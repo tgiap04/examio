@@ -30,6 +30,7 @@ import {
   getFlashcardSetPublicInfo,
   getFlashcardSetForStudy,
 } from "@/apis/flashcardSetApi";
+import { getProgressApi, addStudiedCardApi } from "@/apis/flashcardStudyApi";
 import type {
   FlashcardSetPublicInfo,
   AccessCheckResult,
@@ -113,6 +114,15 @@ export default function FlashcardStudyPage() {
       setCreator(data.creator);
       setShowAccessModal(false);
       setAccessCheckResult({ hasAccess: true, requiresCode: false, accessType: "public" });
+
+      try {
+        const progress = await getProgressApi(flashcardId);
+        if (progress.studiedCardIds && progress.studiedCardIds.length > 0) {
+          setStudiedCards(new Set(progress.studiedCardIds));
+        }
+      } catch {
+        // Progress not available — continue with empty set
+      }
     } catch (error) {
       console.error("Error loading flashcards:", error);
       throw error;
@@ -190,8 +200,9 @@ export default function FlashcardStudyPage() {
       setIsFlipped(false);
       playSound("next");
       const currentCard = flashcards[currentCardIndex];
-      if (currentCard) {
+      if (currentCard && !studiedCards.has(currentCard.id)) {
         setStudiedCards((prev) => new Set([...prev, currentCard.id]));
+        addStudiedCardApi(id, currentCard.id).catch(() => {});
       }
     }
   };
