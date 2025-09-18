@@ -8,6 +8,7 @@ Nền tảng học tập trực tuyến hỗ trợ bởi AI — biến tài li�
 examio/
 ├── examio-be/     # Backend — NestJS microservices + Python AI service
 ├── examio-fe/     # Frontend — React 19 + Vite
+|-- examio-app/    # App native
 ├── DESIGN.md      # Design system tokens (cream + coral + dark navy)
 └── CLAUDE.md      # Hướng dẫn cho AI coding assistants
 ```
