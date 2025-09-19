@@ -244,7 +244,7 @@ export const aiChatApi = {
     ) => void,
     onError: (error: string) => void
   ): (() => void) => {
-    const baseUrl = env.apiUrl || "http://localhost:4000";
+    const baseUrl = env.apiUrl || "/api/v1";
     const controller = new AbortController();
 
     fetch(`${baseUrl}/ai-chat/${chatId}/stream`, {
@@ -322,7 +322,7 @@ export const aiChatApi = {
     onComplete: (assistantMessage: AIChatMessage | null) => void,
     onError: (error: string) => void
   ): (() => void) => {
-    const baseUrl = env.apiUrl || "http://localhost:4000";
+    const baseUrl = env.apiUrl || "/api/v1";
     const controller = new AbortController();
 
     fetch(`${baseUrl}/ai-chat/message/${messageId}/regenerate-stream`, {
