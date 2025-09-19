@@ -32,6 +32,7 @@ model User {
     monthlyFileUploads        UserMonthlyFileUpload[]
     flashCardViewHistories    FlashCardViewHistory[]
     pinnedFlashcards          UserPinnedFlashcard[]
+    flashcardStudyProgress    FlashcardStudyProgress[]
 }
 
 // Subscription tiers: 0=none, 1=basic, 2=advanced, 3=vip

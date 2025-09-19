@@ -393,7 +393,6 @@ model UserPinnedFlashcard {
     @@index([userId, pinnedAt])
 }
 
-
 model FlashcardStudyProgress {
     id             String   @id @default(cuid())
     userId         String
@@ -410,6 +409,7 @@ model FlashcardStudyProgress {
     @@index([userId])
     @@index([flashCardSetId])
 }
+
 
 model Payment {
     id          String    @unique

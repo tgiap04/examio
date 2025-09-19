@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import {
-  getRecentFlashcardSetsApi,
   generateShareLinkApi,
   togglePinFlashcardApi,
   type RecentFlashcardSet,
@@ -19,6 +18,7 @@ import {
 } from "@/components/antd/dialog"
 import { Input } from "@/components/antd/input"
 import { useAuthStore } from "@/stores/useAuthStore"
+import { useStudentMaterialsStore } from "@/stores/useStudentMaterialsStore"
 
 const PAGE_SIZE = 12
 
@@ -308,6 +308,7 @@ export default function MyMaterialsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { toast } = useToast()
   const { user } = useAuthStore()
+  const { fetchFlashcards, flashcardsLoading, updateFlashcardPin } = useStudentMaterialsStore()
 
   const currentPage = Number(searchParams.get("page")) || 1
 
@@ -325,10 +326,10 @@ export default function MyMaterialsPage() {
     accessCode: "",
   })
 
-  const fetchMaterials = useCallback(async (page: number) => {
+  const loadMaterials = useCallback(async (page: number) => {
     try {
       setLoading(true)
-      const data = await getRecentFlashcardSetsApi(PAGE_SIZE, page)
+      const data = await fetchFlashcards(page, PAGE_SIZE)
       setMaterials(data.flashcardSets)
       setTotalPages(data.totalPages)
       setTotal(data.total)
@@ -337,11 +338,11 @@ export default function MyMaterialsPage() {
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [fetchFlashcards, toast])
 
   useEffect(() => {
-    fetchMaterials(currentPage)
-  }, [currentPage, fetchMaterials])
+    loadMaterials(currentPage)
+  }, [currentPage, loadMaterials])
 
   const handlePageChange = (page: number) => {
     setSearchParams({ page: String(page) })
@@ -369,18 +370,24 @@ export default function MyMaterialsPage() {
   }
 
   const handleTogglePin = async (setId: string) => {
-    // Optimistic update
+    const current = materials.find((m) => m.id === setId)
+    if (!current) return
+
+    // Optimistic update local + store
+    const newPinned = !current.isPinned
     setMaterials((prev) =>
-      prev.map((m) => m.id === setId ? { ...m, isPinned: !m.isPinned } : m)
+      prev.map((m) => m.id === setId ? { ...m, isPinned: newPinned } : m)
     )
+    updateFlashcardPin(setId, newPinned)
 
     try {
       await togglePinFlashcardApi(setId)
     } catch {
       // Revert on failure
       setMaterials((prev) =>
-        prev.map((m) => m.id === setId ? { ...m, isPinned: !m.isPinned } : m)
+        prev.map((m) => m.id === setId ? { ...m, isPinned: !newPinned } : m)
       )
+      updateFlashcardPin(setId, !newPinned)
       toast.error("Không thể ghim tài liệu")
     }
   }
