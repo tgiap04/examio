@@ -17,10 +17,12 @@ services:
                 VITE_RECAPTCHA_SITE_KEY: ${VITE_RECAPTCHA_SITE_KEY:-}
         container_name: examio-frontend
         environment:
-            - BACKEND_URL=${BACKEND_URL:-http://examio-gateway:3000}
+            - BACKEND_URL=${BACKEND_URL:-http://examio-gateway:7000}
         ports:
             - '${FE_PORT:-3080}:80'
         restart: unless-stopped
+        networks:
+            - examio-network
         healthcheck:
             test: ['CMD', 'curl', '-f', 'http://localhost:80/']
             interval: 30s
@@ -32,3 +34,8 @@ services:
             options:
                 max-size: '5m'
                 max-file: '3'
+
+networks:
+    examio-network:
+        external: true
+        name: examio-network
