@@ -20,7 +20,6 @@ import {
   Upload,
   FileText,
   CircleHelp,
-  CheckCircle2,
   Cpu,
 } from "lucide-react";
 import { useToast } from "@/components/antd/toast";
@@ -360,8 +359,8 @@ export function TestGenerator() {
               </p>
             </div>
           ) : (
-            <ScrollArea className="flex-1 min-h-[360px] rounded-2xl border border-border bg-card">
-              <div className="space-y-3 p-3 md:space-y-4 md:p-6 md:pr-7 max-h-[600px] overflow-y-auto">
+            <ScrollArea className="flex-1 min-h-[360px] rounded-2xl border border-border shadow-[0_24px_60px_rgba(20,20,19,0.18)]">
+              <div className="space-y-4 p-4 md:p-6 max-h-[600px] overflow-y-auto">
                 {generatedTest.map((q: Quizz, idx: number) => {
                   const answerIndex =
                     typeof q.answer === "number"
@@ -371,54 +370,37 @@ export function TestGenerator() {
                   return (
                     <div
                       key={idx}
-                      className="rounded-xl border border-border bg-background p-3 md:rounded-2xl md:p-5"
+                      className="rounded-[12px] border border-border p-4"
                     >
-                      <div className="flex items-start gap-3 md:gap-4">
-                        <span className="mt-0.5 flex h-8 w-8 md:h-9 md:w-9 shrink-0 items-center justify-center rounded-lg md:rounded-xl bg-primary/10 text-xs md:text-sm font-semibold text-primary">
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-coral/15 font-mono text-xs font-semibold text-coral">
                           {idx + 1}
                         </span>
-                        <div className="min-w-0 flex-1 space-y-3 md:space-y-4">
-                          <p className="text-sm font-semibold leading-6 text-foreground md:text-base md:leading-7">
+                        <div className="min-w-0 flex-1 space-y-3">
+                          <p className="text-[14px] font-medium leading-[1.55]">
                             {q.question}
                           </p>
 
-                          <div className="grid gap-2">
+                          <div className="grid gap-2 sm:grid-cols-2">
                             {q.options.map((opt: string, optIdx: number) => {
                               const isCorrect = answerIndex === optIdx;
+                              const hasPrefix = /^[A-D]\s*[\.\)\:]\s+/.test(opt);
+                              const displayText = hasPrefix ? opt.replace(/^[A-D]\s*[\.\)\:]\s+/, "") : opt;
 
                               return (
                                 <div
                                   key={optIdx}
                                   className={cn(
-                                    "flex items-start gap-2.5 rounded-lg border p-2.5 md:gap-3 md:rounded-xl md:p-3 transition-colors",
+                                    "flex items-center gap-2 rounded-[8px] border px-3 py-2 text-[13px] transition-colors",
                                     isCorrect
-                                      ? "border-accent-teal/30 bg-accent-teal/10"
-                                      : "border-border bg-card",
+                                      ? "border-coral/40 bg-coral/10"
+                                      : "border-border text-muted-foreground",
                                   )}
                                 >
-                                  <span
-                                    className={cn(
-                                      "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs font-semibold",
-                                      isCorrect
-                                        ? "bg-accent-teal/15 text-accent-teal"
-                                        : "bg-muted text-muted-foreground",
-                                    )}
-                                  >
-                                    {String.fromCharCode(65 + optIdx)}
+                                  <span className="font-mono text-[11px]">
+                                    {String.fromCharCode(65 + optIdx)}.
                                   </span>
-                                  <span
-                                    className={cn(
-                                      "flex-1 text-sm leading-5 md:leading-6",
-                                      isCorrect
-                                        ? "text-accent-teal"
-                                        : "text-muted-foreground",
-                                    )}
-                                  >
-                                    {opt}
-                                  </span>
-                                  {isCorrect && (
-                                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent-teal" />
-                                  )}
+                                  <span className="flex-1">{displayText}</span>
                                 </div>
                               );
                             })}

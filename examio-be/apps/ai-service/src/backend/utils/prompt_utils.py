@@ -105,10 +105,11 @@ Yêu cầu:
 - Chỉ trả về JSON array theo mẫu:
 {{
   "question": "...",
-  "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+  "options": ["nội dung đáp án A", "nội dung đáp án B", "nội dung đáp án C", "nội dung đáp án D"],
   "answer": "C",
   "sourcePageRange": "{page_range}"
 }}
+- QUAN TRỌNG: KHÔNG thêm ký tự A., B., C., D. vào đầu mỗi option. Chỉ ghi nội dung đáp án.
 - Không markdown, không giải thích thêm.
 
 Content:

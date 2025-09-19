@@ -23,12 +23,12 @@ export class PromptUtils {
             - The result returns a JSON array, each item has the form:
             {
             "question": "...",
-            "options": ["A. ...", "B. ...", "C. ...", "D. ..."],
+            "options": ["content of option A", "content of option B", "content of option C", "content of option D"],
             "answer": "C",
             "sourcePageRange": "${pageRange}"
             }
-            - Note that each answer must have the letter A/B/C/D at the beginning, not missing
-            - The correct answer only needs the letter A/B/C/D at the beginning, not the answer content
+            - IMPORTANT: Do NOT include the letter prefix (A., B., C., D.) in the options array. Only include the answer content itself.
+            - The correct answer only needs the letter A/B/C/D, not the answer content
 
             Content:
             ${content.content}

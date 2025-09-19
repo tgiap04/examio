@@ -919,22 +919,43 @@ class ContentGenerationService:
         )
         return selected_chunks
 
+    def _normalize_json_items(self, items: list) -> List[Dict]:
+        """Normalize LLM output — handle str items, nested formats across models"""
+        result = []
+        for item in items:
+            if isinstance(item, str):
+                try:
+                    item = json.loads(item)
+                except (json.JSONDecodeError, ValueError):
+                    continue
+            if isinstance(item, dict):
+                if "options" in item and isinstance(item["options"], list):
+                    item["options"] = [self._strip_option_prefix(opt) for opt in item["options"]]
+                result.append(item)
+        return result
+
+    @staticmethod
+    def _strip_option_prefix(opt: str) -> str:
+        """Strip A./B./C./D. or numeric prefixes from option text — O(1) regex"""
+        clean = str(opt).strip()
+        return re.sub(r'^([A-D]|[0-9]+)\s*[\.\)\:]\s+', '', clean)
+
     def _parse_quiz_response(self, response: str, default_page_range: str) -> List[Dict]:
         """Parse LLM response into quiz questions"""
         try:
-            # Try to extract JSON from response
             json_str = self._extract_json(response)
-            questions = json.loads(json_str)
+            raw_items = json.loads(json_str)
+            questions = self._normalize_json_items(raw_items)
 
-            result = []
-            for q in questions:
-                result.append({
+            return [
+                {
                     "question": q.get("question", ""),
                     "options": q.get("options", []),
                     "answer": q.get("answer", ""),
-                    "sourcePageRange": q.get("sourcePageRange", default_page_range)
-                })
-            return result
+                    "sourcePageRange": q.get("sourcePageRange", default_page_range),
+                }
+                for q in questions
+            ]
 
         except Exception as e:
             logger.error(f"Failed to parse quiz response: {e}")
@@ -943,18 +964,18 @@ class ContentGenerationService:
     def _parse_flashcard_response(self, response: str, default_page_range: str) -> List[Dict]:
         """Parse LLM response into flashcards"""
         try:
-            # Try to extract JSON from response
             json_str = self._extract_json(response)
-            flashcards = json.loads(json_str)
+            raw_items = json.loads(json_str)
+            flashcards = self._normalize_json_items(raw_items)
 
-            result = []
-            for f in flashcards:
-                result.append({
+            return [
+                {
                     "question": f.get("question", ""),
                     "answer": f.get("answer", ""),
-                    "sourcePageRange": f.get("sourcePageRange", default_page_range)
-                })
-            return result
+                    "sourcePageRange": f.get("sourcePageRange", default_page_range),
+                }
+                for f in flashcards
+            ]
 
         except Exception as e:
             logger.error(f"Failed to parse flashcard response: {e}")
@@ -983,52 +1004,36 @@ class ContentGenerationService:
         valid_answers = ["A", "B", "C", "D"]
         clean_answer = str(item.answer).strip()
 
-        # Normalize Options first
         new_options = []
         for idx, opt in enumerate(item.options):
-            prefix = f"{valid_answers[idx]}. "
             clean_opt = str(opt).strip()
-            # Remove existing prefixes like "A. ", "A) ", "1. ", etc.
-            # Using simple replacement for common patterns to avoid complex regex logic if possible, 
-            # but regex is safer for "A) content".
-            import re
-            # Matches A., A), 1., 1), or just A space at start
-            clean_opt = re.sub(r'^([A-D]|[0-9]+)[\.\)\:]\s+', '', clean_opt)
-            # Remove literal "A " if present
+            clean_opt = re.sub(r'^([A-D]|[0-9]+)\s*[\.\)\:]\s+', '', clean_opt)
             if clean_opt.startswith(valid_answers[idx] + " "):
                 clean_opt = clean_opt[2:].strip()
-                
-            new_options.append(f"{prefix}{clean_opt}")
-            
-        # Fix Answer if it is not A/B/C/D (e.g. full text answer)
+            new_options.append(clean_opt)
+
         if clean_answer not in valid_answers:
-            # Try to match with options
             found = False
-            
-            # 1. Check normalized new_options
-            for idx, opt in enumerate(new_options): 
-                # opt is "A. content". We check content.
-                opt_content = opt[3:].strip() 
-                if clean_answer.lower() == opt_content.lower() or clean_answer in opt_content:
+
+            for idx, opt in enumerate(new_options):
+                if clean_answer.lower() == opt.lower() or clean_answer in opt:
                     clean_answer = valid_answers[idx]
                     found = True
                     break
-            
+
             if not found:
-                # 2. Check original item.options
-                 for idx, opt in enumerate(item.options):
+                for idx, opt in enumerate(item.options):
                     if clean_answer in str(opt):
                         clean_answer = valid_answers[idx]
                         found = True
                         break
-            
+
             if not found:
-                 # 3. Last resort: if answer looks like "A) content", extract A
-                 if len(clean_answer) > 0 and clean_answer[0].upper() in valid_answers:
-                     clean_answer = clean_answer[0].upper()
-                 else:
-                     logger.warning(f"Could not normalize answer '{item.answer}', defaulting to A")
-                     clean_answer = "A"
+                if len(clean_answer) > 0 and clean_answer[0].upper() in valid_answers:
+                    clean_answer = clean_answer[0].upper()
+                else:
+                    logger.warning(f"Could not normalize answer '{item.answer}', defaulting to A")
+                    clean_answer = "A"
 
         return {
             "question": item.question,
