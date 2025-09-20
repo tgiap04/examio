@@ -179,7 +179,7 @@ jobs:
 
               sleep 5
 
-              if docker compose exec -T frontend wget -q --spider http://localhost:80/ 2>/dev/null; then
+              if docker compose exec -T frontend curl -fsS http://localhost:80/ -o /dev/null 2>/dev/null; then
                 echo "   Frontend healthy"
               else
                 echo "   Frontend health check FAILED"
