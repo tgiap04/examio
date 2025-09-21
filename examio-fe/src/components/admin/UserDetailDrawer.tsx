@@ -45,8 +45,23 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
     setLoading(true);
     setError(null);
     getUserApi(userId)
-      .then((res) => {
-        if (mounted) setData(res as UserDetailResponse);
+      .then((res: any) => {
+        if (mounted) {
+          // Backend returns { user, wallet, subscription, lastSession }
+          // Flatten into a single object for the UI
+          setData({
+            ...res.user,
+            wallet: res.wallet ?? undefined,
+            subscription: res.subscription ?? undefined,
+            lastSession: res.lastSession
+              ? {
+                device: [res.lastSession.browser, res.lastSession.os].filter(Boolean).join(" / "),
+                ip: res.lastSession.ipAddress ?? undefined,
+                lastActive: res.lastSession.lastActivity ?? undefined,
+              }
+              : undefined,
+          });
+        }
       })
       .catch((err) => {
         if (mounted) setError((err as Error).message);
