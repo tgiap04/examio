@@ -9,11 +9,17 @@ export class GoogleAuthGuard extends AuthGuard('google') {
         const redirect = request.query?.redirect;
 
         if (typeof redirect === 'string') {
+            const isProduction = process.env.NODE_ENV === 'production';
+            const cookieDomain = isProduction
+                ? process.env.COOKIE_DOMAIN || '.examio.top'
+                : undefined;
+
             response.cookie('oauth_redirect', redirect, {
                 httpOnly: true,
                 sameSite: 'lax',
-                secure: false,
+                secure: isProduction,
                 maxAge: 10 * 60 * 1000,
+                ...(cookieDomain && { domain: cookieDomain }),
             });
         }
 

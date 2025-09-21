@@ -12,6 +12,9 @@ interface CookieConfigOptions {
  * - FE local + BE production: secure=false, sameSite=lax (để FE local nhận cookie qua HTTPS)
  * - FE production + BE production: secure=true, sameSite=none (cross-domain)
  * - FE local + BE local: secure=false, sameSite=lax (development)
+ *
+ * COOKIE_DOMAIN env variable controls the cookie domain for production.
+ * Example: COOKIE_DOMAIN=.examio.top
  */
 export function getCookieConfig(options: CookieConfigOptions): CookieOptions {
     const { feOrigin, isProductionBE } = options;
@@ -33,7 +36,8 @@ export function getCookieConfig(options: CookieConfigOptions): CookieOptions {
 
     // Chỉ set domain khi cả FE và BE đều production
     if (isProductionBE && !isLocalFE) {
-        cookieConfig.domain = '.fayedark.com';
+        const cookieDomain = process.env.COOKIE_DOMAIN || '.examio.top';
+        cookieConfig.domain = cookieDomain;
     }
 
     return cookieConfig;

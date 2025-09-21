@@ -242,7 +242,7 @@ export class AuthProxyController {
             path: '/',
         };
         if (process.env.NODE_ENV === 'production') {
-            cookieOptions.domain = '.fayedark.com';
+            cookieOptions.domain = process.env.COOKIE_DOMAIN || '.examio.top';
         }
 
         res.clearCookie('accessToken', cookieOptions);
@@ -350,7 +350,7 @@ export class AuthProxyController {
 
         // BẮT BUỘC: Set domain cho production để share giữa subdomains
         if (isProduction && !isLocalFE) {
-            cookieOptions.domain = '.fayedark.com';
+            cookieOptions.domain = process.env.COOKIE_DOMAIN || '.examio.top';
         }
 
         // Set token cookies
