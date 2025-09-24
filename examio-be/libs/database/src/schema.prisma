@@ -672,6 +672,7 @@ model User {
     pinnedExamRooms           UserPinnedExamRoom[]
     flashcardStudyProgress    FlashcardStudyProgress[]
     adminAudits               AdminAudit[]
+    savedWordFamilies         UserSavedWordFamily[]
 }
 
 // Subscription tiers: 0=none, 1=basic, 2=advanced, 3=vip
@@ -752,4 +753,56 @@ model UserSession {
     @@index([userId, isActive])
     @@index([userId, deviceId])
     @@index([refreshToken])
+}
+
+
+// Word Family Category — seeded by admin, used to organize root words
+model WordFamilyCategory {
+    id          String   @id @default(cuid())
+    name        String   @unique
+    slug        String   @unique
+    description String?
+    imageUrl    String?
+    order       Int      @default(0)
+    isActive    Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    wordFamilies WordFamily[]
+
+    @@index([isActive, order])
+}
+
+// Word Family — AI-generated cache of word variants for a root word in a category
+model WordFamily {
+    id           String   @id @default(cuid())
+    rootWord     String
+    categoryId   String
+    categorySlug String
+    data         Json
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @updatedAt
+
+    category WordFamilyCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+    savedByUsers UserSavedWordFamily[]
+
+    @@unique([rootWord, categorySlug])
+    @@index([categorySlug])
+    @@index([categoryId])
+    @@index([rootWord])
+}
+
+// User's saved word families — reference-based, O(1) lookup
+model UserSavedWordFamily {
+    id           String   @id @default(cuid())
+    userId       String
+    wordFamilyId String
+    savedAt      DateTime @default(now())
+
+    user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+    wordFamily WordFamily @relation(fields: [wordFamilyId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, wordFamilyId])
+    @@index([userId])
+    @@index([wordFamilyId])
 }

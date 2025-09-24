@@ -24,6 +24,7 @@ import { FinanceClientModule } from './modules/finance-client/finance-client.mod
 import { R2Module } from './modules/r2/r2.module';
 import { StudentModule } from './modules/student/student.module';
 import { FlashcardStudyModule } from './modules/flashcard-study/flashcard-study.module';
+import { WordFamilyModule } from './modules/word-family/word-family.module';
 
 @Module({
     imports: [
@@ -44,6 +45,7 @@ import { FlashcardStudyModule } from './modules/flashcard-study/flashcard-study.
         R2Module,
         StudentModule,
         FlashcardStudyModule,
+        WordFamilyModule,
     ],
     controllers: [ExamServiceController],
     providers: [

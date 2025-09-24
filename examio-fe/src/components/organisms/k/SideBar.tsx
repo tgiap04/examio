@@ -7,8 +7,8 @@ import {
   Clock as ClockIcon,
   Coins as TokensIcon,
   GraduationCap,
-  Library,
   LogOut,
+  Network,
   PanelsTopLeft as CardStackIcon,
   Rocket as RocketIcon,
   ScrollText as ReaderIcon,
@@ -19,7 +19,6 @@ import ProfileDropdown from "@/components/atoms/ProfileDropdown";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useEffect } from "react";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
-import { canAccessGenAIKnowledgeManager } from "@/lib/genai-knowledge-access";
 import { Button } from "@/components/antd/button";
 import { cn } from "@/lib/utils";
 
@@ -38,7 +37,6 @@ interface SidebarItem {
   label: string;
   shortLabel?: string;
   active: boolean;
-  restrictedByPolicy?: boolean;
   adminOnly?: boolean;
 }
 
@@ -88,13 +86,12 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
       active: currentPath === "/k/ai-tool",
     },
     {
-      name: "GenAI Knowledge",
-      href: "/k/genai-knowledge",
-      icon: <Library className="w-5 h-5" />,
-      label: "Kho tri thức GenAI",
-      shortLabel: "Tri thức",
-      active: currentPath === "/k/genai-knowledge",
-      restrictedByPolicy: true,
+      name: "Word Family",
+      href: "/k/word-family",
+      icon: <Network className="w-5 h-5" />,
+      label: "Từ vựng tiếng Anh",
+      shortLabel: "Từ vựng",
+      active: currentPath.startsWith("/k/word-family"),
     },
     {
       name: "My Materials",
@@ -163,9 +160,6 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
   ];
 
   const filteredSidebarItems = itemSiderbar.filter((item) => {
-    if (item.restrictedByPolicy) {
-      return canAccessGenAIKnowledgeManager(user);
-    }
     if (item.adminOnly) {
       return user?.isAdmin === true;
     }
