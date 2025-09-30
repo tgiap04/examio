@@ -122,7 +122,9 @@ export class QuizsetProxyController {
     }
 
     @Post()
-    @UseInterceptors(FileInterceptor('thumbnail'))
+    @UseInterceptors(
+        FileInterceptor('thumbnail', { limits: { fileSize: 2 * 1024 * 1024 } })
+    )
     @ApiOperation({ summary: 'Tạo quiz set mới' })
     async create(
         @Body() body: any,
@@ -153,7 +155,9 @@ export class QuizsetProxyController {
     }
 
     @Put(':id')
-    @UseInterceptors(FileInterceptor('thumbnail'))
+    @UseInterceptors(
+        FileInterceptor('thumbnail', { limits: { fileSize: 2 * 1024 * 1024 } })
+    )
     @ApiOperation({ summary: 'Cập nhật quiz set' })
     async update(
         @Param('id') id: string,

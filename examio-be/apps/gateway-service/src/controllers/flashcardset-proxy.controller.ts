@@ -263,7 +263,9 @@ export class FlashcardsetProxyController {
     }
 
     @Post()
-    @UseInterceptors(FileInterceptor('thumbnail'))
+    @UseInterceptors(
+        FileInterceptor('thumbnail', { limits: { fileSize: 2 * 1024 * 1024 } })
+    )
     @ApiOperation({ summary: 'Tạo flashcard set mới' })
     async create(
         @Body() body: any,
@@ -294,7 +296,9 @@ export class FlashcardsetProxyController {
     }
 
     @Put(':id')
-    @UseInterceptors(FileInterceptor('thumbnail'))
+    @UseInterceptors(
+        FileInterceptor('thumbnail', { limits: { fileSize: 2 * 1024 * 1024 } })
+    )
     @ApiOperation({ summary: 'Cập nhật flashcard set' })
     async update(
         @Param('id') id: string,
