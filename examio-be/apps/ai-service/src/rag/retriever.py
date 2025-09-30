@@ -3,6 +3,7 @@ import os
 import io
 import sys
 import logging
+from pathlib import Path
 from typing import List, Optional, Dict, Any
 import tempfile
 import re
@@ -30,6 +31,28 @@ from .semantic_analyzer import analyze_query_semantic_filter
 from .docling_extractor import extract_text_with_docling, is_docling_available
 from dotenv import load_dotenv
 load_dotenv()
+
+
+def _assert_trusted_index_path(output_path: str) -> None:
+    """Guard local FAISS index loads against path traversal.
+
+    SECURITY: ``FAISS.load_local(..., allow_dangerous_deserialization=True)``
+    unpickles the index's docstore, which can execute arbitrary code if the
+    file contents are attacker-controlled. These loaders are only meant for
+    offline/rebuild flows over developer-trusted, locally-built indices --
+    never a path derived from external/user input.
+    TODO: migrate this index format away from pickle (e.g. a safetensors-
+    backed docstore) so ``allow_dangerous_deserialization`` can be removed
+    entirely; until then this check only bounds *where* we'll load from.
+    """
+    allowed_root = Path(os.getenv("AI_VECTOR_INDEX_ROOT", os.getcwd())).resolve()
+    resolved = Path(output_path).resolve()
+    if not (resolved == allowed_root or allowed_root in resolved.parents):
+        raise ValueError(
+            f"Refusing to load vector index outside trusted root {allowed_root}: {resolved}"
+        )
+
+
 # Optional imports for file processing
 try:
     import PyPDF2
@@ -541,6 +564,7 @@ def load_enhanced_vector_database(output_path: str, data_dir: str = "./data"):
         else:
             print("Loading existing vector database...")
             # Load existing vectorstore
+            _assert_trusted_index_path(output_path)
             vectorstore = FAISS.load_local(output_path, embeddings, allow_dangerous_deserialization=True)
 
             # Recreate documents for BM25 (we need the text content)
@@ -566,6 +590,7 @@ def load_enhanced_vector_database(output_path: str, data_dir: str = "./data"):
             return vectorstore, documents
 
         # If we created new database, load it
+        _assert_trusted_index_path(output_path)
         vectorstore = FAISS.load_local(output_path, embeddings, allow_dangerous_deserialization=True)
         return vectorstore, documents
 
@@ -881,6 +906,7 @@ def load_vector_database(output_path, data_dir="./data"):
             chunks = text_splitter.split_text(regulations)
 
         print("Loading vector database...")
+        _assert_trusted_index_path(output_path)
         return FAISS.load_local(output_path, embeddings, allow_dangerous_deserialization=True), chunks
     except Exception as e:
         print(f"Error loading vector database: {e}")

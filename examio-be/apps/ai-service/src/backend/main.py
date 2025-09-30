@@ -1,6 +1,8 @@
 import asyncio
+import hmac
 import logging
 import os
+import uuid
 import uvicorn
 from contextlib import asynccontextmanager
 from datetime import datetime
@@ -118,7 +120,10 @@ async def require_internal_service_token(request: Request, call_next):
 
     expected_token = os.getenv("INTERNAL_SERVICE_TOKEN")
     received_token = request.headers.get("x-internal-service-token")
-    if not expected_token or received_token != expected_token:
+    # Fail closed when unset (falsy expected_token short-circuits before the
+    # compare); use a constant-time compare to avoid leaking the token via
+    # response-timing side channels.
+    if not expected_token or not hmac.compare_digest(received_token or "", expected_token):
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
             content={"success": False, "error": "Invalid internal service token"},
@@ -144,13 +149,16 @@ async def http_exception_handler(request: Request, exc: HTTPException):
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
+    error_id = uuid.uuid4().hex
+    # Full details (including str(exc)) stay server-side; the client only
+    # gets a generic message plus a correlation id to reference in logs.
+    logger.error(f"Unhandled exception [{error_id}]: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
             "success": False,
             "error": "Internal server error",
-            "message": str(exc)
+            "error_id": error_id,
         },
     )
 

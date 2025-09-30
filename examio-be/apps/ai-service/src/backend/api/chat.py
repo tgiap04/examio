@@ -1,6 +1,7 @@
 import logging
 import os
 import sys
+import uuid
 from datetime import datetime
 from typing import List, Dict, Optional, Any
 
@@ -142,8 +143,12 @@ async def query_ai(request: ChatRequest):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error in stateless query: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_id = uuid.uuid4().hex
+        logger.error(f"Error in stateless query [{error_id}]: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal error while processing query (ref: {error_id})",
+        )
 
 @router.post("/stream")
 async def stream_ai(request: ChatRequest):
@@ -214,8 +219,16 @@ async def stream_ai(request: ChatRequest):
                 yield f"data: {done_data}\n\n"
 
             except Exception as e:
+                error_id = uuid.uuid4().hex
                 error_code = getattr(e, 'code', None)
-                err_data = json.dumps({"type": "error", "data": str(e), "code": error_code})
+                logger.error(f"Error in stream chunk [{error_id}]: {str(e)}", exc_info=True)
+                # Do not leak internal error text into the SSE payload; only a
+                # generic message plus a correlation id for log lookup.
+                err_data = json.dumps({
+                    "type": "error",
+                    "data": f"Internal error while streaming response (ref: {error_id})",
+                    "code": error_code,
+                })
                 yield f"data: {err_data}\n\n"
 
         return StreamingResponse(iter_response(), media_type="text/event-stream")
@@ -225,8 +238,12 @@ async def stream_ai(request: ChatRequest):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error in streaming query: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_id = uuid.uuid4().hex
+        logger.error(f"Error in streaming query [{error_id}]: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal error while starting stream (ref: {error_id})",
+        )
 
 @router.get("/health")
 async def health_check():

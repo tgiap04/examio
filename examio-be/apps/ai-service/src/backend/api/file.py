@@ -11,6 +11,7 @@ KHÔNG xử lý: Upload file, tạo UserStorage (NestJS làm)
 import logging
 import os
 import sys
+import uuid
 from typing import Dict, Any, List, Optional
 
 from fastapi import APIRouter, HTTPException
@@ -180,8 +181,12 @@ async def process_file(request: ProcessFileRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error processing file: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error processing file: {str(e)}")
+        error_id = uuid.uuid4().hex
+        logger.error(f"Error processing file [{error_id}]: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal error while processing file (ref: {error_id})",
+        )
 
 
 @router.get('/models', response_model=Dict[str, Any])
@@ -257,8 +262,12 @@ async def query_file(request: QueryFileRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error querying file: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
+        error_id = uuid.uuid4().hex
+        logger.error(f"Error querying file [{error_id}]: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal error while querying file (ref: {error_id})",
+        )
 
 
 @router.post("/multi-query", response_model=Dict[str, Any])
@@ -330,8 +339,12 @@ async def multi_query_file(request: MultiQueryRequest):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in multi-query: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        error_id = uuid.uuid4().hex
+        logger.error(f"Error in multi-query [{error_id}]: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Internal error while processing multi-query (ref: {error_id})",
+        )
 
 
 @router.get("/file-status/{user_storage_id}", response_model=Dict[str, Any])

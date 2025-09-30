@@ -4,6 +4,7 @@ Xây dựng graph từ documents với các loại edges khác nhau
 """
 import os
 import logging
+from pathlib import Path
 from typing import List, Dict, Any, Tuple, Optional
 import networkx as nx
 from langchain_core.documents import Document
@@ -21,6 +22,26 @@ logger = logging.getLogger(__name__)
 def _use_faiss_for_graph() -> bool:
     raw = os.getenv('AI_GRAPH_USE_FAISS', 'false').strip().lower()
     return raw in {'1', 'true', 'yes', 'on'}
+
+
+def _assert_trusted_cache_path(filepath: str) -> None:
+    """Guard graph cache loads against path traversal.
+
+    SECURITY: ``load_graph`` deserializes with ``pickle.load()``, which can
+    execute arbitrary code if the file contents are attacker-controlled.
+    This path is only meant to reload developer-generated graph caches
+    produced by ``save_graph()`` in the same trusted environment -- never a
+    path derived from external/user input.
+    TODO: migrate the cache format away from pickle (e.g. GraphML for the
+    graph plus a JSON sidecar for community metadata) to remove this trust
+    boundary entirely; until then this check only bounds *where* we load from.
+    """
+    allowed_root = Path(os.getenv('AI_GRAPH_CACHE_ROOT', os.getcwd())).resolve()
+    resolved = Path(filepath).resolve()
+    if not (resolved == allowed_root or allowed_root in resolved.parents):
+        raise ValueError(
+            f"Refusing to load graph cache outside trusted root {allowed_root}: {resolved}"
+        )
 
 
 class DocumentGraph:
@@ -368,6 +389,7 @@ class DocumentGraph:
     def load_graph(self, filepath: str):
         """Load graph from file with community metadata"""
         import pickle
+        _assert_trusted_cache_path(filepath)
         with open(filepath, 'rb') as f:
             data = pickle.load(f)
             self.graph = data['graph']
