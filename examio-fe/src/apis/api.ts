@@ -6,16 +6,6 @@ import axios, {
 } from "axios";
 import { getOrCreateDeviceId } from "@/lib/deviceId";
 import { MODEL_UNAVAILABLE_MESSAGE } from "@/types/ai";
-import {
-  setAuthToken,
-  clearAuthToken,
-  getStoredRefreshToken,
-  getStoredSessionId,
-  setStoredRefreshToken,
-  clearStoredRefreshToken,
-  clearStoredSessionId,
-} from "@/hooks/useAuthSync";
-import { syncRefreshTokenApi } from "@/apis/authApi";
 import { env } from "@/lib/env";
 import { clearRedirectBackTarget, getCurrentReturnPath, setRedirectBackTarget } from "@/lib/authRedirect";
 import { navigateTo } from "@/lib/navigation";
@@ -28,10 +18,10 @@ type RetryableRequestConfig = AxiosRequestConfig & {
 let refreshPromise: Promise<string | null> | null = null;
 
 function handleAuthFailure() {
-  clearAuthToken();
-  clearStoredRefreshToken();
-  clearStoredSessionId();
-
+  // SECURITY: auth tokens live in httpOnly cookies set by the backend; there
+  // is nothing to clear on the client. A full-page navigateTo("/login")
+  // below remounts the app, which re-hydrates auth state from the (now
+  // invalid/cleared) cookie.
   if (typeof window === "undefined") {
     return;
   }
@@ -49,30 +39,19 @@ export const api = axios.create({
 
 async function refreshAccessToken() {
   if (!refreshPromise) {
-    let refreshToken = getStoredRefreshToken();
-    const sessionId = getStoredSessionId();
-
-    if (!refreshToken && sessionId) {
-      const syncResponse = await syncRefreshTokenApi(sessionId);
-      refreshToken = syncResponse.refreshToken || null;
-      if (refreshToken) {
-        setStoredRefreshToken(refreshToken);
-      }
-    }
-
+    // SECURITY: the refresh token lives in an httpOnly cookie; the backend
+    // reads it from there (cookie-first) and reissues fresh httpOnly cookies
+    // on this response via Set-Cookie. We never read/write the token or
+    // refresh token from JS — the returned `token` is only used as a
+    // success signal for the retried request below.
     refreshPromise = api
-      .post("/auth/refresh", refreshToken ? { refreshToken } : undefined, {
+      .post("/auth/refresh", undefined, {
         skipAuthRefresh: true,
       } as RetryableRequestConfig)
       .then((response) => {
         const token = response.data?.token;
         if (!token) {
           throw new Error("Làm mới phiên đăng nhập thất bại");
-        }
-
-        setAuthToken(token);
-        if (response.data?.refreshToken) {
-          setStoredRefreshToken(response.data.refreshToken);
         }
         return token as string;
       })
@@ -87,10 +66,9 @@ async function refreshAccessToken() {
 api.interceptors.request.use(authRequestInterceptor);
 function authRequestInterceptor(config: InternalAxiosRequestConfig) {
   if (config.headers) {
-    const token = localStorage.getItem("auth_token");
-    if (token) {
-      config.headers.authorization = `Bearer ${token.replace(/"/g, "")}`;
-    }
+    // SECURITY: auth tokens live in httpOnly cookies set by the backend;
+    // never persist them in localStorage (XSS-exfiltratable). `withCredentials:
+    // true` on the axios instance already sends the cookie with every request.
 
     // Add Device ID header for session tracking
     const deviceId = getOrCreateDeviceId();
@@ -137,9 +115,8 @@ api.interceptors.response.use(
       const errorData = error.response.data as SessionErrorData;
 
       if (errorData.code === "SESSION_INVALIDATED") {
-        clearAuthToken();
-        clearStoredRefreshToken();
-        clearStoredSessionId();
+        // SECURITY: no client-side token to clear — the backend invalidates
+        // the session/cookie; navigateTo below forces a full reload.
         clearRedirectBackTarget();
         const returnTo = getCurrentReturnPath();
         // Prevent redirect loop if already on login page
