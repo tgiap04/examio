@@ -481,7 +481,7 @@ model PageFeatureFlag {
 model Payment {
     id          String    @unique
     userId      String
-    amount      Float
+    amount      Int
     currency    String
     status      Int // 0=unpaid, 1=paid, 2=overdue, 3=cancelled, 4=refunded
     paymentType String    @default("credits") // credits | subscription
@@ -501,7 +501,7 @@ model Payment {
 model Wallet {
     id        String   @unique
     userId    String   @unique
-    balance   Float    @default(0)
+    balance   Int      @default(0)
     createdBy String?
     updatedBy String?
     createdAt DateTime @default(now())
@@ -517,7 +517,7 @@ model WalletTransaction {
     updatedAt   DateTime @default(now()) @updatedAt
     createdBy   String?
     updatedBy   String?
-    amount      Float
+    amount      Int
     type        Int // 0 = buy credits, 1 = buy subscription, 2 = refund, 3 = admin adjustment, 4 = use services
     direction   String   @default("SUBTRACT") // ADD = cộng credits, SUBTRACT = trừ credits
     description String?
