@@ -48,8 +48,28 @@ function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+/**
+ * Highlights occurrences of `search` inside `text` by splitting the plain
+ * text into React text-node segments (never raw HTML), so React escapes
+ * every segment automatically. This avoids dangerouslySetInnerHTML entirely.
+ */
+function highlightMatches(text: string, search: string) {
+  if (!search) {
+    return text;
+  }
 
+  const parts = text.split(new RegExp(`(${escapeRegExp(search)})`, "gi"));
 
+  return parts.map((part, i) =>
+    i % 2 === 1 ? (
+      <mark key={i} className="bg-yellow-200">
+        {part}
+      </mark>
+    ) : (
+      part
+    ),
+  );
+}
 
 const LABEL_COLORS = [
   "#3B82F6",
@@ -598,12 +618,6 @@ export function LabelManager({ quizSetId, onLabelChange }: LabelManagerProps) {
             ) : (
               paginatedLabelQuestions.map((question, index) => {
                 const plainText = question.question.replace(/<[^>]+>/g, "");
-                const highlight = debouncedQuestionSearch
-                  ? plainText.replace(
-                    new RegExp(`(${escapeRegExp(debouncedQuestionSearch)})`, "gi"),
-                    "<mark class='bg-yellow-200'>$1</mark>",
-                  )
-                  : null;
 
                 return (
                   <div
@@ -615,10 +629,8 @@ export function LabelManager({ quizSetId, onLabelChange }: LabelManagerProps) {
                         {index + 1}
                       </span>
                       <div className="text-[13px] leading-[1.55] flex-1">
-                        {highlight ? (
-                          <div
-                            dangerouslySetInnerHTML={{ __html: highlight }}
-                          />
+                        {debouncedQuestionSearch ? (
+                          <div>{highlightMatches(plainText, debouncedQuestionSearch)}</div>
                         ) : (
                           <RichTextViewer content={question.question} />
                         )}

@@ -20,7 +20,9 @@ export const env = {
   apiUrl: trimTrailingSlash(readEnv("VITE_API_URL") ?? readEnv("NEXT_PUBLIC_API_URL") ?? ""),
   turnstileSiteKey: readEnv("VITE_TURNSTILE_SITE_KEY") ?? "",
   measurementId: readEnv("VITE_MEASUREMENT_ID") ?? readEnv("NEXT_PUBLIC_MEASUREMENT_ID") ?? "",
-  quizAesKey: readEnv("VITE_QUIZ_AES_KEY") ?? readEnv("NEXT_PUBLIC_QUIZ_AES_KEY") ?? "default-aes-256-key-32-chars!!!",
+  // SECURITY: no hardcoded fallback key here — see crypto.ts for the fail-loud behavior
+  // when this resolves to an empty value. Do not reintroduce a default key.
+  quizAesKey: readEnv("VITE_QUIZ_AES_KEY") ?? readEnv("NEXT_PUBLIC_QUIZ_AES_KEY") ?? "",
   genAITutorAllowedEmails: readEnv("VITE_GENAI_TUTOR_ALLOWED_EMAILS") ?? readEnv("NEXT_PUBLIC_GENAI_TUTOR_ALLOWED_EMAILS") ?? "",
   /** e.g. ".examio.fayedark.com" — used for cookie domain. Omit/empty = no domain attribute */
   cookieDomain: readEnv("VITE_COOKIE_DOMAIN") ?? readEnv("NEXT_PUBLIC_COOKIE_DOMAIN") ?? "",
