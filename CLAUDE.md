@@ -6,7 +6,7 @@ Tệp này cung cấp hướng dẫn cho Claude Code (claude.ai/code) khi làm v
 
 - Repository này được chia thành hai workspace chính:
   - `examio-be/`: repository backend polyglot gồm các microservice NestJS và một AI service viết bằng Python.
-  - `examio-fe/`: frontend Next.js 15.
+  - `examio-fe/`: frontend React 19 + Vite.
 - Hãy xem backend và frontend là hai package root riêng biệt. Chạy lệnh trong đúng thư mục con thay vì ở thư mục gốc repository.
 - Không có package manager workspace dùng chung ở thư mục gốc cho cả hai app.
 
@@ -23,36 +23,36 @@ Tệp này cung cấp hướng dẫn cho Claude Code (claude.ai/code) khi làm v
 
 ```bash
 cd examio-be
-pnpm install
-pnpm build
-pnpm test
-pnpm test:watch
-pnpm test:cov
-pnpm test:debug
-pnpm dev:auth
-pnpm dev:exam
-pnpm dev:finance
-pnpm dev:gateway
-pnpm dev:r2
-pnpm dev:ocr
-pnpm dev:ai
-pnpm dev:all
-pnpm prisma:merge
-pnpm prisma:generate
-pnpm prisma:migrate
-pnpm prisma:push
-pnpm prisma:studio
-pnpm prisma:deploy
-pnpm prisma:seed
+yarn install
+yarn build
+yarn test
+yarn test:watch
+yarn test:cov
+yarn test:debug
+yarn dev:auth
+yarn dev:exam
+yarn dev:finance
+yarn dev:gateway
+yarn dev:r2
+yarn dev:ocr
+yarn dev:ai
+yarn dev:all
+yarn prisma:merge
+yarn prisma:generate
+yarn prisma:migrate
+yarn prisma:push
+yarn prisma:studio
+yarn prisma:deploy
+yarn prisma:seed
 ```
 
 ### Chạy một test backend cụ thể
 
 ```bash
 cd examio-be
-pnpm test -- apps/auth-service/src/auth-service.controller.spec.ts
-pnpm test -- --testNamePattern="AuthServiceController"
-pnpm test -- --runInBand apps/exam-service/src/exam-service.controller.spec.ts
+yarn test apps/auth-service/src/auth-service.controller.spec.ts
+yarn test --testNamePattern="AuthServiceController"
+yarn test --runInBand apps/exam-service/src/exam-service.controller.spec.ts
 ```
 
 ### Chạy e2e test backend trực tiếp
@@ -68,21 +68,21 @@ cd examio-be/apps/auth-service && ../../node_modules/.bin/jest --config test/jes
 
 ```bash
 cd examio-fe
-pnpm install
-pnpm dev
-pnpm build
-pnpm start
-pnpm lint
-pnpm lint:fix
+yarn install
+yarn dev
+yarn build
+yarn start
+yarn lint
+yarn lint:fix
 ```
 
 Ghi chú:
-- Frontend dev server chạy trên port `5173` qua `next dev --turbopack -p 5173`.
+- Frontend dev server chạy trên port `5173` qua `vite --host 0.0.0.0 --port 5173`.
 - Frontend hiện chưa có script test trong `package.json`.
 
 ### Python AI service (`examio-be/apps/ai-service`)
 
-Script backend `pnpm dev:ai` giả định rằng virtualenv đã tồn tại tại `examio-be/apps/ai-service/venv`.
+Script backend `yarn dev:ai` giả định rằng virtualenv đã tồn tại tại `examio-be/apps/ai-service/venv`.
 
 ```bash
 cd examio-be/apps/ai-service
@@ -110,7 +110,7 @@ cd examio-be/apps/ai-service
 
 ### Topology các service
 
-Backend là một pnpm workspace (`examio-be/pnpm-workspace.yaml`) với nhiều service nằm trong `examio-be/apps/`:
+Backend là một root package dùng Yarn, tổ chức theo kiểu Nest monorepo với nhiều service nằm trong `examio-be/apps/`:
 
 - `gateway-service`: điểm vào HTTP public và lớp façade/proxy.
 - `auth-service`: xác thực, OAuth providers, quản lý profile/session/device và các gRPC endpoint liên quan auth.
@@ -191,16 +191,16 @@ Khi chỉnh sửa AI chat hoặc generation flow, hãy kiểm tra đủ ba lớp
 
 ### Framework và cấu trúc app
 
-- Frontend là một ứng dụng Next.js 15 App Router nằm trong `examio-fe/src/app`.
-- Route group như `(auth)` và `(landing)` được dùng để tổ chức page.
-- Protected route hiện đang được chặn bởi `src/middleware.ts`, nơi redirect user chưa đăng nhập đối với `/k/:path*` và `/exam-session/:path*`.
-- Root layout bọc toàn bộ app bằng theme, toast, analytics và reCAPTCHA providers.
+- Frontend là một ứng dụng React 19 + Vite, bootstrap từ `examio-fe/src/main.tsx` và `examio-fe/src/App.tsx`.
+- Routing dùng React Router, được khai báo trong `src/routes/index.tsx`.
+- Protected route được chặn bởi route guards phía client như `ProtectedRoute` thay vì Next middleware.
+- App được bọc bởi providers trong `src/provider/AppProviders.tsx`.
 
 ### Phân lớp frontend
 
 Frontend được tổ chức quanh một số lớp khá ổn định:
 
-- `src/app`: route, layout, page entrypoint.
+- `src/pages`: page-level UI theo route.
 - `src/apis`: các API client dựa trên Axios.
 - `src/stores`: Zustand store cho state phía client.
 - `src/components`: UI component.
@@ -214,7 +214,7 @@ Pattern phổ biến là:
 
 ### Auth/session flow ở frontend
 
-Auth không chỉ được xử lý bởi Next middleware.
+Auth không chỉ được xử lý bởi route guards phía client.
 
 - `src/apis/api.ts` là nơi cấu hình Axios dùng chung, thêm bearer token từ `localStorage`, đồng thời gắn `X-Device-ID` để theo dõi session.
 - File này cũng xử lý trường hợp `401` do session bị vô hiệu hóa bằng cách xóa auth state local và redirect về `/login`.
@@ -270,3 +270,79 @@ Khi backend thay đổi response shape, hãy cập nhật đồng thời API cli
 - Với tính năng AI/tài liệu, cần dự đoán trước sự liên kết giữa Prisma model, `exam-service`, `ai-service` và các client AI chat/generation phía frontend.
 - Tránh chạy lệnh ở thư mục gốc repository trừ khi lệnh đó thực sự dành cho root; đa số lệnh phải chạy trong `examio-be/` hoặc `examio-fe/`.
 - Giữ diff gọn và tập trung. Repo này có convention format/style khác nhau giữa backend và frontend, vì vậy hãy match theo file đang sửa.
+
+## Active Technologies
+- TypeScript 5.x with React 19 + React 19, React DOM 19, Axios, Zustand, Tailwind CSS 4, Radix UI primitives, TipTap, Framer Motion, Recharts, react-google-recaptcha-v3 (001-migrate-fe-vite)
+- Browser localStorage, browser cookies for auth sync, backend APIs as system of record (001-migrate-fe-vite)
+
+## Quy tắc Tối ưu Hiệu năng (Performance Rules)
+
+### Nguyên tắc Độ phức tạp Thuật toán
+
+- **Ưu tiên O(1), O(log n)** - Không dùng O(n) hoặc cao hơn khi có thể
+- **Tuyệt đối không N+1 query** - Luôn dùng `include`/`join` để fetch related data trong 1 query
+- **Batch operations** - Xử lý nhiều records trong 1 câu query thay vì loop từng cái
+
+### Database & Query Optimization
+
+```typescript
+// ✅ ĐÚNG: Dùng include để tránh N+1
+const users = await prisma.user.findMany({
+  include: { posts: true, profile: true }
+});
+
+// ❌ SAI: N+1 query trong loop
+const users = await prisma.user.findMany();
+for (const user of users) {
+  user.posts = await prisma.post.findMany({ where: { userId: user.id } }); // N+1!
+}
+```
+
+- Dùng `select` thay vì `include` khi chỉ cần vài fields
+- Dùng `cursor`/`skip`/`take` cho pagination thay vì `offset` khi có nhiều records
+- Index các fields thường dùng trong WHERE, ORDER BY
+
+### Memory Management
+
+- **Không leak memory** - Cleanup event listeners, subscriptions, timers
+- **Stream large data** - Dùng cursor/streaming thay vì load toàn bộ vào memory
+- **Limit response size** - Pagination, field selection, truncate long text
+- **Dispose resources** - Close connections, clear caches khi không cần
+
+### Python AI Service (FastAPI)
+
+```python
+# ✅ ĐÚNG: Dùng async và batch
+embeddings = await ollama_embeddings.create_embeddings_batch(texts, batch_size=10)
+
+# ❌ SAI: Loop sync trong async function
+for text in texts:
+    result.append(await ollama_embeddings.create_embedding(text))  # Chậm!
+```
+
+- Dùng `async/await` cho I/O operations
+- Dùng `concurrent.futures` hoặc `asyncio` cho parallel processing
+- Cache embedding results nếu text giống nhau
+- Giới hạn batch size và concurrency để tránh OOM
+
+### Frontend Performance
+
+- **Memo components** - Dùng `React.memo`, `useMemo`, `useCallback` cho expensive computations
+- **Virtual scrolling** - Cho danh sách dài (>100 items)
+- **Code splitting** - Lazy load routes/components không cần thiết
+- **Debounce/Throttle** - Input events, scroll handlers, resize observers
+
+### Monitoring & Testing
+
+- Dùng `EXPLAIN ANALYZE` (PostgreSQL) để kiểm tra query plans
+- Track N+1 queries bằng Prisma middleware hoặc query logging
+- Benchmark trước/sau khi thay đổi quan trọng
+
+### Note 
+- Tuyệt dối không commit code lên nếu người dùng không cho phép
+- Tuyệt đối không sinh plan trong examio-fe hay examio-be hay examio-app mà sinh trong `/plans`
+
+---
+
+## Recent Changes
+- 001-migrate-fe-vite: Added TypeScript 5.x with React 19 + React 19, React DOM 19, Axios, Zustand, Tailwind CSS 4, Radix UI primitives, TipTap, Framer Motion, Recharts, react-google-recaptcha-v3
