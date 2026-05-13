@@ -1,0 +1,247 @@
+name: Deploy Microservices
+
+on:
+  push:
+    branches: [main, dev, staging]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to deploy'
+        required: true
+        default: 'main'
+      force_rebuild:
+        description: 'Force rebuild without cache'
+        type: boolean
+        default: false
+
+env:
+  COMPOSE_PROJECT_NAME: examio-be
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-${{ github.ref }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Get branch name
+        id: branch
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "name=${{ github.event.inputs.branch }}" >> $GITHUB_OUTPUT
+            echo "force_rebuild=${{ github.event.inputs.force_rebuild }}" >> $GITHUB_OUTPUT
+          else
+            echo "name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+            echo "force_rebuild=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT }}
+          command_timeout: 20000m
+          script: |
+            set -e
+
+            BRANCH="${{ steps.branch.outputs.name }}"
+            FORCE_REBUILD="${{ steps.branch.outputs.force_rebuild }}"
+            DEPLOY_DIR="${{ secrets.SERVER_DEPLOY_DIR }}"
+            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+
+            echo "═══════════════════════════════════════════════════════════"
+            echo "🚀 EXAMIO BACKEND DEPLOYMENT"
+            echo "═══════════════════════════════════════════════════════════"
+            echo "📌 Branch: $BRANCH"
+            echo "📂 Directory: $DEPLOY_DIR"
+            echo "⏰ Timestamp: $TIMESTAMP"
+            echo "🔄 Force Rebuild: $FORCE_REBUILD"
+            echo "═══════════════════════════════════════════════════════════"
+
+            # ================================================================
+            # PHASE 1: PREPARE
+            # ================================================================
+            echo ""
+            echo "📦 PHASE 1: PREPARE"
+            echo "────────────────────────────────────────────────────────────"
+
+            mkdir -p "$DEPLOY_DIR"
+            cd "$DEPLOY_DIR"
+
+            # Get current commit for comparison
+            OLD_COMMIT=""
+            if [ -d .git ]; then
+              OLD_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "")
+            fi
+
+            # Pull latest code
+            echo "📥 Pulling latest code..."
+            if [ -d .git ]; then
+              git fetch origin "$BRANCH" --prune
+              git reset --hard "origin/$BRANCH"
+              git clean -fd
+            else
+              git clone -b "$BRANCH" "https://${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git" .
+            fi
+
+            NEW_COMMIT=$(git rev-parse HEAD)
+            echo "📋 Commit: $NEW_COMMIT"
+
+            # Check if code changed
+            if [ "$OLD_COMMIT" = "$NEW_COMMIT" ] && [ "$FORCE_REBUILD" != "true" ]; then
+              echo "✅ No code changes detected. Skipping build."
+              echo "💡 Use 'Force rebuild' option to rebuild anyway."
+              exit 0
+            fi
+
+            # Setup docker-compose and Dockerfile
+            echo "📋 Configuring build files..."
+            cp deploy/docker-compose.yml docker-compose.yml
+            cp deploy/Dockerfile Dockerfile
+
+            # Verify .env exists
+            if [ ! -f .env ]; then
+              echo "❌ ERROR: .env file not found!"
+              echo "Please create .env file on the server first."
+              exit 1
+            fi
+
+            # ================================================================
+            # PHASE 2: BUILD (Services still running - zero downtime)
+            # ================================================================
+            echo ""
+            echo "🔨 PHASE 2: BUILD"
+            echo "────────────────────────────────────────────────────────────"
+            echo "💡 Building new images while services are still running..."
+
+            BUILD_ARGS=""
+            if [ "$FORCE_REBUILD" = "true" ]; then
+              BUILD_ARGS="--no-cache"
+              echo "⚠️  Force rebuild: cache disabled"
+            fi
+
+            # Build all services in parallel with BuildKit cache
+            # Old containers keep running during build
+            docker compose build $BUILD_ARGS --parallel 2>&1 | while read line; do
+              echo "   $line"
+            done
+
+            BUILD_STATUS=$?
+            if [ $BUILD_STATUS -ne 0 ]; then
+              echo "❌ Build failed!"
+              exit 1
+            fi
+
+            echo "✅ All images built successfully"
+
+            # ================================================================
+            # PHASE 3: ROLLING UPDATE (Minimal downtime)
+            # ================================================================
+            echo ""
+            echo "🔄 PHASE 3: ROLLING UPDATE"
+            echo "────────────────────────────────────────────────────────────"
+
+            # Stop all containers first, then recreate with new images
+            echo "   → Stopping all services..."
+            docker compose down --remove-orphans 2>/dev/null || true
+
+            echo "   → Starting all services with new images..."
+            docker compose up -d --build --force-recreate --remove-orphans
+
+            echo "✅ Services updated"
+
+            # ================================================================
+            # PHASE 4: HEALTH CHECK
+            # ================================================================
+            echo ""
+            echo "🏥 PHASE 4: HEALTH CHECK"
+            echo "────────────────────────────────────────────────────────────"
+
+            # Wait for services to initialize
+            echo "⏳ Waiting for services to initialize (30s)..."
+            sleep 30
+
+            # Health check with retries
+            MAX_RETRIES=5
+            RETRY_DELAY=10
+            HEALTHY=false
+
+            for i in $(seq 1 $MAX_RETRIES); do
+              echo "   Attempt $i/$MAX_RETRIES..."
+
+              if docker compose exec -T gateway wget -q --spider http://localhost:7000/api/v1/health 2>/dev/null; then
+                HEALTHY=true
+                break
+              fi
+
+              if [ $i -lt $MAX_RETRIES ]; then
+                echo "   ⏳ Retrying in ${RETRY_DELAY}s..."
+                sleep $RETRY_DELAY
+              fi
+            done
+
+            if [ "$HEALTHY" = "true" ]; then
+              echo "✅ Gateway is healthy!"
+            else
+              echo "❌ Gateway health check failed after $MAX_RETRIES attempts!"
+              echo ""
+              echo "📋 Gateway logs:"
+              docker compose logs gateway --tail=100
+              echo ""
+              echo "📋 All services status:"
+              docker compose ps
+              exit 1
+            fi
+
+            # Check all services
+            echo ""
+            echo "📊 Service Status:"
+            docker compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Health}}"
+
+            # ================================================================
+            # PHASE 5: CLEANUP (Background, non-blocking)
+            # ================================================================
+            echo ""
+            echo "🧹 PHASE 5: CLEANUP"
+            echo "────────────────────────────────────────────────────────────"
+
+            # Remove old unused images (only dangling, safe)
+            echo "   → Removing dangling images..."
+            docker image prune -f --filter "until=1h" 2>/dev/null || true
+
+            # Clean old build cache (older than 7 days)
+            echo "   → Cleaning old build cache..."
+            docker builder prune -f --filter "until=168h" 2>/dev/null || true
+
+            # Remove stopped containers
+            echo "   → Removing stopped containers..."
+            docker container prune -f --filter "until=1h" 2>/dev/null || true
+
+            echo "✅ Cleanup completed"
+
+            # ================================================================
+            # DONE
+            # ================================================================
+            echo ""
+            echo "═══════════════════════════════════════════════════════════"
+            echo "🎉 DEPLOYMENT COMPLETED SUCCESSFULLY!"
+            echo "═══════════════════════════════════════════════════════════"
+            echo "📌 Branch: $BRANCH"
+            echo "📋 Commit: $NEW_COMMIT"
+            echo "⏰ Completed: $(date)"
+            echo "═══════════════════════════════════════════════════════════"
+
+      - name: Deployment Status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "✅ Deployment successful"
+          else
+            echo "❌ Deployment failed"
+            exit 1
+          fi

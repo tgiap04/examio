@@ -1,0 +1,406 @@
+import { create } from "zustand";
+import { QuizSet } from "@/types/quizset";
+import {
+  getQuizSetsApi,
+  CredentialsGetQuizsets,
+  ResponseListQuizsets,
+  CredentialsQuizSet,
+  CredentialsSetQuizToQuizset,
+  setQuizzesToQuizset,
+  createQuizSetApi,
+  ResponseSetQuizzesToQuizset,
+  ResponseCreateQuizset,
+  CredentialSetHistoryToQuizset,
+  setHistoryQuizzesToQuizset,
+  deleteQuizSetApi,
+  getQuizSetByIdApi,
+  updateQuizSetApi,
+  addQuestionToQuizSet,
+  updateQuestionInQuizSet,
+  deleteQuestionFromQuizSet,
+  CreateQuestionData,
+  UpdateQuestionData,
+  getAllQuizSetsApi,
+} from "@/apis/quizsetApi";
+import { toast } from "@/components/antd/toast";
+import { storeCache, CacheTTL } from "@/lib/storeCache";
+
+interface QuizSetState {
+  quizSetsK: Omit<QuizSet, "questions">[];
+  currentQuizSet: QuizSet | null;
+  loading: boolean;
+  fetchQuizSets: (
+    credentials: CredentialsGetQuizsets,
+    options?: { forceRefresh?: boolean }
+  ) => Promise<ResponseListQuizsets | undefined>;
+  fetchAllQuizSets: (options?: { forceRefresh?: boolean }) => Promise<any>;
+  fetchQuizSetById: (id: string) => Promise<void>;
+  createQuizSet: (
+    credentials: CredentialsQuizSet,
+    thumbnailFile?: File
+  ) => Promise<void>;
+  updateQuizSet: (
+    id: string,
+    credentials: CredentialsQuizSet,
+    thumbnailFile?: File
+  ) => Promise<void>;
+  deleteQuizSet: (id: string) => Promise<void>;
+  setQuizzesToQuizset: (
+    credentials: CredentialsSetQuizToQuizset
+  ) => Promise<void>;
+  invalidateCache: () => void;
+  setHistoryQuizzesToQuizset: (
+    credentials: CredentialSetHistoryToQuizset
+  ) => Promise<void>;
+  // Question CRUD methods
+  addQuestion: (
+    quizSetId: string,
+    questionData: CreateQuestionData & { labelId?: string | null }
+  ) => Promise<void>;
+  updateQuestion: (
+    quizSetId: string,
+    questionId: string,
+    questionData: UpdateQuestionData
+  ) => Promise<void>;
+  deleteQuestion: (quizSetId: string, questionId: string) => Promise<void>;
+}
+
+export const useQuizSetStore = create<QuizSetState>((set) => ({
+  quizSetsK: [],
+  currentQuizSet: null,
+  loading: false,
+
+  fetchQuizSets: async (credentials, options = {}) => {
+    const { forceRefresh = false } = options;
+
+    // Tạo cache key dựa trên params
+    const cacheKey = storeCache.createKey("quizsets", credentials);
+
+    set({ loading: true });
+    try {
+      const response: ResponseListQuizsets = await storeCache.fetchWithCache(
+        cacheKey,
+        () => getQuizSetsApi(credentials),
+        {
+          ttl: CacheTTL.FIVE_MINUTES,
+          forceRefresh,
+        }
+      );
+      set({ quizSetsK: response.quizSets });
+      return response;
+    } catch (error) {
+      toast.error("Lấy bộ câu hỏi thất bại", {
+        description: (error as Error).message,
+      });
+      console.error("Lấy bộ câu hỏi thất bại:", error);
+      return undefined;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  fetchAllQuizSets: async (options = {}) => {
+    const { forceRefresh = false } = options;
+    const cacheKey = storeCache.createKey("quizsets-all", {});
+
+    set({ loading: true });
+    try {
+      const response = await storeCache.fetchWithCache(
+        cacheKey,
+        () => getAllQuizSetsApi(),
+        {
+          ttl: CacheTTL.FIVE_MINUTES,
+          forceRefresh,
+        }
+      );
+      set({ quizSetsK: response.quizSets });
+      return response;
+    } catch (error) {
+      toast.error("Lấy bộ câu hỏi thất bại", {
+        description: (error as Error).message,
+      });
+      console.error("Lấy bộ câu hỏi thất bại:", error);
+      return undefined;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  createQuizSet: async (credentials, thumbnailFile) => {
+    set({ loading: true });
+    try {
+      const response: ResponseCreateQuizset = await createQuizSetApi(
+        credentials,
+        thumbnailFile
+      );
+      set((state) => ({
+        quizSetsK: [response.quizSet, ...state.quizSetsK],
+      }));
+      toast.success("Tạo bộ câu hỏi thành công");
+
+      // Invalidate cache sau khi tạo mới
+      storeCache.invalidate("quizsets");
+    } catch (error) {
+      toast.error("Tạo bộ câu hỏi thất bại", {
+        description: (error as Error).message,
+      });
+      console.error("Tạo bộ câu hỏi thất bại:", error);
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  setQuizzesToQuizset: async (credentials) => {
+    set({ loading: true });
+    try {
+      const response: ResponseSetQuizzesToQuizset = await setQuizzesToQuizset(
+        credentials
+      );
+      toast.success(`Thêm ${response.createdCount} câu hỏi thành công`);
+
+      // Invalidate cache sau khi thêm câu hỏi
+      storeCache.invalidate("quizsets");
+    } catch (error) {
+      toast.error("Thêm câu hỏi thất bại", {
+        description: (error as Error).message,
+      });
+      console.error("Thêm câu hỏi thất bại:", error);
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  setHistoryQuizzesToQuizset: async (
+    credentials: CredentialSetHistoryToQuizset
+  ) => {
+    set({ loading: true });
+    try {
+      const response: ResponseSetQuizzesToQuizset =
+        await setHistoryQuizzesToQuizset(credentials);
+
+      if (response.updatedCount && response.updatedCount > 0) {
+        toast.success(`Đã cập nhật nhãn cho ${response.updatedCount} câu hỏi`);
+      } else if (response.createdCount > 0) {
+        toast.success(`Thêm danh sách câu hỏi vào bộ đề thành công`);
+      } else {
+        toast.info("Danh sách câu hỏi này đã được thêm trước đó");
+      }
+
+      // Invalidate cache sau khi thêm câu hỏi
+      storeCache.invalidate("quizsets");
+    } catch (error) {
+      toast.error("Thêm câu hỏi từ lịch sử thất bại", {
+        description: (error as Error).message,
+      });
+      console.error("Thêm câu hỏi từ lịch sử thất bại:", error);
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  fetchQuizSetById: async (id: string) => {
+    set({ loading: true });
+    try {
+      const quizSet = await getQuizSetByIdApi(id);
+      set({ currentQuizSet: quizSet });
+    } catch (error) {
+      toast.error("Lấy thông tin bộ đề thất bại", {
+        description: (error as Error).message,
+      });
+      console.error("Lấy thông tin bộ đề thất bại:", error);
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  updateQuizSet: async (
+    id: string,
+    credentials: CredentialsQuizSet,
+    thumbnailFile?: File
+  ) => {
+    set({ loading: true });
+    try {
+      const response: ResponseCreateQuizset = await updateQuizSetApi(
+        id,
+        credentials,
+        thumbnailFile
+      );
+      set((state) => ({
+        quizSetsK: state.quizSetsK.map((qs) =>
+          qs.id === id ? response.quizSet : qs
+        ),
+        currentQuizSet:
+          state.currentQuizSet?.id === id
+            ? { ...state.currentQuizSet, ...response.quizSet }
+            : state.currentQuizSet,
+      }));
+      toast.success("Cập nhật bộ đề thành công");
+
+      // Invalidate cache sau khi cập nhật
+      storeCache.invalidate("quizsets");
+    } catch (error) {
+      toast.error("Cập nhật bộ đề thất bại", {
+        description: (error as Error).message,
+      });
+      console.error("Cập nhật bộ đề thất bại:", error);
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  deleteQuizSet: async (id: string) => {
+    set({ loading: true });
+    try {
+      await deleteQuizSetApi(id);
+      set((state) => ({
+        quizSetsK: state.quizSetsK.filter((qs) => qs.id !== id),
+        currentQuizSet:
+          state.currentQuizSet?.id === id ? null : state.currentQuizSet,
+      }));
+      toast.success("Xóa bộ đề thành công");
+
+      // Invalidate cache sau khi xóa
+      storeCache.invalidate("quizsets");
+    } catch (error) {
+      toast.error("Xóa bộ đề thất bại", {
+        description: (error as Error).message,
+      });
+      console.error("Xóa bộ đề thất bại:", error);
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  invalidateCache: () => {
+    storeCache.clear();
+  },
+
+  // ========== QUESTION CRUD METHODS ==========
+
+  addQuestion: async (quizSetId: string, questionData: CreateQuestionData) => {
+    set({ loading: true });
+    try {
+      const response = await addQuestionToQuizSet(quizSetId, questionData);
+
+      // Optimistic update - add new question to state
+      set((state) => {
+        if (!state.currentQuizSet) return state;
+
+        return {
+          currentQuizSet: {
+            ...state.currentQuizSet,
+            questions: [
+              ...(state.currentQuizSet.questions || []),
+              response.question,
+            ],
+          },
+        };
+      });
+
+      toast.success("Thêm câu hỏi thành công");
+
+      // Invalidate all quizsets cache and refetch current quiz set
+      storeCache.clear();
+
+      // Refetch to ensure we have the latest data from server
+      const freshQuizSet = await getQuizSetByIdApi(quizSetId);
+      set({ currentQuizSet: freshQuizSet });
+    } catch (error) {
+      toast.error("Thêm câu hỏi thất bại", {
+        description: (error as Error).message,
+      });
+      console.error("Thêm câu hỏi thất bại:", error);
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  updateQuestion: async (
+    quizSetId: string,
+    questionId: string,
+    questionData: UpdateQuestionData
+  ) => {
+    set({ loading: true });
+    try {
+      const response = await updateQuestionInQuizSet(
+        quizSetId,
+        questionId,
+        questionData
+      );
+
+      // Update state with response from server
+      set((state) => {
+        if (!state.currentQuizSet || !state.currentQuizSet.questions) {
+          return state;
+        }
+
+        return {
+          currentQuizSet: {
+            ...state.currentQuizSet,
+            questions: state.currentQuizSet.questions.map((q) =>
+              q.id === questionId ? response.question : q
+            ),
+          },
+        };
+      });
+
+      toast.success("Cập nhật câu hỏi thành công");
+
+      // Invalidate all cache and refetch current quiz set
+      storeCache.clear();
+
+      // Refetch to ensure we have the latest data from server
+      const freshQuizSet = await getQuizSetByIdApi(quizSetId);
+      set({ currentQuizSet: freshQuizSet });
+    } catch (error) {
+      toast.error("Cập nhật câu hỏi thất bại", {
+        description: (error as Error).message,
+      });
+      console.error("Cập nhật câu hỏi thất bại:", error);
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  deleteQuestion: async (quizSetId: string, questionId: string) => {
+    set({ loading: true });
+    try {
+      await deleteQuestionFromQuizSet(quizSetId, questionId);
+
+      // Optimistic update - remove question from state
+      set((state) => {
+        if (!state.currentQuizSet || !state.currentQuizSet.questions) {
+          return state;
+        }
+
+        return {
+          currentQuizSet: {
+            ...state.currentQuizSet,
+            questions: state.currentQuizSet.questions.filter(
+              (q) => q.id !== questionId
+            ),
+          },
+        };
+      });
+
+      toast.success("Xóa câu hỏi thành công");
+
+      // Invalidate all cache and refetch current quiz set
+      storeCache.clear();
+
+      // Refetch to ensure we have the latest data from server
+      const freshQuizSet = await getQuizSetByIdApi(quizSetId);
+      set({ currentQuizSet: freshQuizSet });
+    } catch (error) {
+      toast.error("Xóa câu hỏi thất bại", {
+        description: (error as Error).message,
+      });
+      console.error("Xóa câu hỏi thất bại:", error);
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
+  },
+}));

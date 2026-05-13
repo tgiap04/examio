@@ -1,0 +1,63 @@
+# Core API dependencies only - Production optimized
+python-dotenv==1.1.0
+
+# LangChain ecosystem - use compatible 0.2.x versions for langchain-google-genai compatibility
+langchain>=0.2.0,<0.3.0
+langchain-core>=0.2.33,<0.3.0
+langchain-community>=0.2.0,<0.3.0
+langgraph>=0.2.0,<0.3.0
+grandalf>=0.8,<0.9
+langchain-ollama>=0.1.0,<0.2.0
+langchain-openai>=0.1.0,<0.2.0
+langchain-google-genai>=1.0.0,<2.0.0
+
+# Web framework (API only)
+fastapi>=0.115.0,<0.116.0
+uvicorn[standard]>=0.34.0,<0.35.0
+
+# Vector DB and search
+faiss-cpu>=1.10.0,<2.0.0
+rank-bm25>=0.2.2,<0.3.0
+
+# ML - Minimal (torch installed separately for CPU optimization)
+numpy>=1.26.0,<2.0.0
+huggingface_hub>=0.20.0
+# torch installed via Dockerfile --index-url for CPU variant
+
+# Data processing (lightweight)
+pandas>=2.0.0,<3.0.0
+tqdm>=4.60.0,<5.0.0
+
+# Database
+asyncpg>=0.30.0,<0.31.0
+
+# API and validation
+pydantic>=2.0.0,<3.0.0
+pydantic-settings>=2.0.0,<3.0.0
+python-multipart>=0.0.9,<0.1.0
+
+# Document processing (lightweight only)
+pypdf>=4.0.0
+pdfplumber>=0.10.0,<0.12.0
+pillow>=10.0.0,<12.0.0
+pdf2image>=1.17.0
+pytesseract>=0.3.10
+
+# Graph algorithms
+networkx>=3.0,<4.0
+scikit-learn>=1.5.0,<2.0.0
+
+# Utilities
+requests>=2.31.0,<3.0.0
+orjson>=3.10.0,<4.0.0
+typer>=0.15.0,<0.16.0
+evaluate>=0.4.3,<0.5.0
+datasets>=3.0.0,<4.0.0
+human-eval>=1.0.3,<2.0.0
+tree-sitter>=0.24.0,<0.25.0
+tree-sitter-c>=0.23.0,<0.24.0
+codebleu>=0.7.0,<0.8.0
+tenacity>=9.0.0,<10.0.0
+
+# Message Queue
+aio-pika>=9.0.0,<10.0.0

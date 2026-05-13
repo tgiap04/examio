@@ -1,0 +1,10 @@
+services:
+  examio-fe:
+    build:
+      context: .
+    container_name: examio-fe
+    ports:
+      - "6368:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped

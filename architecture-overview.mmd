@@ -1,0 +1,47 @@
+flowchart TB
+    FE["examio-fe<br/>React + Vite + React Router<br/>Zustand + Axios"] -->|HTTP / SSE| GW["gateway-service<br/>Public API / Proxy"]
+
+    GW --> AUTH["auth-service<br/>auth / profile / session / OAuth"]
+    GW --> EXAM["exam-service<br/>quiz / flashcard / exam / ai-chat"]
+    GW --> FIN["finance-service<br/>wallet / payment / subscription"]
+    GW --> R2S["r2-service<br/>file / storage API"]
+    GW --> AI["ai-service<br/>FastAPI / RAG / generation / chat"]
+    GW --> OCR["ocr-service<br/>OCR processing"]
+
+    AUTH -->|USER_CREATED event| MQ[(RabbitMQ)]
+    MQ -->|consume event| FIN
+
+    EXAM <-->|HTTP / internal integration| AI
+    EXAM -->|storage integration| R2S
+    R2S --> R2[(Cloudflare R2)]
+
+    COMMON["libs/common<br/>guards / events / grpc / utils"]
+    DBLIB["libs/database<br/>Prisma schema + client"]
+    REDISLIB["libs/redis<br/>shared Redis module"]
+
+    COMMON -. shared .-> AUTH
+    COMMON -. shared .-> EXAM
+    COMMON -. shared .-> FIN
+    COMMON -. shared .-> R2S
+    COMMON -. shared .-> GW
+
+    DBLIB -. shared .-> AUTH
+    DBLIB -. shared .-> EXAM
+    DBLIB -. shared .-> FIN
+    DBLIB -. shared .-> GW
+
+    REDISLIB -. shared .-> AUTH
+    REDISLIB -. shared .-> EXAM
+    REDISLIB -. shared .-> FIN
+    REDISLIB -. shared .-> GW
+
+    DBLIB --> PG[(Prisma / Postgres)]
+    REDISLIB --> REDIS[(Redis)]
+
+    classDef app fill:#e8f1ff,stroke:#4a7bd1,color:#0f172a
+    classDef infra fill:#eefbf3,stroke:#22a06b,color:#0f172a
+    classDef shared fill:#fff7e6,stroke:#d97706,color:#0f172a
+
+    class FE,GW,AUTH,EXAM,FIN,R2S,AI,OCR app
+    class MQ,R2,PG,REDIS infra
+    class COMMON,DBLIB,REDISLIB shared

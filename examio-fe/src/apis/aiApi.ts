@@ -1,0 +1,160 @@
+import { api } from "./api";
+import { Quizz, Flashcard } from "@/types/exam";
+import { AIModelCatalog } from "@/types/ai";
+
+interface RecentUploadQuizSummary {
+  id: string;
+  createdAt: string;
+  quizCount: number;
+}
+
+interface RecentUploadFlashcardSummary {
+  id: string;
+  createdAt: string;
+  flashcardCount: number;
+}
+
+export interface RecentUpload {
+  id: string;
+  filename: string;
+  url: string;
+  size: number;
+  mimeType: string;
+  createdAt: string;
+  quizHistory: RecentUploadQuizSummary | null;
+  flashcardHistory: RecentUploadFlashcardSummary | null;
+}
+
+export interface UploadDetail {
+  id: string;
+  filename: string;
+  url: string;
+  size: number;
+  mimeType: string;
+  createdAt: string;
+  quizHistories: {
+    id: string;
+    quizzes: Quizz[];
+    createdAt: string;
+  }[];
+  flashcardHistories: {
+    id: string;
+    flashcards: Flashcard[];
+    createdAt: string;
+  }[];
+}
+
+export interface RegenerateParams {
+  typeResult: number; // 1 = quiz, 2 = flashcard
+  quantityFlashcard?: number;
+  quantityQuizz?: number;
+  isNarrowSearch?: boolean;
+  keyword?: string;
+  modelType?: string; // model id tu registry
+}
+
+export interface RegenerateResponse {
+  type: "flashcard" | "quiz";
+  quizzes?: Quizz[];
+  flashcards?: Flashcard[];
+  historyId?: string;
+  fileInfo: {
+    id: string;
+    filename: string;
+  };
+}
+
+// Job response when creating regenerate job
+export interface JobCreateResponse {
+  jobId: string;
+  newBalance?: number;
+}
+
+export const aiApi = {
+  getModels: async (): Promise<AIModelCatalog> => {
+    const response = await api.get("/ai/models");
+    return response.data;
+  },
+
+  /**
+   * Get recent uploads summary with latest quiz/flashcard counts
+   */
+  getRecentUploads: async (limit: number = 10): Promise<RecentUpload[]> => {
+    const params = new URLSearchParams({
+      limit: limit.toString(),
+    });
+    const response = await api.get(`/ai/recent-uploads?${params}`);
+    return response.data;
+  },
+
+  getUploadDetail: async (uploadId: string): Promise<UploadDetail> => {
+    const response = await api.get(`/ai/upload/${uploadId}`);
+    return response.data;
+  },
+
+  deleteUpload: async (
+    uploadId: string
+  ): Promise<{ success: boolean; message: string }> => {
+    const response = await api.delete(`/ai/upload/${uploadId}`);
+    return response.data;
+  },
+
+  // This now returns jobId and uses job queue (same as file upload)
+  regenerateFromUpload: async (
+    uploadId: string,
+    params: RegenerateParams
+  ): Promise<JobCreateResponse> => {
+    const response = await api.post(`/ai/regenerate/${uploadId}`, params);
+    return response.data;
+  },
+
+  getJobStatus: async (
+    jobId: string
+  ): Promise<{
+    jobId: string;
+    status: string;
+    progress?: number;
+    message?: string;
+    error?: string;
+    result?: {
+      type: string;
+      quizzes?: any[];
+      flashcards?: any[];
+      historyId?: string;
+      fileInfo?: {
+        id: string;
+        filename: string;
+      };
+    };
+  }> => {
+    const response = await api.get(`/ai/job/${jobId}`);
+    return response.data;
+  },
+
+  cancelJob: async (
+    jobId: string
+  ): Promise<{ success: boolean; message: string }> => {
+    const response = await api.delete(`/ai/job/${jobId}`);
+    return response.data;
+  },
+
+  /**
+   * Get full quiz and flashcard history for an upload
+   * Used when selecting a recent file to load previous results
+   */
+  getUploadHistory: async (
+    uploadId: string
+  ): Promise<{
+    uploadId: string;
+    filename: string;
+    quizHistory: { id: string; quizzes: Quizz[]; createdAt: string } | null;
+    flashcardHistory: {
+      id: string;
+      flashcards: Flashcard[];
+      createdAt: string;
+    } | null;
+  }> => {
+    const response = await api.get(`/ai/upload/${uploadId}/history`);
+    return response.data;
+  },
+};
