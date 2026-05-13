@@ -1,8 +1,5 @@
-"use client";
-
 import { useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useNavigate } from "react-router-dom";
 import { ChevronRight, LogOut, User as UserIcon } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useAuthSync } from "@/hooks/useAuthSync";
@@ -19,7 +16,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/antd/avatar";
 export function AuthLayoutShell({ children }: { children: React.ReactNode }) {
   useAuthSync();
 
-  const router = useRouter();
+  const navigate = useNavigate();
   const { user, isAuthenticated, initializing, getUser, logout } =
     useAuthStore();
 
@@ -29,7 +26,7 @@ export function AuthLayoutShell({ children }: { children: React.ReactNode }) {
 
   const handleLogout = async () => {
     await logout();
-    router.push("/");
+    navigate("/");
   };
 
   const dashboardPath =
@@ -39,7 +36,7 @@ export function AuthLayoutShell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen bg-gradient-to-br from-white via-red-50/30 to-yellow-50/30">
       <div className="sticky top-0 z-40 border-b border-red-100/80 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <Link href="/" className="flex items-center gap-3">
+          <Link to="/" className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-red-600 to-yellow-400 text-sm font-bold text-white shadow-lg shadow-red-200/70">
               KMA
             </div>
@@ -54,7 +51,7 @@ export function AuthLayoutShell({ children }: { children: React.ReactNode }) {
           ) : isAuthenticated && user ? (
             <div className="flex items-center gap-3">
               <Link
-                href={dashboardPath}
+                to={dashboardPath}
                 className="hidden items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-primary transition-colors hover:bg-red-100 sm:inline-flex"
               >
                 Vào trang chính
@@ -83,11 +80,11 @@ export function AuthLayoutShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>Tài khoản</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push("/k/profile")}>
+                  <DropdownMenuItem onClick={() => navigate("/k/profile")}>
                     <UserIcon className="h-4 w-4" />
                     Hồ sơ
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => router.push(dashboardPath)}>
+                  <DropdownMenuItem onClick={() => navigate(dashboardPath)}>
                     <ChevronRight className="h-4 w-4" />
                     Vào trang chính
                   </DropdownMenuItem>

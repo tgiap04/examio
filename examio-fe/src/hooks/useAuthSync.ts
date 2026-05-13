@@ -45,7 +45,7 @@ function getCookie(name: string): string | null {
 
 /**
  * Hook to sync auth token from localStorage to cookie
- * This enables middleware to access the token
+ * This keeps auth state consistent for browser refreshes and API calls
  */
 export function useAuthSync() {
   const getUser = useAuthStore((state) => state.getUser);
@@ -136,12 +136,12 @@ export function useAuthSync() {
 }
 
 /**
- * Utility to set token in localStorage and cookie (for API headers and middleware)
+ * Utility to set token in localStorage and cookie for API headers
  */
 export function setAuthToken(token: string) {
   // Set in localStorage
   localStorage.setItem(AUTH_STORAGE_KEY, token);
-  // Set in cookie for middleware access
+  // Set in cookie for browser refresh compatibility
   setCookie(AUTH_COOKIE_NAME, token);
 }
 
