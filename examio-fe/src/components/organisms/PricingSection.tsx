@@ -135,7 +135,7 @@ export default function PricingSection() {
   if (error) {
     return (
       <div className="flex items-center justify-center py-24 text-center">
-        <p className="text-red-500">{error}</p>
+        <p className="text-destructive">{error}</p>
       </div>
     );
   }

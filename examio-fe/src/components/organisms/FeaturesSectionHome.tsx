@@ -130,8 +130,8 @@ function SpotlightFeature({ items }: { items: string[] }) {
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.1 * index }}
           className="flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0" />
-          <span className="text-sm text-neutral-700">
+          <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0" />
+          <span className="text-sm text-body">
             {item}
           </span>
         </motion.li>
@@ -175,10 +175,10 @@ function CounterAnimation({
 
   return (
     <div className="flex items-baseline gap-1">
-      <span className="text-3xl font-bold text-neutral-900">
+      <span className="text-3xl font-semibold text-ink">
         {count.toFixed(1).replace(/\.0$/, "")}
       </span>
-      <span className="text-xl font-medium text-neutral-900">
+      <span className="text-xl font-medium text-ink">
         {suffix}
       </span>
     </div>
@@ -187,9 +187,9 @@ function CounterAnimation({
 
 function ChartAnimation({ value }: { value: number }) {
   return (
-    <div className="mt-2 w-full h-2 bg-neutral-200 rounded-full overflow-hidden">
+    <div className="mt-2 w-full h-2 bg-surface-cream-strong rounded-full overflow-hidden">
       <motion.div
-        className="h-full bg-emerald-500 rounded-full"
+        className="h-full bg-success rounded-full"
         initial={{ width: 0 }}
         animate={{ width: `${value}%` }}
         transition={{ duration: 1.5, ease: "easeOut" }}
@@ -201,53 +201,53 @@ function ChartAnimation({ value }: { value: number }) {
 function IconsFeature() {
   return (
     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mt-4">
-      <motion.div className="flex flex-col items-center gap-2 p-2 sm:p-3 rounded-xl bg-gradient-to-b from-neutral-100/80 to-neutral-100 border border-border group transition-all duration-300 hover:border-border">
+      <motion.div className="flex flex-col items-center gap-2 p-2 sm:p-3 rounded-xl bg-gradient-to-b from-surface-soft to-surface-card border border-border group transition-all duration-300 hover:border-border">
         <div className="relative w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center">
           <OpenAI className="w-5 h-5 sm:w-7 sm:h-7 transition-transform " />
           <OpenAIDark className="w-5 h-5 sm:w-7 sm:h-7 hidden transition-transform " />
         </div>
-        <span className="text-xs font-medium text-center text-neutral-600 group-hover:text-neutral-900">
+        <span className="text-xs font-medium text-center text-muted-foreground group-hover:text-ink">
           OpenAI
         </span>
       </motion.div>
-      <motion.div className="flex flex-col items-center gap-2 p-2 sm:p-3 rounded-xl bg-gradient-to-b from-neutral-100/80 to-neutral-100 border border-border group transition-all duration-300 hover:border-border">
+      <motion.div className="flex flex-col items-center gap-2 p-2 sm:p-3 rounded-xl bg-gradient-to-b from-surface-soft to-surface-card border border-border group transition-all duration-300 hover:border-border">
         <div className="relative w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center">
           <Anthropic className="w-5 h-5 sm:w-7 sm:h-7 transition-transform " />
           <AnthropicDark className="w-5 h-5 sm:w-7 sm:h-7 hidden transition-transform " />
         </div>
-        <span className="text-xs font-medium text-center text-neutral-600 group-hover:text-neutral-900">
+        <span className="text-xs font-medium text-center text-muted-foreground group-hover:text-ink">
           Anthropic
         </span>
       </motion.div>
-      <motion.div className="flex flex-col items-center gap-2 p-2 sm:p-3 rounded-xl bg-gradient-to-b from-neutral-100/80 to-neutral-100 border border-border group transition-all duration-300 hover:border-border">
+      <motion.div className="flex flex-col items-center gap-2 p-2 sm:p-3 rounded-xl bg-gradient-to-b from-surface-soft to-surface-card border border-border group transition-all duration-300 hover:border-border">
         <div className="relative w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center">
           <Google className="w-5 h-5 sm:w-7 sm:h-7 transition-transform " />
         </div>
-        <span className="text-xs font-medium text-center text-neutral-600 group-hover:text-neutral-900">
+        <span className="text-xs font-medium text-center text-muted-foreground group-hover:text-ink">
           Google
         </span>
       </motion.div>
-      <motion.div className="flex flex-col items-center gap-2 p-2 sm:p-3 rounded-xl bg-gradient-to-b from-neutral-100/80 to-neutral-100 border border-border group transition-all duration-300 hover:border-border">
+      <motion.div className="flex flex-col items-center gap-2 p-2 sm:p-3 rounded-xl bg-gradient-to-b from-surface-soft to-surface-card border border-border group transition-all duration-300 hover:border-border">
         <div className="relative w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center">
           <MistralAI className="w-5 h-5 sm:w-7 sm:h-7 transition-transform " />
         </div>
-        <span className="text-xs font-medium text-center text-neutral-600 group-hover:text-neutral-900">
+        <span className="text-xs font-medium text-center text-muted-foreground group-hover:text-ink">
           Mistral
         </span>
       </motion.div>
-      <motion.div className="flex flex-col items-center gap-2 p-2 sm:p-3 rounded-xl bg-gradient-to-b from-neutral-100/80 to-neutral-100 border border-border group transition-all duration-300 hover:border-border">
+      <motion.div className="flex flex-col items-center gap-2 p-2 sm:p-3 rounded-xl bg-gradient-to-b from-surface-soft to-surface-card border border-border group transition-all duration-300 hover:border-border">
         <div className="relative w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center">
           <DeepSeek className="w-5 h-5 sm:w-7 sm:h-7 transition-transform " />
         </div>
-        <span className="text-xs font-medium text-center text-neutral-600 group-hover:text-neutral-900">
+        <span className="text-xs font-medium text-center text-muted-foreground group-hover:text-ink">
           DeepSeek
         </span>
       </motion.div>
-      <motion.div className="flex flex-col items-center gap-2 p-2 sm:p-3 rounded-xl bg-gradient-to-b from-neutral-100/80 to-neutral-100 border border-border group transition-all duration-300 hover:border-border">
+      <motion.div className="flex flex-col items-center gap-2 p-2 sm:p-3 rounded-xl bg-gradient-to-b from-surface-soft to-surface-card border border-border group transition-all duration-300 hover:border-border">
         <div className="relative w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center">
-          <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-neutral-600 transition-transform " />
+          <Plus className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground transition-transform " />
         </div>
-        <span className="text-xs font-medium text-center text-neutral-600 group-hover:text-neutral-900">
+        <span className="text-xs font-medium text-center text-muted-foreground group-hover:text-ink">
           More
         </span>
       </motion.div>
@@ -284,13 +284,13 @@ function TypingCodeFeature({ text }: { text: string }) {
   return (
     <div className="mt-3 relative">
       <div className="flex items-center gap-2 mb-2">
-        <div className="text-xs text-neutral-500">
+        <div className="text-xs text-on-dark-soft">
           server.ts
         </div>
       </div>
       <div
         ref={terminalRef}
-        className="bg-neutral-900 text-neutral-100 p-2.5 sm:p-3 rounded-md text-[11px] sm:text-xs font-mono h-[120px] sm:h-[150px] overflow-y-auto">
+        className="bg-surface-dark text-on-dark p-2.5 sm:p-3 rounded-md text-[11px] sm:text-xs font-mono h-[120px] sm:h-[150px] overflow-y-auto">
         <pre className="whitespace-pre-wrap">
           {displayedText}
           <span className="animate-pulse">|</span>
@@ -312,7 +312,7 @@ function MetricsFeature({
 }) {
   const getColorClass = (color = "emerald") => {
     const colors = {
-      emerald: "bg-emerald-500",
+      emerald: "bg-success",
       blue: "bg-primary",
       violet: "bg-yellow-500",
       amber: "bg-amber-500",
@@ -331,7 +331,7 @@ function MetricsFeature({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 * index }}>
           <div className="flex justify-between items-center text-sm">
-            <div className="text-neutral-700 font-medium flex items-center gap-1.5">
+            <div className="text-body font-medium flex items-center gap-1.5">
               {metric.label === "Uptime" && <Clock className="w-3.5 h-3.5" />}
               {metric.label === "Response time" && (
                 <Zap className="w-3.5 h-3.5" />
@@ -341,12 +341,12 @@ function MetricsFeature({
               )}
               {metric.label}
             </div>
-            <div className="text-neutral-700 font-semibold">
+            <div className="text-body font-semibold">
               {metric.value}
               {metric.suffix}
             </div>
           </div>
-          <div className="h-1.5 w-full bg-neutral-200 rounded-full overflow-hidden">
+          <div className="h-1.5 w-full bg-surface-cream-strong rounded-full overflow-hidden">
             <motion.div
               className={`h-full rounded-full ${getColorClass(metric.color)}`}
               initial={{ width: 0 }}
@@ -551,12 +551,12 @@ function BentoCard({ item }: { item: BentoItem }) {
           style={{ transform: "translateZ(20px)" }}>
           <div className="space-y-2 flex-1 flex flex-col">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold tracking-tight text-neutral-900 group-hover:text-neutral-700 transition-colors duration-300">
+              <h3 className="text-xl font-semibold tracking-tight text-ink group-hover:text-body transition-colors duration-300">
                 {item.title}
               </h3>
             </div>
 
-            <p className="text-sm text-neutral-600 tracking-tight">
+            <p className="text-sm text-muted-foreground tracking-tight">
               {item.description}
             </p>
 
@@ -578,10 +578,10 @@ function BentoCard({ item }: { item: BentoItem }) {
             {item.feature === "chart" && item.statistic && (
               <div className="mt-auto pt-3">
                 <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-neutral-700">
+                  <span className="text-sm font-medium text-body">
                     {item.statistic.label}
                   </span>
-                  <span className="text-sm font-medium text-neutral-700">
+                  <span className="text-sm font-medium text-body">
                     {item.statistic.end}
                     {item.statistic.suffix}
                   </span>
@@ -622,7 +622,7 @@ export default function FeaturesSection() {
   return (
     <section
       id="features"
-      className="relative py-16 sm:py-24 lg:py-36 bg-white overflow-hidden">
+      className="relative py-16 sm:py-24 lg:py-36 bg-canvas overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div variants={fadeInUp}>
           <SparklesText className="text-3xl sm:text-4xl lg:text-5xl text-center pb-8 sm:pb-12">
@@ -653,11 +653,11 @@ export default function FeaturesSection() {
               className="md:col-span-1 rounded-xl overflow-hidden bg-gradient-to-b from-neutral-50/80 to-neutral-50 border border-border hover:border-border hover:shadow-lg hover:shadow-neutral-200/20 transition-all duration-300">
               <div className="p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-xl font-semibold tracking-tight text-neutral-900">
+                  <h3 className="text-xl font-semibold tracking-tight text-ink">
                     Giáo viên AI thông minh
                   </h3>
                 </div>
-                <p className="text-sm text-neutral-600 tracking-tight mb-4">
+                <p className="text-sm text-muted-foreground tracking-tight mb-4">
                   Tương tác với giáo viên AI qua tin nhắn hoặc giọng nói để hỏi
                   đáp cũng như thảo luận về các chủ đề học tập.
                 </p>

@@ -15,23 +15,23 @@ export interface ButtonProps extends Omit<AntButtonProps, "size" | "type" | "var
 }
 
 const variantClasses: Partial<Record<LegacyVariant, string>> = {
-  secondary: "!border-transparent !bg-secondary !text-secondary-foreground hover:!bg-secondary/80",
-  outline: "!border-border !bg-background !text-foreground hover:!bg-accent hover:!text-accent-foreground",
-  ghost: "!border-transparent !bg-transparent !text-foreground !shadow-none hover:!bg-accent hover:!text-accent-foreground",
-  link: "!h-auto !border-transparent !bg-transparent !p-0 !text-primary !shadow-none hover:!text-primary/80",
-  success: "!border-green-600 !bg-green-600 !text-white hover:!bg-green-700",
-  warning: "!border-yellow-500 !bg-yellow-500 !text-white hover:!bg-yellow-600",
-  info: "!border-blue-600 !bg-blue-600 !text-white hover:!bg-blue-700",
-  dark: "!border-slate-900 !bg-slate-900 !text-white hover:!bg-slate-800",
-  light: "!border-border !bg-white !text-foreground hover:!bg-accent",
-  gradient: "!border-transparent !bg-gradient-to-r !from-primary !to-red-500 !text-white",
-  glass: "!border-white/20 !bg-white/10 !text-foreground !backdrop-blur hover:!bg-white/20",
+  secondary: "!border-hairline !bg-surface-card !text-ink hover:!bg-surface-cream-strong",
+  outline: "!border-hairline !bg-canvas !text-ink hover:!bg-surface-card",
+  ghost: "!border-transparent !bg-transparent !text-ink !shadow-none hover:!bg-surface-card",
+  link: "!h-auto !border-transparent !bg-transparent !p-0 !text-primary !shadow-none hover:!text-coral-active",
+  success: "!border-success !bg-success !text-white hover:!brightness-95",
+  warning: "!border-warning !bg-warning !text-white hover:!brightness-95",
+  info: "!border-accent-teal !bg-accent-teal !text-white hover:!brightness-95",
+  dark: "!border-surface-dark !bg-surface-dark !text-on-dark hover:!bg-surface-dark-elevated",
+  light: "!border-hairline !bg-canvas !text-ink hover:!bg-surface-card",
+  gradient: "!border-transparent !bg-primary !text-primary-foreground hover:!bg-coral-active",
+  glass: "!border-hairline !bg-surface-card/80 !text-ink !backdrop-blur hover:!bg-surface-cream-strong",
   errorGhost: "!border-transparent !bg-transparent !text-destructive !shadow-none hover:!bg-destructive/10",
 };
 
 function buttonVariants({ variant, size, className }: { variant?: LegacyVariant; size?: LegacySize; className?: string } = {}) {
   return cn(
-    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium transition-colors [&>svg]:pointer-events-none [&>svg]:size-4 [&>svg]:shrink-0",
+    "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md font-medium transition-colors [&>svg]:pointer-events-none [&>svg]:size-4 [&>svg]:shrink-0 focus-visible:!ring-2 focus-visible:!ring-primary/15",
     size === "icon" && "!h-10 !w-10 !p-0",
     variantClasses[variant ?? "default"],
     className,

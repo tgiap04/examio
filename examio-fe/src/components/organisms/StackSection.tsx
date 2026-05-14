@@ -42,20 +42,20 @@ export default function StackSection() {
   const iconsPerOrbit = Math.ceil(iconConfigs.length / orbitCount);
 
   return (
-    <section className="relative max-w-6xl mx-auto pl-10 flex items-center justify-between h-[30rem] border border-border bg-white overflow-hidden rounded-3xl ">
+    <section className="relative max-w-6xl mx-auto pl-10 flex items-center justify-between h-[30rem] border border-border bg-canvas overflow-hidden rounded-3xl ">
       {/* Left side: Heading and Text */}
       <div className="w-1/2 z-10">
-        <h1 className="text-4xl sm:text-6xl font-bold mb-4 text-gray-900">
+        <h1 className="text-4xl sm:text-6xl font-semibold mb-4 text-ink">
           Học tập và ôn luyện với tại liệu có sẵn của bạn
         </h1>
-        <p className="text-gray-500 mb-6 max-w-lg">
+        <p className="text-muted-foreground mb-6 max-w-lg">
           Kết nối tài liệu của bạn từ Google Drive, Dropbox, hoặc tải lên trực
           tiếp để bắt đầu hành trình học tập cá nhân hóa.
         </p>
         <div className="flex items-center gap-3">
           <Button
             variant="default"
-            className="bg-primary hover:bg-red-700 text-white"
+            className="bg-primary hover:bg-coral-active text-white"
           >
             <a href="https://ruixen.com" target="_blank" rel="noreferrer">
               Bắt đầu ngay
@@ -70,7 +70,7 @@ export default function StackSection() {
         <div className="relative w-[50rem] h-[50rem] translate-x-[30%] flex items-center justify-center">
           {/* Center Circle */}
           <div className="w-24 h-24 rounded-full bg-gray-50 shadow-lg flex items-center justify-center">
-            <FaFilePdf className="w-12 h-12 text-red-400" />
+            <FaFilePdf className="w-12 h-12 text-coral" />
           </div>
 
           {/* Generate Orbits */}
@@ -103,7 +103,7 @@ export default function StackSection() {
                     return (
                       <div
                         key={`${orbitIdx}-${iconIdx}`}
-                        className="absolute bg-white rounded-full p-1 shadow-md"
+                        className="absolute bg-canvas rounded-full p-1 shadow-md"
                         style={{
                           left: `${x}%`,
                           top: `${y}%`,

@@ -14,7 +14,6 @@ import {
   Rocket as RocketIcon,
   ScrollText as ReaderIcon,
 } from "lucide-react";
-import { Button } from "@/components/antd/button";
 import { FloatingDock } from "@/components/atoms/k/FloatingDock";
 import ProfileDropdown from "@/components/atoms/ProfileDropdown";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -199,36 +198,46 @@ export function SidebarKit() {
 
       {/* Desktop: Sidebar - Only render on desktop */}
       {isDesktop && (
-        <div className="fixed bg-background h-[calc(100%)] w-[250px] flex flex-col justify-between gap-y-3 border border-1/2 px-4 pt-4 py-1">
-          <div className="flex flex-col gap-y-4 mt-2">
+        <aside className="fixed inset-y-0 left-0 flex w-[250px] flex-col justify-between gap-y-3 border-r border-hairline bg-surface-soft px-4 py-4 text-ink">
+          <div className="mt-2 flex flex-col gap-y-4">
             <Logo sizeLogo={28} sizeText={20} />
 
-            <div className="flex flex-col gap-y-2 mb-2 w-full">
+            <nav
+              className="mb-2 flex w-full flex-col gap-y-1.5"
+              aria-label="Dashboard navigation"
+            >
               {filteredSidebarItems.map((item, index) => (
-                <Button
-                  asChild
+                <Link
                   key={index}
-                  variant="ghost"
-                  className={`w-full justify-start p-2 hover:bg-[#fef2f2] hover:text-[#e31837]
-                     rounded-sm ${
-                       item.active ? "bg-[#fef2f2] text-[#e31837]" : ""
-                     }`}
+                  to={item.href}
+                  aria-current={item.active ? "page" : undefined}
+                  className={`group flex w-full items-center gap-x-3 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                    item.active
+                      ? "border-hairline bg-surface-card text-ink shadow-[0_1px_3px_rgba(20,20,19,0.08)]"
+                      : "border-transparent text-muted-foreground hover:bg-surface-card/70 hover:text-ink"
+                  }`}
                 >
-                  <Link to={item.href} className="flex items-center gap-x-3">
+                  <span
+                    className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
+                      item.active
+                        ? "bg-coral text-primary-foreground"
+                        : "bg-canvas text-muted-foreground group-hover:text-coral"
+                    }`}
+                  >
                     {item.icon}
-                    {item.label}
-                  </Link>
-                </Button>
+                  </span>
+                  <span>{item.label}</span>
+                </Link>
               ))}
-            </div>
+            </nav>
           </div>
 
-          <div className="flex flex-col gap-y-2 mb-2 w-full">
+          <div className="mb-2 flex w-full flex-col gap-y-2 border-t border-hairline pt-3">
             <div className="mt-2">
               <ProfileDropdown data={profile} />
             </div>
           </div>
-        </div>
+        </aside>
       )}
     </>
   );

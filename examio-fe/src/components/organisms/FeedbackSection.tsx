@@ -15,7 +15,7 @@ const testimonials: Testimonial[] = [
   {
     id: 1,
     quote:
-      "KMA Edu giúp tôi nhanh chóng tạo đề kiểm tra từ tài liệu, tiết kiệm rất nhiều thời gian.",
+      "Examio giúp tôi nhanh chóng tạo đề kiểm tra từ tài liệu, tiết kiệm rất nhiều thời gian.",
     name: "Nguyễn Minh",
     username: "@nguyenminh",
     avatar:
@@ -42,7 +42,7 @@ const testimonials: Testimonial[] = [
   {
     id: 4,
     quote:
-      "Cộng đồng KMA Edu rất năng động, tôi dễ dàng tìm thấy cách học hiệu quả từ chia sẻ của mọi người.",
+      "Cộng đồng Examio rất năng động, tôi dễ dàng tìm thấy cách học hiệu quả từ chia sẻ của mọi người.",
     name: "Phạm Huy",
     username: "@phamhuy",
     avatar:
@@ -51,7 +51,7 @@ const testimonials: Testimonial[] = [
   {
     id: 5,
     quote:
-      "AI của KMA Edu mang đến cách tiếp cận hoàn toàn mới, giúp tôi học nhanh hơn và nhớ lâu hơn.",
+      "AI của Examio mang đến cách tiếp cận hoàn toàn mới, giúp tôi học nhanh hơn và nhớ lâu hơn.",
     name: "Đỗ Lan",
     username: "@dolan",
     avatar:
@@ -177,7 +177,7 @@ export default function FeedbackSection() {
   };
 
   return (
-    <div className="px-4 py-8 sm:py-16 bg-gradient-to-b from-gray-50 to-white overflow-hidden">
+    <div className="px-4 py-8 sm:py-16 bg-gradient-to-b from-surface-soft to-canvas overflow-hidden">
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -188,7 +188,7 @@ export default function FeedbackSection() {
           <span className="inline-block py-1 px-3 rounded-full bg-primary/10 text-primary font-medium text-xs sm:text-sm uppercase tracking-wider">
             Người dùng nói gì
           </span>
-          <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mt-3 sm:mt-4 px-4">
+          <h3 className="text-2xl sm:text-3xl md:text-4xl font-semibold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mt-3 sm:mt-4 px-4">
             Đánh giá nền tảng từ người dùng
           </h3>
           <div className="w-16 sm:w-24 h-1 bg-gradient-to-r from-primary to-primary/70 mx-auto mt-4 sm:mt-6"></div>
@@ -203,8 +203,8 @@ export default function FeedbackSection() {
               disabled={!canGoPrev}
               className={`p-2 rounded-full ${
                 canGoPrev
-                  ? "bg-white shadow-md hover:bg-gray-50 text-primary"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  ? "bg-canvas shadow-md hover:bg-surface-card text-primary"
+                  : "bg-surface-card text-muted-foreground cursor-not-allowed"
               } transition-all duration-300`}
               aria-label="Previous testimonial"
             >
@@ -217,8 +217,8 @@ export default function FeedbackSection() {
               disabled={!canGoNext}
               className={`p-2 rounded-full ${
                 canGoNext
-                  ? "bg-white shadow-md hover:bg-gray-50 text-primary"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  ? "bg-canvas shadow-md hover:bg-surface-card text-primary"
+                  : "bg-surface-card text-muted-foreground cursor-not-allowed"
               } transition-all duration-300`}
               aria-label="Next testimonial"
             >
@@ -258,10 +258,10 @@ export default function FeedbackSection() {
                   style={{ cursor: "grab" }}
                 >
                   <motion.div
-                    className="relative overflow-hidden rounded-xl sm:rounded-2xl p-4 sm:p-6 h-full bg-white border border-border shadow-lg shadow-primary/5"
+                    className="relative overflow-hidden rounded-xl sm:rounded-2xl p-4 sm:p-6 h-full bg-canvas border border-border shadow-lg shadow-primary/5"
                     whileHover={{
                       boxShadow:
-                        "0 10px 15px -3px rgba(79, 70, 229, 0.1), 0 4px 6px -2px rgba(79, 70, 229, 0.05)",
+                        "0 10px 15px -3px rgba(204, 120, 92, 0.1), 0 4px 6px -2px rgba(204, 120, 92, 0.05)",
                     }}
                   >
                     <div className="absolute -top-4 -left-4 opacity-10">
@@ -272,7 +272,7 @@ export default function FeedbackSection() {
                     </div>
 
                     <div className="relative z-10 h-full flex flex-col">
-                      <p className="text-sm sm:text-base text-gray-700 font-medium mb-4 sm:mb-6 leading-relaxed">
+                      <p className="text-sm sm:text-base text-body font-medium mb-4 sm:mb-6 leading-relaxed">
                         &ldquo;
                         {testimonial.quote}
                         &rdquo;
@@ -306,7 +306,7 @@ export default function FeedbackSection() {
                             />
                           </div>
                           <div className="ml-3">
-                            <h4 className="font-bold text-sm sm:text-base text-gray-900">
+                            <h4 className="font-semibold text-sm sm:text-base text-ink">
                               {testimonial.name}
                             </h4>
                             <p className="text-gray-600 text-xs sm:text-sm">

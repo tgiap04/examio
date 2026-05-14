@@ -67,17 +67,17 @@ export function HeroSection() {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="text-center sm:mx-auto lg:mr-auto lg:mt-0">
                 <AnimatedGroup variants={transitionVariants}>
-                  <h1 className="mt-8 max-w-4xl mx-auto text-balance text-3xl sm:text-4xl md:text-5xl lg:mt-16 lg:text-6xl xl:text-[5.25rem]">
+                  <h1 className="mt-8 max-w-4xl mx-auto text-balance font-display text-4xl leading-[1.05] text-ink sm:text-5xl md:text-6xl lg:mt-16 xl:text-[5.25rem]">
                     Từ trang giấy đến kiến thức, chỉ trong tích tắc.
                   </h1>
-                  <div className="text-center mx-auto mt-6 sm:mt-8 max-w-2xl text-balance text-base sm:text-lg px-2 sm:px-0">
+                  <div className="text-center mx-auto mt-6 sm:mt-8 max-w-2xl text-balance text-base text-body sm:text-lg px-2 sm:px-0">
                     <p className="leading-relaxed">
                       Nền tảng của chúng tôi mang sức mạnh{" "}
-                      <Highlighter action="underline" color="#FF9800">
+                      <Highlighter action="underline" color="#cc785c">
                         trí tuệ nhân tạo
                       </Highlighter>{" "}
                       để biến tài liệu thành{" "}
-                      <Highlighter action="highlight" color="#87CEFA">
+                      <Highlighter action="highlight" color="#e8a55a">
                         bài kiểm tra, flashcard và tóm tắt
                       </Highlighter>{" "}
                       giúp học tập hiệu quả hơn.
@@ -100,12 +100,12 @@ export function HeroSection() {
                   className="mt-8 sm:mt-12 flex flex-col items-center justify-center gap-3 sm:gap-2 md:flex-row">
                   <div
                     key={1}
-                    className="bg-foreground/10 rounded-[14px] border p-0.5">
+                    className="rounded-[14px] border border-hairline bg-surface-card p-0.5">
                     <Button
                       variant="default"
                       asChild
                       size="lg"
-                      className="rounded-xl px-5 text-base bg-primary hover:bg-red-700 text-white">
+                      className="rounded-xl bg-primary px-5 text-base text-primary-foreground hover:bg-coral-active">
                       <Link to="/k">
                         <span className="text-nowrap">Bắt đầu ngay</span>
                       </Link>
@@ -116,7 +116,7 @@ export function HeroSection() {
                     asChild
                     size="lg"
                     variant="ghost"
-                    className="h-10.5 rounded-xl px-5">
+                    className="h-10.5 rounded-xl px-5 text-ink hover:bg-surface-card">
                     <Link to="/k">
                       <span className="text-nowrap text-base">Xem thêm</span>
                     </Link>
@@ -142,16 +142,16 @@ export function HeroSection() {
                   aria-hidden
                   className="bg-gradient-to-b to-background absolute inset-0 z-10 from-transparent from-35%"
                 />
-                <div className="inset-shadow-2xs ring-background bg-background relative mx-auto max-w-6xl overflow-hidden rounded-2xl border p-4 shadow-lg shadow-zinc-950/15 ring-1">
+                <div className="inset-shadow-2xs ring-hairline bg-surface-dark relative mx-auto max-w-6xl overflow-hidden rounded-2xl border border-surface-dark-elevated p-4 shadow-none ring-1">
                   <img
-                    className="bg-background aspect-15/8 relative hidden rounded-2xl"
+                    className="bg-surface-dark aspect-15/8 relative hidden rounded-2xl"
                     src="https://tailark.com//_next/image?url=%2Fmail2.png&w=3840&q=75"
                     alt="app screen"
                     width="2700"
                     height="1440"
                   />
                   <img
-                    className="z-2 border-border/25 aspect-15/8 relative rounded-2xl border"
+                    className="z-2 border-white/10 aspect-15/8 relative rounded-2xl border"
                     src="https://tailark.com/_next/image?url=%2Fmail2-light.png&w=3840&q=75"
                     alt="app screen"
                     width="2700"

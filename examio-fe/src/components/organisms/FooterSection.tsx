@@ -21,12 +21,12 @@ import Logo from "../atoms/Logo";
 
 export default function FooterSection() {
   return (
-    <footer className="relative border-t mt-16 bg-white text-foreground">
+    <footer className="relative mt-16 bg-surface-dark text-on-dark-soft">
       <div className="container mx-auto px-4 py-8 sm:py-12 md:px-6 lg:px-8">
         <div className="grid gap-8 sm:gap-12 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <div className="relative sm:col-span-2 lg:col-span-1">
             <Logo />
-            <p className="mb-6 text-muted-foreground mt-4">
+            <p className="mb-6 text-on-dark-soft mt-4">
               Nền tảng học tập trực tuyến hỗ trợ bởi AI - Học viện Kỹ thuật Mật
               mã
             </p>
@@ -48,7 +48,7 @@ export default function FooterSection() {
             <div className="absolute -right-4 top-0 h-24 w-24 rounded-full bg-primary/10 blur-2xl hidden lg:block" />
           </div>
           <div className="text-center sm:text-left">
-            <h3 className="mb-4 text-lg font-semibold">Liên kết</h3>
+            <h3 className="mb-4 text-lg font-semibold text-on-dark">Liên kết</h3>
             <nav className="space-y-2 text-sm">
               <a
                 href="/"
@@ -71,7 +71,7 @@ export default function FooterSection() {
             </nav>
           </div>
           <div>
-            <h3 className="mb-4 text-lg font-semibold">Liên hệ</h3>
+            <h3 className="mb-4 text-lg font-semibold text-on-dark">Liên hệ</h3>
             <address className="space-y-2 text-sm not-italic">
               <p>141 Đường Chiến Thắng, Tân Triều</p>
               <p>Thanh Trì, Hà Nội</p>
@@ -79,7 +79,7 @@ export default function FooterSection() {
             </address>
           </div>
           <div className="relative sm:col-span-2 lg:col-span-1 flex flex-col items-center sm:items-start">
-            <h3 className="mb-4 text-lg font-semibold">Theo dõi</h3>
+            <h3 className="mb-4 text-lg font-semibold text-on-dark">Theo dõi</h3>
             <div className="mb-6 flex flex-wrap justify-center sm:justify-start gap-3 sm:space-x-4">
               <TooltipProvider>
                 <Tooltip>
@@ -158,10 +158,10 @@ export default function FooterSection() {
             </div>
           </div>
         </div>
-        <div className="mt-8 sm:mt-12 flex flex-col items-center justify-between gap-4 border-t pt-6 sm:pt-8 text-center md:flex-row">
-          <p className="text-sm text-muted-foreground flex items-center gap-x-1">
+        <div className="mt-8 sm:mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 sm:pt-8 text-center md:flex-row">
+          <p className="text-sm text-on-dark-soft flex items-center gap-x-1">
             <Copyright size={15} className="-mt-1" /> {new Date().getFullYear()}{" "}
-            KMA Edu. All rights reserved.
+            Examio. All rights reserved.
           </p>
           <nav className="flex gap-4 text-sm">
             <a href="#" className="transition-colors hover:text-primary">

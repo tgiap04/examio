@@ -12,8 +12,8 @@ import { toast } from "@/components/antd/toast";
 function BottomGradient() {
   return (
     <>
-      <span className="group-hover/btn:opacity-100 block transition duration-500 opacity-0 absolute h-px w-full -bottom-px inset-x-0 bg-gradient-to-r from-transparent via-[#e31837] to-transparent" />
-      <span className="group-hover/btn:opacity-100 blur-sm block transition duration-500 opacity-0 absolute h-px w-1/2 mx-auto -bottom-px inset-x-10 bg-gradient-to-r from-transparent via-[#ffc107] to-transparent" />
+      <span className="group-hover/btn:opacity-100 block transition duration-500 opacity-0 absolute h-px w-full -bottom-px inset-x-0 bg-gradient-to-r from-transparent via-coral to-transparent" />
+      <span className="group-hover/btn:opacity-100 blur-sm block transition duration-500 opacity-0 absolute h-px w-1/2 mx-auto -bottom-px inset-x-10 bg-gradient-to-r from-transparent via-accent-amber to-transparent" />
     </>
   );
 }
@@ -65,24 +65,19 @@ export function SignupForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-red-50/30 to-yellow-50/30 py-8">
-      <div className="max-w-md w-full mx-4 rounded-2xl p-6 md:p-8 shadow-xl bg-white border relative">
-        {/* KMA gradient decoration */}
-        <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-red-100 via-yellow-50 to-transparent opacity-60 blur-3xl -mt-20 rounded-t-2xl"></div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-canvas via-surface-soft to-surface-card py-8">
+      <div className="max-w-md w-full mx-4 rounded-2xl p-6 md:p-8 shadow-xl bg-canvas border relative">
+        <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-coral/15 via-surface-card to-transparent opacity-60 blur-3xl -mt-20 rounded-t-2xl"></div>
 
         <div className="relative">
-          {/* Logo and Title */}
           <div className="flex flex-col items-center mb-6">
-            <img
-              src="/Logo_KMA.png"
-              alt="KMA Edu Logo"
-              width={60}
-              height={60}
-            />
-            <h2 className="font-bold text-xl text-gray-800 mt-3">
-              Chào Mừng Đến Với KMA Edu
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-hairline bg-canvas text-2xl text-ink shadow-sm">
+              ✳
+            </div>
+            <h2 className="font-bold text-xl text-ink mt-3">
+              Chào Mừng Đến Với Examio
             </h2>
-            <h1 className="text-3xl font-bold kma-gradient-text mt-1">
+            <h1 className="text-3xl font-bold font-display text-coral mt-1">
               Đăng Ký
             </h1>
           </div>
@@ -90,7 +85,7 @@ export function SignupForm() {
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <LabelInputContainer>
-              <Label htmlFor="username" className="text-gray-700">
+              <Label htmlFor="username" className="text-body">
                 Tên Đăng Nhập
               </Label>
               <Input
@@ -98,12 +93,12 @@ export function SignupForm() {
                 name="username"
                 placeholder="Tên Đăng Nhập"
                 type="text"
-                className="bg-gray-50 border-gray-200 focus:ring-primary focus:border-primary"
+                className="bg-surface-soft border-hairline focus:ring-primary focus:border-primary"
               />
             </LabelInputContainer>
 
             <LabelInputContainer>
-              <Label htmlFor="email" className="text-gray-700">
+              <Label htmlFor="email" className="text-body">
                 Email
               </Label>
               <Input
@@ -111,12 +106,12 @@ export function SignupForm() {
                 name="email"
                 placeholder="email@kma.edu.vn"
                 type="email"
-                className="bg-gray-50 border-gray-200 focus:ring-primary focus:border-primary"
+                className="bg-surface-soft border-hairline focus:ring-primary focus:border-primary"
               />
             </LabelInputContainer>
 
             <LabelInputContainer>
-              <Label htmlFor="password" className="text-gray-700">
+              <Label htmlFor="password" className="text-body">
                 Mật Khẩu
               </Label>
               <Input
@@ -124,12 +119,12 @@ export function SignupForm() {
                 name="password"
                 placeholder="••••••••"
                 type="password"
-                className="bg-gray-50 border-gray-200 focus:ring-primary focus:border-primary"
+                className="bg-surface-soft border-hairline focus:ring-primary focus:border-primary"
               />
             </LabelInputContainer>
 
             <LabelInputContainer>
-              <Label htmlFor="confirmPassword" className="text-gray-700">
+              <Label htmlFor="confirmPassword" className="text-body">
                 Nhập Lại Mật Khẩu
               </Label>
               <Input
@@ -137,12 +132,12 @@ export function SignupForm() {
                 name="confirmPassword"
                 placeholder="••••••••"
                 type="password"
-                className="bg-gray-50 border-gray-200 focus:ring-primary focus:border-primary"
+                className="bg-surface-soft border-hairline focus:ring-primary focus:border-primary"
               />
             </LabelInputContainer>
 
             <button
-              className="bg-primary hover:bg-[#b71c1c] relative group/btn w-full text-white rounded-lg h-11 font-semibold shadow-lg shadow-primary/30 cursor-pointer transition-all mt-6"
+              className="bg-primary hover:bg-coral-active relative group/btn w-full text-white rounded-lg h-11 font-semibold shadow-lg shadow-primary/30 cursor-pointer transition-all mt-6"
               type="submit"
             >
               Đăng Ký →
@@ -150,16 +145,16 @@ export function SignupForm() {
             </button>
 
             <div className="flex items-center my-6">
-              <hr className="flex-grow border-t border-gray-200" />
-              <span className="px-4 text-sm text-gray-400">
+              <hr className="flex-grow border-t border-hairline" />
+              <span className="px-4 text-sm text-muted-foreground">
                 Hoặc đăng ký với
               </span>
-              <hr className="flex-grow border-t border-gray-200" />
+              <hr className="flex-grow border-t border-hairline" />
             </div>
 
             <div className="grid gap-2 grid-cols-1 md:grid-cols-3">
               <button
-                className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-gray-700 rounded-lg h-10 font-medium bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all"
+                className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-body rounded-lg h-10 font-medium bg-surface-soft border border-hairline hover:bg-surface-card cursor-pointer transition-all"
                 type="button"
                 onClick={() => loginWithGithub?.()}
               >
@@ -168,7 +163,7 @@ export function SignupForm() {
                 <BottomGradient />
               </button>
               <button
-                className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-gray-700 rounded-lg h-10 font-medium bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all"
+                className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-body rounded-lg h-10 font-medium bg-surface-soft border border-hairline hover:bg-surface-card cursor-pointer transition-all"
                 type="button"
                 onClick={() => loginWithGoogle?.()}
               >
@@ -177,7 +172,7 @@ export function SignupForm() {
                 <BottomGradient />
               </button>
               <button
-                className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-gray-700 rounded-lg h-10 font-medium bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all"
+                className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-body rounded-lg h-10 font-medium bg-surface-soft border border-hairline hover:bg-surface-card cursor-pointer transition-all"
                 type="button"
                 onClick={() => loginWithFacebook?.()}
               >

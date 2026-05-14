@@ -135,7 +135,7 @@ export default function HeaderSection() {
               {initializing ? (
                 // Show skeleton/placeholder while checking auth status
                 <div className="flex w-full justify-end md:w-fit">
-                  <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse" />
+                  <div className="w-10 h-10 rounded-full bg-surface-card animate-pulse" />
                 </div>
               ) : !isAuthenticated ? (
                 <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
@@ -151,7 +151,7 @@ export default function HeaderSection() {
                     size="sm"
                     className={cn(
                       isScrolled && "lg:hidden",
-                      "bg-primary hover:bg-red-700 text-white",
+                      "bg-primary hover:bg-coral-active text-white",
                     )}
                     onClick={() => navigate("/register")}
                   >
@@ -161,7 +161,7 @@ export default function HeaderSection() {
                     size="sm"
                     className={cn(
                       isScrolled ? "lg:inline-flex" : "hidden",
-                      "bg-primary hover:bg-red-700 text-white",
+                      "bg-primary hover:bg-coral-active text-white",
                     )}
                     onClick={() => navigate("/login")}
                   >
