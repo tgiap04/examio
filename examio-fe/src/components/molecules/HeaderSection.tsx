@@ -140,38 +140,32 @@ export default function HeaderSection() {
               ) : !isAuthenticated ? (
                 <div className="flex w-full flex-col space-y-3 sm:flex-row sm:gap-3 sm:space-y-0 md:w-fit">
                   <Button
-                    asChild
                     variant="outline"
                     size="sm"
                     className={cn(isScrolled && "lg:hidden")}
+                    onClick={() => navigate("/login")}
                   >
-                    <Link to="/login">
-                      <span>Đăng nhập</span>
-                    </Link>
+                    <span>Đăng nhập</span>
                   </Button>
                   <Button
-                    asChild
                     size="sm"
                     className={cn(
                       isScrolled && "lg:hidden",
                       "bg-primary hover:bg-red-700 text-white",
                     )}
+                    onClick={() => navigate("/register")}
                   >
-                    <Link to="/register">
-                      <span>Đăng ký</span>
-                    </Link>
+                    <span>Đăng ký</span>
                   </Button>
                   <Button
-                    asChild
                     size="sm"
                     className={cn(
                       isScrolled ? "lg:inline-flex" : "hidden",
                       "bg-primary hover:bg-red-700 text-white",
                     )}
+                    onClick={() => navigate("/login")}
                   >
-                    <Link to="/login">
-                      <span>Bắt đầu ngay</span>
-                    </Link>
+                    <span>Bắt đầu ngay</span>
                   </Button>
                 </div>
               ) : (

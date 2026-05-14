@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ChevronRight, LogOut, User as UserIcon } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useAuthSync } from "@/hooks/useAuthSync";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,8 +13,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/antd/avatar";
 
 export function AuthLayoutShell({ children }: { children: React.ReactNode }) {
-  useAuthSync();
-
   const navigate = useNavigate();
   const { user, isAuthenticated, initializing, getUser, logout } =
     useAuthStore();
@@ -29,8 +26,7 @@ export function AuthLayoutShell({ children }: { children: React.ReactNode }) {
     navigate("/");
   };
 
-  const dashboardPath =
-    user?.role === "teacher" ? "/k/dashboard-teacher" : "/k/dashboard-student";
+  const dashboardPath = "/k";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-white via-red-50/30 to-yellow-50/30">
@@ -72,7 +68,7 @@ export function AuthLayoutShell({ children }: { children: React.ReactNode }) {
                         {user.username}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {user.role === "teacher" ? "Giáo viên" : "Học sinh"}
+                        Thành viên
                       </p>
                     </div>
                   </button>

@@ -37,8 +37,6 @@ export interface DeviceInfo {
     ipAddress?: string;
 }
 
-type OAuthRole = 'teacher' | 'student';
-
 @Injectable()
 export class AuthService {
     private readonly sessionTtlMs = 30 * 24 * 60 * 60 * 1000;
@@ -113,7 +111,7 @@ export class AuthService {
     }
 
     async register(registerDto: RegisterDto, deviceInfo?: DeviceInfo) {
-        const { username, email, password, role } = registerDto;
+        const { username, email, password } = registerDto;
         if (!username || !email || !password) {
             throw new BadRequestException('Thông tin đăng ký không hợp lệ');
         }
@@ -142,7 +140,6 @@ export class AuthService {
                         username,
                         email,
                         password: hashedPassword,
-                        role: role || 'student', // Default to student if not provided
                     },
                 });
 
@@ -530,17 +527,9 @@ export class AuthService {
         email: string,
         username: string,
         avatar?: string,
-        deviceInfo?: DeviceInfo,
-        role: OAuthRole = 'student'
+        deviceInfo?: DeviceInfo
     ) {
         let existingUser = await this.userRepository.findByEmail(email, false);
-
-        console.log('[OAuth][AuthService] Incoming OAuth login', {
-            email,
-            username,
-            requestedRole: role,
-            userExists: Boolean(existingUser),
-        });
 
         if (!existingUser) {
             existingUser = await this.prisma.$transaction(async (tx) => {
@@ -550,7 +539,6 @@ export class AuthService {
                         email,
                         username,
                         avatar,
-                        role,
                         isVerified: true,
                         password: null,
                     },
@@ -569,12 +557,6 @@ export class AuthService {
                 return user;
             });
 
-            console.log('[OAuth][AuthService] Created new OAuth user', {
-                email: existingUser.email,
-                userId: existingUser.id,
-                savedRole: existingUser.role,
-            });
-
             // Publish USER_CREATED event for wallet creation and other services (fire-and-forget to avoid timeout)
             this.eventPublisher
                 .publishAuthEvent(EventType.USER_CREATED, {
@@ -588,13 +570,6 @@ export class AuthService {
                         error
                     );
                 });
-        } else {
-            console.log('[OAuth][AuthService] Existing OAuth user reused', {
-                email: existingUser.email,
-                userId: existingUser.id,
-                existingRole: existingUser.role,
-                requestedRole: role,
-            });
         }
 
         const token = this.jwtService.sign({ userId: existingUser.id });
@@ -621,21 +596,13 @@ export class AuthService {
         };
     }
 
-    async googleLogin(
-        user: any,
-        deviceInfo?: DeviceInfo,
-        role: OAuthRole = 'student'
-    ) {
+    async googleLogin(user: any, deviceInfo?: DeviceInfo) {
         const { email, picture } = user;
         const username = email.split('@')[0];
-        return this.handleOAuthLogin(email, username, picture, deviceInfo, role);
+        return this.handleOAuthLogin(email, username, picture, deviceInfo);
     }
 
-    async facebookLogin(
-        user: any,
-        deviceInfo?: DeviceInfo,
-        role: OAuthRole = 'student'
-    ) {
+    async facebookLogin(user: any, deviceInfo?: DeviceInfo) {
         const { email, picture, username } = user;
         if (!email) {
             throw new BadRequestException(
@@ -646,23 +613,17 @@ export class AuthService {
             email,
             username || email.split('@')[0],
             picture,
-            deviceInfo,
-            role
+            deviceInfo
         );
     }
 
-    async githubLogin(
-        user: any,
-        deviceInfo?: DeviceInfo,
-        role: OAuthRole = 'student'
-    ) {
+    async githubLogin(user: any, deviceInfo?: DeviceInfo) {
         const { email, avatar, username } = user;
         return this.handleOAuthLogin(
             email,
             username || email.split('@')[0],
             avatar,
-            deviceInfo,
-            role
+            deviceInfo
         );
     }
 

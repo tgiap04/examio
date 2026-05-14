@@ -125,7 +125,7 @@ function GenAIKnowledgePageContent() {
   }, [hydrate]);
 
   const loadKnowledgeData = useCallback(async () => {
-    if (!user || user.role !== "teacher") {
+    if (!canAccessGenAIKnowledgeManager(user)) {
       return;
     }
 
@@ -193,7 +193,7 @@ function GenAIKnowledgePageContent() {
   }, [loadKnowledgeData]);
 
   const loadDatasetImports = useCallback(async () => {
-    if (!user || user.role !== "teacher") {
+    if (!canAccessGenAIKnowledgeManager(user)) {
       return;
     }
 
@@ -280,11 +280,6 @@ function GenAIKnowledgePageContent() {
   const canAccess = canAccessGenAIKnowledgeManager(user);
   const accessRestrictedByEmail = isGenAIKnowledgeRestrictedByEmail();
 
-  useEffect(() => {
-    if (!initializing && user && user.role !== "teacher") {
-      navigate("/k", { replace: true });
-    }
-  }, [initializing, navigate, user]);
 
   useEffect(() => {
     if (!selectedFolderId && folders.length > 0) {
@@ -746,7 +741,7 @@ function GenAIKnowledgePageContent() {
     );
   }
 
-  if (!user || user.role !== "teacher") {
+  if (!user) {
     return null;
   }
 
@@ -763,11 +758,11 @@ function GenAIKnowledgePageContent() {
                 <div className="space-y-2">
                   <h1 className="text-2xl font-semibold tracking-tight">Khu vực quản trị kho tri thức GenAI</h1>
                   <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-                    Trang này hiện chỉ mở cho một nhóm giảng viên được chỉ định. FE đã được chuẩn bị sẵn cơ chế allowlist theo email để sau này chỉ cần cấu hình thêm là giới hạn được người truy cập.
+                    Trang này hiện chỉ mở cho quản trị viên hoặc nhóm email được chỉ định.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <Badge variant="outline" className="px-3 py-1 text-xs">Teacher only</Badge>
+                  <Badge variant="outline" className="px-3 py-1 text-xs">Restricted access</Badge>
                   {accessRestrictedByEmail && (
                     <Badge variant="secondary" className="px-3 py-1 text-xs">
                       Email allowlist enabled

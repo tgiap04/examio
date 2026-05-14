@@ -10,11 +10,6 @@ jest.mock('@examio/common', () => ({
             return true;
         }
     },
-    RolesGuard: class RolesGuard {
-        canActivate() {
-            return true;
-        }
-    },
     Roles: () => () => undefined,
 }));
 
@@ -37,7 +32,7 @@ describe('AIController (e2e)', () => {
 
         app = moduleFixture.createNestApplication();
         app.use((req, _res, next) => {
-            req.user = { id: 'user-1', role: 'teacher' };
+            req.user = { id: 'user-1' };
             next();
         });
         await app.init();

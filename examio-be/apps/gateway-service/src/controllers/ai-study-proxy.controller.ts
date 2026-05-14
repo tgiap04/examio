@@ -31,14 +31,13 @@ import { ProxyService } from '../services/proxy.service';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import * as FormData from 'form-data';
-import { AuthGuard, Roles, RolesGuard } from '@examio/common';
+import { AuthGuard } from '@examio/common';
 
 // ==================== AI ====================
 
 @ApiTags('AI')
 @Controller('ai')
-@UseGuards(AuthGuard, RolesGuard)
-@Roles('teacher', 'student')
+@UseGuards(AuthGuard)
 @ApiBearerAuth('access-token')
 @ApiCookieAuth('cookie-auth')
 export class AIProxyController {
@@ -914,8 +913,7 @@ export class AIProxyController {
 
 @ApiTags('AI Chat')
 @Controller('ai-chat')
-@UseGuards(AuthGuard, RolesGuard)
-@Roles('teacher', 'student')
+@UseGuards(AuthGuard)
 @ApiBearerAuth('access-token')
 @ApiCookieAuth('cookie-auth')
 export class AIChatProxyController {

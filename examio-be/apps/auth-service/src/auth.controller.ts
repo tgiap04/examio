@@ -109,17 +109,11 @@ export class AuthController {
         }
     }
 
-    private resolveFrontendTarget(
-        frontendUrl: string,
-        role?: 'teacher' | 'student',
-        redirectPath?: string
-    ) {
+    private resolveFrontendTarget(frontendUrl: string, redirectPath?: string) {
         const safeRedirect =
             redirectPath && redirectPath.startsWith('/') ? redirectPath : null;
-        const dashboardPath =
-            role === 'teacher' ? '/k/dashboard-teacher' : '/k/dashboard-student';
 
-        return `${frontendUrl}${safeRedirect || dashboardPath}`;
+        return `${frontendUrl}${safeRedirect || '/k'}`;
     }
 
     @Post('register')
@@ -426,13 +420,11 @@ export class AuthController {
         const oauthState = this.parseOAuthState(
             request.query.state as string | undefined
         );
-        res.clearCookie('oauth_role');
         res.clearCookie('oauth_redirect');
 
         res.redirect(
             this.resolveFrontendTarget(
                 frontendUrl,
-                oauthPayload.user?.role as 'teacher' | 'student' | undefined,
                 redirectFromCookie || oauthState.redirect
             )
         );
@@ -476,13 +468,11 @@ export class AuthController {
         const oauthState = this.parseOAuthState(
             request.query.state as string | undefined
         );
-        res.clearCookie('oauth_role');
         res.clearCookie('oauth_redirect');
 
         res.redirect(
             this.resolveFrontendTarget(
                 frontendUrl,
-                oauthPayload.user?.role as 'teacher' | 'student' | undefined,
                 redirectFromCookie || oauthState.redirect
             )
         );
@@ -526,13 +516,11 @@ export class AuthController {
         const oauthState = this.parseOAuthState(
             request.query.state as string | undefined
         );
-        res.clearCookie('oauth_role');
         res.clearCookie('oauth_redirect');
 
         res.redirect(
             this.resolveFrontendTarget(
                 frontendUrl,
-                oauthPayload.user?.role as 'teacher' | 'student' | undefined,
                 redirectFromCookie || oauthState.redirect
             )
         );

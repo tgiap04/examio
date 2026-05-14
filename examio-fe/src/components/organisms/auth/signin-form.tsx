@@ -5,15 +5,6 @@ import { Link, useSearchParams } from "react-router-dom";
 import { IconBrandGithub, IconBrandGoogle } from "@tabler/icons-react";
 import { Eye, EyeOff, FacebookIcon } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { UserRole } from "@/types/user";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/antd/dialog";
-import { RoleSelection } from "./role-selection";
 
 function BottomGradient() {
   return (
@@ -26,31 +17,9 @@ function BottomGradient() {
 
 export function SigninForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const [oauthProvider, setOauthProvider] = useState<
-    "github" | "google" | "facebook" | null
-  >(null);
   const { loginWithGoogle, loginWithFacebook, loginWithGithub, login } =
     useAuthStore();
   const [searchParams] = useSearchParams();
-
-  const handleOauthRoleSelect = async (role: UserRole) => {
-    const provider = oauthProvider;
-    setOauthProvider(null);
-
-    if (provider === "github") {
-      await loginWithGithub?.(role);
-      return;
-    }
-
-    if (provider === "google") {
-      await loginWithGoogle?.(role);
-      return;
-    }
-
-    if (provider === "facebook") {
-      await loginWithFacebook?.(role);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -63,13 +32,7 @@ export function SigninForm() {
     try {
       const response = await login({ credential, password });
       if (response && response.user) {
-        const role = response.user.role;
-        const targetPath =
-          response.redirectTo ||
-          from ||
-          (role === "teacher"
-            ? "/k/dashboard-teacher"
-            : "/k/dashboard-student");
+        const targetPath = response.redirectTo || from || "/k";
         window.location.href = targetPath;
       } else {
         window.location.href = from || "/k";
@@ -167,7 +130,7 @@ export function SigninForm() {
               <button
                 className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-gray-700 rounded-lg h-10 font-medium bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all"
                 type="button"
-                onClick={() => setOauthProvider("github")}
+                onClick={() => loginWithGithub?.()}
               >
                 <IconBrandGithub className="h-4 w-4" />
                 <span className="text-sm">GitHub</span>
@@ -177,7 +140,7 @@ export function SigninForm() {
               <button
                 className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-gray-700 rounded-lg h-10 font-medium bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all"
                 type="button"
-                onClick={() => setOauthProvider("google")}
+                onClick={() => loginWithGoogle?.()}
               >
                 <IconBrandGoogle className="h-4 w-4" />
                 <span className="text-sm">Google</span>
@@ -187,7 +150,7 @@ export function SigninForm() {
               <button
                 className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-gray-700 rounded-lg h-10 font-medium bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all"
                 type="button"
-                onClick={() => setOauthProvider("facebook")}
+                onClick={() => loginWithFacebook?.()}
               >
                 <FacebookIcon className="h-4 w-4" />
                 <span className="text-sm">Facebook</span>
@@ -208,34 +171,6 @@ export function SigninForm() {
         </div>
       </div>
 
-      <Dialog
-        open={Boolean(oauthProvider)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setOauthProvider(null);
-          }
-        }}
-      >
-        <DialogContent className="max-w-xl border-white/60 bg-white/95 p-0 overflow-hidden">
-          <div className="bg-gradient-to-r from-red-50 via-white to-yellow-50 p-6">
-            <DialogHeader>
-              <DialogTitle>Chọn vai trò để tiếp tục</DialogTitle>
-              <DialogDescription>
-                Bạn đang tiếp tục với
-                {oauthProvider === "google"
-                  ? " Google"
-                  : oauthProvider === "github"
-                    ? " GitHub"
-                    : " Facebook"}
-                . Sau khi chọn vai trò, hệ thống sẽ chuyển bạn sang trang đăng nhập OAuth.
-              </DialogDescription>
-            </DialogHeader>
-          </div>
-          <div className="p-6 pt-0">
-            <RoleSelection compact onSelectRole={handleOauthRoleSelect} />
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

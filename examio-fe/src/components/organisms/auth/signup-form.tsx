@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
 import { Label } from "@/components/antd/label";
 import { Input } from "@/components/antd/input";
@@ -8,8 +8,6 @@ import { IconBrandGithub, IconBrandGoogle } from "@tabler/icons-react";
 import { FacebookIcon } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { toast } from "@/components/antd/toast";
-import { RoleSelection } from "./role-selection";
-import { UserRole } from "@/types/user";
 
 function BottomGradient() {
   return (
@@ -37,12 +35,6 @@ function LabelInputContainer({
 export function SignupForm() {
   const { signup, loginWithGoogle, loginWithFacebook, loginWithGithub } =
     useAuthStore();
-  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
-
-  const handleRoleSelect = (role: UserRole) => {
-    setSelectedRole(role);
-  };
-
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
@@ -56,17 +48,11 @@ export function SignupForm() {
       return;
     }
 
-    if (!selectedRole) {
-      toast.warning("Vui lòng chọn vai trò!");
-      return;
-    }
-
     try {
       const response = await signup({
         username,
         email,
         password,
-        role: selectedRole,
       });
       if (response && response.user) {
         window.location.href = response.redirectTo || "/k";
@@ -77,11 +63,6 @@ export function SignupForm() {
       console.error("Signup failed:", error);
     }
   };
-
-  // Show role selection first
-  if (!selectedRole) {
-    return <RoleSelection onSelectRole={handleRoleSelect} />;
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-white via-red-50/30 to-yellow-50/30 py-8">
@@ -106,21 +87,6 @@ export function SignupForm() {
             </h1>
           </div>
 
-          {/* Show selected role */}
-          <div className="mb-6 p-3 bg-red-50 rounded-lg border border-red-200">
-            <p className="text-sm text-gray-600">
-              Vai trò:{" "}
-              <span className="font-semibold text-primary">
-                {selectedRole === "teacher" ? "Giáo Viên" : "Học Sinh"}
-              </span>
-              <button
-                onClick={() => setSelectedRole(null)}
-                className="ml-2 text-xs text-primary hover:underline"
-              >
-                Thay đổi
-              </button>
-            </p>
-          </div>
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <LabelInputContainer>
@@ -195,7 +161,7 @@ export function SignupForm() {
               <button
                 className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-gray-700 rounded-lg h-10 font-medium bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all"
                 type="button"
-                onClick={() => loginWithGithub?.(selectedRole)}
+                onClick={() => loginWithGithub?.()}
               >
                 <IconBrandGithub className="h-4 w-4" />
                 <span className="text-sm">GitHub</span>
@@ -204,7 +170,7 @@ export function SignupForm() {
               <button
                 className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-gray-700 rounded-lg h-10 font-medium bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all"
                 type="button"
-                onClick={() => loginWithGoogle?.(selectedRole)}
+                onClick={() => loginWithGoogle?.()}
               >
                 <IconBrandGoogle className="h-4 w-4" />
                 <span className="text-sm">Google</span>
@@ -213,7 +179,7 @@ export function SignupForm() {
               <button
                 className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-gray-700 rounded-lg h-10 font-medium bg-gray-50 border border-gray-200 hover:bg-gray-100 cursor-pointer transition-all"
                 type="button"
-                onClick={() => loginWithFacebook?.(selectedRole)}
+                onClick={() => loginWithFacebook?.()}
               >
                 <FacebookIcon className="h-4 w-4" />
                 <span className="text-sm">Facebook</span>

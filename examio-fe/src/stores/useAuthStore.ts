@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { User, UserRole } from "@/types/user";
+import { User } from "@/types/user";
 import {
   loginApi,
   signupApi,
@@ -45,9 +45,9 @@ interface AuthState {
   refreshSession: () => Promise<string | null>;
   sendVerificationEmail: () => Promise<void>;
   verifyAccount: (code: string) => Promise<void>;
-  loginWithGoogle?: (role: UserRole) => Promise<void>;
-  loginWithFacebook?: (role: UserRole) => Promise<void>;
-  loginWithGithub?: (role: UserRole) => Promise<void>;
+  loginWithGoogle?: () => Promise<void>;
+  loginWithFacebook?: () => Promise<void>;
+  loginWithGithub?: () => Promise<void>;
   updateWalletBalance: (newBalance: number) => void;
 }
 
@@ -337,21 +337,21 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  loginWithGoogle: async (role) => {
+  loginWithGoogle: async () => {
     const redirectPath = getOAuthRedirectPath();
     const redirect = encodeURIComponent(redirectPath);
-    window.location.href = `${env.apiUrl}/auth/google?role=${role}&redirect=${redirect}`;
+    window.location.href = `${env.apiUrl}/auth/google?redirect=${redirect}`;
   },
 
-  loginWithFacebook: async (role) => {
+  loginWithFacebook: async () => {
     const redirectPath = getOAuthRedirectPath();
     const redirect = encodeURIComponent(redirectPath);
-    window.location.href = `${env.apiUrl}/auth/facebook?role=${role}&redirect=${redirect}`;
+    window.location.href = `${env.apiUrl}/auth/facebook?redirect=${redirect}`;
   },
 
-  loginWithGithub: async (role) => {
+  loginWithGithub: async () => {
     const redirectPath = getOAuthRedirectPath();
     const redirect = encodeURIComponent(redirectPath);
-    window.location.href = `${env.apiUrl}/auth/github?role=${role}&redirect=${redirect}`;
+    window.location.href = `${env.apiUrl}/auth/github?redirect=${redirect}`;
   },
 }));

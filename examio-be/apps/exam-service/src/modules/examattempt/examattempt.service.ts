@@ -1406,16 +1406,6 @@ export class ExamAttemptService {
      * Optimized with COUNT queries (O(1) with indexed fields) and Redis caching
      */
     async getHistoryStats(user: User) {
-        // Only return stats for teachers
-        if (user.role !== 'teacher') {
-            return {
-                totalPDFs: 0,
-                examsCreated: 0,
-                flashcardSets: 0,
-                totalStudyHours: 0,
-            };
-        }
-
         const cacheKey = getUserCacheKey('QUIZ_STATS', user.id) + ':history';
 
         // Check cache first

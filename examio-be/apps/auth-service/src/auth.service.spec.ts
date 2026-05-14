@@ -79,7 +79,6 @@ describe('AuthService refresh token flow', () => {
             username: 'student',
             password: 'hashed-password',
             isAdmin: false,
-            role: 'student',
         });
         jwtService.sign.mockReturnValue('new-access-token');
         generateIdService.generateId

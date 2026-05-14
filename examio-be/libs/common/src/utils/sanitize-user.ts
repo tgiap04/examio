@@ -21,7 +21,7 @@ export function sanitizeUser(
             updatedAt: Date;
         } | null;
     }
-): Omit<User, 'password' | 'isAdmin'> & {
+): Omit<User, 'password'> & {
     wallet?: { balance: number } | null;
     subscription?: {
         id: string;
@@ -32,6 +32,6 @@ export function sanitizeUser(
         nextPaymentDate?: Date | null;
     } | null;
 } {
-    const { password, isAdmin, ...rest } = user;
+    const { password, ...rest } = user;
     return rest;
 }

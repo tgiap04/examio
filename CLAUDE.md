@@ -331,6 +331,7 @@ for text in texts:
 - **Virtual scrolling** - Cho danh sách dài (>100 items)
 - **Code splitting** - Lazy load routes/components không cần thiết
 - **Debounce/Throttle** - Input events, scroll handlers, resize observers
+- **Zustand / Data call from api** - Cần cache kết quả API để tránh gọi lại quá nhiều, khi chuyển qua lại các trang cùng một phiên không cần gọi lại API, trừ khi thực hiện các action Create/Update/Delete data thì mới cần, hoặc load lại trang thì sẽ cần
 
 ### Monitoring & Testing
 

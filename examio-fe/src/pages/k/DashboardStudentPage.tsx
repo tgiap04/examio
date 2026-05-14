@@ -1,6 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "@/stores/useAuthStore";
 import {
   AreaChart,
   Area,
@@ -39,8 +37,6 @@ import {
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8"];
 
 export default function DashboardStudentPage() {
-  const navigate = useNavigate();
-  const { user } = useAuthStore();
   const [isMounted, setIsMounted] = useState(false);
   const [statsMap, setStatsMap] = useState<Record<string, StudentDashboardStats>>({});
   const [loading, setLoading] = useState(true);
@@ -49,12 +45,6 @@ export default function DashboardStudentPage() {
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  useEffect(() => {
-    if (user && user.role === "teacher") {
-      navigate("/k/dashboard-teacher", { replace: true });
-    }
-  }, [user, navigate]);
 
   const fetchStats = useCallback(async (selectedRange: string = range, forceRefresh: boolean = false) => {
     if (!forceRefresh && statsMap[selectedRange]) {

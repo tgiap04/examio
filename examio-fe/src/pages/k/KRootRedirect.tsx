@@ -4,7 +4,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function KRootRedirect() {
   const navigate = useNavigate();
-  const { user, isAuthenticated, initializing } = useAuthStore();
+  const { isAuthenticated, initializing } = useAuthStore();
 
   useEffect(() => {
     if (initializing) {
@@ -16,13 +16,8 @@ export default function KRootRedirect() {
       return;
     }
 
-    if (user?.role === "teacher") {
-      navigate("/k/dashboard-teacher", { replace: true });
-      return;
-    }
-
     navigate("/k/dashboard-student", { replace: true });
-  }, [initializing, isAuthenticated, navigate, user?.role]);
+  }, [initializing, isAuthenticated, navigate]);
 
   return (
     <div className="flex flex-1 flex-col items-center justify-center p-4">

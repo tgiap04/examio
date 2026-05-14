@@ -635,6 +635,69 @@ export class AIService {
         }
     }
 
+    private getFallbackModelCatalog() {
+        const unavailableReason = 'AI service chưa sẵn sàng. Vui lòng khởi động AI service rồi thử lại.';
+
+        const generationModel = {
+            id: this.getDefaultModelId(),
+            name: 'Qwen3 8B',
+            description: 'Fallback catalog khi AI service không phản hồi.',
+            provider: 'ollama',
+            runtimeModelName: 'qwen3:8b',
+            badge: 'Offline',
+            disabled: true,
+            available: false,
+            availabilityReason: unavailableReason,
+            isDefault: true,
+            supportsStructuredOutput: true,
+            specs: [
+                { label: 'Trạng thái', value: 'AI service offline' },
+                { label: 'Runtime', value: 'qwen3:8b' },
+            ],
+        };
+
+        return {
+            embeddingModel: {
+                id: 'qwen3_embedding_8b',
+                name: 'Qwen3 Embedding 8B',
+                description: 'Embedding model dùng chung cho hệ thống.',
+                provider: 'ollama',
+                runtimeModelName: 'qwen3-embedding:latest',
+                badge: 'Offline',
+                disabled: true,
+                available: false,
+                availabilityReason: unavailableReason,
+                isDefault: true,
+                supportsStructuredOutput: false,
+                specs: [
+                    { label: 'Trạng thái', value: 'AI service offline' },
+                    { label: 'Runtime', value: 'qwen3-embedding:latest' },
+                ],
+            },
+            generationModels: [generationModel],
+            defaultGenerationModel: generationModel.id,
+        };
+    }
+
+    private isAiServiceUnavailable(error: unknown): boolean {
+        const axiosError = error as AxiosError;
+        const unavailableCodes = new Set([
+            'ECONNREFUSED',
+            'ECONNRESET',
+            'ECONNABORTED',
+            'ETIMEDOUT',
+            'ENOTFOUND',
+            'EAI_AGAIN',
+        ]);
+
+        if (axiosError.code && unavailableCodes.has(axiosError.code)) {
+            return true;
+        }
+
+        const status = axiosError.response?.status;
+        return status === 502 || status === 503 || status === 504;
+    }
+
     async getModelCatalog() {
         try {
             const response = await firstValueFrom(
@@ -644,13 +707,18 @@ export class AIService {
             );
             return response.data;
         } catch (error) {
-            this.logger.error(
-                `Failed to fetch model catalog: ${error.message}`,
-                error.stack
+            if (!this.isAiServiceUnavailable(error)) {
+                this.logger.error(
+                    `Failed to fetch model catalog: ${error.message}`,
+                    error.stack
+                );
+                this.rethrowAiHttpError(error);
+            }
+
+            this.logger.warn(
+                `AI service model catalog unavailable, using fallback catalog: ${error.message}`
             );
-            throw new InternalServerErrorException(
-                'Không thể tải danh sách model AI'
-            );
+            return this.getFallbackModelCatalog();
         }
     }
 

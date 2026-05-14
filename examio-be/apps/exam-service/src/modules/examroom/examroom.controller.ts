@@ -19,7 +19,7 @@ import {
     ApiParam,
     ApiQuery,
 } from '@nestjs/swagger';
-import { AuthGuard, AuthenticatedRequest, Roles, RolesGuard } from '@examio/common';
+import { AuthGuard, AuthenticatedRequest } from '@examio/common';
 import { ExamRoomService } from './examroom.service';
 import { CreateExamRoomDto } from './dto/create-examroom.dto';
 import { UpdateExamRoomDto } from './dto/update-examroom.dto';
@@ -32,8 +32,7 @@ export class ExamRoomController {
     constructor(private readonly examRoomService: ExamRoomService) {}
 
     @Post()
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Create a new exam room (Teacher only)' })
     @ApiResponse({
@@ -66,8 +65,7 @@ export class ExamRoomController {
     }
 
     @Put(':id')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update an exam room by ID (Teacher only)' })
     @ApiParam({ name: 'id', description: 'Exam room ID' })
@@ -118,8 +116,7 @@ export class ExamRoomController {
     }
 
     @Delete(':id')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete an exam room by ID (Teacher only)' })
     @ApiParam({ name: 'id', description: 'Exam room ID' })

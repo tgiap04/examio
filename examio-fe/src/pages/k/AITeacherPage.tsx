@@ -81,7 +81,6 @@ import "katex/dist/katex.min.css";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { ModelSelector } from "@/components/atoms/ModelSelector";
 import { Badge } from "@/components/antd/badge";
-import { useNavigate } from "react-router-dom";
 
 const isSpeechRecognitionSupported = () => {
   return (
@@ -153,9 +152,6 @@ function renderIcon(iconName: string | null | undefined, className?: string) {
 }
 
 export default function AITeacherPage() {
-  const { user } = useAuthStore();
-  const navigate = useNavigate();
-
   const {
     selectedSubject,
     fetchCategories,
@@ -206,11 +202,6 @@ export default function AITeacherPage() {
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (user && user.role === "teacher") {
-      navigate("/k", { replace: true });
-      return;
-    }
-
     setSpeechSupported(isSpeechRecognitionSupported());
     fetchChats();
     fetchCategories();
@@ -222,7 +213,7 @@ export default function AITeacherPage() {
         window.speechSynthesis.getVoices();
       };
     }
-  }, [fetchChats, fetchCategories, checkAndLoadChatFromUrl, user, navigate]);
+  }, [fetchChats, fetchCategories, checkAndLoadChatFromUrl]);
 
   useEffect(() => {
     if (scrollRef.current) {

@@ -5,13 +5,10 @@ import { AlertTriangle, Mail, X } from "lucide-react";
 import { SidebarKit } from "@/components/organisms/k/SideBar";
 import { PendingJobDialog } from "@/components/organisms/PendingJobDialog";
 import { cn } from "@/lib/utils";
-import { useAuthSync } from "@/hooks/useAuthSync";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useJobStore } from "@/stores/useAIGeneratorStore";
 
 export function KLayout({ children }: PropsWithChildren) {
-  useAuthSync();
-
   const location = useLocation();
   const navigate = useNavigate();
   const { user, sendVerificationEmail, loading } = useAuthStore();

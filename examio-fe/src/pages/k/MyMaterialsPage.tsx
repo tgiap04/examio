@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "@/stores/useAuthStore";
 import {
   getRecentFlashcardSetsApi,
   generateShareLinkApi,
@@ -27,7 +26,6 @@ import { Input } from "@/components/antd/input";
 
 export default function MyMaterialsPage() {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
   const { toast } = useToast();
   const [materials, setMaterials] = useState<RecentFlashcardSet[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,12 +53,6 @@ export default function MyMaterialsPage() {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (user && user.role === "teacher") {
-      navigate("/k/flash-card", { replace: true });
-    }
-  }, [user, navigate]);
 
   useEffect(() => {
     fetchMaterials();

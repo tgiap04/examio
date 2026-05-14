@@ -26,7 +26,7 @@ import {
     ApiConsumes,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { AuthGuard, AuthenticatedRequest, Roles, RolesGuard } from '@examio/common';
+import { AuthGuard, AuthenticatedRequest } from '@examio/common';
 import { Response } from 'express';
 import { AIService } from './ai.service';
 import {
@@ -49,8 +49,7 @@ export class AIController {
     constructor(private readonly aiService: AIService) {}
 
     @Post('quick-upload')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher', 'student')
+    @UseGuards(AuthGuard)
     @UseInterceptors(FileInterceptor('file'))
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
@@ -85,8 +84,7 @@ export class AIController {
     }
 
     @Post('generate-from-file')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @UseInterceptors(FileInterceptor('file'))
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
@@ -118,8 +116,7 @@ export class AIController {
     }
 
     @Get('recent-uploads')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy danh sách file đã upload (Teacher & Student)' })
     @ApiQuery({ name: 'page', required: false, type: Number })
@@ -138,8 +135,7 @@ export class AIController {
     }
 
     @Get('models')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher', 'student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lay catalog model AI cho frontend' })
     @ApiResponse({ status: 200, description: 'Danh sach model AI' })
@@ -148,8 +144,7 @@ export class AIController {
     }
 
     @Post('tutor/ingest')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Tạo tutor ingest job (Teacher only)' })
     async tutorIngest(
@@ -160,8 +155,7 @@ export class AIController {
     }
 
     @Post('tutor/knowledge-files')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @UseInterceptors(FileInterceptor('file'))
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Upload file tri thức cho GenAI Tutor (Teacher only)' })
@@ -175,8 +169,7 @@ export class AIController {
     }
 
     @Post('tutor/knowledge-folders')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Tạo folder tri thức tutor' })
     async createTutorKnowledgeFolder(
@@ -187,8 +180,7 @@ export class AIController {
     }
 
     @Put('tutor/knowledge-folders/:folderId')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Cập nhật folder tri thức tutor' })
     async updateTutorKnowledgeFolder(
@@ -200,8 +192,7 @@ export class AIController {
     }
 
     @Delete('tutor/knowledge-folders/:folderId')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Xóa folder tri thức tutor' })
     async deleteTutorKnowledgeFolder(@Param('folderId') folderId: string) {
@@ -209,8 +200,7 @@ export class AIController {
     }
 
     @Get('tutor/knowledge-folders/:folderId/contents')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy nội dung folder tri thức tutor' })
     async getTutorKnowledgeFolderContents(
@@ -228,8 +218,7 @@ export class AIController {
     }
 
     @Get('tutor/knowledge-folders')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy danh sách folder tri thức tutor' })
     async listTutorKnowledgeFolders(@Req() req: AuthenticatedRequest) {
@@ -237,8 +226,7 @@ export class AIController {
     }
 
     @Get('tutor/knowledge-stats')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy thống kê kho tri thức tutor' })
     async getTutorKnowledgeStats(
@@ -249,8 +237,7 @@ export class AIController {
     }
 
     @Get('tutor/knowledge-files')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy danh sách file tri thức tutor' })
     async listTutorKnowledgeFiles(@Req() req: AuthenticatedRequest) {
@@ -258,8 +245,7 @@ export class AIController {
     }
 
     @Get('tutor/dataset-imports/catalog')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy catalog dataset có thể nạp vào kho tri thức' })
     async listTutorDatasetCatalog() {
@@ -267,8 +253,7 @@ export class AIController {
     }
 
     @Post('tutor/dataset-imports')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Tạo job nạp dataset vào kho tri thức tutor' })
     async createTutorDatasetImport(
@@ -279,8 +264,7 @@ export class AIController {
     }
 
     @Get('tutor/dataset-imports')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy danh sách job nạp dataset tutor' })
     async listTutorDatasetImports(@Req() req: AuthenticatedRequest) {
@@ -288,8 +272,7 @@ export class AIController {
     }
 
     @Get('tutor/dataset-imports/states')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy trạng thái dataset tutor theo folder/job' })
     async listTutorDatasetImportStates(@Req() req: AuthenticatedRequest) {
@@ -297,8 +280,7 @@ export class AIController {
     }
 
     @Get('tutor/dataset-imports/:jobId')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy trạng thái job nạp dataset tutor' })
     async getTutorDatasetImportJob(@Param('jobId') jobId: string) {
@@ -306,8 +288,7 @@ export class AIController {
     }
 
     @Post('tutor/dataset-imports/:jobId/cancel')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Hủy job nạp dataset tutor' })
     async cancelTutorDatasetImportJob(@Param('jobId') jobId: string) {
@@ -315,8 +296,7 @@ export class AIController {
     }
 
     @Post('tutor/dataset-imports/:datasetKey/clear')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Xóa toàn bộ dữ liệu dataset tutor đã nạp' })
     async clearTutorDatasetImport(
@@ -327,8 +307,7 @@ export class AIController {
     }
 
     @Get('tutor/knowledge-files/search')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Filter/search/sort danh sách file tri thức tutor' })
     async searchTutorKnowledgeFiles(
@@ -353,8 +332,7 @@ export class AIController {
     }
 
     @Post('tutor/knowledge-files/:fileId/reprocess')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Retry/reprocess file tri thức tutor' })
     async reprocessTutorKnowledgeFile(@Param('fileId') fileId: string) {
@@ -362,8 +340,7 @@ export class AIController {
     }
 
     @Post('tutor/knowledge-files/bulk-delete')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Bulk delete file tri thức tutor' })
     async bulkDeleteTutorKnowledgeFiles(@Body('fileIds') fileIds: string[]) {
@@ -371,8 +348,7 @@ export class AIController {
     }
 
     @Post('tutor/knowledge-files/bulk-reprocess')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Bulk reprocess file tri thức tutor' })
     async bulkReprocessTutorKnowledgeFiles(@Body('fileIds') fileIds: string[]) {
@@ -380,8 +356,7 @@ export class AIController {
     }
 
     @Get('tutor/ingest')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher', 'student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy danh sách tutor ingest jobs' })
     async listTutorIngestJobs() {
@@ -389,8 +364,7 @@ export class AIController {
     }
 
     @Get('tutor/ingest/:jobId')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher', 'student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy chi tiết tutor ingest job' })
     async getTutorIngestJob(@Param('jobId') jobId: string) {
@@ -398,8 +372,7 @@ export class AIController {
     }
 
     @Post('tutor/query')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher', 'student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Hỏi tutor' })
     async tutorQuery(@Body() dto: TutorQueryDto) {
@@ -407,8 +380,7 @@ export class AIController {
     }
 
     @Post('tutor/stream')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher', 'student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Hỏi tutor với streaming' })
     async tutorStream(@Body() dto: TutorQueryDto, @Req() req: AuthenticatedRequest, @Res() res: Response) {
@@ -437,16 +409,14 @@ export class AIController {
     }
 
     @Get('tutor/student-programming/sessions')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     async listStudentProgrammingSessions(@Req() req: AuthenticatedRequest) {
         return this.aiService.listStudentProgrammingSessions(req.user);
     }
 
     @Post('tutor/student-programming/sessions')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     async createStudentProgrammingSession(
         @Req() req: AuthenticatedRequest,
@@ -456,8 +426,7 @@ export class AIController {
     }
 
     @Patch('tutor/student-programming/sessions/:sessionId')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     async updateStudentProgrammingSession(
         @Req() req: AuthenticatedRequest,
@@ -468,8 +437,7 @@ export class AIController {
     }
 
     @Delete('tutor/student-programming/sessions/:sessionId')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     async deleteStudentProgrammingSession(
         @Req() req: AuthenticatedRequest,
@@ -479,8 +447,7 @@ export class AIController {
     }
 
     @Get('tutor/student-programming/sessions/:sessionId/messages')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     async listStudentProgrammingMessages(
         @Req() req: AuthenticatedRequest,
@@ -490,8 +457,7 @@ export class AIController {
     }
 
     @Post('tutor/student-programming/sessions/:sessionId/messages')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     async createStudentProgrammingMessage(
         @Req() req: AuthenticatedRequest,
@@ -509,8 +475,7 @@ export class AIController {
     }
 
     @Post('tutor/student-programming/evaluate')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     async evaluateStudentProgrammingAnswer(
         @Req() req: AuthenticatedRequest,
@@ -520,8 +485,7 @@ export class AIController {
     }
 
     @Get('tutor/student-programming/evaluate/:jobId')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     async getStudentProgrammingEvaluationJob(
         @Req() req: AuthenticatedRequest,
@@ -531,8 +495,7 @@ export class AIController {
     }
 
     @Get('tutor/graph/job/:jobId')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Xem graph tutor theo job' })
     async getTutorGraphByJob(@Param('jobId') jobId: string) {
@@ -540,8 +503,7 @@ export class AIController {
     }
 
     @Get('tutor/graph/document/:documentId')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Xem graph tutor theo document' })
     async getTutorGraphByDocument(@Param('documentId') documentId: string) {
@@ -549,8 +511,7 @@ export class AIController {
     }
 
     @Get('tutor/knowledge-files/:fileId/graph')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Xem graph theo file tri thức tutor' })
     async getTutorKnowledgeFileGraph(@Param('fileId') fileId: string) {
@@ -558,8 +519,7 @@ export class AIController {
     }
 
     @Get('upload/:uploadId')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher', 'student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy chi tiết file đã upload (Teacher & Student)' })
     @ApiParam({ name: 'uploadId', description: 'ID của upload' })
@@ -572,8 +532,7 @@ export class AIController {
     }
 
     @Delete('upload/:uploadId')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher', 'student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Xóa file upload (Teacher & Student)' })
     @ApiParam({ name: 'uploadId', description: 'ID của upload' })
@@ -586,8 +545,7 @@ export class AIController {
     }
 
     @Post('upload')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher', 'student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Tạo upload mới và trigger OCR (Teacher & Student)' })
     @ApiResponse({ status: 201, description: 'Upload đã được tạo' })
@@ -599,8 +557,7 @@ export class AIController {
     }
 
     @Post('upload-image')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher', 'student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Upload image cho AI chat (Teacher & Student)' })
     @ApiResponse({ status: 201, description: 'Image đã được upload' })
@@ -616,8 +573,7 @@ export class AIController {
     }
 
     @Post('regenerate/:uploadId')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Tạo lại quiz/flashcard từ file (Teacher only)' })
     @ApiParam({ name: 'uploadId', description: 'ID của upload' })
@@ -631,8 +587,7 @@ export class AIController {
     }
 
     @Get('job/:jobId')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher', 'student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy trạng thái job (Teacher & Student)' })
     @ApiParam({ name: 'jobId', description: 'ID của job (userStorageId)' })
@@ -653,8 +608,7 @@ export class AIController {
     }
 
     @Delete('job/:jobId')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher', 'student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Hủy job đang xử lý (Teacher & Student)' })
     @ApiParam({ name: 'jobId', description: 'ID của job (userStorageId)' })
@@ -675,8 +629,7 @@ export class AIController {
     }
 
     @Get('upload/:uploadId/history')
-    @UseGuards(AuthGuard, RolesGuard)
-    @Roles('teacher', 'student')
+    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Lấy lịch sử quiz và flashcard đã tạo cho một file (Teacher & Student)',

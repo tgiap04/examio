@@ -9,16 +9,16 @@ function getAllowedEmails(): string[] {
 }
 
 export function canAccessGenAIKnowledgeManager(user: User | null | undefined) {
-  if (!user || user.role !== "teacher") {
+  if (!user) {
     return false;
   }
 
   const allowedEmails = getAllowedEmails();
   if (allowedEmails.length === 0) {
-    return true;
+    return Boolean(user.isAdmin);
   }
 
-  return allowedEmails.includes(user.email.trim().toLowerCase());
+  return user.isAdmin || allowedEmails.includes(user.email.trim().toLowerCase());
 }
 
 export function isGenAIKnowledgeRestrictedByEmail() {

@@ -28,7 +28,7 @@ export class LoginResponse {
         description: 'Sanitized user object',
         type: Object,
     })
-    user: Omit<User, 'password' | 'isAdmin'>;
+    user: Omit<User, 'password'>;
 
     @ApiProperty({
         description: 'Indicates if the login was successful',

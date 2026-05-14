@@ -180,7 +180,7 @@ export default function AIStudentPage() {
   const [isRenaming, setIsRenaming] = useState(false);
 
   const canAccess = useMemo(
-    () => !initializing && user?.role === "student",
+    () => !initializing && Boolean(user),
     [initializing, user],
   );
   const visibleMessages = useMemo(

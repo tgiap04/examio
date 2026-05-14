@@ -18,14 +18,13 @@ import {
     ApiResponse,
     ApiCookieAuth,
 } from '@nestjs/swagger';
-import { AuthGuard, AuthenticatedRequest, Roles, RolesGuard } from '@examio/common';
+import { AuthGuard, AuthenticatedRequest } from '@examio/common';
 import { AIChatService } from './ai-chat.service';
 import { Observable } from 'rxjs';
 
 @ApiTags('AI Chat')
 @Controller('ai-chat')
-@UseGuards(AuthGuard, RolesGuard)
-@Roles('student')
+@UseGuards(AuthGuard)
 @ApiCookieAuth('cookie-auth')
 export class AIChatController {
     constructor(private readonly chatService: AIChatService) {}

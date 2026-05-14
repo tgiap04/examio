@@ -3,7 +3,7 @@ import { Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 export function TeacherRoute({ children }: PropsWithChildren) {
-  const { isAuthenticated, initializing, user } = useAuthStore();
+  const { isAuthenticated, initializing } = useAuthStore();
 
   if (initializing) {
     return (
@@ -15,10 +15,6 @@ export function TeacherRoute({ children }: PropsWithChildren) {
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
-  }
-
-  if (user?.role !== "teacher") {
-    return <Navigate to="/k" replace />;
   }
 
   return children ?? <Outlet />;
