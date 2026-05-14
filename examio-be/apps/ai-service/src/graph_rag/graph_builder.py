@@ -7,14 +7,13 @@ import logging
 from typing import List, Dict, Any, Tuple, Optional
 import networkx as nx
 from langchain_core.documents import Document
-from langchain_ollama import OllamaEmbeddings
+from src.llm.gemini_embeddings import GeminiEmbeddings
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from dotenv import load_dotenv
 
 load_dotenv()
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text:latest")
+GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "models/text-embedding-004")
 
 logger = logging.getLogger(__name__)
 
@@ -42,13 +41,13 @@ class DocumentGraph:
         self.max_semantic_edges_per_node = max_semantic_edges_per_node
         
         # Use env variable if model not specified
-        model = embeddings_model or OLLAMA_EMBEDDING_MODEL
-        print(f"📊 Graph Builder using Ollama embedding model: {model}")
+        model = embeddings_model or GEMINI_EMBEDDING_MODEL
+        print(f"📊 Graph Builder using Gemini embedding model: {model}")
         print(f"⚙️  Config: threshold={semantic_threshold}, max_edges/node={max_semantic_edges_per_node}")
         
-        self.embeddings = OllamaEmbeddings(
+        self.embeddings = GeminiEmbeddings(
             model=model,
-            base_url=OLLAMA_BASE_URL
+            
         )
         self.doc_embeddings = {}  # Cache embeddings
         

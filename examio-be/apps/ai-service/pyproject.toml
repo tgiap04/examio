@@ -14,7 +14,6 @@ dependencies = [
     "langchain (>=0.3.22,<0.4.0)",
     "langgraph (>=0.3.21,<0.4.0)",
     "grandalf (>=0.8,<0.9)",
-    "langchain-ollama (>=0.3.0,<0.4.0)",
     "langchain-openai (>=0.3.11,<0.4.0)",
     "langchain-experimental (>=0.3.4,<0.4.0)",
     "streamlit (>=1.44.1,<2.0.0)",

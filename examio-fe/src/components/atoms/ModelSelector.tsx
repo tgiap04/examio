@@ -32,8 +32,6 @@ interface ModelSelectorProps {
 }
 
 const MODEL_ICONS: Record<string, typeof Sparkles> = {
-  qwen3_8b: Cpu,
-  qwen3_32b: Brain,
   gemini: Sparkles,
   glm4_9b: Cpu,
   gemma2_9b: Cpu,
@@ -41,7 +39,6 @@ const MODEL_ICONS: Record<string, typeof Sparkles> = {
 
 const PROVIDER_LABELS: Record<string, string> = {
   gemini: "Google",
-  ollama: "Ollama",
 };
 
 const EMPTY_DISABLED_MODELS: Partial<Record<AIModelType, string>> = {};
@@ -51,7 +48,6 @@ const EMPTY_DISABLED_MODELS: Partial<Record<AIModelType, string>> = {};
  *
  * Allows users to select between available AI models:
  * - Gemini AI: Fast and accurate cloud-based AI
- * - KMA AI: Local Ollama-based AI for privacy
  */
 export function ModelSelector({
   value = DEFAULT_AI_MODEL,
@@ -111,7 +107,6 @@ export function ModelSelector({
                       className={cn(
                         "size-4",
                         selectedModel.provider === "gemini" && "text-primary",
-                        selectedModel.provider === "ollama" && "text-secondary",
                       )}
                     />
                     <div className="flex min-w-0 flex-col items-start leading-tight">
@@ -143,7 +138,6 @@ export function ModelSelector({
                         className={cn(
                           "size-4",
                           model.provider === "gemini" && "text-primary",
-                          model.provider === "ollama" && "text-secondary",
                           isModelDisabled && "opacity-50",
                         )}
                       />

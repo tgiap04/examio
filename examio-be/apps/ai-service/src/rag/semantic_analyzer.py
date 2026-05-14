@@ -6,19 +6,18 @@ Replaces keyword matching with semantic similarity for better accuracy
 from typing import Dict, Any, List, Optional
 import numpy as np
 try:
-    from langchain_ollama import OllamaEmbeddings
-    OLLAMA_AVAILABLE = True
+    from src.llm.gemini_embeddings import GeminiEmbeddings
+    GEMINI_EMBEDDINGS_AVAILABLE = True
 except ImportError:
     from sentence_transformers import SentenceTransformer
-    OLLAMA_AVAILABLE = False
-    print("⚠️  OllamaEmbeddings not available, falling back to SentenceTransformer")
+    GEMINI_EMBEDDINGS_AVAILABLE = False
+    print("⚠️  GeminiEmbeddings not available, falling back to SentenceTransformer")
 import json
 import os
 from pathlib import Path
 from .metadata_config import get_metadata_config
 from dotenv import load_dotenv
 load_dotenv()
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 class SemanticQueryAnalyzer:
     def __init__(self):
         self.model = None
@@ -32,19 +31,16 @@ class SemanticQueryAnalyzer:
         self._initialize_templates()
     
     def _get_model(self):
-        """Lazy loading of the embedding model - Ollama or SentenceTransformer"""
+        """Lazy loading of the embedding model - Gemini or SentenceTransformer"""
         if self.model is None:
-            if OLLAMA_AVAILABLE:
+            if GEMINI_EMBEDDINGS_AVAILABLE:
                 try:
-                    # Use Ollama embeddings with nomic-embed-text model
-                    self.model = OllamaEmbeddings(
-                        model="nomic-embed-text",
-                        base_url=OLLAMA_BASE_URL  # Default Ollama URL
-                    )
-                    self.model_type = "ollama"
-                    print("🔗 Using Ollama embeddings with nomic-embed-text model")
+                    # Use Gemini embeddings
+                    self.model = GeminiEmbeddings()
+                    self.model_type = "gemini"
+                    print("🔗 Using Gemini embeddings")
                 except Exception as e:
-                    print(f"⚠️  Failed to initialize Ollama embeddings: {e}")
+                    print(f"⚠️  Failed to initialize Gemini embeddings: {e}")
                     print("🔄 Falling back to SentenceTransformer...")
                     self.model = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
                     self.model_type = "sentence_transformer"
@@ -60,8 +56,8 @@ class SemanticQueryAnalyzer:
         """Encode texts using the appropriate model"""
         model = self._get_model()
         
-        if self.model_type == "ollama":
-            # Ollama embeddings return list of embeddings
+        if self.model_type == "gemini":
+            # Gemini embeddings return list of embeddings
             if isinstance(texts, str):
                 texts = [texts]
             embeddings = model.embed_documents(texts)

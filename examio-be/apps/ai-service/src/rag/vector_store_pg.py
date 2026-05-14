@@ -74,10 +74,10 @@ class PgVectorStore:
         self,
         text: str,
         task_type: str = "retrieval_document",
-        model_type: str = "qwen3_8b"
+        model_type: str = "minimax-m2.5-free"
     ) -> List[float]:
         """
-        Tạo embedding vector cho text bằng Ollama embedding model.
+        Tạo embedding vector cho text bằng Gemini embedding model.
 
         Lưu ý: luôn dùng cùng 1 embedding space để đảm bảo retrieval nhất quán
         giữa các lần generate, khong phu thuoc model generation do user chon.
@@ -87,17 +87,17 @@ class PgVectorStore:
             task_type: "retrieval_document" cho documents, "retrieval_query" cho queries
             model_type: Ignored (giữ để tương thích interface cũ)
         """
-        from src.llm.ollama_embeddings import ollama_embeddings
-        return await ollama_embeddings.create_embedding(text, task_type)
+        from src.llm.gemini_embeddings import gemini_embeddings
+        return await gemini_embeddings.create_embedding(text, task_type)
 
     async def create_embeddings_batch(
         self,
         texts: List[str],
         task_type: str = "retrieval_document",
-        model_type: str = "qwen3_8b"
+        model_type: str = "minimax-m2.5-free"
     ) -> List[List[float]]:
         """
-        Tạo embeddings cho nhiều texts bằng Ollama embedding model.
+        Tạo embeddings cho nhiều texts bằng Gemini embedding model.
 
         Lưu ý: luôn dùng cùng 1 embedding space để đảm bảo retrieval nhất quán.
 
@@ -106,8 +106,8 @@ class PgVectorStore:
             task_type: Task type
             model_type: Ignored (giữ để tương thích interface cũ)
         """
-        from src.llm.ollama_embeddings import ollama_embeddings
-        return await ollama_embeddings.create_embeddings_batch(texts, task_type)
+        from src.llm.gemini_embeddings import gemini_embeddings
+        return await gemini_embeddings.create_embeddings_batch(texts, task_type)
 
     async def store_document(
         self,
@@ -116,7 +116,7 @@ class PgVectorStore:
         content: str,
         page_range: str,
         title: Optional[str] = None,
-        model_type: str = "qwen3_8b"
+        model_type: str = "minimax-m2.5-free"
     ) -> bool:
         """
         Lưu document chunk với embedding vào database.
@@ -166,7 +166,7 @@ class PgVectorStore:
     async def store_documents_batch(
         self,
         documents: List[Dict[str, Any]],
-        model_type: str = "qwen3_8b"
+        model_type: str = "minimax-m2.5-free"
     ) -> int:
         """
         Lưu nhiều document chunks với batch embedding.
@@ -267,7 +267,7 @@ class PgVectorStore:
         query: str,
         top_k: int = None,
         similarity_threshold: float = None,
-        model_type: str = "qwen3_8b"
+        model_type: str = "minimax-m2.5-free"
     ) -> List[DocumentChunk]:
         """
         Tìm kiếm documents tương tự bằng vector similarity.

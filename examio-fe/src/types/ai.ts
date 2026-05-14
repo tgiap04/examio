@@ -26,7 +26,7 @@ export interface AIModelCatalog {
   defaultGenerationModel: AIModelType;
 }
 
-export const DEFAULT_AI_MODEL: AIModelType = "qwen3_8b";
+export const DEFAULT_AI_MODEL: AIModelType = "minimax-m2.5-free";
 
 export const MODEL_UNAVAILABLE_MESSAGE =
   "Model hiện tại không khả dụng, thử model khác.";

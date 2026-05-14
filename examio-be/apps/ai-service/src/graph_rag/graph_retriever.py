@@ -7,7 +7,7 @@ from typing import List, Dict, Any, Optional, Set, Tuple
 import networkx as nx
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
-from langchain_ollama import OllamaEmbeddings
+from src.llm.gemini_embeddings import GeminiEmbeddings
 from pydantic import Field
 import numpy as np
 import os
@@ -17,8 +17,7 @@ from .graph_builder import DocumentGraph
 from .subgraph_partitioner import SubgraphPartitioner
 
 load_dotenv()
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
-OLLAMA_EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING_MODEL", "nomic-embed-text:latest")
+GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "models/text-embedding-004")
 
 logger = logging.getLogger(__name__)
 
@@ -46,12 +45,12 @@ class GraphRoutedRetriever(BaseRetriever):
                  expansion_factor: float = 1.5,
                  embeddings_model: str = None):
         """Initialize graph-routed retriever with optimization"""
-        model = embeddings_model or OLLAMA_EMBEDDING_MODEL
-        print(f"📊 Graph Retriever using Ollama embedding model: {model}")
+        model = embeddings_model or GEMINI_EMBEDDING_MODEL
+        print(f"📊 Graph Retriever using Gemini embedding model: {model}")
         
-        embeddings = OllamaEmbeddings(
+        embeddings = GeminiEmbeddings(
             model=model,
-            base_url=OLLAMA_BASE_URL
+            
         )
         
         super().__init__(

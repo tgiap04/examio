@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Literal
 
 
-ModelProvider = Literal['gemini', 'ollama', 'ai2']
+ModelProvider = Literal['gemini', 'ai2']
 ModelTask = Literal['generation', 'chat', 'embedding']
 
 
@@ -69,10 +69,10 @@ def _format_ai2_display_name(model_name: str) -> str:
 
 
 EMBEDDING_MODEL = ModelRegistryEntry(
-    id='qwen3_embedding_8b',
-    provider='ollama',
-    runtime_model_name='qwen3-embedding:latest',
-    display_name='Qwen3 Embedding 8B',
+    id='gemini_embedding',
+    provider='gemini',
+    runtime_model_name=os.getenv('GEMINI_EMBEDDING_MODEL', 'models/text-embedding-004'),
+    display_name='Gemini Embedding',
     description='Embedding model dung chung cho toan bo he thong.',
     task_types=('embedding',),
     enabled=True,
@@ -81,7 +81,7 @@ EMBEDDING_MODEL = ModelRegistryEntry(
     sort_order=0,
     specs=(
         ModelSpec(label='Loai', value='Embedding'),
-        ModelSpec(label='Runtime', value='qwen3-embedding:latest'),
+        ModelSpec(label='Provider', value='Google'),
     ),
 )
 
@@ -135,10 +135,7 @@ GENERATION_MODELS: tuple[ModelRegistryEntry, ...] = (*AI2_GENERATION_MODELS, GEM
 
 LEGACY_MODEL_ALIASES: dict[str, str] = {
     'fayedark': '__default__',
-    'ollama': '__default__',
     'local': '__default__',
-    'qwen3_8b': '__default__',
-    'qwen3_32b': '__default__',
     'glm4_9b': '__default__',
     'gemma2_9b': '__default__',
     'ai2': '__default__',

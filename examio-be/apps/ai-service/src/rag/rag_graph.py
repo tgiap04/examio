@@ -81,7 +81,7 @@
 
 
 # class KMAChatAgent:
-#     def __init__(self, model_name="qwen3:8b", project_name="KMARegulation"):
+#     def __init__(self, model_name="gemini", project_name="KMARegulation"):
 #         """Initialize the KMA Chat Agent with a hybrid retriever and model"""
 #         # Initialize LangSmith client
 #         self.langsmith_client = Client()
@@ -256,7 +256,7 @@ from langgraph.graph import StateGraph, START, END
 from langsmith import Client
 from pydantic import Field, BaseModel
 
-# Sử dụng get_llm để respect runtime model selection (Ollama/Gemini)
+# Sử dụng get_llm để respect runtime model selection (Gemini/AI2)
 from src.llm import LLMConfig, get_llm
 from .retriever import create_hybrid_retriever
 from .semantic_analyzer import analyze_query_semantic_filter
@@ -293,7 +293,7 @@ async def process_kma_query(query: str, retriever=None, llm=None) -> Dict[str, A
         retriever = get_retriever()
 
     if llm is None:
-        # Sử dụng get_llm() để respect runtime model selection (Ollama/Gemini)
+        # Sử dụng get_llm() để respect runtime model selection (Gemini/AI2)
         llm = get_llm()
 
     # Load prompts
@@ -351,7 +351,7 @@ def process_kma_query_sync(query: str, retriever=None, llm=None, department_filt
         retriever = get_retriever()
 
     if llm is None:
-        # Sử dụng get_llm() để respect runtime model selection (Ollama/Gemini)
+        # Sử dụng get_llm() để respect runtime model selection (Gemini/AI2)
         llm = get_llm()
 
     # Load prompts
@@ -519,7 +519,7 @@ async def process_file_query(query: str, retriever, llm=None) -> Dict[str, Any]:
         Dictionary with answer and sources
     """
     if llm is None:
-        # Sử dụng get_llm() để respect runtime model selection (Ollama/Gemini)
+        # Sử dụng get_llm() để respect runtime model selection (Gemini/AI2)
         llm = get_llm()
 
     # Load prompts
@@ -641,7 +641,7 @@ class KMAChatAgent:
         # Initialize callback manager with LangSmith tracer
         self.callback_manager = LLMConfig.create_callback_manager(project_name)
 
-        # Sử dụng get_llm() để respect runtime model selection (Ollama/Gemini)
+        # Sử dụng get_llm() để respect runtime model selection (Gemini/AI2)
         try:
             self.llm = get_llm()
             # Sử dụng cùng model cho grader

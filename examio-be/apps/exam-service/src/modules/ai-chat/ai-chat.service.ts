@@ -309,7 +309,7 @@ export class AIChatService implements OnModuleInit {
             query: data.message,
             history: historyForAI,
             user_storage_id: userStorageId,
-            model_type: data.modelType || 'qwen3_8b',
+            model_type: data.modelType || 'minimax-m2.5-free',
             system_prompt: systemPrompt, // Subject-specific system prompt
         };
 

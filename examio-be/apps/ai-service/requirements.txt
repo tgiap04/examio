@@ -7,7 +7,6 @@ langchain-core>=0.2.33,<0.3.0
 langchain-community>=0.2.0,<0.3.0
 langgraph>=0.2.0,<0.3.0
 grandalf>=0.8,<0.9
-langchain-ollama>=0.1.0,<0.2.0
 langchain-openai>=0.1.0,<0.2.0
 langchain-google-genai>=1.0.0,<2.0.0
 

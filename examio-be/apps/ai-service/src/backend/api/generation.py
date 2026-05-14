@@ -36,7 +36,7 @@ class GenerateQuizBody(BaseModel):
     isNarrowSearch: bool = Field(default=False, description="Chế độ tìm kiếm hẹp")
     keyword: Optional[str] = Field(default=None, description="Từ khóa cho tìm kiếm hẹp")
     modelType: str = Field(
-        default='qwen3_8b',
+        default='minimax-m2.5-free',
         description='Model id tu registry'
     )
 
@@ -49,7 +49,7 @@ class GenerateFlashcardBody(BaseModel):
     isNarrowSearch: bool = Field(default=False, description="Chế độ tìm kiếm hẹp")
     keyword: Optional[str] = Field(default=None, description="Từ khóa cho tìm kiếm hẹp")
     modelType: str = Field(
-        default='qwen3_8b',
+        default='minimax-m2.5-free',
         description='Model id tu registry'
     )
 

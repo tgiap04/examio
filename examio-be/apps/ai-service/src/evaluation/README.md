@@ -77,7 +77,7 @@ src/evaluation/
 cd examio-be/apps/ai-service
 PYTHONPATH=. ./venv/bin/python -m src.evaluation.scripts.run_benchmark \
   --dataset humaneval \
-  --model-type qwen3_8b \
+  --model-type minimax-m2.5-free \
   --limit 10 \
   --report-name report.json
 ```
@@ -89,7 +89,7 @@ cd examio-be/apps/ai-service
 PYTHONPATH=. ./venv/bin/python -m src.evaluation.scripts.run_benchmark \
   --dataset mbpp \
   --dataset-path src/evaluation/datasets/samples/mbpp.json \
-  --model-type qwen3_8b \
+  --model-type minimax-m2.5-free \
   --limit 20 \
   --fast-mode true \
   --report-dir src/evaluation/reports \
@@ -143,7 +143,7 @@ cd examio-be/apps/ai-service
 PYTHONPATH=. ./venv/bin/python -m src.evaluation.scripts.run_benchmark \
   --dataset humaneval \
   --dataset-path src/evaluation/datasets/samples/humaneval_smoke.jsonl \
-  --model-type qwen3_8b \
+  --model-type minimax-m2.5-free \
   --limit 5 \
   --fast-mode true \
   --report-name humaneval_smoke_report.json

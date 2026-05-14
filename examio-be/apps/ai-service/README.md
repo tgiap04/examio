@@ -208,7 +208,7 @@ Evaluation module nam trong `src/evaluation` de benchmark AI Tutor cho bai toan 
 python -m src.evaluation.scripts.run_benchmark \
   --dataset humaneval \
   --dataset-path src/evaluation/datasets/samples/humaneval_smoke.jsonl \
-  --model-type qwen3_8b \
+  --model-type minimax-m2.5-free \
   --limit 2 \
   --fast-mode true \
   --report-name deploy_smoke_report.json

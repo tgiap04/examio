@@ -26,7 +26,6 @@ logger = logging.getLogger(__name__)
 
 
 class ModelType(str, Enum):
-    OLLAMA = 'ollama'
     GEMINI = 'gemini'
     AI2 = 'ai2'
 
@@ -36,8 +35,6 @@ class AIModelType(str, Enum):
     NEMOTRON_3_SUPER_FREE = 'nemotron-3-super-free'
     TRINITY_LARGE_PREVIEW_FREE = 'trinity-large-preview-free'
     GEMINI = 'gemini'
-    QWEN3_8B = 'qwen3_8b'
-    QWEN3_32B = 'qwen3_32b'
     GLM4_9B = 'glm4_9b'
     GEMMA2_9B = 'gemma2_9b'
     FAYEDARK = 'fayedark'
@@ -64,7 +61,6 @@ class ModelManager:
 
         self._runtime_model_id: Optional[str] = None
         self._runtime_model_type: Optional[ModelType] = None
-        self._runtime_ollama_model: Optional[str] = None
         self._runtime_gemini_model: Optional[str] = None
         self._initialized = True
 
@@ -137,14 +133,6 @@ class ModelManager:
     def get_current_model_id(self) -> str:
         return self.resolve_model().id
 
-    def get_ollama_info(self, model_id: str | None = None) -> Dict[str, Any]:
-        model = self.resolve_model(model_id)
-        return {
-            'model': self._runtime_ollama_model or model.runtime_model_name,
-            'url': os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434').rstrip('/'),
-            'id': model.id,
-        }
-
     def get_gemini_info(self, model_id: str | None = None) -> Dict[str, Any]:
         model = self.resolve_model(model_id)
         return {
@@ -182,7 +170,6 @@ class ModelManager:
         return {
             'id': model.id,
             'model': model.runtime_model_name,
-            'url': os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434').rstrip('/'),
         }
 
     async def check_generation_model_availability(
@@ -234,45 +221,11 @@ class ModelManager:
                 'reason': None,
             }
 
-        if availability_error is not None:
-            normalized_error = self._normalize_model_error(availability_error)
-            return {
-                'modelId': model.id,
-                'available': False,
-                'reason': str(normalized_error),
-                'code': normalized_error.code,
-            }
-
-        if installed_names is None:
-            installed_names = await self._fetch_installed_ollama_model_names()
-
-        if model.runtime_model_name not in installed_names:
-            return {
-                'modelId': model.id,
-                'available': False,
-                'reason': 'Model chua duoc cai dat tren runtime.',
-            }
-
         return {
             'modelId': model.id,
             'available': True,
             'reason': None,
         }
-
-    async def _fetch_installed_ollama_model_names(self) -> set[str]:
-        ollama_info = self.get_ollama_info()
-        verify_ssl = os.getenv('OLLAMA_VERIFY_SSL', 'true').lower() == 'true'
-        tags_url = f"{ollama_info['url'].rstrip('/')}/api/tags"
-        async with httpx.AsyncClient(timeout=5.0, verify=verify_ssl, trust_env=False) as client:
-            response = await client.get(tags_url)
-            response.raise_for_status()
-            data = response.json()
-            models = data.get('models', [])
-            return {
-                item.get('name')
-                for item in models
-                if isinstance(item, dict) and item.get('name')
-            }
 
     async def _fetch_ai2_model_names(self) -> set[str]:
         api_key = os.getenv('AI2_API_KEY')
@@ -305,16 +258,7 @@ class ModelManager:
     async def get_frontend_model_catalog(self) -> Dict[str, Any]:
         availability_map: Dict[str, Dict[str, Any]] = {}
         generation_models = get_generation_models()
-        ollama_model_ids = [model.id for model in generation_models if model.provider == 'ollama']
         ai2_model_ids = [model.id for model in generation_models if model.provider == 'ai2']
-
-        installed_names: set[str] | None = None
-        availability_error: Exception | None = None
-        if ollama_model_ids:
-            try:
-                installed_names = await self._fetch_installed_ollama_model_names()
-            except Exception as error:
-                availability_error = error
 
         ai2_model_names: set[str] | None = None
         ai2_availability_error: Exception | None = None
@@ -327,8 +271,6 @@ class ModelManager:
         for model in generation_models:
             availability_map[model.id] = await self.check_generation_model_availability(
                 model.id,
-                installed_names=installed_names if model.provider == 'ollama' else None,
-                availability_error=availability_error if model.provider == 'ollama' else None,
                 ai2_model_names=ai2_model_names if model.provider == 'ai2' else None,
                 ai2_availability_error=ai2_availability_error if model.provider == 'ai2' else None,
             )
@@ -342,14 +284,8 @@ class ModelManager:
         model = resolve_generation_model(model_id)
         self._runtime_model_id = model.id
         self._runtime_model_type = ModelType(model.provider)
-        if model.provider == 'ollama':
-            self._runtime_ollama_model = model.runtime_model_name
-        elif model.provider == 'gemini':
+        if model.provider == 'gemini':
             self._runtime_gemini_model = os.getenv('GEMINI_MODEL', 'gemini-2.5-flash')
-
-    def set_ollama_model(self, ollama_model: str) -> None:
-        self._runtime_ollama_model = ollama_model
-        self.set_active_model_type(ModelType.OLLAMA)
 
     def set_gemini_model(self, gemini_model: str) -> None:
         self._runtime_gemini_model = gemini_model
@@ -469,63 +405,6 @@ class ModelManager:
 
         raise last_error or ValueError('All API keys and models exhausted')
 
-    async def _generate_with_ollama(
-        self,
-        prompt: str,
-        model_id: str,
-        response_model: Any = None,
-        system_prompt: str | None = None,
-    ) -> str:
-        ollama_info = self.get_ollama_info(model_id)
-        base_url = ollama_info['url'].rstrip('/')
-        url = f"{base_url}/api/generate"
-        verify_ssl = os.getenv('OLLAMA_VERIFY_SSL', 'true').lower() == 'true'
-
-        payload = {
-            'model': ollama_info['model'],
-            'prompt': prompt,
-            'stream': False,
-            'options': {
-                'temperature': self.get_temperature(),
-                'num_predict': self.get_max_tokens(),
-                'num_ctx': 4096,
-            },
-        }
-
-        if system_prompt:
-            payload['system'] = system_prompt
-
-        if response_model:
-            payload['format'] = response_model.model_json_schema()
-
-        max_retries = 3
-        last_error = None
-        for attempt in range(max_retries):
-            try:
-                async with httpx.AsyncClient(timeout=3600.0, verify=verify_ssl, trust_env=False) as client:
-                    response = await client.post(url, json=payload)
-                    response.raise_for_status()
-                    data = response.json()
-                    return data.get('response', '')
-            except httpx.HTTPStatusError as error:
-                last_error = error
-                if error.response.status_code >= 500 and attempt < max_retries - 1:
-                    if attempt == 0 and 'format' in payload:
-                        payload = {k: v for k, v in payload.items() if k != 'format'}
-                    await asyncio.sleep((attempt + 1) * 2)
-                    continue
-                raise self._normalize_model_error(error)
-            except (httpx.ConnectError, httpx.ConnectTimeout) as error:
-                last_error = error
-                if attempt < max_retries - 1:
-                    await asyncio.sleep((attempt + 1) * 2)
-                    continue
-                raise self._normalize_model_error(error)
-            except Exception as error:
-                raise self._normalize_model_error(error)
-
-        raise self._normalize_model_error(last_error or Exception('Ollama generation failed'))
-
     async def _generate_with_ai2(
         self,
         prompt: str,
@@ -612,18 +491,10 @@ class ModelManager:
 
         if model.provider == 'ai2':
             return await self._generate_with_ai2(prompt, model.id, system_prompt=system_prompt)
-        if model.provider == 'gemini':
-            return await self._generate_with_gemini(prompt, system_prompt=system_prompt)
-        return await self._generate_with_ollama(
-            prompt,
-            model.id,
-            response_model,
-            system_prompt=system_prompt,
-        )
+        return await self._generate_with_gemini(prompt, system_prompt=system_prompt)
 
     def get_langchain_model(self, ai_model_type: AIModelType | str = AIModelType.MINIMAX_M25_FREE):
         from langchain_google_genai import ChatGoogleGenerativeAI
-        from langchain_ollama import ChatOllama
         from langchain_openai import ChatOpenAI
 
         model_id = ai_model_type.value if isinstance(ai_model_type, AIModelType) else str(ai_model_type)
@@ -656,13 +527,4 @@ class ModelManager:
                 convert_system_message_to_human=True,
             )
 
-        ollama_info = self.get_ollama_info(model.id)
-        return ChatOllama(
-            base_url=ollama_info['url'],
-            model=ollama_info['model'],
-            temperature=self.get_temperature(),
-            format='json' if model.supports_structured_output else '',
-        )
-
-
-model_manager = ModelManager()
+        return self.get_langchain_model('gemini')

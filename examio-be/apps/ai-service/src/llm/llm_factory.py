@@ -7,7 +7,6 @@ from typing import Optional
 from langchain.callbacks.manager import CallbackManager
 from langchain_core.language_models import BaseChatModel
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_ollama import ChatOllama
 from langchain_openai import ChatOpenAI
 
 from .model_manager import ModelType, ModelUnavailableError, model_manager
@@ -28,9 +27,6 @@ class LLMFactory:
         if model_type == ModelType.AI2:
             return cls._create_ai2_model(temperature, model_manager.get_ai2_max_tokens(), callback_manager)
 
-        if model_type == ModelType.OLLAMA:
-            return cls._create_ollama_model(temperature, max_tokens, callback_manager)
-
         return cls._create_gemini_model(temperature, max_tokens)
 
     @classmethod
@@ -45,15 +41,6 @@ class LLMFactory:
 
         if model.provider == 'ai2':
             return cls._create_ai2_model(temperature, model_manager.get_ai2_max_tokens(), callback_manager, model.id)
-
-        if model.provider == 'ollama':
-            return ChatOllama(
-                model=model.runtime_model_name,
-                base_url=model_manager.get_ollama_info(model.id)["url"],
-                temperature=temperature,
-                num_predict=max_tokens,
-                callback_manager=callback_manager,
-            )
 
         return cls._create_gemini_model(temperature, max_tokens)
 
@@ -78,22 +65,6 @@ class LLMFactory:
             temperature=temperature,
             max_tokens=max_tokens,
             callback_manager=callback_manager,
-        )
-
-    @classmethod
-    def _create_ollama_model(
-        cls,
-        temperature: float,
-        max_tokens: int,
-        callback_manager: Optional[CallbackManager] = None,
-    ) -> ChatOllama:
-        ollama_info = model_manager.get_ollama_info()
-        return ChatOllama(
-            model=ollama_info["model"],
-            base_url=ollama_info["url"],
-            temperature=temperature,
-            num_predict=max_tokens,
-            callback_manager=callback_manager
         )
 
     @classmethod

@@ -110,8 +110,8 @@ CHAT_HISTORY_MAX_CHARS=1200
 GEMINI_API_KEYS=key1,key2
 GEMINI_MODEL_NAMES=gemini-2.0-flash,gemini-1.5-flash
 
-# Ollama is used for OCR/RAG embeddings only.
-OLLAMA_BASE_URL=http://ollama:11434
+# Gemini is used for OCR/RAG embeddings.
+GEMINI_EMBEDDING_MODEL=models/text-embedding-004
 ```
 
 #### R2 Storage (Cloudflare)

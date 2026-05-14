@@ -31,7 +31,7 @@ def test_benchmark_runner_smoke_humaneval(tmp_path: Path):
 
     report = runner.run(
         dataset_name='humaneval',
-        model_type='qwen3_8b',
+        model_type='minimax-m2.5-free',
         limit=2,
         dataset_path=Path('src/evaluation/datasets/samples/humaneval_smoke.jsonl'),
         fast_mode=True,

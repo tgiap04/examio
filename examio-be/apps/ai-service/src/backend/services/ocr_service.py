@@ -23,7 +23,7 @@ from dataclasses import dataclass
 import asyncpg
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from src.llm.ollama_embeddings import get_embedding_text_limit
+from src.llm.gemini_embeddings import get_embedding_text_limit
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ def _resolve_text_splitter_config() -> tuple[int, int, int]:
 
     if configured_chunk_size > chunk_size:
         logger.info(
-            f"OCR_TEXT_CHUNK_SIZE={configured_chunk_size} exceeds OLLAMA_EMBED_MAX_LENGTH={embed_limit}; using chunk_size={chunk_size}"
+            f"OCR_TEXT_CHUNK_SIZE={configured_chunk_size} exceeds GEMINI_EMBED_MAX_LENGTH={embed_limit}; using chunk_size={chunk_size}"
         )
     if configured_overlap != chunk_overlap:
         logger.info(

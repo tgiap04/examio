@@ -6,7 +6,6 @@ from huggingface_hub import InferenceClient
 from langchain_core.language_models import BaseChatModel
 from langchain_core.messages import BaseMessage, AIMessage
 from langchain.callbacks.manager import CallbackManager
-from langchain_ollama import ChatOllama
 from langchain_community.callbacks.tracers import LangChainTracer
 from langchain_google_genai import ChatGoogleGenerativeAI
 
@@ -19,7 +18,6 @@ load_dotenv()
 class LLMConfig:
     """Configuration for language models used in the KMA Chat Agent."""
     
-    DEFAULT_RAG_MODEL_NAME = "mistral"
     DEFAULT_PROJECT_NAME = "KMA_CHAT"
     DEFAULT_GEMINI_MODEL = "gemini-2.0-flash"
     
@@ -38,20 +36,6 @@ class LLMConfig:
         """
         # Sử dụng LLMFactory để tạo model
         return LLMFactory.create_llm(callback_manager)
-
-        # Get API key from environment
-        rag_model = os.environ.get("RAG_MODEL")
-
-        if model_name is None:
-            if rag_model is not None:
-                model_name = rag_model
-            else:
-                model_name = cls.DEFAULT_RAG_MODEL_NAME
-        
-        return ChatOllama(
-            model=model_name,
-            callback_manager=callback_manager
-        )
     
     @classmethod
     def create_callback_manager(cls, project_name: str = None) -> CallbackManager:
@@ -69,7 +53,7 @@ def get_llm(model_name: str = None, project_name: str = None) -> BaseChatModel:
         project_name: Optional project name for LangSmith
         
     Returns:
-        Configured ChatOllama instance
+        Configured chat model instance
     """
     callback_manager = None
     if project_name:

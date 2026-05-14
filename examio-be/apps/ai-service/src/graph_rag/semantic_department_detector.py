@@ -14,7 +14,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 from pathlib import Path
 
-from langchain_community.embeddings import OllamaEmbeddings
+from src.llm.gemini_embeddings import GeminiEmbeddings
 from langchain_core.documents import Document
 
 logger = logging.getLogger(__name__)
@@ -108,10 +108,7 @@ class SemanticDepartmentDetector:
         """Initialize embedding model"""
         if self.embedding_model is None:
             try:
-                self.embedding_model = OllamaEmbeddings(
-                    model="nomic-embed-text",
-                    base_url="http://localhost:11434"
-                )
+                self.embedding_model = GeminiEmbeddings()
                 logger.info("✅ Embedding model initialized")
             except Exception as e:
                 logger.warning(f"⚠️ Could not initialize embedding model: {e}")

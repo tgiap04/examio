@@ -12,7 +12,7 @@ from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
-from langchain_ollama import OllamaEmbeddings
+from src.llm.gemini_embeddings import GeminiEmbeddings
 try:
     from langchain_google_genai import GoogleGenerativeAIEmbeddings
     GEMINI_EMBEDDINGS_AVAILABLE = True
@@ -30,7 +30,6 @@ from .semantic_analyzer import analyze_query_semantic_filter
 from .docling_extractor import extract_text_with_docling, is_docling_available
 from dotenv import load_dotenv
 load_dotenv()
-OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 # Optional imports for file processing
 try:
     import PyPDF2
@@ -509,7 +508,7 @@ def create_enhanced_vector_database(output_path: str, data_dir: str = "./data"):
                 all_documents.append(doc)
 
         # Create embeddings
-        embeddings = OllamaEmbeddings(model="nomic-embed-text")
+        embeddings = GeminiEmbeddings()
 
         # Create FAISS vector store from documents (preserves metadata)
         vectorstore = FAISS.from_documents(all_documents, embeddings)
@@ -534,7 +533,7 @@ def create_enhanced_vector_database(output_path: str, data_dir: str = "./data"):
 def load_enhanced_vector_database(output_path: str, data_dir: str = "./data"):
     """Load or create enhanced vector database"""
     try:
-        embeddings = OllamaEmbeddings(model="nomic-embed-text")
+        embeddings = GeminiEmbeddings()
 
         if not os.path.exists(output_path):
             print("Vector database not found, creating new one...")
@@ -842,12 +841,9 @@ def create_vector_database(output_path, data_dir="./data"):
         )
         chunks = text_splitter.split_text(regulations)
 
-        embeddings = OllamaEmbeddings(
-            model="nomic-embed-text",
-            base_url=OLLAMA_BASE_URL
-        )
-        # embeddings = OllamaEmbeddings(
-        #     model="nomic-embed-text"
+        embeddings = GeminiEmbeddings()
+        # embeddings = GeminiEmbeddings(
+        #     
         # )
 
         vectorstore = FAISS.from_texts(chunks, embeddings)
@@ -866,12 +862,9 @@ def create_vector_database(output_path, data_dir="./data"):
 
 def load_vector_database(output_path, data_dir="./data"):
     try:
-        embeddings = OllamaEmbeddings(
-            model="nomic-embed-text",
-            base_url=OLLAMA_BASE_URL
-        )
-        # embeddings = OllamaEmbeddings(
-        #     model="nomic-embed-text"
+        embeddings = GeminiEmbeddings()
+        # embeddings = GeminiEmbeddings(
+        #     
         # )
 
         if not os.path.exists(output_path):
@@ -1407,17 +1400,14 @@ def create_in_memory_retriever(file_content: str, chunk_size: int = 400, chunk_o
 
         embeddings = None
         
-        # Use Ollama embeddings as primary (Gemini embedding API is deprecated)
+        # Use Gemini embeddings as primary (Gemini embeddings)
         try:
-            embeddings = OllamaEmbeddings(
-                model="nomic-embed-text",
-                base_url=OLLAMA_BASE_URL
-            )
+            embeddings = GeminiEmbeddings()
             # Test connection with a simple embed
             embeddings.embed_query("test")
-            logger.info("Using OllamaEmbeddings for in-memory retriever")
+            logger.info("Using GeminiEmbeddings for in-memory retriever")
         except Exception as e:
-            logger.warning(f"Ollama not available: {e}, falling back to HuggingFace")
+            logger.warning(f"Gemini embeddings not available: {e}, falling back to HuggingFace")
 
         # Ultimate fallback to HuggingFace (CPU friendly)
         if not embeddings:

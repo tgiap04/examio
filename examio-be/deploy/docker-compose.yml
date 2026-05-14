@@ -276,7 +276,7 @@ services:
             - TUTOR_FAST_RETRIEVAL_TIMEOUT_SECONDS=${TUTOR_FAST_RETRIEVAL_TIMEOUT_SECONDS:-0.5}
             - CHAT_HISTORY_MAX_MESSAGES=${CHAT_HISTORY_MAX_MESSAGES:-4}
             - CHAT_HISTORY_MAX_CHARS=${CHAT_HISTORY_MAX_CHARS:-1200}
-            - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+            - GEMINI_EMBEDDING_MODEL=${GEMINI_EMBEDDING_MODEL:-models/text-embedding-004}
             - OCR_SERVICE_URL= # Using internal Tesseract/PyPDF logic
         env_file:
             - .env

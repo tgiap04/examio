@@ -44,7 +44,7 @@ export class AIService {
     }
 
     private getDefaultModelId(): string {
-        return 'qwen3_8b';
+        return process.env.AI2_DEFAULT_MODEL || 'minimax-m2.5-free';
     }
 
     private normalizeModelUnavailableMessage(errorData: unknown): string | null {
@@ -639,10 +639,10 @@ export class AIService {
 
         const generationModel = {
             id: this.getDefaultModelId(),
-            name: 'Qwen3 8B',
+            name: 'Gemini',
             description: 'Fallback catalog khi AI service không phản hồi.',
-            provider: 'ollama',
-            runtimeModelName: 'qwen3:8b',
+            provider: 'gemini',
+            runtimeModelName: 'gemini',
             badge: 'Offline',
             disabled: true,
             available: false,
@@ -651,17 +651,17 @@ export class AIService {
             supportsStructuredOutput: true,
             specs: [
                 { label: 'Trạng thái', value: 'AI service offline' },
-                { label: 'Runtime', value: 'qwen3:8b' },
+                { label: 'Provider', value: 'Google' },
             ],
         };
 
         return {
             embeddingModel: {
-                id: 'qwen3_embedding_8b',
-                name: 'Qwen3 Embedding 8B',
+                id: 'gemini_embedding',
+                name: 'Gemini Embedding',
                 description: 'Embedding model dùng chung cho hệ thống.',
-                provider: 'ollama',
-                runtimeModelName: 'qwen3-embedding:latest',
+                provider: 'gemini',
+                runtimeModelName: 'models/text-embedding-004',
                 badge: 'Offline',
                 disabled: true,
                 available: false,
@@ -670,7 +670,7 @@ export class AIService {
                 supportsStructuredOutput: false,
                 specs: [
                     { label: 'Trạng thái', value: 'AI service offline' },
-                    { label: 'Runtime', value: 'qwen3-embedding:latest' },
+                    { label: 'Provider', value: 'Google' },
                 ],
             },
             generationModels: [generationModel],

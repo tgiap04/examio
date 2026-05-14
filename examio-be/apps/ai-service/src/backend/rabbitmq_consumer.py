@@ -178,7 +178,7 @@ class RabbitMQConsumer:
         type_result: int,
         quantity_quizz: int,
         quantity_flashcard: int,
-        model_type: str = "qwen3_8b"
+        model_type: str = "minimax-m2.5-free"
     ):
         """
         Auto-generate quiz or flashcard after OCR completes.

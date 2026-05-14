@@ -96,7 +96,7 @@ async def test_graph_rag_with_answer(query: str):
     retriever = GraphRoutedRetriever(
         graph=graph,
         partitioner=partitioner,
-        embeddings_model="nomic-embed-text:latest",
+        embeddings_model=None,
         k=10,  # FINAL: Top-10 sent to LLM (balance context size)
         internal_k=30,  # INTERNAL: Expand from 30*2.5=75 candidates (NOW WORKS!)
         hop_depth=3,  # Moderate hop depth for good coverage

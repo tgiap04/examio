@@ -43,7 +43,7 @@ def _trim_chat_history(history: List[Dict[str, str]]) -> List[Dict[str, str]]:
 class SimpleChatAgent:
     """Simplified chat agent without LangGraph to avoid recursion issues"""
 
-    def __init__(self, custom_retriever=None, model_name: Optional[str] = None, model_type: str = "qwen3_8b", pre_context: Optional[str] = None, system_prompt: Optional[str] = None):
+    def __init__(self, custom_retriever=None, model_name: Optional[str] = None, model_type: str = "minimax-m2.5-free", pre_context: Optional[str] = None, system_prompt: Optional[str] = None):
         """Initialize the Simple Chat Agent
 
         Args:

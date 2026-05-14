@@ -293,7 +293,7 @@ const JOB_POLL_INTERVAL_MS = 10_000;
 const JOB_POLL_MAX_ATTEMPTS = 360;
 
 // Helper function for polling job status
-// Extended timeout: 360 attempts * 10s = 60 minutes (Ollama/local AI can be slow for large jobs)
+// Extended timeout: 360 attempts * 10s = 60 minutes (AI provider can be slow for large jobs)
 const pollJobStatus = async (
   jobId: string,
   onProgress: (progress: number) => void,
