@@ -81,16 +81,6 @@ async def lifespan(app: FastAPI):
         logger.error(f'Failed to ensure tutor dataset import schema: {e}')
 
     try:
-        from .services.student_programming_chat_service import (
-            student_programming_chat_service,
-        )
-
-        await student_programming_chat_service.ensure_schema()
-        logger.info('Student programming chat schema ensured')
-    except Exception as e:
-        logger.error(f'Failed to ensure student programming chat schema: {e}')
-
-    try:
         from .services.benchmark_index_service import benchmark_index_service
 
         await benchmark_index_service.seed_from_fixtures()

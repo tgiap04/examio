@@ -7,8 +7,6 @@ import RegisterPage from "@/pages/auth/RegisterPage";
 import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
 import KRootRedirect from "@/pages/k/KRootRedirect";
-import DashboardStudentPage from "@/pages/k/DashboardStudentPage";
-import DashboardTeacherPage from "@/pages/k/DashboardTeacherPage";
 import ProfilePage from "@/pages/k/ProfilePage";
 import VerifyPage from "@/pages/k/VerifyPage";
 import SubscriptionPage from "@/pages/k/SubscriptionPage";
@@ -16,7 +14,6 @@ import MyMaterialsPage from "@/pages/k/MyMaterialsPage";
 import FlashcardsPage from "@/pages/k/FlashcardsPage";
 import HistoryPage from "@/pages/k/HistoryPage";
 import AITeacherPage from "@/pages/k/AITeacherPage";
-import AIStudentPage from "@/app/k/ai-student/page";
 import ExamHistoryPage from "@/pages/k/ExamHistoryPage";
 import PDFHistoryPage from "@/pages/k/PDFHistoryPage";
 import FlashcardStudyPage from "@/pages/study-flashcard/FlashcardStudyPage";
@@ -122,26 +119,6 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/k/dashboard-student",
-    element: (
-      <ProtectedRoute>
-        <KLayout>
-          <DashboardStudentPage />
-        </KLayout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/k/dashboard-teacher",
-    element: (
-      <ProtectedRoute>
-        <KLayout>
-          <DashboardTeacherPage />
-        </KLayout>
-      </ProtectedRoute>
-    ),
-  },
-  {
     path: "/k/profile",
     element: (
       <ProtectedRoute>
@@ -197,20 +174,6 @@ export const router = createBrowserRouter([
       <ProtectedRoute>
         <KLayout>
           <HistoryPage />
-        </KLayout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/k/ai-teacher",
-    element: <Navigate to="/k/student-programming" replace />,
-  },
-  {
-    path: "/k/student-programming",
-    element: (
-      <ProtectedRoute>
-        <KLayout>
-          <AIStudentPage />
         </KLayout>
       </ProtectedRoute>
     ),

@@ -1,15 +1,14 @@
 "use client";
 import * as React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Logo from "@/components/atoms/Logo";
 import {
-  Bot,
   BookOpen,
   Clock as ClockIcon,
   Coins as TokensIcon,
   GraduationCap,
-  LayoutDashboard as DashboardIcon,
   Library,
+  LogOut,
   PanelsTopLeft as CardStackIcon,
   Rocket as RocketIcon,
   ScrollText as ReaderIcon,
@@ -30,13 +29,14 @@ interface Profile {
 }
 
 export function SidebarKit() {
-  const { user, getUser } = useAuthStore();
+  const { user, getUser, logout } = useAuthStore();
   const [profile, setProfile] = React.useState<Profile>({
     name: "",
     email: "",
     avatar: "",
   });
   const { pathname: currentPath } = useLocation();
+  const navigate = useNavigate();
   const isDesktop = useIsDesktop();
   const [mounted, setMounted] = React.useState(false);
 
@@ -63,20 +63,6 @@ export function SidebarKit() {
 
   const itemSiderbar = [
     {
-      name: "Dashboard",
-      href: "/k/dashboard-teacher",
-      icon: <DashboardIcon className="w-5 h-5" />,
-      label: "Dashboard",
-      active: currentPath === "/k/dashboard-teacher",
-    },
-    {
-      name: "Dashboard Student",
-      href: "/k/dashboard-student",
-      icon: <DashboardIcon className="w-5 h-5" />,
-      label: "Dashboard",
-      active: currentPath === "/k/dashboard-student",
-    },
-    {
       name: "Ai Tool",
       href: "/k/ai-tool",
       icon: <RocketIcon className="w-5 h-5" />,
@@ -90,13 +76,6 @@ export function SidebarKit() {
       label: "Kho tri thức GenAI",
       active: currentPath === "/k/genai-knowledge",
       restrictedByPolicy: true,
-    },
-    {
-      name: "Student Programming",
-      href: "/k/student-programming",
-      icon: <Bot />,
-      label: "Lập trình AI",
-      active: currentPath === "/k/student-programming",
     },
     {
       name: "My Materials",
@@ -157,6 +136,11 @@ export function SidebarKit() {
     return true;
   });
 
+  const handleLogout = async () => {
+    await logout();
+    navigate("/");
+  };
+
   // For mobile FloatingDock
   const primaryDockItems = filteredSidebarItems
     .slice(0, 5)
@@ -198,44 +182,52 @@ export function SidebarKit() {
 
       {/* Desktop: Sidebar - Only render on desktop */}
       {isDesktop && (
-        <aside className="fixed inset-y-0 left-0 flex w-[250px] flex-col justify-between gap-y-3 border-r border-hairline bg-surface-soft px-4 py-4 text-ink">
-          <div className="mt-2 flex flex-col gap-y-4">
-            <Logo sizeLogo={28} sizeText={20} />
-
-            <nav
-              className="mb-2 flex w-full flex-col gap-y-1.5"
-              aria-label="Dashboard navigation"
-            >
-              {filteredSidebarItems.map((item, index) => (
-                <Link
-                  key={index}
-                  to={item.href}
-                  aria-current={item.active ? "page" : undefined}
-                  className={`group flex w-full items-center gap-x-3 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
-                    item.active
-                      ? "border-hairline bg-surface-card text-ink shadow-[0_1px_3px_rgba(20,20,19,0.08)]"
-                      : "border-transparent text-muted-foreground hover:bg-surface-card/70 hover:text-ink"
-                  }`}
-                >
-                  <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-md transition-colors ${
-                      item.active
-                        ? "bg-coral text-primary-foreground"
-                        : "bg-canvas text-muted-foreground group-hover:text-coral"
-                    }`}
-                  >
-                    {item.icon}
-                  </span>
-                  <span>{item.label}</span>
-                </Link>
-              ))}
-            </nav>
+        <aside className="fixed inset-y-0 left-0 flex w-[272px] flex-col border-r border-hairline bg-canvas text-ink">
+          <div className="border-b border-hairline px-5 py-5">
+            <Logo sizeLogo={34} sizeText={22} />
           </div>
 
-          <div className="mb-2 flex w-full flex-col gap-y-2 border-t border-hairline pt-3">
-            <div className="mt-2">
+          <nav
+            className="flex-1 space-y-1.5 overflow-y-auto px-3 py-4"
+            aria-label="Dashboard navigation"
+          >
+            {filteredSidebarItems.map((item, index) => (
+              <Link
+                key={index}
+                to={item.href}
+                aria-current={item.active ? "page" : undefined}
+                className={`group flex min-h-11 w-full items-center gap-x-3 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral ${
+                  item.active
+                    ? "border-hairline bg-surface-card text-ink shadow-[0_1px_3px_rgba(20,20,19,0.08)]"
+                    : "border-transparent text-muted-foreground hover:bg-surface-soft hover:text-ink"
+                }`}
+              >
+                <span
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors ${
+                    item.active
+                      ? "bg-coral text-primary-foreground"
+                      : "bg-surface-soft text-muted-foreground group-hover:bg-surface-card group-hover:text-coral"
+                  }`}
+                >
+                  {item.icon}
+                </span>
+                <span className="truncate">{item.label}</span>
+              </Link>
+            ))}
+          </nav>
+
+          <div className="border-t border-hairline bg-surface-soft/70 px-4 py-4">
+            <div className="rounded-lg border border-hairline bg-canvas p-3">
               <ProfileDropdown data={profile} />
             </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-surface-dark bg-surface-dark px-3 py-2.5 text-sm font-medium text-on-dark transition-colors hover:bg-surface-dark-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral"
+            >
+              <LogOut className="h-4 w-4" />
+              Đăng xuất
+            </button>
           </div>
         </aside>
       )}

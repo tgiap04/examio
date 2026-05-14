@@ -34,7 +34,6 @@ export function AppProviders({ children }: PropsWithChildren) {
       <ThemeProvider
         attribute="class"
         defaultTheme="light"
-        forcedTheme="light"
         enableSystem={false}
         disableTransitionOnChange
       >

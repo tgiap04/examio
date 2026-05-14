@@ -25,7 +25,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "relative rounded-lg border border-border bg-card p-6 shadow-sm",
+        "relative rounded-lg border border-hairline bg-surface-card p-6 shadow-none",
         className
       )}>
       <div className="flex items-start justify-between mb-4">

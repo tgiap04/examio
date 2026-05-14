@@ -1,17 +1,23 @@
-import type { PropsWithChildren } from "react";
+import { type FormEvent, type PropsWithChildren, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import { AlertTriangle, Mail, X } from "lucide-react";
+import { AlertTriangle, Languages, Mail, Moon, PanelLeft, Search, Sun, X } from "lucide-react";
+import ProfileDropdown from "@/components/atoms/ProfileDropdown";
 import { SidebarKit } from "@/components/organisms/k/SideBar";
 import { PendingJobDialog } from "@/components/organisms/PendingJobDialog";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useJobStore } from "@/stores/useAIGeneratorStore";
+import { useThemeContext } from "@/provider/ThemeProvider";
 
 export function KLayout({ children }: PropsWithChildren) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, sendVerificationEmail, loading } = useAuthStore();
+  const profile = {
+    name: user?.name || user?.username || "Người dùng",
+    email: user?.email || "",
+    avatar: user?.avatar || "",
+  };
   const {
     showPendingJobDialog,
     resumePendingJob,
@@ -21,6 +27,9 @@ export function KLayout({ children }: PropsWithChildren) {
   const [showVerifyAlert, setShowVerifyAlert] = useState(true);
   const [sendingEmail, setSendingEmail] = useState(false);
   const [isCancelingJob, setIsCancelingJob] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [language, setLanguage] = useState<"VI" | "EN">("VI");
+  const { isDarkMode, setTheme } = useThemeContext();
 
   const handleResendVerification = async () => {
     setSendingEmail(true);
@@ -49,6 +58,34 @@ export function KLayout({ children }: PropsWithChildren) {
 
   const showVerificationBanner = user && user.isVerified === false && showVerifyAlert;
 
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const query = searchQuery.trim();
+
+    if (!query) {
+      navigate("/k/my-materials");
+      return;
+    }
+
+    const normalized = query.toLowerCase();
+    if (normalized.includes("flash")) {
+      navigate(`/k/flash-card?search=${encodeURIComponent(query)}`);
+      return;
+    }
+
+    if (normalized.includes("phòng") || normalized.includes("room")) {
+      navigate(`/k/manage-exam-room?search=${encodeURIComponent(query)}`);
+      return;
+    }
+
+    if (normalized.includes("đề") || normalized.includes("thi") || normalized.includes("exam")) {
+      navigate(`/k/manage-exam?search=${encodeURIComponent(query)}`);
+      return;
+    }
+
+    navigate(`/k/my-materials?search=${encodeURIComponent(query)}`);
+  };
+
   return (
     <div
       className={cn(
@@ -57,9 +94,9 @@ export function KLayout({ children }: PropsWithChildren) {
     >
       <SidebarKit />
 
-      <div className="m-0 w-full pb-20 pt-12 md:ml-[250px]">
+      <main className="m-0 w-full pb-20 pt-20 md:ml-[272px]">
         {showVerificationBanner && (
-          <div className="mx-3 mt-3 flex w-auto flex-col items-start justify-between gap-2 rounded-lg border border-warning/25 bg-warning/10 px-3 py-2 text-body shadow-[0_1px_3px_rgba(20,20,19,0.08)] sm:flex-row sm:items-center sm:gap-4 sm:px-4 sm:py-2.5">
+          <div className="mx-4 mt-4 flex w-auto flex-col items-start justify-between gap-2 rounded-lg border border-warning/25 bg-warning/10 px-3 py-2 text-body shadow-[0_1px_3px_rgba(20,20,19,0.08)] sm:flex-row sm:items-center sm:gap-4 sm:px-4 sm:py-2.5">
             <div className="flex flex-1 items-center gap-3">
               <AlertTriangle className="h-5 w-5 flex-shrink-0 text-warning" />
               <p className="text-xs font-medium sm:text-sm">
@@ -70,7 +107,7 @@ export function KLayout({ children }: PropsWithChildren) {
               <button
                 onClick={handleResendVerification}
                 disabled={sendingEmail || loading}
-                className="flex items-center gap-1.5 rounded-md border border-warning/30 bg-canvas px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-surface-card disabled:opacity-50"
+                className="flex min-h-9 items-center gap-1.5 rounded-md border border-warning/30 bg-canvas px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-surface-card disabled:opacity-50"
               >
                 <Mail className="h-3.5 w-3.5" />
                 {sendingEmail ? "Đang gửi..." : "Gửi lại email"}
@@ -78,13 +115,15 @@ export function KLayout({ children }: PropsWithChildren) {
               <Link
                 to="/k/verify"
                 state={{ from: location.pathname }}
-                className="rounded-md bg-coral px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-coral-active"
+                className="flex min-h-9 items-center rounded-md bg-coral px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-coral-active"
               >
                 Xác minh ngay
               </Link>
               <button
+                type="button"
+                aria-label="Ẩn thông báo xác minh"
                 onClick={() => setShowVerifyAlert(false)}
-                className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-surface-card hover:text-ink"
+                className="grid h-9 w-9 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-surface-card hover:text-ink"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -92,17 +131,53 @@ export function KLayout({ children }: PropsWithChildren) {
           </div>
         )}
 
-        <header className="fixed left-0 right-0 top-0 z-50 w-full border-b border-hairline bg-canvas/90 backdrop-blur-sm md:left-[250px] md:w-[calc(100%-250px)]">
-          <div className="container mx-auto w-full px-2 py-1">
-            <div className="flex w-full items-center justify-between">
-              <div className="flex items-center gap-3" />
-              <div className="flex items-center justify-between gap-x-3" />
+        <header className="fixed left-0 right-0 top-0 z-50 w-full border-b border-hairline bg-canvas/95 backdrop-blur-md md:left-[272px] md:w-[calc(100%-272px)]">
+          <div className="flex min-h-16 w-full items-center justify-between gap-3 px-4 md:px-6 lg:px-8">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-hairline bg-surface-card text-coral md:hidden">
+                <PanelLeft className="h-5 w-5" />
+              </span>
+            </div>
+
+            <form
+              onSubmit={handleSearch}
+              className="hidden min-h-11 w-full max-w-sm items-center gap-2 rounded-lg border border-hairline bg-surface-soft px-3 text-sm text-muted-foreground transition-colors focus-within:border-coral focus-within:bg-canvas lg:flex"
+            >
+              <Search className="h-4 w-4" />
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                className="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-muted-foreground"
+                placeholder="Tìm tài liệu, đề thi, phòng thi..."
+                aria-label="Tìm kiếm trong workspace"
+              />
+            </form>
+
+            <div className="ml-auto flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setLanguage((current) => current === "VI" ? "EN" : "VI")}
+                className="hidden min-h-10 items-center gap-2 rounded-lg border border-hairline bg-surface-soft px-3 text-sm font-medium text-body transition-colors hover:bg-surface-card hover:text-ink sm:flex"
+                aria-label="Chọn ngôn ngữ"
+              >
+                <Languages className="h-4 w-4 text-coral" />
+                {language}
+              </button>
+              <button
+                type="button"
+                onClick={() => setTheme(isDarkMode ? "light" : "dark")}
+                className="grid h-10 w-10 place-items-center rounded-lg border border-hairline bg-surface-soft text-body transition-colors hover:bg-surface-card hover:text-ink"
+                aria-label={isDarkMode ? "Bật giao diện sáng" : "Bật giao diện tối"}
+              >
+                {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+              <ProfileDropdown data={profile} variant="header" />
             </div>
           </div>
         </header>
 
         {children}
-      </div>
+      </main>
 
       <PendingJobDialog
         open={showPendingJobDialog}

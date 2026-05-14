@@ -16,7 +16,7 @@ export default function KRootRedirect() {
       return;
     }
 
-    navigate("/k/dashboard-student", { replace: true });
+    navigate("/k/my-materials", { replace: true });
   }, [initializing, isAuthenticated, navigate]);
 
   return (

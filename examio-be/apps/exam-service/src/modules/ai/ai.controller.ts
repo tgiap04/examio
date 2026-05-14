@@ -10,7 +10,6 @@ import {
     Query,
     UseGuards,
     Req,
-    Res,
     UseInterceptors,
     UploadedFile,
     Logger,
@@ -27,18 +26,15 @@ import {
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard, AuthenticatedRequest } from '@examio/common';
-import { Response } from 'express';
 import { AIService } from './ai.service';
 import {
     UploadFileDto,
     RegenerateDto,
-    StudentProgrammingEvaluateDto,
     UploadImageDto,
     GenerateFromFileDto,
     TutorIngestDto,
     TutorKnowledgeFolderDto,
     TutorKnowledgeUploadDto,
-    TutorQueryDto,
 } from './dto/ai.dto';
 
 @ApiTags('AI')
@@ -369,129 +365,6 @@ export class AIController {
     @ApiOperation({ summary: 'Lấy chi tiết tutor ingest job' })
     async getTutorIngestJob(@Param('jobId') jobId: string) {
         return this.aiService.getTutorIngestJob(jobId);
-    }
-
-    @Post('tutor/query')
-    @UseGuards(AuthGuard)
-    @ApiCookieAuth('cookie-auth')
-    @ApiOperation({ summary: 'Hỏi tutor' })
-    async tutorQuery(@Body() dto: TutorQueryDto) {
-        return this.aiService.tutorQuery(dto);
-    }
-
-    @Post('tutor/stream')
-    @UseGuards(AuthGuard)
-    @ApiCookieAuth('cookie-auth')
-    @ApiOperation({ summary: 'Hỏi tutor với streaming' })
-    async tutorStream(@Body() dto: TutorQueryDto, @Req() req: AuthenticatedRequest, @Res() res: Response) {
-        res.setHeader('Content-Type', 'text/event-stream');
-        res.setHeader('Cache-Control', 'no-cache');
-        res.setHeader('Connection', 'keep-alive');
-        res.write(`data: ${JSON.stringify({ type: 'started' })}\n\n`);
-
-        const observable = await this.aiService.tutorStream(dto);
-        const subscription = observable.subscribe({
-            next: (event) => {
-                res.write(`data: ${JSON.stringify(event)}\n\n`);
-            },
-            error: (err) => {
-                res.write(`data: ${JSON.stringify({ type: 'error', data: err.message })}\n\n`);
-                res.end();
-            },
-            complete: () => {
-                res.end();
-            },
-        });
-
-        req.on('close', () => {
-            subscription.unsubscribe();
-        });
-    }
-
-    @Get('tutor/student-programming/sessions')
-    @UseGuards(AuthGuard)
-    @ApiCookieAuth('cookie-auth')
-    async listStudentProgrammingSessions(@Req() req: AuthenticatedRequest) {
-        return this.aiService.listStudentProgrammingSessions(req.user);
-    }
-
-    @Post('tutor/student-programming/sessions')
-    @UseGuards(AuthGuard)
-    @ApiCookieAuth('cookie-auth')
-    async createStudentProgrammingSession(
-        @Req() req: AuthenticatedRequest,
-        @Body() body: { title?: string }
-    ) {
-        return this.aiService.createStudentProgrammingSession(req.user, body?.title);
-    }
-
-    @Patch('tutor/student-programming/sessions/:sessionId')
-    @UseGuards(AuthGuard)
-    @ApiCookieAuth('cookie-auth')
-    async updateStudentProgrammingSession(
-        @Req() req: AuthenticatedRequest,
-        @Param('sessionId') sessionId: string,
-        @Body() body: { title: string }
-    ) {
-        return this.aiService.updateStudentProgrammingSession(req.user, sessionId, body.title);
-    }
-
-    @Delete('tutor/student-programming/sessions/:sessionId')
-    @UseGuards(AuthGuard)
-    @ApiCookieAuth('cookie-auth')
-    async deleteStudentProgrammingSession(
-        @Req() req: AuthenticatedRequest,
-        @Param('sessionId') sessionId: string
-    ) {
-        return this.aiService.deleteStudentProgrammingSession(req.user, sessionId);
-    }
-
-    @Get('tutor/student-programming/sessions/:sessionId/messages')
-    @UseGuards(AuthGuard)
-    @ApiCookieAuth('cookie-auth')
-    async listStudentProgrammingMessages(
-        @Req() req: AuthenticatedRequest,
-        @Param('sessionId') sessionId: string
-    ) {
-        return this.aiService.listStudentProgrammingMessages(req.user, sessionId);
-    }
-
-    @Post('tutor/student-programming/sessions/:sessionId/messages')
-    @UseGuards(AuthGuard)
-    @ApiCookieAuth('cookie-auth')
-    async createStudentProgrammingMessage(
-        @Req() req: AuthenticatedRequest,
-        @Param('sessionId') sessionId: string,
-        @Body()
-        body: {
-            content: string;
-            role: 'assistant' | 'user';
-            sources?: any[];
-            confidence?: number;
-            modelUsed?: string;
-        }
-    ) {
-        return this.aiService.createStudentProgrammingMessage(req.user, sessionId, body);
-    }
-
-    @Post('tutor/student-programming/evaluate')
-    @UseGuards(AuthGuard)
-    @ApiCookieAuth('cookie-auth')
-    async evaluateStudentProgrammingAnswer(
-        @Req() req: AuthenticatedRequest,
-        @Body() body: StudentProgrammingEvaluateDto
-    ) {
-        return this.aiService.evaluateStudentProgrammingAnswer(req.user, body);
-    }
-
-    @Get('tutor/student-programming/evaluate/:jobId')
-    @UseGuards(AuthGuard)
-    @ApiCookieAuth('cookie-auth')
-    async getStudentProgrammingEvaluationJob(
-        @Req() req: AuthenticatedRequest,
-        @Param('jobId') jobId: string
-    ) {
-        return this.aiService.getStudentProgrammingEvaluationJob(req.user, jobId);
     }
 
     @Get('tutor/graph/job/:jobId')

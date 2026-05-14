@@ -2,9 +2,8 @@
 
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { LogOut, Settings, User as PersonIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { User as PersonIcon } from "lucide-react";
-import { ArrowLeftStartOnRectangleIcon } from "@heroicons/react/24/solid";
 import { useAuthStore } from "@/stores/useAuthStore";
 import {
   DropdownMenu,
@@ -22,12 +21,9 @@ interface Profile {
   model?: string;
 }
 
-interface MenuItem {
-  label: string;
-  value?: string;
-  href: string;
-  icon: React.ReactNode;
-  external?: boolean;
+interface ProfileDropdownProps extends React.HTMLAttributes<HTMLDivElement> {
+  data?: Profile;
+  variant?: "sidebar" | "header";
 }
 
 const SAMPLE_PROFILE_DATA: Profile = {
@@ -37,165 +33,106 @@ const SAMPLE_PROFILE_DATA: Profile = {
   subscription: "PRO",
 };
 
-interface ProfileDropdownProps extends React.HTMLAttributes<HTMLDivElement> {
-  data?: Profile;
-  showTopbar?: boolean;
-}
-
 export default function ProfileDropdown({
   data = SAMPLE_PROFILE_DATA,
   className,
+  variant = "sidebar",
   ...props
 }: ProfileDropdownProps) {
-  const [isOpen, setIsOpen] = React.useState(false);
   const navigate = useNavigate();
   const { logout } = useAuthStore();
+  const compact = variant === "header";
 
   const handleLogout = async () => {
     await logout();
     navigate("/");
   };
 
-  const menuItems: MenuItem[] = [
-    {
-      label: "Hồ sơ",
-      href: "/k/profile",
-      icon: <PersonIcon className="w-4 h-4" />,
-    },
-    // FREE_MODE: Ẩn menu Subscription - uncomment để bật lại
-    // {
-    //   label: "Subscription",
-    //   value: data.subscription || "Free",
-    //   href: "/k/subscription",
-    //   icon: <CardStackMinusIcon className="w-4 h-4" />,
-    // },
-  ];
-
   return (
     <div className={cn("relative", className)} {...props}>
-      <DropdownMenu onOpenChange={setIsOpen}>
-        <div className="group relative">
-          <DropdownMenuTrigger asChild>
-            <button
-              type="button"
-              className="flex items-center gap-16 focus:outline-none cursor-pointer justify-between"
-            >
-              <div className="text-left flex-1">
-                <div className="text-sm font-medium text-zinc-900 tracking-tight leading-tight">
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            className={cn(
+              "flex min-h-11 w-full items-center rounded-lg text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral",
+              compact
+                ? "justify-center gap-2 border border-hairline bg-surface-soft px-2 hover:bg-surface-card"
+                : "justify-between gap-3 hover:bg-surface-soft",
+            )}
+          >
+            {!compact && (
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium leading-tight text-ink">
                   {data.name}
                 </div>
-                <div className="text-xs text-zinc-500 tracking-tight leading-tight">
+                <div className="truncate text-xs leading-tight text-muted-foreground">
                   {data.email}
                 </div>
               </div>
-              <div className="relative">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 p-0.5">
-                  <div className="w-full h-full rounded-full overflow-hidden bg-white">
-                    <img
-                      src={data.avatar || "/avt-default.webp"}
-                      alt={data.name}
-                      width={36}
-                      height={36}
-                      className="w-full h-full object-cover rounded-full"
-                    />
-                  </div>
-                </div>
-              </div>
-            </button>
-          </DropdownMenuTrigger>
-
-          {/* Bending line indicator on the right */}
-          <div
-            className={cn(
-              "absolute -right-3 top-1/2 -translate-y-1/2 transition-all duration-200",
-              isOpen ? "opacity-100" : "opacity-60 group-hover:opacity-100",
             )}
-          >
-            <svg
-              width="12"
-              height="24"
-              viewBox="0 0 12 24"
-              fill="none"
-              className={cn(
-                "transition-all duration-200",
-                isOpen
-                  ? "text-primary scale-110"
-                  : "text-zinc-400 group-hover:text-zinc-600",
+            <div className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-full border border-hairline bg-surface-card">
+              {data.avatar ? (
+                <img
+                  src={data.avatar}
+                  alt={data.name}
+                  width={40}
+                  height={40}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <PersonIcon className="h-5 w-5 text-coral" />
               )}
-              aria-hidden="true"
-            >
-              <path
-                d="M2 4C6 8 6 16 2 20"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                fill="none"
-              />
-            </svg>
+            </div>
+          </button>
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent
+          side={compact ? "bottom" : "left"}
+          align="end"
+          sideOffset={8}
+          className="z-[1000] w-64 rounded-lg border border-hairline bg-canvas p-2 text-ink shadow-[0_12px_30px_rgba(20,20,19,0.12)]"
+        >
+          <div className="px-3 py-2">
+            <p className="truncate text-sm font-medium text-ink">{data.name}</p>
+            <p className="truncate text-xs text-muted-foreground">{data.email}</p>
           </div>
 
-          <DropdownMenuContent
-            side="left"
-            align="end"
-            sideOffset={4}
-            className="w-fit p-2 bg-white/95 backdrop-blur-sm border border-border/60 rounded-2xl shadow-xl shadow-zinc-900/5
-                    data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 origin-top-right z-[1000]"
-          >
-            <div className="space-y-1">
-              {menuItems.map((item) => (
-                <DropdownMenuItem
-                  key={item.label}
-                  asChild
-                  className="hover:bg-[#fef2f2] hover:text-[#e31837] rounded-sm focus:bg-[#fef2f2] focus-visible:bg-[#fef2f2]"
-                >
-                  <Link
-                    to={item.href}
-                    className="flex items-center p-3 transition-all duration-200 cursor-pointer group hover:bg-[#fef2f2] hover:text-[#e31837] rounded-sm focus:outline-none focus-visible:outline-none"
-                  >
-                    <div className="flex items-center gap-2 flex-1">
-                      {item.icon}
-                      <span className="text-sm font-medium text-zinc-900 tracking-tight leading-tight whitespace-nowrap transition-colors">
-                        {item.label}
-                      </span>
-                    </div>
-                    <div className="flex-shrink-0 ml-auto">
-                      {item.value && (
-                        <span
-                          className={cn(
-                            "text-xs font-medium rounded-md py-1 px-2 tracking-tight",
-                            item.label === "Model"
-                              ? "text-primary bg-red-50 border border-primary/10"
-                              : "text-yellow-600 bg-purple-50 border border-yellow-500/10",
-                          )}
-                        >
-                          {item.value}
-                        </span>
-                      )}
-                    </div>
-                  </Link>
-                </DropdownMenuItem>
-              ))}
-            </div>
+          <DropdownMenuSeparator className="my-2 bg-hairline" />
 
-            <DropdownMenuSeparator className="my-3 bg-gradient-to-r from-transparent via-zinc-200 to-transparent" />
-
-            <DropdownMenuItem
-              asChild
-              className="focus:bg-red-500/20 focus-visible:bg-red-500/20 "
+          <DropdownMenuItem asChild>
+            <Link
+              to="/k/profile"
+              className="flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-body transition-colors hover:bg-surface-soft hover:text-ink focus:bg-surface-soft"
             >
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 p-3 duration-200 bg-red-500/10 rounded-sm hover:bg-red-500/20 cursor-pointer transition-all group focus:outline-none focus-visible:outline-none"
-              >
-                <ArrowLeftStartOnRectangleIcon className="w-4 h-4 text-red-500 group-hover:text-red-600" />
-                <span className="text-sm font-medium text-red-500 group-hover:text-red-600">
-                  Sign Out
-                </span>
-              </button>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </div>
+              <PersonIcon className="h-4 w-4 text-coral" />
+              Hồ sơ
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuItem asChild>
+            <Link
+              to="/k/settings"
+              className="flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-body transition-colors hover:bg-surface-soft hover:text-ink focus:bg-surface-soft"
+            >
+              <Settings className="h-4 w-4 text-accent-amber" />
+              Cài đặt
+            </Link>
+          </DropdownMenuItem>
+
+          <DropdownMenuSeparator className="my-2 bg-hairline" />
+
+          <DropdownMenuItem asChild>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-error transition-colors hover:bg-error/10 focus:bg-error/10"
+            >
+              <LogOut className="h-4 w-4" />
+              Đăng xuất
+            </button>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
       </DropdownMenu>
     </div>
   );

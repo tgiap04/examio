@@ -41,7 +41,6 @@ import { R2ProxyController } from './controllers/r2-proxy.controller';
 
 // Webhook (external callbacks)
 import { WebhookProxyController } from './controllers/webhook-proxy.controller';
-import { StatisticsProxyController } from './controllers/statistics-proxy.controller';
 import { StudentProxyController } from './controllers/student-proxy.controller';
 
 @Module({
@@ -85,8 +84,6 @@ import { StudentProxyController } from './controllers/student-proxy.controller';
         R2ProxyController,
         // Webhook (external callbacks)
         WebhookProxyController,
-        // Statistics
-        StatisticsProxyController,
         // Student
         StudentProxyController,
     ],

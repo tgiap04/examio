@@ -142,7 +142,10 @@ export default function HeaderSection() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className={cn(isScrolled && "lg:hidden")}
+                    className={cn(
+                      isScrolled && "lg:hidden",
+                      "!h-10 !rounded-full !border-hairline !bg-canvas/85 !px-5 !text-sm !font-semibold !text-ink !shadow-[0_8px_24px_rgba(20,20,19,0.08)] backdrop-blur hover:!border-coral/40 hover:!bg-surface-card",
+                    )}
                     onClick={() => navigate("/login")}
                   >
                     <span>Đăng nhập</span>
@@ -151,7 +154,7 @@ export default function HeaderSection() {
                     size="sm"
                     className={cn(
                       isScrolled && "lg:hidden",
-                      "bg-primary hover:bg-coral-active text-white",
+                      "!h-10 !rounded-full !border-coral !bg-coral !px-5 !text-sm !font-semibold !text-white !shadow-[0_10px_24px_rgba(204,120,92,0.22)] hover:!bg-coral-active",
                     )}
                     onClick={() => navigate("/register")}
                   >
@@ -161,7 +164,7 @@ export default function HeaderSection() {
                     size="sm"
                     className={cn(
                       isScrolled ? "lg:inline-flex" : "hidden",
-                      "bg-primary hover:bg-coral-active text-white",
+                      "!h-10 !rounded-full !border-surface-dark !bg-surface-dark !px-5 !text-sm !font-semibold !text-on-dark !shadow-[0_10px_24px_rgba(20,20,19,0.18)] hover:!bg-surface-dark-elevated",
                     )}
                     onClick={() => navigate("/login")}
                   >

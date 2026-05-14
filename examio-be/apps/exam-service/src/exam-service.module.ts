@@ -22,7 +22,6 @@ import { AIModule } from './modules/ai/ai.module';
 import { AIChatModule } from './modules/ai-chat/ai-chat.module';
 import { FinanceClientModule } from './modules/finance-client/finance-client.module';
 import { R2Module } from './modules/r2/r2.module';
-import { StatisticsModule } from './modules/statistics/statistics.module';
 import { StudentModule } from './modules/student/student.module';
 
 @Module({
@@ -42,7 +41,6 @@ import { StudentModule } from './modules/student/student.module';
         AIModule,
         AIChatModule,
         R2Module,
-        StatisticsModule,
         StudentModule,
     ],
     controllers: [ExamServiceController],
