@@ -370,6 +370,34 @@ async def get_graph_stats(user_storage_id: str):
     }
 
 
+@router.post("/extract-entities/{user_storage_id}")
+async def extract_entities(user_storage_id: str):
+    """Extract educational entities from a processed file (background-safe)."""
+    from src.backend.services.entity_extraction_service import entity_extraction_service
+
+    file_info = await ocr_service.get_file_info(user_storage_id)
+    if not file_info:
+        raise HTTPException(status_code=404, detail="File not found")
+    if file_info.processing_status != "COMPLETED":
+        raise HTTPException(status_code=400, detail=f"File chưa được xử lý: {file_info.processing_status}")
+
+    result = await entity_extraction_service.extract_and_persist(user_storage_id)
+    return result
+
+
+@router.get("/entities/{user_storage_id}")
+async def get_entities(user_storage_id: str):
+    """Get extracted entities for a document."""
+    from src.backend.services.entity_extraction_service import entity_extraction_service
+
+    file_info = await ocr_service.get_file_info(user_storage_id)
+    if not file_info:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    entities = await entity_extraction_service.get_entities_for_document(user_storage_id)
+    return {"success": True, "count": len(entities), "entities": entities}
+
+
 @router.delete("/clear-cache/{user_storage_id}")
 async def clear_retriever_cache(user_storage_id: str):
     """Clear retriever cache for a file"""

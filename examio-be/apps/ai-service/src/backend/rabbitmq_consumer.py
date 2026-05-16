@@ -4,6 +4,7 @@ RabbitMQ Consumer for OCR Tasks
 This module consumes OCR_REQUESTED events from RabbitMQ and processes files.
 After processing, it publishes OCR_COMPLETED or OCR_FAILED events.
 """
+import asyncio
 import json
 import logging
 import os
@@ -154,6 +155,9 @@ class RabbitMQConsumer:
                     chunks_count = result.get("chunks_count", 0)
                     logger.info(f"OCR completed for {user_storage_id}: {chunks_count} chunks")
 
+                    # Background entity extraction (non-blocking)
+                    asyncio.create_task(self._run_entity_extraction(user_storage_id))
+
                     # Auto-generate quiz/flashcard after OCR
                     await self.auto_generate_content(
                         user_storage_id,
@@ -170,6 +174,22 @@ class RabbitMQConsumer:
 
             except Exception as e:
                 logger.exception(f"Error processing message: {e}")
+
+    async def _run_entity_extraction(self, user_storage_id: str) -> None:
+        """Run entity extraction in background, non-blocking."""
+        try:
+            from src.backend.services.entity_extraction_service import entity_extraction_service
+            result = await entity_extraction_service.extract_and_persist(user_storage_id)
+            if result.get("success"):
+                logger.info(
+                    "[ENTITY] Extraction completed for %s: %s entities",
+                    user_storage_id,
+                    result.get("entities_extracted"),
+                )
+            else:
+                logger.warning("[ENTITY] Extraction failed for %s: %s", user_storage_id, result.get("error"))
+        except Exception as e:
+            logger.warning("[ENTITY] Background extraction error for %s: %s", user_storage_id, e)
 
     async def auto_generate_content(
         self,

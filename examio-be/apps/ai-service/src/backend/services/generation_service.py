@@ -94,10 +94,10 @@ class ContentGenerationService:
 
     _instance = None
     _pool: Optional[asyncpg.Pool] = None
-    MAX_SOURCE_CHUNKS = 8
-    MAX_ITEMS_PER_CALL = 6
-    DEFAULT_GENERATION_MAX_CONCURRENCY = 2
-    DEFAULT_GENERATION_MAX_CONCURRENCY_CAP = 3
+    MAX_SOURCE_CHUNKS = 10
+    MAX_ITEMS_PER_CALL = 12
+    DEFAULT_GENERATION_MAX_CONCURRENCY = 3
+    DEFAULT_GENERATION_MAX_CONCURRENCY_CAP = 5
     MAX_META_OUTPUT_RETRIES = 1
 
     def _describe_group(self, group: GenerationGroup) -> Dict[str, Any]:
@@ -869,6 +869,10 @@ class ContentGenerationService:
 
     def _merge_group_chunks(self, group: GenerationGroup) -> DocumentChunk:
         combined_content = '\n\n'.join(chunk.content for chunk in group.chunks)
+        entity_names = group.metadata.get('entities')
+        if entity_names:
+            entity_hint = '\n\n[KEY CONCEPTS: ' + ', '.join(entity_names) + ']'
+            combined_content += entity_hint
         page_range = (
             f"{group.page_start}-{group.page_end}"
             if group.page_start is not None and group.page_end is not None

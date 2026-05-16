@@ -448,6 +448,7 @@ model UserStorage {
     historyGeneratedQuizz     HistoryGeneratedQuizz[]
     historyGeneratedFlashcard HistoryGeneratedFlashcard[]
     aiChatDocuments           AIChatDocument[]
+    documentEntities          DocumentEntity[]
 }
 
 model Document {
@@ -510,6 +511,22 @@ model UserStorageGraphGroup {
     @@index([userStorageId, groupIndex])
 }
 
+
+model DocumentEntity {
+    id            String   @id @default(cuid())
+    userStorageId String
+    chunkId       String
+    name          String
+    type          String   // concept, definition, formula, process, example, comparison
+    description   String?
+    relatedNames  Json     @default("[]") // Array of related entity names within same document
+    createdAt     DateTime @default(now())
+
+    userStorage UserStorage @relation(fields: [userStorageId], references: [id], onDelete: Cascade)
+
+    @@index([userStorageId])
+    @@index([chunkId])
+}
 
 // Subject Category - Nhóm môn học (VD: Toán học, Khoa học Tự nhiên, ...)
 model SubjectCategory {

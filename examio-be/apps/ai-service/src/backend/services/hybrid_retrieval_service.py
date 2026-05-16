@@ -764,6 +764,10 @@ class HybridRetrievalService:
             seed_chunks=seed_chunks,
             keyword=keyword,
         )
+
+        # Enrich groups with entity context if available
+        await self._enrich_groups_with_entities(user_storage_id, generation_groups)
+
         flattened_chunks: List[DocumentChunk] = []
         seen_chunk_ids: set[str] = set()
         for group in generation_groups:
@@ -865,6 +869,39 @@ class HybridRetrievalService:
         del keyword
         active_groups = [group for _, group in scored_groups[:active_group_count]]
         return sorted(active_groups, key=lambda group: group.group_index)
+
+    async def _enrich_groups_with_entities(
+        self,
+        user_storage_id: str,
+        groups: List[GenerationGroup],
+    ) -> None:
+        """Attach entity names to group metadata for better generation prompts."""
+        try:
+            from src.backend.services.entity_extraction_service import entity_extraction_service
+            if not await entity_extraction_service.has_entities(user_storage_id):
+                return
+
+            entities = await entity_extraction_service.get_entities_for_document(user_storage_id)
+            if not entities:
+                return
+
+            chunk_entities: Dict[str, List[str]] = {}
+            for entity in entities:
+                chunk_id = entity['chunkId']
+                chunk_entities.setdefault(chunk_id, []).append(entity['name'])
+
+            for group in groups:
+                group_entity_names: List[str] = []
+                seen: set[str] = set()
+                for chunk in group.chunks:
+                    for name in chunk_entities.get(chunk.id, []):
+                        if name not in seen:
+                            seen.add(name)
+                            group_entity_names.append(name)
+                if group_entity_names:
+                    group.metadata['entities'] = group_entity_names[:15]
+        except Exception as e:
+            logger.warning("[ENTITY] Enrichment failed for %s: %s", user_storage_id, e)
 
     def clear_graph_cache(self, user_storage_id: str) -> None:
         self._graph_cache.pop(user_storage_id, None)
