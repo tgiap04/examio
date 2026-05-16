@@ -16,11 +16,11 @@ function Drawer({ open, defaultOpen, onOpenChange, children }: React.PropsWithCh
     setInternalOpen(next);
     onOpenChange?.(next);
   }
-  return <DrawerContext.Provider value={{ open: currentOpen, onOpenChange: setOpen }}>{children}</DrawerContext.Provider>;
+  return <DrawerContext value={{ open: currentOpen, onOpenChange: setOpen }}>{children}</DrawerContext>;
 }
 
 function DrawerTrigger({ children }: React.PropsWithChildren) {
-  const context = React.useContext(DrawerContext);
+  const context = React.use(DrawerContext);
   if (React.isValidElement(children)) {
     return React.cloneElement(children as React.ReactElement<any>, { onClick: (event: any) => { (children as React.ReactElement<any>).props.onClick?.(event); context.onOpenChange?.(true); } });
   }
@@ -32,7 +32,7 @@ function DrawerPortal({ children }: React.PropsWithChildren) {
 }
 
 function DrawerClose({ children }: React.PropsWithChildren) {
-  const context = React.useContext(DrawerContext);
+  const context = React.use(DrawerContext);
   if (React.isValidElement(children)) {
     return React.cloneElement(children as React.ReactElement<any>, { onClick: (event: any) => { (children as React.ReactElement<any>).props.onClick?.(event); context.onOpenChange?.(false); } });
   }
@@ -44,7 +44,7 @@ function DrawerOverlay() {
 }
 
 function DrawerContent({ className, children, ...props }: React.ComponentProps<"div">) {
-  const context = React.useContext(DrawerContext);
+  const context = React.use(DrawerContext);
   return <AntDrawer open={context.open} onClose={() => context.onOpenChange?.(false)} placement="bottom" className={className} {...(props as any)}>{children}</AntDrawer>;
 }
 

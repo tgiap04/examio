@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/antd/dropdown-menu";
+import { Facehash } from "facehash";
 
 interface Profile {
   name: string;
@@ -81,7 +82,7 @@ export default function ProfileDropdown({
                   className="h-full w-full object-cover"
                 />
               ) : (
-                <PersonIcon className="h-5 w-5 text-coral" />
+                <Facehash name={data.name} size={40} className="text-coral" />
               )}
             </div>
           </button>

@@ -10,27 +10,27 @@ type AlertDialogContentProps = React.ComponentProps<"div"> & {
 const AlertDialogContext = React.createContext<Ctx>({});
 
 function AlertDialog({ children, open, onOpenChange }: React.PropsWithChildren<Ctx>) {
-  return <AlertDialogContext.Provider value={{ open, onOpenChange }}>{children}</AlertDialogContext.Provider>;
+  return <AlertDialogContext value={{ open, onOpenChange }}>{children}</AlertDialogContext>;
 }
 
 function AlertDialogTrigger({ children, asChild }: React.PropsWithChildren<{ asChild?: boolean }>) {
-  const ctx = React.useContext(AlertDialogContext);
+  const ctx = React.use(AlertDialogContext);
   if (asChild && React.isValidElement(children)) return React.cloneElement(children as React.ReactElement<any>, { onClick: () => ctx.onOpenChange?.(true) });
   return <button type="button" onClick={() => ctx.onOpenChange?.(true)}>{children}</button>;
 }
 
 function AlertDialogContent({ className, children, onEscapeKeyDown, onPointerDownOutside, ...props }: AlertDialogContentProps) {
-  const ctx = React.useContext(AlertDialogContext);
+  const ctx = React.use(AlertDialogContext);
   return <Modal open={ctx.open} onCancel={() => ctx.onOpenChange?.(false)} footer={null} className={className} {...(props as any)}>{children}</Modal>;
 }
 
 function AlertDialogAction({ className, children, ...props }: any) {
-  const ctx = React.useContext(AlertDialogContext);
+  const ctx = React.use(AlertDialogContext);
   return <button className={cn("ant-btn ant-btn-primary", className)} onClick={(event) => { props.onClick?.(event); ctx.onOpenChange?.(false); }} {...props}>{children}</button>;
 }
 
 function AlertDialogCancel({ className, children, ...props }: any) {
-  const ctx = React.useContext(AlertDialogContext);
+  const ctx = React.use(AlertDialogContext);
   return <button className={cn("ant-btn", className)} onClick={() => ctx.onOpenChange?.(false)} {...props}>{children}</button>;
 }
 

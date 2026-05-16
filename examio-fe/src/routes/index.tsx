@@ -1,4 +1,4 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import HomePage from "@/pages/landing/HomePage";
 import AboutPage from "@/pages/landing/AboutPage";
 import ContactPage from "@/pages/landing/ContactPage";
@@ -13,7 +13,6 @@ import SubscriptionPage from "@/pages/k/SubscriptionPage";
 import MyMaterialsPage from "@/pages/k/MyMaterialsPage";
 import FlashcardsPage from "@/pages/k/FlashcardsPage";
 import HistoryPage from "@/pages/k/HistoryPage";
-import AITeacherPage from "@/pages/k/AITeacherPage";
 import ExamHistoryPage from "@/pages/k/ExamHistoryPage";
 import PDFHistoryPage from "@/pages/k/PDFHistoryPage";
 import FlashcardStudyPage from "@/pages/study-flashcard/FlashcardStudyPage";

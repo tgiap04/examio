@@ -1,32 +1,49 @@
 import type { PropsWithChildren } from "react";
-import { ConfigProvider } from "antd";
-import { ThemeProvider } from "@/provider/ThemeProvider";
+import { ConfigProvider, theme as antTheme } from "antd";
+import { ThemeProvider, useThemeContext } from "@/provider/ThemeProvider";
 import { ToastProvider } from "@/components/antd/toast";
 import { ReCaptchaProvider } from "@/provider/ReCaptchaProvider";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import { AuthSyncBootstrap } from "@/components/auth/AuthSyncBootstrap";
 
-const antdTheme = {
-  token: {
-    colorPrimary: "#e31837",
-    colorError: "#b71c1c",
-    colorWarning: "#ffc107",
-    borderRadius: 12,
-    fontFamily: "inherit",
-  },
-  components: {
-    Button: {
-      borderRadius: 12,
-      controlHeight: 40,
+function AntdConfigProvider({ children }: PropsWithChildren) {
+  const { isDarkMode } = useThemeContext();
+
+  const antdTheme = {
+    algorithm: isDarkMode ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
+    token: {
+      colorPrimary: "#cc785c",
+      colorError: "#c64545",
+      colorWarning: "#d4a017",
+      colorSuccess: "#5db872",
+      colorBgContainer: isDarkMode ? "#24211d" : "#faf9f5",
+      colorBgElevated: isDarkMode ? "#24211d" : "#faf9f5",
+      colorBorder: isDarkMode ? "#37312a" : "#e6dfd8",
+      colorText: isDarkMode ? "#faf7ef" : "#141413",
+      colorTextSecondary: isDarkMode ? "#a99f91" : "#6c6a64",
+      borderRadius: 8,
+      fontFamily: "inherit",
     },
-    Card: {
-      borderRadiusLG: 16,
+    components: {
+      Button: {
+        borderRadius: 8,
+        controlHeight: 40,
+      },
+      Modal: {
+        borderRadiusLG: 12,
+        contentBg: isDarkMode ? "#24211d" : "#faf9f5",
+        headerBg: isDarkMode ? "#24211d" : "#faf9f5",
+        footerBg: isDarkMode ? "#24211d" : "#faf9f5",
+      },
     },
-    Modal: {
-      borderRadiusLG: 16,
-    },
-  },
-};
+  };
+
+  return (
+    <ConfigProvider theme={antdTheme}>
+      {children}
+    </ConfigProvider>
+  );
+}
 
 export function AppProviders({ children }: PropsWithChildren) {
   return (
@@ -37,13 +54,13 @@ export function AppProviders({ children }: PropsWithChildren) {
         enableSystem={false}
         disableTransitionOnChange
       >
-        <ConfigProvider theme={antdTheme}>
+        <AntdConfigProvider>
           <ToastProvider>
             <AuthSyncBootstrap />
             <GoogleAnalytics />
             {children}
           </ToastProvider>
-        </ConfigProvider>
+        </AntdConfigProvider>
       </ThemeProvider>
     </ReCaptchaProvider>
   );

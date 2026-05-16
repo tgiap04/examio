@@ -25,7 +25,7 @@ function RadioGroup({ className, value, defaultValue, onValueChange, disabled, c
   }
 
   return (
-    <RadioContext.Provider value={{ value: selectedValue as string, onValueChange, disabled }}>
+    <RadioContext value={{ value: selectedValue as string, onValueChange, disabled }}>
       <Radio.Group
         className={cn("grid gap-3", className)}
         value={selectedValue}
@@ -35,12 +35,12 @@ function RadioGroup({ className, value, defaultValue, onValueChange, disabled, c
       >
         {children}
       </Radio.Group>
-    </RadioContext.Provider>
+    </RadioContext>
   );
 }
 
 function RadioGroupItem({ className, value, disabled, ...props }: React.ComponentProps<typeof Radio>) {
-  const context = React.useContext(RadioContext);
+  const context = React.use(RadioContext);
   return <Radio className={className} value={value} disabled={disabled || context.disabled} {...props} />;
 }
 

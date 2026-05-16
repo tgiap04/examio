@@ -19,6 +19,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useEffect } from "react";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { canAccessGenAIKnowledgeManager } from "@/lib/genai-knowledge-access";
+import { Button } from "@/components/antd/button";
 
 interface Profile {
   name: string;
@@ -183,7 +184,7 @@ export function SidebarKit() {
       {/* Desktop: Sidebar - Only render on desktop */}
       {isDesktop && (
         <aside className="fixed inset-y-0 left-0 flex w-[272px] flex-col border-r border-hairline bg-canvas text-ink">
-          <div className="border-b border-hairline px-5 py-5">
+          <div className="border-b border-hairline px-5 py-4">
             <Logo sizeLogo={34} sizeText={22} />
           </div>
 
@@ -217,17 +218,18 @@ export function SidebarKit() {
           </nav>
 
           <div className="border-t border-hairline bg-surface-soft/70 px-4 py-4">
-            <div className="rounded-lg border border-hairline bg-canvas p-3">
-              <ProfileDropdown data={profile} />
+            <div className="rounded-lg border border-hairline bg-canvas mb-2">
+              <ProfileDropdown data={profile} className="p-2" />
             </div>
-            <button
+            <Button
               type="button"
               onClick={handleLogout}
-              className="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-surface-dark bg-surface-dark px-3 py-2.5 text-sm font-medium text-on-dark transition-colors hover:bg-surface-dark-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral"
+              variant="link"
+              className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-surface-dark bg-surface-dark px-3 py-2.5 text-sm font-medium text-on-dark transition-colors hover:bg-surface-dark-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral"
             >
               <LogOut className="h-4 w-4" />
               Đăng xuất
-            </button>
+            </Button>
           </div>
         </aside>
       )}

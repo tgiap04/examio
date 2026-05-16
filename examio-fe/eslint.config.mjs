@@ -52,6 +52,20 @@ export default antfu(
     ],
   },
   {
+    files: ["src/components/antd/**/*.tsx"],
+    rules: {
+      "react/no-children-for-each": "off",
+      "react/no-children-map": "off",
+      "react/no-children-to-array": "off",
+      "react/no-clone-element": "off",
+      "react/no-unstable-context-value": "off",
+      "react/no-unstable-default-props": "off",
+      "react-hooks/exhaustive-deps": "off",
+      "react-hooks-extra/no-unnecessary-use-prefix": "off",
+      "unused-imports/no-unused-vars": "off",
+    },
+  },
+  {
     // Without `files`, they are general rules for all files
     rules: {
       "style/semi": "off",

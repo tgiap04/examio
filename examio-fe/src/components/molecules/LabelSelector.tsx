@@ -31,6 +31,19 @@ const LABEL_COLORS = [
   "#84CC16", // lime
 ];
 
+const labelsCache = new Map<string, (QuizSetLabel | FlashcardSetLabel)[]>();
+const pendingFetches = new Map<string, Promise<(QuizSetLabel | FlashcardSetLabel)[]>>();
+
+export function invalidateLabelsCache(setId?: string) {
+  if (setId) {
+    labelsCache.delete(setId);
+    pendingFetches.delete(setId);
+  } else {
+    labelsCache.clear();
+    pendingFetches.clear();
+  }
+}
+
 interface LabelSelectorProps {
   quizSetId?: string | null;
   flashcardSetId?: string | null;
@@ -62,38 +75,56 @@ export function LabelSelector({
   const [loading, setLoading] = useState(false);
   const isFlashcardMode = !!flashcardSetId;
 
-  // Fetch labels when quizSetId or flashcardSetId changes
   useEffect(() => {
     const setId = quizSetId || flashcardSetId;
-    if (setId) {
-      setLoading(true);
-      const fetchLabels = quizSetId
-        ? getQuizSetLabelsApi(setId)
-        : getFlashcardSetLabelsApi(setId);
-
-      fetchLabels
-        .then((response) => {
-          setLabels(response.labels);
-          // Auto-switch mode: prefer "existing" if labels exist, otherwise "new"
-          if (response.labels.length > 0) {
-            onModeChange("existing");
-          } else {
-            onModeChange("new");
-          }
-        })
-        .catch((error) => {
-          console.error("Failed to fetch labels:", error);
-          setLabels([]);
-          onModeChange("new");
-        })
-        .finally(() => {
-          setLoading(false);
-        });
-    } else {
+    if (!setId) {
       setLabels([]);
       onModeChange("new");
+      return;
     }
-  }, [quizSetId, flashcardSetId, onModeChange]);
+
+    const cached = labelsCache.get(setId);
+    if (cached) {
+      setLabels(cached);
+      if (cached.length > 0) {
+        onModeChange("existing");
+      } else {
+        onModeChange("new");
+      }
+      return;
+    }
+
+    // Deduplicate in-flight requests
+    let promise = pendingFetches.get(setId);
+    if (!promise) {
+      promise = (quizSetId
+        ? getQuizSetLabelsApi(setId)
+        : getFlashcardSetLabelsApi(setId)
+      ).then((response) => {
+        labelsCache.set(setId, response.labels);
+        pendingFetches.delete(setId);
+        return response.labels;
+      }).catch((error) => {
+        console.error("Failed to fetch labels:", error);
+        pendingFetches.delete(setId);
+        return [] as (QuizSetLabel | FlashcardSetLabel)[];
+      });
+      pendingFetches.set(setId, promise);
+    }
+
+    setLoading(true);
+    promise.then((result) => {
+      setLabels(result);
+      if (result.length > 0) {
+        onModeChange("existing");
+      } else {
+        onModeChange("new");
+      }
+    }).finally(() => {
+      setLoading(false);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quizSetId, flashcardSetId]);
 
   if (!quizSetId && !flashcardSetId) {
     return null;

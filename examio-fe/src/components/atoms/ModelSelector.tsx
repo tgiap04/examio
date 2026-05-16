@@ -17,7 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/antd/tooltip";
-import { Brain, Cloud, Cpu, Sparkles } from "lucide-react";
+import { Cloud, Cpu, Sparkles } from "lucide-react";
 import { useAIModelCatalogStore } from "@/stores/useAIModelCatalogStore";
 
 interface ModelSelectorProps {
@@ -38,10 +38,15 @@ const MODEL_ICONS: Record<string, typeof Sparkles> = {
 };
 
 const PROVIDER_LABELS: Record<string, string> = {
+  ai2: "AI2",
   gemini: "Google",
 };
 
 const EMPTY_DISABLED_MODELS: Partial<Record<AIModelType, string>> = {};
+
+function cleanModelName(name: string): string {
+  return name.replace(/\s*[-–]\s*free$/i, "").replace(/\s+free$/i, "").trim();
+}
 
 /**
  * AI Model Selector Component
@@ -81,37 +86,41 @@ export function ModelSelector({
     return null;
   }
 
-  const selectedName = repairVietnameseText(selectedModel.name || "AI Model");
+  const selectedName = cleanModelName(repairVietnameseText(selectedModel.name || "AI Model"));
   const selectedDescription = repairVietnameseText(selectedModel.description || "Đang tải thông tin model...");
 
   return (
-    <div className={cn("flex min-w-0 items-center gap-2", className)}>
+    <div className={cn("ai-model-selector flex w-full max-w-full items-center gap-2", className)}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className="flex min-w-0 items-center">
+          <div className="flex w-full max-w-full items-center">
             <Select
               value={selectedModel.id}
               onValueChange={(val) => onChange?.(val as AIModelType)}
               disabled={disabled}
+              popupMatchSelectWidth={false}
+              popupClassName="ai-model-selector-dropdown"
+              className="!bg-muted !border-border hover:!border-muted-foreground text-foreground outline-none focus:border-primary"
             >
               <SelectTrigger
                 size={size}
                 className={cn(
-                  "min-w-[200px] gap-2",
-                  size === "sm" && "min-w-[140px] text-xs",
+                  "w-full min-w-0 gap-2",
+                  size === "sm" && "text-xs",
                 )}
               >
                 <SelectValue>
-                  <div className="flex min-w-0 items-center gap-2">
+                  <div className="flex w-fit min-w-0 items-center gap-2 pr-2">
                     <IconComponent
                       className={cn(
-                        "size-4",
-                        selectedModel.provider === "gemini" && "text-primary",
+                        "size-4 shrink-0 text-foreground",
                       )}
                     />
                     <div className="flex min-w-0 flex-col items-start leading-tight">
-                       <span className="truncate font-medium">{selectedName}</span>
-                       <span className="truncate text-[11px] text-muted-foreground">
+                       <span className="max-w-[24rem] whitespace-normal text-left font-medium leading-snug text-foreground">
+                         {selectedName}
+                       </span>
+                       <span className="max-w-[24rem] whitespace-normal text-left text-[11px] leading-snug text-muted-foreground">
                          {PROVIDER_LABELS[selectedModel.provider] || selectedModel.provider}
                          {selectedModel.specs?.[0]?.value
                            ? ` • ${repairVietnameseText(selectedModel.specs[0].value)}`
@@ -124,7 +133,7 @@ export function ModelSelector({
               <SelectContent>
                 {availableModels.map((model) => {
                   const Icon = MODEL_ICONS[model.id] || Sparkles;
-                  const isModelDisabled = model.disabled;
+                  const isModelDisabled = model.disabled || Boolean(disabledModels[model.id]);
                   const disabledTooltip =
                     disabledModels[model.id]
                     || model.availabilityReason
@@ -136,8 +145,7 @@ export function ModelSelector({
                     <div className="flex items-center gap-3 py-1">
                       <Icon
                         className={cn(
-                          "size-4",
-                          model.provider === "gemini" && "text-primary",
+                          "size-4 shrink-0 text-foreground",
                           isModelDisabled && "opacity-50",
                         )}
                       />
@@ -149,19 +157,8 @@ export function ModelSelector({
                               isModelDisabled && "opacity-50",
                             )}
                           >
-                              {repairVietnameseText(model.name)}
+                              {cleanModelName(repairVietnameseText(model.name))}
                             </span>
-                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                            {PROVIDER_LABELS[model.provider] || model.provider}
-                          </Badge>
-                          {model.badge && !isModelDisabled && (
-                            <Badge
-                              variant="secondary"
-                              className="text-[10px] px-1.5 py-0"
-                            >
-                              {repairVietnameseText(model.badge)}
-                            </Badge>
-                          )}
                           {isModelDisabled && (
                             <Badge
                               variant="outline"

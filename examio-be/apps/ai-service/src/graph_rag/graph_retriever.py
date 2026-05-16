@@ -17,7 +17,7 @@ from .graph_builder import DocumentGraph
 from .subgraph_partitioner import SubgraphPartitioner
 
 load_dotenv()
-GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "models/text-embedding-004")
+GEMINI_EMBEDDING_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "models/gemini-embedding-001")
 
 logger = logging.getLogger(__name__)
 

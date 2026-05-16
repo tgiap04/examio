@@ -48,6 +48,22 @@ export class AIRepository {
         });
     }
 
+    async findUserStorageWithLatestHistories(id: string) {
+        return this.prisma.userStorage.findUnique({
+            where: { id },
+            include: {
+                historyGeneratedQuizz: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 1,
+                },
+                historyGeneratedFlashcard: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 1,
+                },
+            },
+        });
+    }
+
     async findUserStoragesByUserId(
         userId: string,
         options?: { page?: number; size?: number }

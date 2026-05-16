@@ -34,7 +34,7 @@ export function ItemFileDetail({
       <ItemMedia>
         <FileText className="size-5 text-primary" />
       </ItemMedia>
-      <ItemContent>
+      <ItemContent className="flex items-start justify-between">
         <ItemTitle className="text-sm font-medium line-clamp-2 break-words">
           {fileName}
         </ItemTitle>

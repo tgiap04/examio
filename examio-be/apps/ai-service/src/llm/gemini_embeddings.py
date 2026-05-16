@@ -21,7 +21,7 @@ DEFAULT_GEMINI_EMBED_MAX_CONCURRENCY_CAP = 5
 DEFAULT_GEMINI_EMBED_DELAY_BETWEEN_BATCHES = 0.02
 DEFAULT_GEMINI_EMBED_RETRY_COUNT = 3
 DEFAULT_GEMINI_EMBED_RETRY_BASE_DELAY = 0.75
-DEFAULT_GEMINI_EMBED_MODEL = "models/text-embedding-004"
+DEFAULT_GEMINI_EMBED_MODEL = os.getenv("GEMINI_EMBEDDING_MODEL", "models/gemini-embedding-001")
 
 
 def _get_int_env(name: str, default: int, min_value: int = 1) -> int:
@@ -66,7 +66,7 @@ class GeminiEmbeddings:
 
     _instance = None
 
-    def __new__(cls):
+    def __new__(cls, *_args, **_kwargs):
         if cls._instance is None:
             cls._instance = super(GeminiEmbeddings, cls).__new__(cls)
             cls._instance._initialized = False
@@ -76,7 +76,6 @@ class GeminiEmbeddings:
         if self._initialized:
             if model:
                 self.model = model
-            return
             return
 
         self.model = model or os.getenv("GEMINI_EMBEDDING_MODEL", DEFAULT_GEMINI_EMBED_MODEL)

@@ -4753,6 +4753,7 @@ __metadata:
     eslint: "npm:^9"
     eslint-plugin-react-hooks: "npm:^5.2.0"
     eslint-plugin-react-refresh: "npm:^0.4.23"
+    facehash: "npm:^0.1.0"
     framer-motion: "npm:^12.23.22"
     input-otp: "npm:^1.4.2"
     jspdf: "npm:^3.0.3"
@@ -4804,6 +4805,23 @@ __metadata:
   version: 3.0.2
   resolution: "extend@npm:3.0.2"
   checksum: 10c0/73bf6e27406e80aa3e85b0d1c4fd987261e628064e170ca781125c0b635a3dabad5e05adbf07595ea0cf1e6c5396cacb214af933da7cbaf24fe75ff14818e8f9
+  languageName: node
+  linkType: hard
+
+"facehash@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "facehash@npm:0.1.0"
+  peerDependencies:
+    "@types/react": ""
+    next: ">=15"
+    react: ">=18 <20"
+    react-dom: ">=18 <20"
+  peerDependenciesMeta:
+    "@types/react":
+      optional: true
+    next:
+      optional: true
+  checksum: 10c0/a7b94c5e3ad9f33003f0efd025a84a5615853658f5deb275124cd31aae98557b1658a6ca392fd14a6d9e1263801e8285a6e8c1124287f7c1ac2a4377e01b7a92
   languageName: node
   linkType: hard
 

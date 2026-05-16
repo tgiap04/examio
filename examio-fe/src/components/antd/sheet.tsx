@@ -23,11 +23,11 @@ function Sheet({ open, defaultOpen, onOpenChange, children }: SheetProps) {
     setInternalOpen(next);
     onOpenChange?.(next);
   }
-  return <SheetContext.Provider value={{ open: currentOpen, onOpenChange: setOpen }}>{children}</SheetContext.Provider>;
+  return <SheetContext value={{ open: currentOpen, onOpenChange: setOpen }}>{children}</SheetContext>;
 }
 
 function SheetTrigger({ children, asChild }: React.PropsWithChildren<{ asChild?: boolean }>) {
-  const context = React.useContext(SheetContext);
+  const context = React.use(SheetContext);
   if (React.isValidElement(children)) {
     return React.cloneElement(children as React.ReactElement<any>, { onClick: (event: any) => { (children as React.ReactElement<any>).props.onClick?.(event); context.onOpenChange?.(true); } });
   }
@@ -35,7 +35,7 @@ function SheetTrigger({ children, asChild }: React.PropsWithChildren<{ asChild?:
 }
 
 function SheetClose({ children, asChild }: React.PropsWithChildren<{ asChild?: boolean }>) {
-  const context = React.useContext(SheetContext);
+  const context = React.use(SheetContext);
   if (React.isValidElement(children)) {
     return React.cloneElement(children as React.ReactElement<any>, { onClick: (event: any) => { (children as React.ReactElement<any>).props.onClick?.(event); context.onOpenChange?.(false); } });
   }
@@ -51,7 +51,7 @@ function SheetOverlay() {
 }
 
 function SheetContent({ side = "right", className, children, ...props }: React.ComponentProps<"div"> & { side?: "top" | "right" | "bottom" | "left" }) {
-  const context = React.useContext(SheetContext);
+  const context = React.use(SheetContext);
   const placement = side === "top" || side === "bottom" || side === "left" ? side : "right";
   return (
     <Drawer open={context.open} onClose={() => context.onOpenChange?.(false)} placement={placement} className={className} closable={false} {...(props as any)}>

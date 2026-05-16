@@ -143,12 +143,12 @@ export function FormSelectQuizSet({
                     handleCheckboxChange(quizSet.id, checked as boolean)
                   }
                 />
-                <Label htmlFor={quizSet.id} className="font-medium">
+                <Label htmlFor={quizSet.id} className="font-medium ml-2">
                   {quizSet.title}
                 </Label>
-                <p className="font-medium text-muted-foreground truncate">
+                <span className="font-medium text-muted-foreground truncate">
                   {quizSet.description}
-                </p>
+                </span>
               </div>
             </Item>
           ))}

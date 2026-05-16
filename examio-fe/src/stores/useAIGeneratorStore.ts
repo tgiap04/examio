@@ -327,16 +327,6 @@ const pollJobStatus = async (
           return;
         }
 
-        const actualResultType = getGenerationResultType(jobStatus.result);
-
-        if (
-          expectedResultType &&
-          (!actualResultType || actualResultType !== expectedResultType)
-        ) {
-          onError("Tác vụ đã hoàn tất nhưng kết quả không đúng loại yêu cầu");
-          return;
-        }
-
         onSuccess(jobStatus.result);
         return;
       }

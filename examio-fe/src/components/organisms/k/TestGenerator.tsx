@@ -21,6 +21,7 @@ import {
   FileText,
   CircleHelp,
   CheckCircle2,
+  Cpu,
 } from "lucide-react";
 import { useToast } from "@/components/antd/toast";
 import FileUpload from "@/components/kokonutui/file-upload";
@@ -139,107 +140,103 @@ export function TestGenerator() {
   };
 
   return (
-    <div className="grid w-full gap-6 xl:grid-cols-[minmax(320px,0.82fr)_minmax(0,1.18fr)] xl:items-start">
-      <Card className="h-fit w-full border-border bg-white/[0.02] backdrop-blur-xl">
-        <CardHeader className="px-5 md:px-6">
-          <CardTitle className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-primary/20 bg-gradient-to-br from-primary/20 to-primary/5">
-              <Upload className="h-4 w-4 text-primary" />
+    <div className="grid w-full gap-6 lg:grid-cols-[420px_minmax(0,1fr)] xl:items-stretch">
+      <div className="flex flex-col gap-4">
+        <Card className="border-border bg-card shadow-none">
+          <CardContent className="flex min-h-[252px] flex-col items-center justify-center px-6 py-7 text-center">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary">
+              <Upload className="h-6 w-6" />
             </div>
-            Tải lên tài liệu
-          </CardTitle>
-          <CardDescription>
-            Tải lên file PDF để AI tạo đề kiểm tra tự động
-          </CardDescription>
-        </CardHeader>
+            <h3 className="max-w-[18rem] font-serif text-3xl font-normal leading-tight tracking-[-0.025em] text-foreground">
+              Biến tài liệu thành kiến thức
+            </h3>
+            <p className="mt-3 text-sm text-muted-foreground">Kéo thả PDF up to 100 MB</p>
+            {!hasFile ? (
+              <FileUpload
+                acceptedFileTypes={[".pdf", "application/pdf"]}
+                maxFileSize={104857600}
+                className="mt-5 w-full"
+                onUploadSuccess={handleFileUpload}
+                onUploadError={handleFileError}
+                uploadDelay={2000}
+              />
+            ) : (
+              <div className="mt-5 w-full">
+                <ItemFileDetail
+                  fileName={displayFileName || "Unknown file"}
+                  fileSize={displayFileSize || 0}
+                  onRemove={handleRemoveFile}
+                />
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-        <CardContent className="space-y-6 px-5 md:px-6">
-          {!hasFile ? (
-            <FileUpload
-              acceptedFileTypes={[".pdf", "application/pdf"]}
-              maxFileSize={104857600}
-              className="h-full w-full"
-              onUploadSuccess={handleFileUpload}
-              onUploadError={handleFileError}
-              uploadDelay={2000}
-            />
-          ) : (
-            <ItemFileDetail
-              fileName={displayFileName || "Unknown file"}
-              fileSize={displayFileSize || 0}
-              onRemove={handleRemoveFile}
-            />
-          )}
+        <Card className="border-border bg-card shadow-none">
+          <CardContent className="space-y-6 px-6 py-6">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                <Cpu className="h-3.5 w-3.5" />
+                AI Model
+              </Label>
+              <ModelSelector
+                value={selectedModel}
+                onChange={(value) => setSelectedModel(value as any)}
+                className="w-full"
+              />
+              <p className="text-[11px] italic text-muted-foreground">AI2 / AI service offline</p>
+            </div>
 
-          <div className="space-y-3">
-            <Label className="text-muted-foreground">AI Model</Label>
-            <ModelSelector
-              value={selectedModel}
-              onChange={(value) => setSelectedModel(value as any)}
-              className="w-full"
-            />
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <Label className="text-muted-foreground">Số lượng câu hỏi</Label>
-              <div className="flex items-center gap-2">
-                <Input
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <Label className="text-xs font-semibold text-foreground">Số lượng</Label>
+                <input
                   type="number"
                   value={questionCount}
                   onChange={(e) => {
-                    const val = Number.parseInt(e.target.value);
-                    if (!Number.isNaN(val)) setQuestionCount(val);
+                    const val = Number.parseInt(e.target.value, 10);
+                    if (!Number.isNaN(val)) setQuestionCount(Math.min(100, Math.max(1, val)));
                   }}
-                  className="h-8 w-16 border-none bg-primary/10 px-1 text-center text-xs font-bold focus-visible:ring-1 focus-visible:ring-primary/30"
+                  className="h-7 w-16 rounded-md border border-border bg-muted px-1 text-center text-xs font-semibold text-foreground outline-none focus:border-primary"
                   min={1}
                   max={100}
                 />
-                <span className="text-xs font-medium text-muted-foreground">
-                  câu
-                </span>
               </div>
+              <Slider
+                value={[Math.min(questionCount, 100)]}
+                onValueChange={(value) => setQuestionCount(value[0])}
+                min={5}
+                max={100}
+                step={5}
+                className="w-full"
+              />
             </div>
-            <Slider
-              value={[Math.min(questionCount, 100)]}
-              onValueChange={(value) => setQuestionCount(value[0])}
-              min={5}
-              max={100}
-              step={5}
-              className="w-full"
-            />
-            <p className="text-[10px] italic text-muted-foreground">
-              * Tối đa 100 câu hỏi.
-            </p>
-          </div>
 
-          <div className="flex items-center justify-between rounded-xl border border-border bg-black/5 p-3">
-            <Label
-              htmlFor="narrow-toggle-test"
-              className="flex cursor-pointer items-center gap-2 text-muted-foreground"
-            >
-              Định dạng hẹp
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <CircleHelp className="h-4 w-4 text-muted-foreground/60" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  Bật để tạo đề kiểm tra tập trung vào từ khóa mà bạn nhập thay
-                  vì toàn file PDF
-                </TooltipContent>
-              </Tooltip>
-            </Label>
-            <Switch
-              id="narrow-toggle-test"
-              checked={isNarrow}
-              onCheckedChange={setIsNarrow}
-              className="cursor-pointer data-[state=checked]:bg-primary"
-            />
-          </div>
+            <div className="flex items-center justify-between gap-3">
+              <Label
+                htmlFor="narrow-toggle-test"
+                className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-foreground"
+              >
+                Định dạng nâng cao
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <CircleHelp className="h-3.5 w-3.5 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Bật để tạo đề kiểm tra tập trung vào từ khóa mà bạn nhập thay vì toàn file PDF
+                  </TooltipContent>
+                </Tooltip>
+              </Label>
+              <Switch
+                id="narrow-toggle-test"
+                checked={isNarrow}
+                onCheckedChange={setIsNarrow}
+                className="cursor-pointer data-[state=checked]:bg-primary"
+              />
+            </div>
 
-          {isNarrow && (
-            <div className="animate-in slide-in-from-top-2 space-y-2 duration-200">
-              <Field>
+            {isNarrow && (
+              <Field className="animate-in slide-in-from-top-2 duration-200">
                 <FieldLabel htmlFor="keyword-input-test">Từ khóa</FieldLabel>
                 <FieldContent>
                   <Input
@@ -247,46 +244,47 @@ export function TestGenerator() {
                     placeholder="Nhập từ khóa..."
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
-                    className="border-border bg-black/5"
+                    className="border-border bg-muted"
                   />
                 </FieldContent>
               </Field>
-            </div>
-          )}
-
-          <Button
-            onClick={handleGenerate}
-            disabled={!hasFile || isGenerating}
-            className="h-12 w-full bg-gradient-to-r from-primary to-primary/80 text-base font-medium shadow-lg shadow-primary/20 hover:from-primary/90 hover:to-primary/70"
-            size="lg"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Đang tạo đề...
-              </>
-            ) : (
-              <>
-                <Sparkles className="mr-2 h-5 w-5" />
-                Tạo đề kiểm tra
-              </>
             )}
-          </Button>
-        </CardContent>
-      </Card>
 
-      <Card className="w-full border-border bg-white/[0.02] backdrop-blur-xl xl:min-h-[760px]">
-        <CardHeader className="gap-4 border-b border-border/50 px-5 pb-5 md:px-6">
+            <Button
+              onClick={handleGenerate}
+              disabled={!hasFile || isGenerating}
+              variant="gradient"
+              className="h-12 w-full text-sm font-semibold shadow-none"
+              size="lg"
+            >
+              {isGenerating ? (
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Đang tạo đề...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  <p className="h-4 pt-1">Tạo đề kiểm tra</p>
+                </div>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="min-h-[560px] border-border bg-background shadow-none">
+        <CardHeader className="gap-4 border-b border-border px-6 pb-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-primary/20 bg-gradient-to-br from-primary/20 to-primary/5">
-                  <FileText className="h-4 w-4 text-red-400" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-card">
+                  <FileText className="h-4 w-4 text-primary" />
                 </div>
                 Kết quả đề kiểm tra
               </CardTitle>
               <CardDescription>
-                Xem, rà soát và lưu bộ câu hỏi được tạo từ tài liệu của bạn.
+                Preview khu vực phân tích nội dung.
               </CardDescription>
             </div>
 
@@ -299,7 +297,7 @@ export function TestGenerator() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="cursor-pointer border-border bg-black/5"
+                  className="cursor-pointer border-border bg-card text-foreground !p-4"
                 >
                   <SaveAll size={15} className="mr-2" />
                   Lưu
@@ -310,7 +308,7 @@ export function TestGenerator() {
 
           {generatedTest && !isGenerating && (
             <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span className="rounded-full border border-border bg-black/5 px-3 py-1 font-medium text-foreground">
+              <span className="rounded-full border border-border bg-card px-3 py-1 font-medium text-foreground">
                 {generatedTest.length} câu hỏi
               </span>
               {isNarrow && keyword && (
@@ -322,9 +320,9 @@ export function TestGenerator() {
           )}
         </CardHeader>
 
-        <CardContent className="flex flex-1 flex-col px-5 md:px-6">
+        <CardContent className="flex flex-1 flex-col px-6 mt-4">
           {isGenerating ? (
-            <div className="flex min-h-[420px] flex-1 items-center justify-center rounded-[28px] border border-border/60 bg-black/[0.04] px-6">
+            <div className="flex min-h-[360px] flex-1 items-center justify-center rounded-2xl border border-border bg-card px-6">
               <ModernLoader
                 words={[
                   "Đang phân tích tài liệu…",
@@ -343,17 +341,17 @@ export function TestGenerator() {
               />
             </div>
           ) : !generatedTest ? (
-            <div className="flex min-h-[420px] flex-1 flex-col items-center justify-center rounded-[28px] border border-dashed border-border/70 bg-black/[0.03] px-6 text-center">
-              <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl border border-border bg-black/5">
-                <FileText className="h-10 w-10 text-muted-foreground/50" />
+            <div className="flex min-h-[360px] flex-1 flex-col items-center justify-center rounded-2xl bg-card px-6 text-center">
+              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl border border-primary/15 bg-primary/10">
+                <FileText className="h-7 w-7 text-primary" />
               </div>
               <p className="max-w-md text-sm text-muted-foreground md:text-base">
                 Tải lên file PDF và nhấn Tạo đề kiểm tra để xem kết quả.
               </p>
             </div>
           ) : (
-            <ScrollArea className="flex-1 min-h-[420px] rounded-[28px] border border-border/60 bg-black/[0.04]">
-              <div className="space-y-4 p-4 pr-5 md:p-6 md:pr-7 max-h-[500px] overflow-y-auto">
+            <ScrollArea className="flex-1 min-h-[360px] rounded-2xl border border-border bg-card">
+              <div className="space-y-4 p-4 pr-5 md:p-6 md:pr-7 max-h-[600px] overflow-y-auto">
                 {generatedTest.map((q: Quizz, idx: number) => {
                   const answerIndex =
                     typeof q.answer === "number"
@@ -363,7 +361,7 @@ export function TestGenerator() {
                   return (
                     <div
                       key={idx}
-                      className="rounded-2xl border border-border/60 bg-background/20 p-4 md:p-5"
+                      className="rounded-2xl border border-border bg-card p-4 md:p-5"
                     >
                       <div className="flex items-start gap-4">
                         <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-semibold text-primary">
@@ -384,16 +382,16 @@ export function TestGenerator() {
                                   className={cn(
                                     "flex items-start gap-3 rounded-xl border p-3 transition-colors",
                                     isCorrect
-                                      ? "border-green-500/20 bg-green-500/10"
-                                      : "border-border/50 bg-black/5",
+                                      ? "border-accent-teal/30 bg-accent-teal/10"
+                                      : "border-border bg-card",
                                   )}
                                 >
                                   <span
                                     className={cn(
                                       "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-xs font-semibold",
                                       isCorrect
-                                        ? "bg-green-500/15 text-green-400"
-                                        : "bg-black/10 text-muted-foreground",
+                                        ? "bg-accent-teal/15 text-accent-teal"
+                                        : "bg-muted text-muted-foreground",
                                     )}
                                   >
                                     {String.fromCharCode(65 + optIdx)}
@@ -402,14 +400,14 @@ export function TestGenerator() {
                                     className={cn(
                                       "flex-1 text-sm leading-6",
                                       isCorrect
-                                        ? "text-green-400"
+                                        ? "text-accent-teal"
                                         : "text-muted-foreground",
                                     )}
                                   >
                                     {opt}
                                   </span>
                                   {isCorrect && (
-                                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-green-400" />
+                                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-accent-teal" />
                                   )}
                                 </div>
                               );

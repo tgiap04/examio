@@ -14,7 +14,7 @@ import {
 } from "@/components/antd/dialog";
 import { FormSelectQuizSet } from "@/components/atoms/k/FormSelectQuizSet";
 import { FormSelectFlashcardSet } from "@/components/atoms/k/FormSelectFlashcardSet";
-import { LabelSelector } from "@/components/molecules/LabelSelector";
+import { LabelSelector, invalidateLabelsCache } from "@/components/molecules/LabelSelector";
 import { useQuizSetStore } from "@/stores/useQuizSetStore";
 import { useFlashcardSetStore } from "@/stores/useFlashcardSetStore";
 import {
@@ -173,8 +173,10 @@ export function DialogAddExam(props: DialogAddExamProps) {
       // Invalidate stats
       if (props.type === DialogAddExamType.QUIZZ) {
         invalidateQuizStats();
+        invalidateLabelsCache();
       } else {
         invalidateFlashcardStats();
+        invalidateLabelsCache();
       }
 
       // Reset and close

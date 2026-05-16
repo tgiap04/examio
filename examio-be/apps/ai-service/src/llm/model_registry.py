@@ -71,7 +71,7 @@ def _format_ai2_display_name(model_name: str) -> str:
 EMBEDDING_MODEL = ModelRegistryEntry(
     id='gemini_embedding',
     provider='gemini',
-    runtime_model_name=os.getenv('GEMINI_EMBEDDING_MODEL', 'models/text-embedding-004'),
+    runtime_model_name=os.getenv('GEMINI_EMBEDDING_MODEL', 'models/gemini-embedding-001'),
     display_name='Gemini Embedding',
     description='Embedding model dung chung cho toan bo he thong.',
     task_types=('embedding',),

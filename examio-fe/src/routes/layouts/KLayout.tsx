@@ -94,7 +94,7 @@ export function KLayout({ children }: PropsWithChildren) {
     >
       <SidebarKit />
 
-      <main className="m-0 w-full pb-20 pt-20 md:ml-[272px]">
+      <main className="m-0 w-full pb-20 pt-10 md:ml-[272px] md:pb-0">
         {showVerificationBanner && (
           <div className="mx-4 mt-4 flex w-auto flex-col items-start justify-between gap-2 rounded-lg border border-warning/25 bg-warning/10 px-3 py-2 text-body shadow-[0_1px_3px_rgba(20,20,19,0.08)] sm:flex-row sm:items-center sm:gap-4 sm:px-4 sm:py-2.5">
             <div className="flex flex-1 items-center gap-3">
@@ -132,7 +132,7 @@ export function KLayout({ children }: PropsWithChildren) {
         )}
 
         <header className="fixed left-0 right-0 top-0 z-50 w-full border-b border-hairline bg-canvas/95 backdrop-blur-md md:left-[272px] md:w-[calc(100%-272px)]">
-          <div className="flex min-h-16 w-full items-center justify-between gap-3 px-4 md:px-6 lg:px-8">
+          <div className="flex min-h-16.5 w-full items-center justify-between gap-3 px-4 md:px-6 lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-hairline bg-surface-card text-coral md:hidden">
                 <PanelLeft className="h-5 w-5" />
@@ -177,6 +177,19 @@ export function KLayout({ children }: PropsWithChildren) {
         </header>
 
         {children}
+
+        <footer className="mx-4 mt-12 border-t border-hairline pb-6 pt-4 text-center text-xs text-muted-foreground md:mx-6 lg:mx-8">
+          <p>
+            This site is protected by reCAPTCHA and the Google{" "}
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-body">Privacy Policy</a>
+            {" "}and{" "}
+            <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-body">Terms of Service</a>
+            {" "}apply.
+          </p>
+          <p className="mt-2">
+            © {new Date().getFullYear()} Examio. All rights reserved. Made with love in Vietnam.
+          </p>
+        </footer>
       </main>
 
       <PendingJobDialog

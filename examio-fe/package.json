@@ -28,6 +28,7 @@
         "cobe": "^0.6.5",
         "crypto-js": "^4.2.0",
         "date-fns": "^4.1.0",
+        "facehash": "^0.1.0",
         "framer-motion": "^12.23.22",
         "input-otp": "^1.4.2",
         "jspdf": "^3.0.3",

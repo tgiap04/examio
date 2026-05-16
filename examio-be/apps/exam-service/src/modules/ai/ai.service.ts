@@ -47,6 +47,28 @@ export class AIService {
         return process.env.AI2_DEFAULT_MODEL || 'minimax-m2.5-free';
     }
 
+    private getFallbackAi2ModelIds(): string[] {
+        const configuredModels = process.env.AI2_GENERATION_MODEL_NAMES
+            ?.split(',')
+            .map((model) => model.trim())
+            .filter(Boolean);
+
+        const models = configuredModels?.length
+            ? configuredModels
+            : [
+                  'minimax-m2.5-free',
+                  'nemotron-3-super-free',
+                  'trinity-large-preview-free',
+              ];
+        const defaultModel = this.getDefaultModelId();
+
+        return Array.from(new Set([defaultModel, ...models]));
+    }
+
+    private formatAi2ModelName(modelId: string): string {
+        return modelId.replace(/[-.]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+    }
+
     private normalizeModelUnavailableMessage(errorData: unknown): string | null {
         const payload = errorData as
             | { detail?: { code?: string; message?: string } | string; message?: string; error?: string }
@@ -546,14 +568,12 @@ export class AIService {
                 );
             }
 
-            // Keep PROCESSING only when OCR was skipped (regenerate path).
-            // If OCR just completed, AI service already set status COMPLETED and generation endpoint requires it.
-            if (skipOcr) {
-                await this.aiRepository.updateUserStorageStatus(
-                    userStorageId,
-                    'PROCESSING'
-                );
-            }
+            // Always ensure PROCESSING before generation starts
+            // (OCR step in Python may have set COMPLETED prematurely)
+            await this.aiRepository.updateUserStorageStatus(
+                userStorageId,
+                'PROCESSING'
+            );
 
             // Step 2: Generate quiz or flashcard
             const isFlashcard = typeResult === 2;
@@ -636,24 +656,44 @@ export class AIService {
 
     private getFallbackModelCatalog() {
         const unavailableReason = 'AI service chưa sẵn sàng. Vui lòng khởi động AI service rồi thử lại.';
-
-        const generationModel = {
-            id: this.getDefaultModelId(),
-            name: 'Gemini',
-            description: 'Fallback catalog khi AI service không phản hồi.',
-            provider: 'gemini',
-            runtimeModelName: 'gemini',
-            badge: 'Offline',
+        const ai2ModelIds = this.getFallbackAi2ModelIds();
+        const defaultModelId = this.getDefaultModelId();
+        const generationModels = ai2ModelIds.map((modelId, index) => ({
+            id: modelId,
+            name: this.formatAi2ModelName(modelId),
+            description: 'AI2 OpenAI-compatible model dùng cho sinh quiz và flashcard.',
+            provider: 'ai2',
+            runtimeModelName: modelId,
+            badge: modelId === defaultModelId ? 'Mặc định' : 'AI2',
             disabled: true,
             available: false,
             availabilityReason: unavailableReason,
-            isDefault: true,
-            supportsStructuredOutput: true,
+            isDefault: modelId === defaultModelId || (index === 0 && !ai2ModelIds.includes(defaultModelId)),
+            supportsStructuredOutput: false,
+            specs: [
+                { label: 'Trạng thái', value: 'AI service offline' },
+                { label: 'Provider', value: 'AI2' },
+                { label: 'Runtime', value: modelId },
+            ],
+        }));
+
+        generationModels.push({
+            id: 'gemini',
+            name: 'Gemini',
+            description: 'Cloud model giữ nguyên cơ chế rotate key và model từ env.',
+            provider: 'gemini',
+            runtimeModelName: 'gemini',
+            badge: 'Cloud',
+            disabled: true,
+            available: false,
+            availabilityReason: unavailableReason,
+            isDefault: false,
+            supportsStructuredOutput: false,
             specs: [
                 { label: 'Trạng thái', value: 'AI service offline' },
                 { label: 'Provider', value: 'Google' },
             ],
-        };
+        });
 
         return {
             embeddingModel: {
@@ -673,8 +713,8 @@ export class AIService {
                     { label: 'Provider', value: 'Google' },
                 ],
             },
-            generationModels: [generationModel],
-            defaultGenerationModel: generationModel.id,
+            generationModels,
+            defaultGenerationModel: generationModels.find((model) => model.isDefault)?.id || defaultModelId,
         };
     }
 
@@ -1458,7 +1498,15 @@ export class AIService {
      * Returns result for FE polling pattern
      */
     async getJobStatus(jobId: string, user: User) {
-        const upload = await this.getUploadDetail(jobId, user);
+        const upload = await this.aiRepository.findUserStorageWithLatestHistories(jobId);
+
+        if (!upload) {
+            throw new NotFoundException('Upload không tồn tại');
+        }
+
+        if (upload.userId !== user.id) {
+            throw new NotFoundException('Upload không tồn tại');
+        }
 
         // If currently processing/pending, do not return old history data
         const normalizedStatus =
@@ -1482,11 +1530,8 @@ export class AIService {
             };
         }
 
-        // Check if quiz or flashcard was generated
-        const [quizHistory, flashcardHistory] = await Promise.all([
-            this.aiRepository.findLatestQuizHistory(upload.id),
-            this.aiRepository.findLatestFlashcardHistory(upload.id),
-        ]);
+        const quizHistory = upload.historyGeneratedQuizz[0];
+        const flashcardHistory = upload.historyGeneratedFlashcard[0];
 
         // Determine which one is more recent
         let returnType: 'quiz' | 'flashcard' | null = null;
@@ -1556,12 +1601,18 @@ export class AIService {
      * Used when selecting a recent file to load previous results
      */
     async getUploadHistory(uploadId: string, user: User) {
-        const upload = await this.getUploadDetail(uploadId, user);
+        const upload = await this.aiRepository.findUserStorageWithLatestHistories(uploadId);
 
-        const [quizHistory, flashcardHistory] = await Promise.all([
-            this.aiRepository.findLatestQuizHistory(upload.id),
-            this.aiRepository.findLatestFlashcardHistory(upload.id),
-        ]);
+        if (!upload) {
+            throw new NotFoundException('Upload không tồn tại');
+        }
+
+        if (upload.userId !== user.id) {
+            throw new NotFoundException('Upload không tồn tại');
+        }
+
+        const quizHistory = upload.historyGeneratedQuizz[0];
+        const flashcardHistory = upload.historyGeneratedFlashcard[0];
 
         return {
             uploadId: upload.id,

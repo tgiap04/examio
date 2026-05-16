@@ -12,22 +12,22 @@ type DialogContentProps = React.ComponentProps<"div"> & {
 const DialogContext = React.createContext<Ctx>({});
 
 function Dialog({ children, open, onOpenChange }: React.PropsWithChildren<Ctx>) {
-  return <DialogContext.Provider value={{ open, onOpenChange }}>{children}</DialogContext.Provider>;
+  return <DialogContext value={{ open, onOpenChange }}>{children}</DialogContext>;
 }
 
 function DialogTrigger({ children, asChild }: React.PropsWithChildren<{ asChild?: boolean }>) {
-  const ctx = React.useContext(DialogContext);
+  const ctx = React.use(DialogContext);
   if (asChild && React.isValidElement(children)) return React.cloneElement(children as React.ReactElement<any>, { onClick: () => ctx.onOpenChange?.(true) });
   return <button type="button" onClick={() => ctx.onOpenChange?.(true)}>{children}</button>;
 }
 
 function DialogContent({ className, children, onEscapeKeyDown, onPointerDownOutside, onCloseAutoFocus, showCloseButton, ...props }: DialogContentProps) {
-  const ctx = React.useContext(DialogContext);
+  const ctx = React.use(DialogContext);
   return <Modal open={ctx.open} onCancel={() => ctx.onOpenChange?.(false)} footer={null} className={className} {...(props as any)}>{children}</Modal>;
 }
 
 function DialogClose({ children, asChild, ...props }: React.PropsWithChildren<{ asChild?: boolean } & React.ComponentProps<"button">>) {
-  const ctx = React.useContext(DialogContext);
+  const ctx = React.use(DialogContext);
   if (asChild && React.isValidElement(children)) return React.cloneElement(children as React.ReactElement<any>, { onClick: () => ctx.onOpenChange?.(false) });
   return <button type="button" onClick={() => ctx.onOpenChange?.(false)} {...props}>{children}</button>;
 }

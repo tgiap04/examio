@@ -528,3 +528,6 @@ class ModelManager:
             )
 
         return self.get_langchain_model('gemini')
+
+
+model_manager = ModelManager()
