@@ -74,26 +74,26 @@ function AIGeneratorContent() {
             onValueChange={handleTabChange}
             className="ai-tool-tabs w-full gap-5"
           >
-            <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-5 flex flex-col gap-3">
               <div className="flex items-center gap-3 text-sm text-muted-foreground">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
                   <Sparkles className="h-4 w-4" />
                 </span>
                 <span>Workspace tạo học liệu từ PDF</span>
               </div>
-              <TabsList className="grid h-11 w-full grid-cols-2 rounded-xl border border-border bg-card p-1 sm:w-fit">
+              <TabsList className="grid h-11 w-full grid-cols-2 rounded-xl border border-border bg-card p-1">
                 <TabsTrigger
                   value="test"
-                  className="flex items-center gap-2 rounded-lg px-4 font-medium"
+                  className="flex items-center justify-center gap-2 rounded-lg px-3 font-medium text-sm"
                 >
-                  <FileText className="h-4 w-4" />
+                  <FileText className="h-4 w-4 shrink-0" />
                   <span>Đề kiểm tra</span>
                 </TabsTrigger>
                 <TabsTrigger
                   value="flashcard"
-                  className="flex items-center gap-2 rounded-lg px-4 font-medium"
+                  className="flex items-center justify-center gap-2 rounded-lg px-3 font-medium text-sm"
                 >
-                  <SquareSplitVertical className="h-4 w-4" />
+                  <SquareSplitVertical className="h-4 w-4 shrink-0" />
                   <span>Flashcard</span>
                 </TabsTrigger>
               </TabsList>

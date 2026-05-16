@@ -20,6 +20,7 @@ import { useEffect } from "react";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { canAccessGenAIKnowledgeManager } from "@/lib/genai-knowledge-access";
 import { Button } from "@/components/antd/button";
+import { cn } from "@/lib/utils";
 
 interface Profile {
   name: string;
@@ -29,7 +30,11 @@ interface Profile {
   model?: string;
 }
 
-export function SidebarKit() {
+interface SidebarKitProps {
+  collapsed?: boolean;
+}
+
+export function SidebarKit({ collapsed = false }: SidebarKitProps) {
   const { user, getUser, logout } = useAuthStore();
   const [profile, setProfile] = React.useState<Profile>({
     name: "",
@@ -40,7 +45,6 @@ export function SidebarKit() {
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
   const [mounted, setMounted] = React.useState(false);
-
   React.useEffect(() => {
     setMounted(true);
   }, []);
@@ -68,6 +72,7 @@ export function SidebarKit() {
       href: "/k/ai-tool",
       icon: <RocketIcon className="w-5 h-5" />,
       label: "Công cụ AI",
+      shortLabel: "AI",
       active: currentPath === "/k/ai-tool",
     },
     {
@@ -75,6 +80,7 @@ export function SidebarKit() {
       href: "/k/genai-knowledge",
       icon: <Library className="w-5 h-5" />,
       label: "Kho tri thức GenAI",
+      shortLabel: "Tri thức",
       active: currentPath === "/k/genai-knowledge",
       restrictedByPolicy: true,
     },
@@ -83,6 +89,7 @@ export function SidebarKit() {
       href: "/k/my-materials",
       icon: <BookOpen className="w-5 h-5" />,
       label: "Tài liệu của tôi",
+      shortLabel: "Tài liệu",
       active: currentPath === "/k/my-materials",
     },
     {
@@ -90,6 +97,7 @@ export function SidebarKit() {
       href: "/k/my-exams",
       icon: <GraduationCap className="w-5 h-5" />,
       label: "Bài thi của tôi",
+      shortLabel: "Bài thi",
       active: currentPath === "/k/my-exams",
     },
     {
@@ -97,6 +105,7 @@ export function SidebarKit() {
       href: "/k/manage-exam",
       icon: <ReaderIcon className="w-5 h-5" />,
       label: "Quản lý Đề thi",
+      shortLabel: "Đề thi",
       active:
         currentPath === "/k/manage-exam" ||
         currentPath.startsWith("/k/manage-quiz-set") ||
@@ -107,6 +116,7 @@ export function SidebarKit() {
       href: "/k/flash-card",
       icon: <CardStackIcon className="w-5 h-5" />,
       label: "Quản lý Flashcard",
+      shortLabel: "Flashcard",
       active:
         currentPath === "/k/flash-card" ||
         currentPath.startsWith("/k/manage-flashcard-set"),
@@ -116,6 +126,7 @@ export function SidebarKit() {
       href: "/k/manage-exam-room",
       icon: <TokensIcon className="w-5 h-5" />,
       label: "Quản lý Phòng thi",
+      shortLabel: "Phòng thi",
       active:
         currentPath === "/k/manage-exam-room" ||
         currentPath.startsWith("/k/manage-exam-room"),
@@ -125,6 +136,7 @@ export function SidebarKit() {
       href: "/k/history",
       icon: <ClockIcon className="w-5 h-5" />,
       label: "Lịch sử",
+      shortLabel: "Lịch sử",
       active: currentPath === "/k/history",
     },
   ];
@@ -145,11 +157,11 @@ export function SidebarKit() {
   // For mobile FloatingDock
   const primaryDockItems = filteredSidebarItems
     .slice(0, 5)
-    .map(({ name, href, icon, label, active }) => ({
+    .map(({ name, href, icon, shortLabel, active }) => ({
       name,
       href,
       icon,
-      label,
+      label: shortLabel || name,
       active,
     }));
 
@@ -170,9 +182,11 @@ export function SidebarKit() {
     return null;
   }
 
+  const sidebarWidth = collapsed ? "w-[72px]" : "w-[272px]";
+
   return (
     <>
-      {/* Mobile: FloatingDock - Only render on mobile */}
+      {/* Mobile/Tablet: FloatingDock */}
       {!isDesktop && (
         <FloatingDock
           className="z-[1000]"
@@ -181,55 +195,84 @@ export function SidebarKit() {
         />
       )}
 
-      {/* Desktop: Sidebar - Only render on desktop */}
+      {/* Desktop: Sidebar */}
       {isDesktop && (
-        <aside className="fixed inset-y-0 left-0 flex w-[272px] flex-col border-r border-hairline bg-canvas text-ink">
-          <div className="border-b border-hairline px-5 py-4">
-            <Logo sizeLogo={34} sizeText={22} />
+        <aside
+          className={cn(
+            "fixed inset-y-0 left-0 z-50 flex flex-col overflow-visible border-r border-hairline bg-canvas text-ink transition-[width] duration-200",
+            sidebarWidth
+          )}
+        >
+          <div className={cn(
+            "flex items-center border-b border-hairline px-3 py-4",
+            collapsed ? "justify-center" : "justify-start"
+          )}>
+            <Logo sizeLogo={collapsed ? 40 : 34} sizeText={22} showText={!collapsed} />
           </div>
 
           <nav
-            className="flex-1 space-y-1.5 overflow-y-auto px-3 py-4"
+            className="flex-1 space-y-1.5 overflow-visible px-2 py-4"
             aria-label="Dashboard navigation"
           >
             {filteredSidebarItems.map((item, index) => (
-              <Link
-                key={index}
-                to={item.href}
-                aria-current={item.active ? "page" : undefined}
-                className={`group flex min-h-11 w-full items-center gap-x-3 rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral ${
-                  item.active
-                    ? "border-hairline bg-surface-card text-ink shadow-[0_1px_3px_rgba(20,20,19,0.08)]"
-                    : "border-transparent text-muted-foreground hover:bg-surface-soft hover:text-ink"
-                }`}
-              >
-                <span
-                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors ${
+              <div key={index} className="relative group">
+                <Link
+                  to={item.href}
+                  aria-current={item.active ? "page" : undefined}
+                  className={cn(
+                    "flex min-h-11 w-full items-center rounded-lg border px-2 py-2.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral",
+                    collapsed ? "justify-center" : "gap-x-3 px-3",
                     item.active
-                      ? "bg-coral text-primary-foreground"
-                      : "bg-surface-soft text-muted-foreground group-hover:bg-surface-card group-hover:text-coral"
-                  }`}
+                      ? "border-hairline bg-surface-card text-ink shadow-[0_1px_3px_rgba(20,20,19,0.08)]"
+                      : "border-transparent text-muted-foreground hover:bg-surface-soft hover:text-ink"
+                  )}
                 >
-                  {item.icon}
-                </span>
-                <span className="truncate">{item.label}</span>
-              </Link>
+                  <span
+                    className={cn(
+                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors",
+                      item.active
+                        ? "bg-coral text-primary-foreground"
+                        : "bg-surface-soft text-muted-foreground group-hover:bg-surface-card group-hover:text-coral"
+                    )}
+                  >
+                    {item.icon}
+                  </span>
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                </Link>
+                {collapsed && (
+                  <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-surface-dark px-2.5 py-1.5 text-xs font-medium text-on-dark opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                    {item.label}
+                  </span>
+                )}
+              </div>
             ))}
           </nav>
 
-          <div className="border-t border-hairline bg-surface-soft/70 px-4 py-4">
-            <div className="rounded-lg border border-hairline bg-canvas mb-2">
-              <ProfileDropdown data={profile} className="p-2" />
+          <div className={cn("border-t border-hairline bg-surface-soft/70 px-2 py-4", collapsed && "px-1.5")}>
+            {!collapsed && (
+              <div className="rounded-lg border border-hairline bg-canvas mb-2">
+                <ProfileDropdown data={profile} className="p-2" />
+              </div>
+            )}
+            <div className="group relative">
+              <Button
+                type="button"
+                onClick={handleLogout}
+                variant="link"
+                className={cn(
+                  "flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-surface-dark bg-surface-dark text-sm font-medium text-on-dark transition-colors hover:bg-surface-dark-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral",
+                  collapsed ? "px-2 py-2.5" : "px-3 py-2.5"
+                )}
+              >
+                <LogOut className="h-4 w-4 shrink-0" />
+                {!collapsed && "Đăng xuất"}
+              </Button>
+              {collapsed && (
+                <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-surface-dark px-2.5 py-1.5 text-xs font-medium text-on-dark opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+                  Đăng xuất
+                </span>
+              )}
             </div>
-            <Button
-              type="button"
-              onClick={handleLogout}
-              variant="link"
-              className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-surface-dark bg-surface-dark px-3 py-2.5 text-sm font-medium text-on-dark transition-colors hover:bg-surface-dark-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral"
-            >
-              <LogOut className="h-4 w-4" />
-              Đăng xuất
-            </Button>
           </div>
         </aside>
       )}

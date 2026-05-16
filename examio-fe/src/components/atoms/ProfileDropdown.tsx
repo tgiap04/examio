@@ -104,7 +104,7 @@ export default function ProfileDropdown({
           <DropdownMenuItem asChild>
             <Link
               to="/k/profile"
-              className="flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-body transition-colors hover:bg-surface-soft hover:text-ink focus:bg-surface-soft"
+              className="flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-body transition-colors !text-accent-amber hover:bg-surface-soft hover:text-ink focus:bg-surface-soft"
             >
               <PersonIcon className="h-4 w-4 text-coral" />
               Hồ sơ
@@ -114,7 +114,7 @@ export default function ProfileDropdown({
           <DropdownMenuItem asChild>
             <Link
               to="/k/settings"
-              className="flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-body transition-colors hover:bg-surface-soft hover:text-ink focus:bg-surface-soft"
+              className="flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-body !text-accent-amber transition-colors hover:bg-surface-soft hover:text-ink focus:bg-surface-soft"
             >
               <Settings className="h-4 w-4 text-accent-amber" />
               Cài đặt
@@ -127,7 +127,7 @@ export default function ProfileDropdown({
             <button
               type="button"
               onClick={handleLogout}
-              className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-error transition-colors hover:bg-error/10 focus:bg-error/10"
+              className="flex min-h-10 w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium !text-error transition-colors hover:bg-error/10 focus:bg-error/10"
             >
               <LogOut className="h-4 w-4" />
               Đăng xuất

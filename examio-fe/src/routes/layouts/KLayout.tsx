@@ -1,4 +1,4 @@
-import { type FormEvent, type PropsWithChildren, useState } from "react";
+import { type FormEvent, type PropsWithChildren, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AlertTriangle, Languages, Mail, Moon, PanelLeft, Search, Sun, X } from "lucide-react";
 import ProfileDropdown from "@/components/atoms/ProfileDropdown";
@@ -8,11 +8,24 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useJobStore } from "@/stores/useAIGeneratorStore";
 import { useThemeContext } from "@/provider/ThemeProvider";
+import { useIsDesktop } from "@/hooks/useMediaQuery";
 
 export function KLayout({ children }: PropsWithChildren) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, sendVerificationEmail, loading } = useAuthStore();
+  const isDesktop = useIsDesktop();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("sidebar_collapsed") === "true";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("sidebar_collapsed", String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
+
+  const sidebarWidth = isDesktop ? (sidebarCollapsed ? 72 : 272) : 0;
+
   const profile = {
     name: user?.name || user?.username || "Người dùng",
     email: user?.email || "",
@@ -92,9 +105,12 @@ export function KLayout({ children }: PropsWithChildren) {
         "mx-auto flex min-h-screen w-full flex-1 flex-col overflow-x-hidden overflow-y-auto bg-canvas text-ink md:flex-row",
       )}
     >
-      <SidebarKit />
+      <SidebarKit collapsed={sidebarCollapsed} />
 
-      <main className="m-0 w-full pb-20 pt-10 md:ml-[272px] md:pb-0">
+      <main
+        className="m-0 w-full pb-20 pt-10 xl:pb-0"
+        style={{ marginLeft: isDesktop ? sidebarWidth : 0 }}
+      >
         {showVerificationBanner && (
           <div className="mx-4 mt-4 flex w-auto flex-col items-start justify-between gap-2 rounded-lg border border-warning/25 bg-warning/10 px-3 py-2 text-body shadow-[0_1px_3px_rgba(20,20,19,0.08)] sm:flex-row sm:items-center sm:gap-4 sm:px-4 sm:py-2.5">
             <div className="flex flex-1 items-center gap-3">
@@ -131,12 +147,25 @@ export function KLayout({ children }: PropsWithChildren) {
           </div>
         )}
 
-        <header className="fixed left-0 right-0 top-0 z-50 w-full border-b border-hairline bg-canvas/95 backdrop-blur-md md:left-[272px] md:w-[calc(100%-272px)]">
-          <div className="flex min-h-16.5 w-full items-center justify-between gap-3 px-4 md:px-6 lg:px-8">
+        <header
+          className="fixed right-0 top-0 z-50 border-b border-hairline bg-canvas/95 backdrop-blur-md"
+          style={{ left: isDesktop ? sidebarWidth : 0, width: isDesktop ? `calc(100% - ${sidebarWidth}px)` : "100%" }}
+        >
+          <div className="flex min-h-16.5 w-full items-center justify-between gap-3 px-4 xl:px-6 2xl:px-8">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-hairline bg-surface-card text-coral md:hidden">
+              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-hairline bg-surface-card text-coral xl:hidden">
                 <PanelLeft className="h-5 w-5" />
               </span>
+              {isDesktop && (
+                <button
+                  type="button"
+                  onClick={() => setSidebarCollapsed((current) => !current)}
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-hairline bg-surface-soft text-muted-foreground transition-colors hover:bg-surface-card hover:text-ink"
+                  aria-label={sidebarCollapsed ? "Mở rộng sidebar" : "Thu nhỏ sidebar"}
+                >
+                  <PanelLeft className={cn("h-5 w-5 transition-transform", sidebarCollapsed && "rotate-180")} />
+                </button>
+              )}
             </div>
 
             <form
@@ -178,7 +207,7 @@ export function KLayout({ children }: PropsWithChildren) {
 
         {children}
 
-        <footer className="mx-4 mt-12 border-t border-hairline pb-6 pt-4 text-center text-xs text-muted-foreground md:mx-6 lg:mx-8">
+        <footer className="mx-4 mt-12 border-t border-hairline pb-6 pt-4 text-center text-xs text-muted-foreground xl:mx-6 2xl:mx-8">
           <p>
             This site is protected by reCAPTCHA and the Google{" "}
             <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-body">Privacy Policy</a>
