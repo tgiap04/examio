@@ -295,7 +295,7 @@ export default function AboutSection() {
                 className="flex justify-between items-end"
               >
                 <h2 className="text-2xl font-bold text-slate-900">
-                  Văn hóa KMA Edu
+                  Văn hóa Examio
                 </h2>
               </motion.div>
 
@@ -346,7 +346,7 @@ export default function AboutSection() {
 
               <div className="relative z-10 flex flex-col items-center gap-6">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900">
-                  Sẵn sàng trải nghiệm KMA Edu?
+                  Sẵn sàng trải nghiệm Examio?
                 </h2>
                 <p className="text-slate-600 max-w-xl text-lg">
                   Bắt đầu tạo bài kiểm tra, flashcard và tóm tắt từ tài liệu của

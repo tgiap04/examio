@@ -75,7 +75,7 @@ export default function FooterSection() {
             <address className="space-y-2 text-sm not-italic">
               <p>141 Đường Chiến Thắng, Tân Triều</p>
               <p>Thanh Trì, Hà Nội</p>
-              <p>Email: contact@kma.edu.vn</p>
+              <p>Email: contact@examio.vn</p>
             </address>
           </div>
           <div className="relative sm:col-span-2 lg:col-span-1 flex flex-col items-center sm:items-start">

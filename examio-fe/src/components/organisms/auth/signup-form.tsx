@@ -104,7 +104,7 @@ export function SignupForm() {
               <Input
                 id="email"
                 name="email"
-                placeholder="email@kma.edu.vn"
+                placeholder="email@examio.vn"
                 type="email"
                 className="bg-surface-soft border-hairline focus:ring-primary focus:border-primary"
               />
