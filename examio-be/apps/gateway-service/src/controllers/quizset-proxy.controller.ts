@@ -10,6 +10,7 @@ import {
     Req,
     UseInterceptors,
     UploadedFile,
+    HttpException,
 } from '@nestjs/common';
 import {
     ApiTags,
@@ -473,12 +474,12 @@ export class QuizsetProxyController {
             return response.data;
         } catch (error) {
             if (error.response) {
-                throw new Error(
-                    JSON.stringify(error.response.data) ||
-                        'Failed to forward request'
+                throw new HttpException(
+                    error.response.data,
+                    error.response.status
                 );
             }
-            throw error;
+            throw new HttpException('Service unavailable', 503);
         }
     }
 }

@@ -10,7 +10,7 @@ const ExamManagementHeaderComponent = ({
   onCreateExam,
 }: ExamManagementHeaderProps) => {
   return (
-    <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center justify-between mb-6 mt-4">
       <div>
         <h1 className="text-2xl font-bold text-foreground">Quản lý đề thi</h1>
         <p className="text-sm text-muted-foreground mt-1">

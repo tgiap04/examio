@@ -148,104 +148,106 @@ export function LabelSelector({
         Nhãn câu hỏi (tùy chọn)
       </Label>
 
-      <RadioGroup
-        value={mode}
-        onValueChange={(value) => onModeChange(value as "existing" | "new")}
-        className="space-y-2"
-      >
-        {/* Existing labels option - default if labels exist */}
-        {labels.length > 0 && (
+      <div className="space-y-3">
+        {/* Radio options */}
+        <RadioGroup
+          value={mode}
+          onValueChange={(value) => onModeChange(value as "existing" | "new")}
+          className="space-y-2"
+        >
+          {labels.length > 0 && (
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="existing" id="label-existing" />
+              <Label
+                htmlFor="label-existing"
+                className="cursor-pointer font-normal"
+              >
+                Chọn nhãn có sẵn
+              </Label>
+            </div>
+          )}
           <div className="flex items-center space-x-2">
-            <RadioGroupItem value="existing" id="label-existing" />
-            <Label
-              htmlFor="label-existing"
-              className="cursor-pointer font-normal"
-            >
-              Chọn nhãn có sẵn
+            <RadioGroupItem value="new" id="label-new" />
+            <Label htmlFor="label-new" className="cursor-pointer font-normal">
+              Tạo nhãn mới
             </Label>
+          </div>
+        </RadioGroup>
+
+        {/* Existing label selector - outside RadioGroup */}
+        {mode === "existing" && labels.length > 0 && (
+          <div className="pl-6">
+            <Select value={selectedLabelId || ""} onValueChange={onLabelIdChange} className="w-full">
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Chọn nhãn..." />
+              </SelectTrigger>
+              <SelectContent>
+                {labels.map((label) => (
+                  <SelectItem key={label.id} value={label.id}>
+                    <div className="flex items-center gap-2">
+                      {label.color && (
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: label.color }}
+                        />
+                      )}
+                      <span>{label.name}</span>
+                      <span className="text-muted-foreground text-xs">
+                        (
+                        {(isFlashcardMode
+                          ? (label as FlashcardSetLabel).flashcardCount
+                          : (label as QuizSetLabel).questionCount) || 0}{" "}
+                        {isFlashcardMode ? "thẻ" : "câu"})
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         )}
 
-        {/* Create new label option - always available */}
-        <div className="flex items-center space-x-2">
-          <RadioGroupItem value="new" id="label-new" />
-          <Label htmlFor="label-new" className="cursor-pointer font-normal">
-            Tạo nhãn mới
-          </Label>
-        </div>
-      </RadioGroup>
+        {/* New label form - outside RadioGroup */}
+        {mode === "new" && (
+          <div className="space-y-3 pl-6 border-l-2 border-primary/20">
+            <div>
+              <Label htmlFor="new-label-name" className="text-sm">
+                Tên nhãn
+              </Label>
+              <Input
+                id="new-label-name"
+                placeholder="VD: Chương 1, Phần A, ..."
+                value={newLabelName}
+                onChange={(e) => onNewLabelNameChange(e.target.value)}
+                className="mt-1"
+              />
+            </div>
 
-      {/* Existing label selector */}
-      {mode === "existing" && labels.length > 0 && (
-        <Select value={selectedLabelId || ""} onValueChange={onLabelIdChange}>
-          <SelectTrigger>
-            <SelectValue placeholder="Chọn nhãn..." />
-          </SelectTrigger>
-          <SelectContent>
-            {labels.map((label) => (
-              <SelectItem key={label.id} value={label.id}>
-                <div className="flex items-center gap-2">
-                  {label.color && (
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: label.color }}
-                    />
-                  )}
-                  <span>{label.name}</span>
-                  <span className="text-muted-foreground text-xs">
-                    (
-                    {(isFlashcardMode
-                      ? (label as FlashcardSetLabel).flashcardCount
-                      : (label as QuizSetLabel).questionCount) || 0}{" "}
-                    {isFlashcardMode ? "thẻ" : "câu"})
-                  </span>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
-
-      {/* New label form */}
-      {mode === "new" && (
-        <div className="space-y-3 pl-6 border-l-2 border-primary/20">
-          <div>
-            <Label htmlFor="new-label-name" className="text-sm">
-              Tên nhãn
-            </Label>
-            <Input
-              id="new-label-name"
-              placeholder="VD: Chương 1, Phần A, ..."
-              value={newLabelName}
-              onChange={(e) => onNewLabelNameChange(e.target.value)}
-              className="mt-1"
-            />
-          </div>
-
-          <div>
-            <Label className="text-sm flex items-center gap-1">
-              <Palette className="h-3 w-3" />
-              Màu sắc
-            </Label>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {LABEL_COLORS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  onClick={() => onNewLabelColorChange(color)}
-                  className={cn(
-                    "w-7 h-7 rounded-full border-2 transition-all",
-                    newLabelColor === color
-                      ? "border-foreground scale-110"
-                      : "border-transparent hover:scale-105",
-                  )}
-                  style={{ backgroundColor: color }}
-                />
-              ))}
+            <div>
+              <Label className="text-sm flex items-center gap-1">
+                <Palette className="h-3 w-3" />
+                Màu sắc
+              </Label>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {LABEL_COLORS.map((color) => (
+                  <button
+                    key={color}
+                    type="button"
+                    onClick={() => onNewLabelColorChange(color)}
+                    className={cn(
+                      "w-7 h-7 rounded-full border-2 transition-all",
+                      newLabelColor === color
+                        ? "border-foreground scale-110"
+                        : "border-transparent hover:scale-105",
+                    )}
+                    style={{ backgroundColor: color }}
+                  />
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

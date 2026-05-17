@@ -42,9 +42,10 @@ function Select({ value, defaultValue, onValueChange, onOpenChange, children, cl
       options={items.map((item) => ({ value: item.value, label: item.label, disabled: item.disabled }))}
       onChange={(nextValue) => onValueChange?.(String(nextValue))}
       onOpenChange={onOpenChange}
-      className={cn("min-w-0", trigger?.props.className, className)}
+      className={cn("min-w-0 w-full", trigger?.props.className, className)}
       placeholder={placeholder ?? valueSlot?.props.placeholder}
       labelRender={valueSlot?.props.children ? () => valueSlot.props.children : undefined}
+      getPopupContainer={(triggerNode) => triggerNode.closest('.ant-modal-body') as HTMLElement || triggerNode.closest('.ant-drawer-body') as HTMLElement || document.body}
       {...props}
     />
   );

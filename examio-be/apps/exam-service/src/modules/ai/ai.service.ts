@@ -6,6 +6,7 @@ import {
     HttpException,
     InternalServerErrorException,
     ServiceUnavailableException,
+    ConflictException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { AxiosError } from 'axios';
@@ -15,6 +16,7 @@ import {
     R2ClientService,
     sanitizeFilename,
 } from '@examio/common';
+import { RedisService, EXPIRED_TIME } from '@examio/redis';
 import { AIRepository } from './ai.repository';
 import {
     UploadFileDto,
@@ -31,16 +33,54 @@ import { FinanceClientService } from '../finance-client/finance-client.service';
 export class AIService {
     private readonly logger = new Logger(AIService.name);
     private readonly aiServiceUrl: string;
+    private readonly GENERATION_LOCK_TTL = EXPIRED_TIME.THIRTY_MINUTES;
 
     constructor(
         private readonly aiRepository: AIRepository,
         private readonly generateIdService: GenerateIdService,
         private readonly httpService: HttpService,
         private readonly financeClient: FinanceClientService,
-        private readonly r2ClientService: R2ClientService
+        private readonly r2ClientService: R2ClientService,
+        private readonly redisService: RedisService
     ) {
         this.aiServiceUrl =
             process.env.AI_SERVICE_URL || 'http://localhost:8000/api';
+    }
+
+    /**
+     * Acquire a lock to prevent duplicate generation jobs of same type per user.
+     * Throws ConflictException if user already has an active job of this type.
+     * Type 1 = quiz, Type 2 = flashcard. User can run 1 quiz + 1 flashcard concurrently.
+     */
+    private async acquireGenerationLock(
+        userId: string,
+        typeResult: number
+    ): Promise<string> {
+        const typeKey = typeResult === 2 ? 'flashcard' : 'quiz';
+        const lockKey = `ai:generation:lock:${userId}:${typeKey}`;
+        const existing = await this.redisService.get<string>(lockKey);
+        if (existing) {
+            const label = typeKey === 'quiz' ? 'sinh quiz' : 'sinh flashcard';
+            throw new ConflictException(
+                `Bạn đang có job ${label} chưa hoàn tất. Vui lòng đợi job hiện tại kết thúc.`
+            );
+        }
+        await this.redisService.set(
+            lockKey,
+            new Date().toISOString(),
+            this.GENERATION_LOCK_TTL
+        );
+        return lockKey;
+    }
+
+    private async releaseGenerationLock(
+        userId: string,
+        typeResult: number
+    ): Promise<void> {
+        const typeKey = typeResult === 2 ? 'flashcard' : 'quiz';
+        await this.redisService.del(
+            `ai:generation:lock:${userId}:${typeKey}`
+        );
     }
 
     private getDefaultModelId(): string {
@@ -266,6 +306,10 @@ export class AIService {
             throw new BadRequestException('No file provided');
         }
 
+        // Guard: prevent duplicate generation job of same type for this user
+        const typeResultForLock = this.normalizeTypeResult(dto.typeResult);
+        await this.acquireGenerationLock(user.id, typeResultForLock);
+
         try {
             // 1. Check for duplicate upload first
             const existingStorage =
@@ -469,6 +513,13 @@ export class AIService {
                 `Generate from file failed: ${error.message}`,
                 error.stack
             );
+            // Release lock on synchronous failure (e.g., balance check, validation)
+            // Lock is released by processFileAsync.finally for async failures.
+            try {
+                await this.releaseGenerationLock(user.id, typeResultForLock);
+            } catch {
+                /* ignore */
+            }
             throw error;
         }
     }
@@ -650,6 +701,15 @@ export class AIService {
 
             if (normalizedModelError) {
                 throw new ServiceUnavailableException(normalizedModelError);
+            }
+        } finally {
+            // Release the generation lock so the user can start a new job of this type
+            try {
+                await this.releaseGenerationLock(userId, typeResult);
+            } catch (lockErr) {
+                this.logger.error(
+                    `Failed to release generation lock: ${lockErr.message}`
+                );
             }
         }
     }
@@ -1378,6 +1438,12 @@ export class AIService {
     async regenerate(uploadId: string, user: User, dto: RegenerateDto) {
         const upload = await this.getUploadDetail(uploadId, user);
 
+        // Guard: prevent duplicate generation of same type for this user
+        const lockType = this.normalizeTypeResult(dto.typeResult);
+        await this.acquireGenerationLock(user.id, lockType);
+
+        try {
+
         // If not yet processed or FAILED, trigger OCR first via HTTP
         if (
             upload.processingStatus === 'PENDING' ||
@@ -1487,9 +1553,25 @@ export class AIService {
             };
         } catch (error) {
             this.logger.error(`Error calling AI service: ${error.message}`);
+            // Release lock on synchronous failure
+            try {
+                await this.releaseGenerationLock(user.id, lockType);
+            } catch {
+                /* ignore */
+            }
             throw new NotFoundException(
                 `Lỗi khi tạo nội dung: ${error.message}`
             );
+        }
+
+        } catch (lockOrEarlyError) {
+            // Release lock on any error before processFileAsync gets a chance
+            try {
+                await this.releaseGenerationLock(user.id, lockType);
+            } catch {
+                /* ignore */
+            }
+            throw lockOrEarlyError;
         }
     }
 

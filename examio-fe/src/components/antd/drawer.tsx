@@ -1,22 +1,23 @@
 import * as React from "react";
-import { Drawer as AntDrawer } from "antd";
+import { Drawer as AntDrawer, type DrawerProps as AntDrawerProps } from "antd";
 import { cn } from "@/lib/utils";
 
 type DrawerContextValue = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  drawerProps?: Omit<AntDrawerProps, "open" | "onClose">;
 };
 
 const DrawerContext = React.createContext<DrawerContextValue>({});
 
-function Drawer({ open, defaultOpen, onOpenChange, children }: React.PropsWithChildren<{ open?: boolean; defaultOpen?: boolean; onOpenChange?: (open: boolean) => void }>) {
+function Drawer({ open, defaultOpen, onOpenChange, children, ...rest }: React.PropsWithChildren<{ open?: boolean; defaultOpen?: boolean; onOpenChange?: (open: boolean) => void } & Omit<AntDrawerProps, "open" | "onClose" | "children">>) {
   const [internalOpen, setInternalOpen] = React.useState(defaultOpen ?? false);
   const currentOpen = open ?? internalOpen;
   function setOpen(next: boolean) {
     setInternalOpen(next);
     onOpenChange?.(next);
   }
-  return <DrawerContext value={{ open: currentOpen, onOpenChange: setOpen }}>{children}</DrawerContext>;
+  return <DrawerContext value={{ open: currentOpen, onOpenChange: setOpen, drawerProps: rest }}>{children}</DrawerContext>;
 }
 
 function DrawerTrigger({ children }: React.PropsWithChildren) {
@@ -45,7 +46,7 @@ function DrawerOverlay() {
 
 function DrawerContent({ className, children, ...props }: React.ComponentProps<"div">) {
   const context = React.use(DrawerContext);
-  return <AntDrawer open={context.open} onClose={() => context.onOpenChange?.(false)} placement="bottom" className={className} {...(props as any)}>{children}</AntDrawer>;
+  return <AntDrawer open={context.open} onClose={() => context.onOpenChange?.(false)} {...context.drawerProps} className={className} {...(props as any)}>{children}</AntDrawer>;
 }
 
 function DrawerHeader({ className, ...props }: React.ComponentProps<"div">) {

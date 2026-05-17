@@ -404,3 +404,20 @@
 .pulse-red {
   animation: pulse-red 2s infinite;
 }
+
+/* AI Tool page - sticky tab bar on mobile */
+.ai-tool-tabs > .ant-tabs-nav {
+  position: sticky !important;
+  top: 66px !important;
+  z-index: 40 !important;
+  background: var(--color-background, hsl(var(--background))) !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+
+@media (min-width: 768px) {
+  .ai-tool-tabs > .ant-tabs-nav {
+    position: static !important;
+    z-index: auto !important;
+  }
+}

@@ -49,7 +49,7 @@ export function DeleteConfirmDialog({
           <AlertDialogAction
             onClick={handleConfirm}
             disabled={isLoading}
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600">
+            className="bg-red-600 hover:bg-red-700 focus:ring-red-600 px-4 !ml-2 flex items-center gap-x-2">
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Xóa
           </AlertDialogAction>

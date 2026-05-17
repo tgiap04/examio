@@ -13,12 +13,14 @@ interface ItemFileDetailProps {
   fileName: string;
   fileSize: number;
   onRemove: () => void;
+  disabled?: boolean;
 }
 
 export function ItemFileDetail({
   fileName,
   fileSize,
   onRemove,
+  disabled,
 }: ItemFileDetailProps) {
   const formatBytes = (bytes: number, decimals = 2): string => {
     if (!+bytes) return "0 Bytes";
@@ -47,7 +49,8 @@ export function ItemFileDetail({
           variant="ghost"
           size="icon"
           onClick={onRemove}
-          className="h-8 w-8 text-muted-foreground hover:text-destructive">
+          disabled={disabled}
+          className="h-8 w-8 text-muted-foreground hover:text-destructive disabled:opacity-50 disabled:cursor-not-allowed">
           <X className="size-4" />
         </Button>
       </ItemActions>

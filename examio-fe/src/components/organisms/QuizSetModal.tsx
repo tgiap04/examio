@@ -74,8 +74,8 @@ export function QuizSetModal({
 
   // Mobile: sử dụng Drawer
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent className="max-h-[90vh] px-4 pb-24">
+    <Drawer open={open} onOpenChange={onOpenChange} size={"80%"} placement="bottom">
+      <DrawerContent className="max-h-[90vh] px-4 pb-6">
         <DrawerHeader>
           <DrawerTitle>{title}</DrawerTitle>
         </DrawerHeader>

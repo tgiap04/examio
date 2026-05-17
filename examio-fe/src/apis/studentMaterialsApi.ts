@@ -58,6 +58,9 @@ export interface RecentMaterialsResponse {
 export interface RecentExamsResponse {
   examAttempts: RecentExamAttempt[];
   total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 // ==================== API Functions ====================
@@ -73,10 +76,11 @@ export async function getRecentFlashcardSetsApi(
 }
 
 export async function getRecentExamAttemptsApi(
-  limit: number = 10
+  limit: number = 10,
+  page: number = 1
 ): Promise<RecentExamsResponse> {
   const response = await api.get("/student/recent-exams", {
-    params: { limit },
+    params: { limit, page },
   });
   return response.data;
 }

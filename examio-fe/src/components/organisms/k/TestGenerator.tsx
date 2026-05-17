@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useEffect } from "react";
 
 import {
   Card,
@@ -69,6 +69,13 @@ export function TestGenerator() {
   useGenerationGuard(isGenerating);
 
   const { toast } = useToast();
+  const resultRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isGenerating && resultRef.current) {
+      resultRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [isGenerating]);
   const displayFileName = file?.name || fileInfo?.name;
   const displayFileSize = file?.size || fileInfo?.size;
   const hasFile = !!file || !!uploadId;
@@ -143,7 +150,7 @@ export function TestGenerator() {
     <div className="grid w-full gap-6 lg:grid-cols-[420px_minmax(0,1fr)] xl:items-stretch">
       <div className="flex flex-col gap-4">
         <Card className="border-border bg-card shadow-none">
-          <CardContent className="flex min-h-[252px] flex-col items-center justify-center px-6 py-7 text-center">
+          <CardContent className="flex min-h-[252px] flex-col items-center justify-center px-3 md:px-6 py-7 text-center">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary">
               <Upload className="h-6 w-6" />
             </div>
@@ -152,20 +159,23 @@ export function TestGenerator() {
             </h3>
             <p className="mt-3 text-sm text-muted-foreground">Kéo thả PDF up to 100 MB</p>
             {!hasFile ? (
-              <FileUpload
-                acceptedFileTypes={[".pdf", "application/pdf"]}
-                maxFileSize={104857600}
-                className="mt-5 w-full"
-                onUploadSuccess={handleFileUpload}
-                onUploadError={handleFileError}
-                uploadDelay={2000}
-              />
+              <div className={isGenerating ? "pointer-events-none opacity-50 mt-5 w-full" : "mt-5 w-full"}>
+                <FileUpload
+                  acceptedFileTypes={[".pdf", "application/pdf"]}
+                  maxFileSize={104857600}
+                  className="w-full"
+                  onUploadSuccess={handleFileUpload}
+                  onUploadError={handleFileError}
+                  uploadDelay={2000}
+                />
+              </div>
             ) : (
               <div className="mt-5 w-full">
                 <ItemFileDetail
                   fileName={displayFileName || "Unknown file"}
                   fileSize={displayFileSize || 0}
                   onRemove={handleRemoveFile}
+                  disabled={isGenerating}
                 />
               </div>
             )}
@@ -173,7 +183,7 @@ export function TestGenerator() {
         </Card>
 
         <Card className="border-border bg-card shadow-none">
-          <CardContent className="space-y-6 px-6 py-6">
+          <CardContent className="space-y-6 px-3 md:px-6 py-6">
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-xs font-semibold text-foreground">
                 <Cpu className="h-3.5 w-3.5" />
@@ -273,8 +283,8 @@ export function TestGenerator() {
         </Card>
       </div>
 
-      <Card className="min-h-[560px] border-border bg-background shadow-none">
-        <CardHeader className="gap-4 border-b border-border px-6 pb-5">
+      <Card ref={resultRef} className="min-h-[560px] border-border bg-background shadow-none">
+        <CardHeader className="gap-4 border-b border-border px-3 md:px-6 pb-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2">
@@ -297,7 +307,7 @@ export function TestGenerator() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="cursor-pointer border-border bg-card text-foreground !p-4"
+                  className="cursor-pointer border-border bg-card text-foreground !p-4 mb-2 md:mb-0 w-full md:w-auto"
                 >
                   <SaveAll size={15} className="mr-2" />
                   Lưu
@@ -307,8 +317,8 @@ export function TestGenerator() {
           </div>
 
           {generatedTest && !isGenerating && (
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span className="rounded-full border border-border bg-card px-3 py-1 font-medium text-foreground">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-sm text-muted-foreground">
+              <span className="rounded-full border border-border bg-card px-3 py-1 font-medium text-foreground mt-4">
                 {generatedTest.length} câu hỏi
               </span>
               {isNarrow && keyword && (
@@ -320,7 +330,7 @@ export function TestGenerator() {
           )}
         </CardHeader>
 
-        <CardContent className="flex flex-1 flex-col px-6 mt-4">
+        <CardContent className="flex flex-1 flex-col px-0 md:px-6 mt-4">
           {isGenerating ? (
             <div className="flex min-h-[360px] flex-1 items-center justify-center rounded-2xl border border-border bg-card px-6">
               <ModernLoader
@@ -351,7 +361,7 @@ export function TestGenerator() {
             </div>
           ) : (
             <ScrollArea className="flex-1 min-h-[360px] rounded-2xl border border-border bg-card">
-              <div className="space-y-4 p-4 pr-5 md:p-6 md:pr-7 max-h-[600px] overflow-y-auto">
+              <div className="space-y-3 p-3 md:space-y-4 md:p-6 md:pr-7 max-h-[600px] overflow-y-auto">
                 {generatedTest.map((q: Quizz, idx: number) => {
                   const answerIndex =
                     typeof q.answer === "number"
@@ -361,18 +371,18 @@ export function TestGenerator() {
                   return (
                     <div
                       key={idx}
-                      className="rounded-2xl border border-border bg-card p-4 md:p-5"
+                      className="rounded-xl border border-border bg-background p-3 md:rounded-2xl md:p-5"
                     >
-                      <div className="flex items-start gap-4">
-                        <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-semibold text-primary">
+                      <div className="flex items-start gap-3 md:gap-4">
+                        <span className="mt-0.5 flex h-8 w-8 md:h-9 md:w-9 shrink-0 items-center justify-center rounded-lg md:rounded-xl bg-primary/10 text-xs md:text-sm font-semibold text-primary">
                           {idx + 1}
                         </span>
-                        <div className="min-w-0 flex-1 space-y-4">
-                          <p className="text-sm font-semibold leading-7 text-foreground md:text-base">
+                        <div className="min-w-0 flex-1 space-y-3 md:space-y-4">
+                          <p className="text-sm font-semibold leading-6 text-foreground md:text-base md:leading-7">
                             {q.question}
                           </p>
 
-                          <div className="grid gap-2.5">
+                          <div className="grid gap-2">
                             {q.options.map((opt: string, optIdx: number) => {
                               const isCorrect = answerIndex === optIdx;
 
@@ -380,7 +390,7 @@ export function TestGenerator() {
                                 <div
                                   key={optIdx}
                                   className={cn(
-                                    "flex items-start gap-3 rounded-xl border p-3 transition-colors",
+                                    "flex items-start gap-2.5 rounded-lg border p-2.5 md:gap-3 md:rounded-xl md:p-3 transition-colors",
                                     isCorrect
                                       ? "border-accent-teal/30 bg-accent-teal/10"
                                       : "border-border bg-card",
@@ -398,7 +408,7 @@ export function TestGenerator() {
                                   </span>
                                   <span
                                     className={cn(
-                                      "flex-1 text-sm leading-6",
+                                      "flex-1 text-sm leading-5 md:leading-6",
                                       isCorrect
                                         ? "text-accent-teal"
                                         : "text-muted-foreground",

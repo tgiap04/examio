@@ -134,7 +134,7 @@ export function FormSelectFlashcardSet({
               key={flashcardSet.id}
               variant="outline"
               className="flex items-center justify-between space-y-0 space-x-4">
-              <div className="flex flex-1 items-center space-x-4">
+              <div className="flex flex-1 items-center space-x-4 gap-x-2">
                 <Checkbox
                   id={flashcardSet.id}
                   checked={selectedIds.includes(flashcardSet.id)}
@@ -142,12 +142,12 @@ export function FormSelectFlashcardSet({
                     handleCheckboxChange(flashcardSet.id, checked as boolean)
                   }
                 />
-                <Label htmlFor={flashcardSet.id} className="font-medium">
+                <Label htmlFor={flashcardSet.id} className="font-medium truncate w-1/3">
                   {flashcardSet.title}
                 </Label>
-                <p className="font-medium text-muted-foreground truncate w-full">
+                <span className="font-medium text-muted-foreground truncate w-full">
                   {flashcardSet.description}
-                </p>
+                </span>
               </div>
             </Item>
           ))}

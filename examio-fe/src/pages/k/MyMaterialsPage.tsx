@@ -37,7 +37,7 @@ function MaterialCard({
 }) {
   return (
     <article
-      className="group relative flex flex-col rounded-lg border border-hairline bg-canvas p-5 transition-all duration-200 hover:border-coral/30 hover:shadow-[0_4px_16px_rgba(20,20,19,0.06)]"
+      className="group relative flex flex-col rounded-lg border justify-between border-hairline bg-canvas p-5 transition-all duration-200 hover:border-coral/30 hover:shadow-[0_4px_16px_rgba(20,20,19,0.06)]"
     >
       {material.isPinned && (
         <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-coral/10 text-coral">
@@ -80,7 +80,7 @@ function MaterialCard({
       </div>
 
       {material.description && (
-        <p className="mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-2">
+        <p className="!mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-2">
           {material.description}
         </p>
       )}

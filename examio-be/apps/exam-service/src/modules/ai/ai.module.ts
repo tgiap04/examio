@@ -8,6 +8,7 @@ import {
     GrpcClientsModule,
     R2ClientService,
 } from '@examio/common';
+import { RedisModule } from '@examio/redis';
 import { AIController } from './ai.controller';
 import { AIService } from './ai.service';
 import { AIRepository } from './ai.repository';
@@ -17,6 +18,7 @@ import { AIRepository } from './ai.repository';
         AuthModule,
         EventsModule,
         HttpModule,
+        RedisModule,
         GrpcClientsModule.registerR2Client(),
     ],
     controllers: [AIController],

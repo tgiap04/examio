@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useRef, useEffect } from "react";
 
 import {
   Card,
@@ -70,6 +70,13 @@ export function FlashcardGenerator() {
   useGenerationGuard(isGenerating);
 
   const { toast } = useToast();
+  const resultRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isGenerating && resultRef.current) {
+      resultRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [isGenerating]);
   const displayFileName = file?.name || fileInfo?.name;
   const displayFileSize = file?.size || fileInfo?.size;
   const hasFile = !!file || !!uploadId;
@@ -158,7 +165,7 @@ export function FlashcardGenerator() {
     <div className="grid w-full gap-6 lg:grid-cols-[420px_minmax(0,1fr)] xl:items-stretch">
       <div className="flex flex-col gap-4">
         <Card className="border-border bg-card shadow-none">
-          <CardContent className="flex min-h-[252px] flex-col items-center justify-center px-6 py-7 text-center">
+          <CardContent className="flex min-h-[252px] flex-col items-center justify-center px-3 md:px-6 py-7 text-center">
             <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/15 bg-primary/10 text-primary">
               <Upload className="h-6 w-6" />
             </div>
@@ -167,20 +174,23 @@ export function FlashcardGenerator() {
             </h3>
             <p className="mt-3 text-sm text-muted-foreground">Kéo thả PDF up to 100 MB</p>
             {!hasFile ? (
-              <FileUpload
-                acceptedFileTypes={[".pdf", "application/pdf"]}
-                maxFileSize={104857600}
-                className="mt-5 w-full"
-                onUploadSuccess={handleFileUpload}
-                onUploadError={handleFileError}
-                uploadDelay={2000}
-              />
+              <div className={isGenerating ? "pointer-events-none opacity-50 mt-5 w-full" : "mt-5 w-full"}>
+                <FileUpload
+                  acceptedFileTypes={[".pdf", "application/pdf"]}
+                  maxFileSize={104857600}
+                  className="w-full"
+                  onUploadSuccess={handleFileUpload}
+                  onUploadError={handleFileError}
+                  uploadDelay={2000}
+                />
+              </div>
             ) : (
               <div className="mt-5 w-full">
                 <ItemFileDetail
                   fileName={displayFileName || "Unknown file"}
                   fileSize={displayFileSize || 0}
                   onRemove={handleRemoveFile}
+                  disabled={isGenerating}
                 />
               </div>
             )}
@@ -188,7 +198,7 @@ export function FlashcardGenerator() {
         </Card>
 
         <Card className="border-border bg-card shadow-none">
-          <CardContent className="space-y-6 px-6 py-6">
+          <CardContent className="space-y-6 px-3 md:px-6 py-6">
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-xs font-semibold text-foreground">
                 <Cpu className="h-3.5 w-3.5" />
@@ -288,8 +298,8 @@ export function FlashcardGenerator() {
         </Card>
       </div>
 
-      <Card className="min-h-[560px] border-border bg-background shadow-none">
-        <CardHeader className="gap-4 border-b border-border px-6 pb-5">
+      <Card ref={resultRef} className="min-h-[560px] border-border bg-background shadow-none">
+        <CardHeader className="gap-4 border-b border-border px-3 md:px-6 pb-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2">
@@ -312,7 +322,7 @@ export function FlashcardGenerator() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="cursor-pointer border-border bg-card text-foreground !p-4"
+                  className="cursor-pointer border-border bg-card text-foreground !p-4 mb-2 md:mb-0 w-full md:w-auto"
                 >
                   <SaveAll size={15} className="mr-2" />
                   Lưu
@@ -322,8 +332,8 @@ export function FlashcardGenerator() {
           </div>
 
           {generatedCards && generatedCards.length > 0 && !isGenerating && (
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-              <span className="rounded-full border border-border bg-card px-3 py-1 font-medium text-foreground">
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 text-sm text-muted-foreground">
+              <span className="rounded-full border border-border bg-card px-3 py-1 font-medium text-foreground mt-4">
                 {generatedCards.length} thẻ flashcard
               </span>
               {isNarrow && keyword && (
@@ -335,7 +345,7 @@ export function FlashcardGenerator() {
           )}
         </CardHeader>
 
-        <CardContent className="flex flex-1 flex-col px-6 mt-4">
+        <CardContent className="flex flex-1 flex-col px-0 md:px-6 mt-4">
           {isGenerating ? (
             <div className="flex min-h-[360px] flex-1 items-center justify-center rounded-2xl border border-border bg-card px-6">
               <ModernLoader
@@ -377,7 +387,7 @@ export function FlashcardGenerator() {
 
               <div className="flex flex-1 items-center justify-center py-4 md:py-8">
                 {generatedCards[currentCard] && (
-                  <div className="mx-auto w-full max-w-2xl">
+                  <div className="mx-auto w-full">
                     <FlipCard
                       key={currentCard}
                       className="w-full"
@@ -395,7 +405,7 @@ export function FlashcardGenerator() {
                 )}
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex items-center justify-center gap-2">
                 <Button
                   variant="outline"
                   size="lg"

@@ -150,8 +150,8 @@ export function FloatingDock({
                       ? "bg-coral/10 text-coral"
                       : "text-ink hover:bg-surface-soft"
                   )}>
-                  <span className="h-5 w-5 shrink-0">{item.icon}</span>
-                  <span className="font-medium text-sm">{item.label}</span>
+                  <span className="h-5 w-5 shrink-0 !text-coral">{item.icon}</span>
+                  <span className="font-medium text-sm !text-coral">{item.label}</span>
                 </Link>
               ))}
             </div>

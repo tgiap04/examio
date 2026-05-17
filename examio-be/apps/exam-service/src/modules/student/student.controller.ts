@@ -28,12 +28,15 @@ export class StudentController {
     @UseGuards(AuthGuard)
     @ApiOperation({ summary: 'Get recent exam attempts by student' })
     @ApiQuery({ name: 'limit', required: false, type: Number })
+    @ApiQuery({ name: 'page', required: false, type: Number })
     async getRecentExams(
         @Req() req: AuthenticatedRequest,
-        @Query('limit') limit?: string
+        @Query('limit') limit?: string,
+        @Query('page') page?: string
     ) {
         const parsedLimit = limit ? parseInt(limit, 10) : 10;
-        return this.studentService.getRecentExams(req.user.id, parsedLimit);
+        const parsedPage = page ? parseInt(page, 10) : 1;
+        return this.studentService.getRecentExams(req.user.id, parsedLimit, parsedPage);
     }
 
     @Post('pin-flashcard/:id')

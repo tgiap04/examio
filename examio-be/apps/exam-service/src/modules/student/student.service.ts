@@ -111,25 +111,33 @@ export class StudentService {
         return { pinned: true };
     }
 
-    async getRecentExams(userId: string, limit: number) {
-        const examAttempts = await this.prisma.examAttempt.findMany({
-            where: { userId },
-            include: {
-                examSession: {
-                    include: {
-                        examRoom: {
-                            select: {
-                                id: true,
-                                title: true,
-                                description: true,
+    async getRecentExams(userId: string, limit: number, page: number = 1) {
+        const skip = (page - 1) * limit;
+
+        const where = { userId };
+
+        const [examAttempts, total] = await Promise.all([
+            this.prisma.examAttempt.findMany({
+                where,
+                include: {
+                    examSession: {
+                        include: {
+                            examRoom: {
+                                select: {
+                                    id: true,
+                                    title: true,
+                                    description: true,
+                                },
                             },
                         },
                     },
                 },
-            },
-            orderBy: { createdAt: 'desc' },
-            take: limit,
-        });
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: limit,
+            }),
+            this.prisma.examAttempt.count({ where }),
+        ]);
 
         const formattedExamAttempts = examAttempts.map((attempt) => {
             const timeLimitMinutes = attempt.examSession.timeLimitMinutes;
@@ -166,7 +174,10 @@ export class StudentService {
 
         return {
             examAttempts: formattedExamAttempts,
-            total: formattedExamAttempts.length,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
         };
     }
 }

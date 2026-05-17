@@ -342,6 +342,7 @@ for text in texts:
 ### Note 
 - Tuyệt dối không commit code lên nếu người dùng không cho phép
 - Tuyệt đối không sinh plan trong examio-fe hay examio-be hay examio-app mà sinh trong `/plans`
+- Khi xóa bản ghi ( data ) ở database mà nó có ảnh lưu ở R2 thì đảm bảo cũng xóa luôna nhr đó trên R2
 
 ---
 

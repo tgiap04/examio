@@ -9,12 +9,15 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useJobStore } from "@/stores/useAIGeneratorStore";
 import { useThemeContext } from "@/provider/ThemeProvider";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
+import { useIsMobile } from "@/hooks/useMediaQuery";
+import Logo from "@/components/atoms/Logo";
 
 export function KLayout({ children }: PropsWithChildren) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, sendVerificationEmail, loading } = useAuthStore();
   const isDesktop = useIsDesktop();
+  const isMobile = useIsMobile();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("sidebar_collapsed") === "true";
@@ -102,13 +105,13 @@ export function KLayout({ children }: PropsWithChildren) {
   return (
     <div
       className={cn(
-        "mx-auto flex min-h-screen w-full flex-1 flex-col overflow-x-hidden overflow-y-auto bg-canvas text-ink md:flex-row",
+        "mx-auto flex min-h-screen w-full flex-1 flex-col bg-canvas text-ink md:flex-row",
       )}
     >
       <SidebarKit collapsed={sidebarCollapsed} />
 
       <main
-        className="m-0 w-full pb-20 pt-10 xl:pb-0"
+        className="m-0 w-full overflow-x-clip pb-5 pt-10 xl:pb-0"
         style={{ marginLeft: isDesktop ? sidebarWidth : 0 }}
       >
         {showVerificationBanner && (
@@ -153,9 +156,7 @@ export function KLayout({ children }: PropsWithChildren) {
         >
           <div className="flex min-h-16.5 w-full items-center justify-between gap-3 px-4 xl:px-6 2xl:px-8">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-hairline bg-surface-card text-coral xl:hidden">
-                <PanelLeft className="h-5 w-5" />
-              </span>
+              {isMobile && <Logo sizeLogo={40} sizeText={0} />}
               {isDesktop && (
                 <button
                   type="button"

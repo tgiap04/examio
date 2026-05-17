@@ -16,8 +16,9 @@ import {
   AlertDialogTitle,
 } from "@/components/antd/alert-dialog";
 import { Card, CardContent } from "@/components/antd/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/antd/tabs";
-import { useRecentUploadsStore } from "@/stores/useAIGeneratorStore";
+import { useRecentUploadsStore, useTestGeneratorStore, useFlashcardGeneratorStore } from "@/stores/useAIGeneratorStore";
+import { Tabs } from "antd";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 
 function formatFileSize(bytes: number) {
   if (!bytes) return "0 KB";
@@ -42,6 +43,10 @@ function AIGeneratorContent() {
     loadFromUpload,
     deleteUpload,
   } = useRecentUploadsStore();
+  const isMobile = useIsMobile();
+  const isTestGenerating = useTestGeneratorStore((s) => s.isGenerating);
+  const isFlashcardGenerating = useFlashcardGeneratorStore((s) => s.isGenerating);
+  const isAnyGenerating = isTestGenerating || isFlashcardGenerating;
 
   useEffect(() => {
     setActiveTab(tabFromUrl);
@@ -66,50 +71,55 @@ function AIGeneratorContent() {
     <div className="relative min-h-screen bg-background text-foreground">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-[radial-gradient(circle_at_16%_10%,rgba(204,120,92,0.14),transparent_32%),radial-gradient(circle_at_84%_8%,rgba(93,184,166,0.10),transparent_28%)]" />
 
-      <section className="relative mx-auto max-w-6xl px-4 py-6 md:py-8">
-        <div className="bg-background p-4 md:p-6 rounded-lg">
+      <section className="relative mx-auto max-w-6xl px-0 py-6 md:py-8 md:px-6 pt-8">
+        <div className="bg-background p-0 md:p-6 rounded-lg">
+          <div className="hidden md:flex items-center gap-3 text-sm text-muted-foreground mb-3 px-4 md:px-0">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
+              <Sparkles className="h-4 w-4" />
+            </span>
+            <span>Workspace tạo học liệu từ PDF</span>
+          </div>
+
           <Tabs
-            id="ai-generator-tabs"
-            value={activeTab}
-            onValueChange={handleTabChange}
-            className="ai-tool-tabs w-full gap-5"
-          >
-            <div className="mb-5 flex flex-col gap-3">
-              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
-                  <Sparkles className="h-4 w-4" />
-                </span>
-                <span>Workspace tạo học liệu từ PDF</span>
-              </div>
-              <TabsList className="grid h-11 w-full grid-cols-2 rounded-xl border border-border bg-card p-1">
-                <TabsTrigger
-                  value="test"
-                  className="flex items-center justify-center gap-2 rounded-lg px-3 font-medium text-sm"
-                >
-                  <FileText className="h-4 w-4 shrink-0" />
-                  <span>Đề kiểm tra</span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="flashcard"
-                  className="flex items-center justify-center gap-2 rounded-lg px-3 font-medium text-sm"
-                >
-                  <SquareSplitVertical className="h-4 w-4 shrink-0" />
-                  <span>Flashcard</span>
-                </TabsTrigger>
-              </TabsList>
-            </div>
+            activeKey={activeTab}
+            onChange={handleTabChange}
+            className="ai-tool-tabs"
+            tabBarStyle={!isMobile ? { padding: "0 0px", margin: 0 } : { padding: "0 16px", margin: 0 }}
+            items={[
+              {
+                key: "test",
+                label: (
+                  <span className="inline-flex items-center gap-2 font-medium text-sm">
+                    <FileText className="h-4 w-4 shrink-0" />
+                    Đề kiểm tra
+                  </span>
+                ),
+                children: (
+                  <div className="px-4 md:px-0 -mt-4">
+                    <TestGenerator />
+                  </div>
+                ),
+              },
+              {
+                key: "flashcard",
+                label: (
+                  <span className="inline-flex items-center gap-2 font-medium text-sm">
+                    <SquareSplitVertical className="h-4 w-4 shrink-0" />
+                    Flashcard
+                  </span>
+                ),
+                children: (
+                  <div className="px-4 md:px-0 -mt-4">
+                    <FlashcardGenerator />
+                  </div>
+                ),
+              },
+            ]}
+          />
 
-            <TabsContent value="test" className="m-0">
-              <TestGenerator />
-            </TabsContent>
-
-            <TabsContent value="flashcard" className="m-0">
-              <FlashcardGenerator />
-            </TabsContent>
-          </Tabs>
-
-          <Card className="!mt-4 border-border bg-card shadow-none">
-            <CardContent className="p-4 md:p-5">
+          <div className="px-4 md:px-0">
+            <Card className="!mt-4 border-border bg-card shadow-none">
+              <CardContent className="p-4 md:p-5">
               <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-3">
                   <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
@@ -156,7 +166,8 @@ function AIGeneratorContent() {
                         <button
                           type="button"
                           onClick={() => loadFromUpload(upload)}
-                          className="inline-flex min-w-0 flex-1 items-center gap-2 rounded-full px-1 text-left"
+                          disabled={isAnyGenerating}
+                          className="inline-flex min-w-0 flex-1 items-center gap-2 rounded-full px-1 text-left disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <FileText className="h-4 w-4 shrink-0 text-primary" />
                           <span className="min-w-0 max-w-[18rem] truncate font-medium">
@@ -180,7 +191,8 @@ function AIGeneratorContent() {
                           type="button"
                           aria-label={`Xóa ${upload.filename}`}
                           onClick={() => setUploadToDelete(upload)}
-                          className="ml-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-error/10 hover:text-error"
+                          disabled={isAnyGenerating}
+                          className="ml-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-error/10 hover:text-error disabled:cursor-not-allowed disabled:opacity-50"
                         >
                           <X className="h-3.5 w-3.5" />
                         </button>
@@ -191,6 +203,7 @@ function AIGeneratorContent() {
               )}
             </CardContent>
           </Card>
+          </div>
         </div>
       </section>
 
