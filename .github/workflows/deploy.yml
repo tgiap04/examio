@@ -1,0 +1,200 @@
+name: Deploy Examio
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'What to deploy'
+        type: choice
+        options:
+          - all
+          - backend
+          - frontend
+        default: 'all'
+      force_rebuild:
+        description: 'Force rebuild without cache'
+        type: boolean
+        default: false
+
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.changes.outputs.backend }}
+      frontend: ${{ steps.changes.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changed paths
+        id: changes
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TARGET="${{ github.event.inputs.target }}"
+            if [ "$TARGET" = "all" ] || [ "$TARGET" = "backend" ]; then
+              echo "backend=true" >> $GITHUB_OUTPUT
+            else
+              echo "backend=false" >> $GITHUB_OUTPUT
+            fi
+            if [ "$TARGET" = "all" ] || [ "$TARGET" = "frontend" ]; then
+              echo "frontend=true" >> $GITHUB_OUTPUT
+            else
+              echo "frontend=false" >> $GITHUB_OUTPUT
+            fi
+          else
+            CHANGED=$(git diff --name-only HEAD~1 HEAD)
+            echo "$CHANGED" | grep -q "^examio-be/" && echo "backend=true" >> $GITHUB_OUTPUT || echo "backend=false" >> $GITHUB_OUTPUT
+            echo "$CHANGED" | grep -q "^examio-fe/" && echo "frontend=true" >> $GITHUB_OUTPUT || echo "frontend=false" >> $GITHUB_OUTPUT
+          fi
+
+  deploy:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+
+    steps:
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT }}
+          command_timeout: 20m
+          script: |
+            set -e
+
+            DEPLOY_DIR="${{ secrets.DEPLOY_DIR }}"
+            DEPLOY_BE="${{ needs.detect-changes.outputs.backend }}"
+            DEPLOY_FE="${{ needs.detect-changes.outputs.frontend }}"
+            FORCE_REBUILD="${{ github.event.inputs.force_rebuild }}"
+
+            echo "══════════════════════════════════════════════════"
+            echo "  EXAMIO DEPLOYMENT"
+            echo "══════════════════════════════════════════════════"
+            echo "  Backend:  $DEPLOY_BE"
+            echo "  Frontend: $DEPLOY_FE"
+            echo "  Force:    ${FORCE_REBUILD:-false}"
+            echo "══════════════════════════════════════════════════"
+
+            # ── PULL CODE ──
+            echo ""
+            echo ">> PULL CODE"
+
+            mkdir -p "$DEPLOY_DIR"
+            cd "$DEPLOY_DIR"
+
+            if [ -d .git ]; then
+              git fetch origin main --prune
+              git reset --hard origin/main
+              git clean -fd
+            else
+              git clone -b main "https://${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git" .
+            fi
+
+            echo "   Commit: $(git rev-parse --short HEAD)"
+
+            BUILD_ARGS=""
+            [ "$FORCE_REBUILD" = "true" ] && BUILD_ARGS="--no-cache"
+
+            # ── DEPLOY BACKEND ──
+            if [ "$DEPLOY_BE" = "true" ]; then
+              echo ""
+              echo ">> DEPLOY BACKEND"
+
+              cd "$DEPLOY_DIR/examio-be/deploy"
+
+              if [ ! -f .env ]; then
+                echo "   ERROR: examio-be/deploy/.env not found"
+                exit 1
+              fi
+
+              echo "   Building..."
+              docker compose build $BUILD_ARGS --parallel
+
+              echo "   Restarting services..."
+              docker compose down --remove-orphans 2>/dev/null || true
+              docker compose up -d --force-recreate --remove-orphans
+
+              echo "   Waiting for services..."
+              sleep 30
+
+              MAX_RETRIES=5
+              HEALTHY=false
+              for i in $(seq 1 $MAX_RETRIES); do
+                if docker compose exec -T gateway wget -q --spider http://localhost:7000/api/v1/health 2>/dev/null; then
+                  HEALTHY=true
+                  break
+                fi
+                [ $i -lt $MAX_RETRIES ] && sleep 10
+              done
+
+              if [ "$HEALTHY" = "true" ]; then
+                echo "   Backend healthy"
+              else
+                echo "   Backend health check FAILED"
+                docker compose logs gateway --tail=50
+                exit 1
+              fi
+
+              docker compose ps --format "table {{.Name}}\t{{.Status}}"
+            fi
+
+            # ── DEPLOY FRONTEND ──
+            if [ "$DEPLOY_FE" = "true" ]; then
+              echo ""
+              echo ">> DEPLOY FRONTEND"
+
+              cd "$DEPLOY_DIR/examio-fe"
+
+              if [ ! -f .env ]; then
+                echo "   ERROR: examio-fe/.env not found"
+                exit 1
+              fi
+
+              set -a
+              source .env
+              set +a
+
+              echo "   Building..."
+              docker compose build $BUILD_ARGS \
+                --build-arg VITE_API_URL="${VITE_API_URL}" \
+                --build-arg VITE_MEASUREMENT_ID="${VITE_MEASUREMENT_ID:-}" \
+                --build-arg VITE_QUIZ_AES_KEY="${VITE_QUIZ_AES_KEY:-}" \
+                --build-arg VITE_RECAPTCHA_SITE_KEY="${VITE_RECAPTCHA_SITE_KEY:-}"
+
+              echo "   Restarting..."
+              docker compose down --remove-orphans 2>/dev/null || true
+              docker compose up -d --force-recreate --remove-orphans
+
+              sleep 5
+
+              if docker compose exec -T frontend wget -q --spider http://localhost:80/ 2>/dev/null; then
+                echo "   Frontend healthy"
+              else
+                echo "   Frontend health check FAILED"
+                docker compose logs frontend --tail=30
+                exit 1
+              fi
+            fi
+
+            # ── CLEANUP ──
+            echo ""
+            echo ">> CLEANUP"
+            docker image prune -f --filter "until=1h" 2>/dev/null || true
+            docker builder prune -f --filter "until=168h" 2>/dev/null || true
+
+            echo ""
+            echo "══════════════════════════════════════════════════"
+            echo "  DEPLOYMENT COMPLETE - $(date)"
+            echo "══════════════════════════════════════════════════"
