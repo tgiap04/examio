@@ -1,8 +1,6 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
-/node_modules
-/.pnp
+# Dependencies - installed fresh in Docker
+node_modules
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -10,40 +8,49 @@
 !.yarn/releases
 !.yarn/versions
 
-# testing
-/coverage
+# Build output - built fresh in Docker
+dist
+build
+out
+.next/
 
-# next.js
-/.next/
-/out/
+# Testing
+coverage
 
-# production
-/build
+# Git & CI
+.git
+.gitignore
+.github
 
-# misc
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# IDE & OS
+.vscode
+.idea
 .DS_Store
-*.pem
+*.swp
+*.swo
 
-# debug
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Debug & Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# vercel
-.vercel
-
-# typescript
+# TypeScript build info
 *.tsbuildinfo
 next-env.d.ts
 
-# docker compose files
-docker-compose.yml
-docker-compose.*.yml
-
-# misc
-.git
-.gitignore
-.dockerignore
-.github
-.vscode
+# Misc
+.vercel
+graphify-out

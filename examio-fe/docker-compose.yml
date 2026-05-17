@@ -1,0 +1,32 @@
+# Examio Frontend - Production Docker Compose
+# =============================================================================
+# Usage:
+#   1. Set build args in .env or pass via --build-arg
+#   2. docker compose build && docker compose up -d
+# =============================================================================
+
+services:
+    frontend:
+        build:
+            context: .
+            dockerfile: Dockerfile
+            args:
+                VITE_API_URL: ${VITE_API_URL}
+                VITE_MEASUREMENT_ID: ${VITE_MEASUREMENT_ID:-}
+                VITE_QUIZ_AES_KEY: ${VITE_QUIZ_AES_KEY:-}
+                VITE_RECAPTCHA_SITE_KEY: ${VITE_RECAPTCHA_SITE_KEY:-}
+        container_name: examio-frontend
+        ports:
+            - '${FE_PORT:-3080}:80'
+        restart: unless-stopped
+        healthcheck:
+            test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:80/']
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 10s
+        logging:
+            driver: 'json-file'
+            options:
+                max-size: '5m'
+                max-file: '3'

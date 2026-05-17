@@ -1,21 +1,41 @@
-FROM node:20-alpine AS base
+# =============================================================================
+# Examio Frontend - Optimized Multi-stage Dockerfile
+# =============================================================================
+# Final image: nginx:alpine (~30MB) instead of node (~1GB)
+# Build: node for compilation, nginx for serving static files
+# =============================================================================
+
+# Stage 1: Dependencies
+FROM node:20-alpine AS deps
 RUN corepack enable && corepack prepare yarn@4.9.2 --activate
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
-
-FROM base AS deps
 COPY package.json yarn.lock .yarnrc.yml ./
 RUN yarn install --immutable
 
+# Stage 2: Build
 FROM deps AS builder
+WORKDIR /app
 COPY . .
+ARG VITE_API_URL
+ARG VITE_MEASUREMENT_ID
+ARG VITE_QUIZ_AES_KEY
+ARG VITE_RECAPTCHA_SITE_KEY
+ENV VITE_API_URL=${VITE_API_URL} \
+    VITE_MEASUREMENT_ID=${VITE_MEASUREMENT_ID} \
+    VITE_QUIZ_AES_KEY=${VITE_QUIZ_AES_KEY} \
+    VITE_RECAPTCHA_SITE_KEY=${VITE_RECAPTCHA_SITE_KEY}
 RUN yarn build
 
-FROM base AS runner
-ENV NODE_ENV=production
-WORKDIR /app
-COPY package.json yarn.lock .yarnrc.yml ./
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-EXPOSE 4173
-CMD ["yarn", "preview", "--host", "0.0.0.0", "--port", "4173"]
+# Stage 3: Production - nginx alpine (~30MB final image)
+FROM nginx:1.27-alpine AS runner
+
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s \
+    CMD wget -q --spider http://localhost:80/ || exit 1
+
+CMD ["nginx", "-g", "daemon off;"]
