@@ -1,4 +1,5 @@
 # Prisma Migration Runner - Minimal image
+# Strategy: db push (create schema) + migrate resolve (mark migrations applied)
 FROM node:20-alpine AS base
 RUN corepack enable && corepack prepare yarn@4.9.2 --activate
 WORKDIR /app
@@ -11,4 +12,7 @@ RUN yarn install --immutable && \
     yarn prisma:generate && \
     rm -rf /root/.cache /tmp/*
 
-CMD ["npx", "prisma", "migrate", "deploy", "--schema=libs/database/src/schema.prisma"]
+COPY deploy/entrypoint-migration.sh ./entrypoint-migration.sh
+RUN chmod +x ./entrypoint-migration.sh
+
+CMD ["./entrypoint-migration.sh"]

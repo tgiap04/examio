@@ -316,9 +316,10 @@ services:
             - examio-network
         healthcheck:
             test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
-            interval: 30s
+            interval: 15s
             timeout: 10s
-            retries: 3
+            retries: 5
+            start_period: 30s
         restart: unless-stopped
         logging: *default-logging
 
