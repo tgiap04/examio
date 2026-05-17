@@ -139,6 +139,7 @@ model FlashCardSet {
     detailsFlashCard DetailsFlashCard[]
     labels           FlashCardSetLabel[]
     viewHistories    FlashCardViewHistory[]
+    userPins         UserPinnedFlashcard[]
 
     @@index([accessCode])
 }
@@ -378,6 +379,19 @@ model FlashCardViewHistory {
     @@index([flashCardSetId])
 }
 
+model UserPinnedFlashcard {
+    id             String   @id @default(cuid())
+    userId         String
+    flashcardSetId String
+    pinnedAt       DateTime @default(now())
+
+    user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+    flashcardSet FlashCardSet @relation(fields: [flashcardSetId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, flashcardSetId])
+    @@index([userId, pinnedAt])
+}
+
 
 model Payment {
     id          String    @unique
@@ -448,7 +462,6 @@ model UserStorage {
     historyGeneratedQuizz     HistoryGeneratedQuizz[]
     historyGeneratedFlashcard HistoryGeneratedFlashcard[]
     aiChatDocuments           AIChatDocument[]
-    documentEntities          DocumentEntity[]
 }
 
 model Document {
@@ -511,22 +524,6 @@ model UserStorageGraphGroup {
     @@index([userStorageId, groupIndex])
 }
 
-
-model DocumentEntity {
-    id            String   @id @default(cuid())
-    userStorageId String
-    chunkId       String
-    name          String
-    type          String   // concept, definition, formula, process, example, comparison
-    description   String?
-    relatedNames  Json     @default("[]") // Array of related entity names within same document
-    createdAt     DateTime @default(now())
-
-    userStorage UserStorage @relation(fields: [userStorageId], references: [id], onDelete: Cascade)
-
-    @@index([userStorageId])
-    @@index([chunkId])
-}
 
 // Subject Category - Nhóm môn học (VD: Toán học, Khoa học Tự nhiên, ...)
 model SubjectCategory {
@@ -602,6 +599,7 @@ model User {
     sessions                  UserSession[]
     monthlyFileUploads        UserMonthlyFileUpload[]
     flashCardViewHistories    FlashCardViewHistory[]
+    pinnedFlashcards          UserPinnedFlashcard[]
 }
 
 // Subscription tiers: 0=none, 1=basic, 2=advanced, 3=vip

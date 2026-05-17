@@ -1,5 +1,5 @@
-import { Controller, Get, Query, Req } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { Request } from 'express';
 import { ProxyService } from '../services/proxy.service';
 
@@ -12,6 +12,7 @@ export class StudentProxyController {
     @Get('recent-flashcards')
     @ApiOperation({ summary: 'Get recent flashcard sets viewed by student' })
     @ApiQuery({ name: 'limit', required: false, type: Number })
+    @ApiQuery({ name: 'page', required: false, type: Number })
     async getRecentFlashcards(@Req() req: Request, @Query() query: any) {
         return this.proxyService.forwardWithAuth(
             'exam',
@@ -35,6 +36,21 @@ export class StudentProxyController {
                 method: 'GET',
                 path: '/api/v1/student/recent-exams',
                 query,
+                headers: this.h(req),
+            },
+            this.t(req)
+        );
+    }
+
+    @Post('pin-flashcard/:id')
+    @ApiOperation({ summary: 'Toggle pin/unpin a flashcard set' })
+    @ApiParam({ name: 'id', description: 'Flashcard set ID' })
+    async togglePinFlashcard(@Req() req: Request, @Param('id') id: string) {
+        return this.proxyService.forwardWithAuth(
+            'exam',
+            {
+                method: 'POST',
+                path: `/api/v1/student/pin-flashcard/${id}`,
                 headers: this.h(req),
             },
             this.t(req)

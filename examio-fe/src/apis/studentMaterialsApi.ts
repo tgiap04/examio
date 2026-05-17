@@ -18,7 +18,8 @@ export interface RecentFlashcardSet {
     avatar: string | null;
   };
   isPublic: boolean;
-  progress?: number; // Percentage of cards studied
+  isPinned: boolean;
+  progress?: number;
 }
 
 export interface RecentExamAttempt {
@@ -28,10 +29,10 @@ export interface RecentExamAttempt {
   violationCount: number;
   startedAt: string;
   finishedAt: string | null;
-  status: number; // 0: IN_PROGRESS, 1: COMPLETED, 2: CANCELLED
+  status: number;
   totalQuestions: number;
   correctAnswers: number;
-  timeRemaining: number | null; // Minutes remaining if in progress
+  timeRemaining: number | null;
   examSession: {
     id: string;
     startTime: string;
@@ -49,6 +50,9 @@ export interface RecentExamAttempt {
 export interface RecentMaterialsResponse {
   flashcardSets: RecentFlashcardSet[];
   total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 export interface RecentExamsResponse {
@@ -58,21 +62,16 @@ export interface RecentExamsResponse {
 
 // ==================== API Functions ====================
 
-/**
- * Get recent flashcard sets viewed/studied by student
- */
 export async function getRecentFlashcardSetsApi(
-  limit: number = 10
+  limit: number = 10,
+  page: number = 1
 ): Promise<RecentMaterialsResponse> {
   const response = await api.get("/student/recent-flashcards", {
-    params: { limit },
+    params: { limit, page },
   });
   return response.data;
 }
 
-/**
- * Get recent exam attempts (both exam room and practice)
- */
 export async function getRecentExamAttemptsApi(
   limit: number = 10
 ): Promise<RecentExamsResponse> {
@@ -82,12 +81,16 @@ export async function getRecentExamAttemptsApi(
   return response.data;
 }
 
-/**
- * Generate share link for flashcard set
- */
 export async function generateShareLinkApi(
   flashcardSetId: string
 ): Promise<{ shareUrl: string; accessCode: string }> {
   const response = await api.post(`/flashcardsets/${flashcardSetId}/share`);
+  return response.data;
+}
+
+export async function togglePinFlashcardApi(
+  flashcardSetId: string
+): Promise<{ pinned: boolean }> {
+  const response = await api.post(`/student/pin-flashcard/${flashcardSetId}`);
   return response.data;
 }

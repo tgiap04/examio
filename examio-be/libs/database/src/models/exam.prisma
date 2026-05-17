@@ -76,6 +76,7 @@ model FlashCardSet {
     detailsFlashCard DetailsFlashCard[]
     labels           FlashCardSetLabel[]
     viewHistories    FlashCardViewHistory[]
+    userPins         UserPinnedFlashcard[]
 
     @@index([accessCode])
 }
@@ -313,4 +314,17 @@ model FlashCardViewHistory {
 
     @@index([userId, viewedAt])
     @@index([flashCardSetId])
+}
+
+model UserPinnedFlashcard {
+    id             String   @id @default(cuid())
+    userId         String
+    flashcardSetId String
+    pinnedAt       DateTime @default(now())
+
+    user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+    flashcardSet FlashCardSet @relation(fields: [flashcardSetId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, flashcardSetId])
+    @@index([userId, pinnedAt])
 }

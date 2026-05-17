@@ -1,13 +1,14 @@
-import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useCallback, useEffect, useState } from "react"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import {
   getRecentFlashcardSetsApi,
   generateShareLinkApi,
+  togglePinFlashcardApi,
   type RecentFlashcardSet,
 } from "@/apis/studentMaterialsApi"
 import { Button } from "@/components/antd/button"
 import { Skeleton } from "@/components/antd/skeleton"
-import { BookOpen, Share2, Eye, Clock, User, Copy, Check } from "lucide-react"
+import { BookOpen, Share2, Eye, Clock, User, Copy, Check, ChevronLeft, ChevronRight, Pin, PinOff } from "lucide-react"
 import { useToast } from "@/components/antd/toast"
 import {
   Dialog,
@@ -17,20 +18,33 @@ import {
   DialogTitle,
 } from "@/components/antd/dialog"
 import { Input } from "@/components/antd/input"
+import { useAuthStore } from "@/stores/useAuthStore"
+
+const PAGE_SIZE = 12
 
 function MaterialCard({
   material,
+  isOwner,
   onReview,
   onShare,
+  onTogglePin,
 }: {
   material: RecentFlashcardSet
+  isOwner: boolean
   onReview: (id: string) => void
   onShare: (id: string) => void
+  onTogglePin: (id: string) => void
 }) {
   return (
     <article
       className="group relative flex flex-col rounded-lg border border-hairline bg-canvas p-5 transition-all duration-200 hover:border-coral/30 hover:shadow-[0_4px_16px_rgba(20,20,19,0.06)]"
     >
+      {material.isPinned && (
+        <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-coral/10 text-coral">
+          <Pin className="h-3 w-3" />
+        </span>
+      )}
+
       <div className="flex items-start gap-4">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-surface-card">
           {material.thumbnail ? (
@@ -96,12 +110,27 @@ function MaterialCard({
 
         <div className="flex items-center gap-1.5">
           <button
-            onClick={() => onShare(material.id)}
-            className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-surface-card hover:text-ink"
-            aria-label="Chia sẻ"
+            onClick={() => onTogglePin(material.id)}
+            className={`grid h-8 w-8 place-items-center rounded-md transition-colors ${
+              material.isPinned
+                ? "bg-coral/10 text-coral hover:bg-coral/20"
+                : "text-muted-foreground hover:bg-surface-card hover:text-ink"
+            }`}
+            aria-label={material.isPinned ? "Bỏ ghim" : "Ghim"}
+            title={material.isPinned ? "Bỏ ghim" : "Ghim"}
           >
-            <Share2 className="h-3.5 w-3.5" />
+            {material.isPinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
           </button>
+          {isOwner && (
+            <button
+              onClick={() => onShare(material.id)}
+              className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-surface-card hover:text-ink"
+              aria-label="Chia sẻ"
+              title="Chia sẻ"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </button>
+          )}
           <Button
             onClick={() => onReview(material.id)}
             size="sm"
@@ -129,6 +158,77 @@ function formatTimeAgo(dateString: string): string {
   if (diffDays < 7) return `${diffDays} ngày trước`
   if (diffDays < 30) return `${Math.floor(diffDays / 7)} tuần trước`
   return `${Math.floor(diffDays / 30)} tháng trước`
+}
+
+function Pagination({
+  page,
+  totalPages,
+  onPageChange,
+}: {
+  page: number
+  totalPages: number
+  onPageChange: (page: number) => void
+}) {
+  if (totalPages <= 1) return null
+
+  const getVisiblePages = () => {
+    const pages: (number | "ellipsis")[] = []
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i)
+    } else {
+      pages.push(1)
+      if (page > 3) pages.push("ellipsis")
+      const start = Math.max(2, page - 1)
+      const end = Math.min(totalPages - 1, page + 1)
+      for (let i = start; i <= end; i++) pages.push(i)
+      if (page < totalPages - 2) pages.push("ellipsis")
+      pages.push(totalPages)
+    }
+    return pages
+  }
+
+  return (
+    <nav className="mt-8 flex items-center justify-center gap-1" aria-label="Phân trang">
+      <button
+        onClick={() => onPageChange(page - 1)}
+        disabled={page <= 1}
+        className="grid h-9 w-9 place-items-center rounded-md border border-hairline text-muted-foreground transition-colors hover:bg-surface-card hover:text-ink disabled:pointer-events-none disabled:opacity-40"
+        aria-label="Trang trước"
+      >
+        <ChevronLeft className="h-4 w-4" />
+      </button>
+
+      {getVisiblePages().map((p, i) =>
+        p === "ellipsis" ? (
+          <span key={`ellipsis-${i}`} className="grid h-9 w-9 place-items-center text-xs text-muted-foreground">
+            ...
+          </span>
+        ) : (
+          <button
+            key={p}
+            onClick={() => onPageChange(p)}
+            className={`grid h-9 w-9 place-items-center rounded-md text-sm font-medium transition-colors ${
+              p === page
+                ? "bg-coral text-on-primary"
+                : "border border-hairline text-body hover:bg-surface-card hover:text-ink"
+            }`}
+            aria-current={p === page ? "page" : undefined}
+          >
+            {p}
+          </button>
+        )
+      )}
+
+      <button
+        onClick={() => onPageChange(page + 1)}
+        disabled={page >= totalPages}
+        className="grid h-9 w-9 place-items-center rounded-md border border-hairline text-muted-foreground transition-colors hover:bg-surface-card hover:text-ink disabled:pointer-events-none disabled:opacity-40"
+        aria-label="Trang sau"
+      >
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </nav>
+  )
 }
 
 function ShareDialog({
@@ -205,8 +305,15 @@ function ShareDialog({
 
 export default function MyMaterialsPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { toast } = useToast()
+  const { user } = useAuthStore()
+
+  const currentPage = Number(searchParams.get("page")) || 1
+
   const [materials, setMaterials] = useState<RecentFlashcardSet[]>([])
+  const [totalPages, setTotalPages] = useState(1)
+  const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [shareDialog, setShareDialog] = useState<{
     open: boolean
@@ -218,22 +325,28 @@ export default function MyMaterialsPage() {
     accessCode: "",
   })
 
-  const fetchMaterials = async () => {
+  const fetchMaterials = useCallback(async (page: number) => {
     try {
       setLoading(true)
-      const data = await getRecentFlashcardSetsApi(20)
+      const data = await getRecentFlashcardSetsApi(PAGE_SIZE, page)
       setMaterials(data.flashcardSets)
+      setTotalPages(data.totalPages)
+      setTotal(data.total)
     } catch {
       toast.error("Không thể tải tài liệu học tập")
     } finally {
       setLoading(false)
     }
-  }
+  }, [toast])
 
   useEffect(() => {
-    fetchMaterials()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    fetchMaterials(currentPage)
+  }, [currentPage, fetchMaterials])
+
+  const handlePageChange = (page: number) => {
+    setSearchParams({ page: String(page) })
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
 
   const handleReview = (setId: string) => {
     navigate(`/study-flashcard/${setId}`)
@@ -255,6 +368,23 @@ export default function MyMaterialsPage() {
     }
   }
 
+  const handleTogglePin = async (setId: string) => {
+    // Optimistic update
+    setMaterials((prev) =>
+      prev.map((m) => m.id === setId ? { ...m, isPinned: !m.isPinned } : m)
+    )
+
+    try {
+      await togglePinFlashcardApi(setId)
+    } catch {
+      // Revert on failure
+      setMaterials((prev) =>
+        prev.map((m) => m.id === setId ? { ...m, isPinned: !m.isPinned } : m)
+      )
+      toast.error("Không thể ghim tài liệu")
+    }
+  }
+
   if (loading) {
     return (
       <div className="relative min-h-screen bg-background text-foreground">
@@ -264,8 +394,8 @@ export default function MyMaterialsPage() {
             <Skeleton className="h-4 w-80" />
           </div>
           <div className="mt-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }, (_, i) => (
-              <Skeleton key={i} className="h-[340px] rounded-lg" />
+            {Array.from({ length: PAGE_SIZE }, (_, i) => (
+              <Skeleton key={i} className="h-[200px] rounded-lg" />
             ))}
           </div>
         </section>
@@ -282,6 +412,11 @@ export default function MyMaterialsPage() {
           </h1>
           <p className="mt-2 font-body text-base text-muted-foreground">
             Các bộ flashcard bạn đã xem gần đây
+            {total > 0 && (
+              <span className="ml-2 text-sm text-muted-foreground">
+                ({total} bộ)
+              </span>
+            )}
           </p>
         </header>
 
@@ -298,16 +433,26 @@ export default function MyMaterialsPage() {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {materials.map((material) => (
-              <MaterialCard
-                key={material.id}
-                material={material}
-                onReview={handleReview}
-                onShare={handleShare}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {materials.map((material) => (
+                <MaterialCard
+                  key={material.id}
+                  material={material}
+                  isOwner={material.creator.id === String(user?.id)}
+                  onReview={handleReview}
+                  onShare={handleShare}
+                  onTogglePin={handleTogglePin}
+                />
+              ))}
+            </div>
+
+            <Pagination
+              page={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
+          </>
         )}
 
         <ShareDialog

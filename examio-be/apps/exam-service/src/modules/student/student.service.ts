@@ -1,41 +1,49 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@examio/database';
 
 @Injectable()
 export class StudentService {
     constructor(private readonly prisma: PrismaService) {}
 
-    async getRecentFlashcards(userId: string, limit: number) {
-        // Get flashcard sets the student has access to
-        // This includes public sets and sets they've been granted access to
-        const flashcardSets = await this.prisma.flashCardSet.findMany({
-            where: {
-                OR: [
-                    { isPublic: true },
-                    { userId: userId },
-                    { whitelist: { has: userId } },
+    async getRecentFlashcards(userId: string, limit: number, page: number) {
+        const skip = (page - 1) * limit;
+
+        const where = {
+            OR: [
+                { isPublic: true },
+                { userId: userId },
+                { whitelist: { has: userId } },
+            ],
+        };
+
+        const [flashcardSets, total] = await Promise.all([
+            this.prisma.flashCardSet.findMany({
+                where,
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            username: true,
+                            name: true,
+                            avatar: true,
+                        },
+                    },
+                    detailsFlashCard: {
+                        select: { id: true },
+                    },
+                    userPins: {
+                        where: { userId },
+                        select: { pinnedAt: true },
+                    },
+                },
+                orderBy: [
+                    { updatedAt: 'desc' },
                 ],
-            },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        username: true,
-                        name: true,
-                        avatar: true,
-                    },
-                },
-                detailsFlashCard: {
-                    select: {
-                        id: true,
-                    },
-                },
-            },
-            orderBy: {
-                updatedAt: 'desc',
-            },
-            take: limit,
-        });
+                skip,
+                take: limit,
+            }),
+            this.prisma.flashCardSet.count({ where }),
+        ]);
 
         const formattedSets = flashcardSets.map((set) => ({
             id: set.id,
@@ -53,21 +61,59 @@ export class StudentService {
                 avatar: set.user.avatar,
             },
             isPublic: set.isPublic,
-            progress: undefined, // TODO: Implement progress tracking
+            isPinned: set.userPins.length > 0,
+            progress: undefined,
         }));
+
+        // Sort: pinned first (by pinnedAt desc), then non-pinned
+        formattedSets.sort((a, b) => {
+            const aPinned = a.isPinned ? 1 : 0;
+            const bPinned = b.isPinned ? 1 : 0;
+            if (aPinned !== bPinned) return bPinned - aPinned;
+            return 0; // keep DB order (updatedAt desc) for same pin status
+        });
 
         return {
             flashcardSets: formattedSets,
-            total: formattedSets.length,
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
         };
     }
 
-    async getRecentExams(userId: string, limit: number) {
-        // Get exam attempts from exam rooms
-        const examAttempts = await this.prisma.examAttempt.findMany({
+    async togglePinFlashcard(userId: string, flashcardSetId: string) {
+        const flashcardSet = await this.prisma.flashCardSet.findUnique({
+            where: { id: flashcardSetId },
+            select: { id: true },
+        });
+
+        if (!flashcardSet) {
+            throw new NotFoundException('Flashcard set not found');
+        }
+
+        const existing = await this.prisma.userPinnedFlashcard.findUnique({
             where: {
-                userId,
+                userId_flashcardSetId: { userId, flashcardSetId },
             },
+        });
+
+        if (existing) {
+            await this.prisma.userPinnedFlashcard.delete({
+                where: { id: existing.id },
+            });
+            return { pinned: false };
+        }
+
+        await this.prisma.userPinnedFlashcard.create({
+            data: { userId, flashcardSetId },
+        });
+        return { pinned: true };
+    }
+
+    async getRecentExams(userId: string, limit: number) {
+        const examAttempts = await this.prisma.examAttempt.findMany({
+            where: { userId },
             include: {
                 examSession: {
                     include: {
@@ -81,9 +127,7 @@ export class StudentService {
                     },
                 },
             },
-            orderBy: {
-                createdAt: 'desc',
-            },
+            orderBy: { createdAt: 'desc' },
             take: limit,
         });
 
@@ -92,7 +136,6 @@ export class StudentService {
             let timeRemaining: number | null = null;
 
             if (attempt.status === 0 && timeLimitMinutes) {
-                // IN_PROGRESS
                 const startedAt = new Date(attempt.startedAt).getTime();
                 const now = Date.now();
                 const elapsedMinutes = (now - startedAt) / (1000 * 60);
