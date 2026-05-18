@@ -23,17 +23,12 @@ function ResetPasswordForm() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    if (newPassword !== confirmPassword) {
-      return;
-    }
+    if (newPassword !== confirmPassword) return;
 
     try {
       await resetPassword({ email, code, newPassword });
       setSuccess(true);
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
+      setTimeout(() => navigate("/login"), 2000);
     } catch (error) {
       console.error("Failed to reset password:", error);
     }
@@ -42,13 +37,13 @@ function ResetPasswordForm() {
   if (success) {
     return (
       <div className="py-8 text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-          <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success/15">
+          <svg className="h-8 w-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h2 className="mb-2 text-xl font-bold text-zinc-900">Đặt lại mật khẩu thành công!</h2>
-        <p className="text-zinc-500">Đang chuyển hướng đến trang đăng nhập...</p>
+        <h2 className="mb-2 text-[18px] font-medium text-ink">Đặt lại mật khẩu thành công!</h2>
+        <p className="text-[14px] text-muted-foreground">Đang chuyển hướng đến trang đăng nhập...</p>
       </div>
     );
   }
@@ -56,7 +51,7 @@ function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label htmlFor="email" className="mb-2 block text-sm font-medium text-zinc-700">
+        <label htmlFor="email" className="mb-1.5 block text-[13px] font-medium text-ink">
           Email
         </label>
         <input
@@ -64,35 +59,35 @@ function ResetPasswordForm() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="your@email.com"
+          placeholder="email@example.com"
           required
-          className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary"
+          className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
         />
       </div>
 
       <div>
-        <label htmlFor="code" className="mb-2 block text-sm font-medium text-zinc-700">
+        <label htmlFor="code" className="mb-1.5 block text-[13px] font-medium text-ink">
           Mã xác nhận
         </label>
         <div className="flex justify-center">
           <InputOTP maxLength={6} value={code} onChange={(value) => setCode(value)}>
             <InputOTPGroup>
-              <InputOTPSlot index={0} className="h-12 w-12 text-lg" />
-              <InputOTPSlot index={1} className="h-12 w-12 text-lg" />
-              <InputOTPSlot index={2} className="h-12 w-12 text-lg" />
+              <InputOTPSlot index={0} className="h-12 w-12 text-lg border-hairline" />
+              <InputOTPSlot index={1} className="h-12 w-12 text-lg border-hairline" />
+              <InputOTPSlot index={2} className="h-12 w-12 text-lg border-hairline" />
             </InputOTPGroup>
             <InputOTPSeparator />
             <InputOTPGroup>
-              <InputOTPSlot index={3} className="h-12 w-12 text-lg" />
-              <InputOTPSlot index={4} className="h-12 w-12 text-lg" />
-              <InputOTPSlot index={5} className="h-12 w-12 text-lg" />
+              <InputOTPSlot index={3} className="h-12 w-12 text-lg border-hairline" />
+              <InputOTPSlot index={4} className="h-12 w-12 text-lg border-hairline" />
+              <InputOTPSlot index={5} className="h-12 w-12 text-lg border-hairline" />
             </InputOTPGroup>
           </InputOTP>
         </div>
       </div>
 
       <div>
-        <label htmlFor="newPassword" className="mb-2 block text-sm font-medium text-zinc-700">
+        <label htmlFor="newPassword" className="mb-1.5 block text-[13px] font-medium text-ink">
           Mật khẩu mới
         </label>
         <div className="relative">
@@ -104,20 +99,20 @@ function ResetPasswordForm() {
             placeholder="Nhập mật khẩu mới"
             required
             minLength={6}
-            className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 pr-12 text-zinc-900 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary"
+            className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 pr-12 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
           />
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-ink"
           >
-            {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
         </div>
       </div>
 
       <div>
-        <label htmlFor="confirmPassword" className="mb-2 block text-sm font-medium text-zinc-700">
+        <label htmlFor="confirmPassword" className="mb-1.5 block text-[13px] font-medium text-ink">
           Xác nhận mật khẩu
         </label>
         <input
@@ -128,21 +123,21 @@ function ResetPasswordForm() {
           placeholder="Nhập lại mật khẩu mới"
           required
           minLength={6}
-          className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-3 text-zinc-900 outline-none transition-all focus:border-transparent focus:ring-2 focus:ring-primary"
+          className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
         />
         {confirmPassword && newPassword !== confirmPassword && (
-          <p className="mt-1 text-sm text-red-500">Mật khẩu không khớp</p>
+          <p className="mt-1 text-[12px] text-error">Mật khẩu không khớp</p>
         )}
       </div>
 
       <button
         type="submit"
         disabled={loading || newPassword !== confirmPassword}
-        className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 font-medium text-white transition-colors hover:bg-red-700 disabled:bg-red-400"
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-coral px-4 text-[14px] font-medium text-white transition-colors hover:bg-coral-active disabled:bg-coral/50 disabled:cursor-not-allowed"
       >
         {loading ? (
           <>
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader2 className="h-4 w-4 animate-spin" />
             Đang xử lý...
           </>
         ) : (
@@ -155,21 +150,25 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-red-50 via-white to-yellow-50 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-canvas landing-dot-paper p-4">
       <div className="w-full max-w-md">
-        <div className="rounded-2xl border border-zinc-200 bg-white p-8 shadow-xl">
+        <div className="rounded-[16px] border border-hairline bg-canvas p-8 shadow-[0_18px_48px_rgba(20,20,19,0.08)]">
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-              <Lock className="h-8 w-8 text-primary" />
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-coral/25 bg-coral/10">
+              <Lock className="h-8 w-8 text-coral" />
             </div>
-            <h1 className="text-2xl font-bold text-zinc-900">Đặt lại mật khẩu</h1>
-            <p className="mt-2 text-zinc-500">Nhập mã xác nhận và mật khẩu mới</p>
+            <h1 className="font-display text-[28px] font-medium tracking-[-0.015em] text-ink">
+              Đặt lại mật khẩu
+            </h1>
+            <p className="mt-2 text-[14px] text-body">
+              Nhập mã xác nhận và mật khẩu mới
+            </p>
           </div>
 
           <Suspense
             fallback={
               <div className="flex justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <Loader2 className="h-6 w-6 animate-spin text-coral" />
               </div>
             }
           >
@@ -177,7 +176,7 @@ export default function ResetPasswordPage() {
           </Suspense>
 
           <div className="mt-6 text-center">
-            <Link to="/login" className="inline-flex items-center gap-2 text-sm text-zinc-500 transition-colors hover:text-zinc-700">
+            <Link to="/login" className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition-colors hover:text-ink">
               <ArrowLeft className="h-4 w-4" />
               Quay lại đăng nhập
             </Link>

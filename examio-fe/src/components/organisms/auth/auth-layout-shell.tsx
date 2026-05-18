@@ -33,8 +33,12 @@ export function AuthLayoutShell({ children }: { children: React.ReactNode }) {
       <div className="sticky top-0 z-40 border-b border-hairline bg-canvas/85 backdrop-blur-xl">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <Link to="/" className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-hairline bg-canvas text-ink shadow-sm">
-              ✳
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-coral/25 bg-coral/10 shadow-sm">
+              <img
+                src="/examio-lightmode.png"
+                alt="Examio"
+                className="h-8 w-8 rounded-lg object-cover"
+              />
             </div>
             <div>
               <p className="text-sm font-semibold text-ink">Examio</p>

@@ -43,14 +43,18 @@ export function SigninForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-canvas via-surface-soft to-surface-card">
+    <div className="min-h-screen flex items-center justify-center bg-canvas landing-dot-paper">
       <div className="w-full max-w-md rounded-2xl shadow-xl overflow-hidden border bg-canvas relative">
         <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-coral/15 via-surface-card to-transparent opacity-60 blur-3xl -mt-20"></div>
 
         <div className="p-8 relative">
           <div className="flex flex-col items-center mb-8">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-hairline bg-canvas text-2xl text-ink shadow-sm">
-              ✳
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-coral/25 bg-coral/10 shadow-sm">
+              <img
+                src="/examio-lightmode.png"
+                alt="Examio"
+                className="h-12 w-12 rounded-xl object-cover"
+              />
             </div>
             <div className="p-0 mt-2">
               <h2 className="text-2xl font-bold text-center text-ink">

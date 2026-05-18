@@ -370,6 +370,22 @@
   background: var(--canvas);
 }
 
+.landing-dot-paper {
+  background-image:
+    radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--ink) 10%, transparent) 1px, transparent 0),
+    radial-gradient(ellipse at top left, color-mix(in srgb, var(--coral) 8%, transparent), transparent 42%),
+    radial-gradient(ellipse at bottom right, color-mix(in srgb, var(--accent-amber) 8%, transparent), transparent 46%);
+  background-size: 24px 24px, 100% 100%, 100% 100%;
+  background-position: 0 0, center, center;
+}
+
+.dark .landing-dot-paper {
+  background-image:
+    radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--on-dark) 8%, transparent) 1px, transparent 0),
+    radial-gradient(ellipse at top left, color-mix(in srgb, var(--coral) 10%, transparent), transparent 42%),
+    radial-gradient(ellipse at bottom right, color-mix(in srgb, var(--accent-amber) 8%, transparent), transparent 46%);
+}
+
 .gradient-border::before {
   content: "";
   position: absolute;

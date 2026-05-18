@@ -1,33 +1,15 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
 import {
-  User,
+  ArrowRight,
   Mail,
+  MapPin,
   Phone,
   Send,
-  MapPin,
-  AtSign,
-  PhoneCall,
+  Sparkles,
 } from "lucide-react";
-
-const fadeInUp = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: "easeOut" as const },
-  },
-};
-
-const staggerContainer = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1, delayChildren: 0.2 },
-  },
-};
 
 export default function ContactSection() {
   const [formData, setFormData] = useState({
@@ -36,11 +18,14 @@ export default function ContactSection() {
     phone: "",
     message: "",
   });
+  const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
     console.log("Form submitted:", formData);
+    setSubmitted(true);
+    setFormData({ name: "", email: "", phone: "", message: "" });
+    setTimeout(() => setSubmitted(false), 3000);
   };
 
   const handleChange = (
@@ -53,232 +38,191 @@ export default function ContactSection() {
   };
 
   return (
-    <div className="relative min-h-screen">
-      {/* Background Decoration (Blobs) */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-purple-500/5 to-cyan-500/10" />
-      </div>
-      {/* Floating shapes */}
-      <div className="fixed top-20 left-[10%] w-72 h-72 bg-primary/20 rounded-full blur-[80px] -z-10 animate-pulse" />
-      <div className="fixed bottom-20 right-[10%] w-96 h-96 bg-yellow-400/20 rounded-full blur-[100px] -z-10" />
+    <div className="overflow-x-hidden bg-canvas">
+      <section className="bg-canvas landing-dot-paper pt-28 pb-24 md:pt-32 md:pb-28">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-[9999px] border border-hairline bg-surface-card px-3 py-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-coral" />
+              <span className="text-[12px] font-medium uppercase tracking-[1.5px] text-ink">
+                Liên hệ
+              </span>
+            </div>
 
-      {/* Main Content */}
-      <main className="flex-grow flex flex-col items-center justify-center py-24 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-[1100px]">
-          {/* Page Header */}
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={staggerContainer}
-            className="mb-10 text-center"
-          >
-            <motion.h1
-              variants={fadeInUp}
-              className="text-3xl sm:text-4xl md:text-5xl font-black text-slate-900 tracking-tight mb-3"
-            >
-              Liên Hệ Với Chúng Tôi
-            </motion.h1>
-            <motion.p
-              variants={fadeInUp}
-              className="text-lg text-slate-600 max-w-2xl mx-auto font-normal"
-            >
-              Chúng tôi luôn sẵn sàng lắng nghe ý kiến của bạn. Hãy điền vào
-              biểu mẫu bên dưới hoặc liên hệ trực tiếp qua email.
-            </motion.p>
-          </motion.div>
+            <h1 className="font-display !mt-6 text-[44px] font-medium leading-[1.05] tracking-[-0.02em] text-ink sm:text-[56px] lg:text-[64px]">
+              Chúng tôi luôn sẵn sàng lắng nghe.
+            </h1>
 
-          {/* Glass Card Container */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="bg-white/65 backdrop-blur-md rounded-3xl overflow-hidden p-1 shadow-2xl border border-white/60"
-          >
-            <div className="flex flex-col lg:flex-row">
-              {/* Left Column: Contact Form */}
-              <div className="flex-1 p-5 sm:p-8 lg:p-12">
-                <div className="mb-8">
-                  <h3 className="text-2xl font-bold text-slate-800 mb-1">
-                    Gửi tin nhắn
-                  </h3>
-                  <p className="text-slate-500 text-sm">
-                    Chúng tôi sẽ phản hồi trong vòng 24 giờ.
-                  </p>
-                </div>
+            <p className="mt-6 text-[17px] leading-[1.6] text-body">
+              Có câu hỏi, góp ý hay muốn hợp tác? Gửi tin nhắn cho chúng tôi
+              hoặc liên hệ qua các kênh bên dưới.
+            </p>
+          </div>
+        </div>
+      </section>
 
-                <form
-                  onSubmit={handleSubmit}
-                  className="space-y-4 sm:space-y-6"
-                >
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                    <label className="flex flex-col">
-                      <span className="text-slate-700 text-sm font-semibold mb-2 ml-1">
+      <section className="bg-canvas landing-dot-paper py-8">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-8 lg:grid-cols-12 lg:gap-12">
+            <div className="lg:col-span-7">
+              <div className="rounded-[16px] border border-hairline bg-surface-card p-8 sm:p-10">
+                <h2 className="font-display text-[28px] font-medium leading-[1.15] tracking-[-0.015em] text-ink">
+                  Gửi tin nhắn
+                </h2>
+                <p className="mt-2 text-[14px] text-body">
+                  Chúng tôi sẽ phản hồi trong vòng 24 giờ.
+                </p>
+
+                <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                  <div className="grid gap-5 sm:grid-cols-2">
+                    <div>
+                      <label className="text-[13px] font-medium text-ink">
                         Họ và tên
-                      </span>
-                      <div className="relative">
-                        <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                        <input
-                          type="text"
-                          name="name"
-                          value={formData.name}
-                          onChange={handleChange}
-                          className="w-full rounded-xl h-12 pl-11 pr-4 bg-white/50 border border-white/60 backdrop-blur-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white/90 transition-all text-sm font-medium"
-                          placeholder="Nguyễn Văn A"
-                        />
-                      </div>
-                    </label>
-
-                    <label className="flex flex-col">
-                      <span className="text-slate-700 text-sm font-semibold mb-2 ml-1">
-                        Email
-                      </span>
-                      <div className="relative">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-                        <input
-                          type="email"
-                          name="email"
-                          value={formData.email}
-                          onChange={handleChange}
-                          className="w-full rounded-xl h-12 pl-11 pr-4 bg-white/50 border border-white/60 backdrop-blur-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white/90 transition-all text-sm font-medium"
-                          placeholder="example@email.com"
-                        />
-                      </div>
-                    </label>
-                  </div>
-
-                  <label className="flex flex-col">
-                    <span className="text-slate-700 text-sm font-semibold mb-2 ml-1">
-                      Số điện thoại{" "}
-                      <span className="text-slate-400 font-normal">
-                        (Tùy chọn)
-                      </span>
-                    </span>
-                    <div className="relative">
-                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+                      </label>
                       <input
-                        type="tel"
-                        name="phone"
-                        value={formData.phone}
+                        name="name"
+                        value={formData.name}
                         onChange={handleChange}
-                        className="w-full rounded-xl h-12 pl-11 pr-4 bg-white/50 border border-white/60 backdrop-blur-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white/90 transition-all text-sm font-medium"
-                        placeholder="+84 ..."
+                        placeholder="Nguyễn Văn A"
+                        required
+                        className="mt-1.5 h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
                       />
                     </div>
-                  </label>
+                    <div>
+                      <label className="text-[13px] font-medium text-ink">
+                        Email
+                      </label>
+                      <input
+                        name="email"
+                        type="email"
+                        value={formData.email}
+                        onChange={handleChange}
+                        placeholder="email@example.com"
+                        required
+                        className="mt-1.5 h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
+                      />
+                    </div>
+                  </div>
 
-                  <label className="flex flex-col">
-                    <span className="text-slate-700 text-sm font-semibold mb-2 ml-1">
-                      Nội dung tin nhắn
-                    </span>
+                  <div>
+                    <label className="text-[13px] font-medium text-ink">
+                      Số điện thoại (tuỳ chọn)
+                    </label>
+                    <input
+                      name="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      placeholder="0912 345 678"
+                      className="mt-1.5 h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[13px] font-medium text-ink">
+                      Nội dung
+                    </label>
                     <textarea
                       name="message"
                       value={formData.message}
                       onChange={handleChange}
-                      className="w-full rounded-xl min-h-[140px] p-4 bg-white/50 border border-white/60 backdrop-blur-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:bg-white/90 transition-all text-sm font-medium resize-none"
-                      placeholder="Hãy chia sẻ chi tiết yêu cầu của bạn..."
+                      placeholder="Bạn muốn nói gì với chúng tôi?"
+                      required
+                      rows={5}
+                      className="mt-1.5 w-full resize-none rounded-[8px] border border-hairline bg-canvas px-3 py-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
                     />
-                  </label>
+                  </div>
 
                   <button
                     type="submit"
-                    className="group relative w-full h-12 bg-primary hover:bg-red-700 text-white font-bold rounded-xl shadow-lg shadow-red-500/30 hover:shadow-red-500/50 hover:-translate-y-0.5 transition-all duration-300 overflow-hidden"
+                    className="inline-flex h-11 items-center gap-2 rounded-[8px] bg-coral px-5 text-[14px] font-medium text-white transition-colors hover:bg-coral-active"
                   >
-                    <span className="relative z-10 flex items-center justify-center gap-2">
-                      Gửi Tin Nhắn
-                      <Send className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </span>
-                    <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+                    {submitted ? "Đã gửi" : "Gửi tin nhắn"}
+                    {!submitted && <Send className="h-4 w-4" />}
                   </button>
                 </form>
               </div>
+            </div>
 
-              {/* Right Column: Info & Map */}
-              <div className="w-full lg:w-[350px] xl:w-[400px] bg-white/40 backdrop-blur-md border-t lg:border-t-0 lg:border-l border-white/50 p-5 sm:p-8 flex flex-col gap-6 sm:gap-8">
-                {/* Info Cards */}
-                <div>
-                  <h3 className="text-xl font-bold text-slate-800 mb-6">
-                    Thông tin liên hệ
-                  </h3>
-                  <div className="space-y-4">
-                    {/* Email Item */}
-                    <a
-                      href="mailto:fayeteam2004@gmail.com"
-                      className="flex items-start gap-4 p-4 rounded-2xl bg-white/50 hover:bg-white/80 transition-colors border border-white/40 shadow-sm group"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-red-100 text-primary flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                        <AtSign className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">
-                          Email
-                        </p>
-                        <p className="text-slate-900 font-medium break-all">
-                          fayeteam2004@gmail.com
-                        </p>
-                      </div>
-                    </a>
+            <div className="lg:col-span-5">
+              <div className="space-y-5">
+                <ContactCard
+                  icon={Mail}
+                  title="Email"
+                  value="togiap.dev@gmail.com"
+                  href="mailto:togiap.dev@gmail.com"
+                />
+                <ContactCard
+                  icon={Phone}
+                  title="Điện thoại"
+                  value="(+84) 123 456 789"
+                  href="tel:+84123456789"
+                />
+                <ContactCard
+                  icon={MapPin}
+                  title="Địa chỉ"
+                  value="Hà Nội, Việt Nam"
+                />
+              </div>
 
-                    {/* Phone Item */}
-                    <a
-                      href="tel:+84977836517"
-                      className="flex items-start gap-4 p-4 rounded-2xl bg-white/50 hover:bg-white/80 transition-colors border border-white/40 shadow-sm group"
-                    >
-                      <div className="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                        <PhoneCall className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">
-                          Hotline
-                        </p>
-                        <p className="text-slate-900 font-medium">
-                          +84 977 836 517
-                        </p>
-                      </div>
-                    </a>
-
-                    {/* Address Item */}
-                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-white/50 border border-white/40 shadow-sm">
-                      <div className="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center shrink-0">
-                        <MapPin className="w-5 h-5" />
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-0.5">
-                          Địa chỉ
-                        </p>
-                        <p className="text-slate-900 font-medium">
-                          Hà Nội, Việt Nam
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Map */}
-                <div className="relative w-full h-40 sm:h-48 rounded-2xl overflow-hidden shadow-inner border border-white/50 group">
-                  <img
-                    src="https://images.unsplash.com/photo-1524168272322-bf73616d9cb5?w=800&h=400&fit=crop"
-                    alt="Map Location - Hanoi"
-                    className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <div className="bg-white/90 p-2 rounded-full shadow-lg animate-bounce">
-                      <MapPin className="w-6 h-6 text-red-500" />
-                    </div>
-                  </div>
-                  <a
-                    href="https://maps.google.com/?q=Hanoi,Vietnam"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute bottom-3 right-3 bg-white/90 hover:bg-white text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm text-slate-800 transition-colors backdrop-blur-sm"
-                  >
-                    Xem bản đồ lớn
-                  </a>
-                </div>
+              <div className="mt-8 rounded-[12px] border border-hairline bg-surface-card p-6">
+                <p className="text-[12px] font-medium uppercase tracking-[1.5px] text-coral">
+                  Hợp tác
+                </p>
+                <h3 className="font-display mt-2 text-[22px] font-medium leading-[1.3] tracking-[-0.01em] text-ink">
+                  Bạn là giảng viên hoặc tổ chức giáo dục?
+                </h3>
+                <p className="mt-2 text-[14px] leading-[1.6] text-body">
+                  Chúng tôi có chương trình hợp tác dành riêng cho trường học và
+                  tổ chức. Liên hệ để tìm hiểu thêm.
+                </p>
+                <Link
+                  to="/register"
+                  className="mt-4 inline-flex items-center gap-1.5 text-[14px] font-medium text-coral hover:text-coral-active"
+                >
+                  Tìm hiểu thêm
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
-      </main>
+      </section>
     </div>
   );
+}
+
+function ContactCard({
+  icon: Icon,
+  title,
+  value,
+  href,
+}: {
+  icon: React.ComponentType<{ className?: string; strokeWidth?: number }>;
+  title: string;
+  value: string;
+  href?: string;
+}) {
+  const content = (
+    <div className="flex items-start gap-4 rounded-[12px] border border-hairline bg-canvas p-5 transition-colors hover:border-coral/40">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-surface-card text-coral">
+        <Icon className="h-5 w-5" strokeWidth={1.75} />
+      </div>
+      <div>
+        <p className="text-[12px] font-medium uppercase tracking-[1.5px] text-muted-foreground">
+          {title}
+        </p>
+        <p className="mt-1 text-[15px] font-medium text-ink">{value}</p>
+      </div>
+    </div>
+  );
+
+  if (href) {
+    return (
+      <a href={href} className="block">
+        {content}
+      </a>
+    );
+  }
+  return content;
 }
