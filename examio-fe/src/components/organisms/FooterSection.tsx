@@ -35,10 +35,10 @@ const linkGroups = [
   {
     title: "Pháp lý",
     links: [
-      { label: "Điều khoản", to: "#" },
-      { label: "Quyền riêng tư", to: "#" },
-      { label: "Cookie", to: "#" },
-      { label: "Bảo mật", to: "#" },
+      { label: "Điều khoản", to: "/terms" },
+      { label: "Quyền riêng tư", to: "/privacy" },
+      { label: "Cookie", to: "/cookies" },
+      { label: "Bảo mật", to: "/security" },
     ],
   },
 ];
@@ -164,13 +164,13 @@ export default function FooterSection() {
             © {new Date().getFullYear()} Examio. Made with love by tgiap.dev
           </p>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px]">
-            <Link to="#" className="text-muted-foreground transition-colors hover:text-ink dark:text-on-dark-soft dark:hover:text-on-dark">
+            <Link to="/terms" className="text-muted-foreground transition-colors hover:text-ink dark:text-on-dark-soft dark:hover:text-on-dark">
               Điều khoản
             </Link>
-            <Link to="#" className="text-muted-foreground transition-colors hover:text-ink dark:text-on-dark-soft dark:hover:text-on-dark">
+            <Link to="/privacy" className="text-muted-foreground transition-colors hover:text-ink dark:text-on-dark-soft dark:hover:text-on-dark">
               Quyền riêng tư
             </Link>
-            <Link to="#" className="text-muted-foreground transition-colors hover:text-ink dark:text-on-dark-soft dark:hover:text-on-dark">
+            <Link to="/cookies" className="text-muted-foreground transition-colors hover:text-ink dark:text-on-dark-soft dark:hover:text-on-dark">
               Cookie
             </Link>
             <span className="hidden h-3 w-px bg-hairline dark:bg-white/10 sm:inline-block" />

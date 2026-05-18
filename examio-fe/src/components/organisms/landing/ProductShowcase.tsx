@@ -75,7 +75,7 @@ function ShowcaseTerminal() {
         </span>
       </div>
 
-      <pre className="overflow-x-auto px-5 py-5 font-mono text-[13px] leading-[1.7]">
+      <pre className="overflow-x-auto whitespace-pre-wrap break-words px-5 py-5 font-mono text-[13px] leading-[1.7]">
         <code>
           <span className="text-on-dark-soft">{"# 1. Upload tài liệu"}</span>
           {"\n"}

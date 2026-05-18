@@ -2,6 +2,10 @@ import { createBrowserRouter } from "react-router-dom";
 import HomePage from "@/pages/landing/HomePage";
 import AboutPage from "@/pages/landing/AboutPage";
 import ContactPage from "@/pages/landing/ContactPage";
+import TermsPage from "@/pages/landing/TermsPage";
+import PrivacyPage from "@/pages/landing/PrivacyPage";
+import CookiesPage from "@/pages/landing/CookiesPage";
+import SecurityPage from "@/pages/landing/SecurityPage";
 import LoginPage from "@/pages/auth/LoginPage";
 import RegisterPage from "@/pages/auth/RegisterPage";
 import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
@@ -64,6 +68,38 @@ export const router = createBrowserRouter([
     element: (
       <PublicLayout>
         <ContactPage />
+      </PublicLayout>
+    ),
+  },
+  {
+    path: "/terms",
+    element: (
+      <PublicLayout>
+        <TermsPage />
+      </PublicLayout>
+    ),
+  },
+  {
+    path: "/privacy",
+    element: (
+      <PublicLayout>
+        <PrivacyPage />
+      </PublicLayout>
+    ),
+  },
+  {
+    path: "/cookies",
+    element: (
+      <PublicLayout>
+        <CookiesPage />
+      </PublicLayout>
+    ),
+  },
+  {
+    path: "/security",
+    element: (
+      <PublicLayout>
+        <SecurityPage />
       </PublicLayout>
     ),
   },

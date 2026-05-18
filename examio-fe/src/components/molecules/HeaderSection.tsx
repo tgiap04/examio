@@ -130,7 +130,7 @@ export default function HeaderSection() {
                 <button
                   type="button"
                   aria-label="Ngôn ngữ"
-                  className="hidden h-9 items-center gap-1.5 rounded-[9999px] border border-hairline bg-surface-card px-3 text-[12px] font-medium uppercase tracking-[1px] text-ink transition-colors hover:border-coral/40 hover:bg-surface-cream-strong sm:inline-flex"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-[9999px] border border-hairline bg-surface-card px-3 text-[12px] font-medium uppercase tracking-[1px] text-ink transition-colors hover:border-coral/40 hover:bg-surface-cream-strong"
                 >
                   <Globe className="h-3.5 w-3.5" strokeWidth={1.75} />
                   {currentLocale.short}

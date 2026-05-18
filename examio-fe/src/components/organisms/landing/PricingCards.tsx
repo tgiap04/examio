@@ -40,7 +40,8 @@ export default function PricingCards({
           </ToggleButton>
           <ToggleButton active={isYearly} onClick={() => onToggle(true)}>
             Theo năm
-            <span className="ml-2 rounded-[9999px] bg-coral/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[1px] text-coral">
+            <span className={cn("ml-2 rounded-[9999px] bg-coral/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[1px]") + (!isYearly ? "bg-coral/25 text-coral" : "border-border border text-black") }>
+              
               -20%
             </span>
           </ToggleButton>
