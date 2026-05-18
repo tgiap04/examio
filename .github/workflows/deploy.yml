@@ -99,7 +99,7 @@ jobs:
               git reset --hard origin/main
               git clean -fd
             else
-              git clone -b main "https://${{ secrets.PAT_TOKEN }}@github.com/${{ github.repository }}.git" .
+              git clone -b main "https://github.com/cychipo/examio.git" .
             fi
 
             echo "   Commit: $(git rev-parse --short HEAD)"
