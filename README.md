@@ -1,167 +1,106 @@
-# FayeDark Agent Kit
+# Examio
 
-AI-powered development kit for coding agents (Claude Code, OpenCode). Specialized subagents handle planning, implementation, testing, and review.
+Nền tảng học tập trực tuyến hỗ trợ bởi AI — biến tài liệu thành quiz, flashcard và phòng luyện thi.
+
+## Cấu trúc
+
+```
+examio/
+├── examio-be/     # Backend — NestJS microservices + Python AI service
+├── examio-fe/     # Frontend — React 19 + Vite
+├── DESIGN.md      # Design system tokens (cream + coral + dark navy)
+└── CLAUDE.md      # Hướng dẫn cho AI coding assistants
+```
+
+Backend và frontend là hai package root riêng biệt. Chạy lệnh trong đúng thư mục con.
+
+## Yêu cầu
+
+- Node.js 20+
+- Yarn 4 (Corepack)
+- Docker + Docker Compose (production)
+- Python 3.12+ (AI service)
 
 ## Quick Start
 
-### Install CLI from a private GitHub Release
-
-Requirements:
-- Node.js 18+
-- GitHub CLI authenticated with repo access: `gh auth login`
+### Frontend
 
 ```bash
-# Download the packaged CLI from the latest private release
-gh release download --repo cychipo/fd-kit --pattern "fayedark-kit-*.tgz"
-
-# Install globally from the downloaded tarball
-npm install -g ./fayedark-kit-*.tgz
-
-# Verify installation
-fdk --help
+cd examio-fe
+corepack enable
+yarn install
+yarn dev
 ```
 
-Alternative global install commands:
+Chạy ở `http://localhost:5173`.
+
+### Backend
 
 ```bash
-pnpm add -g ./fayedark-kit-*.tgz
-# or
-yarn global add file:./fayedark-kit-*.tgz
-# or
-bun add -g ./fayedark-kit-*.tgz
+cd examio-be
+yarn install
+yarn dev:all
 ```
 
-For project setup from the local monorepo:
+Cần PostgreSQL, Redis, RabbitMQ chạy local hoặc qua Docker.
+
+### AI Service
 
 ```bash
-cd ../my-project
-fdk init --local
+cd examio-be/apps/ai-service
+python -m venv venv
+./venv/bin/pip install -r requirements.txt
+./venv/bin/uvicorn src.backend.main:app --reload --port 8000
 ```
 
-Or point directly at a local kit directory:
+## Kiến trúc
+
+### Backend Services
+
+| Service | Vai trò |
+|---|---|
+| `gateway-service` | HTTP public entry point, proxy |
+| `auth-service` | Xác thực, OAuth, session |
+| `exam-service` | Quiz, flashcard, phòng thi, AI chat |
+| `finance-service` | Ví, thanh toán, subscription |
+| `r2-service` | Lưu trữ file (Cloudflare R2) |
+| `ai-service` | RAG, document processing, AI generation (Python/FastAPI) |
+
+### Frontend
+
+- React 19 + Vite + React Router v6
+- Zustand (state) + Axios (API)
+- Tailwind CSS 4 + Radix UI + Framer Motion
+- Self-hosted fonts (Cormorant Garamond, Inter, JetBrains Mono)
+
+### Giao tiếp
+
+- Gateway → downstream services qua HTTP proxy
+- Inter-service: gRPC + RabbitMQ events
+- Frontend → Gateway qua REST API
+- AI chat: SSE streaming
+
+## Deploy
+
+Deploy tự động qua GitHub Actions khi push `main`. Xem `.github/workflows/deploy.yml`.
 
 ```bash
-fdk init --kit-path /path/to/agent-kit/claude
+# Manual deploy
+gh workflow run deploy.yml -f target=all
 ```
 
-### Initialize a project
+Cần configure GitHub Secrets: `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY`, `SERVER_SSH_PORT`, `DEPLOY_DIR`, `PAT_TOKEN`.
 
-```bash
-# From GitHub release (recommended for installed users)
-fdk init
+## Tech Stack
 
-# From local monorepo (recommended when developing this repo)
-fdk init --local
-
-# Explicit local kit path
-fdk init --kit-path /path/to/agent-kit/claude
-```
-
-### Core commands
-
-```bash
-fdk doctor         # Health check
-fdk skills --list  # List installed skills
-fdk config show    # View configuration
-fdk update         # Update CLI, then offer to refresh project kit with fdk init
-```
-
-## Repo Layout
-
-This is a **monorepo** containing the kit and its CLI:
-
-```
-agent-kit/
-├── claude/           # Kit source (shipped as .claude/ after install)
-│   ├── agents/       # 16 specialized agents
-│   ├── skills/       # 80+ skills
-│   ├── commands/      # Slash commands
-│   ├── hooks/        # Lifecycle hooks
-│   ├── rules/        # Workflow rules
-│   ├── output-styles/
-│   ├── schemas/
-│   ├── session-state/
-│   ├── templates/
-│   ├── metadata.json
-│   └── settings.json
-├── cli/              # fayedark-agent-kit-cli (published to npm, CLI binary: `fdk`)
-├── scripts/          # Build scripts (prepare-release-assets.cjs)
-├── docs/             # Documentation
-├── tests/, evals/    # Dev-only
-└── .github/workflows/release.yml
-```
-
-## Update workflow
-
-When a new release is published:
-
-```bash
-fdk update
-```
-
-This updates the global CLI first, then hands off to `fdk init` so the `.claude/` kit inside each project can be refreshed.
-
-## Claude workflow after installation
-
-After the kit is installed, use these slash commands inside Claude Code:
-
-```
-/plan → /cook → /code-review → /ship
-```
-
-Claude orchestrates specialized subagents:
-
-| Agent | Role |
-|-------|------|
-| `planner` | Architecture breakdown, phase planning |
-| `implementer` | Code implementation per phase |
-| `tester` | Unit + integration tests, coverage |
-| `reviewer` | Code quality, spec compliance |
-| `debugger` | Root-cause investigation |
-| `researcher` | Technical research (parallel) |
-| `doc-writer` | Documentation updates |
-| `git-manager` | Git operations, commits |
-
-See `.claude/rules/primary-workflow.md` for the full protocol.
-
-## Common Claude slash commands
-
-These run inside Claude Code after `fdk init` has installed the kit:
-
-```text
-/plan Build a task management app
-/brainstorm Choose stack for real-time collaboration
-/fix Authentication bug when logging in with Google
-/code-review
-/ship
-```
-
-## Plan Format
-
-```
-plans/
-└── 260409-1226-task-management-app/
-    ├── plan.md
-    ├── phase-01-setup.md
-    ├── phase-02-database.md
-    └── phase-03-implementation.md
-```
-
-## Documentation
-
-- [Installation Guide](./docs/INSTALL.md)
-- [Development Guide](./docs/DEV.md)
-- [User Guide](./docs/GUIDE.md)
-- [Code Standards](./docs/code-standards.md)
-- [System Architecture](./docs/system-architecture.md)
-
-## Contributing
-
-1. Fork and create a feature branch
-2. Follow `.claude/rules/development-rules.md`
-3. Run `fdk doctor` to verify setup
-4. Submit PR
+| Layer | Công nghệ |
+|---|---|
+| Frontend | React 19, Vite, Tailwind CSS 4, Zustand, React Router |
+| Backend | NestJS, Prisma, PostgreSQL, Redis, RabbitMQ |
+| AI | FastAPI, LangChain, LangGraph, Gemini, FAISS |
+| Storage | Cloudflare R2 |
+| Deploy | Docker, nginx, GitHub Actions, VPS |
 
 ## License
 
-Internal use — FayeDark.
+Private — Examio Team.
