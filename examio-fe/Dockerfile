@@ -30,12 +30,14 @@ RUN yarn build
 # Stage 3: Production - nginx alpine (~30MB final image)
 FROM nginx:1.27-alpine AS runner
 
+RUN apk add --no-cache curl
+
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=10s \
-    CMD wget -q --spider http://localhost:80/ || exit 1
+    CMD curl -f http://localhost:80/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]

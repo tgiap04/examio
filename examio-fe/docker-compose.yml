@@ -11,16 +11,18 @@ services:
             context: .
             dockerfile: Dockerfile
             args:
-                VITE_API_URL: ${VITE_API_URL}
+                VITE_API_URL: /api/v1
                 VITE_MEASUREMENT_ID: ${VITE_MEASUREMENT_ID:-}
                 VITE_QUIZ_AES_KEY: ${VITE_QUIZ_AES_KEY:-}
                 VITE_RECAPTCHA_SITE_KEY: ${VITE_RECAPTCHA_SITE_KEY:-}
         container_name: examio-frontend
+        environment:
+            - BACKEND_URL=${BACKEND_URL:-http://examio-gateway:3000}
         ports:
             - '${FE_PORT:-3080}:80'
         restart: unless-stopped
         healthcheck:
-            test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:80/']
+            test: ['CMD', 'curl', '-f', 'http://localhost:80/']
             interval: 30s
             timeout: 5s
             retries: 3
