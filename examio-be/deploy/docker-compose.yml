@@ -355,8 +355,6 @@ services:
     redis:
         image: redis:7-alpine
         container_name: examio-redis
-        ports:
-            - '6379:6379'
         command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
         volumes:
             - redis_data:/data
