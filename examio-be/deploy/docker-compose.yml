@@ -304,9 +304,6 @@ services:
     rabbitmq:
         image: rabbitmq:3.12-management-alpine
         container_name: examio-rabbitmq
-        ports:
-            - '5672:5672'
-            - '15672:15672'
         environment:
             - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-admin}
             - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS:-admin}
@@ -328,7 +325,7 @@ services:
         image: pgvector/pgvector:pg16
         container_name: examio-postgres
         ports:
-            - '5432:5432'
+            - '5411:5432'
         environment:
             - POSTGRES_USER=${POSTGRES_USER:-examio}
             - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-examio_password}
