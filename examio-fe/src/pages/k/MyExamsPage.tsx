@@ -14,11 +14,12 @@ import {
   TrendingUp,
   XCircle,
 } from "lucide-react"
-import { getRecentExamAttemptsApi, type RecentExamAttempt } from "@/apis/studentMaterialsApi"
+import { type RecentExamAttempt } from "@/apis/studentMaterialsApi"
 import { Button } from "@/components/antd/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/antd/dialog"
 import { Skeleton } from "@/components/antd/skeleton"
 import { useToast } from "@/components/antd/toast"
+import { useStudentMaterialsStore } from "@/stores/useStudentMaterialsStore"
 
 const PAGE_SIZE = 12
 
@@ -309,6 +310,7 @@ function ExamAttemptDetails({ attempt }: { attempt: RecentExamAttempt }) {
 export default function MyExamsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { toast } = useToast()
+  const { fetchExams: fetchExamsFromStore } = useStudentMaterialsStore()
 
   const currentPage = Number(searchParams.get("page")) || 1
 
@@ -323,7 +325,7 @@ export default function MyExamsPage() {
   const fetchExams = useCallback(async (page: number) => {
     try {
       setLoading(true)
-      const data = await getRecentExamAttemptsApi(PAGE_SIZE, page)
+      const data = await fetchExamsFromStore(page, PAGE_SIZE)
       setExamAttempts(data.examAttempts)
       setTotal(data.total)
     } catch {
@@ -331,7 +333,7 @@ export default function MyExamsPage() {
     } finally {
       setLoading(false)
     }
-  }, [toast])
+  }, [fetchExamsFromStore, toast])
 
   useEffect(() => {
     fetchExams(currentPage)
