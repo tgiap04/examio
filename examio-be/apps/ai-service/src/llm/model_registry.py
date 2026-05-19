@@ -130,7 +130,7 @@ GEMINI_MODEL = ModelRegistryEntry(
     ),
 )
 
-GENERATION_MODELS: tuple[ModelRegistryEntry, ...] = (*AI2_GENERATION_MODELS, GEMINI_MODEL)
+GENERATION_MODELS: tuple[ModelRegistryEntry, ...] = (*AI2_GENERATION_MODELS,)
 
 
 LEGACY_MODEL_ALIASES: dict[str, str] = {
@@ -139,6 +139,7 @@ LEGACY_MODEL_ALIASES: dict[str, str] = {
     'glm4_9b': '__default__',
     'gemma2_9b': '__default__',
     'ai2': '__default__',
+    'gemini': '__default__',
 }
 
 
