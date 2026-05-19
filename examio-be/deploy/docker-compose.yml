@@ -387,6 +387,7 @@ services:
 
 networks:
     examio-network:
+        name: examio-network
         driver: bridge
 
 volumes:
