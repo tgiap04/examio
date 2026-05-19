@@ -45,6 +45,27 @@ export class StudentService {
             this.prisma.flashCardSet.count({ where }),
         ]);
 
+        const flashCardSetIds = flashcardSets.map((set) => set.id);
+        const progressRecords = await this.prisma.flashcardStudyProgress.findMany({
+            where: {
+                userId,
+                flashCardSetId: { in: flashCardSetIds },
+            },
+            select: {
+                flashCardSetId: true,
+                studiedCardIds: true,
+                totalCards: true,
+            },
+        });
+
+        const progressMap = new Map<string, number>();
+        for (const record of progressRecords) {
+            const percentage = record.totalCards > 0
+                ? Math.round((record.studiedCardIds.length / record.totalCards) * 100)
+                : 0;
+            progressMap.set(record.flashCardSetId, percentage);
+        }
+
         const formattedSets = flashcardSets.map((set) => ({
             id: set.id,
             title: set.title,
@@ -62,7 +83,7 @@ export class StudentService {
             },
             isPublic: set.isPublic,
             isPinned: set.userPins.length > 0,
-            progress: undefined,
+            progress: progressMap.get(set.id) ?? undefined,
         }));
 
         // Sort: pinned first (by pinnedAt desc), then non-pinned

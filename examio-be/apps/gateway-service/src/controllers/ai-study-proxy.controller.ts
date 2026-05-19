@@ -1157,6 +1157,25 @@ export class FlashcardStudyProxyController {
         );
     }
 
+    @Post('progress/:flashCardSetId')
+    @ApiOperation({ summary: 'Save study progress' })
+    async saveProgress(
+        @Param('flashCardSetId') flashCardSetId: string,
+        @Body() body: any,
+        @Req() req: Request
+    ) {
+        return this.proxyService.forwardWithAuth(
+            'exam',
+            {
+                method: 'POST',
+                path: `/api/v1/flashcard-study/progress/${flashCardSetId}`,
+                body,
+                headers: this.h(req),
+            },
+            this.t(req)
+        );
+    }
+
     private h(req: Request) {
         return { 'user-agent': req.headers['user-agent'] || '' };
     }
