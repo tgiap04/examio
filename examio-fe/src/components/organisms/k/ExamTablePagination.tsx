@@ -40,10 +40,9 @@ const ExamTablePaginationComponent = ({
   };
 
   return (
-    <div className="flex items-center justify-between px-4 py-4 border-t border-border bg-card rounded-b-lg">
+    <div className="flex items-center justify-between px-4 py-4 border-t border-hairline bg-surface-soft rounded-b-lg">
       <div className="text-sm text-muted-foreground">
-        Hiển thị {startResult} - {endResult} trong tổng số {totalResults} kết
-        quả
+        Hiển thị {startResult} - {endResult} trong tổng số {totalResults} kết quả
       </div>
       <div className="flex items-center gap-1">
         <Button
@@ -51,7 +50,7 @@ const ExamTablePaginationComponent = ({
           size="sm"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="h-8">
+          className="h-8 border-hairline">
           <ChevronLeft className="h-4 w-4 mr-1" />
           Trước
         </Button>
@@ -63,8 +62,8 @@ const ExamTablePaginationComponent = ({
             onClick={() => onPageChange(page)}
             className={`h-8 w-8 p-0 ${
               currentPage === page
-                ? "bg-primary text-white hover:bg-red-700"
-                : ""
+                ? ""
+                : "border-hairline"
             }`}>
             {page}
           </Button>
@@ -74,7 +73,7 @@ const ExamTablePaginationComponent = ({
           size="sm"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="h-8">
+          className="h-8 border-hairline">
           Sau
           <ChevronRight className="h-4 w-4 ml-1" />
         </Button>

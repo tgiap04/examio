@@ -250,10 +250,10 @@ export default function ManageExamRoomDetailPage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card><CardContent className="flex items-center gap-4 py-6"><div className="rounded-full p-3 bg-primary/10"><Calendar className="h-6 w-6 text-primary" /></div><div><p className="text-2xl font-bold">{stats.total}</p><p className="text-sm text-muted-foreground">Tổng phiên thi</p></div></CardContent></Card>
-          <Card><CardContent className="flex items-center gap-4 py-6"><div className="rounded-full p-3 bg-green-500/10"><PlayCircle className="h-6 w-6 text-green-500" /></div><div><p className="text-2xl font-bold">{stats.ongoing}</p><p className="text-sm text-muted-foreground">Đang diễn ra</p></div></CardContent></Card>
-          <Card><CardContent className="flex items-center gap-4 py-6"><div className="rounded-full p-3 bg-secondary/10"><Users className="h-6 w-6 text-secondary" /></div><div><p className="text-2xl font-bold">{stats.totalParticipants}</p><p className="text-sm text-muted-foreground">Thí sinh tham gia</p></div></CardContent></Card>
-          <Card><CardContent className="flex items-center gap-4 py-6"><div className="rounded-full p-3 bg-orange-500/10"><CheckCircle2 className="h-6 w-6 text-orange-500" /></div><div><p className="text-2xl font-bold">{stats.totalAttempts}</p><p className="text-sm text-muted-foreground">Lượt làm bài</p></div></CardContent></Card>
+          <Card><CardContent className="flex items-center gap-4 py-6"><div className="rounded-full p-3 bg-coral/10"><Calendar className="h-6 w-6 text-coral" /></div><div><p className="text-2xl font-bold">{stats.total}</p><p className="text-sm text-muted-foreground">Tổng phiên thi</p></div></CardContent></Card>
+          <Card><CardContent className="flex items-center gap-4 py-6"><div className="rounded-full p-3 bg-success/10"><PlayCircle className="h-6 w-6 text-success" /></div><div><p className="text-2xl font-bold">{stats.ongoing}</p><p className="text-sm text-muted-foreground">Đang diễn ra</p></div></CardContent></Card>
+          <Card><CardContent className="flex items-center gap-4 py-6"><div className="rounded-full p-3 bg-accent-teal/10"><Users className="h-6 w-6 text-accent-teal" /></div><div><p className="text-2xl font-bold">{stats.totalParticipants}</p><p className="text-sm text-muted-foreground">Thí sinh tham gia</p></div></CardContent></Card>
+          <Card><CardContent className="flex items-center gap-4 py-6"><div className="rounded-full p-3 bg-accent-amber/10"><CheckCircle2 className="h-6 w-6 text-accent-amber" /></div><div><p className="text-2xl font-bold">{stats.totalAttempts}</p><p className="text-sm text-muted-foreground">Lượt làm bài</p></div></CardContent></Card>
         </div>
 
         <Card>
@@ -277,9 +277,9 @@ export default function ManageExamRoomDetailPage() {
                 <p className="text-sm text-muted-foreground mt-1">Quản lý các phiên thi trong phòng</p>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-primary flex items-center"><Timer className="h-3 w-3 mr-1" />{stats.upcoming} sắp tới</Badge>
-                <Badge variant="outline" className="text-green-500"><PlayCircle className="h-3 w-3 mr-1" />{stats.ongoing} đang thi</Badge>
-                <Badge variant="outline" className="text-gray-500"><CheckCircle2 className="h-3 w-3 mr-1" />{stats.completed} đã kết thúc</Badge>
+                <Badge variant="outline" className="text-coral flex items-center"><Timer className="h-3 w-3 mr-1" />{stats.upcoming} sắp tới</Badge>
+                <Badge variant="outline" className="text-success"><PlayCircle className="h-3 w-3 mr-1" />{stats.ongoing} đang thi</Badge>
+                <Badge variant="outline" className="text-muted-foreground"><CheckCircle2 className="h-3 w-3 mr-1" />{stats.completed} đã kết thúc</Badge>
               </div>
             </div>
           </CardHeader>

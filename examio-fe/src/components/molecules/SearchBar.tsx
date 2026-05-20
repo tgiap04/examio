@@ -13,7 +13,7 @@ export function SearchBar({
   placeholder = "Tìm kiếm...",
 }: SearchBarProps) {
   return (
-    <div className="relative flex-1 max-w-md">
+    <div className="relative flex-1 max-w-md min-w-xs">
       <Input
         type="text"
         placeholder={placeholder}

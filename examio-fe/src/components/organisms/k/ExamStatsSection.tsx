@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { FileText, CheckCircle, CircleQuestionMark } from "lucide-react";
+import { FileText, CheckCircle, HelpCircle } from "lucide-react";
 import { StatCard } from "@/components/molecules/StatCard";
 
 interface ExamStatsData {
@@ -19,30 +19,33 @@ interface ExamStatsSectionProps {
 
 const ExamStatsSectionComponent = ({ stats }: ExamStatsSectionProps) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+    <div className="grid grid-cols-3 gap-2 mb-8">
       <StatCard
         title="Tổng số đề"
         value={stats.totalExams}
         icon={FileText}
-        iconColor="text-primary"
-        iconBgColor="bg-red-100"
+        iconColor="text-coral"
+        iconBgColor="bg-coral/10"
         trend={stats.totalExamsTrend}
+        className="flex-1"
       />
       <StatCard
         title="Đề đang hoạt động"
         value={stats.activeExams}
         icon={CheckCircle}
-        iconColor="text-green-600"
-        iconBgColor="bg-green-100"
+        iconColor="text-success"
+        iconBgColor="bg-success/10"
         trend={stats.activeExamsTrend}
+        className="flex-1"
       />
       <StatCard
         title="Tổng câu hỏi"
         value={stats.totalQuestions}
-        icon={CircleQuestionMark}
-        iconColor="text-yellow-600"
-        iconBgColor="bg-yellow-100"
+        icon={HelpCircle}
+        iconColor="text-accent-amber"
+        iconBgColor="bg-accent-amber/10"
         trend={stats.totalQuestionsTrend}
+        className="flex-1"
       />
     </div>
   );

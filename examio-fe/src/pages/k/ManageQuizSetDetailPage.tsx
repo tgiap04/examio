@@ -146,7 +146,7 @@ export default function ManageQuizSetDetailPage() {
         <div className="mb-8">
           <div className="mb-4 flex items-center justify-between gap-4">
             <div className="flex-1">
-              <Breadcrumb className="mb-3">
+              <Breadcrumb className="mt-4">
                 <BreadcrumbList>
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild>
@@ -233,7 +233,7 @@ export default function ManageQuizSetDetailPage() {
               ))}
             </div>
           ) : paginatedQuestions.length > 0 ? (
-            <div className="space-y-4">
+            <div className="!space-y-4">
               {paginatedQuestions.map((question, index) => {
                 const actualIndex = (currentPage - 1) * itemsPerPage + index;
                 return (
@@ -273,9 +273,8 @@ export default function ManageQuizSetDetailPage() {
                             return (
                               <div
                                 key={optIndex}
-                                className={`flex items-start gap-2 rounded p-2 text-sm ${
-                                  isCorrect ? "bg-green-50 font-medium text-green-700" : "bg-muted/50"
-                                }`}
+                                className={`flex items-start gap-2 rounded p-2 text-sm ${isCorrect ? "bg-green-50 font-medium text-green-700" : "bg-muted/50"
+                                  }`}
                               >
                                 <div className="flex-1">
                                   <RichTextViewer content={option} />
