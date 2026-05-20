@@ -230,6 +230,8 @@ export const useJobStore = create<JobState>((set, get) => ({
 
         // Refresh data
         useRecentUploadsStore.getState().fetchRecentUploads(true);
+        const currentUploadId = useTestGeneratorStore.getState().uploadId || useFlashcardGeneratorStore.getState().uploadId;
+        if (currentUploadId) storeCache.invalidate(`upload-history-${currentUploadId}`);
         useAuthStore.getState().getUser();
       },
       // onError
@@ -879,6 +881,7 @@ export const useRecentUploadsStore = create<RecentUploadsState>((set, get) => ({
 
       // Invalidate cache
       storeCache.invalidate(CACHE_KEY);
+      storeCache.invalidate(`upload-history-${uploadId}`);
 
       toast.success("Đã xóa file", {
         description: "File và dữ liệu liên quan đã được xóa",
@@ -896,14 +899,12 @@ export const useRecentUploadsStore = create<RecentUploadsState>((set, get) => ({
   loadFromUpload: async (upload) => {
     set({ selectedUpload: upload });
 
-    // Create a mock File object info for the upload card
     const fileInfo = {
       name: upload.filename,
       size: upload.size,
       type: upload.mimeType,
     };
 
-    // Set initial file info to BOTH generators
     useTestGeneratorStore.setState({
       file: null,
       uploadId: upload.id,
@@ -921,28 +922,44 @@ export const useRecentUploadsStore = create<RecentUploadsState>((set, get) => ({
       currentCard: 0,
     });
 
-    // If there's quiz or flashcard history, fetch the full data
     if (upload.quizHistory || upload.flashcardHistory) {
-      try {
-        const history = await aiApi.getUploadHistory(upload.id);
+      const cacheKey = `upload-history-${upload.id}`;
+      const cached = storeCache.get<{ quizHistory: any; flashcardHistory: any }>(cacheKey);
 
-        // Load quiz if available
-        if (history.quizHistory) {
+      if (cached) {
+        if (cached.quizHistory) {
           useTestGeneratorStore.setState({
-            generatedTest: history.quizHistory.quizzes as Quizz[],
-            generatedTestId: history.quizHistory.id,
+            generatedTest: cached.quizHistory.quizzes as Quizz[],
+            generatedTestId: cached.quizHistory.id,
           });
         }
-
-        // Load flashcard if available
-        if (history.flashcardHistory) {
+        if (cached.flashcardHistory) {
           useFlashcardGeneratorStore.setState({
-            generatedCards: history.flashcardHistory.flashcards as Flashcard[],
-            generatedCardsId: history.flashcardHistory.id,
+            generatedCards: cached.flashcardHistory.flashcards as Flashcard[],
+            generatedCardsId: cached.flashcardHistory.id,
           });
         }
-      } catch (error) {
-        console.error("Error fetching history data:", error);
+      } else {
+        try {
+          const history = await aiApi.getUploadHistory(upload.id);
+          storeCache.set(cacheKey, history);
+
+          if (history.quizHistory) {
+            useTestGeneratorStore.setState({
+              generatedTest: history.quizHistory.quizzes as Quizz[],
+              generatedTestId: history.quizHistory.id,
+            });
+          }
+
+          if (history.flashcardHistory) {
+            useFlashcardGeneratorStore.setState({
+              generatedCards: history.flashcardHistory.flashcards as Flashcard[],
+              generatedCardsId: history.flashcardHistory.id,
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching history data:", error);
+        }
       }
     }
 
