@@ -13,7 +13,7 @@ app = typer.Typer(add_completion=False)
 def main() -> None:
     run_benchmark_main(
         dataset='humaneval',
-        model_type='minimax-m2.5-free',
+        model_type='',
         limit=2,
         dataset_path=str(Path('src/evaluation/datasets/samples/humaneval_smoke.jsonl')),
         fast_mode=True,

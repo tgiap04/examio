@@ -13,6 +13,7 @@ model UserStorage {
 
     user                      User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
     documents                 Document[]
+    documentEntities          DocumentEntity[]
     graphState                UserStorageGraph?
     graphGroups               UserStorageGraphGroup[]
     historyGeneratedQuizz     HistoryGeneratedQuizz[]
@@ -33,6 +34,22 @@ model Document {
     userStorage UserStorage @relation(fields: [userStorageId], references: [id], onDelete: Cascade)
 
     @@index([userStorageId, createdAt])
+}
+
+model DocumentEntity {
+    id            String   @id
+    userStorageId String
+    chunkId       String?
+    name          String
+    type          String
+    description   String   @default("")
+    relatedNames  Json     @default("[]")
+    createdAt     DateTime @default(now())
+
+    userStorage UserStorage @relation(fields: [userStorageId], references: [id], onDelete: Cascade)
+
+    @@index([userStorageId])
+    @@index([name, type])
 }
 
 model UserStorageGraph {

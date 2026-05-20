@@ -32,7 +32,7 @@ class ChatRequest(BaseModel):
     user_storage_id: Optional[str] = Field(None, description="ID for RAG context from a specific file")
     department: Optional[str] = Field(None, description="Department context for general RAG")
     model_type: Optional[str] = Field(
-        default='minimax-m2.5-free',
+        default=None,
         alias="modelType",
         description='Model id tu registry'
     )

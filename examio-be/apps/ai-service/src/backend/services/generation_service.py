@@ -1003,6 +1003,7 @@ class ContentGenerationService:
         """Normalize quiz item to ensure correct format"""
         valid_answers = ["A", "B", "C", "D"]
         clean_answer = str(item.answer).strip()
+        clean_answer = re.sub(r'^([A-D])\s*[\.\)\:]\s*', '', clean_answer).strip() or clean_answer
 
         new_options = []
         for idx, opt in enumerate(item.options):
@@ -1012,18 +1013,29 @@ class ContentGenerationService:
                 clean_opt = clean_opt[2:].strip()
             new_options.append(clean_opt)
 
-        if clean_answer not in valid_answers:
+        if clean_answer.upper() in valid_answers:
+            clean_answer = clean_answer.upper()
+        else:
             found = False
+            answer_lower = clean_answer.lower()
 
             for idx, opt in enumerate(new_options):
-                if clean_answer.lower() == opt.lower() or clean_answer in opt:
+                if answer_lower == opt.lower():
                     clean_answer = valid_answers[idx]
                     found = True
                     break
 
             if not found:
+                for idx, opt in enumerate(new_options):
+                    if answer_lower in opt.lower() or opt.lower() in answer_lower:
+                        clean_answer = valid_answers[idx]
+                        found = True
+                        break
+
+            if not found:
                 for idx, opt in enumerate(item.options):
-                    if clean_answer in str(opt):
+                    opt_str = str(opt).lower()
+                    if answer_lower in opt_str or opt_str in answer_lower:
                         clean_answer = valid_answers[idx]
                         found = True
                         break

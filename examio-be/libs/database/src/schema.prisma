@@ -305,26 +305,26 @@ model CheatingLog {
 model HistoryGeneratedQuizz {
     id            String   @id @default(cuid())
     userId        String
-    userStorageId String
+    userStorageId String?
     quizzes       Json
     createdAt     DateTime @default(now())
     updatedAt     DateTime @default(now()) @updatedAt
 
     user                 User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-    userStorage          UserStorage           @relation(fields: [userStorageId], references: [id], onDelete: Cascade)
+    userStorage          UserStorage?          @relation(fields: [userStorageId], references: [id], onDelete: SetNull)
     detailsQuizQuestions DetailsQuizQuestion[]
 }
 
 model HistoryGeneratedFlashcard {
     id            String   @id @default(cuid())
     userId        String
-    userStorageId String
+    userStorageId String?
     flashcards    Json
     createdAt     DateTime @default(now())
     updatedAt     DateTime @default(now()) @updatedAt
 
     user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-    userStorage       UserStorage        @relation(fields: [userStorageId], references: [id], onDelete: Cascade)
+    userStorage       UserStorage?       @relation(fields: [userStorageId], references: [id], onDelete: SetNull)
     detailsFlashCards DetailsFlashCard[]
 }
 
@@ -475,6 +475,7 @@ model UserStorage {
 
     user                      User                        @relation(fields: [userId], references: [id], onDelete: Cascade)
     documents                 Document[]
+    documentEntities          DocumentEntity[]
     graphState                UserStorageGraph?
     graphGroups               UserStorageGraphGroup[]
     historyGeneratedQuizz     HistoryGeneratedQuizz[]
@@ -495,6 +496,22 @@ model Document {
     userStorage UserStorage @relation(fields: [userStorageId], references: [id], onDelete: Cascade)
 
     @@index([userStorageId, createdAt])
+}
+
+model DocumentEntity {
+    id            String   @id
+    userStorageId String
+    chunkId       String?
+    name          String
+    type          String
+    description   String   @default("")
+    relatedNames  Json     @default("[]")
+    createdAt     DateTime @default(now())
+
+    userStorage UserStorage @relation(fields: [userStorageId], references: [id], onDelete: Cascade)
+
+    @@index([userStorageId])
+    @@index([name, type])
 }
 
 model UserStorageGraph {

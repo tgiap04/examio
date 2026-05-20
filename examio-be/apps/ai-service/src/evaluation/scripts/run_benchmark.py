@@ -21,7 +21,7 @@ app = typer.Typer(add_completion=False)
 @app.command()
 def main(
     dataset: str = typer.Option('humaneval', help='Dataset name: humaneval or mbpp'),
-    model_type: str = typer.Option('minimax-m2.5-free', help='Tutor model id'),
+    model_type: str = typer.Option('', help='Tutor model id (empty = env default)'),
     limit: int = typer.Option(10, help='Number of samples to run'),
     dataset_path: str | None = typer.Option(None, help='Optional custom dataset file path'),
     fast_mode: bool = typer.Option(True, help='Enable tutor fast mode for lower latency'),

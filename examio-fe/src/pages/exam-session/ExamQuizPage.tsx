@@ -18,6 +18,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { resolveAnswerIndex } from "@/lib/quizAnswerUtils";
 import { ConfirmDialog } from "@/components/organisms/ConfirmDialog";
 import { FullscreenConfirmDialog } from "@/components/organisms/FullscreenConfirmDialog";
 import { toast } from "@/components/antd/toast";
@@ -390,7 +391,9 @@ export default function ExamQuizPage() {
     if (showDetailedResults && resultData.showAnswers && resultData.questions) {
       const reviewQuestion = resultData.questions[reviewQuestionIndex];
       const userAnswer = reviewQuestion.userAnswer;
-      const isCorrect = userAnswer === reviewQuestion.answer;
+      const correctIdx = resolveAnswerIndex(reviewQuestion.answer || "A", reviewQuestion.options);
+      const correctLetter = String.fromCharCode(65 + correctIdx);
+      const isCorrect = userAnswer === correctLetter;
 
       return (
         <div className="min-h-screen">
@@ -435,7 +438,7 @@ export default function ExamQuizPage() {
                       {reviewQuestion.options.map((option, index) => {
                         const optionLetter = String.fromCharCode(65 + index);
                         const isUserAnswer = userAnswer === optionLetter;
-                        const isCorrectAnswer = reviewQuestion.answer === optionLetter;
+                        const isCorrectAnswer = correctLetter === optionLetter;
 
                         return (
                           <div

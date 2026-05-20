@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import {
   generateShareLinkApi,
@@ -7,7 +7,7 @@ import {
 } from "@/apis/studentMaterialsApi"
 import { Button } from "@/components/antd/button"
 import { Skeleton } from "@/components/antd/skeleton"
-import { BookOpen, Share2, Eye, Clock, User, Copy, Check, ChevronLeft, ChevronRight, Pin, PinOff } from "lucide-react"
+import { BookOpen, Share2, Eye, Clock, User, Copy, Check, ChevronLeft, ChevronRight, Pin, PinOff, RefreshCw } from "lucide-react"
 import { useToast } from "@/components/antd/toast"
 import {
   Dialog,
@@ -17,10 +17,17 @@ import {
   DialogTitle,
 } from "@/components/antd/dialog"
 import { Input } from "@/components/antd/input"
+import { updateSharingSettings } from "@/apis/flashcardSetApi"
 import { useAuthStore } from "@/stores/useAuthStore"
 import { useStudentMaterialsStore } from "@/stores/useStudentMaterialsStore"
 
 const PAGE_SIZE = 12
+
+function sortWithPinnedFirst(items: RecentFlashcardSet[]): RecentFlashcardSet[] {
+  const pinned = items.filter((m) => m.isPinned)
+  const unpinned = items.filter((m) => !m.isPinned)
+  return [...pinned, ...unpinned]
+}
 
 function MaterialCard({
   material,
@@ -37,7 +44,7 @@ function MaterialCard({
 }) {
   return (
     <article
-      className="group relative flex flex-col rounded-lg border justify-between border-hairline bg-canvas p-5 transition-all duration-200 hover:border-coral/30 hover:shadow-[0_4px_16px_rgba(20,20,19,0.06)]"
+      className="group relative flex h-[220px] flex-col rounded-lg justify-between border border-hairline bg-canvas p-5 transition-all duration-200 hover:border-coral/30 hover:shadow-[0_4px_16px_rgba(20,20,19,0.06)]"
     >
       {material.isPinned && (
         <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-coral/10 text-coral">
@@ -80,64 +87,65 @@ function MaterialCard({
       </div>
 
       {material.description && (
-        <p className="!mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-2">
+        <p className="!mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-2 min-h-0">
           {material.description}
         </p>
       )}
 
-      {material.progress !== undefined && (
-        <div className="mt-4">
-          <div className="mb-1.5 flex justify-between text-xs">
-            <span className="text-muted-foreground">Tiến độ</span>
-            <span className="font-medium text-ink">{material.progress}%</span>
+      <div>
+        {material.progress !== undefined && (
+          <div className="mt-4">
+            <div className="mb-1.5 flex justify-between text-xs">
+              <span className="text-muted-foreground">Tiến độ</span>
+              <span className="font-medium text-ink">{material.progress}%</span>
+            </div>
+            <div className="h-1 overflow-hidden rounded-pill bg-hairline">
+              <div
+                className="h-full rounded-pill bg-coral transition-all duration-300"
+                style={{ width: `${material.progress}%` }}
+              />
+            </div>
           </div>
-          <div className="h-1 overflow-hidden rounded-pill bg-hairline">
-            <div
-              className="h-full rounded-pill bg-coral transition-all duration-300"
-              style={{ width: `${material.progress}%` }}
-            />
-          </div>
-        </div>
-      )}
+        )}
 
-      <div className="mt-4 flex items-center justify-between border-t border-hairline-soft pt-4">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-surface-card">
-            <User className="h-3 w-3" />
+        <div className="mt-auto flex items-center justify-between border-t border-hairline-soft pt-4">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-surface-card">
+              <User className="h-3 w-3" />
+            </div>
+            <span>{material.creator?.name || material.creator?.username || "Ẩn danh"}</span>
           </div>
-          <span>{material.creator?.name || material.creator?.username || "Ẩn danh"}</span>
-        </div>
 
-        <div className="flex items-center gap-1.5">
-          <button
-            onClick={() => onTogglePin(material.id)}
-            className={`grid h-8 w-8 place-items-center rounded-md transition-colors ${
-              material.isPinned
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => onTogglePin(material.id)}
+              className={`grid h-8 w-8 place-items-center rounded-md transition-colors ${material.isPinned
                 ? "bg-coral/10 text-coral hover:bg-coral/20"
                 : "text-muted-foreground hover:bg-surface-card hover:text-ink"
-            }`}
-            aria-label={material.isPinned ? "Bỏ ghim" : "Ghim"}
-            title={material.isPinned ? "Bỏ ghim" : "Ghim"}
-          >
-            {material.isPinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
-          </button>
-          {isOwner && (
-            <button
-              onClick={() => onShare(material.id)}
-              className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-surface-card hover:text-ink"
-              aria-label="Chia sẻ"
-              title="Chia sẻ"
+                }`}
+              aria-label={material.isPinned ? "Bỏ ghim" : "Ghim"}
+              title={material.isPinned ? "Bỏ ghim" : "Ghim"}
             >
-              <Share2 className="h-3.5 w-3.5" />
+              {material.isPinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
             </button>
-          )}
-          <Button
-            onClick={() => onReview(material.id)}
-            size="sm"
-            className="h-8 px-3 text-xs"
-          >
-            Ôn tập
-          </Button>
+            {isOwner && (
+              <button
+                onClick={() => onShare(material.id)}
+                className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-surface-card hover:text-ink"
+                aria-label="Chia sẻ"
+                title="Chia sẻ"
+              >
+                <Share2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <Button
+              onClick={() => onReview(material.id)}
+              size="sm"
+              className="h-8 px-3 text-xs"
+            >
+              Ôn tập
+            </Button>
+          </div>
         </div>
       </div>
     </article>
@@ -207,11 +215,10 @@ function Pagination({
           <button
             key={p}
             onClick={() => onPageChange(p)}
-            className={`grid h-9 w-9 place-items-center rounded-md text-sm font-medium transition-colors ${
-              p === page
-                ? "bg-coral text-on-primary"
-                : "border border-hairline text-body hover:bg-surface-card hover:text-ink"
-            }`}
+            className={`grid h-9 w-9 place-items-center rounded-md text-sm font-medium transition-colors ${p === page
+              ? "bg-coral text-on-primary"
+              : "border border-hairline text-body hover:bg-surface-card hover:text-ink"
+              }`}
             aria-current={p === page ? "page" : undefined}
           >
             {p}
@@ -236,14 +243,24 @@ function ShareDialog({
   onOpenChange,
   shareUrl,
   accessCode,
+  flashcardSetId,
+  onCodeChange,
 }: {
   open: boolean
   onOpenChange: (open: boolean) => void
   shareUrl: string
   accessCode: string
+  flashcardSetId: string
+  onCodeChange: (code: string) => void
 }) {
   const [copiedUrl, setCopiedUrl] = useState(false)
   const [copiedCode, setCopiedCode] = useState(false)
+  const [code, setCode] = useState(accessCode)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    setCode(accessCode)
+  }, [accessCode])
 
   const handleCopy = (text: string, type: "url" | "code") => {
     navigator.clipboard.writeText(text)
@@ -255,6 +272,29 @@ function ShareDialog({
       setTimeout(() => setCopiedCode(false), 2000)
     }
   }
+
+  const handleGenerate = () => {
+    setCode(Math.floor(100000 + Math.random() * 900000).toString())
+  }
+
+  const handleSaveCode = async () => {
+    if (!code || code.length < 6) return
+    try {
+      setSaving(true)
+      await updateSharingSettings(flashcardSetId, {
+        isPublic: false,
+        accessCode: code,
+        whitelist: [],
+      })
+      onCodeChange(code)
+    } catch {
+      // silent
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const codeChanged = code !== accessCode
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -283,19 +323,44 @@ function ShareDialog({
           <div className="space-y-2">
             <label className="text-sm font-medium text-ink">Mã truy cập</label>
             <div className="flex gap-2">
-              <Input value={accessCode} readOnly className="flex-1" />
+              <Input
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="Nhập mã 6 số"
+                className="flex-1 font-mono text-lg tracking-widest"
+                maxLength={6}
+              />
               <Button
-                onClick={() => handleCopy(accessCode, "code")}
+                onClick={() => handleCopy(code, "code")}
                 size="sm"
                 variant={copiedCode ? "outline" : "default"}
+                disabled={!code}
               >
                 {copiedCode ? <Check className="mr-1.5 h-3.5 w-3.5" /> : <Copy className="mr-1.5 h-3.5 w-3.5" />}
                 {copiedCode ? "Đã chép" : "Sao chép"}
               </Button>
+              <Button
+                onClick={handleGenerate}
+                size="sm"
+                variant="outline"
+                title="Tạo mã ngẫu nhiên"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Người khác có thể sử dụng mã này để truy cập tài liệu
+              Nhập mã hoặc bấm tạo ngẫu nhiên. Người khác cần mã này để truy cập.
             </p>
+            {codeChanged && (
+              <Button
+                onClick={handleSaveCode}
+                size="sm"
+                disabled={saving || code.length < 6}
+                className="w-full"
+              >
+                {saving ? "Đang lưu..." : "Lưu mã mới"}
+              </Button>
+            )}
           </div>
         </div>
       </DialogContent>
@@ -320,17 +385,19 @@ export default function MyMaterialsPage() {
     open: boolean
     shareUrl: string
     accessCode: string
+    flashcardSetId: string
   }>({
     open: false,
     shareUrl: "",
     accessCode: "",
+    flashcardSetId: "",
   })
 
   const loadMaterials = useCallback(async (page: number) => {
     try {
       setLoading(true)
       const data = await fetchFlashcards(page, PAGE_SIZE)
-      setMaterials(data.flashcardSets)
+      setMaterials(sortWithPinnedFirst(data.flashcardSets))
       setTotalPages(data.totalPages)
       setTotal(data.total)
     } catch {
@@ -353,14 +420,23 @@ export default function MyMaterialsPage() {
     navigate(`/study-flashcard/${setId}`)
   }
 
+  const shareCache = useRef<Map<string, { shareUrl: string; accessCode: string }>>(new Map())
+
   const handleShare = async (setId: string) => {
+    const cached = shareCache.current.get(setId)
+    if (cached) {
+      setShareDialog({ open: true, flashcardSetId: setId, ...cached })
+      return
+    }
+
     try {
       const data = await generateShareLinkApi(setId)
-      const shareUrl =
-        data.shareUrl || `${window.location.origin}/study-flashcard/${setId}`
+      const shareUrl = `${window.location.origin}/study-flashcard/${setId}`
 
+      shareCache.current.set(setId, { shareUrl, accessCode: data.accessCode })
       setShareDialog({
         open: true,
+        flashcardSetId: setId,
         shareUrl,
         accessCode: data.accessCode,
       })
@@ -373,20 +449,20 @@ export default function MyMaterialsPage() {
     const current = materials.find((m) => m.id === setId)
     if (!current) return
 
-    // Optimistic update local + store
     const newPinned = !current.isPinned
-    setMaterials((prev) =>
-      prev.map((m) => m.id === setId ? { ...m, isPinned: newPinned } : m)
-    )
+    setMaterials((prev) => {
+      const updated = prev.map((m) => m.id === setId ? { ...m, isPinned: newPinned } : m)
+      return sortWithPinnedFirst(updated)
+    })
     updateFlashcardPin(setId, newPinned)
 
     try {
       await togglePinFlashcardApi(setId)
     } catch {
-      // Revert on failure
-      setMaterials((prev) =>
-        prev.map((m) => m.id === setId ? { ...m, isPinned: !newPinned } : m)
-      )
+      setMaterials((prev) => {
+        const reverted = prev.map((m) => m.id === setId ? { ...m, isPinned: !newPinned } : m)
+        return sortWithPinnedFirst(reverted)
+      })
       updateFlashcardPin(setId, !newPinned)
       toast.error("Không thể ghim tài liệu")
     }
@@ -443,14 +519,19 @@ export default function MyMaterialsPage() {
           <>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {materials.map((material) => (
-                <MaterialCard
+                <div
                   key={material.id}
-                  material={material}
-                  isOwner={material.creator.id === String(user?.id)}
-                  onReview={handleReview}
-                  onShare={handleShare}
-                  onTogglePin={handleTogglePin}
-                />
+                  className="transition-all duration-300 ease-out"
+                  style={{ order: material.isPinned ? 0 : 1 }}
+                >
+                  <MaterialCard
+                    material={material}
+                    isOwner={material.creator.id === String(user?.id)}
+                    onReview={handleReview}
+                    onShare={handleShare}
+                    onTogglePin={handleTogglePin}
+                  />
+                </div>
               ))}
             </div>
 
@@ -467,6 +548,11 @@ export default function MyMaterialsPage() {
           onOpenChange={(open) => setShareDialog((prev) => ({ ...prev, open }))}
           shareUrl={shareDialog.shareUrl}
           accessCode={shareDialog.accessCode}
+          flashcardSetId={shareDialog.flashcardSetId}
+          onCodeChange={(code) => {
+            setShareDialog((prev) => ({ ...prev, accessCode: code }))
+            shareCache.current.delete(shareDialog.flashcardSetId)
+          }}
         />
       </section>
     </div>

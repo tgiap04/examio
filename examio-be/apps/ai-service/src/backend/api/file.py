@@ -45,7 +45,7 @@ class ProcessFileRequest(BaseModel):
     model_config = ConfigDict(populate_by_name=True)
     
     user_storage_id: str = Field(..., description="ID của UserStorage (NestJS đã tạo)")
-    model_type: str = Field(default='minimax-m2.5-free', alias='modelType', description='Model id tu registry')
+    model_type: Optional[str] = Field(default=None, alias='modelType', description='Model id tu registry')
 
 
 class QueryFileRequest(BaseModel):
@@ -68,7 +68,7 @@ class MultiQueryRequest(BaseModel):
 
 # ==================== Helper Functions ====================
 
-async def get_or_create_retriever(user_storage_id: str, model_type: str = 'minimax-m2.5-free'):
+async def get_or_create_retriever(user_storage_id: str, model_type: Optional[str] = None):
     """Get retriever from cache or create from DB chunks"""
     cache_key = f"{user_storage_id}:embedding:{model_manager.get_embedding_info()['id']}"
     if cache_key in _retriever_cache:

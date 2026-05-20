@@ -8,7 +8,7 @@ import asyncio
 import json
 import logging
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import aio_pika
 from aio_pika import connect_robust, IncomingMessage
@@ -198,7 +198,7 @@ class RabbitMQConsumer:
         type_result: int,
         quantity_quizz: int,
         quantity_flashcard: int,
-        model_type: str = "minimax-m2.5-free"
+        model_type: Optional[str] = None
     ):
         """
         Auto-generate quiz or flashcard after OCR completes.
