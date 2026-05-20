@@ -1740,7 +1740,7 @@ export class FlashcardsetService {
 
         // Generate share URL
         const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        const shareUrl = `${baseUrl}/k/manage-flashcard-set/${flashcardSetId}?code=${accessCode}`;
+        const shareUrl = `${baseUrl}/study-flashcard/${flashcardSetId}`;
 
         return {
             shareUrl,

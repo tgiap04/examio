@@ -5,6 +5,7 @@ import { Button } from "@/components/antd/button";
 import { Card } from "@/components/antd/card";
 import { Badge } from "@/components/antd/badge";
 import { Skeleton } from "@/components/antd/skeleton";
+import { isCorrectAnswer } from "@/lib/quizAnswerUtils";
 import {
   Plus,
   Trash2,
@@ -268,8 +269,7 @@ export default function ManageQuizSetDetailPage() {
                         <div className="space-y-1">
                           {question.options.map((option, optIndex) => {
                             const optionLetter = String.fromCharCode(65 + optIndex);
-                            const isCorrect =
-                              question.answer === optionLetter || question.answer === optIndex.toString();
+                            const isCorrect = isCorrectAnswer(question.answer, optIndex, question.options);
                             return (
                               <div
                                 key={optIndex}

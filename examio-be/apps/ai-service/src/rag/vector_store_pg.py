@@ -74,7 +74,7 @@ class PgVectorStore:
         self,
         text: str,
         task_type: str = "retrieval_document",
-        model_type: str = "minimax-m2.5-free"
+        model_type: Optional[str] = None
     ) -> List[float]:
         """
         Tạo embedding vector cho text bằng Gemini embedding model.
@@ -94,7 +94,7 @@ class PgVectorStore:
         self,
         texts: List[str],
         task_type: str = "retrieval_document",
-        model_type: str = "minimax-m2.5-free"
+        model_type: Optional[str] = None
     ) -> List[List[float]]:
         """
         Tạo embeddings cho nhiều texts bằng Gemini embedding model.
@@ -116,7 +116,7 @@ class PgVectorStore:
         content: str,
         page_range: str,
         title: Optional[str] = None,
-        model_type: str = "minimax-m2.5-free"
+        model_type: Optional[str] = None
     ) -> bool:
         """
         Lưu document chunk với embedding vào database.
@@ -166,7 +166,7 @@ class PgVectorStore:
     async def store_documents_batch(
         self,
         documents: List[Dict[str, Any]],
-        model_type: str = "minimax-m2.5-free"
+        model_type: Optional[str] = None
     ) -> int:
         """
         Lưu nhiều document chunks với batch embedding.
@@ -267,7 +267,7 @@ class PgVectorStore:
         query: str,
         top_k: int = None,
         similarity_threshold: float = None,
-        model_type: str = "minimax-m2.5-free"
+        model_type: Optional[str] = None
     ) -> List[DocumentChunk]:
         """
         Tìm kiếm documents tương tự bằng vector similarity.

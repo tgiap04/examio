@@ -84,25 +84,22 @@ export class AIService {
     }
 
     private getDefaultModelId(): string {
-        return process.env.AI2_DEFAULT_MODEL || 'minimax-m2.5-free';
+        const defaultModel = process.env.AI2_DEFAULT_MODEL?.trim();
+        if (defaultModel) return defaultModel;
+        const models = (process.env.AI2_GENERATION_MODEL_NAMES || '')
+            .split(',')
+            .map((m) => m.trim())
+            .filter(Boolean);
+        return models[0] || '';
     }
 
     private getFallbackAi2ModelIds(): string[] {
-        const configuredModels = process.env.AI2_GENERATION_MODEL_NAMES
-            ?.split(',')
+        const configuredModels = (process.env.AI2_GENERATION_MODEL_NAMES || '')
+            .split(',')
             .map((model) => model.trim())
             .filter(Boolean);
-
-        const models = configuredModels?.length
-            ? configuredModels
-            : [
-                  'minimax-m2.5-free',
-                  'nemotron-3-super-free',
-                  'trinity-large-preview-free',
-              ];
         const defaultModel = this.getDefaultModelId();
-
-        return Array.from(new Set([defaultModel, ...models]));
+        return Array.from(new Set([defaultModel, ...configuredModels].filter(Boolean)));
     }
 
     private formatAi2ModelName(modelId: string): string {
@@ -1286,7 +1283,7 @@ export class AIService {
                 upload.id
             );
             this.logger.log(
-                `Deleted upload aggregate for UserStorage: ${upload.id} (documents=${deletionResult.documents}, quizHistories=${deletionResult.quizHistories}, flashcardHistories=${deletionResult.flashcardHistories}, aiChatDocuments=${deletionResult.aiChatDocuments})`
+                `Deleted upload aggregate for UserStorage: ${upload.id} (documents=${deletionResult.documents}, documentEntities=${deletionResult.documentEntities}, aiChatDocuments=${deletionResult.aiChatDocuments})`
             );
         } catch (error) {
             this.logger.error(

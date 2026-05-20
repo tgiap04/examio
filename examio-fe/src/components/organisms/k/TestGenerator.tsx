@@ -13,6 +13,7 @@ import { Button } from "@/components/antd/button";
 import { Label } from "@/components/antd/label";
 import ModelSelector from "@/components/atoms/ModelSelector";
 import { Slider } from "@/components/antd/slider";
+import { resolveAnswerIndex } from "@/lib/quizAnswerUtils";
 import {
   Loader2,
   Sparkles,
@@ -362,10 +363,7 @@ export function TestGenerator() {
             <ScrollArea className="flex-1 min-h-[360px] rounded-2xl border border-border shadow-[0_24px_60px_rgba(20,20,19,0.18)]">
               <div className="space-y-4 p-4 md:p-6 max-h-[600px] overflow-y-auto">
                 {generatedTest.map((q: Quizz, idx: number) => {
-                  const answerIndex =
-                    typeof q.answer === "number"
-                      ? q.answer
-                      : ["A", "B", "C", "D"].indexOf(q.answer.toUpperCase());
+                  const answerIndex = resolveAnswerIndex(q.answer, q.options);
 
                   return (
                     <div

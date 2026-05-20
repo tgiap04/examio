@@ -23,6 +23,7 @@ import {
   VolumeX,
   Home,
   RotateCcw,
+  Shuffle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -74,24 +75,6 @@ export default function FlashcardStudyPage() {
   const [settings, setSettings] = useState({ soundEffects: false });
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (scrollContainerRef.current) {
-      const container = scrollContainerRef.current;
-      const activeButton = container.children[currentCardIndex] as HTMLElement;
-      if (activeButton) {
-        const containerRect = container.getBoundingClientRect();
-        const buttonRect = activeButton.getBoundingClientRect();
-        const scrollLeft =
-          container.scrollLeft +
-          (buttonRect.left - containerRect.left) -
-          container.offsetWidth / 2 +
-          activeButton.offsetWidth / 2;
-        container.scrollTo({ left: scrollLeft, behavior: "smooth" });
-      }
-    }
-  }, [currentCardIndex]);
 
   const playSound = useCallback(
     (sound: keyof typeof SOUND_EFFECTS) => {
@@ -121,7 +104,7 @@ export default function FlashcardStudyPage() {
           setStudiedCards(new Set(progress.studiedCardIds));
         }
       } catch {
-        // Progress not available — continue with empty set
+        // Progress not available
       }
     } catch (error) {
       console.error("Error loading flashcards:", error);
@@ -165,6 +148,19 @@ export default function FlashcardStudyPage() {
     checkAccess();
   }, [id, loadFlashcards]);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") handlePrevious();
+      else if (e.key === "ArrowRight") handleNext();
+      else if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        handleFlip();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  });
+
   const handleVerifyCode = async () => {
     if (!accessCode.trim()) {
       setAccessError("Vui lòng nhập mã truy cập");
@@ -207,13 +203,14 @@ export default function FlashcardStudyPage() {
     }
   };
 
-  const handleCardClick = (index: number) => {
-    setCurrentCardIndex(index);
+  const handleShuffle = () => {
+    const shuffled = [...flashcards].sort(() => Math.random() - 0.5);
+    setFlashcards(shuffled);
+    setCurrentCardIndex(0);
     setIsFlipped(false);
-    playSound("next");
   };
 
-  // Loading / access states
+  // Loading state
   if (isCheckingAccess) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-canvas">
@@ -225,6 +222,7 @@ export default function FlashcardStudyPage() {
     );
   }
 
+  // No access (not in whitelist)
   if (accessCheckResult && !accessCheckResult.hasAccess && !accessCheckResult.requiresCode) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-canvas">
@@ -232,12 +230,12 @@ export default function FlashcardStudyPage() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-card">
             <Lock className="h-6 w-6 text-muted-foreground" />
           </div>
-          <h1 className="text-2xl tracking-tight text-ink">Không có quyền truy cập</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <h1 className="font-display text-2xl tracking-tight text-ink">Không có quyền truy cập</h1>
+          <p className="mt-2 text-sm text-body">
             Bộ flashcard này là riêng tư hoặc bạn chưa được thêm vào whitelist.
           </p>
           {publicInfo && (
-            <div className="mt-4 rounded-lg border border-hairline bg-surface-soft p-4">
+            <div className="mt-4 rounded-lg border border-hairline bg-surface-card p-4">
               <p className="font-medium text-ink">{publicInfo.title}</p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Tạo bởi {publicInfo.creator.name || publicInfo.creator.username}
@@ -253,6 +251,7 @@ export default function FlashcardStudyPage() {
     );
   }
 
+  // Access code modal
   if (showAccessModal) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-canvas">
@@ -268,7 +267,7 @@ export default function FlashcardStudyPage() {
               </DialogDescription>
             </DialogHeader>
             {publicInfo && (
-              <div className="rounded-lg border border-hairline bg-surface-soft p-4 text-center">
+              <div className="rounded-lg border border-hairline bg-surface-card p-4 text-center">
                 <p className="font-medium text-ink">{publicInfo.title}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Tạo bởi {publicInfo.creator.name || publicInfo.creator.username}
@@ -300,6 +299,7 @@ export default function FlashcardStudyPage() {
     );
   }
 
+  // Loading flashcards
   if (isLoadingFlashcards) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-canvas">
@@ -311,6 +311,7 @@ export default function FlashcardStudyPage() {
     );
   }
 
+  // Empty state
   if (!id || flashcards.length === 0) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-canvas">
@@ -318,8 +319,8 @@ export default function FlashcardStudyPage() {
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-surface-card">
             <X className="h-6 w-6 text-muted-foreground" />
           </div>
-          <h1 className="text-2xl tracking-tight text-ink">Không có thẻ</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Bộ flashcard này chưa có thẻ nào</p>
+          <h1 className="font-display text-2xl tracking-tight text-ink">Không có thẻ</h1>
+          <p className="mt-2 text-sm text-body">Bộ flashcard này chưa có thẻ nào</p>
         </div>
       </div>
     );
@@ -327,53 +328,64 @@ export default function FlashcardStudyPage() {
 
   const currentCard = flashcards[currentCardIndex];
   const totalCards = flashcards.length;
-  const progress = Math.round(((studiedCards.size) / totalCards) * 100);
+  const progress = Math.round((studiedCards.size / totalCards) * 100);
 
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-canvas">
       <audio ref={audioRef} />
 
-      {/* Header */}
-      <header className="z-10 border-b border-hairline bg-canvas/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-3">
+      {/* Header — editorial minimal */}
+      <header className="z-10 flex-shrink-0">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-4">
             <button
               onClick={() => navigate("/k")}
-              className="grid h-9 w-9 place-items-center rounded-lg border border-hairline text-muted-foreground transition-colors hover:bg-surface-card hover:text-ink"
+              className="grid h-9 w-9 place-items-center rounded-md border border-hairline text-muted-foreground transition-colors hover:bg-surface-card hover:text-ink"
               aria-label="Về trang chủ"
             >
               <Home className="h-4 w-4" />
             </button>
-            <h1 className="min-w-0 truncate font-body text-sm font-medium text-ink sm:text-base">
-              {flashcardSetTitle}
-            </h1>
+            <div className="min-w-0">
+              <h1 className="truncate font-display text-lg tracking-tight text-ink sm:text-xl">
+                {flashcardSetTitle}
+              </h1>
+              {flashcardSetDescription && (
+                <p className="hidden truncate text-xs text-muted-foreground sm:block">
+                  {flashcardSetDescription}
+                </p>
+              )}
+            </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-3">
+          <div className="flex shrink-0 items-center gap-2">
             {creator && (
-              <div className="hidden items-center gap-2 rounded-lg border-none border-hairline bg-surface-soft px-3 py-1.5 sm:flex">
-                <Avatar className="h-5 w-5">
+              <div className="hidden items-center gap-2 sm:flex">
+                <Avatar className="h-6 w-6">
                   <AvatarImage src={creator.avatar || "/avt-default.webp"} />
                 </Avatar>
-                <div className="flex flex-col">
-                  <span className="text-[10px] leading-none text-muted-foreground">Tác giả</span>
-                  <span className="text-xs font-medium text-ink">
-                    {creator.name || creator.username}
-                  </span>
-                </div>
+                <span className="text-xs text-muted-foreground">
+                  {creator.name || creator.username}
+                </span>
               </div>
             )}
-
             <span className="hidden items-center gap-1 text-xs text-muted-foreground sm:flex">
               <Eye className="h-3.5 w-3.5" />
               {viewCount.toLocaleString()}
             </span>
             <button
+              onClick={handleShuffle}
+              className="grid h-9 w-9 place-items-center rounded-md border border-hairline text-muted-foreground transition-colors hover:bg-surface-card hover:text-ink"
+              aria-label="Xáo trộn"
+              title="Xáo trộn thẻ"
+            >
+              <Shuffle className="h-4 w-4" />
+            </button>
+            <button
               onClick={() => setSettings((prev) => ({ ...prev, soundEffects: !prev.soundEffects }))}
               className={cn(
-                "grid h-9 w-9 place-items-center rounded-lg border border-hairline transition-colors",
+                "grid h-9 w-9 place-items-center rounded-md border border-hairline transition-colors",
                 settings.soundEffects
-                  ? "bg-coral/10 text-coral"
+                  ? "border-coral/30 bg-coral/10 text-coral"
                   : "text-muted-foreground hover:bg-surface-card hover:text-ink"
               )}
               aria-label={settings.soundEffects ? "Tắt âm thanh" : "Bật âm thanh"}
@@ -383,119 +395,128 @@ export default function FlashcardStudyPage() {
           </div>
         </div>
 
-        {/* Progress bar */}
-        <div className="h-0.5 bg-hairline">
+        {/* Progress bar — thin coral line */}
+        <div className="h-[2px] bg-hairline-soft">
           <div
-            className="h-full bg-coral transition-all duration-300"
+            className="h-full bg-coral transition-all duration-500 ease-out"
             style={{ width: `${progress}%` }}
           />
         </div>
       </header>
 
-      {/* Card area */}
-      <div className="flex flex-1 items-center justify-center px-4 py-6">
-        <div className="w-full max-w-2xl">
-          {/* Flip card */}
+      {/* Main card area */}
+      <main className="flex flex-1 flex-col items-center justify-center px-4 py-8">
+        <div className="w-full max-w-xl">
+          {/* Card counter */}
+          <div className="mb-4 flex items-center justify-between">
+            <span className="rounded-pill bg-surface-card px-3 py-1 text-xs font-medium text-muted-foreground">
+              {currentCardIndex + 1} / {totalCards}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {studiedCards.size} đã học · {progress}%
+            </span>
+          </div>
+
+          {/* Flip card — editorial cream surface */}
           <div
-            className="relative cursor-pointer"
+            className="relative cursor-pointer select-none"
             style={{ perspective: "1200px" }}
             onClick={handleFlip}
           >
             <div
-              className="relative w-full transition-transform duration-500 ease-out"
+              className="relative w-full transition-transform duration-600 ease-out"
               style={{
                 transformStyle: "preserve-3d",
                 transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
               }}
             >
-              {/* Front */}
+              {/* Front — cream card */}
               <div
-                className="flex min-h-[320px] flex-col items-center justify-center rounded-xl border border-hairline bg-canvas p-8 shadow-[0_1px_3px_rgba(20,20,19,0.08)] sm:min-h-[380px] sm:p-12"
+                className="flex min-h-[340px] flex-col items-center justify-center rounded-lg border border-hairline bg-surface-card p-10 sm:min-h-[400px] sm:p-14"
                 style={{ backfaceVisibility: "hidden" }}
               >
-                <span className="mb-4 rounded-pill bg-surface-card px-3 py-1 text-xs font-medium text-muted-foreground">
+                <span className="mb-6 inline-flex items-center gap-1.5 rounded-pill bg-canvas px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                   Câu hỏi
                 </span>
                 <div
-                  className="prose max-w-none text-center text-lg text-ink sm:text-xl"
+                  className="prose max-w-none text-center font-display text-xl leading-relaxed tracking-tight text-ink sm:text-2xl"
                   dangerouslySetInnerHTML={{ __html: currentCard?.question || "" }}
                 />
-                <div className="mt-8 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <div className="mt-auto pt-8 flex items-center gap-1.5 text-[11px] text-muted-soft">
                   <RotateCcw className="h-3 w-3" />
-                  Nhấp để lật thẻ
+                  Nhấp hoặc Space để lật
                 </div>
               </div>
 
-              {/* Back */}
+              {/* Back — warm soft surface with coral accent */}
               <div
-                className="absolute inset-0 flex min-h-[320px] flex-col items-center justify-center rounded-xl border border-coral/20 bg-surface-soft p-8 shadow-[0_1px_3px_rgba(20,20,19,0.08)] sm:min-h-[380px] sm:p-12"
+                className="absolute inset-0 flex min-h-[340px] flex-col items-center justify-center rounded-lg border border-coral/20 bg-surface-soft p-10 sm:min-h-[400px] sm:p-14"
                 style={{
                   backfaceVisibility: "hidden",
                   transform: "rotateY(180deg)",
                 }}
               >
-                <span className="mb-4 rounded-pill bg-coral/10 px-3 py-1 text-xs font-medium text-coral">
+                <span className="mb-6 inline-flex items-center gap-1.5 rounded-pill bg-coral/10 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-coral">
                   Câu trả lời
                 </span>
                 <div
-                  className="prose max-w-none text-center text-lg text-ink sm:text-xl"
+                  className="prose max-w-none text-center text-lg leading-relaxed text-ink sm:text-xl"
                   dangerouslySetInnerHTML={{ __html: currentCard?.answer || "" }}
                 />
-                <div className="mt-8 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <div className="mt-auto pt-8 flex items-center gap-1.5 text-[11px] text-muted-soft">
                   <RotateCcw className="h-3 w-3" />
-                  Nhấp để quay lại
+                  Nhấp hoặc Space để quay lại
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
 
-      {/* Footer navigation */}
-      <footer className="z-10 border-t border-hairline bg-canvas/95 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+      {/* Footer — navigation controls */}
+      <footer className="z-10 flex-shrink-0 border-t border-hairline-soft">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
           <Button
             variant="outline"
             size="sm"
             onClick={handlePrevious}
             disabled={currentCardIndex === 0}
-            className="h-9"
+            className="h-10 gap-1.5 rounded-md border-hairline px-4"
           >
-            <ChevronLeft className="mr-1 h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
             <span className="hidden sm:inline">Trước</span>
           </Button>
 
-          <div className="flex items-center gap-3">
-            <div
-              ref={scrollContainerRef}
-              className="hidden max-w-[240px] gap-1 overflow-x-auto scroll-smooth sm:flex"
-              style={{ scrollbarWidth: "none" }}
-            >
-              {flashcards.map((card, index) => {
+          {/* Card dots — minimal indicator */}
+          <div className="flex items-center gap-1">
+            {totalCards <= 20 ? (
+              flashcards.map((card, index) => {
                 const isStudied = studiedCards.has(card.id);
                 const isCurrent = index === currentCardIndex;
                 return (
                   <button
                     key={card.id}
-                    onClick={() => handleCardClick(index)}
+                    onClick={() => {
+                      setCurrentCardIndex(index);
+                      setIsFlipped(false);
+                    }}
                     className={cn(
-                      "h-8 w-8 shrink-0 rounded-md text-xs font-medium transition-colors",
-                      isCurrent && "bg-coral text-on-primary",
-                      isStudied && !isCurrent && "bg-surface-cream-strong text-ink",
-                      !isStudied && !isCurrent && "bg-surface-soft text-muted-foreground hover:bg-surface-card",
+                      "h-2 w-2 rounded-full transition-all duration-200",
+                      isCurrent && "h-2.5 w-2.5 bg-coral",
+                      isStudied && !isCurrent && "bg-coral/40",
+                      !isStudied && !isCurrent && "bg-hairline hover:bg-muted-soft",
                     )}
-                  >
-                    {index + 1}
-                  </button>
+                    aria-label={`Thẻ ${index + 1}`}
+                  />
                 );
-              })}
-            </div>
-
-            <span className="text-sm text-muted-foreground">
-              <span className="font-medium text-ink">{currentCardIndex + 1}</span>
-              {" / "}
-              {totalCards}
-            </span>
+              })
+            ) : (
+              <span className="text-sm text-muted-foreground">
+                <span className="font-medium text-ink">{currentCardIndex + 1}</span>
+                {" / "}
+                {totalCards}
+              </span>
+            )}
           </div>
 
           <Button
@@ -503,10 +524,10 @@ export default function FlashcardStudyPage() {
             size="sm"
             onClick={handleNext}
             disabled={currentCardIndex === totalCards - 1}
-            className="h-9"
+            className="h-10 gap-1.5 rounded-md border-hairline px-4"
           >
             <span className="hidden sm:inline">Sau</span>
-            <ChevronRight className="ml-1 h-4 w-4" />
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </footer>

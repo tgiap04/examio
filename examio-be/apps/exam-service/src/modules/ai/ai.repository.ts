@@ -193,13 +193,9 @@ export class AIRepository {
             const aiChatDocuments = await tx.aIChatDocument.deleteMany({
                 where: { documentId: userStorageId },
             });
-            const quizHistories = await tx.historyGeneratedQuizz.deleteMany({
+            const documentEntities = await tx.documentEntity.deleteMany({
                 where: { userStorageId },
             });
-            const flashcardHistories =
-                await tx.historyGeneratedFlashcard.deleteMany({
-                    where: { userStorageId },
-                });
             const documents = await tx.document.deleteMany({
                 where: { userStorageId },
             });
@@ -209,8 +205,7 @@ export class AIRepository {
 
             return {
                 aiChatDocuments: aiChatDocuments.count,
-                quizHistories: quizHistories.count,
-                flashcardHistories: flashcardHistories.count,
+                documentEntities: documentEntities.count,
                 documents: documents.count,
                 userStorage,
             };

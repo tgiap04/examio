@@ -140,6 +140,9 @@ LEGACY_MODEL_ALIASES: dict[str, str] = {
     'gemma2_9b': '__default__',
     'ai2': '__default__',
     'gemini': '__default__',
+    'minimax-m2.5-free': '__default__',
+    'nemotron-3-super-free': '__default__',
+    'trinity-large-preview-free': '__default__',
 }
 
 

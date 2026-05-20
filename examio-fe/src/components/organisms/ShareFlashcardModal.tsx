@@ -28,7 +28,6 @@ import { toast } from "@/components/antd/toast";
 import {
   getSharingSettings,
   updateSharingSettings,
-  generateAccessCode,
   searchUsersForWhitelist,
   SearchUser,
 } from "@/apis/flashcardSetApi";
@@ -43,13 +42,19 @@ interface ShareFlashcardModalProps {
 
 type PrivateAccessType = "code" | "whitelist";
 
-// Type for whitelist user info (stored in state)
 type WhitelistUser = {
   id: string;
   username: string;
   name: string | null;
   avatar: string | null;
 };
+
+const sharingSettingsCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000;
+
+function generateRandomCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
 export function ShareFlashcardModal({
   open,
@@ -65,7 +70,6 @@ export function ShareFlashcardModal({
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // User search states
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -79,17 +83,35 @@ export function ShareFlashcardModal({
       : "";
 
   const fetchSettings = useCallback(async () => {
+    const cached = sharingSettingsCache.get(flashcardSetId);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      const settings = cached.data;
+      setIsPublic(settings.isPublic);
+      setAccessCode(settings.accessCode || "");
+      const whitelist = settings.whitelist as any[];
+      setWhitelistUsers(
+        (whitelist || []).map((user: any) => ({
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          avatar: user.avatar,
+        }))
+      );
+      if (!settings.isPublic) {
+        setPrivateAccessType(settings.accessCode ? "code" : "whitelist");
+      }
+      return;
+    }
+
     try {
       setLoading(true);
       const settings = await getSharingSettings(flashcardSetId);
+      sharingSettingsCache.set(flashcardSetId, { data: settings, timestamp: Date.now() });
       setIsPublic(settings.isPublic);
       setAccessCode(settings.accessCode || "");
-      // Convert whitelist IDs to WhitelistUser objects
-      // For now, just store IDs - actual user info will be fetched when needed
-      // API returns populated users for whitelist
       const whitelist = settings.whitelist as any[];
       setWhitelistUsers(
-        (whitelist || []).map((user) => ({
+        (whitelist || []).map((user: any) => ({
           id: user.id,
           username: user.username,
           name: user.name,
@@ -107,14 +129,12 @@ export function ShareFlashcardModal({
     }
   }, [flashcardSetId]);
 
-  // Fetch current settings when modal opens
   useEffect(() => {
     if (open && flashcardSetId) {
       fetchSettings();
     }
   }, [open, flashcardSetId, fetchSettings]);
 
-  // Close search dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -129,11 +149,9 @@ export function ShareFlashcardModal({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Debounced search
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
 
-    // Clear previous timeout
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
@@ -144,13 +162,11 @@ export function ShareFlashcardModal({
       return;
     }
 
-    // Debounce search - 300ms
     searchTimeoutRef.current = setTimeout(async () => {
       try {
         setIsSearching(true);
         setShowSearchDropdown(true);
         const results = await searchUsersForWhitelist(value);
-        // Filter out already added users
         const filteredResults = results.filter(
           (user) => !whitelistUsers.some((u) => u.id === user.id)
         );
@@ -185,15 +201,8 @@ export function ShareFlashcardModal({
     setWhitelistUsers(whitelistUsers.filter((u) => u.id !== userId));
   };
 
-  const handleGenerateCode = async () => {
-    try {
-      const result = await generateAccessCode(flashcardSetId);
-      setAccessCode(result.accessCode);
-      toast.success("Đã tạo mã truy cập mới");
-    } catch (error) {
-      console.error("Failed to generate code:", error);
-      toast.error("Không thể tạo mã truy cập");
-    }
+  const handleGenerateCode = () => {
+    setAccessCode(generateRandomCode());
   };
 
   const handleSave = async () => {
@@ -208,6 +217,7 @@ export function ShareFlashcardModal({
             ? whitelistUsers.map((u) => u.id)
             : [],
       });
+      sharingSettingsCache.delete(flashcardSetId);
       toast.success("Đã lưu cài đặt chia sẻ");
       onOpenChange(false);
     } catch (error) {
@@ -311,9 +321,10 @@ export function ShareFlashcardModal({
                     <div className="flex gap-2">
                       <Input
                         value={accessCode}
-                        readOnly
-                        placeholder="Chưa có mã"
+                        onChange={(e) => setAccessCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                        placeholder="Nhập mã 6 số"
                         className="font-mono text-lg tracking-widest"
+                        maxLength={6}
                       />
                       <Button
                         variant="outline"
@@ -325,12 +336,13 @@ export function ShareFlashcardModal({
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={handleGenerateCode}>
+                        onClick={handleGenerateCode}
+                        title="Tạo mã ngẫu nhiên">
                         <RefreshCw className="h-4 w-4" />
                       </Button>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Người dùng cần nhập mã này để xem bộ thẻ
+                      Nhập mã hoặc bấm tạo ngẫu nhiên. Người dùng cần nhập mã này để xem bộ thẻ.
                     </p>
                   </div>
                 )}

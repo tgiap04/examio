@@ -30,16 +30,6 @@ class ModelType(str, Enum):
     AI2 = 'ai2'
 
 
-class AIModelType(str, Enum):
-    MINIMAX_M25_FREE = 'minimax-m2.5-free'
-    NEMOTRON_3_SUPER_FREE = 'nemotron-3-super-free'
-    TRINITY_LARGE_PREVIEW_FREE = 'trinity-large-preview-free'
-    GEMINI = 'gemini'
-    GLM4_9B = 'glm4_9b'
-    GEMMA2_9B = 'gemma2_9b'
-    FAYEDARK = 'fayedark'
-
-
 class ModelUnavailableError(Exception):
     def __init__(self, message: str, code: str = 'MODEL_UNAVAILABLE') -> None:
         super().__init__(message)
@@ -480,11 +470,11 @@ class ModelManager:
     async def generate_content_with_model(
         self,
         prompt: str,
-        ai_model_type: AIModelType | str = AIModelType.MINIMAX_M25_FREE,
+        ai_model_type: str | None = None,
         response_model: Any = None,
         system_prompt: str | None = None,
     ) -> str:
-        model_id = ai_model_type.value if isinstance(ai_model_type, AIModelType) else str(ai_model_type)
+        model_id = str(ai_model_type) if ai_model_type else None
         model = self.resolve_model(model_id)
 
         await self.ensure_generation_model_ready(model.id)
@@ -493,11 +483,11 @@ class ModelManager:
             return await self._generate_with_ai2(prompt, model.id, system_prompt=system_prompt)
         return await self._generate_with_gemini(prompt, system_prompt=system_prompt)
 
-    def get_langchain_model(self, ai_model_type: AIModelType | str = AIModelType.MINIMAX_M25_FREE):
+    def get_langchain_model(self, ai_model_type: str | None = None):
         from langchain_google_genai import ChatGoogleGenerativeAI
         from langchain_openai import ChatOpenAI
 
-        model_id = ai_model_type.value if isinstance(ai_model_type, AIModelType) else str(ai_model_type)
+        model_id = str(ai_model_type) if ai_model_type else None
         model = self.resolve_model(model_id)
 
         if model.provider == 'ai2':
