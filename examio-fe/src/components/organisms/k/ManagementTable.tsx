@@ -27,10 +27,10 @@ export interface ManagementTableData {
   description: string;
   questionCount: number;
   viewCount?: number;
-  countLabel: string; // "câu hỏi" hoặc "thẻ"
+  countLabel: string;
   status: ExamStatus;
   createdDate: string;
-  lastStudied: string | null; // Học gần nhất
+  lastStudied: string | null;
   tags: string[];
 }
 
@@ -72,14 +72,14 @@ export function ManagementTable({
   showViewCount = true,
 }: ManagementTableProps) {
   return (
-    <div className="bg-card rounded-lg rounded-b-none border border-border border-b-0 overflow-hidden">
-      <div className="p-4 border-b border-border">
-        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+    <div className="rounded-lg rounded-b-none border border-hairline border-b-0 overflow-hidden bg-canvas">
+      <div className="p-4 border-b border-hairline">
+        <h2 className="text-lg font-medium text-ink">{title}</h2>
       </div>
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow className="hover:bg-transparent border-border">
+            <TableRow className="hover:bg-transparent border-hairline">
               <TableHead className="text-muted-foreground font-medium">
                 Tên
               </TableHead>
@@ -106,10 +106,10 @@ export function ManagementTable({
             {data.map((item) => (
               <TableRow
                 key={item.id}
-                className="hover:bg-muted/50 border-border">
+                className="hover:bg-surface-soft border-hairline">
                 <TableCell>
                   <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 shrink-0 overflow-hidden">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-coral/10 shrink-0 overflow-hidden">
                       {item.thumbnail ? (
                         <img
                           src={item.thumbnail}
@@ -117,11 +117,11 @@ export function ManagementTable({
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <BookOpenCheck className="w-5 h-5 text-primary" />
+                        <BookOpenCheck className="w-5 h-5 text-coral" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-medium text-foreground truncate">
+                      <div className="font-medium text-ink truncate">
                         {item.name}
                       </div>
                       <div className="text-sm text-muted-foreground truncate">
@@ -133,12 +133,12 @@ export function ManagementTable({
                             <Badge
                               key={tag}
                               variant="outline"
-                              className="text-xs">
+                              className="text-xs border-hairline">
                               {tag}
                             </Badge>
                           ))}
                           {item.tags.length > 2 && (
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="outline" className="text-xs border-hairline">
                               +{item.tags.length - 2}
                             </Badge>
                           )}
@@ -148,7 +148,7 @@ export function ManagementTable({
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="text-foreground font-medium">
+                  <span className="text-ink font-medium">
                     {item.questionCount} {item.countLabel}
                   </span>
                 </TableCell>
@@ -164,7 +164,7 @@ export function ManagementTable({
                   <ExamStatusBadge status={item.status} />
                 </TableCell>
                 <TableCell>
-                  <span className="text-foreground">{item.createdDate}</span>
+                  <span className="text-body">{item.createdDate}</span>
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-1">
@@ -174,7 +174,7 @@ export function ManagementTable({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-primary hover:text-red-700 hover:bg-red-50"
+                            className="h-8 w-8 text-coral hover:text-coral hover:bg-coral/10"
                             onClick={() => onPrimaryAction(item.id)}>
                             <PrimaryIcon className="h-4 w-4" />
                           </Button>
@@ -191,7 +191,7 @@ export function ManagementTable({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
+                            className="h-8 w-8 text-accent-teal hover:text-accent-teal hover:bg-accent-teal/10"
                             onClick={() => onSecondaryAction(item.id)}>
                             <SecondaryIcon className="h-4 w-4" />
                           </Button>
@@ -208,7 +208,7 @@ export function ManagementTable({
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-8 w-8 text-yellow-600 hover:text-yellow-700 hover:bg-purple-50"
+                            className="h-8 w-8 text-accent-amber hover:text-accent-amber hover:bg-accent-amber/10"
                             onClick={() => onShare(item.id)}>
                             <ShareIcon className="h-4 w-4" />
                           </Button>
@@ -224,7 +224,7 @@ export function ManagementTable({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                          className="h-8 w-8 text-muted-foreground hover:text-ink hover:bg-surface-card"
                           onClick={() => onEdit(item.id)}>
                           <Edit className="h-4 w-4" />
                         </Button>
@@ -238,7 +238,7 @@ export function ManagementTable({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="h-8 w-8 text-muted-foreground hover:text-error hover:bg-error/10"
                           onClick={() => onDelete(item.id)}>
                           <Trash2 className="h-4 w-4" />
                         </Button>

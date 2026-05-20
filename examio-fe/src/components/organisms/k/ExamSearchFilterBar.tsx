@@ -21,7 +21,7 @@ const ExamSearchFilterBarComponent = ({
   onStatusChange,
 }: ExamSearchFilterBarProps) => {
   return (
-    <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between mb-6 p-4 bg-card rounded-lg border border-border">
+    <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between mb-6 p-4 rounded-lg border border-hairline bg-surface-soft">
       <SearchBar
         value={searchQuery}
         onChange={onSearchChange}

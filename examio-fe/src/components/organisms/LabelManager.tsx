@@ -215,7 +215,7 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
   }
 
   return (
-    <Card className="mb-6">
+    <Card className="!mb-6">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -224,7 +224,7 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
           </div>
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button size="sm">
+              <Button size="lg">
                 <Plus className="h-4 w-4 mr-2" />
                 Tạo nhãn
               </Button>
