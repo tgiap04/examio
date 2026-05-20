@@ -156,6 +156,7 @@ model ExamRoom {
     quizSet QuizSet @relation(fields: [quizSetId], references: [id], onDelete: Cascade)
 
     examSessions ExamSession[]
+    userPins     UserPinnedExamRoom[]
 }
 
 model ExamSession {
@@ -327,6 +328,19 @@ model UserPinnedFlashcard {
     flashcardSet FlashCardSet @relation(fields: [flashcardSetId], references: [id], onDelete: Cascade)
 
     @@unique([userId, flashcardSetId])
+    @@index([userId, pinnedAt])
+}
+
+model UserPinnedExamRoom {
+    id         String   @id @default(cuid())
+    userId     String
+    examRoomId String
+    pinnedAt   DateTime @default(now())
+
+    user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+    examRoom ExamRoom @relation(fields: [examRoomId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, examRoomId])
     @@index([userId, pinnedAt])
 }
 

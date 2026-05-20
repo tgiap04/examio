@@ -32,6 +32,7 @@ model User {
     monthlyFileUploads        UserMonthlyFileUpload[]
     flashCardViewHistories    FlashCardViewHistory[]
     pinnedFlashcards          UserPinnedFlashcard[]
+    pinnedExamRooms           UserPinnedExamRoom[]
     flashcardStudyProgress    FlashcardStudyProgress[]
 }
 

@@ -49,4 +49,15 @@ export class StudentController {
     ) {
         return this.studentService.togglePinFlashcard(req.user.id, flashcardSetId);
     }
+
+    @Post('pin-exam-room/:id')
+    @UseGuards(AuthGuard)
+    @ApiOperation({ summary: 'Toggle pin/unpin an exam room for the current user' })
+    @ApiParam({ name: 'id', description: 'Exam room ID' })
+    async togglePinExamRoom(
+        @Req() req: AuthenticatedRequest,
+        @Param('id') examRoomId: string
+    ) {
+        return this.studentService.togglePinExamRoom(req.user.id, examRoomId);
+    }
 }

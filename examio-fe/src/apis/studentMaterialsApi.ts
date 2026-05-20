@@ -33,6 +33,7 @@ export interface RecentExamAttempt {
   totalQuestions: number;
   correctAnswers: number;
   timeRemaining: number | null;
+  isPinned: boolean;
   examSession: {
     id: string;
     startTime: string;
@@ -96,5 +97,12 @@ export async function togglePinFlashcardApi(
   flashcardSetId: string
 ): Promise<{ pinned: boolean }> {
   const response = await api.post(`/student/pin-flashcard/${flashcardSetId}`);
+  return response.data;
+}
+
+export async function togglePinExamRoomApi(
+  examRoomId: string
+): Promise<{ pinned: boolean }> {
+  const response = await api.post(`/student/pin-exam-room/${examRoomId}`);
   return response.data;
 }
