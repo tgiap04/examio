@@ -132,12 +132,41 @@ export class StudentService {
         return { pinned: true };
     }
 
+    async togglePinExamRoom(userId: string, examRoomId: string) {
+        const examRoom = await this.prisma.examRoom.findUnique({
+            where: { id: examRoomId },
+            select: { id: true },
+        });
+
+        if (!examRoom) {
+            throw new NotFoundException('Exam room not found');
+        }
+
+        const existing = await this.prisma.userPinnedExamRoom.findUnique({
+            where: {
+                userId_examRoomId: { userId, examRoomId },
+            },
+        });
+
+        if (existing) {
+            await this.prisma.userPinnedExamRoom.delete({
+                where: { id: existing.id },
+            });
+            return { pinned: false };
+        }
+
+        await this.prisma.userPinnedExamRoom.create({
+            data: { userId, examRoomId },
+        });
+        return { pinned: true };
+    }
+
     async getRecentExams(userId: string, limit: number, page: number = 1) {
         const skip = (page - 1) * limit;
 
         const where = { userId };
 
-        const [examAttempts, total] = await Promise.all([
+        const [examAttempts, total, pinnedRooms] = await Promise.all([
             this.prisma.examAttempt.findMany({
                 where,
                 include: {
@@ -158,7 +187,13 @@ export class StudentService {
                 take: limit,
             }),
             this.prisma.examAttempt.count({ where }),
+            this.prisma.userPinnedExamRoom.findMany({
+                where: { userId },
+                select: { examRoomId: true },
+            }),
         ]);
+
+        const pinnedRoomIds = new Set(pinnedRooms.map((p) => p.examRoomId));
 
         const formattedExamAttempts = examAttempts.map((attempt) => {
             const timeLimitMinutes = attempt.examSession.timeLimitMinutes;
@@ -182,6 +217,7 @@ export class StudentService {
                 totalQuestions: attempt.totalQuestions,
                 correctAnswers: attempt.correctAnswers,
                 timeRemaining,
+                isPinned: pinnedRoomIds.has(attempt.examSession.examRoom.id),
                 examSession: {
                     id: attempt.examSession.id,
                     startTime: attempt.examSession.startTime.toISOString(),

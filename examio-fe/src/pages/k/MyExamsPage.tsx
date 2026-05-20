@@ -9,12 +9,14 @@ import {
   ChevronRight,
   Clock,
   Eye,
+  Pin,
+  PinOff,
   PlayCircle,
   Trophy,
   TrendingUp,
   XCircle,
 } from "lucide-react"
-import { type RecentExamAttempt } from "@/apis/studentMaterialsApi"
+import { type RecentExamAttempt, togglePinExamRoomApi } from "@/apis/studentMaterialsApi"
 import { Button } from "@/components/antd/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/antd/dialog"
 import { Skeleton } from "@/components/antd/skeleton"
@@ -22,6 +24,12 @@ import { useToast } from "@/components/antd/toast"
 import { useStudentMaterialsStore } from "@/stores/useStudentMaterialsStore"
 
 const PAGE_SIZE = 12
+
+function sortWithPinnedFirst(items: RecentExamAttempt[]): RecentExamAttempt[] {
+  const pinned = items.filter((m) => m.isPinned)
+  const unpinned = items.filter((m) => !m.isPinned)
+  return [...pinned, ...unpinned]
+}
 
 function formatTimeAgo(dateString: string): string {
   const date = new Date(dateString)
@@ -75,9 +83,11 @@ function getScoreColor(score: number): string {
 function ExamCard({
   attempt,
   onViewDetail,
+  onTogglePin,
 }: {
   attempt: RecentExamAttempt
   onViewDetail: (attempt: RecentExamAttempt) => void
+  onTogglePin: (attempt: RecentExamAttempt) => void
 }) {
   const title = attempt.examSession.examRoom.title
   const percentage = attempt.totalQuestions > 0
@@ -85,7 +95,12 @@ function ExamCard({
     : 0
 
   return (
-    <article className="group relative flex flex-col rounded-lg border border-hairline bg-canvas p-5 transition-all duration-200 hover:border-coral/30 hover:shadow-[0_4px_16px_rgba(20,20,19,0.06)]">
+    <article className="group relative flex h-[240px] flex-col rounded-lg border border-hairline bg-canvas p-5 transition-all duration-200 hover:border-coral/30 hover:shadow-[0_4px_16px_rgba(20,20,19,0.06)]">
+      {attempt.isPinned && (
+        <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-coral/10 text-coral">
+          <Pin className="h-3 w-3" />
+        </span>
+      )}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-surface-card">
@@ -145,7 +160,19 @@ function ExamCard({
       )}
 
       {/* Actions */}
-      <div className="mt-4 flex items-center justify-end border-t border-hairline-soft pt-4">
+      <div className="mt-auto flex items-center justify-between border-t border-hairline-soft pt-4">
+        <button
+          onClick={() => onTogglePin(attempt)}
+          className={`grid h-8 w-8 place-items-center rounded-md transition-colors ${
+            attempt.isPinned
+              ? "bg-coral/10 text-coral hover:bg-coral/20"
+              : "text-muted-foreground hover:bg-surface-card hover:text-ink"
+          }`}
+          aria-label={attempt.isPinned ? "Bỏ ghim" : "Ghim"}
+          title={attempt.isPinned ? "Bỏ ghim" : "Ghim"}
+        >
+          {attempt.isPinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+        </button>
         {attempt.status === 0 ? (
           <Button
             onClick={() => window.location.assign(`/exam-session/${attempt.examSessionId}/quiz`)}
@@ -326,7 +353,7 @@ export default function MyExamsPage() {
     try {
       setLoading(true)
       const data = await fetchExamsFromStore(page, PAGE_SIZE)
-      setExamAttempts(data.examAttempts)
+      setExamAttempts(sortWithPinnedFirst(data.examAttempts))
       setTotal(data.total)
     } catch {
       toast.error("Không thể tải lịch sử thi")
@@ -342,6 +369,29 @@ export default function MyExamsPage() {
   const handlePageChange = (page: number) => {
     setSearchParams({ page: String(page) })
     window.scrollTo({ top: 0, behavior: "smooth" })
+  }
+
+  const handleTogglePin = async (attempt: RecentExamAttempt) => {
+    const examRoomId = attempt.examSession.examRoom.id
+    const newPinned = !attempt.isPinned
+    setExamAttempts((prev) => {
+      const updated = prev.map((a) =>
+        a.examSession.examRoom.id === examRoomId ? { ...a, isPinned: newPinned } : a
+      )
+      return sortWithPinnedFirst(updated)
+    })
+
+    try {
+      await togglePinExamRoomApi(examRoomId)
+    } catch {
+      setExamAttempts((prev) => {
+        const reverted = prev.map((a) =>
+          a.examSession.examRoom.id === examRoomId ? { ...a, isPinned: !newPinned } : a
+        )
+        return sortWithPinnedFirst(reverted)
+      })
+      toast.error("Không thể ghim phòng thi")
+    }
   }
 
   const totalPages = Math.ceil(total / PAGE_SIZE)
@@ -395,11 +445,17 @@ export default function MyExamsPage() {
           <>
             <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
               {examAttempts.map((attempt) => (
-                <ExamCard
+                <div
                   key={attempt.id}
-                  attempt={attempt}
-                  onViewDetail={(a) => setDetailDialog({ open: true, attempt: a })}
-                />
+                  className="transition-all duration-300 ease-out"
+                  style={{ order: attempt.isPinned ? 0 : 1 }}
+                >
+                  <ExamCard
+                    attempt={attempt}
+                    onViewDetail={(a) => setDetailDialog({ open: true, attempt: a })}
+                    onTogglePin={handleTogglePin}
+                  />
+                </div>
               ))}
             </div>
 
