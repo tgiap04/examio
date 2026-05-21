@@ -1,6 +1,9 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { FileText, History, Loader2, Sparkles, SquareSplitVertical, X } from "lucide-react";
+import { FileText, HelpCircle, History, Loader2, Sparkles, SquareSplitVertical, X } from "lucide-react";
+import type { Config, DriveStep } from "driver.js";
+import { driver } from "driver.js";
+import "driver.js/dist/driver.css";
 import type { RecentUpload } from "@/apis/aiApi";
 import { FlashcardGenerator } from "@/components/organisms/k/FlashcardGenerator";
 import { TestGenerator } from "@/components/organisms/k/TestGenerator";
@@ -19,6 +22,30 @@ import { Card, CardContent } from "@/components/antd/card";
 import { useRecentUploadsStore, useTestGeneratorStore, useFlashcardGeneratorStore } from "@/stores/useAIGeneratorStore";
 import { Tabs } from "antd";
 import { useIsMobile } from "@/hooks/useMediaQuery";
+
+const AI_TOOL_TOUR_STORAGE_KEY = "examio:tour:ai-tool:v1";
+
+const aiToolTourConfig: Config = {
+  animate: true,
+  smoothScroll: true,
+  showProgress: true,
+  progressText: "{{current}}/{{total}}",
+  nextBtnText: "Tiếp",
+  prevBtnText: "Quay lại",
+  doneBtnText: "Xong",
+  popoverClass: "examio-driver-popover",
+  popoverOffset: 14,
+  stagePadding: 8,
+  stageRadius: 16,
+  overlayOpacity: 0.48,
+};
+
+function getAvailableTourSteps(steps: DriveStep[]) {
+  return steps.filter((step) => {
+    if (typeof step.element !== "string") return true;
+    return document.querySelector(step.element);
+  });
+}
 
 function formatFileSize(bytes: number) {
   if (!bytes) return "0 KB";
@@ -48,6 +75,79 @@ function AIGeneratorContent() {
   const isFlashcardGenerating = useFlashcardGeneratorStore((s) => s.isGenerating);
   const isAnyGenerating = isTestGenerating || isFlashcardGenerating;
 
+  const tourSteps = useMemo<DriveStep[]>(() => [
+    {
+      element: "[data-tour='ai-tool-upload']",
+      popover: {
+        title: "Upload file PDF",
+        description: "Kéo thả hoặc chọn PDF để AI đọc nội dung và tạo học liệu.",
+        side: "bottom",
+        align: "center",
+      },
+    },
+    {
+      element: "[data-tour='ai-tool-count']",
+      popover: {
+        title: "Chỉnh số lượng",
+        description: "Điều chỉnh số câu hỏi hoặc số thẻ flashcard muốn tạo.",
+        side: "bottom",
+        align: "center",
+      },
+    },
+    {
+      element: "[data-tour='ai-tool-advanced']",
+      popover: {
+        title: "Định dạng nâng cao",
+        description: "Bật tùy chọn này để tập trung nội dung vào từ khóa cụ thể trong tài liệu.",
+        side: "bottom",
+        align: "center",
+      },
+    },
+    {
+      element: "[data-tour='ai-tool-preview']",
+      popover: {
+        title: "Preview kết quả",
+        description: "Kết quả tạo từ AI sẽ hiển thị ở đây để bạn kiểm tra trước khi lưu.",
+        side: "left",
+        align: "center",
+      },
+    },
+    {
+      element: "[data-tour='ai-tool-recents']",
+      popover: {
+        title: "File gần đây",
+        description: "Chọn lại file đã tải lên để tạo tiếp mà không cần upload lại.",
+        side: "bottom",
+        align: "center",
+      },
+    },
+    {
+      element: "[data-tour='ai-tool-flashcard-tab']",
+      popover: {
+        title: "Tab Flashcard",
+        description: "Chuyển sang tab này để tạo bộ thẻ ghi nhớ từ cùng luồng upload và cấu hình.",
+        side: "bottom",
+        align: "center",
+      },
+    },
+  ], []);
+
+  const startAiToolTour = useCallback((force = false) => {
+    if (!force && localStorage.getItem(AI_TOOL_TOUR_STORAGE_KEY) === "done") return;
+
+    const availableSteps = getAvailableTourSteps(tourSteps);
+    if (!availableSteps.length) return;
+
+    const driverObj = driver({
+      ...aiToolTourConfig,
+      steps: availableSteps,
+      onDestroyed: () => localStorage.setItem(AI_TOOL_TOUR_STORAGE_KEY, "done"),
+    });
+
+    driverObj.drive();
+    return driverObj;
+  }, [tourSteps]);
+
   useEffect(() => {
     setActiveTab(tabFromUrl);
   }, [tabFromUrl]);
@@ -55,6 +155,18 @@ function AIGeneratorContent() {
   useEffect(() => {
     void fetchRecentUploads();
   }, [fetchRecentUploads]);
+
+  useEffect(() => {
+    let activeTour: ReturnType<typeof startAiToolTour>;
+    const timeoutId = window.setTimeout(() => {
+      activeTour = startAiToolTour();
+    }, 450);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      activeTour?.destroy();
+    };
+  }, [startAiToolTour]);
 
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -73,17 +185,28 @@ function AIGeneratorContent() {
 
       <section className="relative mx-auto max-w-7xl px-0 py-6 md:py-8 md:px-6 pt-8">
         <div className="bg-background p-0 md:p-6 rounded-lg">
-          <div className="hidden md:flex items-center gap-3 text-sm text-muted-foreground mb-3 px-4 md:px-0">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
-              <Sparkles className="h-4 w-4" />
-            </span>
-            <span>Workspace tạo học liệu từ PDF</span>
+          <div className="hidden md:flex items-center justify-between gap-3 text-sm text-muted-foreground mb-3 px-4 md:px-0">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary">
+                <Sparkles className="h-4 w-4" />
+              </span>
+              <span>Workspace tạo học liệu từ PDF</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => startAiToolTour(true)}
+              className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground"
+            >
+              <HelpCircle className="h-3.5 w-3.5" />
+              Hướng dẫn nhanh
+            </button>
           </div>
 
           <Tabs
             activeKey={activeTab}
             onChange={handleTabChange}
             className="ai-tool-tabs"
+            data-tour="ai-tool-tabs"
             tabBarStyle={!isMobile ? { padding: "0 0px", margin: 0 } : { padding: "0 16px", margin: 0 }}
             items={[
               {
@@ -103,7 +226,7 @@ function AIGeneratorContent() {
               {
                 key: "flashcard",
                 label: (
-                  <span className="inline-flex items-center gap-2 font-medium text-sm">
+                  <span data-tour="ai-tool-flashcard-tab" className="inline-flex items-center gap-2 font-medium text-sm">
                     <SquareSplitVertical className="h-4 w-4 shrink-0" />
                     Flashcard
                   </span>
@@ -118,7 +241,7 @@ function AIGeneratorContent() {
           />
 
           <div className="px-4 md:px-0">
-            <Card className="!mt-4 border-border bg-card shadow-none">
+            <Card className="!mt-4 border-border bg-card shadow-none" data-tour="ai-tool-recents">
               <CardContent className="p-4 md:p-5">
                 <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3">
