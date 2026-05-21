@@ -397,7 +397,6 @@ export class AuthController {
         const deviceInfo: DeviceInfo = {
             deviceId: request.headers['x-device-id'] as string,
             userAgent: request.headers['user-agent'],
-            ip: request.ip,
         };
         const result = await this.authService.googleOneTapLogin(
             body.credential,
