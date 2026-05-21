@@ -3764,28 +3764,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/passport-facebook@npm:^3.0.3":
-  version: 3.0.4
-  resolution: "@types/passport-facebook@npm:3.0.4"
-  dependencies:
-    "@types/express": "npm:*"
-    "@types/passport": "npm:*"
-    "@types/passport-oauth2": "npm:*"
-  checksum: 10c0/8ac8b175414834a99d3747aa2f03b1e7dd01c2e48960cea60d0624054a3de9622c4525778e14e4ededf551fd73627b3827a5f692578a69ccb307d40a62f74d58
-  languageName: node
-  linkType: hard
-
-"@types/passport-github2@npm:^1.2.9":
-  version: 1.2.9
-  resolution: "@types/passport-github2@npm:1.2.9"
-  dependencies:
-    "@types/express": "npm:*"
-    "@types/passport": "npm:*"
-    "@types/passport-oauth2": "npm:*"
-  checksum: 10c0/e4e5ecd6fe16f0b18886fd259824c0f97b4c19718b67580bbe70cc7dfa858967e90d8edf602dc0b04175ce3dd8223ae103e133060df4c6cb331809ecce5fc32c
-  languageName: node
-  linkType: hard
-
 "@types/passport-google-oauth20@npm:^2.0.16":
   version: 2.0.17
   resolution: "@types/passport-google-oauth20@npm:2.0.17"
@@ -5067,8 +5045,6 @@ __metadata:
     "@types/node": "npm:^24.0.13"
     "@types/node-cron": "npm:^3.0.11"
     "@types/nodemailer": "npm:^6.4.17"
-    "@types/passport-facebook": "npm:^3.0.3"
-    "@types/passport-github2": "npm:^1.2.9"
     "@types/passport-google-oauth20": "npm:^2.0.16"
     amqp-connection-manager: "npm:^5.0.0"
     amqplib: "npm:^0.10.9"
@@ -5091,8 +5067,6 @@ __metadata:
     node-cron: "npm:^4.2.1"
     nodemailer: "npm:^7.0.5"
     passport: "npm:^0.7.0"
-    passport-facebook: "npm:^3.0.0"
-    passport-github2: "npm:^0.1.12"
     passport-google-oauth20: "npm:^2.0.0"
     passport-jwt: "npm:^4.0.1"
     pdf-lib: "npm:^1.17.1"
@@ -8319,24 +8293,6 @@ __metadata:
   version: 1.3.3
   resolution: "parseurl@npm:1.3.3"
   checksum: 10c0/90dd4760d6f6174adb9f20cf0965ae12e23879b5f5464f38e92fce8073354341e4b3b76fa3d878351efe7d01e617121955284cfd002ab087fba1a0726ec0b4f5
-  languageName: node
-  linkType: hard
-
-"passport-facebook@npm:^3.0.0":
-  version: 3.0.0
-  resolution: "passport-facebook@npm:3.0.0"
-  dependencies:
-    passport-oauth2: "npm:1.x.x"
-  checksum: 10c0/ff26680efa07b2b00ceb8d2cdf0d68832e3d540ae1d66cedaf54f7df18391738e4693478969d7ccd3e4a7d19e04d753d2bd988e149b590f895e8841c9321f998
-  languageName: node
-  linkType: hard
-
-"passport-github2@npm:^0.1.12":
-  version: 0.1.12
-  resolution: "passport-github2@npm:0.1.12"
-  dependencies:
-    passport-oauth2: "npm:1.x.x"
-  checksum: 10c0/70c763f40392f15509373d43014f4c32af8f4fa0a290c74f4b0125208c7aff5a0d55c16ead5663a964653622c759fa70adbc58e417577b206deb9a5a255b528c
   languageName: node
   linkType: hard
 

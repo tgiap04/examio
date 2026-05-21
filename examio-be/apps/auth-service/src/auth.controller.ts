@@ -21,8 +21,6 @@ import {
 import {
     AuthGuard,
     GoogleAuthGuard,
-    FacebookAuthGuard,
-    GithubAuthGuard,
     getCookieConfig,
 } from '@examio/common';
 import {
@@ -393,102 +391,6 @@ export class AuthController {
     @UseGuards(GoogleAuthGuard)
     @ApiOperation({ summary: 'Google OAuth callback' })
     async googleAuthRedirect(
-        @Req() req: AuthenticatedOauthRequest,
-        @Res({ passthrough: true }) res: ExpressResponse,
-        @Req() request: Request
-    ) {
-        const oauthPayload = await this.ensureOauthSession(request, req.user);
-        const { token, sessionId, refreshToken } = oauthPayload;
-
-        const cookieConfig = getCookieConfig({
-            feOrigin: request.headers.origin,
-            isProductionBE: process.env.NODE_ENV === 'production',
-        });
-
-        res.cookie('token', token, cookieConfig);
-        if (sessionId) {
-            res.cookie('session_id', sessionId, cookieConfig);
-        }
-        if (refreshToken) {
-            res.cookie('refreshToken', refreshToken, cookieConfig);
-        }
-
-        const frontendUrl = (
-            process.env.FRONTEND_URL || 'http://localhost:3001'
-        ).replace(/\/+$/, '');
-        const redirectFromCookie = request.cookies?.oauth_redirect;
-        const oauthState = this.parseOAuthState(
-            request.query.state as string | undefined
-        );
-        res.clearCookie('oauth_redirect');
-
-        res.redirect(
-            this.resolveFrontendTarget(
-                frontendUrl,
-                redirectFromCookie || oauthState.redirect
-            )
-        );
-    }
-
-    @Get('facebook')
-    @UseGuards(FacebookAuthGuard)
-    @ApiOperation({ summary: 'Đăng nhập Facebook OAuth' })
-    async facebookLogin() {
-        // Redirects to Facebook
-    }
-
-    @Get('facebook/callback')
-    @UseGuards(FacebookAuthGuard)
-    @ApiOperation({ summary: 'Facebook OAuth callback' })
-    async facebookCallback(
-        @Req() req: AuthenticatedOauthRequest,
-        @Res({ passthrough: true }) res: ExpressResponse,
-        @Req() request: Request
-    ) {
-        const oauthPayload = await this.ensureOauthSession(request, req.user);
-        const { token, sessionId, refreshToken } = oauthPayload;
-
-        const cookieConfig = getCookieConfig({
-            feOrigin: request.headers.origin,
-            isProductionBE: process.env.NODE_ENV === 'production',
-        });
-
-        res.cookie('token', token, cookieConfig);
-        if (sessionId) {
-            res.cookie('session_id', sessionId, cookieConfig);
-        }
-        if (refreshToken) {
-            res.cookie('refreshToken', refreshToken, cookieConfig);
-        }
-
-        const frontendUrl = (
-            process.env.FRONTEND_URL || 'http://localhost:3001'
-        ).replace(/\/+$/, '');
-        const redirectFromCookie = request.cookies?.oauth_redirect;
-        const oauthState = this.parseOAuthState(
-            request.query.state as string | undefined
-        );
-        res.clearCookie('oauth_redirect');
-
-        res.redirect(
-            this.resolveFrontendTarget(
-                frontendUrl,
-                redirectFromCookie || oauthState.redirect
-            )
-        );
-    }
-
-    @Get('github')
-    @UseGuards(GithubAuthGuard)
-    @ApiOperation({ summary: 'Đăng nhập GitHub OAuth' })
-    async githubLogin() {
-        // Passport sẽ redirect tới GitHub
-    }
-
-    @Get('github/callback')
-    @UseGuards(GithubAuthGuard)
-    @ApiOperation({ summary: 'GitHub OAuth callback' })
-    async githubLoginCallback(
         @Req() req: AuthenticatedOauthRequest,
         @Res({ passthrough: true }) res: ExpressResponse,
         @Req() request: Request

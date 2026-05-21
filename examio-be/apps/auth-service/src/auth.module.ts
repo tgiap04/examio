@@ -19,8 +19,6 @@ import { RedisModule, RedisService } from '@examio/redis';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { GoogleStrategy } from './strategies/google.strategy';
-import { FacebookStrategy } from './strategies/facebook.strategy';
-import { GithubStrategy } from './strategies/github.strategy';
 import { UserRepository } from './repositories/user.repository';
 import { DevicesModule } from './devices/devices.module';
 import { ProfileModule } from './profile/profile.module';
@@ -48,8 +46,6 @@ import { ProfileModule } from './profile/profile.module';
         PasswordService,
         GenerateIdService,
         GoogleStrategy,
-        FacebookStrategy,
-        GithubStrategy,
         AuthService,
         MailService,
         AuthGuard,

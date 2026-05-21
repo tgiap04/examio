@@ -15,8 +15,6 @@ export * from './services/recaptcha.service';
 export * from './guard/auth.guard';
 export * from './guard/optional-auth.guard';
 export * from './guard/google-auth.guard';
-export * from './guard/facebook-auth.guard';
-export * from './guard/github-auth.guard';
 
 // Auth Module (includes JwtModule + Guards)
 export * from './auth/auth.module';

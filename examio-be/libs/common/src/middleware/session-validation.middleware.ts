@@ -25,8 +25,6 @@ export class SessionValidationMiddleware implements NestMiddleware {
             '/auth/register',
             '/auth/refresh',
             '/auth/google',
-            '/auth/facebook',
-            '/auth/github',
             '/auth/send-code-reset-password',
             '/auth/reset-password',
         ];
