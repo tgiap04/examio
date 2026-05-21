@@ -155,6 +155,23 @@ export class AuthProxyController {
         return res.json(result.data || { error: 'OAuth redirect failed' });
     }
 
+    @Post('google/one-tap')
+    @ApiOperation({ summary: 'Đăng nhập Google One Tap' })
+    async googleOneTap(@Body() body: any, @Req() req: Request, @Res() res: Response) {
+        const result = await this.proxyService.forwardWithAuth(
+            'auth',
+            {
+                method: 'POST',
+                path: '/api/v1/auth/google/one-tap',
+                body,
+                headers: this.extractHeaders(req),
+            },
+            undefined
+        );
+        this.setAuthCookies(res, result, req);
+        return res.json(result);
+    }
+
     @Get('google/callback')
     @ApiOperation({ summary: 'Google OAuth callback' })
     async googleCallback(@Req() req: Request, @Res() res: Response) {
