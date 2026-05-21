@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import HeaderSection from "@/components/molecules/HeaderSection";
 import FooterSection from "@/components/organisms/FooterSection";
+import { GoogleOneTap } from "@/components/organisms/GoogleOneTap";
 
 export function PublicLayout({ children }: PropsWithChildren) {
   const { pathname, hash } = useLocation();
@@ -15,6 +16,7 @@ export function PublicLayout({ children }: PropsWithChildren) {
 
   return (
     <div>
+      <GoogleOneTap />
       <HeaderSection />
       {children}
       <FooterSection />

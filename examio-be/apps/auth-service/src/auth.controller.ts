@@ -387,6 +387,39 @@ export class AuthController {
         // Khởi tạo Google OAuth flow
     }
 
+    @Post('google/one-tap')
+    @ApiOperation({ summary: 'Đăng nhập Google One Tap' })
+    async googleOneTap(
+        @Body() body: { credential: string },
+        @Req() request: Request,
+        @Res({ passthrough: true }) res: ExpressResponse
+    ) {
+        const deviceInfo: DeviceInfo = {
+            deviceId: request.headers['x-device-id'] as string,
+            userAgent: request.headers['user-agent'],
+            ip: request.ip,
+        };
+        const result = await this.authService.googleOneTapLogin(
+            body.credential,
+            deviceInfo
+        );
+
+        const cookieConfig = getCookieConfig({
+            feOrigin: request.headers.origin,
+            isProductionBE: process.env.NODE_ENV === 'production',
+        });
+
+        res.cookie('token', result.token, cookieConfig);
+        if (result.sessionId) {
+            res.cookie('session_id', result.sessionId, cookieConfig);
+        }
+        if (result.refreshToken) {
+            res.cookie('refreshToken', result.refreshToken, cookieConfig);
+        }
+
+        return result;
+    }
+
     @Get('google/callback')
     @UseGuards(GoogleAuthGuard)
     @ApiOperation({ summary: 'Google OAuth callback' })
