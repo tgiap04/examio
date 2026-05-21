@@ -279,6 +279,69 @@
   .ai-tool-tabs .ant-tabs-content-holder {
     border: 0 !important;
   }
+
+  .examio-driver-popover {
+    max-width: min(340px, calc(100vw - 32px)) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 18px !important;
+    background: var(--popover) !important;
+    color: var(--popover-foreground) !important;
+    box-shadow: 0 24px 70px color-mix(in srgb, var(--foreground) 18%, transparent) !important;
+  }
+
+  .examio-driver-popover .driver-popover-title {
+    color: var(--foreground) !important;
+    font-family: var(--font-display) !important;
+    font-size: 1.45rem !important;
+    font-weight: 500 !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  .examio-driver-popover .driver-popover-description,
+  .examio-driver-popover .driver-popover-progress-text {
+    color: var(--muted-foreground) !important;
+  }
+
+  .examio-driver-popover .driver-popover-next-btn,
+  .examio-driver-popover .driver-popover-prev-btn {
+    border: 1px solid var(--border) !important;
+    border-radius: 999px !important;
+    color: var(--foreground) !important;
+    text-shadow: none !important;
+  }
+
+  .examio-driver-popover .driver-popover-next-btn {
+    background: var(--primary) !important;
+    color: var(--primary-foreground) !important;
+  }
+
+  .examio-driver-popover .driver-popover-prev-btn {
+    background: var(--card) !important;
+  }
+
+  .examio-driver-popover .driver-popover-close-btn {
+    color: var(--muted-foreground) !important;
+  }
+
+  .examio-driver-popover .driver-popover-arrow {
+    border: 5px solid transparent !important;
+  }
+
+  .examio-driver-popover .driver-popover-arrow-side-left {
+    border-left-color: var(--popover) !important;
+  }
+
+  .examio-driver-popover .driver-popover-arrow-side-right {
+    border-right-color: var(--popover) !important;
+  }
+
+  .examio-driver-popover .driver-popover-arrow-side-top {
+    border-top-color: var(--popover) !important;
+  }
+
+  .examio-driver-popover .driver-popover-arrow-side-bottom {
+    border-bottom-color: var(--popover) !important;
+  }
   .ai-model-selector.ant-select .ant-select-selector {
     background: var(--input) !important;
     border-color: var(--border) !important;

@@ -174,7 +174,7 @@ export function FlashcardGenerator() {
             </h3>
             <p className="mt-3 text-sm text-muted-foreground">Kéo thả PDF up to 100 MB</p>
             {!hasFile ? (
-              <div className={isGenerating ? "pointer-events-none opacity-50 mt-5 w-full" : "mt-5 w-full"}>
+              <div data-tour="ai-tool-upload" className={isGenerating ? "pointer-events-none opacity-50 mt-5 w-full" : "mt-5 w-full"}>
                 <FileUpload
                   acceptedFileTypes={[".pdf", "application/pdf"]}
                   maxFileSize={104857600}
@@ -185,7 +185,7 @@ export function FlashcardGenerator() {
                 />
               </div>
             ) : (
-              <div className="mt-5 w-full">
+              <div className="mt-5 w-full" data-tour="ai-tool-upload">
                 <ItemFileDetail
                   fileName={displayFileName || "Unknown file"}
                   fileSize={displayFileSize || 0}
@@ -212,7 +212,7 @@ export function FlashcardGenerator() {
               <p className="text-[11px] italic text-muted-foreground">AI2 / AI service offline</p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3" data-tour="ai-tool-count">
               <div className="flex items-center justify-between gap-3">
                 <Label className="text-xs font-semibold text-foreground">Số lượng thẻ</Label>
                 <input
@@ -237,7 +237,7 @@ export function FlashcardGenerator() {
               />
             </div>
 
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3" data-tour="ai-tool-advanced">
               <Label
                 htmlFor="narrow-toggle"
                 className="flex cursor-pointer items-center gap-2 text-xs font-semibold text-foreground"
@@ -299,7 +299,7 @@ export function FlashcardGenerator() {
       </div>
 
       <Card ref={resultRef} className="min-h-[560px] border-border bg-background shadow-none">
-        <CardHeader className="gap-4 border-b border-border px-3 md:px-6 pb-5">
+        <CardHeader data-tour="ai-tool-preview" className="gap-4 border-b border-border px-3 md:px-6 pb-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
               <CardTitle className="flex items-center gap-2">
