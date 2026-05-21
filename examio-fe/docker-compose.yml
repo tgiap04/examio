@@ -19,7 +19,7 @@ services:
         environment:
             - BACKEND_URL=${BACKEND_URL:-http://examio-gateway:7000}
         ports:
-            - '${FE_PORT:-3080}:80'
+            - '${FE_PORT:-6368}:80'
         restart: unless-stopped
         networks:
             - examio-network
