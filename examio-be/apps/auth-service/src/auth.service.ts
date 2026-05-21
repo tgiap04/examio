@@ -602,30 +602,6 @@ export class AuthService {
         return this.handleOAuthLogin(email, username, picture, deviceInfo);
     }
 
-    async facebookLogin(user: any, deviceInfo?: DeviceInfo) {
-        const { email, picture, username } = user;
-        if (!email) {
-            throw new BadRequestException(
-                'Tài khoản của bạn cần được liên kết với email để có thể hoàn tất đăng nhập.'
-            );
-        }
-        return this.handleOAuthLogin(
-            email,
-            username || email.split('@')[0],
-            picture,
-            deviceInfo
-        );
-    }
-
-    async githubLogin(user: any, deviceInfo?: DeviceInfo) {
-        const { email, avatar, username } = user;
-        return this.handleOAuthLogin(
-            email,
-            username || email.split('@')[0],
-            avatar,
-            deviceInfo
-        );
-    }
 
     async getUser(user: User) {
         const foundUser = await this.userRepository.findByIdWithRelations(

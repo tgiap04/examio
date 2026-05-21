@@ -2,8 +2,8 @@
 
 import React, { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { IconBrandGithub, IconBrandGoogle } from "@tabler/icons-react";
-import { Eye, EyeOff, FacebookIcon } from "lucide-react";
+import { IconBrandGoogle } from "@tabler/icons-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 function BottomGradient() {
@@ -17,7 +17,7 @@ function BottomGradient() {
 
 export function SigninForm() {
   const [showPassword, setShowPassword] = useState(false);
-  const { loginWithGoogle, loginWithFacebook, loginWithGithub, login } =
+  const { loginWithGoogle, login } =
     useAuthStore();
   const [searchParams] = useSearchParams();
 
@@ -124,17 +124,7 @@ export function SigninForm() {
               <div className="flex-1 h-px bg-surface-card"></div>
             </div>
 
-            <div className="grid gap-2 mb-[10px] grid-cols-1 md:grid-cols-3">
-              <button
-                className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-body rounded-lg h-10 font-medium bg-surface-soft border border-hairline hover:bg-surface-card cursor-pointer transition-all"
-                type="button"
-                onClick={() => loginWithGithub?.()}
-              >
-                <IconBrandGithub className="h-4 w-4" />
-                <span className="text-sm">GitHub</span>
-                <BottomGradient />
-              </button>
-
+            <div className="grid gap-2 mb-[10px]">
               <button
                 className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-body rounded-lg h-10 font-medium bg-surface-soft border border-hairline hover:bg-surface-card cursor-pointer transition-all"
                 type="button"
@@ -142,16 +132,6 @@ export function SigninForm() {
               >
                 <IconBrandGoogle className="h-4 w-4" />
                 <span className="text-sm">Google</span>
-                <BottomGradient />
-              </button>
-
-              <button
-                className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-body rounded-lg h-10 font-medium bg-surface-soft border border-hairline hover:bg-surface-card cursor-pointer transition-all"
-                type="button"
-                onClick={() => loginWithFacebook?.()}
-              >
-                <FacebookIcon className="h-4 w-4" />
-                <span className="text-sm">Facebook</span>
                 <BottomGradient />
               </button>
             </div>

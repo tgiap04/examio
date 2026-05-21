@@ -46,8 +46,6 @@ interface AuthState {
   sendVerificationEmail: () => Promise<void>;
   verifyAccount: (code: string) => Promise<void>;
   loginWithGoogle?: () => Promise<void>;
-  loginWithFacebook?: () => Promise<void>;
-  loginWithGithub?: () => Promise<void>;
   updateWalletBalance: (newBalance: number) => void;
 }
 
@@ -341,17 +339,5 @@ export const useAuthStore = create<AuthState>((set) => ({
     const redirectPath = getOAuthRedirectPath();
     const redirect = encodeURIComponent(redirectPath);
     window.location.href = `${env.apiUrl}/auth/google?redirect=${redirect}`;
-  },
-
-  loginWithFacebook: async () => {
-    const redirectPath = getOAuthRedirectPath();
-    const redirect = encodeURIComponent(redirectPath);
-    window.location.href = `${env.apiUrl}/auth/facebook?redirect=${redirect}`;
-  },
-
-  loginWithGithub: async () => {
-    const redirectPath = getOAuthRedirectPath();
-    const redirect = encodeURIComponent(redirectPath);
-    window.location.href = `${env.apiUrl}/auth/github?redirect=${redirect}`;
   },
 }));
