@@ -10,7 +10,7 @@ const stats = [
 export default function CoralCallout() {
   return (
     <section className="bg-canvas landing-dot-paper pb-8 dark:bg-canvas pt-8">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="relative overflow-hidden rounded-[16px] bg-coral px-8 py-14 sm:px-12 sm:py-16 lg:px-16 lg:py-20">
           <SpikeMark className="absolute right-10 top-10 h-24 w-24 text-white/10" />
           <SpikeMark className="absolute -left-10 -bottom-10 h-40 w-40 text-white/5" />

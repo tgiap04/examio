@@ -16,7 +16,7 @@ export default function KRootRedirect() {
       return;
     }
 
-    navigate("/k/my-materials", { replace: true });
+    navigate("/k/ai-tool", { replace: true });
   }, [initializing, isAuthenticated, navigate]);
 
   return (

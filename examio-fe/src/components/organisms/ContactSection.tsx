@@ -40,7 +40,7 @@ export default function ContactSection() {
   return (
     <div className="overflow-x-hidden bg-canvas">
       <section className="bg-canvas landing-dot-paper pt-28 pb-24 md:pt-32 md:pb-28">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
             <div className="inline-flex items-center gap-2 rounded-[9999px] border border-hairline bg-surface-card px-3 py-1.5">
               <Sparkles className="h-3.5 w-3.5 text-coral" />
@@ -62,7 +62,7 @@ export default function ContactSection() {
       </section>
 
       <section className="bg-canvas landing-dot-paper py-8">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 lg:grid-cols-12 lg:gap-12">
             <div className="lg:col-span-7">
               <div className="rounded-[16px] border border-hairline bg-surface-card p-8 sm:p-10">

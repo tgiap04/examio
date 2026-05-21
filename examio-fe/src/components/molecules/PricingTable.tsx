@@ -61,7 +61,7 @@ export function PricingTable({
       )}
     >
       <div
-        className={cn("w-full max-w-6xl mx-auto px-4", containerClassName)}
+        className={cn("w-full max-w-7xl mx-auto px-4", containerClassName)}
         {...props}
       >
         <div className="flex flex-col sm:flex-row justify-between mb-4 sm:mb-8 gap-4">
@@ -100,7 +100,7 @@ export function PricingTable({
                 "flex-1 min-w-[140px] sm:min-w-0 p-3 sm:p-4 rounded-xl text-left transition-all",
                 "border border-border",
                 selectedPlan === plan.level &&
-                  "ring-2 ring-primary",
+                "ring-2 ring-primary",
               )}
             >
               <div className="flex items-center justify-between mb-2">
@@ -151,7 +151,7 @@ export function PricingTable({
                   className={cn(
                     "flex items-center p-4 transition-colors",
                     feature.included === selectedPlan &&
-                      "bg-red-50/50",
+                    "bg-red-50/50",
                   )}
                 >
                   <div className="flex-1 text-sm">{feature.name}</div>

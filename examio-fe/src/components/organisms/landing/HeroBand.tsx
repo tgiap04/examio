@@ -4,7 +4,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 export default function HeroBand() {
   return (
     <section className="relative bg-canvas landing-dot-paper pt-28 pb-24 md:pt-32 md:pb-28">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid gap-12 lg:grid-cols-12 lg:gap-10">
           <div className="lg:col-span-6">
             <div className="inline-flex items-center gap-2 rounded-[9999px] border border-hairline bg-surface-card px-3 py-1.5">
@@ -100,11 +100,10 @@ function HeroMockup() {
           ].map((opt) => (
             <div
               key={opt.label}
-              className={`flex items-center gap-2 rounded-[8px] border px-3 py-2 text-[13px] ${
-                opt.correct
+              className={`flex items-center gap-2 rounded-[8px] border px-3 py-2 text-[13px] ${opt.correct
                   ? "border-coral/40 bg-coral/10 text-on-dark"
                   : "border-surface-dark-soft text-on-dark-soft"
-              }`}
+                }`}
             >
               <span className="font-mono text-[11px]">{opt.label}.</span>
               <span>{opt.text}</span>

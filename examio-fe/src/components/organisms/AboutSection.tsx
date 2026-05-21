@@ -41,7 +41,7 @@ export default function AboutSection() {
   return (
     <div className="overflow-x-hidden bg-canvas">
       <section className="bg-canvas landing-dot-paper pt-28 pb-24 md:pt-32 md:pb-28">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
             <div className="inline-flex items-center gap-2 rounded-[9999px] border border-hairline bg-surface-card px-3 py-1.5">
               <Sparkles className="h-3.5 w-3.5 text-coral" />
@@ -65,7 +65,7 @@ export default function AboutSection() {
       </section>
 
       <section className="border-y border-hairline bg-surface-soft py-14">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 md:grid-cols-3">
             {stats.map(({ icon: Icon, value, label }) => (
               <div key={label} className="text-center">
@@ -83,7 +83,7 @@ export default function AboutSection() {
       </section>
 
       <section className="bg-canvas landing-dot-paper py-24">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-6 md:grid-cols-2">
             <article className="rounded-[12px] bg-surface-card p-8 sm:p-10">
               <p className="text-[12px] font-medium uppercase tracking-[1.5px] text-coral">
@@ -117,7 +117,7 @@ export default function AboutSection() {
       </section>
 
       <section className="bg-canvas landing-dot-paper py-24">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl">
             <p className="text-[12px] font-medium uppercase tracking-[1.5px] text-coral">
               Giá trị cốt lõi
@@ -149,7 +149,7 @@ export default function AboutSection() {
       </section>
 
       <section className="bg-canvas landing-dot-paper py-8">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="overflow-hidden rounded-[16px] bg-coral px-8 py-14 sm:px-12 sm:py-16 lg:px-16 lg:py-20">
             <div className="mx-auto max-w-2xl text-center">
               <h2 className="font-display text-[36px] font-medium leading-[1.1] tracking-[-0.02em] text-white sm:text-[44px]">

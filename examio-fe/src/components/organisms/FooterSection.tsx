@@ -64,7 +64,7 @@ export default function FooterSection() {
 
   return (
     <footer className="bg-surface-cream-strong text-body dark:bg-surface-dark-elevated dark:text-on-dark-soft">
-      <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
         <div className="grid gap-10 border-b border-hairline pb-12 dark:border-white/10 lg:grid-cols-12 lg:items-center">
           <div className="lg:col-span-5">
             <h3 className="font-display text-[28px] font-medium leading-[1.15] tracking-[-0.015em] text-ink dark:text-on-dark sm:text-[32px]">

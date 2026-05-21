@@ -34,7 +34,7 @@ const ways = [
 export default function WaysToStudy() {
   return (
     <section className="bg-canvas landing-dot-paper py-24">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="max-w-2xl">
           <p className="text-[12px] font-medium uppercase tracking-[1.5px] text-coral">
             Ba cách học

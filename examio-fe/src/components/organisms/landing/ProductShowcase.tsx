@@ -12,7 +12,7 @@ const steps = [
 export default function ProductShowcase() {
   return (
     <section id="showcase" className="bg-canvas py-24">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="overflow-hidden rounded-[16px] bg-surface-dark px-6 py-14 sm:px-10 sm:py-16 lg:px-16 lg:py-20">
           <div className="grid gap-12 lg:grid-cols-12 lg:gap-12">
             <div className="lg:col-span-5">
