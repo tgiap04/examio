@@ -158,16 +158,12 @@ export class AuthProxyController {
     @Post('google/one-tap')
     @ApiOperation({ summary: 'Đăng nhập Google One Tap' })
     async googleOneTap(@Body() body: any, @Req() req: Request, @Res() res: Response) {
-        const result = await this.proxyService.forwardWithAuth(
-            'auth',
-            {
-                method: 'POST',
-                path: '/api/v1/auth/google/one-tap',
-                body,
-                headers: this.extractHeaders(req),
-            },
-            undefined
-        );
+        const result = await this.proxyService.forward('auth', {
+            method: 'POST',
+            path: '/api/v1/auth/google/one-tap',
+            body,
+            headers: this.extractHeaders(req),
+        });
         this.setAuthCookies(res, result, req);
         return res.json(result);
     }
