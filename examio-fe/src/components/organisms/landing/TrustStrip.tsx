@@ -7,7 +7,7 @@ const trustItems = [
 export default function TrustStrip() {
   return (
     <section className="border-y border-hairline bg-surface-soft py-10">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <p className="text-center text-[12px] font-medium uppercase tracking-[1.5px] text-muted-foreground">
           Được tin dùng bởi
         </p>

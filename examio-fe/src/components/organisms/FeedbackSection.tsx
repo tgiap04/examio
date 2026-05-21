@@ -178,7 +178,7 @@ export default function FeedbackSection() {
 
   return (
     <div className="px-4 py-8 sm:py-16 bg-gradient-to-b from-surface-soft to-canvas overflow-hidden">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -201,11 +201,10 @@ export default function FeedbackSection() {
               whileTap={{ scale: 0.95 }}
               onClick={goPrev}
               disabled={!canGoPrev}
-              className={`p-2 rounded-full ${
-                canGoPrev
+              className={`p-2 rounded-full ${canGoPrev
                   ? "bg-canvas shadow-md hover:bg-surface-card text-primary"
                   : "bg-surface-card text-muted-foreground cursor-not-allowed"
-              } transition-all duration-300`}
+                } transition-all duration-300`}
               aria-label="Previous testimonial"
             >
               <ChevronLeft size={20} className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -215,11 +214,10 @@ export default function FeedbackSection() {
               whileTap={{ scale: 0.95 }}
               onClick={goNext}
               disabled={!canGoNext}
-              className={`p-2 rounded-full ${
-                canGoNext
+              className={`p-2 rounded-full ${canGoNext
                   ? "bg-canvas shadow-md hover:bg-surface-card text-primary"
                   : "bg-surface-card text-muted-foreground cursor-not-allowed"
-              } transition-all duration-300`}
+                } transition-all duration-300`}
               aria-label="Next testimonial"
             >
               <ChevronRight size={20} className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -239,13 +237,12 @@ export default function FeedbackSection() {
               {testimonials.map((testimonial) => (
                 <motion.div
                   key={testimonial.id}
-                  className={`flex-shrink-0 w-full ${
-                    visibleCount === 3
+                  className={`flex-shrink-0 w-full ${visibleCount === 3
                       ? "md:w-1/3"
                       : visibleCount === 2
                         ? "md:w-1/2"
                         : "w-full"
-                  } p-2`}
+                    } p-2`}
                   initial={{ opacity: 0.5, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.4 }}
@@ -336,11 +333,10 @@ export default function FeedbackSection() {
                     aria-label={`Go to testimonial ${index + 1}`}
                   >
                     <motion.div
-                      className={`w-2 h-2 rounded-full ${
-                        index === currentIndex
+                      className={`w-2 h-2 rounded-full ${index === currentIndex
                           ? "bg-primary"
                           : "bg-gray-300"
-                      }`}
+                        }`}
                       animate={{
                         scale: index === currentIndex ? [1, 1.2, 1] : 1,
                       }}

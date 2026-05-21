@@ -163,11 +163,10 @@ function ExamCard({
       <div className="mt-auto flex items-center justify-between border-t border-hairline-soft pt-4">
         <button
           onClick={() => onTogglePin(attempt)}
-          className={`grid h-8 w-8 place-items-center rounded-md transition-colors ${
-            attempt.isPinned
+          className={`grid h-8 w-8 place-items-center rounded-md transition-colors ${attempt.isPinned
               ? "bg-coral/10 text-coral hover:bg-coral/20"
               : "text-muted-foreground hover:bg-surface-card hover:text-ink"
-          }`}
+            }`}
           aria-label={attempt.isPinned ? "Bỏ ghim" : "Ghim"}
           title={attempt.isPinned ? "Bỏ ghim" : "Ghim"}
         >
@@ -242,11 +241,10 @@ function Pagination({
           <button
             key={p}
             onClick={() => onPageChange(p)}
-            className={`grid h-9 w-9 place-items-center rounded-md text-sm font-medium transition-colors ${
-              p === page
+            className={`grid h-9 w-9 place-items-center rounded-md text-sm font-medium transition-colors ${p === page
                 ? "bg-coral text-on-primary"
                 : "border border-hairline text-body hover:bg-surface-card hover:text-ink"
-            }`}
+              }`}
             aria-current={p === page ? "page" : undefined}
           >
             {p}
@@ -399,7 +397,7 @@ export default function MyExamsPage() {
   if (loading) {
     return (
       <div className="relative min-h-screen bg-background text-foreground">
-        <section className="relative mx-auto max-w-6xl px-4 py-6 md:py-8">
+        <section className="relative mx-auto max-w-7xl px-4 py-6 md:py-8">
           <div className="space-y-2">
             <Skeleton className="h-9 w-56" />
             <Skeleton className="h-4 w-80" />
@@ -416,7 +414,7 @@ export default function MyExamsPage() {
 
   return (
     <div className="relative min-h-screen bg-background text-foreground">
-      <section className="relative mx-auto max-w-6xl px-4 py-6 md:py-8 mt-4">
+      <section className="relative mx-auto max-w-7xl px-4 py-6 md:py-8 mt-4">
         <header className="mb-8">
           <h1 className="text-3xl tracking-tight text-ink lg:text-4xl">
             Bài thi của tôi

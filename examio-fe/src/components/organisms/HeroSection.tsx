@@ -142,7 +142,7 @@ export function HeroSection() {
                   aria-hidden
                   className="bg-gradient-to-b to-background absolute inset-0 z-10 from-transparent from-35%"
                 />
-                <div className="inset-shadow-2xs ring-hairline bg-surface-dark relative mx-auto max-w-6xl overflow-hidden rounded-2xl border border-surface-dark-elevated p-4 shadow-none ring-1">
+                <div className="inset-shadow-2xs ring-hairline bg-surface-dark relative mx-auto max-w-7xl overflow-hidden rounded-2xl border border-surface-dark-elevated p-4 shadow-none ring-1">
                   <img
                     className="bg-surface-dark aspect-15/8 relative hidden rounded-2xl"
                     src="https://tailark.com//_next/image?url=%2Fmail2.png&w=3840&q=75"

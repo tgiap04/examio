@@ -80,7 +80,7 @@ export default function HeaderSection() {
         <nav
           data-state={menuState ? "active" : undefined}
           className={cn(
-            "mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-4 rounded-[16px] border px-4 transition-all duration-200 sm:px-5",
+            "mx-auto flex h-14 w-full max-w-7xl items-center justify-between gap-4 rounded-[16px] border px-4 transition-all duration-200 sm:px-5",
             isScrolled
               ? "border-hairline bg-canvas/80 shadow-[0_8px_24px_rgba(20,20,19,0.06)] backdrop-blur"
               : "border-transparent bg-canvas/60 backdrop-blur-sm",
@@ -213,7 +213,7 @@ export default function HeaderSection() {
         </nav>
 
         {menuState && (
-          <div className="mx-auto mt-2 max-w-6xl rounded-[16px] border border-hairline bg-canvas p-4 shadow-[0_18px_40px_rgba(20,20,19,0.08)] lg:hidden">
+          <div className="mx-auto mt-2 max-w-7xl rounded-[16px] border border-hairline bg-canvas p-4 shadow-[0_18px_40px_rgba(20,20,19,0.08)] lg:hidden">
             <ul className="space-y-3">
               {menuItems.map((item) => (
                 <li key={item.href}>

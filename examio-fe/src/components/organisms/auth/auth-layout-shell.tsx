@@ -31,7 +31,7 @@ export function AuthLayoutShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-canvas via-surface-soft to-surface-card">
       <div className="sticky top-0 z-40 border-b border-hairline bg-canvas/85 backdrop-blur-xl">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <Link to="/" className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-coral/25 bg-coral/10 shadow-sm">
               <img

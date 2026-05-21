@@ -42,7 +42,7 @@ export default function StackSection() {
   const iconsPerOrbit = Math.ceil(iconConfigs.length / orbitCount);
 
   return (
-    <section className="relative max-w-6xl mx-auto pl-10 flex items-center justify-between h-[30rem] border border-border bg-canvas overflow-hidden rounded-3xl ">
+    <section className="relative max-w-7xl mx-auto pl-10 flex items-center justify-between h-[30rem] border border-border bg-canvas overflow-hidden rounded-3xl ">
       {/* Left side: Heading and Text */}
       <div className="w-1/2 z-10">
         <h1 className="text-4xl sm:text-6xl font-semibold mb-4 text-ink">
@@ -112,18 +112,18 @@ export default function StackSection() {
                       >
                         {cfg.Icon
                           ? (
-                              <cfg.Icon
-                                className="w-8 h-8"
-                                style={{ color: cfg.color }}
-                              />
-                            )
+                            <cfg.Icon
+                              className="w-8 h-8"
+                              style={{ color: cfg.color }}
+                            />
+                          )
                           : (
-                              <img
-                                src=""
-                                alt="icon"
-                                className="w-8 h-8 object-contain"
-                              />
-                            )}
+                            <img
+                              src=""
+                              alt="icon"
+                              className="w-8 h-8 object-contain"
+                            />
+                          )}
                       </div>
                     );
                   })}

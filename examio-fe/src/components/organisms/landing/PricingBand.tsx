@@ -112,7 +112,7 @@ export default function PricingBand() {
 
   return (
     <section id="pricing" className="bg-surface-soft landing-dot-paper py-24">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-2xl text-center">
           <p className="text-[12px] font-medium uppercase tracking-[1.5px] text-coral">
             Bảng giá
