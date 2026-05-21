@@ -6,6 +6,7 @@ import { Card } from "@/components/antd/card";
 import { Badge } from "@/components/antd/badge";
 import { Skeleton } from "@/components/antd/skeleton";
 import { isCorrectAnswer } from "@/lib/quizAnswerUtils";
+import { cn } from "@/lib/utils";
 import {
   Plus,
   Trash2,
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import type { Quizz } from "@/types/quizset";
 import { DeleteConfirmDialog } from "@/components/organisms/DeleteConfirmDialog";
-import { QuestionEditorDialog } from "@/components/organisms/QuestionEditorDialog";
+import { InlineQuestionEditor } from "@/components/organisms/InlineQuestionEditor";
 import { LabelManager } from "@/components/organisms/LabelManager";
 import { RichTextViewer } from "@/components/molecules/RichTextViewer";
 import {
@@ -127,7 +128,7 @@ export default function ManageQuizSetDetailPage() {
   if (loading || !currentQuizSet) {
     return (
       <div className="min-h-screen">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-2 py-6 sm:px-6 lg:px-8">
           <Skeleton className="mb-6 h-10 w-full" />
           <div className="mb-8 grid gap-6 md:grid-cols-3">
             <Skeleton className="h-32" />
@@ -142,7 +143,7 @@ export default function ManageQuizSetDetailPage() {
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-2 py-6 sm:px-6 lg:px-8">
         <div className="mb-8">
           <div className="mb-4 flex items-center justify-between gap-4">
             <div className="flex-1">
@@ -175,7 +176,7 @@ export default function ManageQuizSetDetailPage() {
         </div>
 
         <div className="mb-8 grid gap-4 md:grid-cols-2">
-          <Card className="p-6">
+          <Card className="p-3 sm:p-6">
             <div className="flex items-center gap-4">
               <div className="rounded-lg bg-primary/10 p-3">
                 <FileText className="h-6 w-6 text-primary" />
@@ -187,7 +188,7 @@ export default function ManageQuizSetDetailPage() {
             </div>
           </Card>
 
-          <Card className="p-6">
+          <Card className="p-3 sm:p-6">
             <div className="flex items-center gap-4">
               <div className="rounded-lg bg-primary/10 p-3">
                 <FileText className="h-6 w-6 text-primary" />
@@ -204,15 +205,7 @@ export default function ManageQuizSetDetailPage() {
 
         <LabelManager quizSetId={id} />
 
-        <QuestionEditorDialog
-          open={showQuestionForm}
-          onOpenChange={setShowQuestionForm}
-          question={selectedQuestion}
-          onSave={handleSaveQuestion}
-          quizSetId={id}
-        />
-
-        <Card className="p-6">
+        <Card className="p-3 sm:p-6">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-xl font-semibold">
               Danh sách câu hỏi
@@ -226,6 +219,17 @@ export default function ManageQuizSetDetailPage() {
             </Button>
           </div>
 
+          {showQuestionForm && !selectedQuestion && (
+            <div className="mb-6">
+              <InlineQuestionEditor
+                question={null}
+                quizSetId={id}
+                onSave={handleSaveQuestion}
+                onCancel={() => { setShowQuestionForm(false); setSelectedQuestion(null); }}
+              />
+            </div>
+          )}
+
           {questionsLoading ? (
             <div className="space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -233,68 +237,87 @@ export default function ManageQuizSetDetailPage() {
               ))}
             </div>
           ) : paginatedQuestions.length > 0 ? (
-            <div className="!space-y-4">
+            <div className="space-y-4">
               {paginatedQuestions.map((question, index) => {
                 const actualIndex = (currentPage - 1) * itemsPerPage + index;
+                const isEditing = showQuestionForm && selectedQuestion?.id === question.id;
+
+                if (isEditing) {
+                  return (
+                    <InlineQuestionEditor
+                      key={question.id}
+                      question={question}
+                      quizSetId={id}
+                      onSave={handleSaveQuestion}
+                      onCancel={() => { setShowQuestionForm(false); setSelectedQuestion(null); }}
+                    />
+                  );
+                }
+
                 return (
-                  <Card key={question.id} className="p-4 transition-shadow hover:shadow-md">
-                    <div className="flex items-start gap-4">
-                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 font-semibold text-primary">
+                  <div key={question.id} className="rounded-[12px] border border-hairline p-4 transition-shadow hover:shadow-[0_1px_3px_rgba(20,20,19,0.08)]">
+                    <div className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-coral/15 font-mono text-xs font-semibold text-coral">
                         {actualIndex + 1}
-                      </div>
-                      <div className="min-w-0 flex-1">
+                      </span>
+                      <div className="min-w-0 flex-1 space-y-3">
                         {question.label && (
-                          <div className="mb-2">
-                            <div
-                              className="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium"
-                              style={{
-                                backgroundColor: question.label.color ? `${question.label.color}15` : undefined,
-                                borderColor: question.label.color || undefined,
-                                color: question.label.color || undefined,
-                              }}
-                            >
-                              {question.label.color && (
-                                <div
-                                  className="h-2 w-2 rounded-full"
-                                  style={{ backgroundColor: question.label.color }}
-                                />
-                              )}
-                              {question.label.name}
-                            </div>
+                          <div
+                            className="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium"
+                            style={{
+                              backgroundColor: question.label.color ? `${question.label.color}15` : undefined,
+                              borderColor: question.label.color || undefined,
+                              color: question.label.color || undefined,
+                            }}
+                          >
+                            {question.label.color && (
+                              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: question.label.color }} />
+                            )}
+                            {question.label.name}
                           </div>
                         )}
-                        <div className="mb-2">
+                        <div className="text-[14px] font-medium leading-[1.55]">
                           <RichTextViewer content={question.question} />
                         </div>
-                        <div className="space-y-1">
+
+                        <div className="grid gap-2 sm:grid-cols-2">
                           {question.options.map((option, optIndex) => {
-                            const optionLetter = String.fromCharCode(65 + optIndex);
                             const isCorrect = isCorrectAnswer(question.answer, optIndex, question.options);
+                            const hasPrefix = /^[A-D]\s*[\.\)\:]\s+/.test(option);
+                            const displayText = hasPrefix ? option.replace(/^[A-D]\s*[\.\)\:]\s+/, "") : option;
+
                             return (
                               <div
                                 key={optIndex}
-                                className={`flex items-start gap-2 rounded p-2 text-sm ${isCorrect ? "bg-green-50 font-medium text-green-700" : "bg-muted/50"
-                                  }`}
+                                className={cn(
+                                  "flex items-center gap-2 rounded-[8px] border px-3 py-2 text-[13px] transition-colors",
+                                  isCorrect
+                                    ? "border-coral/40 bg-coral/10 text-ink"
+                                    : "border-hairline text-muted-foreground",
+                                )}
                               >
-                                <div className="flex-1">
-                                  <RichTextViewer content={option} />
-                                </div>
-                                {isCorrect && <span className="ml-2 flex-shrink-0">✓ Đáp án đúng</span>}
+                                <span className="font-mono text-[11px]">
+                                  {String.fromCharCode(65 + optIndex)}.
+                                </span>
+                                <span className="flex-1">
+                                  <RichTextViewer content={displayText} />
+                                </span>
+                                {isCorrect && <span className="text-[11px] text-coral font-medium">✓</span>}
                               </div>
                             );
                           })}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => handleEditQuestion(question)} disabled={showQuestionForm}>
-                          <Edit className="h-4 w-4" />
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => handleEditQuestion(question)} disabled={showQuestionForm} className="h-8 w-8 p-0">
+                          <Edit className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="errorGhost" size="sm" onClick={() => handleDeleteQuestion(question.id)} disabled={showQuestionForm}>
-                          <Trash2 className="h-4 w-4" />
+                        <Button variant="ghost" size="sm" onClick={() => handleDeleteQuestion(question.id)} disabled={showQuestionForm} className="h-8 w-8 p-0 text-muted-foreground hover:text-error">
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 );
               })}
 
