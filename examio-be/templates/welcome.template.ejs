@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Chào mừng đến với FayEdu</title>
+  <title>Chào mừng đến với Examio</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
@@ -16,42 +16,25 @@
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       line-height: 1.6;
-      color: #1a1a1a;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: #141413;
+      background: #faf9f5;
       padding: 20px 0;
     }
 
     .email-wrapper {
       max-width: 600px;
       margin: 0 auto;
-      background: #ffffff;
-      border-radius: 16px;
+      background: #faf9f5;
+      border-radius: 12px;
       overflow: hidden;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 4px 24px rgba(20, 20, 19, 0.08);
+      border: 1px solid #e6dfd8;
     }
 
     .header {
-      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      background: #cc785c;
       padding: 40px 30px;
       text-align: center;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .header::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: -50%;
-      width: 200%;
-      height: 200%;
-      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-      animation: float 20s ease-in-out infinite;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0px) rotate(0deg); }
-      50% { transform: translateY(-10px) rotate(1deg); }
     }
 
     .logo-container {
@@ -63,68 +46,79 @@
       display: inline-flex;
       align-items: center;
       text-decoration: none;
-      color: white;
-      font-size: 32px;
+      color: #ffffff;
+      font-size: 28px;
       font-weight: 700;
       letter-spacing: -0.5px;
       justify-content: center;
     }
 
     .logo-icon {
-      width: 48px;
-      height: 48px;
-      background: rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(10px);
+      width: 44px;
+      height: 44px;
       border-radius: 12px;
       display: inline-block;
       margin-right: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.3);
       vertical-align: middle;
     }
 
     .header-subtitle {
       color: rgba(255, 255, 255, 0.9);
-      font-size: 16px;
+      font-size: 14px;
       margin-top: 8px;
       font-weight: 400;
     }
 
+    .fallback-logo {
+      display: none;
+      width: 44px;
+      height: 44px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      text-align: center;
+      line-height: 44px;
+      font-size: 22px;
+      font-weight: 700;
+      color: white;
+      margin-right: 12px;
+      vertical-align: middle;
+    }
+
     .content {
-      padding: 50px 40px;
-      background: #ffffff;
+      padding: 48px 40px;
+      background: #faf9f5;
     }
 
     .welcome-badge {
       display: inline-block;
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: white;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 14px;
+      background: #cc785c;
+      color: #ffffff;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 13px;
       font-weight: 500;
       margin-bottom: 24px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
     }
 
     .welcome-title {
-      font-size: 28px;
-      font-weight: 700;
-      color: #1a1a1a;
-      margin-bottom: 16px;
+      font-size: 26px;
+      font-weight: 600;
+      color: #141413;
+      margin-bottom: 12px;
       line-height: 1.3;
     }
 
     .welcome-subtitle {
-      font-size: 18px;
-      color: #6b7280;
+      font-size: 16px;
+      color: #3d3d3a;
       margin-bottom: 32px;
-      line-height: 1.5;
+      line-height: 1.55;
     }
 
     .user-card {
-      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-      border: 1px solid #e2e8f0;
+      background: #efe9de;
+      border: 1px solid #e6dfd8;
       border-radius: 12px;
       padding: 24px;
       margin: 32px 0;
@@ -137,184 +131,95 @@
     }
 
     .user-avatar {
-      width: 60px;
-      height: 60px;
-      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      width: 56px;
+      height: 56px;
+      background: #cc785c;
       border-radius: 50%;
       display: inline-block;
       margin-right: 16px;
-      vertical-align: middle;
-    }
-
-    .user-details h3 {
-      font-size: 18px;
-      font-weight: 600;
-      color: #1a1a1a;
-      margin-bottom: 4px;
-    }
-
-    .user-details p {
-      color: #6b7280;
-      font-size: 14px;
-    }
-
-    .cta-section {
-      text-align: center;
-      margin: 40px 0;
-    }
-
-    .cta-button {
-      display: inline-block;
-      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-      color: white;
-      text-decoration: none;
-      padding: 16px 32px;
-      border-radius: 12px;
-      font-weight: 600;
-      font-size: 16px;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .cta-button::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-      transition: left 0.5s;
-    }
-
-    .cta-button:hover::before {
-      left: 100%;
-    }
-
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 10px;
-      margin: 40px 0;
-    }
-
-    .feature-item {
-      text-align: center;
-      padding: 20px;
-      border-radius: 12px;
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      transition: all 0.3s ease;
-    }
-
-    .feature-item:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-    }
-
-    .feature-icon {
-      width: 48px;
-      height: 48px;
-      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 12px;
-      color: white;
-      font-size: 20px;
-    }
-
-    .feature-title {
-      font-size: 14px;
-      font-weight: 600;
-      color: #1a1a1a;
-      margin-bottom: 4px;
-    }
-
-    .feature-desc {
-      font-size: 12px;
-      color: #6b7280;
-    }
-
-    .footer {
-      background: #f8fafc;
-      padding: 40px 30px;
-      text-align: center;
-      border-top: 1px solid #e2e8f0;
-    }
-
-    .social-links {
-      display: flex;
-      justify-content: center;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .social-link {
-      width: 40px;
-      height: 40px;
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-      color: #6b7280;
-      transition: all 0.3s ease;
-    }
-
-    .social-link:hover {
-      background: #3b82f6;
-      color: white;
-      transform: translateY(-2px);
-    }
-
-    .footer-text {
-      color: #6b7280;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-
-    .footer-text a {
-      color: #3b82f6;
-      text-decoration: none;
-    }
-
-    /* Email client fallbacks */
-    .fallback-logo {
-      display: none;
-      width: 48px;
-      height: 48px;
-      background: rgba(255, 255, 255, 0.2);
-      backdrop-filter: blur(10px);
-      border-radius: 12px;
-      text-align: center;
-      line-height: 46px;
-      font-size: 24px;
-      font-weight: 800;
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      margin-right: 12px;
       vertical-align: middle;
     }
 
     .fallback-avatar {
       display: none;
-      width: 60px;
-      height: 60px;
-      background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+      width: 56px;
+      height: 56px;
+      background: #cc785c;
       border-radius: 50%;
       text-align: center;
-      line-height: 60px;
-      font-size: 24px;
+      line-height: 56px;
+      font-size: 22px;
       font-weight: 600;
       color: white;
       margin-right: 16px;
       vertical-align: middle;
+    }
+
+    .user-details h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #141413;
+      margin-bottom: 4px;
+    }
+
+    .user-details p {
+      color: #6c6a64;
+      font-size: 14px;
+    }
+
+    .cta-section {
+      text-align: center;
+      margin: 36px 0;
+    }
+
+    .cta-button {
+      display: inline-block;
+      background: #cc785c;
+      color: #ffffff;
+      text-decoration: none;
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .tip-box {
+      background: #efe9de;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin: 32px 0;
+      border-left: 4px solid #cc785c;
+    }
+
+    .tip-box h3 {
+      color: #141413;
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .tip-box p {
+      color: #3d3d3a;
+      font-size: 14px;
+      margin: 0;
+      line-height: 1.55;
+    }
+
+    .footer {
+      background: #181715;
+      padding: 32px 30px;
+      text-align: center;
+    }
+
+    .footer-text {
+      color: #a09d96;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    .footer-text a {
+      color: #cc785c;
+      text-decoration: none;
     }
 
     @media (max-width: 600px) {
@@ -332,44 +237,23 @@
       }
 
       .welcome-title {
-        font-size: 24px;
-      }
-
-      .features-grid {
-        grid-template-columns: 1fr;
+        font-size: 22px;
       }
     }
 
-    /* Outlook and other email clients that don't support advanced CSS */
     @media screen and (-webkit-min-device-pixel-ratio: 0) {
-      .logo-icon {
-        display: inline-block !important;
-      }
-      .fallback-logo {
-        display: none !important;
-      }
-      .user-avatar {
-        display: inline-block !important;
-      }
-      .fallback-avatar {
-        display: none !important;
-      }
+      .logo-icon { display: inline-block !important; }
+      .fallback-logo { display: none !important; }
+      .user-avatar { display: inline-block !important; }
+      .fallback-avatar { display: none !important; }
     }
   </style>
   <!--[if mso]>
   <style>
-    .logo-icon {
-      display: none !important;
-    }
-    .fallback-logo {
-      display: inline-block !important;
-    }
-    .user-avatar {
-      display: none !important;
-    }
-    .fallback-avatar {
-      display: inline-block !important;
-    }
+    .logo-icon { display: none !important; }
+    .fallback-logo { display: inline-block !important; }
+    .user-avatar { display: none !important; }
+    .fallback-avatar { display: inline-block !important; }
   </style>
   <![endif]-->
 </head>
@@ -378,81 +262,69 @@
     <div class="header">
       <div class="logo-container">
         <div class="logo">
-          <img src="https://ik.imagekit.io/devhatebug/code_craft/code.png?updatedAt=1752507908607" alt="FayEdu Logo" class="logo-icon" style="width: 48px; height: 48px; border-radius: 12px; margin-right: 12px; vertical-align: middle;" />
-          <!--[if mso]>
-          <div class="fallback-logo">C</div>
-          <![endif]-->
-          <div class="fallback-logo">C</div>
-          FayEdu
+          <img src="https://ik.imagekit.io/devhatebug/code_craft/code.png?updatedAt=1752507908607" alt="Examio Logo" class="logo-icon" style="width: 44px; height: 44px; border-radius: 12px; margin-right: 12px; vertical-align: middle;" />
+          <!--[if mso]><div class="fallback-logo">E</div><![endif]-->
+          <div class="fallback-logo">E</div>
+          Examio
         </div>
-        <div class="header-subtitle">Nền tảng cung cấp các công cụ hữu ích cho việc học tập</div>
+        <div class="header-subtitle">Nền tảng học tập và luyện thi trực tuyến</div>
       </div>
     </div>
 
     <div class="content">
-      <div class="welcome-badge">🎉 Chào mừng</div>
+      <div class="welcome-badge">Chào mừng</div>
 
       <h1 class="welcome-title">Xin chào <%= username %>!</h1>
       <p class="welcome-subtitle">
-        Chúng tôi rất vui mừng chào đón bạn đến với cộng đồng FayEdu.
-        Hành trình khám phá các công cụ tuyệt vời của bạn bắt đầu từ đây!
+        Chúng tôi rất vui mừng chào đón bạn đến với Examio.
+        Hành trình học tập hiệu quả của bạn bắt đầu từ đây!
       </p>
 
       <div class="user-card">
         <div class="user-info">
-          <img class="user-avatar" src="https://ik.imagekit.io/devhatebug/code_craft/code.png?updatedAt=1752507908607" alt="User Avatar" style="width: 60px; height: 60px; border-radius: 50%; margin-right: 16px; vertical-align: middle;" />
-          <!--[if mso]>
-          <div class="fallback-avatar"><%= username.charAt(0).toUpperCase() %></div>
-          <![endif]-->
+          <img class="user-avatar" src="https://ik.imagekit.io/devhatebug/code_craft/code.png?updatedAt=1752507908607" alt="Avatar" style="width: 56px; height: 56px; border-radius: 50%; margin-right: 16px; vertical-align: middle;" />
+          <!--[if mso]><div class="fallback-avatar"><%= username.charAt(0).toUpperCase() %></div><![endif]-->
           <div class="fallback-avatar"><%= username.charAt(0).toUpperCase() %></div>
           <div class="user-details">
             <h3><%= username %></h3>
             <p><%= useremail %></p>
           </div>
         </div>
-        <p style="color: #10b981; font-weight: 500; font-size: 14px;">
+        <p style="color: #5db872; font-weight: 500; font-size: 14px;">
           ✅ Tài khoản đã được tạo thành công
         </p>
       </div>
 
       <div class="cta-section">
         <a href="<%= loginUrl %>" class="cta-button">
-          🚀 Bắt đầu khám phá FayEdu
+          Bắt đầu khám phá Examio
         </a>
       </div>
 
-      <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border-radius: 12px; padding: 24px; margin: 32px 0; border-left: 4px solid #f59e0b;">
-        <h3 style="color: #92400e; font-size: 16px; margin-bottom: 8px;">💡 Mẹo cho người mới</h3>
-        <p style="color: #78350f; font-size: 14px; margin: 0;">
+      <div class="tip-box">
+        <h3>Mẹo cho người mới</h3>
+        <p>
           Hãy hoàn thiện hồ sơ của bạn để có trải nghiệm tốt nhất.
           Bạn có thể tùy chỉnh giao diện và cài đặt theo sở thích cá nhân.
         </p>
       </div>
 
-      <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
-        Nếu bạn có bất kỳ câu hỏi nào, đội ngũ hỗ trợ của chúng tôi luôn sẵn sàng giúp đỡ tại
-        <a href="mailto:support@neo.com" style="color: #3b82f6; text-decoration: none;">codecraft.pet@gmail.com</a>
+      <p style="color: #6c6a64; font-size: 14px; line-height: 1.55;">
+        Nếu bạn có bất kỳ câu hỏi nào, đội ngũ hỗ trợ luôn sẵn sàng giúp đỡ tại
+        <a href="mailto:support@examio.top" style="color: #cc785c; text-decoration: none;">support@examio.top</a>
       </p>
 
-      <div style="margin-top: 40px; padding-top: 24px; border-top: 1px solid #e2e8f0;">
-        <p style="color: #1a1a1a; font-weight: 500; margin-bottom: 8px;">
-          Trân trọng,
-        </p>
-        <p style="color: #3b82f6; font-weight: 600;">
-          Đội ngũ FayEdu 💙
-        </p>
+      <div style="margin-top: 36px; padding-top: 20px; border-top: 1px solid #e6dfd8;">
+        <p style="color: #141413; font-weight: 500; margin-bottom: 6px;">Trân trọng,</p>
+        <p style="color: #cc785c; font-weight: 600;">Đội ngũ Examio</p>
       </div>
     </div>
 
     <div class="footer">
       <div class="footer-text">
-        <p>&copy; <%= new Date().getFullYear() %> FayEdu Platform. Tất cả quyền được bảo lưu.</p>
-        <p style="margin-top: 8px;">
-          Hà Nội, Việt Nam
-        </p>
-        <p style="margin-top: 16px; font-size: 12px; color: #9ca3af;">
+        <p>&copy; <%= new Date().getFullYear() %> Examio. Tất cả quyền được bảo lưu.</p>
+        <p style="margin-top: 12px; font-size: 12px;">
           Email này được gửi tự động. Vui lòng không trả lời trực tiếp.
-          <br>
         </p>
       </div>
     </div>
