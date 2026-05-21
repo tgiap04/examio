@@ -65,6 +65,13 @@ export class AIProxyController {
             throw new BadRequestException('No file uploaded');
         }
 
+        const maxSize = 50 * 1024 * 1024;
+        if (file.size > maxSize) {
+            throw new BadRequestException(
+                `File quá lớn. Tối đa 50MB, file của bạn: ${(file.size / (1024 * 1024)).toFixed(2)}MB`
+            );
+        }
+
         // Forward file to exam-service
         const formData = new FormData();
         formData.append('file', file.buffer, {
@@ -121,6 +128,13 @@ export class AIProxyController {
         if (!file || !file.buffer) {
             this.logger.error('No file received in gateway');
             throw new BadRequestException('No file uploaded');
+        }
+
+        const maxSize = 50 * 1024 * 1024;
+        if (file.size > maxSize) {
+            throw new BadRequestException(
+                `File quá lớn. Tối đa 50MB, file của bạn: ${(file.size / (1024 * 1024)).toFixed(2)}MB`
+            );
         }
 
         // Forward file to exam-service with form data
@@ -234,6 +248,13 @@ export class AIProxyController {
     ) {
         if (!file || !file.buffer) {
             throw new BadRequestException('No file uploaded');
+        }
+
+        const maxSize = 50 * 1024 * 1024;
+        if (file.size > maxSize) {
+            throw new BadRequestException(
+                `File quá lớn. Tối đa 50MB, file của bạn: ${(file.size / (1024 * 1024)).toFixed(2)}MB`
+            );
         }
 
         const formData = new FormData();

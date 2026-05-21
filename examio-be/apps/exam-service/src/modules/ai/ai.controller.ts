@@ -68,6 +68,13 @@ export class AIController {
             throw new BadRequestException('No file uploaded');
         }
 
+        const maxSize = 50 * 1024 * 1024;
+        if (file.size > maxSize) {
+            throw new BadRequestException(
+                `File quá lớn. Tối đa 50MB, file của bạn: ${(file.size / (1024 * 1024)).toFixed(2)}MB`
+            );
+        }
+
         try {
             return await this.aiService.quickUpload(req.user, file);
         } catch (error) {
@@ -93,19 +100,26 @@ export class AIController {
         @UploadedFile() file: Express.Multer.File,
         @Body() dto: GenerateFromFileDto
     ) {
-        console.log(
-            '--- EXAM SERVICE: GENERATE FROM FILE REQUEST RECEIVED ---'
+        this.logger.log('--- EXAM SERVICE: GENERATE FROM FILE REQUEST RECEIVED ---');
+        this.logger.log(`User: ${req.user?.id}`);
+        this.logger.log(
+            `File: ${file ? `${file.originalname} (${file.size} bytes)` : 'MISSING'}`
         );
-        console.log('User:', req.user?.id);
-        console.log(
-            'File:',
-            file ? `${file.originalname} (${file.size} bytes)` : 'MISSING'
-        );
+
+        if (!file || !file.buffer) {
+            throw new BadRequestException('No file uploaded');
+        }
+
+        const maxSize = 50 * 1024 * 1024;
+        if (file.size > maxSize) {
+            throw new BadRequestException(
+                `File quá lớn. Tối đa 50MB, file của bạn: ${(file.size / (1024 * 1024)).toFixed(2)}MB`
+            );
+        }
 
         try {
             return await this.aiService.generateFromFile(req.user, file, dto);
         } catch (error) {
-            console.error('--- EXAM SERVICE: GENERATE ERROR ---', error);
             this.logger.error(`Generate error: ${error.message}`, error.stack);
             throw error;
         }

@@ -451,6 +451,13 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
       return;
     }
 
+    if (file && file.size > 50 * 1024 * 1024) {
+      toast.error("File quá lớn", {
+        description: `Tối đa 50MB. File của bạn: ${(file.size / (1024 * 1024)).toFixed(1)}MB`,
+      });
+      return;
+    }
+
     if (isNarrow && !keyword.trim()) {
       toast.error("Chưa nhập từ khóa", {
         description: "Vui lòng nhập từ khóa khi sử dụng định dạng hẹp",
@@ -640,6 +647,13 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
       if (!file && !uploadId) {
         toast.error("Chưa có file", {
           description: "Vui lòng tải lên file PDF trước",
+        });
+        return;
+      }
+
+      if (file && file.size > 50 * 1024 * 1024) {
+        toast.error("File quá lớn", {
+          description: `Tối đa 50MB. File của bạn: ${(file.size / (1024 * 1024)).toFixed(1)}MB`,
         });
         return;
       }

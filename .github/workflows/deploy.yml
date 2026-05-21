@@ -198,3 +198,31 @@ jobs:
             echo "══════════════════════════════════════════════════"
             echo "  DEPLOYMENT COMPLETE - $(date)"
             echo "══════════════════════════════════════════════════"
+
+      - name: Notify Telegram (Success)
+        if: success()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            ✅ *Deploy thành công*
+            📦 `${{ github.repository }}`
+            🌿 `${{ github.ref_name }}`
+            👤 ${{ github.actor }}
+            🔗 [Xem commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
+
+      - name: Notify Telegram (Failure)
+        if: failure()
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_TO }}
+          token: ${{ secrets.TELEGRAM_TOKEN }}
+          format: markdown
+          message: |
+            ❌ *Deploy thất bại*
+            📦 `${{ github.repository }}`
+            🌿 `${{ github.ref_name }}`
+            👤 ${{ github.actor }}
+            🔗 [Xem logs](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
