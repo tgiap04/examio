@@ -1,9 +1,9 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/antd/card";
+import { memo } from "react";
+import { Link } from "react-router-dom";
 import {
   PDFHistoryListItem,
   type PDFHistoryListItemData,
 } from "@/components/molecules/PDFHistoryListItem";
-import { Link } from "react-router-dom";
 
 interface PDFHistoryListSectionProps {
   items: PDFHistoryListItemData[];
@@ -12,54 +12,52 @@ interface PDFHistoryListSectionProps {
   maxItems?: number;
 }
 
-export function PDFHistoryListSection({
+const PDFHistoryListSectionComponent = ({
   items,
   onDownload,
   onDelete,
   maxItems = 4,
-}: PDFHistoryListSectionProps) {
+}: PDFHistoryListSectionProps) => {
   const displayItems = items.slice(0, maxItems);
 
   return (
-    <Card className="glass-card h-full">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-lg font-semibold text-foreground">
-              Lịch sử xử lý PDF
-            </CardTitle>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Các file PDF tải lên gần đây
+    <div className="h-full rounded-lg border border-hairline bg-canvas p-4">
+      <div className="mb-4 flex items-start justify-between gap-4 border-b border-hairline pb-4">
+        <div>
+          <h2 className="text-lg font-medium text-ink">Lịch sử xử lý PDF</h2>
+          <p className="text-sm text-muted-foreground">
+            Các file PDF tải lên gần đây
+          </p>
+        </div>
+        <Link
+          to="/k/history/pdf"
+          className="text-sm font-medium text-coral transition-colors hover:text-coral/80">
+          Xem tất cả
+        </Link>
+      </div>
+
+      <div className="divide-y divide-hairline">
+        {displayItems.length > 0 ? (
+          displayItems.map((item) => (
+            <PDFHistoryListItem
+              key={item.id}
+              item={item}
+              onDownload={onDownload}
+              onDelete={onDelete}
+            />
+          ))
+        ) : (
+          <div className="py-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              Chưa có lịch sử PDF
             </p>
           </div>
-          <Link
-            to="/k/history/pdf"
-            className="text-sm text-primary hover:text-primary/80 font-medium transition-colors"
-          >
-            Xem tất cả
-          </Link>
-        </div>
-      </CardHeader>
-      <CardContent className="pt-0">
-        <div className="divide-y divide-border/50">
-          {displayItems.length > 0 ? (
-            displayItems.map((item) => (
-              <PDFHistoryListItem
-                key={item.id}
-                item={item}
-                onDownload={onDownload}
-                onDelete={onDelete}
-              />
-            ))
-          ) : (
-            <div className="py-8 text-center">
-              <p className="text-muted-foreground text-sm">
-                Chưa có lịch sử PDF
-              </p>
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+        )}
+      </div>
+    </div>
   );
-}
+};
+
+PDFHistoryListSectionComponent.displayName = "PDFHistoryListSection";
+
+export const PDFHistoryListSection = memo(PDFHistoryListSectionComponent);

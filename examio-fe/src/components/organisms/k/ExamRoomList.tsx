@@ -1,4 +1,4 @@
-import { Card } from "@/components/antd/card";
+import { memo } from "react";
 import { ExamRoomCardItem } from "@/components/molecules/ExamRoomCardItem";
 
 export interface ExamRoom {
@@ -18,26 +18,24 @@ export interface ExamRoomListProps {
   onDeleteRoom?: (id: string) => void;
 }
 
-export function ExamRoomList({
+const ExamRoomListComponent = ({
   rooms,
   filter: _filter,
   onFilterChange: _onFilterChange,
   onViewRoom,
   onEditRoom,
   onDeleteRoom,
-}: ExamRoomListProps) {
+}: ExamRoomListProps) => {
   return (
-    <Card className="p-6">
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-foreground">
-          Danh sách phòng thi
-        </h2>
-        <p className="text-sm text-muted-foreground mt-1">
+    <div className="rounded-lg border border-hairline bg-canvas p-4">
+      <div className="mb-4 border-b border-hairline pb-4">
+        <h2 className="text-lg font-medium text-ink">Danh sách phòng thi</h2>
+        <p className="text-sm text-muted-foreground">
           {rooms.length} phòng thi
         </p>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
         {rooms.map((room) => (
           <ExamRoomCardItem
             key={room.id}
@@ -57,6 +55,10 @@ export function ExamRoomList({
           <p className="text-muted-foreground">Chưa có phòng thi nào</p>
         </div>
       )}
-    </Card>
+    </div>
   );
-}
+};
+
+ExamRoomListComponent.displayName = "ExamRoomList";
+
+export const ExamRoomList = memo(ExamRoomListComponent);

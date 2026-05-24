@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { HistoryStatCard } from "@/components/molecules/HistoryStatCard";
 import { FileText, ClipboardList, BookOpen, Clock } from "lucide-react";
 
@@ -12,33 +13,37 @@ interface HistoryStatsGridProps {
   stats: HistoryStats;
 }
 
-export function HistoryStatsGrid({ stats }: HistoryStatsGridProps) {
+const HistoryStatsGridComponent = ({ stats }: HistoryStatsGridProps) => {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-1 gap-2 mb-8 sm:grid-cols-2 lg:grid-cols-4">
       <HistoryStatCard
         title="Tổng PDF đã xử lý"
         value={stats.totalPDFs}
         icon={FileText}
-        iconClassName="bg-red-100 text-primary"
+        iconClassName="bg-coral/10 text-coral"
       />
       <HistoryStatCard
         title="Đề thi đã tạo"
         value={stats.examsCreated}
         icon={ClipboardList}
-        iconClassName="bg-yellow-100 text-yellow-600"
+        iconClassName="bg-accent-amber/10 text-accent-amber"
       />
       <HistoryStatCard
         title="Bộ Flashcard"
         value={stats.flashcardSets}
         icon={BookOpen}
-        iconClassName="bg-yellow-100 text-yellow-600"
+        iconClassName="bg-success/10 text-success"
       />
       <HistoryStatCard
         title="Giờ học tổng cộng"
         value={stats.totalStudyHours}
         icon={Clock}
-        iconClassName="bg-orange-100 text-orange-600"
+        iconClassName="bg-accent-teal/10 text-accent-teal"
       />
     </div>
   );
-}
+};
+
+HistoryStatsGridComponent.displayName = "HistoryStatsGrid";
+
+export const HistoryStatsGrid = memo(HistoryStatsGridComponent);

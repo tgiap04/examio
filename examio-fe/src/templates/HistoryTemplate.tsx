@@ -39,39 +39,38 @@ export function HistoryTemplate({
   showStats = true,
 }: HistoryTemplateProps) {
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4 pt-8 pb-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Quản lý lịch sử</h1>
-        <p className="text-muted-foreground mt-1">
-          Theo dõi tiến độ và hoạt động học tập của bạn
-        </p>
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-8 mt-4">
+          <h1 className="font-display text-2xl tracking-tight text-ink">Quản lý lịch sử</h1>
+          <p className="text-xs text-muted-foreground md:text-sm">
+            Theo dõi tiến độ và hoạt động học tập của bạn
+          </p>
+        </div>
+
+        {/* Stats Grid */}
+        {showStats && <HistoryStatsGrid stats={stats} />}
+
+        {/* Recent Activity Section */}
+        <RecentActivitySection activities={activities} />
+
+        {/* Two Column Layout: PDF History + Exam History */}
+        <div className={`mt-6 grid gap-6 ${showPdfHistory && showExamHistory ? "lg:grid-cols-2" : "lg:grid-cols-1"}`}>
+          {showPdfHistory && (
+            <PDFHistoryListSection
+              items={pdfItems}
+              onDownload={onPdfDownload}
+              onDelete={onPdfDelete}
+            />
+          )}
+          {showExamHistory && (
+            <ExamHistoryListSection
+              items={examItems}
+              onClick={onExamClick}
+            />
+          )}
+        </div>
       </div>
-
-      {/* Stats Grid */}
-      {showStats && <HistoryStatsGrid stats={stats} />}
-
-      {/* Recent Activity Section */}
-      <RecentActivitySection activities={activities} />
-
-      {/* Two Column Layout: PDF History + Exam History */}
-      <div className={`grid gap-6 ${showPdfHistory && showExamHistory ? 'lg:grid-cols-2' : 'lg:grid-cols-1'}`}>
-        {showPdfHistory && (
-          <PDFHistoryListSection
-            items={pdfItems}
-            onDownload={onPdfDownload}
-            onDelete={onPdfDelete}
-          />
-        )}
-        {showExamHistory && (
-          <ExamHistoryListSection
-            items={examItems}
-            onClick={onExamClick}
-          />
-        )}
-      </div>
-
-
     </div>
   );
 }

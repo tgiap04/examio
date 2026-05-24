@@ -1,4 +1,3 @@
-import { Card, CardContent } from "@/components/antd/card";
 import { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -16,25 +15,20 @@ export function HistoryStatCard({
   iconClassName,
 }: HistoryStatCardProps) {
   return (
-    <Card className="glass-card">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              {title}
-            </p>
-            <h3 className="text-3xl font-bold text-foreground mt-1">{value}</h3>
-          </div>
-          <div
-            className={cn(
-              "flex h-12 w-12 items-center justify-center rounded-xl",
-              iconClassName || "bg-primary/10 text-primary"
-            )}
-          >
-            <Icon className="h-6 w-6" />
-          </div>
+    <div className="rounded-lg border border-hairline bg-canvas p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="mt-2 text-3xl font-bold text-ink">{value}</p>
         </div>
-      </CardContent>
-    </Card>
+        <div
+          className={cn(
+            "flex h-11 w-11 items-center justify-center rounded-lg",
+            iconClassName || "bg-coral/10 text-coral",
+          )}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
   );
 }

@@ -1,4 +1,4 @@
-import { Card } from "@/components/antd/card";
+import { memo } from "react";
 import { ParticipantListItem } from "@/components/molecules/ParticipantListItem";
 
 export interface Participant {
@@ -14,19 +14,17 @@ interface RecentParticipantsListProps {
   onViewAll?: () => void;
 }
 
-export function RecentParticipantsList({
+const RecentParticipantsListComponent = ({
   participants,
   onViewAll: _onViewAll,
-}: RecentParticipantsListProps) {
+}: RecentParticipantsListProps) => {
   return (
-    <Card className="p-6">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-foreground">
-          Thí sinh gần đây
-        </h2>
+    <div className="rounded-lg border border-hairline bg-canvas p-4">
+      <div className="mb-4 border-b border-hairline pb-4">
+        <h2 className="text-lg font-medium text-ink">Thí sinh gần đây</h2>
       </div>
 
-      <div className="divide-y divide-border">
+      <div className="divide-y divide-hairline">
         {participants.map((participant) => (
           <ParticipantListItem
             key={participant.id}
@@ -37,6 +35,16 @@ export function RecentParticipantsList({
           />
         ))}
       </div>
-    </Card>
+
+      {participants.length === 0 && (
+        <div className="py-10 text-center">
+          <p className="text-sm text-muted-foreground">Chưa có thí sinh gần đây</p>
+        </div>
+      )}
+    </div>
   );
-}
+};
+
+RecentParticipantsListComponent.displayName = "RecentParticipantsList";
+
+export const RecentParticipantsList = memo(RecentParticipantsListComponent);
