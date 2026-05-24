@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { FlashcardManagementTemplate } from "@/templates/FlashcardManagementTemplate";
 import type { FlashcardTableData } from "@/components/organisms/k/FlashcardTable";
 import type { ExamStatus } from "@/components/atoms/k/ExamStatusBadge";
@@ -12,6 +13,7 @@ import type { FlashcardSetFormData } from "@/components/molecules/FlashcardSetFo
 import { TableSkeletonLoader } from "@/components/organisms/TableSkeletonLoader";
 
 export default function FlashcardsPage() {
+  const navigate = useNavigate();
   const {
     flashcardSetsK,
     loading,
@@ -115,8 +117,8 @@ export default function FlashcardsPage() {
   const statusOptions = useMemo(
     () => [
       { value: "all", label: "Tất cả trạng thái" },
-      { value: "public", label: "Public" },
-      { value: "private", label: "Private" },
+      { value: "public", label: "Công khai" },
+      { value: "private", label: "Riêng tư" },
     ],
     [],
   );
@@ -125,9 +127,12 @@ export default function FlashcardsPage() {
     setIsCreateModalOpen(true);
   }, []);
 
-  const handleManageFlashcard = useCallback((id: string) => {
-    window.location.href = `/k/manage-flashcard-set/${id}`;
-  }, []);
+  const handleManageFlashcard = useCallback(
+    (id: string) => {
+      navigate(`/k/manage-flashcard-set/${id}`);
+    },
+    [navigate],
+  );
 
   const handleEditFlashcard = useCallback(
     (id: string) => {

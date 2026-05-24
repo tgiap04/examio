@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Eye, Share2 } from "lucide-react";
 import { ManagementTable, ManagementTableData } from "./ManagementTable";
 import { ExamStatus } from "@/components/atoms/k/ExamStatusBadge";
@@ -26,13 +27,13 @@ interface FlashcardTableProps {
   onShare: (id: string) => void;
 }
 
-export function FlashcardTable({
+const FlashcardTableComponent = ({
   flashcards,
   onManage,
   onEdit,
   onDelete,
   onShare,
-}: FlashcardTableProps) {
+}: FlashcardTableProps) => {
   const tableData: ManagementTableData[] = flashcards.map((flashcard) => ({
     id: flashcard.id,
     icon: flashcard.icon,
@@ -64,4 +65,8 @@ export function FlashcardTable({
       emptyMessage="Không có bộ thẻ nào"
     />
   );
-}
+};
+
+FlashcardTableComponent.displayName = "FlashcardTable";
+
+export const FlashcardTable = memo(FlashcardTableComponent);

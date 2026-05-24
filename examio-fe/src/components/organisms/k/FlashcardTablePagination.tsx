@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Button } from "@/components/antd/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -8,12 +9,12 @@ interface FlashcardTablePaginationProps {
   onPageChange: (page: number) => void;
 }
 
-export function FlashcardTablePagination({
+const FlashcardTablePaginationComponent = ({
   currentPage,
   totalPages,
   totalResults,
   onPageChange,
-}: FlashcardTablePaginationProps) {
+}: FlashcardTablePaginationProps) => {
   const startResult = (currentPage - 1) * 10 + 1;
   const endResult = Math.min(currentPage * 10, totalResults);
 
@@ -39,10 +40,9 @@ export function FlashcardTablePagination({
   };
 
   return (
-    <div className="flex items-center justify-between px-4 py-4 border-t border-border bg-card rounded-b-lg">
+    <div className="flex items-center justify-between px-4 py-4 border-t border-hairline bg-surface-soft rounded-b-lg">
       <div className="text-sm text-muted-foreground">
-        Hiển thị {startResult} - {endResult} trong tổng số {totalResults} kết
-        quả
+        Hiển thị {startResult} - {endResult} trong tổng số {totalResults} kết quả
       </div>
       <div className="flex items-center gap-1">
         <Button
@@ -50,7 +50,7 @@ export function FlashcardTablePagination({
           size="sm"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="h-8">
+          className="h-8 border-hairline">
           <ChevronLeft className="h-4 w-4 mr-1" />
           Trước
         </Button>
@@ -62,8 +62,8 @@ export function FlashcardTablePagination({
             onClick={() => onPageChange(page)}
             className={`h-8 w-8 p-0 ${
               currentPage === page
-                ? "bg-primary text-white hover:bg-red-700"
-                : ""
+                ? ""
+                : "border-hairline"
             }`}>
             {page}
           </Button>
@@ -73,11 +73,15 @@ export function FlashcardTablePagination({
           size="sm"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="h-8">
+          className="h-8 border-hairline">
           Sau
           <ChevronRight className="h-4 w-4 ml-1" />
         </Button>
       </div>
     </div>
   );
-}
+};
+
+FlashcardTablePaginationComponent.displayName = "FlashcardTablePagination";
+
+export const FlashcardTablePagination = memo(FlashcardTablePaginationComponent);

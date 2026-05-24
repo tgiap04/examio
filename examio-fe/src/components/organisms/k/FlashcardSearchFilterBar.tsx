@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { SearchBar } from "@/components/molecules/SearchBar";
 import {
   FilterSelect,
@@ -15,7 +16,7 @@ interface FlashcardSearchFilterBarProps {
   onStatusChange: (value: string) => void;
 }
 
-export function FlashcardSearchFilterBar({
+const FlashcardSearchFilterBarComponent = ({
   searchQuery,
   onSearchChange,
   sortBy,
@@ -24,9 +25,9 @@ export function FlashcardSearchFilterBar({
   statusOptions,
   onSortChange,
   onStatusChange,
-}: FlashcardSearchFilterBarProps) {
+}: FlashcardSearchFilterBarProps) => {
   return (
-    <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between mb-6 p-4 bg-card rounded-lg border border-border">
+    <div className="flex flex-col md:flex-row gap-3 items-start md:items-center justify-between mb-6 p-4 rounded-lg border border-hairline bg-surface-soft">
       <SearchBar
         value={searchQuery}
         onChange={onSearchChange}
@@ -50,4 +51,8 @@ export function FlashcardSearchFilterBar({
       </div>
     </div>
   );
-}
+};
+
+FlashcardSearchFilterBarComponent.displayName = "FlashcardSearchFilterBar";
+
+export const FlashcardSearchFilterBar = memo(FlashcardSearchFilterBarComponent);
