@@ -208,10 +208,10 @@ export default function ManageExamRoomPage() {
     <TeacherRoute>
       <div className="min-h-screen">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-8 flex items-center justify-between">
+          <div className="mb-8 mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight">Quản lý phòng thi</h1>
-              <p className="text-muted-foreground mt-1">Tạo và quản lý các phòng thi trực tuyến</p>
+              <h1 className="font-display text-2xl tracking-tight text-ink">Quản lý phòng thi</h1>
+              <p className="text-xs text-muted-foreground md:text-sm">Tạo và quản lý các phòng thi trực tuyến</p>
             </div>
             <Button onClick={() => setIsCreateModalOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
@@ -219,9 +219,7 @@ export default function ManageExamRoomPage() {
             </Button>
           </div>
 
-          <div className="mb-8">
-            <RoomStatsSection stats={stats} />
-          </div>
+          <RoomStatsSection stats={stats} />
 
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="lg:col-span-2">
