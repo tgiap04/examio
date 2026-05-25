@@ -20,6 +20,19 @@
     <string>0.1.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>com.examio.app.oauth</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>examio</string>
+            </array>
+        </dict>
+    </array>
+    <key>ExamioAPIBaseURL</key>
+    <string>http://localhost:3000</string>
     <key>UILaunchScreen</key>
     <dict/>
 </dict>

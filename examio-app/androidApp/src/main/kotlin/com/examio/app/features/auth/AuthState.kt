@@ -8,3 +8,5 @@ data class AuthUiState(
     val errorMessage: String? = null,
     val successMessage: String? = null,
 )
+
+fun Throwable.toAuthMessage(): String = message ?: "Không thể kết nối Examio. Vui lòng thử lại."

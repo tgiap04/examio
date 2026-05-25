@@ -11,6 +11,8 @@ import androidx.compose.ui.Modifier
 import com.examio.app.features.account.AccountScreen
 import com.examio.app.features.ai.AiScreen
 import com.examio.app.features.auth.AuthNavGraph
+import com.examio.app.features.auth.models.User
+import com.examio.app.features.auth.repository.AuthRepository
 import com.examio.app.features.exams.MyExamsScreen
 import com.examio.app.features.home.HomeScreen
 import com.examio.app.features.navigation.MainTab
@@ -21,16 +23,15 @@ import com.examio.app.features.study.StudyScreen
 import com.examio.app.navigation.BottomTabBar
 
 @Composable
-fun ExamioApp() {
+fun ExamioApp(authRepository: AuthRepository) {
     var authState by remember { mutableStateOf<NavigationAuthState>(NavigationAuthState.Unauthenticated) }
     var selectedTab by remember { mutableStateOf(MainTab.Home) }
 
     if (authState !is NavigationAuthState.Authenticated) {
         AuthNavGraph(
-            onAuthenticated = {
-                authState = NavigationAuthState.Authenticated(
-                    UserSession(userId = "local-session", roles = setOf(UserRole.Student)),
-                )
+            authRepository = authRepository,
+            onAuthenticated = { user ->
+                authState = NavigationAuthState.Authenticated(user.toSession())
             },
         )
         return
@@ -55,3 +56,13 @@ fun ExamioApp() {
         }
     }
 }
+
+private fun User?.toSession(): UserSession =
+    UserSession(
+        userId = this?.id ?: "local-session",
+        roles = if (this?.roles?.any { it.name == UserRole.Teacher.name } == true) {
+            setOf(UserRole.Teacher)
+        } else {
+            setOf(UserRole.Student)
+        },
+    )

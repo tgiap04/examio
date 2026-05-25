@@ -14,6 +14,11 @@ android {
         targetSdk = libs.versions.android.target.sdk.get().toInt()
         versionCode = 1
         versionName = "0.1.0"
+        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 }
 

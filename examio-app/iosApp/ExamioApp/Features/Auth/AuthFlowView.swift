@@ -33,6 +33,9 @@ struct AuthFlowView: View {
             }
         }
         .tint(.examioPrimary)
+        .onOpenURL { url in
+            viewModel.completeOAuthCallback(url: url)
+        }
     }
 
     private func go(_ nextRoute: AuthRoute) {
