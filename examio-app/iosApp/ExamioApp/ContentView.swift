@@ -1,23 +1,40 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var authViewModel = AuthViewModel()
+    @State private var selectedTab: AppTab = .home
+
     var body: some View {
-        TabView {
-            HomeView()
-                .tabItem { Label("Trang chủ", systemImage: "house") }
+        if authViewModel.isAuthenticated {
+            TabView(selection: $selectedTab) {
+                HomeView()
+                    .tabItem { Label("Trang chủ", systemImage: "house") }
+                    .tag(AppTab.home)
 
-            StudyView()
-                .tabItem { Label("Học tập", systemImage: "book") }
+                StudyView()
+                    .tabItem { Label("Học tập", systemImage: "book") }
+                    .tag(AppTab.study)
 
-            MyExamsView()
-                .tabItem { Label("Thi của tôi", systemImage: "doc.text") }
+                MyExamsView()
+                    .tabItem { Label("Thi của tôi", systemImage: "doc.text") }
+                    .tag(AppTab.exams)
 
-            AiView()
-                .tabItem { Label("AI", systemImage: "sparkles") }
+                AiView()
+                    .tabItem { Label("AI", systemImage: "sparkles") }
+                    .tag(AppTab.ai)
 
-            AccountView()
-                .tabItem { Label("Tài khoản", systemImage: "person.crop.circle") }
+                AccountView()
+                    .tabItem { Label("Tài khoản", systemImage: "person.crop.circle") }
+                    .tag(AppTab.account)
+            }
+            .tint(.examioPrimary)
+            .onOpenURL { url in
+                if let deepLink = parseAppDeepLink(url) {
+                    selectedTab = deepLink.targetTab
+                }
+            }
+        } else {
+            AuthFlowView(viewModel: authViewModel)
         }
-        .tint(Color(red: 0.8, green: 0.47, blue: 0.36))
     }
 }

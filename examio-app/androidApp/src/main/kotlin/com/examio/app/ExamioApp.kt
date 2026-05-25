@@ -10,15 +10,31 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.examio.app.features.account.AccountScreen
 import com.examio.app.features.ai.AiScreen
+import com.examio.app.features.auth.AuthNavGraph
 import com.examio.app.features.exams.MyExamsScreen
 import com.examio.app.features.home.HomeScreen
 import com.examio.app.features.navigation.MainTab
+import com.examio.app.features.navigation.NavigationAuthState
+import com.examio.app.features.navigation.UserRole
+import com.examio.app.features.navigation.UserSession
 import com.examio.app.features.study.StudyScreen
 import com.examio.app.navigation.BottomTabBar
 
 @Composable
 fun ExamioApp() {
+    var authState by remember { mutableStateOf<NavigationAuthState>(NavigationAuthState.Unauthenticated) }
     var selectedTab by remember { mutableStateOf(MainTab.Home) }
+
+    if (authState !is NavigationAuthState.Authenticated) {
+        AuthNavGraph(
+            onAuthenticated = {
+                authState = NavigationAuthState.Authenticated(
+                    UserSession(userId = "local-session", roles = setOf(UserRole.Student)),
+                )
+            },
+        )
+        return
+    }
 
     Scaffold(
         bottomBar = {
