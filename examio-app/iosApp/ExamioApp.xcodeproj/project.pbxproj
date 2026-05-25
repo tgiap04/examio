@@ -16,6 +16,15 @@
 		A10000000000000000000007 /* AiView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000007 /* AiView.swift */; };
 		A10000000000000000000008 /* AccountView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000008 /* AccountView.swift */; };
 		A10000000000000000000009 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000009 /* Assets.xcassets */; };
+		A1000000000000000000000A /* TeacherView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000A /* TeacherView.swift */; };
+		A1000000000000000000000B /* AppRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2000000000000000000000B /* AppRouter.swift */; };
+		A10000000000000000000020 /* AuthViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000020 /* AuthViewModel.swift */; };
+		A10000000000000000000021 /* AuthFlowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000021 /* AuthFlowView.swift */; };
+		A10000000000000000000022 /* AuthComponents.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000022 /* AuthComponents.swift */; };
+		A10000000000000000000023 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000023 /* LoginView.swift */; };
+		A10000000000000000000024 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* RegisterView.swift */; };
+		A10000000000000000000025 /* ForgotPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* ForgotPasswordView.swift */; };
+		A10000000000000000000026 /* ResetPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* ResetPasswordView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,8 +37,17 @@
 		A20000000000000000000007 /* AiView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AiView.swift; sourceTree = "<group>"; };
 		A20000000000000000000008 /* AccountView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountView.swift; sourceTree = "<group>"; };
 		A20000000000000000000009 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A2000000000000000000000A /* TeacherView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Views/TeacherView.swift; sourceTree = SOURCE_ROOT; };
+		A2000000000000000000000B /* AppRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/AppRouter.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000010 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A20000000000000000000011 /* ExamioApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ExamioApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A20000000000000000000020 /* AuthViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Auth/AuthViewModel.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000021 /* AuthFlowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Auth/AuthFlowView.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000022 /* AuthComponents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Auth/AuthComponents.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000023 /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Auth/LoginView.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000024 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Auth/RegisterView.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000025 /* ForgotPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Auth/ForgotPasswordView.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000026 /* ResetPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Auth/ResetPasswordView.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -74,6 +92,28 @@
 				A20000000000000000000008 /* AccountView.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000020 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				A40000000000000000000021 /* Auth */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		A40000000000000000000021 /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				A20000000000000000000020 /* AuthViewModel.swift */,
+				A20000000000000000000021 /* AuthFlowView.swift */,
+				A20000000000000000000022 /* AuthComponents.swift */,
+				A20000000000000000000023 /* LoginView.swift */,
+				A20000000000000000000024 /* RegisterView.swift */,
+				A20000000000000000000025 /* ForgotPasswordView.swift */,
+				A20000000000000000000026 /* ResetPasswordView.swift */,
+			);
+			path = Auth;
 			sourceTree = "<group>";
 		};
 		A40000000000000000000004 /* Products */ = {
@@ -161,6 +201,15 @@
 				A10000000000000000000006 /* MyExamsView.swift in Sources */,
 				A10000000000000000000007 /* AiView.swift in Sources */,
 				A10000000000000000000008 /* AccountView.swift in Sources */,
+					A1000000000000000000000A /* TeacherView.swift in Sources */,
+					A1000000000000000000000B /* AppRouter.swift in Sources */,
+					A10000000000000000000020 /* AuthViewModel.swift in Sources */,
+					A10000000000000000000021 /* AuthFlowView.swift in Sources */,
+					A10000000000000000000022 /* AuthComponents.swift in Sources */,
+					A10000000000000000000023 /* LoginView.swift in Sources */,
+					A10000000000000000000024 /* RegisterView.swift in Sources */,
+					A10000000000000000000025 /* ForgotPasswordView.swift in Sources */,
+					A10000000000000000000026 /* ResetPasswordView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
