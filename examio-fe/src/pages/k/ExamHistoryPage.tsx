@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/antd/card";
 import { Button } from "@/components/antd/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
@@ -93,65 +92,72 @@ export default function ExamHistoryPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-4 pb-6 pt-8">
-      <Breadcrumb>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link to="/k/history">Lịch sử</Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Lịch sử làm bài</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <Breadcrumb className="mb-6">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/k/history">Lịch sử</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Lịch sử làm bài</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
 
-      <Card className="glass-card">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold text-foreground">
-            Danh sách bài thi ({total})
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <div className="divide-y divide-border/50">
+        <div className="mb-8 mt-4">
+          <h1 className="font-display text-2xl tracking-tight text-ink">Lịch sử làm bài</h1>
+          <p className="text-xs text-muted-foreground md:text-sm">Kết quả các bài thi đã làm</p>
+        </div>
+
+        <div className="rounded-lg border border-hairline bg-canvas">
+          <div className="border-b border-hairline p-4">
+            <h2 className="text-lg font-medium text-ink">Danh sách bài thi ({total})</h2>
+          </div>
+          <div className="divide-y divide-hairline">
             {items.length > 0 ? (
               items.map((item) => (
                 <ExamHistoryListItem key={item.id} item={item} onClick={handleExamClick} />
               ))
             ) : (
               <div className="py-12 text-center">
-                <p className="text-muted-foreground">Chưa có lịch sử bài thi</p>
+                <p className="text-sm text-muted-foreground">Chưa có lịch sử bài thi</p>
               </div>
             )}
           </div>
 
           {totalPages > 1 && (
-            <div className="mt-6 flex items-center justify-center gap-2 border-t border-border/50 pt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
+            <div className="flex items-center justify-between border-t border-hairline px-4 py-4">
               <span className="text-sm text-muted-foreground">
                 Trang {page} / {totalPages}
               </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="h-8 border-hairline">
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Trước
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="h-8 border-hairline">
+                  Sau
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

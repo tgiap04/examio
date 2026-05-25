@@ -7,7 +7,7 @@ const Input = React.forwardRef<HTMLInputElement, AntInputProps>(({ className, ..
   <AntInput
     ref={ref as any}
     className={cn(
-      "!rounded-md !border-hairline !bg-canvas !text-ink placeholder:!text-muted-foreground focus-within:!border-primary focus-within:!shadow-[0_0_0_3px_rgba(204,120,92,0.15)] hover:!border-primary/60",
+      "!rounded-md !border-hairline !bg-canvas !px-2 !py-2 !text-ink placeholder:!text-muted-foreground focus-within:!border-primary focus-within:!shadow-[0_0_0_3px_rgba(204,120,92,0.15)] hover:!border-primary/60",
       className,
     )}
     {...props}
