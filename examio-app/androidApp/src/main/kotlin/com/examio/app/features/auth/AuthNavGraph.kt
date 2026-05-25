@@ -1,43 +1,44 @@
 package com.examio.app.features.auth
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import com.examio.app.core.network.ApiResult
+import com.examio.app.features.auth.models.SignupRequest
+import com.examio.app.features.auth.models.User
+import com.examio.app.features.auth.repository.AuthRepository
+import kotlinx.coroutines.launch
 
 @Composable
 fun AuthNavGraph(
-    onAuthenticated: () -> Unit,
+    authRepository: AuthRepository,
+    onAuthenticated: (User?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val scope = rememberCoroutineScope()
     var screen by remember { mutableStateOf(AuthScreen.Login) }
     var state by remember { mutableStateOf(AuthUiState()) }
-
-    fun submit(success: String) {
-        state = AuthUiState(isLoading = true)
-        state = AuthUiState(successMessage = success)
-    }
 
     when (screen) {
         AuthScreen.Login -> LoginScreen(
             state = state,
             onLogin = { credential, password ->
-                state = validateLogin(credential, password) ?: AuthUiState(isAuthenticated = true)
-                if (state.isAuthenticated) onAuthenticated()
+                validateLogin(credential, password)?.let { state = it; return@LoginScreen }
+                scope.launch {
+                    state = AuthUiState(isLoading = true)
+                    when (val result = authRepository.login(credential, password)) {
+                        is ApiResult.Success -> {
+                            state = AuthUiState(isAuthenticated = true)
+                            onAuthenticated(result.data.user)
+                        }
+                        is ApiResult.HttpError -> state = AuthUiState(errorMessage = result.message)
+                        is ApiResult.NetworkError -> state = AuthUiState(errorMessage = result.message)
+                    }
+                }
             },
             onRegister = { state = AuthUiState(); screen = AuthScreen.Register },
             onForgotPassword = { state = AuthUiState(); screen = AuthScreen.ForgotPassword },
@@ -46,46 +47,56 @@ fun AuthNavGraph(
         AuthScreen.Register -> RegisterScreen(
             state = state,
             onRegister = { username, email, password ->
-                state = validateRegister(username, email, password) ?: AuthUiState(isAuthenticated = true)
-                if (state.isAuthenticated) onAuthenticated()
+                validateRegister(username, email, password)?.let { state = it; return@RegisterScreen }
+                scope.launch {
+                    state = AuthUiState(isLoading = true)
+                    val request = SignupRequest(username = username, email = email, password = password)
+                    when (val result = authRepository.signup(request)) {
+                        is ApiResult.Success -> {
+                            state = AuthUiState(isAuthenticated = true)
+                            onAuthenticated(result.data.user)
+                        }
+                        is ApiResult.HttpError -> state = AuthUiState(errorMessage = result.message)
+                        is ApiResult.NetworkError -> state = AuthUiState(errorMessage = result.message)
+                    }
+                }
             },
             onBackToLogin = { state = AuthUiState(); screen = AuthScreen.Login },
             modifier = modifier,
         )
         AuthScreen.ForgotPassword -> ForgotPasswordScreen(
             state = state,
-            onSendCode = { email -> state = validateEmail(email) ?: AuthUiState(successMessage = "Mã khôi phục đã được gửi.") },
+            onSendCode = { email ->
+                validateEmail(email)?.let { state = it; return@ForgotPasswordScreen }
+                scope.launch {
+                    state = AuthUiState(isLoading = true)
+                    state = when (val result = authRepository.forgotPassword(email)) {
+                        is ApiResult.Success -> AuthUiState(successMessage = result.data.message ?: "Mã khôi phục đã được gửi.")
+                        is ApiResult.HttpError -> AuthUiState(errorMessage = result.message)
+                        is ApiResult.NetworkError -> AuthUiState(errorMessage = result.message)
+                    }
+                }
+            },
             onResetPassword = { state = AuthUiState(); screen = AuthScreen.ResetPassword },
             onBackToLogin = { state = AuthUiState(); screen = AuthScreen.Login },
             modifier = modifier,
         )
         AuthScreen.ResetPassword -> ResetPasswordScreen(
             state = state,
-            onReset = { code, password -> state = validateReset(code, password) ?: AuthUiState(successMessage = "Mật khẩu đã được cập nhật.") },
+            onReset = { code, password ->
+                validateReset(code, password)?.let { state = it; return@ResetPasswordScreen }
+                scope.launch {
+                    state = AuthUiState(isLoading = true)
+                    state = when (val result = authRepository.resetPassword(email = null, code = code, password = password)) {
+                        is ApiResult.Success -> AuthUiState(successMessage = result.data.message ?: "Mật khẩu đã được cập nhật.")
+                        is ApiResult.HttpError -> AuthUiState(errorMessage = result.message)
+                        is ApiResult.NetworkError -> AuthUiState(errorMessage = result.message)
+                    }
+                }
+            },
             onBackToLogin = { state = AuthUiState(); screen = AuthScreen.Login },
             modifier = modifier,
         )
-    }
-}
-
-@Composable
-fun AuthShell(
-    title: String,
-    subtitle: String,
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(title, color = MaterialTheme.colorScheme.onBackground, style = MaterialTheme.typography.headlineLarge)
-        Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-        Spacer(Modifier.height(24.dp))
-        content()
     }
 }
 

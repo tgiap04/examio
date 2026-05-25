@@ -3,6 +3,8 @@ package com.examio.app.core.session
 data class SessionTokens(
     val accessToken: String,
     val refreshToken: String?,
+    val sessionId: String? = null,
+    val deviceId: String? = null,
 )
 
 data class UserSession(

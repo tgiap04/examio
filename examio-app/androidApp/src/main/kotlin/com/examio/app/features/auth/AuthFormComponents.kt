@@ -24,11 +24,13 @@ fun AuthTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     isPassword: Boolean = false,
+    leadingIcon: (@Composable () -> Unit)? = null,
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
+        leadingIcon = leadingIcon,
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(8.dp),
         visualTransformation = if (isPassword) PasswordVisualTransformation() else VisualTransformation.None,
