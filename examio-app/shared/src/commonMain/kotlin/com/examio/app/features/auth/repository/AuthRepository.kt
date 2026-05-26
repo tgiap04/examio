@@ -48,6 +48,10 @@ class AuthRepository(
     suspend fun resetPassword(email: String?, code: String, password: String): ApiResult<MessageResponse> =
         api.resetPassword(ResetPasswordRequest(email = email, code = code, newPassword = password))
 
+    suspend fun saveOAuthTokens(response: AuthResponse): Boolean {
+        return persistTokens(response)
+    }
+
     private suspend fun persistTokens(result: ApiResult<AuthResponse>) {
         if (result is ApiResult.Success) persistTokens(result.data)
     }

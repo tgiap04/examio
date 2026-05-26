@@ -1,13 +1,18 @@
 package com.examio.app.features.auth
 
+import android.net.Uri
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.examio.app.OAuthCallbackHolder
 import com.examio.app.core.network.ApiResult
+import com.examio.app.features.auth.models.AuthResponse
 import com.examio.app.features.auth.models.SignupRequest
 import com.examio.app.features.auth.models.User
 import com.examio.app.features.auth.repository.AuthRepository
@@ -22,6 +27,21 @@ fun AuthNavGraph(
     val scope = rememberCoroutineScope()
     var screen by remember { mutableStateOf(AuthScreen.Login) }
     var state by remember { mutableStateOf(AuthUiState()) }
+
+    val pendingCallback by OAuthCallbackHolder.callback.collectAsState()
+
+    LaunchedEffect(pendingCallback) {
+        pendingCallback?.let { callbackUrl ->
+            OAuthCallbackHolder.clear()
+            state = AuthUiState(isLoading = true)
+            val success = processOAuthCallback(authRepository, callbackUrl)
+            if (success) {
+                onAuthenticated(null)
+            } else {
+                state = AuthUiState(errorMessage = "Đăng nhập Google thất bại. Vui lòng thử lại.")
+            }
+        }
+    }
 
     when (screen) {
         AuthScreen.Login -> LoginScreen(
@@ -120,4 +140,33 @@ private fun validateReset(code: String, password: String): AuthUiState? = when {
     code.isBlank() -> AuthUiState(errorMessage = "Vui lòng nhập mã khôi phục.")
     password.length < 6 -> AuthUiState(errorMessage = "Mật khẩu cần ít nhất 6 ký tự.")
     else -> null
+}
+
+private suspend fun processOAuthCallback(
+    authRepository: AuthRepository,
+    callbackUrl: String,
+): Boolean {
+    val uri = Uri.parse(callbackUrl)
+    if (uri.host != "auth" || uri.path != "/callback") return false
+
+    val token = uri.getQueryParameter("token")
+        ?: uri.getQueryParameter("accessToken")
+        ?: uri.getQueryParameter("access_token")
+        ?: return false
+
+    val response = AuthResponse(
+        success = true,
+        token = token,
+        accessToken = token,
+        refreshToken = uri.getQueryParameter("refreshToken")
+            ?: uri.getQueryParameter("refresh_token"),
+        sessionId = uri.getQueryParameter("sessionId")
+            ?: uri.getQueryParameter("session_id"),
+        deviceId = uri.getQueryParameter("deviceId")
+            ?: uri.getQueryParameter("device_id"),
+        user = null,
+    )
+
+    authRepository.saveOAuthTokens(response)
+    return true
 }
