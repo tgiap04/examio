@@ -428,7 +428,7 @@ export class AuthController {
         @Req() request: Request
     ) {
         const oauthPayload = await this.ensureOauthSession(request, req.user);
-        const { token, sessionId, refreshToken } = oauthPayload;
+        const { token, sessionId, refreshToken, user } = oauthPayload;
 
         const cookieConfig = getCookieConfig({
             feOrigin: request.headers.origin,
@@ -452,10 +452,28 @@ export class AuthController {
         );
         res.clearCookie('oauth_redirect');
 
+        const appCallback = redirectFromCookie || oauthState.redirect;
+
+        // If redirect target is a mobile app scheme (e.g. "examio://auth/callback"),
+        // append tokens as query params and redirect directly to it.
+        if (appCallback && /^[a-zA-Z][a-zA-Z0-9+\-.]*:\/\//.test(appCallback)) {
+            try {
+                const url = new URL(appCallback);
+                if (token) url.searchParams.set('token', token);
+                if (refreshToken) url.searchParams.set('refreshToken', refreshToken);
+                if (sessionId) url.searchParams.set('sessionId', sessionId);
+                if (user?.id) url.searchParams.set('userId', user.id);
+                res.redirect(302, url.toString());
+                return;
+            } catch {
+                // fall through to web redirect
+            }
+        }
+
         res.redirect(
             this.resolveFrontendTarget(
                 frontendUrl,
-                redirectFromCookie || oauthState.redirect
+                appCallback
             )
         );
     }
