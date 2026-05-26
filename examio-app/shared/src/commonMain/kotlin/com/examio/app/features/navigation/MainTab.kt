@@ -4,9 +4,9 @@ enum class MainTab(
     val title: String,
     val description: String,
 ) {
-    Home("Trang chủ", "Tổng quan học tập và việc cần làm tiếp theo"),
-    Study("Học tập", "Quiz, flashcard và tài nguyên học tập"),
-    MyExams("Thi của tôi", "Danh sách kỳ thi và kết quả"),
-    Ai("AI", "Chat lập trình và công cụ AI học tập"),
-    Account("Tài khoản", "Hồ sơ, cài đặt và phiên đăng nhập"),
+    AiTool("AI", "Tạo câu hỏi từ tài liệu PDF bằng AI"),
+    TaiLieu("Tài liệu", "Bộ flashcard và tài liệu học tập"),
+    BaiThi("Bài thi", "Lượt làm bài và kết quả gần đây"),
+    DeThi("Đề thi", "Quản lý bộ đề, flashcard và phòng thi"),
+    LichSu("Lịch sử", "Hoạt động học tập và thống kê cá nhân"),
 }

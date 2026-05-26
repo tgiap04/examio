@@ -9,28 +9,28 @@ enum AppDeepLink: Equatable {
     var targetTab: AppTab {
         switch self {
         case .examSession:
-            return .exams
+            return .baiThi
         case .flashcard:
-            return .study
+            return .taiLieu
         case .chat:
-            return .ai
+            return .aiTool
         case .profile:
-            return .account
+            return .lichSu
         }
     }
 }
 
 enum AppTab: Hashable {
-    case home
-    case study
-    case exams
-    case ai
-    case account
+    case aiTool
+    case taiLieu
+    case baiThi
+    case deThi
+    case lichSu
 }
 
 func parseAppDeepLink(_ url: URL) -> AppDeepLink? {
     var pathParts = url.pathComponents.dropFirst().filter { !$0.isEmpty }
-    if let host = url.host, !host.isEmpty {
+    if url.scheme != "https", let host = url.host, !host.isEmpty {
         pathParts.insert(host, at: 0)
     }
     guard let route = pathParts.first else { return nil }
