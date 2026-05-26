@@ -48,10 +48,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.examio.app.BuildConfig
 import com.examio.app.R
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
+import com.examio.app.core.config.MobileApiConfig
 
 @Composable
 fun LoginScreen(
@@ -157,10 +155,7 @@ fun LoginScreen(
                     AuthOrDivider()
 
                     OutlinedButton(
-                        onClick = {
-                            val redirect = URLEncoder.encode("examio://auth/callback", StandardCharsets.UTF_8.toString())
-                            uriHandler.openUri("${BuildConfig.API_BASE_URL}/api/v1/auth/google?redirect=$redirect")
-                        },
+                        onClick = { uriHandler.openUri(MobileApiConfig.googleOAuthUrl()) },
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(14.dp),
                         border = BorderStroke(1.dp, Color(0xFFE4D7CA)),

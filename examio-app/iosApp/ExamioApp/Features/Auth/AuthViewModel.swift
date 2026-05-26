@@ -144,8 +144,7 @@ private final class AuthApiClient {
     private let decoder = JSONDecoder()
 
     init() {
-        let configuredURL = Bundle.main.object(forInfoDictionaryKey: "ExamioAPIBaseURL") as? String ?? "http://localhost:3000"
-        baseURL = URL(string: configuredURL)!
+        baseURL = URL(string: AppConfig.apiBaseURL)!
     }
 
     func login(credential: String, password: String) async throws -> AuthResponse {

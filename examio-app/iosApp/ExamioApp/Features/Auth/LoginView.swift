@@ -207,10 +207,7 @@ struct LoginView: View {
     }
 
     private func openGoogleLogin() {
-        let baseURL = Bundle.main.object(forInfoDictionaryKey: "ExamioAPIBaseURL") as? String ?? "http://localhost:3000"
-        var components = URLComponents(string: baseURL.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/api/v1/auth/google")
-        components?.queryItems = [URLQueryItem(name: "redirect", value: "examio://auth/callback")]
-        if let url = components?.url {
+        if let url = AppConfig.googleOAuthURL() {
             openURL(url)
         }
     }

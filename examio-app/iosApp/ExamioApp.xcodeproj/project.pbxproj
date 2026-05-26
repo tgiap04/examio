@@ -25,6 +25,7 @@
 		A10000000000000000000024 /* RegisterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000024 /* RegisterView.swift */; };
 		A10000000000000000000025 /* ForgotPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000025 /* ForgotPasswordView.swift */; };
 		A10000000000000000000026 /* ResetPasswordView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000026 /* ResetPasswordView.swift */; };
+		A10000000000000000000027 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* AppConfig.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -48,6 +49,7 @@
 		A20000000000000000000024 /* RegisterView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Auth/RegisterView.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000025 /* ForgotPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Auth/ForgotPasswordView.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000026 /* ResetPasswordView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Auth/ResetPasswordView.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000027 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/AppConfig.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -210,6 +212,7 @@
 					A10000000000000000000024 /* RegisterView.swift in Sources */,
 					A10000000000000000000025 /* ForgotPasswordView.swift in Sources */,
 					A10000000000000000000026 /* ResetPasswordView.swift in Sources */,
+					A10000000000000000000027 /* AppConfig.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
