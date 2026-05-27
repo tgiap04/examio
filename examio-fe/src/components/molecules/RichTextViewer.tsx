@@ -30,17 +30,17 @@ export function RichTextViewer({
         },
       }),
     ],
-    content,
+    content: "",
     editable: false,
     immediatelyRender: false,
   });
 
-  // Update content when it changes
+  // Set content after editor mounts and whenever content prop changes
   useEffect(() => {
-    if (editor && content !== editor.getHTML()) {
+    if (editor) {
       editor.commands.setContent(content);
     }
-  }, [content, editor]);
+  }, [editor, content]);
 
   if (!editor) {
     return null;

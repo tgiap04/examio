@@ -23,7 +23,7 @@ function DialogTrigger({ children, asChild }: React.PropsWithChildren<{ asChild?
 
 function DialogContent({ className, children, onEscapeKeyDown, onPointerDownOutside, onCloseAutoFocus, showCloseButton, ...props }: DialogContentProps) {
   const ctx = React.use(DialogContext);
-  return <Modal open={ctx.open} onCancel={() => ctx.onOpenChange?.(false)} footer={null} className={className} {...(props as any)}>{children}</Modal>;
+  return <Modal open={ctx.open} onCancel={() => ctx.onOpenChange?.(false)} footer={null} className={className} styles={{ body: { overflow: "auto" } }} {...(props as any)}>{children}</Modal>;
 }
 
 function DialogClose({ children, asChild, ...props }: React.PropsWithChildren<{ asChild?: boolean } & React.ComponentProps<"button">>) {

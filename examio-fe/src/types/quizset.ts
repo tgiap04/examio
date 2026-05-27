@@ -10,14 +10,21 @@ export interface QuizSetLabel {
   questionCount?: number;
 }
 
+export type QuizOption = string | {
+  text?: string;
+  content?: string;
+  value?: string;
+};
+
 export interface Quizz {
   id: string;
   question: string;
-  options: string[];
+  options: QuizOption[];
   answer: string;
   createdAt: string;
   updatedAt: string;
   label?: QuizSetLabel | null; // Optional label for the question
+  labelId?: string | null; // Label ID from the junction table
 }
 
 export interface LastAttemptInfo {
@@ -43,4 +50,5 @@ export interface QuizSet {
   questionCount: number;
   lastStudied?: string | null;
   lastAttempt?: LastAttemptInfo | null;
+  labels?: QuizSetLabel[]; // Labels from getQuizSetById
 }

@@ -251,16 +251,9 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   getUser: async () => {
     if (typeof window !== "undefined" && !localStorage.getItem("auth_token")) {
-      console.warn("[auth-store] skip getUser because auth_token is missing");
       set({ user: null, isAuthenticated: false, initializing: false });
       return;
     }
-
-    console.log("[auth-store] getUser start", {
-      authToken: typeof window !== "undefined" ? localStorage.getItem("auth_token") : null,
-      refreshToken: typeof window !== "undefined" ? localStorage.getItem("refresh_token") : null,
-      sessionId: typeof window !== "undefined" ? localStorage.getItem("session_id") : null,
-    });
 
     set((state) => ({
       initializing: !state.isAuthenticated,
@@ -268,17 +261,13 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       const user = await getUserApi(true);
       if (user) {
-        console.log("[auth-store] getUser success", user);
         set({ user: user.user, isAuthenticated: true });
       } else {
-        console.warn("[auth-store] getUser returned empty payload");
         set({ user: null, isAuthenticated: false });
       }
-    } catch (error) {
-      console.error("[auth-store] getUser failed", error);
+    } catch {
       set({ user: null, isAuthenticated: false });
     } finally {
-      console.log("[auth-store] getUser finished");
       set({ initializing: false });
     }
   },
