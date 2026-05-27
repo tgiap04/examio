@@ -1,0 +1,12 @@
+{
+  "overall_status": "PASS",
+  "failed": 0,
+  "missing": 0,
+  "warnings": [
+    "LLM-authored specs contain Needs verification markers for incomplete scout evidence."
+  ],
+  "checks": {
+    "wave6_feature_files": "PASS",
+    "pending_markers": "PASS"
+  }
+}
