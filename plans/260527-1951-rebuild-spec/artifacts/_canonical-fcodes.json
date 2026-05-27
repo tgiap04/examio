@@ -1,0 +1,62 @@
+[
+  {
+    "code": "F001",
+    "title": "Account Authentication & Session Management",
+    "slug": "f001-account-authentication-session-management"
+  },
+  {
+    "code": "F002",
+    "title": "Account Verification & Profile Security",
+    "slug": "f002-account-verification-profile-security"
+  },
+  {
+    "code": "F003",
+    "title": "Workspace Navigation, Dashboard & Material Access",
+    "slug": "f003-workspace-navigation-dashboard-material-access"
+  },
+  {
+    "code": "F004",
+    "title": "Quiz Set Authoring & Practice Content",
+    "slug": "f004-quiz-set-authoring-practice-content"
+  },
+  {
+    "code": "F005",
+    "title": "Flashcard Authoring & Study",
+    "slug": "f005-flashcard-authoring-study"
+  },
+  {
+    "code": "F006",
+    "title": "AI File Upload, OCR & Content Generation",
+    "slug": "f006-ai-file-upload-ocr-content-generation"
+  },
+  {
+    "code": "F007",
+    "title": "AI Chat & Virtual Tutor",
+    "slug": "f007-ai-chat-virtual-tutor"
+  },
+  {
+    "code": "F008",
+    "title": "Exam Room & Session Management",
+    "slug": "f008-exam-room-session-management"
+  },
+  {
+    "code": "F009",
+    "title": "Exam Taking, Attempts & Integrity Logging",
+    "slug": "f009-exam-taking-attempts-integrity-logging"
+  },
+  {
+    "code": "F010",
+    "title": "Wallet, Payments & Subscription Benefits",
+    "slug": "f010-wallet-payments-subscription-benefits"
+  },
+  {
+    "code": "F011",
+    "title": "Storage, Media & File Lifecycle",
+    "slug": "f011-storage-media-file-lifecycle"
+  },
+  {
+    "code": "F012",
+    "title": "Cross-Platform Mobile Companion",
+    "slug": "f012-cross-platform-mobile-companion"
+  }
+]
