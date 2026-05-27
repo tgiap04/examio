@@ -9,6 +9,7 @@ export const CreateQuestionSchema = z.object({
         .array(z.string())
         .min(2, { message: 'At least two options are required' }),
     answer: z.string().min(1, { message: 'Answer must not be empty' }),
+    labelId: z.string().nullable().optional(),
 });
 
 export class CreateQuestionDto extends createZodDto(CreateQuestionSchema) {
@@ -31,6 +32,13 @@ export class CreateQuestionDto extends createZodDto(CreateQuestionSchema) {
         example: 'B',
     })
     answer: string;
+
+    @ApiProperty({
+        description: 'Optional label ID for categorizing the question',
+        required: false,
+        nullable: true,
+    })
+    labelId?: string | null;
 }
 
 // Update Question DTO
@@ -38,6 +46,7 @@ export const UpdateQuestionSchema = z.object({
     question: z.string().min(1).optional(),
     options: z.array(z.string()).min(2).optional(),
     answer: z.string().min(1).optional(),
+    labelId: z.string().nullable().optional(),
 });
 
 export class UpdateQuestionDto extends createZodDto(UpdateQuestionSchema) {
@@ -62,6 +71,13 @@ export class UpdateQuestionDto extends createZodDto(UpdateQuestionSchema) {
         required: false,
     })
     answer?: string;
+
+    @ApiProperty({
+        description: 'Optional label ID for categorizing the question',
+        required: false,
+        nullable: true,
+    })
+    labelId?: string | null;
 }
 
 // Response DTOs

@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/antd/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/antd/tabs";
-import { Tag, Plus, MoreVertical, Edit, Trash2 } from "lucide-react";
+import { Tag, Plus, MoreVertical, Edit, Trash2, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   QuizSetLabel,
@@ -36,6 +36,9 @@ import {
 import { toast } from "@/components/antd/toast";
 import { RichTextViewer } from "@/components/molecules/RichTextViewer";
 import { useQuizSetStore } from "@/stores/useQuizSetStore";
+import { useDebounce } from "@/hooks/useDebounce";
+import { isCorrectAnswer, quizOptionToText } from "@/lib/quizAnswerUtils";
+import type { Quizz } from "@/types/quizset";
 
 const LABEL_COLORS = [
   "#3B82F6",
@@ -70,10 +73,15 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
   const [editDescription, setEditDescription] = useState("");
   const [editColor, setEditColor] = useState("");
 
-  // Questions by label
-  const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
-  const [labelQuestions, setLabelQuestions] = useState<any[]>([]);
+  // Label questions dialog
+  const [labelDialogOpen, setLabelDialogOpen] = useState(false);
+  const [labelDialogLabel, setLabelDialogLabel] = useState<QuizSetLabel | null>(null);
+  const [labelQuestions, setLabelQuestions] = useState<Quizz[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
+  const [questionSearch, setQuestionSearch] = useState("");
+  const [labelQuestionPage, setLabelQuestionPage] = useState(1);
+  const labelQuestionItemsPerPage = 10;
+  const debouncedQuestionSearch = useDebounce(questionSearch, 300);
 
   // Load labels
   const loadLabels = useCallback(async () => {
@@ -94,10 +102,14 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
   }, [loadLabels]);
 
   const loadLabelQuestions = useCallback(
-    async (labelId: string) => {
+    async (label: QuizSetLabel, page = 1) => {
       setLoadingQuestions(true);
+      setLabelDialogLabel(label);
+      setLabelQuestionPage(page);
+      setLabelDialogOpen(true);
+      setQuestionSearch("");
       try {
-        const response = await getQuestionsByLabelApi(quizSetId, labelId);
+        const response = await getQuestionsByLabelApi(quizSetId, label.id, page, labelQuestionItemsPerPage * 5);
         setLabelQuestions(response.questions);
       } catch (error) {
         console.error("Failed to load questions:", error);
@@ -109,12 +121,19 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
     [quizSetId],
   );
 
-  // Load questions for selected label
-  useEffect(() => {
-    if (selectedLabelId !== null) {
-      loadLabelQuestions(selectedLabelId);
-    }
-  }, [selectedLabelId, loadLabelQuestions]);
+  const filteredLabelQuestions = debouncedQuestionSearch
+    ? labelQuestions.filter((q) => {
+        const searchLower = debouncedQuestionSearch.toLowerCase();
+        const textContent = q.question.replace(/<[^>]+>/g, "").toLowerCase();
+        return textContent.includes(searchLower);
+      })
+    : labelQuestions;
+
+  const totalLabelPages = Math.ceil(filteredLabelQuestions.length / labelQuestionItemsPerPage);
+  const paginatedLabelQuestions = filteredLabelQuestions.slice(
+    (labelQuestionPage - 1) * labelQuestionItemsPerPage,
+    labelQuestionPage * labelQuestionItemsPerPage,
+  );
 
   const handleCreateLabel = async () => {
     if (!newLabelName.trim()) return;
@@ -133,7 +152,6 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
       setNewLabelDescription("");
       setNewLabelColor("#3B82F6");
 
-      // Invalidate cache to refresh data across components
       invalidateCache();
     } catch (error) {
       console.error("Failed to create label:", error);
@@ -157,7 +175,6 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
       );
       setEditingLabel(null);
 
-      // Invalidate cache to refresh data across components
       invalidateCache();
     } catch (error) {
       console.error("Failed to update label:", error);
@@ -177,11 +194,7 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
       await deleteLabelApi(quizSetId, labelId);
       toast.success("Xóa nhãn thành công");
       setLabels((prev) => prev.filter((l) => l.id !== labelId));
-      if (selectedLabelId === labelId) {
-        setSelectedLabelId(null);
-      }
 
-      // Invalidate cache to refresh data across components
       invalidateCache();
     } catch (error) {
       console.error("Failed to delete label:", error);
@@ -293,12 +306,7 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <Tabs
-          value={selectedLabelId || "overview"}
-          onValueChange={(value) => {
-            setSelectedLabelId(value === "overview" ? null : value);
-          }}
-        >
+        <Tabs defaultValue="overview">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="overview">Tổng quan</TabsTrigger>
             <TabsTrigger value="unlabeled" disabled={unlabeledCount === 0}>
@@ -321,7 +329,7 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
                   <Card
                     key={label.id}
                     className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => setSelectedLabelId(label.id)}
+                    onClick={() => loadLabelQuestions(label)}
                   >
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-2">
@@ -382,40 +390,177 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
             </div>
           </TabsContent>
         </Tabs>
+      </CardContent>
 
-        {/* Questions by label */}
-        {selectedLabelId && (
-          <div className="mt-6">
-            <h3 className="text-lg font-semibold mb-4">
-              Câu hỏi trong nhãn:{" "}
-              {labels.find((l) => l.id === selectedLabelId)?.name}
-            </h3>
+      {/* Label Questions Dialog */}
+      <Dialog open={labelDialogOpen} onOpenChange={setLabelDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {labelDialogLabel?.color && (
+                <div
+                  className="w-3 h-3 rounded-full"
+                  style={{ backgroundColor: labelDialogLabel.color }}
+                />
+              )}
+              {labelDialogLabel?.name}
+            </DialogTitle>
+            <DialogDescription>
+              {filteredLabelQuestions.length} câu hỏi
+              {totalLabelPages > 1 && ` (trang ${labelQuestionPage}/${totalLabelPages})`}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Tìm kiếm câu hỏi..."
+              value={questionSearch}
+              onChange={(e) => setQuestionSearch(e.target.value)}
+              className="pl-9 pr-9"
+            />
+            {questionSearch && (
+              <button
+                onClick={() => setQuestionSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
             {loadingQuestions ? (
-              <div className="text-center py-4">Đang tải...</div>
-            ) : labelQuestions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <p>Không có câu hỏi nào trong nhãn này</p>
+                Đang tải...
+              </div>
+            ) : filteredLabelQuestions.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                {debouncedQuestionSearch
+                  ? "Không tìm thấy câu hỏi phù hợp"
+                  : "Không có câu hỏi nào trong nhãn này"}
               </div>
             ) : (
-              <div className="space-y-2">
-                {labelQuestions.map((question, index) => (
-                  <div key={question.id} className="p-3 border rounded-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium text-muted-foreground">
-                        {index + 1}.
+              paginatedLabelQuestions.map((question, index) => {
+                const plainText = question.question.replace(/<[^>]+>/g, "");
+                const highlight = debouncedQuestionSearch
+                  ? plainText.replace(
+                      new RegExp(`(${debouncedQuestionSearch})`, "gi"),
+                      "<mark class='bg-yellow-200'>$1</mark>",
+                    )
+                  : null;
+
+                return (
+                  <div
+                    key={question.id}
+                    className="rounded-[8px] border border-hairline p-3 space-y-2"
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-coral/15 font-mono text-[11px] font-semibold text-coral">
+                        {index + 1}
                       </span>
-                      <RichTextViewer
-                        content={question.question}
-                        className="text-sm"
-                      />
+                      <div className="text-[13px] leading-[1.55] flex-1">
+                        {highlight ? (
+                          <div
+                            dangerouslySetInnerHTML={{ __html: highlight }}
+                          />
+                        ) : (
+                          <RichTextViewer content={question.question} />
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid gap-1.5 sm:grid-cols-2">
+                      {question.options.map((option, optIndex) => {
+                        const isCorrect = isCorrectAnswer(
+                          question.answer,
+                          optIndex,
+                          question.options,
+                        );
+                        return (
+                          <div
+                            key={optIndex}
+                            className={cn(
+                              "flex items-center gap-1.5 rounded-[6px] border px-2.5 py-1.5 text-[12px]",
+                              isCorrect
+                                ? "border-coral/40 bg-coral/10 text-ink"
+                                : "border-hairline text-muted-foreground",
+                            )}
+                          >
+                            <span className="font-mono text-[10px] shrink-0">
+                              {String.fromCharCode(65 + optIndex)}.
+                            </span>
+                            <span className="flex-1 min-w-0">
+                              <RichTextViewer
+                                content={quizOptionToText(option).replace(
+                                  /^[A-D][\.\)\:\s]+/i,
+                                  "",
+                                )}
+                              />
+                            </span>
+                            {isCorrect && (
+                              <span className="text-[10px] text-coral font-medium shrink-0">
+                                ✓
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
-                ))}
+                );
+              })
+            )}
+
+            {/* Pagination */}
+            {totalLabelPages > 1 && (
+              <div className="flex items-center justify-between border-t pt-3 mt-2 shrink-0">
+                <p className="text-xs text-muted-foreground">
+                  {(labelQuestionPage - 1) * labelQuestionItemsPerPage + 1}–{Math.min(labelQuestionPage * labelQuestionItemsPerPage, filteredLabelQuestions.length)} / {filteredLabelQuestions.length}
+                </p>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setLabelQuestionPage((p) => Math.max(1, p - 1))}
+                    disabled={labelQuestionPage === 1}
+                  >
+                    ‹
+                  </Button>
+                  {Array.from({ length: Math.min(5, totalLabelPages) }, (_, i) => {
+                    let pageNum: number;
+                    if (totalLabelPages <= 5) pageNum = i + 1;
+                    else if (labelQuestionPage <= 3) pageNum = i + 1;
+                    else if (labelQuestionPage >= totalLabelPages - 2) pageNum = totalLabelPages - 4 + i;
+                    else pageNum = labelQuestionPage - 2 + i;
+                    return (
+                      <Button
+                        key={pageNum}
+                        variant={labelQuestionPage === pageNum ? "default" : "outline"}
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        onClick={() => setLabelQuestionPage(pageNum)}
+                      >
+                        {pageNum}
+                      </Button>
+                    );
+                  })}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setLabelQuestionPage((p) => Math.min(totalLabelPages, p + 1))}
+                    disabled={labelQuestionPage === totalLabelPages}
+                  >
+                    ›
+                  </Button>
+                </div>
               </div>
             )}
           </div>
-        )}
-      </CardContent>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Label Dialog */}
       {editingLabel && (

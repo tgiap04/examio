@@ -65,9 +65,9 @@ export function RichTextEditor({
         },
       }),
     ],
-    content,
+    content: "", // Start empty, content is set via useEffect after mount
     editable: !disabled,
-    immediatelyRender: false, // Fix SSR hydration mismatch
+    immediatelyRender: false,
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
@@ -76,10 +76,10 @@ export function RichTextEditor({
   // State for image dialog
   const [showImageDialog, setShowImageDialog] = useState(false);
 
-  // Update editor content when prop changes
+  // Keep TipTap in sync when parent loads another record for editing.
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content);
+      editor.commands.setContent(content, false);
     }
   }, [content, editor]);
 

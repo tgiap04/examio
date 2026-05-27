@@ -192,16 +192,22 @@ export class QuizsetService {
                 where: { quizSetId: id },
                 include: {
                     quizQuestion: true,
+                    label: true,
                 },
                 skip,
                 take: limitNum,
-                orderBy: {
-                    quizQuestion: { createdAt: 'asc' },
-                },
+                orderBy: [
+                    { quizQuestion: { createdAt: 'asc' } },
+                    { quizQuestionId: 'asc' },
+                ],
             });
 
         const questions = detailsQuizQuestions.map(
-            (detail) => detail.quizQuestion
+            (detail) => ({
+                ...detail.quizQuestion,
+                labelId: detail.labelId,
+                label: detail.label,
+            })
         );
 
         return {
@@ -952,7 +958,12 @@ export class QuizsetService {
         quizSetId: string,
         questionId: string,
         user: User,
-        dto: { question?: string; options?: string[]; answer?: string }
+        dto: {
+            question?: string;
+            options?: string[];
+            answer?: string;
+            labelId?: string | null;
+        }
     ) {
         // Check ownership of quizset
         const quizSet = await this.quizSetRepository.findOne({
@@ -978,14 +989,22 @@ export class QuizsetService {
             );
         }
 
-        // Update question
-        const updatedQuestion = await this.prisma.quizQuestion.update({
-            where: { id: questionId },
-            data: {
-                ...(dto.question && { question: dto.question }),
-                ...(dto.options && { options: dto.options }),
-                ...(dto.answer && { answer: dto.answer }),
-            },
+        const updatedQuestion = await this.prisma.$transaction(async (tx) => {
+            if (dto.labelId !== undefined) {
+                await tx.detailsQuizQuestion.update({
+                    where: { id: detailLink.id },
+                    data: { labelId: dto.labelId },
+                });
+            }
+
+            return tx.quizQuestion.update({
+                where: { id: questionId },
+                data: {
+                    ...(dto.question && { question: dto.question }),
+                    ...(dto.options && { options: dto.options }),
+                    ...(dto.answer && { answer: dto.answer }),
+                },
+            });
         });
 
         // Invalidate all quizset caches including paginate caches
@@ -993,7 +1012,10 @@ export class QuizsetService {
 
         return {
             message: 'Cập nhật câu hỏi thành công',
-            question: updatedQuestion,
+            question: {
+                ...updatedQuestion,
+                labelId: dto.labelId !== undefined ? dto.labelId : detailLink.labelId,
+            },
         };
     }
 

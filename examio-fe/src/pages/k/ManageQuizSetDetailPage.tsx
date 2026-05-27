@@ -1,11 +1,12 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { Search, X } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useQuizSetStore } from "@/stores/useQuizSetStore";
 import { Button } from "@/components/antd/button";
 import { Card } from "@/components/antd/card";
 import { Badge } from "@/components/antd/badge";
 import { Skeleton } from "@/components/antd/skeleton";
-import { isCorrectAnswer } from "@/lib/quizAnswerUtils";
+import { isCorrectAnswer, quizOptionToText } from "@/lib/quizAnswerUtils";
 import { cn } from "@/lib/utils";
 import {
   Plus,
@@ -17,7 +18,7 @@ import {
 } from "lucide-react";
 import type { Quizz } from "@/types/quizset";
 import { DeleteConfirmDialog } from "@/components/organisms/DeleteConfirmDialog";
-import { InlineQuestionEditor } from "@/components/organisms/InlineQuestionEditor";
+import { InlineQuestionEditor, type InlineQuestionFormData } from "@/components/organisms/InlineQuestionEditor";
 import { LabelManager } from "@/components/organisms/LabelManager";
 import { RichTextViewer } from "@/components/molecules/RichTextViewer";
 import {
@@ -29,6 +30,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/antd/breadcrumb";
 import { getQuizSetQuestionsApi, type PaginationInfo } from "@/apis/quizsetApi";
+import { useDebounce } from "@/hooks/useDebounce";
+import { Input } from "@/components/antd/input";
 
 export default function ManageQuizSetDetailPage() {
   const { id = "" } = useParams();
@@ -50,6 +53,10 @@ export default function ManageQuizSetDetailPage() {
   const [pagination, setPagination] = useState<PaginationInfo | null>(null);
   const [questionsLoading, setQuestionsLoading] = useState(false);
   const itemsPerPage = 9;
+  const addEditorRef = useRef<HTMLDivElement>(null);
+  const editEditorRef = useRef<HTMLDivElement>(null);
+  const [questionSearch, setQuestionSearch] = useState("");
+  const debouncedSearch = useDebounce(questionSearch, 300);
 
   useEffect(() => {
     if (id) {
@@ -79,13 +86,11 @@ export default function ManageQuizSetDetailPage() {
   const handleAddQuestion = useCallback(() => {
     setSelectedQuestion(null);
     setShowQuestionForm(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const handleEditQuestion = useCallback((question: Quizz) => {
     setSelectedQuestion(question);
     setShowQuestionForm(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const handleDeleteQuestion = useCallback((questionId: string) => {
@@ -107,7 +112,7 @@ export default function ManageQuizSetDetailPage() {
   }, [questionToDelete, id, deleteQuestion, paginatedQuestions.length, currentPage, fetchQuestions]);
 
   const handleSaveQuestion = useCallback(
-    async (questionData: any) => {
+    async (questionData: InlineQuestionFormData) => {
       if (!id) return;
 
       if (selectedQuestion) {
@@ -183,7 +188,7 @@ export default function ManageQuizSetDetailPage() {
               </div>
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Tổng số câu hỏi</p>
-                <p className="text-2xl font-bold">{currentQuizSet.questions?.length || 0}</p>
+                <p className="text-2xl font-bold">{totalQuestions}</p>
               </div>
             </div>
           </Card>
@@ -206,17 +211,39 @@ export default function ManageQuizSetDetailPage() {
         <LabelManager quizSetId={id} />
 
         <Card className="p-3 sm:p-6">
-          <div className="mb-6 flex items-center justify-between">
+          <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <h2 className="text-xl font-semibold">
               Danh sách câu hỏi
               {totalQuestions > 0 && (
                 <span className="ml-2 text-sm font-normal text-muted-foreground">({totalQuestions} câu)</span>
               )}
             </h2>
-            <Button onClick={handleAddQuestion} disabled={showQuestionForm}>
-              <Plus className="mr-2 h-4 w-4" />
-              Thêm câu hỏi
-            </Button>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="relative flex-1 sm:flex-initial sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Tìm kiếm câu hỏi..."
+                  value={questionSearch}
+                  onChange={(e) => {
+                    setQuestionSearch(e.target.value);
+                    if (e.target.value) setCurrentPage(1);
+                  }}
+                  className="pl-9 pr-9"
+                />
+                {questionSearch && (
+                  <button
+                    onClick={() => { setQuestionSearch(""); }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              <Button onClick={handleAddQuestion} disabled={showQuestionForm}>
+                <Plus className="mr-2 h-4 w-4" />
+                Thêm câu hỏi
+              </Button>
+            </div>
           </div>
 
           {showQuestionForm && !selectedQuestion && (
@@ -224,8 +251,10 @@ export default function ManageQuizSetDetailPage() {
               <InlineQuestionEditor
                 question={null}
                 quizSetId={id}
+                labels={currentQuizSet.labels}
                 onSave={handleSaveQuestion}
                 onCancel={() => { setShowQuestionForm(false); setSelectedQuestion(null); }}
+                editorRef={addEditorRef}
               />
             </div>
           )}
@@ -238,90 +267,133 @@ export default function ManageQuizSetDetailPage() {
             </div>
           ) : paginatedQuestions.length > 0 ? (
             <div className="space-y-4">
-              {paginatedQuestions.map((question, index) => {
-                const actualIndex = (currentPage - 1) * itemsPerPage + index;
-                const isEditing = showQuestionForm && selectedQuestion?.id === question.id;
+              {/* Filter + highlight search matches */}
+              {(() => {
+                const displayed = debouncedSearch
+                  ? paginatedQuestions.filter((q) => {
+                      const text = q.question.replace(/<[^>]+>/g, "").toLowerCase();
+                      return text.includes(debouncedSearch.toLowerCase());
+                    })
+                  : paginatedQuestions;
 
-                if (isEditing) {
+                if (debouncedSearch && displayed.length === 0) {
                   return (
-                    <InlineQuestionEditor
-                      key={question.id}
-                      question={question}
-                      quizSetId={id}
-                      onSave={handleSaveQuestion}
-                      onCancel={() => { setShowQuestionForm(false); setSelectedQuestion(null); }}
-                    />
+                    <div className="py-8 text-center text-muted-foreground">
+                      <Search className="mx-auto mb-3 h-10 w-10 opacity-40" />
+                      <p>Không tìm thấy câu hỏi phù hợp</p>
+                    </div>
                   );
                 }
 
-                return (
-                  <div key={question.id} className="rounded-[12px] border border-hairline p-4 transition-shadow hover:shadow-[0_1px_3px_rgba(20,20,19,0.08)]">
-                    <div className="flex items-start gap-3">
-                      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-coral/15 font-mono text-xs font-semibold text-coral">
-                        {actualIndex + 1}
-                      </span>
-                      <div className="min-w-0 flex-1 space-y-3">
-                        {question.label && (
-                          <div
-                            className="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium"
-                            style={{
-                              backgroundColor: question.label.color ? `${question.label.color}15` : undefined,
-                              borderColor: question.label.color || undefined,
-                              color: question.label.color || undefined,
-                            }}
-                          >
-                            {question.label.color && (
-                              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: question.label.color }} />
-                            )}
-                            {question.label.name}
-                          </div>
+                return displayed.map((question, index) => {
+                  const actualIndex = (currentPage - 1) * itemsPerPage + index;
+                  const isEditing = showQuestionForm && selectedQuestion?.id === question.id;
+
+                  // Highlight search matches in question text
+                  const highlightText = (html: string): React.ReactNode => {
+                    if (!debouncedSearch) return <RichTextViewer content={html} />;
+                    const plainText = html.replace(/<[^>]+>/g, "");
+                    const escaped = debouncedSearch.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+                    const regex = new RegExp(`(${escaped})`, "gi");
+                    const parts = plainText.split(regex);
+                    return (
+                      <span>
+                        {parts.map((part, i) =>
+                          regex.test(part) ? (
+                            <mark key={i} className="bg-yellow-200">{part}</mark>
+                          ) : (
+                            <RichTextViewer key={i} content={html} />
+                          )
                         )}
-                        <div className="text-[14px] font-medium leading-[1.55]">
-                          <RichTextViewer content={question.question} />
-                        </div>
+                      </span>
+                    );
+                  };
 
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          {question.options.map((option, optIndex) => {
-                            const isCorrect = isCorrectAnswer(question.answer, optIndex, question.options);
-                            const hasPrefix = /^[A-D]\s*[\.\)\:]\s+/.test(option);
-                            const displayText = hasPrefix ? option.replace(/^[A-D]\s*[\.\)\:]\s+/, "") : option;
+                  if (isEditing) {
+                    return (
+                      <InlineQuestionEditor
+                        key={question.id}
+                        question={question}
+                        quizSetId={id}
+                        labels={currentQuizSet.labels}
+                        onSave={handleSaveQuestion}
+                        onCancel={() => { setShowQuestionForm(false); setSelectedQuestion(null); }}
+                        editorRef={editEditorRef}
+                      />
+                    );
+                  }
 
-                            return (
-                              <div
-                                key={optIndex}
-                                className={cn(
-                                  "flex items-center gap-2 rounded-[8px] border px-3 py-2 text-[13px] transition-colors",
-                                  isCorrect
-                                    ? "border-coral/40 bg-coral/10 text-ink"
-                                    : "border-hairline text-muted-foreground",
-                                )}
-                              >
-                                <span className="font-mono text-[11px]">
-                                  {String.fromCharCode(65 + optIndex)}.
-                                </span>
-                                <span className="flex-1">
-                                  <RichTextViewer content={displayText} />
-                                </span>
-                                {isCorrect && <span className="text-[11px] text-coral font-medium">✓</span>}
-                              </div>
-                            );
-                          })}
+                  return (
+                    <div key={question.id} className="rounded-[12px] border border-hairline p-4 transition-shadow hover:shadow-[0_1px_3px_rgba(20,20,19,0.08)]">
+                      <div className="flex items-start gap-3">
+                        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-coral/15 font-mono text-xs font-semibold text-coral">
+                          {actualIndex + 1}
+                        </span>
+                        <div className="min-w-0 flex-1 space-y-3">
+                          {question.label && (
+                            <div
+                              className="inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium"
+                              style={{
+                                backgroundColor: question.label.color ? `${question.label.color}15` : undefined,
+                                borderColor: question.label.color || undefined,
+                                color: question.label.color || undefined,
+                              }}
+                            >
+                              {question.label.color && (
+                                <div className="h-2 w-2 rounded-full" style={{ backgroundColor: question.label.color }} />
+                              )}
+                              {question.label.name}
+                            </div>
+                          )}
+                          <div className="text-[14px] font-medium leading-[1.55]">
+                            {debouncedSearch ? highlightText(question.question) : <RichTextViewer content={question.question} />}
+                          </div>
+
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            {question.options.map((option, optIndex) => {
+                              const isCorrect = isCorrectAnswer(question.answer, optIndex, question.options);
+                              const optionText = quizOptionToText(option);
+                              const hasPrefix = /^[A-D]\s*[\.\)\:]\s+/.test(optionText);
+                              const displayText = hasPrefix ? optionText.replace(/^[A-D]\s*[\.\)\:]\s+/, "") : optionText;
+
+                              return (
+                                <div
+                                  key={optIndex}
+                                  className={cn(
+                                    "flex items-center gap-2 rounded-[8px] border px-3 py-2 text-[13px] transition-colors",
+                                    isCorrect
+                                      ? "border-coral/40 bg-coral/10 text-ink"
+                                      : "border-hairline text-muted-foreground",
+                                  )}
+                                >
+                                  <span className="font-mono text-[11px]">
+                                    {String.fromCharCode(65 + optIndex)}.
+                                  </span>
+                                  <span className="flex-1">
+                                    <RichTextViewer content={displayText} />
+                                  </span>
+                                  {isCorrect && <span className="text-[11px] text-coral font-medium">✓</span>}
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => handleEditQuestion(question)} disabled={showQuestionForm} className="h-8 w-8 p-0">
-                          <Edit className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button variant="ghost" size="sm" onClick={() => handleDeleteQuestion(question.id)} disabled={showQuestionForm} className="h-8 w-8 p-0 text-muted-foreground hover:text-error">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" onClick={() => handleEditQuestion(question)} disabled={showQuestionForm} className="h-8 w-8 p-0">
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button variant="ghost" size="sm" onClick={() => handleDeleteQuestion(question.id)} disabled={showQuestionForm} className="h-8 w-8 p-0 text-muted-foreground hover:text-error">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
 
-              {totalPages > 1 && (
+              {/* Pagination — hidden when searching */}
+              {!debouncedSearch && totalPages > 1 && (
                 <div className="flex items-center justify-between border-t pt-4">
                   <p className="text-sm text-muted-foreground">
                     Hiển thị {(currentPage - 1) * itemsPerPage + 1} - {Math.min(currentPage * itemsPerPage, totalQuestions)} / {totalQuestions} câu hỏi
