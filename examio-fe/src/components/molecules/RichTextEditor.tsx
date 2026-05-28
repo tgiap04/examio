@@ -79,7 +79,7 @@ export function RichTextEditor({
   // Keep TipTap in sync when parent loads another record for editing.
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
-      editor.commands.setContent(content, false);
+      editor.commands.setContent(content, { emitUpdate: false });
     }
   }, [content, editor]);
 
