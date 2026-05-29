@@ -375,9 +375,138 @@
     background: var(--card) !important;
   }
 
-  .ai-model-selector-dropdown.ant-select-dropdown .ant-select-item-option-disabled {
+.ai-model-selector-dropdown.ant-select-dropdown .ant-select-item-option-disabled {
     color: var(--muted-foreground) !important;
   }
+
+  .profile-tabs .ant-tabs-nav {
+    margin: 0 !important;
+    border: 0 !important;
+    background: none !important;
+  }
+
+  .profile-tabs .ant-tabs-nav::before,
+  .profile-tabs .ant-tabs-ink-bar {
+    display: none !important;
+  }
+
+  .profile-tabs .ant-tabs-tab {
+    margin: 0 !important;
+    border-radius: 8px !important;
+    padding: 10px 20px !important;
+    background: none !important;
+    border: 0 !important;
+    color: var(--muted-text) !important;
+    font-weight: 500 !important;
+  }
+
+  .profile-tabs .ant-tabs-tab:hover {
+    background: var(--surface-card) !important;
+    color: var(--ink) !important;
+  }
+
+  .profile-tabs .ant-tabs-tab-active {
+    background: var(--coral) !important;
+    color: var(--on-primary) !important;
+  }
+
+  .profile-tabs .ant-tabs-tab-btn {
+    color: inherit !important;
+    text-shadow: none !important;
+    font-size: 14px !important;
+  }
+
+  .profile-tabs .ant-tabs-content-holder {
+    border: 0 !important;
+  }
+}
+
+/* glass-card: Card component with cream-surface theming */
+.glass-card,
+.ant-card.glass-card {
+  border-radius: 12px !important;
+  border: 1px solid var(--hairline) !important;
+  background: var(--surface-card) !important;
+  box-shadow: none !important;
+  overflow: hidden !important;
+}
+
+.glass-card .ant-card-head,
+.glass-card > div:first-child {
+  background: transparent !important;
+  border-bottom: 1px solid var(--hairline) !important;
+  padding: 16px 24px !important;
+  min-height: unset !important;
+}
+
+.glass-card .ant-card-head-title {
+  font-family: var(--font-display) !important;
+  font-size: 1.125rem !important;
+  font-weight: 500 !important;
+  color: var(--ink) !important;
+  letter-spacing: -0.02em !important;
+}
+
+.glass-card .ant-card-body {
+  padding: 24px !important;
+  background: transparent !important;
+}
+
+.glass-card .ant-card-head + div,
+.glass-card .ant-card-body {
+  background: transparent !important;
+}
+
+.glass-card .ant-input,
+.glass-card input[type="text"],
+.glass-card input[type="password"],
+.glass-card input[type="email"] {
+  border-radius: 8px !important;
+  border-color: var(--hairline) !important;
+  background: var(--canvas) !important;
+  color: var(--ink) !important;
+  padding: 10px 14px !important;
+  height: 40px !important;
+}
+
+.glass-card .ant-input::placeholder {
+  color: var(--muted-text) !important;
+}
+
+.glass-card .ant-input:hover {
+  border-color: var(--coral) !important;
+}
+
+.glass-card .ant-input:focus,
+.glass-card .ant-input-focused {
+  border-color: var(--coral) !important;
+  box-shadow: 0 0 0 3px rgba(204, 120, 92, 0.15) !important;
+}
+
+.glass-card textarea,
+.glass-card .ant-input-textarea textarea {
+  border-radius: 8px !important;
+  border-color: var(--hairline) !important;
+  background: var(--canvas) !important;
+  color: var(--ink) !important;
+  padding: 12px 14px !important;
+  resize: vertical !important;
+}
+
+.glass-card textarea:hover {
+  border-color: var(--coral) !important;
+}
+
+.glass-card textarea:focus {
+  border-color: var(--coral) !important;
+  box-shadow: 0 0 0 3px rgba(204, 120, 92, 0.15) !important;
+}
+
+.glass-card .ant-input[disabled],
+.glass-card input:disabled {
+  background: var(--surface-soft) !important;
+  color: var(--muted-text) !important;
+  cursor: not-allowed !important;
 }
 
 .grecaptcha-badge {
