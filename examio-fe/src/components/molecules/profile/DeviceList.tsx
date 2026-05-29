@@ -3,23 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/antd/card";
 import { Button } from "@/components/antd/button";
-import {
-  Monitor,
-  Smartphone,
-  Tablet,
-  Loader2,
-  LogOut,
-  MapPin,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-} from "lucide-react";
-import {
-  getDevicesApi,
-  logoutDeviceApi,
-  logoutAllOthersApi,
-  type Device,
-} from "@/apis/devicesApi";
+import { Monitor, Smartphone, Tablet, Loader2, LogOut, MapPin, Clock, CheckCircle2, AlertTriangle } from "lucide-react";
+import { getDevicesApi, logoutDeviceApi, logoutAllOthersApi, type Device } from "@/apis/devicesApi";
 import { useToast } from "@/components/antd/toast";
 import {
   AlertDialog,
@@ -45,27 +30,22 @@ export function DeviceList() {
       setIsLoading(true);
       const result = await getDevicesApi();
       setDevices(result.devices);
-    } catch (error) {
-      console.error("Failed to fetch devices:", error);
+    } catch {
       toast.error("Không thể tải danh sách thiết bị");
     } finally {
       setIsLoading(false);
     }
   }, [toast]);
 
-  useEffect(() => {
-    fetchDevices();
-  }, [fetchDevices]);
+  useEffect(() => { fetchDevices(); }, [fetchDevices]);
 
   const handleLogoutDevice = async (sessionId: string) => {
     try {
       setLogoutingId(sessionId);
       await logoutDeviceApi(sessionId);
-      toast.success("Đã đăng xuất thiết bị thành công");
-      // Remove device from list
+      toast.success("Đã đăng xuất thiết bị");
       setDevices((prev) => prev.filter((d) => d.id !== sessionId));
-    } catch (error) {
-      console.error("Failed to logout device:", error);
+    } catch {
       toast.error("Không thể đăng xuất thiết bị");
     } finally {
       setLogoutingId(null);
@@ -77,10 +57,8 @@ export function DeviceList() {
       setIsLogoutingAll(true);
       const result = await logoutAllOthersApi();
       toast.success(`Đã đăng xuất ${result.devicesLoggedOut} thiết bị khác`);
-      // Keep only current device
       setDevices((prev) => prev.filter((d) => d.isCurrent));
-    } catch (error) {
-      console.error("Failed to logout all devices:", error);
+    } catch {
       toast.error("Không thể đăng xuất các thiết bị khác");
     } finally {
       setIsLogoutingAll(false);
@@ -90,13 +68,7 @@ export function DeviceList() {
   const getDeviceIcon = (deviceName: string | null, os: string | null) => {
     const name = (deviceName || "").toLowerCase();
     const osLower = (os || "").toLowerCase();
-
-    if (
-      name.includes("iphone") ||
-      name.includes("android") ||
-      osLower.includes("ios") ||
-      osLower.includes("android")
-    ) {
+    if (name.includes("iphone") || name.includes("android") || osLower.includes("ios") || osLower.includes("android")) {
       return <Smartphone className="h-5 w-5" />;
     }
     if (name.includes("ipad") || name.includes("tablet")) {
@@ -105,21 +77,25 @@ export function DeviceList() {
     return <Monitor className="h-5 w-5" />;
   };
 
-  const otherDevicesCount = devices.filter((d) => !d.isCurrent).length;
+  const currentDevice = devices.find((d) => d.isCurrent);
+  const otherDevices = devices.filter((d) => !d.isCurrent);
 
   if (isLoading) {
     return (
       <Card className="glass-card">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Monitor className="h-5 w-5" />
-            Thiết bị đã đăng nhập
+        <CardHeader className="pb-0">
+          <CardTitle className="flex items-center gap-3 text-xl">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-hairline bg-surface-soft">
+              <Monitor className="h-5 w-5 text-coral" />
+            </div>
+            <div>
+              <div className="font-display text-xl font-medium text-ink">Thiết bị</div>
+              <p className="mt-0.5 text-sm font-normal text-muted-text">Quản lý thiết bị đã đăng nhập</p>
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-text" />
         </CardContent>
       </Card>
     );
@@ -127,47 +103,50 @@ export function DeviceList() {
 
   return (
     <Card className="glass-card">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Monitor className="h-5 w-5" />
-            Thiết bị đã đăng nhập
+      <CardHeader className="pb-0">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="flex items-center gap-3 text-xl">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-hairline bg-surface-soft">
+              <Monitor className="h-5 w-5 text-coral" />
+            </div>
+            <div>
+              <div className="font-display text-xl font-medium text-ink">Thiết bị</div>
+              <p className="mt-0.5 text-sm font-normal text-muted-text">
+                {devices.length} thiết bị đã đăng nhập
+              </p>
+            </div>
           </CardTitle>
-
-          {otherDevicesCount > 0 && (
+          {otherDevices.length > 0 && (
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="text-destructive hover:text-destructive"
-                  disabled={isLogoutingAll}
+                  className="gap-2 border-error/30 text-error hover:border-error hover:bg-error/5 shrink-0"
                 >
                   {isLogoutingAll ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <LogOut className="h-4 w-4 mr-2" />
+                    <LogOut className="h-4 w-4" />
                   )}
-                  Đăng xuất thiết bị khác
+                  Đăng xuất tất cả
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
                 <AlertDialogHeader>
                   <AlertDialogTitle className="flex items-center gap-2">
-                    <AlertTriangle className="h-5 w-5 text-amber-500" />
+                    <AlertTriangle className="h-5 w-5 text-warning" />
                     Xác nhận đăng xuất
                   </AlertDialogTitle>
                   <AlertDialogDescription>
-                    Bạn có chắc muốn đăng xuất khỏi {otherDevicesCount} thiết bị
-                    khác? Các phiên đăng nhập trên những thiết bị đó sẽ kết
-                    thúc.
+                    Đăng xuất khỏi {otherDevices.length} thiết bị khác? Các phiên đăng nhập trên những thiết bị đó sẽ kết thúc ngay.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
                   <AlertDialogCancel>Hủy</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleLogoutAllOthers}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    className="bg-error text-white hover:bg-error/90"
                   >
                     Đăng xuất tất cả
                   </AlertDialogAction>
@@ -176,115 +155,116 @@ export function DeviceList() {
             </AlertDialog>
           )}
         </div>
-        <p className="text-sm text-muted-foreground mt-1">
-          Quản lý các thiết bị đang đăng nhập vào tài khoản của bạn
-        </p>
       </CardHeader>
 
-      <CardContent className="space-y-3">
+      <CardContent className="pt-6">
         {devices.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            Không có thiết bị nào đang đăng nhập
+          <div className="flex flex-col items-center gap-3 py-12 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-soft">
+              <Monitor className="h-6 w-6 text-muted-text" />
+            </div>
+            <p className="text-sm text-muted-text">Không có thiết bị nào đã đăng nhập.</p>
           </div>
         ) : (
-          devices.map((device) => (
-            <div
-              key={device.id}
-              className={`flex items-start gap-4 p-4 rounded-lg border ${
-                device.isCurrent
-                  ? "bg-primary/5 border-primary/20"
-                  : "bg-muted/30 border-border/50"
-              }`}
-            >
-              {/* Device Icon */}
-              <div
-                className={`p-2 rounded-lg ${
-                  device.isCurrent
-                    ? "bg-primary/10 text-primary"
-                    : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {getDeviceIcon(device.deviceName, device.os)}
-              </div>
-
-              {/* Device Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium truncate">
-                    {device.deviceName || "Thiết bị không xác định"}
-                  </span>
-                  {device.isCurrent && (
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-primary/10 text-primary rounded-full">
+          <div className="space-y-3">
+            {/* Current device */}
+            {currentDevice && (
+              <div className="flex items-start gap-4 rounded-xl border-2 border-coral/30 bg-coral/5 p-4 transition-all">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-coral/10 text-coral">
+                  {getDeviceIcon(currentDevice.deviceName, currentDevice.os)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium text-ink">{currentDevice.deviceName || "Thiết bị hiện tại"}</span>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-coral/10 px-2 py-0.5 text-xs font-medium text-coral">
                       <CheckCircle2 className="h-3 w-3" />
                       Thiết bị này
                     </span>
-                  )}
-                </div>
-
-                <div className="mt-1 text-sm text-muted-foreground space-y-0.5">
-                  <div>
-                    {device.browser || "Không xác định"} •{" "}
-                    {device.os || "Không xác định"}
                   </div>
-
-                  {device.location && (
-                    <div className="flex items-center gap-1">
-                      <MapPin className="h-3 w-3" />
-                      {device.location}
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-1">
-                    <Clock className="h-3 w-3" />
-                    Hoạt động {device.lastActivity}
+                  <div className="mt-1.5 space-y-0.5">
+                    <p className="text-sm text-muted-text">
+                      {currentDevice.browser || "Trình duyệt"} · {currentDevice.os || "Hệ điều hành"}
+                    </p>
+                    {currentDevice.location && (
+                      <p className="flex items-center gap-1 text-xs text-muted-text">
+                        <MapPin className="h-3 w-3" />
+                        {currentDevice.location}
+                      </p>
+                    )}
+                    <p className="flex items-center gap-1 text-xs text-muted-text">
+                      <Clock className="h-3 w-3" />
+                      Hoạt động {currentDevice.lastActivity}
+                    </p>
                   </div>
                 </div>
               </div>
+            )}
 
-              {/* Logout Button */}
-              {!device.isCurrent && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      disabled={logoutingId === device.id}
-                    >
-                      {logoutingId === device.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <LogOut className="h-4 w-4" />
+            {/* Other devices */}
+            {otherDevices.map((device) => (
+              <div key={device.id} className="flex items-start gap-4 rounded-xl border border-hairline bg-surface-soft p-4 transition-all hover:border-hairline/80">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-card text-muted-text">
+                  {getDeviceIcon(device.deviceName, device.os)}
+                </div>
+                <div className="flex flex-1 min-w-0 items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <span className="font-medium text-ink">{device.deviceName || "Thiết bị không xác định"}</span>
+                    <div className="mt-1.5 space-y-0.5">
+                      <p className="text-sm text-muted-text">
+                        {device.browser || "Trình duyệt"} · {device.os || "Hệ điều hành"}
+                      </p>
+                      {device.location && (
+                        <p className="flex items-center gap-1 text-xs text-muted-text">
+                          <MapPin className="h-3 w-3" />
+                          {device.location}
+                        </p>
                       )}
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Đăng xuất khỏi thiết bị này?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Thiết bị:{" "}
-                        {device.deviceName || "Không xác định"} (
-                        {device.browser})
-                        <br />
-                        Phiên đăng nhập trên thiết bị này sẽ kết thúc.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Hủy</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => handleLogoutDevice(device.id)}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      <p className="flex items-center gap-1 text-xs text-muted-text">
+                        <Clock className="h-3 w-3" />
+                        Hoạt động {device.lastActivity}
+                      </p>
+                    </div>
+                  </div>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 shrink-0 gap-1.5 text-error hover:bg-error/10"
+                        disabled={logoutingId === device.id}
                       >
-                        Đăng xuất
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </div>
-          ))
+                        {logoutingId === device.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <LogOut className="h-4 w-4" />
+                        )}
+                        <span className="hidden sm:inline">Đăng xuất</span>
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Đăng xuất khỏi thiết bị này?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          {device.deviceName || "Thiết bị"} ({device.browser})
+                          <br />
+                          Phiên đăng nhập trên thiết bị này sẽ kết thúc.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Hủy</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleLogoutDevice(device.id)}
+                          className="bg-error text-white hover:bg-error/90"
+                        >
+                          Đăng xuất
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>
