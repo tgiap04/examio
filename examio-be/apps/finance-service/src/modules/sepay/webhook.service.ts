@@ -3,8 +3,10 @@ import {
     NotFoundException,
     ConflictException,
     ForbiddenException,
+    UnauthorizedException,
     Logger,
 } from '@nestjs/common';
+import * as crypto from 'crypto';
 import { PrismaService } from '@examio/database';
 import { SepayWebhook } from '../../types/webhook';
 import { getPaymentIdFromWebhook } from '../../utils/handleWebhook';
@@ -45,9 +47,16 @@ export class WebhookService {
         data: SepayWebhook,
         apiKey: string
     ): Promise<{ success: boolean }> {
-        if (apiKey !== this.webhookSecretKey) {
-            this.logger.warn(`Invalid API key: ${apiKey}`);
-            return { success: false };
+        if (
+            !this.webhookSecretKey ||
+            !apiKey ||
+            !crypto.timingSafeEqual(
+                Buffer.from(apiKey),
+                Buffer.from(this.webhookSecretKey)
+            )
+        ) {
+            this.logger.warn(`Invalid API key received`);
+            throw new UnauthorizedException('Invalid API key');
         }
 
         // Chỉ xử lý tiền vào

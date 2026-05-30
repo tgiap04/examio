@@ -22,17 +22,28 @@ export class CryptoService {
     private readonly algorithm = 'aes-256-cbc';
 
     constructor() {
-        // Get secrets from environment
-        this.jwtSecret =
-            process.env.QUIZ_JWT_SECRET || 'default-quiz-jwt-secret-32chars!';
-        const aesKeyString =
-            process.env.QUIZ_AES_KEY || 'default-aes-256-key-32-chars!!!';
+        // Get secrets from environment — fail fast if not configured
+        const jwtSecret = process.env.QUIZ_JWT_SECRET;
+        const aesKeyString = process.env.QUIZ_AES_KEY;
 
-        // Ensure AES key is exactly 32 bytes
-        this.aesKey = Buffer.from(
-            aesKeyString.padEnd(32, '!').slice(0, 32),
-            'utf8'
-        );
+        if (!jwtSecret) {
+            throw new Error(
+                'QUIZ_JWT_SECRET environment variable is required. Set it in your environment configuration.'
+            );
+        }
+        if (!aesKeyString) {
+            throw new Error(
+                'QUIZ_AES_KEY environment variable is required. Set it in your environment configuration.'
+            );
+        }
+        if (jwtSecret.length < 32) {
+            throw new Error(
+                'QUIZ_JWT_SECRET must be at least 32 characters long.'
+            );
+        }
+
+        this.jwtSecret = jwtSecret;
+        this.aesKey = Buffer.from(aesKeyString.padEnd(32, '!').slice(0, 32), 'utf8');
     }
 
     /**

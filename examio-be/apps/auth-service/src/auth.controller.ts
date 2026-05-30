@@ -7,8 +7,12 @@ import {
     Get,
     Res,
     UnauthorizedException,
+    HttpCode,
+    HttpStatus,
+    Param,
 } from '@nestjs/common';
 import { AuthService, DeviceInfo } from './auth.service';
+import { RedisService } from '@examio/redis';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto, LoginResponse } from './dto/login.dto';
 import {
@@ -51,7 +55,12 @@ import * as crypto from 'crypto';
 )
 @Controller('auth')
 export class AuthController {
-    constructor(private readonly authService: AuthService) {}
+    private readonly EXCHANGE_CODE_TTL = 60; // 60 seconds
+
+    constructor(
+        private readonly authService: AuthService,
+        private readonly redisService: RedisService
+    ) {}
 
     private async ensureOauthSession(
         request: Request,
@@ -455,14 +464,24 @@ export class AuthController {
         const appCallback = redirectFromCookie || oauthState.redirect;
 
         // If redirect target is a mobile app scheme (e.g. "examio://auth/callback"),
-        // append tokens as query params and redirect directly to it.
+        // store tokens in Redis with a one-time exchange code and redirect with ?code=
+        // This prevents tokens from appearing in URL, server logs, and Referer headers.
         if (appCallback && /^[a-zA-Z][a-zA-Z0-9+\-.]*:\/\//.test(appCallback)) {
             try {
+                const exchangeCode = crypto.randomBytes(32).toString('hex');
+                // Store tokens in Redis with 60s TTL — one-time use
+                await this.redisService.set(
+                    `oauth:exchange:${exchangeCode}`,
+                    JSON.stringify({
+                        token,
+                        refreshToken,
+                        sessionId,
+                        userId: user?.id,
+                    }),
+                    this.EXCHANGE_CODE_TTL
+                );
                 const url = new URL(appCallback);
-                if (token) url.searchParams.set('token', token);
-                if (refreshToken) url.searchParams.set('refreshToken', refreshToken);
-                if (sessionId) url.searchParams.set('sessionId', sessionId);
-                if (user?.id) url.searchParams.set('userId', user.id);
+                url.searchParams.set('code', exchangeCode);
                 res.redirect(302, url.toString());
                 return;
             } catch {
@@ -572,5 +591,52 @@ export class AuthController {
         }
 
         return request.ip;
+    }
+
+    /**
+     * Exchange a one-time OAuth code for tokens.
+     * The code is stored in Redis with a 60-second TTL and is deleted after use.
+     * This prevents tokens from leaking via URL, server logs, or Referer headers.
+     */
+    @Post('exchange')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({ summary: 'Exchange OAuth code for tokens (mobile app)' })
+    @ApiResponse({ status: 200, description: 'Tokens exchanged successfully' })
+    @ApiResponse({ status: 401, description: 'Invalid or expired exchange code' })
+    async exchangeOAuthCode(
+        @Body('code') code: string
+    ): Promise<{
+        token: string;
+        refreshToken: string;
+        sessionId: string;
+        userId: string;
+    }> {
+        if (!code) {
+            throw new UnauthorizedException('Exchange code is required');
+        }
+
+        const key = `oauth:exchange:${code}`;
+        const data = await this.redisService.get<string>(key);
+
+        if (!data) {
+            throw new UnauthorizedException(
+                'Invalid or expired exchange code'
+            );
+        }
+
+        // Delete immediately — one-time use
+        await this.redisService.del(key);
+
+        try {
+            const parsed = JSON.parse(data) as {
+                token: string;
+                refreshToken: string;
+                sessionId: string;
+                userId: string;
+            };
+            return parsed;
+        } catch {
+            throw new UnauthorizedException('Malformed exchange data');
+        }
     }
 }

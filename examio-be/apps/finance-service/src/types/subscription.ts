@@ -1,9 +1,11 @@
 /**
  * FREE_MODE: Khi bật, tất cả người dùng đều có quyền truy cập không giới hạn
- * Đặt thành true để bỏ qua tất cả giới hạn thanh toán/subscription
- * Đặt thành false để bật lại hệ thống thanh toán
+ * Đặt thành true để bỏ qua tất cả giới hạn thanh toán/subscription (chỉ dùng khi phát triển local)
+ * Đặt thành false để bật lại hệ thống thanh toán thực tế
+ *
+ * CẢNH BÁO: Không bao giờ commit với FREE_MODE = true lên production
  */
-export const FREE_MODE = true;
+export const FREE_MODE = false;
 
 /**
  * Subscription Tier Constants

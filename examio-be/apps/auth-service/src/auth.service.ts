@@ -673,12 +673,18 @@ export class AuthService {
         // Generate new access token
         const token = this.jwtService.sign({ userId: user.id });
         const nextRefreshToken = this.generateRefreshToken();
+        const oldRefreshToken = session.refreshToken; // capture before rotation
 
         // Rotate refresh token and update last activity
         await this.userSessionRepository.rotateRefreshToken(
             session.sessionId,
             nextRefreshToken
         );
+
+        // Immediately invalidate the old refresh token to prevent replay attacks
+        if (oldRefreshToken) {
+            await this.userSessionRepository.deactivateByRefreshToken(oldRefreshToken);
+        }
 
         return {
             token,
