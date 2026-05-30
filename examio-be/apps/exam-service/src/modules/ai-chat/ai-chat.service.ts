@@ -596,10 +596,11 @@ export class AIChatService implements OnModuleInit {
 
     /**
      * FREE_MODE: Khi bật, bypass tất cả limits
+     * Chỉ dùng cho phát triển local — không bao giờ bật trên production
      */
     private async checkLimits(userId: string, chatId: string) {
         // FREE_MODE: Bypass all limits
-        const FREE_MODE = true;
+        const FREE_MODE = false;
         if (FREE_MODE) {
             this.logger.log(`[FREE_MODE] Bypassed limits for user ${userId}`);
             return;

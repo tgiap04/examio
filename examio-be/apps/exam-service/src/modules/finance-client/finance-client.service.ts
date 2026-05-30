@@ -23,9 +23,9 @@ interface WalletService {
 
 /**
  * FREE_MODE: Khi bật, bypass tất cả deduction credits
- * Đặt thành true để bỏ qua việc trừ credits
+ * Đặt thành false khi triển khai production — chỉ dùng true cho dev local
  */
-const FREE_MODE = true;
+const FREE_MODE = false;
 
 @Injectable()
 export class FinanceClientService implements OnModuleInit {

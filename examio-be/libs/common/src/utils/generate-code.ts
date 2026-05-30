@@ -1,9 +1,11 @@
+import * as crypto from 'crypto';
+
+/**
+ * Generate a cryptographically secure numeric code.
+ * Uses crypto.randomInt() instead of Math.random() to prevent prediction attacks.
+ */
 export function generateCode(length: number): string {
-    const characters = '0123456789';
-    let result = '';
-    for (let i = 0; i < length; i++) {
-        const randomIndex = Math.floor(Math.random() * characters.length);
-        result += characters[randomIndex];
-    }
-    return result;
+    const max = Math.pow(10, length);
+    const code = crypto.randomInt(0, max);
+    return code.toString().padStart(length, '0');
 }
