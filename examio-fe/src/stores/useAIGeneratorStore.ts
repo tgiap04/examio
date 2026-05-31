@@ -465,33 +465,31 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
       return;
     }
 
-    // Check balance before proceeding
-    const user = useAuthStore.getState().user;
-    const balance = user?.wallet?.balance || 0;
+    // [TEMP DISABLED] Check balance before proceeding
+    // const user = useAuthStore.getState().user;
+    // const balance = user?.wallet?.balance || 0;
 
-    // Calculate cost
-    const { calculateTotalCost, calculateRegenerateCost, checkBalance } =
-      await import("@/lib/creditUtils");
+    // [TEMP DISABLED] Calculate cost
+    // const { calculateTotalCost, calculateRegenerateCost, checkBalance } =
+    //   await import("@/lib/creditUtils");
 
-    let requiredCost: number;
-    if (uploadId && fileInfo) {
-      // Regenerating from existing file - only question cost
-      requiredCost = calculateRegenerateCost(questionCount);
-    } else if (file) {
-      // New file - OCR + question cost
-      const costs = calculateTotalCost(file.size, questionCount);
-      requiredCost = costs.totalCost;
-    } else {
-      requiredCost = calculateRegenerateCost(questionCount);
-    }
+    // [TEMP DISABLED] let requiredCost: number;
+    // [TEMP DISABLED] if (uploadId && fileInfo) {
+    //   requiredCost = calculateRegenerateCost(questionCount);
+    // } else if (file) {
+    //   const costs = calculateTotalCost(file.size, questionCount);
+    //   requiredCost = costs.totalCost;
+    // } else {
+    //   requiredCost = calculateRegenerateCost(questionCount);
+    // }
 
-    const { isEnough, deficit } = checkBalance(balance, requiredCost);
-    if (!isEnough) {
-      toast.error("Không đủ tín dụng", {
-        description: `Cần ${requiredCost} token, hiện có ${balance} token. Thiếu ${deficit} token.`,
-      });
-      return;
-    }
+    // [TEMP DISABLED] const { isEnough, deficit } = checkBalance(balance, requiredCost);
+    // [TEMP DISABLED] if (!isEnough) {
+    //   toast.error("Không đủ tín dụng", {
+    //     description: `Cần ${requiredCost} token, hiện có ${balance} token. Thiếu ${deficit} token.`,
+    //   });
+    //   return;
+    // }
 
     set({ isGenerating: true });
 
@@ -507,9 +505,9 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
           keyword: isNarrow ? keyword : undefined,
           modelType: selectedModel,
         });
-        if (jobResponse.newBalance !== undefined) {
-          useAuthStore.getState().updateWalletBalance(jobResponse.newBalance);
-        }
+        // [TEMP DISABLED] if (jobResponse.newBalance !== undefined) {
+        // [TEMP DISABLED]   useAuthStore.getState().updateWalletBalance(jobResponse.newBalance);
+        // [TEMP DISABLED] }
         jobId = jobResponse.jobId;
       } else {
         // Nếu có file mới, sử dụng generate API với job queue
@@ -521,9 +519,9 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
           keyword: isNarrow ? keyword : undefined,
           modelType: selectedModel,
         });
-        if (jobResponse.newBalance !== undefined) {
-          useAuthStore.getState().updateWalletBalance(jobResponse.newBalance);
-        }
+        // [TEMP DISABLED] if (jobResponse.newBalance !== undefined) {
+        // [TEMP DISABLED]   useAuthStore.getState().updateWalletBalance(jobResponse.newBalance);
+        // [TEMP DISABLED] }
         jobId = jobResponse.jobId;
       }
 
@@ -549,8 +547,8 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
           });
           // Refresh recent uploads list after successful generation
           useRecentUploadsStore.getState().fetchRecentUploads(true);
-          // Refresh user data to update wallet balance
-          useAuthStore.getState().getUser();
+          // [TEMP DISABLED] Refresh user data to update wallet balance
+          // [TEMP DISABLED] useAuthStore.getState().getUser();
         },
         // onError
         (error) => {
@@ -665,33 +663,31 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
         return;
       }
 
-      // Check balance before proceeding
-      const user = useAuthStore.getState().user;
-      const balance = user?.wallet?.balance || 0;
+      // [TEMP DISABLED] Check balance before proceeding
+      // const user = useAuthStore.getState().user;
+      // const balance = user?.wallet?.balance || 0;
 
-      // Calculate cost
-      const { calculateTotalCost, calculateRegenerateCost, checkBalance } =
-        await import("@/lib/creditUtils");
+      // [TEMP DISABLED] Calculate cost
+      // const { calculateTotalCost, calculateRegenerateCost, checkBalance } =
+      //   await import("@/lib/creditUtils");
 
-      let requiredCost: number;
-      if (uploadId && fileInfo) {
-        // Regenerating from existing file - only question cost
-        requiredCost = calculateRegenerateCost(cardCount);
-      } else if (file) {
-        // New file - OCR + question cost
-        const costs = calculateTotalCost(file.size, cardCount);
-        requiredCost = costs.totalCost;
-      } else {
-        requiredCost = calculateRegenerateCost(cardCount);
-      }
+      // [TEMP DISABLED] let requiredCost: number;
+      // [TEMP DISABLED] if (uploadId && fileInfo) {
+      //   requiredCost = calculateRegenerateCost(cardCount);
+      // } else if (file) {
+      //   const costs = calculateTotalCost(file.size, cardCount);
+      //   requiredCost = costs.totalCost;
+      // } else {
+      //   requiredCost = calculateRegenerateCost(cardCount);
+      // }
 
-      const { isEnough, deficit } = checkBalance(balance, requiredCost);
-      if (!isEnough) {
-        toast.error("Không đủ tín dụng", {
-          description: `Cần ${requiredCost} token, hiện có ${balance} token. Thiếu ${deficit} token.`,
-        });
-        return;
-      }
+      // [TEMP DISABLED] const { isEnough, deficit } = checkBalance(balance, requiredCost);
+      // [TEMP DISABLED] if (!isEnough) {
+      //   toast.error("Không đủ tín dụng", {
+      //     description: `Cần ${requiredCost} token, hiện có ${balance} token. Thiếu ${deficit} token.`,
+      //   });
+      //   return;
+      // }
 
       set({ isGenerating: true });
 
@@ -707,9 +703,9 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
             keyword: isNarrow ? keyword : undefined,
             modelType: selectedModel,
           });
-          if (jobResponse.newBalance !== undefined) {
-            useAuthStore.getState().updateWalletBalance(jobResponse.newBalance);
-          }
+          // [TEMP DISABLED] if (jobResponse.newBalance !== undefined) {
+          // [TEMP DISABLED]   useAuthStore.getState().updateWalletBalance(jobResponse.newBalance);
+          // [TEMP DISABLED] }
           jobId = jobResponse.jobId;
         } else {
           // Nếu có file mới, sử dụng generate API với job queue
@@ -721,9 +717,9 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
             keyword: isNarrow ? keyword : undefined,
             modelType: selectedModel,
           });
-          if (jobResponse.newBalance !== undefined) {
-            useAuthStore.getState().updateWalletBalance(jobResponse.newBalance);
-          }
+          // [TEMP DISABLED] if (jobResponse.newBalance !== undefined) {
+          // [TEMP DISABLED]   useAuthStore.getState().updateWalletBalance(jobResponse.newBalance);
+          // [TEMP DISABLED] }
           jobId = jobResponse.jobId;
         }
 
@@ -752,8 +748,8 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
             });
             // Refresh recent uploads list after successful generation
             useRecentUploadsStore.getState().fetchRecentUploads(true);
-            // Refresh user data to update wallet balance
-            useAuthStore.getState().getUser();
+            // [TEMP DISABLED] Refresh user data to update wallet balance
+            // [TEMP DISABLED] useAuthStore.getState().getUser();
           },
           // onError
           (error) => {

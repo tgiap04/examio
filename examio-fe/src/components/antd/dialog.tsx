@@ -8,6 +8,8 @@ type DialogContentProps = React.ComponentProps<"div"> & {
   onPointerDownOutside?: (event: React.PointerEvent) => void;
   onCloseAutoFocus?: (event: React.FocusEvent) => void;
   showCloseButton?: boolean;
+  bodyStyle?: React.CSSProperties;
+  modalWidth?: string | number;
 };
 const DialogContext = React.createContext<Ctx>({});
 
@@ -21,9 +23,9 @@ function DialogTrigger({ children, asChild }: React.PropsWithChildren<{ asChild?
   return <button type="button" onClick={() => ctx.onOpenChange?.(true)}>{children}</button>;
 }
 
-function DialogContent({ className, children, onEscapeKeyDown, onPointerDownOutside, onCloseAutoFocus, showCloseButton, ...props }: DialogContentProps) {
+function DialogContent({ className, children, onEscapeKeyDown, onPointerDownOutside, onCloseAutoFocus, showCloseButton, bodyStyle, modalWidth, ...props }: DialogContentProps) {
   const ctx = React.use(DialogContext);
-  return <Modal open={ctx.open} onCancel={() => ctx.onOpenChange?.(false)} footer={null} className={className} styles={{ body: { overflow: "auto" } }} {...(props as any)}>{children}</Modal>;
+  return <Modal width={modalWidth} open={ctx.open} onCancel={() => ctx.onOpenChange?.(false)} footer={null} className={className} styles={{ body: { overflow: "auto", pointerEvents: "auto", ...bodyStyle } }} {...(props as any)}>{children}</Modal>;
 }
 
 function DialogClose({ children, asChild, ...props }: React.PropsWithChildren<{ asChild?: boolean } & React.ComponentProps<"button">>) {

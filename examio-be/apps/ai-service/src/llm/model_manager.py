@@ -5,6 +5,7 @@ Model Manager Module de quan ly da model generation/chat va embedding.
 import asyncio
 import logging
 import os
+import time
 from enum import Enum
 from typing import Any, Dict, Optional
 
@@ -23,6 +24,26 @@ from src.llm.model_registry import (
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+# TTL cache for AI2 model names — avoids hitting the provider on every request
+_AI2_MODELS_CACHE_TTL_SECONDS = 300  # 5 minutes
+_ai2_models_cache: dict[str, tuple[float, set[str]]] = {}  # url -> (timestamp, model_names)
+
+
+def _get_cached_ai2_models(url: str) -> tuple[bool, set[str]]:
+    """Return (cache_hit, model_names_set)."""
+    entry = _ai2_models_cache.get(url)
+    if entry is None:
+        return False, set()
+    timestamp, names = entry
+    if time.monotonic() - timestamp > _AI2_MODELS_CACHE_TTL_SECONDS:
+        del _ai2_models_cache[url]
+        return False, set()
+    return True, names
+
+
+def _set_cached_ai2_models(url: str, names: set[str]) -> None:
+    _ai2_models_cache[url] = (time.monotonic(), names)
 
 
 class ModelType(str, Enum):
@@ -226,16 +247,22 @@ class ModelManager:
             )
 
         url = f'{self.get_ai2_base_url()}/models'
-        async with httpx.AsyncClient(timeout=30.0, trust_env=False) as client:
+        hit, cached = _get_cached_ai2_models(url)
+        if hit:
+            return cached
+
+        async with httpx.AsyncClient(timeout=10.0, trust_env=False) as client:
             response = await client.get(url, headers={'Authorization': f'Bearer {api_key}'})
             self._raise_ai2_status_error(response)
             data = response.json()
             models = data.get('data', [])
-            return {
+            names = {
                 item.get('id')
                 for item in models
                 if isinstance(item, dict) and item.get('id')
             }
+            _set_cached_ai2_models(url, names)
+            return names
 
     async def ensure_generation_model_ready(self, model_id: str) -> None:
         availability = await self.check_generation_model_availability(model_id)
