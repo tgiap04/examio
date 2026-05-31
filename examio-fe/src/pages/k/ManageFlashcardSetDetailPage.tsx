@@ -17,6 +17,7 @@ import {
 import type { Flashcard as FlashCard } from "@/types/flashcardSet";
 import { DeleteConfirmDialog } from "@/components/organisms/DeleteConfirmDialog";
 import { FlashcardEditorDialog } from "@/components/organisms/FlashcardEditorDialog";
+import type { FlashcardFormData } from "@/components/organisms/FlashcardEditorDialog";
 import { FlashcardLabelManager } from "@/components/organisms/FlashcardLabelManager";
 import { RichTextViewer } from "@/components/molecules/RichTextViewer";
 import {
@@ -37,9 +38,11 @@ import {
 import {
   getFlashcardSetFlashcardsApi,
   getFlashcardSetLabelsApi,
+  updateFlashcardInFlashcardSet,
   type PaginationInfo,
   type FlashcardSetLabel,
 } from "@/apis/flashcardSetApi";
+import { storeCache } from "@/lib/storeCache";
 
 export default function ManageFlashcardSetDetailPage() {
   const { id = "" } = useParams();
@@ -64,7 +67,6 @@ export default function ManageFlashcardSetDetailPage() {
   const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
   const [availableLabels, setAvailableLabels] = useState<FlashcardSetLabel[]>([]);
   const [_labelsLoading, setLabelsLoading] = useState(false);
-
   useEffect(() => {
     if (id) {
       fetchFlashcardSetById(id);
@@ -111,16 +113,36 @@ export default function ManageFlashcardSetDetailPage() {
   const totalFlashcards = pagination?.total || 0;
   const totalPages = pagination?.totalPages || 0;
 
+  // Cache key generator for flashcards by label
+  const getLabelFlashcardsCacheKey = (labelId: string) =>
+    storeCache.createKey("flashcards-by-label", { flashcardSetId: id, labelId });
+
+  // Invalidate label flashcards cache when card CUD or label CUD
+  const invalidateLabelFlashcardsCache = (labelId: string) => {
+    const cacheKey = getLabelFlashcardsCacheKey(labelId);
+    storeCache.invalidate(cacheKey);
+  };
+
+  // Handle label change from FlashcardLabelManager
+  const handleLabelChange = useCallback(
+    (_action: "create" | "update" | "delete", labelId?: string) => {
+      if (labelId) {
+        invalidateLabelFlashcardsCache(labelId);
+      }
+      // Refresh labels list
+      fetchLabels();
+    },
+    [fetchLabels],
+  );
+
   const handleAddCard = useCallback(() => {
     setSelectedCard(null);
     setShowCardForm(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const handleEditCard = useCallback((card: FlashCard) => {
     setSelectedCard(card);
     setShowCardForm(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
   const handleDeleteCard = useCallback((cardId: string) => {
@@ -130,29 +152,49 @@ export default function ManageFlashcardSetDetailPage() {
 
   const handleConfirmDelete = useCallback(async () => {
     if (cardToDelete && id) {
+      // Find the card to get its labelId before deletion
+      const cardToDeleteObj = paginatedFlashcards.find((c) => c.id === cardToDelete);
+      const cardLabelId = cardToDeleteObj?.label?.id;
+
       await deleteFlashcard(id, cardToDelete);
       setIsDeleteDialogOpen(false);
       setCardToDelete(null);
+
+      // Invalidate label cache if card had label
+      if (cardLabelId) {
+        invalidateLabelFlashcardsCache(cardLabelId);
+      }
+
       if (paginatedFlashcards.length === 1 && currentPage > 1) {
         setCurrentPage((prev) => prev - 1);
+        await fetchFlashcards();
       } else {
-        fetchFlashcards();
+        await fetchFlashcards();
       }
     }
-  }, [cardToDelete, id, deleteFlashcard, paginatedFlashcards.length, currentPage, fetchFlashcards]);
+  }, [cardToDelete, id, deleteFlashcard, paginatedFlashcards, currentPage, fetchFlashcards]);
 
   const handleSaveCard = useCallback(
-    async (cardData: any) => {
+    async (cardData: FlashcardFormData) => {
       if (!id) return;
 
       if (selectedCard) {
-        await updateFlashcard(id, selectedCard.id, cardData);
+        // Call API directly and update local state with returned data
+        const response = await updateFlashcardInFlashcardSet(id, selectedCard.id, cardData);
+        setPaginatedFlashcards((prev) =>
+          prev.map((card) => (card.id === selectedCard.id ? response.flashcard : card))
+        );
+        // Invalidate label cache if card has label
+        if (selectedCard.label?.id) {
+          invalidateLabelFlashcardsCache(selectedCard.label.id);
+        }
       } else {
         await addFlashcard(id, cardData);
+        await fetchFlashcards();
       }
+
       setShowCardForm(false);
       setSelectedCard(null);
-      fetchFlashcards();
     },
     [selectedCard, id, addFlashcard, updateFlashcard, fetchFlashcards],
   );
@@ -248,7 +290,10 @@ export default function ManageFlashcardSetDetailPage() {
           </Card>
         </div>
 
-        <FlashcardLabelManager flashcardSetId={id} />
+        <FlashcardLabelManager
+          flashcardSetId={id}
+          onLabelChange={handleLabelChange}
+        />
 
         <FlashcardEditorDialog
           open={showCardForm}

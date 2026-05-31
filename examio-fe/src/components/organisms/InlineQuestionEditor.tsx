@@ -247,7 +247,7 @@ export function InlineQuestionEditor({
         {options.length < 6 && (
           <Button
             variant="outline"
-            size="sm"
+            size="lg"
             onClick={handleAddOption}
             className="w-full"
           >
@@ -259,8 +259,8 @@ export function InlineQuestionEditor({
 
       {/* Actions */}
       <div className="flex gap-2 justify-end pt-2 border-t border-hairline">
-        <Button variant="outline" size="sm" onClick={onCancel}>Hủy</Button>
-        <Button size="sm" onClick={handleSave}>
+        <Button variant="outline" size="lg" onClick={onCancel}>Hủy</Button>
+        <Button size="lg" onClick={handleSave}>
           <Check className="mr-1.5 h-3.5 w-3.5" />
           {question ? "Cập nhật" : "Thêm"}
         </Button>

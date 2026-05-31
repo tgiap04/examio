@@ -23,7 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/antd/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/antd/tabs";
-import { Tag, Plus, MoreVertical, Edit, Trash2 } from "lucide-react";
+import { Tag, Plus, MoreVertical, Edit, Trash2, Eye, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   FlashcardSetLabel,
@@ -35,7 +35,10 @@ import {
 } from "@/apis/flashcardSetApi";
 import { toast } from "@/components/antd/toast";
 import { useFlashcardSetStore } from "@/stores/useFlashcardSetStore";
+import { ViewFlashcardDialog } from "@/components/organisms/ViewFlashcardDialog";
 import { RichTextViewer } from "@/components/molecules/RichTextViewer";
+import { Flashcard } from "@/types/flashcardSet";
+import { storeCache } from "@/lib/storeCache";
 
 const LABEL_COLORS = [
   "#3B82F6",
@@ -50,10 +53,13 @@ const LABEL_COLORS = [
 
 interface FlashcardLabelManagerProps {
   flashcardSetId: string;
+  /** Called when a label is created, updated, or deleted */
+  onLabelChange?: (action: "create" | "update" | "delete", labelId?: string) => void;
 }
 
 export function FlashcardLabelManager({
   flashcardSetId,
+  onLabelChange,
 }: FlashcardLabelManagerProps) {
   const { invalidateCache } = useFlashcardSetStore();
   const [labels, setLabels] = useState<FlashcardSetLabel[]>([]);
@@ -74,9 +80,13 @@ export function FlashcardLabelManager({
   const [editDescription, setEditDescription] = useState("");
   const [editColor, setEditColor] = useState("");
 
+  // View flashcard dialog
+  const [viewFlashcard, setViewFlashcard] = useState<Flashcard | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+
   // Flashcards by label
   const [selectedLabelId, setSelectedLabelId] = useState<string | null>(null);
-  const [labelFlashcards, setLabelFlashcards] = useState<any[]>([]);
+  const [labelFlashcards, setLabelFlashcards] = useState<Flashcard[]>([]);
   const [loadingFlashcards, setLoadingFlashcards] = useState(false);
 
   // Load labels
@@ -97,12 +107,30 @@ export function FlashcardLabelManager({
     loadLabels();
   }, [loadLabels]);
 
+  // Cache key generator for flashcards by label
+  const getLabelFlashcardsCacheKey = (labelId: string) =>
+    storeCache.createKey("flashcards-by-label", { flashcardSetId, labelId });
+
   const loadLabelFlashcards = useCallback(
-    async (labelId: string) => {
+    async (labelId: string, forceRefresh = false) => {
+      const cacheKey = getLabelFlashcardsCacheKey(labelId);
+
+      // Check cache first (unless force refresh)
+      if (!forceRefresh) {
+        const cached = storeCache.get<Flashcard[]>(cacheKey);
+        if (cached !== null) {
+          setLabelFlashcards(cached);
+          return;
+        }
+      }
+
       setLoadingFlashcards(true);
       try {
         const response = await getFlashcardsByLabelApi(flashcardSetId, labelId);
-        setLabelFlashcards(response.flashCards || []);
+        const flashcards = response.flashCards || [];
+        setLabelFlashcards(flashcards);
+        // Cache the result
+        storeCache.set(cacheKey, flashcards);
       } catch (error) {
         console.error("Failed to load flashcards:", error);
         toast.error("Không thể tải thẻ ghi nhớ");
@@ -113,6 +141,12 @@ export function FlashcardLabelManager({
     },
     [flashcardSetId],
   );
+
+  // Invalidate cache for a specific label
+  const invalidateLabelCache = (labelId: string) => {
+    const cacheKey = getLabelFlashcardsCacheKey(labelId);
+    storeCache.invalidate(cacheKey);
+  };
 
   // Load flashcards for selected label
   useEffect(() => {
@@ -142,6 +176,8 @@ export function FlashcardLabelManager({
 
       // Invalidate cache to refresh data across components
       invalidateCache();
+      // Notify parent for cache invalidation
+      onLabelChange?.("create", response.label.id);
     } catch (error) {
       console.error("Failed to create label:", error);
       toast.error("Tạo nhãn thất bại");
@@ -170,6 +206,9 @@ export function FlashcardLabelManager({
 
       // Invalidate cache to refresh data across components
       invalidateCache();
+      // Invalidate this label's flashcards cache and notify parent
+      invalidateLabelCache(editingLabel.id);
+      onLabelChange?.("update", editingLabel.id);
     } catch (error) {
       console.error("Failed to update label:", error);
       toast.error("Cập nhật nhãn thất bại");
@@ -194,6 +233,9 @@ export function FlashcardLabelManager({
 
       // Invalidate cache to refresh data across components
       invalidateCache();
+      // Invalidate this label's flashcards cache and notify parent
+      invalidateLabelCache(labelId);
+      onLabelChange?.("delete", labelId);
     } catch (error) {
       console.error("Failed to delete label:", error);
       toast.error("Xóa nhãn thất bại");
@@ -205,6 +247,11 @@ export function FlashcardLabelManager({
     setEditName(label.name);
     setEditDescription(label.description || "");
     setEditColor(label.color || "");
+  };
+
+  const handleViewFlashcard = (flashcard: Flashcard) => {
+    setViewFlashcard(flashcard);
+    setIsViewDialogOpen(true);
   };
 
   if (loading) {
@@ -394,6 +441,13 @@ export function FlashcardLabelManager({
           </TabsContent>
         </Tabs>
 
+        {/* Back button */}
+        {selectedLabelId && (
+          <Button variant="ghost" size="sm" className="mb-4" onClick={() => setSelectedLabelId(null)}>
+            <ChevronLeft className="h-4 w-4 mr-1" />
+            Quay lại danh sách nhãn
+          </Button>
+        )}
         {/* Flashcards by label */}
         {selectedLabelId && (
           <div className="mt-6">
@@ -414,10 +468,13 @@ export function FlashcardLabelManager({
                     key={flashcard?.id || index}
                     className="p-3 border rounded-lg"
                   >
-                    <div className="flex items-center gap-2 mb-3">
+                    <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-medium text-muted-foreground">
                         {index + 1}.
                       </span>
+                      <Button variant="ghost" size="sm" onClick={() => handleViewFlashcard(flashcard)}>
+                        <Eye className="h-4 w-4" />
+                      </Button>
                     </div>
                     <div className="space-y-3">
                       <div>
@@ -444,6 +501,13 @@ export function FlashcardLabelManager({
           </div>
         )}
       </CardContent>
+
+      {/* View Flashcard Dialog */}
+      <ViewFlashcardDialog
+        flashcard={viewFlashcard}
+        open={isViewDialogOpen}
+        onOpenChange={setIsViewDialogOpen}
+      />
 
       {/* Edit Label Dialog */}
       {editingLabel && (

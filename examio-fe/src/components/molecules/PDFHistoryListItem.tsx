@@ -50,7 +50,7 @@ export function PDFHistoryListItem({
   const StatusIcon = config.icon;
 
   return (
-    <div className="flex items-start gap-3 py-3 border-b border-border/50 last:border-b-0">
+    <div className="flex items-start gap-3 p-3 border-b border-border/50 last:border-b-0">
       {/* PDF Icon */}
       <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center">
         <FileText className="h-5 w-5 text-yellow-600" />

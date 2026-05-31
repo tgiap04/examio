@@ -186,15 +186,6 @@ export function KLayout({ children }: PropsWithChildren) {
             <div className="ml-auto flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setLanguage((current) => current === "VI" ? "EN" : "VI")}
-                className="hidden min-h-10 items-center gap-2 rounded-lg border border-hairline bg-surface-soft px-3 text-sm font-medium text-body transition-colors hover:bg-surface-card hover:text-ink sm:flex"
-                aria-label="Chọn ngôn ngữ"
-              >
-                <Languages className="h-4 w-4 text-coral" />
-                {language}
-              </button>
-              <button
-                type="button"
                 onClick={() => setTheme(isDarkMode ? "light" : "dark")}
                 className="grid h-10 w-10 place-items-center rounded-lg border border-hairline bg-surface-soft text-body transition-colors hover:bg-surface-card hover:text-ink"
                 aria-label={isDarkMode ? "Bật giao diện sáng" : "Bật giao diện tối"}
