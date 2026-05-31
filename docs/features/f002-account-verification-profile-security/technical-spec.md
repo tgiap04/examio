@@ -4,10 +4,11 @@
 - FR001: The system shall let authenticated users request a verification email/code through `/api/v1/auth/sendVerificationEmail`.
 - FR002: The system shall let authenticated users submit verification through `/api/v1/auth/verifyAccount` and update account verification state.
 - FR003: The system shall display account verification access from `/k/verify` and workspace verification notices.
-- FR004: The system shall let authenticated users view and update their own profile details through profile APIs.
-- FR005: The system shall let authenticated users upload avatar and banner media through R2-backed image upload routes.
+- FR004: The system shall let authenticated users view and update their own profile details through profile APIs (`getProfileApi`, `updateProfileApi`).
+- FR005: The system shall let authenticated users upload avatar and banner media through R2-backed image upload routes (`uploadAvatarApi`, `uploadBannerApi`).
 - FR006: The system shall let authenticated users view and manage their own active devices/sessions.
 - FR007: The system shall let authenticated users change password through authenticated password-change routes.
+- FR008: The Profile page (`/k/profile`) shall display user info in three tabs: **Profile** (avatar/banner, name, bio, email), **Security** (change password section), and **Devices** (active session/device list with logout capability).
 
 ## Business Rules
 - BR001: Only authenticated users can verify their own account.

@@ -13,7 +13,7 @@
 - BR001: Upload and generation require authentication. Source: PERM029, PERM030.
 - BR002: Users may view/delete/regenerate only own uploads/jobs/history. Source: PERM031.
 - BR003: Client notes a 50MB upload limit; backend/R2 exact limits Need verification. Source: PERM029.
-- BR004: Web `FREE_MODE = true` bypasses client credit checks; backend subscription/credit enforcement Needs verification. Source: BL065.
+- BR004: `FREE_MODE = false` in production; all credit and subscription checks are enforced. The `useAIGeneratorStore` no longer checks wallet balance before generation requests. Source: BL065.
 - BR005: R2 asset deletion must be coordinated with DB record deletion; exact implementation Needs verification.
 
 ## State Management

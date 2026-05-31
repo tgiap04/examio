@@ -10,7 +10,7 @@
 ## Business Rules
 - BR001: Only an exam participant/session client with valid access may take an exam or log cheating violations. Linked FR: FR001, FR005.
 - BR002: Exam session lifecycle, access code/whitelist/sharing, passing score, and retake rules influence whether attempts can start or continue; detailed transitions Need verification. Linked FR: FR001, FR002.
-- BR003: Standalone web exam routes are not ProtectedRoute-wrapped; API/session/code authorization is the enforcement point. Linked FR: FR001.
+- BR003: Standalone web exam routes are not ProtectedRoute-wrapped; both `ExamSessionPage` and `ExamQuizPage` now include client-side auth checks that redirect unauthenticated users to `/login?from=...` before loading exam data. API/session/code authorization is the secondary enforcement point. Linked FR: FR001.
 - BR004: Anti-cheating penalties, thresholds, and lockout/end-exam behavior Need verification. Linked FR: FR005.
 
 ## State Machines

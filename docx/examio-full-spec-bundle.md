@@ -1,6 +1,7 @@
 # Examio Full Specification Bundle
 
-Generated: 2026-05-27T21:21:58.489406
+Generated: 2026-05-31T10:43:00.041596
+
 
 
 ---
@@ -38,6 +39,7 @@ Successful registration also starts account setup behind the scenes, including w
 | Register email already exists | Register API rejects duplicate account | This email is already registered. |
 | Session expires during workspace use | Axios tries refresh once, then retries original request | Session refreshed. |
 | Refresh token/session is invalid | Client clears auth state and redirects to `/login` | Your session expired. Please sign in again. |
+| Session invalidated on `/login` page (403) | Client clears auth state without setting a redirect-back target (prevents loop), alerts the user, and stays on `/login` | Bạn đã bị đăng xuất từ thiết bị khác |
 | OAuth callback lacks valid tokens | Client cannot persist auth and keeps/returns user to login | Google sign-in failed. Please try again. |
 | Password reset code is invalid or expired | Reset password API rejects submission | The reset code is invalid or expired. |
 | Network fails during auth request | Request fails without session change | Could not connect. Please try again. |
@@ -66,13 +68,14 @@ Successful registration also starts account setup behind the scenes, including w
 
 ## User Journey
 1. Visitor opens login or register.
-2. Visitor signs up with email/password or starts Google OAuth.
+2. Visitor signs up with email/password or starts Google OAuth. If the signup URL contains a `?from=` parameter, the user is redirected to that path after successful registration (overrides the default `/k` redirect).
 3. Backend authenticates the user, creates session credentials, and returns tokens/cookies.
-4. Client persists auth state and sends user to `/k`.
+4. Client persists auth state and sends user to `/k` or the `?from=` target if provided.
 5. Authenticated user revisits public auth pages and is redirected back to the workspace.
-6. If an API call returns expired session, the client attempts refresh and retries once.
-7. If refresh fails, local auth state is cleared and the user returns to `/login`.
-8. For forgotten passwords, the user requests a reset code, submits the code and new password, then returns to the appropriate sign-in/success path. Exact redirect Needs verification.
+6. If an API call returns expired session (401), the client attempts refresh and retries once.
+7. If refresh fails, local auth state is cleared and the user returns to `/login`. Redirect back target is not stored when already on `/login` to prevent redirect loops.
+8. On 403 session invalidation (e.g., session killed by admin or from another device), client clears auth state, alerts the user, and redirects to `/login`. Redirect loop prevention applies.
+9. For forgotten passwords, the user requests a reset code, submits the code and new password, then returns to the appropriate sign-in/success path. Exact redirect Needs verification.
 
 ## Artifact References
 - `screen-list.md` SCR008-SCR012, SCR101-SCR105, SCR201-SCR205
@@ -102,6 +105,8 @@ Successful registration also starts account setup behind the scenes, including w
 - BR004: New user registration triggers backend wallet bootstrap via finance integration/event flow.
 - BR005: Backend accepts cookie-first JWT auth with Bearer token fallback.
 - BR006: iOS KMP secure token storage is incomplete; iOS auth currently relies on Swift Keychain storage.
+- BR007: Registration supports `?from=` query parameter — signup success redirects to the specified return path when present, falling back to backend `redirectTo` then `/k`.
+- BR008: Auth failure redirect loop is prevented — `handleAuthFailure` does not call `setRedirectBackTarget` when the current path is already `/login`. On 403 session invalidation, the same guard applies.
 
 ## State Machines
 - SM001 Session state: anonymous -> authenticating -> authenticated -> refreshing -> authenticated, or refreshing -> expired -> anonymous.
@@ -110,8 +115,9 @@ Successful registration also starts account setup behind the scenes, including w
 
 ## Algorithms
 - ALG001: Web Axios attaches `Authorization: Bearer {auth_token}` and `X-Device-ID` to requests.
-- ALG002: On 401, web runs a single-flight refresh promise, retries the failed request once, then clears auth and redirects to `/login` if refresh fails.
+- ALG002: On 401, web runs a single-flight refresh promise, retries the failed request once, then clears auth and redirects to `/login` if refresh fails. Redirect loop is prevented: `setRedirectBackTarget` is not called when the current path is `/login`.
 - ALG003: OAuth callback parsing stores returned tokens and removes token query params from the URL.
+- ALG004: On `403` session invalidation, the client clears auth state, shows `alert("Bạn đã bị đăng xuất từ thiết bị khác")`, and redirects to `/login`. Redirect back target is set only when the current path is not `/login` to prevent redirect loops.
 
 ## Integrations
 - INT001: Gateway proxies `/api/v1/auth/*` to auth-service.
@@ -190,7 +196,7 @@ Mobile account screens exist, but the artifacts say most non-auth mobile account
 # F002 - Account Verification & Profile Security Screens
 
 ## Screen List
-- SCR013 `/k/profile` - Profile form, devices, and password change.
+- SCR013 `/k/profile` - Profile page with tabbed interface: **Profile** tab (avatar, banner, name, bio, email), **Security** tab (change password), **Devices** tab (active devices/sessions with logout). Uses `ProfileForm`, `ChangePasswordSection`, `DeviceList` subcomponents.
 - SCR014 `/k/verify` - Account email verification.
 - REG003 KLayout - Workspace shell that can show verification banner and pending job dialog.
 - SCR114 Android AccountScreen - Mock-backed account/profile/wallet/settings UI; repository wiring Needs verification.
@@ -202,9 +208,11 @@ Mobile account screens exist, but the artifacts say most non-auth mobile account
 2. If the account is unverified, the workspace can surface a verification prompt.
 3. User opens `/k/verify`, requests or enters a verification code, and submits it.
 4. User returns to workspace or the prior page. Exact post-verification route Needs verification.
-5. User opens `/k/profile` to edit profile fields or upload avatar/banner media.
-6. User reviews device/session list and logs out an unwanted session.
-7. User may change password from the profile/security area through authenticated password-change flow.
+5. User opens `/k/profile` — profile data is loaded via `getProfileApi()` (separate from auth store).
+6. User switches between **Profile** tab (edit name, bio, upload avatar/banner), **Security** tab (change password with current password and OTP code), and **Devices** tab (view active sessions, logout remote devices, logout all other sessions).
+7. Avatar upload triggers local preview (`FileReader`) before persisting to R2 via `uploadAvatarApi`.
+8. User reviews device/session list and logs out an unwanted session.
+9. User may change password from the Security tab through authenticated password-change flow with current password validation and OTP verification.
 
 ## Artifact References
 - `screen-list.md` SCR013-SCR014, REG003, SCR114-SCR115, SCR211
@@ -222,10 +230,11 @@ Mobile account screens exist, but the artifacts say most non-auth mobile account
 - FR001: The system shall let authenticated users request a verification email/code through `/api/v1/auth/sendVerificationEmail`.
 - FR002: The system shall let authenticated users submit verification through `/api/v1/auth/verifyAccount` and update account verification state.
 - FR003: The system shall display account verification access from `/k/verify` and workspace verification notices.
-- FR004: The system shall let authenticated users view and update their own profile details through profile APIs.
-- FR005: The system shall let authenticated users upload avatar and banner media through R2-backed image upload routes.
+- FR004: The system shall let authenticated users view and update their own profile details through profile APIs (`getProfileApi`, `updateProfileApi`).
+- FR005: The system shall let authenticated users upload avatar and banner media through R2-backed image upload routes (`uploadAvatarApi`, `uploadBannerApi`).
 - FR006: The system shall let authenticated users view and manage their own active devices/sessions.
 - FR007: The system shall let authenticated users change password through authenticated password-change routes.
+- FR008: The Profile page (`/k/profile`) shall display user info in three tabs: **Profile** (avatar/banner, name, bio, email), **Security** (change password section), and **Devices** (active session/device list with logout capability).
 
 ## Business Rules
 - BR001: Only authenticated users can verify their own account.
@@ -576,7 +585,7 @@ Artifact refs: `feature-list.md` F005, `user-stories.md` US007, `behavior-logic.
 ## Screen List
 - SCR017 `/k/flash-card` - browse/search/create flashcard sets.
 - SCR023 `/k/manage-flashcard-set/:id` - edit a set, cards, labels, and sharing.
-- SCR030 `/study-flashcard/:id` - standalone flashcard study flow; no web route guard, API access required.
+- SCR030 `/study-flashcard/:id` - standalone flashcard study flow; no web route guard, but the page now includes an auth check that redirects unauthenticated users to `/login?from=...`. API access is the secondary enforcement point.
 - SCR016 `/k/my-materials` - recent materials can link to flashcard study.
 - SCR112 Android StudyScreen - mock-backed study/material list.
 - SCR209 iOS StudyView - mock-backed material list and flashcard study.
@@ -585,9 +594,11 @@ Artifact refs: `feature-list.md` F005, `user-stories.md` US007, `behavior-logic.
 1. User opens the workspace flashcard page.
 2. User creates or selects a flashcard set.
 3. User edits title/tags/cards/labels and sharing settings where permitted.
-4. User starts study from the set, My Materials, or a shared link.
-5. The study screen loads accessible cards and submits progress/answers.
-6. User returns to materials/history with updated progress where supported; exact history display Needs verification.
+4. In the label management UI, user can now click an eye icon to view a flashcard's full content in `ViewFlashcardDialog` without navigating away from the label view.
+5. User starts study from the set, My Materials, or a shared link.
+6. If not authenticated, the study page redirects to `/login?from=...` preserving the return path.
+7. The study screen loads accessible cards and submits progress/answers.
+8. User returns to materials/history with updated progress where supported; exact history display Needs verification.
 
 Artifact refs: `screen-list.md` SCR016, SCR017, SCR023, SCR030, SCR112, SCR209; `screen-flow.md` FLW021-FLW023.
 
@@ -606,6 +617,8 @@ Artifact refs: `screen-list.md` SCR016, SCR017, SCR023, SCR030, SCR112, SCR209; 
 - FR005: Study flow records progress and answer submissions through the flashcard study API.
 - FR006: Student material surfaces can show recent/pinned/shared flashcard sets where available.
 - FR007: Mobile flashcard/study screens are represented in Android/iOS UI, but current platform feature screens are mock-backed; API wiring Needs verification.
+- FR008: Within `FlashcardLabelManager`, users can now view a flashcard's full content directly via `ViewFlashcardDialog` without leaving the label management view.
+- FR009: Flashcards loaded by label are cached client-side (`storeCache` with key `flashcards-by-label`) to avoid redundant API calls when switching labels.
 
 ## Business Rules
 - BR001: Creating or managing flashcard sets requires authentication. Source: PERM019, PERM020.
@@ -725,7 +738,7 @@ Artifact refs: `screen-list.md` SCR018, SCR020, SCR024, SCR108, SCR109, SCR208; 
 - BR001: Upload and generation require authentication. Source: PERM029, PERM030.
 - BR002: Users may view/delete/regenerate only own uploads/jobs/history. Source: PERM031.
 - BR003: Client notes a 50MB upload limit; backend/R2 exact limits Need verification. Source: PERM029.
-- BR004: Web `FREE_MODE = true` bypasses client credit checks; backend subscription/credit enforcement Needs verification. Source: BL065.
+- BR004: `FREE_MODE = false` in production; all credit and subscription checks are enforced. The `useAIGeneratorStore` no longer checks wallet balance before generation requests. Source: BL065.
 - BR005: R2 asset deletion must be coordinated with DB record deletion; exact implementation Needs verification.
 
 ## State Management
@@ -857,6 +870,7 @@ Artifact refs: `screen-list.md` SCR024, SCR025, SCR108, SCR208; `screen-flow.md`
 - ALG001: Streaming chat sends message/context to gateway/exam-service/Python and appends SSE chunks until completion.
 - ALG002: Multi-document chat resolves selected `UserStorage` records, links them through `AIChatDocument`, and sends relevant context to Python AI service.
 - ALG003: Knowledge ingestion imports/uploads files, processes them, and exposes graph/stat views; exact graph persistence Needs verification.
+- ALG004: AI2 model names are cached server-side in the Python AI service with a 5-minute TTL (`_ai2_models_cache` dict) to avoid hitting the AI2 provider `/models` endpoint on every catalog request.
 
 ## Integrations
 - INT001: API007 `/ai-chat/*` and Python `/api/chat/*` for chat and streaming.
@@ -1057,11 +1071,12 @@ Some important behavior still Needs verification: exact anti-cheating thresholds
 
 ## User Journey
 1. Student opens an exam session link or enters through the exam session route.
-2. System loads session details and checks whether the student can join.
-3. Student starts or resumes the attempt and receives quiz content.
-4. Student answers questions, moves between questions, marks items, and progress is saved.
-5. Proctoring events are logged when suspicious browser behavior is detected.
-6. Student submits the exam and sees result/history according to available attempt data.
+2. System checks authentication status — unauthenticated users are redirected to `/login?from=...` with the return path preserved.
+3. System loads session details and checks whether the student can join.
+4. Student starts or resumes the attempt and receives quiz content.
+5. Student answers questions, moves between questions, marks items, and progress is saved.
+6. Proctoring events are logged when suspicious browser behavior is detected.
+7. Student submits the exam and sees result/history according to available attempt data.
 
 ## Artifact References
 - `screen-list.md` SCR031, SCR032, SCR210.
@@ -1085,7 +1100,7 @@ Some important behavior still Needs verification: exact anti-cheating thresholds
 ## Business Rules
 - BR001: Only an exam participant/session client with valid access may take an exam or log cheating violations. Linked FR: FR001, FR005.
 - BR002: Exam session lifecycle, access code/whitelist/sharing, passing score, and retake rules influence whether attempts can start or continue; detailed transitions Need verification. Linked FR: FR001, FR002.
-- BR003: Standalone web exam routes are not ProtectedRoute-wrapped; API/session/code authorization is the enforcement point. Linked FR: FR001.
+- BR003: Standalone web exam routes are not ProtectedRoute-wrapped; both `ExamSessionPage` and `ExamQuizPage` now include client-side auth checks that redirect unauthenticated users to `/login?from=...` before loading exam data. API/session/code authorization is the secondary enforcement point. Linked FR: FR001.
 - BR004: Anti-cheating penalties, thresholds, and lockout/end-exam behavior Need verification. Linked FR: FR005.
 
 ## State Machines
@@ -1150,10 +1165,10 @@ Production behavior Needs verification for frontend free-mode bypass, exact subs
 | Payment creation fails | No QR/payment instruction is shown; user can retry. | We could not create the payment. Please try again. |
 | Payment polling times out | UI stops waiting or asks user to refresh; exact timeout Needs verification. | Payment is still pending. Please check again shortly. |
 | Webhook arrives twice | Backend should avoid double-crediting; idempotency Needs verification. | Payment already processed. |
-| Webhook API key invalid | Webhook is rejected and payment remains pending. | Payment confirmation could not be verified yet. |
+| Webhook API key invalid | Webhook throws `UnauthorizedException` using `crypto.timingSafeEqual` for comparison (timing-attack safe). Payment remains pending. | Invalid API key |
 | Payment succeeds but wallet refresh fails | Payment record may be updated, but UI still shows stale balance until refresh. | Payment received. Refreshing your wallet failed. |
 | Subscription plan endpoint missing | UI/client referenced endpoint may not match backend route table. | Subscription plans are temporarily unavailable. |
-| Free-mode bypass enabled | Frontend may allow usage without credit checks; production policy Needs verification. | Premium checks are currently unavailable. |
+| Free-mode bypass disabled | `FREE_MODE = false` in production; all credit and subscription checks are enforced. Flag is strictly development-only and must never be `true` in production commits. | Premium checks are currently unavailable. |
 
 
 ---
@@ -1199,9 +1214,10 @@ Production behavior Needs verification for frontend free-mode bypass, exact subs
 ## Business Rules
 - BR001: Users can view only their own wallet, payments, and subscription information. Linked FR: FR001-FR004.
 - BR002: New user registration triggers wallet creation through event/gRPC-backed finance workflow. Linked FR: FR001.
-- BR003: Webhook calls require API-key protection per scout evidence. Linked FR: FR005.
-- BR004: `FREE_MODE = true` currently bypasses frontend credit checks; production intent Needs verification. Linked FR: FR001, FR006.
+- BR003: Webhook calls require API-key protection — validated via `crypto.timingSafeEqual` to prevent timing attacks. Invalid API keys throw `UnauthorizedException` (not silent failure). Linked FR: FR005, SEC002.
+- BR004: `FREE_MODE = false` (disabled) in production — credit and subscription checks are fully enforced. This flag is strictly development-only and must never be `true` in production commits. Linked FR: FR001, FR006, SEC001.
 - BR005: Payment success/failure must be reflected in wallet/subscription events and persisted records. Linked FR: FR003, FR005.
+- BR006: Critical environment variables (`QUIZ_JWT_SECRET`, `QUIZ_AES_KEY`) are validated at startup — service fails to initialize if missing or invalid, preventing silent fallback to weak defaults. Linked FR: SEC001.
 
 ## State Machines
 - SM001: Payment lifecycle: created -> pending/QR shown -> paid/succeeded or failed/cancelled -> wallet/subscription refreshed. Exact enum values Need verification. Linked FR: FR002-FR005.
@@ -1909,10 +1925,11 @@ Source: scout reports and `_scout-bl-inventory.md`. Unknowns are marked `Needs v
 | BL001 | Login/register issue JWT access tokens, refresh tokens, session id, and auth cookies. | Backend, web, mobile | Auth service `/auth/login`, `/auth/register`; web auth store; mobile AuthRepository/AuthViewModel. |
 | BL002 | Authenticated requests prefer cookies on backend, with Bearer token fallback. | Backend | Shared AuthGuard. |
 | BL003 | Web Axios injects `Authorization: Bearer {auth_token}` and `X-Device-ID`. | Web | `src/apis/api.ts`. |
-| BL004 | Web 401 responses trigger single-flight token refresh, then retry or clear auth and redirect to `/login`. | Web | Handles invalid/expired sessions and model-specific error codes. |
+| BL004 | Web 401 responses trigger single-flight token refresh, then retry or clear auth and redirect to `/login`. Redirect loop prevention: `setRedirectBackTarget` skipped when already on `/login`. `handleAuthFailure` no longer calls `clearRedirectBackTarget()` before `navigateTo()`. | Web | Handles invalid/expired sessions, session invalidation (403), and model-specific error codes. `src/apis/api.ts`. |
 | BL005 | OAuth redirect tokens are read from URL query params, persisted, then stripped from URL. | Web, mobile | Web `useAuthSync`; Android/iOS custom scheme callbacks. |
 | BL006 | ProtectedRoute blocks unauthenticated workspace screens and stores return path. | Web | Applies to `/k/*`. |
 | BL007 | PublicRoute redirects authenticated users away from login/register/reset screens. | Web | Redirects to `/k`. |
+| BL007a | Standalone study/exam routes (`/study-flashcard/:id`, `/exam-session/:id`, `/exam-session/:id/quiz`) include client-side auth checks that redirect to `/login?from=...` when unauthenticated. | Web | Previously had no route guard; auth check added inline in page components. |
 | BL008 | TeacherRoute only checks authentication, not teacher/admin role. | Web | Authorization gap; should not be treated as enforced teacher permission. |
 | BL009 | Device/session lifecycle includes `x-device-id`, active session tracking, logout deactivation, and cleanup cron. | Backend, web, mobile | Device list/logout behavior on web; mobile sends device id through KMP interceptor. |
 | BL010 | Mobile Android auth uses shared KMP AuthRepository and encrypted token storage. | Android | API-backed. |
@@ -1933,10 +1950,10 @@ Source: scout reports and `_scout-bl-inventory.md`. Unknowns are marked `Needs v
 | ID | Logic | Scope | Sources / Notes |
 |---|---|---|---|
 | BL030 | Quiz sets support CRUD, labels, questions, sharing/access, history save, and export on web. | Backend, web | Mobile shared API ready; mobile UI mock-backed. |
-| BL031 | Flashcard sets support CRUD, labels, flashcards, sharing/access, and study flow. | Backend, web | Mobile shared API ready; mobile UI mock-backed. |
-| BL032 | Store caches reduce repeated API calls and are invalidated on mutations. | Web | `storeCache` used by most Zustand stores. |
+| BL031 | Flashcard sets support CRUD, labels, flashcards, sharing/access, study flow, and flashcard view modal in label manager. | Backend, web | Mobile shared API ready; mobile UI mock-backed. |
+| BL032 | Store caches reduce repeated API calls and are invalidated on mutations. Includes flashcards-by-label cache. | Web | `storeCache` used by most Zustand stores. |
 | BL033 | Student materials expose recent flashcards/exams and pin/unpin/share links. | Backend, web, mobile shared | Mobile UI mock-backed. Exact share flow Needs verification. |
-| BL034 | Flashcard study records progress and answer submissions through `/flashcard-study/*`. | Backend, web, mobile shared | Web standalone route; mobile UI mock-backed. |
+| BL034 | Flashcard study records progress and answer submissions through `/flashcard-study/*`. | Backend, web, mobile shared | Web standalone route with inline auth check; mobile UI mock-backed. |
 
 ## Exam And Proctoring
 
@@ -1944,9 +1961,9 @@ Source: scout reports and `_scout-bl-inventory.md`. Unknowns are marked `Needs v
 |---|---|---|---|
 | BL040 | Exam rooms group sessions and are managed by authenticated users. | Backend, web | Teacher/admin enforcement Needs verification. |
 | BL041 | Exam sessions have lifecycle states, access code/whitelist/sharing settings, passing score, and retake rules. | Backend, web, mobile shared | Detailed transitions Need verification. |
-| BL042 | Join/start flows allow public code/link entry while backend validates access. | Backend, web | Standalone routes have no web route guard. |
+| BL042 | Join/start flows allow public code/link entry while backend validates access. Standalone exam routes now include inline auth check redirecting to `/login?from=...`. | Backend, web | Route guards added in commit 1bb4d29. |
 | BL043 | Exam attempts track score, answers, current index, marked questions, violation count, and status. | Backend, web, mobile shared | Mobile UI mock-backed. |
-| BL044 | Secure quiz flow can use encrypted quiz payloads/JWT per question and client-side AES helpers. | Backend, web, mobile shared | Mobile decryption plan Needs verification. |
+| BL044 | Secure quiz flow can use encrypted quiz payloads/JWT per question and client-side AES helpers. Cryptography env vars (`QUIZ_JWT_SECRET`, `QUIZ_AES_KEY`) validated at startup. | Backend, web, mobile shared | Mobile decryption plan Needs verification. |
 | BL045 | Web exam taking uses reCAPTCHA on protected submission endpoints. | Web, backend | reCAPTCHA provider wraps app. Exact endpoints Need verification. |
 | BL046 | Web proctoring detects tab switch, blur, devtools, copy/paste, right-click, fullscreen exit, and print screen. | Web | Logs violations to cheating log API. |
 | BL047 | Cheating logs persist violation type/count/stats per attempt. | Backend, web | Threshold consequences Need verification. |
@@ -1960,9 +1977,11 @@ Source: scout reports and `_scout-bl-inventory.md`. Unknowns are marked `Needs v
 | BL052 | Generation flow uploads/selects file, creates async job/history, polls job status, then displays quiz/flashcards. | Backend, web | Web `useAIGeneratorStore`; mobile UI mock-backed. |
 | BL053 | Recent uploads and generation history are fetched from `/ai/recent-uploads` and history endpoints. | Backend, web, mobile shared | Mobile UI mock-backed. |
 | BL054 | AI chat supports chat CRUD, messages, image upload, multi-document context, and SSE streaming on web. | Backend, web | Mobile shared SSE is stubbed. |
-| BL055 | AI model catalog is lazy-loaded and includes embedding/generation models/default model. | Backend, web | Model runtime errors handled in web Axios. |
+| BL055 | AI model catalog is lazy-loaded and cached. AI2 model names cached in Python service with 5-min TTL. | Backend, web | Model runtime errors handled in web Axios. |
 | BL056 | GenAI tutor knowledge supports folders, files, ingest jobs, graphs, dataset imports, bulk delete/reprocess. | Backend, web | Access restrictions Need verification. |
 | BL057 | Uploaded profile/media images use R2 image API. | Backend, web | On record deletion with R2 asset, deletion behavior Needs verification per repo rule. |
+| BL058 | `generateCode()` now uses `crypto.randomInt()` for cryptographically secure random codes. | Backend | Shared lib `@examio/common`. |
+| BL059 | Environment variable validation: `QUIZ_JWT_SECRET` and `QUIZ_AES_KEY` validated at startup (required, min length). | Backend | Shared lib `@examio/common`. |
 
 ## Finance And Subscription
 
@@ -1971,9 +1990,9 @@ Source: scout reports and `_scout-bl-inventory.md`. Unknowns are marked `Needs v
 | BL060 | New user registration triggers wallet creation through event/gRPC-backed finance workflow. | Backend | `user.created` event and wallet gRPC. |
 | BL061 | Wallet details include balance and transaction history. | Backend, web, mobile shared | Mobile UI mock-backed. |
 | BL062 | Payment creation returns SePay QR/payment data; client polls status. | Backend, web | Web QRPaymentDialog. |
-| BL063 | SePay webhook updates payment/wallet/subscription state. | Backend | Webhook protected by API key per scout. |
+| BL063 | SePay webhook updates payment/wallet/subscription state. Webhook API key validated via `crypto.timingSafeEqual`; invalid keys throw `UnauthorizedException`. | Backend | Timing-safe comparison; previously returned `{ success: false }` silently. |
 | BL064 | Subscription benefits are available through finance gRPC `GetUserBenefits`. | Backend | Used by AI chat/subscription checks. |
-| BL065 | Web credit utility currently has `FREE_MODE = true`, bypassing client credit checks. | Web | Production behavior Needs decision/verification. Backend checks may still apply. |
+| BL065 | `FREE_MODE` is `false` in production — credit and subscription checks are fully enforced. Flag is strictly development-only. | Backend, web | Was previously `true` by default. |
 
 ## Mobile-Specific Behavior
 
@@ -2112,7 +2131,7 @@ Source artifacts: `data-model.md`, `scout-report.md`.
 Source artifacts: `scout-report.md`, `_session-context.md`, `user-stories.md`.
 
 ## F001 - Account Authentication & Session Management
-Users register, log in, use Google OAuth/One Tap, refresh sessions, log out, and recover/change passwords across web and mobile.
+Users register, log in, use Google OAuth/One Tap, refresh sessions, log out, and recover/change passwords across web and mobile. Registration supports `?from=` param for post-signup redirect. Session refresh handles redirect loop prevention.
 - User stories: US001, US002, US003
 - Screens/routes: `/login`, `/register`, `/forgot-password`, `/reset-password`, mobile auth flows
 - APIs: API001
@@ -2806,6 +2825,39 @@ As a mobile user, I want exam, flashcard, chat, profile, and OAuth links to open
 
 ---
 
+# docs/index.md
+
+# Examio Rebuilt Specification Index
+
+Generated: 2026-05-27
+
+## System
+- `system/overview.md`
+- `system/data-model.md`
+- `system/business-rules.md`
+- `system/permissions.md`
+- `system/glossary.md`
+
+## Generated
+- `generated/route-list.md`
+- `generated/api-map.md`
+- `generated/entities.md`
+- `generated/user-stories.md`
+- `generated/feature-list.md`
+- `generated/screen-list.md`
+- `generated/screen-flow.md`
+- `generated/behavior-logic.md`
+- `generated/permissions-matrix.md`
+
+## Flows
+See `flows/`.
+
+## Features
+See `features/F###-*`. Each feature has `technical-spec.md`, `business-context.md`, `screens.md`, `edge-cases.md`.
+
+
+---
+
 # docs/system/business-rules.md
 
 # Business Rules
@@ -3318,13 +3370,21 @@ Sources: `scout-report.md` lines 883-887, 913-922, 1042-1049, 1264-1270, 1478-14
 ## Known Gaps / Needs Verification
 
 - `TeacherRoute.tsx` only checks authentication, not teacher/admin role.
-- `FREE_MODE = true` in web credit utilities bypasses credit checks.
 - Web has remnants of prior Next.js migration; route/proxy prefix consistency needs verification.
 - Mobile SSE clients are stubs on both Android and iOS.
 - iOS KMP secure token storage is stubbed; actual token store is private Swift code.
 - Most Android/iOS non-auth screens use mock UiState rather than repositories.
 
-Sources: `scout-report.md` lines 1121-1132, 1464-1502.
+## Resolved Gaps (since 2026-05-27)
+
+- `FREE_MODE` changed from `true` to `false` — credit and subscription checks are now fully enforced in production. The flag is strictly development-only and must never be `true` in production commits.
+- Environment variable validation: `QUIZ_JWT_SECRET` and `QUIZ_AES_KEY` are now validated at startup (required, minimum 32-char length for JWT secret). Services fail to initialize with descriptive errors instead of silently falling back to weak defaults.
+- Code generation: `generateCode()` uses `crypto.randomInt()` instead of `Math.random()` for cryptographically secure random codes (password reset, verification, exam access codes).
+- Webhook API key validation: SePay webhooks now use `crypto.timingSafeEqual()` for timing-attack-safe comparison. Invalid API keys throw `UnauthorizedException` instead of silently returning `false`.
+- Auth redirect loop prevention: `handleAuthFailure` and 403 session invalidation handlers skip `setRedirectBackTarget` when the current path is `/login`, preventing redirect loops.
+- Standalone study/exam routes: `/study-flashcard/:id`, `/exam-session/:id`, and `/exam-session/:id/quiz` now include client-side auth checks that redirect unauthenticated users to `/login?from=...`.
+
+Sources: git diffs `0a16bed..be6471c`, commit range May 27–May 31 2026.
 
 
 ---
@@ -3398,3 +3458,4 @@ Source: scout reports. Unknowns are marked `Needs verification`.
 - Android/iOS main feature screens are mostly mock-backed; they currently demonstrate UI permissions only, not backend-enforced feature permissions.
 - Shared KMP repositories are ready to call authenticated APIs for AI/study/exam/history/account, but platform UI wiring is not present in scout evidence.
 - iOS KMP token storage is stubbed; iOS auth uses a private Swift Keychain store instead.
+

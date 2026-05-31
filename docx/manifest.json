@@ -1,5 +1,8 @@
 {
-  "generated_at": "2026-05-27T21:21:58.491822",
+  "generated_at": "2026-05-31T17:31:58.000000",
+  "updated_from": "2026-05-27T21:21:58.491822",
+  "commit_range": "0a16bed..be6471c",
+  "description": "Updated spec bundle reflecting 8 commits of code changes: auth fixes, profile redesign, flashcard view modal, AI caching, security hardening, auth checks in standalone routes",
   "promoted_files": [
     "docs/features/f001-account-authentication-session-management/business-context.md",
     "docs/features/f001-account-authentication-session-management/edge-cases.md",

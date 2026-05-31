@@ -3,7 +3,7 @@
 Source artifacts: `scout-report.md`, `_session-context.md`, `user-stories.md`.
 
 ## F001 - Account Authentication & Session Management
-Users register, log in, use Google OAuth/One Tap, refresh sessions, log out, and recover/change passwords across web and mobile.
+Users register, log in, use Google OAuth/One Tap, refresh sessions, log out, and recover/change passwords across web and mobile. Registration supports `?from=` param for post-signup redirect. Session refresh handles redirect loop prevention.
 - User stories: US001, US002, US003
 - Screens/routes: `/login`, `/register`, `/forgot-password`, `/reset-password`, mobile auth flows
 - APIs: API001

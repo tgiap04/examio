@@ -11,9 +11,10 @@
 ## Business Rules
 - BR001: Users can view only their own wallet, payments, and subscription information. Linked FR: FR001-FR004.
 - BR002: New user registration triggers wallet creation through event/gRPC-backed finance workflow. Linked FR: FR001.
-- BR003: Webhook calls require API-key protection per scout evidence. Linked FR: FR005.
-- BR004: `FREE_MODE = true` currently bypasses frontend credit checks; production intent Needs verification. Linked FR: FR001, FR006.
+- BR003: Webhook calls require API-key protection — validated via `crypto.timingSafeEqual` to prevent timing attacks. Invalid API keys throw `UnauthorizedException` (not silent failure). Linked FR: FR005, SEC002.
+- BR004: `FREE_MODE = false` (disabled) in production — credit and subscription checks are fully enforced. This flag is strictly development-only and must never be `true` in production commits. Linked FR: FR001, FR006, SEC001.
 - BR005: Payment success/failure must be reflected in wallet/subscription events and persisted records. Linked FR: FR003, FR005.
+- BR006: Critical environment variables (`QUIZ_JWT_SECRET`, `QUIZ_AES_KEY`) are validated at startup — service fails to initialize if missing or invalid, preventing silent fallback to weak defaults. Linked FR: SEC001.
 
 ## State Machines
 - SM001: Payment lifecycle: created -> pending/QR shown -> paid/succeeded or failed/cancelled -> wallet/subscription refreshed. Exact enum values Need verification. Linked FR: FR002-FR005.
