@@ -16,6 +16,8 @@
 - BR004: New user registration triggers backend wallet bootstrap via finance integration/event flow.
 - BR005: Backend accepts cookie-first JWT auth with Bearer token fallback.
 - BR006: iOS KMP secure token storage is incomplete; iOS auth currently relies on Swift Keychain storage.
+- BR007: Registration supports `?from=` query parameter — signup success redirects to the specified return path when present, falling back to backend `redirectTo` then `/k`.
+- BR008: Auth failure redirect loop is prevented — `handleAuthFailure` does not call `setRedirectBackTarget` when the current path is already `/login`. On 403 session invalidation, the same guard applies.
 
 ## State Machines
 - SM001 Session state: anonymous -> authenticating -> authenticated -> refreshing -> authenticated, or refreshing -> expired -> anonymous.
@@ -24,8 +26,9 @@
 
 ## Algorithms
 - ALG001: Web Axios attaches `Authorization: Bearer {auth_token}` and `X-Device-ID` to requests.
-- ALG002: On 401, web runs a single-flight refresh promise, retries the failed request once, then clears auth and redirects to `/login` if refresh fails.
+- ALG002: On 401, web runs a single-flight refresh promise, retries the failed request once, then clears auth and redirects to `/login` if refresh fails. Redirect loop is prevented: `setRedirectBackTarget` is not called when the current path is `/login`.
 - ALG003: OAuth callback parsing stores returned tokens and removes token query params from the URL.
+- ALG004: On `403` session invalidation, the client clears auth state, shows `alert("Bạn đã bị đăng xuất từ thiết bị khác")`, and redirects to `/login`. Redirect back target is set only when the current path is not `/login` to prevent redirect loops.
 
 ## Integrations
 - INT001: Gateway proxies `/api/v1/auth/*` to auth-service.

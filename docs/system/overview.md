@@ -88,10 +88,18 @@ Sources: `scout-report.md` lines 883-887, 913-922, 1042-1049, 1264-1270, 1478-14
 ## Known Gaps / Needs Verification
 
 - `TeacherRoute.tsx` only checks authentication, not teacher/admin role.
-- `FREE_MODE = true` in web credit utilities bypasses credit checks.
 - Web has remnants of prior Next.js migration; route/proxy prefix consistency needs verification.
 - Mobile SSE clients are stubs on both Android and iOS.
 - iOS KMP secure token storage is stubbed; actual token store is private Swift code.
 - Most Android/iOS non-auth screens use mock UiState rather than repositories.
 
-Sources: `scout-report.md` lines 1121-1132, 1464-1502.
+## Resolved Gaps (since 2026-05-27)
+
+- `FREE_MODE` changed from `true` to `false` — credit and subscription checks are now fully enforced in production. The flag is strictly development-only and must never be `true` in production commits.
+- Environment variable validation: `QUIZ_JWT_SECRET` and `QUIZ_AES_KEY` are now validated at startup (required, minimum 32-char length for JWT secret). Services fail to initialize with descriptive errors instead of silently falling back to weak defaults.
+- Code generation: `generateCode()` uses `crypto.randomInt()` instead of `Math.random()` for cryptographically secure random codes (password reset, verification, exam access codes).
+- Webhook API key validation: SePay webhooks now use `crypto.timingSafeEqual()` for timing-attack-safe comparison. Invalid API keys throw `UnauthorizedException` instead of silently returning `false`.
+- Auth redirect loop prevention: `handleAuthFailure` and 403 session invalidation handlers skip `setRedirectBackTarget` when the current path is `/login`, preventing redirect loops.
+- Standalone study/exam routes: `/study-flashcard/:id`, `/exam-session/:id`, and `/exam-session/:id/quiz` now include client-side auth checks that redirect unauthenticated users to `/login?from=...`.
+
+Sources: git diffs `0a16bed..be6471c`, commit range May 27–May 31 2026.

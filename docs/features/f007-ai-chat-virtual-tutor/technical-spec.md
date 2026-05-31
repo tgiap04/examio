@@ -26,6 +26,7 @@
 - ALG001: Streaming chat sends message/context to gateway/exam-service/Python and appends SSE chunks until completion.
 - ALG002: Multi-document chat resolves selected `UserStorage` records, links them through `AIChatDocument`, and sends relevant context to Python AI service.
 - ALG003: Knowledge ingestion imports/uploads files, processes them, and exposes graph/stat views; exact graph persistence Needs verification.
+- ALG004: AI2 model names are cached server-side in the Python AI service with a 5-minute TTL (`_ai2_models_cache` dict) to avoid hitting the AI2 provider `/models` endpoint on every catalog request.
 
 ## Integrations
 - INT001: API007 `/ai-chat/*` and Python `/api/chat/*` for chat and streaming.

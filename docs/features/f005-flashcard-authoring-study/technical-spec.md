@@ -8,6 +8,8 @@
 - FR005: Study flow records progress and answer submissions through the flashcard study API.
 - FR006: Student material surfaces can show recent/pinned/shared flashcard sets where available.
 - FR007: Mobile flashcard/study screens are represented in Android/iOS UI, but current platform feature screens are mock-backed; API wiring Needs verification.
+- FR008: Within `FlashcardLabelManager`, users can now view a flashcard's full content directly via `ViewFlashcardDialog` without leaving the label management view.
+- FR009: Flashcards loaded by label are cached client-side (`storeCache` with key `flashcards-by-label`) to avoid redundant API calls when switching labels.
 
 ## Business Rules
 - BR001: Creating or managing flashcard sets requires authentication. Source: PERM019, PERM020.
