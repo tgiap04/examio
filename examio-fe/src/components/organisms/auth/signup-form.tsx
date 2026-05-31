@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
+import { normalizeReturnPath } from "@/lib/authRedirect";
 import { Label } from "@/components/antd/label";
 import { Input } from "@/components/antd/input";
 import { cn } from "@/lib/utils";
@@ -34,6 +35,8 @@ function LabelInputContainer({
 export function SignupForm() {
   const { signup, loginWithGoogle } =
     useAuthStore();
+  const [searchParams] = useSearchParams();
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.target as HTMLFormElement;
@@ -53,10 +56,11 @@ export function SignupForm() {
         email,
         password,
       });
+      const from = normalizeReturnPath(searchParams.get("from"));
       if (response && response.user) {
-        window.location.href = response.redirectTo || "/k";
+        window.location.href = from || response.redirectTo || "/k";
       } else {
-        window.location.href = "/k";
+        window.location.href = from || "/k";
       }
     } catch (error) {
       console.error("Signup failed:", error);

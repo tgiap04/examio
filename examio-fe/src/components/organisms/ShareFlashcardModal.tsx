@@ -289,10 +289,11 @@ export function ShareFlashcardModal({
 
             {/* Private access options */}
             {!isPublic && (
-              <div className="space-y-4 border-t pt-4">
+              <div className="space-y-2 border-t pt-4 flex flex-col">
                 <Label>Phương thức truy cập</Label>
                 <RadioGroup
                   value={privateAccessType}
+                  className="space-y-2"
                   onValueChange={(v) =>
                     setPrivateAccessType(v as PrivateAccessType)
                   }>
@@ -316,8 +317,11 @@ export function ShareFlashcardModal({
 
                 {/* Access code section */}
                 {privateAccessType === "code" && (
-                  <div className="space-y-2">
-                    <Label>Mã truy cập</Label>
+                  <div className="space-y-2 mt-4">
+                    <Label className="flex items-center gap-2 mb-2">
+                      <Lock className="h-4 w-4" />
+                      Mã truy cập
+                    </Label>
                     <div className="flex gap-2">
                       <Input
                         value={accessCode}

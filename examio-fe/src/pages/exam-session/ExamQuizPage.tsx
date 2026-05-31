@@ -1,6 +1,6 @@
 /* eslint-disable react-dom/no-dangerously-set-innerhtml */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/antd/button";
 import { Card, CardContent } from "@/components/antd/card";
 import { RadioGroup, RadioGroupItem } from "@/components/antd/radio-group";
@@ -18,6 +18,8 @@ import {
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { setRedirectBackTarget } from "@/lib/authRedirect";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { resolveAnswerIndex } from "@/lib/quizAnswerUtils";
 import { ConfirmDialog } from "@/components/organisms/ConfirmDialog";
 import { FullscreenConfirmDialog } from "@/components/organisms/FullscreenConfirmDialog";
@@ -38,6 +40,8 @@ import {
 export default function ExamQuizPage() {
   const { id: examSessionId = "" } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated, initializing } = useAuthStore();
 
   const [showFullscreenDialog, setShowFullscreenDialog] = useState(true);
   const [fullscreenConfirmed, setFullscreenConfirmed] = useState(false);
@@ -69,6 +73,8 @@ export default function ExamQuizPage() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [hasWarned30s, setHasWarned30s] = useState(false);
 
+  const returnTo = `${location.pathname}${location.search}${location.hash}`;
+
   const debouncedAnswers = useDebounce(answers, 1000);
   const debouncedCurrentIndex = useDebounce(currentQuestionIndex, 1000);
 
@@ -76,6 +82,15 @@ export default function ExamQuizPage() {
     examAttemptId: attemptId || "",
     enabled: !!attemptId && !isSubmitted && !loading,
   });
+
+  useEffect(() => {
+    if (initializing || isAuthenticated) {
+      return;
+    }
+
+    setRedirectBackTarget(returnTo);
+    navigate(`/login?from=${encodeURIComponent(returnTo)}`, { replace: true });
+  }, [initializing, isAuthenticated, returnTo, navigate]);
 
   const saveProgress = useCallback(
     async (overrideAnswers?: Record<string, string>) => {
@@ -127,7 +142,7 @@ export default function ExamQuizPage() {
   }, [attemptId, answers, currentQuestionIndex, markedForReview, tokenMap]);
 
   useEffect(() => {
-    if (!fullscreenConfirmed || !examSessionId) return;
+    if (!fullscreenConfirmed || !examSessionId || initializing || !isAuthenticated) return;
 
     const initExam = async () => {
       setLoading(true);
@@ -185,7 +200,7 @@ export default function ExamQuizPage() {
     };
 
     initExam();
-  }, [examSessionId, fullscreenConfirmed, captchaToken]);
+  }, [examSessionId, fullscreenConfirmed, captchaToken, initializing, isAuthenticated]);
 
   const handleFullscreenConfirm = (token?: string) => {
     if (token) {
@@ -335,6 +350,17 @@ export default function ExamQuizPage() {
   const handleExit = () => {
     navigate(`/exam-session/${examSessionId}`);
   };
+
+  if (initializing || !isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Đang kiểm tra đăng nhập...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading || !fullscreenConfirmed) {
     return (
