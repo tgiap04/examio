@@ -734,24 +734,6 @@ export class AIService {
             ],
         }));
 
-        generationModels.push({
-            id: 'gemini',
-            name: 'Gemini',
-            description: 'Cloud model giữ nguyên cơ chế rotate key và model từ env.',
-            provider: 'gemini',
-            runtimeModelName: 'gemini',
-            badge: 'Cloud',
-            disabled: true,
-            available: false,
-            availabilityReason: unavailableReason,
-            isDefault: false,
-            supportsStructuredOutput: false,
-            specs: [
-                { label: 'Trạng thái', value: 'AI service offline' },
-                { label: 'Provider', value: 'Google' },
-            ],
-        });
-
         return {
             embeddingModel: {
                 id: 'gemini_embedding',
@@ -798,7 +780,7 @@ export class AIService {
         try {
             const response = await firstValueFrom(
                 this.httpService.get(`${this.aiServiceUrl}/ai/models`, {
-                    timeout: 15000,
+                    timeout: 60000,
                 })
             );
             return response.data;

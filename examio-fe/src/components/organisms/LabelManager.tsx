@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { useIsMobile } from "@/hooks/useMediaQuery";
 import { Button } from "@/components/antd/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/antd/card";
 import { Badge } from "@/components/antd/badge";
@@ -76,12 +77,86 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
   // Label questions dialog
   const [labelDialogOpen, setLabelDialogOpen] = useState(false);
   const [labelDialogLabel, setLabelDialogLabel] = useState<QuizSetLabel | null>(null);
+  const isMobile = useIsMobile();
   const [labelQuestions, setLabelQuestions] = useState<Quizz[]>([]);
   const [loadingQuestions, setLoadingQuestions] = useState(false);
   const [questionSearch, setQuestionSearch] = useState("");
   const [labelQuestionPage, setLabelQuestionPage] = useState(1);
   const labelQuestionItemsPerPage = 10;
   const debouncedQuestionSearch = useDebounce(questionSearch, 300);
+
+  // Description expand/collapse
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [overflowingIds, setOverflowingIds] = useState<Set<string>>(new Set());
+  const descElementsRef = useRef(new Map<string, HTMLParagraphElement>());
+
+  const setDescRef = useCallback((id: string) => (el: HTMLParagraphElement | null) => {
+    if (el) {
+      descElementsRef.current.set(id, el);
+    } else {
+      descElementsRef.current.delete(id);
+    }
+  }, []);
+
+  const toggleExpanded = useCallback((id: string) => {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+
+  // Measure which descriptions overflow their 3-line clamp
+  // Detached div timing: we need setTimeout to allow browser to paint + compute layout
+  useEffect(() => {
+    // First RAF ensures initial render is done
+    const rafId = requestAnimationFrame(() => {
+      // Then setTimeout gives the browser time to paint and resolve styles
+      const timerId = window.setTimeout(() => {
+        const overflown = new Set<string>();
+        labels.forEach((label) => {
+          if (!label.description) return;
+          const visibleEl = descElementsRef.current.get(label.id);
+          if (!visibleEl) return;
+
+          // Cloned styles from visible element (no line-clamp so it shows all content)
+          const cs = getComputedStyle(visibleEl);
+          const measure = document.createElement("div");
+          measure.style.cssText = [
+            "position:fixed",
+            "visibility:hidden",
+            "pointer-events:none",
+            "z-index:-1",
+            `width:${visibleEl.clientWidth}px`,
+            `font-size:${cs.fontSize}`,
+            `font-family:${cs.fontFamily}`,
+            `line-height:${cs.lineHeight}`,
+            `padding:${cs.padding}`,
+            "box-sizing:border-box",
+            "white-space:normal",
+            "word-break:break-word",
+            "overflow:visible",
+          ].join(";");
+          measure.textContent = label.description;
+          document.body.appendChild(measure);
+
+          const unclampedHeight = measure.offsetHeight;
+          document.body.removeChild(measure);
+
+          // If unclamped text is taller than the visible clamped element, overflow
+          if (unclampedHeight > visibleEl.clientHeight + 2) {
+            overflown.add(label.id);
+          }
+        });
+        setOverflowingIds(overflown);
+      }, 100);
+      return () => {
+        window.clearTimeout(timerId);
+      };
+    });
+    return () => cancelAnimationFrame(rafId);
+  }, [labels]);
 
   // Load labels
   const loadLabels = useCallback(async () => {
@@ -123,10 +198,10 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
 
   const filteredLabelQuestions = debouncedQuestionSearch
     ? labelQuestions.filter((q) => {
-        const searchLower = debouncedQuestionSearch.toLowerCase();
-        const textContent = q.question.replace(/<[^>]+>/g, "").toLowerCase();
-        return textContent.includes(searchLower);
-      })
+      const searchLower = debouncedQuestionSearch.toLowerCase();
+      const textContent = q.question.replace(/<[^>]+>/g, "").toLowerCase();
+      return textContent.includes(searchLower);
+    })
     : labelQuestions;
 
   const totalLabelPages = Math.ceil(filteredLabelQuestions.length / labelQuestionItemsPerPage);
@@ -326,14 +401,13 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {labels.map((label) => (
-                  <Card
-                    key={label.id}
-                    className="cursor-pointer hover:shadow-md transition-shadow"
-                    onClick={() => loadLabelQuestions(label)}
-                  >
+                  <Card key={label.id} className="hover:shadow-md transition-shadow [&_.ant-card-body]:!p-0" style={{ padding: "0" }}>
                     <CardContent className="p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
+                        <div
+                          className="flex items-center gap-2 cursor-pointer"
+                          onClick={() => loadLabelQuestions(label)}
+                        >
                           {label.color && (
                             <div
                               className="w-3 h-3 rounded-full"
@@ -344,11 +418,7 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
                         </div>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => e.stopPropagation()}
-                            >
+                            <Button variant="ghost" size="sm">
                               <MoreVertical className="h-4 w-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -367,10 +437,44 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">
+                      <p
+                        ref={setDescRef(label.id)}
+                        className={cn(
+                          "text-sm text-muted-foreground w-full whitespace-normal break-words",
+                          !expandedIds.has(label.id) && "line-clamp-3",
+                          overflowingIds.has(label.id) ? "mb-0" : "mb-2",
+                        )}
+                        style={
+                          !expandedIds.has(label.id)
+                            ? {
+                                display: "-webkit-box",
+                                WebkitLineClamp: 3,
+                                WebkitBoxOrient: "vertical",
+                                overflow: "hidden",
+                                wordBreak: "break-word",
+                              }
+                            : undefined
+                        }
+                        onClick={() => loadLabelQuestions(label)}
+                      >
                         {label.description || "Không có mô tả"}
                       </p>
-                      <Badge variant="secondary">
+                      {overflowingIds.has(label.id) && (
+                        <button
+                          className="block text-xs text-muted-foreground hover:text-foreground mb-2 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleExpanded(label.id);
+                          }}
+                        >
+                          {expandedIds.has(label.id) ? "Thu gọn" : "Xem thêm"}
+                        </button>
+                      )}
+                      <Badge
+                        variant="secondary"
+                        className="cursor-pointer"
+                        onClick={() => loadLabelQuestions(label)}
+                      >
                         {label.questionCount || 0} câu hỏi
                       </Badge>
                     </CardContent>
@@ -394,7 +498,13 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
 
       {/* Label Questions Dialog */}
       <Dialog open={labelDialogOpen} onOpenChange={setLabelDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogContent
+          modalWidth={isMobile ? "90vw" : 960}
+          bodyStyle={{
+            maxHeight: isMobile ? "80vh" : "70vh",
+            overflow: "auto",
+          }}
+        >
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {labelDialogLabel?.color && (
@@ -430,7 +540,7 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto space-y-3 min-h-0">
+          <div className="space-y-3">
             {loadingQuestions ? (
               <div className="text-center py-8 text-muted-foreground">
                 Đang tải...
@@ -446,15 +556,15 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
                 const plainText = question.question.replace(/<[^>]+>/g, "");
                 const highlight = debouncedQuestionSearch
                   ? plainText.replace(
-                      new RegExp(`(${debouncedQuestionSearch})`, "gi"),
-                      "<mark class='bg-yellow-200'>$1</mark>",
-                    )
+                    new RegExp(`(${debouncedQuestionSearch})`, "gi"),
+                    "<mark class='bg-yellow-200'>$1</mark>",
+                  )
                   : null;
 
                 return (
                   <div
                     key={question.id}
-                    className="rounded-[8px] border border-hairline p-3 space-y-2"
+                    className="rounded-[8px] border border-hairline p-3 space-y-2 mt-4"
                   >
                     <div className="flex items-start gap-2">
                       <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-coral/15 font-mono text-[11px] font-semibold text-coral">
@@ -490,7 +600,7 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
                             <span className="font-mono text-[10px] shrink-0">
                               {String.fromCharCode(65 + optIndex)}.
                             </span>
-                            <span className="flex-1 min-w-0">
+                            <span className="flex-1 min-w-0 mt-3">
                               <RichTextViewer
                                 content={quizOptionToText(option).replace(
                                   /^[A-D][\.\)\:\s]+/i,
@@ -514,7 +624,7 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
 
             {/* Pagination */}
             {totalLabelPages > 1 && (
-              <div className="flex items-center justify-between border-t pt-3 mt-2 shrink-0">
+              <div className="flex items-center justify-between border-t pt-3 mt-2">
                 <p className="text-xs text-muted-foreground">
                   {(labelQuestionPage - 1) * labelQuestionItemsPerPage + 1}–{Math.min(labelQuestionPage * labelQuestionItemsPerPage, filteredLabelQuestions.length)} / {filteredLabelQuestions.length}
                 </p>

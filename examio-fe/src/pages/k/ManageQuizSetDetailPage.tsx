@@ -271,9 +271,9 @@ export default function ManageQuizSetDetailPage() {
               {(() => {
                 const displayed = debouncedSearch
                   ? paginatedQuestions.filter((q) => {
-                      const text = q.question.replace(/<[^>]+>/g, "").toLowerCase();
-                      return text.includes(debouncedSearch.toLowerCase());
-                    })
+                    const text = q.question.replace(/<[^>]+>/g, "").toLowerCase();
+                    return text.includes(debouncedSearch.toLowerCase());
+                  })
                   : paginatedQuestions;
 
                 if (debouncedSearch && displayed.length === 0) {
@@ -369,7 +369,7 @@ export default function ManageQuizSetDetailPage() {
                                   <span className="font-mono text-[11px]">
                                     {String.fromCharCode(65 + optIndex)}.
                                   </span>
-                                  <span className="flex-1">
+                                  <span className="flex-1 mt-3">
                                     <RichTextViewer content={displayText} />
                                   </span>
                                   {isCorrect && <span className="text-[11px] text-coral font-medium">✓</span>}
