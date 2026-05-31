@@ -38,7 +38,6 @@ function handleAuthFailure() {
 
   if (window.location.pathname !== "/login") {
     setRedirectBackTarget(getCurrentReturnPath());
-    clearRedirectBackTarget();
     navigateTo("/login", true);
   }
 }
@@ -142,7 +141,11 @@ api.interceptors.response.use(
         clearStoredRefreshToken();
         clearStoredSessionId();
         clearRedirectBackTarget();
-        setRedirectBackTarget(getCurrentReturnPath());
+        const returnTo = getCurrentReturnPath();
+        // Prevent redirect loop if already on login page
+        if (returnTo !== "/login") {
+          setRedirectBackTarget(returnTo);
+        }
         alert("Bạn đã bị đăng xuất từ thiết bị khác");
         navigateTo("/login", true);
         return Promise.reject(new Error("Session invalidated"));

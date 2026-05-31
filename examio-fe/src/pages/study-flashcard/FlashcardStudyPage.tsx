@@ -1,6 +1,6 @@
 /* eslint-disable react-dom/no-dangerously-set-innerhtml */
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/antd/button";
 import { Input } from "@/components/antd/input";
 import { Label } from "@/components/antd/label";
@@ -26,6 +26,8 @@ import {
   Shuffle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { setRedirectBackTarget } from "@/lib/authRedirect";
+import { useAuthStore } from "@/stores/useAuthStore";
 import {
   checkFlashcardSetAccess,
   getFlashcardSetPublicInfo,
@@ -47,6 +49,8 @@ const SOUND_EFFECTS = {
 export default function FlashcardStudyPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated, initializing } = useAuthStore();
 
   const [accessCheckResult, setAccessCheckResult] =
     useState<AccessCheckResult | null>(null);
@@ -120,6 +124,17 @@ export default function FlashcardStudyPage() {
       return;
     }
 
+    if (initializing) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      const returnTo = `${location.pathname}${location.search}${location.hash}`;
+      setRedirectBackTarget(returnTo);
+      navigate(`/login?from=${encodeURIComponent(returnTo)}`, { replace: true });
+      return;
+    }
+
     const checkAccess = async () => {
       setIsCheckingAccess(true);
       try {
@@ -146,7 +161,7 @@ export default function FlashcardStudyPage() {
     };
 
     checkAccess();
-  }, [id, loadFlashcards]);
+  }, [id, initializing, isAuthenticated, loadFlashcards, location, navigate]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

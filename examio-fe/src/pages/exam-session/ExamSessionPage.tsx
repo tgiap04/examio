@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   checkExamSessionAccessApi,
   verifyExamSessionAccessCodeApi,
@@ -27,10 +27,14 @@ import {
 import { KeyRound, Loader2, Lock, XCircle } from "lucide-react";
 import { toast } from "@/components/antd/toast";
 import { cn } from "@/lib/utils";
+import { setRedirectBackTarget } from "@/lib/authRedirect";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function ExamSessionPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated, initializing } = useAuthStore();
 
   const [loading, setLoading] = useState(true);
   const [accessInfo, setAccessInfo] = useState<AccessCheckResult | null>(null);
@@ -43,6 +47,17 @@ export default function ExamSessionPage() {
 
   useEffect(() => {
     const loadData = async () => {
+      if (initializing) {
+        return;
+      }
+
+      if (!isAuthenticated) {
+        const returnTo = `${location.pathname}${location.search}${location.hash}`;
+        setRedirectBackTarget(returnTo);
+        navigate(`/login?from=${encodeURIComponent(returnTo)}`, { replace: true });
+        return;
+      }
+
       setLoading(true);
       try {
         const access = await checkExamSessionAccessApi(id);
@@ -73,7 +88,7 @@ export default function ExamSessionPage() {
     if (id) {
       loadData();
     }
-  }, [id]);
+  }, [id, initializing, isAuthenticated, location, navigate]);
 
   const handleVerifyCode = async () => {
     if (accessCode.length !== 6) {

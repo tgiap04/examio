@@ -175,11 +175,11 @@ export default function ManageFlashcardSetDetailPage() {
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
         <div className="mb-8">
           <div className="mb-4 flex items-center gap-4">
             <div className="flex-1">
-              <Breadcrumb className="mb-3">
+              <Breadcrumb className="mb-3 mt-4">
                 <BreadcrumbList>
                   <BreadcrumbItem>
                     <BreadcrumbLink asChild>
@@ -210,7 +210,7 @@ export default function ManageFlashcardSetDetailPage() {
           )}
         </div>
 
-        <div className="mb-8 grid gap-4 md:grid-cols-3">
+        <div className="mb-4 grid gap-4 md:grid-cols-3">
           <Card className="p-6">
             <div className="flex items-center gap-4">
               <div className="rounded-lg bg-primary/10 p-3">
@@ -257,10 +257,10 @@ export default function ManageFlashcardSetDetailPage() {
           onSave={handleSaveCard}
         />
 
-        <Card className="p-6">
+        <Card className="p-6" style={{ marginTop: "16px" }}>
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-xl font-semibold">
-              Danh sách thẻ nhớ
+              Danh sách flashcard
               {totalFlashcards > 0 && (
                 <span className="ml-2 text-sm font-normal text-muted-foreground">({totalFlashcards} thẻ)</span>
               )}
