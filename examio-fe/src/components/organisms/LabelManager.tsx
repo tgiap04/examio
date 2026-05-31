@@ -40,6 +40,7 @@ import { useQuizSetStore } from "@/stores/useQuizSetStore";
 import { useDebounce } from "@/hooks/useDebounce";
 import { isCorrectAnswer, quizOptionToText } from "@/lib/quizAnswerUtils";
 import type { Quizz } from "@/types/quizset";
+import { storeCache } from "@/lib/storeCache";
 
 const LABEL_COLORS = [
   "#3B82F6",
@@ -54,9 +55,11 @@ const LABEL_COLORS = [
 
 interface LabelManagerProps {
   quizSetId: string;
+  /** Called when a label is created, updated, or deleted */
+  onLabelChange?: (action: "create" | "update" | "delete", labelId?: string) => void;
 }
 
-export function LabelManager({ quizSetId }: LabelManagerProps) {
+export function LabelManager({ quizSetId, onLabelChange }: LabelManagerProps) {
   const { invalidateCache } = useQuizSetStore();
   const [labels, setLabels] = useState<QuizSetLabel[]>([]);
   const [unlabeledCount, setUnlabeledCount] = useState(0);
@@ -176,8 +179,33 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
     loadLabels();
   }, [loadLabels]);
 
+  // Cache key generator for questions by label
+  const getLabelQuestionsCacheKey = (labelId: string) =>
+    storeCache.createKey("questions-by-label", { quizSetId, labelId });
+
+  // Invalidate cache for a specific label
+  const invalidateLabelCache = (labelId: string) => {
+    const cacheKey = getLabelQuestionsCacheKey(labelId);
+    storeCache.invalidate(cacheKey);
+  };
+
   const loadLabelQuestions = useCallback(
-    async (label: QuizSetLabel, page = 1) => {
+    async (label: QuizSetLabel, page = 1, forceRefresh = false) => {
+      const cacheKey = getLabelQuestionsCacheKey(label.id);
+
+      // Check cache first (unless force refresh)
+      if (!forceRefresh) {
+        const cached = storeCache.get<Quizz[]>(cacheKey);
+        if (cached !== null) {
+          setLabelQuestions(cached);
+          setLabelDialogLabel(label);
+          setLabelQuestionPage(page);
+          setLabelDialogOpen(true);
+          setQuestionSearch("");
+          return;
+        }
+      }
+
       setLoadingQuestions(true);
       setLabelDialogLabel(label);
       setLabelQuestionPage(page);
@@ -186,6 +214,8 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
       try {
         const response = await getQuestionsByLabelApi(quizSetId, label.id, page, labelQuestionItemsPerPage * 5);
         setLabelQuestions(response.questions);
+        // Cache the result
+        storeCache.set(cacheKey, response.questions);
       } catch (error) {
         console.error("Failed to load questions:", error);
         toast.error("Không thể tải câu hỏi");
@@ -228,6 +258,7 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
       setNewLabelColor("#3B82F6");
 
       invalidateCache();
+      onLabelChange?.("create", response.label.id);
     } catch (error) {
       console.error("Failed to create label:", error);
       toast.error("Tạo nhãn thất bại");
@@ -251,6 +282,8 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
       setEditingLabel(null);
 
       invalidateCache();
+      invalidateLabelCache(editingLabel.id);
+      onLabelChange?.("update", editingLabel.id);
     } catch (error) {
       console.error("Failed to update label:", error);
       toast.error("Cập nhật nhãn thất bại");
@@ -271,6 +304,8 @@ export function LabelManager({ quizSetId }: LabelManagerProps) {
       setLabels((prev) => prev.filter((l) => l.id !== labelId));
 
       invalidateCache();
+      invalidateLabelCache(labelId);
+      onLabelChange?.("delete", labelId);
     } catch (error) {
       console.error("Failed to delete label:", error);
       toast.error("Xóa nhãn thất bại");

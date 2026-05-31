@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Dialog,
   DialogContent,
@@ -33,11 +33,6 @@ export interface FlashcardFormData {
   answer: string;
 }
 
-/**
- * Flashcard Editor Dialog Component
- * Modal/Drawer responsive để thêm/sửa flashcard
- * Chỉ có 2 fields: question (front) và answer (back)
- */
 export function FlashcardEditorDialog({
   open,
   onOpenChange,
@@ -45,27 +40,42 @@ export function FlashcardEditorDialog({
   onSave,
 }: FlashcardEditorDialogProps) {
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const isSavingRef = useRef(false);
+  const pendingSaveRef = useRef<FlashcardFormData | null>(null);
 
-  // Form state
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Initialize form khi dialog mở hoặc flashcard thay đổi
+  // Initialize form when dialog opens
   useEffect(() => {
     if (open) {
       if (flashcard) {
         setQuestion(flashcard.question);
         setAnswer(flashcard.answer);
       } else {
-        // Reset form
         setQuestion("");
         setAnswer("");
       }
     }
   }, [open, flashcard]);
 
-  const handleSave = () => {
-    // Validate
+  // Handle save when dialog closes
+  const handleClose = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
+
+  // Execute pending save after dialog animation
+  useEffect(() => {
+    if (!open && pendingSaveRef.current && isSavingRef.current) {
+      isSavingRef.current = false;
+      const data = pendingSaveRef.current;
+      pendingSaveRef.current = null;
+      onSave(data);
+    }
+  }, [open, onSave]);
+
+  const handleSave = useCallback(() => {
     if (!question.trim()) {
       alert("Vui lòng nhập mặt trước của thẻ");
       return;
@@ -76,18 +86,24 @@ export function FlashcardEditorDialog({
       return;
     }
 
-    onSave({
-      question: question.trim(),
-      answer: answer.trim(),
-    });
+    if (isSavingRef.current) return;
 
-    // Close dialog
+    // Mark as saving and store data
+    isSavingRef.current = true;
+    pendingSaveRef.current = { question: question.trim(), answer: answer.trim() };
+    setIsSaving(true);
+
+    // Close the dialog
     onOpenChange(false);
-  };
+  }, [question, answer, onOpenChange]);
+
+  const handleCancel = useCallback(() => {
+    if (isSavingRef.current) return;
+    onOpenChange(false);
+  }, [onOpenChange]);
 
   const formContent = (
     <div className="space-y-6">
-      {/* Question (Front) */}
       <div className="space-y-2">
         <Label htmlFor="question">
           Mặt trước <span className="text-destructive">*</span>
@@ -97,13 +113,13 @@ export function FlashcardEditorDialog({
           onChange={setQuestion}
           placeholder="Nhập câu hỏi hoặc thuật ngữ..."
           minHeight="150px"
+          disabled={isSaving}
         />
         <p className="text-xs text-muted-foreground">
           💡 Gợi ý: Sử dụng nút 🖼️ trên toolbar để chèn hình ảnh từ URL
         </p>
       </div>
 
-      {/* Answer (Back) */}
       <div className="space-y-2">
         <Label htmlFor="answer">
           Mặt sau <span className="text-destructive">*</span>
@@ -113,19 +129,19 @@ export function FlashcardEditorDialog({
           onChange={setAnswer}
           placeholder="Nhập câu trả lời hoặc định nghĩa..."
           minHeight="180px"
+          disabled={isSaving}
         />
         <p className="text-xs text-muted-foreground">
           💡 Sử dụng các nút định dạng để làm nổi bật nội dung
         </p>
       </div>
 
-      {/* Actions */}
       <div className="flex gap-2 justify-end pt-4">
-        <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <Button variant="outline" onClick={handleCancel} disabled={isSaving}>
           Hủy
         </Button>
-        <Button onClick={handleSave}>
-          {flashcard ? "Cập nhật" : "Thêm thẻ"}
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? "Đang lưu..." : flashcard ? "Cập nhật" : "Thêm thẻ"}
         </Button>
       </div>
     </div>
@@ -133,13 +149,13 @@ export function FlashcardEditorDialog({
 
   if (isDesktop) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent
-          className="!max-w-4xl max-h-[90vh] overflow-y-auto  [&::-webkit-scrollbar]:w-0.5
+          className="!max-w-[900px] max-h-[90vh] overflow-y-auto [&::-webkit-scrollbar]:w-0.5
   [&::-webkit-scrollbar-track]:bg-gray-100
-  [&::-webkit-scrollbar-thumb]:bg-gray-300
- 
- ">
+  [&::-webkit-scrollbar-thumb]:bg-gray-300"
+          modalWidth={900}
+        >
           <DialogHeader>
             <DialogTitle>
               {flashcard ? "Chỉnh sửa thẻ nhớ" : "Thêm thẻ nhớ mới"}
@@ -155,7 +171,7 @@ export function FlashcardEditorDialog({
   }
 
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
+    <Drawer open={open} onOpenChange={handleClose}>
       <DrawerContent className="max-h-[90vh] px-4 pb-8">
         <DrawerHeader>
           <DrawerTitle>

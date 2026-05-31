@@ -29,8 +29,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/antd/breadcrumb";
-import { getQuizSetQuestionsApi, type PaginationInfo } from "@/apis/quizsetApi";
+import { getQuizSetQuestionsApi, updateQuestionInQuizSet, type PaginationInfo } from "@/apis/quizsetApi";
 import { useDebounce } from "@/hooks/useDebounce";
+import { storeCache } from "@/lib/storeCache";
 import { Input } from "@/components/antd/input";
 
 export default function ManageQuizSetDetailPage() {
@@ -57,6 +58,26 @@ export default function ManageQuizSetDetailPage() {
   const editEditorRef = useRef<HTMLDivElement>(null);
   const [questionSearch, setQuestionSearch] = useState("");
   const debouncedSearch = useDebounce(questionSearch, 300);
+
+  // Cache key generator for questions by label
+  const getLabelQuestionsCacheKey = (labelId: string) =>
+    storeCache.createKey("questions-by-label", { quizSetId: id, labelId });
+
+  // Invalidate label questions cache when question CUD or label CUD
+  const invalidateLabelQuestionsCache = (labelId: string) => {
+    const cacheKey = getLabelQuestionsCacheKey(labelId);
+    storeCache.invalidate(cacheKey);
+  };
+
+  // Handle label change from LabelManager
+  const handleLabelChange = useCallback(
+    (_action: "create" | "update" | "delete", labelId?: string) => {
+      if (labelId) {
+        invalidateLabelQuestionsCache(labelId);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (id) {
@@ -100,31 +121,51 @@ export default function ManageQuizSetDetailPage() {
 
   const handleConfirmDelete = useCallback(async () => {
     if (questionToDelete && id) {
+      // Find the question to get its labelId before deletion
+      const questionToDeleteObj = paginatedQuestions.find((q) => q.id === questionToDelete);
+      const questionLabelId = questionToDeleteObj?.label?.id;
+
       await deleteQuestion(id, questionToDelete);
       setIsDeleteDialogOpen(false);
       setQuestionToDelete(null);
+
+      // Invalidate label cache if question had label
+      if (questionLabelId) {
+        invalidateLabelQuestionsCache(questionLabelId);
+      }
+
       if (paginatedQuestions.length === 1 && currentPage > 1) {
         setCurrentPage((prev) => prev - 1);
+        await fetchQuestions();
       } else {
-        fetchQuestions();
+        await fetchQuestions();
       }
     }
-  }, [questionToDelete, id, deleteQuestion, paginatedQuestions.length, currentPage, fetchQuestions]);
+  }, [questionToDelete, id, deleteQuestion, paginatedQuestions, currentPage, fetchQuestions]);
 
   const handleSaveQuestion = useCallback(
     async (questionData: InlineQuestionFormData) => {
       if (!id) return;
 
       if (selectedQuestion) {
-        await updateQuestion(id, selectedQuestion.id, questionData);
+        // Call API directly and update local state with returned data
+        const response = await updateQuestionInQuizSet(id, selectedQuestion.id, questionData);
+        setPaginatedQuestions((prev) =>
+          prev.map((q) => (q.id === selectedQuestion.id ? response.question : q))
+        );
+        // Invalidate label cache if question has label
+        if (selectedQuestion.label?.id) {
+          invalidateLabelQuestionsCache(selectedQuestion.label.id);
+        }
       } else {
         await addQuestion(id, questionData);
+        await fetchQuestions();
       }
+
       setShowQuestionForm(false);
       setSelectedQuestion(null);
-      fetchQuestions();
     },
-    [selectedQuestion, id, addQuestion, updateQuestion, fetchQuestions],
+    [selectedQuestion, id, addQuestion, fetchQuestions],
   );
 
   const totalQuestions = pagination?.total || 0;
@@ -208,7 +249,7 @@ export default function ManageQuizSetDetailPage() {
           </Card>
         </div>
 
-        <LabelManager quizSetId={id} />
+        <LabelManager quizSetId={id} onLabelChange={handleLabelChange} />
 
         <Card className="p-3 sm:p-6">
           <div className="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
