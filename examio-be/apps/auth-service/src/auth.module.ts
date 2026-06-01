@@ -12,6 +12,7 @@ import {
     GrpcClientsModule,
     EventsModule,
     EventPublisherService,
+    TurnstileService,
 } from '@examio/common';
 import { RedisModule, RedisService } from '@examio/redis';
 
@@ -50,6 +51,7 @@ import { ProfileModule } from './profile/profile.module';
         MailService,
         AuthGuard,
         UserRepository,
+        TurnstileService,
     ],
     controllers: [AuthController],
     exports: [AuthService, JwtModule, AuthGuard, UserRepository],

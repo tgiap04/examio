@@ -27,6 +27,7 @@ import {
     AuthGuard,
     OptionalAuthGuard,
     AuthenticatedRequest,
+    TurnstileService,
 } from '@examio/common';
 import { FlashcardsetService } from './flashcardset.service';
 import { CreateFlashcardsetDto } from './dto/create-flashcardset.dto';
@@ -78,7 +79,10 @@ import {
 )
 @Controller('flashcardsets')
 export class FlashcardsetController {
-    constructor(private readonly flashcardsetService: FlashcardsetService) {}
+    constructor(
+        private readonly flashcardsetService: FlashcardsetService,
+        private readonly turnstileService: TurnstileService
+    ) {}
 
     @Post()
     @UseGuards(AuthGuard)
@@ -580,8 +584,12 @@ export class FlashcardsetController {
     })
     async getForStudy(
         @Param('id') id: string,
-        @Req() req: AuthenticatedRequest
+        @Req() req: AuthenticatedRequest,
+        @Query('turnstileToken') turnstileToken?: string
     ) {
+        if (turnstileToken) {
+            await this.turnstileService.verify(turnstileToken);
+        }
         return this.flashcardsetService.getFlashcardSetForStudy(
             id,
             req.user?.id
@@ -617,6 +625,9 @@ export class FlashcardsetController {
         @Body() dto: FlashcardSetVerifyAccessCodeDto,
         @Req() req: AuthenticatedRequest
     ) {
+        if (dto.turnstileToken) {
+            await this.turnstileService.verify(dto.turnstileToken);
+        }
         return this.flashcardsetService.getFlashcardSetWithCode(
             id,
             dto.accessCode,

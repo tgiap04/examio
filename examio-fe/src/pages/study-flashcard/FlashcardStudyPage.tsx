@@ -34,6 +34,7 @@ import {
   getFlashcardSetForStudy,
 } from "@/apis/flashcardSetApi";
 import { getProgressApi, addStudiedCardApi } from "@/apis/flashcardStudyApi";
+import { TurnstileGuard } from "@/components/molecules/TurnstileGuard";
 import type {
   FlashcardSetPublicInfo,
   AccessCheckResult,
@@ -77,6 +78,7 @@ export default function FlashcardStudyPage() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [studiedCards, setStudiedCards] = useState<Set<string>>(() => new Set());
   const [settings, setSettings] = useState({ soundEffects: false });
+  const [turnstileToken, setTurnstileToken] = useState<string>("");
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -93,7 +95,7 @@ export default function FlashcardStudyPage() {
   const loadFlashcards = useCallback(async (flashcardId: string, code?: string) => {
     setIsLoadingFlashcards(true);
     try {
-      const data = await getFlashcardSetForStudy(flashcardId, code);
+      const data = await getFlashcardSetForStudy(flashcardId, code, turnstileToken);
       setFlashcards(data.flashCards || []);
       setFlashcardSetTitle(data.title);
       setFlashcardSetDescription(data.description || "");
@@ -119,6 +121,11 @@ export default function FlashcardStudyPage() {
   }, []);
 
   useEffect(() => {
+    if (!turnstileToken) {
+      setIsCheckingAccess(true);
+      return;
+    }
+
     if (!id) {
       setIsCheckingAccess(false);
       return;
@@ -161,7 +168,7 @@ export default function FlashcardStudyPage() {
     };
 
     checkAccess();
-  }, [id, initializing, isAuthenticated, loadFlashcards, location, navigate]);
+  }, [id, initializing, isAuthenticated, loadFlashcards, location, navigate, turnstileToken]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -229,9 +236,12 @@ export default function FlashcardStudyPage() {
   if (isCheckingAccess) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-canvas">
+        <TurnstileGuard onTokenReady={setTurnstileToken} />
         <div className="text-center">
           <div className="mx-auto mb-4 h-10 w-10 animate-spin rounded-full border-2 border-hairline border-t-coral" />
-          <p className="text-sm text-muted-foreground">Đang kiểm tra quyền truy cập...</p>
+          <p className="text-sm text-muted-foreground">
+            {turnstileToken ? "Đang kiểm tra quyền truy cập..." : "Đang xác minh bảo mật..."}
+          </p>
         </div>
       </div>
     );
@@ -348,6 +358,7 @@ export default function FlashcardStudyPage() {
   return (
     <div className="fixed inset-0 flex flex-col overflow-hidden bg-canvas">
       <audio ref={audioRef} />
+      <TurnstileGuard onTokenReady={setTurnstileToken} />
 
       {/* Header — editorial minimal */}
       <header className="z-10 flex-shrink-0">

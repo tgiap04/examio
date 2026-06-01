@@ -26,6 +26,7 @@ import {
     AuthGuard,
     GoogleAuthGuard,
     getCookieConfig,
+    TurnstileService,
 } from '@examio/common';
 import {
     AuthenticatedRequest,
@@ -59,7 +60,8 @@ export class AuthController {
 
     constructor(
         private readonly authService: AuthService,
-        private readonly redisService: RedisService
+        private readonly redisService: RedisService,
+        private readonly turnstileService: TurnstileService
     ) {}
 
     private async ensureOauthSession(
@@ -135,6 +137,11 @@ export class AuthController {
         @Res({ passthrough: true }) res: ExpressResponse,
         @Req() request: Request
     ) {
+        // Verify Turnstile token
+        if (registerDto.turnstileToken) {
+            await this.turnstileService.verify(registerDto.turnstileToken);
+        }
+
         // Extract device info from request
         const deviceInfo = this.extractDeviceInfo(request);
 
@@ -190,6 +197,11 @@ export class AuthController {
         @Res({ passthrough: true }) res: ExpressResponse,
         @Req() request: Request
     ): Promise<LoginResponse> {
+        // Verify Turnstile token
+        if (loginDto.turnstileToken) {
+            await this.turnstileService.verify(loginDto.turnstileToken);
+        }
+
         // Extract device info from request
         const deviceInfo = this.extractDeviceInfo(request);
 

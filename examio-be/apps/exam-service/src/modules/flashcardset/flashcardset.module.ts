@@ -7,6 +7,7 @@ import {
     AuthModule,
     GrpcClientsModule,
     R2ClientService,
+    TurnstileService,
 } from '@examio/common';
 import { RedisService } from '@examio/redis';
 import { FlashCardSetRepository } from './flashcardset.repository';
@@ -20,6 +21,7 @@ import { FlashCardSetRepository } from './flashcardset.repository';
         GenerateIdService,
         R2ClientService,
         FlashCardSetRepository,
+        TurnstileService,
     ],
     controllers: [FlashcardsetController],
     exports: [FlashcardsetService, FlashCardSetRepository],
