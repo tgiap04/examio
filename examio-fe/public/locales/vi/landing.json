@@ -111,7 +111,7 @@
   "cookies.s2.title": "2. Cookie chúng tôi sử dụng",
   "cookies.s2.body": "Examio sử dụng cookie cần thiết cho: duy trì phiên đăng nhập, ghi nhớ tuỳ chọn giao diện (dark/light mode, ngôn ngữ), và bảo mật (CSRF token). Chúng tôi không sử dụng cookie quảng cáo hoặc tracking bên thứ ba.",
   "cookies.s3.title": "3. Cookie bên thứ ba",
-  "cookies.s3.body": "Chúng tôi sử dụng Google reCAPTCHA để bảo vệ form đăng ký/đăng nhập. Dịch vụ này có thể đặt cookie riêng theo chính sách của Google.",
+  "cookies.s3.body": "Chúng tôi sử dụng Cloudflare Turnstile để bảo vệ form đăng ký/đăng nhập. Dịch vụ này có thể đặt cookie riêng theo chính sách của Cloudflare.",
   "cookies.s4.title": "4. Quản lý cookie",
   "cookies.s4.body": "Bạn có thể xoá hoặc chặn cookie thông qua cài đặt trình duyệt. Lưu ý rằng việc chặn cookie cần thiết có thể ảnh hưởng đến trải nghiệm sử dụng nền tảng.",
   "security.title": "Chính sách bảo mật",

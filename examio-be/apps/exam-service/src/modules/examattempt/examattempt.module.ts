@@ -5,7 +5,7 @@ import { PrismaService } from '@examio/database';
 import {
     GenerateIdService,
     CryptoService,
-    RecaptchaService,
+    TurnstileService,
     AuthModule,
 } from '@examio/common';
 import { RedisModule, RedisService } from '@examio/redis';
@@ -20,7 +20,7 @@ import { ExamSessionRepository } from '../examsession/examsession.repository';
         ExamAttemptService,
         GenerateIdService,
         CryptoService,
-        RecaptchaService,
+        TurnstileService,
         ExamAttemptRepository,
         ExamSessionRepository,
     ],

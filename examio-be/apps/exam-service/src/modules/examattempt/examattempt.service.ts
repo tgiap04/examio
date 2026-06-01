@@ -9,7 +9,7 @@ import {
 import {
     GenerateIdService,
     CryptoService,
-    RecaptchaService,
+    TurnstileService,
 } from '@examio/common';
 import { User } from '@prisma/client';
 import {
@@ -39,7 +39,7 @@ export class ExamAttemptService {
         private readonly generateIdService: GenerateIdService,
         private readonly redisService: RedisService,
         private readonly cryptoService: CryptoService,
-        private readonly recaptchaService: RecaptchaService
+        private readonly turnstileService: TurnstileService
     ) {}
 
     /**
@@ -47,13 +47,7 @@ export class ExamAttemptService {
      * Checks retry limits based on ExamSession settings
      */
     async startExamAttempt(user: User, dto: CreateExamAttemptDto) {
-        // Verify reCAPTCHA token if provided
-        if (dto.captchaToken) {
-            await this.recaptchaService.verify(
-                dto.captchaToken,
-                'fullscreen_exam'
-            );
-        }
+        await this.turnstileService.verify(dto.turnstileToken);
         // Verify exam session exists with all needed data
         const examSession = await this.prisma.examSession.findUnique({
             where: { id: dto.examSessionId },

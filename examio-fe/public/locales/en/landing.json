@@ -111,7 +111,7 @@
   "cookies.s2.title": "2. Cookies We Use",
   "cookies.s2.body": "Examio uses essential cookies for: maintaining login sessions, remembering interface preferences (dark/light mode, language), and security (CSRF token). We do not use advertising or third-party tracking cookies.",
   "cookies.s3.title": "3. Third-Party Cookies",
-  "cookies.s3.body": "We use Google reCAPTCHA to protect registration/login forms. This service may set its own cookies according to Google's policy.",
+  "cookies.s3.body": "We use Cloudflare Turnstile to protect registration/login forms. This service may set its own cookies according to Cloudflare's policy.",
   "cookies.s4.title": "4. Managing Cookies",
   "cookies.s4.body": "You can delete or block cookies through your browser settings. Note that blocking essential cookies may affect your experience on the platform.",
   "security.title": "Security Policy",

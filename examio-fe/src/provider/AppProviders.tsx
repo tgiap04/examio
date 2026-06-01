@@ -2,7 +2,7 @@ import type { PropsWithChildren } from "react";
 import { ConfigProvider, theme as antTheme } from "antd";
 import { ThemeProvider, useThemeContext } from "@/provider/ThemeProvider";
 import { ToastProvider } from "@/components/antd/toast";
-import { ReCaptchaProvider } from "@/provider/ReCaptchaProvider";
+import { TurnstileProvider } from "@/provider/TurnstileProvider";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import { AuthSyncBootstrap } from "@/components/auth/AuthSyncBootstrap";
 
@@ -47,7 +47,7 @@ function AntdConfigProvider({ children }: PropsWithChildren) {
 
 export function AppProviders({ children }: PropsWithChildren) {
   return (
-    <ReCaptchaProvider>
+    <TurnstileProvider>
       <ThemeProvider
         attribute="class"
         defaultTheme="light"
@@ -62,6 +62,6 @@ export function AppProviders({ children }: PropsWithChildren) {
           </ToastProvider>
         </AntdConfigProvider>
       </ThemeProvider>
-    </ReCaptchaProvider>
+    </TurnstileProvider>
   );
 }
