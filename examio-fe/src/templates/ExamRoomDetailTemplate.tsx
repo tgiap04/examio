@@ -47,11 +47,11 @@ export function ExamRoomDetailTemplate({
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content - Left Side (2 columns) */}
-          <div className="space-y-6 lg:col-span-2">
+          <div className="!space-y-3 lg:col-span-2">
             {/* Exam Header */}
             <ExamHeaderSection examInfo={examInfo} />
 

@@ -45,7 +45,7 @@ export default function ExamQuizPage() {
 
   const [showFullscreenDialog, setShowFullscreenDialog] = useState(true);
   const [fullscreenConfirmed, setFullscreenConfirmed] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [turnstileToken, setCaptchaToken] = useState<string | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<DecryptedQuestion[]>([]);
   const [tokenMap, setTokenMap] = useState<QuestionTokenMap>(() => new Map());
@@ -149,7 +149,7 @@ export default function ExamQuizPage() {
       setError(null);
 
       try {
-        const startResult = await startExamAttemptApi(examSessionId, captchaToken || undefined);
+        const startResult = await startExamAttemptApi(examSessionId, turnstileToken ?? "");
         setAttemptId(startResult.examAttempt.id);
 
         const secureQuizData = await fetchAndDecryptSecureQuiz(startResult.examAttempt.id);
@@ -200,7 +200,7 @@ export default function ExamQuizPage() {
     };
 
     initExam();
-  }, [examSessionId, fullscreenConfirmed, captchaToken, initializing, isAuthenticated]);
+  }, [examSessionId, fullscreenConfirmed, turnstileToken, initializing, isAuthenticated]);
 
   const handleFullscreenConfirm = (token?: string) => {
     if (token) {

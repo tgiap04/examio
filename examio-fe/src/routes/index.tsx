@@ -34,6 +34,7 @@ import GenAIKnowledgePage from "@/app/k/genai-knowledge/page";
 import { PublicLayout } from "@/routes/layouts/PublicLayout";
 import { AuthLayout } from "@/routes/layouts/AuthLayout";
 import { KLayout } from "@/routes/layouts/KLayout";
+import { ExamSessionLayout } from "@/routes/layouts/ExamSessionLayout";
 import { PublicRoute } from "@/routes/guards/PublicRoute";
 import { ProtectedRoute } from "@/routes/guards/ProtectedRoute";
 
@@ -244,7 +245,11 @@ export const router = createBrowserRouter([
   },
   {
     path: "/exam-session/:id",
-    element: <ExamSessionPage />,
+    element: (
+      <ExamSessionLayout>
+        <ExamSessionPage />
+      </ExamSessionLayout>
+    ),
   },
   {
     path: "/exam-session/:id/quiz",

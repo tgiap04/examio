@@ -6,7 +6,7 @@ import { GenerateIdService } from './services/generate-id.service';
 import { CryptoService } from './services/crypto.service';
 import { PdfService } from './services/pdf.service';
 import { ImagePreprocessingService } from './services/image-preprocessing.service';
-import { RecaptchaService } from './services/recaptcha.service';
+import { TurnstileService } from './services/turnstile.service';
 
 const services = [
     CommonService,
@@ -16,7 +16,7 @@ const services = [
     CryptoService,
     PdfService,
     ImagePreprocessingService,
-    RecaptchaService,
+    TurnstileService,
 ];
 
 @Module({

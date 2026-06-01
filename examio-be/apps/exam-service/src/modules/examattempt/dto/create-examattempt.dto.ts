@@ -6,7 +6,7 @@ export const CreateExamAttemptSchema = z.object({
     examSessionId: z
         .string()
         .min(1, { message: 'Exam session ID is required' }),
-    captchaToken: z.string().optional(),
+    turnstileToken: z.string().min(1, { message: 'Turnstile token is required' }),
 });
 
 export class CreateExamAttemptDto extends createZodDto(
@@ -19,8 +19,7 @@ export class CreateExamAttemptDto extends createZodDto(
     examSessionId: string;
 
     @ApiProperty({
-        description: 'reCAPTCHA v3 token for bot protection',
-        required: false,
+        description: 'Cloudflare Turnstile token for bot protection',
     })
-    captchaToken?: string;
+    turnstileToken: string;
 }

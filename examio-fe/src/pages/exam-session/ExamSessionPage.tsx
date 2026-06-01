@@ -119,7 +119,7 @@ export default function ExamSessionPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="bg-background">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="grid gap-6 lg:grid-cols-3">
             <div className="space-y-6 lg:col-span-2">
@@ -139,7 +139,7 @@ export default function ExamSessionPage() {
 
   if (sessionNotFound) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex flex-1 items-center justify-center p-4">
         <Card className="max-w-md">
           <CardContent className="flex flex-col items-center py-12 text-center">
             <XCircle className="h-16 w-16 text-red-500 mb-4" />
@@ -158,7 +158,7 @@ export default function ExamSessionPage() {
 
   if (showCodeDialog) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+      <div className="flex flex-1 items-center justify-center p-4 bg-background">
         <Dialog open={true} onOpenChange={() => {}}>
           <DialogContent
             className="sm:max-w-md"
@@ -228,7 +228,7 @@ export default function ExamSessionPage() {
 
   if (accessInfo && !accessInfo.hasAccess && accessInfo.accessType === "denied") {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="flex flex-1 items-center justify-center p-4">
         <Card className="max-w-md w-full">
           <CardContent className="flex flex-col items-center py-12 text-center">
             <Lock className="h-16 w-16 text-orange-500 mb-4" />
@@ -243,7 +243,7 @@ export default function ExamSessionPage() {
 
   if (!stats) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex flex-1 items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );

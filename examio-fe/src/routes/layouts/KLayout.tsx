@@ -201,10 +201,10 @@ export function KLayout({ children }: PropsWithChildren) {
 
         <footer className="mx-4 mt-12 border-t border-hairline pb-6 pt-4 text-center text-xs text-muted-foreground xl:mx-6 2xl:mx-8">
           <p>
-            This site is protected by reCAPTCHA and the Google{" "}
-            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline hover:text-body">Privacy Policy</a>
+            This site is protected by Cloudflare Turnstile. See{" "}
+            <a href="https://www.cloudflare.com/privacypolicy/" target="_blank" rel="noopener noreferrer" className="underline hover:text-body">Privacy Policy</a>
             {" "}and{" "}
-            <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="underline hover:text-body">Terms of Service</a>
+            <a href="https://www.cloudflare.com/website-terms-of-use/" target="_blank" rel="noopener noreferrer" className="underline hover:text-body">Terms of Service</a>
             {" "}apply.
           </p>
           <p className="mt-2">

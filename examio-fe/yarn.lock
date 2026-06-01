@@ -1104,6 +1104,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@marsidev/react-turnstile@npm:^1.5.2":
+  version: 1.5.2
+  resolution: "@marsidev/react-turnstile@npm:1.5.2"
+  peerDependencies:
+    react: ^17.0.2 || ^18.0.0 || ^19.0
+    react-dom: ^17.0.2 || ^18.0.0 || ^19.0
+  checksum: 10c0/6e05616fb8bca1e885778b5dbda9c6a3696a8a4719da5ac29eccadf71abb2e0d0b269615e2e40250f815d7641cb1b87bb058ccfc5b8ee0102733132510194497
+  languageName: node
+  linkType: hard
+
 "@napi-rs/wasm-runtime@npm:^1.1.1":
   version: 1.1.4
   resolution: "@napi-rs/wasm-runtime@npm:1.1.4"
@@ -2780,16 +2790,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react-google-recaptcha@npm:^2.1.9":
-  version: 2.1.9
-  resolution: "@types/react-google-recaptcha@npm:2.1.9"
-  dependencies:
-    "@types/react": "npm:*"
-  checksum: 10c0/12b1806ef4083524cf108fb7c83f7438feb5746e672af2589a2645de26d2ac1ed0f4b687a1e7d482f51a92a75850c074a8696396c1024a3f80e8902a780d4f95
-  languageName: node
-  linkType: hard
-
-"@types/react@npm:*, @types/react@npm:^19":
+"@types/react@npm:^19":
   version: 19.2.14
   resolution: "@types/react@npm:19.2.14"
   dependencies:
@@ -4743,6 +4744,7 @@ __metadata:
     "@eslint-react/eslint-plugin": "npm:^1.53.1"
     "@eslint/eslintrc": "npm:^3"
     "@heroicons/react": "npm:^2.2.0"
+    "@marsidev/react-turnstile": "npm:^1.5.2"
     "@number-flow/react": "npm:^0.5.10"
     "@tabler/icons-react": "npm:^3.35.0"
     "@tailwindcss/postcss": "npm:^4"
@@ -4755,7 +4757,6 @@ __metadata:
     "@types/node": "npm:^20"
     "@types/react": "npm:^19"
     "@types/react-dom": "npm:^19"
-    "@types/react-google-recaptcha": "npm:^2.1.9"
     "@types/three": "npm:^0.180.0"
     "@vitejs/plugin-react": "npm:^5.0.2"
     antd: "npm:^6.3.7"
@@ -4783,7 +4784,6 @@ __metadata:
     pdf-lib: "npm:^1.17.1"
     react: "npm:19.1.0"
     react-dom: "npm:19.1.0"
-    react-google-recaptcha-v3: "npm:^1.11.0"
     react-i18next: "npm:^17.0.8"
     react-icons: "npm:^5.5.0"
     react-markdown: "npm:^10.1.0"
@@ -5375,15 +5375,6 @@ __metadata:
     property-information: "npm:^7.0.0"
     space-separated-tokens: "npm:^2.0.0"
   checksum: 10c0/18dc8064e5c3a7a2ae862978e626b97a254e1c8a67ee9d0c9f06d373bba155ed805fc5b5ce21b990fb7bc174624889e5e1ce1cade264f1b1d58b48f994bc85ce
-  languageName: node
-  linkType: hard
-
-"hoist-non-react-statics@npm:^3.3.2":
-  version: 3.3.2
-  resolution: "hoist-non-react-statics@npm:3.3.2"
-  dependencies:
-    react-is: "npm:^16.7.0"
-  checksum: 10c0/fe0889169e845d738b59b64badf5e55fa3cf20454f9203d1eb088df322d49d4318df774828e789898dcb280e8a5521bb59b3203385662ca5e9218a6ca5820e74
   languageName: node
   linkType: hard
 
@@ -7416,18 +7407,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-google-recaptcha-v3@npm:^1.11.0":
-  version: 1.11.0
-  resolution: "react-google-recaptcha-v3@npm:1.11.0"
-  dependencies:
-    hoist-non-react-statics: "npm:^3.3.2"
-  peerDependencies:
-    react: ^16.3 || ^17.0 || ^18.0 || ^19.0
-    react-dom: ^17.0 || ^18.0 || ^19.0
-  checksum: 10c0/8c14d4aae702cb4be150ec15794842947473c1fd8d9c65545fb17566beb6033982f418a4a2dea0b4e5b73c28cb3a7312f5ab2c32e45c6a4d4e115b2a6193a86b
-  languageName: node
-  linkType: hard
-
 "react-i18next@npm:^17.0.8":
   version: 17.0.8
   resolution: "react-i18next@npm:17.0.8"
@@ -7456,13 +7435,6 @@ __metadata:
   peerDependencies:
     react: "*"
   checksum: 10c0/addba1ebfd45cdf7f69291d0c93df64fca1271cfdb66df657abd223e3451c73356b035f50e75858627dd182b02129596c79eaaaa45d32eb52658e443a992645c
-  languageName: node
-  linkType: hard
-
-"react-is@npm:^16.7.0":
-  version: 16.13.1
-  resolution: "react-is@npm:16.13.1"
-  checksum: 10c0/33977da7a5f1a287936a0c85639fec6ca74f4f15ef1e59a6bc20338fc73dc69555381e211f7a3529b8150a1f71e4225525b41b60b52965bda53ce7d47377ada1
   languageName: node
   linkType: hard
 

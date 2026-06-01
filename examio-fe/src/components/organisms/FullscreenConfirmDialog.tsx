@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -10,8 +10,9 @@ import {
 } from "@/components/antd/alert-dialog";
 import { Button } from "@/components/antd/button";
 import { Maximize, XCircle, ShieldCheck, Loader2 } from "lucide-react";
-import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { toast } from "@/components/antd/toast";
+import { env } from "@/lib/env";
 
 interface FullscreenConfirmDialogProps {
   open: boolean;
@@ -30,14 +31,15 @@ export function FullscreenConfirmDialog({
   onCancel,
 }: FullscreenConfirmDialogProps) {
   const [loading, setLoading] = useState(false);
-  const { executeRecaptcha } = useGoogleReCaptcha();
+  const [turnstileToken, setTurnstileToken] = useState<string>("");
+  const turnstileRef = useRef<TurnstileInstance>(null);
+  const siteKey = env.turnstileSiteKey;
 
   // Request fullscreen
   const requestFullscreen = async () => {
     setLoading(true);
     try {
-      // Execute reCAPTCHA v3
-      if (!executeRecaptcha) {
+      if (!siteKey) {
         toast.error("Chưa tải được dịch vụ bảo mật", {
           description: "Vui lòng tải lại trang và thử lại",
         });
@@ -45,7 +47,8 @@ export function FullscreenConfirmDialog({
         return;
       }
 
-      const token = await executeRecaptcha("fullscreen_exam");
+      // Get token from Turnstile
+      const token = turnstileRef.current?.getResponse();
 
       if (!token) {
         toast.error("Xác thực bảo mật thất bại");
@@ -156,7 +159,7 @@ export function FullscreenConfirmDialog({
 
               <div className="flex items-center gap-2 p-3 text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg">
                 <ShieldCheck className="w-5 h-5 flex-shrink-0" />
-                <span>Được bảo vệ bởi Google reCAPTCHA v3</span>
+                <span>Được bảo vệ bởi Cloudflare Turnstile</span>
               </div>
 
               <p className="text-yellow-600 font-medium text-center">
@@ -166,6 +169,14 @@ export function FullscreenConfirmDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+          {siteKey && (
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={siteKey}
+              options={{ action: "fullscreen_exam", appearance: "always" }}
+              onSuccess={setTurnstileToken}
+            />
+          )}
           <Button
             variant="outline"
             onClick={onCancel}
