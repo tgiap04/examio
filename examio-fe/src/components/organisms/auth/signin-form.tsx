@@ -6,6 +6,7 @@ import { IconBrandGoogle } from "@tabler/icons-react";
 import { Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { TurnstileGuard } from "@/components/molecules/TurnstileGuard";
 
 function BottomGradient() {
   return (
@@ -19,6 +20,7 @@ function BottomGradient() {
 export function SigninForm() {
   const { t } = useTranslation("auth");
   const [showPassword, setShowPassword] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string>("");
   const { loginWithGoogle, login } =
     useAuthStore();
   const [searchParams] = useSearchParams();
@@ -32,7 +34,7 @@ export function SigninForm() {
     const from = searchParams.get("from");
 
     try {
-      const response = await login({ credential, password });
+      const response = await login({ credential, password, turnstileToken });
       if (response && response.user) {
         const targetPath = response.redirectTo || from || "/k";
         window.location.href = targetPath;
@@ -112,7 +114,8 @@ export function SigninForm() {
 
               <button
                 type="submit"
-                className="bg-primary hover:bg-coral-active relative group/btn w-full text-white rounded-lg h-11 font-semibold shadow-lg shadow-primary/30 cursor-pointer transition-all"
+                disabled={!turnstileToken}
+                className="bg-primary hover:bg-coral-active relative group/btn w-full text-white rounded-lg h-11 font-semibold shadow-lg shadow-primary/30 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
               >
                 {t("login.submit")}
               </button>
@@ -128,7 +131,8 @@ export function SigninForm() {
 
             <div className="grid gap-2 mb-[10px]">
               <button
-                className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-body rounded-lg h-10 font-medium bg-surface-soft border border-hairline hover:bg-surface-card cursor-pointer transition-all"
+                disabled={!turnstileToken}
+                className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-body rounded-lg h-10 font-medium bg-surface-soft border border-hairline hover:bg-surface-card cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-surface-soft"
                 type="button"
                 onClick={() => loginWithGoogle?.()}
               >
@@ -148,9 +152,12 @@ export function SigninForm() {
               {t("login.signupLink")}
             </Link>
           </div>
+
+          <div className="flex justify-center mt-4">
+            <TurnstileGuard onTokenReady={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
+          </div>
         </div>
       </div>
-
     </div>
   );
 }

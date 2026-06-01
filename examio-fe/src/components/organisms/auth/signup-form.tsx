@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { normalizeReturnPath } from "@/lib/authRedirect";
 import { Label } from "@/components/antd/label";
@@ -9,6 +9,7 @@ import { IconBrandGoogle } from "@tabler/icons-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { toast } from "@/components/antd/toast";
 import { useTranslation } from "react-i18next";
+import { TurnstileGuard } from "@/components/molecules/TurnstileGuard";
 
 function BottomGradient() {
   return (
@@ -35,6 +36,7 @@ function LabelInputContainer({
 
 export function SignupForm() {
   const { t } = useTranslation("auth");
+  const [turnstileToken, setTurnstileToken] = useState<string>("");
   const { signup, loginWithGoogle } =
     useAuthStore();
   const [searchParams] = useSearchParams();
@@ -57,6 +59,7 @@ export function SignupForm() {
         username,
         email,
         password,
+        turnstileToken,
       });
       const from = normalizeReturnPath(searchParams.get("from"));
       if (response && response.user) {
@@ -146,7 +149,8 @@ export function SignupForm() {
             </LabelInputContainer>
 
             <button
-              className="bg-primary hover:bg-coral-active relative group/btn w-full text-white rounded-lg h-11 font-semibold shadow-lg shadow-primary/30 cursor-pointer transition-all mt-6"
+              disabled={!turnstileToken}
+              className="bg-primary hover:bg-coral-active relative group/btn w-full text-white rounded-lg h-11 font-semibold shadow-lg shadow-primary/30 cursor-pointer transition-all mt-6 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
               type="submit"
             >
               {t("signup.submit")}
@@ -163,7 +167,8 @@ export function SignupForm() {
 
             <div className="grid gap-2 grid-cols-1">
               <button
-                className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-body rounded-lg h-10 font-medium bg-surface-soft border border-hairline hover:bg-surface-card cursor-pointer transition-all"
+                disabled={!turnstileToken}
+                className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-body rounded-lg h-10 font-medium bg-surface-soft border border-hairline hover:bg-surface-card cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-surface-soft"
                 type="button"
                 onClick={() => loginWithGoogle?.()}
               >
@@ -181,6 +186,10 @@ export function SignupForm() {
               >
                 {t("signup.loginLink")}
               </Link>
+            </div>
+
+            <div className="flex justify-center mt-2">
+              <TurnstileGuard onTokenReady={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
             </div>
           </form>
         </div>

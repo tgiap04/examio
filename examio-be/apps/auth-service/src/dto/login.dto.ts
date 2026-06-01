@@ -8,6 +8,7 @@ export const LoginSchema = z.object({
     password: z
         .string()
         .min(6, { message: 'Password must be at least 6 characters long' }),
+    turnstileToken: z.string().optional(),
 });
 
 export class LoginDto extends createZodDto(LoginSchema) {
@@ -21,6 +22,12 @@ export class LoginDto extends createZodDto(LoginSchema) {
         example: 'password123',
     })
     password: string;
+
+    @ApiProperty({
+        description: 'Cloudflare Turnstile token for bot protection',
+        required: false,
+    })
+    turnstileToken?: string;
 }
 
 export class LoginResponse {

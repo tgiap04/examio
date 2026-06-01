@@ -31,9 +31,26 @@ export function FullscreenConfirmDialog({
   onCancel,
 }: FullscreenConfirmDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [turnstileReady, setTurnstileReady] = useState(false);
+  const [turnstileError, setTurnstileError] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string>("");
   const turnstileRef = useRef<TurnstileInstance>(null);
   const siteKey = env.turnstileSiteKey;
+
+  const handleTurnstileSuccess = (token: string) => {
+    setTurnstileToken(token);
+    setTurnstileReady(true);
+    setTurnstileError(false);
+  };
+
+  const handleTurnstileError = () => {
+    setTurnstileReady(false);
+    setTurnstileError(true);
+    setTurnstileToken("");
+    toast.error("Xác minh bảo mật thất bại", {
+      description: "Vui lòng tải lại trang và thử lại",
+    });
+  };
 
   // Request fullscreen
   const requestFullscreen = async () => {
@@ -169,38 +186,70 @@ export function FullscreenConfirmDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-          {siteKey && (
-            <Turnstile
-              ref={turnstileRef}
-              siteKey={siteKey}
-              options={{ action: "fullscreen_exam", appearance: "always" }}
-              onSuccess={setTurnstileToken}
-            />
-          )}
-          <Button
-            variant="outline"
-            onClick={onCancel}
-            disabled={loading}
-            className="w-full sm:w-auto">
-            <XCircle className="h-4 w-4 mr-2" />
-            Hủy bỏ
-          </Button>
-          <Button
-            onClick={requestFullscreen}
-            disabled={loading}
-            className="w-full sm:w-auto bg-primary">
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Đang xử lý...
-              </>
-            ) : (
-              <>
-                <Maximize className="h-4 w-4 mr-2" />
-                Vào thi ngay
-              </>
+          <div className="w-full flex flex-col items-center gap-4">
+            {siteKey && (
+              <Turnstile
+                ref={turnstileRef}
+                siteKey={siteKey}
+                options={{ action: "fullscreen_exam", appearance: "always" }}
+                onSuccess={handleTurnstileSuccess}
+                onError={handleTurnstileError}
+              />
             )}
-          </Button>
+            <div className="w-full flex flex-col sm:flex-row items-center justify-center gap-2">
+              {turnstileError && (
+                <>
+                  <p className="text-sm text-destructive w-full flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 flex-shrink-0" />
+                    Xác minh bảo mật thất bại. Vui lòng tải lại trang để thử lại.
+                  </p>
+                  <Button
+                    onClick={() => window.location.reload()}
+                    className="w-full sm:w-auto bg-primary">
+                    Tải lại trang
+                  </Button>
+                </>
+              )}
+              {!turnstileReady && !turnstileError && siteKey && (
+                <p className="text-sm text-muted-foreground w-full flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Đang xác minh con người...
+                </p>
+              )}
+              {!turnstileError && (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={onCancel}
+                    disabled={loading}
+                    size="lg"
+                    className="w-full sm:w-auto">
+                    <div className="flex items-center">
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Hủy bỏ
+                    </div>
+                  </Button>
+                  <Button
+                    size="lg"
+                    onClick={requestFullscreen}
+                    disabled={loading || !turnstileReady}
+                    className="w-full sm:w-auto">
+                    {loading ? (
+                      <div className="flex items-center">
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Đang xử lý...
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        <Maximize className="h-4 w-4 mr-2" />
+                        Vào thi ngay
+                      </div>
+                    )}
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
