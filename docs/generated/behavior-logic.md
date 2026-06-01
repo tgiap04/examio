@@ -19,6 +19,7 @@ Source: scout reports and `_scout-bl-inventory.md`. Unknowns are marked `Needs v
 | BL009 | Device/session lifecycle includes `x-device-id`, active session tracking, logout deactivation, and cleanup cron. | Backend, web, mobile | Device list/logout behavior on web; mobile sends device id through KMP interceptor. |
 | BL010 | Mobile Android auth uses shared KMP AuthRepository and encrypted token storage. | Android | API-backed. |
 | BL011 | Mobile iOS auth uses a private Swift URLSession client and KeychainTokenStore, not shared KMP auth storage. | iOS | KMP iOS SecureTokenStorage is stubbed. |
+| BL012 | Public pages (landing, auth, legal) are fully translated via `react-i18next`. Namespaces `common`, `landing`, `auth` load from `/locales/{lng}/{ns}}.json`. Supported locales: `vi` (default), `en`, `ja`. Locale is detected from localStorage then browser navigator and persisted under `examio-i18next.locale`. A `LanguageSwitcher` component renders in the public header. | Web | `src/lib/i18n.ts`, `public/locales/{vi,en,ja}/{common,landing,auth}.json`, `src/components/molecules/LanguageSwitcher.tsx`. |
 
 ## API Gateway And Integration
 

@@ -4,6 +4,7 @@ import App from "@/App";
 import { AppProviders } from "@/provider/AppProviders";
 import "antd/dist/reset.css";
 import "@/app/globals.css";
+import "./lib/i18n";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

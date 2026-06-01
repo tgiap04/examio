@@ -1,6 +1,7 @@
 import NumberFlow from "@number-flow/react";
 import { Check, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 export interface PricingTierFeature {
@@ -31,17 +32,18 @@ export default function PricingCards({
   isYearly,
   onToggle,
 }: PricingCardsProps) {
+  const { t } = useTranslation("landing");
   return (
     <div>
       <div className="flex justify-center">
         <div className="inline-flex items-center gap-1 rounded-[9999px] border border-hairline bg-canvas p-1">
           <ToggleButton active={!isYearly} onClick={() => onToggle(false)}>
-            Theo tháng
+            {t("pricing.toggle.monthly")}
           </ToggleButton>
           <ToggleButton active={isYearly} onClick={() => onToggle(true)}>
-            Theo năm
+            {t("pricing.toggle.yearly")}
             <span className={cn("ml-2 rounded-[9999px] bg-coral/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[1px]") + (!isYearly ? "bg-coral/25 text-coral" : "border-border border text-black") }>
-              
+
               -20%
             </span>
           </ToggleButton>
@@ -83,6 +85,7 @@ function ToggleButton({
 }
 
 function TierCard({ tier, isYearly }: { tier: PricingTier; isYearly: boolean }) {
+  const { t } = useTranslation("landing");
   const isFeatured = !!tier.popular;
   const price = isYearly ? tier.priceYearly : tier.priceMonthly;
 
@@ -98,7 +101,7 @@ function TierCard({ tier, isYearly }: { tier: PricingTier; isYearly: boolean }) 
       {isFeatured && (
         <span className="absolute -top-3 left-8 inline-flex items-center gap-1 rounded-[9999px] bg-coral px-3 py-1 text-[11px] font-semibold uppercase tracking-[1.5px] text-white">
           <Sparkles className="h-3 w-3" />
-          Phổ biến
+          {t("pricing.popular")}
         </span>
       )}
 
@@ -124,7 +127,7 @@ function TierCard({ tier, isYearly }: { tier: PricingTier; isYearly: boolean }) 
       <div className="mt-6 flex items-baseline gap-1.5">
         {price === 0 ? (
           <span className="font-display text-[40px] font-medium tracking-[-0.02em]">
-            Miễn phí
+            {t("pricing.free")}
           </span>
         ) : (
           <>
@@ -143,7 +146,7 @@ function TierCard({ tier, isYearly }: { tier: PricingTier; isYearly: boolean }) 
                 isFeatured ? "text-on-dark-soft" : "text-muted-foreground",
               )}
             >
-              /{isYearly ? "năm" : "tháng"}
+              {isYearly ? t("pricing.perYear") : t("pricing.perMonth")}
             </span>
           </>
         )}

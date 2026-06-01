@@ -1,13 +1,14 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Sparkles } from "lucide-react";
-
-const stats = [
-  { value: "2 phút", label: "để biến PDF thành đề ôn" },
-  { value: "120+", label: "flashcard mỗi tài liệu" },
-  { value: "Miễn phí", label: "cho người dùng mới" },
-];
+import { useTranslation } from "react-i18next";
 
 export default function CoralCallout() {
+  const { t } = useTranslation("landing");
+  const stats = [
+    { value: t("cta.stats.time.value"), label: t("cta.stats.time.label") },
+    { value: t("cta.stats.flashcards.value"), label: t("cta.stats.flashcards.label") },
+    { value: t("cta.stats.free.value"), label: t("cta.stats.free.label") },
+  ];
   return (
     <section className="bg-canvas landing-dot-paper pb-8 dark:bg-canvas pt-8">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -20,16 +21,15 @@ export default function CoralCallout() {
               <div className="inline-flex items-center gap-2 rounded-[9999px] bg-white/15 px-3 py-1.5 backdrop-blur-sm">
                 <Sparkles className="h-3.5 w-3.5 text-white" />
                 <span className="text-[12px] font-medium uppercase tracking-[1.5px] text-white">
-                  Sẵn sàng học?
+                  {t("cta.badge")}
                 </span>
               </div>
 
               <h2 className="font-display !mt-5 text-[40px] font-medium leading-[1.05] tracking-[-0.02em] text-white sm:text-[52px] lg:text-[60px]">
-                Bắt đầu học cùng Examio hôm nay.
+                {t("cta.headline")}
               </h2>
               <p className="mt-5 max-w-xl text-[16px] leading-[1.6] text-white/85">
-                Tải tài liệu đầu tiên và xem AI biến nó thành đề ôn tập trong
-                chưa đầy một phút. Không cần thẻ tín dụng, không cần cấu hình.
+                {t("cta.description")}
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -37,14 +37,14 @@ export default function CoralCallout() {
                   to="/register"
                   className="inline-flex h-12 items-center justify-center gap-2 rounded-[8px] bg-canvas px-6 text-[14px] font-medium text-ink transition-colors hover:bg-on-dark"
                 >
-                  Tạo tài khoản miễn phí
+                  {t("cta.primary")}
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
                   to="/k"
                   className="inline-flex h-12 items-center justify-center rounded-[8px] border border-white/30 bg-transparent px-6 text-[14px] font-medium text-white transition-colors hover:bg-white/10"
                 >
-                  Khám phá công cụ
+                  {t("cta.secondary")}
                 </Link>
               </div>
             </div>

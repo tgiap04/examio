@@ -2,7 +2,8 @@
 import * as React from "react";
 import { useLayoutEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Globe, LogOut, Menu, Moon, Sun, User, X } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { LogOut, Menu, Moon, Sun, User, X } from "lucide-react";
 import {
   Avatar,
   AvatarFallback,
@@ -21,24 +22,18 @@ import { useThemeContext } from "@/provider/ThemeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { cn } from "@/lib/utils";
 import Logo from "../atoms/Logo";
+import LanguageSwitcher from "./language-switcher";
 
 const menuItems = [
-  { name: "Tính năng", href: "/#features" },
-  { name: "Giới thiệu", href: "/about" },
-  { name: "Liên hệ", href: "/contact" },
+  { name: "nav.features", href: "/#features" },
+  { name: "nav.about", href: "/about" },
+  { name: "nav.contact", href: "/contact" },
 ];
-
-const locales = [
-  { code: "vi", label: "Tiếng Việt", short: "VI" },
-  { code: "en", label: "English", short: "EN" },
-];
-
-const LOCALE_STORAGE_KEY = "examio.locale";
 
 export default function HeaderSection() {
+  const { t } = useTranslation("common");
   const [menuState, setMenuState] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
-  const [locale, setLocale] = React.useState<string>("vi");
   const navigate = useNavigate();
   const { isDarkMode, setTheme } = useThemeContext();
   const { user, isAuthenticated, initializing, getUser, logout } =
@@ -49,21 +44,11 @@ export default function HeaderSection() {
   }, [getUser]);
 
   React.useEffect(() => {
-    const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
-    if (stored) setLocale(stored);
-  }, []);
-
-  React.useEffect(() => {
     const onScroll = () => setIsScrolled(window.scrollY > 24);
     onScroll();
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  const handleLocale = (code: string) => {
-    setLocale(code);
-    localStorage.setItem(LOCALE_STORAGE_KEY, code);
-  };
 
   const toggleTheme = () => setTheme(isDarkMode ? "light" : "dark");
 
@@ -71,8 +56,6 @@ export default function HeaderSection() {
     await logout();
     navigate("/");
   };
-
-  const currentLocale = locales.find((l) => l.code === locale) ?? locales[0];
 
   return (
     <header className="fixed inset-x-0 top-0 z-30">
@@ -97,7 +80,7 @@ export default function HeaderSection() {
                   to={item.href}
                   className="text-[14px] font-medium text-body transition-colors hover:text-ink"
                 >
-                  {item.name}
+                  {t(item.name)}
                 </Link>
               </li>
             ))}
@@ -107,7 +90,7 @@ export default function HeaderSection() {
                   to="/k"
                   className="text-[14px] font-medium text-body transition-colors hover:text-ink"
                 >
-                  Công cụ
+                  {t("nav.tools")}
                 </Link>
               </li>
             )}
@@ -116,7 +99,7 @@ export default function HeaderSection() {
           <div className="flex items-center gap-1.5 sm:gap-2">
             <IconButton
               onClick={toggleTheme}
-              ariaLabel={isDarkMode ? "Chuyển sang sáng" : "Chuyển sang tối"}
+              ariaLabel={isDarkMode ? t("nav.themeLight") : t("nav.themeDark")}
             >
               {isDarkMode ? (
                 <Sun className="h-4 w-4" strokeWidth={1.75} />
@@ -125,29 +108,7 @@ export default function HeaderSection() {
               )}
             </IconButton>
 
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  type="button"
-                  aria-label="Ngôn ngữ"
-                  className="inline-flex h-9 items-center gap-1.5 rounded-[9999px] border border-hairline bg-surface-card px-3 text-[12px] font-medium uppercase tracking-[1px] text-ink transition-colors hover:border-coral/40 hover:bg-surface-cream-strong"
-                >
-                  <Globe className="h-3.5 w-3.5" strokeWidth={1.75} />
-                  {currentLocale.short}
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[160px]">
-                {locales.map((l) => (
-                  <DropdownMenuItem
-                    key={l.code}
-                    onClick={() => handleLocale(l.code)}
-                    className={cn(locale === l.code && "font-medium text-coral")}
-                  >
-                    {l.label}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <LanguageSwitcher />
 
             <span className="mx-1 hidden h-5 w-px bg-hairline lg:inline-block" />
 
@@ -159,13 +120,13 @@ export default function HeaderSection() {
                   to="/login"
                   className="text-[14px] font-medium text-ink transition-colors hover:text-coral"
                 >
-                  Đăng nhập
+                  {t("nav.login")}
                 </Link>
                 <Link
                   to="/register"
                   className="inline-flex h-9 items-center rounded-[9999px] bg-foreground px-4 text-[13px] font-medium text-background transition-opacity hover:opacity-90"
                 >
-                  Bắt đầu
+                  {t("nav.getStarted")}
                 </Link>
               </div>
             ) : (
@@ -180,18 +141,18 @@ export default function HeaderSection() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-[180px]">
                   <DropdownMenuLabel className="font-semibold">
-                    Tài khoản
+                    {t("nav.account")}
                   </DropdownMenuLabel>
                   <DropdownMenuGroup>
                     <DropdownMenuItem onClick={() => navigate("/k/profile")}>
                       <User className="h-4 w-4" />
-                      Hồ sơ
+                      {t("nav.profile")}
                     </DropdownMenuItem>
                   </DropdownMenuGroup>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem variant="destructive" onClick={handleLogout}>
                     <LogOut className="h-4 w-4" />
-                    Đăng xuất
+                    {t("nav.logout")}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -200,7 +161,7 @@ export default function HeaderSection() {
             <button
               type="button"
               onClick={() => setMenuState((s) => !s)}
-              aria-label={menuState ? "Đóng menu" : "Mở menu"}
+              aria-label={menuState ? t("nav.menuClose") : t("nav.menuOpen")}
               className="inline-flex h-9 w-9 items-center justify-center rounded-[9999px] border border-hairline bg-canvas text-ink transition-colors hover:border-coral/40 hover:bg-surface-card lg:hidden"
             >
               {menuState ? (
@@ -222,7 +183,7 @@ export default function HeaderSection() {
                     onClick={() => setMenuState(false)}
                     className="block py-1 text-[15px] font-medium text-ink"
                   >
-                    {item.name}
+                    {t(item.name)}
                   </Link>
                 </li>
               ))}
@@ -233,7 +194,7 @@ export default function HeaderSection() {
                     onClick={() => setMenuState(false)}
                     className="block py-1 text-[15px] font-medium text-ink"
                   >
-                    Công cụ
+                    {t("nav.tools")}
                   </Link>
                 </li>
               )}
@@ -246,14 +207,14 @@ export default function HeaderSection() {
                   onClick={() => setMenuState(false)}
                   className="inline-flex h-10 flex-1 items-center justify-center rounded-[8px] border border-hairline text-[14px] font-medium text-ink"
                 >
-                  Đăng nhập
+                  {t("nav.login")}
                 </Link>
                 <Link
                   to="/register"
                   onClick={() => setMenuState(false)}
                   className="inline-flex h-10 flex-1 items-center justify-center rounded-[8px] bg-foreground text-[14px] font-medium text-background"
                 >
-                  Bắt đầu
+                  {t("nav.getStarted")}
                 </Link>
               </div>
             )}
