@@ -41,6 +41,7 @@ Sources: `scout-report.md` lines 20-37, 61-93, 365-430, 499-530.
 - Zustand stores hold feature state for auth, quiz sets, flashcards, exam rooms/sessions, AI generation/chat, model catalog, stats, student materials, and GenAI knowledge.
 - `storeCache` provides in-memory TTL caching and mutation invalidation across stores.
 - UI is organized into pages, templates, components, hooks, stores, APIs, and types.
+- `react-i18next` with `i18next-http-backend` and `i18next-browser-languagedetector` provides i18n. Namespaces `common`, `landing`, `auth` are loaded from `/locales/{lng}/{ns}}.json`. Supported locales: `vi` (default), `en`, `ja`. Detection order is localStorage then browser navigator; locale persists under key `examio-i18next.locale`. A `LanguageSwitcher` component is available in the public header.
 
 Sources: `scout-report.md` lines 797-805, 828-887, 891-947.
 

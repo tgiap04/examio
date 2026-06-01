@@ -11,37 +11,9 @@ import {
   Mail,
   Twitter,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../antd/button";
-
-const linkGroups = [
-  {
-    title: "Sản phẩm",
-    links: [
-      { label: "Tính năng", to: "/#features" },
-      { label: "Bảng giá", to: "/#pricing" },
-      { label: "Phòng thi", to: "/k/manage-exam-room" },
-      { label: "AI Tool", to: "/k/ai-tool" },
-    ],
-  },
-  {
-    title: "Tài nguyên",
-    links: [
-      { label: "Giới thiệu", to: "/about" },
-      { label: "Liên hệ", to: "/contact" },
-      { label: "Hướng dẫn", to: "#" },
-      { label: "Cộng đồng", to: "#" },
-    ],
-  },
-  {
-    title: "Pháp lý",
-    links: [
-      { label: "Điều khoản", to: "/terms" },
-      { label: "Quyền riêng tư", to: "/privacy" },
-      { label: "Cookie", to: "/cookies" },
-      { label: "Bảo mật", to: "/security" },
-    ],
-  },
-];
+import LanguageSwitcher from "../molecules/language-switcher";
 
 const socials = [
   { icon: Facebook, label: "Facebook", href: "https://www.facebook.com/HocVienKyThuatMatMa" },
@@ -51,6 +23,7 @@ const socials = [
 ];
 
 export default function FooterSection() {
+  const { t } = useTranslation("common");
   const [email, setEmail] = React.useState("");
   const [subscribed, setSubscribed] = React.useState(false);
 
@@ -62,16 +35,46 @@ export default function FooterSection() {
     setTimeout(() => setSubscribed(false), 3000);
   };
 
+  const linkGroups = [
+    {
+      title: t("footer.group.product"),
+      links: [
+        { label: t("footer.link.features"), to: "/#features" },
+        { label: t("footer.link.pricing"), to: "/#pricing" },
+        { label: t("footer.link.examRoom"), to: "/k/manage-exam-room" },
+        { label: t("footer.link.aiTool"), to: "/k/ai-tool" },
+      ],
+    },
+    {
+      title: t("footer.group.resources"),
+      links: [
+        { label: t("footer.link.about"), to: "/about" },
+        { label: t("footer.link.contact"), to: "/contact" },
+        { label: t("footer.link.guide"), to: "#" },
+        { label: t("footer.link.community"), to: "#" },
+      ],
+    },
+    {
+      title: t("footer.group.legal"),
+      links: [
+        { label: t("footer.link.terms"), to: "/terms" },
+        { label: t("footer.link.privacy"), to: "/privacy" },
+        { label: t("footer.link.cookies"), to: "/cookies" },
+        { label: t("footer.link.security"), to: "/security" },
+      ],
+    },
+  ];
+
   return (
     <footer className="bg-surface-cream-strong text-body dark:bg-surface-dark-elevated dark:text-on-dark-soft">
       <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
         <div className="grid gap-10 border-b border-hairline pb-12 dark:border-white/10 lg:grid-cols-12 lg:items-center">
           <div className="lg:col-span-5">
             <h3 className="font-display text-[28px] font-medium leading-[1.15] tracking-[-0.015em] text-ink dark:text-on-dark sm:text-[32px]">
-              Nhận tin tức về AI học tập, mỗi tuần một bản.
+              {t("footer.newsletter.heading")}
             </h3>
             <p className="mt-3 text-[14px] leading-[1.6] text-body dark:text-on-dark-soft">
-              Mẹo ôn thi, tính năng mới và case study từ học viên Examio.
+              {t("footer.newsletter.description")}
             </p>
           </div>
 
@@ -84,7 +87,7 @@ export default function FooterSection() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="email@cua-ban.vn"
+                placeholder={t("footer.newsletter.placeholder")}
                 className="h-10 flex-1 bg-transparent px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:outline-none dark:text-on-dark dark:placeholder:text-on-dark-soft/60"
                 required
               />
@@ -92,7 +95,7 @@ export default function FooterSection() {
                 type="submit"
                 className="inline-flex h-10 items-center gap-2 rounded-[8px] bg-coral px-4 text-[13px] font-medium text-white transition-colors hover:bg-coral-active"
               >
-                {subscribed ? "Đã đăng ký" : "Đăng ký"}
+                {subscribed ? t("footer.newsletter.subscribed") : t("footer.newsletter.subscribe")}
                 {!subscribed && <ArrowRight className="h-4 w-4" />}
               </Button>
             </div>
@@ -103,13 +106,13 @@ export default function FooterSection() {
           <div className="lg:col-span-5">
             <FooterLogo />
             <p className="!mt-4 max-w-sm text-[14px] leading-[1.6] text-body dark:text-on-dark-soft">
-              Nền tảng học tập trực tuyến hỗ trợ bởi AI - Examio. Biến tài liệu của bạn thành kiến thức nắm chắc.
+              {t("footer.description")}
             </p>
 
             <ul className="mt-6 space-y-2.5 text-[13px] text-body dark:text-on-dark-soft">
               <li className="flex items-start gap-2.5">
                 <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-coral" strokeWidth={1.75} />
-                Hà Nội, Việt Nam
+                {t("footer.address")}
               </li>
               <li className="flex items-center gap-2.5">
                 <Mail className="h-4 w-4 shrink-0 text-coral" strokeWidth={1.75} />
@@ -165,16 +168,16 @@ export default function FooterSection() {
           </p>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px]">
             <Link to="/terms" className="text-muted-foreground transition-colors hover:text-ink dark:text-on-dark-soft dark:hover:text-on-dark">
-              Điều khoản
+              {t("footer.link.terms")}
             </Link>
             <Link to="/privacy" className="text-muted-foreground transition-colors hover:text-ink dark:text-on-dark-soft dark:hover:text-on-dark">
-              Quyền riêng tư
+              {t("footer.link.privacy")}
             </Link>
             <Link to="/cookies" className="text-muted-foreground transition-colors hover:text-ink dark:text-on-dark-soft dark:hover:text-on-dark">
-              Cookie
+              {t("footer.link.cookies")}
             </Link>
             <span className="hidden h-3 w-px bg-hairline dark:bg-white/10 sm:inline-block" />
-            <span className="text-muted-foreground dark:text-on-dark-soft">🇻🇳 Tiếng Việt</span>
+            <LanguageSwitcher />
           </div>
         </div>
       </div>

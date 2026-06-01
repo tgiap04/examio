@@ -37,14 +37,19 @@ import { KLayout } from "@/routes/layouts/KLayout";
 import { PublicRoute } from "@/routes/guards/PublicRoute";
 import { ProtectedRoute } from "@/routes/guards/ProtectedRoute";
 
-const NotFoundPage = () => (
-  <div className="flex min-h-screen items-center justify-center p-4 text-center">
-    <div>
-      <h1 className="text-3xl font-bold">404</h1>
-      <p className="mt-2 text-muted-foreground">Không tìm thấy trang.</p>
+import { useTranslation } from "react-i18next";
+
+function NotFoundPage() {
+  const { t } = useTranslation("common");
+  return (
+    <div className="flex min-h-screen items-center justify-center p-4 text-center">
+      <div>
+        <h1 className="text-3xl font-bold">404</h1>
+        <p className="mt-2 text-muted-foreground">{t("notFound")}</p>
+      </div>
     </div>
-  </div>
-);
+  );
+}
 
 export const router = createBrowserRouter([
   {

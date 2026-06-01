@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { IconBrandGoogle } from "@tabler/icons-react";
 import { Eye, EyeOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 function BottomGradient() {
@@ -16,6 +17,7 @@ function BottomGradient() {
 }
 
 export function SigninForm() {
+  const { t } = useTranslation("auth");
   const [showPassword, setShowPassword] = useState(false);
   const { loginWithGoogle, login } =
     useAuthStore();
@@ -58,10 +60,10 @@ export function SigninForm() {
             </div>
             <div className="p-0 mt-2">
               <h2 className="text-2xl font-bold text-center text-ink">
-                Chào Mừng Trở Lại
+                {t("login.welcome")}
               </h2>
               <p className="text-sm text-muted-foreground text-center mt-1">
-                Đăng nhập vào Examio
+                {t("login.subtitle")}
               </p>
             </div>
           </div>
@@ -70,25 +72,25 @@ export function SigninForm() {
             <form onSubmit={handleSubmit} className="space-y-6 p-0">
               <div className="space-y-1">
                 <label className="text-sm font-medium text-body">
-                  Tên Đăng Nhập hoặc Email
+                  {t("login.credential.label")}
                 </label>
                 <input
                   name="credential"
                   className="bg-surface-soft border border-hairline text-ink placeholder:text-muted-foreground h-12 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary w-full px-3 py-2 text-sm outline-none transition-all"
-                  placeholder="Tên Đăng Nhập hoặc Email"
+                  placeholder={t("login.credential.placeholder")}
                 />
               </div>
 
               <div className="space-y-1">
                 <div className="flex justify-between items-center">
                   <label className="text-sm font-medium text-body">
-                    Mật Khẩu
+                    {t("login.password.label")}
                   </label>
                   <Link
                     to="/forgot-password"
                     className="text-xs text-primary hover:underline"
                   >
-                    Quên mật khẩu?
+                    {t("login.forgotPassword")}
                   </Link>
                 </div>
                 <div className="relative">
@@ -96,7 +98,7 @@ export function SigninForm() {
                     name="password"
                     type={showPassword ? "text" : "password"}
                     className="bg-surface-soft border border-hairline text-ink pr-12 h-12 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary w-full px-3 py-2 text-sm outline-none transition-all"
-                    placeholder="••••••••"
+                    placeholder={t("login.password.placeholder")}
                   />
                   <button
                     type="button"
@@ -112,14 +114,14 @@ export function SigninForm() {
                 type="submit"
                 className="bg-primary hover:bg-coral-active relative group/btn w-full text-white rounded-lg h-11 font-semibold shadow-lg shadow-primary/30 cursor-pointer transition-all"
               >
-                Đăng Nhập
+                {t("login.submit")}
               </button>
             </form>
 
             <div className="flex items-center my-4">
               <div className="flex-1 h-px bg-surface-card"></div>
               <span className="px-4 text-sm text-muted-foreground">
-                Hoặc tiếp tục với
+                {t("login.orContinue")}
               </span>
               <div className="flex-1 h-px bg-surface-card"></div>
             </div>
@@ -138,12 +140,12 @@ export function SigninForm() {
           </div>
 
           <div className="text-muted-foreground flex justify-center gap-1 text-sm mt-4">
-            <p>Bạn chưa có tài khoản? </p>
+            <p>{t("login.noAccount")} </p>
             <Link
               to="/register"
               className="text-primary font-medium hover:underline"
             >
-              Đăng ký ngay
+              {t("login.signupLink")}
             </Link>
           </div>
         </div>

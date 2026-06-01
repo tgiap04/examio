@@ -1,6 +1,7 @@
 import { Suspense, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Lock, ArrowLeft, Loader2, Eye, EyeOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/useAuthStore";
 import {
   InputOTP,
@@ -10,6 +11,7 @@ import {
 } from "@/components/antd/input-otp";
 
 function ResetPasswordForm() {
+  const { t } = useTranslation("auth");
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { resetPassword, loading } = useAuthStore();
@@ -42,8 +44,8 @@ function ResetPasswordForm() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <h2 className="mb-2 text-[18px] font-medium text-ink">Đặt lại mật khẩu thành công!</h2>
-        <p className="text-[14px] text-muted-foreground">Đang chuyển hướng đến trang đăng nhập...</p>
+        <h2 className="mb-2 text-[18px] font-medium text-ink">{t("reset.success")}</h2>
+        <p className="text-[14px] text-muted-foreground">{t("reset.redirecting")}</p>
       </div>
     );
   }
@@ -52,7 +54,7 @@ function ResetPasswordForm() {
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
         <label htmlFor="email" className="mb-1.5 block text-[13px] font-medium text-ink">
-          Email
+          {t("reset.email.label")}
         </label>
         <input
           id="email"
@@ -67,7 +69,7 @@ function ResetPasswordForm() {
 
       <div>
         <label htmlFor="code" className="mb-1.5 block text-[13px] font-medium text-ink">
-          Mã xác nhận
+          {t("reset.code.label")}
         </label>
         <div className="flex justify-center">
           <InputOTP maxLength={6} value={code} onChange={(value) => setCode(value)}>
@@ -88,7 +90,7 @@ function ResetPasswordForm() {
 
       <div>
         <label htmlFor="newPassword" className="mb-1.5 block text-[13px] font-medium text-ink">
-          Mật khẩu mới
+          {t("reset.newPassword.label")}
         </label>
         <div className="relative">
           <input
@@ -96,7 +98,7 @@ function ResetPasswordForm() {
             type={showPassword ? "text" : "password"}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="Nhập mật khẩu mới"
+            placeholder={t("reset.newPassword.placeholder")}
             required
             minLength={6}
             className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 pr-12 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
@@ -113,20 +115,20 @@ function ResetPasswordForm() {
 
       <div>
         <label htmlFor="confirmPassword" className="mb-1.5 block text-[13px] font-medium text-ink">
-          Xác nhận mật khẩu
+          {t("reset.confirmPassword.label")}
         </label>
         <input
           id="confirmPassword"
           type={showPassword ? "text" : "password"}
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-          placeholder="Nhập lại mật khẩu mới"
+          placeholder={t("reset.confirmPassword.placeholder")}
           required
           minLength={6}
           className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
         />
         {confirmPassword && newPassword !== confirmPassword && (
-          <p className="mt-1 text-[12px] text-error">Mật khẩu không khớp</p>
+          <p className="mt-1 text-[12px] text-error">{t("reset.passwordMismatch")}</p>
         )}
       </div>
 
@@ -138,10 +140,10 @@ function ResetPasswordForm() {
         {loading ? (
           <>
             <Loader2 className="h-4 w-4 animate-spin" />
-            Đang xử lý...
+            {t("reset.processing")}
           </>
         ) : (
-          "Đặt lại mật khẩu"
+          t("reset.submit")
         )}
       </button>
     </form>
@@ -149,6 +151,7 @@ function ResetPasswordForm() {
 }
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation("auth");
   return (
     <div className="flex min-h-screen items-center justify-center bg-canvas landing-dot-paper p-4">
       <div className="w-full max-w-md">
@@ -158,10 +161,10 @@ export default function ResetPasswordPage() {
               <Lock className="h-8 w-8 text-coral" />
             </div>
             <h1 className="font-display text-[28px] font-medium tracking-[-0.015em] text-ink">
-              Đặt lại mật khẩu
+              {t("reset.title")}
             </h1>
             <p className="mt-2 text-[14px] text-body">
-              Nhập mã xác nhận và mật khẩu mới
+              {t("reset.description")}
             </p>
           </div>
 
@@ -178,7 +181,7 @@ export default function ResetPasswordPage() {
           <div className="mt-6 text-center">
             <Link to="/login" className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition-colors hover:text-ink">
               <ArrowLeft className="h-4 w-4" />
-              Quay lại đăng nhập
+              {t("reset.backToLogin")}
             </Link>
           </div>
         </div>

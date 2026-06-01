@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, ArrowLeft, Loader2 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation("auth");
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const navigate = useNavigate();
@@ -33,10 +35,10 @@ export default function ForgotPasswordPage() {
               <Mail className="h-8 w-8 text-coral" />
             </div>
             <h1 className="font-display text-[28px] font-medium tracking-[-0.015em] text-ink">
-              Quên mật khẩu?
+              {t("forgot.title")}
             </h1>
             <p className="mt-2 text-[14px] text-body">
-              Nhập email của bạn để nhận mã đặt lại mật khẩu
+              {t("forgot.description")}
             </p>
           </div>
 
@@ -47,14 +49,14 @@ export default function ForgotPasswordPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <p className="font-medium text-success">Mã đặt lại đã được gửi!</p>
-              <p className="mt-2 text-[13px] text-muted-foreground">Đang chuyển hướng...</p>
+              <p className="font-medium text-success">{t("forgot.sent")}</p>
+              <p className="mt-2 text-[13px] text-muted-foreground">{t("forgot.redirecting")}</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
                 <label htmlFor="email" className="mb-1.5 block text-[13px] font-medium text-ink">
-                  Email
+                  {t("reset.email.label")}
                 </label>
                 <input
                   id="email"
@@ -75,10 +77,10 @@ export default function ForgotPasswordPage() {
                 {loading ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Đang gửi...
+                    {t("forgot.sending")}
                   </>
                 ) : (
-                  "Gửi mã đặt lại"
+                  t("forgot.submit")
                 )}
               </button>
             </form>
@@ -87,7 +89,7 @@ export default function ForgotPasswordPage() {
           <div className="mt-6 text-center">
             <Link to="/login" className="inline-flex items-center gap-2 text-[13px] text-muted-foreground transition-colors hover:text-ink">
               <ArrowLeft className="h-4 w-4" />
-              Quay lại đăng nhập
+              {t("forgot.backToLogin")}
             </Link>
           </div>
         </div>

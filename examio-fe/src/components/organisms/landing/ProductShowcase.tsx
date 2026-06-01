@@ -1,15 +1,10 @@
-import { Link } from "react-router-dom";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { Button } from "antd";
-
-const steps = [
-  "Trích xuất nội dung từ PDF, Word, ảnh chụp",
-  "Phân loại theo chương, mục và độ khó",
-  "Sinh quiz và flashcard có trích dẫn nguồn",
-  "Đồng bộ vào phòng luyện thi của bạn",
-];
+import { useTranslation } from "react-i18next";
 
 export default function ProductShowcase() {
+  const { t } = useTranslation("landing");
+  const steps = t("showcase.steps", { returnObjects: true }) as string[];
   return (
     <section id="showcase" className="bg-canvas py-24">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -17,20 +12,19 @@ export default function ProductShowcase() {
           <div className="grid gap-12 lg:grid-cols-12 lg:gap-12">
             <div className="lg:col-span-5">
               <p className="text-[12px] font-medium uppercase tracking-[1.5px] text-accent-amber">
-                Quy trình
+                {t("showcase.badge")}
               </p>
               <h2 className="font-display mt-3 text-[32px] font-medium leading-[1.15] tracking-[-0.02em] text-on-dark sm:text-[40px]">
-                Từ tệp tài liệu đến đề ôn tập, chỉ một lần upload.
+                {t("showcase.headline")}
               </h2>
               <p className="mt-5 text-[15px] leading-[1.6] text-on-dark-soft">
-                Không cần copy-paste, không cần soạn câu hỏi thủ công. Bạn upload,
-                AI đọc, bạn ôn tập.
+                {t("showcase.description")}
               </p>
 
               <ul className="mt-8 space-y-3">
-                {steps.map((step) => (
+                {steps.map((step, i) => (
                   <li
-                    key={step}
+                    key={i}
                     className="flex items-start gap-3 text-[14px] text-on-dark-soft"
                   >
                     <CheckCircle2
@@ -46,7 +40,7 @@ export default function ProductShowcase() {
                 href="/k/ai-tool"
                 className="mt-10 inline-flex h-11 items-center text-col gap-2 rounded-[8px] bg-on-dark px-5 text-[14px] font-medium text-ink transition-colors hover:bg-on-dark/90"
               >
-                Thử ngay
+                {t("showcase.cta")}
                 <ArrowRight className="h-4 w-4" />
               </Button>
             </div>

@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import { ArrowRight, Sparkles } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function HeroBand() {
+  const { t } = useTranslation("landing");
   return (
     <section className="relative bg-canvas landing-dot-paper pt-28 pb-24 md:pt-32 md:pb-28">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -10,17 +12,16 @@ export default function HeroBand() {
             <div className="inline-flex items-center gap-2 rounded-[9999px] border border-hairline bg-surface-card px-3 py-1.5">
               <Sparkles className="h-3.5 w-3.5 text-coral" />
               <span className="text-[12px] font-medium uppercase tracking-[1.5px] text-ink">
-                AI cho việc học
+                {t("hero.badge")}
               </span>
             </div>
 
             <h1 className="font-display !mt-6 text-balance text-[44px] font-medium leading-[1.05] tracking-[-0.02em] text-ink sm:text-[56px] lg:text-[64px]">
-              Biến mọi tài liệu thành kiến thức bạn nắm chắc.
+              {t("hero.headline")}
             </h1>
 
             <p className="mt-6 max-w-xl text-[17px] leading-[1.6] text-body">
-              Examio dùng AI để biến PDF, Word và ảnh chụp giáo trình thành
-              quiz, flashcard và phòng luyện thi — tất cả chỉ trong vài giây.
+              {t("hero.description")}
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -28,14 +29,14 @@ export default function HeroBand() {
                 to="/k"
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-coral px-5 text-[14px] font-medium text-white transition-colors hover:bg-coral-active"
               >
-                Bắt đầu miễn phí
+                {t("hero.cta.primary")}
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <a
                 href="#showcase"
                 className="inline-flex h-11 items-center justify-center rounded-[8px] border border-hairline bg-canvas px-5 text-[14px] font-medium text-ink transition-colors hover:bg-surface-card"
               >
-                Xem cách hoạt động
+                {t("hero.cta.secondary")}
               </a>
             </div>
           </div>

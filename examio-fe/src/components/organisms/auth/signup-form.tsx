@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { IconBrandGoogle } from "@tabler/icons-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { toast } from "@/components/antd/toast";
+import { useTranslation } from "react-i18next";
 
 function BottomGradient() {
   return (
@@ -33,6 +34,7 @@ function LabelInputContainer({
 }
 
 export function SignupForm() {
+  const { t } = useTranslation("auth");
   const { signup, loginWithGoogle } =
     useAuthStore();
   const [searchParams] = useSearchParams();
@@ -46,7 +48,7 @@ export function SignupForm() {
     const password = formData.get("password") as string;
 
     if (password !== (formData.get("confirmPassword") as string)) {
-      toast.warning("Mật khẩu nhập lại không khớp!");
+      toast.warning(t("signup.passwordMismatch"));
       return;
     }
 
@@ -82,10 +84,10 @@ export function SignupForm() {
               />
             </div>
             <h2 className="font-bold text-xl text-ink mt-3">
-              Chào Mừng Đến Với Examio
+              {t("signup.welcome")}
             </h2>
             <h1 className="text-3xl font-bold font-display text-coral mt-1">
-              Đăng Ký
+              {t("signup.title")}
             </h1>
           </div>
 
@@ -93,12 +95,12 @@ export function SignupForm() {
           <form className="space-y-4" onSubmit={handleSubmit}>
             <LabelInputContainer>
               <Label htmlFor="username" className="text-body">
-                Tên Đăng Nhập
+                {t("signup.username.label")}
               </Label>
               <Input
                 id="username"
                 name="username"
-                placeholder="Tên Đăng Nhập"
+                placeholder={t("signup.username.placeholder")}
                 type="text"
                 className="bg-surface-soft border-hairline focus:ring-primary focus:border-primary"
               />
@@ -106,12 +108,12 @@ export function SignupForm() {
 
             <LabelInputContainer>
               <Label htmlFor="email" className="text-body">
-                Email
+                {t("signup.email.label")}
               </Label>
               <Input
                 id="email"
                 name="email"
-                placeholder="email@examio.vn"
+                placeholder={t("signup.email.placeholder")}
                 type="email"
                 className="bg-surface-soft border-hairline focus:ring-primary focus:border-primary"
               />
@@ -119,12 +121,12 @@ export function SignupForm() {
 
             <LabelInputContainer>
               <Label htmlFor="password" className="text-body">
-                Mật Khẩu
+                {t("signup.password.label")}
               </Label>
               <Input
                 id="password"
                 name="password"
-                placeholder="••••••••"
+                placeholder={t("signup.password.placeholder")}
                 type="password"
                 className="bg-surface-soft border-hairline focus:ring-primary focus:border-primary"
               />
@@ -132,12 +134,12 @@ export function SignupForm() {
 
             <LabelInputContainer>
               <Label htmlFor="confirmPassword" className="text-body">
-                Nhập Lại Mật Khẩu
+                {t("signup.confirmPassword.label")}
               </Label>
               <Input
                 id="confirmPassword"
                 name="confirmPassword"
-                placeholder="••••••••"
+                placeholder={t("signup.confirmPassword.placeholder")}
                 type="password"
                 className="bg-surface-soft border-hairline focus:ring-primary focus:border-primary"
               />
@@ -147,14 +149,14 @@ export function SignupForm() {
               className="bg-primary hover:bg-coral-active relative group/btn w-full text-white rounded-lg h-11 font-semibold shadow-lg shadow-primary/30 cursor-pointer transition-all mt-6"
               type="submit"
             >
-              Đăng Ký →
+              {t("signup.submit")}
               <BottomGradient />
             </button>
 
             <div className="flex items-center my-6">
               <hr className="flex-grow border-t border-hairline" />
               <span className="px-4 text-sm text-muted-foreground">
-                Hoặc đăng ký với
+                {t("signup.orRegister")}
               </span>
               <hr className="flex-grow border-t border-hairline" />
             </div>
@@ -172,12 +174,12 @@ export function SignupForm() {
             </div>
 
             <div className="text-muted-foreground flex justify-center gap-1 text-sm mt-4">
-              <p>Đã có tài khoản? </p>
+              <p>{t("signup.hasAccount")} </p>
               <Link
                 to="/login"
                 className="text-primary font-medium hover:underline"
               >
-                Đăng Nhập
+                {t("signup.loginLink")}
               </Link>
             </div>
           </form>
