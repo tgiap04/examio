@@ -30,6 +30,7 @@ import { useCheatingDetection } from "@/hooks/useCheatingDetection";
 import { CheatingWarningModal } from "@/components/molecules/CheatingWarningModal";
 import { StandardMarkdownRenderer } from "@/components/molecules/StandardMarkdownRenderer";
 import { startExamAttemptApi, updateExamAttemptProgressApi, getExamAttemptDetailApi, type Question } from "@/apis/examAttemptApi";
+import { QuizOptionRow } from "@/components/molecules/QuizOptionRow";
 import { env } from "@/lib/env";
 import {
   fetchAndDecryptSecureQuiz,
@@ -161,40 +162,40 @@ export default function ExamQuizPage() {
 
           const detail = await getExamAttemptDetailApi(urlAttemptId);
 
-          const questionsData: DecryptedQuestion[] = (detail.questions || []).map((q) => ({
+          const resultQuestions: Question[] = (detail.questions || []).map((q) => ({
             id: q.id,
             question: q.question,
             options: q.options,
             answer: q.answer,
+            userAnswer: detail.examAttempt.answers?.[q.id] ?? null,
           }));
+          const correctCount = resultQuestions.filter(
+            (q) => q.answer !== undefined && q.userAnswer === q.answer,
+          ).length;
+          const percentage =
+            resultQuestions.length > 0
+              ? Math.round((correctCount / resultQuestions.length) * 100)
+              : 0;
 
-          setQuestions(questionsData);
+          setQuestions([]);
           setAnswers(detail.examAttempt.answers || {});
           setCurrentQuestionIndex(0);
 
-          const correctCount = questionsData.filter(
-            (q) => detail.examAttempt.answers?.[q.id] === q.answer,
-          ).length;
-          const percentage =
-            questionsData.length > 0
-              ? Math.round((correctCount / questionsData.length) * 100)
-              : 0;
-
           setResultData({
             score: detail.examAttempt.score || 0,
-            totalQuestions: questionsData.length,
+            totalQuestions: resultQuestions.length,
             correctAnswers: correctCount,
             percentage,
             showAnswers: true,
             passed: percentage >= (detail.passingScore || 0),
             passingScore: detail.passingScore || 0,
-            questions: questionsData,
+            questions: resultQuestions,
           });
           setIsSubmitted(true);
           setTimeSpentSeconds(detail.examAttempt.timeSpentSeconds || 0);
 
           toast.success("Đang xem kết quả", {
-            description: detail.examAttempt.examRoom?.title || "Bài thi đã hoàn thành",
+            description: detail.examRoom?.title ?? "Bài thi đã hoàn thành",
           });
 
           return;
@@ -453,113 +454,98 @@ export default function ExamQuizPage() {
       const isCorrect = userAnswer === correctLetter;
 
       return (
-        <div className="min-h-screen">
-          <div className="container max-w-7xl mx-auto py-6 px-4">
-            <div className="mb-6">
-              <Button variant="ghost" onClick={() => setShowDetailedResults(false)} className="mb-4">
-                <ChevronLeft className="h-4 w-4 mr-2" />
-                Quay lại tổng quan
-              </Button>
-              <h1 className="text-2xl font-bold">Xem lại kết quả</h1>
-              <p className="text-muted-foreground">
-                Bài thi - Câu {reviewQuestionIndex + 1}/{totalQuestions}
-              </p>
+        <div className="flex flex-col min-h-screen">
+          {/* Header */}
+          <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
+            <div className="container max-w-7xl mx-auto px-4 py-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Button variant="ghost" size="sm" onClick={() => setShowDetailedResults(false)} className="!p-2">
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <div>
+                    <h1 className="text-base font-semibold">Xem lại kết quả</h1>
+                    <p className="text-xs text-muted-foreground">Câu {reviewQuestionIndex + 1} / {totalQuestions}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Button variant="ghost" size="icon" onClick={toggleTheme} className="!p-2">
+                    {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                  </Button>
+                  <div
+                    className={cn(
+                      "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                      isCorrect ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive",
+                    )}
+                  >
+                    {isCorrect ? (
+                      <>
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Đúng
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="h-3.5 w-3.5" />
+                        Sai
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              <div className="lg:col-span-3 space-y-6">
-                <Card className={cn("border-2", isCorrect ? "border-green-500" : "border-destructive")}>
+          {/* Main Content */}
+          <div className="flex-1 container max-w-7xl mx-auto px-4 py-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2 space-y-6">
+                <Card className={cn("border-2", isCorrect ? "border-success" : "border-destructive")}>
                   <CardContent className="pt-6">
                     <div className="mb-4 flex justify-between items-start">
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-lg font-semibold">
-                          Câu {reviewQuestionIndex + 1}/{totalQuestions}
-                        </h2>
-                        {isCorrect ? (
-                          <span className="inline-flex items-center gap-1 text-green-600 text-sm font-medium">
-                            <CheckCircle2 className="h-4 w-4" />
-                            Đúng
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 text-destructive text-sm font-medium">
-                            <XCircle className="h-4 w-4" />
-                            Sai
-                          </span>
-                        )}
-                      </div>
+                      <h2 className="text-lg font-semibold">
+                        Câu {reviewQuestionIndex + 1}/{totalQuestions}
+                      </h2>
                     </div>
 
-                    <div className="prose max-w-none mb-6" dangerouslySetInnerHTML={{ __html: reviewQuestion.question }} />
+                    <StandardMarkdownRenderer content={reviewQuestion.question} className="mb-6" fontSize={16} />
 
-                    <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {reviewQuestion.options.map((option, index) => {
                         const optionLetter = String.fromCharCode(65 + index);
                         const isUserAnswer = userAnswer === optionLetter;
                         const isCorrectAnswer = correctLetter === optionLetter;
 
+                        const state: "correct" | "wrong" | "skipped" = isCorrectAnswer ? "correct" : isUserAnswer ? "wrong" : "skipped";
+
                         return (
-                          <div
+                          <QuizOptionRow
                             key={index}
-                            className={cn(
-                              "flex items-start space-x-3 p-4 rounded-lg border-2 transition-colors",
-                              isCorrectAnswer && "border-green-500 bg-green-50",
-                              isUserAnswer && !isCorrectAnswer && "border-destructive bg-red-50",
-                              !isUserAnswer && !isCorrectAnswer && "border-border",
-                            )}
-                          >
-                            <div className="flex-shrink-0 mt-0.5">
-                              {isCorrectAnswer ? (
-                                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                              ) : isUserAnswer ? (
-                                <XCircle className="h-5 w-5 text-destructive" />
-                              ) : (
-                                <div className="h-5 w-5 rounded-full border-2 border-muted-foreground/30" />
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <span dangerouslySetInnerHTML={{ __html: option }} />
-                              {isCorrectAnswer && <span className="ml-2 text-green-600 text-sm font-medium">(Đáp án đúng)</span>}
-                              {isUserAnswer && !isCorrectAnswer && <span className="ml-2 text-destructive text-sm font-medium">(Bạn chọn)</span>}
-                            </div>
-                          </div>
+                            optionLetter={optionLetter}
+                            state={state}
+                            content={<span dangerouslySetInnerHTML={{ __html: option }} />}
+                          />
                         );
                       })}
                     </div>
 
                     {!userAnswer && (
-                      <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <p className="text-yellow-800 text-sm">Bạn không trả lời câu hỏi này</p>
+                      <div className="mt-4 p-3 bg-warning/10 border border-warning/30 rounded-lg">
+                        <p className="text-warning text-sm">Bạn không trả lời câu hỏi này</p>
                       </div>
                     )}
                   </CardContent>
                 </Card>
-
-                <div className="flex justify-between">
-                  <Button variant="outline" onClick={() => setReviewQuestionIndex((prev) => prev - 1)} disabled={reviewQuestionIndex === 0}>
-                    <ChevronLeft className="h-4 w-4 mr-2" />
-                    Câu trước
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    onClick={() => setReviewQuestionIndex((prev) => prev + 1)}
-                    disabled={reviewQuestionIndex === totalQuestions - 1}
-                  >
-                    Câu sau
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </Button>
-                </div>
               </div>
 
               <div className="lg:col-span-1">
                 <Card className="sticky top-6">
-                  <CardContent className="pt-6">
+                  <CardContent className="pt-6 pb-0 flex flex-col" style={{ maxHeight: "calc(100vh - 6rem)" }}>
                     <h3 className="font-semibold mb-4 flex items-center">
                       <BarChart3 className="h-4 w-4 mr-2" />
                       Danh sách câu hỏi
                     </h3>
 
-                    <div className="grid grid-cols-5 gap-2 p-1">
+                    <div className="grid grid-cols-5 gap-2 overflow-y-auto flex-1 min-h-0">
                       {resultData.questions.map((q, index) => {
                         const qUserAnswer = q.userAnswer;
                         const qIsCorrect = qUserAnswer === q.answer;
@@ -571,10 +557,10 @@ export default function ExamQuizPage() {
                             onClick={() => setReviewQuestionIndex(index)}
                             className={cn(
                               "aspect-square rounded-md text-sm font-medium transition-colors",
-                              isCurrent && "ring-1 ring-primary ring-offset-1",
-                              qIsCorrect && "bg-green-500 text-white",
+                              isCurrent && "ring-2 ring-primary ring-offset-2",
+                              qIsCorrect && "bg-success text-white",
                               !qIsCorrect && qUserAnswer && "bg-destructive text-white",
-                              !qUserAnswer && "bg-yellow-500 text-white",
+                              !qUserAnswer && "bg-warning text-white",
                             )}
                           >
                             {index + 1}
@@ -583,31 +569,50 @@ export default function ExamQuizPage() {
                       })}
                     </div>
 
-                    <div className="mt-6 space-y-2 text-sm">
+                    <div className="pt-4 mt-2 border-t space-y-2 text-sm shrink-0 bg-background">
                       <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-green-500 rounded" />
-                        <span>Đúng ({correctAnswersCount})</span>
+                        <div className="w-4 h-4 bg-success rounded" />
+                        <span className="text-muted-foreground">Đúng</span>
+                        <span className="ml-auto font-semibold">{correctAnswersCount}</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-destructive rounded" />
-                        <span>Sai ({resultData.questions.filter((q) => q.userAnswer && q.userAnswer !== q.answer).length})</span>
+                        <span className="text-muted-foreground">Sai</span>
+                        <span className="ml-auto font-semibold">{resultData.questions.filter((q) => q.userAnswer && q.userAnswer !== q.answer).length}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-yellow-500 rounded" />
-                        <span>Chưa trả lời ({resultData.questions.filter((q) => !q.userAnswer).length})</span>
+                        <div className="w-4 h-4 bg-warning rounded" />
+                        <span className="text-muted-foreground">Chưa trả lời</span>
+                        <span className="ml-auto font-semibold">{resultData.questions.filter((q) => !q.userAnswer).length}</span>
                       </div>
                     </div>
 
-                    <div className="mt-6 space-y-2">
-                      <Button className="w-full" variant="outline" onClick={() => setShowDetailedResults(false)}>
-                        Xem tổng quan
-                      </Button>
-                      <Button className="w-full" variant="outline" onClick={() => window.location.reload()}>
-                        Làm lại
-                      </Button>
-                    </div>
+                    <Button className="w-full mt-3" onClick={() => setShowDetailedResults(false)} variant="outline">
+                      Xem tổng quan
+                    </Button>
                   </CardContent>
                 </Card>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur border-t border-border">
+            <div className="container max-w-7xl mx-auto px-4 py-3">
+              <div className="flex items-center justify-between">
+                <Button variant="outline" onClick={() => setReviewQuestionIndex((prev) => prev - 1)} disabled={reviewQuestionIndex === 0}>
+                  <ChevronLeft className="h-4 w-4 mr-2" />
+                  Câu trước
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => setReviewQuestionIndex((prev) => prev + 1)}
+                  disabled={reviewQuestionIndex === totalQuestions - 1}
+                >
+                  Câu sau
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
               </div>
             </div>
           </div>
@@ -621,7 +626,7 @@ export default function ExamQuizPage() {
           <CardContent className="pt-6">
             <div className="text-center space-y-6">
               <div className="flex justify-center">
-                {passed ? <CheckCircle2 className="h-20 w-20 text-green-500" /> : <XCircle className="h-20 w-20 text-destructive" />}
+                {passed ? <CheckCircle2 className="h-20 w-20 text-success" /> : <XCircle className="h-20 w-20 text-destructive" />}
               </div>
 
               <div>
@@ -631,7 +636,7 @@ export default function ExamQuizPage() {
 
               <div className="grid grid-cols-5 gap-4 max-w-2xl mx-auto">
                 <div className="text-center p-4 bg-muted rounded-lg">
-                  <div className="text-2xl font-bold text-green-600">{correctAnswersCount}</div>
+                  <div className="text-2xl font-bold text-success">{correctAnswersCount}</div>
                   <div className="text-sm text-muted-foreground">Đúng</div>
                 </div>
                 <div className="text-center p-4 bg-muted rounded-lg">
@@ -647,7 +652,7 @@ export default function ExamQuizPage() {
                   <div className="text-sm text-muted-foreground">Thời gian</div>
                 </div>
                 <div className="text-center p-4 bg-muted rounded-lg">
-                  <div className={`text-2xl font-bold ${cheatingDetection.totalViolations > 0 ? "text-orange-500" : "text-green-600"}`}>
+                  <div className={`text-2xl font-bold ${cheatingDetection.totalViolations > 0 ? "text-warning" : "text-success"}`}>
                     {cheatingDetection.totalViolations}
                   </div>
                   <div className="text-sm text-muted-foreground">Vi phạm</div>
@@ -773,24 +778,13 @@ export default function ExamQuizPage() {
                         const isSelected = answers[currentQuestion.id] === optionLetter;
 
                         return (
-                          <div
+                          <QuizOptionRow
                             key={index}
-                            className={cn(
-                              "flex items-center gap-2 p-4 rounded-[10px] border-2 transition-colors cursor-pointer",
-                              isSelected ? "border-coral bg-coral/5" : "border-border hover:border-coral/50",
-                            )}
+                            optionLetter={optionLetter}
+                            state={isSelected ? "selected" : "default"}
                             onClick={() => handleAnswerSelect(isSelected ? "" : optionLetter)}
-                          >
-                            <span className={cn(
-                              "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 font-mono text-[11px] font-semibold",
-                              isSelected ? "border-coral bg-coral/10 text-coral" : "border-border text-muted-foreground",
-                            )}>
-                              {optionLetter}
-                            </span>
-                            <span className="flex-1 text-[13px] leading-[1.55]">
-                              <StandardMarkdownRenderer content={option} fontSize={13} />
-                            </span>
-                          </div>
+                            content={<StandardMarkdownRenderer content={option} fontSize={13} />}
+                          />
                         );
                       })}
                     </div>
@@ -843,15 +837,15 @@ export default function ExamQuizPage() {
                       <span className="ml-auto font-semibold">{totalQuestions - answeredCount}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Flag className="h-4 w-4 text-orange-500" />
+                      <Flag className="h-4 w-4 text-warning" />
                       <span className="text-muted-foreground">Đánh dấu</span>
                       <span className="ml-auto font-semibold">{markedForReview.size}</span>
                     </div>
                   </div>
 
                   {remainingTime !== null && remainingTime <= 300 && remainingTime > 0 && (
-                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg shrink-0">
-                      <div className="flex items-center gap-2 text-yellow-800 text-sm">
+                    <div className="mt-3 p-3 bg-warning/10 border border-warning/30 rounded-lg shrink-0">
+                      <div className="flex items-center gap-2 text-warning text-sm">
                         <AlertTriangle className="h-4 w-4" />
                         <span>Còn {Math.ceil(remainingTime / 60)} phút</span>
                       </div>
