@@ -23,9 +23,9 @@ export function ParticipantListItem({
   avatar,
 }: ParticipantListItemProps) {
   return (
-    <div className={cn("flex items-center gap-3 py-2", className)}>
+    <div className={cn("flex items-center gap-3 pb-2", className)}>
       <div className="relative">
-        <Avatar className="h-10 w-10">
+        <Avatar className="!h-10 !w-10 !-mt-2">
           {avatar && <AvatarImage src={avatar} alt={name} />}
         </Avatar>
         <span
@@ -36,7 +36,7 @@ export function ParticipantListItem({
         />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-foreground">{name}</p>
+        <p className="truncate text-sm font-medium text-foreground !mb-2 !mt-1">{name}</p>
         <p className="truncate text-xs text-muted-foreground">{subtitle}</p>
       </div>
     </div>

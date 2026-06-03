@@ -50,24 +50,24 @@ function StatusBadge({ status }: { status: number }) {
   switch (status) {
     case 0:
       return (
-        <span className="inline-flex items-center gap-1 rounded-pill bg-coral/10 px-2.5 py-0.5 text-xs font-medium text-coral">
+        <div className="inline-flex items-center rounded-pill bg-coral/10 px-2.5 font-medium text-coral w-fit flex items-center gap-x-2">
           <Clock className="h-3 w-3" />
-          Đang làm
-        </span>
+          <p className="whitespace-nowrap text-xs !mt-2.5">Đang làm</p>
+        </div>
       )
     case 1:
       return (
-        <span className="inline-flex items-center gap-1 rounded-pill bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">
+        <div className="inline-flex items-center gap-1 rounded-pill bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success w-fit flex items-center gap-x-2">
           <CheckCircle className="h-3 w-3" />
-          Hoàn thành
-        </span>
+          <p className="whitespace-nowrap text-xs !mt-2.5">Hoàn thành</p>
+        </div>
       )
     case 2:
       return (
-        <span className="inline-flex items-center gap-1 rounded-pill bg-error/10 px-2.5 py-0.5 text-xs font-medium text-error">
+        <div className="inline-flex items-center gap-1 rounded-pill bg-error/10 px-2.5 py-0.5 text-xs font-medium text-error w-fit flex items-center gap-x-2">
           <XCircle className="h-3 w-3" />
-          Đã hủy
-        </span>
+          <p className="whitespace-nowrap text-xs !mt-2.5">Đã hủy</p>
+        </div>
       )
     default:
       return null
@@ -160,12 +160,12 @@ function ExamCard({
       )}
 
       {/* Actions */}
-      <div className="mt-auto flex items-center justify-between border-t border-hairline-soft pt-4">
+      <div className="mt-auto flex items-center justify-between border-t border-hairline-soft !pt-2 !mt-2">
         <button
           onClick={() => onTogglePin(attempt)}
           className={`grid h-8 w-8 place-items-center rounded-md transition-colors ${attempt.isPinned
-              ? "bg-coral/10 text-coral hover:bg-coral/20"
-              : "text-muted-foreground hover:bg-surface-card hover:text-ink"
+            ? "bg-coral/10 text-coral hover:bg-coral/20"
+            : "text-muted-foreground hover:bg-surface-card hover:text-ink"
             }`}
           aria-label={attempt.isPinned ? "Bỏ ghim" : "Ghim"}
           title={attempt.isPinned ? "Bỏ ghim" : "Ghim"}
@@ -242,8 +242,8 @@ function Pagination({
             key={p}
             onClick={() => onPageChange(p)}
             className={`grid h-9 w-9 place-items-center rounded-md text-sm font-medium transition-colors ${p === page
-                ? "bg-coral text-on-primary"
-                : "border border-hairline text-body hover:bg-surface-card hover:text-ink"
+              ? "bg-coral text-on-primary"
+              : "border border-hairline text-body hover:bg-surface-card hover:text-ink"
               }`}
             aria-current={p === page ? "page" : undefined}
           >

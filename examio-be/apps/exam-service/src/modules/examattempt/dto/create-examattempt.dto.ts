@@ -6,7 +6,7 @@ export const CreateExamAttemptSchema = z.object({
     examSessionId: z
         .string()
         .min(1, { message: 'Exam session ID is required' }),
-    turnstileToken: z.string().min(1, { message: 'Turnstile token is required' }),
+    turnstileToken: z.string().optional(),
 });
 
 export class CreateExamAttemptDto extends createZodDto(

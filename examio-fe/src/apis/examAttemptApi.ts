@@ -85,11 +85,11 @@ export interface SubmitExamAttemptResponse {
  */
 export async function startExamAttemptApi(
   examSessionId: string,
-  turnstileToken: string
+  turnstileToken?: string
 ): Promise<StartExamAttemptResponse> {
   const response = await api.post("/examattempts/start", {
     examSessionId,
-    turnstileToken,
+    ...(turnstileToken ? { turnstileToken } : {}),
   });
   return response.data;
 }
@@ -215,6 +215,40 @@ export async function getExamAttemptsBySessionApi(
 ): Promise<ExamAttemptsByRoomResponse> {
   const response = await api.get(`/examattempts/list-by-session/${sessionId}`, {
     params: { page, limit, distinctUser: distinctUser.toString() },
+  });
+  return response.data;
+}
+
+/**
+ * Get current user's attempts for a specific session
+ */
+export interface MyAttemptItem {
+  id: string;
+  status: number;
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  startedAt: string;
+  finishedAt: string | null;
+  violationCount: number;
+  timeSpentSeconds: number | null;
+}
+
+export interface MyAttemptsResponse {
+  examAttempts: MyAttemptItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+export async function getMyAttemptsBySessionApi(
+  sessionId: string,
+  page: number = 1,
+  limit: number = 10
+): Promise<MyAttemptsResponse> {
+  const response = await api.get("/examattempts/list", {
+    params: { examSessionId: sessionId, page, limit },
   });
   return response.data;
 }
