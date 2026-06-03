@@ -762,10 +762,14 @@ export class ExamAttemptService {
                 examSession: {
                     include: {
                         examRoom: {
-                            select: {
-                                id: true,
-                                hostId: true,
-                                title: true,
+                            include: {
+                                quizSet: {
+                                    include: {
+                                        detailsQuizQuestions: {
+                                            include: { quizQuestion: true },
+                                        },
+                                    },
+                                },
                             },
                         },
                     },
@@ -777,8 +781,8 @@ export class ExamAttemptService {
             throw new NotFoundException('Bài làm không tồn tại');
         }
 
-        // Only owner can see attempt details
-        if (attempt.examSession.examRoom.hostId !== user.id) {
+        // Only owner or attempt owner can see attempt details
+        if (attempt.examSession.examRoom.hostId !== user.id && attempt.userId !== user.id) {
             throw new ForbiddenException('Bạn không có quyền xem dữ liệu này');
         }
 
@@ -790,6 +794,29 @@ export class ExamAttemptService {
                     new Date(attempt.startedAt).getTime()) /
                     1000
             );
+        }
+
+        // Decrypt questions for attempt owner or host
+        let questions: Array<{ id: string; question: string; options: string[]; answer?: string }> = [];
+        const canViewQuestions = attempt.userId === user.id || attempt.examSession.examRoom.hostId === user.id;
+        if (canViewQuestions) {
+            const showAnswers = attempt.status === EXAM_ATTEMPT_STATUS.COMPLETED;
+            questions = attempt.examSession.examRoom.quizSet.detailsQuizQuestions.map((dq) => {
+              const q = dq.quizQuestion;
+              if (showAnswers) {
+                return {
+                  id: dq.id,
+                  question: q.question,
+                  options: q.options,
+                  answer: q.answer,
+                };
+              }
+              return {
+                id: dq.id,
+                question: q.question,
+                options: q.options,
+              };
+            });
         }
 
         return {
@@ -806,6 +833,17 @@ export class ExamAttemptService {
             markedQuestions: attempt.markedQuestions,
             violationCount: attempt.violationCount,
             user: attempt.user,
+            passingScore: attempt.examSession.passingScore ?? 0,
+            questions,
+            examAttempt: {
+                id: attempt.id,
+                answers: attempt.answers || {},
+                timeSpentSeconds,
+                score: attempt.score,
+                status: attempt.status,
+                startedAt: attempt.startedAt,
+                finishedAt: attempt.finishedAt,
+            },
             session: {
                 id: attempt.examSession.id,
                 startTime: attempt.examSession.startTime,

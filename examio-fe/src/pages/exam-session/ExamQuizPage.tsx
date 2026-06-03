@@ -1,6 +1,6 @@
 /* eslint-disable react-dom/no-dangerously-set-innerhtml */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useNavigate, useParams, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/antd/button";
 import { Card, CardContent } from "@/components/antd/card";
 import { Progress } from "@/components/antd/progress";
@@ -29,7 +29,7 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { useCheatingDetection } from "@/hooks/useCheatingDetection";
 import { CheatingWarningModal } from "@/components/molecules/CheatingWarningModal";
 import { StandardMarkdownRenderer } from "@/components/molecules/StandardMarkdownRenderer";
-import { startExamAttemptApi, updateExamAttemptProgressApi, type Question } from "@/apis/examAttemptApi";
+import { startExamAttemptApi, updateExamAttemptProgressApi, getExamAttemptDetailApi, type Question } from "@/apis/examAttemptApi";
 import { env } from "@/lib/env";
 import {
   fetchAndDecryptSecureQuiz,
@@ -47,7 +47,9 @@ export default function ExamQuizPage() {
   const toggleTheme = () => setTheme(isDarkMode ? "light" : "dark");
 
   const [attemptId, setAttemptId] = useState<string | null>(null);
+  const [isViewOnly, setIsViewOnly] = useState(false);
   const [questions, setQuestions] = useState<DecryptedQuestion[]>([]);
+  const [searchParams] = useSearchParams();
   const [tokenMap, setTokenMap] = useState<QuestionTokenMap>(() => new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -148,8 +150,58 @@ export default function ExamQuizPage() {
       setLoading(true);
       setError(null);
 
+      const urlAttemptId = searchParams.get("attemptId");
+      const urlViewResult = searchParams.get("view") === "result";
+
       try {
-        const startResult = await startExamAttemptApi(examSessionId);
+        // Case 1: view=result — load completed attempt detail
+        if (urlViewResult && urlAttemptId) {
+          setAttemptId(urlAttemptId);
+          setIsViewOnly(true);
+
+          const detail = await getExamAttemptDetailApi(urlAttemptId);
+
+          const questionsData: DecryptedQuestion[] = (detail.questions || []).map((q) => ({
+            id: q.id,
+            question: q.question,
+            options: q.options,
+            answer: q.answer,
+          }));
+
+          setQuestions(questionsData);
+          setAnswers(detail.examAttempt.answers || {});
+          setCurrentQuestionIndex(0);
+
+          const correctCount = questionsData.filter(
+            (q) => detail.examAttempt.answers?.[q.id] === q.answer,
+          ).length;
+          const percentage =
+            questionsData.length > 0
+              ? Math.round((correctCount / questionsData.length) * 100)
+              : 0;
+
+          setResultData({
+            score: detail.examAttempt.score || 0,
+            totalQuestions: questionsData.length,
+            correctAnswers: correctCount,
+            percentage,
+            showAnswers: true,
+            passed: percentage >= (detail.passingScore || 0),
+            passingScore: detail.passingScore || 0,
+            questions: questionsData,
+          });
+          setIsSubmitted(true);
+          setTimeSpentSeconds(detail.examAttempt.timeSpentSeconds || 0);
+
+          toast.success("Đang xem kết quả", {
+            description: detail.examAttempt.examRoom?.title || "Bài thi đã hoàn thành",
+          });
+
+          return;
+        }
+
+        // Case 2 & 3: normal flow (new or resume)
+        const startResult = await startExamAttemptApi(examSessionId, urlAttemptId ?? undefined);
         setAttemptId(startResult.examAttempt.id);
 
         const secureQuizData = await fetchAndDecryptSecureQuiz(startResult.examAttempt.id);

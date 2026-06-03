@@ -38,8 +38,8 @@ export function ExamHeaderSection({ examInfo }: ExamHeaderSectionProps) {
           icon={FileText}
           label="Tổng số câu hỏi"
           value={`${examInfo.totalQuestions} câu`}
-          iconColor="text-secondary"
-          iconBgColor="bg-secondary/10"
+          iconColor="text-blue-500"
+          iconBgColor="bg-blue-500/10"
         />
         <ExamMetricCard
           icon={Award}
