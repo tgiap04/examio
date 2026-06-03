@@ -77,11 +77,12 @@ export function ExamRoomDetailTemplate({
 }: ExamRoomDetailTemplateProps) {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  const formatDuration = (seconds: number | null) => {
-    if (seconds === null) return "-";
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
+  const formatDuration = (seconds: number | null | undefined) => {
+    if (seconds === null || seconds === undefined || isNaN(seconds as number)) return "-";
+    const n = seconds as number;
+    const h = Math.floor(n / 3600);
+    const m = Math.floor((n % 3600) / 60);
+    const s = n % 60;
     if (h > 0) return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
@@ -195,7 +196,7 @@ export function ExamRoomDetailTemplate({
             <ExamProgressSection progress={progress} />
 
             {/* Attempt History */}
-            <Card className="p-6">
+            <Card className="p-6 !mt-3">
               <h3 className="mb-4 font-semibold text-foreground flex items-center gap-2">
                 <RotateCcw className="h-4 w-4" />
                 Lịch sử làm bài
@@ -214,7 +215,7 @@ export function ExamRoomDetailTemplate({
                   <p className="text-xs text-muted-foreground/60 mt-1">Bắt đầu lần đầu tiên của bạn</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {myAttempts.map((attempt, index) => {
                     const percentage = attempt.totalQuestions > 0
                       ? Math.round((attempt.correctAnswers / attempt.totalQuestions) * 100)
@@ -224,11 +225,11 @@ export function ExamRoomDetailTemplate({
                     return (
                       <div
                         key={attempt.id}
-                        className="flex items-start gap-3 p-4 rounded-[12px] border border-border hover:border-hairline transition-colors"
+                        className="flex items-start gap-4 p-4 rounded-xl border border-border hover:border-hairline transition-colors"
                       >
                         {/* Status icon */}
                         <div className={cn(
-                          "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg mt-0.5",
+                          "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
                           attempt.status === 0
                             ? "bg-yellow-100 text-yellow-600"
                             : passed
@@ -251,8 +252,8 @@ export function ExamRoomDetailTemplate({
                             {getStatusBadge(attempt.status, percentage, examInfo.passingScore)}
                           </div>
                           <p className="text-xs text-muted-foreground mb-2">{formatDate(attempt.startedAt)}</p>
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                            <span className="font-medium text-foreground">{percentage}%</span>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground !mb-3">
+                            <span className="font-semibold text-foreground">{percentage}%</span>
                             <span>{attempt.correctAnswers}/{attempt.totalQuestions} đúng</span>
                             {attempt.timeSpentSeconds !== null && (
                               <span className="flex items-center gap-1">

@@ -168,6 +168,17 @@ export interface ExamAttemptDetail
   currentIndex: number;
   markedQuestions: string[];
   violationCount: number;
+  passingScore: number;
+  questions: Question[];
+  examAttempt: {
+    id: string;
+    answers: Record<string, string>;
+    timeSpentSeconds: number | null;
+    score: number;
+    status: number;
+    startedAt: string;
+    finishedAt: string | null;
+  };
   session: {
     id: string;
     startTime: string;
