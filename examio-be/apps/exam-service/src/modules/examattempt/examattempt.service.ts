@@ -47,7 +47,9 @@ export class ExamAttemptService {
      * Checks retry limits based on ExamSession settings
      */
     async startExamAttempt(user: User, dto: CreateExamAttemptDto) {
-        await this.turnstileService.verify(dto.turnstileToken);
+        if (dto.turnstileToken) {
+            await this.turnstileService.verify(dto.turnstileToken);
+        }
         // Verify exam session exists with all needed data
         const examSession = await this.prisma.examSession.findUnique({
             where: { id: dto.examSessionId },

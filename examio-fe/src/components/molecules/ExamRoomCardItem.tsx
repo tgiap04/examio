@@ -1,5 +1,5 @@
 import { Button } from "@/components/antd/button";
-import { Lock, FileText, HelpCircle, Edit, Trash2 } from "lucide-react";
+import { Lock, FileText, HelpCircle, Edit, Trash2, Eye } from "lucide-react";
 import { RoomInfoRow } from "./RoomInfoRow";
 
 interface ExamRoomCardItemProps {
@@ -30,7 +30,7 @@ export function ExamRoomCardItem({
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-sm font-medium text-ink">
+          <h3 className="truncate text-xl font-medium text-ink">
             {name}
           </h3>
         </div>
@@ -54,27 +54,27 @@ export function ExamRoomCardItem({
       <div className="flex gap-2">
         <Button
           variant="outline"
-          size="sm"
-          className="h-7 flex-1 border-hairline text-xs"
+          size="lg"
           onClick={onViewDetails}>
+          <Eye className="h-3.5 w-3.5" />
           Xem chi tiết
         </Button>
         {onEdit && (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 text-muted-foreground hover:bg-surface-card hover:text-ink"
+            variant="outline"
+            size="lg"
             onClick={onEdit}>
             <Edit className="h-3.5 w-3.5" />
+            Chỉnh sửa
           </Button>
         )}
         {onDelete && (
           <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 text-muted-foreground hover:bg-error/10 hover:text-error"
+            variant="destructive"
+            size="lg"
             onClick={onDelete}>
             <Trash2 className="h-3.5 w-3.5" />
+            Xóa
           </Button>
         )}
       </div>

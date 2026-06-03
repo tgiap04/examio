@@ -6,6 +6,7 @@ import {
   getExamSessionStatsApi,
   type ExamSessionStats,
 } from "@/apis/examSessionApi";
+import { getMyAttemptsBySessionApi, type MyAttemptItem } from "@/apis/examAttemptApi";
 import { EXAM_SESSION_STATUS, type AccessCheckResult } from "@/types/examSession";
 import { ExamRoomDetailTemplate } from "@/templates/ExamRoomDetailTemplate";
 import { Skeleton } from "@/components/antd/skeleton";
@@ -44,6 +45,8 @@ export default function ExamSessionPage() {
   const [accessCode, setAccessCode] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [codeError, setCodeError] = useState("");
+  const [myAttempts, setMyAttempts] = useState<MyAttemptItem[]>([]);
+  const [myAttemptsLoading, setMyAttemptsLoading] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -66,6 +69,17 @@ export default function ExamSessionPage() {
         if (access.hasAccess) {
           const sessionStats = await getExamSessionStatsApi(id);
           setStats(sessionStats);
+
+          // Load user's attempt history for this session
+          setMyAttemptsLoading(true);
+          try {
+            const attemptRes = await getMyAttemptsBySessionApi(id, 1, 10);
+            setMyAttempts(attemptRes.examAttempts);
+          } catch {
+            // silently ignore
+          } finally {
+            setMyAttemptsLoading(false);
+          }
         } else if (access.accessType === "code_required") {
           setShowCodeDialog(true);
         }
@@ -335,6 +349,14 @@ export default function ExamSessionPage() {
     navigate(`/exam-session/${id}/quiz`);
   };
 
+  const handleContinueAttempt = (attemptId: string) => {
+    navigate(`/exam-session/${id}/quiz?attemptId=${attemptId}`);
+  };
+
+  const handleViewAttempt = (attemptId: string) => {
+    navigate(`/exam-session/${id}/quiz?attemptId=${attemptId}&view=result`);
+  };
+
   return (
     <ExamRoomDetailTemplate
       examInfo={examInfo}
@@ -342,6 +364,10 @@ export default function ExamSessionPage() {
       timeRemaining={calculateTimeRemaining()}
       examStartTime={examStartTime}
       onStartExam={handleStartExam}
+      myAttempts={myAttempts}
+      myAttemptsLoading={myAttemptsLoading}
+      onContinueAttempt={handleContinueAttempt}
+      onViewAttempt={handleViewAttempt}
     />
   );
 }

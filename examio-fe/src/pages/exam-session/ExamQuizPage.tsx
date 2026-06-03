@@ -3,9 +3,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/antd/button";
 import { Card, CardContent } from "@/components/antd/card";
-import { RadioGroup, RadioGroupItem } from "@/components/antd/radio-group";
-import { Label } from "@/components/antd/label";
 import { Progress } from "@/components/antd/progress";
+import { ScrollArea } from "@/components/antd/scroll-area";
 import {
   AlertTriangle,
   BarChart3,
@@ -15,14 +14,16 @@ import {
   Clock,
   Flag,
   Loader2,
+  Moon,
+  Sun,
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setRedirectBackTarget } from "@/lib/authRedirect";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useThemeContext } from "@/provider/ThemeProvider";
 import { resolveAnswerIndex } from "@/lib/quizAnswerUtils";
 import { ConfirmDialog } from "@/components/organisms/ConfirmDialog";
-import { FullscreenConfirmDialog } from "@/components/organisms/FullscreenConfirmDialog";
 import { toast } from "@/components/antd/toast";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useCheatingDetection } from "@/hooks/useCheatingDetection";
@@ -42,10 +43,9 @@ export default function ExamQuizPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, initializing } = useAuthStore();
+  const { isDarkMode, setTheme } = useThemeContext();
+  const toggleTheme = () => setTheme(isDarkMode ? "light" : "dark");
 
-  const [showFullscreenDialog, setShowFullscreenDialog] = useState(true);
-  const [fullscreenConfirmed, setFullscreenConfirmed] = useState(false);
-  const [turnstileToken, setCaptchaToken] = useState<string | null>(null);
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [questions, setQuestions] = useState<DecryptedQuestion[]>([]);
   const [tokenMap, setTokenMap] = useState<QuestionTokenMap>(() => new Map());
@@ -142,14 +142,14 @@ export default function ExamQuizPage() {
   }, [attemptId, answers, currentQuestionIndex, markedForReview, tokenMap]);
 
   useEffect(() => {
-    if (!fullscreenConfirmed || !examSessionId || initializing || !isAuthenticated) return;
+    if (!examSessionId || initializing || !isAuthenticated) return;
 
     const initExam = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        const startResult = await startExamAttemptApi(examSessionId, turnstileToken ?? "");
+        const startResult = await startExamAttemptApi(examSessionId);
         setAttemptId(startResult.examAttempt.id);
 
         const secureQuizData = await fetchAndDecryptSecureQuiz(startResult.examAttempt.id);
@@ -200,32 +200,7 @@ export default function ExamQuizPage() {
     };
 
     initExam();
-  }, [examSessionId, fullscreenConfirmed, turnstileToken, initializing, isAuthenticated]);
-
-  const handleFullscreenConfirm = (token?: string) => {
-    if (token) {
-      setCaptchaToken(token);
-    }
-    setShowFullscreenDialog(false);
-    setFullscreenConfirmed(true);
-  };
-
-  const handleFullscreenCancel = () => {
-    navigate(`/exam-session/${examSessionId}`);
-  };
-
-  useEffect(() => {
-    return () => {
-      const cleanupFns = (window as any).__examCleanupFunctions;
-      if (cleanupFns) {
-        document.removeEventListener("keydown", cleanupFns.preventDevTools);
-        document.removeEventListener("contextmenu", cleanupFns.preventRightClick);
-      }
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(() => {});
-      }
-    };
-  }, []);
+  }, [examSessionId, initializing, isAuthenticated]);
 
   useEffect(() => {
     if (!loading && !isSubmitted && questions.length > 0) {
@@ -290,9 +265,23 @@ export default function ExamQuizPage() {
   const progressPercentage = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) {
+      return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    }
+    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const formatTimeLabel = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) {
+      return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+    }
+    return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
   const getRemainingTime = () => {
@@ -362,24 +351,14 @@ export default function ExamQuizPage() {
     );
   }
 
-  if (loading || !fullscreenConfirmed) {
+  if (loading) {
     return (
-      <>
-        <FullscreenConfirmDialog
-          open={showFullscreenDialog}
-          onConfirm={handleFullscreenConfirm}
-          onCancel={handleFullscreenCancel}
-        />
-
-        {fullscreenConfirmed && (
-          <div className="flex items-center justify-center min-h-screen">
-            <div className="text-center">
-              <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-              <p className="text-muted-foreground">Đang tải bài thi...</p>
-            </div>
-          </div>
-        )}
-      </>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground">Đang tải bài thi...</p>
+        </div>
+      </div>
     );
   }
 
@@ -612,7 +591,7 @@ export default function ExamQuizPage() {
                   <div className="text-sm text-muted-foreground">Điểm</div>
                 </div>
                 <div className="text-center p-4 bg-muted rounded-lg">
-                  <div className="text-2xl font-bold">{formatTime(timeSpentSeconds)}</div>
+                  <div className="text-2xl font-bold">{formatTimeLabel(timeSpentSeconds)}</div>
                   <div className="text-sm text-muted-foreground">Thời gian</div>
                 </div>
                 <div className="text-center p-4 bg-muted rounded-lg">
@@ -665,50 +644,57 @@ export default function ExamQuizPage() {
         totalViolations={cheatingDetection.totalViolations}
       />
 
-      <div className="min-h-screen">
-        <div className="container max-w-7xl mx-auto py-6 px-4">
-          <div className="mb-6">
-            <Button variant="ghost" onClick={handleExit} className="mb-4">
-              <ChevronLeft className="h-4 w-4 mr-2" />
-              Thoát
-            </Button>
-            <div className="flex justify-between items-start">
-              <div>
-                <h1 className="text-2xl font-bold">Bài thi</h1>
-                <p className="text-muted-foreground">
-                  Câu {currentQuestionIndex + 1} / {totalQuestions}
-                </p>
+      <div className="flex flex-col min-h-screen">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
+          <div className="container max-w-7xl mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="sm" onClick={handleExit} className="!p-2">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <div>
+                  <h1 className="text-base font-semibold">Bài thi</h1>
+                  <p className="text-xs text-muted-foreground">Câu {currentQuestionIndex + 1} / {totalQuestions}</p>
+                </div>
               </div>
-
-              <div
-                className={cn(
-                  "flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-lg",
-                  remainingTime !== null && remainingTime <= 60 ? "bg-destructive/10 text-destructive animate-pulse" : "bg-muted",
-                )}
-              >
-                <Clock className="h-5 w-5" />
-                {remainingTime !== null ? (
-                  <span>
-                    {formatTime(remainingTime)}
-                    <span className="text-sm text-muted-foreground ml-1">còn lại</span>
-                  </span>
-                ) : (
-                  <span>{formatTime(timeSpentSeconds)}</span>
-                )}
+              <div className="flex items-center gap-3">
+                <Button variant="ghost" size="icon" onClick={toggleTheme} className="!p-2">
+                  {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+                </Button>
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="w-4 h-4 rounded bg-primary" />
+                  <span className="text-muted-foreground">{answeredCount}/{totalQuestions}</span>
+                </div>
+                <div
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-lg font-mono text-sm",
+                    remainingTime !== null && remainingTime <= 60 ? "bg-destructive/10 text-destructive animate-pulse" : "bg-muted",
+                  )}
+                >
+                  <Clock className="h-4 w-4" />
+                  {remainingTime !== null ? (
+                    <span>
+                      {formatTimeLabel(remainingTime)}
+                      <span className="text-xs text-muted-foreground ml-1">còn lại</span>
+                    </span>
+                  ) : (
+                    <span>{formatTimeLabel(timeSpentSeconds)}</span>
+                  )}
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          <div className="mb-6">
-            <div className="flex justify-between text-sm mb-2">
-              <span>Tiến độ: {answeredCount}/{totalQuestions} câu</span>
-              <span>{progressPercentage.toFixed(0)}%</span>
-            </div>
+        {/* Main Content */}
+        <div className="flex-1 container max-w-7xl mx-auto px-4 py-6">
+          <div className="mb-4">
             <Progress value={progressPercentage} />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-3 space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
               {currentQuestion && (
                 <Card>
                   <CardContent className="pt-6">
@@ -719,6 +705,7 @@ export default function ExamQuizPage() {
                       <Button
                         variant={markedForReview.has(currentQuestion.id) ? "default" : "outline"}
                         size="sm"
+                        className="!p-4"
                         onClick={handleMarkForReview}
                       >
                         <Flag className="h-4 w-4 mr-2" />
@@ -728,7 +715,7 @@ export default function ExamQuizPage() {
 
                     <StandardMarkdownRenderer content={currentQuestion.question} className="mb-6" fontSize={16} />
 
-                    <RadioGroup value={answers[currentQuestion.id] || ""} onValueChange={handleAnswerSelect} className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {currentQuestion.options.map((option, index) => {
                         const optionLetter = String.fromCharCode(65 + index);
                         const isSelected = answers[currentQuestion.id] === optionLetter;
@@ -737,49 +724,38 @@ export default function ExamQuizPage() {
                           <div
                             key={index}
                             className={cn(
-                              "flex items-start space-x-3 p-4 rounded-lg border-2 transition-colors cursor-pointer",
-                              isSelected ? "border-primary bg-primary/5" : "border-border hover:border-primary/50",
+                              "flex items-center gap-2 p-4 rounded-[10px] border-2 transition-colors cursor-pointer",
+                              isSelected ? "border-coral bg-coral/5" : "border-border hover:border-coral/50",
                             )}
-                            onClick={() => handleAnswerSelect(optionLetter)}
+                            onClick={() => handleAnswerSelect(isSelected ? "" : optionLetter)}
                           >
-                            <RadioGroupItem value={optionLetter} id={`option-${index}`} />
-                            <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
-                              <StandardMarkdownRenderer content={option} fontSize={15} />
-                            </Label>
+                            <span className={cn(
+                              "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 font-mono text-[11px] font-semibold",
+                              isSelected ? "border-coral bg-coral/10 text-coral" : "border-border text-muted-foreground",
+                            )}>
+                              {optionLetter}
+                            </span>
+                            <span className="flex-1 text-[13px] leading-[1.55]">
+                              <StandardMarkdownRenderer content={option} fontSize={13} />
+                            </span>
                           </div>
                         );
                       })}
-                    </RadioGroup>
+                    </div>
                   </CardContent>
                 </Card>
               )}
-
-              <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setCurrentQuestionIndex((prev) => prev - 1)} disabled={currentQuestionIndex === 0}>
-                  <ChevronLeft className="h-4 w-4 mr-2" />
-                  Câu trước
-                </Button>
-
-                {currentQuestionIndex === totalQuestions - 1 ? (
-                  <Button onClick={() => (answeredCount < totalQuestions ? setShowSubmitConfirm(true) : doSubmit())}>Nộp bài</Button>
-                ) : (
-                  <Button onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}>
-                    Câu sau
-                    <ChevronRight className="h-4 w-4 ml-2" />
-                  </Button>
-                )}
-              </div>
             </div>
 
             <div className="lg:col-span-1">
-              <Card className="sticky top-6">
-                <CardContent className="pt-6">
+              <Card className="sticky top-6 !p-0">
+                <CardContent className="pt-6 !pb-0 !px-0 flex flex-col" style={{ maxHeight: "calc(100vh - 24rem)" }}>
                   <h3 className="font-semibold mb-4 flex items-center">
                     <BarChart3 className="h-4 w-4 mr-2" />
                     Danh sách câu hỏi
                   </h3>
 
-                  <div className="grid grid-cols-5 gap-2">
+                  <div className="grid grid-cols-5 gap-2 overflow-y-auto flex-1 min-h-0 p-1">
                     {questions.map((q, index) => {
                       const isAnswered = !!answers[q.id];
                       const isMarked = markedForReview.has(q.id);
@@ -797,29 +773,32 @@ export default function ExamQuizPage() {
                           )}
                         >
                           {index + 1}
-                          {isMarked && <Flag className="h-3 w-3 absolute top-0 right-0 text-orange-500" />}
+                          {isMarked && <Flag className="h-3 w-3 absolute top-1 right-1 size-8" />}
                         </button>
                       );
                     })}
                   </div>
 
-                  <div className="mt-6 space-y-2 text-sm">
+                  <div className="pt-4 mt-2 border-t space-y-2 text-sm shrink-0 bg-background !p-2 !rounded-lg">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 bg-primary rounded" />
-                      <span>Đã trả lời ({answeredCount})</span>
+                      <span className="text-muted-foreground">Đã trả lời</span>
+                      <span className="ml-auto font-semibold">{answeredCount}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 bg-muted rounded" />
-                      <span>Chưa trả lời ({totalQuestions - answeredCount})</span>
+                      <span className="text-muted-foreground">Chưa trả lời</span>
+                      <span className="ml-auto font-semibold">{totalQuestions - answeredCount}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <Flag className="h-4 w-4 text-orange-500" />
-                      <span>Đánh dấu ({markedForReview.size})</span>
+                      <span className="text-muted-foreground">Đánh dấu</span>
+                      <span className="ml-auto font-semibold">{markedForReview.size}</span>
                     </div>
                   </div>
 
                   {remainingTime !== null && remainingTime <= 300 && remainingTime > 0 && (
-                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg shrink-0">
                       <div className="flex items-center gap-2 text-yellow-800 text-sm">
                         <AlertTriangle className="h-4 w-4" />
                         <span>Còn {Math.ceil(remainingTime / 60)} phút</span>
@@ -827,11 +806,36 @@ export default function ExamQuizPage() {
                     </div>
                   )}
 
-                  <Button className="w-full mt-6" onClick={() => setShowSubmitConfirm(true)} variant="default">
+                  <Button className="w-full !mt-3" size="lg" onClick={() => setShowSubmitConfirm(true)} variant="default">
                     Nộp bài
                   </Button>
                 </CardContent>
               </Card>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 z-10 bg-background/95 backdrop-blur border-t border-border">
+          <div className="container max-w-7xl mx-auto px-4 py-3">
+            <div className="flex items-center justify-between">
+              <Button variant="outline" onClick={() => setCurrentQuestionIndex((prev) => prev - 1)} disabled={currentQuestionIndex === 0}>
+                <ChevronLeft className="h-4 w-4 mr-2" />
+                Câu trước
+              </Button>
+
+              <div className="flex items-center gap-2">
+                {currentQuestionIndex === totalQuestions - 1 ? (
+                  <Button onClick={() => (answeredCount < totalQuestions ? setShowSubmitConfirm(true) : doSubmit())}>
+                    Nộp bài
+                  </Button>
+                ) : (
+                  <Button onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}>
+                    Câu sau
+                    <ChevronRight className="h-4 w-4 ml-2" />
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>

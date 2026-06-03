@@ -66,8 +66,8 @@ export function ConfirmDialog({
             disabled={isLoading}
             className={
               variant === "destructive"
-                ? "bg-destructive hover:bg-destructive/90"
-                : ""
+                ? "bg-destructive hover:bg-destructive/90 px-2"
+                : "px-2"
             }>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {confirmText}
