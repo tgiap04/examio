@@ -69,6 +69,7 @@ export default function ExamQuizPage() {
     showAnswers: boolean;
     passed: boolean;
     passingScore: number;
+    violationCount: number;
     questions?: Question[];
   } | null>(null);
   const [timeSpentSeconds, setTimeSpentSeconds] = useState(() => 0);
@@ -133,6 +134,7 @@ export default function ExamQuizPage() {
         showAnswers: result.showAnswers,
         passed: result.passed,
         passingScore: result.passingScore,
+        violationCount: cheatingDetection.totalViolations,
         questions: result.questions,
       });
       setIsSubmitted(true);
@@ -148,8 +150,20 @@ export default function ExamQuizPage() {
     if (!examSessionId || initializing || !isAuthenticated) return;
 
     const initExam = async () => {
+      // Reset all quiz state before (re-)initializing
       setLoading(true);
       setError(null);
+      setIsSubmitted(false);
+      setResultData(null);
+      setQuestions([]);
+      setAnswers({});
+      setMarkedForReview(new Set());
+      setCurrentQuestionIndex(0);
+      setAttemptId(null);
+      setIsViewOnly(false);
+      setShowDetailedResults(false);
+      setTimeSpentSeconds(0);
+      setHasWarned30s(false);
 
       const urlAttemptId = searchParams.get("attemptId");
       const urlViewResult = searchParams.get("view") === "result";
@@ -162,12 +176,13 @@ export default function ExamQuizPage() {
 
           const detail = await getExamAttemptDetailApi(urlAttemptId);
 
+          // Backend now returns userAnswer per question directly.
           const resultQuestions: Question[] = (detail.questions || []).map((q) => ({
             id: q.id,
             question: q.question,
             options: q.options,
             answer: q.answer,
-            userAnswer: detail.examAttempt.answers?.[q.id] ?? null,
+            userAnswer: q.userAnswer ?? null,
           }));
           const correctCount = resultQuestions.filter(
             (q) => q.answer !== undefined && q.userAnswer === q.answer,
@@ -189,6 +204,7 @@ export default function ExamQuizPage() {
             showAnswers: true,
             passed: percentage >= (detail.passingScore || 0),
             passingScore: detail.passingScore || 0,
+            violationCount: detail.violationCount || 0,
             questions: resultQuestions,
           });
           setIsSubmitted(true);
@@ -202,7 +218,7 @@ export default function ExamQuizPage() {
         }
 
         // Case 2 & 3: normal flow (new or resume)
-        const startResult = await startExamAttemptApi(examSessionId, urlAttemptId ?? undefined);
+        const startResult = await startExamAttemptApi(examSessionId);
         setAttemptId(startResult.examAttempt.id);
 
         const secureQuizData = await fetchAndDecryptSecureQuiz(startResult.examAttempt.id);
@@ -240,6 +256,7 @@ export default function ExamQuizPage() {
             showAnswers: false,
             passed: false,
             passingScore: 0,
+            violationCount: 0,
             questions: undefined,
           });
         }
@@ -253,7 +270,7 @@ export default function ExamQuizPage() {
     };
 
     initExam();
-  }, [examSessionId, initializing, isAuthenticated]);
+  }, [examSessionId, initializing, isAuthenticated, location.key]);
 
   useEffect(() => {
     if (!loading && !isSubmitted && questions.length > 0) {
@@ -313,7 +330,9 @@ export default function ExamQuizPage() {
   }, [attemptId, isSubmitted, answers, currentQuestionIndex, markedForReview]);
 
   const currentQuestion = questions[currentQuestionIndex];
-  const totalQuestions = questions.length;
+  const totalQuestions = isViewOnly
+    ? (resultData?.questions?.length ?? 0)
+    : questions.length;
   const answeredCount = Object.keys(answers).length;
   const progressPercentage = totalQuestions > 0 ? (answeredCount / totalQuestions) * 100 : 0;
 
@@ -378,6 +397,7 @@ export default function ExamQuizPage() {
         showAnswers: result.showAnswers,
         passed: result.passed,
         passingScore: result.passingScore,
+        violationCount: cheatingDetection.totalViolations,
         questions: result.questions,
       });
       setIsSubmitted(true);
@@ -455,7 +475,7 @@ export default function ExamQuizPage() {
 
       return (
         <div className="flex flex-col min-h-screen">
-          {/* Header */}
+          {/* Header — same structure as quiz mode header */}
           <div className="sticky top-0 z-10 bg-background/95 backdrop-blur border-b border-border">
             <div className="container max-w-7xl mx-auto px-4 py-3">
               <div className="flex items-center justify-between">
@@ -472,23 +492,10 @@ export default function ExamQuizPage() {
                   <Button variant="ghost" size="icon" onClick={toggleTheme} className="!p-2">
                     {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
                   </Button>
-                  <div
-                    className={cn(
-                      "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
-                      isCorrect ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive",
-                    )}
-                  >
-                    {isCorrect ? (
-                      <>
-                        <CheckCircle2 className="h-3.5 w-3.5" />
-                        Đúng
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="h-3.5 w-3.5" />
-                        Sai
-                      </>
-                    )}
+                  {/* Score count — mirrors answered-count pill from quiz mode */}
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-4 h-4 rounded bg-success" />
+                    <span className="text-muted-foreground">{correctAnswersCount}/{totalQuestions}</span>
                   </div>
                 </div>
               </div>
@@ -497,6 +504,11 @@ export default function ExamQuizPage() {
 
           {/* Main Content */}
           <div className="flex-1 container max-w-7xl mx-auto px-4 py-6">
+            {/* Progress bar — mirrors quiz mode, shows % correct */}
+            <div className="mb-4">
+              <Progress value={percentage} />
+            </div>
+
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-6">
                 <Card className={cn("border-2", isCorrect ? "border-success" : "border-destructive")}>
@@ -538,14 +550,14 @@ export default function ExamQuizPage() {
               </div>
 
               <div className="lg:col-span-1">
-                <Card className="sticky top-6">
-                  <CardContent className="pt-6 pb-0 flex flex-col" style={{ maxHeight: "calc(100vh - 6rem)" }}>
-                    <h3 className="font-semibold mb-4 flex items-center">
+                <Card className="sticky !p-0">
+                  <CardContent className="pt-6 !pb-0 !px-0 flex flex-col" style={{ maxHeight: "calc(100vh - 24rem)" }}>
+                    <h3 className="font-semibold mb-4 flex items-center px-4">
                       <BarChart3 className="h-4 w-4 mr-2" />
                       Danh sách câu hỏi
                     </h3>
 
-                    <div className="grid grid-cols-5 gap-2 overflow-y-auto flex-1 min-h-0">
+                    <div className="grid grid-cols-5 gap-2 overflow-y-auto flex-1 min-h-0 p-1 px-3">
                       {resultData.questions.map((q, index) => {
                         const qUserAnswer = q.userAnswer;
                         const qIsCorrect = qUserAnswer === q.answer;
@@ -560,7 +572,7 @@ export default function ExamQuizPage() {
                               isCurrent && "ring-2 ring-primary ring-offset-2",
                               qIsCorrect && "bg-success text-white",
                               !qIsCorrect && qUserAnswer && "bg-destructive text-white",
-                              !qUserAnswer && "bg-warning text-white",
+                              !qUserAnswer && "bg-muted text-muted-foreground",
                             )}
                           >
                             {index + 1}
@@ -569,7 +581,7 @@ export default function ExamQuizPage() {
                       })}
                     </div>
 
-                    <div className="pt-4 mt-2 border-t space-y-2 text-sm shrink-0 bg-background">
+                    <div className="pt-4 mt-2 border-t space-y-2 text-sm shrink-0 bg-background !p-3 !rounded-lg">
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 bg-success rounded" />
                         <span className="text-muted-foreground">Đúng</span>
@@ -581,13 +593,13 @@ export default function ExamQuizPage() {
                         <span className="ml-auto font-semibold">{resultData.questions.filter((q) => q.userAnswer && q.userAnswer !== q.answer).length}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-warning rounded" />
+                        <div className="w-4 h-4 bg-muted rounded border" />
                         <span className="text-muted-foreground">Chưa trả lời</span>
                         <span className="ml-auto font-semibold">{resultData.questions.filter((q) => !q.userAnswer).length}</span>
                       </div>
                     </div>
 
-                    <Button className="w-full mt-3" onClick={() => setShowDetailedResults(false)} variant="outline">
+                    <Button className="w-full !mt-3 mx-3 !py-2" size="lg" onClick={() => setShowDetailedResults(false)} variant="outline">
                       Xem tổng quan
                     </Button>
                   </CardContent>
@@ -652,8 +664,8 @@ export default function ExamQuizPage() {
                   <div className="text-sm text-muted-foreground">Thời gian</div>
                 </div>
                 <div className="text-center p-4 bg-muted rounded-lg">
-                  <div className={`text-2xl font-bold ${cheatingDetection.totalViolations > 0 ? "text-warning" : "text-success"}`}>
-                    {cheatingDetection.totalViolations}
+                  <div className={`text-2xl font-bold ${(resultData.violationCount ?? 0) > 0 ? "text-warning" : "text-success"}`}>
+                    {resultData.violationCount ?? 0}
                   </div>
                   <div className="text-sm text-muted-foreground">Vi phạm</div>
                 </div>
@@ -666,7 +678,7 @@ export default function ExamQuizPage() {
                     Xem chi tiết
                   </Button>
                 )}
-                <Button onClick={() => window.location.reload()} variant="outline">
+                <Button onClick={() => navigate(`/exam-session/${examSessionId}/quiz`)} variant="outline">
                   Làm lại
                 </Button>
                 <Button onClick={handleExit} variant="outline">
@@ -794,7 +806,7 @@ export default function ExamQuizPage() {
             </div>
 
             <div className="lg:col-span-1">
-              <Card className="sticky top-6 !p-0">
+              <Card className="sticky !p-0">
                 <CardContent className="pt-6 !pb-0 !px-0 flex flex-col" style={{ maxHeight: "calc(100vh - 24rem)" }}>
                   <h3 className="font-semibold mb-4 flex items-center">
                     <BarChart3 className="h-4 w-4 mr-2" />

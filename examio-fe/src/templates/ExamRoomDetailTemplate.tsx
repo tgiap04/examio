@@ -101,22 +101,30 @@ export function ExamRoomDetailTemplate({
   const getStatusBadge = (status: number, score: number, passingScore: number) => {
     if (status === 0) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-warning/15 text-warning">
           <Loader2 className="h-3 w-3" />
           Đang thi
         </span>
       );
     }
+    if (passingScore === 0) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success/15 text-success">
+          <CheckCircle2 className="h-3 w-3" />
+          Hoàn thành
+        </span>
+      );
+    }
     if (score >= passingScore) {
       return (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-success/15 text-success">
           <CheckCircle2 className="h-3 w-3" />
           Đạt
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-destructive/15 text-destructive">
         <XCircle className="h-3 w-3" />
         Chưa đạt
       </span>
@@ -215,12 +223,13 @@ export function ExamRoomDetailTemplate({
                   <p className="text-xs text-muted-foreground/60 mt-1">Bắt đầu lần đầu tiên của bạn</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-[500px] overflow-y-auto pr-1">
                   {myAttempts.map((attempt, index) => {
                     const percentage = attempt.totalQuestions > 0
                       ? Math.round((attempt.correctAnswers / attempt.totalQuestions) * 100)
                       : 0;
-                    const passed = percentage >= examInfo.passingScore;
+                    const hasPassingScore = examInfo.passingScore > 0;
+                    const passed = hasPassingScore && percentage >= examInfo.passingScore;
 
                     return (
                       <div
@@ -231,14 +240,14 @@ export function ExamRoomDetailTemplate({
                         <div className={cn(
                           "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
                           attempt.status === 0
-                            ? "bg-yellow-100 text-yellow-600"
-                            : passed
-                              ? "bg-green-100 text-green-600"
-                              : "bg-red-100 text-red-600",
+                            ? "bg-warning/15 text-warning"
+                            : passed || !hasPassingScore
+                              ? "bg-success/15 text-success"
+                              : "bg-destructive/15 text-destructive",
                         )}>
                           {attempt.status === 0 ? (
                             <Loader2 className="h-5 w-5" />
-                          ) : passed ? (
+                          ) : passed || !hasPassingScore ? (
                             <CheckCircle2 className="h-5 w-5" />
                           ) : (
                             <XCircle className="h-5 w-5" />
