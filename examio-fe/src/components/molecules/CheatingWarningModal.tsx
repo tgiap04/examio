@@ -59,7 +59,7 @@ export function CheatingWarningModal({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogAction onClick={onClose}>Đã hiểu</AlertDialogAction>
+          <AlertDialogAction className="px-3" onClick={onClose}>Đã hiểu</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

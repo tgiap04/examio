@@ -399,6 +399,8 @@ export class ExamAttemptService {
             const passingScore = attempt.examSession.passingScore || 0;
             const passed = score >= passingScore;
 
+            await this.examAttemptRepository.invalidateUserListCache(user.id);
+
             // Prepare response based on showAnswersAfterSubmit
             if (showAnswers) {
                 // Return questions with correct answers
@@ -797,24 +799,29 @@ export class ExamAttemptService {
         }
 
         // Decrypt questions for attempt owner or host
-        let questions: Array<{ id: string; question: string; options: string[]; answer?: string }> = [];
+        let questions: Array<{ id: string; question: string; options: string[]; answer?: string; userAnswer?: string | null }> = [];
         const canViewQuestions = attempt.userId === user.id || attempt.examSession.examRoom.hostId === user.id;
         if (canViewQuestions) {
             const showAnswers = attempt.status === EXAM_ATTEMPT_STATUS.COMPLETED;
+            const attemptAnswers = (attempt.answers as Record<string, string>) || {};
             questions = attempt.examSession.examRoom.quizSet.detailsQuizQuestions.map((dq) => {
               const q = dq.quizQuestion;
+              // Answers are keyed by quizQuestion.id (not dq.id)
+              const userAnswer = attemptAnswers[q.id] ?? null;
               if (showAnswers) {
                 return {
                   id: dq.id,
                   question: q.question,
                   options: q.options,
                   answer: q.answer,
+                  userAnswer,
                 };
               }
               return {
                 id: dq.id,
                 question: q.question,
                 options: q.options,
+                userAnswer,
               };
             });
         }
@@ -1805,6 +1812,7 @@ export class ExamAttemptService {
                 }));
             }
 
+            await this.examAttemptRepository.invalidateUserListCache(user.id);
             return response;
         } catch (error) {
             throw new InternalServerErrorException('Nộp bài thất bại');

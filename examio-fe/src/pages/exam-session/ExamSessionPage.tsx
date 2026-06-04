@@ -30,12 +30,14 @@ import { toast } from "@/components/antd/toast";
 import { cn } from "@/lib/utils";
 import { setRedirectBackTarget } from "@/lib/authRedirect";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useStudentMaterialsStore } from "@/stores/useStudentMaterialsStore";
 
 export default function ExamSessionPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, initializing } = useAuthStore();
+  const { invalidateExams } = useStudentMaterialsStore();
 
   const [loading, setLoading] = useState(true);
   const [accessInfo, setAccessInfo] = useState<AccessCheckResult | null>(null);
@@ -102,7 +104,7 @@ export default function ExamSessionPage() {
     if (id) {
       loadData();
     }
-  }, [id, initializing, isAuthenticated, location, navigate]);
+  }, [id, initializing, isAuthenticated, location.key, navigate]);
 
   const handleVerifyCode = async () => {
     if (accessCode.length !== 6) {
@@ -346,10 +348,13 @@ export default function ExamSessionPage() {
       toast.info("Phiên thi đã kết thúc.");
       return;
     }
+    // Clear /k/my-exams cache so the new attempt appears immediately when user returns
+    invalidateExams();
     navigate(`/exam-session/${id}/quiz`);
   };
 
   const handleContinueAttempt = (attemptId: string) => {
+    invalidateExams();
     navigate(`/exam-session/${id}/quiz?attemptId=${attemptId}`);
   };
 
