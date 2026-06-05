@@ -92,7 +92,7 @@ export function ProfileForm({
           )}
 
           {/* Name & Bio input fields */}
-          <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-5 sm:grid-cols-1">
             <div className="space-y-2">
               <Label htmlFor="name" className="text-sm font-medium text-ink">
                 Tên hiển thị
@@ -106,7 +106,7 @@ export function ProfileForm({
                 className="w-full"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="bio" className="text-sm font-medium text-ink">
                 Giới thiệu
@@ -137,7 +137,7 @@ export function ProfileForm({
                   <p className="truncate text-sm font-medium text-ink">{profile.email}</p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-muted-text">
                   <span className="text-xs font-semibold">@</span>

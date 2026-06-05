@@ -133,10 +133,10 @@ export default function ProfilePage() {
 
   const joinDate = profile.createdAt
     ? new Date(profile.createdAt).toLocaleDateString("vi-VN", {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      })
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })
     : null;
 
   // Compute profile completeness score (20% for each filled/verified attribute)
@@ -152,7 +152,7 @@ export default function ProfilePage() {
   const completeness = getCompleteness();
 
   return (
-    <div className="space-y-6 p-4 pb-20 sm:p-6 xl:p-8 max-w-7xl mx-auto">
+    <div className="space-y-6 p-4 pb-20 sm:p-6 xl:p-8 max-w-7xl mx-auto mt-4">
       {/* Page Header */}
       <div className="pb-2">
         <h1
