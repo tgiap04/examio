@@ -1,251 +1,695 @@
-# Route List
+# Route List — examio
 
-Generated: 2026-05-27
+**Project**: examio
+**Generated**: 2026-06-05
+**Stack**: TypeScript (NestJS monorepo backend + React 19 SPA frontend)
+**Gateway**: `http://localhost:3000` — single HTTP entry point; all backend routes live under `/api/v1`
+
+---
+
+## Backend Routes
+
+### Gateway (`/api/v1/...`)
+
+Gateway proxies all requests to downstream services. Auth: Bearer token (forwarded as `Authorization: Bearer ...` header) or cookie `token`/`accessToken`.
+
+#### Auth
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/auth/login | Login with email/password | public |
+| POST | /api/v1/auth/register | Register new account | public |
+| POST | /api/v1/auth/send-code-reset-password | Send reset password code | public |
+| POST | /api/v1/auth/reset-password | Reset password with code | public |
+| POST | /api/v1/auth/refresh | Refresh access token | public (cookie) |
+| POST | /api/v1/auth/logout | Logout and clear session | Bearer |
+| GET | /api/v1/auth/google | Initiate Google OAuth flow | public |
+| GET | /api/v1/auth/google/callback | Google OAuth callback | public |
+| POST | /api/v1/auth/google/one-tap | Google One Tap login | public |
+| POST | /api/v1/auth/sync-refresh-token | Sync refresh token from current session | Bearer |
+| GET | /api/v1/auth/me | Get current user profile | Bearer |
+| POST | /api/v1/auth/sendVerificationEmail | Send account verification email | Bearer |
+| POST | /api/v1/auth/verifyAccount | Verify account with code | Bearer |
+| POST | /api/v1/auth/send-code-change-password | Send code to change password | Bearer |
+| POST | /api/v1/auth/change-password | Change password with code | Bearer |
+| POST | /api/v1/auth/exchange | Exchange OAuth code for tokens (mobile app) | public |
+
+#### Profile
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/profile | Get user profile | Bearer |
+| PUT | /api/v1/profile | Update user profile | Bearer |
+| POST | /api/v1/profile/upload-avatar | Upload profile avatar | Bearer |
+| POST | /api/v1/profile/upload-banner | Upload profile banner | Bearer |
+
+#### Devices
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/devices | List logged-in devices | Bearer |
+| DELETE | /api/v1/devices/:sessionId | Logout a specific device | Bearer |
+| POST | /api/v1/devices/logout-all-others | Logout all other devices | Bearer |
+
+#### Quiz Sets
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/quizsets | List quiz sets (paginated, filterable) | Bearer |
+| GET | /api/v1/quizsets/stats | Get quiz set statistics | Bearer |
+| GET | /api/v1/quizsets/list/all | List all quiz sets (no pagination) | Bearer |
+| GET | /api/v1/quizsets/:id | Get quiz set by ID | Bearer |
+| POST | /api/v1/quizsets | Create new quiz set | Bearer |
+| PUT | /api/v1/quizsets/:id | Update quiz set | Bearer |
+| DELETE | /api/v1/quizsets/:id | Delete quiz set | Bearer |
+| GET | /api/v1/quizsets/:id/questions | Get paginated questions for quiz set | Bearer |
+| POST | /api/v1/quizsets/set-quizzes-to-quizset | Assign quizzes to quiz set | Bearer |
+| POST | /api/v1/quizsets/save-history-to-quizset | Save AI-generated quizzes to quiz set | Bearer |
+| POST | /api/v1/quizsets/:quizSetId/questions | Add question to quiz set | Bearer |
+| PUT | /api/v1/quizsets/:quizSetId/questions/:questionId | Update question | Bearer |
+| DELETE | /api/v1/quizsets/:quizSetId/questions/:questionId | Delete question | Bearer |
+| GET | /api/v1/quizsets/:quizSetId/labels | Get labels for quiz set | Bearer |
+| POST | /api/v1/quizsets/:quizSetId/labels | Create label | Bearer |
+| PUT | /api/v1/quizsets/:quizSetId/labels/:labelId | Update label | Bearer |
+| DELETE | /api/v1/quizsets/:quizSetId/labels/:labelId | Delete label | Bearer |
+| POST | /api/v1/quizsets/:quizSetId/labels/:labelId/questions | Assign questions to label | Bearer |
+| DELETE | /api/v1/quizsets/:quizSetId/labels/:labelId/questions | Remove questions from label | Bearer |
+| GET | /api/v1/quizsets/:quizSetId/labels/:labelId/questions | Get questions by label | Bearer |
+
+#### Flashcard Sets
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/flashcardsets | List flashcard sets (paginated) | Bearer |
+| GET | /api/v1/flashcardsets/stats | Get flashcard set statistics | Bearer |
+| GET | /api/v1/flashcardsets/users/search | Search users for whitelist | Bearer |
+| GET | /api/v1/flashcardsets/:id | Get flashcard set by ID | Bearer |
+| GET | /api/v1/flashcardsets/:id/flashcards | Get paginated flashcards | Bearer |
+| GET | /api/v1/flashcardsets/:id/labels | Get labels for flashcard set | Bearer |
+| POST | /api/v1/flashcardsets | Create new flashcard set | Bearer |
+| PUT | /api/v1/flashcardsets/:id | Update flashcard set | Bearer |
+| DELETE | /api/v1/flashcardsets/:id | Delete flashcard set | Bearer |
+| POST | /api/v1/flashcardsets/:id/share | Generate share link and access code | Bearer |
+| POST | /api/v1/flashcardsets/set-flashcards-to-flashcardset | Assign flashcards to set | Bearer |
+| POST | /api/v1/flashcardsets/save-history-to-flashcardset | Save AI-generated flashcards to set | Bearer |
+| POST | /api/v1/flashcardsets/:id/labels | Create label for flashcard set | Bearer |
+| PUT | /api/v1/flashcardsets/:id/labels/:labelId | Update label | Bearer |
+| DELETE | /api/v1/flashcardsets/:id/labels/:labelId | Delete label | Bearer |
+| POST | /api/v1/flashcardsets/:id/labels/:labelId/flashcards | Assign flashcards to label | Bearer |
+| DELETE | /api/v1/flashcardsets/:id/labels/:labelId/flashcards | Remove flashcards from label | Bearer |
+| GET | /api/v1/flashcardsets/:id/labels/:labelId/flashcards | Get flashcards by label | Bearer |
+| POST | /api/v1/flashcardsets/:setId/flashcards | Add flashcard to set | Bearer |
+| PUT | /api/v1/flashcardsets/:setId/flashcards/:cardId | Update flashcard | Bearer |
+| DELETE | /api/v1/flashcardsets/:setId/flashcards/:cardId | Delete flashcard | Bearer |
+| GET | /api/v1/flashcardsets/study/:id/access | Check access to flashcard set | Bearer |
+| GET | /api/v1/flashcardsets/study/:id/info | Get public info for study | Bearer |
+| GET | /api/v1/flashcardsets/study/:id | Get flashcard set for study | Bearer |
+| POST | /api/v1/flashcardsets/study/:id/verify-code | Verify access code | Bearer |
+| POST | /api/v1/flashcardsets/study/:id/with-code | Get set with access code | Bearer |
+| GET | /api/v1/flashcardsets/:id/sharing | Get sharing settings | Bearer |
+| PUT | /api/v1/flashcardsets/:id/sharing | Update sharing settings | Bearer |
+| POST | /api/v1/flashcardsets/:id/generate-code | Generate new access code | Bearer |
+
+#### Exam Rooms
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/examrooms/list | List exam rooms (paginated) | Bearer |
+| GET | /api/v1/examrooms/list-all | List all exam rooms | Bearer |
+| GET | /api/v1/examrooms/detail/:id | Get exam room by ID | Bearer |
+| GET | /api/v1/examrooms/get-public/:id | Get public exam room | Bearer |
+| POST | /api/v1/examrooms | Create exam room | Bearer |
+| PUT | /api/v1/examrooms/:id | Update exam room | Bearer |
+| DELETE | /api/v1/examrooms/:id | Delete exam room | Bearer |
+| GET | /api/v1/examrooms/:examRoomId/sessions | Get exam sessions for room | Bearer |
+
+#### Exam Sessions
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/examsessions/list | List exam sessions (paginated) | Bearer |
+| GET | /api/v1/examsessions/get-by-id/:id | Get exam session by ID | Bearer |
+| GET | /api/v1/examsessions/get-public/:id | Get public exam session | Bearer |
+| POST | /api/v1/examsessions | Create exam session | Bearer |
+| PUT | /api/v1/examsessions/:id | Update exam session | Bearer |
+| DELETE | /api/v1/examsessions/:id | Delete exam session | Bearer |
+| GET | /api/v1/examsessions/users/search | Search users for whitelist | Bearer |
+| GET | /api/v1/examsessions/study/:id/access | Check access to exam session | Bearer |
+| GET | /api/v1/examsessions/study/:id/info | Get public info | Bearer |
+| GET | /api/v1/examsessions/study/:id | Get exam session for study | Bearer |
+| POST | /api/v1/examsessions/study/:id/with-code | Get session with access code | Bearer |
+| POST | /api/v1/examsessions/study/:id/verify-code | Verify access code | Bearer |
+| GET | /api/v1/examsessions/study/:id/stats | Get student-visible stats | Bearer |
+| GET | /api/v1/examsessions/:id/sharing | Get sharing settings | Bearer |
+| PUT | /api/v1/examsessions/:id/sharing | Update sharing settings | Bearer |
+| POST | /api/v1/examsessions/:id/generate-code | Generate access code | Bearer |
+| GET | /api/v1/examsessions/room/:roomId/available-labels | Get available labels for room | Bearer |
+
+#### Exam Attempts
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/examattempts/start | Start or resume exam attempt | Bearer |
+| GET | /api/v1/examattempts/list | List exam attempts (paginated) | Bearer |
+| GET | /api/v1/examattempts/history-stats | Get aggregated history statistics | Bearer |
+| GET | /api/v1/examattempts/list-by-room/:examRoomId | List attempts by room (owner) | Bearer |
+| GET | /api/v1/examattempts/list-by-session/:sessionId | List attempts by session (owner) | Bearer |
+| GET | /api/v1/examattempts/:attemptId/quiz | Get attempt with questions | Bearer |
+| GET | /api/v1/examattempts/:attemptId/detail | Get attempt detail (owner) | Bearer |
+| PUT | /api/v1/examattempts/:attemptId/progress | Update progress (auto-save) | Bearer |
+| POST | /api/v1/examattempts/:attemptId/submit | Submit exam (legacy) | Bearer |
+| GET | /api/v1/examattempts/:attemptId/secure-quiz | Get encrypted quiz with JWT tokens | Bearer |
+| POST | /api/v1/examattempts/:attemptId/secure-submit | Submit with JWT verification | Bearer |
+
+#### Subjects
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/subjects/categories | Get subject categories with subjects | Bearer |
+| GET | /api/v1/subjects | List all subjects | Bearer |
+| GET | /api/v1/subjects/:id | Get subject by ID | Bearer |
+| GET | /api/v1/subjects/slug/:slug | Get subject by slug | Bearer |
+
+#### Wallet
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/wallet/details | Get wallet with transaction history | Bearer |
+
+#### Payment
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/payment/create | Create payment (credits/subscription) | Bearer |
+| GET | /api/v1/payment/status/:paymentId | Check payment status | Bearer |
+| GET | /api/v1/payment/subscription | Get current subscription | Bearer |
+| GET | /api/v1/payment/subscription/plans | List subscription plans | Bearer |
+| DELETE | /api/v1/payment/cancel/:paymentId | Cancel pending payment | Bearer |
+
+#### Student
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/student/recent-flashcards | Get recent viewed flashcard sets | Bearer |
+| GET | /api/v1/student/recent-exams | Get recent exam attempts | Bearer |
+| POST | /api/v1/student/pin-flashcard/:id | Toggle pin/unpin flashcard set | Bearer |
+
+#### AI Study
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/ai/quick-upload | Quick upload file for AI Teacher | Bearer |
+| POST | /api/v1/ai/generate-from-file | Upload file and generate quiz/flashcard | Bearer |
+| GET | /api/v1/ai/recent-uploads | List recently uploaded files | Bearer |
+| GET | /api/v1/ai/models | Get AI model catalog | Bearer |
+| GET | /api/v1/ai/upload/:uploadId | Get upload detail | Bearer |
+| DELETE | /api/v1/ai/upload/:uploadId | Delete upload | Bearer |
+| GET | /api/v1/ai/upload/:uploadId/history | Get quiz/flashcard history for upload | Bearer |
+| POST | /api/v1/ai/regenerate/:uploadId | Regenerate quiz/flashcard from file | Bearer |
+| GET | /api/v1/ai/job/:jobId | Get job status | Bearer |
+| DELETE | /api/v1/ai/job/:jobId | Cancel job | Bearer |
+| POST | /api/v1/ai/upload-image | Upload image for AI chat | Bearer |
+| POST | /api/v1/ai/tutor/ingest | Create tutor ingest job | Bearer |
+| GET | /api/v1/ai/tutor/ingest | List tutor ingest jobs | Bearer |
+| GET | /api/v1/ai/tutor/ingest/:jobId | Get tutor ingest job detail | Bearer |
+| GET | /api/v1/ai/tutor/graph/job/:jobId | Get tutor graph by job | Bearer |
+| GET | /api/v1/ai/tutor/graph/document/:documentId | Get tutor graph by document | Bearer |
+| GET | /api/v1/ai/tutor/knowledge-stats | Get knowledge base stats | Bearer |
+| GET | /api/v1/ai/tutor/knowledge-folders | List knowledge folders | Bearer |
+| POST | /api/v1/ai/tutor/knowledge-folders | Create knowledge folder | Bearer |
+| PUT | /api/v1/ai/tutor/knowledge-folders/:folderId | Update knowledge folder | Bearer |
+| DELETE | /api/v1/ai/tutor/knowledge-folders/:folderId | Delete knowledge folder | Bearer |
+| GET | /api/v1/ai/tutor/knowledge-folders/:folderId/contents | Get folder contents | Bearer |
+| GET | /api/v1/ai/tutor/knowledge-files | List knowledge files | Bearer |
+| GET | /api/v1/ai/tutor/knowledge-files/search | Search/filter knowledge files | Bearer |
+| POST | /api/v1/ai/tutor/knowledge-files | Upload knowledge file | Bearer |
+| GET | /api/v1/ai/tutor/knowledge-files/:fileId | Get knowledge file status | Bearer |
+| DELETE | /api/v1/ai/tutor/knowledge-files/:fileId | Delete knowledge file | Bearer |
+| POST | /api/v1/ai/tutor/knowledge-files/:fileId/reprocess | Reprocess knowledge file | Bearer |
+| GET | /api/v1/ai/tutor/knowledge-files/:fileId/graph | Get graph for knowledge file | Bearer |
+| POST | /api/v1/ai/tutor/knowledge-files/bulk-delete | Bulk delete knowledge files | Bearer |
+| POST | /api/v1/ai/tutor/knowledge-files/bulk-reprocess | Bulk reprocess knowledge files | Bearer |
+| GET | /api/v1/ai/tutor/dataset-imports/catalog | Get dataset import catalog | Bearer |
+| POST | /api/v1/ai/tutor/dataset-imports | Create dataset import job | Bearer |
+| GET | /api/v1/ai/tutor/dataset-imports | List dataset import jobs | Bearer |
+| GET | /api/v1/ai/tutor/dataset-imports/states | Get dataset import states | Bearer |
+| GET | /api/v1/ai/tutor/dataset-imports/:jobId | Get dataset import job status | Bearer |
+| POST | /api/v1/ai/tutor/dataset-imports/:jobId/cancel | Cancel dataset import job | Bearer |
+| POST | /api/v1/ai/tutor/dataset-imports/:datasetKey/clear | Clear imported dataset | Bearer |
+
+#### AI Chat
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/ai-chat | List all chats | Bearer |
+| POST | /api/v1/ai-chat | Create new chat | Bearer |
+| GET | /api/v1/ai-chat/:chatId/messages | Get chat messages | Bearer |
+| POST | /api/v1/ai-chat/:chatId/message | Send message | Bearer |
+| POST | /api/v1/ai-chat/:chatId/stream | Send message with SSE streaming | Bearer |
+| GET | /api/v1/ai-chat/:chatId/exists | Check chat exists | Bearer |
+| DELETE | /api/v1/ai-chat/:chatId | Delete chat | Bearer |
+| GET | /api/v1/ai-chat/:chatId/documents | Get chat documents | Bearer |
+| POST | /api/v1/ai-chat/:chatId/documents | Add document to chat | Bearer |
+| DELETE | /api/v1/ai-chat/:chatId/documents/:documentId | Remove document from chat | Bearer |
+| DELETE | /api/v1/ai-chat/message/:messageId | Delete message | Bearer |
+| PATCH | /api/v1/ai-chat/message/:messageId | Update message | Bearer |
+| POST | /api/v1/ai-chat/message/:messageId/regenerate | Regenerate AI response | Bearer |
+| POST | /api/v1/ai-chat/message/:messageId/regenerate-stream | Regenerate with SSE streaming | Bearer |
+
+#### Flashcard Study
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/flashcard-study/session | Get or create study session | Bearer |
+| PUT | /api/v1/flashcard-study/session/:sessionId | Update study session | Bearer |
+| POST | /api/v1/flashcard-study/session/:sessionId/complete | Complete study session | Bearer |
+| POST | /api/v1/flashcard-study/session/:sessionId/review | Review flashcard | Bearer |
+| GET | /api/v1/flashcard-study/cards/:flashCardSetId | Get cards for study | Bearer |
+| GET | /api/v1/flashcard-study/history/:flashCardSetId | Get study history | Bearer |
+| GET | /api/v1/flashcard-study/progress/:flashCardSetId | Get study progress | Bearer |
+| POST | /api/v1/flashcard-study/progress/:flashCardSetId | Save study progress | Bearer |
+
+#### Quiz Practice
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/quiz-practice-attempts | Get or create practice attempt | Bearer |
+| GET | /api/v1/quiz-practice-attempts/by-quizset/:quizSetId | Get practice attempt by quiz set | Bearer |
+| GET | /api/v1/quiz-practice-attempts/stats/completion-rate | Get completion rate stats | Bearer |
+| GET | /api/v1/quiz-practice-attempts/:attemptId | Get practice attempt by ID | Bearer |
+| PUT | /api/v1/quiz-practice-attempts/:attemptId | Update practice attempt | Bearer |
+| POST | /api/v1/quiz-practice-attempts/:attemptId/submit | Submit practice attempt | Bearer |
+| POST | /api/v1/quiz-practice-attempts/:attemptId/reset | Reset practice attempt | Bearer |
+
+#### Cheating Logs
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/cheatinglogs | Log cheating violation | Bearer |
+| GET | /api/v1/cheatinglogs/attempt/:attemptId | Get cheating logs for attempt (host) | Bearer |
+| GET | /api/v1/cheatinglogs/session/:sessionId/stats | Get cheating stats for session (host) | Bearer |
+| GET | /api/v1/cheatinglogs/session/:sessionId/user/:userId | Get user attempts with logs (host) | Bearer |
+
+#### R2 Storage
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/r2/image | Upload image to R2 storage (max 2MB) | Bearer |
+
+#### Webhook
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/webhook/sepay | SePay payment webhook callback | ApiKey |
+
+---
+
+### Auth Service (`localhost:3001`, `/api/v1/...`)
+
+Internal service routes — not directly exposed to clients (gateway proxies to these).
+
+#### Auth
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/auth/register | Register user | public |
+| POST | /api/v1/auth/login | Login | public |
+| POST | /api/v1/auth/logout | Logout | Bearer |
+| POST | /api/v1/auth/refresh | Refresh token | public (cookie) |
+| POST | /api/v1/auth/sendVerificationEmail | Send verification email | Bearer |
+| POST | /api/v1/auth/verifyAccount | Verify account | Bearer |
+| POST | /api/v1/auth/send-code-reset-password | Send reset code | public |
+| POST | /api/v1/auth/reset-password | Reset password | public |
+| POST | /api/v1/auth/send-code-change-password | Send change password code | Bearer |
+| POST | /api/v1/auth/change-password | Change password | Bearer |
+| GET | /api/v1/auth/google | Initiate Google OAuth | public |
+| POST | /api/v1/auth/google/one-tap | Google One Tap | public |
+| GET | /api/v1/auth/google/callback | Google OAuth callback | public |
+| GET | /api/v1/auth/me | Get current user | Bearer |
+| POST | /api/v1/auth/sync-refresh-token | Sync refresh token | Bearer |
+| POST | /api/v1/auth/exchange | Exchange OAuth code for tokens | public |
+
+#### Profile
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/profile | Get profile | Bearer |
+| PUT | /api/v1/profile | Update profile | Bearer |
+| POST | /api/v1/profile/upload-avatar | Upload avatar | Bearer |
+| POST | /api/v1/profile/upload-banner | Upload banner | Bearer |
+
+#### Devices
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/devices | List devices | Bearer |
+| DELETE | /api/v1/devices/:sessionId | Logout device | Bearer |
+| POST | /api/v1/devices/logout-all-others | Logout all other devices | Bearer |
+
+---
+
+### Exam Service (`localhost:3002`, `/api/v1/...`)
+
+#### Quiz Sets
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/quizsets | List quiz sets | Bearer |
+| GET | /api/v1/quizsets/stats | Quiz set statistics | Bearer |
+| GET | /api/v1/quizsets/:id | Get quiz set by ID | Bearer |
+| GET | /api/v1/quizsets/:id/questions | Get paginated questions | Bearer |
+| GET | /api/v1/quizsets/list/all | List all (no pagination) | Bearer |
+| POST | /api/v1/quizsets | Create quiz set | Bearer |
+| PUT | /api/v1/quizsets/:id | Update quiz set | Bearer |
+| DELETE | /api/v1/quizsets/:id | Delete quiz set | Bearer |
+| GET | /api/v1/quizsets/public/:id | Get public quiz set | public |
+| POST | /api/v1/quizsets/set-quizzes-to-quizset | Assign quizzes to set | Bearer |
+| POST | /api/v1/quizsets/save-history-to-quizset | Save AI-generated quizzes | Bearer |
+| POST | /api/v1/quizsets/:quizSetId/questions | Add question | Bearer |
+| PUT | /api/v1/quizsets/:quizSetId/questions/:questionId | Update question | Bearer |
+| DELETE | /api/v1/quizsets/:quizSetId/questions/:questionId | Delete question | Bearer |
+| GET | /api/v1/quizsets/:quizSetId/labels | Get labels | Bearer |
+| POST | /api/v1/quizsets/:quizSetId/labels | Create label | Bearer |
+| PUT | /api/v1/quizsets/:quizSetId/labels/:labelId | Update label | Bearer |
+| DELETE | /api/v1/quizsets/:quizSetId/labels/:labelId | Delete label | Bearer |
+| POST | /api/v1/quizsets/:quizSetId/labels/:labelId/questions | Assign questions to label | Bearer |
+| DELETE | /api/v1/quizsets/:quizSetId/labels/:labelId/questions | Remove questions from label | Bearer |
+| GET | /api/v1/quizsets/:quizSetId/labels/:labelId/questions | Get questions by label | Bearer |
+
+#### Flashcard Sets
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/flashcardsets | List flashcard sets | Bearer |
+| GET | /api/v1/flashcardsets/stats | Flashcard set statistics | Bearer |
+| GET | /api/v1/flashcardsets/users/search | Search users for whitelist | Bearer |
+| GET | /api/v1/flashcardsets/:id | Get flashcard set by ID | Bearer |
+| GET | /api/v1/flashcardsets/:id/flashcards | Get paginated flashcards | Bearer |
+| GET | /api/v1/flashcardsets/:id/labels | Get labels | Bearer |
+| POST | /api/v1/flashcardsets | Create flashcard set | Bearer |
+| PUT | /api/v1/flashcardsets/:id | Update flashcard set | Bearer |
+| DELETE | /api/v1/flashcardsets/:id | Delete flashcard set | Bearer |
+| GET | /api/v1/flashcardsets/public/:id | Get public flashcard set | optional |
+| POST | /api/v1/flashcardsets/:id/share | Generate share link | Bearer |
+| POST | /api/v1/flashcardsets/set-flashcards-to-flashcardset | Assign flashcards | Bearer |
+| POST | /api/v1/flashcardsets/save-history-to-flashcardset | Save AI-generated flashcards | Bearer |
+| POST | /api/v1/flashcardsets/:flashcardSetId/labels | Create label | Bearer |
+| PUT | /api/v1/flashcardsets/:flashcardSetId/labels/:labelId | Update label | Bearer |
+| DELETE | /api/v1/flashcardsets/:flashcardSetId/labels/:labelId | Delete label | Bearer |
+| POST | /api/v1/flashcardsets/:flashcardSetId/labels/:labelId/flashcards | Assign flashcards | Bearer |
+| DELETE | /api/v1/flashcardsets/:flashcardSetId/labels/:labelId/flashcards | Remove flashcards | Bearer |
+| GET | /api/v1/flashcardsets/:flashcardSetId/labels/:labelId/flashcards | Get flashcards by label | Bearer |
+| POST | /api/v1/flashcardsets/:flashcardSetId/flashcards | Add flashcard | Bearer |
+| PUT | /api/v1/flashcardsets/:flashcardSetId/flashcards/:flashcardId | Update flashcard | Bearer |
+| DELETE | /api/v1/flashcardsets/:flashcardSetId/flashcards/:flashcardId | Delete flashcard | Bearer |
+| GET | /api/v1/flashcardsets/study/:id/access | Check access | optional |
+| GET | /api/v1/flashcardsets/study/:id/info | Get public info | public |
+| GET | /api/v1/flashcardsets/study/:id | Get set for study | optional |
+| POST | /api/v1/flashcardsets/study/:id/verify-code | Verify access code | public |
+| POST | /api/v1/flashcardsets/study/:id/with-code | Get set with access code | optional |
+| GET | /api/v1/flashcardsets/:id/sharing | Get sharing settings | Bearer |
+| PUT | /api/v1/flashcardsets/:id/sharing | Update sharing settings | Bearer |
+| POST | /api/v1/flashcardsets/:id/generate-code | Generate access code | Bearer |
+
+#### Exam Rooms
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/examrooms | Create exam room | Bearer |
+| GET | /api/v1/examrooms/detail/:id | Get exam room by ID | Bearer |
+| PUT | /api/v1/examrooms/:id | Update exam room | Bearer |
+| GET | /api/v1/examrooms/list | List exam rooms | Bearer |
+| GET | /api/v1/examrooms/list-all | List all exam rooms | Bearer |
+| DELETE | /api/v1/examrooms/:id | Delete exam room | Bearer |
+| GET | /api/v1/examrooms/get-public/:id | Get public exam room | public |
+| GET | /api/v1/examrooms/:id/sessions | Get exam sessions for room | Bearer |
+
+#### Exam Sessions
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/examsessions | Create exam session | Bearer |
+| GET | /api/v1/examsessions/get-by-id/:id | Get exam session by ID | Bearer |
+| PUT | /api/v1/examsessions/:id | Update exam session | Bearer |
+| GET | /api/v1/examsessions/list | List exam sessions | Bearer |
+| DELETE | /api/v1/examsessions/:id | Delete exam session | Bearer |
+| GET | /api/v1/examsessions/get-public/:id | Get public exam session | public |
+| GET | /api/v1/examsessions/study/:id/access | Check access | optional |
+| GET | /api/v1/examsessions/study/:id/info | Get public info | public |
+| GET | /api/v1/examsessions/study/:id | Get session for study | optional |
+| POST | /api/v1/examsessions/study/:id/verify-code | Verify access code | public |
+| POST | /api/v1/examsessions/study/:id/with-code | Get session with code | public |
+| GET | /api/v1/examsessions/study/:id/stats | Get student stats | Bearer |
+| GET | /api/v1/examsessions/:id/sharing | Get sharing settings | Bearer |
+| PUT | /api/v1/examsessions/:id/sharing | Update sharing settings | Bearer |
+| POST | /api/v1/examsessions/:id/generate-code | Generate access code | Bearer |
+| GET | /api/v1/examsessions/users/search | Search users for whitelist | Bearer |
+| GET | /api/v1/examsessions/room/:roomId/available-labels | Get available labels | Bearer |
+
+#### Exam Attempts
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/examattempts/history-stats | Aggregated history statistics | Bearer |
+| POST | /api/v1/examattempts/start | Start or resume exam attempt | Bearer |
+| PUT | /api/v1/examattempts/:id/progress | Update progress (auto-save) | Bearer |
+| POST | /api/v1/examattempts/:id/submit | Submit exam (legacy) | Bearer |
+| GET | /api/v1/examattempts/:id/quiz | Get attempt with questions | Bearer |
+| GET | /api/v1/examattempts/:id/secure-quiz | Get encrypted quiz with JWT | Bearer |
+| POST | /api/v1/examattempts/:id/secure-submit | Submit with JWT verification | Bearer |
+| GET | /api/v1/examattempts/list-by-room/:examRoomId | List attempts by room (owner) | Bearer |
+| GET | /api/v1/examattempts/list-by-session/:sessionId | List attempts by session (owner) | Bearer |
+| GET | /api/v1/examattempts/:id/detail | Get attempt detail (owner) | Bearer |
+| POST | /api/v1/examattempts | Create exam attempt | Bearer |
+| GET | /api/v1/examattempts/get-by-id/:id | Get attempt by ID | Bearer |
+| PUT | /api/v1/examattempts/:id | Update attempt | Bearer |
+| GET | /api/v1/examattempts/list | List attempts | Bearer |
+| DELETE | /api/v1/examattempts/:id | Delete attempt | Bearer |
+
+#### Subjects
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/subjects/categories | Get subject categories | public |
+| GET | /api/v1/subjects | List all subjects | public |
+| GET | /api/v1/subjects/:id | Get subject by ID | public |
+| GET | /api/v1/subjects/slug/:slug | Get subject by slug | public |
+
+#### AI
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/ai/quick-upload | Quick upload for AI Teacher | Bearer |
+| POST | /api/v1/ai/generate-from-file | Upload and generate quiz/flashcard | Bearer |
+| GET | /api/v1/ai/recent-uploads | List recent uploads | Bearer |
+| GET | /api/v1/ai/models | Get AI model catalog | Bearer |
+| POST | /api/v1/ai/upload | Create upload + trigger OCR | Bearer |
+| GET | /api/v1/ai/upload/:uploadId | Get upload detail | Bearer |
+| DELETE | /api/v1/ai/upload/:uploadId | Delete upload | Bearer |
+| GET | /api/v1/ai/upload/:uploadId/history | Get quiz/flashcard history | Bearer |
+| POST | /api/v1/ai/regenerate/:uploadId | Regenerate quiz/flashcard | Bearer |
+| GET | /api/v1/ai/job/:jobId | Get job status | Bearer |
+| DELETE | /api/v1/ai/job/:jobId | Cancel job | Bearer |
+| POST | /api/v1/ai/upload-image | Upload image for AI chat | Bearer |
+| POST | /api/v1/ai/tutor/ingest | Create tutor ingest job | Bearer |
+| GET | /api/v1/ai/tutor/ingest | List tutor ingest jobs | Bearer |
+| GET | /api/v1/ai/tutor/ingest/:jobId | Get tutor ingest job | Bearer |
+| GET | /api/v1/ai/tutor/graph/job/:jobId | Get tutor graph by job | Bearer |
+| GET | /api/v1/ai/tutor/graph/document/:documentId | Get tutor graph by document | Bearer |
+| GET | /api/v1/ai/tutor/knowledge-stats | Get knowledge stats | Bearer |
+| GET | /api/v1/ai/tutor/knowledge-folders | List knowledge folders | Bearer |
+| POST | /api/v1/ai/tutor/knowledge-folders | Create knowledge folder | Bearer |
+| PUT | /api/v1/ai/tutor/knowledge-folders/:folderId | Update knowledge folder | Bearer |
+| DELETE | /api/v1/ai/tutor/knowledge-folders/:folderId | Delete knowledge folder | Bearer |
+| GET | /api/v1/ai/tutor/knowledge-folders/:folderId/contents | Get folder contents | Bearer |
+| GET | /api/v1/ai/tutor/knowledge-files | List knowledge files | Bearer |
+| GET | /api/v1/ai/tutor/knowledge-files/search | Search knowledge files | Bearer |
+| POST | /api/v1/ai/tutor/knowledge-files | Upload knowledge file | Bearer |
+| GET | /api/v1/ai/tutor/knowledge-files/:fileId | Get knowledge file status | Bearer |
+| DELETE | /api/v1/ai/tutor/knowledge-files/:fileId | Delete knowledge file | Bearer |
+| POST | /api/v1/ai/tutor/knowledge-files/:fileId/reprocess | Reprocess knowledge file | Bearer |
+| GET | /api/v1/ai/tutor/knowledge-files/:fileId/graph | Get graph for knowledge file | Bearer |
+| POST | /api/v1/ai/tutor/knowledge-files/bulk-delete | Bulk delete knowledge files | Bearer |
+| POST | /api/v1/ai/tutor/knowledge-files/bulk-reprocess | Bulk reprocess knowledge files | Bearer |
+| GET | /api/v1/ai/tutor/dataset-imports/catalog | Get dataset catalog | Bearer |
+| POST | /api/v1/ai/tutor/dataset-imports | Create dataset import job | Bearer |
+| GET | /api/v1/ai/tutor/dataset-imports | List dataset import jobs | Bearer |
+| GET | /api/v1/ai/tutor/dataset-imports/states | Get dataset import states | Bearer |
+| GET | /api/v1/ai/tutor/dataset-imports/:jobId | Get dataset import job status | Bearer |
+| POST | /api/v1/ai/tutor/dataset-imports/:jobId/cancel | Cancel dataset import job | Bearer |
+| POST | /api/v1/ai/tutor/dataset-imports/:datasetKey/clear | Clear imported dataset | Bearer |
+
+#### AI Chat
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/ai-chat | List chats | Bearer |
+| POST | /api/v1/ai-chat | Create chat | Bearer |
+| PATCH | /api/v1/ai-chat/:chatId | Update chat title | Bearer |
+| DELETE | /api/v1/ai-chat/:chatId | Delete chat | Bearer |
+| POST | /api/v1/ai-chat/:chatId/clear | Clear chat content | Bearer |
+| GET | /api/v1/ai-chat/:chatId/exists | Check chat exists | Bearer |
+| GET | /api/v1/ai-chat/:chatId/messages | Get messages | Bearer |
+| POST | /api/v1/ai-chat/:chatId/message | Send message | Bearer |
+| POST | /api/v1/ai-chat/:chatId/stream | Send message with SSE streaming | Bearer |
+| PATCH | /api/v1/ai-chat/message/:messageId | Update message | Bearer |
+| DELETE | /api/v1/ai-chat/message/:messageId | Delete message | Bearer |
+| POST | /api/v1/ai-chat/message/:messageId/regenerate | Regenerate AI response | Bearer |
+| POST | /api/v1/ai-chat/message/:messageId/regenerate-stream | Regenerate with SSE | Bearer |
+| GET | /api/v1/ai-chat/:chatId/documents | Get chat documents | Bearer |
+| POST | /api/v1/ai-chat/:chatId/documents | Add document to chat | Bearer |
+| DELETE | /api/v1/ai-chat/:chatId/documents/:documentId | Remove document | Bearer |
+
+#### Flashcard Study
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/flashcard-study/progress/:flashCardSetId | Get study progress | Bearer |
+| POST | /api/v1/flashcard-study/progress/:flashCardSetId | Save study progress | Bearer |
+
+#### Student
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/student/recent-flashcards | Get recent flashcard sets | Bearer |
+| GET | /api/v1/student/recent-exams | Get recent exam attempts | Bearer |
+| POST | /api/v1/student/pin-flashcard/:id | Toggle pin flashcard set | Bearer |
+| POST | /api/v1/student/pin-exam-room/:id | Toggle pin exam room | Bearer |
+
+#### R2
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/r2/image | Upload image to R2 storage | Bearer |
+
+#### Cheating Logs
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/cheatinglogs | Log cheating violation | Bearer |
+| GET | /api/v1/cheatinglogs/attempt/:id | Get logs for attempt (host) | Bearer |
+| GET | /api/v1/cheatinglogs/session/:id/stats | Get session stats (host) | Bearer |
+| GET | /api/v1/cheatinglogs/session/:sessionId/user/:userId | Get user attempts with logs (host) | Bearer |
+
+---
+
+### Finance Service (`localhost:3003`, `/api/v1/...`)
+
+#### Wallet
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/wallet/info | Get wallet info | Bearer |
+| GET | /api/v1/wallet/details | Get wallet with transaction history | Bearer |
+
+#### Payment
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/payment/create | Create payment and get QR code | Bearer |
+| GET | /api/v1/payment/status/:paymentId | Check payment status | Bearer |
+| GET | /api/v1/payment/history | Get payment history | Bearer |
+| DELETE | /api/v1/payment/cancel/:paymentId | Cancel pending payment | Bearer |
+| GET | /api/v1/payment/subscription | Get current subscription | Bearer |
+| GET | /api/v1/payment/subscription/plans | Get subscription plans | Bearer |
+
+#### Webhook
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| POST | /api/v1/webhook | SePay payment webhook (apikey auth) | ApiKey |
+
+---
+
+## Frontend Routes
+
+### File: `examio-fe/src/routes/index.tsx`
+
+React Router v6 `createBrowserRouter` — all routes use layout wrappers.
+
+#### Public Routes (no auth required)
+
+| Path | Component | Layout | Guard |
+|------|-----------|--------|-------|
+| / | HomePage | PublicLayout | PublicRoute |
+| /about | AboutPage | PublicLayout | PublicRoute |
+| /contact | ContactPage | PublicLayout | PublicRoute |
+| /terms | TermsPage | PublicLayout | PublicRoute |
+| /privacy | PrivacyPage | PublicLayout | PublicRoute |
+| /cookies | CookiesPage | PublicLayout | PublicRoute |
+| /security | SecurityPage | PublicLayout | PublicRoute |
+| /login | LoginPage | AuthLayout | PublicRoute |
+| /register | RegisterPage | AuthLayout | PublicRoute |
+| /forgot-password | ForgotPasswordPage | AuthLayout | PublicRoute |
+| /reset-password | ResetPasswordPage | AuthLayout | PublicRoute |
+
+#### Protected Routes (auth required)
+
+| Path | Component | Layout | Guard |
+|------|-----------|--------|-------|
+| /k | KRootRedirect | KLayout | ProtectedRoute |
+| /k/profile | ProfilePage | KLayout | ProtectedRoute |
+| /k/verify | VerifyPage | KLayout | ProtectedRoute |
+| /k/subscription | SubscriptionPage | KLayout | ProtectedRoute |
+| /k/my-materials | MyMaterialsPage | KLayout | ProtectedRoute |
+| /k/flash-card | FlashcardsPage | KLayout | ProtectedRoute |
+| /k/history | HistoryPage | KLayout | ProtectedRoute |
+| /k/history/exam | ExamHistoryPage | KLayout | ProtectedRoute |
+| /k/history/pdf | PDFHistoryPage | KLayout | ProtectedRoute |
+| /k/manage-exam | ManageExamPage | KLayout | ProtectedRoute |
+| /k/manage-quiz-set/:id | ManageQuizSetDetailPage | KLayout | ProtectedRoute |
+| /k/manage-flashcard-set/:id | ManageFlashcardSetDetailPage | KLayout | ProtectedRoute |
+| /k/ai-tool | AIToolPage | KLayout | ProtectedRoute |
+| /k/genai-knowledge | GenAIKnowledgePage | KLayout | ProtectedRoute |
+| /k/manage-exam-room | ManageExamRoomPage | KLayout | ProtectedRoute |
+| /k/manage-exam-room/:id | ManageExamRoomDetailPage | KLayout | ProtectedRoute |
+| /k/manage-exam-room/:id/session/:sessionId | ExamRoomSessionAnalyticsPage | KLayout | ProtectedRoute |
+| /k/my-exams | MyExamsPage | KLayout | ProtectedRoute |
+
+#### Exam Session Routes (special layout)
+
+| Path | Component | Layout |
+|------|-----------|--------|
+| /study-flashcard/:id | FlashcardStudyPage | none |
+| /exam-session/:id | ExamSessionPage | ExamSessionLayout |
+| /exam-session/:id/quiz | ExamQuizPage | none |
+
+#### Catch-all
+
+| Path | Component |
+|------|-----------|
+| * | NotFoundPage |
+
+---
+
+## Summary
+
+| Category | Count |
+|----------|-------|
+| Gateway proxied routes (public) | 15 |
+| Gateway proxied routes (authenticated) | ~140 |
+| Auth service routes | 17 |
+| Exam service routes | ~130 |
+| Finance service routes | 10 |
+| Frontend pages | 26 |
+| **Total backend routes** | **~310** |
+| **Total frontend routes** | **26** |
 
 ## Notes
 
-- Routes are listed from the scout report only; exact controller method signatures and request/response DTOs need code-level verification.
-- Gateway public API uses `/api/v1` for proxied domain routes.
-- Stable route codes use `ROUTE###`.
+1. **Duplicate finance routes**: Gateway has two proxy controllers exposing wallet/payment routes — `wallet-profile-proxy.controller.ts` (prefix `/api/v1/wallet`, `/api/v1/payment`, `/api/v1/profile`) and `finance-proxy.controller.ts` (prefix `/api/v1/finance/wallet`, `/api/v1/finance/payment`). Both proxy to the same finance-service. The `wallet-profile-proxy` version is the primary; `finance-proxy` is a secondary path (not wired from frontend). The authoritative finance paths use the `/wallet`, `/payment` prefix directly.
 
-Sources: `plans/260527-1951-rebuild-spec/artifacts/scout-report.md` lines 624-761, 828-887, 891-924, 1209-1288.
+2. **Public vs optional vs authenticated**: Most routes use `AuthGuard` (authenticated). Public routes include: auth endpoints (login, register, reset, OAuth), subject list, public exam room/session/flashcard set access. Optional auth (`OptionalAuthGuard`) is used for study access checks that work with or without login.
 
-## Backend Gateway Routes
+3. **Quiz encryption**: Exam attempts have two submission paths — legacy `submit` (plain answers) and secure `secure-submit` (answers wrapped in JWT tokens from encrypted quiz). The `secure-quiz` endpoint returns AES-256-CBC encrypted questions with server-signed JWT tokens.
 
-| Code | Public Route | Target | Auth | Notes |
-|---|---|---|---|---|
-| ROUTE001 | `GET /health` | gateway | Public | Gateway health |
-| ROUTE002 | `GET /status` | gateway | Public | Gateway status |
-| ROUTE003 | `GET /api` | gateway | Public | Swagger UI |
-| ROUTE004 | `/api/v1/auth/*` | auth-service | Mixed | Auth proxy |
-| ROUTE005 | `/api/v1/quizsets/*` | exam-service | Mixed | Quiz set proxy |
-| ROUTE006 | `/api/v1/flashcardsets/*` | exam-service | Auth | Flashcard set proxy |
-| ROUTE007 | `/api/v1/examrooms/*` | exam-service | Auth | Exam room proxy |
-| ROUTE008 | `/api/v1/examsessions/*` | exam-service | Mixed | Exam session proxy |
-| ROUTE009 | `/api/v1/examattempts/*` | exam-service | Auth | Exam attempt proxy |
-| ROUTE010 | `/api/v1/subjects/*` | exam-service | Public/Mixed | Subject proxy |
-| ROUTE011 | `/api/v1/ai/*` | exam-service / AI integration | Auth | AI upload/generation/tutor proxy |
-| ROUTE012 | `/api/v1/student/*` | exam-service | Auth | Student materials proxy |
-| ROUTE013 | `/api/v1/r2/*` | exam-service | Auth | R2 upload proxy |
-| ROUTE014 | `/api/v1/wallet/*` | finance-service | Auth | Wallet proxy |
-| ROUTE015 | `/api/v1/payment/*` | finance-service | Auth | Payment proxy |
-| ROUTE016 | `/api/v1/webhook/*` | finance-service | API key/external | SePay webhook proxy |
+4. **Gateway is the only public entry**: All clients go through `gateway-service` on port 3000. Direct access to auth/exam/finance services is not exposed publicly.
 
-Source: `scout-report.md` lines 628-647.
+5. **AI service** (Python FastAPI) runs as a separate process; not part of the NestJS scan. It is called by `exam-service` via HTTP and exposes its own endpoints under `/api/v1/...` forwarded by the AI controller.
 
-## Backend Domain Routes
+## Unresolved
 
-### Auth Service
-
-| Code | Method | Route | Auth | Notes |
-|---|---|---|---|---|
-| ROUTE017 | POST | `/auth/register` | Public | Register and set cookies |
-| ROUTE018 | POST | `/auth/login` | Public | Login and set cookies |
-| ROUTE019 | POST | `/auth/logout` | Auth | Clears cookies, deactivates session |
-| ROUTE020 | POST | `/auth/refresh` | Public | Refresh access token |
-| ROUTE021 | GET | `/auth/me` | Auth | Current user |
-| ROUTE022 | POST | `/auth/sendVerificationEmail` | Auth | Send verification code |
-| ROUTE023 | POST | `/auth/verifyAccount` | Auth | Verify account |
-| ROUTE024 | POST | `/auth/send-code-reset-password` | Public | Send reset code |
-| ROUTE025 | POST | `/auth/reset-password` | Public | Reset password |
-| ROUTE026 | POST | `/auth/send-code-change-password` | Auth | Send change-password code |
-| ROUTE027 | POST | `/auth/change-password` | Auth | Change password |
-| ROUTE028 | GET | `/auth/google` | Public | Google OAuth start |
-| ROUTE029 | POST | `/auth/google/one-tap` | Public | Google One Tap |
-| ROUTE030 | GET | `/auth/google/callback` | Public | OAuth callback |
-| ROUTE031 | POST | `/auth/sync-refresh-token` | Auth | Sync refresh token from session |
-| ROUTE032 | GET | `/profile/*` | Auth | Profile routes, exact subroutes need verification |
-
-Source: `scout-report.md` lines 649-669.
-
-### Exam Service
-
-| Code | Method | Route | Auth | Notes |
-|---|---|---|---|---|
-| ROUTE033 | POST/GET | `/quizsets` | Auth / some public | Quiz set create/list |
-| ROUTE034 | GET/PUT/DELETE | `/quizsets/:id` | Auth / some public | Quiz set detail/update/delete |
-| ROUTE035 | GET/POST | `/quizsets/:id/questions` | Auth | Quiz questions |
-| ROUTE036 | POST | `/quizsets/:id/questions/:qId/label` | Auth | Assign label |
-| ROUTE037 | GET/POST | `/flashcardsets` | Auth | Flashcard set list/create |
-| ROUTE038 | GET/PUT/DELETE | `/flashcardsets/:id` | Auth | Flashcard set detail/update/delete |
-| ROUTE039 | POST | `/flashcardsets/:id/flashcards` | Auth | Add flashcards |
-| ROUTE040 | POST/GET | `/examrooms` | Auth | Exam room create/list |
-| ROUTE041 | POST | `/examsessions` | Auth | Create exam session |
-| ROUTE042 | GET | `/examsessions` | Auth | List exam sessions |
-| ROUTE043 | PUT | `/examsessions/:id` | Auth | Update exam session |
-| ROUTE044 | POST | `/examsessions/:id/start` | Auth | Start session |
-| ROUTE045 | POST | `/examsessions/:id/verify-code` | Public/code | Access-code validation |
-| ROUTE046 | POST | `/examsessions/:id/sharing` | Auth | Sharing settings |
-| ROUTE047 | POST | `/examsessions/:id/join` | Public/code | Join by code/link |
-| ROUTE048 | POST/PUT | `/examattempts` | Auth | Attempt start/update |
-| ROUTE049 | POST | `/cheatinglog` | Auth | Cheating violation logging |
-| ROUTE050 | POST | `/flashcard-study/progress` | Auth | Study progress |
-| ROUTE051 | POST | `/flashcard-study/submit-answer` | Auth | Study answer submission |
-| ROUTE052 | GET | `/subjects` | Public | Subject list |
-| ROUTE053 | POST | `/r2/*` | Auth | File/image upload via R2 |
-
-Source: `scout-report.md` lines 670-725.
-
-### Exam Service AI/Tutor Routes
-
-| Code | Method | Route | Auth | Notes |
-|---|---|---|---|---|
-| ROUTE054 | POST | `/ai/quick-upload` | Auth | Quick file upload |
-| ROUTE055 | POST | `/ai/generate-from-file` | Auth | Generate quiz/flashcards from upload |
-| ROUTE056 | POST | `/ai/upload` | Auth | File upload |
-| ROUTE057 | POST | `/ai/upload-image` | Auth | Image upload |
-| ROUTE058 | GET | `/ai/recent-uploads` | Auth | Recent uploads |
-| ROUTE059 | GET | `/ai/models` | Auth | AI model catalog |
-| ROUTE060 | GET | `/ai/upload/:uploadId` | Auth | Upload detail |
-| ROUTE061 | DELETE | `/ai/upload/:uploadId` | Auth | Delete upload |
-| ROUTE062 | POST | `/ai/regenerate/:uploadId` | Auth | Regenerate output |
-| ROUTE063 | GET | `/ai/job/:jobId` | Auth | Job status |
-| ROUTE064 | DELETE | `/ai/job/:jobId` | Auth | Cancel/delete job |
-| ROUTE065 | GET | `/ai/upload/:uploadId/history` | Auth | Generated history |
-| ROUTE066 | POST | `/ai/tutor/ingest` | Auth | Tutor ingest |
-| ROUTE067 | GET | `/ai/tutor/ingest` | Auth | List ingest jobs |
-| ROUTE068 | GET | `/ai/tutor/ingest/:jobId` | Auth | Ingest job detail |
-| ROUTE069 | POST/GET | `/ai/tutor/knowledge-files` | Auth | Create/list knowledge files |
-| ROUTE070 | GET | `/ai/tutor/knowledge-files/search` | Auth | Search knowledge files |
-| ROUTE071 | GET | `/ai/tutor/knowledge-files/:fileId/graph` | Auth | Knowledge graph |
-| ROUTE072 | POST | `/ai/tutor/knowledge-files/bulk-delete` | Auth | Bulk delete |
-| ROUTE073 | POST | `/ai/tutor/knowledge-files/bulk-reprocess` | Auth | Bulk reprocess |
-| ROUTE074 | POST/GET | `/ai/tutor/knowledge-folders` | Auth | Create/list folders |
-| ROUTE075 | PUT/DELETE | `/ai/tutor/knowledge-folders/:folderId` | Auth | Update/delete folder |
-| ROUTE076 | GET | `/ai/tutor/knowledge-stats` | Auth | Knowledge stats |
-| ROUTE077 | POST/GET | `/ai/tutor/dataset-imports` | Auth | Dataset import management |
-| ROUTE078 | GET | `/ai/tutor/dataset-imports/catalog` | Auth | Dataset catalog |
-| ROUTE079 | GET | `/ai/tutor/dataset-imports/:jobId` | Auth | Import status |
-| ROUTE080 | POST | `/ai/tutor/dataset-imports/:jobId/cancel` | Auth | Cancel import |
-| ROUTE081 | POST | `/ai/tutor/dataset-imports/:datasetKey/clear` | Auth | Clear imported dataset |
-
-Source: `scout-report.md` lines 689-719.
-
-### Finance Service
-
-| Code | Method | Route | Auth | Notes |
-|---|---|---|---|---|
-| ROUTE082 | GET | `/wallet/info` | Auth | Wallet summary |
-| ROUTE083 | GET | `/wallet/details` | Auth | Wallet + transactions |
-| ROUTE084 | POST | `/payment/create` | Auth | Create payment / QR |
-| ROUTE085 | GET | `/payment/status/:paymentId` | Auth | Payment status |
-| ROUTE086 | GET | `/payment/history` | Auth | Payment history |
-| ROUTE087 | DELETE | `/payment/cancel/:paymentId` | Auth | Cancel pending payment |
-| ROUTE088 | POST | `/webhook/sepay` | API key | SePay webhook |
-
-Source: `scout-report.md` lines 727-738.
-
-### Python AI Service
-
-| Code | Method | Route | Notes |
-|---|---|---|---|
-| ROUTE089 | GET | `/` | Health check |
-| ROUTE090 | GET | `/health` | Health check |
-| ROUTE091 | POST | `/api/chat/query` | Stateless AI query |
-| ROUTE092 | POST | `/api/chat/stream` | SSE streaming query |
-| ROUTE093 | GET | `/api/chat/health` | Chat health |
-| ROUTE094 | POST | `/api/ai/process-file` | OCR + embeddings |
-| ROUTE095 | POST | `/api/ai/query-file` | Query file content |
-| ROUTE096 | POST | `/api/ai/multi-query` | Multi-query file |
-| ROUTE097 | GET | `/api/ai/file-status/{id}` | File status |
-| ROUTE098 | GET | `/api/ai/models` | Model catalog |
-| ROUTE099 | GET | `/api/ai/graph-stats/{id}` | GraphRAG stats |
-| ROUTE100 | POST | `/api/ai/extract-entities/{id}` | Extract entities |
-| ROUTE101 | GET | `/api/ai/entities/{id}` | Entity list |
-| ROUTE102 | DELETE | `/api/ai/clear-cache/{id}` | Clear retriever cache |
-| ROUTE103 | POST | `/api/generate/quiz` | Generate quiz |
-| ROUTE104 | POST | `/api/generate/flashcards` | Generate flashcards |
-| ROUTE105 | GET | `/api/generate/quiz/{history_id}` | Generated quiz history |
-| ROUTE106 | GET | `/api/generate/flashcards/{history_id}` | Generated flashcard history |
-| ROUTE107 | Various | `/api/tutor/*` | Tutor knowledge endpoints; exact list in AI service section |
-
-Sources: `scout-report.md` lines 255-314, 739-761.
-
-## Web Frontend Routes
-
-| Code | Path | Page | Guard/Layout |
-|---|---|---|---|
-| ROUTE108 | `/` | `HomePage` | PublicLayout |
-| ROUTE109 | `/about` | `AboutPage` | PublicLayout |
-| ROUTE110 | `/contact` | `ContactPage` | PublicLayout |
-| ROUTE111 | `/terms` | `TermsPage` | PublicLayout |
-| ROUTE112 | `/privacy` | `PrivacyPage` | PublicLayout |
-| ROUTE113 | `/cookies` | `CookiesPage` | PublicLayout |
-| ROUTE114 | `/security` | `SecurityPage` | PublicLayout |
-| ROUTE115 | `/login` | `LoginPage` | PublicRoute/AuthLayout |
-| ROUTE116 | `/register` | `RegisterPage` | PublicRoute/AuthLayout |
-| ROUTE117 | `/forgot-password` | `ForgotPasswordPage` | PublicRoute/AuthLayout |
-| ROUTE118 | `/reset-password` | `ResetPasswordPage` | PublicRoute/AuthLayout |
-| ROUTE119 | `/k` | `KRootRedirect` | ProtectedRoute/KLayout |
-| ROUTE120 | `/k/profile` | `ProfilePage` | ProtectedRoute/KLayout |
-| ROUTE121 | `/k/verify` | `VerifyPage` | ProtectedRoute/KLayout |
-| ROUTE122 | `/k/subscription` | `SubscriptionPage` | ProtectedRoute/KLayout |
-| ROUTE123 | `/k/my-materials` | `MyMaterialsPage` | ProtectedRoute/KLayout |
-| ROUTE124 | `/k/flash-card` | `FlashcardsPage` | ProtectedRoute/KLayout |
-| ROUTE125 | `/k/history` | `HistoryPage` | ProtectedRoute/KLayout |
-| ROUTE126 | `/k/history/exam` | `ExamHistoryPage` | ProtectedRoute/KLayout |
-| ROUTE127 | `/k/history/pdf` | `PDFHistoryPage` | ProtectedRoute/KLayout |
-| ROUTE128 | `/k/manage-exam` | `ManageExamPage` | ProtectedRoute/KLayout |
-| ROUTE129 | `/k/manage-quiz-set/:id` | `ManageQuizSetDetailPage` | ProtectedRoute/KLayout |
-| ROUTE130 | `/k/manage-flashcard-set/:id` | `ManageFlashcardSetDetailPage` | ProtectedRoute/KLayout |
-| ROUTE131 | `/k/ai-tool` | `AIToolPage` | ProtectedRoute/KLayout |
-| ROUTE132 | `/k/genai-knowledge` | `GenAIKnowledgePage` | ProtectedRoute/KLayout |
-| ROUTE133 | `/k/manage-exam-room` | `ManageExamRoomPage` | ProtectedRoute/KLayout |
-| ROUTE134 | `/k/manage-exam-room/:id` | `ManageExamRoomDetailPage` | ProtectedRoute/KLayout |
-| ROUTE135 | `/k/manage-exam-room/:id/session/:sessionId` | `ExamRoomSessionAnalyticsPage` | ProtectedRoute/KLayout |
-| ROUTE136 | `/k/my-exams` | `MyExamsPage` | ProtectedRoute/KLayout |
-| ROUTE137 | `/study-flashcard/:id` | `FlashcardStudyPage` | No route guard |
-| ROUTE138 | `/exam-session/:id` | `ExamSessionPage` | No route guard |
-| ROUTE139 | `/exam-session/:id/quiz` | `ExamQuizPage` | No route guard |
-
-Source: `scout-report.md` lines 852-887.
-
-## Web API Client Coverage
-
-| Code | API Client | Backend Base | Purpose |
-|---|---|---|---|
-| ROUTE140 | `authApi.ts` | `/auth/*` | Auth lifecycle |
-| ROUTE141 | `subjectApi.ts` | `/subjects/*` | Subjects/categories |
-| ROUTE142 | `examApi.ts` | `/ai/generate-from-file` | AI exam generation |
-| ROUTE143 | `examRoomApi.ts` | `/examrooms/*` | Exam rooms |
-| ROUTE144 | `examSessionApi.ts` | `/examsessions/*` | Sessions/access/sharing/stats |
-| ROUTE145 | `examAttemptApi.ts` | `/examattempts/*` | Attempts/progress/secure quiz |
-| ROUTE146 | `flashcardSetApi.ts` | `/flashcardsets/*` | Flashcard sets/cards/labels |
-| ROUTE147 | `flashcardStudyApi.ts` | `/flashcard-study/*` | Study progress/review |
-| ROUTE148 | `quizsetApi.ts` | `/quizsets/*` | Quiz sets/questions/labels |
-| ROUTE149 | `aiApi.ts` | `/ai/*` | Uploads/jobs/models/regenerate |
-| ROUTE150 | `aiChatApi.ts` | `/ai-chat/*` | Chat CRUD/messages/SSE |
-| ROUTE151 | `virtualTeacherApi.ts` | `/virtual-teacher/*` | Legacy teacher chat/upload; backend coverage needs verification |
-| ROUTE152 | `genaiTutorKnowledgeApi.ts` | `/ai/tutor/knowledge-*` | Knowledge folders/files/stats/datasets |
-| ROUTE153 | `historyApi.ts` | `/examattempts/history-stats`, `/ai/recent-uploads` | History |
-| ROUTE154 | `studentMaterialsApi.ts` | `/student/*` | Recent materials/pin/share |
-| ROUTE155 | `profileApi.ts` | `/profile/*` | Profile/avatar/banner |
-| ROUTE156 | `subscriptionApi.ts` | `/wallet/*`, `/payment/*` | Wallet/payment/subscription |
-| ROUTE157 | `mediaApi.ts` | `/r2/image` | Generic image upload |
-| ROUTE158 | `devicesApi.ts` | `/devices/*` | Device/session management; gateway route needs verification |
-| ROUTE159 | `cheatingLogApi.ts` | `/cheatinglogs/*` | Cheating logs; singular/plural backend route needs verification |
-
-Source: `scout-report.md` lines 891-924.
-
-## Mobile Route/API Coverage
-
-Mobile has simple local navigation rather than route URLs. Shared KMP endpoint constants and API services cover:
-
-| Code | Mobile Area | Backend Base | Status |
-|---|---|---|---|
-| ROUTE160 | Auth | `/auth/login`, `/auth/me`, reset/refresh/logout | Real shared API; platform auth flows wired |
-| ROUTE161 | Profile/account | `/profile`, `/wallet/details`, `/payment/subscription/plans` | Shared API ready; UI partly mock/local |
-| ROUTE162 | AI chat/generator | `/ai/chats`, `/ai/chat`, `/ai/recent-uploads`, `/ai/generate-from-file`, `/subjects` | Shared API ready; platform UI mock; SSE stub |
-| ROUTE163 | Study | `/flashcardsets`, `/student/materials/` | Shared API ready; platform UI mock |
-| ROUTE164 | Exams | `/quizsets`, `/examrooms`, `/examattempts` | Shared API ready; platform UI mock |
-| ROUTE165 | History | `/examattempts/history-stats`, `/ai/recent-uploads`, `/examattempts/list` | Shared API ready; platform UI mock |
-| ROUTE166 | Deep links | `examio://auth`, `examio://...` parsed to exam/flashcard/chat/profile | Auth callback real; feature deep-link behavior needs verification |
-
-Sources: `scout-report.md` lines 1209-1288, 1311-1323, 1408-1412, 1440-1459, 1464-1488.
-
-## Needs Verification
-
-- Exact backend route names for web `/ai-chat/*`, `/virtual-teacher/*`, `/devices/*`, and plural `/cheatinglogs/*` versus scout backend route list.
-- Exact auth requirements for quiz/subject routes marked mixed or some public.
-- Exact request/response DTOs for all routes.
-- Mobile shared endpoint constants should be checked against gateway routes before implementation.
+- `ocr-service` gRPC port collision with `finance-service` (both default to 50053) — not resolved in routes.
+- `PendingJobDialog` rendered unconditionally in `KLayout` — unclear if intentional.
+- `ProfilePage` uses both `getProfileApi` and `useAuthStore.user` — possible state drift.
+- `SubscriptionPage` vs `SubscriptionTemplate` — two subscription UIs, unclear canonical.

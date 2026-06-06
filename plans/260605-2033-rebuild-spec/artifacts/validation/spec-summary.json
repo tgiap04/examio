@@ -1,0 +1,144 @@
+{
+  "generated_at": "2026-06-05T15:25:49Z",
+  "overall_status": "WARN",
+  "plan": "260605-2033-rebuild-spec",
+  "schema_version": 1,
+  "totals": {
+    "critical": 0,
+    "failed_specs": 0,
+    "passed_specs": 13,
+    "warning": 1
+  },
+  "validators": {
+    "specs": {
+      "F001_PublicLanding": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F001_PublicLanding",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F002_Authentication": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F002_Authentication",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F003_AccountManagement": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F003_AccountManagement",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F004_ProfileManagement": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F004_ProfileManagement",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F005_Finance": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F005_Finance",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F006_QuizAuthoring": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F006_QuizAuthoring",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F007_FlashcardAuthoring": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F007_FlashcardAuthoring",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F008_ExamHosting": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F008_ExamHosting",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F009_AITeacherKnowledgeBase": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F009_AITeacherKnowledgeBase",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F010_AITool": {
+        "issues": [
+          {
+            "location": {
+              "file": "plans/260605-2033-rebuild-spec/artifacts/features/F010_AITool/technical-spec.md",
+              "line": 73
+            },
+            "message": "#### DEC-010_01 \u2014 Generate Button State pseudocode block 9 lines > 8",
+            "rule_id": "FeatureSpec.dec_blocks_well_formed",
+            "severity": "warning",
+            "validator": "feature_spec"
+          }
+        ],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F010_AITool",
+        "status": "WARN",
+        "summary": {
+          "critical": 0,
+          "warning": 1
+        }
+      },
+      "F011_FlashcardStudy": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F011_FlashcardStudy",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F012_ExamTaking": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F012_ExamTaking",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F013_SessionCleanup": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F013_SessionCleanup",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      }
+    }
+  }
+}

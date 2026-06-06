@@ -1,0 +1,133 @@
+{
+  "generated_at": "2026-06-05T15:27:13Z",
+  "overall_status": "PASS",
+  "plan": "260605-2033-rebuild-spec",
+  "schema_version": 1,
+  "totals": {
+    "critical": 0,
+    "failed_specs": 0,
+    "passed_specs": 13,
+    "warning": 0
+  },
+  "validators": {
+    "specs": {
+      "F001_PublicLanding": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F001_PublicLanding/technical-spec.md",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F002_Authentication": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F002_Authentication/technical-spec.md",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F003_AccountManagement": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F003_AccountManagement/technical-spec.md",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F004_ProfileManagement": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F004_ProfileManagement/technical-spec.md",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F005_Finance": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F005_Finance/technical-spec.md",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F006_QuizAuthoring": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F006_QuizAuthoring/technical-spec.md",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F007_FlashcardAuthoring": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F007_FlashcardAuthoring/technical-spec.md",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F008_ExamHosting": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F008_ExamHosting/technical-spec.md",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F009_AITeacherKnowledgeBase": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F009_AITeacherKnowledgeBase/technical-spec.md",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F010_AITool": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F010_AITool/technical-spec.md",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F011_FlashcardStudy": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F011_FlashcardStudy/technical-spec.md",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F012_ExamTaking": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F012_ExamTaking/technical-spec.md",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      },
+      "F013_SessionCleanup": {
+        "issues": [],
+        "spec_path": "plans/260605-2033-rebuild-spec/artifacts/features/F013_SessionCleanup/technical-spec.md",
+        "status": "PASS",
+        "summary": {
+          "critical": 0,
+          "warning": 0
+        }
+      }
+    }
+  }
+}

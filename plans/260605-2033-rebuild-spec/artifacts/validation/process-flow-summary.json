@@ -1,0 +1,503 @@
+{
+  "generated_at": "2026-06-05T16:18:05Z",
+  "overall_status": "PASS",
+  "plan": "260605-2033-rebuild-spec",
+  "schema_version": 1,
+  "totals": {
+    "critical": 0,
+    "failed_specs": 0,
+    "passed_specs": 0,
+    "warning": 0
+  },
+  "validators": {
+    "process_flow": {
+      "issues": [
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW001_user-subscription.md",
+            "line": null
+          },
+          "message": "transition T1 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW001_user-subscription.md",
+            "line": null
+          },
+          "message": "transition T2 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW001_user-subscription.md",
+            "line": null
+          },
+          "message": "transition T3 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW001_user-subscription.md",
+            "line": null
+          },
+          "message": "transition T4 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW001_user-subscription.md",
+            "line": null
+          },
+          "message": "transition T5 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW001_user-subscription.md",
+            "line": null
+          },
+          "message": "transition T6 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW001_user-subscription.md",
+            "line": 1
+          },
+          "message": "flow has 6 transitions and 0 trigger types; gate requires >=2 of each (should have been hard-omitted)",
+          "rule_id": "ProcessFlow.sub_threshold_flow",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW002_payment.md",
+            "line": null
+          },
+          "message": "transition T1 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW002_payment.md",
+            "line": null
+          },
+          "message": "transition T2 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW002_payment.md",
+            "line": null
+          },
+          "message": "transition T3 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW002_payment.md",
+            "line": null
+          },
+          "message": "transition T4 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW002_payment.md",
+            "line": null
+          },
+          "message": "transition T5 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW002_payment.md",
+            "line": null
+          },
+          "message": "transition T6 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW002_payment.md",
+            "line": 1
+          },
+          "message": "flow has 6 transitions and 0 trigger types; gate requires >=2 of each (should have been hard-omitted)",
+          "rule_id": "ProcessFlow.sub_threshold_flow",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW003_exam-session.md",
+            "line": null
+          },
+          "message": "transition T1 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW003_exam-session.md",
+            "line": null
+          },
+          "message": "transition T2 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW003_exam-session.md",
+            "line": null
+          },
+          "message": "transition T3 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW003_exam-session.md",
+            "line": null
+          },
+          "message": "transition T4 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW003_exam-session.md",
+            "line": null
+          },
+          "message": "transition T5 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW003_exam-session.md",
+            "line": null
+          },
+          "message": "transition T6 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW003_exam-session.md",
+            "line": 1
+          },
+          "message": "flow has 6 transitions and 0 trigger types; gate requires >=2 of each (should have been hard-omitted)",
+          "rule_id": "ProcessFlow.sub_threshold_flow",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW004_exam-attempt.md",
+            "line": null
+          },
+          "message": "transition T1 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW004_exam-attempt.md",
+            "line": null
+          },
+          "message": "transition T2 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW004_exam-attempt.md",
+            "line": null
+          },
+          "message": "transition T3 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW004_exam-attempt.md",
+            "line": null
+          },
+          "message": "transition T4 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW004_exam-attempt.md",
+            "line": null
+          },
+          "message": "transition T5 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW004_exam-attempt.md",
+            "line": null
+          },
+          "message": "transition T6 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW004_exam-attempt.md",
+            "line": 1
+          },
+          "message": "flow has 6 transitions and 0 trigger types; gate requires >=2 of each (should have been hard-omitted)",
+          "rule_id": "ProcessFlow.sub_threshold_flow",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW005_user-storage.md",
+            "line": null
+          },
+          "message": "transition T1 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW005_user-storage.md",
+            "line": null
+          },
+          "message": "transition T2 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW005_user-storage.md",
+            "line": null
+          },
+          "message": "transition T3 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW005_user-storage.md",
+            "line": null
+          },
+          "message": "transition T4 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW005_user-storage.md",
+            "line": null
+          },
+          "message": "transition T5 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW005_user-storage.md",
+            "line": null
+          },
+          "message": "transition T6 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW005_user-storage.md",
+            "line": 1
+          },
+          "message": "flow has 6 transitions and 0 trigger types; gate requires >=2 of each (should have been hard-omitted)",
+          "rule_id": "ProcessFlow.sub_threshold_flow",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW006_wallet-transaction.md",
+            "line": null
+          },
+          "message": "transition T1 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW006_wallet-transaction.md",
+            "line": null
+          },
+          "message": "transition T2 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW006_wallet-transaction.md",
+            "line": null
+          },
+          "message": "transition T3 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW006_wallet-transaction.md",
+            "line": null
+          },
+          "message": "transition T4 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW006_wallet-transaction.md",
+            "line": null
+          },
+          "message": "transition T5 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW006_wallet-transaction.md",
+            "line": 1
+          },
+          "message": "flow has 5 transitions and 0 trigger types; gate requires >=2 of each (should have been hard-omitted)",
+          "rule_id": "ProcessFlow.sub_threshold_flow",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW007_quiz-practice-attempt.md",
+            "line": null
+          },
+          "message": "transition T1 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW007_quiz-practice-attempt.md",
+            "line": null
+          },
+          "message": "transition T2 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW007_quiz-practice-attempt.md",
+            "line": null
+          },
+          "message": "transition T3 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW007_quiz-practice-attempt.md",
+            "line": null
+          },
+          "message": "transition T4 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW007_quiz-practice-attempt.md",
+            "line": null
+          },
+          "message": "transition T5 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW007_quiz-practice-attempt.md",
+            "line": null
+          },
+          "message": "transition T6 has no file:line citation in Source column",
+          "rule_id": "ProcessFlow.citation_missing",
+          "severity": "critical",
+          "validator": "process_flow"
+        },
+        {
+          "location": {
+            "file": "plans/260605-2033-rebuild-spec/artifacts/flows/FLOW007_quiz-practice-attempt.md",
+            "line": 1
+          },
+          "message": "flow has 6 transitions and 0 trigger types; gate requires >=2 of each (should have been hard-omitted)",
+          "rule_id": "ProcessFlow.sub_threshold_flow",
+          "severity": "critical",
+          "validator": "process_flow"
+        }
+      ],
+      "status": "FAIL",
+      "summary": {
+        "critical": 48,
+        "warning": 0
+      }
+    }
+  }
+}
