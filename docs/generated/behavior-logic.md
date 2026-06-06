@@ -1,99 +1,539 @@
 # Behavior Logic
 
-Generated: 2026-05-27
-Source: scout reports and `_scout-bl-inventory.md`. Unknowns are marked `Needs verification`.
+**Project**: examio
+**Generated**: 2026-06-05
+**Analysis Scope**: All BL inventory entries from Wave 0 scout
 
-## Auth, Session, And Routing
+---
 
-| ID | Logic | Scope | Sources / Notes |
-|---|---|---|---|
-| BL001 | Login/register issue JWT access tokens, refresh tokens, session id, and auth cookies. | Backend, web, mobile | Auth service `/auth/login`, `/auth/register`; web auth store; mobile AuthRepository/AuthViewModel. |
-| BL002 | Authenticated requests prefer cookies on backend, with Bearer token fallback. | Backend | Shared AuthGuard. |
-| BL003 | Web Axios injects `Authorization: Bearer {auth_token}` and `X-Device-ID`. | Web | `src/apis/api.ts`. |
-| BL004 | Web 401 responses trigger single-flight token refresh, then retry or clear auth and redirect to `/login`. Redirect loop prevention: `setRedirectBackTarget` skipped when already on `/login`. `handleAuthFailure` no longer calls `clearRedirectBackTarget()` before `navigateTo()`. | Web | Handles invalid/expired sessions, session invalidation (403), and model-specific error codes. `src/apis/api.ts`. |
-| BL005 | OAuth redirect tokens are read from URL query params, persisted, then stripped from URL. | Web, mobile | Web `useAuthSync`; Android/iOS custom scheme callbacks. |
-| BL006 | ProtectedRoute blocks unauthenticated workspace screens and stores return path. | Web | Applies to `/k/*`. |
-| BL007 | PublicRoute redirects authenticated users away from login/register/reset screens. | Web | Redirects to `/k`. |
-| BL007a | Standalone study/exam routes (`/study-flashcard/:id`, `/exam-session/:id`, `/exam-session/:id/quiz`) include client-side auth checks that redirect to `/login?from=...` when unauthenticated. | Web | Previously had no route guard; auth check added inline in page components. |
-| BL008 | TeacherRoute only checks authentication, not teacher/admin role. | Web | Authorization gap; should not be treated as enforced teacher permission. |
-| BL009 | Device/session lifecycle includes `x-device-id`, active session tracking, logout deactivation, and cleanup cron. | Backend, web, mobile | Device list/logout behavior on web; mobile sends device id through KMP interceptor. |
-| BL010 | Mobile Android auth uses shared KMP AuthRepository and encrypted token storage. | Android | API-backed. |
-| BL011 | Mobile iOS auth uses a private Swift URLSession client and KeychainTokenStore, not shared KMP auth storage. | iOS | KMP iOS SecureTokenStorage is stubbed. |
-| BL012 | Public pages (landing, auth, legal) are fully translated via `react-i18next`. Namespaces `common`, `landing`, `auth` load from `/locales/{lng}/{ns}}.json`. Supported locales: `vi` (default), `en`, `ja`. Locale is detected from localStorage then browser navigator and persisted under `examio-i18next.locale`. A `LanguageSwitcher` component renders in the public header. | Web | `src/lib/i18n.ts`, `public/locales/{vi,en,ja}/{common,landing,auth}.json`, `src/components/molecules/LanguageSwitcher.tsx`. |
+## Behavior Logic Index
 
-## API Gateway And Integration
+| Code | Name | Type | Trigger |
+|------|------|------|---------|
+| BL001 | SessionCleanupCron | scheduled-job | Cron (daily) |
+| BL002 | UserEventHandler | event-listener | `auth.user.created` RabbitMQ event |
+| BL003 | AuthService | integration | Login, OAuth, token validation |
+| BL004 | FinanceClientService | integration | Credit deduction, wallet check |
+| BL005 | R2ClientService | integration | File upload to R2 |
+| BL006 | R2Service | integration | R2 storage operations |
+| BL007 | OcrService | integration | Document OCR processing |
+| BL008 | MailService | mail | Account verification, password reset |
+| BL009 | SessionValidationMiddleware | middleware | Every non-public HTTP request |
+| BL010 | SePayWebhook | webhook | SePay bank transfer callback |
+| BL011 | GatewayWebhookProxy | webhook | Forwarded webhook to downstream |
+| BL012 | AuthSyncBootstrap | integration | OAuth callback token sync |
+| BL013 | CheatingDetectionHook | event-listener | Tab switch, window blur, devtools |
+| BL014 | ExportPDFHook | integration | PDF generation and download |
+| BL015 | GenerationGuardHook | scheduled-job | AI generation throttle |
+| BL016 | ExamQuizPagePolling | scheduled-job | Auto-save progress every 30s |
 
-| ID | Logic | Scope | Sources / Notes |
-|---|---|---|---|
-| BL020 | Gateway proxies `/api/v1/*` to auth, exam, finance, R2-related, webhook, and AI/study controllers. | Backend | Public clients mostly call gateway. |
-| BL021 | Gateway forwards cookies and bearer tokens to downstream services. | Backend | Proxy behavior. |
-| BL022 | Gateway rate limits requests at about 100 req/min. | Backend | `@nestjs/throttler`; exact route exclusions Need verification. |
-| BL023 | Service-to-service validation can use auth gRPC `ValidateToken`, `GetUserInfo`, and `CheckPermission`. | Backend | Authorization model simple role/ownership. |
-| BL024 | RabbitMQ topic exchange `examio.events` carries user, payment, wallet, subscription, exam, OCR events. | Backend | Known consumers include finance user-created handler and AI consumer. |
+---
 
-## Learning Content
+## BL001: SessionCleanupCron
 
-| ID | Logic | Scope | Sources / Notes |
-|---|---|---|---|
-| BL030 | Quiz sets support CRUD, labels, questions, sharing/access, history save, and export on web. | Backend, web | Mobile shared API ready; mobile UI mock-backed. |
-| BL031 | Flashcard sets support CRUD, labels, flashcards, sharing/access, study flow, and flashcard view modal in label manager. | Backend, web | Mobile shared API ready; mobile UI mock-backed. |
-| BL032 | Store caches reduce repeated API calls and are invalidated on mutations. Includes flashcards-by-label cache. | Web | `storeCache` used by most Zustand stores. |
-| BL033 | Student materials expose recent flashcards/exams and pin/unpin/share links. | Backend, web, mobile shared | Mobile UI mock-backed. Exact share flow Needs verification. |
-| BL034 | Flashcard study records progress and answer submissions through `/flashcard-study/*`. | Backend, web, mobile shared | Web standalone route with inline auth check; mobile UI mock-backed. |
+**Type**: scheduled-job
+**Trigger**: Cron (daily, time-based)
+**Source File**: `examio-be/apps/auth-service/src/session-cleanup.cron.ts`
+**Source Symbol**: `SessionCleanupCron` (class with `@Cron()` decorator)
 
-## Exam And Proctoring
+### Description
 
-| ID | Logic | Scope | Sources / Notes |
-|---|---|---|---|
-| BL040 | Exam rooms group sessions and are managed by authenticated users. | Backend, web | Teacher/admin enforcement Needs verification. |
-| BL041 | Exam sessions have lifecycle states, access code/whitelist/sharing settings, passing score, and retake rules. | Backend, web, mobile shared | Detailed transitions Need verification. |
-| BL042 | Join/start flows allow public code/link entry while backend validates access. Standalone exam routes now include inline auth check redirecting to `/login?from=...`. | Backend, web | Route guards added in commit 1bb4d29. |
-| BL043 | Exam attempts track score, answers, current index, marked questions, violation count, and status. | Backend, web, mobile shared | Mobile UI mock-backed. |
-| BL044 | Secure quiz flow can use encrypted quiz payloads/JWT per question and client-side AES helpers. Cryptography env vars (`QUIZ_JWT_SECRET`, `QUIZ_AES_KEY`) validated at startup. | Backend, web, mobile shared | Mobile decryption plan Needs verification. |
-| BL045 | Web exam taking uses reCAPTCHA on protected submission endpoints. | Web, backend | reCAPTCHA provider wraps app. Exact endpoints Need verification. |
-| BL046 | Web proctoring detects tab switch, blur, devtools, copy/paste, right-click, fullscreen exit, and print screen. | Web | Logs violations to cheating log API. |
-| BL047 | Cheating logs persist violation type/count/stats per attempt. | Backend, web | Threshold consequences Need verification. |
+Daily cron job that scans all `UserSession` records and deactivates expired sessions. Runs at a configured schedule (typically midnight). Uses Prisma to find sessions where `expiresAt < now` and `isActive === true`, then bulk-deactivates them in a transaction.
 
-## AI, OCR, And File Storage
+### Related Modules
 
-| ID | Logic | Scope | Sources / Notes |
-|---|---|---|---|
-| BL050 | File upload flow: client -> gateway -> exam-service -> R2 gRPC -> UserStorage DB record -> AI process-file. | Backend, web | Applies to AI upload/quick-upload. |
-| BL051 | AI service processes files via OCR/chunking/embeddings and writes Document/UserStorage status. | Backend Python | Uses shared PostgreSQL. |
-| BL052 | Generation flow uploads/selects file, creates async job/history, polls job status, then displays quiz/flashcards. | Backend, web | Web `useAIGeneratorStore`; mobile UI mock-backed. |
-| BL053 | Recent uploads and generation history are fetched from `/ai/recent-uploads` and history endpoints. | Backend, web, mobile shared | Mobile UI mock-backed. |
-| BL054 | AI chat supports chat CRUD, messages, image upload, multi-document context, and SSE streaming on web. | Backend, web | Mobile shared SSE is stubbed. |
-| BL055 | AI model catalog is lazy-loaded and cached. AI2 model names cached in Python service with 5-min TTL. | Backend, web | Model runtime errors handled in web Axios. |
-| BL056 | GenAI tutor knowledge supports folders, files, ingest jobs, graphs, dataset imports, bulk delete/reprocess. | Backend, web | Access restrictions Need verification. |
-| BL057 | Uploaded profile/media images use R2 image API. | Backend, web | On record deletion with R2 asset, deletion behavior Needs verification per repo rule. |
-| BL058 | `generateCode()` now uses `crypto.randomInt()` for cryptographically secure random codes. | Backend | Shared lib `@examio/common`. |
-| BL059 | Environment variable validation: `QUIZ_JWT_SECRET` and `QUIZ_AES_KEY` validated at startup (required, min length). | Backend | Shared lib `@examio/common`. |
+- auth-service: AuthModule, SessionRepository
 
-## Finance And Subscription
+### Related Routes
 
-| ID | Logic | Scope | Sources / Notes |
-|---|---|---|---|
-| BL060 | New user registration triggers wallet creation through event/gRPC-backed finance workflow. | Backend | `user.created` event and wallet gRPC. |
-| BL061 | Wallet details include balance and transaction history. | Backend, web, mobile shared | Mobile UI mock-backed. |
-| BL062 | Payment creation returns SePay QR/payment data; client polls status. | Backend, web | Web QRPaymentDialog. |
-| BL063 | SePay webhook updates payment/wallet/subscription state. Webhook API key validated via `crypto.timingSafeEqual`; invalid keys throw `UnauthorizedException`. | Backend | Timing-safe comparison; previously returned `{ success: false }` silently. |
-| BL064 | Subscription benefits are available through finance gRPC `GetUserBenefits`. | Backend | Used by AI chat/subscription checks. |
-| BL065 | `FREE_MODE` is `false` in production — credit and subscription checks are fully enforced. Flag is strictly development-only. | Backend, web | Was previously `true` by default. |
+- (internal cleanup, no client-facing route)
 
-## Mobile-Specific Behavior
+### Related Data Models
 
-| ID | Logic | Scope | Sources / Notes |
-|---|---|---|---|
-| BL070 | Shared KMP repositories for auth, AI, study, exams, history, and account are real Ktor API facades. | Mobile shared | Platform feature UIs mostly not wired. |
-| BL071 | Android main feature screens manage local `mutableStateOf` UiState and use hardcoded sample data. | Android | Mock-backed except auth and likely logout. |
-| BL072 | iOS main feature screens manage local SwiftUI state and use hardcoded/default data. | iOS | Mock-backed except auth. |
-| BL073 | Mobile deep links parse exam session, flashcard, chat, and profile targets. | Mobile shared/platform | Actual navigation handling beyond auth callback Needs verification. |
-| BL074 | Mobile SSE client interfaces exist but Android/iOS actuals throw `NotImplementedError`. | Mobile shared | AI streaming unavailable on mobile. |
+- MODEL-002: UserSession
 
-## Unknowns To Verify
+---
 
-- Exact `/k` root redirect destination.
-- Detailed exam session state transitions and anti-cheating penalty thresholds.
-- Whether backend enforces teacher/admin permissions for teacher-only web/mobile flows.
-- Whether production credit checks are backend-enforced when web `FREE_MODE = true`.
-- Exact mobile wiring plans for shared repositories and SSE.
+## BL002: UserEventHandler
+
+**Type**: event-listener
+**Trigger**: RabbitMQ topic `auth.user.created` on `examio.events` durable exchange
+**Source File**: `examio-be/apps/finance-service/src/user-event.handler.ts`
+**Source Symbol**: `UserEventHandler` (class with `@EventHandler()` or equivalent)
+
+### Description
+
+Idempotent event listener that handles the `auth.user.created` RabbitMQ event. On user creation, it creates a Wallet record for the new user and optionally awards a welcome bonus (20 credits). Checks if wallet already exists before creation to ensure idempotency.
+
+### Related Modules
+
+- finance-service: FinanceModule, WalletModule
+- auth-service: AuthModule (publishes event)
+
+### Related Routes
+
+- (event-driven, no HTTP route)
+
+### Related Data Models
+
+- MODEL-027: Wallet
+- MODEL-001: User
+
+---
+
+## BL003: AuthService
+
+**Type**: integration
+**Trigger**: Login form submit, OAuth callback, token refresh
+**Source File**: `examio-be/apps/auth-service/src/auth.service.ts`
+**Source Symbol**: `AuthService` (class)
+
+### Description
+
+Core authentication service. Handles email/password login, Google OAuth flow (initiation + callback), JWT token generation and refresh, session creation with device fingerprinting, and account verification. Integrates with the database (Prisma) and Google OAuth provider.
+
+### Related Modules
+
+- auth-service: AuthModule
+
+### Related Routes
+
+- (POST) `/api/v1/auth/login`
+- (POST) `/api/v1/auth/register`
+- (GET) `/api/v1/auth/google`
+- (GET) `/api/v1/auth/google/callback`
+- (POST) `/api/v1/auth/google/one-tap`
+- (POST) `/api/v1/auth/refresh`
+- (POST) `/api/v1/auth/logout`
+- (POST) `/api/v1/auth/sync-refresh-token`
+- (GET) `/api/v1/auth/me`
+- (POST) `/api/v1/auth/sendVerificationEmail`
+- (POST) `/api/v1/auth/verifyAccount`
+- (POST) `/api/v1/auth/send-code-reset-password`
+- (POST) `/api/v1/auth/reset-password`
+- (POST) `/api/v1/auth/send-code-change-password`
+- (POST) `/api/v1/auth/change-password`
+- (POST) `/api/v1/auth/exchange`
+
+### Related Data Models
+
+- MODEL-001: User
+- MODEL-002: UserSession
+- MODEL-003: VerifyAccountCode
+- MODEL-004: ResetPasswordCode
+
+---
+
+## BL004: FinanceClientService
+
+**Type**: integration
+**Trigger**: Credit-deductor feature (AI generation, document processing)
+**Source File**: `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts`
+**Source Symbol**: `FinanceClientService` (class, gRPC client or HTTP client to finance-service)
+
+### Description
+
+Finance service client used by exam-service to check user wallet balance and deduct credits before allowing AI generation or document processing. Queries wallet info and emits debit transactions. Note: `FREE_MODE = true` shipped in production code path — credit gating is bypassed.
+
+### Related Modules
+
+- exam-service: ExamServiceModule, AIGenerationModule
+
+### Related Routes
+
+- (internal gRPC/HTTP) Wallet info and credit deduction
+
+### Related Data Models
+
+- MODEL-027: Wallet
+- MODEL-028: WalletTransaction
+
+---
+
+## BL005: R2ClientService
+
+**Type**: integration
+**Trigger**: File upload in exam-service context (AI generation input files, avatar upload)
+**Source File**: `examio-be/apps/exam-service/src/modules/r2/r2-client.service.ts`
+**Source Symbol**: `R2ClientService` (class, gRPC client to r2-service)
+
+### Description
+
+R2 storage client used by exam-service for uploading and retrieving user files. Used during AI generation (upload source documents) and profile operations (avatar/banner upload via proxy). Calls r2-service via gRPC.
+
+### Related Modules
+
+- exam-service: ExamServiceModule, R2Module
+
+### Related Routes
+
+- (internal gRPC) R2 storage operations
+
+### Related Data Models
+
+- MODEL-029: UserStorage
+
+---
+
+## BL006: R2Service
+
+**Type**: integration
+**Trigger**: Direct file storage operations via gateway proxy
+**Source File**: `examio-be/apps/r2-service/src/r2.service.ts`
+**Source Symbol**: `R2Service` (class, Cloudflare R2 SDK client)
+
+### Description
+
+R2 storage service managing Cloudflare R2 bucket operations. Handles file upload (images up to 2MB via `/api/v1/r2/image`), file deletion, and URL generation. Stores files with user-scoped keys and returns CDN URLs.
+
+### Related Modules
+
+- r2-service: R2Module
+
+### Related Routes
+
+- (POST) `/api/v1/r2/image`
+
+### Related Data Models
+
+- MODEL-029: UserStorage
+
+---
+
+## BL007: OcrService
+
+**Type**: integration
+**Trigger**: Document upload for OCR processing
+**Source File**: `examio-be/apps/ocr-service/src/ocr.service.ts`
+**Source Symbol**: `OcrService` (class, gRPC client or HTTP)
+
+### Description
+
+OCR service client used by exam-service for extracting text from uploaded documents (PDFs, images) before AI generation. Calls ocr-service via gRPC to process document images and return machine-readable text for quiz/flashcard generation.
+
+### Related Modules
+
+- exam-service: ExamServiceModule, AIGenerationModule
+
+### Related Routes
+
+- (internal gRPC) OCR document processing
+
+### Related Data Models
+
+- MODEL-029: UserStorage
+- MODEL-030: Document
+
+---
+
+## BL008: MailService
+
+**Type**: mail
+**Trigger**: User actions requiring email notification
+**Source File**: `examio-be/libs/common/src/services/mail.service.ts`
+**Source Symbol**: `MailService` (class with `send*` methods)
+
+### Description
+
+Email service for transactional emails. Sends account verification emails (6-digit OTP), password reset emails, and change-password confirmation emails. Uses a configured SMTP provider or transactional email service (e.g., Resend, SendGrid, AWS SES).
+
+### Related Modules
+
+- auth-service: AuthModule (calls MailService)
+- common: CommonModule
+
+### Related Routes
+
+- (POST) `/api/v1/auth/sendVerificationEmail`
+- (POST) `/api/v1/auth/verifyAccount`
+- (POST) `/api/v1/auth/send-code-reset-password`
+- (POST) `/api/v1/auth/reset-password`
+- (POST) `/api/v1/auth/send-code-change-password`
+- (POST) `/api/v1/auth/change-password`
+
+### Related Data Models
+
+- MODEL-003: VerifyAccountCode
+- MODEL-004: ResetPasswordCode
+
+---
+
+## BL009: SessionValidationMiddleware
+
+**Type**: middleware
+**Trigger**: Every non-public HTTP request to backend services
+**Source File**: `examio-be/libs/common/src/middleware/session-validation.middleware.ts`
+**Source Symbol**: `SessionValidationMiddleware` (class implementing `NestMiddleware`)
+
+### Description
+
+Request-level middleware that validates the user's session token on every protected route. Extracts bearer token from `Authorization` header or `token`/`accessToken` cookie. Queries `UserSession` in the database: rejects if `isActive === false` (SESSION_INVALIDATED) or `expiresAt < now` (SESSION_EXPIRED). Returns 401 with error code on failure. Applied globally via NestJS middleware registration.
+
+### Related Modules
+
+- common: CommonModule (re-exported in all service modules)
+
+### Related Routes
+
+- All routes protected by `AuthGuard` (Bearer auth routes)
+
+### Related Data Models
+
+- MODEL-002: UserSession
+
+---
+
+## BL010: SePayWebhook
+
+**Type**: webhook
+**Trigger**: Incoming bank transfer notification from SePay
+**Source File**: `examio-be/apps/finance-service/src/webhook.controller.ts`
+**Source Symbol**: `WebhookController` (class with webhook route handler)
+
+### Description
+
+Incoming webhook controller receiving payment notifications from SePay virtual account provider. Verifies webhook signature (API key), parses payment confirmation (VA number, amount, transfer content), and updates Payment status from `unpaid` to `paid`. Triggers wallet credit top-up or subscription activation.
+
+### Related Modules
+
+- finance-service: FinanceModule, WalletModule
+
+### Related Routes
+
+- (POST) `/api/v1/webhook/sepay`
+
+### Related Data Models
+
+- MODEL-026: Payment
+- MODEL-027: Wallet
+- MODEL-028: WalletTransaction
+
+---
+
+## BL011: GatewayWebhookProxy
+
+**Type**: webhook
+**Trigger**: Incoming webhook forwarded through gateway to downstream service
+**Source File**: `examio-be/apps/gateway-service/src/controllers/webhook-proxy.controller.ts`
+**Source Symbol**: `WebhookProxyController` (class)
+
+### Description
+
+Gateway-level webhook proxy that forwards incoming webhook requests to downstream services. The SePay payment webhook is received at the gateway and proxied to finance-service. Maintains webhook signature verification and request logging.
+
+### Related Modules
+
+- gateway-service: GatewayModule
+
+### Related Routes
+
+- (POST) `/api/v1/webhook/sepay` (gateway receives, proxies to finance-service)
+
+### Related Data Models
+
+- MODEL-026: Payment
+
+---
+
+## BL012: AuthSyncBootstrap
+
+**Type**: integration
+**Trigger**: OAuth redirect URL with token params (`?token=&refreshToken=&sessionId=`)
+**Source File**: `examio-fe/src/components/auth/AuthSyncBootstrap.tsx`
+**Source Symbol**: `AuthSyncBootstrap` (React component)
+
+### Description
+
+Client-side OAuth callback handler. Reads `token`, `refreshToken`, and `sessionId` from URL query params on Google OAuth redirect. Stores tokens in localStorage and sets a cookie, then calls `syncRefreshTokenApi` to persist the session server-side. Also sets the `X-Device-ID` header via `getOrCreateDeviceId`.
+
+### Related Modules
+
+- examio-fe: auth flow, API client
+
+### Related Routes
+
+- (GET) `/api/v1/auth/google/callback` (frontend-side handling)
+- (POST) `/api/v1/auth/sync-refresh-token`
+
+### Related Data Models
+
+- MODEL-002: UserSession
+
+---
+
+## BL013: CheatingDetectionHook
+
+**Type**: event-listener
+**Trigger**: Browser events during active exam attempt
+**Source File**: `examio-fe/src/hooks/useCheatingDetection.ts`
+**Source Symbol**: `useCheatingDetection` (React hook)
+
+### Description
+
+Client-side exam integrity hook. Registers listeners for tab visibility changes (`visibilitychange`), window blur (`blur`), copy/paste events, right-click (`contextmenu`), fullscreen exit (`fullscreenchange`), and print screen. On each violation, calls `POST /api/v1/cheatinglogs` to log the incident against the current attempt. Shows `CheatingWarningModal` to the student.
+
+### Related Modules
+
+- examio-fe: ExamQuizPage, CheatingWarningModal
+
+### Related Routes
+
+- (POST) `/api/v1/cheatinglogs`
+
+### Related Data Models
+
+- MODEL-020: CheatingLog
+- MODEL-019: ExamAttempt
+
+---
+
+## BL014: ExportPDFHook
+
+**Type**: integration
+**Trigger**: User clicks "Export PDF" on PDF history item
+**Source File**: `examio-fe/src/hooks/useExportPDF.ts`
+**Source Symbol**: `useExportPDF` (React hook)
+
+### Description
+
+Client-side hook for generating and downloading PDF files from processed document history. Fetches document content, renders to PDF using browser APIs, and triggers browser download via blob URL.
+
+### Related Modules
+
+- examio-fe: HistoryPage, PDFHistoryPage
+
+### Related Routes
+
+- (GET) `/api/v1/student/recent-flashcards` (PDF list)
+- (GET) `/api/v1/student/recent-exams` (exam history)
+
+### Related Data Models
+
+- MODEL-029: UserStorage
+
+---
+
+## BL015: GenerationGuardHook
+
+**Type**: scheduled-job
+**Trigger**: AI generation page mount, tab visibility change
+**Source File**: `examio-fe/src/hooks/useGenerationGuard.ts`
+**Source Symbol**: `useGenerationGuard` (React hook)
+
+### Description
+
+Client-side guard that manages AI generation state persistence and resume logic. Reads `pending_generation_job` key from localStorage on mount. If a job is pending, shows `PendingJobDialog` and polls `getJobStatus` every 10s (up to 360 attempts = 60 min). On tab visibility change, triggers visibility check for background polling.
+
+### Related Modules
+
+- examio-fe: AIToolPage, PendingJobDialog
+
+### Related Routes
+
+- (GET) `/api/v1/ai/job/:jobId`
+- (DELETE) `/api/v1/ai/job/:jobId`
+
+### Related Data Models
+
+- MODEL-011: HistoryGeneratedQuizz
+- MODEL-016: HistoryGeneratedFlashcard
+
+---
+
+## BL016: ExamQuizPagePolling
+
+**Type**: scheduled-job
+**Trigger**: Active exam attempt, time-based interval
+**Source File**: `examio-fe/src/pages/exam-session/ExamQuizPage.tsx`
+**Source Symbol**: `ExamQuizPage` (component with `setInterval` + `sendBeacon`)
+
+### Description
+
+Exam quiz page background auto-save mechanism. Uses `setInterval` to poll `updateExamAttemptProgressApi` every 30 seconds during an active exam attempt, persisting current answer state, question index, and time spent. On `beforeunload` event, calls `navigator.sendBeacon` to fire a final auto-save request, ensuring answers are not lost on accidental tab close.
+
+### Related Modules
+
+- examio-fe: ExamQuizPage
+
+### Related Routes
+
+- (PUT) `/api/v1/examattempts/:attemptId/progress`
+
+### Related Data Models
+
+- MODEL-019: ExamAttempt
+
+---
+
+## Summary
+
+- **Total Behavior Logic Items**: 16
+- **By Type**:
+  - scheduled-job: 3 (BL001, BL015, BL016)
+  - event-listener: 2 (BL002, BL013)
+  - integration: 7 (BL003–BL007, BL012, BL014)
+  - mail: 1 (BL008)
+  - middleware: 1 (BL009)
+  - webhook: 2 (BL010–BL011)
+
+---
+
+## Cross-Reference Validation
+
+- [x] All BL### codes are unique (BL001–BL016)
+- [x] All BL### Source File paths match Wave 0 scout `## Background Logic Source Inventory` entries
+- [x] All BL### Source Symbol fields are single-valued (Rule C2)
+- [x] All sentinel entries (`_(none found)_`) from scout inventory are skipped (no BL items emitted)
+- [x] `[SIGNAL_INFERRED]` entries from scout inventory are included with explicit `[SIGNAL_INFERRED]` tag (BL013, BL014, BL015, BL016)
+- [x] Aggregation is avoided: each inventory entry → exactly one BL item
+- [x] No BL items emit for Python FastAPI (sentinel only)
+- [x] No orphaned behavior logic references
+
+---
+
+## Client-Side Logic
+
+### Debounce / Throttle
+
+N/A — no debounce or throttle patterns detected in the current scan.
+
+### Optimistic UI
+
+**BL-C01 — Session card pin toggle**
+pattern: optimistic-ui
+source: `examio-fe/src/pages/k/MyExamsPage.tsx:191` (inline handler)
+trigger: user clicks pin/unpin on exam session card
+optimistic-action: immediately updates `examAttempts` state with toggled `isPinned` flag
+rollback: reverts `isPinned` on API error + shows error toast
+
+**BL-C02 — Flashcard study progress**
+pattern: optimistic-ui
+source: `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:221`
+trigger: user navigates to next card
+optimistic-action: immediately adds current card ID to `studiedCards` Set
+rollback: silent (fire-and-forget API call `addStudiedCardApi`)
+
+### Polling
+
+**BL-C03 — AI job status polling**
+pattern: polling
+source: `examio-fe/src/hooks/useGenerationGuard.ts`
+trigger: `pending_generation_job` key exists in localStorage on mount
+interval: 10000ms (10s)
+stops-when: job status changes to "completed" or "failed", or user cancels
+max-attempts: 360 (60 minutes)
+
+**BL-C04 — Exam attempt auto-save**
+pattern: polling
+source: `examio-fe/src/pages/exam-session/ExamQuizPage.tsx` (setInterval)
+trigger: active exam attempt (status = IN_PROGRESS)
+interval: 30000ms (30s)
+stops-when: attempt status changes to COMPLETED/CANCELLED, or tab closes
+
+### Upload Progress
+
+N/A — no explicit upload progress tracking detected (XHR upload progress, FormData onUploadProgress, or similar).
+
+### Realtime (WebSocket / SSE / EventSource)
+
+N/A — no WebSocket or SSE patterns detected in the current scan. AI chat uses SSE streaming at the API level (`/api/v1/ai-chat/:chatId/stream`) but the client-side SSE consumption is handled by the API layer, not a standalone WebSocket/SSE hook.

@@ -1,0 +1,202 @@
+{
+  "generated_at": "2026-06-05T21:37:00Z",
+  "plan": "260605-2033-rebuild-spec",
+  "features": [
+    {
+      "fcode": "F001",
+      "name": "PublicLanding",
+      "slug": "F001_PublicLanding",
+      "priority": "P1",
+      "type": "ui",
+      "related": {
+        "screens": ["SCR001", "SCR002", "SCR003", "SCR004", "SCR005", "SCR006", "SCR007"],
+        "user_stories": ["US001", "US002"],
+        "routes": ["GET /", "GET /about", "GET /contact", "GET /terms", "GET /privacy", "GET /cookies", "GET /security", "POST /api/v1/contact"],
+        "models": ["QuizSet", "FlashCardSet", "ExamRoom"],
+        "bl": [],
+        "perms": ["PERM001"]
+      }
+    },
+    {
+      "fcode": "F002",
+      "name": "Authentication",
+      "slug": "F002_Authentication",
+      "priority": "P0",
+      "type": "ui",
+      "related": {
+        "screens": ["SCR008", "SCR009", "SCR010", "SCR011"],
+        "user_stories": ["US003", "US004", "US005", "US006", "US007"],
+        "routes": ["POST /api/v1/auth/login", "GET /api/v1/auth/google", "POST /api/v1/auth/google/one-tap", "POST /api/v1/auth/register", "POST /api/v1/auth/send-code-reset-password", "POST /api/v1/auth/reset-password", "POST /api/v1/auth/refresh", "POST /api/v1/auth/logout", "POST /api/v1/auth/sync-refresh-token"],
+        "models": ["User", "UserSession", "VerifyCode", "ResetCode"],
+        "bl": [],
+        "perms": ["PERM004", "PERM005", "PERM042"]
+      }
+    },
+    {
+      "fcode": "F003",
+      "name": "AccountManagement",
+      "slug": "F003_AccountManagement",
+      "priority": "P0",
+      "type": "ui",
+      "related": {
+        "screens": ["SCR012", "SCR014"],
+        "user_stories": ["US011"],
+        "routes": ["POST /api/v1/auth/verifyAccount", "POST /api/v1/auth/sendVerificationEmail", "GET /api/v1/auth/me", "GET /k"],
+        "models": ["User", "VerifyCode"],
+        "bl": [],
+        "perms": ["PERM002", "PERM003"]
+      }
+    },
+    {
+      "fcode": "F004",
+      "name": "ProfileManagement",
+      "slug": "F004_ProfileManagement",
+      "priority": "P1",
+      "type": "ui",
+      "related": {
+        "screens": ["SCR013/REG001", "SCR013/REG002"],
+        "user_stories": ["US008", "US009", "US010"],
+        "routes": ["GET /api/v1/profile", "PUT /api/v1/profile", "POST /api/v1/r2/image", "GET /api/v1/devices", "DELETE /api/v1/devices/:deviceId", "POST /api/v1/auth/change-password", "POST /api/v1/auth/send-code-change-password"],
+        "models": ["User", "UserSession"],
+        "bl": [],
+        "perms": ["PERM002", "PERM003", "PERM006", "PERM007", "PERM008", "PERM009", "PERM010"]
+      }
+    },
+    {
+      "fcode": "F005",
+      "name": "Finance",
+      "slug": "F005_Finance",
+      "priority": "P1",
+      "type": "ui",
+      "related": {
+        "screens": ["SCR013/REG003", "SCR015"],
+        "user_stories": ["US012"],
+        "routes": ["GET /api/v1/wallet/details", "GET /api/v1/payment/subscription", "POST /api/v1/payment/subscription", "webhook:SePay"],
+        "models": ["Wallet", "WalletTransaction", "Payment", "UserSubscription"],
+        "bl": [],
+        "perms": ["PERM002", "PERM003", "PERM011", "PERM012", "PERM013"]
+      }
+    },
+    {
+      "fcode": "F006",
+      "name": "QuizAuthoring",
+      "slug": "F006_QuizAuthoring",
+      "priority": "P1",
+      "type": "ui",
+      "related": {
+        "screens": ["SCR016/REG001", "SCR018/REG001", "SCR020", "SCR021", "SCR022", "SCR024", "SCR017"],
+        "user_stories": ["US013", "US014", "US015", "US023", "US024", "US025", "US028", "US029", "US030", "US031", "US036", "US037"],
+        "routes": ["GET /api/v1/quizsets", "POST /api/v1/quizsets", "PUT /api/v1/quizsets/:id", "DELETE /api/v1/quizsets/:id", "GET /api/v1/quizsets/:id", "POST /api/v1/quizsets/:id/labels", "GET /api/v1/quizsets/:id/labels", "PUT /api/v1/quizsets/:id/labels", "DELETE /api/v1/quizsets/:id/labels/:labelId", "GET /api/v1/quizsets/:id/questions", "POST /api/v1/quizsets/:id/questions", "PUT /api/v1/quizsets/:id/questions/:questionId", "DELETE /api/v1/quizsets/:id/questions/:questionId", "GET /api/v1/student/recent-flashcards", "DELETE /api/v1/student/recent-flashcards", "GET /api/v1/quizsets/stats", "POST /api/v1/ai/job", "GET /api/v1/ai/job/:jobId", "DELETE /api/v1/ai/job/:jobId"],
+        "models": ["QuizSet", "QuizQuestion", "QuizSetLabel", "UserStorage", "HistoryGeneratedQuizz", "HistoryGeneratedFlashcard"],
+        "bl": [],
+        "perms": ["PERM002", "PERM003", "PERM014", "PERM015", "PERM016", "PERM035", "PERM036", "PERM038", "PERM041", "PERM043"]
+      }
+    },
+    {
+      "fcode": "F007",
+      "name": "FlashcardAuthoring",
+      "slug": "F007_FlashcardAuthoring",
+      "priority": "P1",
+      "type": "ui",
+      "related": {
+        "screens": ["SCR016/REG002", "SCR017", "SCR023"],
+        "user_stories": ["US016", "US017", "US018", "US022", "US023", "US032", "US033", "US034", "US035", "US036", "US037"],
+        "routes": ["GET /api/v1/flashcardsets", "POST /api/v1/flashcardsets", "PUT /api/v1/flashcardsets/:id", "DELETE /api/v1/flashcardsets/:id", "GET /api/v1/flashcardsets/:id", "GET /api/v1/flashcardsets/:id/labels", "POST /api/v1/flashcardsets/:id/labels", "PUT /api/v1/flashcardsets/:id/labels", "DELETE /api/v1/flashcardsets/:id/labels/:labelId", "GET /api/v1/flashcardsets/:id/flashcards", "POST /api/v1/flashcardsets/:id/flashcards", "PUT /api/v1/flashcardsets/:id/flashcards/:flashcardId", "DELETE /api/v1/flashcardsets/:id/flashcards/:flashcardId", "POST /api/v1/ai/job", "GET /api/v1/ai/job/:jobId", "DELETE /api/v1/ai/job/:jobId"],
+        "models": ["FlashCardSet", "FlashCard", "FlashCardSetLabel", "HistoryGeneratedFlashcard"],
+        "bl": [],
+        "perms": ["PERM002", "PERM003", "PERM017", "PERM018", "PERM019", "PERM035", "PERM036", "PERM041", "PERM044"]
+      }
+    },
+    {
+      "fcode": "F008",
+      "name": "ExamHosting",
+      "slug": "F008_ExamHosting",
+      "priority": "P1",
+      "type": "ui",
+      "related": {
+        "screens": ["SCR016/REG003", "SCR018/REG002", "SCR018/REG003", "SCR019", "SCR021", "SCR026", "SCR027/REG001", "SCR027/REG002", "SCR027/REG003", "SCR027/REG004", "SCR028", "SCR029", "SCR031"],
+        "user_stories": ["US019", "US020", "US021", "US026", "US027", "US044", "US045", "US046", "US047", "US048", "US049", "US050", "US051", "US052", "US056", "US057", "US058", "US059"],
+        "routes": ["GET /api/v1/examrooms", "POST /api/v1/examrooms", "PUT /api/v1/examrooms/:id", "DELETE /api/v1/examrooms/:id", "GET /api/v1/examrooms/list", "GET /api/v1/examrooms/detail/:id", "GET /api/v1/examrooms/:id/sessions", "POST /api/v1/examrooms/:id/sessions", "GET /api/v1/examsessions/:id", "PUT /api/v1/examsessions/:id", "DELETE /api/v1/examsessions/:id", "GET /api/v1/examsessions/:id/sharing", "PUT /api/v1/examsessions/:id/sharing", "GET /api/v1/examrooms/:id/sessions/:sessionId/attempts", "GET /api/v1/examrooms/:id/sessions/:sessionId/attempts/:attemptId", "GET /api/v1/student/recent-exams", "POST /api/v1/secure-quiz", "POST /api/v1/secure-submit", "PUT /api/v1/examattempts/:attemptId/progress", "POST /api/v1/cheatinglogs"],
+        "models": ["ExamRoom", "ExamSession", "ExamAttempt", "CheatingLog"],
+        "bl": [],
+        "perms": ["PERM002", "PERM003", "PERM020", "PERM021", "PERM022", "PERM023", "PERM024", "PERM025", "PERM026", "PERM027", "PERM028", "PERM029", "PERM030", "PERM031", "PERM039", "PERM045"]
+      }
+    },
+    {
+      "fcode": "F009",
+      "name": "AITeacherKnowledgeBase",
+      "slug": "F009_AITeacherKnowledgeBase",
+      "priority": "P1",
+      "type": "ui",
+      "related": {
+        "screens": ["SCR025/REG001", "SCR025/REG002", "SCR025/REG003", "SCR025/REG004"],
+        "user_stories": ["US038", "US039", "US040", "US041", "US042", "US043"],
+        "routes": ["GET /api/v1/ai/tutor/knowledge-folders", "POST /api/v1/ai/tutor/knowledge-folders", "PUT /api/v1/ai/tutor/knowledge-folders/:id", "DELETE /api/v1/ai/tutor/knowledge-folders/:id", "GET /api/v1/ai/tutor/knowledge-files", "POST /api/v1/ai/tutor/knowledge-files", "DELETE /api/v1/ai/tutor/knowledge-files/:id", "POST /api/v1/ai/tutor/knowledge-files/:id/reprocess", "GET /api/v1/ai/tutor/dataset-imports", "POST /api/v1/ai/tutor/dataset-imports", "GET /api/v1/ai/tutor/knowledge-stats"],
+        "models": ["UserStorage", "Document", "UserStorageGraph", "UserStorageGraphGroup", "AIChat"],
+        "bl": [],
+        "perms": ["PERM002", "PERM003", "PERM037"]
+      }
+    },
+    {
+      "fcode": "F010",
+      "name": "AITool",
+      "slug": "F010_AITool",
+      "priority": "P1",
+      "type": "ui",
+      "related": {
+        "screens": ["SCR024"],
+        "user_stories": ["US023", "US036", "US037"],
+        "across": ["SCR017", "SCR024"],
+        "routes": ["POST /api/v1/ai/job", "GET /api/v1/ai/job/:jobId", "DELETE /api/v1/ai/job/:jobId"],
+        "models": ["UserStorage", "HistoryGeneratedQuizz", "HistoryGeneratedFlashcard"],
+        "bl": ["BL004"],
+        "perms": ["PERM002", "PERM003", "PERM035", "PERM036", "PERM041"]
+      }
+    },
+    {
+      "fcode": "F011",
+      "name": "FlashcardStudy",
+      "slug": "F011_FlashcardStudy",
+      "priority": "P1",
+      "type": "ui",
+      "related": {
+        "screens": ["SCR030"],
+        "user_stories": ["US053", "US054", "US055"],
+        "routes": ["GET /study-flashcard/:id", "addStudiedCardApi"],
+        "models": ["FlashCardSet", "FlashCard", "FlashcardStudyProgress"],
+        "bl": [],
+        "perms": ["PERM002", "PERM003", "PERM032", "PERM033", "PERM034", "PERM042"]
+      }
+    },
+    {
+      "fcode": "F012",
+      "name": "ExamTaking",
+      "slug": "F012_ExamTaking",
+      "priority": "P0",
+      "type": "ui",
+      "related": {
+        "screens": ["SCR032"],
+        "user_stories": ["US058", "US059", "US060", "US061", "US062"],
+        "routes": ["POST /api/v1/secure-quiz", "POST /api/v1/secure-submit", "PUT /api/v1/examattempts/:attemptId/progress", "POST /api/v1/cheatinglogs", "GET /api/v1/examrooms/:id/sessions/:sessionId/attempts/:attemptId"],
+        "models": ["ExamAttempt", "QuizQuestion", "CheatingLog"],
+        "bl": ["BL005"],
+        "perms": ["PERM002", "PERM003", "PERM027", "PERM028", "PERM029", "PERM030", "PERM031"]
+      }
+    },
+    {
+      "fcode": "F013",
+      "name": "SessionCleanup",
+      "slug": "F013_SessionCleanup",
+      "priority": "P2",
+      "type": "background",
+      "related": {
+        "screens": [],
+        "user_stories": [],
+        "routes": [],
+        "models": ["UserSession"],
+        "bl": ["BL001"],
+        "perms": ["PERM040"]
+      }
+    }
+  ]
+}

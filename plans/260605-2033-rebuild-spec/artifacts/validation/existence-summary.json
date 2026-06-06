@@ -1,0 +1,32 @@
+{
+  "generated_at": "2026-06-05T14:43:48Z",
+  "overall_status": "WARN",
+  "plan": "features",
+  "schema_version": 1,
+  "totals": {
+    "critical": 0,
+    "failed_specs": 0,
+    "passed_specs": 0,
+    "warning": 1
+  },
+  "validators": {
+    "feature_existence": {
+      "issues": [
+        {
+          "location": {
+            "file": "_canonical-fcodes.json",
+            "line": null
+          },
+          "message": "no _canonical-fcodes.json; falling back to feature-list.md regex parse",
+          "rule_id": "existence.canonical_missing",
+          "severity": "warning"
+        }
+      ],
+      "status": "WARN",
+      "summary": {
+        "critical": 0,
+        "warning": 1
+      }
+    }
+  }
+}
