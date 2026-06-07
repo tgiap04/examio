@@ -35,8 +35,16 @@ import { PublicLayout } from "@/routes/layouts/PublicLayout";
 import { AuthLayout } from "@/routes/layouts/AuthLayout";
 import { KLayout } from "@/routes/layouts/KLayout";
 import { ExamSessionLayout } from "@/routes/layouts/ExamSessionLayout";
+import { AdminLayout } from "@/routes/layouts/AdminLayout";
 import { PublicRoute } from "@/routes/guards/PublicRoute";
 import { ProtectedRoute } from "@/routes/guards/ProtectedRoute";
+import { AdminRoute } from "@/routes/guards/AdminRoute";
+import AdminOverviewPage from "@/pages/admin/AdminOverviewPage";
+import AdminUsersPage from "@/pages/admin/AdminUsersPage";
+import AdminFinancePage from "@/pages/admin/AdminFinancePage";
+import AdminLogsPage from "@/pages/admin/AdminLogsPage";
+import AdminAuditPage from "@/pages/admin/AdminAuditPage";
+import AdminStatsPage from "@/pages/admin/AdminStatsPage";
 
 import { useTranslation } from "react-i18next";
 
@@ -344,6 +352,22 @@ export const router = createBrowserRouter([
         </KLayout>
       </ProtectedRoute>
     ),
+  },
+  {
+    path: "/admin",
+    element: (
+      <AdminRoute>
+        <AdminLayout />
+      </AdminRoute>
+    ),
+    children: [
+      { index: true, element: <AdminOverviewPage /> },
+      { path: "stats", element: <AdminStatsPage /> },
+      { path: "users", element: <AdminUsersPage /> },
+      { path: "finance", element: <AdminFinancePage /> },
+      { path: "logs", element: <AdminLogsPage /> },
+      { path: "audit", element: <AdminAuditPage /> },
+    ],
   },
   {
     path: "*",

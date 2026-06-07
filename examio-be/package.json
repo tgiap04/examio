@@ -13,6 +13,7 @@
         "dev:auth": "nest start auth-service --watch",
         "dev:exam": "nest start exam-service --watch",
         "dev:finance": "nest start finance-service --watch",
+        "dev:admin": "nest start admin-service --watch",
         "dev:r2": "nest start r2-service --watch",
         "dev:gateway": "nest start gateway-service --watch",
         "dev:ocr": "nest start ocr-service --watch",
@@ -26,7 +27,11 @@
         "prisma:studio": "prisma studio --schema=libs/database/src/schema.prisma",
         "prisma:deploy": "yarn prisma:merge && prisma migrate deploy --schema=libs/database/src/schema.prisma",
         "prisma:seed": "./node_modules/.bin/ts-node libs/database/prisma/seed.ts",
-        "start:prod": "node dist/apps/codecraft-be/main"
+        "start:prod": "node dist/apps/codecraft-be/main",
+        "bootstrap:admin": "ts-node -r tsconfig-paths/register apps/admin-service/src/commands/cli.ts",
+        "bootstrap:admin:list": "ts-node -r tsconfig-paths/register apps/admin-service/src/commands/cli.ts list",
+        "bootstrap:admin:grant": "ts-node -r tsconfig-paths/register apps/admin-service/src/commands/cli.ts grant",
+        "bootstrap:admin:revoke": "ts-node -r tsconfig-paths/register apps/admin-service/src/commands/cli.ts revoke"
     },
     "keywords": [],
     "author": "",

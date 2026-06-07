@@ -599,6 +599,28 @@ Internal service routes — not directly exposed to clients (gateway proxies to 
 |--------|------|-------------|------|
 | POST | /api/v1/webhook | SePay payment webhook (apikey auth) | ApiKey |
 
+#### Admin
+
+All admin routes are proxied from gateway via `/api/v1/admin/*` to `admin-service` (port 7006). Auth: `AdminGuard` (JWT + `User.isAdmin = true`), not standard `AuthGuard`.
+
+| Method | Path | Description | Auth |
+|--------|------|-------------|------|
+| GET | /api/v1/admin/bootstrap | Application bootstrap + health | Admin |
+| GET | /api/v1/admin/stats | KPI overview + time-series data | Admin |
+| GET | /api/v1/admin/users | User list with pagination + filters | Admin |
+| PUT | /api/v1/admin/users/:id/ban | Ban user (`isBanned = true`) | Admin |
+| PUT | /api/v1/admin/users/:id/unban | Unban user (`isBanned = false`) | Admin |
+| DELETE | /api/v1/admin/users/:id | Soft-delete user (`deletedAt = now()`) | Admin |
+| PUT | /api/v1/admin/users/:id/grant-admin | Grant admin role (`isAdmin = true`) | Admin |
+| DELETE | /api/v1/admin/users/:id/revoke-admin | Revoke admin role (`isAdmin = false`) | Admin |
+| GET | /api/v1/admin/finance/refunds | List refund history | Admin |
+| POST | /api/v1/admin/finance/refund | Issue wallet refund | Admin |
+| POST | /api/v1/admin/finance/adjust-credit | Manual credit adjustment | Admin |
+| PUT | /api/v1/admin/finance/subscription-tier | Change user subscription tier | Admin |
+| GET | /api/v1/admin/audit | Query audit log (paginated, date-filtered) | Admin |
+| GET | /api/v1/admin/logs | Fetch server-side logs (polling fallback) | Admin |
+| GET | /api/v1/admin/logs/stream | SSE stream for real-time logs (ticket exchange) | Admin |
+
 ---
 
 ## Frontend Routes

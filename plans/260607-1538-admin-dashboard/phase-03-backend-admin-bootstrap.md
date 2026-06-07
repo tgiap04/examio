@@ -14,8 +14,8 @@
 - **Date:** 2026-06-07
 - **Track:** Backend (B)
 - **Priority:** P0 (admin account bootstrap — required before anyone can login)
-- **Implementation status:** pending
-- **Review status:** pending
+- **Implementation status:** done
+- **Review status:** done
 
 `AdminBootstrapService` chạy trong `OnModuleInit` của `auth-service`. Sync `ADMIN_EMAILS` (CSV) + `ADMIN_DEFAULT_PASSWORD` env. Idempotent: tạo user nếu chưa có, set `isAdmin=true` nếu chưa phải, update password nếu mismatch. Có CLI command riêng để re-sync thủ công.
 
@@ -164,3 +164,16 @@ export class AdminBootstrapService implements OnModuleInit {
 - Phase 04 (admin-users-and-audit) cần `AuditWriter` từ phase này (full impl).
 - Phase 06 (admin-finance) cần `AuditWriter` cho mọi mutation.
 - Phase 10 (integration) cần CLI command + AuditWriter audit cho user grant/revoke actions.
+
+## Implementation Notes
+
+- **Deviation from plan:** Bootstrap placed in `admin-service` (not `auth-service` as originally planned) — cleaner separation, admin-service owns its own bootstrap
+- `AdminBootstrapService` implements `OnModuleInit` + `syncAdmins()`
+- `ManagementService` for CLI-driven manual re-sync
+- `bootstrap.types.ts` with `BootstrapResult` + `BootstrapAction` enum
+- CLI command wired via `apps/admin-service/src/commands/cli.ts`
+- `package.json` updated with `bootstrap:admin` script
+- `apps/admin-service/.env.example` created
+- `AuditWriterService` fully implemented in `admin-service/src/common/` (not shared lib)
+- Idempotent: create / grant / update-password / skip per email
+- Audit rows written for create, grant, password_update actions

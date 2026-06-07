@@ -11,8 +11,8 @@
 - **Date:** 2026-06-07
 - **Track:** Backend (B)
 - **Priority:** P1
-- **Implementation status:** pending
-- **Review status:** pending
+- **Implementation status:** done
+- **Review status:** done
 
 Module thống kê: 4 KPI + 3 series chart theo range (7d/30d/90d). Aggregations trên User / UserSession / Payment / WalletTransaction. Cache qua Redis 5 phút.
 
@@ -171,3 +171,13 @@ export class AdminStatsService {
 
 - Phase 06 (admin-finance) gọi `invalidateOverview()` + `invalidateSeries()` sau mỗi mutation.
 - Phase 08 (frontend AdminOverview + AdminStats) consume các endpoints.
+
+## Implementation Notes
+
+- admin-stats module: overview (4 KPIs) + 3 series (userGrowth, traffic, revenue)
+- Redis 5-minute cache via raw `ioredis` (not via `libs/redis` RedisService — avoids extra import)
+- Cache keys: `admin:stats:overview`, `admin:stats:series:{range}`
+- Public invalidation methods `invalidateOverview()` + `invalidateSeries()` for finance mutations to call
+- Range query via Zod: `z.enum(['7d', '30d', '90d']).default('7d')`
+- Date fill logic ensures every day in range has an entry (0 if no data)
+- Throttler `'admin'` 30 req/min applied

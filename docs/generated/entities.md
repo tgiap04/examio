@@ -17,7 +17,9 @@ erDiagram
         string name
         string avatar
         boolean isAdmin
+        boolean isBanned
         boolean isVerified
+        datetime deletedAt
         datetime createdAt
     }
     UserSession ||--o| User : "belongs to"
@@ -78,6 +80,7 @@ erDiagram
     User ||--o{ UserPinnedFlashcard : "pins"
     User ||--o{ UserPinnedExamRoom : "pins"
     User ||--o{ FlashcardStudyProgress : "tracks"
+    AdminAudit ||--o| User : "performed by"
 ```
 
 ---
@@ -98,7 +101,9 @@ erDiagram
 | banner | String | NULL | Banner image URL |
 | bio | String | NULL | Short bio |
 | isAdmin | Boolean | NOT NULL, DEFAULT false | Admin flag |
+| isBanned | Boolean | NOT NULL, DEFAULT false | Soft-ban flag; banned users see 403 "Account suspended" |
 | isVerified | Boolean | NOT NULL, DEFAULT false | Email verified flag |
+| deletedAt | DateTime | NULL | Soft-delete timestamp; null = active |
 | password | String | NULL | Bcrypt hash (null for OAuth-only) |
 | createdAt | DateTime | NOT NULL | Account creation |
 | updatedAt | DateTime | NOT NULL | Last update |
@@ -124,6 +129,7 @@ erDiagram
 - One-to-Many with UserPinnedFlashcard via `userId`
 - One-to-Many with UserPinnedExamRoom via `userId`
 - One-to-Many with FlashcardStudyProgress via `userId`
+- One-to-Many with AdminAudit via `adminId`
 
 **Discriminator Fields**: None.
 
@@ -131,6 +137,30 @@ erDiagram
 - `MODEL-001-UK-01`: `email` (unique constraint)
 - `MODEL-001-UK-02`: `username` (unique constraint)
 - `MODEL-001-UK-03`: `id` (primary key, unique by default)
+
+---
+
+### MODEL-001b AdminAudit
+
+**Description**: Audit log entry written by `AuditWriterService` on every admin mutation. One row per changed field per action. Used for accountability and compliance.
+
+| Attribute | Type | Constraints | Description |
+|-----------|------|-------------|-------------|
+| id | String | PK, NOT NULL | Audit record ID |
+| adminId | String | FK, NOT NULL, INDEX | References User.id (the admin who performed the action) |
+| targetId | String | NOT NULL, INDEX | ID of the entity being acted on (user ID, wallet ID, etc.) |
+| action | String | NOT NULL | Action name (e.g. `user.ban`, `finance.refund`, `user.grant_admin`) |
+| payload | JSON | NULL | JSON diff of changed fields (before/after) |
+| ipAddress | String | NULL | Admin's client IP |
+| userAgent | String | NULL | Admin's client user agent |
+| createdAt | DateTime | NOT NULL | Timestamp of action |
+
+**Relationships**:
+- Many-to-One with User via `adminId`
+
+**Discriminator Fields**: None.
+
+**Unique Codes**: None.
 
 ---
 
@@ -1288,7 +1318,7 @@ erDiagram
 
 ## Summary
 
-- **Total Entities**: 38
+- **Total Entities**: 39
 - **Total Domains**: 5
 - **Total Unique Constraints**: 24 (composite + scalar)
 - **Total Discriminator Fields**: 14 (DISC-001 through DISC-014)

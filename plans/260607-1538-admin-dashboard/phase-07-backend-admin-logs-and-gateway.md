@@ -13,8 +13,8 @@
 - **Date:** 2026-06-07
 - **Track:** Backend (B)
 - **Priority:** P1
-- **Implementation status:** pending
-- **Review status:** pending
+- **Implementation status:** done
+- **Review status:** done
 
 Module đọc log file từ auth + gateway: `@Sse('logs/stream')` cho live tail, `GET logs/recent` cho non-streaming. PII redaction (email, token, password). Gateway proxy mới cho admin-service với named throttler.
 
@@ -245,4 +245,16 @@ export function redactPII(line: string): string {
 ## Next steps
 
 - Phase 09 (frontend AdminLogs) — dùng EventSource connect tới SSE, render lines real-time.
-- Phase 10 (integration) — docker compose mount `examio_logs` volume, e2e test SSE từ frontend → backend.
+- Phase 10 (integration) — docker compose mount `examio_logs` volume, e2e test SSE t�ng frontend → backend.
+
+## Implementation Notes
+
+- Ticket auth implemented via raw `ioredis` (not via `libs/redis` RedisService)
+- Redis key `sse:ticket:{ticket}` with TTL 300s, single-use (marked used on validate)
+- `GET /admin/logs/recent` reads last N lines of log file, redact PII
+- `@Sse('logs/stream')` SSE endpoint streams new log lines with PII redacted
+- log-watcher uses `fs.watch` + `readline` for tail + initial buffer (last 100 lines)
+- 4 PII patterns: email, Bearer token, password field, JWT 3-segment
+- admin-proxy.controller.ts in gateway forwards all `/api/v1/admin/*` → admin-service
+- Re-injects Bearer + cookies + device ID + forwarded IP + UA
+- Cleanup on client disconnect (no memory leak) via rxjs takeUntil + `OnModuleDestroy`

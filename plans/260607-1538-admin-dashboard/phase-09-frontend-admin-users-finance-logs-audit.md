@@ -18,8 +18,8 @@
 - **Date:** 2026-06-07
 - **Track:** Frontend (F)
 - **Priority:** P0 (largest frontend surface — 4 pages, 7 components)
-- **Implementation status:** pending
-- **Review status:** pending
+- **Implementation status:** done
+- **Review status:** done
 
 4 trang admin còn lại: Users (DataTable với filter), Finance (3 modal action với 2-step confirm), Logs (SSE live tail), Audit (read-only history). Component shared: UserTable, FinanceActionModal, LogViewer.
 
@@ -300,3 +300,16 @@ export function useEventSource(url: string | null, options: { onMessage, onError
 ## Next steps
 
 - Phase 10 (integration) — replace mock data, e2e test full flow qua UI.
+
+## Implementation Notes
+
+- useDebounce hook for search filter (300ms debounce)
+- useEventSource hook with reconnect backoff (1/2/5/30s, max 5 retries)
+- AdminUsersPage: antd Table with search debounce, role/status filters, DateRangePicker, ban via Popconfirm, grant/revoke admin (self disabled), UserDetailDrawer
+- UserDetailDrawer: full profile + wallet + subscription + last session in antd Drawer width 600
+- AdminFinancePage: 3 action buttons + recent finance audit table (50 rows)
+- FinanceActionModal: 2-step confirm (Modal.confirm warning → real modal with Form) + type-specific fields + reason (min 10 chars)
+- AdminLogsPage: service selector + "Tail trực tiếp" button + "Tải 100 dòng gần nhất" button + LogViewer (monospace, scrollable)
+- AdminAuditPage: antd Table with admin email, action Tag, target user, reason, expandable payload row, adminId + action + date filters
+- Cache invalidation after each mutation (invalidateOverview, invalidateSeries, invalidateAudit, invalidateUsers)
+- Vietnamese labels from i18n namespace `vi/admin.json`

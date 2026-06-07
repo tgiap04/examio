@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-examio is a multi-tenant exam/quiz platform serving students and teachers. Authoring users create quiz sets, flashcard sets, and exam rooms; students take timed sessions under AES-256-CBC question encryption with JWT answer tokens. The backend is a NestJS monorepo of 6 services + one Python FastAPI AI service, fronted by a gateway HTTP proxy. Payments are handled via SePay QR code and an internal wallet with credit-based subscription gating. AI features (generation, document RAG, AI teacher chat) are offloaded to a Python FastAPI worker. Infrastructure runs on PostgreSQL + Redis + RabbitMQ (topic exchange `examio.events`).
+examio is a multi-tenant exam/quiz platform serving students and teachers. Authoring users create quiz sets, flashcard sets, and exam rooms; students take timed sessions under AES-256-CBC question encryption with JWT answer tokens. The backend is a NestJS monorepo of 7 services (gateway, auth, exam, finance, r2, ocr, admin) plus one Python FastAPI AI service, fronted by a gateway HTTP proxy. Payments are handled via SePay QR code and an internal wallet with credit-based subscription gating. AI features (generation, document RAG, AI teacher chat) are offloaded to a Python FastAPI worker. Infrastructure runs on PostgreSQL + Redis + RabbitMQ (topic exchange `examio.events`).
 
 For architecture diagrams and tech stack details, see [architecture.md](architecture.md).
 
@@ -69,12 +69,12 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 ┌────────────────────────▼────────────────────────────────────┐
 │               gateway-service :3000                        │
 │    HTTP proxy · rate limit 100 req/min · logging           │
-└──┬──────┬──────┬──────┬──────┬──────┬──────────────────────┘
-   │      │      │      │      │      │ HTTP
-   │gRPC  │gRPC  │gRPC  │gRPC  │gRPC  │ (AI study proxy)
-   ▼      ▼      ▼      ▼      ▼      ▼
-auth:3001 exam:3002 finance:3003 r2:3004 ocr-service
-gRPC:50051      gRPC:50053 gRPC:50054
+└──┬──────┬──────┬──────┬──────┬──────┬──────┬──────────────────────┐
+   │      │      │      │      │      │      │ HTTP
+   │gRPC  │gRPC  │gRPC  │gRPC  │gRPC  │gRPC  │ (AI study proxy)
+   ▼      ▼      ▼      ▼      ▼      ▼      ▼
+auth:3001 exam:3002 finance:3003 r2:3004 admin:7006 ocr-service
+gRPC:50051      gRPC:50053 gRPC:50054 gRPC:50056
          exam-service ←──────────────────┐
                   │ HTTP                │ gRPC (wallet check)
                   ▼                     │
@@ -93,6 +93,7 @@ Infrastructure: PostgreSQL (Prisma shared) · Redis (cache) · RabbitMQ (topic e
 | exam-service | 3002 | HTTP | Quiz/flashcard/exam authoring, attempts, AI orchestration |
 | finance-service | 3003 HTTP / 50053 gRPC | HTTP + gRPC | Wallet, SePay QR payments, subscriptions |
 | r2-service | 3004 HTTP / 50054 gRPC | HTTP + gRPC | Cloudflare R2 storage |
+| admin-service | 7006 HTTP / 50056 gRPC | HTTP + gRPC | Admin dashboard: users, stats, finance, logs, audit |
 | ocr-service | gRPC 50053 (default) | gRPC | OCR processing (delegates to Python FastAPI worker) |
 | ai-service | 8000 | HTTP | RAG, document processing, AI chat (Python FastAPI) |
 
@@ -102,13 +103,14 @@ Infrastructure: PostgreSQL (Prisma shared) · Redis (cache) · RabbitMQ (topic e
 
 ### HTTP Proxy (gateway → downstream)
 
-gateway-service proxies HTTP requests to downstream services by URL prefix. Downstream services use shared `AuthGuard` (Prisma-direct session validation via `SessionValidationMiddleware`) rather than calling the gRPC AuthService for every request.
+gateway-service proxies HTTP requests to downstream services by URL prefix. Admin routes (`/api/v1/admin/*`) are routed to `admin-service` (port 7006) via `ProxyService.forwardWithAuth`. Downstream services use shared `AuthGuard` (Prisma-direct session validation via `SessionValidationMiddleware`) rather than calling the gRPC AuthService for every request. Admin routes use `AdminGuard` (standalone JWT verify + Prisma lookup) instead of `AuthGuard`.
 
 ### gRPC (synchronous, internal)
 
 - auth-service `AuthService` (port 50051): token validation, session lookup
 - finance-service `WalletService` (port 50053): credit deduction, balance check
 - r2-service `R2Service` (port 50054): signed upload URLs, file deletion
+- admin-service `AdminService` (port 50056): admin operations (not yet exposed to other services)
 - ocr-service `OcrService` (port 50053 default): document OCR
 
 > **Unresolved**: ocr-service defaults to gRPC port 50053, colliding with finance-service. Needs port reassignment.

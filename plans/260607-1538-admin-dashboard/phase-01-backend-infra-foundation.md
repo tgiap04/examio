@@ -15,8 +15,8 @@
 - **Date:** 2026-06-07
 - **Track:** Backend (B)
 - **Priority:** P0 (foundation — unblocks all admin phases)
-- **Implementation status:** pending
-- **Review status:** pending
+- **Implementation status:** done
+- **Review status:** done
 
 Bootstrap nền tảng cho admin-service: Prisma model `AdminAudit` + migration, scaffold NestJS service mới, `AdminGuard` trong `libs/common`, gateway ProxyService extension, env + nest-cli wiring.
 
@@ -149,3 +149,13 @@ apps/gateway-service/src/
 - Phase 02 (frontend-foundation) chạy song song — không phụ thuộc phase này.
 - Phase 03 (bootstrap) cần Prisma model từ phase này.
 - Phase 04–07 cần scaffold service từ phase này.
+
+## Implementation Notes
+
+- Prisma models placed in separate files under `libs/database/src/models/` (not inline in `schema.prisma`): `admin-audit.prisma`, `user.prisma`, `payment.prisma`
+- AdminAudit, User.isBanned, User.deletedAt, Payment refund comment all implemented as planned
+- AdminGuard extends AuthGuard, throws ForbiddenException when `isAdmin !== true`
+- ProxyService union extended with `'admin'` + `ADMIN_SERVICE_URL`
+- Admin service scaffolded at `apps/admin-service/` with port 7006
+- nest-cli.json updated, package.json updated with `dev:admin` script
+- **Prisma migration status unknown** — `prisma:merge && prisma:migrate` not confirmed run

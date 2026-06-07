@@ -22,6 +22,8 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **AI Service** — Standalone Python FastAPI service responsible for RAG (document retrieval), embedding generation, AI chat orchestration, and AI-assisted quiz/flashcard generation. Exam-service calls it via HTTP.
 
+**Admin Service** — NestJS service providing the admin dashboard backend. Handles KPI/stats, user management (ban/unban/delete/grant admin), finance operations (refund/credit adjust/tier change), log streaming (SSE via ticket exchange), and audit log query. Exposed via gateway proxy at `/api/v1/admin/*` (HTTP port 7006) and gRPC on port 50056. Uses `AdminGuard` in `@examio/common` (standalone JWT verify + `User.isAdmin` check) instead of `AuthGuard`.
+
 **Answer Token (JWT)** — A signed JSON Web Token submitted by the client when a student finishes an exam. Contains the map of question IDs to selected answers. The server validates the signature before grading — preventing answer forgery or tampering.
 
 **Assess Type** — A discriminator on ExamSession controlling access mode: `0=PUBLIC` means anyone with the link can join; `1=PRIVATE` requires an access code or explicit whitelist.

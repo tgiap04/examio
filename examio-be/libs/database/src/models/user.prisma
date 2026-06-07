@@ -8,6 +8,8 @@ model User {
     bio        String?
     isAdmin    Boolean  @default(false)
     isVerified Boolean  @default(false)
+    isBanned   Boolean  @default(false)
+    deletedAt  DateTime?
     password   String?
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt
@@ -34,6 +36,7 @@ model User {
     pinnedFlashcards          UserPinnedFlashcard[]
     pinnedExamRooms           UserPinnedExamRoom[]
     flashcardStudyProgress    FlashcardStudyProgress[]
+    adminAudits               AdminAudit[]
 }
 
 // Subscription tiers: 0=none, 1=basic, 2=advanced, 3=vip

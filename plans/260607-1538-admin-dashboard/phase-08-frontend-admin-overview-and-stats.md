@@ -17,8 +17,8 @@
 - **Date:** 2026-06-07
 - **Track:** Frontend (F)
 - **Priority:** P1
-- **Implementation status:** pending
-- **Review status:** pending
+- **Implementation status:** done
+- **Review status:** done
 
 2 trang admin: Overview (4 KPI + 3 mini charts) + Stats (range selector 7d/30d/90d với 3 charts lớn). Áp dụng DESIGN.md tokens (cream surface, coral accent, dark navy cho KPI).
 
@@ -215,3 +215,15 @@ export function MiniChartCard({ title, data, type }: Props) {
 
 - Phase 09 (frontend users + finance + logs + audit) — chạy song song với phase này.
 - Phase 10 (integration) — replace mock data với real API, test e2e.
+
+## Implementation Notes
+
+- KpiCard: dark navy surface (`#181715`), cream text, coral accent, format helpers for VND currency + numbers
+- MiniChartCard: Recharts (line/bar/area), height 120, coral stroke/fill
+- StatChart: Recharts large (height 300), full tooltip + legend
+- RangeSelector: antd `Segmented` with 7d/30d/90d options
+- AdminOverviewPage: 4 KPI grid + 3 mini charts, loading skeleton, error state with retry
+- AdminStatsPage: range selector + 3 full-width charts (userGrowth line, traffic bar, revenue area)
+- AdminStatsPage was added as a new page (not originally scoped in phase 08, moved from phase 09 area)
+- Data sourced from `useAdminStore().overview` and `useAdminStore().stats`
+- Cache 5 min via store, refetch on range change or manual refresh

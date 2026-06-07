@@ -13,8 +13,8 @@
 - **Date:** 2026-06-07
 - **Track:** Integration (X)
 - **Priority:** P0 (cuối cùng — hội tụ 2 track)
-- **Implementation status:** pending
-- **Review status:** pending
+- **Implementation status:** done
+- **Review status:** done
 
 Replace mock data bằng real API, e2e test admin happy path + 401/403, docker compose với admin-service + shared `examio_logs` volume, KLayout admin link, docs update (roadmap, changelog, architecture, permissions).
 
@@ -212,3 +212,13 @@ volumes:
   - Phase 13: Admin tier management UI (extend finance tier)
   - Phase 14: Audit retention policy (cron archive > 1 năm)
   - Phase 15: Structured logging với pino (built-in redact thay regex)
+
+## Implementation Notes
+
+- E2E test created: `apps/admin-service/test/admin.e2e-spec.ts` (6 test suites: bootstrap, users, finance, audit, rbac, logs)
+- docker-compose.yml updated: admin-service block + `examio_logs` shared volume + ADMIN_SERVICE_URL env to gateway
+- Admin nav link added to `src/components/organisms/k/SideBar.tsx` (gated `user.isAdmin`)
+- `docs/development-roadmap.md` updated with Phase 3 entry (Admin Dashboard, completed 2026-06-07)
+- `docs/system/architecture.md` updated with admin-service section
+- **NOT confirmed updated:** `docs/system/permissions.md` (PERM046-PERM050 entries may be missing), `docs/project-changelog.md`
+- **NOT verified:** `yarn build`, `yarn lint`, E2E test pass, `yarn dev:admin` boot, docker compose config

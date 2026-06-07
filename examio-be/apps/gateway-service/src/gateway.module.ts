@@ -3,10 +3,12 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { HttpModule } from '@nestjs/axios';
 import { AuthModule } from '@examio/common';
+import { RedisModule } from '@examio/redis';
 
 import { GatewayController } from './gateway.controller';
 import { ProxyMiddleware } from './middleware/proxy.middleware';
 import { ProxyService } from './services/proxy.service';
+import { LogPublisherService } from './common/log-publisher.service';
 
 // Auth
 import { AuthProxyController } from './controllers/auth-proxy.controller';
@@ -43,9 +45,13 @@ import { R2ProxyController } from './controllers/r2-proxy.controller';
 import { WebhookProxyController } from './controllers/webhook-proxy.controller';
 import { StudentProxyController } from './controllers/student-proxy.controller';
 
+// Admin
+import { AdminProxyController } from './controllers/admin-proxy.controller';
+
 @Module({
     imports: [
         AuthModule,
+        RedisModule,
         // Rate limiting: 100 requests per minute
         ThrottlerModule.forRoot([
             {
@@ -86,6 +92,8 @@ import { StudentProxyController } from './controllers/student-proxy.controller';
         WebhookProxyController,
         // Student
         StudentProxyController,
+        // Admin
+        AdminProxyController,
     ],
     providers: [
         {
@@ -93,6 +101,7 @@ import { StudentProxyController } from './controllers/student-proxy.controller';
             useClass: ThrottlerGuard,
         },
         ProxyService,
+        LogPublisherService,
     ],
 })
 export class GatewayModule implements NestModule {

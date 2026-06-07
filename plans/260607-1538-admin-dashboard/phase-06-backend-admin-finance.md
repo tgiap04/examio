@@ -15,8 +15,8 @@
 - **Date:** 2026-06-07
 - **Track:** Backend (B)
 - **Priority:** P0 (highest financial risk — most audited actions)
-- **Implementation status:** pending
-- **Review status:** pending
+- **Implementation status:** done
+- **Review status:** done
 
 3 thao tác tài chính cao rủi ro: refund, cộng/trừ credits (wallet adjustment), đổi tier subscription. Mỗi action ghi `AdminAudit` BẮT BUỘC với payload đầy đủ. Atomicity qua `prisma.$transaction` + isolation `Serializable` chống race condition. Refund extend `Payment.status` enum thêm `4 = refunded`.
 
@@ -254,3 +254,16 @@ export class AdminFinanceService {
 - Phase 07 (admin-logs-and-gateway) — không phụ thuộc phase này, có thể chạy song song.
 - Phase 09 (frontend AdminFinance) — consume 3 endpoints này.
 - Phase 10 (integration) — e2e test full flow.
+
+## Implementation Notes
+
+- 3 endpoints: POST /admin/finance/refund, /admin/finance/credit, /admin/finance/tier
+- All mutations wrapped in `prisma.$transaction` with `Serializable` isolation
+- Refund: status check (only paid=1 can be refunded) → set status=4 → create reversal WalletTransaction → update wallet balance (credits only, not subscription)
+- Credit: balance check for SUBTRACT → insufficient balance → 400
+- Tier change: upsert UserSubscription, call finance-service via HTTP proxy
+- AuditWriter.write() called inside transaction for atomic audit trail
+- Cache invalidation (`invalidateOverview` + `invalidateSeries`) called after mutation
+- Reason required (min 10, max 500 chars) enforced via Zod validation
+- Idempotency: double-refund returns 409
+- Throttler stricter at 10 req/min (financial actions)

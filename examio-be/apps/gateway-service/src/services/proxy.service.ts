@@ -21,6 +21,7 @@ export class ProxyService {
         auth: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
         exam: process.env.EXAM_SERVICE_URL || 'http://localhost:3002',
         finance: process.env.FINANCE_SERVICE_URL || 'http://localhost:3003',
+        admin: process.env.ADMIN_SERVICE_URL || 'http://localhost:7006',
     };
 
     constructor(private readonly httpService: HttpService) {}
@@ -29,7 +30,7 @@ export class ProxyService {
      * Forward request tới target service
      */
     async forward(
-        service: 'auth' | 'exam' | 'finance',
+        service: 'auth' | 'exam' | 'finance' | 'admin',
         request: ProxyRequest
     ): Promise<any> {
         const baseUrl = this.serviceUrls[service];
@@ -84,7 +85,7 @@ export class ProxyService {
      * Trả về redirect URL để browser tự redirect
      */
     async forwardWithRedirect(
-        service: 'auth' | 'exam' | 'finance',
+        service: 'auth' | 'exam' | 'finance' | 'admin',
         request: ProxyRequest
     ): Promise<{ redirectUrl?: string; data?: any; headers?: any }> {
         const baseUrl = this.serviceUrls[service];
@@ -147,7 +148,7 @@ export class ProxyService {
      * Forward với JWT token
      */
     async forwardWithAuth(
-        service: 'auth' | 'exam' | 'finance',
+        service: 'auth' | 'exam' | 'finance' | 'admin',
         request: ProxyRequest,
         token: string
     ): Promise<any> {
@@ -164,7 +165,7 @@ export class ProxyService {
      * Forward với JWT token và custom timeout (cho streaming/long-running requests)
      */
     async forwardWithAuthAndTimeout(
-        service: 'auth' | 'exam' | 'finance',
+        service: 'auth' | 'exam' | 'finance' | 'admin',
         request: ProxyRequest,
         token: string,
         timeoutMs: number
@@ -213,7 +214,7 @@ export class ProxyService {
      * This bypasses body parsing and forwards the request as-is
      */
     async forwardRaw(
-        service: 'auth' | 'exam' | 'finance',
+        service: 'auth' | 'exam' | 'finance' | 'admin',
         req: Request,
         path: string
     ): Promise<any> {
