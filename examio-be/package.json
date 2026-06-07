@@ -27,9 +27,10 @@
         "prisma:studio": "prisma studio --schema=libs/database/src/schema.prisma",
         "prisma:deploy": "yarn prisma:merge && prisma migrate deploy --schema=libs/database/src/schema.prisma",
         "prisma:seed": "./node_modules/.bin/ts-node libs/database/prisma/seed.ts",
+        "seed:dev": "./node_modules/.bin/jiti libs/database/prisma/seed-dev.ts",
         "start:prod": "node dist/apps/codecraft-be/main",
-        "bootstrap:admin": "ts-node -r tsconfig-paths/register apps/admin-service/src/commands/cli.ts",
-        "bootstrap:admin:list": "ts-node -r tsconfig-paths/register apps/admin-service/src/commands/cli.ts list",
+        "bootstrap:admin": "node -r tsconfig-paths/register apps/admin-service/dist/commands/cli.js",
+        "bootstrap:admin:list": "node -r tsconfig-paths/register apps/admin-service/dist/commands/cli.js list",
         "bootstrap:admin:grant": "ts-node -r tsconfig-paths/register apps/admin-service/src/commands/cli.ts grant",
         "bootstrap:admin:revoke": "ts-node -r tsconfig-paths/register apps/admin-service/src/commands/cli.ts revoke"
     },

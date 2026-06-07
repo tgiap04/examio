@@ -133,6 +133,30 @@ PAYMENT_QR_BANK_CODE=your_bank_code
 PAYMENT_WEBHOOK_SECRET_KEY=your_webhook_secret
 ```
 
+#### Admin Bootstrap & Seed
+```bash
+# Comma-separated list of admin emails (bootstrap on admin-service startup)
+ADMIN_EMAILS=admin@examio.vn
+# Default password for newly created admin accounts. ALSO consumed by
+# `yarn run seed:dev` (libs/database/prisma/seed-dev.ts) so seeded users
+# share the same password as bootstrap-created admins. Override per-run
+# with SEED_PASSWORD=<value> yarn run seed:dev.
+ADMIN_DEFAULT_PASSWORD=ChangeMe123!
+```
+
+> When deploying to a fresh database, the **seed** service runs
+> automatically as part of `docker compose up -d` — it depends on the
+> **migration** service (waits for it to finish), executes
+> `yarn run seed:dev` against the production `DATABASE_URL`, then exits.
+> The script picks up `ADMIN_DEFAULT_PASSWORD` from `deploy/.env`, so
+> seeded users share the same password as admins created by the
+> admin-service bootstrap. Idempotent — safe to re-run.
+>
+> To re-seed manually (e.g. after editing `seed-dev.ts`):
+> ```bash
+> docker compose run --rm seed
+> ```
+
 #### OAuth Providers (Optional)
 Configure Google, Facebook, and GitHub OAuth if needed.
 

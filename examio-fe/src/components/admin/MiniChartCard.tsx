@@ -31,9 +31,9 @@ export interface MiniChartCardProps {
   showAxis?: boolean;
 }
 
-const PRIMARY = "#cc785c";
-const GRID = "#e6dfd8";
-const AXIS_TEXT = "#6c6a64";
+const PRIMARY = "var(--coral)";
+const GRID = "var(--hairline)";
+const AXIS_TEXT = "var(--muted-text)";
 
 function formatXAxis(date: string): string {
   // Expecting YYYY-MM-DD
@@ -82,7 +82,7 @@ export function MiniChartCard({
   const hasData = Array.isArray(data) && data.length > 0;
 
   return (
-    <div className={cn("rounded-xl bg-surface-card p-5", className)}>
+    <div className={cn("rounded-lg bg-surface-card p-6", className)}>
       <div className="mb-3 flex items-center justify-between">
         <h3 className="text-sm font-medium text-ink">{title}</h3>
       </div>
@@ -117,10 +117,11 @@ export function MiniChartCard({
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#faf9f5",
-                    border: "1px solid #e6dfd8",
+                    backgroundColor: "var(--canvas)",
+                    border: "1px solid var(--hairline)",
                     borderRadius: 8,
                     fontSize: 12,
+                    color: "var(--ink)",
                   }}
                   labelFormatter={(label) => formatXAxis(String(label))}
                 />
@@ -153,10 +154,11 @@ export function MiniChartCard({
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#faf9f5",
-                    border: "1px solid #e6dfd8",
+                    backgroundColor: "var(--canvas)",
+                    border: "1px solid var(--hairline)",
                     borderRadius: 8,
                     fontSize: 12,
+                    color: "var(--ink)",
                   }}
                   labelFormatter={(label) => formatXAxis(String(label))}
                 />
@@ -182,10 +184,11 @@ export function MiniChartCard({
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#faf9f5",
-                    border: "1px solid #e6dfd8",
+                    backgroundColor: "var(--canvas)",
+                    border: "1px solid var(--hairline)",
                     borderRadius: 8,
                     fontSize: 12,
+                    color: "var(--ink)",
                   }}
                   labelFormatter={(label) => formatXAxis(String(label))}
                 />

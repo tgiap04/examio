@@ -38,9 +38,9 @@ export function AdminLayout() {
   };
 
   return (
-    <div className="flex min-h-screen w-full bg-[#faf9f5] text-ink">
-      <aside className="hidden w-64 shrink-0 border-r border-hairline bg-[#faf9f5] md:flex md:flex-col">
-        <div className="flex h-16 items-center border-b border-hairline px-5 text-lg font-semibold">
+    <div className="flex min-h-screen w-full bg-canvas text-ink">
+      <aside className="hidden w-64 shrink-0 border-r border-hairline bg-canvas md:flex md:flex-col">
+        <div className="flex h-16 items-center border-b border-hairline px-5 font-display text-lg font-normal tracking-tight">
           Examio Admin
         </div>
         <nav className="flex-1 space-y-1 px-3 py-4">
@@ -65,21 +65,21 @@ export function AdminLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b border-hairline bg-[#faf9f5] px-4 md:px-8">
-          <h1 className="truncate text-base font-semibold md:text-lg">
+        <header className="flex h-16 items-center justify-between border-b border-hairline bg-canvas px-4 md:px-8">
+          <h1 className="truncate font-display text-base font-normal tracking-tight md:text-lg">
             {currentTitle}
           </h1>
           <div className="flex items-center gap-3">
             <span className="hidden text-sm text-ink/70 sm:inline">
               {user?.name || user?.username || "Admin"}
             </span>
-            <span className="rounded-full bg-coral/10 px-2 py-0.5 text-xs font-medium text-coral">
+            <span className="rounded-pill bg-coral/10 px-2 py-0.5 text-xs font-medium text-coral">
               Admin
             </span>
             <button
               type="button"
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 rounded-md border border-hairline bg-[#faf9f5] px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-surface-card"
+              className="inline-flex items-center gap-1.5 rounded-md border border-hairline bg-canvas px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-surface-card"
             >
               <LogOut className="h-3.5 w-3.5" />
               {t("actions.logout")}

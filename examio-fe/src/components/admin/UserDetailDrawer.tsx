@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Drawer, Descriptions, Tag, Skeleton, Empty, Alert } from "antd";
+import { Drawer, Descriptions, Skeleton, Empty, Alert } from "antd";
 import { useTranslation } from "react-i18next";
 import { getUserApi } from "@/apis/adminApi";
+import { BadgePill } from "@/components/admin/BadgePill";
 
 interface UserDetailDrawerProps {
   userId: number | null;
@@ -82,7 +83,7 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
       {data && (
         <div className="space-y-6">
           <section>
-            <h3 className="mb-3 text-sm font-semibold uppercase text-ink/60">
+            <h3 className="mb-3 font-display text-sm font-normal tracking-tight text-ink/70">
               {t("users.detail.basicInfo")}
             </h3>
             <Descriptions column={1} size="small" bordered>
@@ -96,19 +97,19 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
                 {data.name}
               </Descriptions.Item>
               <Descriptions.Item label={t("users.columns.isAdmin")}>
-                <Tag color={data.isAdmin ? "geekblue" : "default"}>
+                <BadgePill variant={data.isAdmin ? "positive" : "neutral"}>
                   {data.isAdmin ? t("common.yes") : t("common.no")}
-                </Tag>
+                </BadgePill>
               </Descriptions.Item>
               <Descriptions.Item label={t("users.columns.isVerified")}>
-                <Tag color={data.isVerified ? "green" : "default"}>
+                <BadgePill variant={data.isVerified ? "positive" : "neutral"}>
                   {data.isVerified ? t("common.yes") : t("common.no")}
-                </Tag>
+                </BadgePill>
               </Descriptions.Item>
               <Descriptions.Item label={t("users.columns.isBanned")}>
-                <Tag color={data.isBanned ? "red" : "default"}>
+                <BadgePill variant={data.isBanned ? "negative" : "neutral"}>
                   {data.isBanned ? t("common.yes") : t("common.no")}
-                </Tag>
+                </BadgePill>
               </Descriptions.Item>
               <Descriptions.Item label={t("users.columns.createdAt")}>
                 {new Date(data.createdAt).toLocaleString()}
@@ -117,7 +118,7 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
           </section>
 
           <section>
-            <h3 className="mb-3 text-sm font-semibold uppercase text-ink/60">
+            <h3 className="mb-3 font-display text-sm font-normal tracking-tight text-ink/70">
               {t("users.detail.wallet")}
             </h3>
             <Descriptions column={1} size="small" bordered>
@@ -128,7 +129,7 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
           </section>
 
           <section>
-            <h3 className="mb-3 text-sm font-semibold uppercase text-ink/60">
+            <h3 className="mb-3 font-display text-sm font-normal tracking-tight text-ink/70">
               {t("users.detail.subscription")}
             </h3>
             {data.subscription
@@ -141,11 +142,11 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
                     {data.subscription.billingCycle}
                   </Descriptions.Item>
                   <Descriptions.Item label={t("users.detail.active")}>
-                    <Tag color={data.subscription.isActive ? "green" : "default"}>
+                    <BadgePill variant={data.subscription.isActive ? "positive" : "neutral"}>
                       {data.subscription.isActive
                         ? t("common.yes")
                         : t("common.no")}
-                    </Tag>
+                    </BadgePill>
                   </Descriptions.Item>
                   {data.subscription.nextPaymentDate && (
                     <Descriptions.Item
@@ -160,7 +161,7 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
           </section>
 
           <section>
-            <h3 className="mb-3 text-sm font-semibold uppercase text-ink/60">
+            <h3 className="mb-3 font-display text-sm font-normal tracking-tight text-ink/70">
               {t("users.detail.lastSession")}
             </h3>
             {data.lastSession

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { Select, Button, Space, Tag, Alert } from "antd";
+import { Select, Button, Space, Alert } from "antd";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import {
@@ -10,6 +10,7 @@ import {
 } from "@/apis/adminApi";
 import { useEventSource, EventSourceStatus } from "@/hooks/useEventSource";
 import { LogViewer } from "@/components/admin/LogViewer";
+import { BadgePill, type BadgeVariant } from "@/components/admin/BadgePill";
 import { toast } from "@/components/antd/toast";
 
 type Service = "auth" | "gateway";
@@ -162,9 +163,9 @@ export function LogStreamPanel() {
           </Button>
         </Space>
         <div className="ml-auto flex items-center gap-2">
-          <Tag color={statusColor(esStatus)}>
+          <BadgePill variant={statusVariant(esStatus)}>
             {t(`logs.status.${esStatus}`)}
-          </Tag>
+          </BadgePill>
           <span className="text-xs text-ink/50">
             {t("logs.lineCount", { count: lines.length })}
           </span>
@@ -180,17 +181,16 @@ export function LogStreamPanel() {
   );
 }
 
-function statusColor(s: EventSourceStatus): string {
+function statusVariant(s: EventSourceStatus): BadgeVariant {
   switch (s) {
     case "open":
-      return "green";
     case "connecting":
     case "reconnecting":
-      return "blue";
+      return "positive";
     case "error":
     case "closed":
-      return "red";
+      return "negative";
     default:
-      return "default";
+      return "neutral";
   }
 }

@@ -51,6 +51,19 @@ Full-stack admin dashboard implementation, completing Phase 3 of the development
 - Vietnamese + English i18n: `public/locales/{vi,en}/admin.json`
 - KLayout sidebar: admin-only "Trang quản trị" nav link (visible when `user.isAdmin`)
 
+#### Admin UI design-token realignment
+All admin pages and components now strictly follow `DESIGN.md` tokens — no hardcoded hex, no antd `Tag` preset colors, no `shadow-inner`, no off-spec radii.
+
+- New `BadgePill` component (3 brand variants: `positive`/`negative`/`neutral`) replaces every antd `<Tag color="geekblue|green|red|blue|volcano|purple|orange|cyan">` in admin (10 sites)
+- `AdminLayout` body + sidebar + header + logout button: `bg-[#faf9f5]` → `bg-canvas` (token-driven, dark-mode safe)
+- `LogViewer` terminal surface: `bg-[#181715] text-[#e6dfd8] shadow-inner` → `bg-surface-dark text-on-dark` (shadow dropped per DESIGN §Elevation)
+- `MiniChartCard` + `StatChart`: raw hex consts `PRIMARY/GRID/AXIS_TEXT` → CSS-var reads; tooltip inline hex → `var(--canvas)` / `var(--hairline)`; `rounded-xl` → `rounded-lg` (12px content card)
+- `KpiCard` `rounded-xl` → `rounded-lg`
+- `RangeSelector` active tab: `text-white` → `text-on-primary`
+- All admin page h1s: `text-2xl font-semibold` → `font-display text-3xl font-normal tracking-tight` (per DESIGN §Typography: display weight 400, negative tracking)
+- `UserDetailDrawer` section h3s: drop `uppercase`, switch to display style
+- `AuditTable` JSON pre block: `bg-[#faf9f5]` → `bg-canvas`
+
 **Database — Prisma schema additions**
 
 ```prisma

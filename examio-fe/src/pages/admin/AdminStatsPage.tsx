@@ -3,35 +3,26 @@ import { useTranslation } from "react-i18next";
 import { useAdminStore } from "@/stores/useAdminStore";
 import { RangeSelector, type Range } from "@/components/admin/RangeSelector";
 import { StatChart } from "@/components/admin/StatChart";
-import type { SeriesPoint } from "@/apis/adminApi";
 
-interface SeriesState {
-  data: SeriesPoint[] | null;
-  loading: boolean;
-  error: string | null;
-}
-
-function selectSeries(name: string) {
-  return (s: ReturnType<typeof useAdminStore.getState>): SeriesState => {
-    const entry = s.series[name];
-    if (!entry) {
-      return { data: null, loading: false, error: null };
-    }
-    return {
-      data: entry.data,
-      loading: entry.loading,
-      error: entry.error,
-    };
-  };
-}
+// IMPORTANT: select the entry by its stable `s.series[name]` reference.
+// `useSyncExternalStore` requires `getSnapshot` to return the SAME
+// reference for unchanged state, otherwise React loops. A selector that
+// builds a new object literal each call (e.g. `{ data, loading, error }`)
+// breaks that contract and triggers "Maximum update depth exceeded".
+const EMPTY_SERIES = {
+  data: null,
+  loading: false,
+  error: null,
+  lastFetched: null,
+} as const;
 
 export default function AdminStatsPage() {
   const { t } = useTranslation("admin");
   const [range, setRange] = useState<Range>("30d");
 
-  const signups = useAdminStore(selectSeries("signups"));
-  const traffic = useAdminStore(selectSeries("traffic"));
-  const revenue = useAdminStore(selectSeries("revenue"));
+  const signups = useAdminStore((s) => s.series.signups ?? EMPTY_SERIES);
+  const traffic = useAdminStore((s) => s.series.traffic ?? EMPTY_SERIES);
+  const revenue = useAdminStore((s) => s.series.revenue ?? EMPTY_SERIES);
 
   useEffect(() => {
     void useAdminStore.getState().fetchSeries("signups", range, true);
@@ -53,7 +44,7 @@ export default function AdminStatsPage() {
     <div className="space-y-6">
       <div className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
         <div>
-          <h1 className="font-display text-3xl text-ink">
+          <h1 className="font-display text-3xl font-normal tracking-tight text-ink">
             {t("pages.stats.title")}
           </h1>
           <p className="mt-1 text-sm text-ink/60">

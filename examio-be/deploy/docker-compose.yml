@@ -432,6 +432,32 @@ services:
         restart: 'no'
         logging: *default-logging
 
+    # ==================== SEED ====================
+    # Runs `yarn run seed:dev` once and exits. Idempotent — safe to re-run.
+    # Picks up ADMIN_DEFAULT_PASSWORD / ADMIN_EMAILS from `deploy/.env`
+    # via env_file so seeded users share the same password as admins
+    # created by the admin-service bootstrap.
+    seed:
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile.seed
+        container_name: examio-seed
+        environment:
+            - DATABASE_URL=${DATABASE_URL}
+            - ADMIN_EMAILS=${ADMIN_EMAILS}
+            - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD}
+        env_file:
+            - .env
+        depends_on:
+            migration:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+        networks:
+            - examio-network
+        restart: 'no'
+        logging: *default-logging
+
 networks:
     examio-network:
         name: examio-network
