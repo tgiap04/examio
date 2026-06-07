@@ -29,7 +29,7 @@ export default function AdminAuditPage() {
     let mounted = true;
     (async () => {
       try {
-        const res = await listUsersApi({ isAdmin: true, size: 100 });
+        const res = await listUsersApi({ isAdmin: true, pageSize: 100 });
         if (mounted) {
           const list: UserRow[] = res?.data ?? res ?? [];
           setAdminOptions(list);

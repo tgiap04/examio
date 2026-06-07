@@ -19,7 +19,7 @@
         "dev:ocr": "nest start ocr-service --watch",
         "dev:ocr-python": "cd apps/ocr-service && PYTHONPATH=src:../../olmocr OLMOCR_PATH=../../olmocr python -m src.backend.main",
         "dev:ai": "cd apps/ai-service && PYTHONPATH=src SSL_CERT_FILE=$(./venv/bin/python -c 'import certifi; print(certifi.where())') ./venv/bin/uvicorn src.backend.main:app --reload --port 8000",
-        "dev:all": "concurrently \"yarn dev:gateway\" \"yarn dev:auth\" \"yarn dev:exam\" \"yarn dev:finance\" \"yarn dev:r2\" \"yarn dev:ai\"",
+        "dev:all": "concurrently \"yarn dev:gateway\" \"yarn dev:auth\" \"yarn dev:exam\" \"yarn dev:finance\" \"yarn dev:admin\" \"yarn dev:r2\" \"yarn dev:ai\"",
         "prisma:merge": "prisma-merge -b libs/database/src/base.prisma -s 'libs/database/src/models/*.prisma' -o libs/database/src/schema.prisma",
         "prisma:generate": "prisma generate --schema=libs/database/src/schema.prisma",
         "prisma:migrate": "yarn prisma:merge && prisma migrate dev --schema=libs/database/src/schema.prisma",
@@ -85,7 +85,7 @@
         "rxjs": "^7.8.2",
         "swagger-ui-express": "^5.0.1",
         "tesseract.js": "5.0.1",
-        "zod": "^4.0.5"
+        "zod": "^3.23.8"
     },
     "devDependencies": {
         "@nestjs/cli": "^11.0.7",

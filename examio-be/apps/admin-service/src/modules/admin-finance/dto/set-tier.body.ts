@@ -10,10 +10,10 @@ export const SUBSCRIPTION_TIER = {
 
 export const SetTierBodySchema = z.object({
     userId: z
-        .string({ error: 'userId is required' })
+        .string({ required_error: 'userId is required' })
         .min(1, { message: 'userId is required' }),
     tier: z
-        .number({ error: 'tier is required' })
+        .number({ required_error: 'tier is required' })
         .int({ message: 'tier must be an integer' })
         .refine(
             (v) => v === 0 || v === 1 || v === 2 || v === 3,
@@ -21,7 +21,7 @@ export const SetTierBodySchema = z.object({
         ),
     billingCycle: z.enum(['monthly', 'yearly']).optional(),
     reason: z
-        .string({ error: 'reason is required' })
+        .string({ required_error: 'reason is required' })
         .min(10, { message: 'Reason must be at least 10 characters' })
         .max(500, { message: 'Reason must be at most 500 characters' }),
 });

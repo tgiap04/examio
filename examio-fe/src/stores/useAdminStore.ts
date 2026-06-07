@@ -33,13 +33,13 @@ interface AdminState {
     data: UserRow[];
     total: number;
     page: number;
-    size: number;
+    pageSize: number;
   }>;
   audit: ResourceState<{
     data: AuditRow[];
     total: number;
     page: number;
-    size: number;
+    pageSize: number;
   }>;
   fetchOverview: (force?: boolean) => Promise<void>;
   fetchSeries: (
