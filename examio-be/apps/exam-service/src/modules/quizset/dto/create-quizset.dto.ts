@@ -30,14 +30,14 @@ export class CreateQuizsetDto extends createZodDto(CreateQuizsetSchema) {
         example: false,
         required: false,
     })
-    isPublic?: boolean;
+    isPublic: boolean;
 
     @ApiProperty({
         description: 'Indicates if the quiz set is pinned',
         example: false,
         required: false,
     })
-    isPinned?: boolean;
+    isPinned: boolean;
 
     @ApiProperty({
         description: 'Tags associated with the quiz set',
@@ -45,7 +45,7 @@ export class CreateQuizsetDto extends createZodDto(CreateQuizsetSchema) {
         required: false,
         type: [String],
     })
-    tags?: string[];
+    tags: string[];
 
     @ApiProperty({
         description: 'URL of the thumbnail image for the quiz set',

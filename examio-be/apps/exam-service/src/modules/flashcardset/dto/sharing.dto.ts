@@ -31,7 +31,7 @@ export class FlashcardSetUpdateSharingSettingsDto extends createZodDto(
         required: false,
         type: [String],
     })
-    whitelist?: string[];
+    whitelist: string[];
 }
 
 // DTO for verifying access code

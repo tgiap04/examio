@@ -40,7 +40,7 @@ export class CreateFlashcardLabelDto extends createZodDto(CreateFlashcardLabelSc
         example: 0,
         required: false,
     })
-    order?: number;
+    order: number;
 }
 
 // ==================== UPDATE LABEL ====================

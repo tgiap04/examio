@@ -108,16 +108,16 @@ export class FlashcardsetController {
             isPublic:
                 body.isPublic !== undefined
                     ? body.isPublic === 'true' || body.isPublic === true
-                    : undefined,
+                    : false,
             isPinned:
                 body.isPinned !== undefined
                     ? body.isPinned === 'true' || body.isPinned === true
-                    : undefined,
+                    : false,
             tags: body.tags
                 ? typeof body.tags === 'string'
                     ? JSON.parse(body.tags)
                     : body.tags
-                : undefined,
+                : [],
             thumbnail: body.thumbnail,
         };
 
@@ -204,16 +204,16 @@ export class FlashcardsetController {
             isPublic:
                 body.isPublic !== undefined
                     ? body.isPublic === 'true' || body.isPublic === true
-                    : undefined,
+                    : false,
             isPinned:
                 body.isPinned !== undefined
                     ? body.isPinned === 'true' || body.isPinned === true
-                    : undefined,
+                    : false,
             tags: body.tags
                 ? typeof body.tags === 'string'
                     ? JSON.parse(body.tags)
                     : body.tags
-                : undefined,
+                : [],
             thumbnail: body.thumbnail,
         };
 

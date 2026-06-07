@@ -1384,16 +1384,16 @@ export class AIService {
             creditCharged,
         });
 
-        // Process file asynchronously via HTTP to AI service
+        // Trigger async OCR processing (generation is handled separately via regenerate endpoint)
         this.processFileAsync(
             userStorage.id,
             user.id,
-            dto.typeResult || 1,
-            dto.quantityQuizz || 10,
-            dto.quantityFlashcard || 10,
-            dto.modelType,
-            dto.isNarrowSearch ?? false,
-            dto.keyword?.trim() || undefined
+            1,
+            10,
+            10,
+            undefined,
+            false,
+            undefined
         ).catch((err) =>
             this.logger.error(`Background processing failed: ${err.message}`)
         );

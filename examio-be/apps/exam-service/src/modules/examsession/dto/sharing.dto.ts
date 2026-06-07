@@ -31,7 +31,7 @@ export class ExamSessionUpdateSharingSettingsDto extends createZodDto(
         example: ['user_123', 'user_456'],
         required: false,
     })
-    whitelist?: string[];
+    whitelist: string[];
 }
 
 // ================== VERIFY ACCESS CODE ==================
