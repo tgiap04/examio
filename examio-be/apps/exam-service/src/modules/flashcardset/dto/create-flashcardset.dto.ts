@@ -32,14 +32,14 @@ export class CreateFlashcardsetDto extends createZodDto(
         example: false,
         required: false,
     })
-    isPublic?: boolean;
+    isPublic: boolean;
 
     @ApiProperty({
         description: 'Indicates if the flashcard set is pinned',
         example: false,
         required: false,
     })
-    isPinned?: boolean;
+    isPinned: boolean;
 
     @ApiProperty({
         description: 'Tags associated with the flashcard set',
@@ -47,7 +47,7 @@ export class CreateFlashcardsetDto extends createZodDto(
         required: false,
         type: [String],
     })
-    tags?: string[];
+    tags: string[];
 
     @ApiProperty({
         description: 'URL of the thumbnail image for the flashcard set',

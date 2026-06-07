@@ -40,7 +40,7 @@ export class CreateLabelDto extends createZodDto(CreateLabelSchema) {
         example: 0,
         required: false,
     })
-    order?: number;
+    order: number;
 }
 
 // ==================== UPDATE LABEL ====================

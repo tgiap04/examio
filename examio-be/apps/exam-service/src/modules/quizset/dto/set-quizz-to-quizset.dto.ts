@@ -11,7 +11,7 @@ export const SetQuizzToQuizsetSchema = z.object({
         .array(
             z.object({
                 question: z
-                    .array(z.string())
+                    .string()
                     .min(1, { message: 'Question must not be empty' }),
                 options: z
                     .array(z.string())

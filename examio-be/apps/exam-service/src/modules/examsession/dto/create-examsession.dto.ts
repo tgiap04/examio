@@ -67,7 +67,7 @@ export class CreateExamSessionDto extends createZodDto(
         example: false,
         required: false,
     })
-    autoJoinByLink?: boolean;
+    autoJoinByLink: boolean;
 
     @ApiProperty({
         description: 'Assessment type: PUBLIC (0) or PRIVATE (1)',
@@ -75,21 +75,21 @@ export class CreateExamSessionDto extends createZodDto(
         enum: ASSESS_TYPE,
         required: false,
     })
-    assessType?: ASSESS_TYPE;
+    assessType: ASSESS_TYPE;
 
     @ApiProperty({
         description: 'Whether participants can retake the exam',
         example: false,
         required: false,
     })
-    allowRetake?: boolean;
+    allowRetake: boolean;
 
     @ApiProperty({
         description: 'Maximum number of attempts allowed',
         example: 1,
         required: false,
     })
-    maxAttempts?: number;
+    maxAttempts: number;
 
     @ApiProperty({
         description: '6-digit access code for private sessions',
@@ -103,21 +103,21 @@ export class CreateExamSessionDto extends createZodDto(
         example: ['user_123', 'user_456'],
         required: false,
     })
-    whitelist?: string[];
+    whitelist: string[];
 
     @ApiProperty({
         description: 'Whether to show detailed answers after submission',
         example: true,
         required: false,
     })
-    showAnswersAfterSubmit?: boolean;
+    showAnswersAfterSubmit: boolean;
 
     @ApiProperty({
         description: 'Minimum score percentage to pass (0-100, 0 = no minimum)',
         example: 50,
         required: false,
     })
-    passingScore?: number;
+    passingScore: number;
 
     @ApiProperty({
         description: 'Total number of questions for this session (null = all questions)',
@@ -132,7 +132,7 @@ export class CreateExamSessionDto extends createZodDto(
         enum: QUESTION_SELECTION_MODE,
         required: false,
     })
-    questionSelectionMode?: QUESTION_SELECTION_MODE;
+    questionSelectionMode: QUESTION_SELECTION_MODE;
 
     @ApiProperty({
         description: 'Configuration for label-based question selection. Array of { labelId, count }',
@@ -146,5 +146,5 @@ export class CreateExamSessionDto extends createZodDto(
         example: false,
         required: false,
     })
-    shuffleQuestions?: boolean;
+    shuffleQuestions: boolean;
 }
