@@ -44,7 +44,7 @@ export function RangeSelector({ value, onChange, className }: RangeSelectorProps
             className={cn(
               "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
               active
-                ? "bg-coral text-white"
+                ? "bg-coral text-on-primary"
                 : "text-ink/70 hover:bg-surface-card hover:text-ink",
             )}
           >

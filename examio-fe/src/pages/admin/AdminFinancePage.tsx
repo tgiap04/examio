@@ -11,7 +11,7 @@ export default function AdminFinancePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">{t("pages.finance.title")}</h1>
+        <h1 className="font-display text-3xl font-normal tracking-tight text-ink">{t("pages.finance.title")}</h1>
         <p className="text-sm text-ink/60">{t("pages.finance.subtitle")}</p>
       </div>
 
@@ -28,7 +28,7 @@ export default function AdminFinancePage() {
       </Space>
 
       <section>
-        <h2 className="mb-3 text-base font-semibold">
+        <h2 className="mb-3 font-display text-base font-normal tracking-tight text-ink/70">
           {t("finance.recentTitle")}
         </h2>
         <AuditTable

@@ -31,9 +31,9 @@ export interface StatChartProps {
   height?: number;
 }
 
-const PRIMARY = "#cc785c";
-const GRID = "#e6dfd8";
-const AXIS_TEXT = "#6c6a64";
+const PRIMARY = "var(--coral)";
+const GRID = "var(--hairline)";
+const AXIS_TEXT = "var(--muted-text)";
 
 const vndFormatter = new Intl.NumberFormat("vi-VN", {
   style: "currency",
@@ -110,9 +110,9 @@ export function StatChart({
   const hasData = Array.isArray(data) && data.length > 0;
 
   return (
-    <div className={cn("rounded-xl bg-surface-card p-5", className)}>
+    <div className={cn("rounded-lg bg-surface-card p-6", className)}>
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="font-display text-lg text-ink">{title}</h3>
+        <h3 className="font-display text-lg font-normal tracking-tight text-ink">{title}</h3>
       </div>
       <div className="w-full" style={{ height }}>
         {loading ? (
@@ -143,10 +143,11 @@ export function StatChart({
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#faf9f5",
-                    border: "1px solid #e6dfd8",
+                    backgroundColor: "var(--canvas)",
+                    border: "1px solid var(--hairline)",
                     borderRadius: 8,
                     fontSize: 12,
+                    color: "var(--ink)",
                   }}
                   labelFormatter={(label) => formatXAxis(String(label))}
                   formatter={(value) => formatTooltip(value, format)}
@@ -183,10 +184,11 @@ export function StatChart({
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#faf9f5",
-                    border: "1px solid #e6dfd8",
+                    backgroundColor: "var(--canvas)",
+                    border: "1px solid var(--hairline)",
                     borderRadius: 8,
                     fontSize: 12,
+                    color: "var(--ink)",
                   }}
                   labelFormatter={(label) => formatXAxis(String(label))}
                   formatter={(value) => formatTooltip(value, format)}
@@ -215,10 +217,11 @@ export function StatChart({
                 />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "#faf9f5",
-                    border: "1px solid #e6dfd8",
+                    backgroundColor: "var(--canvas)",
+                    border: "1px solid var(--hairline)",
                     borderRadius: 8,
                     fontSize: 12,
+                    color: "var(--ink)",
                   }}
                   labelFormatter={(label) => formatXAxis(String(label))}
                   formatter={(value) => formatTooltip(value, format)}

@@ -7,7 +7,6 @@ import {
   Button,
   Space,
   Popconfirm,
-  Tag,
   Tooltip,
   Skeleton,
   Alert,
@@ -28,6 +27,7 @@ import {
 import { toast } from "@/components/antd/toast";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { UserDetailDrawer } from "@/components/admin/UserDetailDrawer";
+import { BadgePill } from "@/components/admin/BadgePill";
 
 const { RangePicker } = DatePicker;
 
@@ -129,9 +129,9 @@ export function UserTable({ onAction }: UserTableProps) {
       key: "isAdmin",
       width: 100,
       render: (val: boolean) => (
-        <Tag color={val ? "geekblue" : "default"}>
+        <BadgePill variant={val ? "positive" : "neutral"}>
           {val ? t("common.yes") : t("common.no")}
-        </Tag>
+        </BadgePill>
       ),
     },
     {
@@ -140,9 +140,9 @@ export function UserTable({ onAction }: UserTableProps) {
       key: "isVerified",
       width: 110,
       render: (val: boolean) => (
-        <Tag color={val ? "green" : "default"}>
+        <BadgePill variant={val ? "positive" : "neutral"}>
           {val ? t("common.yes") : t("common.no")}
-        </Tag>
+        </BadgePill>
       ),
     },
     {
@@ -151,9 +151,9 @@ export function UserTable({ onAction }: UserTableProps) {
       key: "isBanned",
       width: 100,
       render: (val: boolean) => (
-        <Tag color={val ? "red" : "default"}>
+        <BadgePill variant={val ? "negative" : "neutral"}>
           {val ? t("common.yes") : t("common.no")}
-        </Tag>
+        </BadgePill>
       ),
     },
     {

@@ -4,18 +4,36 @@ import axios from 'axios';
 @Injectable()
 export class TurnstileService {
     private readonly logger = new Logger(TurnstileService.name);
-    private readonly secretKey = process.env.TURNSTILE_SECRET_KEY;
 
     /**
      * Verify Cloudflare Turnstile token
      * @param token Turnstile token from frontend
      */
     async verify(token: string): Promise<boolean> {
-        if (!this.secretKey) {
+        // Production-only verification.
+        //
+        // Rationale: in development / staging the frontend may run on
+        // localhost or an unregistered host, the site key is usually the
+        // production one, and the resulting `success: false` would block
+        // real users. We only require Turnstile when running in
+        // production. To force-enable verification in non-production
+        // (e.g. for an end-to-end smoke test), set TURNSTILE_ENFORCE=1.
+        if (
+            process.env.NODE_ENV !== 'production' &&
+            process.env.TURNSTILE_ENFORCE !== '1'
+        ) {
             this.logger.warn(
-                'TURNSTILE_SECRET_KEY not configured. Skipping verification.'
+                `Skipping Turnstile verification (NODE_ENV=${process.env.NODE_ENV ?? 'undefined'}).`
             );
             return true;
+        }
+
+        const secretKey = process.env.TURNSTILE_SECRET_KEY;
+        if (!secretKey) {
+            this.logger.error(
+                'TURNSTILE_SECRET_KEY is required in production. Rejecting request.'
+            );
+            throw new BadRequestException('Xác thực bảo mật thất bại');
         }
 
         if (!token) {
@@ -24,7 +42,7 @@ export class TurnstileService {
 
         try {
             const params = new URLSearchParams();
-            params.append('secret', this.secretKey);
+            params.append('secret', secretKey);
             params.append('response', token);
 
             const response = await axios.post(

@@ -48,7 +48,7 @@ export default function AdminAuditPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-semibold">{t("pages.audit.title")}</h1>
+        <h1 className="font-display text-3xl font-normal tracking-tight text-ink">{t("pages.audit.title")}</h1>
         <p className="text-sm text-ink/60">{t("pages.audit.subtitle")}</p>
       </div>
 

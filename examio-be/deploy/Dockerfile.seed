@@ -1,0 +1,19 @@
+# Prisma Seed Runner - Minimal image
+# Runs `yarn run seed:dev` against the configured DATABASE_URL and exits.
+# Idempotent: upserts users/wallets/payments/audit, safe to re-run.
+FROM node:20-alpine AS base
+RUN corepack enable && corepack prepare yarn@4.9.2 --activate
+WORKDIR /app
+
+COPY package.json yarn.lock .yarnrc.yml ./
+COPY libs ./libs
+
+RUN yarn install --immutable && \
+    yarn prisma:merge && \
+    yarn prisma:generate && \
+    rm -rf /root/.cache /tmp/*
+
+COPY deploy/entrypoint-seed.sh ./entrypoint-seed.sh
+RUN chmod +x ./entrypoint-seed.sh
+
+CMD ["./entrypoint-seed.sh"]

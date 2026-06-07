@@ -36,12 +36,12 @@ export function LogViewer({
     <div
       ref={containerRef}
       onScroll={handleScroll}
-      className={`overflow-auto rounded-md border border-hairline bg-[#181715] p-3 font-mono text-[12px] leading-5 text-[#e6dfd8] shadow-inner ${className}`}
+      className={`overflow-auto rounded-md border border-hairline bg-surface-dark p-3 font-mono text-[12px] leading-5 text-on-dark ${className}`}
       style={{ minHeight: 360, maxHeight: 540 }}
     >
       {visible.length === 0
         ? (
-          <div className="italic text-[#a99f91]">
+          <div className="italic text-on-dark-soft">
             {emptyText ?? t("logs.empty")}
           </div>
         )

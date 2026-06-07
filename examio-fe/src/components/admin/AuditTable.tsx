@@ -1,10 +1,11 @@
 import { useMemo } from "react";
-import { Table, Tag, Space, Skeleton, Alert, Button } from "antd";
+import { Table, Space, Skeleton, Alert, Button } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
 import { useAdminStore } from "@/stores/useAdminStore";
 import { AuditRow, ListAuditQuery } from "@/apis/adminApi";
+import { BadgePill, type BadgeVariant } from "@/components/admin/BadgePill";
 
 interface AuditTableProps {
   defaultAction?: string | string[];
@@ -27,16 +28,13 @@ function toActionQuery(
   return action;
 }
 
-function actionColor(action: string): string {
-  if (action.startsWith("admin.finance.refund")) return "red";
-  if (action.startsWith("admin.finance.credit")) return "orange";
-  if (action.startsWith("admin.finance.tier")) return "purple";
-  if (action.startsWith("admin.user.ban")) return "red";
-  if (action.startsWith("admin.user.unban")) return "green";
-  if (action.startsWith("admin.user.grant")) return "blue";
-  if (action.startsWith("admin.user.revoke")) return "volcano";
-  if (action.startsWith("admin.user.update")) return "cyan";
-  return "default";
+function actionVariant(action: string): BadgeVariant {
+  if (action.startsWith("admin.finance.refund")) return "negative";
+  if (action.startsWith("admin.finance.credit")) return "positive";
+  if (action.startsWith("admin.user.ban")) return "negative";
+  if (action.startsWith("admin.user.unban")) return "positive";
+  if (action.startsWith("admin.user.grant")) return "positive";
+  return "neutral";
 }
 
 export function AuditTable({
@@ -94,7 +92,7 @@ export function AuditTable({
       dataIndex: "action",
       key: "action",
       width: 200,
-      render: (val: string) => <Tag color={actionColor(val)}>{val}</Tag>,
+      render: (val: string) => <BadgePill variant={actionVariant(val)}>{val}</BadgePill>,
     },
     {
       title: t("audit.columns.target"),
@@ -157,7 +155,7 @@ export function AuditTable({
             }}
             expandable={{
               expandedRowRender: (row) => (
-                <pre className="m-0 max-w-full overflow-auto rounded bg-[#faf9f5] p-3 font-mono text-xs text-ink/80">
+                <pre className="m-0 max-w-full overflow-auto rounded bg-canvas p-3 font-mono text-xs text-ink/80">
                   {JSON.stringify(row.metadata ?? {}, null, 2)}
                 </pre>
               ),

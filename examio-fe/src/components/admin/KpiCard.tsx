@@ -39,7 +39,7 @@ export function KpiCard({ label, value, format = "number", icon, className, load
   return (
     <div
       className={cn(
-        "rounded-xl bg-surface-card p-6 transition-colors",
+        "rounded-lg bg-surface-card p-6 transition-colors",
         className,
       )}
     >

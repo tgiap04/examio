@@ -3,27 +3,18 @@ import { useTranslation } from "react-i18next";
 import { useAdminStore } from "@/stores/useAdminStore";
 import { KpiCard } from "@/components/admin/KpiCard";
 import { MiniChartCard } from "@/components/admin/MiniChartCard";
-import type { SeriesPoint } from "@/apis/adminApi";
 
-interface SeriesState {
-  data: SeriesPoint[] | null;
-  loading: boolean;
-  error: string | null;
-}
-
-function selectSeries(name: string) {
-  return (s: ReturnType<typeof useAdminStore.getState>): SeriesState => {
-    const entry = s.series[name];
-    if (!entry) {
-      return { data: null, loading: false, error: null };
-    }
-    return {
-      data: entry.data,
-      loading: entry.loading,
-      error: entry.error,
-    };
-  };
-}
+// IMPORTANT: select the entry by its stable `s.series[name]` reference.
+// `useSyncExternalStore` requires `getSnapshot` to return the SAME
+// reference for unchanged state, otherwise React loops. A selector that
+// builds a new object literal each call (e.g. `{ data, loading, error }`)
+// breaks that contract and triggers "Maximum update depth exceeded".
+const EMPTY_SERIES = {
+  data: null,
+  loading: false,
+  error: null,
+  lastFetched: null,
+} as const;
 
 function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
@@ -44,9 +35,9 @@ export default function AdminOverviewPage() {
   const { t } = useTranslation("admin");
 
   const overview = useAdminStore((s) => s.overview);
-  const signups = useAdminStore(selectSeries("signups"));
-  const traffic = useAdminStore(selectSeries("traffic"));
-  const revenue = useAdminStore(selectSeries("revenue"));
+  const signups = useAdminStore((s) => s.series.signups ?? EMPTY_SERIES);
+  const traffic = useAdminStore((s) => s.series.traffic ?? EMPTY_SERIES);
+  const revenue = useAdminStore((s) => s.series.revenue ?? EMPTY_SERIES);
 
   useEffect(() => {
     void useAdminStore.getState().fetchOverview();
@@ -71,7 +62,7 @@ export default function AdminOverviewPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-display text-3xl text-ink">
+        <h1 className="font-display text-3xl font-normal tracking-tight text-ink">
           {t("pages.overview.title")}
         </h1>
         <p className="mt-1 text-sm text-ink/60">
