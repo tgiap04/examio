@@ -93,6 +93,15 @@
                 "tsConfigPath": "apps/finance-service/tsconfig.app.json"
             }
         },
+        "admin-service": {
+            "type": "application",
+            "root": "apps/admin-service",
+            "entryFile": "main",
+            "sourceRoot": "apps/admin-service/src",
+            "compilerOptions": {
+                "tsConfigPath": "apps/admin-service/tsconfig.app.json"
+            }
+        },
         "r2-service": {
             "type": "application",
             "root": "apps/r2-service",

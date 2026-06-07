@@ -17,8 +17,8 @@
 - **Date:** 2026-06-07
 - **Track:** Frontend (F)
 - **Priority:** P0 (foundation — unblocks all admin pages)
-- **Implementation status:** pending
-- **Review status:** pending
+- **Implementation status:** done
+- **Review status:** done
 
 Foundation cho 6 trang admin: `AdminRoute` guard, `adminApi.ts` typed surface, `useAdminStore`, `AdminLayout` shell, route wiring, antd theme token mapping, locale `vi/admin.json`.
 
@@ -138,3 +138,14 @@ examio-fe/src/
 - Phase 01 (backend infra) chạy song song — không phụ thuộc.
 - Phase 08 (overview + stats pages) cần `adminApi.ts` + `useAdminStore` + `AdminLayout` từ phase này.
 - Phase 09 (users + finance + logs + audit) cũng vậy.
+
+## Implementation Notes
+
+- All 6 admin pages stubbed as placeholders (filled in phases 08/09)
+- AdminRoute guard checks `useAuthStore.user.isAdmin === true`, redirects non-admin to `/k`
+- adminApi.ts typed surface covers all endpoints including SSE log tail
+- useAdminStore with per-slice cache (5 min TTL) + invalidate helpers
+- AdminLayout with sidebar (6 items) + topbar + content outlet
+- 6 routes wired in `src/routes/index.tsx`
+- `vi/admin.json` + `en/admin.json` created with Vietnamese strings
+- `AdminOverviewPage.tsx` stub created (filled in phase 08)

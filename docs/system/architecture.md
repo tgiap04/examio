@@ -42,6 +42,7 @@ graph TB
     GW -->|HTTP proxy| AUTH
     GW -->|HTTP proxy| EXAM
     GW -->|HTTP proxy| FIN
+    GW -->|HTTP proxy| ADMIN
     GW -->|HTTP proxy| R2
     EXAM -->|gRPC wallet check| FIN
     EXAM -->|gRPC R2 upload| R2
@@ -52,9 +53,11 @@ graph TB
     AUTH -->|Prisma| PG
     EXAM -->|Prisma| PG
     FIN -->|Prisma| PG
+    ADMIN -->|Prisma| PG
     AUTH -->|cache| REDIS
     EXAM -->|cache| REDIS
     FIN -->|cache| REDIS
+    ADMIN -->|cache| REDIS
     R2 -->|upload| R2STORE
     EXAM -->|embeddings (vector)| PG
 ```
@@ -68,6 +71,7 @@ graph TB
 | `exam-service` | 3002 | — | Node 20+ | Quiz/flashcard authoring, exam sessions, AI orchestration |
 | `finance-service` | 3003 | 50053 | Node 20+ | Wallet, SePay QR payments, subscriptions |
 | `r2-service` | 3004 | 50054 | Node 20+ | Cloudflare R2 object storage (proxy) |
+| `admin-service` | 3006 | 50056 | Node 20+ | Admin dashboard: users, stats, finance, logs, audit |
 | `ocr-service` | — | 50053 (default — **port collision with finance**) | Node 20+ | OCR processing (delegates to Python) |
 | `ai-service` | 8000 | — | Python 3.12+ | RAG, document processing, AI chat (LangChain + LangGraph) |
 
@@ -124,7 +128,29 @@ graph LR
 
 **Defined but unused** (14 in `EventType` enum): all others
 
-### 4. AI Orchestration (HTTP + SSE streaming)
+### 4. Admin Service
+
+**Location**: `apps/admin-service/`
+**HTTP Port**: 7006 (mapped to 3006 externally)
+**gRPC Port**: 50056
+
+**Auth**: `AdminGuard` in `@examio/common` — standalone JWT verify + Prisma user lookup (avoids double `canActivate` from inheritance). Admin status checked via `User.isAdmin`.
+
+**Proxy**: gateway routes `/api/v1/admin/*` to `admin-service` via `ProxyService.forwardWithAuth`.
+
+**Modules** (6 total):
+- `AdminBootstrapModule` — application bootstrap, health
+- `AdminStatsModule` — KPI overview + time-series charts
+- `AdminFinanceModule` — wallet refunds, credit adjustments, subscription tier changes
+- `AdminLogsModule` — server-side log retrieval
+- `AdminUsersModule` — user CRUD, ban/unban, grant/revoke admin
+- `AdminAuditModule` — audit log query (one row per changed field per mutation)
+
+**Audit**: every admin mutation writes an `AdminAudit` row via `AuditWriterService` (shared, `@examio/common`). Fields captured: `adminId`, `targetId`, `action`, `payload` (JSON diff of changed fields), `ipAddress`, `userAgent`.
+
+**Rate limiting**: `ThrottlerModule` 30 req/min per admin (configured via `THROTTLE_ADMIN_LIMIT`).
+
+### 5. AI Orchestration (HTTP + SSE streaming)
 
 ```mermaid
 sequenceDiagram
@@ -271,6 +297,7 @@ graph TB
         AUTH[auth :3001/:50051]
         EXAM[exam :3002]
         FIN[finance :3003/:50053]
+        ADMIN[admin :3006/:50056]
         R2[r2 :3004/:50054]
         AI[ai :8000]
         OCR[ocr :gRPC]
@@ -282,17 +309,20 @@ graph TB
     GW --> AUTH
     GW --> EXAM
     GW --> FIN
+    GW --> ADMIN
     GW --> R2
     EXAM --> AI
     OCR --> AI
     AUTH --> PG
     EXAM --> PG
     FIN --> PG
+    ADMIN --> PG
     AUTH --> RMQ
     FIN --> RMQ
     AUTH --> REDIS
     EXAM --> REDIS
     FIN --> REDIS
+    ADMIN --> REDIS
 ```
 
 Docker Compose file: `examio-be/deploy/docker-compose.yml` (production-grade)

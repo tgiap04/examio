@@ -13,6 +13,7 @@ export * from './services/turnstile.service';
 
 // Guards
 export * from './guard/auth.guard';
+export * from './guard/admin.guard';
 export * from './guard/optional-auth.guard';
 export * from './guard/google-auth.guard';
 

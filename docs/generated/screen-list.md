@@ -42,6 +42,12 @@
 | SCR030 | FlashcardStudyPage | atomic | ~1 | Flashcard flip + study progress |
 | SCR031 | ExamSessionPage | atomic | ~1 | ExamRoomDetailTemplate |
 | SCR032 | ExamQuizPage | atomic | ~3 | Exam attempt, questions, cheating detection |
+| SCR033 | AdminOverviewPage | atomic | ~2 | KPI cards, quick stats, recent activity |
+| SCR034 | AdminStatsPage | atomic | ~4 | Time-series charts, user/exam/finance metrics |
+| SCR035 | AdminUsersPage | atomic | ~3 | User table with ban/unban/delete/grant actions |
+| SCR036 | AdminFinancePage | atomic | ~3 | Refund history, credit adjustments, tier changes |
+| SCR037 | AdminLogsPage | atomic | ~2 | Log viewer with SSE stream + polling fallback |
+| SCR038 | AdminAuditPage | atomic | ~2 | Audit log table with filters + export |
 
 ---
 
@@ -1063,10 +1069,176 @@ Active exam-taking interface. Fetches encrypted questions via `secure-quiz` endp
 
 ---
 
+## SCR033: AdminOverviewPage
+
+**Type**: atomic
+
+### Description
+
+Admin dashboard home page. Displays KPI cards (total users, active sessions, revenue today, pending refunds) and recent activity feed. Quick-navigate links to other admin sections.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| AdminKPICards | atomic | KPI stat cards (count, delta, trend) |
+| AdminRecentActivity | atomic | Recent admin actions feed |
+
+### Routes
+
+- `GET /api/v1/admin/bootstrap`
+- `GET /api/v1/admin/stats`
+
+### Auth
+
+- `AdminGuard` — `User.isAdmin = true` required. Non-admins receive 403.
+
+---
+
+## SCR034: AdminStatsPage
+
+**Type**: atomic
+
+### Description
+
+Detailed analytics page with time-series charts for user growth, exam sessions, revenue, and AI usage. Date range picker and export functionality.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| AdminTimeSeriesChart | atomic | Recharts time-series chart |
+| AdminDateRangePicker | atomic | Date range filter |
+| AdminStatsExport | atomic | CSV/JSON export |
+
+### Routes
+
+- `GET /api/v1/admin/stats`
+
+### Auth
+
+- `AdminGuard` — `User.isAdmin = true` required.
+
+---
+
+## SCR035: AdminUsersPage
+
+**Type**: atomic
+
+### Description
+
+User management page with paginated antd Table. Columns: avatar, name, email, role, status, created date. Row actions: ban, unban, soft-delete, grant admin, revoke admin. Search and filter by status/role.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| AdminUserTable | atomic | antd Table with pagination + filters |
+| AdminUserActions | atomic | Row action buttons (ban/unban/delete/grant) |
+| AdminBanDialog | atomic | Confirmation dialog for ban/unban |
+
+### Routes
+
+- `GET /api/v1/admin/users`
+- `PUT /api/v1/admin/users/:id/ban`
+- `PUT /api/v1/admin/users/:id/unban`
+- `DELETE /api/v1/admin/users/:id`
+- `PUT /api/v1/admin/users/:id/grant-admin`
+- `DELETE /api/v1/admin/users/:id/revoke-admin`
+
+### Auth
+
+- `AdminGuard` — `User.isAdmin = true` required.
+
+---
+
+## SCR036: AdminFinancePage
+
+**Type**: atomic
+
+### Description
+
+Finance management page with tabs: Refund History, Credit Adjustments, Subscription Tier Changes. Each tab shows a paginated antd Table with relevant details and action buttons.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| AdminFinanceTabs | atomic | Tabbed interface (refunds / credits / tiers) |
+| AdminRefundTable | atomic | Refund history table |
+| AdminCreditAdjustDialog | atomic | Dialog for manual credit adjustment |
+| AdminTierChangeDialog | atomic | Dialog for subscription tier change |
+
+### Routes
+
+- `GET /api/v1/admin/finance/refunds`
+- `POST /api/v1/admin/finance/refund`
+- `POST /api/v1/admin/finance/adjust-credit`
+- `PUT /api/v1/admin/finance/subscription-tier`
+
+### Auth
+
+- `AdminGuard` — `User.isAdmin = true` required.
+
+---
+
+## SCR037: AdminLogsPage
+
+**Type**: atomic
+
+### Description
+
+Server-side log viewer with real-time SSE streaming (ticket exchange) and polling fallback. Filter by log level (info/warn/error), service name, and time range. Logs displayed in scrollable terminal-style view.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| AdminLogViewer | atomic | Scrollable log display |
+| AdminLogFilters | atomic | Level/service/time range filters |
+| AdminLogStreamToggle | atomic | Toggle SSE vs polling mode |
+
+### Routes
+
+- `GET /api/v1/admin/logs`
+- `GET /api/v1/admin/logs/stream`
+
+### Auth
+
+- `AdminGuard` — `User.isAdmin = true` required.
+
+---
+
+## SCR038: AdminAuditPage
+
+**Type**: atomic
+
+### Description
+
+Audit log query page. Paginated antd Table showing `AdminAudit` rows: admin user, target, action, payload diff, IP, user agent, timestamp. Filters by action type, admin user, and date range. Export to CSV.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| AdminAuditTable | atomic | Paginated audit log table |
+| AdminAuditFilters | atomic | Action type, admin, date range filters |
+| AdminAuditExport | atomic | CSV export button |
+
+### Routes
+
+- `GET /api/v1/admin/audit`
+
+### Auth
+
+- `AdminGuard` — `User.isAdmin = true` required.
+
+---
+
 ## Summary
 
-- **Total Screens**: 32
-- **Atomic**: 26 (SCR001–SCR012, SCR014–SCR015, SCR017, SCR019–SCR024, SCR026, SCR028–SCR032)
+- **Total Screens**: 38
+- **Atomic**: 32 (SCR001–SCR012, SCR014–SCR015, SCR017, SCR019–SCR024, SCR026, SCR028–SCR038)
 - **Composite**: 6 (SCR013, SCR016, SCR018, SCR025, SCR027)
 - **Total Regions**: 16 across composite screens
 
@@ -1074,7 +1246,7 @@ Active exam-taking interface. Fetches encrypted questions via `secure-quiz` endp
 
 ## Cross-Reference Validation
 
-- [x] All SCR### codes are unique (SCR001–SCR032)
+- [x] All SCR### codes are unique (SCR001–SCR038)
 - [x] All SCR### codes are referenced in ScreenFlow.md
 - [x] All route URLs are properly formatted
 - [x] All SCR### codes are referenced in FeatureList.md

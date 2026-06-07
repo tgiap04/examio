@@ -3,7 +3,7 @@ model Payment {
     userId      String
     amount      Float
     currency    String
-    status      Int // 0 = unpaid, 1 = paid, 2 = overdue, 3 = cancelled
+    status      Int // 0=unpaid, 1=paid, 2=overdue, 3=cancelled, 4=refunded
     paymentType String    @default("credits") // credits | subscription
     expiresAt   DateTime? // Payment expires after 10 minutes, null for legacy
     orderId     String? // SePay order ID for VA management

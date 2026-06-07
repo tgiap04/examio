@@ -44,6 +44,7 @@
 | F011 | FlashcardStudy | ui | TypeScript | examio-fe | P1 |
 | F012 | ExamTaking | ui | TypeScript | examio-fe | P0 |
 | F013 | SessionCleanup | background | TypeScript | examio-be | P2 |
+| F014 | AdminDashboard | ui | TypeScript | examio-fe + examio-be | P1 |
 
 ## Feature Details
 
@@ -706,20 +707,76 @@
 
 ---
 
+### F014: AdminDashboard
+
+**Type**: ui
+**Description**: Admin dashboard providing privileged access to platform operations: KPI overview and analytics, user management (ban/unban/delete/grant admin), finance operations (refund/credit adjustment/subscription tier change), server-side log viewing with SSE streaming, and audit log query. Backed by `admin-service` (port 7006) with dedicated `AdminGuard`.
+
+**Workspace**: examio-fe + examio-be
+**Languages**: TypeScript
+**Components**: 6 pages
+
+**Related Screens**:
+- SCR033: AdminOverviewPage
+- SCR034: AdminStatsPage
+- SCR035: AdminUsersPage
+- SCR036: AdminFinancePage
+- SCR037: AdminLogsPage
+- SCR038: AdminAuditPage
+
+**Related User Stories**:
+- (none — internal operational tool; no external user stories)
+
+**Related APIs/Routes**:
+- (GET) `/api/v1/admin/bootstrap`
+- (GET) `/api/v1/admin/stats`
+- (GET) `/api/v1/admin/users`
+- (PUT) `/api/v1/admin/users/:id/ban`
+- (PUT) `/api/v1/admin/users/:id/unban`
+- (DELETE) `/api/v1/admin/users/:id`
+- (PUT) `/api/v1/admin/users/:id/grant-admin`
+- (DELETE) `/api/v1/admin/users/:id/revoke-admin`
+- (GET) `/api/v1/admin/finance/refunds`
+- (POST) `/api/v1/admin/finance/refund`
+- (POST) `/api/v1/admin/finance/adjust-credit`
+- (PUT) `/api/v1/admin/finance/subscription-tier`
+- (GET) `/api/v1/admin/audit`
+- (GET) `/api/v1/admin/logs`
+- (GET) `/api/v1/admin/logs/stream`
+
+**Related Data Models**:
+- User (isBanned, deletedAt fields added)
+- AdminAudit (new)
+
+**Related Background Logic**:
+- BL001: SessionCleanupCron (admin-service also uses ThrottlerModule)
+
+**Related Permissions**:
+- PERM046: AdminRouteAccess
+- PERM047: AdminUserManagement
+- PERM048: AdminGrantRevoke
+- PERM049: AdminFinanceRefund
+- PERM050: AdminCreditAdjustment
+- PERM051: AdminSubscriptionTierChange
+- PERM052: AdminAuditLogView
+- PERM053: AdminLogView
+
+---
+
 ## Summary
 
-- **Total Features**: 13
-- **Total Screens**: 32 (with 16 regions across 5 composite screens)
+- **Total Features**: 14
+- **Total Screens**: 38 (with 16 regions across 5 composite screens)
 - **Total User Stories**: 62
-- **Total Routes**: ~90
-- **Total Data Models**: 24
+- **Total Routes**: ~105
+- **Total Data Models**: 25
 - **Total Background Logic**: 5
-- **Total Permissions**: 45
+- **Total Permissions**: 53
 - **Languages Detected**: TypeScript
 
 ## Cross-Reference Validation
 
-- [x] All F### codes are unique (F001–F013)
+- [x] All F### codes are unique (F001–F014)
 - [x] All F### codes are referenced in UserStories.md
 - [x] All screen references are valid (SCR### or SCR###/REG### in ScreenList; bare-SCR refs and region refs both accepted)
 - [x] All user story references are valid (US### in UserStories)

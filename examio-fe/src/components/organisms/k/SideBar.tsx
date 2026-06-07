@@ -12,6 +12,7 @@ import {
   PanelsTopLeft as CardStackIcon,
   Rocket as RocketIcon,
   ScrollText as ReaderIcon,
+  Shield as AdminIcon,
 } from "lucide-react";
 import { FloatingDock } from "@/components/atoms/k/FloatingDock";
 import ProfileDropdown from "@/components/atoms/ProfileDropdown";
@@ -28,6 +29,17 @@ interface Profile {
   avatar: string;
   subscription?: string;
   model?: string;
+}
+
+interface SidebarItem {
+  name: string;
+  href: string;
+  icon: React.ReactNode;
+  label: string;
+  shortLabel?: string;
+  active: boolean;
+  restrictedByPolicy?: boolean;
+  adminOnly?: boolean;
 }
 
 interface SidebarKitProps {
@@ -66,7 +78,7 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
     }
   }, [user]);
 
-  const itemSiderbar = [
+  const itemSiderbar: SidebarItem[] = [
     {
       name: "Ai Tool",
       href: "/k/ai-tool",
@@ -139,11 +151,23 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
       shortLabel: "Lịch sử",
       active: currentPath === "/k/history",
     },
+    {
+      name: "Admin Dashboard",
+      href: "/admin",
+      icon: <AdminIcon className="w-5 h-5" />,
+      label: "Trang quản trị",
+      shortLabel: "Admin",
+      active: currentPath === "/admin",
+      adminOnly: true,
+    },
   ];
 
   const filteredSidebarItems = itemSiderbar.filter((item) => {
     if (item.restrictedByPolicy) {
       return canAccessGenAIKnowledgeManager(user);
+    }
+    if (item.adminOnly) {
+      return user?.isAdmin === true;
     }
 
     return true;

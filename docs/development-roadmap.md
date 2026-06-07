@@ -128,7 +128,25 @@ Priority: **P0** = blocking/correctness · **P1** = security/integrity · **P2**
 | 2.13.1 | Distributed lock for multi-instance deployments | backend |
 | 2.13.2 | Alerting on cron failure | platform |
 
-## Phase 3 — UX Polish & Spec Completeness (P3)
+## Phase 3 — Admin Dashboard
+
+| # | Item | Owner | Status |
+|---|------|-------|--------|
+| 3.1 | Admin service (port 7006, gRPC 50056) | backend | ✅ Complete |
+| 3.2 | 6 admin modules: bootstrap, stats, finance, logs, users, audit | backend | ✅ Complete |
+| 3.3 | Frontend admin pages (6 pages: overview, stats, users, finance, logs, audit) | frontend | ✅ Complete |
+| 3.4 | Ticket exchange SSE (server-sent events for real-time updates) | backend | ✅ Complete |
+| 3.5 | Soft delete for users (`isBanned` + `deletedAt`) | backend | ✅ Complete |
+| 3.6 | antd Table with pagination + filters on all list pages | frontend | ✅ Complete |
+
+Key decisions made during implementation:
+- `AdminGuard` lives in `@examio/common` — standalone JWT verify + DB lookup, avoids double `canActivate` from inheritance
+- Ticket exchange uses SSE (no WebSocket); graceful fallback to polling if SSE fails
+- User soft-delete: `isBanned = true` + `deletedAt = now()`; hard delete deferred
+- All admin mutations write one `AdminAudit` row per changed field
+- Admin service healthcheck: `GET /api/v1/health` (same pattern as other NestJS services)
+
+## Phase 4 — UX Polish & Spec Completeness (P3)
 
 | # | Item | Source | Owner |
 |---|------|--------|-------|

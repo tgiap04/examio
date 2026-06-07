@@ -14,8 +14,8 @@
 - **Date:** 2026-06-07
 - **Track:** Backend (B)
 - **Priority:** P1
-- **Implementation status:** pending
-- **Review status:** pending
+- **Implementation status:** done
+- **Review status:** done
 
 CRUD user cho admin: list/filter, get detail, update (ban/revoke isAdmin). Module audit: paginated query với filter theo adminId, action, date range. Shared `AuditWriter` service (full impl) dùng cho mọi mutation sau này.
 
@@ -190,3 +190,15 @@ admin-service/src/common/
 - Phase 06 (admin-finance) dùng `AuditWriter` từ phase này.
 - Phase 09 (frontend AdminUsers + AdminAudit pages) consume các endpoints này.
 - Phase 10 (integration) thêm e2e test.
+
+## Implementation Notes
+
+- User model updated: `isBanned @default(false)`, `deletedAt DateTime?`, `adminAudits AdminAudit[]` relation
+- Migration `add_user_ban_fields` not explicitly confirmed as run
+- AuditWriterService fully implemented (write + writeFromRequest), placed in `admin-service/src/common/`
+- AuditWriterModule exported as global-ish module for other admin modules
+- admin-users: 7 endpoints (list, get, update, ban, unban, grant, revoke)
+- admin-audit: paginated query with filters (adminId, action, date range)
+- Self-revoke-admin blocked with 400 "Cannot revoke own admin"
+- Password field never exposed via explicit Prisma `select`
+- Pagination max 100 enforced via Zod validator

@@ -81,6 +81,14 @@ RBAC with resource-ownership checks. Authenticated users have base access; teach
 | PERM043 | QuizSetVisibilityControl | resource-ownership | ManageQuizSetDetailPage |
 | PERM044 | FlashcardSetVisibilityControl | resource-ownership | ManageFlashcardSetDetailPage |
 | PERM045 | ExamRoomVisibilityControl | resource-ownership | ManageExamRoomDetailPage |
+| PERM046 | AdminRouteAccess | route-guard | AdminGuard / `@examio/common` |
+| PERM047 | AdminUserManagement | action-permission | AdminUsersModule |
+| PERM048 | AdminGrantRevoke | action-permission | AdminUsersModule |
+| PERM049 | AdminFinanceRefund | action-permission | AdminFinanceModule |
+| PERM050 | AdminCreditAdjustment | action-permission | AdminFinanceModule |
+| PERM051 | AdminSubscriptionTierChange | action-permission | AdminFinanceModule |
+| PERM052 | AdminAuditLogView | data-permission | AdminAuditModule |
+| PERM053 | AdminLogView | data-permission | AdminLogsModule |
 
 ---
 
@@ -1391,10 +1399,243 @@ An exam room owner can control access via: public (anyone with link), whitelist 
 
 ---
 
+## PERM046: AdminRouteAccess
+
+**Type**: route-guard
+**Enforced At**: `AdminGuard` in `@examio/common` — standalone JWT verify + Prisma user lookup (avoids double `canActivate` from inheritance). Admin status checked via `User.isAdmin`.
+
+### Description
+
+All `/api/v1/admin/*` routes require a valid JWT bearer token and `User.isAdmin = true`. AdminGuard performs its own JWT verification and Prisma user lookup independently of AuthGuard to avoid circular dependencies. ThrottlerModule enforces 30 req/min per admin session.
+
+### Related Routes
+
+- (GET) `/api/v1/admin/bootstrap`
+- (GET) `/api/v1/admin/stats`
+- (GET) `/api/v1/admin/users`
+- (PUT) `/api/v1/admin/users/:id/ban`
+- (PUT) `/api/v1/admin/users/:id/unban`
+- (DELETE) `/api/v1/admin/users/:id`
+- (PUT) `/api/v1/admin/users/:id/grant-admin`
+- (DELETE) `/api/v1/admin/users/:id/revoke-admin`
+- (GET) `/api/v1/admin/finance/refunds`
+- (POST) `/api/v1/admin/finance/refund`
+- (POST) `/api/v1/admin/finance/adjust-credit`
+- (PUT) `/api/v1/admin/finance/subscription-tier`
+- (GET) `/api/v1/admin/audit`
+- (GET) `/api/v1/admin/logs`
+- (GET) `/api/v1/admin/logs/stream`
+
+### Related Screens
+
+- SCR033 – AdminOverviewPage
+- SCR034 – AdminStatsPage
+- SCR035 – AdminUsersPage
+- SCR036 – AdminFinancePage
+- SCR037 – AdminLogsPage
+- SCR038 – AdminAuditPage
+
+### Permission Rules
+
+| Role | Allow | Conditions |
+|------|-------|------------|
+| guest | ✗ | Must authenticate as admin |
+| student | ✗ | 403 Forbidden |
+| teacher | ✗ | 403 Forbidden |
+| admin | ✓ | `User.isAdmin = true` + valid JWT |
+
+---
+
+## PERM047: AdminUserManagement
+
+**Type**: action-permission
+**Enforced At**: `AdminUsersModule` — `PUT /api/v1/admin/users/:id/ban`, `PUT /api/v1/admin/users/:id/unban`, `DELETE /api/v1/admin/users/:id`
+
+### Description
+
+An admin can ban a user (`User.isBanned = true`), unban a user, or soft-delete a user (`User.deletedAt = now()`). Soft-deleted users cannot log in. Banned users see a 403 "Account suspended" error. Every mutation writes an `AdminAudit` row via `AuditWriterService`.
+
+### Related Routes
+
+- (PUT) `/api/v1/admin/users/:id/ban`
+- (PUT) `/api/v1/admin/users/:id/unban`
+- (DELETE) `/api/v1/admin/users/:id`
+
+### Related Screens
+
+- SCR035 – AdminUsersPage
+
+### Permission Rules
+
+| Role | Allow | Conditions |
+|------|-------|------------|
+| admin | ✓ | `User.isAdmin = true` |
+| non-admin | ✗ | 403 Forbidden |
+
+---
+
+## PERM048: AdminGrantRevoke
+
+**Type**: action-permission
+**Enforced At**: `AdminUsersModule` — `PUT /api/v1/admin/users/:id/grant-admin`, `DELETE /api/v1/admin/users/:id/revoke-admin`
+
+### Description
+
+An admin can grant or revoke admin privileges for any user. Granting admin sets `User.isAdmin = true`; revoking sets it to `false`. This permission is distinct from PERM047 because it affects system-level roles, not account state. Every mutation writes an `AdminAudit` row.
+
+### Related Routes
+
+- (PUT) `/api/v1/admin/users/:id/grant-admin`
+- (DELETE) `/api/v1/admin/users/:id/revoke-admin`
+
+### Related Screens
+
+- SCR035 – AdminUsersPage
+
+### Permission Rules
+
+| Role | Allow | Conditions |
+|------|-------|------------|
+| admin | ✓ | `User.isAdmin = true` |
+| non-admin | ✗ | 403 Forbidden |
+
+---
+
+## PERM049: AdminFinanceRefund
+
+**Type**: action-permission
+**Enforced At**: `AdminFinanceModule` — `POST /api/v1/admin/finance/refund`
+
+### Description
+
+An admin can initiate a wallet refund for a user. The refund creates a `WalletTransaction` of type `refund` and credits the user's wallet. Refunds are recorded in `AdminAudit` with full payload.
+
+### Related Routes
+
+- (POST) `/api/v1/admin/finance/refund`
+
+### Related Screens
+
+- SCR036 – AdminFinancePage
+
+### Permission Rules
+
+| Role | Allow | Conditions |
+|------|-------|------------|
+| admin | ✓ | `User.isAdmin = true` |
+| non-admin | ✗ | 403 Forbidden |
+
+---
+
+## PERM050: AdminCreditAdjustment
+
+**Type**: action-permission
+**Enforced At**: `AdminFinanceModule` — `POST /api/v1/admin/finance/adjust-credit`
+
+### Description
+
+An admin can manually adjust a user's credit balance (positive or negative). The adjustment creates a `WalletTransaction` of type `adjustment`. Used for compensating errors or granting promotional credits.
+
+### Related Routes
+
+- (POST) `/api/v1/admin/finance/adjust-credit`
+
+### Related Screens
+
+- SCR036 – AdminFinancePage
+
+### Permission Rules
+
+| Role | Allow | Conditions |
+|------|-------|------------|
+| admin | ✓ | `User.isAdmin = true` |
+| non-admin | ✗ | 403 Forbidden |
+
+---
+
+## PERM051: AdminSubscriptionTierChange
+
+**Type**: action-permission
+**Enforced At**: `AdminFinanceModule` — `PUT /api/v1/admin/finance/subscription-tier`
+
+### Description
+
+An admin can change a user's subscription tier (upgrade/downgrade/cancel). The change updates `UserSubscription` and prorates or voids the current billing cycle as appropriate.
+
+### Related Routes
+
+- (PUT) `/api/v1/admin/finance/subscription-tier`
+
+### Related Screens
+
+- SCR036 – AdminFinancePage
+
+### Permission Rules
+
+| Role | Allow | Conditions |
+|------|-------|------------|
+| admin | ✓ | `User.isAdmin = true` |
+| non-admin | ✗ | 403 Forbidden |
+
+---
+
+## PERM052: AdminAuditLogView
+
+**Type**: data-permission
+**Enforced At**: `AdminAuditModule` — `GET /api/v1/admin/audit`
+
+### Description
+
+An admin can query the audit log — one row per changed field per admin mutation. Captured fields: `adminId`, `targetId`, `action`, `payload` (JSON diff), `ipAddress`, `userAgent`, `createdAt`. Supports pagination and date range filtering.
+
+### Related Routes
+
+- (GET) `/api/v1/admin/audit`
+
+### Related Screens
+
+- SCR038 – AdminAuditPage
+
+### Permission Rules
+
+| Role | Allow | Conditions |
+|------|-------|------------|
+| admin | ✓ | `User.isAdmin = true` |
+| non-admin | ✗ | 403 Forbidden |
+
+---
+
+## PERM053: AdminLogView
+
+**Type**: data-permission
+**Enforced At**: `AdminLogsModule` — `GET /api/v1/admin/logs`, `GET /api/v1/admin/logs/stream`
+
+### Description
+
+An admin can retrieve server-side application logs and stream them in real time via SSE (ticket exchange). Logs are filtered by level, service, and time range. Streaming is via `GET /api/v1/admin/logs/stream`; polling fallback is `GET /api/v1/admin/logs`.
+
+### Related Routes
+
+- (GET) `/api/v1/admin/logs`
+- (GET) `/api/v1/admin/logs/stream`
+
+### Related Screens
+
+- SCR037 – AdminLogsPage
+
+### Permission Rules
+
+| Role | Allow | Conditions |
+|------|-------|------------|
+| admin | ✓ | `User.isAdmin = true` |
+| non-admin | ✗ | 403 Forbidden |
+
+---
+
 ## Summary
 
-- **Total Permission Items**: 45
-- **By Type**: route-guard: 4, screen-permission: 2, action-permission: 10, data-permission: 9, role-based: 1, resource-ownership: 9, env-gate: 2, feature-flag: 1
+- **Total Permission Items**: 53
+- **By Type**: route-guard: 5, screen-permission: 2, action-permission: 13, data-permission: 11, role-based: 1, resource-ownership: 9, env-gate: 2, feature-flag: 1
 
 ---
 
