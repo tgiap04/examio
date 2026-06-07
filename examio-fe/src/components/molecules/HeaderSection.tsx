@@ -5,11 +5,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { LogOut, Menu, Moon, Sun, User, X } from "lucide-react";
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/components/antd/avatar";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuGroup,
@@ -23,6 +18,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { cn } from "@/lib/utils";
 import Logo from "../atoms/Logo";
 import LanguageSwitcher from "./language-switcher";
+import { Facehash } from "facehash";
 
 const menuItems = [
   { name: "nav.features", href: "/#features" },
@@ -132,12 +128,17 @@ export default function HeaderSection() {
             ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Avatar className="h-9 w-9 cursor-pointer border border-hairline">
-                    <AvatarImage src={user?.avatar} />
-                    <AvatarFallback className="bg-surface-card text-[12px] font-medium text-ink">
-                      {user?.username?.charAt(0).toUpperCase() ?? "U"}
-                    </AvatarFallback>
-                  </Avatar>
+                  {user?.avatar ? (
+                    <img
+                      src={user.avatar}
+                      alt={user.name}
+                      width={40}
+                      height={40}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <Facehash name={user?.name || "User"} size={40} className="text-coral" />
+                  )}
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="min-w-[180px]">
                   <DropdownMenuLabel className="font-semibold">

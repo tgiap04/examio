@@ -80,6 +80,20 @@ export class AdminFinanceController {
         return { success: true, data: result };
     }
 
+    /**
+     * Alias for `set-tier` so the FE admin dashboard
+     * (which calls `POST /admin/finance/tier`) can hit the same handler.
+     * Both routes are kept; the canonical path is `set-tier`.
+     */
+    @Post('tier')
+    @HttpCode(HttpStatus.OK)
+    async tier(
+        @Body() body: SetTierBodyDto,
+        @Req() req: AuthedAdminRequest
+    ) {
+        return this.setTier(body, req);
+    }
+
     private buildAuditContext(req: AuthedAdminRequest): AuditContext {
         const adminId = req.user?.id;
         if (!adminId) {

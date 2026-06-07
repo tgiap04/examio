@@ -44,7 +44,7 @@ export interface ListUsersQuery {
   isAdmin?: boolean;
   isBanned?: boolean;
   page?: number;
-  size?: number;
+  pageSize?: number;
 }
 
 export interface ListAuditQuery {
@@ -53,7 +53,7 @@ export interface ListAuditQuery {
   from?: string;
   to?: string;
   page?: number;
-  size?: number;
+  pageSize?: number;
 }
 
 export interface UpdateUserBody {
