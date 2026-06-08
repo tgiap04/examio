@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   Table,
   Input,
@@ -15,6 +15,7 @@ import type { ColumnsType } from "antd/es/table";
 import { SearchOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAdminStore } from "@/stores/useAdminStore";
 import {
@@ -51,7 +52,7 @@ export function UserTable({ onAction }: UserTableProps) {
     dateRange: null,
   });
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(10);
   const [drawerUserId, setDrawerUserId] = useState<number | null>(null);
   const [actionLoading, setActionLoading] = useState<number | null>(null);
 
@@ -72,14 +73,14 @@ export function UserTable({ onAction }: UserTableProps) {
     [debouncedSearch, filters, page, pageSize],
   );
 
-  const { data, loading, error, refetch } = useAdminStore((s) => ({
-    data: s.users.data,
-    loading: s.users.loading,
-    error: s.users.error,
-    refetch: s.fetchUsers,
-  }));
+  const usersData = useAdminStore((s) => s.users.data);
+  const usersLoading = useAdminStore((s) => s.users.loading);
+  const usersError = useAdminStore((s) => s.users.error);
+  const usersVersion = useAdminStore((s) => s.usersVersion);
 
-  useAdminStore.getState().fetchUsers(query);
+  useEffect(() => {
+    useAdminStore.getState().fetchUsers(query);
+  }, [query, usersVersion]);
 
   const isSelf = (row: UserRow) => currentUser?.id === row.id;
 
@@ -97,6 +98,9 @@ export function UserTable({ onAction }: UserTableProps) {
 
       useAdminStore.getState().invalidateUsers();
       useAdminStore.getState().invalidateOverview();
+      useAdminStore.getState().invalidateAudit();
+      // Re-fetch immediately so the table reflects the change
+      useAdminStore.getState().fetchUsers(query, true);
       toast.success(t(`users.actions.${action}Success`));
       onAction?.();
     } catch (err) {
@@ -161,7 +165,7 @@ export function UserTable({ onAction }: UserTableProps) {
       dataIndex: "createdAt",
       key: "createdAt",
       width: 160,
-      render: (val: string) => format(new Date(val), "yyyy-MM-dd HH:mm"),
+      render: (val: string) => format(new Date(val), "dd/MM/yyyy HH:mm", { locale: vi }),
     },
     {
       title: t("users.columns.actions"),
@@ -171,66 +175,68 @@ export function UserTable({ onAction }: UserTableProps) {
       render: (_, row) => {
         const self = isSelf(row);
         return (
-          <Space size="small">
-            {row.isAdmin ? (
-              <Tooltip
-                title={self ? t("users.actions.cannotRevokeSelf") : ""}
-              >
+          <div onClick={(e) => e.stopPropagation()} role="presentation">
+            <Space size="small">
+              {row.isAdmin ? (
+                <Tooltip
+                  title={self ? t("users.actions.cannotRevokeSelf") : ""}
+                >
+                  <Button
+                    size="small"
+                    danger
+                    disabled={self}
+                    loading={actionLoading === row.id}
+                    onClick={() => handleAction(row, "revoke")}
+                  >
+                    {t("users.actions.revokeAdmin")}
+                  </Button>
+                </Tooltip>
+              ) : (
                 <Button
                   size="small"
-                  danger
-                  disabled={self}
                   loading={actionLoading === row.id}
-                  onClick={() => handleAction(row, "revoke")}
+                  onClick={() => handleAction(row, "grant")}
                 >
-                  {t("users.actions.revokeAdmin")}
+                  {t("users.actions.grantAdmin")}
                 </Button>
-              </Tooltip>
-            ) : (
-              <Button
-                size="small"
-                loading={actionLoading === row.id}
-                onClick={() => handleAction(row, "grant")}
-              >
-                {t("users.actions.grantAdmin")}
-              </Button>
-            )}
-            {row.isBanned ? (
-              <Button
-                size="small"
-                loading={actionLoading === row.id}
-                onClick={() => handleAction(row, "unban")}
-              >
-                {t("users.actions.unban")}
-              </Button>
-            ) : (
-              <Popconfirm
-                title={t("users.actions.banConfirm")}
-                onConfirm={() => handleAction(row, "ban")}
-                okText={t("common.yes")}
-                cancelText={t("common.no")}
-              >
+              )}
+              {row.isBanned ? (
                 <Button
                   size="small"
-                  danger
                   loading={actionLoading === row.id}
+                  onClick={() => handleAction(row, "unban")}
                 >
-                  {t("users.actions.ban")}
+                  {t("users.actions.unban")}
                 </Button>
-              </Popconfirm>
-            )}
-          </Space>
+              ) : (
+                <Popconfirm
+                  title={t("users.actions.banConfirm")}
+                  onConfirm={() => handleAction(row, "ban")}
+                  okText={t("common.yes")}
+                  cancelText={t("common.no")}
+                >
+                  <Button
+                    size="small"
+                    danger
+                    loading={actionLoading === row.id}
+                  >
+                    {t("users.actions.ban")}
+                  </Button>
+                </Popconfirm>
+              )}
+            </Space>
+          </div>
         );
       },
     },
   ];
 
-  if (error) {
+  if (usersError) {
     return (
       <Alert
         type="error"
         message={t("users.loadError")}
-        description={error}
+        description={usersError}
         showIcon
         action={
           <Button size="small" onClick={() => useAdminStore.getState().fetchUsers(query, true)}>
@@ -241,8 +247,8 @@ export function UserTable({ onAction }: UserTableProps) {
     );
   }
 
-  const rows = data?.data ?? [];
-  const total = data?.total ?? 0;
+  const rows = usersData?.rows ?? [];
+  const total = usersData?.total ?? 0;
 
   return (
     <div className="space-y-4">
@@ -300,14 +306,14 @@ export function UserTable({ onAction }: UserTableProps) {
         />
       </div>
 
-      {loading && rows.length === 0 ? (
+      {usersLoading && rows.length === 0 ? (
         <Skeleton active paragraph={{ rows: 8 }} />
       ) : (
         <Table
           rowKey="id"
           columns={columns}
           dataSource={rows}
-          loading={loading}
+          loading={usersLoading}
           onRow={(row) => ({
             onClick: () => setDrawerUserId(row.id),
             style: { cursor: "pointer" },
@@ -332,7 +338,7 @@ export function UserTable({ onAction }: UserTableProps) {
           userId={drawerUserId}
           onClose={() => {
             setDrawerUserId(null);
-            refetch(query, true);
+            useAdminStore.getState().fetchUsers(query, true);
           }}
         />
       )}

@@ -14,20 +14,25 @@ const EMPTY_SERIES = {
   loading: false,
   error: null,
   lastFetched: null,
+  lastQueryKey: null,
 } as const;
 
 export default function AdminStatsPage() {
   const { t } = useTranslation("admin");
   const [range, setRange] = useState<Range>("30d");
 
-  const signups = useAdminStore((s) => s.series.signups ?? EMPTY_SERIES);
-  const traffic = useAdminStore((s) => s.series.traffic ?? EMPTY_SERIES);
-  const revenue = useAdminStore((s) => s.series.revenue ?? EMPTY_SERIES);
+  // Series cache is keyed by `${name}:${range}` so different ranges live in
+  // separate slots — switching between 7d/30d/90d never overwrites another.
+  const signups = useAdminStore((s) => s.series[`signups:${range}`] ?? EMPTY_SERIES);
+  const traffic = useAdminStore((s) => s.series[`traffic:${range}`] ?? EMPTY_SERIES);
+  const revenue = useAdminStore((s) => s.series[`revenue:${range}`] ?? EMPTY_SERIES);
 
   useEffect(() => {
-    void useAdminStore.getState().fetchSeries("signups", range, true);
-    void useAdminStore.getState().fetchSeries("traffic", range, true);
-    void useAdminStore.getState().fetchSeries("revenue", range, true);
+    // Without force, the cache (5-min TTL) skips the call when data
+    // for this name+range was already fetched in this session.
+    void useAdminStore.getState().fetchSeries("signups", range);
+    void useAdminStore.getState().fetchSeries("traffic", range);
+    void useAdminStore.getState().fetchSeries("revenue", range);
   }, [range]);
 
   const handleRetrySignups = () => {
@@ -57,7 +62,7 @@ export default function AdminStatsPage() {
       <div className="space-y-4">
         <StatChart
           title={t("stats.charts.signups")}
-          data={signups.data ?? []}
+          data={signups.data?.points ?? []}
           kind="line"
           loading={signups.loading}
           error={signups.error}
@@ -65,7 +70,7 @@ export default function AdminStatsPage() {
         />
         <StatChart
           title={t("stats.charts.traffic")}
-          data={traffic.data ?? []}
+          data={traffic.data?.points ?? []}
           kind="area"
           loading={traffic.loading}
           error={traffic.error}
@@ -73,7 +78,7 @@ export default function AdminStatsPage() {
         />
         <StatChart
           title={t("stats.charts.revenue")}
-          data={revenue.data ?? []}
+          data={revenue.data?.points ?? []}
           kind="bar"
           format="currency-vnd"
           loading={revenue.loading}

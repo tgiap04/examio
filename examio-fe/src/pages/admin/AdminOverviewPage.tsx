@@ -14,6 +14,7 @@ const EMPTY_SERIES = {
   loading: false,
   error: null,
   lastFetched: null,
+  lastQueryKey: null,
 } as const;
 
 function ErrorBlock({ message, onRetry }: { message: string; onRetry: () => void }) {
@@ -35,9 +36,11 @@ export default function AdminOverviewPage() {
   const { t } = useTranslation("admin");
 
   const overview = useAdminStore((s) => s.overview);
-  const signups = useAdminStore((s) => s.series.signups ?? EMPTY_SERIES);
-  const traffic = useAdminStore((s) => s.series.traffic ?? EMPTY_SERIES);
-  const revenue = useAdminStore((s) => s.series.revenue ?? EMPTY_SERIES);
+  // Series cache is keyed by compound key `${name}:${range}` so different
+  // ranges never overwrite each other.
+  const signups = useAdminStore((s) => s.series["signups:7d"] ?? EMPTY_SERIES);
+  const traffic = useAdminStore((s) => s.series["traffic:7d"] ?? EMPTY_SERIES);
+  const revenue = useAdminStore((s) => s.series["revenue:7d"] ?? EMPTY_SERIES);
 
   useEffect(() => {
     void useAdminStore.getState().fetchOverview();
@@ -81,17 +84,17 @@ export default function AdminOverviewPage() {
           />
           <KpiCard
             label={t("kpi.activeToday")}
-            value={overview.data?.activeUsers ?? null}
+            value={overview.data?.activeToday ?? null}
             loading={overview.loading}
           />
           <KpiCard
             label={t("kpi.proCount")}
-            value={overview.data?.totalRevenue ?? null}
+            value={overview.data?.proCount ?? null}
             loading={overview.loading}
           />
           <KpiCard
             label={t("kpi.vipCount")}
-            value={overview.data?.pendingPayments ?? null}
+            value={overview.data?.vipCount ?? null}
             loading={overview.loading}
           />
         </div>
@@ -100,7 +103,7 @@ export default function AdminOverviewPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <MiniChartCard
           title={t("overview.charts.signups7d")}
-          data={signups.data ?? []}
+          data={signups.data?.points ?? []}
           kind="line"
           loading={signups.loading}
           error={signups.error}
@@ -108,7 +111,7 @@ export default function AdminOverviewPage() {
         />
         <MiniChartCard
           title={t("overview.charts.traffic7d")}
-          data={traffic.data ?? []}
+          data={traffic.data?.points ?? []}
           kind="area"
           loading={traffic.loading}
           error={traffic.error}
@@ -116,7 +119,7 @@ export default function AdminOverviewPage() {
         />
         <MiniChartCard
           title={t("overview.charts.revenue30d")}
-          data={revenue.data ?? []}
+          data={revenue.data?.points ?? []}
           kind="bar"
           loading={revenue.loading}
           error={revenue.error}

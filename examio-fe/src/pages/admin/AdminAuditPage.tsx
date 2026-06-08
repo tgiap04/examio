@@ -2,20 +2,23 @@ import { useEffect, useState, useMemo } from "react";
 import { Select, DatePicker, Space, Button } from "antd";
 import { useTranslation } from "react-i18next";
 import { AuditTable } from "@/components/admin/AuditTable";
-import { listUsersApi, UserRow } from "@/apis/adminApi";
+import { UserRow } from "@/apis/adminApi";
+import { useAdminStore } from "@/stores/useAdminStore";
 
 const { RangePicker } = DatePicker;
 
-const ACTION_OPTIONS = [
-  "admin.finance.refund",
-  "admin.finance.credit",
-  "admin.finance.tier_change",
-  "admin.user.ban",
-  "admin.user.unban",
-  "admin.user.grant",
-  "admin.user.revoke",
-  "admin.user.update",
-];
+const ACTION_LABELS: Record<string, string> = {
+  "admin.finance.refund": "Hoàn tiền",
+  "admin.finance.credit": "Cộng tiền",
+  "admin.finance.tier_change": "Đổi gói",
+  "admin.user.ban": "Khóa người dùng",
+  "admin.user.unban": "Mở khóa người dùng",
+  "admin.user.grant": "Cấp quyền admin",
+  "admin.user.revoke": "Thu hồi quyền admin",
+  "admin.user.update": "Cập nhật thông tin",
+};
+
+const ACTION_OPTIONS = Object.keys(ACTION_LABELS);
 
 export default function AdminAuditPage() {
   const { t } = useTranslation("admin");
@@ -25,22 +28,13 @@ export default function AdminAuditPage() {
   const [dateRange, setDateRange] = useState<[string, string] | null>(null);
   const [filterToken, setFilterToken] = useState(0);
 
+  // Load admin list from the store (cached for 10 min, shared across pages).
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const res = await listUsersApi({ isAdmin: true, pageSize: 100 });
-        if (mounted) {
-          const list: UserRow[] = res?.data ?? res ?? [];
-          setAdminOptions(list);
-        }
-      } catch {
-        // ignore — admin list non-critical
-      }
-    })();
-    return () => {
-      mounted = false;
-    };
+    let cancelled = false;
+    useAdminStore.getState().fetchAdminList().then((list) => {
+      if (!cancelled) setAdminOptions(list);
+    });
+    return () => { cancelled = true; };
   }, []);
 
   const actionValue = useMemo(() => (action ? [action] : undefined), [action]);
@@ -72,7 +66,7 @@ export default function AdminAuditPage() {
           style={{ width: 280 }}
           value={action}
           onChange={(val) => setAction(val)}
-          options={ACTION_OPTIONS.map((a) => ({ label: a, value: a }))}
+          options={ACTION_OPTIONS.map((a) => ({ label: ACTION_LABELS[a] ?? a, value: a }))}
           showSearch
         />
         <RangePicker
@@ -109,7 +103,7 @@ export default function AdminAuditPage() {
           defaultAction={actionValue}
           defaultAdminId={adminId}
           defaultDateRange={dateRange ?? undefined}
-          pageSize={50}
+          defaultPageSize={10}
         />
       </div>
     </div>

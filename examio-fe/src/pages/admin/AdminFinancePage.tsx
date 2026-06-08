@@ -4,6 +4,12 @@ import { useTranslation } from "react-i18next";
 import { FinanceActionModal, FinanceActionType } from "@/components/admin/FinanceActionModal";
 import { AuditTable } from "@/components/admin/AuditTable";
 
+const FINANCE_DEFAULT_ACTIONS = [
+  "admin.finance.refund",
+  "admin.finance.credit",
+  "admin.finance.tier_change",
+];
+
 export default function AdminFinancePage() {
   const { t } = useTranslation("admin");
   const [activeAction, setActiveAction] = useState<FinanceActionType | null>(null);
@@ -33,12 +39,8 @@ export default function AdminFinancePage() {
         </h2>
         <AuditTable
           embedded
-          defaultAction={[
-            "admin.finance.refund",
-            "admin.finance.credit",
-            "admin.finance.tier_change",
-          ]}
-          pageSize={50}
+          defaultAction={FINANCE_DEFAULT_ACTIONS}
+          defaultPageSize={10}
         />
       </section>
 
