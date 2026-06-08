@@ -29,14 +29,23 @@ export interface AuditRow {
 
 export interface OverviewKpi {
   totalUsers: number;
-  activeUsers: number;
-  totalRevenue: number;
-  pendingPayments: number;
+  activeToday: number;
+  active30d: number;
+  proCount: number;
+  vipCount: number;
+  revenue30d: number;
 }
 
 export interface SeriesPoint {
   date: string;
   value: number;
+}
+
+export interface SeriesResponse {
+  name: string;
+  range: string;
+  bucket: string;
+  points: SeriesPoint[];
 }
 
 export interface ListUsersQuery {
@@ -139,7 +148,7 @@ export async function getOverviewApi(): Promise<OverviewKpi> {
 
 export async function getSeriesApi(name: string, range: "7d" | "30d" | "90d") {
   const response = await api.get(`/admin/series/${name}`, { params: { range } });
-  return response.data as SeriesPoint[];
+  return response.data as SeriesResponse;
 }
 
 export async function refundApi(body: RefundBody) {

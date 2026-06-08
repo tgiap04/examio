@@ -17,6 +17,9 @@ interface ResourceState<T> {
   loading: boolean;
   error: string | null;
   lastFetched: number | null;
+  /** JSON-hash of the query used for the cached data — cache only
+   *  returns fresh when the same query is reused within the TTL. */
+  lastQueryKey: string | null;
 }
 
 const FRESH_MS = 5 * 60 * 1000;
@@ -26,21 +29,36 @@ function isFresh(timestamp: number | null) {
   return Date.now() - timestamp < FRESH_MS;
 }
 
+/** Standard page envelope returned by paginated admin endpoints. */
+interface PageEnvelope<T> {
+  rows: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+/** Full shape returned by the series API — the UI extracts `.points`. */
+interface SeriesResponse {
+  name: string;
+  range: string;
+  bucket: string;
+  points: SeriesPoint[];
+}
+
+/** Cached list of admin users for filter dropdowns (e.g. audit page). */
+const ADMIN_LIST_CACHE_MS = 10 * 60 * 1000;
+
 interface AdminState {
   overview: ResourceState<OverviewKpi>;
-  series: Record<string, ResourceState<SeriesPoint[]>>;
-  users: ResourceState<{
-    data: UserRow[];
-    total: number;
-    page: number;
-    pageSize: number;
-  }>;
-  audit: ResourceState<{
-    data: AuditRow[];
-    total: number;
-    page: number;
-    pageSize: number;
-  }>;
+  series: Record<string, ResourceState<SeriesResponse>>;
+  users: ResourceState<PageEnvelope<UserRow>>;
+  audit: ResourceState<PageEnvelope<AuditRow>>;
+  /** Cached list of admin users for filter dropdowns. */
+  adminList: { data: UserRow[]; cachedAt: number } | null;
+  /** Monotonic counters bumped by invalidate*() — components include
+   *  these in useEffect deps so that CUD actions trigger a re-fetch. */
+  usersVersion: number;
+  auditVersion: number;
   fetchOverview: (force?: boolean) => Promise<void>;
   fetchSeries: (
     name: string,
@@ -49,6 +67,8 @@ interface AdminState {
   ) => Promise<void>;
   fetchUsers: (query: ListUsersQuery, force?: boolean) => Promise<void>;
   fetchAudit: (query: ListAuditQuery, force?: boolean) => Promise<void>;
+  /** Fetch admin list for filter dropdowns with built-in caching. */
+  fetchAdminList: () => Promise<UserRow[]>;
   invalidateOverview: () => void;
   invalidateSeries: (name?: string) => void;
   invalidateUsers: () => void;
@@ -60,13 +80,21 @@ const empty = <T,>(): ResourceState<T> => ({
   loading: false,
   error: null,
   lastFetched: null,
+  lastQueryKey: null,
 });
+
+function queryKey(query: unknown): string {
+  return JSON.stringify(query);
+}
 
 export const useAdminStore = create<AdminState>((set, get) => ({
   overview: empty<OverviewKpi>(),
   series: {},
   users: empty(),
   audit: empty(),
+  adminList: null,
+  usersVersion: 0,
+  auditVersion: 0,
 
   fetchOverview: async (force) => {
     const current = get().overview;
@@ -82,6 +110,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
           loading: false,
           error: null,
           lastFetched: Date.now(),
+          lastQueryKey: null,
         },
       }));
     } catch (error) {
@@ -96,14 +125,17 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   },
 
   fetchSeries: async (name, range, force) => {
-    const current = get().series[name] ?? empty<SeriesPoint[]>();
+    const compoundKey = `${name}:${range}`;
+    const current = get().series[compoundKey] ?? empty<SeriesResponse>();
+    // compoundKey (name:range) IS the cache key — different ranges live in
+    // separate slots and never overwrite each other.
     if (!force && current.data && isFresh(current.lastFetched)) return;
     if (current.loading) return;
 
     set((s) => ({
       series: {
         ...s.series,
-        [name]: { ...current, loading: true, error: null },
+        [compoundKey]: { ...current, loading: true, error: null },
       },
     }));
     try {
@@ -111,14 +143,14 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       set((s) => ({
         series: {
           ...s.series,
-          [name]: { data, loading: false, error: null, lastFetched: Date.now() },
+          [compoundKey]: { data, loading: false, error: null, lastFetched: Date.now(), lastQueryKey: null },
         },
       }));
     } catch (error) {
       set((s) => ({
         series: {
           ...s.series,
-          [name]: {
+          [compoundKey]: {
             ...current,
             loading: false,
             error: (error as Error).message,
@@ -130,7 +162,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   fetchUsers: async (query, force) => {
     const current = get().users;
-    if (!force && current.data && isFresh(current.lastFetched)) return;
+    const key = queryKey(query);
+    // Only use cache when query params match
+    if (!force && current.data && isFresh(current.lastFetched) && current.lastQueryKey === key) return;
     if (current.loading) return;
 
     set((s) => ({ users: { ...s.users, loading: true, error: null } }));
@@ -142,6 +176,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
           loading: false,
           error: null,
           lastFetched: Date.now(),
+          lastQueryKey: key,
         },
       }));
     } catch (error) {
@@ -157,7 +192,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
 
   fetchAudit: async (query, force) => {
     const current = get().audit;
-    if (!force && current.data && isFresh(current.lastFetched)) return;
+    const key = queryKey(query);
+    // Only use cache when query params match
+    if (!force && current.data && isFresh(current.lastFetched) && current.lastQueryKey === key) return;
     if (current.loading) return;
 
     set((s) => ({ audit: { ...s.audit, loading: true, error: null } }));
@@ -169,6 +206,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
           loading: false,
           error: null,
           lastFetched: Date.now(),
+          lastQueryKey: key,
         },
       }));
     } catch (error) {
@@ -182,17 +220,40 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
 
+  fetchAdminList: async () => {
+    const cached = get().adminList;
+    if (cached && Date.now() - cached.cachedAt < ADMIN_LIST_CACHE_MS) {
+      return cached.data;
+    }
+    const res = await listUsersApi({ isAdmin: true, pageSize: 100 });
+    const list: UserRow[] = res?.rows ?? [];
+    set({ adminList: { data: list, cachedAt: Date.now() } });
+    return list;
+  },
+
   invalidateOverview: () =>
     set((s) => ({ overview: { ...s.overview, data: null, lastFetched: null } })),
   invalidateSeries: (name) =>
     set((s) => {
       if (!name) return { series: {} };
       const next = { ...s.series };
-      delete next[name];
+      // Remove all entries that match this series name at any range
+      // (compound keys look like "signups:7d", "signups:30d", …).
+      Object.keys(next).forEach((key) => {
+        if (key === name || key.startsWith(`${name}:`)) {
+          delete next[key];
+        }
+      });
       return { series: next };
     }),
   invalidateUsers: () =>
-    set((s) => ({ users: { ...s.users, data: null, lastFetched: null } })),
+    set((s) => ({
+      users: { ...s.users, data: null, lastFetched: null, lastQueryKey: null },
+      usersVersion: s.usersVersion + 1,
+    })),
   invalidateAudit: () =>
-    set((s) => ({ audit: { ...s.audit, data: null, lastFetched: null } })),
+    set((s) => ({
+      audit: { ...s.audit, data: null, lastFetched: null, lastQueryKey: null },
+      auditVersion: s.auditVersion + 1,
+    })),
 }));

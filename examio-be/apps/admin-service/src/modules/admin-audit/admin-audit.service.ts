@@ -3,22 +3,42 @@ import { PrismaService } from '@examio/database';
 
 import { ListAuditQuery } from './dto/list-audit.query';
 
+export interface AuditRow {
+    id: string;
+    actorId: number;
+    actorName: string;
+    action: string;
+    targetType: string | null;
+    targetId: string | null;
+    metadata: Record<string, unknown> | null;
+    reason: string | null;
+    createdAt: string;
+}
+
 export interface ListAuditResult {
-    rows: {
-        id: string;
-        adminId: string;
-        action: string;
-        targetId: string | null;
-        payload: Record<string, unknown> | null;
-        reason: string | null;
-        ipAddress: string | null;
-        userAgent: string | null;
-        createdAt: Date;
-        admin?: { id: string; email: string; username: string } | null;
-    }[];
+    rows: AuditRow[];
     total: number;
     page: number;
     pageSize: number;
+}
+
+/** Derive a human-readable target type from the action code. */
+function deriveTargetType(action: string): string | null {
+    // e.g. "admin.user.grant" → "user"
+    // e.g. "admin.finance.refund" → "payment"
+    const parts = action.split('.');
+    // parts = ["admin", "user", "grant"] → "user"
+    // parts = ["admin", "finance", "refund"] → "finance"
+    const domain = parts[1] ?? null;
+    // Map domain to a user-facing target type
+    switch (domain) {
+        case 'user':
+            return 'user';
+        case 'finance':
+            return 'payment';
+        default:
+            return domain;
+    }
 }
 
 /**
@@ -34,7 +54,8 @@ export class AdminAuditService {
 
     /**
      * Paginated list of audit rows with optional filters.
-     * Includes the performing admin's basic profile (id, email, username).
+     * Returns flat rows with actor/target info resolved from the joined
+     * relations, matching the frontend `AuditRow` shape.
      */
     async listAudit(query: ListAuditQuery): Promise<ListAuditResult> {
         const where = {} as any;
@@ -60,7 +81,7 @@ export class AdminAuditService {
 
         const skip = (query.page - 1) * query.pageSize;
 
-        const [rows, total] = await this.prisma.$transaction([
+        const [raw, total] = await this.prisma.$transaction([
             this.prisma.adminAudit.findMany({
                 where,
                 include: {
@@ -75,8 +96,20 @@ export class AdminAuditService {
             this.prisma.adminAudit.count({ where }),
         ]);
 
+        const rows: AuditRow[] = raw.map((r) => ({
+            id: r.id,
+            actorId: Number(r.adminId),
+            actorName: r.admin?.username ?? `#${r.adminId}`,
+            action: r.action,
+            targetType: deriveTargetType(r.action),
+            targetId: r.targetId,
+            metadata: r.payload as Record<string, unknown> | null,
+            reason: r.reason,
+            createdAt: r.createdAt.toISOString(),
+        }));
+
         return {
-            rows: rows as ListAuditResult['rows'],
+            rows,
             total,
             page: query.page,
             pageSize: query.pageSize,

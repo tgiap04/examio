@@ -1,8 +1,9 @@
-import { useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Table, Space, Skeleton, Alert, Button } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useTranslation } from "react-i18next";
 import { format } from "date-fns";
+import { vi } from "date-fns/locale";
 import { useAdminStore } from "@/stores/useAdminStore";
 import { AuditRow, ListAuditQuery } from "@/apis/adminApi";
 import { BadgePill, type BadgeVariant } from "@/components/admin/BadgePill";
@@ -11,21 +12,51 @@ interface AuditTableProps {
   defaultAction?: string | string[];
   defaultAdminId?: number;
   defaultDateRange?: [string, string];
-  pageSize?: number;
+  defaultPageSize?: number;
   embedded?: boolean;
 }
 
-function toActionQuery(
+/** Longest common prefix — used for `contains` filtering when
+ *  multiple actions are grouped (e.g. all admin.finance.* actions). */
+function commonPrefix(strings: string[]): string {
+  if (!strings.length) return "";
+  let prefix = strings[0];
+  for (let i = 1; i < strings.length; i++) {
+    while (!strings[i].startsWith(prefix)) {
+      prefix = prefix.slice(0, -1);
+      if (!prefix) return "";
+    }
+  }
+  return prefix;
+}
+
+function toAuditAction(
   action: string | string[] | undefined,
 ): string | undefined {
   if (!action) return undefined;
   if (Array.isArray(action)) {
-    const prefix = action
-      .map((a) => a.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
-      .join("|");
-    return prefix ? `(?:${prefix})` : undefined;
+    // Backend uses Prisma `contains` (SQL ILIKE). Find the longest common
+    // prefix so a group like ["admin.finance.refund","admin.finance.credit"]
+    // becomes "admin.finance." and matches all finance audit rows.
+    return commonPrefix(action) || undefined;
   }
   return action;
+}
+
+/** Human-readable action labels for each known admin action code. */
+const actionLabels: Record<string, string> = {
+  "admin.user.grant": "Cấp quyền admin",
+  "admin.user.revoke": "Thu hồi quyền admin",
+  "admin.user.ban": "Khóa người dùng",
+  "admin.user.unban": "Mở khóa người dùng",
+  "admin.user.update": "Cập nhật thông tin",
+  "admin.finance.refund": "Hoàn tiền",
+  "admin.finance.credit": "Cộng tiền",
+  "admin.finance.tier_change": "Đổi gói",
+};
+
+function displayAction(action: string): string {
+  return actionLabels[action] ?? action;
 }
 
 function actionVariant(action: string): BadgeVariant {
@@ -41,30 +72,36 @@ export function AuditTable({
   defaultAction,
   defaultAdminId,
   defaultDateRange,
-  pageSize = 50,
+  defaultPageSize = 10,
   embedded = false,
 }: AuditTableProps) {
   const { t } = useTranslation("admin");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(defaultPageSize);
 
   const query = useMemo<ListAuditQuery>(
     () => ({
-      action: Array.isArray(defaultAction) ? defaultAction.join(",") : defaultAction,
+      action: toAuditAction(defaultAction),
       actorId: defaultAdminId,
       from: defaultDateRange?.[0],
       to: defaultDateRange?.[1],
-      page: 1,
+      page,
       pageSize: pageSize,
     }),
-    [defaultAction, defaultAdminId, defaultDateRange, pageSize],
+    [defaultAction, defaultAdminId, defaultDateRange, page, pageSize],
   );
 
-  useAdminStore.getState().fetchAudit(query);
+  const auditVersion = useAdminStore((s) => s.auditVersion);
 
-  const { data, loading, error } = useAdminStore((s) => ({
-    data: s.audit.data,
-    loading: s.audit.loading,
-    error: s.audit.error,
-  }));
+  useEffect(() => {
+    useAdminStore.getState().fetchAudit(query);
+  }, [query, auditVersion]);
+
+  const auditData = useAdminStore((s) => s.audit.data);
+  const auditLoading = useAdminStore((s) => s.audit.loading);
+  const auditError = useAdminStore((s) => s.audit.error);
+
+  const fmt = (val: string) => format(new Date(val), "dd/MM/yyyy HH:mm:ss", { locale: vi });
 
   const columns: ColumnsType<AuditRow> = [
     {
@@ -72,7 +109,7 @@ export function AuditTable({
       dataIndex: "createdAt",
       key: "createdAt",
       width: 160,
-      render: (val: string) => format(new Date(val), "yyyy-MM-dd HH:mm:ss"),
+      render: (val: string) => fmt(val),
     },
     {
       title: t("audit.columns.admin"),
@@ -92,7 +129,7 @@ export function AuditTable({
       dataIndex: "action",
       key: "action",
       width: 200,
-      render: (val: string) => <BadgePill variant={actionVariant(val)}>{val}</BadgePill>,
+      render: (val: string) => <BadgePill variant={actionVariant(val)}>{displayAction(val)}</BadgePill>,
     },
     {
       title: t("audit.columns.target"),
@@ -113,12 +150,12 @@ export function AuditTable({
     },
   ];
 
-  if (error && !data) {
+  if (auditError && !auditData) {
     return (
       <Alert
         type="error"
         message={t("audit.loadError")}
-        description={error}
+        description={auditError}
         showIcon
         action={
           <Button
@@ -132,12 +169,12 @@ export function AuditTable({
     );
   }
 
-  const rows = data?.data ?? [];
-  const total = data?.total ?? 0;
+  const rows = auditData?.rows ?? [];
+  const total = auditData?.total ?? 0;
 
   return (
     <div className={embedded ? "" : "space-y-2"}>
-      {loading && rows.length === 0
+      {auditLoading && rows.length === 0
         ? (
           <Skeleton active paragraph={{ rows: 6 }} />
         )
@@ -146,12 +183,16 @@ export function AuditTable({
             rowKey="id"
             columns={columns}
             dataSource={rows}
-            loading={loading}
+            loading={auditLoading}
             pagination={{
+              current: page,
               pageSize,
               total,
-              showSizeChanger: false,
+              showSizeChanger: true,
+              pageSizeOptions: [10, 20, 50, 100],
               hideOnSinglePage: true,
+              onChange: (p) => setPage(p),
+              onShowSizeChange: (_p, s) => setPageSize(s),
             }}
             expandable={{
               expandedRowRender: (row) => (
@@ -160,7 +201,7 @@ export function AuditTable({
                 </pre>
               ),
               rowExpandable: (row) =>
-                row.metadata !== null && Object.keys(row.metadata).length > 0,
+                row.metadata != null && Object.keys(row.metadata).length > 0,
             }}
           />
         )}
