@@ -1,22 +1,32 @@
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { LogOut } from "lucide-react";
+import {
+  LayoutDashboard,
+  BarChart3,
+  Users,
+  Wallet,
+  ScrollText,
+  History,
+  LogOut,
+} from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { cn } from "@/lib/utils";
+import Logo from "@/components/atoms/Logo";
 
 interface NavItem {
   to: string;
   labelKey: string;
+  icon: React.ReactNode;
   end?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: "/admin", labelKey: "nav.overview", end: true },
-  { to: "/admin/stats", labelKey: "nav.stats" },
-  { to: "/admin/users", labelKey: "nav.users" },
-  { to: "/admin/finance", labelKey: "nav.finance" },
-  { to: "/admin/logs", labelKey: "nav.logs" },
-  { to: "/admin/audit", labelKey: "nav.audit" },
+  { to: "/admin", labelKey: "nav.overview", icon: <LayoutDashboard className="h-4 w-4" />, end: true },
+  { to: "/admin/stats", labelKey: "nav.stats", icon: <BarChart3 className="h-4 w-4" /> },
+  { to: "/admin/users", labelKey: "nav.users", icon: <Users className="h-4 w-4" /> },
+  { to: "/admin/finance", labelKey: "nav.finance", icon: <Wallet className="h-4 w-4" /> },
+  { to: "/admin/logs", labelKey: "nav.logs", icon: <ScrollText className="h-4 w-4" /> },
+  { to: "/admin/audit", labelKey: "nav.audit", icon: <History className="h-4 w-4" /> },
 ];
 
 export function AdminLayout() {
@@ -40,8 +50,8 @@ export function AdminLayout() {
   return (
     <div className="flex min-h-screen w-full bg-canvas text-ink">
       <aside className="hidden w-64 shrink-0 border-r border-hairline bg-canvas md:flex md:flex-col">
-        <div className="flex h-16 items-center border-b border-hairline px-5 font-display text-lg font-normal tracking-tight">
-          Examio Admin
+        <div className="flex h-16 items-center gap-2 border-b border-hairline px-5">
+          <Logo sizeLogo={28} sizeText={18} showText />
         </div>
         <nav className="flex-1 space-y-1 px-3 py-4">
           {NAV_ITEMS.map((item) => (
@@ -51,13 +61,14 @@ export function AdminLayout() {
               end={item.end}
               className={({ isActive }) =>
                 cn(
-                  "block rounded-md px-3 py-2 text-sm transition-colors",
+                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors",
                   isActive
                     ? "bg-coral/10 font-medium text-coral"
                     : "text-ink/70 hover:bg-surface-card hover:text-ink",
                 )
               }
             >
+              <span className="shrink-0">{item.icon}</span>
               {t(item.labelKey)}
             </NavLink>
           ))}

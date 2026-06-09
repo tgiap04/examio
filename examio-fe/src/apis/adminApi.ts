@@ -186,6 +186,8 @@ export async function postLogTicketApi(
 import { env } from "@/lib/env";
 
 export function streamLogsUrl(service: string, ticket: string): string {
+  // env.apiUrl already includes /api/v1 (e.g. "/api/v1" or "http://localhost:3000/api/v1")
+  // — append only the path tail, never re-add the prefix.
   const base = env.apiUrl.replace(/\/$/, "");
-  return `${base}/api/v1/admin/logs/stream?service=${encodeURIComponent(service)}&ticket=${encodeURIComponent(ticket)}`;
+  return `${base}/admin/logs/stream?service=${encodeURIComponent(service)}&ticket=${encodeURIComponent(ticket)}`;
 }

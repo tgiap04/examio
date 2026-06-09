@@ -121,6 +121,7 @@ export default function AdminOverviewPage() {
           title={t("overview.charts.revenue30d")}
           data={revenue.data?.points ?? []}
           kind="bar"
+          format="currency-vnd"
           loading={revenue.loading}
           error={revenue.error}
           onRetry={handleRetryRevenue}

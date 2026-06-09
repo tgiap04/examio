@@ -44,7 +44,9 @@ const vndFormatter = new Intl.NumberFormat("vi-VN", {
 const numberFormatter = new Intl.NumberFormat("vi-VN");
 
 function formatXAxis(date: string): string {
-  const parts = date.split("-");
+  // Handle both "YYYY-MM-DD" and full ISO datetime "YYYY-MM-DDTHH:MM:SS.sssZ"
+  const datePart = date.split("T")[0];
+  const parts = datePart.split("-");
   if (parts.length !== 3) return date;
   return `${parts[2]}/${parts[1]}`;
 }

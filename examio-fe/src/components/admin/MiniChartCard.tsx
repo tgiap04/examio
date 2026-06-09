@@ -16,11 +16,13 @@ import type { SeriesPoint } from "@/apis/adminApi";
 import { cn } from "@/lib/utils";
 
 export type MiniChartKind = "line" | "area" | "bar";
+export type MiniChartFormat = "number" | "currency-vnd";
 
 export interface MiniChartCardProps {
   title: string;
   data: SeriesPoint[];
   kind: MiniChartKind;
+  format?: MiniChartFormat;
   loading?: boolean;
   error?: string | null;
   onRetry?: () => void;
@@ -35,11 +37,34 @@ const PRIMARY = "var(--coral)";
 const GRID = "var(--hairline)";
 const AXIS_TEXT = "var(--muted-text)";
 
+const vndFormatter = new Intl.NumberFormat("vi-VN", {
+  style: "currency",
+  currency: "VND",
+  maximumFractionDigits: 0,
+});
+
+const numberFormatter = new Intl.NumberFormat("vi-VN");
+
 function formatXAxis(date: string): string {
-  // Expecting YYYY-MM-DD
-  const parts = date.split("-");
+  // Handle both "YYYY-MM-DD" and full ISO datetime "YYYY-MM-DDTHH:MM:SS.sssZ"
+  const datePart = date.split("T")[0];
+  const parts = datePart.split("-");
   if (parts.length !== 3) return date;
   return `${parts[2]}/${parts[1]}`;
+}
+
+function formatY(value: number, format: MiniChartFormat): string {
+  if (format === "currency-vnd") {
+    if (value >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(1)} tỷ`;
+    if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)} tr`;
+    return vndFormatter.format(value);
+  }
+  return numberFormatter.format(value);
+}
+
+function formatTooltipValue(value: number, format: MiniChartFormat): string {
+  if (format === "currency-vnd") return vndFormatter.format(value);
+  return numberFormatter.format(value);
 }
 
 function ChartSkeleton({ height }: { height: number }) {
@@ -73,6 +98,7 @@ export function MiniChartCard({
   title,
   data,
   kind,
+  format = "number",
   loading,
   error,
   onRetry,
@@ -114,6 +140,7 @@ export function MiniChartCard({
                   stroke={GRID}
                   width={32}
                   allowDecimals={false}
+                  tickFormatter={(v) => formatY(Number(v), format)}
                 />
                 <Tooltip
                   contentStyle={{
@@ -124,6 +151,7 @@ export function MiniChartCard({
                     color: "var(--ink)",
                   }}
                   labelFormatter={(label) => formatXAxis(String(label))}
+                  formatter={(value) => [formatTooltipValue(Number(value), format), title]}
                 />
                 <Line
                   type="monotone"
@@ -151,6 +179,7 @@ export function MiniChartCard({
                   stroke={GRID}
                   width={36}
                   allowDecimals={false}
+                  tickFormatter={(v) => formatY(Number(v), format)}
                 />
                 <Tooltip
                   contentStyle={{
@@ -161,6 +190,7 @@ export function MiniChartCard({
                     color: "var(--ink)",
                   }}
                   labelFormatter={(label) => formatXAxis(String(label))}
+                  formatter={(value) => [formatTooltipValue(Number(value), format), title]}
                 />
                 <Bar dataKey="value" fill={PRIMARY} radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -181,6 +211,7 @@ export function MiniChartCard({
                   stroke={GRID}
                   width={36}
                   allowDecimals={false}
+                  tickFormatter={(v) => formatY(Number(v), format)}
                 />
                 <Tooltip
                   contentStyle={{
@@ -191,6 +222,7 @@ export function MiniChartCard({
                     color: "var(--ink)",
                   }}
                   labelFormatter={(label) => formatXAxis(String(label))}
+                  formatter={(value) => [formatTooltipValue(Number(value), format), title]}
                 />
                 <Area
                   type="monotone"
