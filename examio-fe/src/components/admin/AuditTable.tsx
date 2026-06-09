@@ -52,6 +52,7 @@ const actionLabels: Record<string, string> = {
   "admin.user.update": "Cập nhật thông tin",
   "admin.finance.refund": "Hoàn tiền",
   "admin.finance.credit": "Cộng tiền",
+  "admin.finance.tier": "Đổi gói",
   "admin.finance.tier_change": "Đổi gói",
 };
 
