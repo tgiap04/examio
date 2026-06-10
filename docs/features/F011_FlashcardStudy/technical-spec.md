@@ -6,7 +6,7 @@
 
 ## Overview
 
-Flashcard study interface allowing students to review flashcard decks with flip animation, keyboard navigation, sound effects, shuffle, and per-user progress tracking. Access is gated by Turnstile bot protection and optional 6-digit access code. Progress is auto-saved per user per deck via a fire-and-forget API call.
+Flashcard study interface allowing students to review flashcard decks with flip animation, keyboard navigation, sound effects, shuffle, and per-user progress tracking. Access is gated by authentication, ownership/public visibility, and optional 6-digit access code. Progress is auto-saved per user per deck via a fire-and-forget API call.
 
 ## Polymorphic Behavior
 
@@ -19,7 +19,7 @@ N/A — no discriminator fields in Key Entities.
 | Code | Description | Endpoint/Handler | Verifiable |
 |------|-------------|-----------------|------------|
 | FR-001 | Load flashcard set for study after access check passes | GET /study-flashcard/:id | yes |
-| FR-002 | Enforce Turnstile bot protection on access check | TurnstileGuard component | yes |
+| FR-002 | Enforce flashcard set access check | checkFlashcardSetAccess API | yes |
 | FR-003 | Verify access code before unlocking study interface | client-side in FlashcardStudyPage | yes |
 | FR-004 | Auto-save studied card progress on each "next" navigation | addStudiedCardApi (internal) | yes |
 | FR-005 | Restore study progress on re-entry | getProgressApi | yes |
@@ -54,8 +54,7 @@ None.
 
 ```mermaid
 stateDiagram-v2
-    [*] --> isCheckingAccess : page mount + Turnstile token not ready
-    isCheckingAccess --> isCheckingAccess : Turnstile token not ready
+    [*] --> isCheckingAccess : page mount
     isCheckingAccess --> showAccessModal : hasAccess=false, requiresCode=true
     isCheckingAccess --> isLoadingFlashcards : hasAccess=true
     isCheckingAccess --> hasAccessDenied : hasAccess=false, requiresCode=false
@@ -68,7 +67,7 @@ stateDiagram-v2
 
 | From | To | Guard | Side effect |
 |------|----|-------|-------------|
-| page mount | isCheckingAccess | Turnstile token not ready | show Turnstile challenge |
+| page mount | isCheckingAccess | authenticated user | check flashcard set access |
 | isCheckingAccess | showAccessModal | requiresCode=true | show AccessModal dialog |
 | isCheckingAccess | isLoadingFlashcards | hasAccess=true | fetch flashcards |
 | isCheckingAccess | hasAccessDenied | hasAccess=false AND requiresCode=false | show access denied screen |
@@ -93,7 +92,7 @@ stateDiagram-v2
 
 ### US053 — Access Flashcard Study (Priority: P1)
 
-**What happens:** A student navigates to a flashcard set URL, passes Turnstile verification, and either gains immediate access (public set or owner) or is prompted for an access code.
+**What happens:** A student navigates to a flashcard set URL and either gains immediate access (public set or owner) or is prompted for an access code.
 **Why this priority:** Core study entry point; without access the entire feature is blocked.
 **Independent Test:** Navigate to /study-flashcard/:id as an authenticated user — verify access modal appears for code-protected sets.
 
@@ -107,8 +106,8 @@ stateDiagram-v2
 **Requirements fulfilled:**
 - **FR-001** Load flashcard set for study after access check passes — `GET /study-flashcard/:id` via `checkFlashcardSetAccess` + `getFlashcardSetForStudy`
   **Source:** `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:145-171`
-- **FR-002** Enforce Turnstile bot protection on access check — `TurnstileGuard` component
-  **Source:** `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:239-248`
+- **FR-002** Enforce flashcard set access check — `checkFlashcardSetAccess` API
+  **Source:** `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx`
 
 **Rules enforced:** None beyond access check.
 
@@ -121,7 +120,7 @@ stateDiagram-v2
 
 ### US054 — Enter Flashcard Access Code (Priority: P2)
 
-**What happens:** A student enters a 6-digit access code to unlock a protected flashcard set. The code is passed to the API with the Turnstile token.
+**What happens:** A student enters a 6-digit access code to unlock a protected flashcard set. The code is passed to the API for server-side validation.
 **Why this priority:** Required for private sharing of flashcard sets.
 **Independent Test:** Enter a wrong code — verify error message. Enter correct code — verify study UI loads.
 
@@ -208,7 +207,7 @@ stateDiagram-v2
 
 ## Assumptions
 
-- Access code verification is handled server-side (client passes code with Turnstile token to `getFlashcardSetForStudy`).
+- Access code verification is handled server-side (client passes code to `getFlashcardSetForStudy`).
 - Sound effect URLs are external CDN links; no local audio assets.
 - Progress save is fire-and-forget (no retry on failure); progress bar updates optimistically.
 
@@ -221,7 +220,6 @@ stateDiagram-v2
 | getFlashcardSetForStudy | `examio-fe/src/apis/flashcardSetApi.ts` | Load flashcards with optional code |
 | getProgressApi | `examio-fe/src/apis/flashcardStudyApi.ts` | Load study progress |
 | addStudiedCardApi | `examio-fe/src/apis/flashcardStudyApi.ts` | Save studied card (fire-and-forget) |
-| TurnstileGuard | `examio-fe/src/components/molecules/TurnstileGuard.tsx` | Bot protection component |
 
 ## Unresolved Questions
 

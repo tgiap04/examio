@@ -11,7 +11,7 @@ Flashcard study is a core learning mechanism on the platform. Students need a fr
 
 ## What They Do
 
-1. Student navigates to a flashcard set URL and passes a Turnstile bot check.
+1. Student navigates to a flashcard set URL.
 2. System checks if the set is public, the student is the owner, or the student is on the whitelist — if so, the study interface loads directly.
 3. If the set requires an access code, the student enters the 6-digit code; system validates it and unlocks the study interface.
 4. Student flips through cards, navigates with keyboard or buttons, and toggles sound effects and shuffle.
