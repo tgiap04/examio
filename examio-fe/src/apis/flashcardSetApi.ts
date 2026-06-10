@@ -305,19 +305,16 @@ export async function getFlashcardSetPublicInfo(
  */
 export async function getFlashcardSetForStudy(
   id: string,
-  accessCode?: string,
-  turnstileToken?: string
+  accessCode?: string
 ): Promise<
   FlashcardSet & { creator: { name: string; avatar: string | null } }
 > {
   if (!accessCode) {
-    const params = turnstileToken ? `?turnstileToken=${encodeURIComponent(turnstileToken)}` : "";
-    const response = await api.get(`/flashcardsets/study/${id}${params}`);
+    const response = await api.get(`/flashcardsets/study/${id}`);
     return response.data;
   } else {
     const response = await api.post(`/flashcardsets/study/${id}/with-code`, {
       accessCode,
-      turnstileToken,
     });
     return response.data;
   }

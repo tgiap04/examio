@@ -77,7 +77,7 @@ RBAC with resource-ownership checks. Authenticated users have base access; teach
 | PERM039 | ExamHistoryViewOwn | data-permission | HistoryPage, ExamHistoryPage |
 | PERM040 | SessionCleanup | env-gate | SessionCleanupCron (BL001) |
 | PERM041 | FreeModeCreditBypass | env-gate | FinanceClientService (BL004) |
-| PERM042 | TurnstileBotProtection | feature-flag | RegisterPage, FlashcardStudyPage |
+| PERM042 | TurnstileBotProtection | feature-flag | RegisterPage |
 | PERM043 | QuizSetVisibilityControl | resource-ownership | ManageQuizSetDetailPage |
 | PERM044 | FlashcardSetVisibilityControl | resource-ownership | ManageFlashcardSetDetailPage |
 | PERM045 | ExamRoomVisibilityControl | resource-ownership | ManageExamRoomDetailPage |
@@ -1058,7 +1058,7 @@ A student submits an exam attempt by sending encrypted answers via JWT-wrapped `
 
 ### Description
 
-A student can access a flashcard set for study if: the set is public, or the student is the owner, or the student holds the correct access code. Turnstile bot protection is applied on the access check.
+A student can access a flashcard set for study if: the set is public, or the student is the owner, or the student holds the correct access code.
 
 ### Related Routes
 
@@ -1086,11 +1086,10 @@ A student can access a flashcard set for study if: the set is public, or the stu
 
 ### Description
 
-A flashcard set with access code protection requires the student to enter the correct 6-digit code before the study interface is unlocked. Turnstile verification is also required.
+A flashcard set with access code protection requires the student to enter the correct 6-digit code before the study interface is unlocked.
 
 ### Related Screens
 
-- SCR030 – FlashcardStudyPage (AccessModal)
 
 ### Permission Rules
 
@@ -1306,16 +1305,15 @@ Daily cron job deactivates expired sessions. Runs on a configurable schedule. Th
 ## PERM042: TurnstileBotProtection
 
 **Type**: feature-flag
-**Enforced At**: RegisterPage (SCR009), FlashcardStudyPage (SCR030) — access check
+**Enforced At**: RegisterPage (SCR009)
 
 ### Description
 
-Bot protection via Turnstile challenge is enforced on account registration and flashcard set access when an access code is required. Protects against automated account creation and study access abuse.
+Bot protection via Turnstile challenge is enforced on account registration. Protects against automated account creation.
 
 ### Related Screens
 
 - SCR009 – RegisterPage
-- SCR030 – FlashcardStudyPage (AccessModal)
 
 ### Permission Rules
 

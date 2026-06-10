@@ -7,7 +7,7 @@
 
 ## Purpose
 
-A student studies a flashcard deck: flips cards to reveal answers, navigates forward/backward, shuffles the deck, toggles sound effects, and tracks study progress. The page gates access via Turnstile bot protection and optional 6-digit access code. Students land here from a deck link or from SCR016 (MyMaterialsPage).
+A student studies a flashcard deck: flips cards to reveal answers, navigates forward/backward, shuffles the deck, toggles sound effects, and tracks study progress. The page gates access via authentication, ownership/public visibility, and optional 6-digit access code. Students land here from a deck link or from SCR016 (MyMaterialsPage).
 
 ## Screen Layout
 
@@ -17,7 +17,6 @@ The page renders as a full-screen fixed layout (`fixed inset-0 flex flex-col ove
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│ (conditional) TurnstileGuard — fullscreen loading   │
 │ (conditional) AccessCodeModal — fullscreen overlay  │
 │ (conditional) NoAccessScreen — fullscreen centered  │
 │ (conditional) LoadingFlashcards — fullscreen spinner│
@@ -47,14 +46,13 @@ The page renders as a full-screen fixed layout (`fixed inset-0 flex flex-col ove
 | R4 | Footer Nav | fixed-bottom, z-10 | no | prev/next buttons, card dot grid or page counter | always visible |
 | R5 | Access Code Modal | fixed overlay | no | Dialog + Label + Input + footer buttons | centered, `sm:max-w-md` |
 | R6 | No Access Screen | fixed overlay | no | Lock icon + title + public info card + Home button | centered |
-| R7 | Turnstile/Loading | fixed overlay | no | TurnstileGuard + spinner | full-screen |
 
 ## User Flow
 
 ### Happy Path
 
 1. Student navigates to `/study-flashcard/{id}`.
-2. `TurnstileGuard` renders; once token received, `checkAccess` effect runs (`FlashcardStudyPage.tsx:145`).
+2. `checkAccess` effect runs on mount.
 3. `isAuthenticated` check; if not, redirect to `/login?from=...` with `setRedirectBackTarget`.
 4. `checkFlashcardSetAccess(id)` determines access level:
    - `hasAccess === true` → `loadFlashcards(id)` → cards load with progress → study UI renders.
@@ -72,7 +70,6 @@ The page renders as a full-screen fixed layout (`fixed inset-0 flex flex-col ove
 
 | Decision point | Condition | Outcome on this screen | Source |
 |----------------|-----------|------------------------|--------|
-| No Turnstile token | `!turnstileToken` | TurnstileGuard shown + "Đang xác minh bảo mật..." | `FlashcardStudyPage.tsx:236` |
 | Not authenticated | `!isAuthenticated` | Redirect to login with return URL | `FlashcardStudyPage.tsx:138` |
 | No access, requires code | `hasAccess=false && requiresCode=true` | AccessCodeModal shown with public info | `FlashcardStudyPage.tsx:280` |
 | No access, no code | `hasAccess=false && requiresCode=false` | "Không có quyền truy cập" full-screen | `FlashcardStudyPage.tsx:251` |
@@ -105,7 +102,6 @@ The page renders as a full-screen fixed layout (`fixed inset-0 flex flex-col ove
 
 | State | Trigger | Visual Behavior | User Action Available | Source |
 |-------|---------|----------------|-----------------------|--------|
-| Turnstile verifying | `!turnstileToken` | Turnstile widget + "Đang xác minh bảo mật..." | none | `FlashcardStudyPage.tsx:236` |
 | access checking | `isCheckingAccess === true` | Spinner + "Đang kiểm tra quyền truy cập..." | none | `FlashcardStudyPage.tsx:236` |
 | no access | `!hasAccess && !requiresCode` | Full-screen "Không có quyền truy cập" card + Lock icon | Home button | `FlashcardStudyPage.tsx:251` |
 | access code required | `showAccessModal === true` | Full-screen Dialog with InputOTP | enter code + verify | `FlashcardStudyPage.tsx:280` |
@@ -147,8 +143,8 @@ The page renders as a full-screen fixed layout (`fixed inset-0 flex flex-col ove
 - **Source:** `FlashcardStudyPage.tsx:153`
 
 #### Load flashcards for study
-- **Endpoint:** `GET /api/v1/flashcardsets/{id}/study?code={code}&turnstileToken={token}`
-- **Request:** `{ id, code?, turnstileToken }`
+- **Endpoint:** `GET /api/v1/flashcardsets/{id}/study?code={code}`
+- **Request:** `{ id, code? }`
 - **Success:** `200` → `{ flashCards[], title, description, viewCount, creator }`
 - **Errors:** `4xx/5xx` → thrown, caught and shown as `accessError`
 - **Trigger:** `loadFlashcards` function (called on access granted or code verification)
@@ -197,7 +193,6 @@ The page renders as a full-screen fixed layout (`fixed inset-0 flex flex-col ove
 
 | Condition | Type | Renders | Hidden | Notes |
 |-----------|------|---------|--------|-------|
-| `!turnstileToken` | security | TurnstileGuard + verifying spinner | study UI | `FlashcardStudyPage.tsx:236` |
 | `isCheckingAccess === true` | async | Spinner + "Đang kiểm tra..." | study UI | `FlashcardStudyPage.tsx:236` |
 | `!hasAccess && !requiresCode` | auth | "Không có quyền truy cập" screen | study UI + modal | `FlashcardStudyPage.tsx:251` |
 | `showAccessModal === true` | auth | AccessCodeDialog | study UI + no-access screen | `FlashcardStudyPage.tsx:280` |
@@ -223,7 +218,6 @@ The page renders as a full-screen fixed layout (`fixed inset-0 flex flex-col ove
 
 | Guard | Type | Consequence if bypassed |
 |-------|------|------------------------|
-| Turnstile token required | bot-protection | `isCheckingAccess` loops until token received |
 | `isAuthenticated` check | auth | Redirect to `/login?from=...` with return URL |
 | Access code check | auth | Wrong code → inline error; no access → full-screen denied card |
 | `hasAccess` gate | auth | Users not in whitelist cannot load flashcards; see no-access or code gate |
@@ -231,7 +225,6 @@ The page renders as a full-screen fixed layout (`fixed inset-0 flex flex-col ove
 ## Source References
 
 - Page/View: `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:50`
-- TurnstileGuard: `examio-fe/src/components/molecules/TurnstileGuard.tsx`
 - FlashcardSetApi: `examio-fe/src/apis/flashcardSetApi.ts`
 - FlashcardStudyApi: `examio-fe/src/apis/flashcardStudyApi.ts`
 - AuthStore: `examio-fe/src/stores/useAuthStore.ts`

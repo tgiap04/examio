@@ -242,7 +242,7 @@ Each time a student moves to the next card in a study session, the card ID is re
 
 ### Flashcard study requires passing an access gate
 
-A flashcard set can be protected by an access code. Students must enter the correct code before the study interface is unlocked. The host of the set bypasses the code requirement. A Turnstile challenge is also required to prevent bot-based access attempts.
+A flashcard set can be protected by an access code. Students must enter the correct code before the study interface is unlocked. The host of the set bypasses the code requirement.
 
 **Applies when:** A student navigates to a flashcard set that has access code protection enabled.
 **Says:** The study interface is locked behind an access dialog. The code must match the host-configured value.

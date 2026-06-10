@@ -11,5 +11,4 @@
 | First card (index 0) | Previous button disabled | Button grayed out, no action |
 | Last card | Next button disabled | Button grayed out, no action |
 | Deck has >20 cards | Dot indicators replaced with text counter (e.g., "3 / 50") | "3 / 50" |
-| Turnstile challenge not ready | Loading spinner shown with "Đang xác minh bảo mật..." | "Đang xác minh bảo mật..." |
 | User denied access (not owner, not whitelisted, no code) | Access denied screen shown with deck info | "Bộ flashcard này là riêng tư hoặc bạn chưa được thêm vào whitelist." |
