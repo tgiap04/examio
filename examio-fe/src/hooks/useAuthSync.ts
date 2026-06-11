@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { syncRefreshTokenApi } from "@/apis/authApi";
+import { env } from "@/lib/env";
 
 const AUTH_COOKIE_NAME = "token";
 const AUTH_STORAGE_KEY = "auth_token";
@@ -10,28 +11,10 @@ const REFRESH_STORAGE_KEY = "refresh_token";
 const SESSION_STORAGE_KEY = "session_id";
 
 /**
- * Helper to set a cookie
- */
-function setCookie(name: string, value: string, days: number = 7) {
-  const expires = new Date();
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-
-  const isProduction = window.location.hostname === "examio.fayedark.com";
-  const domain = isProduction ? ";domain=.fayedark.com" : "";
-  const secure = isProduction ? ";Secure" : "";
-  const sameSite = isProduction ? ";SameSite=None" : ";SameSite=Lax";
-
-  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/${domain}${sameSite}${secure}`;
-}
-
-/**
  * Helper to delete a cookie
  */
 function deleteCookie(name: string) {
-  const isProduction =
-    typeof window !== "undefined" &&
-    window.location.hostname === "examio.fayedark.com";
-  const domain = isProduction ? ";domain=.fayedark.com" : "";
+  const domain = env.cookieDomain ? `;domain=${env.cookieDomain}` : "";
   document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/${domain}`;
 }
 
@@ -52,34 +35,22 @@ export function useAuthSync() {
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    const tokenFromQuery = url.searchParams.get("token");
-    const refreshTokenFromQuery = url.searchParams.get("refreshToken");
-    const sessionIdFromQuery = url.searchParams.get("sessionId");
+    const unsafeTokenParams = ["token", "refreshToken", "sessionId"];
+    const removedUnsafeTokenParams = unsafeTokenParams.some((param) =>
+      url.searchParams.has(param),
+    );
 
-    if (tokenFromQuery) {
-      setAuthToken(tokenFromQuery);
-      url.searchParams.delete("token");
-    }
-
-    if (refreshTokenFromQuery) {
-      setStoredRefreshToken(refreshTokenFromQuery);
-      url.searchParams.delete("refreshToken");
-    }
-
-    if (sessionIdFromQuery) {
-      localStorage.setItem(SESSION_STORAGE_KEY, sessionIdFromQuery);
-      url.searchParams.delete("sessionId");
-    }
-
-    if (tokenFromQuery || refreshTokenFromQuery || sessionIdFromQuery) {
+    unsafeTokenParams.forEach((param) => url.searchParams.delete(param));
+    if (removedUnsafeTokenParams) {
+      console.warn("[auth-sync] ignored auth tokens delivered through URL parameters");
       window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     }
 
     const token = localStorage.getItem(AUTH_STORAGE_KEY);
     if (token) {
       const existingCookie = getCookie(AUTH_COOKIE_NAME);
-      if (!existingCookie || existingCookie !== token) {
-        setCookie(AUTH_COOKIE_NAME, token);
+      if (existingCookie) {
+        deleteCookie(AUTH_COOKIE_NAME);
       }
 
       getUser();
@@ -115,10 +86,8 @@ export function useAuthSync() {
  * Utility to set token in localStorage and cookie for API headers
  */
 export function setAuthToken(token: string) {
-  // Set in localStorage
   localStorage.setItem(AUTH_STORAGE_KEY, token);
-  // Set in cookie for browser refresh compatibility
-  setCookie(AUTH_COOKIE_NAME, token);
+  deleteCookie(AUTH_COOKIE_NAME);
 }
 
 /**

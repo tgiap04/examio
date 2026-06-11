@@ -1,6 +1,7 @@
 import {
     CanActivate,
     ExecutionContext,
+    ForbiddenException,
     Injectable,
     UnauthorizedException,
 } from '@nestjs/common';
@@ -37,6 +38,8 @@ export class AuthGuard implements CanActivate {
                     email: true,
                     isAdmin: true,
                     isVerified: true,
+                    isBanned: true,
+                    deletedAt: true,
                     createdAt: true,
                     updatedAt: true,
                 },
@@ -44,6 +47,14 @@ export class AuthGuard implements CanActivate {
 
             if (!user) {
                 throw new UnauthorizedException('User not found');
+            }
+
+            if (user.isBanned || user.deletedAt) {
+                throw new UnauthorizedException('Account is disabled');
+            }
+
+            if (!user.isVerified) {
+                throw new ForbiddenException('Email not verified');
             }
 
             request['user'] = user;

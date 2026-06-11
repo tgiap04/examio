@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Logger, Headers } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Post, Logger, Headers } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SepayWebhook } from '../../types/webhook';
 import { WebhookService } from './webhook.service';
@@ -25,8 +25,8 @@ export class WebhookController {
         @Body() webhookData: SepayWebhook
     ): Promise<{ success: boolean; message?: string }> {
         this.logger.log(
-            `Received SePay webhook: ${JSON.stringify(webhookData)}`,
-            headers
+            `SePay webhook received: referenceCode=${webhookData.referenceCode}, amount=${webhookData.transferAmount}, type=${webhookData.transferType}`,
+            { hasContent: !!webhookData.content }
         );
 
         const authHeader = headers.authorization;
@@ -38,17 +38,9 @@ export class WebhookController {
 
         if (!webhookData || !webhookData.content) {
             this.logger.warn('Invalid webhook data received');
-            return { success: false, message: 'Invalid data' };
+            throw new BadRequestException('Invalid webhook data');
         }
 
-        try {
-            return await this.webhookService.processWebhook(
-                webhookData,
-                apiKey
-            );
-        } catch (error) {
-            this.logger.error(`Webhook processing failed: ${error.message}`);
-            return { success: false, message: error.message };
-        }
+        return this.webhookService.processWebhook(webhookData, apiKey);
     }
 }

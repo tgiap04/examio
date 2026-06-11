@@ -26,6 +26,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/antd/tabs";
 import { Tag, Plus, MoreVertical, Edit, Trash2, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+
 import {
   QuizSetLabel,
   getQuizSetLabelsApi,
@@ -37,10 +38,18 @@ import {
 import { toast } from "@/components/antd/toast";
 import { RichTextViewer } from "@/components/molecules/RichTextViewer";
 import { useQuizSetStore } from "@/stores/useQuizSetStore";
+
 import { useDebounce } from "@/hooks/useDebounce";
 import { isCorrectAnswer, quizOptionToText } from "@/lib/quizAnswerUtils";
 import type { Quizz } from "@/types/quizset";
 import { storeCache } from "@/lib/storeCache";
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+
+
 
 const LABEL_COLORS = [
   "#3B82F6",
@@ -591,7 +600,7 @@ export function LabelManager({ quizSetId, onLabelChange }: LabelManagerProps) {
                 const plainText = question.question.replace(/<[^>]+>/g, "");
                 const highlight = debouncedQuestionSearch
                   ? plainText.replace(
-                    new RegExp(`(${debouncedQuestionSearch})`, "gi"),
+                    new RegExp(`(${escapeRegExp(debouncedQuestionSearch)})`, "gi"),
                     "<mark class='bg-yellow-200'>$1</mark>",
                   )
                   : null;

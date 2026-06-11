@@ -1,20 +1,40 @@
 const RETURN_TO_KEY = "auth_return_to";
 
+const DEFAULT_RETURN_PATH = "/k";
+const AUTH_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
+
 export function normalizeReturnPath(path?: string | null) {
-  if (!path || !path.startsWith("/")) {
-    return "/k";
+  if (!path) {
+    return DEFAULT_RETURN_PATH;
   }
 
-  if (path.startsWith("//")) {
-    return "/k";
+  const trimmed = path.trim();
+  if (!trimmed || trimmed.includes("\\") || /[\x00-\x1f\x7f]/.test(trimmed)) {
+    return DEFAULT_RETURN_PATH;
   }
 
-  return path;
+  try {
+    const base = typeof window !== "undefined" ? window.location.origin : "https://examio.local";
+    const url = new URL(trimmed, base);
+
+    if (url.origin !== base || !url.pathname.startsWith("/") || url.pathname.startsWith("//")) {
+      return DEFAULT_RETURN_PATH;
+    }
+
+    if (AUTH_PATHS.some((authPath) => url.pathname.startsWith(authPath))) {
+      return DEFAULT_RETURN_PATH;
+    }
+
+    return `${url.pathname}${url.search}${url.hash}`;
+  }
+  catch {
+    return DEFAULT_RETURN_PATH;
+  }
 }
 
 export function getCurrentReturnPath() {
   if (typeof window === "undefined") {
-    return "/k";
+    return DEFAULT_RETURN_PATH;
   }
 
   return normalizeReturnPath(
@@ -32,12 +52,12 @@ export function setRedirectBackTarget(path?: string | null) {
 
 export function getRedirectBackTarget() {
   if (typeof window === "undefined") {
-    return "/k";
+    return DEFAULT_RETURN_PATH;
   }
 
   const stored = window.localStorage.getItem(RETURN_TO_KEY);
   if (!stored) {
-    return "/k";
+    return DEFAULT_RETURN_PATH;
   }
 
   return normalizeReturnPath(stored);

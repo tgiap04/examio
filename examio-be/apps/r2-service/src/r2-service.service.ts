@@ -5,7 +5,7 @@ import {
     DeleteObjectCommand,
     ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { r2Config } from './config/r2.config';
 
 @Injectable()
@@ -23,6 +23,28 @@ export class R2ServiceService {
         });
     }
 
+    private sanitizePathPart(value: string, label: string): string {
+        const normalized = value.replace(/\\/g, '/').split('/').pop()?.trim();
+        if (!normalized || normalized.includes('..') || /[\x00-]/.test(normalized)) {
+            throw new BadRequestException(`Invalid ${label}`);
+        }
+        return normalized.replace(/[^a-zA-Z0-9._-]/g, '_');
+    }
+
+    private sanitizeDirectory(directory: string): string {
+        const parts = directory
+            .replace(/\\/g, '/')
+            .split('/')
+            .filter(Boolean)
+            .map((part) => this.sanitizePathPart(part, 'directory'));
+
+        if (!parts.length) {
+            throw new BadRequestException('Invalid directory');
+        }
+
+        return parts.join('/');
+    }
+
     /**
      * Upload file với hỗ trợ directory/folder
      */
@@ -32,7 +54,10 @@ export class R2ServiceService {
         mimetype: string,
         directory?: string
     ): Promise<string> {
-        const fullKey = directory ? `${directory}/${key}` : key;
+        const safeKey = this.sanitizePathPart(key, 'file key');
+        const fullKey = directory
+            ? `${this.sanitizeDirectory(directory)}/${safeKey}`
+            : safeKey;
 
         await this.s3.send(
             new PutObjectCommand({

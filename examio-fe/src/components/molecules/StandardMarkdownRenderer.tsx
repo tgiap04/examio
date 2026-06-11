@@ -39,10 +39,10 @@ export function StandardMarkdownRenderer({
               ...defaultSchema,
               attributes: {
                 ...defaultSchema.attributes,
-                "*": ["className", "class", "style"], // Allow class/style for styling
-                img: ["src", "alt", "width", "height", "className", "class"],
-                a: ["href", "name", "target", "rel", "className", "class"],
-                // Allow KaTeX elements and classes
+                "*": [],
+                img: ["src", "alt", "width", "height"],
+                a: ["href", "name", "target", "rel"],
+                // KaTeX needs class names for math rendering; do not allow inline styles.
                 span: [...(defaultSchema.attributes?.span || []), "className", "class"],
                 div: [...(defaultSchema.attributes?.div || []), "className", "class"],
                 math: ["display"], // Allow math elements

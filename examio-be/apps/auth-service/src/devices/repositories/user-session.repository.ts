@@ -67,6 +67,27 @@ export class UserSessionRepository {
         });
     }
 
+    async rotateRefreshTokenIfCurrent(
+        sessionId: string,
+        currentRefreshToken: string,
+        nextRefreshToken: string
+    ): Promise<boolean> {
+        const result = await this.prisma.userSession.updateMany({
+            where: {
+                sessionId,
+                refreshToken: currentRefreshToken,
+                isActive: true,
+                expiresAt: { gt: new Date() },
+            },
+            data: {
+                refreshToken: nextRefreshToken,
+                lastActivity: new Date(),
+            },
+        });
+
+        return result.count === 1;
+    }
+
     async deactivateSession(id: string): Promise<void> {
         await this.prisma.userSession.update({
             where: { id },

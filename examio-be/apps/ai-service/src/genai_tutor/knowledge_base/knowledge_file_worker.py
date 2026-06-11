@@ -7,10 +7,14 @@ import hashlib
 import io
 import json
 import logging
+import os
+import ipaddress
+import socket
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
-from urllib.request import urlopen
+from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 from uuid import uuid4
 
 from src.backend.services.pdf_ocr_service import pdf_ocr_service
@@ -267,8 +271,38 @@ class TutorKnowledgeFileWorker:
             )
 
     def _download_file(self, url: str) -> bytes:
-        with urlopen(url) as response:  # noqa: S310
-            return response.read()
+        self._validate_download_url(url)
+        max_bytes = int(os.getenv('TUTOR_KNOWLEDGE_MAX_DOWNLOAD_BYTES', str(20 * 1024 * 1024)))
+        request = Request(url, headers={'User-Agent': 'examio-ai-service/1.0'})
+        with urlopen(request, timeout=10) as response:  # noqa: S310
+            data = response.read(max_bytes + 1)
+        if len(data) > max_bytes:
+            raise RuntimeError('Downloaded file exceeds the configured size limit')
+        return data
+
+    def _validate_download_url(self, url: str) -> None:
+        parsed = urlparse(url)
+        if parsed.scheme != 'https' or not parsed.hostname:
+            raise RuntimeError('Only HTTPS knowledge file URLs are allowed')
+
+        allowed_hosts = {
+            host.strip().lower()
+            for host in os.getenv('TUTOR_KNOWLEDGE_ALLOWED_HOSTS', '').split(',')
+            if host.strip()
+        }
+        hostname = parsed.hostname.lower()
+        if allowed_hosts and hostname not in allowed_hosts:
+            raise RuntimeError('Knowledge file host is not allowlisted')
+
+        try:
+            addresses = socket.getaddrinfo(hostname, None)
+        except socket.gaierror as exc:
+            raise RuntimeError('Cannot resolve knowledge file host') from exc
+
+        for address in addresses:
+            ip = ipaddress.ip_address(address[4][0])
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast:
+                raise RuntimeError('Knowledge file host resolves to a restricted address')
 
     async def _extract_content(
         self,

@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 // Shared libs
 import { DatabaseModule, PrismaService } from '@examio/database';
@@ -40,6 +42,13 @@ import { ProfileModule } from './profile/profile.module';
         PassportModule.register({ session: true }),
         DevicesModule,
         ProfileModule,
+        // Rate limiting: 30 requests per minute globally
+        ThrottlerModule.forRoot([
+            {
+                ttl: 60000,
+                limit: 30,
+            },
+        ]),
     ],
     providers: [
         PrismaService,
@@ -52,6 +61,8 @@ import { ProfileModule } from './profile/profile.module';
         AuthGuard,
         UserRepository,
         TurnstileService,
+        // Global rate limiting applied to all auth endpoints
+        { provide: APP_GUARD, useClass: ThrottlerGuard },
     ],
     controllers: [AuthController],
     exports: [AuthService, JwtModule, AuthGuard, UserRepository],
