@@ -11,6 +11,7 @@ import {
     HttpStatus,
     Param,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService, DeviceInfo } from './auth.service';
 import { RedisService } from '@examio/redis';
 import { RegisterDto } from './dto/register.dto';
@@ -28,6 +29,7 @@ import {
     getCookieConfig,
     TurnstileService,
 } from '@examio/common';
+import { AuthStrictThrottlerGuard } from './auth/guards/auth-strict-throttler.guard';
 import {
     AuthenticatedRequest,
     AuthenticatedOauthRequest,
@@ -126,6 +128,8 @@ export class AuthController {
     }
 
     @Post('register')
+    @UseGuards(AuthStrictThrottlerGuard)
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiOperation({ summary: 'Register a new user' })
     @ApiResponse({
         status: 201,
@@ -181,6 +185,8 @@ export class AuthController {
     }
 
     @Post('login')
+    @UseGuards(AuthStrictThrottlerGuard)
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiOperation({
         summary: 'Login a user',
         description:
@@ -340,6 +346,8 @@ export class AuthController {
     }
 
     @Post('send-code-reset-password')
+    @UseGuards(AuthStrictThrottlerGuard)
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiOperation({ summary: 'Send code to reset password' })
     @ApiResponse({
         status: 200,
@@ -351,6 +359,8 @@ export class AuthController {
     }
 
     @Post('reset-password')
+    @UseGuards(AuthStrictThrottlerGuard)
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiOperation({ summary: 'Reset user password' })
     @ApiResponse({
         status: 200,
@@ -409,6 +419,8 @@ export class AuthController {
     }
 
     @Post('google/one-tap')
+    @UseGuards(AuthStrictThrottlerGuard)
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiOperation({ summary: 'Đăng nhập Google One Tap' })
     async googleOneTap(
         @Body() body: { credential: string },

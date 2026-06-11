@@ -26,7 +26,7 @@ import {
   setStoredSessionId,
   clearStoredSessionId,
 } from "@/hooks/useAuthSync";
-import { clearRedirectBackTarget, getRedirectBackTarget } from "@/lib/authRedirect";
+import { clearRedirectBackTarget, getRedirectBackTarget, normalizeReturnPath } from "@/lib/authRedirect";
 import { env } from "@/lib/env";
 
 interface AuthState {
@@ -59,7 +59,7 @@ function getOAuthRedirectPath() {
   const fromParam = urlParams.get("from");
 
   if (fromParam) {
-    return fromParam;
+    return normalizeReturnPath(fromParam);
   }
 
   const authPaths = ["/login", "/register", "/forgot-password", "/reset-password"];
@@ -68,7 +68,7 @@ function getOAuthRedirectPath() {
     return "/k";
   }
 
-  return currentPath;
+  return normalizeReturnPath(currentPath);
 }
 
 export const useAuthStore = create<AuthState>((set) => ({

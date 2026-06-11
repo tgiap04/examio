@@ -534,7 +534,7 @@ export default function ExamQuizPage() {
                             key={index}
                             optionLetter={optionLetter}
                             state={state}
-                            content={<span dangerouslySetInnerHTML={{ __html: option }} />}
+                            content={<StandardMarkdownRenderer content={option} fontSize={13} />}
                           />
                         );
                       })}

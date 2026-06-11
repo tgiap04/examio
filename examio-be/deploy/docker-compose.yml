@@ -352,8 +352,8 @@ services:
         image: rabbitmq:3.12-management-alpine
         container_name: examio-rabbitmq
         environment:
-            - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:-admin}
-            - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS:-admin}
+            - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:?RABBITMQ_USER is required}
+            - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS:?RABBITMQ_PASS is required}
         volumes:
             - rabbitmq_data:/var/lib/rabbitmq
         networks:
@@ -371,12 +371,12 @@ services:
     postgres:
         image: pgvector/pgvector:pg16
         container_name: examio-postgres
-        ports:
+         ports:
             - '5411:5432'
         environment:
-            - POSTGRES_USER=${POSTGRES_USER:-examio}
-            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-examio_password}
-            - POSTGRES_DB=${POSTGRES_DB:-examio}
+            - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER is required}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+            - POSTGRES_DB=${POSTGRES_DB:?POSTGRES_DB is required}
             - PGDATA=/var/lib/postgresql/data/pgdata
         volumes:
             - postgres_data:/var/lib/postgresql/data
@@ -386,7 +386,7 @@ services:
             test:
                 [
                     'CMD-SHELL',
-                    'pg_isready -U ${POSTGRES_USER:-examio} -d ${POSTGRES_DB:-examio}',
+                    'pg_isready -U ${POSTGRES_USER:?POSTGRES_USER is required} -d ${POSTGRES_DB:?POSTGRES_DB is required}',
                 ]
             interval: 10s
             timeout: 5s
@@ -399,7 +399,7 @@ services:
     redis:
         image: redis:7-alpine
         container_name: examio-redis
-        command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-}
+        command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
         volumes:
             - redis_data:/data
         networks:

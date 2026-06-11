@@ -1,4 +1,5 @@
 import {
+    BadRequestException,
     Injectable,
     NotFoundException,
     ConflictException,
@@ -34,6 +35,22 @@ export class WebhookService {
         private readonly subscriptionService: SubscriptionService
     ) {}
 
+
+    private isValidApiKey(apiKey?: string): boolean {
+        if (!this.webhookSecretKey || !apiKey) {
+            return false;
+        }
+
+        const expected = Buffer.from(this.webhookSecretKey);
+        const received = Buffer.from(apiKey);
+
+        if (expected.length !== received.length) {
+            return false;
+        }
+
+        return crypto.timingSafeEqual(received, expected);
+    }
+
     /**
      * Xử lý webhook từ SePay khi có giao dịch chuyển khoản
      * 1. Parse paymentId từ nội dung
@@ -47,14 +64,7 @@ export class WebhookService {
         data: SepayWebhook,
         apiKey: string
     ): Promise<{ success: boolean }> {
-        if (
-            !this.webhookSecretKey ||
-            !apiKey ||
-            !crypto.timingSafeEqual(
-                Buffer.from(apiKey),
-                Buffer.from(this.webhookSecretKey)
-            )
-        ) {
+        if (!this.isValidApiKey(apiKey)) {
             this.logger.warn(`Invalid API key received`);
             throw new UnauthorizedException('Invalid API key');
         }
@@ -71,7 +81,7 @@ export class WebhookService {
 
         if (!paymentId) {
             this.logger.warn(
-                `Cannot extract paymentId from content: ${data.content}`
+                `Cannot extract paymentId from content (${data.content?.length ?? 0} chars)`
             );
             return { success: false };
         }
@@ -113,25 +123,20 @@ export class WebhookService {
         // Số tiền nhận được
         const amountReceived = data.transferAmount;
 
-        // Kiểm tra số tiền có khớp không (cho phép sai số nhỏ do phí)
-        if (amountReceived < payment.amount * 0.95) {
+        if (amountReceived !== payment.amount) {
             this.logger.warn(
                 `Amount mismatch: expected ${payment.amount}, got ${amountReceived}`
             );
-            // Vẫn xử lý nhưng ghi log
+            throw new BadRequestException('Payment amount does not match');
         }
 
-        // Xử lý dựa vào paymentType
-        console.log('🚀 ~ WebhookService ~ processWebhook ~ payment:', payment);
         if (payment.paymentType === 'subscription') {
-            console.log('Processing subscription payment');
             await this.processSubscriptionPayment(
                 payment,
                 paymentId,
                 amountReceived
             );
         } else {
-            console.log('Processing credit payment');
             await this.processCreditPayment(payment, paymentId, amountReceived);
         }
 
@@ -211,20 +216,15 @@ export class WebhookService {
         paymentId: string,
         amountReceived: number
     ) {
-        // Xác định tier và billing cycle từ số tiền
+        // Xác định tier và billing cycle từ số tiền đã được đối soát.
         const { tier, billingCycle } =
-            getSubscriptionTierFromPrice(amountReceived);
+            getSubscriptionTierFromPrice(payment.amount);
 
         if (tier === SUBSCRIPTION_TIER.NONE) {
             this.logger.warn(
-                `Cannot determine subscription tier from amount: ${amountReceived}`
+                `Cannot determine subscription tier from amount: ${payment.amount}`
             );
-            // Fallback to credit payment
-            return this.processCreditPayment(
-                payment,
-                paymentId,
-                amountReceived
-            );
+            throw new BadRequestException('Invalid subscription payment amount');
         }
 
         // Cập nhật payment status

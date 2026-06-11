@@ -62,6 +62,14 @@ export class AdminGuard implements CanActivate {
             throw new UnauthorizedException('User not found');
         }
 
+        if (user.isBanned || user.deletedAt) {
+            throw new UnauthorizedException('Account is disabled');
+        }
+
+        if (!user.isVerified) {
+            throw new ForbiddenException('Email not verified');
+        }
+
         if (!user.isAdmin) {
             throw new ForbiddenException('Admin access required');
         }

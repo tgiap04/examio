@@ -18,14 +18,26 @@ async function bootstrap() {
     // Global prefix
     app.setGlobalPrefix('api/v1');
 
-    // CORS - hardcoded for production
+    const configuredOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || '')
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean);
+    const allowedOrigins =
+        process.env.NODE_ENV === 'production'
+            ? configuredOrigins
+            : [
+                  ...configuredOrigins,
+                  'http://localhost:5173',
+                  'http://localhost:3001',
+                  'http://127.0.0.1:5173',
+              ];
+
+    if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
+        throw new Error('CORS_ORIGINS or FRONTEND_URL must be configured in production');
+    }
+
     app.enableCors({
-        origin: [
-            'https://kma.fayedark.com',
-            'http://localhost:5173',
-            'http://localhost:3001',
-            'http://127.0.0.1:5173',
-        ],
+        origin: allowedOrigins,
         credentials: true,
         allowedHeaders: [
             'Content-Type',
@@ -78,21 +90,25 @@ Sử dụng JWT Bearer token hoặc Cookie-based auth.
         .addTag('Gateway', 'Health Check & Status')
         .build();
 
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api', app, document, {
-        customSiteTitle: 'ExamIO API Documentation',
-        customCss: '.swagger-ui .topbar { display: none }',
-        swaggerOptions: {
-            persistAuthorization: true,
-            tagsSorter: 'alpha',
-            operationsSorter: 'alpha',
-        },
-    });
+    if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
+        const document = SwaggerModule.createDocument(app, config);
+        SwaggerModule.setup('api', app, document, {
+            customSiteTitle: 'ExamIO API Documentation',
+            customCss: '.swagger-ui .topbar { display: none }',
+            swaggerOptions: {
+                persistAuthorization: true,
+                tagsSorter: 'alpha',
+                operationsSorter: 'alpha',
+            },
+        });
+    }
 
     const port = process.env.PORT || 3000;
     await app.listen(port);
 
     console.log(`🚀 Gateway running on http://localhost:${port}`);
-    console.log(`📚 Swagger docs: http://localhost:${port}/api`);
+    if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
+        console.log(`📚 Swagger docs: http://localhost:${port}/api`);
+    }
 }
 bootstrap();

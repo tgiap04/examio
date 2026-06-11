@@ -114,14 +114,36 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Configure CORS
+# Configure CORS for explicit browser origins only.
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv("AI_CORS_ORIGINS", "").split(",")
+    if origin.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=allowed_origins,
+    allow_credentials=bool(allowed_origins),
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Internal-Service-Token"],
 )
+
+
+@app.middleware("http")
+async def require_internal_service_token(request: Request, call_next):
+    if request.url.path in {"/", "/health"}:
+        return await call_next(request)
+
+    expected_token = os.getenv("INTERNAL_SERVICE_TOKEN")
+    received_token = request.headers.get("x-internal-service-token")
+    if not expected_token or received_token != expected_token:
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"success": False, "error": "Invalid internal service token"},
+        )
+
+    return await call_next(request)
+
 
 # Include routers
 app.include_router(api_router, prefix="/api")

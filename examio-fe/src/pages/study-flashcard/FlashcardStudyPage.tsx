@@ -25,6 +25,7 @@ import {
   RotateCcw,
   Shuffle,
 } from "lucide-react";
+import { StandardMarkdownRenderer } from "@/components/molecules/StandardMarkdownRenderer";
 import { cn } from "@/lib/utils";
 import { setRedirectBackTarget } from "@/lib/authRedirect";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -453,9 +454,9 @@ export default function FlashcardStudyPage() {
                 <span className="mb-6 inline-flex items-center gap-1.5 rounded-pill bg-canvas px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                   Câu hỏi
                 </span>
-                <div
-                  className="prose max-w-none text-center font-display text-xl leading-relaxed tracking-tight text-ink sm:text-2xl"
-                  dangerouslySetInnerHTML={{ __html: currentCard?.question || "" }}
+                <StandardMarkdownRenderer
+                  content={currentCard?.question || ""}
+                  className="text-center font-display text-xl leading-relaxed tracking-tight text-ink sm:text-2xl"
                 />
                 <div className="mt-auto pt-8 flex items-center gap-1.5 text-[11px] text-muted-soft">
                   <RotateCcw className="h-3 w-3" />
@@ -474,9 +475,9 @@ export default function FlashcardStudyPage() {
                 <span className="mb-6 inline-flex items-center gap-1.5 rounded-pill bg-coral/10 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-coral">
                   Câu trả lời
                 </span>
-                <div
-                  className="prose max-w-none text-center text-lg leading-relaxed text-ink sm:text-xl"
-                  dangerouslySetInnerHTML={{ __html: currentCard?.answer || "" }}
+                <StandardMarkdownRenderer
+                  content={currentCard?.answer || ""}
+                  className="text-center text-lg leading-relaxed text-ink sm:text-xl"
                 />
                 <div className="mt-auto pt-8 flex items-center gap-1.5 text-[11px] text-muted-soft">
                   <RotateCcw className="h-3 w-3" />

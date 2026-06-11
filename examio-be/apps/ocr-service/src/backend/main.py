@@ -13,7 +13,7 @@ import sys
 from pathlib import Path
 from typing import Optional, Tuple
 
-from fastapi import FastAPI, File, UploadFile, HTTPException, Form
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -41,17 +41,40 @@ app = FastAPI(
     version="1.0.0"
 )
 
+allowed_origins = [
+    origin.strip()
+    for origin in os.getenv("OCR_CORS_ORIGINS", "").split(",")
+    if origin.strip()
+]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=allowed_origins,
+    allow_credentials=bool(allowed_origins),
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-Internal-Service-Token"],
 )
+
+
+@app.middleware("http")
+async def require_internal_service_token(request: Request, call_next):
+    if request.url.path in {"/", "/health"}:
+        return await call_next(request)
+
+    expected_token = os.getenv("INTERNAL_SERVICE_TOKEN")
+    received_token = request.headers.get("x-internal-service-token")
+    if not expected_token or received_token != expected_token:
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"success": False, "error": "Invalid internal service token"},
+        )
+
+    return await call_next(request)
 
 # Create upload and output directories
 UPLOAD_DIR = Path("/app/apps/ocr-service/uploads")
 OUTPUT_DIR = Path("/app/apps/ocr-service/outputs")
+MAX_UPLOAD_BYTES = int(os.getenv("OCR_MAX_UPLOAD_BYTES", str(25 * 1024 * 1024)))
+MAX_PDF_PAGES = int(os.getenv("OCR_MAX_PDF_PAGES", "50"))
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -154,8 +177,11 @@ def run_fallback_ocr(pdf_path: Path) -> Tuple[str, int]:
         reader = PdfReader(str(pdf_path))
         page_count = len(reader.pages)
         
+        if page_count > MAX_PDF_PAGES:
+            raise RuntimeError(f"PDF page count exceeds limit: {page_count} > {MAX_PDF_PAGES}")
+
         # Convert PDF to images
-        images = convert_from_path(str(pdf_path))
+        images = convert_from_path(str(pdf_path), first_page=1, last_page=page_count)
         
         full_text = []
         for i, image in enumerate(images):
@@ -173,6 +199,27 @@ def run_fallback_ocr(pdf_path: Path) -> Tuple[str, int]:
         raise RuntimeError(f"Fallback OCR failed: {str(e)}")
 
 
+def validate_pdf_upload(filename: str, content: bytes) -> None:
+    safe_name = Path(filename).name
+    if safe_name != filename or ".." in safe_name or not safe_name.lower().endswith(".pdf"):
+        raise HTTPException(status_code=400, detail="Invalid PDF filename")
+
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="PDF file is too large")
+
+    if not content.startswith(b"%PDF"):
+        raise HTTPException(status_code=400, detail="Uploaded file is not a PDF")
+
+    try:
+        reader = PdfReader(io.BytesIO(content))
+        if len(reader.pages) > MAX_PDF_PAGES:
+            raise HTTPException(status_code=413, detail="PDF page count exceeds limit")
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail="Invalid PDF file") from exc
+
+
 @app.post("/api/ocr/process")
 async def process_pdf(
     file: UploadFile = File(...),
@@ -187,11 +234,11 @@ async def process_pdf(
 
         logger.info(f"--- Starting OCR Job: {job_id} ---")
 
-        # Save file
-        pdf_filename = f"{job_id}_{file.filename}"
-        pdf_path = UPLOAD_DIR / pdf_filename
+        content = await file.read(MAX_UPLOAD_BYTES + 1)
+        validate_pdf_upload(file.filename, content)
+
+        pdf_path = UPLOAD_DIR / f"{job_id}.pdf"
         with open(pdf_path, "wb") as f:
-            content = await file.read()
             f.write(content)
 
         # 1. Attempt olmocr (Preferred)
@@ -245,8 +292,8 @@ async def process_pdf(
             content={"success": False, "job_id": job_id, "error_message": str(e)}
         )
     finally:
-        # Optional: Cleanup if needed, but keeping for now for logs
-        pass
+        if pdf_path and pdf_path.exists():
+            pdf_path.unlink(missing_ok=True)
 
 
 @app.get("/")
