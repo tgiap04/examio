@@ -86,8 +86,7 @@ export class R2ServiceController {
             throw new BadRequestException('File is too large');
         }
 
-        if (!file.mimetype || /[
-]/.test(file.mimetype)) {
+        if (!file.mimetype || /[<>\"'\\n]/.test(file.mimetype)) {
             throw new BadRequestException('Invalid file type');
         }
     }
@@ -127,29 +126,6 @@ export class R2ServiceController {
         }
     }
 
-    private assertInternalToken(token?: string): void {
-        const expected = process.env.INTERNAL_SERVICE_TOKEN;
-        if (!expected || !token || token !== expected) {
-            throw new UnauthorizedException('Invalid internal service token');
-        }
-    }
-
-    private validateUploadedFile(file?: Express.Multer.File): asserts file is Express.Multer.File {
-        if (!file) {
-            throw new BadRequestException('File is required');
-        }
-
-        const maxFileSizeBytes = Number(process.env.R2_MAX_UPLOAD_BYTES || 10 * 1024 * 1024);
-        if (!Number.isFinite(maxFileSizeBytes) || file.size > maxFileSizeBytes) {
-            throw new BadRequestException('File is too large');
-        }
-
-        if (!file.mimetype || /[
-]/.test(file.mimetype)) {
-            throw new BadRequestException('Invalid file type');
-        }
-    }
-
     @GrpcMethod('R2Service', 'GetFileUrl')
     async getFileUrl(data: GetFileUrlRequest) {
         const url = this.r2Service.getPublicUrl(data.key_r2);
@@ -157,29 +133,6 @@ export class R2ServiceController {
             url,
             expires_at: Date.now() + (data.expires_in_seconds || 3600) * 1000,
         };
-    }
-
-    private assertInternalToken(token?: string): void {
-        const expected = process.env.INTERNAL_SERVICE_TOKEN;
-        if (!expected || !token || token !== expected) {
-            throw new UnauthorizedException('Invalid internal service token');
-        }
-    }
-
-    private validateUploadedFile(file?: Express.Multer.File): asserts file is Express.Multer.File {
-        if (!file) {
-            throw new BadRequestException('File is required');
-        }
-
-        const maxFileSizeBytes = Number(process.env.R2_MAX_UPLOAD_BYTES || 10 * 1024 * 1024);
-        if (!Number.isFinite(maxFileSizeBytes) || file.size > maxFileSizeBytes) {
-            throw new BadRequestException('File is too large');
-        }
-
-        if (!file.mimetype || /[
-]/.test(file.mimetype)) {
-            throw new BadRequestException('Invalid file type');
-        }
     }
 
     @GrpcMethod('R2Service', 'DeleteFile')
