@@ -371,7 +371,7 @@ services:
     postgres:
         image: pgvector/pgvector:pg16
         container_name: examio-postgres
-         ports:
+        ports:
             - '5411:5432'
         environment:
             - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER is required}
