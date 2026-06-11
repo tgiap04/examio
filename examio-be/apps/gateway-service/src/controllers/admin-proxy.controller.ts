@@ -67,7 +67,7 @@ export class AdminProxyController {
             res.status(upstream.status);
             res.setHeader(
                 'Content-Type',
-                upstream.headers['content-type'] || 'text/event-stream'
+                String(upstream.headers['content-type'] || 'text/event-stream')
             );
             res.setHeader('Cache-Control', 'no-cache');
             res.setHeader('Connection', 'keep-alive');
