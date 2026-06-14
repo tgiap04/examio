@@ -12,6 +12,7 @@ import { AdminBootstrapModule } from './modules/admin-bootstrap/admin-bootstrap.
 import { AdminLogsModule } from './modules/admin-logs/admin-logs.module';
 import { AdminUsersModule } from './modules/admin-users/admin-users.module';
 import { AdminAuditModule } from './modules/admin-audit/admin-audit.module';
+import { AdminWordFamilyModule } from './modules/admin-word-family/admin-word-family.module';
 
 @Module({
     imports: [
@@ -31,6 +32,7 @@ import { AdminAuditModule } from './modules/admin-audit/admin-audit.module';
         AdminLogsModule,
         AdminUsersModule,
         AdminAuditModule,
+        AdminWordFamilyModule,
     ],
     controllers: [AdminServiceController],
     providers: [AdminServiceService, PrismaService],

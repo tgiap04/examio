@@ -37,6 +37,7 @@ model User {
     pinnedExamRooms           UserPinnedExamRoom[]
     flashcardStudyProgress    FlashcardStudyProgress[]
     adminAudits               AdminAudit[]
+    savedWordFamilies         UserSavedWordFamily[]
 }
 
 // Subscription tiers: 0=none, 1=basic, 2=advanced, 3=vip

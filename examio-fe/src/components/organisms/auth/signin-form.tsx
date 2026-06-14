@@ -84,8 +84,8 @@ export function SigninForm() {
               </div>
 
               <div className="space-y-1">
-                <div className="flex justify-between items-center">
-                  <label className="text-sm font-medium text-body">
+                <div className="flex justify-between items-center" >
+                  <label className="text-sm font-medium text-body" >
                     {t("login.password.label")}
                   </label>
                   <Link

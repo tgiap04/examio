@@ -30,7 +30,6 @@ import ManageExamRoomPage from "@/pages/k/ManageExamRoomPage";
 import ManageExamRoomDetailPage from "@/pages/k/ManageExamRoomDetailPage";
 import ExamRoomSessionAnalyticsPage from "@/pages/k/ExamRoomSessionAnalyticsPage";
 import MyExamsPage from "@/pages/k/MyExamsPage";
-import GenAIKnowledgePage from "@/app/k/genai-knowledge/page";
 import { PublicLayout } from "@/routes/layouts/PublicLayout";
 import { AuthLayout } from "@/routes/layouts/AuthLayout";
 import { KLayout } from "@/routes/layouts/KLayout";
@@ -45,6 +44,10 @@ import AdminFinancePage from "@/pages/admin/AdminFinancePage";
 import AdminLogsPage from "@/pages/admin/AdminLogsPage";
 import AdminAuditPage from "@/pages/admin/AdminAuditPage";
 import AdminStatsPage from "@/pages/admin/AdminStatsPage";
+import AdminWordFamilyPage from "@/pages/admin/AdminWordFamilyPage";
+import WordFamilyPage from "@/pages/k/WordFamilyPage";
+import WordFamilyCategoryPage from "@/pages/k/WordFamilyCategoryPage";
+import WordFamilyDetailPage from "@/pages/k/WordFamilyDetailPage";
 
 import { useTranslation } from "react-i18next";
 
@@ -304,16 +307,6 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/k/genai-knowledge",
-    element: (
-      <ProtectedRoute>
-        <KLayout>
-          <GenAIKnowledgePage />
-        </KLayout>
-      </ProtectedRoute>
-    ),
-  },
-  {
     path: "/k/manage-exam-room",
     element: (
       <ProtectedRoute>
@@ -354,6 +347,36 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/k/word-family",
+    element: (
+      <ProtectedRoute>
+        <KLayout>
+          <WordFamilyPage />
+        </KLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/k/word-family/:slug",
+    element: (
+      <ProtectedRoute>
+        <KLayout>
+          <WordFamilyCategoryPage />
+        </KLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/k/word-family/:slug/:rootWord",
+    element: (
+      <ProtectedRoute>
+        <KLayout>
+          <WordFamilyDetailPage />
+        </KLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
     path: "/admin",
     element: (
       <AdminRoute>
@@ -367,6 +390,7 @@ export const router = createBrowserRouter([
       { path: "finance", element: <AdminFinancePage /> },
       { path: "logs", element: <AdminLogsPage /> },
       { path: "audit", element: <AdminAuditPage /> },
+      { path: "word-family", element: <AdminWordFamilyPage /> },
     ],
   },
   {
