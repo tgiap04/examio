@@ -77,6 +77,7 @@ yarn lint:fix
 ```
 
 Ghi chú:
+
 - Frontend dev server chạy trên port `5173` qua `vite --host 0.0.0.0 --port 5173`.
 - Frontend hiện chưa có script test trong `package.json`.
 
@@ -162,6 +163,7 @@ Khi làm backend, hãy nghĩ theo feature module cộng với shared infra modul
 Prisma schema trong `examio-be/libs/database/src/schema.prisma` là nguồn sự thật dùng chung cho nhiều service.
 
 Các domain quan trọng hiện đang được mô hình hóa ở đó gồm:
+
 - User, verify/reset code, session, monthly upload quota, subscription.
 - Wallet, wallet transaction và payment.
 - Lưu trữ tệp người dùng (`UserStorage`), document chunk/OCR (`Document`) và các artifact phục vụ graph/RAG (`UserStorageGraph`, `UserStorageGraphGroup`).
@@ -207,6 +209,7 @@ Frontend được tổ chức quanh một số lớp khá ổn định:
 - `src/hooks`, `src/lib`, `src/types`, `src/provider`: logic hỗ trợ.
 
 Pattern phổ biến là:
+
 1. route/page component render UI,
 2. UI gọi Zustand store,
 3. store gọi API wrapper trong `src/apis`,
@@ -272,6 +275,7 @@ Khi backend thay đổi response shape, hãy cập nhật đồng thời API cli
 - Giữ diff gọn và tập trung. Repo này có convention format/style khác nhau giữa backend và frontend, vì vậy hãy match theo file đang sửa.
 
 ## Active Technologies
+
 - TypeScript 5.x with React 19 + React 19, React DOM 19, Axios, Zustand, Tailwind CSS 4, Radix UI primitives, TipTap, Framer Motion, Recharts, react-google-recaptcha-v3 (001-migrate-fe-vite)
 - Browser localStorage, browser cookies for auth sync, backend APIs as system of record (001-migrate-fe-vite)
 
@@ -328,7 +332,7 @@ for text in texts:
 ### Frontend Performance
 
 - **Memo components** - Dùng `React.memo`, `useMemo`, `useCallback` cho expensive computations
-- **Virtual scrolling** - Cho danh sách dài (>100 items)
+- **Virtual scrolling** - Cho danh sách dài (&gt;100 items)
 - **Code splitting** - Lazy load routes/components không cần thiết
 - **Debounce/Throttle** - Input events, scroll handlers, resize observers
 - **Zustand / Data call from api** - Cần cache kết quả API để tránh gọi lại quá nhiều, khi chuyển qua lại các trang cùng một phiên không cần gọi lại API, trừ khi thực hiện các action Create/Update/Delete data thì mới cần, hoặc load lại trang thì sẽ cần
@@ -340,7 +344,8 @@ for text in texts:
 - Track N+1 queries bằng Prisma middleware hoặc query logging
 - Benchmark trước/sau khi thay đổi quan trọng
 
-### Note 
+### Note
+
 - Tuyệt dối không commit code lên nếu người dùng không cho phép
 - Tuyệt đối không sinh plan trong examio-fe hay examio-be hay examio-app mà sinh trong `/plans`
 - Khi xóa bản ghi ( data ) ở database mà nó có ảnh lưu ở R2 thì đảm bảo cũng xóa luôna nhr đó trên R2
@@ -348,4 +353,129 @@ for text in texts:
 ---
 
 ## Recent Changes
+
 - 001-migrate-fe-vite: Added TypeScript 5.x with React 19 + React 19, React DOM 19, Axios, Zustand, Tailwind CSS 4, Radix UI primitives, TipTap, Framer Motion, Recharts, react-google-recaptcha-v3
+
+## Git message commit
+### Quy tắc gen message commit: 
+## Commit Message Formats
+
+### General Commit
+<pre>
+<b><a href="#types">&lt;type&gt;</a></b></font>(<b><a href="#scopes">&lt;optional scope&gt;</a></b>): <b><a href="#description">&lt;description&gt;</a></b>
+<sub>empty line as separator</sub>
+<b><a href="#body">&lt;optional body&gt;</a></b>
+<sub>empty line as separator</sub>
+<b><a href="#footer">&lt;optional footer&gt;</a></b>
+</pre>
+
+### Initial Commit 
+```
+chore: init
+```
+
+### Merge Commit
+<pre>
+Merge branch '<b>&lt;branch name&gt;</b>'
+</pre>
+<sup>Follows default git merge message</sup>
+
+### Revert Commit
+<pre>
+Revert "<b>&lt;reverted commit subject line&gt;</b>"
+</pre>
+<sup>Follows default git revert message</sup>
+
+
+### Types
+- Changes relevant to the API or UI:
+    - `feat` Commits that add, adjust or remove a feature to/of/from the API or UI
+    - `fix` Commits that fix an API or UI bug of a preceded `feat` commit
+- `refactor` Commits that rewrite or restructure code without altering API or UI behavior
+    - `perf` Commits are special type of `refactor` commits that specifically improve performance
+- `style` Commits that address code style (e.g., white-space, formatting, missing semi-colons) and do not affect application behavior
+- `test` Commits that add missing tests or correct existing ones
+- `docs` Commits that exclusively affect documentation
+- `build` Commits that affect build-related components such as build tools, dependencies, project version, ...
+- `ops` Commits that affect operational aspects like infrastructure (IaC), deployment scripts, CI/CD pipelines, backups, monitoring, or recovery procedures, ...
+- `chore` Commits that represent tasks like initial commit, modifying `.gitignore`, ...
+
+### Scopes
+The `scope` provides additional contextual information.
+* The scope is an **optional** part
+* Allowed scopes vary and are typically defined by the specific project
+* **Do not** use issue identifiers as scopes
+
+### Breaking Changes Indicator
+- A commit that introduce breaking changes **must** be indicated by an `!` before the `:` in the subject line e.g. `feat(api)!: remove status endpoint`
+- Breaking changes **should** be described in the [commit footer section](#footer), if the [commit description](#description) isn't sufficiently informative
+
+### Description
+The `description` contains a concise description of the change. 
+- The description is a **mandatory** part
+- Use the imperative, present tense: "change" not "changed" nor "changes"
+  - Think of `This commit will...` or `This commit should...`
+- **Do not** capitalize the first letter
+- **Do not** end the description with a period (`.`)
+- In case of breaking changes also see [breaking changes indicator](#breaking-changes-indicator)
+
+### Body
+The `body` should include the motivation for the change and contrast this with previous behavior.
+- The body is an **optional** part
+- Use the imperative, present tense: "change" not "changed" nor "changes"
+
+### Footer
+The `footer` should contain issue references and informations about **Breaking Changes**
+- The footer is an **optional** part, except if the commit introduce breaking changes
+- *Optionally* reference issue identifiers (e.g., `Closes #123`, `Fixes JIRA-456`) 
+- **Breaking Changes** **must** start with the word `BREAKING CHANGE:`
+  - For a single line description just add a space after `BREAKING CHANGE:`
+  - For a multi line description add two new lines after `BREAKING CHANGE:`
+
+### Versioning
+- **If** your next release contains commit with...
+   - **Breaking Changes** incremented the **major version**
+   - **API relevant changes** (`feat` or `fix`) incremented the **minor version**
+- **Else** increment the **patch version**
+
+
+### Examples
+- ```
+  feat: add email notifications on new direct messages
+  ```
+- ```
+  feat(shopping cart): add the amazing button
+  ```
+- ```
+  feat!: remove ticket list endpoint
+
+  refers to JIRA-1337
+
+  BREAKING CHANGE: ticket endpoints no longer supports list all entities.
+  ```
+- ```
+  fix(shopping-cart): prevent order an empty shopping cart
+  ```
+- ```
+  fix(api): fix wrong calculation of request body checksum
+  ```
+- ```
+  fix: add missing parameter to service call
+
+  The error occurred due to <reasons>.
+  ```
+- ```
+  perf: decrease memory footprint for determine unique visitors by using HyperLogLog
+  ```
+- ```
+  build: update dependencies
+  ```
+- ```
+  build(release): bump version to 1.0.0
+  ```
+- ```
+  refactor: implement fibonacci number calculation as recursion
+  ```
+- ```
+  style: remove empty line
+  ```
