@@ -1,7 +1,7 @@
 ---
 title: "Phase 3: NestJS Backend — WordFamily Module"
 description: "Add WordFamilyModule in exam-service: controller, service, DTOs, Redis cache, bridge to FlashCard creation"
-status: pending
+status: completed
 priority: P1
 effort: 5h
 branch: feat.grammary-learn
@@ -19,7 +19,7 @@ created: 2026-06-14
 **Date:** 2026-06-14
 **Description:** Add `WordFamilyModule` in exam-service with full CRUD, Redis cache, AI generation orchestration, and FlashCard bridge.
 **Priority:** P1
-**Status:** pending
+**Status:** completed
 
 ## Key Insights
 
@@ -163,15 +163,15 @@ interface FlashCardSetCreate {
 
 ## Todo List
 
-- [ ] Create `word-family.module.ts`
-- [ ] Create `word-family.repository.ts` with Redis cache
-- [ ] Create `word-family.service.ts` with all business logic
-- [ ] Create `word-family-bridge.service.ts` for FlashCard conversion
-- [ ] Create `word-family.controller.ts` with all endpoints
-- [ ] Create DTOs with Zod validation
-- [ ] Update `app.module.ts`
-- [ ] Add gateway proxy routes
-- [ ] Run tests
+- [x] Create `word-family.module.ts`
+- [x] Create `word-family.repository.ts` with Redis cache
+- [x] Create `word-family.service.ts` with all business logic
+- [x] Create `word-family-bridge.service.ts` for FlashCard conversion
+- [x] Create `word-family.controller.ts` with all endpoints
+- [x] Create DTOs with Zod validation
+- [x] Update `app.module.ts`
+- [x] Add gateway proxy routes
+- [x] Run tests
 
 ## Success Criteria
 
