@@ -7,6 +7,7 @@ import {
   Wallet,
   ScrollText,
   History,
+  BookOpen,
   LogOut,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -27,6 +28,7 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/admin/finance", labelKey: "nav.finance", icon: <Wallet className="h-4 w-4" /> },
   { to: "/admin/logs", labelKey: "nav.logs", icon: <ScrollText className="h-4 w-4" /> },
   { to: "/admin/audit", labelKey: "nav.audit", icon: <History className="h-4 w-4" /> },
+  { to: "/admin/word-family", labelKey: "nav.wordFamily", icon: <BookOpen className="h-4 w-4" /> },
 ];
 
 export function AdminLayout() {

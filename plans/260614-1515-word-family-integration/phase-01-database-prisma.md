@@ -1,7 +1,7 @@
 ---
 title: "Phase 1: Database & Prisma Migration"
 description: "Add WordFamilyCategory, WordFamily, UserSavedWordFamily models to Prisma schema + create seed file for 10 categories"
-status: pending
+status: completed
 priority: P1
 effort: 3h
 branch: feat.grammary-learn
@@ -140,13 +140,13 @@ interface WordFamilyData {
 
 ## Todo List
 
-- [ ] Add `WordFamilyCategory` model to schema.prisma
-- [ ] Add `WordFamily` model to schema.prisma
-- [ ] Add `UserSavedWordFamily` model to schema.prisma
-- [ ] Add `savedWordFamilies` relation to User model
-- [ ] Create `word-family-category.seed.ts` with 10 categories
-- [ ] Update `seed.ts` to call new seed
-- [ ] Run `prisma validate` + `prisma generate`
+- [x] Add `WordFamilyCategory` model to schema.prisma
+- [x] Add `WordFamily` model to schema.prisma
+- [x] Add `UserSavedWordFamily` model to schema.prisma
+- [x] Add `savedWordFamilies` relation to User model
+- [x] Create `word-family-category.seed.ts` with 10 categories
+- [x] Update `seed.ts` to call new seed
+- [x] Run `prisma validate` + `prisma generate`
 - [ ] Run seed locally and verify
 
 ## Success Criteria

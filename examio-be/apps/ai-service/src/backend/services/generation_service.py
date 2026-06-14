@@ -31,6 +31,47 @@ logger = logging.getLogger(__name__)
 
 # ==================== Schema Definitions ====================
 
+
+class Affix(BaseModel):
+    """Word affix breakdown"""
+    prefix: str = Field(default="", description="Prefix (e.g. 're', 'un')")
+    root: str = Field(description="Root word (e.g. 'act')")
+    suffix: str = Field(default="", description="Suffix (e.g. 'ion', 'ive')")
+
+
+class WordFamilyWord(BaseModel):
+    """A single word in a word family"""
+    word: str = Field(description="The derived word (e.g. 'action')")
+    pos: str = Field(description="Part of speech: noun/verb/adjective/adverb")
+    meaningEn: str = Field(description="English definition")
+    meaningVi: str = Field(description="Vietnamese definition")
+    example: str = Field(description="Example sentence")
+    affix: Affix = Field(description="Affix breakdown")
+
+
+class WordFamilyData(BaseModel):
+    """Complete word family data for one root word"""
+    rootWord: str = Field(description="Root word (e.g. 'act')")
+    categorySlug: str = Field(description="Category slug (e.g. 'shopping-restaurant')")
+    words: List[WordFamilyWord] = Field(description="Word family variations")
+
+
+class WordFamilyRequest(BaseModel):
+    """Request to generate word family"""
+    category_slug: str = Field(..., description="Category slug")
+    category_name: str = Field(..., description="Category display name")
+    num_root_words: int = Field(default=10, ge=1, le=20, description="Number of root words to generate")
+    exclude_root_words: List[str] = Field(default_factory=list, description="Root words to exclude (already generated)")
+    model_type: Optional[str] = Field(default=None, description="Model id from registry")
+
+
+class WordFamilyResponse(BaseModel):
+    """Response from word family generation"""
+    success: bool
+    data: Optional[WordFamilyData] = None
+    error: Optional[str] = None
+
+
 class QuizItem(BaseModel):
     question: str = Field(description="The quiz question text")
     options: List[str] = Field(description="A list of 4 possible answers")
@@ -814,6 +855,242 @@ class ContentGenerationService:
 
         except Exception as e:
             logger.exception(f"Error generating flashcards: {e}")
+            return {"success": False, "error": str(e)}
+
+    # ==================== Word Family Generation ====================
+
+    def _build_word_family_prompt(
+        self,
+        category_name: str,
+        category_slug: str,
+        num_words: int,
+        exclude_root_words: List[str],
+    ) -> str:
+        """Build prompt for word family generation"""
+        exclude_clause = ""
+        if exclude_root_words:
+            exclude_clause = (
+                "\nExclude these root words that have already been generated: "
+                + ", ".join(exclude_root_words)
+            )
+
+        return (
+            f"You are an English vocabulary expert specializing in Word Family analysis.\n\n"
+            f"Given the category \"{category_name}\" (slug: {category_slug}), "
+            f"generate {num_words} root words and their word family variations.{exclude_clause}\n\n"
+            "Requirements:\n"
+            "- Each root word must be common and relevant to the category\n"
+            "- For each root word, provide 3-5 word family variations "
+            "(noun, verb, adjective, adverb forms)\n"
+            "- Each variation must include:\n"
+            "  - word: the derived word\n"
+            "  - pos: part of speech (noun/verb/adjective/adverb)\n"
+            "  - meaningEn: English definition\n"
+            "  - meaningVi: Vietnamese definition\n"
+            "  - example: an example sentence using the word\n"
+            "  - affix: {{prefix, root, suffix}} — clearly identify the affix components\n\n"
+            "Return ONLY a valid JSON object matching this schema:\n"
+            "{{\n"
+            '  "rootWord": "act",\n'
+            f'  "categorySlug": "{category_slug}",\n'
+            '  "words": [\n'
+            "    {{\n"
+            '      "word": "action",\n'
+            '      "pos": "noun",\n'
+            '      "meaningEn": "the process of doing something",\n'
+            '      "meaningVi": "hành động",\n'
+            '      "example": "She took action immediately.",\n'
+            '      "affix": {{"prefix": "", "root": "act", "suffix": "ion"}}\n'
+            "    }}\n"
+            "  ]\n"
+            "}}\n\n"
+            "Return ONLY the JSON, no markdown, no explanation."
+        )
+
+    def _extract_json_object(self, text: str) -> str:
+        """Extract a JSON object from text (handle markdown blocks and bracket finding)"""
+        # 1. Try markdown block with { }
+        json_block_match = re.search(
+            r'```(?:json)?\s*(\{[\s\S]*?\})\s*```', text
+        )
+        if json_block_match:
+            return json_block_match.group(1)
+
+        # 2. Find first '{' and matching '}'
+        start_idx = text.find('{')
+        if start_idx == -1:
+            raise ValueError("No JSON object found in response")
+
+        depth = 0
+        for i in range(start_idx, len(text)):
+            if text[i] == '{':
+                depth += 1
+            elif text[i] == '}':
+                depth -= 1
+                if depth == 0:
+                    return text[start_idx : i + 1]
+
+        raise ValueError("No complete JSON object found in response")
+
+    def _parse_word_family_response(
+        self, response: str, category_slug: str
+    ) -> Optional[WordFamilyData]:
+        """Parse LLM response into WordFamilyData and validate category matches"""
+        try:
+            json_str = self._extract_json_object(response)
+            raw = json.loads(json_str)
+            parsed = WordFamilyData.model_validate(raw)
+
+            if parsed.categorySlug != category_slug:
+                logger.warning(
+                    f"LLM returned categorySlug '{parsed.categorySlug}' "
+                    f"but expected '{category_slug}' — overriding"
+                )
+                parsed = WordFamilyData(
+                    rootWord=parsed.rootWord,
+                    categorySlug=category_slug,
+                    words=parsed.words,
+                )
+            return parsed
+        except Exception as e:
+            logger.error(f"Failed to parse word family response: {e}")
+            return None
+
+    def _normalize_word_family(self, data: WordFamilyData) -> WordFamilyData:
+        """Normalize word family data: strip prefixes, validate pos, fix affix"""
+        valid_pos = {"noun", "verb", "adjective", "adverb"}
+        normalized_words = []
+
+        for word in data.words:
+            # Strip A./B./C./ prefixes
+            clean_word = re.sub(r'^([A-D]|[0-9]+)\s*[\.\)\:]\s+', '', word.word).strip()
+            clean_pos = word.pos.lower().strip()
+
+            # Map common LLM mistakes
+            pos_map = {
+                "n": "noun", "v": "verb", "adj": "adjective", "adv": "adverb",
+            }
+            clean_pos = pos_map.get(clean_pos, clean_pos)
+
+            if clean_pos not in valid_pos:
+                clean_pos = "noun"  # default
+
+            # Ensure affix.root matches rootWord
+            affix_root = word.affix.root.strip()
+            if affix_root.lower() != data.rootWord.lower():
+                affix_root = data.rootWord
+
+            normalized_words.append(WordFamilyWord(
+                word=clean_word,
+                pos=clean_pos,
+                meaningEn=word.meaningEn.strip(),
+                meaningVi=word.meaningVi.strip(),
+                example=word.example.strip(),
+                affix=Affix(
+                    prefix=word.affix.prefix.strip(),
+                    root=affix_root,
+                    suffix=word.affix.suffix.strip(),
+                ),
+            ))
+
+        return WordFamilyData(
+            rootWord=data.rootWord.strip(),
+            categorySlug=data.categorySlug.strip(),
+            words=normalized_words,
+        )
+
+    async def generate_word_family(
+        self,
+        request: WordFamilyRequest,
+    ) -> Dict[str, Any]:
+        """
+        Generate word family data for a category.
+
+        Returns dict with:
+        - success: bool
+        - data: WordFamilyData dict (if success)
+        - error: str (if failed)
+        """
+        final_model = model_manager.resolve_model(request.model_type)
+        logger.info(
+            f"Using AI model for word family: {final_model.id} "
+            f"(category: {request.category_slug}, num_root_words: {request.num_root_words})"
+        )
+
+        prompt = self._build_word_family_prompt(
+            category_name=request.category_name,
+            category_slug=request.category_slug,
+            num_words=request.num_root_words,
+            exclude_root_words=request.exclude_root_words,
+        )
+
+        generation_start = time.perf_counter()
+
+        try:
+            # Try up to 2 times (initial + 1 retry)
+            for attempt in range(2):
+                try:
+                    response = await model_manager.generate_content_with_model(
+                        prompt,
+                        final_model.id,
+                        system_prompt=(
+                            "You are an expert English linguist. "
+                            "Return ONLY valid JSON, no markdown, no explanation."
+                        ),
+                    )
+
+                    parsed = self._parse_word_family_response(
+                        response, request.category_slug
+                    )
+                    if parsed is None:
+                        logger.warning(
+                            f"Word family parse failed on attempt {attempt + 1}"
+                        )
+                        continue
+
+                    normalized = self._normalize_word_family(parsed)
+
+                    # Validate word count
+                    if not normalized.words:
+                        logger.warning(
+                            f"Word family returned empty words on attempt {attempt + 1}"
+                        )
+                        continue
+
+                    elapsed_ms = int(
+                        (time.perf_counter() - generation_start) * 1000
+                    )
+                    logger.info(
+                        f"[AI_TIMING] stage=word_family category={request.category_slug} "
+                        f"rootWord={normalized.rootWord} words={len(normalized.words)} "
+                        f"elapsed_ms={elapsed_ms}"
+                    )
+
+                    return {
+                        "success": True,
+                        "data": normalized.model_dump(),
+                    }
+
+                except ModelUnavailableError:
+                    raise
+                except Exception as e:
+                    logger.error(
+                        f"Word family generation attempt {attempt + 1} failed: {e}"
+                    )
+                    if attempt == 1:
+                        return {"success": False, "error": str(e)}
+
+            return {"success": False, "error": "Failed to generate word family after retries"}
+
+        except ModelUnavailableError as error:
+            return {
+                "success": False,
+                "error": str(error),
+                "error_code": error.code,
+                "status_code": 503,
+            }
+        except Exception as e:
+            logger.exception(f"Error generating word family: {e}")
             return {"success": False, "error": str(e)}
 
     def _distribute_items(self, total: int, num_chunks: int) -> List[int]:

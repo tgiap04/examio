@@ -1,14 +1,15 @@
 """
-Content Generation API - Generate Quiz and Flashcards from files
+Content Generation API - Generate Quiz, Flashcards, and Word Families
 
 Endpoints:
 - POST /generate/quiz - Generate quiz questions from a processed file
 - POST /generate/flashcards - Generate flashcards from a processed file
+- POST /generate/word-family - Generate word family data for a category
 - GET /generate/quiz/:historyId - Get generated quiz by history ID
 - GET /generate/flashcards/:historyId - Get generated flashcards by history ID
 """
 import logging
-from typing import Dict, Any, Optional
+from typing import Dict, Any, List, Optional
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
@@ -17,6 +18,7 @@ from src.backend.services.generation_service import (
     generation_service,
     GenerateQuizRequest,
     GenerateFlashcardRequest,
+    WordFamilyRequest,
 )
 from src.llm.model_manager import ModelUnavailableError
 
@@ -51,6 +53,22 @@ class GenerateFlashcardBody(BaseModel):
     modelType: Optional[str] = Field(
         default=None,
         description='Model id tu registry'
+    )
+
+
+class GenerateWordFamilyBody(BaseModel):
+    """Request body for word family generation"""
+    categorySlug: str = Field(..., description="Category slug (e.g. 'shopping-restaurant')")
+    categoryName: str = Field(..., description="Category display name (e.g. 'Mua sắm, nhà hàng')")
+    numRootWords: int = Field(default=10, ge=1, le=20, description="Number of root words to generate")
+    excludeRootWords: List[str] = Field(
+        default_factory=list,
+        max_length=50,
+        description="Root words to exclude (already generated)"
+    )
+    modelType: Optional[str] = Field(
+        default=None,
+        description='Model id from registry'
     )
 
 
@@ -212,3 +230,59 @@ async def get_flashcard_history(history_id: str):
         "success": True,
         **result
     }
+
+
+@router.post("/word-family", response_model=Dict[str, Any])
+async def generate_word_family(body: GenerateWordFamilyBody):
+    """
+    Generate word family data for a category
+
+    Flow:
+    1. NestJS calls this endpoint with category info + exclude list
+    2. AI generates root words with word family variations
+    3. Returns WordFamilyData with root word, category, and word variations
+
+    Returns:
+    - success: bool
+    - data: WordFamilyData (rootWord, categorySlug, words[])
+    """
+    logger.info(
+        f"Generate word family request: category={body.categorySlug}, "
+        f"numRootWords={body.numRootWords}, model={body.modelType}"
+    )
+
+    request = WordFamilyRequest(
+        category_slug=body.categorySlug,
+        category_name=body.categoryName,
+        num_root_words=body.numRootWords,
+        exclude_root_words=body.excludeRootWords,
+        model_type=body.modelType,
+    )
+
+    try:
+        result = await generation_service.generate_word_family(request)
+    except ModelUnavailableError as error:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": error.code, "message": str(error)},
+        )
+
+    if not result.get("success"):
+        if result.get('error_code') in {
+            'MODEL_UNAVAILABLE',
+            'MODEL_INSUFFICIENT_VRAM',
+            'MODEL_RUNTIME_ERROR',
+        }:
+            raise HTTPException(
+                status_code=result.get('status_code', 503),
+                detail={
+                    'code': result.get('error_code'),
+                    'message': result.get('error', 'Model unavailable'),
+                },
+            )
+        raise HTTPException(
+            status_code=400,
+            detail=result.get("error", "Failed to generate word family")
+        )
+
+    return result

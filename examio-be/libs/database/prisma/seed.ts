@@ -204,6 +204,10 @@ async function main() {
         }
     }
 
+    // 2. Seed Word Family Categories
+    const { seedWordFamilyCategories } = await import('../src/seed/word-family-category.seed');
+    await seedWordFamilyCategories(prisma);
+
     console.log('🌱 Seed completed successfully.');
 }
 
