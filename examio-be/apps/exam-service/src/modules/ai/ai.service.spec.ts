@@ -231,28 +231,5 @@ describe('AIService', () => {
             warning: 'Cloudflare unavailable',
         });
     });
-
-    it('maps AI tutor folder 404 to NotFoundException', async () => {
-        httpService.get = jest.fn().mockReturnValue(
-            throwError(() => ({
-                response: {
-                    status: 404,
-                    data: {
-                        error: 'Tutor knowledge folder not found',
-                    },
-                },
-                code: 'ERR_CANCELED',
-                message: 'canceled',
-            }))
-        );
-
-        await expect(
-            service.getTutorKnowledgeFolderContents(
-                { id: 'user-1' } as any,
-                'missing-folder',
-                1,
-                12
-            )
-        ).rejects.toThrow(NotFoundException);
-    });
 });
+

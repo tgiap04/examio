@@ -45,6 +45,9 @@ import { R2ProxyController } from './controllers/r2-proxy.controller';
 import { WebhookProxyController } from './controllers/webhook-proxy.controller';
 import { StudentProxyController } from './controllers/student-proxy.controller';
 
+// Word Family
+import { WordFamilyProxyController } from './controllers/word-family-proxy.controller';
+
 // Admin
 import { AdminProxyController } from './controllers/admin-proxy.controller';
 
@@ -92,6 +95,8 @@ import { AdminProxyController } from './controllers/admin-proxy.controller';
         WebhookProxyController,
         // Student
         StudentProxyController,
+        // Word Family
+        WordFamilyProxyController,
         // Admin
         AdminProxyController,
     ],

@@ -1,9 +1,45 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-06-07
+last_updated: 2026-06-14
 ---
 
 # Examio Project Changelog
+
+## [Unreleased] — 2026-06-14
+
+### Added
+
+#### Word Family Categories Seed (Phase 6)
+
+- Seed file `libs/database/src/seed/word-family-category.seed.ts` — 10 categories inserted via `upsert`
+- Seed wired into `libs/database/prisma/seed.ts` (imported and called from `main()`)
+- No AI image generation endpoint; categories seeded with `imageUrl: null` (per design decision)
+- Categories: shopping-restaurant, traffic-construction, workplace-leisure, position-title, location-place, meeting-work-office, travel-entertainment, banking-post-office, announcement-advertising, news-broadcasting-travel
+
+#### Word Family Integration — NestJS Backend (Phase 3)
+
+**Backend — `exam-service` + `gateway-service`**
+
+- New `WordFamilyModule` in exam-service: controller, service, bridge service, repository, DTOs, interfaces
+- `WordFamilyRepository` — Prisma CRUD for `WordFamilyCategory`, `WordFamily`, `UserSavedWordFamily` with Redis caching (TTL 30 min)
+- `WordFamilyService` — business logic for categories, root words, detail, AI generation orchestration with dedup, user collections
+- `WordFamilyBridgeService` — transactional conversion of word families to FlashCard decks (`FlashCardSet` + `FlashCard` + `DetailsFlashCard`)
+- `WordFamilyProxyController` in gateway-service — 11 proxy routes under `/api/v1/word-family/*`
+- Integration with Python AI service for word family generation (`POST /api/generate/word-family`)
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/word-family/categories` | GET | Bearer | List active categories |
+| `/word-family/categories` | POST | Admin | Create category |
+| `/word-family/categories/:id` | PUT | Admin | Update category |
+| `/word-family/categories/:id` | DELETE | Admin | Soft-delete category |
+| `/word-family/categories/:slug/roots` | GET | Bearer | Get root words in category |
+| `/word-family/category/:categorySlug/:rootWord` | GET | Bearer | Get word family detail |
+| `/word-family/generate` | POST | Bearer | Generate via AI |
+| `/word-family/save` | POST | Bearer | Save to collection |
+| `/word-family/saved` | GET | Bearer | Get saved collections |
+| `/word-family/saved/:id` | DELETE | Bearer | Remove from collection |
+| `/word-family/:id/to-flashcard` | POST | Bearer | Convert to flashcard deck |
 
 ## [Unreleased] — 2026-06-07
 
