@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   TreeView,
   ListView,
@@ -13,6 +13,14 @@ import {
   ApartmentOutlined,
   UnorderedListOutlined,
 } from "@ant-design/icons";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/antd/breadcrumb";
 
 export default function WordFamilyDetailPage() {
   const { slug, rootWord } = useParams<{
@@ -88,6 +96,32 @@ export default function WordFamilyDetailPage() {
   return (
     <div className="relative min-h-screen bg-background text-foreground">
       <section className="relative mx-auto max-w-7xl space-y-4 px-4 py-6 md:py-8">
+        <Breadcrumb className="mb-2">
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/k">Trang chủ</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to="/k/word-family">Từ vựng</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link to={`/k/word-family/${slug}`}>{slug}</Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>{rootWord}</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
