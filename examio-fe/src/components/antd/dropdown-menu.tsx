@@ -29,7 +29,7 @@ function collectMenuItems(children: React.ReactNode): MenuItem[] {
     const element = child as React.ReactElement<any>;
     if (element.type === DropdownMenuItem) {
       items.push({
-        key: element.props.key ?? String(index),
+        key: element.key ?? String(index),
         label: <span className={cn("flex w-max max-w-[min(80vw,28rem)] items-center gap-2 whitespace-nowrap", element.props.className)}>{element.props.children}</span>,
         disabled: element.props.disabled,
         danger: element.props.variant === "destructive",
