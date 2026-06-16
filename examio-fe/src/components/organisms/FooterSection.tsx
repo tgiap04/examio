@@ -2,24 +2,17 @@
 
 import * as React from "react";
 import { Link } from "react-router-dom";
-import {
-  ArrowRight,
-  Facebook,
-  Instagram,
-  Linkedin,
-  MapPin,
-  Mail,
-  Twitter,
-} from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../antd/button";
 import LanguageSwitcher from "../molecules/language-switcher";
+import AnimatedWave from "./landing/AnimatedWave";
 
-const socials = [
-  { icon: Facebook, label: "Facebook", href: "https://www.facebook.com/HocVienKyThuatMatMa" },
-  { icon: Twitter, label: "Twitter", href: "#" },
-  { icon: Instagram, label: "Instagram", href: "#" },
-  { icon: Linkedin, label: "LinkedIn", href: "#" },
+const socialLinks = [
+  { name: "Facebook", href: "https://www.facebook.com/HocVienKyThuatMatMa" },
+  { name: "Twitter", href: "#" },
+  { name: "Instagram", href: "#" },
+  { name: "LinkedIn", href: "#" },
 ];
 
 export default function FooterSection() {
@@ -66,138 +59,137 @@ export default function FooterSection() {
   ];
 
   return (
-    <footer className="bg-surface-cream-strong text-body dark:bg-surface-dark-elevated dark:text-on-dark-soft">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8">
-        <div className="grid gap-10 border-b border-hairline pb-12 dark:border-white/10 lg:grid-cols-12 lg:items-center">
-          <div className="lg:col-span-5">
-            <h3 className="font-display text-[28px] font-medium leading-[1.15] tracking-[-0.015em] text-ink dark:text-on-dark sm:text-[32px]">
-              {t("footer.newsletter.heading")}
-            </h3>
-            <p className="mt-3 text-[14px] leading-[1.6] text-body dark:text-on-dark-soft">
-              {t("footer.newsletter.description")}
-            </p>
-          </div>
+    <footer className="relative border-t border-foreground/10">
+      {/* Animated wave background */}
+      <div className="absolute inset-0 h-72 opacity-20 pointer-events-none overflow-hidden">
+        <AnimatedWave />
+      </div>
 
-          <form
-            onSubmit={handleSubscribe}
-            className="lg:col-span-7 lg:flex lg:justify-end"
-          >
-            <div className="flex w-full max-w-md items-center gap-2 rounded-[12px] border border-hairline bg-canvas/60 p-1.5 dark:border-white/10 dark:bg-surface-dark-soft">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder={t("footer.newsletter.placeholder")}
-                className="h-10 flex-1 bg-transparent px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:outline-none dark:text-on-dark dark:placeholder:text-on-dark-soft/60"
-                required
-              />
-              <Button
-                type="submit"
-                className="inline-flex h-10 items-center gap-2 rounded-[8px] bg-coral px-4 text-[13px] font-medium text-white transition-colors hover:bg-coral-active"
-              >
-                {subscribed ? t("footer.newsletter.subscribed") : t("footer.newsletter.subscribe")}
-                {!subscribed && <ArrowRight className="h-4 w-4" />}
-              </Button>
+      <div className="relative z-10 max-w-[1400px] mx-auto px-6 lg:px-12">
+        {/* Newsletter Section */}
+        <div className="py-16 lg:py-20 border-b border-foreground/10">
+          <div className="grid lg:grid-cols-2 gap-8 items-center">
+            <div>
+              <h3 className="text-2xl lg:text-3xl font-display tracking-tight">
+                {t("footer.newsletter.heading")}
+              </h3>
+              <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-md">
+                {t("footer.newsletter.description")}
+              </p>
             </div>
-          </form>
+
+            <form
+              onSubmit={handleSubscribe}
+              className="lg:justify-self-end w-full lg:w-auto"
+            >
+              <div className="flex w-full max-w-md items-center gap-2 rounded-xl border border-foreground/10 bg-canvas/60 p-1.5">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={t("footer.newsletter.placeholder")}
+                  className="h-10 flex-1 bg-transparent px-3 text-sm text-ink placeholder:text-muted-foreground focus:outline-none"
+                  required
+                />
+                <Button
+                  type="submit"
+                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-coral px-4 text-xs font-medium text-white transition-colors hover:bg-coral-active"
+                >
+                  {subscribed ? t("footer.newsletter.subscribed") : t("footer.newsletter.subscribe")}
+                  {!subscribed && <ArrowRight className="h-4 w-4" />}
+                </Button>
+              </div>
+            </form>
+          </div>
         </div>
 
-        <div className="grid gap-10 py-12 sm:grid-cols-2 lg:grid-cols-12">
-          <div className="lg:col-span-5">
-            <FooterLogo />
-            <p className="!mt-4 max-w-sm text-[14px] leading-[1.6] text-body dark:text-on-dark-soft">
-              {t("footer.description")}
-            </p>
+        {/* Main Footer Grid */}
+        <div className="py-16 lg:py-24">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-12 lg:gap-8">
+            {/* Brand Column */}
+            <div className="col-span-2">
+              <a href="/" className="inline-flex items-center gap-2 mb-6">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-coral/15 ring-1 ring-coral/25">
+                  <img
+                    src="/examio-lightmode.png"
+                    alt="Examio"
+                    className="h-6 w-6 rounded-[4px] object-cover"
+                  />
+                </span>
+                <span className="text-xl font-display tracking-tight">Examio</span>
+                <span className="text-xs text-muted-foreground font-mono">TM</span>
+              </a>
 
-            <ul className="mt-6 space-y-2.5 text-[13px] text-body dark:text-on-dark-soft">
-              <li className="flex items-start gap-2.5">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-coral" strokeWidth={1.75} />
-                {t("footer.address")}
-              </li>
-              <li className="flex items-center gap-2.5">
-                <Mail className="h-4 w-4 shrink-0 text-coral" strokeWidth={1.75} />
-                <a
-                  href="mailto:contact@examio.vn"
-                  className="hover:text-ink dark:hover:text-on-dark"
-                >
-                  togiap.dev@gmail.com
-                </a>
-              </li>
-            </ul>
+              <p className="text-sm text-muted-foreground leading-relaxed mb-8 max-w-xs">
+                {t("footer.description")}
+              </p>
 
-            <div className="mt-6 flex items-center gap-2">
-              {socials.map(({ icon: Icon, label, href }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={label}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-[9999px] border border-hairline text-body transition-colors hover:border-coral hover:bg-canvas/40 hover:text-coral dark:border-white/10 dark:text-on-dark-soft dark:hover:bg-surface-dark-soft"
-                >
-                  <Icon className="h-4 w-4" strokeWidth={1.75} />
-                </a>
-              ))}
-            </div>
-          </div>
-
-          {linkGroups.map((group) => (
-            <nav key={group.title} className="lg:col-span-2">
-              <h4 className="text-[12px] font-medium uppercase tracking-[1.5px] text-ink dark:text-on-dark">
-                {group.title}
-              </h4>
-              <ul className="mt-4 space-y-2.5">
-                {group.links.map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      to={link.to}
-                      className="text-[13px] text-body transition-colors hover:text-coral dark:text-on-dark-soft"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
+              {/* Social Links — text style with ArrowUpRight */}
+              <div className="flex gap-6">
+                {socialLinks.map((link) => (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 group"
+                  >
+                    {link.name}
+                    <ArrowUpRight className="w-3 h-3 opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all" />
+                  </a>
                 ))}
-              </ul>
-            </nav>
-          ))}
+              </div>
+            </div>
+
+            {/* Link Columns */}
+            {linkGroups.map((group) => (
+              <div key={group.title}>
+                <h3 className="text-sm font-medium mb-6">{group.title}</h3>
+                <ul className="space-y-4">
+                  {group.links.map((link) => (
+                    <li key={link.label}>
+                      <Link
+                        to={link.to}
+                        className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="flex flex-col items-start justify-between gap-4 border-t border-hairline pt-8 dark:border-white/10 sm:flex-row sm:items-center">
-          <p className="text-[12px] text-muted-foreground dark:text-on-dark-soft">
+        {/* Bottom Bar */}
+        <div className="py-8 border-t border-foreground/10 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-muted-foreground">
             © {new Date().getFullYear()} Examio. Made with love by tgiap.dev
           </p>
-          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[12px]">
-            <Link to="/terms" className="text-muted-foreground transition-colors hover:text-ink dark:text-on-dark-soft dark:hover:text-on-dark">
-              {t("footer.link.terms")}
-            </Link>
-            <Link to="/privacy" className="text-muted-foreground transition-colors hover:text-ink dark:text-on-dark-soft dark:hover:text-on-dark">
-              {t("footer.link.privacy")}
-            </Link>
-            <Link to="/cookies" className="text-muted-foreground transition-colors hover:text-ink dark:text-on-dark-soft dark:hover:text-on-dark">
-              {t("footer.link.cookies")}
-            </Link>
-            <span className="hidden h-3 w-px bg-hairline dark:bg-white/10 sm:inline-block" />
+
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-500" />
+              All systems operational
+            </span>
+            <span className="hidden h-3 w-px bg-foreground/10 md:inline-block" />
+            <div className="flex items-center gap-4">
+              <Link to="/terms" className="hover:text-foreground transition-colors">
+                {t("footer.link.terms")}
+              </Link>
+              <Link to="/privacy" className="hover:text-foreground transition-colors">
+                {t("footer.link.privacy")}
+              </Link>
+              <Link to="/cookies" className="hover:text-foreground transition-colors">
+                {t("footer.link.cookies")}
+              </Link>
+            </div>
+            <span className="hidden h-3 w-px bg-foreground/10 md:inline-block" />
             <LanguageSwitcher />
           </div>
         </div>
       </div>
     </footer>
-  );
-}
-
-function FooterLogo() {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-coral/15 ring-1 ring-coral/25">
-        <img
-          src="/examio-lightmode.png"
-          alt="Examio"
-          className="h-7 w-7 rounded-[6px] object-cover"
-        />
-      </span>
-      <span className="font-display text-[22px] font-semibold leading-none tracking-tight text-ink dark:text-on-dark">
-        Examio
-      </span>
-    </div>
   );
 }

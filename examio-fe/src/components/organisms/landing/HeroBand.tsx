@@ -1,117 +1,175 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import CharacterSphere from "@/components/organisms/landing/CharacterSphere";
+
+const WORDS_INTERVAL = 2500;
 
 export default function HeroBand() {
-  const { t } = useTranslation("landing");
-  return (
-    <section className="relative bg-canvas landing-dot-paper pt-28 pb-24 md:pt-32 md:pb-28">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-12 lg:grid-cols-12 lg:gap-10">
-          <div className="lg:col-span-6">
-            <div className="inline-flex items-center gap-2 rounded-[9999px] border border-hairline bg-surface-card px-3 py-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-coral" />
-              <span className="text-[12px] font-medium uppercase tracking-[1.5px] text-ink">
-                {t("hero.badge")}
-              </span>
+    const { t } = useTranslation("landing");
+    const [isVisible, setIsVisible] = useState(false);
+    const [wordIndex, setWordIndex] = useState(0);
+
+    const rotatingWords: string[] = t("hero.rotatingWords", {
+        returnObjects: true,
+    }) as string[];
+
+    useEffect(() => {
+        setIsVisible(true);
+    }, []);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setWordIndex((prev) => (prev + 1) % rotatingWords.length);
+        }, WORDS_INTERVAL);
+        return () => clearInterval(interval);
+    }, [rotatingWords.length]);
+
+    const stats = [
+        {
+            value: t("hero.stat1.value"),
+            label: t("hero.stat1.label"),
+            company: t("hero.stat1.company"),
+        },
+        {
+            value: t("hero.stat2.value"),
+            label: t("hero.stat2.label"),
+            company: t("hero.stat2.company"),
+        },
+        {
+            value: t("hero.stat3.value"),
+            label: t("hero.stat3.label"),
+            company: t("hero.stat3.company"),
+        },
+        {
+            value: t("hero.stat4.value"),
+            label: t("hero.stat4.label"),
+            company: t("hero.stat4.company"),
+        },
+    ];
+
+    return (
+        <section className="relative min-h-screen flex flex-col justify-center bg-canvas">
+            {/* Subtle grid lines background */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30 landing-grid-bg" />
+
+            {/* Character sphere glow */}
+            <div className="absolute right-[-40px] lg:right-[-60px] top-1/2 -translate-y-1/2 w-[800px] h-[800px] lg:w-[1150px] lg:h-[1150px] pointer-events-none z-[3]"
+                style={{
+                    background: "radial-gradient(ellipse at 55% 50%, color-mix(in srgb, var(--coral) 14%, transparent) 0%, transparent 55%)"
+                }}
+            />
+
+            {/* Character sphere */}
+            <div className="absolute right-[-20px] lg:right-[-40px] top-1/2 -translate-y-1/2 w-[700px] h-[700px] lg:w-[1000px] lg:h-[1000px] pointer-events-none z-20">
+                <CharacterSphere />
             </div>
 
-            <h1 className="font-display !mt-6 text-balance text-[44px] font-medium leading-[1.05] tracking-[-0.02em] text-ink sm:text-[56px] lg:text-[64px]">
-              {t("hero.headline")}
-            </h1>
+            <div className="relative z-10 max-w-[1400px] mx-auto px-6 lg:px-12 pt-32 pb-40">
+                {/* Eyebrow */}
+                <div
+                    className={`mb-8 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                >
+                    <span className="inline-flex items-center gap-3 text-sm font-mono text-muted-foreground">
+                        <span className="w-8 h-px bg-foreground/30" />
+                        {t("hero.badge")}
+                    </span>
+                </div>
 
-            <p className="mt-6 max-w-xl text-[17px] leading-[1.6] text-body">
-              {t("hero.description")}
-            </p>
+                {/* Main headline */}
+                <div className="mb-12">
+                    <h1
+                        className={`text-[clamp(3rem,12vw,10rem)] font-display leading-[0.9] tracking-[-0.03em] transition-all duration-1000 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+                    >
+                        <span className="block text-ink">
+                            {t("hero.headline")}
+                        </span>
+                        <span className="block text-ink">
+                            <span className="relative inline-block">
+                                <span
+                                    key={wordIndex}
+                                    className="inline-flex text-coral"
+                                >
+                                    {rotatingWords[wordIndex]
+                                        ?.split("")
+                                        .map((char, i) => (
+                                            <span
+                                                key={`${wordIndex}-${i}`}
+                                                className="inline-block animate-char-in"
+                                                style={{
+                                                    animationDelay: `${i * 50}ms`,
+                                                }}
+                                            >
+                                                {char}
+                                            </span>
+                                        ))}
+                                </span>
+                                <span className="absolute -bottom-2 left-0 right-0 h-3 bg-coral/10" />
+                            </span>{" "}
+                        </span>
+                        <span className="block text-ink">
+                            {t("hero.headlineSuffix")}
+                        </span>
+                    </h1>
+                </div>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Link
-                to="/k"
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-[8px] bg-coral px-5 text-[14px] font-medium text-white transition-colors hover:bg-coral-active"
-              >
-                {t("hero.cta.primary")}
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <a
-                href="#showcase"
-                className="inline-flex h-11 items-center justify-center rounded-[8px] border border-hairline bg-canvas px-5 text-[14px] font-medium text-ink transition-colors hover:bg-surface-card"
-              >
-                {t("hero.cta.secondary")}
-              </a>
+                {/* Description */}
+                <div className="grid lg:grid-cols-2 gap-12 lg:gap-24 items-end">
+                    <p
+                        className={`text-xl lg:text-2xl text-muted-foreground leading-relaxed max-w-xl transition-all duration-700 delay-200 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                    >
+                        {t("hero.description")}
+                    </p>
+
+                    {/* CTAs */}
+                    <div
+                        className={`flex flex-col sm:flex-row items-start gap-4 transition-all duration-700 delay-300 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+                    >
+                        <Link
+                            to="/register"
+                            className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-coral px-8 text-base font-medium text-white transition-colors hover:bg-coral-active group"
+                        >
+                            {t("hero.cta.primary")}
+                            <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
+                        </Link>
+                        <a
+                            href="#showcase"
+                            className="inline-flex h-14 items-center justify-center rounded-full border border-foreground/20 px-8 text-base font-medium text-ink hover:bg-foreground/5 transition-colors"
+                        >
+                            {t("hero.cta.secondary")}
+                        </a>
+                    </div>
+                </div>
             </div>
-          </div>
 
-          <div className="lg:col-span-6">
-            <HeroMockup />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function HeroMockup() {
-  return (
-    <div className="relative overflow-hidden rounded-[16px] border border-surface-dark-elevated bg-surface-dark p-5 shadow-[0_24px_60px_rgba(20,20,19,0.18)]">
-      <div className="flex items-center gap-2 pb-4">
-        <span className="h-2.5 w-2.5 rounded-full bg-[#3d3d3a]" />
-        <span className="h-2.5 w-2.5 rounded-full bg-[#3d3d3a]" />
-        <span className="h-2.5 w-2.5 rounded-full bg-[#3d3d3a]" />
-        <span className="ml-3 font-mono text-[12px] text-on-dark-soft">
-          examio · giai-tich-1.pdf
-        </span>
-      </div>
-
-      <div className="rounded-[12px] bg-surface-dark-soft p-5">
-        <div className="flex items-center gap-2 pb-3">
-          <span className="h-1.5 w-1.5 rounded-full bg-accent-teal" />
-          <span className="font-mono text-[11px] uppercase tracking-[1.5px] text-on-dark-soft">
-            AI đang phân tích
-          </span>
-        </div>
-        <div className="space-y-2 font-mono text-[13px] leading-[1.6]">
-          <p className="text-on-dark-soft">
-            <span className="text-coral">→</span> Nhận diện 12 chương · 248 khái niệm
-          </p>
-          <p className="text-on-dark-soft">
-            <span className="text-coral">→</span> Sinh{" "}
-            <span className="text-on-dark">40 câu trắc nghiệm</span>
-          </p>
-          <p className="text-on-dark-soft">
-            <span className="text-coral">→</span> Tạo{" "}
-            <span className="text-on-dark">120 flashcard</span> theo chủ đề
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 rounded-[12px] border border-surface-dark-elevated bg-surface-dark-elevated p-4">
-        <p className="text-[12px] uppercase tracking-[1.5px] text-on-dark-soft">
-          Câu hỏi mẫu
-        </p>
-        <p className="mt-2 text-[14px] leading-[1.55] text-on-dark">
-          Định lý nào phát biểu rằng một hàm liên tục trên đoạn đóng đạt giá trị
-          lớn nhất và nhỏ nhất?
-        </p>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          {[
-            { label: "A", text: "Định lý Rolle" },
-            { label: "B", text: "Định lý Weierstrass", correct: true },
-            { label: "C", text: "Định lý Lagrange" },
-            { label: "D", text: "Định lý Bolzano" },
-          ].map((opt) => (
+            {/* Stats marquee - full width outside container */}
             <div
-              key={opt.label}
-              className={`flex items-center gap-2 rounded-[8px] border px-3 py-2 text-[13px] ${opt.correct
-                  ? "border-coral/40 bg-coral/10 text-on-dark"
-                  : "border-surface-dark-soft text-on-dark-soft"
-                }`}
+                className={`absolute bottom-10 left-0 right-0 transition-all duration-700 delay-500 ${isVisible ? "opacity-100" : "opacity-0"}`}
             >
-              <span className="font-mono text-[11px]">{opt.label}.</span>
-              <span>{opt.text}</span>
+                <div className="flex gap-16 marquee whitespace-nowrap">
+                    {[0, 1].map((setIdx) => (
+                        <div key={setIdx} className="flex gap-16">
+                            {stats.map((stat) => (
+                                <div
+                                    key={`${stat.company}-${setIdx}`}
+                                    className="flex items-baseline gap-4"
+                                >
+                                    <span className="text-4xl lg:text-5xl font-display text-ink">
+                                        {stat.value}
+                                    </span>
+                                    <span className="text-sm text-muted-foreground">
+                                        {stat.label}
+                                        <span className="block font-mono text-xs mt-1 text-muted-soft">
+                                            {stat.company}
+                                        </span>
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+                </div>
             </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+        </section>
+    );
 }
