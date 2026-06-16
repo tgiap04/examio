@@ -2,6 +2,14 @@ import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useWordFamilyStore } from "@/stores/useWordFamilyStore";
 import { Skeleton, Button } from "antd";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/antd/breadcrumb";
 
 export default function WordFamilyCategoryPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -27,6 +35,26 @@ export default function WordFamilyCategoryPage() {
   return (
     <div className="relative min-h-screen bg-background text-foreground">
       <section className="relative mx-auto max-w-7xl space-y-6 px-4 py-6 md:py-8">
+      <Breadcrumb className="mb-2">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/k">Trang chủ</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link to="/k/word-family">Từ vựng</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{currentCategory?.category?.name ?? slug}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-display text-3xl font-normal tracking-tight text-ink">
