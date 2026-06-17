@@ -49,7 +49,7 @@ export default function Logo({
   showText = true,
 }: LogoProps) {
   return (
-    <div className={cn("flex items-center gap-3", className)}>
+    <div className={cn("flex items-center gap-3 cursor-pointer", className)}>
       <ExamioIcon size={sizeLogo} />
       {showText && (
         <span
@@ -71,7 +71,7 @@ export function LogoOnly({
   sizeIcon: number;
 }) {
   return (
-    <div className={cn("flex items-center", className)}>
+    <div className={cn("flex items-center cursor-pointer", className)}>
       <ExamioIcon size={sizeIcon} className={className} />
     </div>
   );

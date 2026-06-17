@@ -7,15 +7,7 @@ import { Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { TurnstileGuard } from "@/components/molecules/TurnstileGuard";
-
-function BottomGradient() {
-  return (
-    <>
-      <span className="group-hover/btn:opacity-100 block transition duration-500 opacity-0 absolute h-px w-full -bottom-px inset-x-0 bg-gradient-to-r from-transparent via-coral to-transparent" />
-      <span className="group-hover/btn:opacity-100 blur-sm block transition duration-500 opacity-0 absolute h-px w-1/2 mx-auto -bottom-px inset-x-10 bg-gradient-to-r from-transparent via-accent-amber to-transparent" />
-    </>
-  );
-}
+import Logo from "@/components/atoms/Logo";
 
 export function SigninForm() {
   const { t } = useTranslation("auth");
@@ -47,113 +39,97 @@ export function SigninForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-canvas landing-dot-paper">
-      <div className="w-full max-w-md rounded-2xl shadow-xl overflow-hidden border bg-canvas relative">
-        <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-coral/15 via-surface-card to-transparent opacity-60 blur-3xl -mt-20"></div>
+    <div className="flex min-h-screen items-center justify-center bg-canvas landing-dot-paper p-4">
+      <div className="w-full max-w-md">
+        <div className="rounded-[16px] border border-hairline bg-canvas p-8 shadow-[0_18px_48px_rgba(20,20,19,0.08)]">
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-5 flex justify-center">
+              <Logo sizeLogo={36} sizeText={22} />
+            </div>
+            <h1 className="font-display text-[28px] font-medium tracking-[-0.015em] text-ink">
+              {t("login.welcome")}
+            </h1>
+            <p className="mt-2 text-[14px] text-body">
+              {t("login.subtitle")}
+            </p>
+          </div>
 
-        <div className="p-8 relative">
-          <div className="flex flex-col items-center mb-8">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-coral/25 bg-coral/10 shadow-sm">
-              <img
-                src="/examio-lightmode.png"
-                alt="Examio"
-                className="h-12 w-12 rounded-xl object-cover"
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label className="mb-1.5 block text-[13px] font-medium text-ink">
+                {t("login.credential.label")}
+              </label>
+              <input
+                name="credential"
+                className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
+                placeholder={t("login.credential.placeholder")}
               />
             </div>
-            <div className="p-0 mt-2">
-              <h2 className="text-2xl font-bold text-center text-ink">
-                {t("login.welcome")}
-              </h2>
-              <p className="text-sm text-muted-foreground text-center mt-1">
-                {t("login.subtitle")}
-              </p>
-            </div>
-          </div>
 
-          <div className="space-y-6 p-0">
-            <form onSubmit={handleSubmit} className="space-y-6 p-0">
-              <div className="space-y-1">
-                <label className="text-sm font-medium text-body">
-                  {t("login.credential.label")}
+            <div>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="text-[13px] font-medium text-ink">
+                  {t("login.password.label")}
                 </label>
+                <Link
+                  to="/forgot-password"
+                  className="text-[13px] text-coral hover:text-coral-active"
+                >
+                  {t("login.forgotPassword")}
+                </Link>
+              </div>
+              <div className="relative">
                 <input
-                  name="credential"
-                  className="bg-surface-soft border border-hairline text-ink placeholder:text-muted-foreground h-12 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary w-full px-3 py-2 text-sm outline-none transition-all"
-                  placeholder={t("login.credential.placeholder")}
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 pr-12 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
+                  placeholder={t("login.password.placeholder")}
                 />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-ink"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
               </div>
-
-              <div className="space-y-1">
-                <div className="flex justify-between items-center" >
-                  <label className="text-sm font-medium text-body" >
-                    {t("login.password.label")}
-                  </label>
-                  <Link
-                    to="/forgot-password"
-                    className="text-xs text-primary hover:underline"
-                  >
-                    {t("login.forgotPassword")}
-                  </Link>
-                </div>
-                <div className="relative">
-                  <input
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    className="bg-surface-soft border border-hairline text-ink pr-12 h-12 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary w-full px-3 py-2 text-sm outline-none transition-all"
-                    placeholder={t("login.password.placeholder")}
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground hover:bg-surface-card inline-flex items-center justify-center rounded-md h-9 px-3 cursor-pointer transition-colors"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={!turnstileToken}
-                className="bg-primary hover:bg-coral-active relative group/btn w-full text-white rounded-lg h-11 font-semibold shadow-lg shadow-primary/30 cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
-              >
-                {t("login.submit")}
-              </button>
-            </form>
-
-            <div className="flex items-center my-4">
-              <div className="flex-1 h-px bg-surface-card"></div>
-              <span className="px-4 text-sm text-muted-foreground">
-                {t("login.orContinue")}
-              </span>
-              <div className="flex-1 h-px bg-surface-card"></div>
             </div>
 
-            <div className="grid gap-2 mb-[10px]">
-              <button
-                disabled={!turnstileToken}
-                className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-body rounded-lg h-10 font-medium bg-surface-soft border border-hairline hover:bg-surface-card cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-surface-soft"
-                type="button"
-                onClick={() => loginWithGoogle?.()}
-              >
-                <IconBrandGoogle className="h-4 w-4" />
-                <span className="text-sm">Google</span>
-                <BottomGradient />
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={!turnstileToken}
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-coral px-4 text-[14px] font-medium text-white transition-colors hover:bg-coral-active disabled:bg-coral/50 disabled:cursor-not-allowed"
+            >
+              {t("login.submit")}
+            </button>
+          </form>
+
+          <div className="my-6 flex items-center">
+            <div className="flex-1 h-px bg-hairline" />
+            <span className="px-4 text-[13px] text-muted-foreground">
+              {t("login.orContinue")}
+            </span>
+            <div className="flex-1 h-px bg-hairline" />
           </div>
 
-          <div className="text-muted-foreground flex justify-center gap-1 text-sm mt-4">
-            <p>{t("login.noAccount")} </p>
-            <Link
-              to="/register"
-              className="text-primary font-medium hover:underline"
-            >
+          <button
+            disabled={!turnstileToken}
+            className="flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border border-hairline bg-canvas text-[14px] font-medium text-body transition-colors hover:bg-surface-soft disabled:opacity-50 disabled:cursor-not-allowed"
+            type="button"
+            onClick={() => loginWithGoogle?.()}
+          >
+            <IconBrandGoogle className="h-4 w-4" />
+            <span>Google</span>
+          </button>
+
+          <div className="mt-6 flex justify-center gap-1 text-[13px] text-muted-foreground">
+            <p>{t("login.noAccount")}</p>
+            <Link to="/register" className="font-medium text-coral hover:text-coral-active">
               {t("login.signupLink")}
             </Link>
           </div>
 
-          <div className="flex justify-center mt-4">
+          <div className="mt-4 flex justify-center">
             <TurnstileGuard onTokenReady={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
           </div>
         </div>

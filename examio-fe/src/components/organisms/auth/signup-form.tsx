@@ -2,37 +2,13 @@
 import React, { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { normalizeReturnPath } from "@/lib/authRedirect";
-import { Label } from "@/components/antd/label";
 import { Input } from "@/components/antd/input";
-import { cn } from "@/lib/utils";
 import { IconBrandGoogle } from "@tabler/icons-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { toast } from "@/components/antd/toast";
 import { useTranslation } from "react-i18next";
 import { TurnstileGuard } from "@/components/molecules/TurnstileGuard";
-
-function BottomGradient() {
-  return (
-    <>
-      <span className="group-hover/btn:opacity-100 block transition duration-500 opacity-0 absolute h-px w-full -bottom-px inset-x-0 bg-gradient-to-r from-transparent via-coral to-transparent" />
-      <span className="group-hover/btn:opacity-100 blur-sm block transition duration-500 opacity-0 absolute h-px w-1/2 mx-auto -bottom-px inset-x-10 bg-gradient-to-r from-transparent via-accent-amber to-transparent" />
-    </>
-  );
-}
-
-function LabelInputContainer({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <div className={cn("flex flex-col space-y-2 w-full", className)}>
-      {children}
-    </div>
-  );
-}
+import Logo from "@/components/atoms/Logo";
 
 export function SignupForm() {
   const { t } = useTranslation("auth");
@@ -73,117 +49,103 @@ export function SignupForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-canvas landing-dot-paper py-8 w-full">
-      <div className="max-w-md w-full mx-4 rounded-2xl p-6 md:p-8 shadow-xl bg-canvas border relative">
-        <div className="absolute top-0 left-0 right-0 h-48 bg-gradient-to-b from-coral/15 via-surface-card to-transparent opacity-60 blur-3xl -mt-20 rounded-t-2xl"></div>
-
-        <div className="relative">
-          <div className="flex flex-col items-center mb-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-coral/25 bg-coral/10 shadow-sm">
-              <img
-                src="/examio-lightmode.png"
-                alt="Examio"
-                className="h-12 w-12 rounded-xl object-cover"
-              />
+    <div className="flex min-h-screen items-center justify-center bg-canvas landing-dot-paper p-4 py-8 w-full">
+      <div className="w-full max-w-md">
+        <div className="rounded-[16px] border border-hairline bg-canvas p-8 shadow-[0_18px_48px_rgba(20,20,19,0.08)]">
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-5 flex justify-center">
+              <Logo sizeLogo={36} sizeText={22} />
             </div>
-            <h2 className="font-bold text-xl text-ink mt-3">
+            <h1 className="font-display text-[28px] font-medium tracking-[-0.015em] text-ink">
               {t("signup.welcome")}
-            </h2>
-            <h1 className="text-3xl font-bold font-display text-coral mt-1">
-              {t("signup.title")}
             </h1>
+            <p className="mt-2 text-[14px] text-body">
+              {t("signup.title")}
+            </p>
           </div>
 
-
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <LabelInputContainer>
-              <Label htmlFor="username" className="text-body">
+          <form className="space-y-5" onSubmit={handleSubmit}>
+            <div>
+              <label htmlFor="username" className="mb-1.5 block text-[13px] font-medium text-ink">
                 {t("signup.username.label")}
-              </Label>
+              </label>
               <Input
                 id="username"
                 name="username"
                 placeholder={t("signup.username.placeholder")}
                 type="text"
-                className="bg-surface-soft border-hairline focus:ring-primary focus:border-primary"
+                className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
               />
-            </LabelInputContainer>
+            </div>
 
-            <LabelInputContainer>
-              <Label htmlFor="email" className="text-body">
+            <div>
+              <label htmlFor="email" className="mb-1.5 block text-[13px] font-medium text-ink">
                 {t("signup.email.label")}
-              </Label>
+              </label>
               <Input
                 id="email"
                 name="email"
                 placeholder={t("signup.email.placeholder")}
                 type="email"
-                className="bg-surface-soft border-hairline focus:ring-primary focus:border-primary"
+                className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
               />
-            </LabelInputContainer>
+            </div>
 
-            <LabelInputContainer>
-              <Label htmlFor="password" className="text-body">
+            <div>
+              <label htmlFor="password" className="mb-1.5 block text-[13px] font-medium text-ink">
                 {t("signup.password.label")}
-              </Label>
+              </label>
               <Input
                 id="password"
                 name="password"
                 placeholder={t("signup.password.placeholder")}
                 type="password"
-                className="bg-surface-soft border-hairline focus:ring-primary focus:border-primary"
+                className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
               />
-            </LabelInputContainer>
+            </div>
 
-            <LabelInputContainer>
-              <Label htmlFor="confirmPassword" className="text-body">
+            <div>
+              <label htmlFor="confirmPassword" className="mb-1.5 block text-[13px] font-medium text-ink">
                 {t("signup.confirmPassword.label")}
-              </Label>
+              </label>
               <Input
                 id="confirmPassword"
                 name="confirmPassword"
                 placeholder={t("signup.confirmPassword.placeholder")}
                 type="password"
-                className="bg-surface-soft border-hairline focus:ring-primary focus:border-primary"
+                className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
               />
-            </LabelInputContainer>
+            </div>
 
             <button
               disabled={!turnstileToken}
-              className="bg-primary hover:bg-coral-active relative group/btn w-full text-white rounded-lg h-11 font-semibold shadow-lg shadow-primary/30 cursor-pointer transition-all mt-6 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-coral px-4 text-[14px] font-medium text-white transition-colors hover:bg-coral-active disabled:bg-coral/50 disabled:cursor-not-allowed"
               type="submit"
             >
               {t("signup.submit")}
-              <BottomGradient />
             </button>
 
-            <div className="flex items-center my-6">
-              <hr className="flex-grow border-t border-hairline" />
-              <span className="px-4 text-sm text-muted-foreground">
+            <div className="my-6 flex items-center">
+              <div className="flex-1 h-px bg-hairline" />
+              <span className="px-4 text-[13px] text-muted-foreground">
                 {t("signup.orRegister")}
               </span>
-              <hr className="flex-grow border-t border-hairline" />
+              <div className="flex-1 h-px bg-hairline" />
             </div>
 
-            <div className="grid gap-2 grid-cols-1">
-              <button
-                disabled={!turnstileToken}
-                className="relative group/btn flex space-x-2 items-center justify-center px-4 w-full text-body rounded-lg h-10 font-medium bg-surface-soft border border-hairline hover:bg-surface-card cursor-pointer transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-surface-soft"
-                type="button"
-                onClick={() => loginWithGoogle?.()}
-              >
-                <IconBrandGoogle className="h-4 w-4" />
-                <span className="text-sm">Google</span>
-                <BottomGradient />
-              </button>
-            </div>
+            <button
+              disabled={!turnstileToken}
+              className="flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border border-hairline bg-canvas text-[14px] font-medium text-body transition-colors hover:bg-surface-soft disabled:opacity-50 disabled:cursor-not-allowed"
+              type="button"
+              onClick={() => loginWithGoogle?.()}
+            >
+              <IconBrandGoogle className="h-4 w-4" />
+              <span>Google</span>
+            </button>
 
-            <div className="text-muted-foreground flex justify-center gap-1 text-sm mt-4">
-              <p>{t("signup.hasAccount")} </p>
-              <Link
-                to="/login"
-                className="text-primary font-medium hover:underline"
-              >
+            <div className="mt-6 flex justify-center gap-1 text-[13px] text-muted-foreground">
+              <p>{t("signup.hasAccount")}</p>
+              <Link to="/login" className="font-medium text-coral hover:text-coral-active">
                 {t("signup.loginLink")}
               </Link>
             </div>
