@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "../antd/button";
 import LanguageSwitcher from "../molecules/language-switcher";
 import AnimatedWave from "./landing/AnimatedWave";
+import Logo from "../atoms/Logo";
 
 const socialLinks = [
   { name: "Facebook", href: "https://www.facebook.com/HocVienKyThuatMatMa" },
@@ -109,14 +110,7 @@ export default function FooterSection() {
             {/* Brand Column */}
             <div className="col-span-2">
               <a href="/" className="inline-flex items-center gap-2 mb-6">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-coral/15 ring-1 ring-coral/25">
-                  <img
-                    src="/examio-lightmode.png"
-                    alt="Examio"
-                    className="h-6 w-6 rounded-[4px] object-cover"
-                  />
-                </span>
-                <span className="text-xl font-display tracking-tight">Examio</span>
+                <Logo sizeLogo={32} sizeText={20} />
                 <span className="text-xs text-muted-foreground font-mono">TM</span>
               </a>
 

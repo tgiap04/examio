@@ -112,6 +112,8 @@
   --gradient-from: var(--coral);
   --gradient-via: var(--accent-amber);
   --gradient-to: var(--surface-cream-strong);
+  --trong-dong-color: var(--coral);
+  --trong-dong-opacity: 0.12;
 }
 
 .dark {
@@ -145,6 +147,8 @@
   --sidebar-accent: var(--surface-card);
   --sidebar-accent-foreground: var(--ink);
   --sidebar-border: var(--hairline);
+  --trong-dong-color: var(--ink);
+  --trong-dong-opacity: 0.03;
 }
 
 @theme inline {
@@ -752,6 +756,11 @@
     opacity: 1;
     filter: blur(0);
   }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 .code-char-reveal {

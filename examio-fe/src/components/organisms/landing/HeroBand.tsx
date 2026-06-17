@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import CharacterSphere from "@/components/organisms/landing/CharacterSphere";
 
 const WORDS_INTERVAL = 2500;
 
@@ -57,13 +56,29 @@ export default function HeroBand() {
             {/* Character sphere glow */}
             <div className="absolute right-[-40px] lg:right-[-60px] top-1/2 -translate-y-1/2 w-[800px] h-[800px] lg:w-[1150px] lg:h-[1150px] pointer-events-none z-[3]"
                 style={{
-                    background: "radial-gradient(ellipse at 55% 50%, color-mix(in srgb, var(--coral) 14%, transparent) 0%, transparent 55%)"
+                    background: "radial-gradient(ellipse at 55% 50%, color-mix(in srgb, var(--coral) 22%, transparent) 0%, transparent 60%)"
                 }}
             />
 
-            {/* Character sphere */}
+            {/* Trống đồng — 2D rotation, coral tint via CSS mask */}
             <div className="absolute right-[-20px] lg:right-[-40px] top-1/2 -translate-y-1/2 w-[700px] h-[700px] lg:w-[1000px] lg:h-[1000px] pointer-events-none z-20">
-                <CharacterSphere />
+                <div
+                    className="w-full h-full"
+                    style={{
+                        animation: "spin 40s linear infinite",
+                        opacity: "var(--trong-dong-opacity)" as unknown as number,
+                        backgroundColor: "var(--trong-dong-color)",
+                        filter: "blur(12px)",
+                        maskImage: "url(/trong_dong.svg)",
+                        maskSize: "contain",
+                        maskRepeat: "no-repeat",
+                        maskPosition: "center",
+                        WebkitMaskImage: "url(/trong_dong.svg)",
+                        WebkitMaskSize: "contain",
+                        WebkitMaskRepeat: "no-repeat",
+                        WebkitMaskPosition: "center",
+                    }}
+                />
             </div>
 
             <div className="relative z-10 max-w-[1400px] mx-auto px-6 lg:px-12 pt-32 pb-40">
