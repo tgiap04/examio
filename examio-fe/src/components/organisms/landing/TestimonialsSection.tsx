@@ -100,7 +100,7 @@ export default function TestimonialsSection() {
 
                 {/* Company Logos Marquee Label */}
                 <div className="mt-24 pt-12 border-t border-foreground/10">
-                    <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase mb-8 text-center">
+                    <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase !mb-8 text-center">
                         {t("testimonials.companyLogoLabel")}
                     </p>
                 </div>
