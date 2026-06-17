@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/useAuthStore";
+import Logo from "@/components/atoms/Logo";
 
 export default function ForgotPasswordPage() {
   const { t } = useTranslation("auth");
@@ -31,8 +32,8 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-md">
         <div className="rounded-[16px] border border-hairline bg-canvas p-8 shadow-[0_18px_48px_rgba(20,20,19,0.08)]">
           <div className="mb-8 text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl border border-coral/25 bg-coral/10">
-              <Mail className="h-8 w-8 text-coral" />
+            <div className="mx-auto mb-5 flex justify-center">
+              <Logo sizeLogo={36} sizeText={22} />
             </div>
             <h1 className="font-display text-[28px] font-medium tracking-[-0.015em] text-ink">
               {t("forgot.title")}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowRight,
@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 
 export default function ContactSection() {
   const { t } = useTranslation("landing");
+  const [isVisible, setIsVisible] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -21,6 +22,10 @@ export default function ContactSection() {
     message: "",
   });
   const [submitted, setSubmitted] = useState(false);
+
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,21 +46,61 @@ export default function ContactSection() {
 
   return (
     <div className="overflow-x-hidden bg-canvas">
-      <section className="bg-canvas landing-dot-paper pt-28 pb-24 md:pt-32 md:pb-28">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section className="relative min-h-[55vh] flex flex-col justify-center bg-canvas pt-28 pb-20 md:pt-36 md:pb-24">
+        {/* Grid lines */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30 landing-grid-bg" />
+
+        {/* Radial coral glow — right side */}
+        <div
+          className="absolute right-[-80px] top-1/2 -translate-y-1/2 w-[600px] h-[600px] pointer-events-none"
+          style={{
+            background: "radial-gradient(ellipse at 55% 50%, color-mix(in srgb, var(--coral) 18%, transparent) 0%, transparent 65%)",
+          }}
+        />
+
+        {/* Trống đồng decoration — left */}
+        <div className="absolute left-[-80px] top-1/2 -translate-y-1/2 w-[480px] h-[480px] pointer-events-none">
+          <div
+            className="w-full h-full"
+            style={{
+              animation: "spin 55s linear infinite reverse",
+              opacity: "var(--trong-dong-opacity)" as unknown as number,
+              backgroundColor: "var(--trong-dong-color)",
+              filter: "blur(10px)",
+              maskImage: "url(/trong_dong.svg)",
+              maskSize: "contain",
+              maskRepeat: "no-repeat",
+              maskPosition: "center",
+              WebkitMaskImage: "url(/trong_dong.svg)",
+              WebkitMaskSize: "contain",
+              WebkitMaskRepeat: "no-repeat",
+              WebkitMaskPosition: "center",
+            }}
+          />
+        </div>
+
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-[9999px] border border-hairline bg-surface-card px-3 py-1.5">
-              <Sparkles className="h-3.5 w-3.5 text-coral" />
-              <span className="text-[12px] font-medium uppercase tracking-[1.5px] text-ink">
-                {t("contact.badge")}
-              </span>
+            <div
+              className={`transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            >
+              <div className="inline-flex items-center gap-2 rounded-[9999px] border border-hairline bg-surface-card px-3 py-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-coral" />
+                <span className="text-[12px] font-medium uppercase tracking-[1.5px] text-ink">
+                  {t("contact.badge")}
+                </span>
+              </div>
             </div>
 
-            <h1 className="font-display !mt-6 text-[44px] font-medium leading-[1.05] tracking-[-0.02em] text-ink sm:text-[56px] lg:text-[64px]">
+            <h1
+              className={`font-display !mt-6 text-[44px] font-medium leading-[1.05] tracking-[-0.02em] text-ink sm:text-[56px] lg:text-[64px] transition-all duration-1000 delay-100 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}
+            >
               {t("contact.headline")}
             </h1>
 
-            <p className="mt-6 text-[17px] leading-[1.6] text-body">
+            <p
+              className={`mt-6 text-[17px] leading-[1.6] text-body transition-all duration-700 delay-200 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+            >
               {t("contact.description")}
             </p>
           </div>
