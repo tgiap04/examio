@@ -54,14 +54,14 @@ export default function HeroBand() {
             <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30 landing-grid-bg" />
 
             {/* Character sphere glow */}
-            <div className="absolute right-[-40px] lg:right-[-60px] top-1/2 -translate-y-1/2 w-[800px] h-[800px] lg:w-[1150px] lg:h-[1150px] pointer-events-none z-[3]"
+            <div className="absolute right-[5%] top-1/2 -translate-y-1/2 w-[950px] h-[950px] pointer-events-none z-[3]"
                 style={{
-                    background: "radial-gradient(ellipse at 55% 50%, color-mix(in srgb, var(--coral) 22%, transparent) 0%, transparent 60%)"
+                    background: "radial-gradient(ellipse at 50% 50%, color-mix(in srgb, var(--coral) 22%, transparent) 0%, transparent 60%)"
                 }}
             />
 
             {/* Trống đồng — 2D rotation, coral tint via CSS mask */}
-            <div className="absolute right-[-20px] lg:right-[-40px] top-1/2 -translate-y-1/2 w-[700px] h-[700px] lg:w-[1000px] lg:h-[1000px] pointer-events-none z-20">
+            <div className="absolute right-[8%] top-1/2 -translate-y-1/2 w-[900px] h-[900px] pointer-events-none z-20">
                 <div
                     className="w-full h-full"
                     style={{
@@ -81,7 +81,7 @@ export default function HeroBand() {
                 />
             </div>
 
-            <div className="relative z-10 max-w-[1400px] mx-auto px-6 lg:px-12 pt-32 pb-40">
+            <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 pt-32 pb-40">
                 {/* Eyebrow */}
                 <div
                     className={`mb-8 transition-all duration-700 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}

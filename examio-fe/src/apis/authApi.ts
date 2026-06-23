@@ -1,4 +1,5 @@
 import { api } from "./api";
+import type { AxiosRequestConfig } from "axios";
 import { User } from "@/types/user";
 
 export interface CredentialsLogin {
@@ -86,10 +87,13 @@ export async function resetPasswordApi(
 }
 
 export async function getUserApi(
-  forceRefresh = false
+  forceRefresh = false,
+  options: { skipAuthRefresh?: boolean } = {}
 ): Promise<{ user: User }> {
   const params = forceRefresh ? `?_t=${Date.now()}` : "";
-  const response = await api.get(`/auth/me${params}`);
+  const response = await api.get(`/auth/me${params}`, {
+    skipAuthRefresh: options.skipAuthRefresh,
+  } as AxiosRequestConfig & { skipAuthRefresh?: boolean });
   return response.data;
 }
 
