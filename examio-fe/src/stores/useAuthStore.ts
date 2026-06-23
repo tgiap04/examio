@@ -250,8 +250,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   getUser: async () => {
-    if (typeof window !== "undefined" && !localStorage.getItem("auth_token")) {
-      set({ user: null, isAuthenticated: false, initializing: false });
+    if (typeof window === "undefined") {
       return;
     }
 
@@ -259,7 +258,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       initializing: !state.isAuthenticated,
     }));
     try {
-      const user = await getUserApi(true);
+      // Always call /auth/me — it reads the auth token from the httpOnly cookie
+      // (set by OAuth callback) via withCredentials, falling back to the bearer
+      // header from localStorage. skipAuthRefresh prevents the 401 handler from
+      // triggering an extra /auth/refresh roundtrip on first page load when the
+      // user simply isn't signed in.
+      const user = await getUserApi(true, { skipAuthRefresh: true });
       if (user) {
         set({ user: user.user, isAuthenticated: true });
       } else {

@@ -36,13 +36,30 @@ export function useAuthSync() {
   useEffect(() => {
     const url = new URL(window.location.href);
     const unsafeTokenParams = ["token", "refreshToken", "sessionId"];
-    const removedUnsafeTokenParams = unsafeTokenParams.some((param) =>
+
+    // Capture tokens delivered via URL (e.g. OAuth callback through the gateway)
+    // BEFORE we strip them. The gateway intentionally forwards auth tokens in
+    // the query string alongside the httpOnly cookie; without this read, the
+    // OAuth flow leaves the user unauthenticated.
+    const urlToken = url.searchParams.get("token");
+    const urlRefreshToken = url.searchParams.get("refreshToken");
+    const urlSessionId = url.searchParams.get("sessionId");
+
+    if (urlToken) {
+      setAuthToken(urlToken);
+    }
+    if (urlRefreshToken) {
+      setStoredRefreshToken(urlRefreshToken);
+    }
+    if (urlSessionId) {
+      setStoredSessionId(urlSessionId);
+    }
+
+    const hadUnsafeParams = unsafeTokenParams.some((param) =>
       url.searchParams.has(param),
     );
-
     unsafeTokenParams.forEach((param) => url.searchParams.delete(param));
-    if (removedUnsafeTokenParams) {
-      console.warn("[auth-sync] ignored auth tokens delivered through URL parameters");
+    if (hadUnsafeParams) {
       window.history.replaceState({}, "", `${url.pathname}${url.search}${url.hash}`);
     }
 
@@ -52,15 +69,11 @@ export function useAuthSync() {
       if (existingCookie) {
         deleteCookie(AUTH_COOKIE_NAME);
       }
-
-      getUser();
-    } else {
-      useAuthStore.setState({
-        user: null,
-        isAuthenticated: false,
-        initializing: false,
-      });
     }
+
+    // Always call getUser — it reads auth from httpOnly cookie (via
+    // withCredentials) when localStorage is empty (e.g. fresh OAuth flow).
+    getUser();
 
     const storedToken = localStorage.getItem(AUTH_STORAGE_KEY);
     const storedRefreshToken = localStorage.getItem(REFRESH_STORAGE_KEY);
