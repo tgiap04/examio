@@ -3,7 +3,6 @@ import { api } from "./api";
 export interface ChatRequest {
   message: string;
   documentId?: string;
-  modelType?: string; // model id tu registry
 }
 
 export interface ChatResponse {
