@@ -9,12 +9,8 @@ import { toast } from "@/components/antd/toast";
 import { RecentUpload } from "@/apis/aiApi";
 import { virtualTeacherApi } from "@/apis/virtualTeacherApi";
 import { storeCache, CacheTTL } from "@/lib/storeCache";
-import {
-  AIModelType,
-  MODEL_UNAVAILABLE_MESSAGE,
-} from "@/types/ai";
+import { MODEL_UNAVAILABLE_MESSAGE } from "@/types/ai";
 import { Subject, SubjectCategory, subjectApi } from "@/apis/subjectApi";
-import { env } from "@/lib/env";
 
 // TTS Configuration
 const TTS_CONFIG = {
@@ -25,10 +21,6 @@ const TTS_CONFIG = {
 };
 
 interface AITeacherState {
-  // The model id sent to the backend as `modelType`. Fixed to the single
-  // configured model (VITE_AI_MODEL); there is no runtime model picker anymore.
-  selectedModel: AIModelType;
-
   // Subject (Giáo viên AI)
   categories: SubjectCategory[];
   isLoadingCategories: boolean;
@@ -100,9 +92,6 @@ interface AITeacherState {
   speakResponse: (text: string) => void;
   stopSpeaking: () => void;
   setIsSpeaking: (value: boolean) => void;
-
-  // Actions - Model selection
-  setSelectedModel: (model: AIModelType) => void;
 
   // Actions - Clear
   clearCurrentChat: () => void;
@@ -195,7 +184,6 @@ const getChatIdFromUrl = (): string | null => {
 
 export const useAITeacherStore = create<AITeacherState>((set, get) => ({
   // Initial states
-  selectedModel: env.aiModel,
   categories: [],
   isLoadingCategories: false,
   selectedSubject: null,
@@ -484,7 +472,6 @@ export const useAITeacherStore = create<AITeacherState>((set, get) => ({
       selectedChatId,
       selectedUploads,
       uploadedImageUrl,
-      selectedModel,
       selectedSubject,
       createChat,
       speakResponse,
@@ -554,7 +541,6 @@ export const useAITeacherStore = create<AITeacherState>((set, get) => ({
       documentIds: realDocs.length > 0 ? realDocs.map((d) => d.id) : undefined,
       documentId: realDocs.length > 0 ? realDocs[0].id : undefined, // Legacy
       documentName: realDocs.length > 0 ? realDocs[0].filename : undefined, // Legacy
-      modelType: selectedModel, // Add model type to request
     };
 
     const abort = aiChatApi.streamMessage(
@@ -829,12 +815,6 @@ export const useAITeacherStore = create<AITeacherState>((set, get) => ({
       currentAudio: null,
       audioQueue: [],
     });
-  },
-
-  // ================== MODEL SELECTION ==================
-
-  setSelectedModel: (model: AIModelType) => {
-    set({ selectedModel: model });
   },
 
   // ================== CLEAR ==================
