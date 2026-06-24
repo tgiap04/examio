@@ -39,6 +39,17 @@ export class AIChatService implements OnModuleInit {
         private readonly prisma: PrismaService
     ) {}
 
+    /**
+     * Headers required by the Python AI service internal-token middleware.
+     * Every call to the AI service MUST carry this header or it returns 401.
+     */
+    private get internalHeaders() {
+        return {
+            'x-internal-service-token':
+                process.env.INTERNAL_SERVICE_TOKEN || '',
+        };
+    }
+
     onModuleInit() {
         this.subscriptionService = this.client.getService<SubscriptionService>(
             'SubscriptionService'
@@ -199,11 +210,15 @@ export class AIChatService implements OnModuleInit {
         let aiResponse = '';
         try {
             const response = await firstValueFrom(
-                this.httpService.post(`${this.aiServiceUrl}/chat/query`, {
-                    query: data.message,
-                    history: historyForAI,
-                    user_storage_id: userStorageId,
-                })
+                this.httpService.post(
+                    `${this.aiServiceUrl}/chat/query`,
+                    {
+                        query: data.message,
+                        history: historyForAI,
+                        user_storage_id: userStorageId,
+                    },
+                    { headers: this.internalHeaders }
+                )
             );
             aiResponse = response.data.answer || 'No response';
         } catch (error) {
@@ -321,6 +336,7 @@ export class AIChatService implements OnModuleInit {
         this.httpService
             .post(`${this.aiServiceUrl}/chat/stream`, payload, {
                 responseType: 'stream',
+                headers: this.internalHeaders,
             })
             .subscribe({
                 next: (response) => {
@@ -573,7 +589,7 @@ export class AIChatService implements OnModuleInit {
                     this.httpService.post(
                         `${this.aiServiceUrl}/ai/process-file`,
                         { user_storage_id: doc.id },
-                        { timeout: 300000 } // 5 min timeout for OCR
+                        { timeout: 300000, headers: this.internalHeaders } // 5 min timeout for OCR
                     )
                 );
 

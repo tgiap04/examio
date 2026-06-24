@@ -45,6 +45,17 @@ export class AIService {
     }
 
     /**
+     * Headers required by the Python AI service internal-token middleware.
+     * Every call to the AI service MUST carry this header or it returns 401.
+     */
+    private get internalHeaders() {
+        return {
+            'x-internal-service-token':
+                process.env.INTERNAL_SERVICE_TOKEN || '',
+        };
+    }
+
+    /**
      * Acquire a lock to prevent duplicate generation jobs of same type per user.
      * Throws ConflictException if user already has an active job of this type.
      * Type 1 = quiz, Type 2 = flashcard. User can run 1 quiz + 1 flashcard concurrently.
@@ -172,7 +183,7 @@ export class AIService {
             await firstValueFrom(
                 this.httpService.delete(
                     `${this.aiServiceUrl}/ai/clear-cache/${userStorageId}`,
-                    { timeout: 15000 }
+                    { timeout: 15000, headers: this.internalHeaders }
                 )
             );
             this.logger.log(
@@ -591,7 +602,7 @@ export class AIService {
                     this.httpService.post(
                         `${this.aiServiceUrl}/ai/process-file`,
                         processFilePayload,
-                        { timeout: 3600000 } // 60 min timeout for OCR
+                        { timeout: 3600000, headers: this.internalHeaders } // 60 min timeout for OCR
                     )
                 );
 
@@ -643,7 +654,7 @@ export class AIService {
                         keyword,
                         modelType: modelType || this.getDefaultModelId(),
                     },
-                    { timeout: 3600000 } // 60 min timeout for generation
+                    { timeout: 3600000, headers: this.internalHeaders } // 60 min timeout for generation
                 )
             );
 
@@ -778,6 +789,7 @@ export class AIService {
             const response = await firstValueFrom(
                 this.httpService.get(`${this.aiServiceUrl}/ai/models`, {
                     timeout: 60000,
+                    headers: this.internalHeaders,
                 })
             );
             return response.data;
