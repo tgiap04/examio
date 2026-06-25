@@ -49,7 +49,6 @@ export interface RegenerateParams {
   quantityQuizz?: number;
   isNarrowSearch?: boolean;
   keyword?: string;
-  modelType?: string; // model id tu registry
 }
 
 export interface RegenerateResponse {
