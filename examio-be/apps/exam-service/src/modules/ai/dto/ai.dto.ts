@@ -27,17 +27,20 @@ export class UploadFileDto extends createZodDto(UploadFileSchema) {
     keyR2: string;
 }
 
+// Số quiz/flashcard tối đa cho mỗi lần generate
+export const MAX_GENERATE_ITEMS = 50;
+
 export const RegenerateSchema = z.object({
     // FE sends typeResult: 1 = quiz, 2 = flashcard
     typeResult: z.number().optional(),
-    quantityQuizz: z.number().optional(),
-    quantityFlashcard: z.number().optional(),
+    quantityQuizz: z.number().int().min(1).max(MAX_GENERATE_ITEMS).optional(),
+    quantityFlashcard: z.number().int().min(1).max(MAX_GENERATE_ITEMS).optional(),
     isNarrowSearch: z.boolean().optional(),
     keyword: z.string().optional(),
     modelType: z.string().optional(), // model id tu registry
     // Legacy fields for backward compatibility
     outputType: z.enum(['quiz', 'flashcard']).optional(),
-    count: z.number().optional(),
+    count: z.number().int().min(1).max(MAX_GENERATE_ITEMS).optional(),
 });
 
 export class RegenerateDto extends createZodDto(RegenerateSchema) {

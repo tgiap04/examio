@@ -168,12 +168,11 @@ export function FlashcardGenerator() {
             <h3 className="max-w-[18rem] font-serif text-3xl font-normal leading-tight tracking-[-0.025em] text-foreground">
               Biến tài liệu thành kiến thức
             </h3>
-            <p className="mt-3 text-sm text-muted-foreground">Kéo thả PDF up to 100 MB</p>
             {!hasFile ? (
               <div data-tour="ai-tool-upload" className={isGenerating ? "pointer-events-none opacity-50 mt-5 w-full" : "mt-5 w-full"}>
                 <FileUpload
                   acceptedFileTypes={[".pdf", "application/pdf"]}
-                  maxFileSize={104857600}
+                  maxFileSize={5 * 1024 * 1024}
                   className="w-full"
                   onUploadSuccess={handleFileUpload}
                   onUploadError={handleFileError}
@@ -203,18 +202,18 @@ export function FlashcardGenerator() {
                   value={cardCount}
                   onChange={(e) => {
                     const val = Number.parseInt(e.target.value, 10);
-                    if (!Number.isNaN(val)) setCardCount(Math.min(100, Math.max(1, val)));
+                    if (!Number.isNaN(val)) setCardCount(Math.min(50, Math.max(1, val)));
                   }}
                   className="h-7 w-16 rounded-md border border-border bg-muted px-1 text-center text-xs font-semibold text-foreground outline-none focus:border-primary"
                   min={1}
-                  max={100}
+                  max={50}
                 />
               </div>
               <Slider
-                value={[Math.min(cardCount, 100)]}
+                value={[Math.min(cardCount, 50)]}
                 onValueChange={(value) => setCardCount(value[0])}
                 min={5}
-                max={100}
+                max={50}
                 step={5}
                 className="w-full"
               />

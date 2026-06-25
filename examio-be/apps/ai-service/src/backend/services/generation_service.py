@@ -97,7 +97,7 @@ class GenerateQuizRequest(BaseModel):
     """Request to generate quiz from file"""
     user_storage_id: str = Field(..., description="ID của UserStorage")
     user_id: str = Field(..., description="ID của user")
-    num_questions: int = Field(default=10, ge=1, le=100, description="Số câu hỏi cần tạo (max 100)")
+    num_questions: int = Field(default=10, ge=1, le=50, description="Số câu hỏi cần tạo (max 50)")
     is_narrow_search: bool = Field(default=False, description="Chế độ tìm kiếm hẹp")
     keyword: Optional[str] = Field(None, description="Từ khóa cho tìm kiếm hẹp")
     model_type: Optional[str] = Field(default=None, description='Model id tu registry')
@@ -107,7 +107,7 @@ class GenerateFlashcardRequest(BaseModel):
     """Request to generate flashcards from file"""
     user_storage_id: str = Field(..., description="ID của UserStorage")
     user_id: str = Field(..., description="ID của user")
-    num_flashcards: int = Field(default=10, ge=1, le=100, description="Số flashcard cần tạo (max 100)")
+    num_flashcards: int = Field(default=10, ge=1, le=50, description="Số flashcard cần tạo (max 50)")
     is_narrow_search: bool = Field(default=False, description="Chế độ tìm kiếm hẹp")
     keyword: Optional[str] = Field(None, description="Từ khóa cho tìm kiếm hẹp")
     model_type: Optional[str] = Field(default=None, description='Model id tu registry')
@@ -137,8 +137,8 @@ class ContentGenerationService:
     _pool: Optional[asyncpg.Pool] = None
     MAX_SOURCE_CHUNKS = 10
     MAX_ITEMS_PER_CALL = 12
-    DEFAULT_GENERATION_MAX_CONCURRENCY = 3
-    DEFAULT_GENERATION_MAX_CONCURRENCY_CAP = 5
+    DEFAULT_GENERATION_MAX_CONCURRENCY = 6
+    DEFAULT_GENERATION_MAX_CONCURRENCY_CAP = 10
     MAX_META_OUTPUT_RETRIES = 1
 
     def _describe_group(self, group: GenerationGroup) -> Dict[str, Any]:

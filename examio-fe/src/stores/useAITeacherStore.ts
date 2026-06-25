@@ -693,11 +693,11 @@ export const useAITeacherStore = create<AITeacherState>((set, get) => ({
   uploadPdf: async (files: File[]) => {
     set({ isProcessingPdf: true });
 
-    const maxSize = 50 * 1024 * 1024;
+    const maxSize = 5 * 1024 * 1024;
     const oversizedFiles = files.filter((f) => f.size > maxSize);
     if (oversizedFiles.length > 0) {
       toast.error("File quá lớn", {
-        description: `Tối đa 50MB. File "${oversizedFiles[0].name}" có kích thước ${(oversizedFiles[0].size / (1024 * 1024)).toFixed(1)}MB`,
+        description: `Tối đa 5MB. File "${oversizedFiles[0].name}" có kích thước ${(oversizedFiles[0].size / (1024 * 1024)).toFixed(1)}MB`,
       });
       set({ isProcessingPdf: false });
       return;

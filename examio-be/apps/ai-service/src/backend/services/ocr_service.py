@@ -11,6 +11,7 @@ Service này CHỈ xử lý AI tasks:
 KHÔNG xử lý: Upload file, tạo UserStorage record (NestJS làm)
 """
 
+import asyncio
 import os
 import logging
 import tempfile
@@ -365,7 +366,9 @@ class OCRProcessingService:
                 from backend.services.pdf_ocr_service import pdf_ocr_service
 
                 ocr_start = time.perf_counter()
-                chunk_results = pdf_ocr_service.process_pdf_with_chunks(file_bytes)
+                chunk_results = await asyncio.to_thread(
+                    pdf_ocr_service.process_pdf_with_chunks, file_bytes
+                )
                 ocr_ms = int((time.perf_counter() - ocr_start) * 1000)
                 split_start = time.perf_counter()
                 documents_to_store = self._build_pdf_documents_to_store(user_storage_id, chunk_results)
