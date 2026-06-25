@@ -9,10 +9,9 @@ import { storeCache } from "@/lib/storeCache";
 import { useAuthStore } from "@/stores/useAuthStore";
 import {
   AIModelType,
-  DEFAULT_AI_MODEL,
   MODEL_UNAVAILABLE_MESSAGE,
 } from "@/types/ai";
-import { useAIModelCatalogStore } from "@/stores/useAIModelCatalogStore";
+import { env } from "@/lib/env";
 
 interface FileInfo {
   name: string;
@@ -367,6 +366,8 @@ interface TestGeneratorState {
   generatedTest: Quizz[] | null;
   generatedTestId: string | null; // ID của bản generate
   isGenerating: boolean;
+  // Sent to the backend as `modelType`. Fixed to the single configured model
+  // (VITE_AI_MODEL); there is no runtime model picker anymore.
   selectedModel: AIModelType;
   setFile: (file: File | null) => void;
   setQuestionCount: (count: number) => void;
@@ -410,8 +411,7 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
   generatedTest: null,
   generatedTestId: null,
   isGenerating: false,
-  selectedModel:
-    useAIModelCatalogStore.getState().defaultModel || DEFAULT_AI_MODEL,
+  selectedModel: env.aiModel,
 
   setFile: (file) => {
     set({ file, uploadId: null, fileInfo: null });
@@ -589,8 +589,7 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
       questionCount: 10,
       isNarrow: false,
       keyword: "",
-      selectedModel:
-        useAIModelCatalogStore.getState().defaultModel || DEFAULT_AI_MODEL,
+      selectedModel: env.aiModel,
     }),
 }));
 
@@ -607,8 +606,7 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
     generatedCardsId: null,
     currentCard: 0,
     isGenerating: false,
-    selectedModel:
-      useAIModelCatalogStore.getState().defaultModel || DEFAULT_AI_MODEL,
+    selectedModel: env.aiModel,
 
     setFile: (file) => {
       set({ file, uploadId: null, fileInfo: null });
@@ -791,8 +789,7 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
         cardCount: 15,
         isNarrow: false,
         keyword: "",
-        selectedModel:
-          useAIModelCatalogStore.getState().defaultModel || DEFAULT_AI_MODEL,
+        selectedModel: env.aiModel,
       }),
   }),
 );

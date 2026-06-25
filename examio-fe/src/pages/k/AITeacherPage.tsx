@@ -79,7 +79,6 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { ModelSelector } from "@/components/atoms/ModelSelector";
 import { Badge } from "@/components/antd/badge";
 
 const isSpeechRecognitionSupported = () => {
@@ -188,8 +187,6 @@ export default function AITeacherPage() {
     speakResponse,
     stopSpeaking,
     abortStream,
-    selectedModel,
-    setSelectedModel,
   } = useAITeacherStore();
 
   const [speechSupported, setSpeechSupported] = useState(true);
@@ -518,11 +515,6 @@ export default function AITeacherPage() {
                 Xóa chat
               </Button>
             )}
-            <ModelSelector
-              value={selectedModel}
-              onChange={setSelectedModel}
-              disabled={isProcessing || isStreaming}
-            />
           </div>
         </div>
       </section>
