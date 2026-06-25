@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 import time
@@ -69,6 +70,9 @@ class HybridRetrievalService:
 
     def __init__(self) -> None:
         self._graph_cache: Dict[str, GraphCacheEntry] = {}
+        # Docs known to have no extracted entities — skip the repeated
+        # has_entities() DB query on every generation request for them.
+        self._no_entities_cache: set[str] = set()
 
     def _resolve_mode(self) -> str:
         import os
@@ -473,22 +477,50 @@ class HybridRetrievalService:
     ) -> GraphCacheEntry:
         start_time = time.perf_counter()
         documents = self._to_langchain_documents(chunks)
-        builder = DocumentGraph()
 
-        for index, document in enumerate(documents):
-            builder.graph.add_node(
-                index,
-                content=document.page_content,
-                metadata=document.metadata,
-                document=document,
+        # Reuse embeddings already produced during OCR (stored in pgvector)
+        # instead of re-calling the embedding API once per chunk. Falls back to
+        # API embedding inside the builder when any vector is missing.
+        precomputed_embeddings: Optional[List[List[float]]] = None
+        try:
+            stored = await get_pg_vector_store().get_embeddings_by_user_storage(
+                user_storage_id
+            )
+            if stored and all(chunk.id in stored for chunk in chunks):
+                precomputed_embeddings = [stored[chunk.id] for chunk in chunks]
+                logger.info(
+                    f"[AI_TIMING] stage=graph_embeddings_reused user_storage_id={user_storage_id} count={len(precomputed_embeddings)}"
+                )
+            else:
+                logger.info(
+                    f"[AI_TIMING] stage=graph_embeddings_miss user_storage_id={user_storage_id} stored={len(stored)} chunks={len(chunks)}"
+                )
+        except Exception as error:
+            logger.warning(
+                f"Could not load precomputed embeddings for {user_storage_id}: {error}"
             )
 
-        builder._add_structural_edges(documents)
-        builder._add_metadata_edges(documents)
-        builder._add_semantic_edges(documents)
+        # CPU-bound graph build (semantic edges + Louvain). Offload off the
+        # event loop so concurrent requests are not blocked.
+        def _build_graph_sync() -> tuple:
+            builder = DocumentGraph()
+            for index, document in enumerate(documents):
+                builder.graph.add_node(
+                    index,
+                    content=document.page_content,
+                    metadata=document.metadata,
+                    document=document,
+                )
 
-        partitioner = SubgraphPartitioner(builder.graph)
-        partitioner.partition_by_community_detection(generate_summaries=False)
+            builder._add_structural_edges(documents)
+            builder._add_metadata_edges(documents)
+            builder._add_semantic_edges(documents, precomputed_embeddings)
+
+            partitioner = SubgraphPartitioner(builder.graph)
+            partitioner.partition_by_community_detection(generate_summaries=False)
+            return builder, partitioner
+
+        builder, partitioner = await asyncio.to_thread(_build_graph_sync)
         generation_groups = self._build_generation_groups(chunks, None)
 
         entry = GraphCacheEntry(
@@ -669,7 +701,8 @@ class HybridRetrievalService:
         selected_chunks = seed_chunks[:top_k]
         if mode in {'graph', 'hybrid'}:
             graph_entry = await self._get_or_build_graph_entry(user_storage_id, chunks)
-            graph_selected = self._select_graph_connected_chunks(
+            graph_selected = await asyncio.to_thread(
+                self._select_graph_connected_chunks,
                 chunks=chunks,
                 graph_entry=graph_entry,
                 limit=top_k,
@@ -735,7 +768,8 @@ class HybridRetrievalService:
 
         if seed_chunks:
             if mode in {'graph', 'hybrid'} and graph_entry is not None:
-                selected_chunks = self._select_graph_connected_chunks(
+                selected_chunks = await asyncio.to_thread(
+                    self._select_graph_connected_chunks,
                     chunks=chunks,
                     graph_entry=graph_entry,
                     limit=limit,
@@ -745,7 +779,8 @@ class HybridRetrievalService:
                 selected_chunks = seed_chunks[:limit]
         else:
             if mode in {'graph', 'hybrid'} and graph_entry is not None:
-                selected_chunks = self._select_graph_connected_chunks(
+                selected_chunks = await asyncio.to_thread(
+                    self._select_graph_connected_chunks,
                     chunks=chunks,
                     graph_entry=graph_entry,
                     limit=limit,
@@ -876,13 +911,17 @@ class HybridRetrievalService:
         groups: List[GenerationGroup],
     ) -> None:
         """Attach entity names to group metadata for better generation prompts."""
+        if user_storage_id in self._no_entities_cache:
+            return
         try:
             from src.backend.services.entity_extraction_service import entity_extraction_service
             if not await entity_extraction_service.has_entities(user_storage_id):
+                self._no_entities_cache.add(user_storage_id)
                 return
 
             entities = await entity_extraction_service.get_entities_for_document(user_storage_id)
             if not entities:
+                self._no_entities_cache.add(user_storage_id)
                 return
 
             chunk_entities: Dict[str, List[str]] = {}
@@ -905,12 +944,14 @@ class HybridRetrievalService:
 
     def clear_graph_cache(self, user_storage_id: str) -> None:
         self._graph_cache.pop(user_storage_id, None)
+        self._no_entities_cache.discard(user_storage_id)
 
     def clear_graph_artifact(self, user_storage_id: str) -> None:
         del user_storage_id
 
     def clear_all_graph_cache(self) -> None:
         self._graph_cache.clear()
+        self._no_entities_cache.clear()
 
     def clear_graph_state(self, user_storage_id: str) -> None:
         self.clear_graph_cache(user_storage_id)

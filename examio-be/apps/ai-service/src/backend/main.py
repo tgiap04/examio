@@ -79,6 +79,14 @@ async def lifespan(app: FastAPI):
                 logger.debug(f"RabbitMQ consumer shutdown warning: {e}")
             logger.info("RabbitMQ consumer stopped")
 
+        # Close the shared AI2 HTTP client (pooled across LLM calls)
+        try:
+            from src.llm.model_manager import model_manager
+
+            await model_manager.aclose()
+        except Exception as e:
+            logger.debug(f"AI2 client shutdown warning: {e}")
+
 
 # Create FastAPI app with lifespan
 app = FastAPI(

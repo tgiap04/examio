@@ -434,9 +434,9 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
       return;
     }
 
-    if (file && file.size > 50 * 1024 * 1024) {
+    if (file && file.size > 5 * 1024 * 1024) {
       toast.error("File quá lớn", {
-        description: `Tối đa 50MB. File của bạn: ${(file.size / (1024 * 1024)).toFixed(1)}MB`,
+        description: `Tối đa 5MB. File của bạn: ${(file.size / (1024 * 1024)).toFixed(1)}MB`,
       });
       return;
     }
@@ -620,9 +620,9 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
         return;
       }
 
-      if (file && file.size > 50 * 1024 * 1024) {
+      if (file && file.size > 5 * 1024 * 1024) {
         toast.error("File quá lớn", {
-          description: `Tối đa 50MB. File của bạn: ${(file.size / (1024 * 1024)).toFixed(1)}MB`,
+          description: `Tối đa 5MB. File của bạn: ${(file.size / (1024 * 1024)).toFixed(1)}MB`,
         });
         return;
       }

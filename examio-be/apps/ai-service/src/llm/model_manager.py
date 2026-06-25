@@ -73,7 +73,31 @@ class ModelManager:
         self._runtime_model_id: Optional[str] = None
         self._runtime_model_type: Optional[ModelType] = None
         self._runtime_gemini_model: Optional[str] = None
+        # Shared AI2 HTTP client: reused across every generation/model-list call
+        # so each LLM batch does not pay a fresh TCP + TLS handshake.
+        self._ai2_client: Optional[httpx.AsyncClient] = None
         self._initialized = True
+
+    def _get_ai2_client(self) -> httpx.AsyncClient:
+        """Return the shared AI2 httpx client, creating it lazily.
+
+        Per-request timeouts are passed at call sites; the pooled client keeps
+        connections alive (keep-alive) between batches.
+        """
+        if self._ai2_client is None or self._ai2_client.is_closed:
+            self._ai2_client = httpx.AsyncClient(
+                trust_env=False,
+                limits=httpx.Limits(
+                    max_connections=20, max_keepalive_connections=20
+                ),
+            )
+        return self._ai2_client
+
+    async def aclose(self) -> None:
+        """Close the shared AI2 client. Call on app shutdown."""
+        if self._ai2_client is not None and not self._ai2_client.is_closed:
+            await self._ai2_client.aclose()
+            self._ai2_client = None
 
     def get_model_parameter(self, param_name: str, default_value: Any = None) -> Any:
         env_map = {
@@ -251,18 +275,22 @@ class ModelManager:
         if hit:
             return cached
 
-        async with httpx.AsyncClient(timeout=10.0, trust_env=False) as client:
-            response = await client.get(url, headers={'Authorization': f'Bearer {api_key}'})
-            self._raise_ai2_status_error(response)
-            data = response.json()
-            models = data.get('data', [])
-            names = {
-                item.get('id')
-                for item in models
-                if isinstance(item, dict) and item.get('id')
-            }
-            _set_cached_ai2_models(url, names)
-            return names
+        client = self._get_ai2_client()
+        response = await client.get(
+            url,
+            headers={'Authorization': f'Bearer {api_key}'},
+            timeout=10.0,
+        )
+        self._raise_ai2_status_error(response)
+        data = response.json()
+        models = data.get('data', [])
+        names = {
+            item.get('id')
+            for item in models
+            if isinstance(item, dict) and item.get('id')
+        }
+        _set_cached_ai2_models(url, names)
+        return names
 
     async def ensure_generation_model_ready(self, model_id: str) -> None:
         availability = await self.check_generation_model_availability(model_id)
@@ -455,42 +483,47 @@ class ModelManager:
 
         max_retries = 3
         last_error: Exception | None = None
-        async with httpx.AsyncClient(timeout=ai2_info['timeout'], trust_env=False) as client:
-            for attempt in range(max_retries):
-                try:
-                    response = await client.post(url, headers=headers, json=payload)
-                    if response.status_code in (429, 500, 502, 503, 504) and attempt < max_retries - 1:
-                        last_error = ModelUnavailableError(
-                            f'AI2 transient error status={response.status_code}',
-                            code='MODEL_RUNTIME_ERROR',
-                        )
-                        await asyncio.sleep((attempt + 1) * 2)
-                        continue
-                    self._raise_ai2_status_error(response)
-                    data = response.json()
-                    choices = data.get('choices') if isinstance(data, dict) else None
-                    if not choices or not isinstance(choices, list):
-                        raise ModelUnavailableError('AI2 response missing choices.', code='MODEL_RUNTIME_ERROR')
-                    message = choices[0].get('message') if isinstance(choices[0], dict) else None
-                    content = message.get('content') if isinstance(message, dict) else None
-                    if isinstance(content, list):
-                        content = ''.join(
-                            item.get('text', '') if isinstance(item, dict) else str(item)
-                            for item in content
-                        )
-                    if not isinstance(content, str):
-                        raise ModelUnavailableError('AI2 response missing message content.', code='MODEL_RUNTIME_ERROR')
-                    return content
-                except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as error:
-                    last_error = error
-                    if attempt < max_retries - 1:
-                        await asyncio.sleep((attempt + 1) * 2)
-                        continue
-                    raise self._normalize_model_error(error)
-                except ModelUnavailableError:
-                    raise
-                except Exception as error:
-                    raise self._normalize_model_error(error)
+        client = self._get_ai2_client()
+        for attempt in range(max_retries):
+            try:
+                response = await client.post(
+                    url,
+                    headers=headers,
+                    json=payload,
+                    timeout=ai2_info['timeout'],
+                )
+                if response.status_code in (429, 500, 502, 503, 504) and attempt < max_retries - 1:
+                    last_error = ModelUnavailableError(
+                        f'AI2 transient error status={response.status_code}',
+                        code='MODEL_RUNTIME_ERROR',
+                    )
+                    await asyncio.sleep((attempt + 1) * 2)
+                    continue
+                self._raise_ai2_status_error(response)
+                data = response.json()
+                choices = data.get('choices') if isinstance(data, dict) else None
+                if not choices or not isinstance(choices, list):
+                    raise ModelUnavailableError('AI2 response missing choices.', code='MODEL_RUNTIME_ERROR')
+                message = choices[0].get('message') if isinstance(choices[0], dict) else None
+                content = message.get('content') if isinstance(message, dict) else None
+                if isinstance(content, list):
+                    content = ''.join(
+                        item.get('text', '') if isinstance(item, dict) else str(item)
+                        for item in content
+                    )
+                if not isinstance(content, str):
+                    raise ModelUnavailableError('AI2 response missing message content.', code='MODEL_RUNTIME_ERROR')
+                return content
+            except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as error:
+                last_error = error
+                if attempt < max_retries - 1:
+                    await asyncio.sleep((attempt + 1) * 2)
+                    continue
+                raise self._normalize_model_error(error)
+            except ModelUnavailableError:
+                raise
+            except Exception as error:
+                raise self._normalize_model_error(error)
 
         raise self._normalize_model_error(last_error or Exception('AI2 generation failed'))
 

@@ -175,22 +175,39 @@ class DocumentGraph:
         
         logger.info(f"Added {edge_count} metadata edges")
     
-    def _add_semantic_edges(self, documents: List[Document]):
-        """Add edges between semantically similar documents using ANN for speed"""
+    def _add_semantic_edges(
+        self,
+        documents: List[Document],
+        precomputed_embeddings: Optional[List[List[float]]] = None,
+    ):
+        """Add edges between semantically similar documents using ANN for speed.
+
+        Args:
+            documents: Document nodes to connect.
+            precomputed_embeddings: Vectors aligned to ``documents`` order. When
+                supplied (one per document), the embedding API is skipped
+                entirely — these are reused from the OCR/pgvector step.
+        """
         logger.info("Adding semantic edges with ANN optimization...")
-        
-        # Compute embeddings for all documents
-        texts = [doc.page_content for doc in documents]
-        logger.info(f"Computing embeddings for {len(texts)} documents...")
-        
-        # Batch embed để tăng tốc
-        batch_size = 50
-        all_embeddings = []
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
-            embeddings_batch = self.embeddings.embed_documents(batch)
-            all_embeddings.extend(embeddings_batch)
-            logger.info(f"Embedded {min(i + batch_size, len(texts))}/{len(texts)} documents")
+
+        if precomputed_embeddings is not None and len(precomputed_embeddings) == len(documents):
+            logger.info(
+                f"Reusing {len(precomputed_embeddings)} precomputed embeddings (no API call)"
+            )
+            all_embeddings = precomputed_embeddings
+        else:
+            # Compute embeddings for all documents
+            texts = [doc.page_content for doc in documents]
+            logger.info(f"Computing embeddings for {len(texts)} documents...")
+
+            # Batch embed để tăng tốc
+            batch_size = 50
+            all_embeddings = []
+            for i in range(0, len(texts), batch_size):
+                batch = texts[i:i + batch_size]
+                embeddings_batch = self.embeddings.embed_documents(batch)
+                all_embeddings.extend(embeddings_batch)
+                logger.info(f"Embedded {min(i + batch_size, len(texts))}/{len(texts)} documents")
         
         # Cache embeddings in dict AND in graph nodes
         for i, emb in enumerate(all_embeddings):

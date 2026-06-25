@@ -65,10 +65,10 @@ export class AIController {
             throw new BadRequestException('No file uploaded');
         }
 
-        const maxSize = 50 * 1024 * 1024;
+        const maxSize = 5 * 1024 * 1024;
         if (file.size > maxSize) {
             throw new BadRequestException(
-                `File quá lớn. Tối đa 50MB, file của bạn: ${(file.size / (1024 * 1024)).toFixed(2)}MB`
+                `File quá lớn. Tối đa 5MB, file của bạn: ${(file.size / (1024 * 1024)).toFixed(2)}MB`
             );
         }
 
@@ -107,10 +107,10 @@ export class AIController {
             throw new BadRequestException('No file uploaded');
         }
 
-        const maxSize = 50 * 1024 * 1024;
+        const maxSize = 5 * 1024 * 1024;
         if (file.size > maxSize) {
             throw new BadRequestException(
-                `File quá lớn. Tối đa 50MB, file của bạn: ${(file.size / (1024 * 1024)).toFixed(2)}MB`
+                `File quá lớn. Tối đa 5MB, file của bạn: ${(file.size / (1024 * 1024)).toFixed(2)}MB`
             );
         }
 

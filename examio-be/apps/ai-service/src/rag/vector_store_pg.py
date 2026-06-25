@@ -371,6 +371,46 @@ class PgVectorStore:
 
         return combined_content.strip() or None
 
+    async def get_embeddings_by_user_storage(
+        self, user_storage_id: str
+    ) -> Dict[str, List[float]]:
+        """Load stored chunk embeddings for a file, keyed by Document id.
+
+        Lets the graph builder reuse the vectors produced during OCR instead of
+        re-calling the embedding API for every chunk.
+
+        Returns:
+            Mapping of chunk id -> embedding vector. Empty on error/no rows.
+        """
+        try:
+            pool = await self._get_pool()
+            rows = await pool.fetch(
+                """
+                SELECT id, embeddings::text AS embeddings
+                FROM "Document"
+                WHERE "userStorageId" = $1 AND embeddings IS NOT NULL
+                """,
+                user_storage_id,
+            )
+            result: Dict[str, List[float]] = {}
+            for row in rows:
+                raw = row["embeddings"]
+                if not raw:
+                    continue
+                # pgvector text form: "[0.1,0.2,...]"
+                try:
+                    result[row["id"]] = [
+                        float(v) for v in raw.strip()[1:-1].split(",") if v
+                    ]
+                except (ValueError, AttributeError):
+                    continue
+            return result
+        except Exception as e:
+            logger.warning(
+                f"Failed to load embeddings for {user_storage_id}: {e}"
+            )
+            return {}
+
     async def delete_by_user_storage(self, user_storage_id: str) -> int:
         """Xóa tất cả documents của một UserStorage."""
         try:

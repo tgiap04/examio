@@ -22,6 +22,7 @@ import {
     UploadFileDto,
     RegenerateDto,
     GenerateFromFileDto,
+    MAX_GENERATE_ITEMS,
 } from './dto/ai.dto';
 import { firstValueFrom } from 'rxjs';
 import { FinanceClientService } from '../finance-client/finance-client.service';
@@ -375,12 +376,14 @@ export class AIService {
 
                 // Process async (Generate content + OCR if needed)
                 const typeResult = this.normalizeTypeResult(dto.typeResult);
-                const quantityQuizz = dto.quantityQuizz
-                    ? parseInt(dto.quantityQuizz, 10)
-                    : 10;
-                const quantityFlashcard = dto.quantityFlashcard
-                    ? parseInt(dto.quantityFlashcard, 10)
-                    : 10;
+                const quantityQuizz = this.parseGenerateQuantity(
+                    dto.quantityQuizz,
+                    'câu hỏi quiz'
+                );
+                const quantityFlashcard = this.parseGenerateQuantity(
+                    dto.quantityFlashcard,
+                    'flashcard'
+                );
 
                 this.logger.log(
                     `Parsed DTO - typeResult: ${dto.typeResult}, modelType: ${dto.modelType}`
@@ -480,12 +483,14 @@ export class AIService {
             // 5. Call AI service directly via HTTP to process OCR + generate content
             // This is more reliable than RabbitMQ events for this use case
             const typeResult = this.normalizeTypeResult(dto.typeResult);
-            const quantityQuizz = dto.quantityQuizz
-                ? parseInt(dto.quantityQuizz, 10)
-                : 10;
-            const quantityFlashcard = dto.quantityFlashcard
-                ? parseInt(dto.quantityFlashcard, 10)
-                : 10;
+            const quantityQuizz = this.parseGenerateQuantity(
+                dto.quantityQuizz,
+                'câu hỏi quiz'
+            );
+            const quantityFlashcard = this.parseGenerateQuantity(
+                dto.quantityFlashcard,
+                'flashcard'
+            );
 
             // Fire and forget - call AI service async without waiting
             this.processFileAsync(
@@ -536,6 +541,26 @@ export class AIService {
     private normalizeTypeResult(typeResult?: number | string): number {
         const parsed = Number(typeResult);
         return parsed === 2 ? 2 : 1;
+    }
+
+    /**
+     * Parse số lượng quiz/flashcard từ form-data string.
+     * Mặc định 10, tối đa MAX_GENERATE_ITEMS (reject nếu vượt).
+     */
+    private parseGenerateQuantity(raw: string | undefined, label: string): number {
+        if (!raw) {
+            return 10;
+        }
+        const parsed = parseInt(raw, 10);
+        if (Number.isNaN(parsed) || parsed < 1) {
+            return 10;
+        }
+        if (parsed > MAX_GENERATE_ITEMS) {
+            throw new BadRequestException(
+                `Số ${label} tối đa là ${MAX_GENERATE_ITEMS}, bạn đã yêu cầu ${parsed}`
+            );
+        }
+        return parsed;
     }
 
     private async processFileAsync(

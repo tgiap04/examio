@@ -18,6 +18,7 @@ import io
 import tempfile
 import logging
 import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Tuple, Optional
 from pathlib import Path
 
@@ -203,11 +204,14 @@ class PdfOcrService:
                 except Exception as e:
                     logger.warning(f"⚠️ Image preprocessing not available: {e}")
 
-            full_text = []
             import numpy as np
             import cv2
 
-            for i, pil_image in enumerate(images):
+            max_workers = min(4, os.cpu_count() or 4)
+
+            def _ocr_single_page(args: Tuple[int, object]) -> Tuple[int, str]:
+                """OCR one page; returns (page_index, text) for ordered reassembly."""
+                page_idx, pil_image = args
                 try:
                     image_np = np.array(pil_image)
                     if len(image_np.shape) == 3:
@@ -228,12 +232,25 @@ class PdfOcrService:
                         lang=language,
                         config='--psm 6 --oem 3'
                     )
-
-                    if text.strip():
-                        full_text.append(text.strip())
+                    return page_idx, text.strip() if text.strip() else ""
                 except Exception as e:
-                    logger.error(f"❌ Error Tesseract page {i+1}: {e}")
-                    continue
+                    logger.error(f"❌ Error Tesseract page {page_idx + 1}: {e}")
+                    return page_idx, ""
+
+            # Run pages concurrently; Tesseract spawns subprocesses (releases GIL),
+            # OpenCV also releases the GIL — a bounded pool avoids CPU oversubscription.
+            page_results: List[Tuple[int, str]] = [None] * len(images)  # type: ignore[list-item]
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {
+                    executor.submit(_ocr_single_page, (i, img)): i
+                    for i, img in enumerate(images)
+                }
+                for future in as_completed(futures):
+                    page_idx, text = future.result()
+                    page_results[page_idx] = (page_idx, text)
+
+            # Reassemble in page order, dropping empty pages
+            full_text = [text for _, text in page_results if text]
 
             result = '\n'.join(full_text)
             logger.info(f"✅ Tesseract OCR completed: {len(result)} characters")
