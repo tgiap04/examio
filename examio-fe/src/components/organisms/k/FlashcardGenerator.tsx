@@ -19,12 +19,10 @@ import {
   Sparkles,
   Loader2,
   SaveAll,
-  Cpu,
 } from "lucide-react";
 import { useToast } from "@/components/antd/toast";
 import FileUpload from "@/components/kokonutui/file-upload";
 import { Label } from "@/components/antd/label";
-import ModelSelector from "@/components/atoms/ModelSelector";
 import { Slider } from "@/components/antd/slider";
 import { Switch } from "@/components/antd/switch";
 import { Field, FieldContent, FieldLabel } from "@/components/antd/field";
@@ -56,13 +54,11 @@ export function FlashcardGenerator() {
     generatedCards,
     currentCard,
     isGenerating,
-    selectedModel,
     setFile,
     setCardCount,
     setIsNarrow,
     setKeyword,
     setCurrentCard,
-    setSelectedModel,
     generateFlashcards,
     clearFlashcards,
   } = useFlashcardGeneratorStore();
@@ -199,19 +195,6 @@ export function FlashcardGenerator() {
 
         <Card className="border-border bg-card shadow-none">
           <CardContent className="space-y-6 px-3 md:px-6 py-6">
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2 text-xs font-semibold text-foreground">
-                <Cpu className="h-3.5 w-3.5" />
-                AI Model
-              </Label>
-              <ModelSelector
-                value={selectedModel}
-                onChange={(value) => setSelectedModel(value as any)}
-                className="w-full"
-              />
-              <p className="text-[11px] italic text-muted-foreground">AI2 / AI service offline</p>
-            </div>
-
             <div className="space-y-3" data-tour="ai-tool-count">
               <div className="flex items-center justify-between gap-3">
                 <Label className="text-xs font-semibold text-foreground">Số lượng thẻ</Label>

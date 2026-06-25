@@ -24,4 +24,6 @@ export const env = {
   genAITutorAllowedEmails: readEnv("VITE_GENAI_TUTOR_ALLOWED_EMAILS") ?? readEnv("NEXT_PUBLIC_GENAI_TUTOR_ALLOWED_EMAILS") ?? "",
   /** e.g. ".examio.fayedark.com" — used for cookie domain. Omit/empty = no domain attribute */
   cookieDomain: readEnv("VITE_COOKIE_DOMAIN") ?? readEnv("NEXT_PUBLIC_COOKIE_DOMAIN") ?? "",
+  /** The only AI model id sent to the backend. Users no longer choose a model. */
+  aiModel: readEnv("VITE_AI_MODEL") ?? "Faye-AI",
 };

@@ -11,11 +11,10 @@ import { virtualTeacherApi } from "@/apis/virtualTeacherApi";
 import { storeCache, CacheTTL } from "@/lib/storeCache";
 import {
   AIModelType,
-  DEFAULT_AI_MODEL,
   MODEL_UNAVAILABLE_MESSAGE,
 } from "@/types/ai";
 import { Subject, SubjectCategory, subjectApi } from "@/apis/subjectApi";
-import { useAIModelCatalogStore } from "@/stores/useAIModelCatalogStore";
+import { env } from "@/lib/env";
 
 // TTS Configuration
 const TTS_CONFIG = {
@@ -26,7 +25,8 @@ const TTS_CONFIG = {
 };
 
 interface AITeacherState {
-  // AI Model selection
+  // The model id sent to the backend as `modelType`. Fixed to the single
+  // configured model (VITE_AI_MODEL); there is no runtime model picker anymore.
   selectedModel: AIModelType;
 
   // Subject (Giáo viên AI)
@@ -195,8 +195,7 @@ const getChatIdFromUrl = (): string | null => {
 
 export const useAITeacherStore = create<AITeacherState>((set, get) => ({
   // Initial states
-  selectedModel:
-    useAIModelCatalogStore.getState().defaultModel || DEFAULT_AI_MODEL,
+  selectedModel: env.aiModel,
   categories: [],
   isLoadingCategories: false,
   selectedSubject: null,
