@@ -1,0 +1,23 @@
+// Mô hình hóa lại bảng BenchmarkItem đang tồn tại trong DB (dữ liệu benchmark
+// cho AI code-generation). Bảng có sẵn data nhưng trước đó thiếu trong Prisma
+// schema, gây drift khiến `prisma db push` đòi drop. Khai báo lại cho khớp DB
+// để deploy (db push --accept-data-loss=false) chạy sạch, không mất dữ liệu.
+model BenchmarkItem {
+    id                String   @id
+    datasetName       String
+    language          String
+    title             String
+    prompt            String
+    entryPoint        String?
+    testCode          String
+    referenceSolution String?
+    topic             String?
+    difficulty        String?
+    sourcePath        String?
+    metadata          Json     @default("{}")
+    createdAt         DateTime @default(now())
+    updatedAt         DateTime @default(now()) @updatedAt
+
+    @@index([datasetName, language], map: "BenchmarkItem_dataset_language_idx")
+    @@index([entryPoint])
+}
