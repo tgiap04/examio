@@ -17,7 +17,7 @@ describe('AuthService refresh token flow', () => {
     };
     let userSessionRepository: {
         findByRefreshToken: jest.Mock;
-        rotateRefreshToken: jest.Mock;
+        rotateRefreshTokenIfCurrent: jest.Mock;
         deactivateSession: jest.Mock;
         create: jest.Mock;
         findBySessionId: jest.Mock;
@@ -38,7 +38,7 @@ describe('AuthService refresh token flow', () => {
 
         userSessionRepository = {
             findByRefreshToken: jest.fn(),
-            rotateRefreshToken: jest.fn(),
+            rotateRefreshTokenIfCurrent: jest.fn(),
             deactivateSession: jest.fn(),
             create: jest.fn(),
             findBySessionId: jest.fn(),
@@ -85,11 +85,18 @@ describe('AuthService refresh token flow', () => {
             .mockReturnValueOnce('refresh-part-1')
             .mockReturnValueOnce('refresh-part-2');
 
+        userSessionRepository.rotateRefreshTokenIfCurrent.mockResolvedValue(
+            'refresh-part-1_refresh-part-2'
+        );
+
         const result = await authService.refreshAccessToken('old-refresh-token');
 
         expect(jwtService.sign).toHaveBeenCalledWith({ userId: 'user-123' });
-        expect(userSessionRepository.rotateRefreshToken).toHaveBeenCalledWith(
+        expect(
+            userSessionRepository.rotateRefreshTokenIfCurrent
+        ).toHaveBeenCalledWith(
             'session-123',
+            'old-refresh-token',
             'refresh-part-1_refresh-part-2'
         );
         expect(result).toEqual({
@@ -102,6 +109,65 @@ describe('AuthService refresh token flow', () => {
             }),
         });
         expect(result.user.password).toBeUndefined();
+    });
+
+    it('reuses the current token when refreshing within the grace window', async () => {
+        userSessionRepository.findByRefreshToken.mockResolvedValue({
+            id: 'session-row-id',
+            sessionId: 'session-123',
+            userId: 'user-123',
+            isActive: true,
+            expiresAt: new Date(Date.now() + 60_000),
+        });
+        userRepository.findByIdWithRelations.mockResolvedValue({
+            id: 'user-123',
+            email: 'student@example.com',
+            username: 'student',
+            password: 'hashed-password',
+            isAdmin: false,
+        });
+        jwtService.sign.mockReturnValue('new-access-token');
+        generateIdService.generateId
+            .mockReturnValueOnce('refresh-part-1')
+            .mockReturnValueOnce('refresh-part-2');
+        // Grace path: a concurrent request already rotated, so the repo returns
+        // the existing current token instead of the freshly generated one.
+        userSessionRepository.rotateRefreshTokenIfCurrent.mockResolvedValue(
+            'already-rotated-token'
+        );
+
+        const result = await authService.refreshAccessToken('stale-but-grace-token');
+
+        expect(result.token).toBe('new-access-token');
+        expect(result.refreshToken).toBe('already-rotated-token');
+    });
+
+    it('rejects a refresh token that is outside the grace window', async () => {
+        userSessionRepository.findByRefreshToken.mockResolvedValue({
+            id: 'session-row-id',
+            sessionId: 'session-123',
+            userId: 'user-123',
+            isActive: true,
+            expiresAt: new Date(Date.now() + 60_000),
+        });
+        userRepository.findByIdWithRelations.mockResolvedValue({
+            id: 'user-123',
+            email: 'student@example.com',
+            username: 'student',
+            password: 'hashed-password',
+            isAdmin: false,
+        });
+        jwtService.sign.mockReturnValue('new-access-token');
+        generateIdService.generateId
+            .mockReturnValueOnce('refresh-part-1')
+            .mockReturnValueOnce('refresh-part-2');
+        userSessionRepository.rotateRefreshTokenIfCurrent.mockResolvedValue(null);
+
+        await expect(
+            authService.refreshAccessToken('long-dead-token')
+        ).rejects.toThrow(
+            new UnauthorizedException('Refresh token was already used')
+        );
     });
 
     it('rejects expired refresh token sessions', async () => {
@@ -120,7 +186,9 @@ describe('AuthService refresh token flow', () => {
         expect(userSessionRepository.deactivateSession).toHaveBeenCalledWith(
             'session-row-id'
         );
-        expect(userSessionRepository.rotateRefreshToken).not.toHaveBeenCalled();
+        expect(
+            userSessionRepository.rotateRefreshTokenIfCurrent
+        ).not.toHaveBeenCalled();
     });
 
     it('rejects refresh when session user no longer exists', async () => {

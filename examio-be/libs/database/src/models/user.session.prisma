@@ -3,6 +3,10 @@ model UserSession {
     userId        String
     sessionId     String   @unique
     refreshToken  String   @unique // Token để refresh access token
+    // Token cũ ngay trước lần rotate gần nhất, còn dùng được trong grace window
+    // để tránh tự đăng xuất khi nhiều tab/nhiều request refresh song song.
+    previousRefreshToken   String?   @unique
+    previousTokenExpiresAt DateTime?
     deviceId      String
     deviceName    String?
     browser       String?
@@ -21,4 +25,5 @@ model UserSession {
     @@index([userId, isActive])
     @@index([userId, deviceId])
     @@index([refreshToken])
+    @@index([previousRefreshToken])
 }

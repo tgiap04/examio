@@ -26,8 +26,20 @@ export class UserSessionRepository {
     async findByRefreshToken(
         refreshToken: string
     ): Promise<UserSession | null> {
-        return this.prisma.userSession.findUnique({
-            where: { refreshToken },
+        // Match the current token, or the previous token while it is still
+        // inside its grace window. This keeps concurrent tabs/requests that
+        // hold the just-rotated token from being treated as invalid.
+        const now = new Date();
+        return this.prisma.userSession.findFirst({
+            where: {
+                OR: [
+                    { refreshToken },
+                    {
+                        previousRefreshToken: refreshToken,
+                        previousTokenExpiresAt: { gt: now },
+                    },
+                ],
+            },
         });
     }
 
@@ -67,25 +79,63 @@ export class UserSessionRepository {
         });
     }
 
+    // Cửa sổ ân hạn cho refresh token cũ sau khi rotate (mili giây).
+    private static readonly REFRESH_GRACE_MS = 60 * 1000;
+
+    /**
+     * Rotate refresh token theo cơ chế grace-period.
+     *
+     * - Nếu `currentRefreshToken` là token hiện hành: rotate sang
+     *   `nextRefreshToken`, đồng thời giữ token cũ làm `previousRefreshToken`
+     *   trong REFRESH_GRACE_MS để các request song song không bị vô hiệu hóa.
+     * - Nếu `currentRefreshToken` là một `previousRefreshToken` còn trong grace
+     *   window (request đến sau khi tab khác đã rotate): KHÔNG rotate lại, trả
+     *   về token hiện hành để dùng tiếp (idempotent).
+     *
+     * @returns token hợp lệ để cấp lại cho client, hoặc null nếu không khớp.
+     */
     async rotateRefreshTokenIfCurrent(
         sessionId: string,
         currentRefreshToken: string,
         nextRefreshToken: string
-    ): Promise<boolean> {
-        const result = await this.prisma.userSession.updateMany({
+    ): Promise<string | null> {
+        const now = new Date();
+        const graceUntil = new Date(
+            now.getTime() + UserSessionRepository.REFRESH_GRACE_MS
+        );
+
+        // Trường hợp 1: token hiện hành → rotate.
+        const rotated = await this.prisma.userSession.updateMany({
             where: {
                 sessionId,
                 refreshToken: currentRefreshToken,
                 isActive: true,
-                expiresAt: { gt: new Date() },
+                expiresAt: { gt: now },
             },
             data: {
                 refreshToken: nextRefreshToken,
-                lastActivity: new Date(),
+                previousRefreshToken: currentRefreshToken,
+                previousTokenExpiresAt: graceUntil,
+                lastActivity: now,
             },
         });
 
-        return result.count === 1;
+        if (rotated.count === 1) {
+            return nextRefreshToken;
+        }
+
+        // Trường hợp 2: token nằm trong grace window (đã rotate ở request khác).
+        const session = await this.prisma.userSession.findFirst({
+            where: {
+                sessionId,
+                previousRefreshToken: currentRefreshToken,
+                previousTokenExpiresAt: { gt: now },
+                isActive: true,
+                expiresAt: { gt: now },
+            },
+        });
+
+        return session ? session.refreshToken : null;
     }
 
     async deactivateSession(id: string): Promise<void> {

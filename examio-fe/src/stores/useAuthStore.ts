@@ -270,7 +270,26 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({ user: null, isAuthenticated: false });
       }
     } catch {
-      set({ user: null, isAuthenticated: false });
+      // /auth/me dùng skipAuthRefresh nên 401 không tự refresh. Trước khi coi
+      // như đã đăng xuất, thử làm mới phiên một lần bằng refresh token — vá lỗi
+      // người dùng bị đăng xuất dù refresh token vẫn còn hợp lệ.
+      try {
+        const newToken = await refreshTokenApi();
+        if (newToken?.success && newToken.token && typeof window !== "undefined") {
+          setAuthToken(newToken.token);
+          if (newToken.refreshToken) {
+            setStoredRefreshToken(newToken.refreshToken);
+          }
+          const retried = await getUserApi(true, { skipAuthRefresh: true });
+          if (retried) {
+            set({ user: retried.user, isAuthenticated: true });
+            return;
+          }
+        }
+        set({ user: null, isAuthenticated: false });
+      } catch {
+        set({ user: null, isAuthenticated: false });
+      }
     } finally {
       set({ initializing: false });
     }

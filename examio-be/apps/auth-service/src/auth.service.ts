@@ -670,23 +670,25 @@ export class AuthService {
             throw new NotFoundException('User not found');
         }
 
-        // Generate new access token
+        // Generate new access token. rotateRefreshTokenIfCurrent trả về refresh
+        // token hợp lệ để cấp lại: token mới nếu rotate thành công, hoặc token
+        // hiện hành nếu request đến trong grace window (tab khác đã rotate).
         const token = this.jwtService.sign({ userId: user.id });
         const nextRefreshToken = this.generateRefreshToken();
-        const rotated =
+        const effectiveRefreshToken =
             await this.userSessionRepository.rotateRefreshTokenIfCurrent(
                 session.sessionId,
-                session.refreshToken,
+                refreshToken,
                 nextRefreshToken
             );
 
-        if (!rotated) {
+        if (!effectiveRefreshToken) {
             throw new UnauthorizedException('Refresh token was already used');
         }
 
         return {
             token,
-            refreshToken: nextRefreshToken,
+            refreshToken: effectiveRefreshToken,
             user: sanitizeUser(user),
         };
     }
