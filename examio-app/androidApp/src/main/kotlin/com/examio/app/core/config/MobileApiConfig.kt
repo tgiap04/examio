@@ -9,10 +9,13 @@ object MobileApiConfig {
     private const val OAUTH_CALLBACK_URL = "examio://auth/callback"
 
     val baseUrl: String = BuildConfig.API_BASE_URL.trimEnd('/')
-    val apiBaseUrl: String = "$baseUrl$API_PREFIX"
+
+    // Trailing slash is REQUIRED: Ktor resolves request paths relative to this base.
+    // Endpoints must be relative (no leading "/") so "/api/v1" is preserved.
+    val apiBaseUrl: String = "$baseUrl$API_PREFIX/"
 
     fun googleOAuthUrl(): String {
         val redirect = URLEncoder.encode(OAUTH_CALLBACK_URL, StandardCharsets.UTF_8.toString())
-        return "$apiBaseUrl/auth/google?redirect=$redirect"
+        return "${apiBaseUrl}auth/google?redirect=$redirect"
     }
 }

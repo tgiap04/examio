@@ -11,5 +11,5 @@ import io.ktor.client.request.parameter
 
 class WalletApiService(private val client: HttpClient) {
     suspend fun details(page: Int = 1, limit: Int = 20): ApiResult<WalletDetails> = safeApiCall { client.get(ApiEndpoints.WALLET_DETAILS) { parameter("page", page); parameter("limit", limit) } }
-    suspend fun plans(): ApiResult<List<SubscriptionPlan>> = safeApiCall { client.get("/payment/subscription/plans") }
+    suspend fun plans(): ApiResult<List<SubscriptionPlan>> = safeApiCall { client.get("payment/subscription/plans") }
 }
