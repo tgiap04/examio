@@ -11,11 +11,11 @@ import io.ktor.client.request.parameter
 
 class HistoryApiService(private val client: HttpClient) {
     suspend fun stats(): ApiResult<HistoryStats> =
-        safeApiCall { client.get("/examattempts/history-stats") }
+        safeApiCall { client.get("examattempts/history-stats") }
 
     suspend fun pdfHistory(limit: Int = 20): ApiResult<List<PDFHistoryItem>> =
-        safeApiCall { client.get("/ai/recent-uploads") { parameter("limit", limit) } }
+        safeApiCall { client.get("ai/recent-uploads") { parameter("limit", limit) } }
 
     suspend fun examHistory(page: Int = 1, limit: Int = 20): ApiResult<ExamHistoryResponse> =
-        safeApiCall { client.get("/examattempts/list") { parameter("page", page); parameter("limit", limit) } }
+        safeApiCall { client.get("examattempts/list") { parameter("page", page); parameter("limit", limit) } }
 }
