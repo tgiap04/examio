@@ -31,3 +31,53 @@ data class CreateQuizSetRequest(
     val description: String? = null,
     val isPublic: Boolean = false,
 )
+
+@Serializable
+data class QuizSetListResponse(
+    val quizSets: List<QuizSet>,
+    val total: Int = 0,
+    val page: Int = 1,
+    val limit: Int = 20,
+    val totalPages: Int = 1,
+)
+
+@Serializable
+data class QuizSetCreateResponse(
+    val quizSet: QuizSet,
+)
+
+@Serializable
+data class QuizSetQuestionsResponse(
+    val questions: List<Question>,
+    val pagination: QuizSetPagination? = null,
+)
+
+@Serializable
+data class QuizSetPagination(
+    val page: Int,
+    val limit: Int,
+    val total: Int,
+    val totalPages: Int,
+)
+
+@Serializable
+data class CreateQuestionRequest(
+    val question: String,
+    val options: List<String>,
+    val answer: String,
+    val labelId: String? = null,
+)
+
+@Serializable
+data class UpdateQuestionRequest(
+    val question: String? = null,
+    val options: List<String>? = null,
+    val answer: String? = null,
+    val labelId: String? = null,
+)
+
+@Serializable
+data class QuizSetLabelsResponse(
+    val labels: List<QuizSetLabel>,
+    val unlabeledCount: Int = 0,
+)

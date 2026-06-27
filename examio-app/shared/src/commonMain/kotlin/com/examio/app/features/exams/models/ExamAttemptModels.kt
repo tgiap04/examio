@@ -14,6 +14,48 @@ data class ExamAttempt(
 )
 
 @Serializable
+data class RecentExamRoom(
+    val id: String,
+    val title: String,
+    val description: String? = null,
+)
+
+@Serializable
+data class RecentExamSession(
+    val id: String,
+    val startTime: String,
+    val endTime: String? = null,
+    val timeLimitMinutes: Int? = null,
+    val showAnswersAfterSubmit: Boolean = false,
+    val examRoom: RecentExamRoom,
+)
+
+@Serializable
+data class RecentExamAttempt(
+    val id: String,
+    val examSessionId: String,
+    val score: Double,
+    val violationCount: Int = 0,
+    val startedAt: String,
+    val finishedAt: String? = null,
+    val status: Int,
+    val totalQuestions: Int,
+    val correctAnswers: Int,
+    val timeRemaining: Int? = null,
+    val isPinned: Boolean = false,
+    val examSession: RecentExamSession,
+)
+
+@Serializable
+data class RecentExamsResponse(
+    val examAttempts: List<RecentExamAttempt>,
+    val total: Int = 0,
+    val page: Int = 1,
+    val limit: Int = 20,
+    val totalPages: Int = 1,
+)
+
+@Serializable
 data class StartExamAttemptRequest(val examSessionId: String)
 
 @Serializable

@@ -24,7 +24,14 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             ExamioTheme {
-                ExamioApp(authRepository = appContainer.authRepository)
+                ExamioApp(
+                    authRepository = appContainer.authRepository,
+                    accountRepository = appContainer.accountRepository,
+                    flashcardRepository = appContainer.flashcardRepository,
+                    studentMaterialsApi = appContainer.studentMaterialsApi,
+                    aiRepository = appContainer.aiRepository,
+                    historyRepository = appContainer.historyRepository,
+                )
             }
         }
     }

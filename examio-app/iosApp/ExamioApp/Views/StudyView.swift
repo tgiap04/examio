@@ -1,23 +1,28 @@
 import SwiftUI
 
 struct StudyView: View {
-    @State private var state = StudyUiState()
+    @StateObject private var materialsVM = MyMaterialsViewModel()
+    @State private var selectedSetId: String?
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if state.selectedMaterialId == nil {
-                    myMaterialsView
-                } else {
-                    flashcardStudyView
-                }
+        Group {
+            if let setId = selectedSetId {
+                FlashcardSetDetailView(setId: setId, onBack: { selectedSetId = nil })
+            } else {
+                MyMaterialsView(vm: materialsVM, onOpenSet: { selectedSetId = $0 })
             }
-            .background(Color.examioCanvas)
-            .navigationTitle(state.selectedMaterialId == nil ? "Học tập" : "Flashcard")
         }
+        .background(Color.examioCanvas)
     }
+}
 
-    private var myMaterialsView: some View {
+// MARK: - My Materials
+
+private struct MyMaterialsView: View {
+    @ObservedObject var vm: MyMaterialsViewModel
+    let onOpenSet: (String) -> Void
+
+    var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 VStack(alignment: .leading, spacing: 6) {
@@ -29,135 +34,35 @@ struct StudyView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                ForEach(state.materials) { material in
-                    FlashcardSetRow(
-                        material: material,
-                        onOpen: { open(material) },
-                        onTogglePin: { togglePin(material) }
-                    )
+                if vm.isLoading {
+                    HStack { Spacer(); ProgressView(); Spacer() }
+                } else if let err = vm.errorMessage {
+                    VStack(spacing: 8) {
+                        Text(err).font(.caption).foregroundStyle(.red)
+                        Button("Thử lại") { Task { await vm.load() } }.buttonStyle(.bordered)
+                    }
+                } else {
+                    ForEach(vm.sets) { set in
+                        FlashcardSetRow(set: set, onOpen: { onOpenSet(set.id) }, onTogglePin: { vm.togglePin(id: set.id) })
+                    }
                 }
             }
             .padding(24)
         }
     }
-
-    private var flashcardStudyView: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Button("← Tài liệu") { state.selectedMaterialId = nil }
-                .foregroundStyle(Color.examioPrimary)
-            Text(state.selectedMaterial?.title ?? "Flashcard")
-                .font(.system(size: 28, weight: .regular, design: .serif))
-                .foregroundStyle(Color.examioInk)
-            ProgressView(value: Double(state.currentCardIndex + 1), total: Double(state.flashcards.count))
-                .tint(.examioPrimary)
-            if let currentCard = state.currentCard {
-                FlashcardCardView(
-                    card: currentCard,
-                    isAnswerVisible: state.isAnswerVisible,
-                    onFlip: { state.isAnswerVisible.toggle() }
-                )
-            } else {
-                Text("Chưa có thẻ nào trong bộ này.")
-                    .foregroundStyle(.secondary)
-            }
-            HStack(spacing: 12) {
-                Button("Trước") { previousCard() }
-                    .buttonStyle(.bordered)
-                    .disabled(state.currentCardIndex == 0)
-                Button("Tiếp") { nextCard() }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.examioPrimary)
-                    .disabled(state.currentCardIndex == state.flashcards.count - 1)
-            }
-            Text("\(state.currentCardIndex + 1)/\(state.flashcards.count) · Chạm thẻ để lật")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            Spacer()
-        }
-        .padding(24)
-    }
-
-    private func open(_ material: StudyMaterial) {
-        state.selectedMaterialId = material.id
-        state.currentCardIndex = 0
-        state.isAnswerVisible = false
-    }
-
-    private func togglePin(_ material: StudyMaterial) {
-        state.materials = state.materials.map { item in
-            item.id == material.id ? item.toggledPin() : item
-        }
-    }
-
-    private func nextCard() {
-        state.currentCardIndex = min(state.currentCardIndex + 1, state.flashcards.count - 1)
-        state.isAnswerVisible = false
-    }
-
-    private func previousCard() {
-        state.currentCardIndex = max(state.currentCardIndex - 1, 0)
-        state.isAnswerVisible = false
-    }
-}
-
-private struct StudyUiState {
-    var materials: [StudyMaterial] = [
-        .init(id: "foundation", title: "Nền tảng ôn tập", description: "Bộ thẻ mẫu mô phỏng danh sách học liệu từ web app.", cardCount: 3, lastViewed: "Hôm nay", isPinned: true),
-        .init(id: "strategy", title: "Chiến lược làm bài", description: "Các lưu ý ngắn để luyện tốc độ và độ chính xác.", cardCount: 2, lastViewed: "2 ngày trước", isPinned: false),
-    ]
-    var selectedMaterialId: String?
-    var currentCardIndex = 0
-    var isAnswerVisible = false
-
-    var selectedMaterial: StudyMaterial? {
-        materials.first { $0.id == selectedMaterialId }
-    }
-
-    let flashcards: [StudyFlashcard] = [
-        .init(question: "Examio dùng tab Học tập để làm gì?", answer: "Theo dõi học liệu, mở flashcard và tiếp tục luyện tập."),
-        .init(question: "Khi nối API thật cần lưu ý gì?", answer: "Danh sách dài phải phân trang, refresh rõ ràng và không tải dư dữ liệu."),
-        .init(question: "Thiết kế mobile cần giữ cảm giác nào?", answer: "Ấm, editorial, card bo tròn và màu coral tiết chế."),
-    ]
-
-    var currentCard: StudyFlashcard? {
-        guard flashcards.indices.contains(currentCardIndex) else { return nil }
-        return flashcards[currentCardIndex]
-    }
-}
-
-private struct StudyMaterial: Identifiable {
-    let id: String
-    let title: String
-    let description: String
-    let cardCount: Int
-    let lastViewed: String
-    let isPinned: Bool
-
-    func toggledPin() -> StudyMaterial {
-        StudyMaterial(id: id, title: title, description: description, cardCount: cardCount, lastViewed: lastViewed, isPinned: !isPinned)
-    }
-}
-
-private struct StudyFlashcard {
-    let question: String
-    let answer: String
 }
 
 private struct FlashcardSetRow: View {
-    let material: StudyMaterial
+    let set: RecentFlashcardSetItem
     let onOpen: () -> Void
     let onTogglePin: () -> Void
 
     var body: some View {
-        Button {
-            onOpen()
-        } label: {
+        Button(action: onOpen) {
             HStack(spacing: 14) {
                 VStack(spacing: 0) {
-                    Text("\(material.cardCount)")
-                        .font(.title2.weight(.medium))
-                    Text("thẻ")
-                        .font(.caption2)
+                    Text("\(set.flashcardCount)").font(.title2.weight(.medium))
+                    Text("thẻ").font(.caption2)
                 }
                 .foregroundStyle(Color.examioPrimary)
                 .frame(width: 58, height: 58)
@@ -165,18 +70,16 @@ private struct FlashcardSetRow: View {
                 .clipShape(RoundedRectangle(cornerRadius: 16))
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(material.title)
-                        .font(.headline)
-                        .foregroundStyle(Color.examioInk)
-                    Text(material.description)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                    Text(material.lastViewed)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text(set.title).font(.headline).foregroundStyle(Color.examioInk)
+                    if let desc = set.description {
+                        Text(desc).font(.footnote).foregroundStyle(.secondary)
+                    }
+                    if let viewed = set.lastViewedAt {
+                        Text(viewed).font(.caption).foregroundStyle(.secondary)
+                    }
                 }
                 Spacer()
-                Button(material.isPinned ? "Đã ghim" : "Ghim", action: onTogglePin)
+                Button(set.isPinned ? "Đã ghim" : "Ghim", action: onTogglePin)
                     .font(.caption.weight(.medium))
                     .foregroundStyle(Color.examioPrimary)
             }
@@ -188,20 +91,83 @@ private struct FlashcardSetRow: View {
     }
 }
 
+// MARK: - Flashcard Set Detail
+
+private struct FlashcardSetDetailView: View {
+    let setId: String
+    let onBack: () -> Void
+    @StateObject private var vm: FlashcardSetDetailViewModel
+
+    init(setId: String, onBack: @escaping () -> Void) {
+        self.setId = setId
+        self.onBack = onBack
+        _vm = StateObject(wrappedValue: FlashcardSetDetailViewModel(setId: setId))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            Button("← Tài liệu", action: onBack).foregroundStyle(Color.examioPrimary)
+
+            if vm.isLoading {
+                Spacer()
+                HStack { Spacer(); ProgressView(); Spacer() }
+                Spacer()
+            } else if let err = vm.errorMessage {
+                Text(err).font(.caption).foregroundStyle(.red)
+                Button("Thử lại") { Task { await vm.load() } }.buttonStyle(.bordered)
+            } else {
+                Text(vm.set?.title ?? "Flashcard")
+                    .font(.system(size: 28, weight: .regular, design: .serif))
+                    .foregroundStyle(Color.examioInk)
+
+                let total = max(vm.cards.count, 1)
+                ProgressView(value: Double(vm.studyIndex + 1), total: Double(total))
+                    .tint(.examioPrimary)
+
+                if let card = vm.currentCard {
+                    FlashcardCardView(
+                        question: card.question,
+                        answer: card.answer,
+                        isAnswerVisible: vm.isAnswerVisible,
+                        onFlip: { vm.flipCard() }
+                    )
+                } else {
+                    Text("Chưa có thẻ nào trong bộ này.").foregroundStyle(.secondary)
+                }
+
+                HStack(spacing: 12) {
+                    Button("Trước") { vm.previousCard() }
+                        .buttonStyle(.bordered)
+                        .disabled(vm.studyIndex == 0)
+                    Button("Tiếp") { vm.nextCard() }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.examioPrimary)
+                        .disabled(vm.studyIndex >= vm.cards.count - 1)
+                }
+
+                Text("\(vm.studyIndex + 1)/\(vm.cards.count) · Chạm thẻ để lật")
+                    .font(.footnote).foregroundStyle(.secondary)
+            }
+
+            Spacer()
+        }
+        .padding(24)
+    }
+}
+
 private struct FlashcardCardView: View {
-    let card: StudyFlashcard
+    let question: String
+    let answer: String
     let isAnswerVisible: Bool
     let onFlip: () -> Void
 
     var body: some View {
-        Button {
-            onFlip()
-        } label: {
+        Button(action: onFlip) {
             VStack(spacing: 14) {
                 Text(isAnswerVisible ? "Câu trả lời" : "Câu hỏi")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(Color.examioPrimary)
-                Text(isAnswerVisible ? card.answer : card.question)
+                Text(isAnswerVisible ? answer : question)
                     .font(.title3)
                     .foregroundStyle(Color.examioInk)
                     .multilineTextAlignment(.center)
