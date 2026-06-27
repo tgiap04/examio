@@ -1,13 +1,19 @@
 package com.examio.app
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.examio.app.core.network.ApiResult
 import com.examio.app.features.account.ProfileSheet
 import com.examio.app.features.account.repository.AccountRepository
 import com.examio.app.features.ai.AiScreen
@@ -38,18 +44,37 @@ fun ExamioApp(
     aiRepository: AIChatRepository,
     historyRepository: HistoryRepository,
 ) {
-    var authState by remember { mutableStateOf<NavigationAuthState>(NavigationAuthState.Unauthenticated) }
+    var authState by remember { mutableStateOf<NavigationAuthState>(NavigationAuthState.Loading) }
     var selectedTab by remember { mutableStateOf(MainTab.AiTool) }
     var showProfile by remember { mutableStateOf(false) }
 
-    if (authState !is NavigationAuthState.Authenticated) {
-        AuthNavGraph(
-            authRepository = authRepository,
-            onAuthenticated = { user ->
-                authState = NavigationAuthState.Authenticated(user.toSession())
-            },
-        )
-        return
+    // Restore the persisted session on startup so a reload doesn't force re-login.
+    // restoreSession() reads stored tokens, calls currentUser(), falls back to refresh()
+    // on expiry, and silently clears tokens on 401/403.
+    LaunchedEffect(Unit) {
+        authState = when (val result = authRepository.restoreSession()) {
+            is ApiResult.Success -> NavigationAuthState.Authenticated(result.data.user.toSession())
+            else -> NavigationAuthState.Unauthenticated
+        }
+    }
+
+    when (authState) {
+        is NavigationAuthState.Loading -> {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+            return
+        }
+        is NavigationAuthState.Unauthenticated -> {
+            AuthNavGraph(
+                authRepository = authRepository,
+                onAuthenticated = { user ->
+                    authState = NavigationAuthState.Authenticated(user.toSession())
+                },
+            )
+            return
+        }
+        is NavigationAuthState.Authenticated -> Unit
     }
 
     Scaffold(
