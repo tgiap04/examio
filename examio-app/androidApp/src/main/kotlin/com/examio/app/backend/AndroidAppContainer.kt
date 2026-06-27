@@ -9,10 +9,6 @@ import com.examio.app.core.network.MultipartUploadHelper
 import com.examio.app.features.account.api.ProfileApiService
 import com.examio.app.features.account.api.WalletApiService
 import com.examio.app.features.account.repository.AccountRepository
-import com.examio.app.features.ai.api.AIChatApiService
-import com.examio.app.features.ai.api.AIGeneratorApiService
-import com.examio.app.features.ai.api.SubjectApiService
-import com.examio.app.features.ai.repository.AIChatRepository
 import com.examio.app.features.auth.api.AuthApiService
 import com.examio.app.features.auth.repository.AuthRepository
 import com.examio.app.features.exams.api.ExamAttemptApiService
@@ -60,19 +56,7 @@ class AndroidAppContainer(context: Context) {
         attempts = ExamAttemptApiService(httpClient),
     )
 
-    val aiRepository = AIChatRepository(
-        chatApi = AIChatApiService(httpClient),
-        generatorApi = AIGeneratorApiService(httpClient, multipartHelper),
-        subjectApi = SubjectApiService(httpClient),
-        sseClient = createAndroidSSEClient(),
-    )
-
     val historyRepository = HistoryRepository(
         api = HistoryApiService(httpClient),
     )
-}
-
-private fun createAndroidSSEClient(): com.examio.app.core.network.SSEClient {
-    // SSE wiring deferred to AI-chat phase; placeholder returns the existing stub.
-    return com.examio.app.core.network.createSSEClient()
 }

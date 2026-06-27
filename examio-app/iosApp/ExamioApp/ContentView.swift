@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var authViewModel = AuthViewModel()
-    @State private var selectedTab: AppTab = .aiTool
+    @State private var selectedTab: AppTab = .taiLieu
     @State private var showsProfile = false
 
     var body: some View {
@@ -10,10 +10,6 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 AppHeaderView { showsProfile = true }
                 TabView(selection: $selectedTab) {
-                    AiView()
-                        .tabItem { Label("AI", systemImage: "sparkles") }
-                        .tag(AppTab.aiTool)
-
                     StudyView()
                         .tabItem { Label("Tài liệu", systemImage: "book") }
                         .tag(AppTab.taiLieu)

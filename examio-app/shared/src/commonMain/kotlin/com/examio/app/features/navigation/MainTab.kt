@@ -4,7 +4,6 @@ enum class MainTab(
     val title: String,
     val description: String,
 ) {
-    AiTool("AI", "Tạo câu hỏi từ tài liệu PDF bằng AI"),
     TaiLieu("Tài liệu", "Bộ flashcard và tài liệu học tập"),
     BaiThi("Bài thi", "Lượt làm bài và kết quả gần đây"),
     DeThi("Đề thi", "Quản lý bộ đề, flashcard và phòng thi"),

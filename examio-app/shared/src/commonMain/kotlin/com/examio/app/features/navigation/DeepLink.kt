@@ -26,6 +26,6 @@ fun parseDeepLink(rawUrl: String): DeepLink? {
 fun DeepLink.targetTab(): MainTab = when (this) {
     is DeepLink.ExamSession -> MainTab.BaiThi
     is DeepLink.Flashcard -> MainTab.TaiLieu
-    is DeepLink.Chat -> MainTab.AiTool
+    is DeepLink.Chat -> MainTab.TaiLieu
     DeepLink.Profile -> MainTab.LichSu
 }
