@@ -16,8 +16,6 @@ import androidx.compose.ui.Modifier
 import com.examio.app.core.network.ApiResult
 import com.examio.app.features.account.ProfileSheet
 import com.examio.app.features.account.repository.AccountRepository
-import com.examio.app.features.ai.AiScreen
-import com.examio.app.features.ai.repository.AIChatRepository
 import com.examio.app.features.auth.AuthNavGraph
 import com.examio.app.features.auth.models.User
 import com.examio.app.features.auth.repository.AuthRepository
@@ -41,11 +39,10 @@ fun ExamioApp(
     accountRepository: AccountRepository,
     flashcardRepository: FlashcardRepository,
     studentMaterialsApi: StudentMaterialsApiService,
-    aiRepository: AIChatRepository,
     historyRepository: HistoryRepository,
 ) {
     var authState by remember { mutableStateOf<NavigationAuthState>(NavigationAuthState.Loading) }
-    var selectedTab by remember { mutableStateOf(MainTab.AiTool) }
+    var selectedTab by remember { mutableStateOf(MainTab.TaiLieu) }
     var showProfile by remember { mutableStateOf(false) }
 
     // Restore the persisted session on startup so a reload doesn't force re-login.
@@ -91,7 +88,6 @@ fun ExamioApp(
         val modifier = Modifier.padding(innerPadding)
 
         when (selectedTab) {
-            MainTab.AiTool -> AiScreen(aiRepository = aiRepository, modifier = modifier)
             MainTab.TaiLieu -> StudyScreen(flashcardRepository = flashcardRepository, modifier = modifier)
             MainTab.BaiThi -> MyExamsScreen(materialsApi = studentMaterialsApi, modifier = modifier)
             MainTab.DeThi -> DeThiScreen(modifier)

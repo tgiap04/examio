@@ -29,7 +29,6 @@ class MainActivity : ComponentActivity() {
                     accountRepository = appContainer.accountRepository,
                     flashcardRepository = appContainer.flashcardRepository,
                     studentMaterialsApi = appContainer.studentMaterialsApi,
-                    aiRepository = appContainer.aiRepository,
                     historyRepository = appContainer.historyRepository,
                 )
             }

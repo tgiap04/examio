@@ -13,7 +13,7 @@ enum AppDeepLink: Equatable {
         case .flashcard:
             return .taiLieu
         case .chat:
-            return .aiTool
+            return .taiLieu
         case .profile:
             return .lichSu
         }
@@ -21,7 +21,6 @@ enum AppDeepLink: Equatable {
 }
 
 enum AppTab: Hashable {
-    case aiTool
     case taiLieu
     case baiThi
     case deThi
