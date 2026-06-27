@@ -29,7 +29,11 @@ class MyMaterialsViewModel(private val repo: FlashcardRepository) : ViewModel() 
                     isLoading = false,
                     sets = result.data.flashcardSets,
                 )
-                is ApiResult.Error -> _state.value = _state.value.copy(
+                is ApiResult.HttpError -> _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = result.message,
+                )
+                is ApiResult.NetworkError -> _state.value = _state.value.copy(
                     isLoading = false,
                     error = result.message,
                 )

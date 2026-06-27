@@ -37,8 +37,10 @@ class FlashcardSetDetailViewModel(
             val set = if (setResult is ApiResult.Success) setResult.data else null
             val cards = if (cardsResult is ApiResult.Success) cardsResult.data.flashCards else emptyList()
             val err = when {
-                setResult is ApiResult.Error -> setResult.message
-                cardsResult is ApiResult.Error -> cardsResult.message
+                setResult is ApiResult.HttpError -> setResult.message
+                setResult is ApiResult.NetworkError -> setResult.message
+                cardsResult is ApiResult.HttpError -> cardsResult.message
+                cardsResult is ApiResult.NetworkError -> cardsResult.message
                 else -> null
             }
             _state.value = _state.value.copy(isLoading = false, set = set, cards = cards, error = err)
