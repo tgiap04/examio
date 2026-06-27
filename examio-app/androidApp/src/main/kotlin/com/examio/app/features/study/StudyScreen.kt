@@ -5,6 +5,7 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,10 +20,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,37 +34,31 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.examio.app.features.study.models.RecentFlashcardSet
+import com.examio.app.features.study.repository.FlashcardRepository
 
 @Composable
-fun StudyScreen(modifier: Modifier = Modifier) {
-    var state by remember { mutableStateOf(StudyUiState()) }
+fun StudyScreen(
+    flashcardRepository: FlashcardRepository,
+    modifier: Modifier = Modifier,
+) {
+    val materialsVM = remember { MyMaterialsViewModel(flashcardRepository) }
+    var selectedSetId by remember { mutableStateOf<String?>(null) }
 
-    if (state.selectedMaterialId == null) {
+    if (selectedSetId == null) {
         MyMaterialsScreen(
-            state = state,
-            onOpenMaterial = { material -> state = state.copy(selectedMaterialId = material.id, currentCardIndex = 0, isAnswerVisible = false) },
-            onTogglePin = { material ->
-                state = state.copy(
-                    materials = state.materials.map { if (it.id == material.id) it.copy(isPinned = !it.isPinned) else it },
-                )
-            },
+            vm = materialsVM,
+            onOpenSet = { selectedSetId = it },
             modifier = modifier,
         )
     } else {
-        FlashcardStudyScreen(
-            state = state,
-            onBack = { state = state.copy(selectedMaterialId = null, isAnswerVisible = false) },
-            onFlip = { state = state.copy(isAnswerVisible = !state.isAnswerVisible) },
-            onNext = {
-                val next = (state.currentCardIndex + 1).coerceAtMost(state.flashcards.lastIndex)
-                state = state.copy(currentCardIndex = next, isAnswerVisible = false)
-            },
-            onPrevious = {
-                val previous = (state.currentCardIndex - 1).coerceAtLeast(0)
-                state = state.copy(currentCardIndex = previous, isAnswerVisible = false)
-            },
+        val detailVM = remember(selectedSetId) {
+            FlashcardSetDetailViewModel(selectedSetId!!, flashcardRepository)
+        }
+        FlashcardSetDetailScreen(
+            vm = detailVM,
+            onBack = { selectedSetId = null },
             modifier = modifier,
         )
     }
@@ -68,11 +66,12 @@ fun StudyScreen(modifier: Modifier = Modifier) {
 
 @Composable
 private fun MyMaterialsScreen(
-    state: StudyUiState,
-    onOpenMaterial: (StudyMaterial) -> Unit,
-    onTogglePin: (StudyMaterial) -> Unit,
+    vm: MyMaterialsViewModel,
+    onOpenSet: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val state by vm.state.collectAsState()
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -90,11 +89,29 @@ private fun MyMaterialsScreen(
                 )
             }
         }
-        items(state.materials) { material ->
+
+        if (state.isLoading) {
+            item {
+                Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            }
+        }
+
+        state.error?.let { err ->
+            item {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    TextButton(onClick = { vm.load() }) { Text("Thử lại") }
+                }
+            }
+        }
+
+        items(state.sets) { set ->
             FlashcardSetItem(
-                material = material,
-                onOpen = { onOpenMaterial(material) },
-                onTogglePin = { onTogglePin(material) },
+                set = set,
+                onOpen = { onOpenSet(set.id) },
+                onTogglePin = { vm.togglePin(set.id) },
             )
         }
     }
@@ -102,7 +119,7 @@ private fun MyMaterialsScreen(
 
 @Composable
 private fun FlashcardSetItem(
-    material: StudyMaterial,
+    set: RecentFlashcardSet,
     onOpen: () -> Unit,
     onTogglePin: () -> Unit,
 ) {
@@ -124,17 +141,17 @@ private fun FlashcardSetItem(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text(material.cardCount.toString(), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+                Text(set.flashcardCount.toString(), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
                 Text("thẻ", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
             }
             Spacer(Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(material.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
-                Text(material.description, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(material.lastViewed, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(set.title, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+                set.description?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                set.lastViewedAt?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             }
             Text(
-                text = if (material.isPinned) "Đã ghim" else "Ghim",
+                text = if (set.isPinned) "Đã ghim" else "Ghim",
                 modifier = Modifier.clickable(onClick = onTogglePin).padding(8.dp),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.primary,
@@ -145,16 +162,13 @@ private fun FlashcardSetItem(
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-private fun FlashcardStudyScreen(
-    state: StudyUiState,
+private fun FlashcardSetDetailScreen(
+    vm: FlashcardSetDetailViewModel,
     onBack: () -> Unit,
-    onFlip: () -> Unit,
-    onNext: () -> Unit,
-    onPrevious: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val progress = if (state.flashcards.isEmpty()) 0f else (state.currentCardIndex + 1).toFloat() / state.flashcards.size.toFloat()
-    val currentCard = state.currentCard
+    val state by vm.state.collectAsState()
+    val progress = if (state.cards.isEmpty()) 0f else (state.studyIndex + 1).toFloat() / state.cards.size
 
     Column(
         modifier = modifier
@@ -164,42 +178,49 @@ private fun FlashcardStudyScreen(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text("← Tài liệu", modifier = Modifier.clickable(onClick = onBack), color = MaterialTheme.colorScheme.primary)
-        Text(state.selectedMaterial?.title.orEmpty(), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground)
-        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
-        if (currentCard == null) {
-            Text("Chưa có thẻ nào trong bộ này.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+        if (state.isLoading) {
+            Box(Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
             return@Column
         }
-        AnimatedContent(targetState = state.isAnswerVisible, label = "flashcard") { isAnswerVisible ->
-            FlashcardCard(
-                text = if (isAnswerVisible) currentCard.answer else currentCard.question,
-                eyebrow = if (isAnswerVisible) "Câu trả lời" else "Câu hỏi",
-                onFlip = onFlip,
+
+        state.error?.let { err ->
+            Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+            TextButton(onClick = { vm.load() }) { Text("Thử lại") }
+            return@Column
+        }
+
+        Text(state.set?.title.orEmpty(), style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onBackground)
+        LinearProgressIndicator(progress = { progress }, modifier = Modifier.fillMaxWidth())
+
+        val card = state.cards.getOrNull(state.studyIndex)
+        if (card == null) {
+            Text("Chưa có thẻ nào trong bộ này.", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            AnimatedContent(targetState = state.isAnswerVisible, label = "flashcard") { showAnswer ->
+                FlashcardCard(
+                    text = if (showAnswer) card.answer else card.question,
+                    eyebrow = if (showAnswer) "Câu trả lời" else "Câu hỏi",
+                    onFlip = { vm.flipCard() },
+                )
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = { vm.previousCard() }, enabled = state.studyIndex > 0, modifier = Modifier.weight(1f)) { Text("Trước") }
+                Button(onClick = { vm.nextCard() }, enabled = state.studyIndex < state.cards.lastIndex, modifier = Modifier.weight(1f)) { Text("Tiếp") }
+            }
+            Text(
+                "${state.studyIndex + 1}/${state.cards.size} · Chạm thẻ để lật",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Button(onClick = onPrevious, enabled = state.currentCardIndex > 0, modifier = Modifier.weight(1f)) { Text("Trước") }
-            Button(onClick = onNext, enabled = state.currentCardIndex < state.flashcards.lastIndex, modifier = Modifier.weight(1f)) { Text("Tiếp") }
-        }
-        Text(
-            "${state.currentCardIndex + 1}/${state.flashcards.size} · Chạm thẻ để lật",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
 @Composable
-private fun FlashcardCard(
-    text: String,
-    eyebrow: String,
-    onFlip: () -> Unit,
-) {
+private fun FlashcardCard(text: String, eyebrow: String, onFlip: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(260.dp)
-            .clickable(onClick = onFlip),
+        modifier = Modifier.fillMaxWidth().height(260.dp).clickable(onClick = onFlip),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(24.dp),
     ) {

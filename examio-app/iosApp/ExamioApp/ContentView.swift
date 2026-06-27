@@ -10,7 +10,7 @@ struct ContentView: View {
             VStack(spacing: 0) {
                 AppHeaderView { showsProfile = true }
                 TabView(selection: $selectedTab) {
-                    AIToolView()
+                    AiView()
                         .tabItem { Label("AI", systemImage: "sparkles") }
                         .tag(AppTab.aiTool)
 
@@ -26,13 +26,15 @@ struct ContentView: View {
                         .tabItem { Label("Đề thi", systemImage: "doc.text") }
                         .tag(AppTab.deThi)
 
-                    LichSuView()
+                    HistoryView()
                         .tabItem { Label("Lịch sử", systemImage: "clock.arrow.circlepath") }
                         .tag(AppTab.lichSu)
                 }
                 .tint(.examioPrimary)
             }
-            .sheet(isPresented: $showsProfile) { ProfileSheet() }
+            .sheet(isPresented: $showsProfile) {
+                AccountView(onDismiss: { showsProfile = false })
+            }
             .onOpenURL { url in
                 if let deepLink = parseAppDeepLink(url) {
                     selectedTab = deepLink.targetTab
@@ -66,78 +68,6 @@ private struct AppHeaderView: View {
     }
 }
 
-
-// New tab views live here so the existing Xcode project compiles without project-file churn.
-
-struct AIToolView: View {
-    @State private var selectedTypes: Set<String> = ["Trắc nghiệm"]
-    @State private var count = "5"
-    @State private var keywords = ""
-    @State private var generated = false
-
-    private let types = ["Trắc nghiệm", "Điền từ", "Đúng/Sai", "Điền đoạn", "Đáp án đúp", "Biểu mẫu"]
-    private let questions = ["Khái niệm chính của tài liệu này là gì?", "Yếu tố nào ảnh hưởng trực tiếp tới kết quả học tập?", "Phát biểu nào sau đây là đúng theo nội dung PDF?"]
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Công cụ AI").font(.largeTitle.bold()).foregroundStyle(Color.examioInk)
-                Text("Upload PDF, chọn dạng câu hỏi và tạo bộ đề trong vài giây.").foregroundStyle(.secondary)
-
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 105), spacing: 8)], spacing: 8) {
-                    ForEach(types, id: \.self) { type in
-                        Button(type) {
-                            if selectedTypes.contains(type) { selectedTypes.remove(type) } else { selectedTypes.insert(type) }
-                        }
-                        .font(.subheadline.weight(.semibold))
-                        .padding(.vertical, 10)
-                        .frame(maxWidth: .infinity)
-                        .background(selectedTypes.contains(type) ? Color.examioPrimary.opacity(0.18) : Color.examioCard, in: Capsule())
-                        .foregroundStyle(selectedTypes.contains(type) ? Color.examioPrimary : Color.examioInk)
-                    }
-                }
-
-                VStack(spacing: 10) {
-                    Image(systemName: "doc.badge.arrow.up").font(.largeTitle).foregroundStyle(Color.examioPrimary)
-                    Text("Nhấn để chọn file PDF").font(.headline)
-                    Text("Hỗ trợ PDF tối đa 10MB").font(.subheadline).foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(28)
-                .background(Color.examioCard, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-                .overlay(RoundedRectangle(cornerRadius: 24).stroke(Color.examioPrimary.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [7, 6])))
-
-                HStack(spacing: 12) {
-                    TextField("Số lượng", text: $count).keyboardType(.numberPad).textFieldStyle(.roundedBorder)
-                    TextField("Từ khóa", text: $keywords).textFieldStyle(.roundedBorder)
-                }
-
-                Button("Bắt đầu") { generated = true }
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.examioPrimary, in: RoundedRectangle(cornerRadius: 16))
-                    .foregroundStyle(.white)
-
-                if generated {
-                    Text("Preview: \(count.isEmpty ? "5" : count) câu hỏi đã tạo").font(.headline)
-                    ForEach(questions, id: \.self) { question in
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text("Trắc nghiệm").font(.caption.bold()).foregroundStyle(Color.examioPrimary)
-                            Text(question).foregroundStyle(Color.examioInk)
-                            Text("Đáp án đúng: B").font(.footnote).foregroundStyle(.secondary)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding()
-                        .background(Color.examioCard, in: RoundedRectangle(cornerRadius: 18))
-                    }
-                }
-            }
-            .padding(20)
-        }
-        .background(Color.examioCanvas)
-    }
-}
 
 struct DeThiView: View {
     private let examSets = ["Ôn tập Toán cao cấp", "Kiểm tra Sinh học 12", "Đề luyện tiếng Anh B1"]
@@ -207,31 +137,50 @@ private struct SecondaryAction: View {
     }
 }
 
-struct LichSuView: View {
-    private let items = ["Tạo đề từ PDF Sinh học", "Hoàn thành bài thi Toán", "Ôn 20 flashcard tiếng Anh"]
+struct HistoryView: View {
+    @StateObject private var vm = HistoryViewModel()
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 14) {
-                Text("Lịch sử").font(.largeTitle.bold()).foregroundStyle(Color.examioInk)
-                Text("Theo dõi hoạt động học tập, tài liệu và kết quả gần đây.").foregroundStyle(.secondary)
-                HStack(spacing: 10) {
-                    HistoryStat(value: "18", label: "PDF")
-                    HistoryStat(value: "42", label: "Bài thi")
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Lịch sử")
+                        .font(.system(size: 34, weight: .regular, design: .serif))
+                        .foregroundStyle(Color.examioInk)
+                    Text("Theo dõi hoạt động học tập, tài liệu và kết quả gần đây.")
+                        .foregroundStyle(.secondary)
                 }
-                HStack(spacing: 10) {
-                    HistoryStat(value: "126", label: "Flashcards")
-                    HistoryStat(value: "31h", label: "Tự học")
-                }
-                Text("Hoạt động gần đây").font(.headline).foregroundStyle(Color.examioInk)
-                ForEach(items, id: \.self) { item in
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(item).font(.headline).foregroundStyle(Color.examioInk)
-                        Text("Vừa cập nhật • Đồng bộ với Examio").font(.subheadline).foregroundStyle(.secondary)
+
+                if vm.isLoading {
+                    HStack { Spacer(); ProgressView(); Spacer() }.padding(.top, 32)
+                } else if let err = vm.error {
+                    VStack(spacing: 8) {
+                        Text(err).font(.caption).foregroundStyle(.red)
+                        Button("Thử lại") { Task { await vm.load() } }.buttonStyle(.bordered)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding()
-                    .background(Color.examioCard, in: RoundedRectangle(cornerRadius: 18))
+                } else {
+                    if let stats = vm.stats {
+                        LazyVGrid(columns: [.init(.flexible()), .init(.flexible())], spacing: 10) {
+                            HistoryStatTile(value: "\(stats.totalPDFs)", label: "PDF")
+                            HistoryStatTile(value: "\(stats.examsCreated)", label: "Bài thi")
+                            HistoryStatTile(value: "\(stats.flashcardSets)", label: "Flashcard")
+                            HistoryStatTile(value: "\(stats.totalStudyHours)h", label: "Tự học")
+                        }
+                    }
+
+                    if !vm.pdfs.isEmpty {
+                        Text("Tài liệu PDF").font(.headline).foregroundStyle(Color.examioInk)
+                        ForEach(vm.pdfs) { pdf in
+                            PDFHistoryRow(item: pdf)
+                        }
+                    }
+
+                    if !vm.exams.isEmpty {
+                        Text("Bài thi gần đây").font(.headline).foregroundStyle(Color.examioInk)
+                        ForEach(vm.exams) { exam in
+                            ExamHistoryRow(item: exam)
+                        }
+                    }
                 }
             }
             .padding(20)
@@ -240,10 +189,9 @@ struct LichSuView: View {
     }
 }
 
-private struct HistoryStat: View {
+private struct HistoryStatTile: View {
     let value: String
     let label: String
-
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(value).font(.title.bold()).foregroundStyle(Color.examioPrimary)
@@ -255,44 +203,53 @@ private struct HistoryStat: View {
     }
 }
 
-struct ProfileSheet: View {
+private struct PDFHistoryRow: View {
+    let item: PDFHistoryItemResponse
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Capsule().fill(.secondary.opacity(0.25)).frame(width: 48, height: 5).frame(maxWidth: .infinity)
-            HStack(spacing: 14) {
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 54))
-                    .foregroundStyle(Color.examioPrimary)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Tài khoản Examio").font(.title3.bold()).foregroundStyle(Color.examioInk)
-                    Text("Hồ sơ, ví và bảo mật").foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(item.filename).font(.headline).foregroundStyle(Color.examioInk)
+                Spacer()
+                if let status = item.processingStatus {
+                    Text(status).font(.caption.weight(.medium)).foregroundStyle(Color.examioPrimary)
                 }
             }
-            ProfileSheetRow(icon: "creditcard", title: "Ví của tôi", subtitle: "Số dư, gói học tập và giao dịch")
-            ProfileSheetRow(icon: "lock", title: "Đổi mật khẩu", subtitle: "Cập nhật bảo mật tài khoản")
-            ProfileSheetRow(icon: "rectangle.portrait.and.arrow.right", title: "Đăng xuất", subtitle: "Kết thúc phiên đăng nhập")
-            Spacer(minLength: 12)
+            let detail = buildDetail()
+            if !detail.isEmpty {
+                Text(detail).font(.footnote).foregroundStyle(.secondary)
+            }
         }
-        .padding(24)
-        .background(Color.examioCanvas)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+        .background(Color.examioCard, in: RoundedRectangle(cornerRadius: 18))
+    }
+
+    private func buildDetail() -> String {
+        var parts: [String] = []
+        if let q = item.quizHistory { parts.append("\(q.quizCount) quiz") }
+        if let f = item.flashcardHistory { parts.append("\(f.flashcardCount) flashcard") }
+        return parts.joined(separator: " · ")
     }
 }
 
-private struct ProfileSheetRow: View {
-    let icon: String
-    let title: String
-    let subtitle: String
-
+private struct ExamHistoryRow: View {
+    let item: ExamHistoryItemResponse
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon).foregroundStyle(Color.examioPrimary).frame(width: 28)
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title).font(.headline).foregroundStyle(Color.examioInk)
-                Text(subtitle).font(.subheadline).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 4) {
+            Text(item.examSession?.examRoom?.title ?? "Bài thi")
+                .font(.headline).foregroundStyle(Color.examioInk)
+            HStack(spacing: 10) {
+                Text("\(item.correctAnswers)/\(item.totalQuestions) đúng")
+                    .font(.caption).foregroundStyle(Color.examioPrimary)
+                if let score = item.score {
+                    Text(String(format: "%.1f điểm", score))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
-            Spacer()
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
         .background(Color.examioCard, in: RoundedRectangle(cornerRadius: 18))
     }
 }
+
