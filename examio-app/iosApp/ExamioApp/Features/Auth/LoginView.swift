@@ -13,9 +13,9 @@ struct LoginView: View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color(red: 1.0, green: 0.97, blue: 0.93),
+                    Color.examioSurfaceSoft,
                     Color.examioCanvas,
-                    Color.examioCard,
+                    Color.examioSurfaceCard,
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
@@ -29,7 +29,7 @@ struct LoginView: View {
                 .offset(x: -120, y: -280)
 
             Circle()
-                .fill(Color(red: 0.95, green: 0.71, blue: 0.43).opacity(0.18))
+                .fill(Color.examioAccentAmber.opacity(0.18))
                 .frame(width: 240, height: 240)
                 .blur(radius: 4)
                 .offset(x: 140, y: 290)
@@ -135,10 +135,10 @@ struct LoginView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
-                .background(Color.white.opacity(0.78), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .background(Color.examioSurfaceSoft.opacity(0.78), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(Color(red: 0.89, green: 0.84, blue: 0.79), lineWidth: 1)
+                        .stroke(Color.examioHairline, lineWidth: 1)
                 )
             }
 
@@ -154,22 +154,22 @@ struct LoginView: View {
             .padding(.top, 2)
         }
         .padding(22)
-        .background(Color.white.opacity(0.82), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(Color.examioSurfaceSoft.opacity(0.92), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color(red: 0.91, green: 0.84, blue: 0.78), lineWidth: 1)
+                .stroke(Color.examioHairline, lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.08), radius: 24, x: 0, y: 14)
     }
 
     private var divider: some View {
         HStack(spacing: 12) {
-            Rectangle().fill(Color(red: 0.89, green: 0.84, blue: 0.79)).frame(height: 1)
+            Rectangle().fill(Color.examioHairline).frame(height: 1)
             Text("Hoặc tiếp tục với")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize()
-            Rectangle().fill(Color(red: 0.89, green: 0.84, blue: 0.79)).frame(height: 1)
+            Rectangle().fill(Color.examioHairline).frame(height: 1)
         }
         .padding(.vertical, 2)
     }
@@ -183,10 +183,10 @@ struct LoginView: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 52)
-        .background(Color(red: 0.99, green: 0.97, blue: 0.94), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color.examioSurfaceSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color(red: 0.89, green: 0.84, blue: 0.79), lineWidth: 1)
+                .stroke(Color.examioHairline, lineWidth: 1)
         )
     }
 
@@ -199,10 +199,10 @@ struct LoginView: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 52)
-        .background(Color(red: 0.99, green: 0.97, blue: 0.94), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .background(Color.examioSurfaceSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color(red: 0.89, green: 0.84, blue: 0.79), lineWidth: 1)
+                .stroke(Color.examioHairline, lineWidth: 1)
         )
     }
 

@@ -12,7 +12,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.examio.app.R
@@ -37,6 +37,6 @@ fun AppHeader(
                 Icon(Icons.Outlined.AccountCircle, contentDescription = "Profile")
             }
         },
-        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFFFF7F1)),
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
     )
 }

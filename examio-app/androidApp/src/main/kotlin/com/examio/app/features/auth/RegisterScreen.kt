@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
@@ -60,8 +61,8 @@ fun RegisterScreen(
             leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) })
 
         if (passwordMismatch) {
-            Text("Mật khẩu nhập lại không khớp.", color = Color(0xFFC64545),
-                style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+            Text("Mật khẩu nhập lại không khớp.", color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall)
         }
 
         AuthMessage(state.errorMessage, state.successMessage)
@@ -71,7 +72,7 @@ fun RegisterScreen(
             enabled = !state.isLoading && !passwordMismatch && password == confirmPassword && password.length >= 6,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC785C)),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
         ) {
             Text(if (state.isLoading) "Đang xử lý..." else "Đăng Ký →", fontWeight = FontWeight.SemiBold)
         }
@@ -82,12 +83,13 @@ fun RegisterScreen(
             onClick = { uriHandler.openUri(MobileApiConfig.googleOAuthUrl()) },
             modifier = Modifier.fillMaxWidth().height(50.dp),
             shape = RoundedCornerShape(14.dp),
-            border = BorderStroke(1.dp, Color(0xFFE4D7CA)),
-            colors = ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFFFFFBF7)),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         ) {
+            // Google brand blue — intentionally kept as brand color
             Text("G", color = Color(0xFF4285F4), fontWeight = FontWeight.Black, fontSize = 18.sp)
             androidx.compose.foundation.layout.Spacer(Modifier.size(10.dp))
-            Text("Google", color = Color(0xFF3D3D3A), fontWeight = FontWeight.Medium)
+            Text("Google", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
         }
 
         Row(
@@ -95,8 +97,8 @@ fun RegisterScreen(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Đã có tài khoản?", color = Color(0xFF6B625B),
-                style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+            Text("Đã có tài khoản?", color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = onBackToLogin) { Text("Đăng Nhập") }
         }
     }

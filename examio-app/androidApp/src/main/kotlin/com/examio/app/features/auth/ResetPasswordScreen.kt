@@ -20,7 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -49,8 +49,8 @@ fun ResetPasswordScreen(
             leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) })
 
         if (passwordMismatch) {
-            Text("Mật khẩu nhập lại không khớp.", color = Color(0xFFC64545),
-                style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+            Text("Mật khẩu nhập lại không khớp.", color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall)
         }
 
         AuthMessage(state.errorMessage, state.successMessage)
@@ -60,7 +60,7 @@ fun ResetPasswordScreen(
             enabled = !state.isLoading && code.isNotBlank() && password.length >= 6 && password == confirmPassword,
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC785C)),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
         ) {
             Text(if (state.isLoading) "Đang xử lý..." else "Cập Nhật Mật Khẩu", fontWeight = FontWeight.SemiBold)
         }
@@ -70,8 +70,8 @@ fun ResetPasswordScreen(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Nhớ mật khẩu rồi?", color = Color(0xFF6B625B),
-                style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+            Text("Nhớ mật khẩu rồi?", color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = onBackToLogin) { Text("Đăng Nhập") }
         }
     }

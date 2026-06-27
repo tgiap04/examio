@@ -15,9 +15,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import com.examio.app.design.ExamioCard
+import com.examio.app.design.ExamioCardShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -115,10 +115,9 @@ private fun ExamAttemptCard(
     onOpen: () -> Unit,
     onTogglePin: () -> Unit,
 ) {
-    Card(
+    ExamioCard(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(18.dp),
+        shape = ExamioCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -169,7 +168,7 @@ private fun ExamAttemptDetailScreen(
         attempt.examSession.examRoom.description?.let {
             Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(18.dp)) {
+        ExamioCard(shape = ExamioCardShape) {
             Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text("${attempt.totalQuestions} câu hỏi")
                 attempt.examSession.timeLimitMinutes?.let { Text("Thời lượng $it phút") }

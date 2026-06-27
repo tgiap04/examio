@@ -1,6 +1,5 @@
 package com.examio.app.features.auth
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,21 +18,21 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.examio.app.R
+import com.examio.app.design.ExamioCard
+import com.examio.app.design.ExamioTheme
 
 /**
  * Shared card-based auth screen layout matching examio-fe responsive style.
@@ -46,12 +45,13 @@ fun AuthCardShell(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
+    val tokens = ExamioTheme.tokens
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFFFFF7EE), Color(0xFFFAF9F5), Color(0xFFEFE9DE)),
+                    listOf(tokens.accentAmber.copy(alpha = 0.12f), MaterialTheme.colorScheme.background, tokens.surfaceCreamStrong),
                 ),
             ),
     ) {
@@ -60,7 +60,7 @@ fun AuthCardShell(
                 .padding(top = 48.dp, start = 24.dp)
                 .size(150.dp)
                 .clip(CircleShape)
-                .background(Color(0x33CC785C)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
         )
         Box(
             Modifier
@@ -68,7 +68,7 @@ fun AuthCardShell(
                 .padding(bottom = 24.dp, end = 8.dp)
                 .size(210.dp)
                 .clip(CircleShape)
-                .background(Color(0x26F2B66D)),
+                .background(tokens.accentAmber.copy(alpha = 0.15f)),
         )
 
         Column(
@@ -82,19 +82,17 @@ fun AuthCardShell(
             AuthBrandHeader()
             Spacer(Modifier.height(22.dp))
 
-            Card(
+            ExamioCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xF8FFFCF8)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
-                border = BorderStroke(1.dp, Color(0xFFE8D7C8)),
+                containerColor = MaterialTheme.colorScheme.background,
             ) {
                 Column(
                     modifier = Modifier.padding(22.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    Text(title, color = Color(0xFF141413), fontSize = 26.sp, fontWeight = FontWeight.Bold)
-                    Text(subtitle, color = Color(0xFF6B625B), style = androidx.compose.material3.MaterialTheme.typography.bodyMedium)
+                    Text(title, color = MaterialTheme.colorScheme.onBackground, fontSize = 26.sp, fontWeight = FontWeight.Bold)
+                    Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
                     content()
                 }
             }

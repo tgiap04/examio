@@ -10,10 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import com.examio.app.design.ExamioCard
+import com.examio.app.design.ExamioCardShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -100,11 +99,7 @@ private fun StatsGrid(stats: HistoryStats) {
 
 @Composable
 private fun StatCard(value: String, label: String, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
+    ExamioCard(modifier = modifier, shape = ExamioCardShape) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(value, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
             Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -114,11 +109,7 @@ private fun StatCard(value: String, label: String, modifier: Modifier = Modifier
 
 @Composable
 private fun PdfCard(pdf: PDFHistoryItem) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
+    ExamioCard(modifier = Modifier.fillMaxWidth(), shape = ExamioCardShape) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(pdf.filename, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.onSurface)
@@ -141,11 +132,7 @@ private fun PdfCard(pdf: PDFHistoryItem) {
 @Composable
 private fun ExamCard(exam: ExamHistoryItem) {
     val title = exam.examSession?.examRoom?.title ?: "Bài thi"
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
+    ExamioCard(modifier = Modifier.fillMaxWidth(), shape = ExamioCardShape) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(title, style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurface)
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {

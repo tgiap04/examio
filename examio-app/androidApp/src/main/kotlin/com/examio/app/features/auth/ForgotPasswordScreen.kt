@@ -19,7 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -48,7 +48,7 @@ fun ForgotPasswordScreen(
             enabled = !state.isLoading && email.contains("@"),
             modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC785C)),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
         ) {
             Text(if (state.isLoading) "Đang xử lý..." else "Gửi Mã Khôi Phục", fontWeight = FontWeight.SemiBold)
         }
@@ -57,9 +57,9 @@ fun ForgotPasswordScreen(
             onClick = onResetPassword,
             modifier = Modifier.fillMaxWidth().height(48.dp),
             shape = RoundedCornerShape(14.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0x1FCC785C)),
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
         ) {
-            Text("Tôi đã có mã →", color = Color(0xFFCC785C), fontWeight = FontWeight.Medium)
+            Text("Tôi đã có mã →", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
         }
 
         Row(
@@ -67,8 +67,8 @@ fun ForgotPasswordScreen(
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Nhớ mật khẩu rồi?", color = Color(0xFF6B625B),
-                style = androidx.compose.material3.MaterialTheme.typography.bodySmall)
+            Text("Nhớ mật khẩu rồi?", color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = onBackToLogin) { Text("Đăng Nhập") }
         }
     }

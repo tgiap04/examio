@@ -90,8 +90,7 @@ private struct StatsCardView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(Color.examioCard)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .examioCard(cornerRadius: 16)
     }
 }
 
@@ -123,8 +122,12 @@ private struct RecentFlashcardRow: View {
         Text("\(item.title) · \(item.cardCount) thẻ")
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.white.opacity(0.55))
+            .background(Color.examioSurfaceSoft)
             .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.examioHairline, lineWidth: 1)
+            )
     }
 }
 
@@ -141,7 +144,11 @@ private struct RecentExamRow: View {
             Text(item.score).foregroundStyle(Color.examioPrimary)
         }
         .padding(14)
-        .background(Color.white.opacity(0.55))
+        .background(Color.examioSurfaceSoft)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.examioHairline, lineWidth: 1)
+        )
     }
 }

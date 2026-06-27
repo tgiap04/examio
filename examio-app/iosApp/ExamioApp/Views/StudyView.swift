@@ -84,8 +84,7 @@ private struct FlashcardSetRow: View {
                     .foregroundStyle(Color.examioPrimary)
             }
             .padding(16)
-            .background(Color.examioCard)
-            .clipShape(RoundedRectangle(cornerRadius: 18))
+            .examioCard(cornerRadius: 18)
         }
         .buttonStyle(.plain)
     }
@@ -174,8 +173,7 @@ private struct FlashcardCardView: View {
             }
             .frame(maxWidth: .infinity, minHeight: 260)
             .padding(22)
-            .background(Color.examioCard)
-            .clipShape(RoundedRectangle(cornerRadius: 24))
+            .examioCard(cornerRadius: 24)
         }
         .buttonStyle(.plain)
     }

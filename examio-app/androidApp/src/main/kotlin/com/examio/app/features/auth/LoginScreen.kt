@@ -24,8 +24,6 @@ import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.MailOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -50,6 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.examio.app.R
 import com.examio.app.core.config.MobileApiConfig
+import com.examio.app.design.ExamioCard
+import com.examio.app.design.ExamioTheme
 
 @Composable
 fun LoginScreen(
@@ -62,13 +62,18 @@ fun LoginScreen(
     var credential by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val uriHandler = LocalUriHandler.current
+    val tokens = ExamioTheme.tokens
 
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFFFFF7EE), Color(0xFFFAF9F5), Color(0xFFEFE9DE)),
+                    listOf(
+                        tokens.accentAmber.copy(alpha = 0.12f),
+                        MaterialTheme.colorScheme.background,
+                        tokens.surfaceCreamStrong,
+                    ),
                 ),
             ),
     ) {
@@ -77,7 +82,7 @@ fun LoginScreen(
                 .padding(top = 48.dp, start = 24.dp)
                 .size(150.dp)
                 .clip(CircleShape)
-                .background(Color(0x33CC785C)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)),
         )
         Box(
             Modifier
@@ -85,7 +90,7 @@ fun LoginScreen(
                 .padding(bottom = 24.dp, end = 8.dp)
                 .size(210.dp)
                 .clip(CircleShape)
-                .background(Color(0x26F2B66D)),
+                .background(tokens.accentAmber.copy(alpha = 0.15f)),
         )
 
         Column(
@@ -99,12 +104,10 @@ fun LoginScreen(
             AuthBrandHeader()
             Spacer(Modifier.height(22.dp))
 
-            Card(
+            ExamioCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(28.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xF8FFFCF8)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 10.dp),
-                border = BorderStroke(1.dp, Color(0xFFE8D7C8)),
+                containerColor = MaterialTheme.colorScheme.background,
             ) {
                 Column(
                     modifier = Modifier.padding(22.dp),
@@ -112,13 +115,13 @@ fun LoginScreen(
                 ) {
                     Text(
                         "Chào Mừng Trở Lại",
-                        color = Color(0xFF141413),
+                        color = MaterialTheme.colorScheme.onBackground,
                         fontSize = 26.sp,
                         fontWeight = FontWeight.Bold,
                     )
                     Text(
                         "Đăng nhập vào Examio để tiếp tục học, luyện đề và quản lý tài liệu.",
-                        color = Color(0xFF6B625B),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         style = MaterialTheme.typography.bodyMedium,
                     )
 
@@ -147,7 +150,7 @@ fun LoginScreen(
                         enabled = !state.isLoading,
                         modifier = Modifier.fillMaxWidth().height(52.dp),
                         shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFCC785C)),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     ) {
                         Text(if (state.isLoading) "Đang xử lý..." else "Đăng Nhập", fontWeight = FontWeight.SemiBold)
                     }
@@ -158,12 +161,13 @@ fun LoginScreen(
                         onClick = { uriHandler.openUri(MobileApiConfig.googleOAuthUrl()) },
                         modifier = Modifier.fillMaxWidth().height(50.dp),
                         shape = RoundedCornerShape(14.dp),
-                        border = BorderStroke(1.dp, Color(0xFFE4D7CA)),
-                        colors = ButtonDefaults.outlinedButtonColors(containerColor = Color(0xFFFFFBF7)),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                     ) {
+                        // Google brand blue — intentionally kept as brand color
                         Text("G", color = Color(0xFF4285F4), fontWeight = FontWeight.Black, fontSize = 18.sp)
                         Spacer(Modifier.size(10.dp))
-                        Text("Google", color = Color(0xFF3D3D3A), fontWeight = FontWeight.Medium)
+                        Text("Google", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Medium)
                     }
 
                     Row(
@@ -171,7 +175,7 @@ fun LoginScreen(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text("Bạn chưa có tài khoản?", color = Color(0xFF6B625B), style = MaterialTheme.typography.bodySmall)
+                        Text("Bạn chưa có tài khoản?", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                         TextButton(onClick = onRegister) { Text("Đăng ký ngay") }
                     }
                 }
@@ -182,13 +186,14 @@ fun LoginScreen(
 
 @Composable
 internal fun AuthBrandHeader() {
+    val tokens = ExamioTheme.tokens
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
                 .size(78.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(Color(0x1FCC785C))
-                .border(1.dp, Color(0x40CC785C), RoundedCornerShape(24.dp)),
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.25f), RoundedCornerShape(24.dp)),
             contentAlignment = Alignment.Center,
         ) {
             Image(
@@ -203,8 +208,8 @@ internal fun AuthBrandHeader() {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = Color(0xFFCC785C), modifier = Modifier.size(18.dp))
-            Text("Nền tảng học tập cùng AI", color = Color(0xFF6B625B), style = MaterialTheme.typography.bodySmall)
+            Icon(Icons.Outlined.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+            Text("Nền tảng học tập cùng AI", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -216,8 +221,8 @@ internal fun AuthOrDivider() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        Divider(Modifier.weight(1f), color = Color(0xFFE4D7CA))
-        Text("Hoặc tiếp tục với", color = Color(0xFF8A8077), style = MaterialTheme.typography.bodySmall)
-        Divider(Modifier.weight(1f), color = Color(0xFFE4D7CA))
+        Divider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
+        Text("Hoặc tiếp tục với", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+        Divider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outline)
     }
 }

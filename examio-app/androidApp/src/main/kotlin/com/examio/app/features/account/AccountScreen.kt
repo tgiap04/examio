@@ -15,9 +15,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import com.examio.app.design.ExamioCard
+import com.examio.app.design.ExamioCardShape
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -87,10 +87,7 @@ private fun ProfileSection(
     }
     val profile = state.profile
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            shape = RoundedCornerShape(22.dp),
-        ) {
+        ExamioCard(shape = ExamioCardShape) {
             Column(
                 modifier = Modifier.fillMaxWidth().padding(18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -158,9 +155,9 @@ private fun WalletSection(
     }
     val wallet = state.wallet
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
-            shape = RoundedCornerShape(22.dp),
+        ExamioCard(
+            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.16f),
+            shape = ExamioCardShape,
         ) {
             Column(modifier = Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Text("Số dư ví", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelMedium)
@@ -195,10 +192,7 @@ private fun TeacherSection() {
 @Composable
 private fun TransactionRow(tx: Transaction) {
     val isPositive = tx.direction == "ADD"
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(16.dp),
-    ) {
+    ExamioCard(shape = ExamioCardShape) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(tx.typeLabel ?: tx.description ?: "Giao dịch", style = MaterialTheme.typography.titleSmall)

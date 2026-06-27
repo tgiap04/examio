@@ -1,14 +1,5 @@
 import SwiftUI
 
-extension Color {
-    static let examioCanvas = Color(red: 0.98, green: 0.98, blue: 0.96)
-    static let examioInk = Color(red: 0.08, green: 0.08, blue: 0.07)
-    static let examioPrimary = Color(red: 0.8, green: 0.47, blue: 0.36)
-    static let examioCard = Color(red: 0.94, green: 0.91, blue: 0.87)
-    static let examioSurface = Color(red: 0.99, green: 0.97, blue: 0.94)
-    static let examioBorder = Color(red: 0.89, green: 0.84, blue: 0.79)
-}
-
 // MARK: - Shared card-based auth layout (matches examio-fe responsive style)
 
 struct AuthCardScreen<Content: View>: View {
@@ -19,7 +10,7 @@ struct AuthCardScreen<Content: View>: View {
     var body: some View {
         ZStack {
             LinearGradient(
-                colors: [Color(red: 1.0, green: 0.97, blue: 0.93), Color.examioCanvas, Color.examioCard],
+                colors: [Color.examioSurfaceSoft, Color.examioCanvas, Color.examioSurfaceCard],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
@@ -32,7 +23,7 @@ struct AuthCardScreen<Content: View>: View {
                 .offset(x: -120, y: -280)
 
             Circle()
-                .fill(Color(red: 0.95, green: 0.71, blue: 0.43).opacity(0.16))
+                .fill(Color.examioAccentAmber.opacity(0.16))
                 .frame(width: 220, height: 220)
                 .blur(radius: 4)
                 .offset(x: 140, y: 290)
@@ -97,10 +88,10 @@ private struct AuthCardView<Content: View>: View {
             content
         }
         .padding(22)
-        .background(Color.white.opacity(0.82), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(Color.examioSurfaceSoft.opacity(0.92), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 28, style: .continuous)
-                .stroke(Color(red: 0.91, green: 0.84, blue: 0.78), lineWidth: 1)
+                .stroke(Color.examioHairline, lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.08), radius: 24, x: 0, y: 14)
     }
