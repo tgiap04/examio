@@ -32,10 +32,17 @@ class AuthRepository(
         return currentUser
     }
 
-    suspend fun login(credential: String, password: String): ApiResult<AuthResponse> =
-        api.login(LoginRequest(credential, password)).also(::persistTokens)
+    suspend fun login(credential: String, password: String): ApiResult<AuthResponse> {
+        val result = api.login(LoginRequest(credential, password))
+        persistTokens(result)
+        return result
+    }
 
-    suspend fun signup(request: SignupRequest): ApiResult<AuthResponse> = api.signup(request).also(::persistTokens)
+    suspend fun signup(request: SignupRequest): ApiResult<AuthResponse> {
+        val result = api.signup(request)
+        persistTokens(result)
+        return result
+    }
 
     suspend fun logout(): ApiResult<MessageResponse> {
         val result = api.logout()

@@ -2,8 +2,8 @@ package com.examio.app.features.study.api
 
 import com.examio.app.core.network.ApiResult
 import com.examio.app.core.network.safeApiCall
+import com.examio.app.features.exams.models.RecentExamsResponse
 import com.examio.app.features.study.models.PinResponse
-import com.examio.app.features.study.models.RecentExamsResponse
 import com.examio.app.features.study.models.RecentFlashcardsResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get

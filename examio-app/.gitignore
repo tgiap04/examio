@@ -1,40 +1,52 @@
-dist/
-node_modules/
-[._]*.s[a-v][a-z]
-[._]*.sw[a-p]
-[._]s[a-rt-v][a-z]
-[._]ss[a-gi-z]
-[._]sw[a-p]
-.idea
-.vscode
+# Build outputs
+build/
+**/build/
+androidApp/build/
+shared/build/
 
+# APK / AAB artifacts
+*.apk
+*.aab
+*.ap_
 
-/generated/prisma
-.env
+# iOS build artifacts
+iosApp/build/
+iosApp/*.xcworkspace/xcuserdata/
+iosApp/*.xcodeproj/xcuserdata/
+iosApp/*.xcodeproj/project.xcworkspace/xcuserdata/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
 
-# docker compose files
-docker-compose.yml
-docker-compose.*.yml
-!docker-compose.example.yml
-!deploy/docker-compose*.yml
+# Gradle wrapper distribution (downloaded on demand)
+gradle/wrapper/gradle-wrapper.jar
 
-# Python virtual environments
-venv/
-.venv/
-env/
-python-venv/
-**/venv/
-**/.venv/
-**/env/
-**/python-venv/
-__pycache__/
-**/__pycache__/
-*.py[cod]
-*$py.class
-*.so
-#python
+# Gradle caches & daemon
+.gradle/
+local.properties
 
-/data-source/
-data-source/
-apps/ai-service/data-source/
-graphify-out/
+# IntelliJ / Android Studio
+.idea/
+*.iml
+*.iws
+*.ipr
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Xcode
+xcuserdata/
+*.xccheckout
+*.moved-to-trash
+*.orig
+
+# CocoaPods (if used)
+Pods/
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Editor
+.vscode/

@@ -29,7 +29,11 @@ class MyExamsViewModel(private val materials: StudentMaterialsApiService) : View
                     isLoading = false,
                     attempts = result.data.examAttempts,
                 )
-                is ApiResult.Error -> _state.value = _state.value.copy(
+                is ApiResult.HttpError -> _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = result.message,
+                )
+                is ApiResult.NetworkError -> _state.value = _state.value.copy(
                     isLoading = false,
                     error = result.message,
                 )

@@ -20,10 +20,21 @@ android {
     buildFeatures {
         buildConfig = true
     }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 }
 
 dependencies {
     implementation(project(":shared"))
+    implementation(libs.ktor.client.core)
+    implementation(libs.ktor.client.okhttp)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.foundation)

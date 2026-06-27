@@ -2,6 +2,7 @@ package com.examio.app.core.storage
 
 import android.content.Context
 import com.examio.app.core.session.SessionTokens
+import javax.crypto.Cipher
 
 private lateinit var _instance: SecureTokenStorage
 
