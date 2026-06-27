@@ -23,7 +23,7 @@ struct PlaceholderScreen: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(24)
-            .background(Color(red: 0.98, green: 0.98, blue: 0.96))
+            .background(Color.examioCanvas)
             .navigationTitle(title)
         }
     }

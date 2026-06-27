@@ -13,7 +13,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import com.examio.app.features.navigation.MainTab
@@ -26,8 +26,8 @@ fun BottomTabBar(
 ) {
     NavigationBar(
         modifier = modifier,
-        containerColor = Color.White,
-        tonalElevation = 4.dp,
+        containerColor = MaterialTheme.colorScheme.background,
+        tonalElevation = 0.dp,
     ) {
         MainTab.entries.forEach { tab ->
             NavigationBarItem(
@@ -36,9 +36,9 @@ fun BottomTabBar(
                 icon = { Icon(tab.icon, contentDescription = tab.title) },
                 label = { Text(tab.title, maxLines = 1) },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFFCC785C),
-                    selectedTextColor = Color(0xFFCC785C),
-                    indicatorColor = Color(0x33CC785C),
+                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                    indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
                 ),
             )
         }

@@ -9,13 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Style
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -23,18 +20,19 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.examio.app.design.ExamioCard
+import com.examio.app.design.ExamioCardShape
 
 @Composable
 fun DeThiScreen(modifier: Modifier = Modifier) {
     LazyColumn(
-        modifier = modifier.fillMaxSize().background(Color(0xFFFFF7F1)).padding(20.dp),
+        modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(20.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         item {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text("Đề thi", style = MaterialTheme.typography.headlineLarge, color = Color(0xFF2D211B))
+                Text("Đề thi", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onBackground)
                 Text("Quản lý bộ đề, flashcard và phòng thi từ một nơi.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
@@ -58,16 +56,22 @@ fun DeThiScreen(modifier: Modifier = Modifier) {
         }
         items(examSets) { item -> ExamSetCard(item) }
         item {
-            ExtendedFloatingActionButton(onClick = { }, icon = { Icon(Icons.Outlined.Add, null) }, text = { Text("Tạo bộ đề") }, containerColor = Color(0xFFCC785C), contentColor = Color.White)
+            ExtendedFloatingActionButton(
+                onClick = { },
+                icon = { Icon(Icons.Outlined.Add, null) },
+                text = { Text("Tạo bộ đề") },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            )
         }
     }
 }
 
 @Composable
 private fun StatCard(value: String, label: String, modifier: Modifier = Modifier) {
-    Card(modifier = modifier, shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+    ExamioCard(modifier = modifier, shape = ExamioCardShape) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(value, style = MaterialTheme.typography.headlineSmall, color = Color(0xFFCC785C))
+            Text(value, style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.primary)
             Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
@@ -75,9 +79,9 @@ private fun StatCard(value: String, label: String, modifier: Modifier = Modifier
 
 @Composable
 private fun ExamSetCard(item: String) {
-    Card(shape = RoundedCornerShape(18.dp), colors = CardDefaults.cardColors(containerColor = Color.White)) {
+    ExamioCard(modifier = Modifier.fillMaxWidth(), shape = ExamioCardShape) {
         Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(item, style = MaterialTheme.typography.titleMedium, color = Color(0xFF2D211B))
+            Text(item, style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
             Text("32 câu hỏi • Đang hoạt động • Cập nhật hôm nay", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }

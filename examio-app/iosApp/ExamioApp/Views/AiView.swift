@@ -224,8 +224,7 @@ private struct UploadRow: View {
                 .font(.caption).foregroundStyle(.red)
         }
         .padding(16)
-        .background(Color.examioCard)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .examioCard(cornerRadius: 16)
     }
 
     private func buildDetail() -> String {

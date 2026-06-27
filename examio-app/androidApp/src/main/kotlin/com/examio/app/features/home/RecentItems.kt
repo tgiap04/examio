@@ -1,18 +1,17 @@
 package com.examio.app.features.home
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.examio.app.design.ExamioCard
+import com.examio.app.design.ExamioCardShape
 
 @Composable
 fun RecentFlashcardItem(item: HomeRecentFlashcard, modifier: Modifier = Modifier) {
@@ -36,11 +35,9 @@ fun RecentExamItem(item: HomeRecentExam, modifier: Modifier = Modifier) {
 
 @Composable
 private fun RecentCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .padding(16.dp),
-        content = content,
+    ExamioCard(
+        modifier = modifier.fillMaxWidth(),
+        shape = ExamioCardShape,
+        content = { androidx.compose.foundation.layout.Column(modifier = Modifier.padding(16.dp), content = content) },
     )
 }

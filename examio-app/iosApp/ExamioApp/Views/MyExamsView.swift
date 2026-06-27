@@ -84,8 +84,7 @@ private struct ExamAttemptRow: View {
                 .font(.caption).foregroundStyle(.secondary)
             }
             .padding(16)
-            .background(Color.examioCard)
-            .clipShape(RoundedRectangle(cornerRadius: 18))
+            .examioCard(cornerRadius: 18)
         }
         .buttonStyle(.plain)
     }
@@ -117,8 +116,7 @@ private struct ExamAttemptDetailView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(16)
-            .background(Color.examioCard)
-            .clipShape(RoundedRectangle(cornerRadius: 18))
+            .examioCard(cornerRadius: 18)
 
             Text("Làm lại và nộp bài trực tiếp từ web app tại examio.vn để xem chi tiết đáp án.")
                 .font(.footnote).foregroundStyle(.secondary)

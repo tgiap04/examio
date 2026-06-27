@@ -105,7 +105,6 @@ private struct TeacherContentCard: View {
             }
         }
         .padding(16)
-        .background(Color.examioCard)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .examioCard(cornerRadius: 18)
     }
 }

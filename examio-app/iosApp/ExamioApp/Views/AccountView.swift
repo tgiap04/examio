@@ -81,8 +81,7 @@ struct AccountView: View {
         }
         .padding(18)
         .frame(maxWidth: .infinity)
-        .background(Color.examioCard)
-        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .examioCard(cornerRadius: 22)
     }
 
     // MARK: Wallet
@@ -117,6 +116,10 @@ struct AccountView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(Color.examioPrimary.opacity(0.16))
             .clipShape(RoundedRectangle(cornerRadius: 22))
+            .overlay(
+                RoundedRectangle(cornerRadius: 22, style: .continuous)
+                    .stroke(Color.examioHairline, lineWidth: 1)
+            )
 
             let txs = walletVM.wallet?.transactions.data ?? []
             if !txs.isEmpty {
@@ -187,10 +190,9 @@ private struct WalletTransactionRow: View {
             Spacer()
             let isAdd = transaction.direction == "ADD"
             Text("\(isAdd ? "+" : "-")\(Int(transaction.amount))đ")
-                .foregroundStyle(isAdd ? Color.examioPrimary : .red)
+                .foregroundStyle(isAdd ? Color.examioPrimary : Color.examioError)
         }
         .padding(16)
-        .background(Color.examioCard)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .examioCard(cornerRadius: 16)
     }
 }

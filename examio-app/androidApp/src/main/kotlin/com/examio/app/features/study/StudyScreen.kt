@@ -18,9 +18,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import com.examio.app.design.ExamioCard
+import com.examio.app.design.ExamioCardShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -123,10 +123,9 @@ private fun FlashcardSetItem(
     onOpen: () -> Unit,
     onTogglePin: () -> Unit,
 ) {
-    Card(
+    ExamioCard(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onOpen),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(18.dp),
+        shape = ExamioCardShape,
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -219,10 +218,9 @@ private fun FlashcardSetDetailScreen(
 
 @Composable
 private fun FlashcardCard(text: String, eyebrow: String, onFlip: () -> Unit) {
-    Card(
+    ExamioCard(
         modifier = Modifier.fillMaxWidth().height(260.dp).clickable(onClick = onFlip),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(24.dp),
+        shape = ExamioCardShape,
     ) {
         Column(
             modifier = Modifier.fillMaxSize().padding(22.dp),
