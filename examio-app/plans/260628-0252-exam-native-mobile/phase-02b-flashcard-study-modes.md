@@ -1,7 +1,7 @@
-# Phase 02B — Android + iOS: Flashcard Study Modes
+# Phase 02B — Flashcard Study Modes
 
 **Priority:** Medium  
-**Status:** pending  
+**Status:** Android done / iOS deferred  
 **Blocks on:** Phase 00
 
 ## Overview

@@ -82,6 +82,25 @@ open iosApp/ExamioApp.xcodeproj
 
 Then select a simulator or device and press **Run (⌘R)**.
 
+## Configuration
+
+### Quiz AES key (required)
+
+Exam/quiz questions are encrypted with AES-256-CBC. You must supply the key that matches the backend `QUIZ_AES_KEY` env var.
+
+**Android** — add to `local.properties` (gitignored, never commit):
+
+```
+quizAesKey=<value from backend .env>
+```
+
+The build reads this via `local.properties` and injects it as `BuildConfig.QUIZ_AES_KEY`.  
+Fallback: pass `-PquizAesKey=<value>` as a Gradle property.
+
+**iOS** — edit `iosApp/ExamioApp/Info.plist`, key `ExamioQuizAESKey`, to the same value. The plist ships a placeholder; replace it before running against a real backend.
+
+If the key is wrong or missing, quiz questions will fail to decrypt at runtime.
+
 ## Shared Module
 
 The `shared/` module contains repositories, API services, and models used by both platforms.

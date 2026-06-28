@@ -111,11 +111,13 @@ private struct FlashcardSetDetailView: View {
                 Spacer()
                 HStack { Spacer(); ProgressView(); Spacer() }
                 Spacer()
+            } else if vm.isDenied {
+                FlashcardDeniedContent(onBack: onBack)
             } else if let err = vm.errorMessage {
                 Text(err).font(.caption).foregroundStyle(.red)
                 Button("Thử lại") { Task { await vm.load() } }.buttonStyle(.bordered)
             } else {
-                Text(vm.set?.title ?? "Flashcard")
+                Text(vm.study?.title ?? "Flashcard")
                     .font(.system(size: 28, weight: .regular, design: .serif))
                     .foregroundStyle(Color.examioInk)
 
@@ -151,6 +153,17 @@ private struct FlashcardSetDetailView: View {
             Spacer()
         }
         .padding(24)
+        .sheet(isPresented: $vm.requiresCode, onDismiss: {
+            // Swipe-dismiss bypasses onCancel; if no set was unlocked, exit the dead state.
+            if vm.study == nil { onBack() }
+        }) {
+            FlashcardCodeSheet(
+                isSubmitting: vm.isSubmittingCode,
+                codeError: vm.codeError,
+                onSubmit: { vm.submitCode($0) },
+                onCancel: { vm.requiresCode = false }
+            )
+        }
     }
 }
 

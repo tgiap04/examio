@@ -4,6 +4,7 @@ import android.content.Context
 import com.examio.app.BuildConfig
 import com.examio.app.core.config.AppConfig
 import com.examio.app.core.config.MobileApiConfig
+import com.examio.app.core.crypto.QuizDecryptor
 import com.examio.app.core.network.HttpClientFactory
 import com.examio.app.core.network.MultipartUploadHelper
 import com.examio.app.features.account.api.ProfileApiService
@@ -54,6 +55,7 @@ class AndroidAppContainer(context: Context) {
         quizSets = QuizSetApiService(httpClient),
         rooms = ExamRoomApiService(httpClient),
         attempts = ExamAttemptApiService(httpClient),
+        decryptor = QuizDecryptor(MobileApiConfig.quizAesKey),
     )
 
     val historyRepository = HistoryRepository(

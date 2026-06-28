@@ -50,6 +50,7 @@ import com.examio.app.features.study.api.StudentMaterialsApiService
 @Composable
 fun MyExamsScreen(
     materialsApi: StudentMaterialsApiService,
+    onEnterExam: (sessionId: String, title: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val vm = remember { MyExamsViewModel(materialsApi) }
@@ -60,6 +61,7 @@ fun MyExamsScreen(
         ExamAttemptDetailScreen(
             attempt = selectedAttempt!!,
             onBack = { selectedAttempt = null },
+            onEnterExam = onEnterExam,
             modifier = modifier,
         )
     } else {
@@ -280,6 +282,7 @@ private fun MetaChip(text: String, highlight: Boolean = false) {
 private fun ExamAttemptDetailScreen(
     attempt: RecentExamAttempt,
     onBack: () -> Unit,
+    onEnterExam: (sessionId: String, title: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -339,34 +342,20 @@ private fun ExamAttemptDetailScreen(
             }
         }
 
-        ExamioCard(shape = ExamioCardShape, containerColor = MaterialTheme.colorScheme.surfaceVariant) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Icon(
-                    Icons.Outlined.School,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
-                Text(
-                    "Để làm lại và xem chi tiết đáp án, vào examio.vn trên trình duyệt.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-
         Button(
-            onClick = onBack,
+            onClick = { onEnterExam(attempt.examSessionId, attempt.examSession.examRoom.title) },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             ),
         ) {
+            Icon(Icons.Outlined.School, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Vào phòng thi")
+        }
+
+        TextButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) {
             Text("Về danh sách")
         }
     }

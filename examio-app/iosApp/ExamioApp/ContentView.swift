@@ -11,7 +11,7 @@ struct ContentView: View {
                 AppHeaderView { showsProfile = true }
                 TabView(selection: $selectedTab) {
                     StudyView()
-                        .tabItem { Label("Tài liệu", systemImage: "book") }
+                        .tabItem { Label("Flashcard", systemImage: "rectangle.on.rectangle.angled") }
                         .tag(AppTab.taiLieu)
 
                     MyExamsView()

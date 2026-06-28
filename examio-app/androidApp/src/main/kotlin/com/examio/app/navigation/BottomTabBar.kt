@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.outlined.School
+import androidx.compose.material.icons.outlined.Style
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -60,7 +60,7 @@ fun BottomTabBar(
 
 private val MainTab.icon: ImageVector
     get() = when (this) {
-        MainTab.TaiLieu -> Icons.AutoMirrored.Outlined.MenuBook
+        MainTab.TaiLieu -> Icons.Outlined.Style
         MainTab.BaiThi -> Icons.Outlined.School
         MainTab.DeThi -> Icons.Outlined.Description
         MainTab.LichSu -> Icons.Outlined.History

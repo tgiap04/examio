@@ -1,7 +1,7 @@
-# Phase 01A — Android + iOS: Exam-taking Screen
+# Phase 01A — Exam-taking Screen
 
 **Priority:** High  
-**Status:** pending  
+**Status:** Android done / iOS deferred  
 **Blocks on:** Phase 00
 
 ## Overview

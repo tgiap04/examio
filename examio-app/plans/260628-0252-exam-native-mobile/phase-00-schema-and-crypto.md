@@ -1,7 +1,7 @@
 # Phase 00 — Shared: Fix Schema + AES-CBC Decrypt
 
 **Priority:** Critical — blocks all other phases  
-**Status:** pending
+**Status:** done
 
 ## Overview
 
