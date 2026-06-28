@@ -28,12 +28,14 @@
 		A10000000000000000000027 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000027 /* AppConfig.swift */; };
 		A10000000000000000000030 /* ExamioTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000030 /* ExamioTheme.swift */; };
 		A10000000000000000000031 /* ExamioAPIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000031 /* ExamioAPIClient.swift */; };
+		A10000000000000000000040 /* QuizCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000040 /* QuizCrypto.swift */; };
 		A10000000000000000000032 /* AIToolViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000032 /* AIToolViewModel.swift */; };
 		A10000000000000000000033 /* ProfileViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000033 /* ProfileViewModel.swift */; };
 		A10000000000000000000034 /* WalletViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000034 /* WalletViewModel.swift */; };
 		A10000000000000000000035 /* MyExamsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000035 /* MyExamsViewModel.swift */; };
 		A10000000000000000000036 /* HistoryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000036 /* HistoryViewModel.swift */; };
 		A10000000000000000000037 /* FlashcardSetDetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000037 /* FlashcardSetDetailViewModel.swift */; };
+		A10000000000000000000050 /* FlashcardAccessGateViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000050 /* FlashcardAccessGateViews.swift */; };
 		A10000000000000000000038 /* MyMaterialsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20000000000000000000038 /* MyMaterialsViewModel.swift */; };
 /* End PBXBuildFile section */
 
@@ -61,12 +63,14 @@
 		A20000000000000000000027 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/AppConfig.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000030 /* ExamioTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioTheme.swift; sourceTree = "<group>"; };
 		A20000000000000000000031 /* ExamioAPIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Core/ExamioAPIClient.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000040 /* QuizCrypto.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Core/QuizCrypto.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000032 /* AIToolViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/AI/AIToolViewModel.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000033 /* ProfileViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Account/ProfileViewModel.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000034 /* WalletViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Account/WalletViewModel.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000035 /* MyExamsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Exams/MyExamsViewModel.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000036 /* HistoryViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/History/HistoryViewModel.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000037 /* FlashcardSetDetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Study/FlashcardSetDetailViewModel.swift; sourceTree = SOURCE_ROOT; };
+		A20000000000000000000050 /* FlashcardAccessGateViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Study/FlashcardAccessGateViews.swift; sourceTree = SOURCE_ROOT; };
 		A20000000000000000000038 /* MyMaterialsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExamioApp/Features/Study/MyMaterialsViewModel.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -115,6 +119,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000031 /* ExamioAPIClient.swift */,
+				A20000000000000000000040 /* QuizCrypto.swift */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -182,6 +187,7 @@
 			isa = PBXGroup;
 			children = (
 				A20000000000000000000037 /* FlashcardSetDetailViewModel.swift */,
+				A20000000000000000000050 /* FlashcardAccessGateViews.swift */,
 				A20000000000000000000038 /* MyMaterialsViewModel.swift */,
 			);
 			path = Study;
@@ -298,12 +304,14 @@
 					A10000000000000000000027 /* AppConfig.swift in Sources */,
 				A10000000000000000000030 /* ExamioTheme.swift in Sources */,
 				A10000000000000000000031 /* ExamioAPIClient.swift in Sources */,
+				A10000000000000000000040 /* QuizCrypto.swift in Sources */,
 				A10000000000000000000032 /* AIToolViewModel.swift in Sources */,
 				A10000000000000000000033 /* ProfileViewModel.swift in Sources */,
 				A10000000000000000000034 /* WalletViewModel.swift in Sources */,
 				A10000000000000000000035 /* MyExamsViewModel.swift in Sources */,
 				A10000000000000000000036 /* HistoryViewModel.swift in Sources */,
 				A10000000000000000000037 /* FlashcardSetDetailViewModel.swift in Sources */,
+				A10000000000000000000050 /* FlashcardAccessGateViews.swift in Sources */,
 				A10000000000000000000038 /* MyMaterialsViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

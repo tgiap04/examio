@@ -8,8 +8,11 @@ import com.examio.app.features.study.models.CreateFlashcardRequest
 import com.examio.app.features.study.models.CreateFlashcardSetRequest
 import com.examio.app.features.study.models.CreateLabelRequest
 import com.examio.app.features.study.models.Flashcard
+import com.examio.app.features.study.models.FlashcardAccessCheck
 import com.examio.app.features.study.models.FlashcardCardsResponse
 import com.examio.app.features.study.models.FlashcardSet
+import com.examio.app.features.study.models.FlashcardStudyData
+import com.examio.app.features.study.models.FlashcardWithCodeRequest
 import com.examio.app.features.study.models.FlashcardSetListResponse
 import com.examio.app.features.study.models.LabelResponse
 import com.examio.app.features.study.models.LabelsResponse
@@ -30,6 +33,21 @@ class FlashcardApiService(private val client: HttpClient) {
 
     suspend fun get(id: String): ApiResult<FlashcardSet> =
         safeApiCall { client.get("${ApiEndpoints.FLASHCARD_SETS}/$id") }
+
+    // Study access flow (mirrors FE web: access check -> study detail -> with-code).
+    // Works for owned, public AND whitelisted sets, unlike owner-only get().
+    suspend fun checkAccess(id: String): ApiResult<FlashcardAccessCheck> =
+        safeApiCall { client.get("${ApiEndpoints.FLASHCARD_SETS}/study/$id/access") }
+
+    suspend fun studyDetail(id: String): ApiResult<FlashcardStudyData> =
+        safeApiCall { client.get("${ApiEndpoints.FLASHCARD_SETS}/study/$id") }
+
+    suspend fun studyWithCode(id: String, accessCode: String): ApiResult<FlashcardStudyData> =
+        safeApiCall {
+            client.post("${ApiEndpoints.FLASHCARD_SETS}/study/$id/with-code") {
+                setBody(FlashcardWithCodeRequest(accessCode))
+            }
+        }
 
     suspend fun create(request: CreateFlashcardSetRequest): ApiResult<FlashcardSet> =
         safeApiCall { client.post(ApiEndpoints.FLASHCARD_SETS) { setBody(request) } }

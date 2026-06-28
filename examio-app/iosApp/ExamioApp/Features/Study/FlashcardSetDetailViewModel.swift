@@ -1,15 +1,5 @@
 import Foundation
 
-struct FlashcardSetDetail: Decodable {
-    let id: String
-    let title: String
-    let description: String?
-    let thumbnail: String?
-    let flashcardCount: Int
-    let isPublic: Bool
-    let isPinned: Bool
-}
-
 struct FlashcardCard: Decodable, Identifiable {
     let id: String
     let question: String
@@ -18,16 +8,36 @@ struct FlashcardCard: Decodable, Identifiable {
     let flashcardSetId: String?
 }
 
-struct FlashcardCardsResponse: Decodable {
+/// Server-side access check result (mirrors FE web study page).
+struct FlashcardAccessCheck: Decodable {
+    let hasAccess: Bool
+    let accessType: String
+    let requiresCode: Bool?
+}
+
+/// Study payload returned by /flashcardsets/study/:id (set fields + cards).
+struct FlashcardStudyData: Decodable {
+    let id: String
+    let title: String
+    let description: String?
+    let thumbnail: String?
+    let isPublic: Bool?
+    let cardCount: Int?
     let flashCards: [FlashcardCard]
 }
 
+private struct AccessCodeBody: Encodable { let accessCode: String }
+
 @MainActor
 final class FlashcardSetDetailViewModel: ObservableObject {
-    @Published var set: FlashcardSetDetail?
+    @Published var study: FlashcardStudyData?
     @Published var cards: [FlashcardCard] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var requiresCode = false
+    @Published var isDenied = false
+    @Published var isSubmittingCode = false
+    @Published var codeError: String?
     @Published var studyIndex = 0
     @Published var isAnswerVisible = false
 
@@ -39,18 +49,64 @@ final class FlashcardSetDetailViewModel: ObservableObject {
         Task { await load() }
     }
 
+    /// access check -> study detail; handles owner/public/whitelist/code/denied.
     func load() async {
         isLoading = true
         errorMessage = nil
+        requiresCode = false
+        isDenied = false
         do {
-            async let setResult: FlashcardSetDetail = api.get("/flashcardsets/\(setId)")
-            async let cardsResult: FlashcardCardsResponse = api.get("/flashcardsets/\(setId)/flashcards", query: ["page": "1", "limit": "100"])
-            set = try await setResult
-            cards = (try? await cardsResult)?.flashCards ?? []
+            let access: FlashcardAccessCheck = try await api.get("/flashcardsets/study/\(setId)/access")
+            if access.hasAccess {
+                await fetchStudyData()
+            } else if access.requiresCode == true || access.accessType == "code_required" {
+                requiresCode = true
+            } else {
+                isDenied = true
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
         isLoading = false
+    }
+
+    private func fetchStudyData() async {
+        do {
+            let data: FlashcardStudyData = try await api.get("/flashcardsets/study/\(setId)")
+            apply(data)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Submit a 6-char access code for a code-protected set.
+    func submitCode(_ code: String) {
+        guard !isSubmittingCode else { return }
+        Task {
+            isSubmittingCode = true
+            codeError = nil
+            do {
+                let data: FlashcardStudyData = try await api.postJSON(
+                    "/flashcardsets/study/\(setId)/with-code",
+                    body: AccessCodeBody(accessCode: code.trimmingCharacters(in: .whitespaces))
+                )
+                apply(data)
+            } catch {
+                codeError = error.localizedDescription
+            }
+            isSubmittingCode = false
+        }
+    }
+
+    private func apply(_ data: FlashcardStudyData) {
+        study = data
+        cards = data.flashCards
+        requiresCode = false
+        isDenied = false
+        codeError = nil
+        isSubmittingCode = false
+        studyIndex = 0
+        isAnswerVisible = false
     }
 
     func flipCard() { isAnswerVisible.toggle() }

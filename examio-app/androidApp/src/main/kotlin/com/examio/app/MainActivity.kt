@@ -30,6 +30,7 @@ class MainActivity : ComponentActivity() {
                     flashcardRepository = appContainer.flashcardRepository,
                     studentMaterialsApi = appContainer.studentMaterialsApi,
                     historyRepository = appContainer.historyRepository,
+                    examRepository = appContainer.examRepository,
                 )
             }
         }

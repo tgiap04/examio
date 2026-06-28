@@ -20,6 +20,10 @@ import com.examio.app.features.auth.AuthNavGraph
 import com.examio.app.features.auth.models.User
 import com.examio.app.features.auth.repository.AuthRepository
 import com.examio.app.features.exams.DeThiScreen
+import com.examio.app.features.exams.ExamNavState
+import com.examio.app.features.exams.ExamResultScreen
+import com.examio.app.features.exams.ExamTakingScreen
+import com.examio.app.features.exams.repository.ExamRepository
 import com.examio.app.features.study.api.StudentMaterialsApiService
 import com.examio.app.features.study.repository.FlashcardRepository
 import com.examio.app.features.exams.MyExamsScreen
@@ -40,10 +44,12 @@ fun ExamioApp(
     flashcardRepository: FlashcardRepository,
     studentMaterialsApi: StudentMaterialsApiService,
     historyRepository: HistoryRepository,
+    examRepository: ExamRepository,
 ) {
     var authState by remember { mutableStateOf<NavigationAuthState>(NavigationAuthState.Loading) }
     var selectedTab by remember { mutableStateOf(MainTab.TaiLieu) }
     var showProfile by remember { mutableStateOf(false) }
+    var examNav by remember { mutableStateOf<ExamNavState>(ExamNavState.Idle) }
 
     // Restore the persisted session on startup so a reload doesn't force re-login.
     // restoreSession() reads stored tokens, calls currentUser(), falls back to refresh()
@@ -74,6 +80,30 @@ fun ExamioApp(
         is NavigationAuthState.Authenticated -> Unit
     }
 
+    // Full-screen exam flow overlays the tab Scaffold entirely.
+    when (val nav = examNav) {
+        is ExamNavState.TakingExam -> {
+            ExamTakingScreen(
+                examSessionId = nav.examSessionId,
+                repository = examRepository,
+                onExit = { examNav = ExamNavState.Idle },
+                onSubmitted = { examNav = ExamNavState.ShowResult(it, nav.examTitle) },
+                modifier = Modifier.fillMaxSize(),
+            )
+            return
+        }
+        is ExamNavState.ShowResult -> {
+            ExamResultScreen(
+                result = nav.result,
+                examTitle = nav.examTitle,
+                onClose = { examNav = ExamNavState.Idle },
+                modifier = Modifier.fillMaxSize(),
+            )
+            return
+        }
+        ExamNavState.Idle -> Unit
+    }
+
     Scaffold(
         topBar = {
             AppHeader(onProfileTap = { showProfile = true })
@@ -89,8 +119,12 @@ fun ExamioApp(
 
         when (selectedTab) {
             MainTab.TaiLieu -> StudyScreen(flashcardRepository = flashcardRepository, modifier = modifier)
-            MainTab.BaiThi -> MyExamsScreen(materialsApi = studentMaterialsApi, modifier = modifier)
-            MainTab.DeThi -> DeThiScreen(modifier)
+            MainTab.BaiThi -> MyExamsScreen(
+                materialsApi = studentMaterialsApi,
+                onEnterExam = { sessionId, title -> examNav = ExamNavState.TakingExam(sessionId, title) },
+                modifier = modifier,
+            )
+            MainTab.DeThi -> DeThiScreen(examRepository = examRepository, modifier = modifier)
             MainTab.LichSu -> LichSuScreen(historyRepository = historyRepository, modifier = modifier)
         }
     }

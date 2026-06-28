@@ -15,6 +15,12 @@ class FlashcardRepository(
     // Set CRUD
     suspend fun list(page: Int = 1, limit: Int = 20, search: String? = null) = flashcards.list(page, limit, search)
     suspend fun get(id: String) = flashcards.get(id)
+
+    // Study access flow (use these to OPEN a set for studying — handles
+    // owner/public/whitelist/code-required; get() is owner-only).
+    suspend fun checkAccess(id: String) = flashcards.checkAccess(id)
+    suspend fun studyDetail(id: String) = flashcards.studyDetail(id)
+    suspend fun studyWithCode(id: String, accessCode: String) = flashcards.studyWithCode(id, accessCode)
     suspend fun create(request: CreateFlashcardSetRequest) = flashcards.create(request)
     suspend fun update(id: String, request: CreateFlashcardSetRequest) = flashcards.update(id, request)
     suspend fun delete(id: String) = flashcards.delete(id)

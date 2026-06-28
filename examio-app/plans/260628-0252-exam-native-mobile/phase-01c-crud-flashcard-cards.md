@@ -1,7 +1,7 @@
-# Phase 01C — Android + iOS: CRUD Flashcard Cards
+# Phase 01C — CRUD Flashcard Cards
 
 **Priority:** High  
-**Status:** pending  
+**Status:** Android done / iOS deferred  
 **Blocks on:** Phase 00
 
 ## Overview

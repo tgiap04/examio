@@ -71,6 +71,31 @@ data class RecentFlashcardsResponse(
 )
 
 @Serializable
+data class FlashcardAccessCheck(
+    val hasAccess: Boolean = false,
+    /** public | owner | whitelist | code_required | denied */
+    val accessType: String = "denied",
+    val requiresCode: Boolean = false,
+)
+
+@Serializable
+data class FlashcardStudyData(
+    val id: String,
+    val title: String,
+    val description: String? = null,
+    val thumbnail: String? = null,
+    val isPublic: Boolean = false,
+    val cardCount: Int = 0,
+    val flashCards: List<Flashcard> = emptyList(),
+    val creator: FlashcardSetCreator? = null,
+)
+
+@Serializable
+data class FlashcardWithCodeRequest(
+    val accessCode: String,
+)
+
+@Serializable
 data class FlashcardSetListResponse(
     val flashcardSets: List<FlashcardSet>,
     val total: Int = 0,

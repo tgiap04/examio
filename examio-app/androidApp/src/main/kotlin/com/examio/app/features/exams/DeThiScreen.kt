@@ -1,6 +1,7 @@
 package com.examio.app.features.exams
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,19 +17,19 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Groups
 import androidx.compose.material.icons.outlined.Quiz
-import androidx.compose.material.icons.outlined.Style
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,203 +37,116 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.examio.app.design.ExamioCard
 import com.examio.app.design.ExamioCardShape
-import com.examio.app.design.ExamioTheme
+import com.examio.app.features.exams.models.QuizSet
+import com.examio.app.features.exams.repository.ExamRepository
 
 @Composable
-fun DeThiScreen(modifier: Modifier = Modifier) {
-    val tokens = ExamioTheme.tokens
-    Box(modifier = modifier.fillMaxSize()) {
+fun DeThiScreen(
+    examRepository: ExamRepository,
+    modifier: Modifier = Modifier,
+) {
+    val vm = remember { DeThiViewModel(examRepository) }
+    val state by vm.state.collectAsState()
+    var managing by remember { mutableStateOf<QuizSet?>(null) }
+
+    managing?.let { set ->
+        QuizSetManageScreen(
+            setId = set.id,
+            setTitle = set.title,
+            repository = examRepository,
+            onBack = { managing = null; vm.load() },
+            modifier = modifier,
+        )
+        return
+    }
+
+    Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-                .padding(horizontal = 20.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item { Spacer(Modifier.height(8.dp)) }
-
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        "Đề thi",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Text(
-                        "Quản lý bộ đề, flashcard và phòng thi từ một nơi.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Text("Đề thi", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
+                    Text("Quản lý bộ đề và câu hỏi của bạn.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
-
-            // Stats row
             item {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    IconStatCard(
-                        value = "24",
-                        label = "Bộ đề",
-                        icon = Icons.Outlined.Description,
-                        modifier = Modifier.weight(1f),
-                    )
-                    IconStatCard(
-                        value = "312",
-                        label = "Câu hỏi",
-                        icon = Icons.Outlined.Quiz,
-                        modifier = Modifier.weight(1f),
-                    )
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    StatCard("${state.quizSets.size}", "Bộ đề", Icons.Outlined.Description, Modifier.weight(1f))
+                    StatCard("${state.totalQuestions}", "Câu hỏi", Icons.Outlined.Quiz, Modifier.weight(1f))
                 }
             }
-
-            // Quick action buttons
             item {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    OutlinedButton(
-                        onClick = { },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Icon(Icons.Outlined.Style, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("Flash Card")
+                Text("Bộ đề của tôi", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+
+            if (state.isLoading) {
+                item { Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = MaterialTheme.colorScheme.primary) } }
+            }
+            state.error?.let { err ->
+                item {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                        Text(err, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                        TextButton(onClick = { vm.load() }) { Text("Thử lại") }
                     }
-                    OutlinedButton(
-                        onClick = { },
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        Icon(Icons.Outlined.Groups, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(Modifier.width(6.dp))
-                        Text("Phòng thi")
+                }
+            }
+            if (!state.isLoading && state.quizSets.isEmpty() && state.error == null) {
+                item {
+                    Box(Modifier.fillMaxWidth().padding(vertical = 40.dp), contentAlignment = Alignment.Center) {
+                        Text("Chưa có bộ đề nào", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
 
-            // Section header
-            item {
-                Text(
-                    "Bộ đề gần đây",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+            items(state.quizSets, key = { it.id }) { set ->
+                QuizSetCard(set = set, onClick = { managing = set })
             }
-
-            items(examSets) { item -> ExamSetCard(item) }
-
-            // Bottom padding so FAB doesn't overlap last item
-            item { Spacer(Modifier.height(72.dp)) }
-        }
-
-        // FAB anchored at bottom-right, outside LazyColumn
-        Button(
-            onClick = { },
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(20.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ),
-            shape = RoundedCornerShape(14.dp),
-        ) {
-            Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-            Text("Tạo bộ đề", style = MaterialTheme.typography.labelLarge)
+            item { Spacer(Modifier.height(16.dp)) }
         }
     }
 }
 
 @Composable
-private fun IconStatCard(
+private fun StatCard(
     value: String,
     label: String,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     modifier: Modifier = Modifier,
 ) {
     ExamioCard(modifier = modifier, shape = ExamioCardShape) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)),
+                modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)),
                 contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
+            ) { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = MaterialTheme.colorScheme.primary) }
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(
-                    value,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    label,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
 
 @Composable
-private fun ExamSetCard(item: String) {
-    ExamioCard(modifier = Modifier.fillMaxWidth(), shape = ExamioCardShape) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+private fun QuizSetCard(set: QuizSet, onClick: () -> Unit) {
+    ExamioCard(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick), shape = ExamioCardShape) {
+        Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(10.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.Outlined.Description,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            ) { Icon(Icons.Outlined.Description, contentDescription = null, modifier = Modifier.size(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant) }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(set.title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
                 Text(
-                    item,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    "32 câu hỏi • Đang hoạt động • Hôm nay",
+                    "${set.questionCount} câu hỏi" + (set.description?.let { " • $it" } ?: ""),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
                 )
             }
         }
     }
 }
-
-private val examSets = listOf(
-    "Ôn tập Toán cao cấp",
-    "Kiểm tra Sinh học 12",
-    "Đề luyện tiếng Anh B1",
-)

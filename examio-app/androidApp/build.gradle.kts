@@ -1,7 +1,15 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+}
+
+// Load local.properties (gitignored) for machine-local secrets like QUIZ_AES_KEY.
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
 }
 
 android {
@@ -15,6 +23,12 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000\"")
+        // Secure-quiz AES key — must match BE/FE QUIZ_AES_KEY. Read from local.properties
+        // (quizAesKey=...) or -PquizAesKey gradle property; never committed to source.
+        val quizAesKey = localProps.getProperty("quizAesKey")
+            ?: (project.findProperty("quizAesKey") as String?)
+            ?: ""
+        buildConfigField("String", "QUIZ_AES_KEY", "\"$quizAesKey\"")
     }
 
     buildFeatures {

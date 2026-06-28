@@ -1,7 +1,7 @@
-# Phase 01B — Android + iOS: CRUD Quiz Questions
+# Phase 01B — CRUD Quiz Questions
 
 **Priority:** High  
-**Status:** pending  
+**Status:** Android done / iOS deferred  
 **Blocks on:** Phase 00
 
 ## Overview

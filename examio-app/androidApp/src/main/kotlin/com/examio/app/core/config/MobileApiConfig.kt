@@ -10,6 +10,9 @@ object MobileApiConfig {
 
     val baseUrl: String = BuildConfig.API_BASE_URL.trimEnd('/')
 
+    // Raw AES key for secure-quiz decryption (un-sliced). Empty when not provided.
+    val quizAesKey: String = BuildConfig.QUIZ_AES_KEY
+
     // Trailing slash is REQUIRED: Ktor resolves request paths relative to this base.
     // Endpoints must be relative (no leading "/") so "/api/v1" is preserved.
     val apiBaseUrl: String = "$baseUrl$API_PREFIX/"

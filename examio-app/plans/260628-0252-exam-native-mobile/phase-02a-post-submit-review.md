@@ -1,7 +1,7 @@
-# Phase 02A — Android + iOS: Post-submit Review Screen
+# Phase 02A — Post-submit Review Screen
 
 **Priority:** Medium  
-**Status:** pending  
+**Status:** Android done / iOS deferred  
 **Blocks on:** Phase 01A
 
 ## Overview
