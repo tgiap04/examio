@@ -40,7 +40,7 @@ object HttpClientFactory {
                 accept(ContentType.Application.Json)
             }
         }
-        AuthInterceptor(tokenStorage).installOn(client)
+        AuthInterceptor(tokenStorage, config).installOn(client)
         return client
     }
 }
