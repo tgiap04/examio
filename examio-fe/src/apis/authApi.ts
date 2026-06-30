@@ -119,7 +119,13 @@ export async function logoutApi(): Promise<{ success: boolean }> {
 }
 
 export async function refreshTokenApi(): Promise<LoginResponse> {
-  const response = await api.post("/auth/refresh");
+  // skipAuthRefresh: đây chính là lời gọi refresh thủ công — không để interceptor
+  // 401 tự chạy vòng refresh-rồi-redirect về /login. Khi refresh thất bại, caller
+  // (getUser) đã xử lý bằng cách set isAuthenticated=false mà không điều hướng, nên
+  // trang public không bị đá về /login khi khách chưa đăng nhập.
+  const response = await api.post("/auth/refresh", undefined, {
+    skipAuthRefresh: true,
+  } as AxiosRequestConfig & { skipAuthRefresh?: boolean });
   return response.data;
 }
 
