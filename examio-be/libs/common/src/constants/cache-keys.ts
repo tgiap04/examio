@@ -147,3 +147,17 @@ export function getPublicCachePattern(module: CacheModule): string {
 
 // Backward compatibility - keep old CACHE_KEYS export
 export const CACHE_KEYS = CACHE_MODULES;
+
+// ==================== Page Feature Flags (page-toggle) ====================
+
+/**
+ * Redis key giữ full map trạng thái bật/tắt trang: `{ [pageKey]: boolean }`.
+ * Ghi bởi admin-service (khi toggle) và gateway ConfigService (read-through).
+ */
+export const CONFIG_PAGES_KEY = 'config:pages:flags';
+
+/**
+ * Redis pub/sub channel phát tín hiệu khi admin đổi trạng thái trang.
+ * Payload là JSON.stringify của full map. Gateway subscribe để fan-out qua SSE.
+ */
+export const CONFIG_PAGES_CHANNEL = 'config:pages';
