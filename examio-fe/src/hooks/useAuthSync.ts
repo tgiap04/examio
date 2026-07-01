@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { usePageConfigStore } from "@/stores/usePageConfigStore";
 import { syncRefreshTokenApi } from "@/apis/authApi";
 import { env } from "@/lib/env";
 
@@ -32,6 +33,12 @@ function getCookie(name: string): string | null {
  */
 export function useAuthSync() {
   const getUser = useAuthStore((state) => state.getUser);
+  const loadPages = usePageConfigStore((state) => state.loadPages);
+
+  useEffect(() => {
+    // Nạp cấu hình bật/tắt trang 1 lần, song song với getUser (không polling).
+    void loadPages();
+  }, [loadPages]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
