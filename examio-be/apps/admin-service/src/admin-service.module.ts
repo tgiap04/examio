@@ -13,6 +13,7 @@ import { AdminLogsModule } from './modules/admin-logs/admin-logs.module';
 import { AdminUsersModule } from './modules/admin-users/admin-users.module';
 import { AdminAuditModule } from './modules/admin-audit/admin-audit.module';
 import { AdminWordFamilyModule } from './modules/admin-word-family/admin-word-family.module';
+import { AdminPageConfigModule } from './modules/admin-page-config/admin-page-config.module';
 
 @Module({
     imports: [
@@ -33,6 +34,7 @@ import { AdminWordFamilyModule } from './modules/admin-word-family/admin-word-fa
         AdminUsersModule,
         AdminAuditModule,
         AdminWordFamilyModule,
+        AdminPageConfigModule,
     ],
     controllers: [AdminServiceController],
     providers: [AdminServiceService, PrismaService],
