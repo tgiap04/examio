@@ -364,11 +364,42 @@ async function seedAdminAudit(adminId: string) {
     console.log(`   ✅ 20 audit entries created`);
 }
 
+async function seedPageFlags() {
+    const pageFlags = [
+        { key: 'ai-tool', label: 'Công cụ AI' },
+        { key: 'word-family', label: 'Từ vựng tiếng Anh' },
+        { key: 'my-materials', label: 'Tài liệu của tôi' },
+        { key: 'my-exams', label: 'Bài thi của tôi' },
+        { key: 'manage-exam', label: 'Quản lý Đề thi' },
+        { key: 'flash-card', label: 'Quản lý Flashcard' },
+        { key: 'manage-exam-room', label: 'Quản lý Phòng thi' },
+        { key: 'history', label: 'Lịch sử' },
+    ];
+    for (const flag of pageFlags) {
+        await prisma.pageFeatureFlag.upsert({
+            where: { key: flag.key },
+            update: { label: flag.label },
+            create: { key: flag.key, label: flag.label, enabled: true },
+        });
+    }
+    console.log(`✅ Seeded ${pageFlags.length} page feature flags`);
+}
+
 async function main() {
     console.log('🌱 Seed script starting...');
     console.log('   Database URL:', process.env.DATABASE_URL ?? '(not set — using default)');
 
     try {
+        // PageFeatureFlag may not exist on an older schema. Probe before writing.
+        const pageFlagExists = await prisma.$queryRawUnsafe<{ exists: boolean }[]>(
+            "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'PageFeatureFlag') AS exists",
+        );
+        if (pageFlagExists[0]?.exists) {
+            await seedPageFlags();
+        } else {
+            console.log('\n⚠️  table PageFeatureFlag missing — skipping page flags seed');
+        }
+
         const { admin, users } = await seedUsers();
         await seedWallets([admin, ...users]);
 
