@@ -147,5 +147,15 @@
   "audit.columns.target": "Đối tượng",
   "audit.columns.reason": "Lý do",
   "audit.filters.adminPlaceholder": "Lọc theo admin",
-  "audit.filters.actionPlaceholder": "Lọc theo hành động"
+  "audit.filters.actionPlaceholder": "Lọc theo hành động",
+  "nav.pageConfig": "Bật/tắt trang",
+  "pages.pageConfig.title": "Bật/tắt trang hiển thị",
+  "pages.pageConfig.subtitle": "Bật hoặc tắt các trang hiển thị cho người dùng trên toàn hệ thống",
+  "pageConfig.loadError": "Không tải được danh sách trang",
+  "pageConfig.saveError": "Cập nhật thất bại, đã hoàn tác",
+  "pageConfig.enabled": "Đã bật trang",
+  "pageConfig.disabled": "Đã tắt trang",
+  "pageConfig.columns.label": "Trang",
+  "pageConfig.columns.key": "Mã trang",
+  "pageConfig.columns.enabled": "Trạng thái"
 }
