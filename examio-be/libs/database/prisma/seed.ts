@@ -5,6 +5,28 @@ const prisma = new PrismaClient();
 async function main() {
     console.log('🌱 Starting seed...');
 
+    // 0. Seed Page Feature Flags (trang bật/tắt cho user — global).
+    // Chạy đầu tiên để độc lập với các seed khác. Upsert giữ nguyên `enabled`
+    // mà admin đã chỉnh; chỉ đồng bộ lại `label`.
+    const pageFlags = [
+        { key: 'ai-tool', label: 'Công cụ AI' },
+        { key: 'word-family', label: 'Từ vựng tiếng Anh' },
+        { key: 'my-materials', label: 'Tài liệu của tôi' },
+        { key: 'my-exams', label: 'Bài thi của tôi' },
+        { key: 'manage-exam', label: 'Quản lý Đề thi' },
+        { key: 'flash-card', label: 'Quản lý Flashcard' },
+        { key: 'manage-exam-room', label: 'Quản lý Phòng thi' },
+        { key: 'history', label: 'Lịch sử' },
+    ];
+    for (const flag of pageFlags) {
+        const saved = await prisma.pageFeatureFlag.upsert({
+            where: { key: flag.key },
+            update: { label: flag.label },
+            create: { key: flag.key, label: flag.label, enabled: true },
+        });
+        console.log(`✅ Upserted PageFeatureFlag: ${saved.key}`);
+    }
+
     // 1. Seed Subject Categories (Danh mục môn học)
     // Upsert categories to avoid duplicates
     const categories = [
