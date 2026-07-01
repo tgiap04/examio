@@ -8,13 +8,16 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useJobStore } from "@/stores/useAIGeneratorStore";
 import { useThemeContext } from "@/provider/ThemeProvider";
-import { useIsDesktop } from "@/hooks/useMediaQuery";
-import { useIsMobile } from "@/hooks/useMediaQuery";
+import { useIsDesktop, useIsMobile } from "@/hooks/useMediaQuery";
+import { usePageConfigSse } from "@/hooks/usePageConfigSse";
 import Logo from "@/components/atoms/Logo";
 
 export function KLayout({ children }: PropsWithChildren) {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Kết nối SSE realtime cho page-toggle (1 connection suốt vòng đời layout).
+  usePageConfigSse();
   const { user, sendVerificationEmail, loading } = useAuthStore();
   const isDesktop = useIsDesktop();
   const isMobile = useIsMobile();

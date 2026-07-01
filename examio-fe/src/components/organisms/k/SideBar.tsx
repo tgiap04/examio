@@ -17,6 +17,8 @@ import {
 import { FloatingDock } from "@/components/atoms/k/FloatingDock";
 import ProfileDropdown from "@/components/atoms/ProfileDropdown";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { usePageConfigStore } from "@/stores/usePageConfigStore";
+import type { PageKey } from "@/lib/page-keys";
 import { useEffect } from "react";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { Button } from "@/components/antd/button";
@@ -38,6 +40,7 @@ interface SidebarItem {
   shortLabel?: string;
   active: boolean;
   adminOnly?: boolean;
+  pageKey?: PageKey;
 }
 
 interface SidebarKitProps {
@@ -54,6 +57,8 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
   const { pathname: currentPath } = useLocation();
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
+  // Subscribe vào map bật/tắt để sidebar tự ẩn/hiện realtime khi admin toggle.
+  const pageMap = usePageConfigStore((s) => s.pages);
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => {
     setMounted(true);
@@ -79,6 +84,7 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
   const itemSiderbar: SidebarItem[] = [
     {
       name: "Ai Tool",
+      pageKey: "ai-tool",
       href: "/k/ai-tool",
       icon: <RocketIcon className="w-5 h-5" />,
       label: "Công cụ AI",
@@ -87,6 +93,7 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
     },
     {
       name: "Word Family",
+      pageKey: "word-family",
       href: "/k/word-family",
       icon: <Network className="w-5 h-5" />,
       label: "Từ vựng tiếng Anh",
@@ -95,6 +102,7 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
     },
     {
       name: "My Materials",
+      pageKey: "my-materials",
       href: "/k/my-materials",
       icon: <BookOpen className="w-5 h-5" />,
       label: "Tài liệu của tôi",
@@ -103,6 +111,7 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
     },
     {
       name: "My Exams",
+      pageKey: "my-exams",
       href: "/k/my-exams",
       icon: <GraduationCap className="w-5 h-5" />,
       label: "Bài thi của tôi",
@@ -111,6 +120,7 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
     },
     {
       name: "Manage Exam",
+      pageKey: "manage-exam",
       href: "/k/manage-exam",
       icon: <ReaderIcon className="w-5 h-5" />,
       label: "Quản lý Đề thi",
@@ -122,6 +132,7 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
     },
     {
       name: "Flash Card",
+      pageKey: "flash-card",
       href: "/k/flash-card",
       icon: <CardStackIcon className="w-5 h-5" />,
       label: "Quản lý Flashcard",
@@ -132,6 +143,7 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
     },
     {
       name: "Manage Exam Room",
+      pageKey: "manage-exam-room",
       href: "/k/manage-exam-room",
       icon: <TokensIcon className="w-5 h-5" />,
       label: "Quản lý Phòng thi",
@@ -142,6 +154,7 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
     },
     {
       name: "History",
+      pageKey: "history",
       href: "/k/history",
       icon: <ClockIcon className="w-5 h-5" />,
       label: "Lịch sử",
@@ -162,6 +175,11 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
   const filteredSidebarItems = itemSiderbar.filter((item) => {
     if (item.adminOnly) {
       return user?.isAdmin === true;
+    }
+
+    // Ẩn trang admin đã tắt (default-on: chỉ ẩn khi === false).
+    if (item.pageKey && pageMap[item.pageKey] === false) {
+      return false;
     }
 
     return true;

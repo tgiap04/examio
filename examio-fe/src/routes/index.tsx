@@ -38,6 +38,7 @@ import { AdminLayout } from "@/routes/layouts/AdminLayout";
 import { PublicRoute } from "@/routes/guards/PublicRoute";
 import { ProtectedRoute } from "@/routes/guards/ProtectedRoute";
 import { AdminRoute } from "@/routes/guards/AdminRoute";
+import { FeatureRoute } from "@/routes/guards/FeatureRoute";
 import AdminOverviewPage from "@/pages/admin/AdminOverviewPage";
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
 import AdminFinancePage from "@/pages/admin/AdminFinancePage";
@@ -45,6 +46,7 @@ import AdminLogsPage from "@/pages/admin/AdminLogsPage";
 import AdminAuditPage from "@/pages/admin/AdminAuditPage";
 import AdminStatsPage from "@/pages/admin/AdminStatsPage";
 import AdminWordFamilyPage from "@/pages/admin/AdminWordFamilyPage";
+import AdminPageConfigPage from "@/pages/admin/AdminPageConfigPage";
 import WordFamilyPage from "@/pages/k/WordFamilyPage";
 import WordFamilyCategoryPage from "@/pages/k/WordFamilyCategoryPage";
 import WordFamilyDetailPage from "@/pages/k/WordFamilyDetailPage";
@@ -205,7 +207,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <MyMaterialsPage />
+          <FeatureRoute pageKey="my-materials">
+            <MyMaterialsPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -215,7 +219,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <FlashcardsPage />
+          <FeatureRoute pageKey="flash-card">
+            <FlashcardsPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -225,7 +231,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <HistoryPage />
+          <FeatureRoute pageKey="history">
+            <HistoryPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -235,7 +243,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <ExamHistoryPage />
+          <FeatureRoute pageKey="history">
+            <ExamHistoryPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -245,7 +255,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <PDFHistoryPage />
+          <FeatureRoute pageKey="history">
+            <PDFHistoryPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -271,7 +283,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <ManageExamPage />
+          <FeatureRoute pageKey="manage-exam">
+            <ManageExamPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -281,7 +295,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <ManageQuizSetDetailPage />
+          <FeatureRoute pageKey="manage-exam">
+            <ManageQuizSetDetailPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -291,7 +307,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <ManageFlashcardSetDetailPage />
+          <FeatureRoute pageKey="flash-card">
+            <ManageFlashcardSetDetailPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -301,7 +319,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <AIToolPage />
+          <FeatureRoute pageKey="ai-tool">
+            <AIToolPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -311,7 +331,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <ManageExamRoomPage />
+          <FeatureRoute pageKey="manage-exam-room">
+            <ManageExamRoomPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -321,7 +343,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <ManageExamRoomDetailPage />
+          <FeatureRoute pageKey="manage-exam-room">
+            <ManageExamRoomDetailPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -331,7 +355,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <ExamRoomSessionAnalyticsPage />
+          <FeatureRoute pageKey="manage-exam-room">
+            <ExamRoomSessionAnalyticsPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -341,7 +367,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <MyExamsPage />
+          <FeatureRoute pageKey="my-exams">
+            <MyExamsPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -351,7 +379,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <WordFamilyPage />
+          <FeatureRoute pageKey="word-family">
+            <WordFamilyPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -361,7 +391,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <WordFamilyCategoryPage />
+          <FeatureRoute pageKey="word-family">
+            <WordFamilyCategoryPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -371,7 +403,9 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <KLayout>
-          <WordFamilyDetailPage />
+          <FeatureRoute pageKey="word-family">
+            <WordFamilyDetailPage />
+          </FeatureRoute>
         </KLayout>
       </ProtectedRoute>
     ),
@@ -391,6 +425,7 @@ export const router = createBrowserRouter([
       { path: "logs", element: <AdminLogsPage /> },
       { path: "audit", element: <AdminAuditPage /> },
       { path: "word-family", element: <AdminWordFamilyPage /> },
+      { path: "page-config", element: <AdminPageConfigPage /> },
     ],
   },
   {
