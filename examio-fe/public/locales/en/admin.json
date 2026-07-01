@@ -147,5 +147,15 @@
   "audit.columns.target": "Target",
   "audit.columns.reason": "Reason",
   "audit.filters.adminPlaceholder": "Filter by admin",
-  "audit.filters.actionPlaceholder": "Filter by action"
+  "audit.filters.actionPlaceholder": "Filter by action",
+  "nav.pageConfig": "Page toggles",
+  "pages.pageConfig.title": "Page visibility",
+  "pages.pageConfig.subtitle": "Enable or disable pages shown to users across the platform",
+  "pageConfig.loadError": "Failed to load page list",
+  "pageConfig.saveError": "Update failed, changes reverted",
+  "pageConfig.enabled": "Page enabled",
+  "pageConfig.disabled": "Page disabled",
+  "pageConfig.columns.label": "Page",
+  "pageConfig.columns.key": "Key",
+  "pageConfig.columns.enabled": "Status"
 }
