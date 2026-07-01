@@ -16,11 +16,16 @@ import {
     ApiQuery,
 } from '@nestjs/swagger';
 import { Request } from 'express';
+import { UseGuards } from '@nestjs/common';
 import { ProxyService } from '../services/proxy.service';
+import { PageEnabledGuard } from '../guards/page-enabled.guard';
+import { TogglePage } from '../guards/toggle-page.decorator';
 
 @ApiTags('Exam Rooms')
 @Controller('examrooms')
 @ApiBearerAuth('access-token')
+@UseGuards(PageEnabledGuard)
+@TogglePage('manage-exam-room')
 export class ExamRoomProxyController {
     constructor(private readonly proxyService: ProxyService) {}
 

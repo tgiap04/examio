@@ -19,11 +19,16 @@ import {
     ApiQuery,
 } from '@nestjs/swagger';
 import { Request } from 'express';
+import { UseGuards } from '@nestjs/common';
 import { ProxyService } from '../services/proxy.service';
+import { PageEnabledGuard } from '../guards/page-enabled.guard';
+import { TogglePage } from '../guards/toggle-page.decorator';
 
 @ApiTags('Word Family')
 @Controller('word-family')
 @ApiBearerAuth('access-token')
+@UseGuards(PageEnabledGuard)
+@TogglePage('word-family')
 export class WordFamilyProxyController {
     constructor(private readonly proxyService: ProxyService) {}
 
