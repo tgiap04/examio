@@ -31,12 +31,15 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import * as FormData from 'form-data';
 import { AuthGuard } from '@examio/common';
+import { PageEnabledGuard } from '../guards/page-enabled.guard';
+import { TogglePage } from '../guards/toggle-page.decorator';
 
 // ==================== AI ====================
 
 @ApiTags('AI')
 @Controller('ai')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, PageEnabledGuard)
+@TogglePage('ai-tool')
 @ApiBearerAuth('access-token')
 @ApiCookieAuth('cookie-auth')
 export class AIProxyController {

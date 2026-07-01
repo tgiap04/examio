@@ -25,10 +25,15 @@ import { ProxyService } from '../services/proxy.service';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import * as FormData from 'form-data';
+import { UseGuards } from '@nestjs/common';
+import { PageEnabledGuard } from '../guards/page-enabled.guard';
+import { TogglePage } from '../guards/toggle-page.decorator';
 
 @ApiTags('Flashcardsets')
 @Controller('flashcardsets')
 @ApiBearerAuth('access-token')
+@UseGuards(PageEnabledGuard)
+@TogglePage('flash-card')
 export class FlashcardsetProxyController {
     constructor(
         private readonly proxyService: ProxyService,
