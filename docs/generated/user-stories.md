@@ -2060,6 +2060,155 @@ As a **student**, I want to **view** my exam attempt results so that I can revie
 
 ---
 
+## US063: Toggle Page Visibility
+
+**Type**: ui
+**Interaction**: form
+**Priority**: medium
+**Estimate**: 2
+
+### User Story
+
+As an **admin**, I want to **toggle** a page's enabled state so that I can hide incomplete or problematic features from users without a redeploy.
+
+### Acceptance Criteria
+
+- [ ] AC1: Admin sees every togglable page with its current enabled/disabled state
+- [ ] AC2: Toggling a switch immediately calls the API with optimistic UI update
+- [ ] AC3: On API failure, the switch rolls back to its prior state
+- [ ] AC4: Toggling propagates to all connected clients in real time via SSE
+- [ ] AC5: Every toggle writes an `AdminAudit` row
+
+### Technical Notes
+
+- **Endpoint**: PATCH /api/v1/admin/page-config/:key
+- **Data Required**: PageFeatureFlag
+- **Dependencies**: PERM054, PERM055
+
+### Screens
+
+- SCR039: AdminPageConfigPage
+
+---
+
+## US064: Browse Word Family Categories
+
+**Type**: ui
+**Interaction**: navigation
+**Priority**: low
+**Estimate**: 1
+
+### User Story
+
+As a **student**, I want to **browse** word-family categories so that I can pick a topic to study related-word groups from.
+
+### Acceptance Criteria
+
+- [ ] AC1: Only `isActive = true` categories are shown
+- [ ] AC2: Each category card links to its root-word list
+- [ ] AC3: Category browsing is hidden if the `word-family` page flag is disabled
+
+### Technical Notes
+
+- **Endpoint**: GET /api/v1/word-family/categories
+- **Data Required**: WordFamilyCategory
+- **Dependencies**: PERM056, PERM055
+
+### Screens
+
+- SCR040: WordFamilyPage
+
+---
+
+## US065: Generate Word Family via AI
+
+**Type**: ui
+**Interaction**: form
+**Priority**: medium
+**Estimate**: 3
+
+### User Story
+
+As a **student**, I want to **generate** new root words for a category via AI so that I have fresh vocabulary to study without waiting on manual content creation.
+
+### Acceptance Criteria
+
+- [ ] AC1: Generation excludes root words already present in the category (dedup)
+- [ ] AC2: Concurrent generation requests for the same user+category are rejected (409) while one is in-flight
+- [ ] AC3: On AI service unavailability, a clear error is shown and the user can retry
+- [ ] AC4: Successful generation refreshes the root-word list
+
+### Technical Notes
+
+- **Endpoint**: POST /api/v1/word-family/generate
+- **Data Required**: WordFamily, WordFamilyCategory
+- **Dependencies**: PERM056, PERM055
+
+### Screens
+
+- SCR041: WordFamilyCategoryPage
+
+---
+
+## US066: Save Word Family to Collection
+
+**Type**: ui
+**Interaction**: click
+**Priority**: low
+**Estimate**: 1
+
+### User Story
+
+As a **student**, I want to **save** a word family to my personal collection so that I can revisit it later without re-browsing categories.
+
+### Acceptance Criteria
+
+- [ ] AC1: Saving is idempotent — saving an already-saved word family has no duplicate effect
+- [ ] AC2: Saved state is reflected immediately in the detail view
+- [ ] AC3: Student can remove a word family from their collection
+
+### Technical Notes
+
+- **Endpoint**: POST /api/v1/word-family/save, DELETE /api/v1/word-family/saved/:wordFamilyId
+- **Data Required**: UserSavedWordFamily
+- **Dependencies**: PERM056
+
+### Screens
+
+- SCR042: WordFamilyDetailPage
+
+---
+
+## US067: Convert Word Family to Flashcard Deck
+
+**Type**: ui
+**Interaction**: form
+**Priority**: low
+**Estimate**: 2
+
+### User Story
+
+As a **student**, I want to **convert** selected words from a word family into a flashcard deck so that I can study them using the existing flashcard/spaced-repetition flow.
+
+### Acceptance Criteria
+
+- [ ] AC1: Student can select a subset of words (or all) before converting
+- [ ] AC2: Conversion creates one new `FlashCardSet` with one `FlashCard` per selected word, atomically
+- [ ] AC3: On success, the student is navigated to the new flashcard set's manage page
+- [ ] AC4: AI-generated word content is HTML-escaped before being stored as flashcard question/answer
+
+### Technical Notes
+
+- **Endpoint**: POST /api/v1/word-family/:id/to-flashcard
+- **Data Required**: WordFamily, FlashCardSet, FlashCard, DetailsFlashCard
+- **Dependencies**: PERM056
+
+### Screens
+
+- SCR042: WordFamilyDetailPage
+
+---
+
 ## Screen → US Map
 
 | Screen | US Codes |
@@ -2096,16 +2245,21 @@ As a **student**, I want to **view** my exam attempt results so that I can revie
 | SCR030 | US053, US054, US055 |
 | SCR031 | US056, US057, US058, US059 |
 | SCR032 | US058, US059, US060, US061, US062 |
+| SCR039 | US063 |
+| SCR040 | US064 |
+| SCR041 | US065 |
+| SCR042 | US066, US067 |
+| SCR043 | `[IPE_ZERO]` — admin CRUD, no student-facing story |
 
 ---
 
 ## Cross-Reference Validation
 
-- [x] All US### codes are unique (US001–US062)
+- [x] All US### codes are unique (US001–US067)
 - [x] All acceptance criteria are testable
 - [x] All technical notes are complete
 - [x] All US### codes reference valid SCR### from ScreenList.md
 - [x] All `ui` US### mapped to SCR### or SCR###/REG### (parent SCR must exist in ScreenList; system US excluded)
-- [x] All US### have a named human actor (guest, student, teacher)
+- [x] All US### have a named human actor (guest, student, teacher, admin)
 - [x] All US### titles use ONE action verb (anti-CRUD validated)
-- [x] `[IPE_ZERO]` screens flagged: SCR002, SCR004, SCR005, SCR006, SCR007, SCR012
+- [x] `[IPE_ZERO]` screens flagged: SCR002, SCR004, SCR005, SCR006, SCR007, SCR012, SCR043

@@ -1,9 +1,53 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-06-14
+last_updated: 2026-07-03
 ---
 
 # Examio Project Changelog
+
+## [Unreleased] — 2026-07-03
+
+### Added
+
+#### Page Feature Flags (F015 / Feature Toggling)
+
+Full-stack feature toggle system enabling dynamic page enable/disable without redeployment.
+
+**Backend — `admin-service` + `gateway-service`**
+
+- New `PageFeatureFlag` Prisma model with fields: `key` (unique slug), `label`, `enabled`, `isSystemLevel`, `createdAt`, `updatedAt`
+- `PageConfigModule` in admin-service: controller, service, repository
+- `PageEnabledGuard` in `@examio/common` — validates request against enabled pages
+- Gateway proxy: `PageConfigProxyController` routes `/api/v1/admin/page-config/*` to admin-service
+- Shared page-key constants in `@examio/common/enums/page-keys.enum.ts` (DASHBOARD, AI_CHAT, EXAM_TAKING, etc.)
+- SSE endpoint: `GET /api/v1/admin/page-config/stream` — real-time updates when flags change
+
+| Endpoint | Method | Auth | Description |
+|----------|--------|------|-------------|
+| `/page-config` | GET | Bearer | List all page flags |
+| `/page-config/:id` | PATCH | Admin | Toggle page enabled state |
+| `/page-config/stream` | GET | Bearer (SSE) | Real-time page flag updates |
+
+- Seed script integration: `libs/database/src/seed/page-feature-flag.seed.ts` — default flags seeded in `seed:dev` + production (`seed:prod`)
+
+**Frontend (`examio-fe`)**
+
+- New `usePageConfigStore` Zustand store: manages page flag cache, SSE connection, realtime updates
+- `PageConfigApiClient` in `src/apis/pageConfigApi.ts` — GET, PATCH, and SSE stream methods
+- `PageConfigProvider` wrapper for root layout — initializes store + SSE listener on mount
+- Sidebar filter: pages disabled via flag are hidden from `KLayout` navigation
+- Route guards: `<ProtectedRoute>` checks `pageConfigStore.isPageEnabled(key)` before rendering protected pages
+- i18n: Vietnamese + English translations in `public/locales/{vi,en}/page-config.json`
+
+**Key Design Decisions**
+
+- System-level flags (`isSystemLevel=true`) cannot be disabled; app-level flags can toggle
+- SSE (no WebSocket) for real-time flag updates; graceful fallback to polling if connection fails
+- Flags cached in Zustand; store syncs via SSE on change (300ms debounce)
+- `PageEnabledGuard` runs AFTER `JwtAuthGuard` — ensures authenticated context
+- Mobile (iosApp/androidApp) will require native flag sync (TODO: implement native feature flag bridge)
+
+---
 
 ## [Unreleased] — 2026-06-14
 
