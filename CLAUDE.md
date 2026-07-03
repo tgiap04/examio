@@ -4,11 +4,13 @@ Tệp này cung cấp hướng dẫn cho Claude Code (claude.ai/code) khi làm v
 
 ## Cấu trúc repository
 
-- Repository này được chia thành hai workspace chính:
+- Repository này được chia thành ba workspace chính:
   - `examio-be/`: repository backend polyglot gồm các microservice NestJS và một AI service viết bằng Python.
   - `examio-fe/`: frontend React 19 + Vite.
-- Hãy xem backend và frontend là hai package root riêng biệt. Chạy lệnh trong đúng thư mục con thay vì ở thư mục gốc repository.
-- Không có package manager workspace dùng chung ở thư mục gốc cho cả hai app.
+  - `examio-app/`: mobile app Kotlin Multiplatform (Android Jetpack Compose + iOS SwiftUI), dùng chung business logic/networking qua module `shared/`. Gọi lại API hiện có của backend, không có backend riêng cho mobile. Xem `examio-app/user-stories.md` cho phạm vi tính năng.
+- Hãy xem backend, frontend và mobile app là ba package root riêng biệt. Chạy lệnh trong đúng thư mục con thay vì ở thư mục gốc repository.
+- Không có package manager workspace dùng chung ở thư mục gốc cho các app.
+- **[QUAN TRỌNG]** Khi sửa UI trên mobile thì cần sửa cả `iosApp` và `androidApp` trong `examio-app/` để đảm bảo feature parity (đã ghi trong CLAUDE.md § Note ở cuối file).
 
 ## Các tệp hướng dẫn hiện có
 

@@ -1630,19 +1630,140 @@ An admin can retrieve server-side application logs and stream them in real time 
 
 ---
 
+## PERM054: AdminPageConfigManagement
+
+**Type**: action-permission
+**Enforced At**: `AdminPageConfigController` — `AdminGuard`, `GET/PATCH /api/v1/admin/page-config*`, throttled 30 req/60s.
+
+### Description
+
+An admin can view all `PageFeatureFlag` rows and toggle a page's `enabled` state. `toggle()` validates the key against `TOGGLEABLE_PAGE_KEYS` (else `BadRequestException`), writes DB → rebuilds Redis cache (`config:pages:flags`) → publishes to `config:pages` pub/sub channel → writes an `AdminAudit` row (action `admin.page-config.toggle`). Redis publish and audit-write failures are caught and logged as warnings — they never fail the toggle itself.
+
+### Related Routes
+
+- (GET) `/api/v1/admin/page-config`
+- (PATCH) `/api/v1/admin/page-config/:key`
+
+### Related Screens
+
+- SCR039 – AdminPageConfigPage
+
+### Permission Rules
+
+| Role | Allow | Conditions |
+|------|-------|------------|
+| admin | ✓ | `User.isAdmin = true` |
+| non-admin | ✗ | 403 Forbidden |
+
+---
+
+## PERM055: PageToggleEnforcement
+
+**Type**: feature-flag
+**Enforced At**: `PageEnabledGuard` (gateway-service) — reads `@TogglePage(key)` route metadata, checks `ConfigService.getPages()` (Redis-first, DB fallback).
+
+### Description
+
+Gateway-level feature-flag gate applied to proxy controllers annotated with `@TogglePage(key)` (currently `word-family`, `manage-exam-room`, `flash-card`, `manage-exam`, `ai-tool`). Blocks with `404 Not Found` (not 403, to avoid revealing page existence) only when the flag is explicitly `false`; absence of a key or any infra error (Redis/DB failure) fails OPEN — the request is allowed through. Some page keys (`my-materials`, `my-exams`, `history`) are FE-only toggles with an empty `PAGE_ROUTE_MAP` entry — deliberately not enforced at the gateway because they share core routes with other still-enabled features.
+
+### Related Routes
+
+- All routes on proxy controllers decorated with `@TogglePage(...)` (e.g. `word-family-proxy.controller.ts`, `examroom-proxy.controller.ts`, `flashcardset-proxy.controller.ts`, `quizset-proxy.controller.ts`, `ai-study-proxy.controller.ts`)
+- (GET) `/api/v1/config/pages` — public bootstrap fetch (guests included, via `OptionalAuthGuard`)
+- (GET) `/api/v1/config/stream` — SSE realtime push, requires `AuthGuard`
+
+### Related Screens
+
+- SCR039 – AdminPageConfigPage (management)
+- All screens gated by `<FeatureRoute pageKey="...">` on the frontend (client-side mirror of this guard)
+
+### Permission Rules
+
+| Role | Allow | Conditions |
+|------|-------|------------|
+| guest | ✓/✗ | Allowed unless the page's flag is explicitly `false` |
+| authenticated (any role) | ✓/✗ | Same rule — flag state, not role, determines access |
+| admin | ✓ | Admin routes are never gated by page toggles |
+
+---
+
+## PERM056: WordFamilyAccess
+
+**Type**: route-guard
+**Enforced At**: `word-family.controller.ts` (`AuthGuard`) + `word-family-proxy.controller.ts` (`AuthGuard` + `PageEnabledGuard` + `@TogglePage('word-family')`)
+
+### Description
+
+All user-facing word-family routes (browse categories, view root words/detail, generate via AI, save/remove from collection, convert to flashcard) require a valid Bearer/cookie session AND the `word-family` page flag enabled (PERM055). No credit/quota gate was found on AI generation, unlike other AI flows in the codebase.
+
+### Related Routes
+
+- (GET) `/api/v1/word-family/categories`
+- (GET) `/api/v1/word-family/categories/:slug/roots`
+- (GET) `/api/v1/word-family/category/:categorySlug/:rootWord`
+- (POST) `/api/v1/word-family/generate`
+- (POST) `/api/v1/word-family/save`
+- (GET) `/api/v1/word-family/saved`
+- (DELETE) `/api/v1/word-family/saved/:wordFamilyId`
+- (POST) `/api/v1/word-family/:id/to-flashcard`
+
+### Related Screens
+
+- SCR040 – WordFamilyPage
+- SCR041 – WordFamilyCategoryPage
+- SCR042 – WordFamilyDetailPage
+
+### Permission Rules
+
+| Role | Allow | Conditions |
+|------|-------|------------|
+| guest | ✗ | Must authenticate |
+| authenticated (any role) | ✓ | Valid session + `word-family` page flag enabled |
+
+---
+
+## PERM057: AdminWordFamilyManagement
+
+**Type**: action-permission
+**Enforced At**: `admin-word-family.controller.ts` (`AdminGuard`, class-level) + duplicate category CRUD in `word-family.controller.ts` (`AuthGuard` + `AdminGuard`, method-level)
+
+### Description
+
+Admin-only CRUD on `WordFamilyCategory` (create, update, soft-delete via `isActive = false`). Two parallel implementations exist: the primary admin-service surface (`/api/v1/admin/word-family/*`, used by the FE admin page, wraps writes in `Prisma.TransactionIsolationLevel.Serializable` + `AdminAudit` before/after diff) and a secondary exam-service surface (`/api/v1/word-family/categories*`) kept for backward compatibility. Category deletion is soft-delete only at the API layer — the Prisma `onDelete: Cascade` relation to `WordFamily`/`UserSavedWordFamily` is defined but not reachable via any exposed hard-delete route.
+
+### Related Routes
+
+- (GET) `/api/v1/admin/word-family/categories`
+- (POST) `/api/v1/admin/word-family/categories`
+- (PUT) `/api/v1/admin/word-family/categories/:id`
+- (DELETE) `/api/v1/admin/word-family/categories/:id`
+
+### Related Screens
+
+- SCR043 – AdminWordFamilyPage
+
+### Permission Rules
+
+| Role | Allow | Conditions |
+|------|-------|------------|
+| admin | ✓ | `User.isAdmin = true` |
+| non-admin | ✗ | 403 Forbidden |
+
+---
+
 ## Summary
 
-- **Total Permission Items**: 53
-- **By Type**: route-guard: 5, screen-permission: 2, action-permission: 13, data-permission: 11, role-based: 1, resource-ownership: 9, env-gate: 2, feature-flag: 1
+- **Total Permission Items**: 57
+- **By Type**: route-guard: 6, screen-permission: 2, action-permission: 15, data-permission: 11, role-based: 1, resource-ownership: 9, env-gate: 2, feature-flag: 2
 
 ---
 
 ## Cross-Reference Validation
 
-- [x] All PERM### codes are unique (PERM001–PERM045)
+- [x] All PERM### codes are unique (PERM001–PERM057)
 - [x] All PERM### codes reference valid screens (SCR###) from ScreenList.md
 - [x] All related route references are valid (RT### in RouteList — omitted here for brevity; cross-referenced via route-path pattern matching)
-- [x] All related module references are valid (auth-service, exam-service, finance-service, r2-service, common)
+- [x] All related module references are valid (auth-service, exam-service, finance-service, r2-service, admin-service, common)
 - [x] No orphaned permission references
 - [x] Ownership rules (PERM015–PERM022, PERM024–PERM025) correctly target only resource owners
 - [x] Guest vs. authenticated separation correctly enforced for all screen groups

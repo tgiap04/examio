@@ -45,6 +45,8 @@
 | F012 | ExamTaking | ui | TypeScript | examio-fe | P0 |
 | F013 | SessionCleanup | background | TypeScript | examio-be | P2 |
 | F014 | AdminDashboard | ui | TypeScript | examio-fe + examio-be | P1 |
+| F015 | PageFeatureFlags | ui | TypeScript | examio-fe + examio-be | P1 |
+| F016 | WordFamily | ui | TypeScript | examio-fe + examio-be | P2 |
 
 ## Feature Details
 
@@ -763,20 +765,100 @@
 
 ---
 
+### F015: PageFeatureFlags
+
+**Type**: ui
+**Description**: Dynamic page enable/disable system without redeployment. Admins toggle `PageFeatureFlag` rows via an admin screen; the gateway enforces the flag on proxy routes decorated with `@TogglePage(key)` (fail-open on infra errors, 404 on explicit disable); the frontend mirrors the same state via `<FeatureRoute>` and hides sidebar nav items. Changes propagate to all connected clients in real time over SSE.
+
+**Workspace**: examio-fe + examio-be
+**Languages**: TypeScript
+**Components**: 1 admin page + cross-cutting guard/store
+
+**Related Screens**:
+- SCR039: AdminPageConfigPage
+
+**Related User Stories**:
+- US063: Toggle Page Visibility
+
+**Related APIs/Routes**:
+- (GET) `/api/v1/admin/page-config`
+- (PATCH) `/api/v1/admin/page-config/:key`
+- (GET) `/api/v1/config/pages`
+- (GET, SSE) `/api/v1/config/stream`
+
+**Related Data Models**:
+- PageFeatureFlag
+
+**Related Background Logic**:
+- (none — request-time guard, not a scheduled job)
+
+**Related Permissions**:
+- PERM054: AdminPageConfigManagement
+- PERM055: PageToggleEnforcement
+
+---
+
+### F016: WordFamily
+
+**Type**: ui
+**Description**: AI-assisted vocabulary study by root-word family. Students browse categories, generate new root-word groups via AI (with per-user/category dedup + concurrency lock), save families to a personal collection, and convert selected words into a `FlashCardSet` for spaced-repetition study. Admins manage categories via a dedicated admin CRUD screen.
+
+**Workspace**: examio-fe + examio-be
+**Languages**: TypeScript, Python (AI generation)
+**Components**: 4 pages (3 student-facing + 1 admin)
+
+**Related Screens**:
+- SCR040: WordFamilyPage
+- SCR041: WordFamilyCategoryPage
+- SCR042: WordFamilyDetailPage
+- SCR043: AdminWordFamilyPage
+
+**Related User Stories**:
+- US064: Browse Word Family Categories
+- US065: Generate Word Family via AI
+- US066: Save Word Family to Collection
+- US067: Convert Word Family to Flashcard Deck
+
+**Related APIs/Routes**:
+- (GET) `/api/v1/word-family/categories`
+- (GET) `/api/v1/word-family/categories/:slug/roots`
+- (GET) `/api/v1/word-family/category/:categorySlug/:rootWord`
+- (POST) `/api/v1/word-family/generate`
+- (POST) `/api/v1/word-family/save`
+- (GET) `/api/v1/word-family/saved`
+- (DELETE) `/api/v1/word-family/saved/:wordFamilyId`
+- (POST) `/api/v1/word-family/:id/to-flashcard`
+- (GET/POST/PUT/DELETE) `/api/v1/admin/word-family/categories*`
+
+**Related Data Models**:
+- WordFamilyCategory
+- WordFamily
+- UserSavedWordFamily
+- FlashCardSet, FlashCard, DetailsFlashCard (bridge target)
+
+**Related Background Logic**:
+- (none — AI generation is request-time, not scheduled)
+
+**Related Permissions**:
+- PERM056: WordFamilyAccess
+- PERM057: AdminWordFamilyManagement
+
+---
+
 ## Summary
 
-- **Total Features**: 14
-- **Total Screens**: 38 (with 16 regions across 5 composite screens)
-- **Total User Stories**: 62
-- **Total Routes**: ~105
-- **Total Data Models**: 25
+- **Total Features**: 16
+- **Total Screens**: 43 (with 16 regions across 5 composite screens)
+- **Total User Stories**: 67
+- **Total Routes**: ~118
+- **Total Data Models**: 28
 - **Total Background Logic**: 5
-- **Total Permissions**: 53
-- **Languages Detected**: TypeScript
+- **Total Permissions**: 57
+- **Languages Detected**: TypeScript, Python
 
 ## Cross-Reference Validation
 
-- [x] All F### codes are unique (F001–F014)
+- [x] All F### codes are unique (F001–F016)
 - [x] All F### codes are referenced in UserStories.md
 - [x] All screen references are valid (SCR### or SCR###/REG### in ScreenList; bare-SCR refs and region refs both accepted)
 - [x] All user story references are valid (US### in UserStories)

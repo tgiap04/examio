@@ -1,7 +1,7 @@
 ---
 title: Examio Development Roadmap
-last_updated: 2026-06-06
-source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/)
+last_updated: 2026-07-03
+source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/) + phase completions
 status: ACTIVE
 ---
 
@@ -19,6 +19,19 @@ Living document tracking follow-up work derived from the rebuild-spec pipeline r
 | **Total follow-up items** | **31** |
 
 Priority: **P0** = blocking/correctness · **P1** = security/integrity · **P2** = correctness edge cases · **P3** = UX/spec completeness
+
+---
+
+## Documentation Coverage Note (2026-07-03)
+
+The 2026-06-05 rebuild-spec baseline is now **873 files behind HEAD** (94k+ lines changed) — the diff exceeds the auto-full-rebuild threshold. A scoped manual update was performed instead of a full core re-scan:
+
+- ✅ Added F015 (PageFeatureFlags) and F016 (WordFamily) to `feature-list.md`, `screen-list.md` (SCR039–SCR043), `permissions.md` (PERM054–PERM057), `user-stories.md` (US063–US067), with full 4-file feature specs
+- ✅ Added F014 (AdminDashboard) 4-file feature specs (was in feature-list.md but missing `docs/features/` dir)
+- ✅ Fixed `CLAUDE.md` — added the third workspace `examio-app` (Kotlin Multiplatform mobile), previously undocumented entirely
+- ⚠️ **NOT done**: full core artifact re-scan (route-list, data-model, entities, behavior-logic, architecture) against the 873-file diff — these may still miss changes in `examio-app/`, `word-family` AI-service internals not covered above, and other commits not specifically researched
+- ⚠️ **NOT done**: `docs/flows/*.md` and `docs/system/glossary.md` regeneration for the new features
+- **Recommendation**: run `/tkm:rebuild-spec --full` (core pass) via Claude Code IDE when feasible to catch anything this scoped pass missed, followed by `--flows` and `--glossary`
 
 ---
 
@@ -146,53 +159,84 @@ Key decisions made during implementation:
 - All admin mutations write one `AdminAudit` row per changed field
 - Admin service healthcheck: `GET /api/v1/health` (same pattern as other NestJS services)
 
-## Phase 4 — UX Polish & Spec Completeness (P3)
+## Phase 4 — Page Feature Flags (Feature Toggling)
+
+| # | Item | Owner | Status |
+|---|------|-------|--------|
+| 4.1 | `PageFeatureFlag` Prisma model + seed file | backend | ✅ Complete |
+| 4.2 | `PageConfigModule` (admin-service) + proxy controller (gateway) | backend | ✅ Complete |
+| 4.3 | `PageEnabledGuard` in `@examio/common` | backend | ✅ Complete |
+| 4.4 | Shared page-key constants (`page-keys.enum.ts`) | backend | ✅ Complete |
+| 4.5 | SSE endpoint for real-time flag updates | backend | ✅ Complete |
+| 4.6 | `usePageConfigStore` (Zustand) + `PageConfigApiClient` | frontend | ✅ Complete |
+| 4.7 | `PageConfigProvider` + sidebar filter integration | frontend | ✅ Complete |
+| 4.8 | Route guards + i18n translations | frontend | ✅ Complete |
+
+Key decisions made during implementation:
+- System-level flags (`isSystemLevel=true`) cannot be disabled; app-level flags can toggle
+- SSE preferred over WebSocket for lighter client footprint; polling fallback if SSE unavailable
+- Flags cached in Zustand; synced via SSE (300ms debounce) to reduce noise
+- `PageEnabledGuard` runs after `JwtAuthGuard` to ensure authenticated context
+- Mobile sync (iosApp/androidApp) deferred to next phase
+
+## Phase 5 — UX Polish & Spec Completeness (P3)
 
 | # | Item | Source | Owner |
 |---|------|--------|-------|
-| 3.1 | `SubscriptionPage` vs `SubscriptionTemplate` — pick canonical UI, archive the other | W7a | frontend |
-| 3.2 | `ProfilePage` dual data source (`getProfileApi` + `useAuthStore.user`) — pick one | W7a | frontend |
-| 3.3 | Add a 6th feature for **Mobile Companion** (iOS + Android app) — currently not covered in spec | F012 in legacy v3.x | spec |
-| 3.4 | Add iOS + Android spec parity for any screen changes | CLAUDE.md rule | spec + mobile |
-| 3.5 | Document the FREE_MODE dev-only bypass before it leaks to production | system rule | devops |
+| 5.1 | `SubscriptionPage` vs `SubscriptionTemplate` — pick canonical UI, archive the other | W7a | frontend |
+| 5.2 | `ProfilePage` dual data source (`getProfileApi` + `useAuthStore.user`) — pick one | W7a | frontend |
+| 5.3 | Add a 6th feature for **Mobile Companion** (iOS + Android app) — currently not covered in spec | F012 in legacy v3.x | spec |
+| 5.4 | Add iOS + Android spec parity for any screen changes | CLAUDE.md rule | spec + mobile |
+| 5.5 | Document the FREE_MODE dev-only bypass before it leaks to production | system rule | devops |
+| 5.6 | Implement native feature flag bridge for iosApp + androidApp | Phase 4 follow-up | mobile |
 
 ---
 
 ## Roadmap Stats
 
+- **Completed Phases**: Phase 3 (Admin Dashboard), Phase 4 (Page Feature Flags)
 - **P0 (blocking/correctness)**: 6 items
 - **P1 (security/integrity)**: 6 items
 - **P2 (spec edge cases)**: 30+ items across 12 features
-- **P3 (UX polish)**: 5 items
-- **Total**: 31 work items, ~47 sub-decisions
+- **P3 (UX polish)**: 6 items (Phase 5 + 1 mobile item)
+- **Total unresolved**: ~48 work items, ~55 sub-decisions
 
 ## Owner Mapping
 
 | Owner Role | Item Count |
 |------------|------------:|
 | `backend` | 24 |
-| `frontend` | 7 |
+| `frontend` | 8 |
 | `platform` | 3 |
 | `spec` | 2 |
 | `devops` | 1 |
+| `mobile` | 1 |
 
 ## Implementation Phases (Suggested)
 
-### Sprint 1 (this week) — Phase 0
+### ✅ Completed — Phase 3 (Admin Dashboard)
+All 6 items complete. Dashboard live with audit, stats, user management, finance controls.
+
+### ✅ Completed — Phase 4 (Page Feature Flags)
+All 8 items complete. Dynamic page enable/disable without redeployment. SSE real-time sync.
+
+### Sprint Next — Phase 0 (System Correctness)
 Goal: remove blockers that mask real bugs
 - 0.1, 0.2, 0.3 (low-hanging cleanup)
 - 0.4, 0.5 (dead-code audit)
+- 0.6 (PendingJobDialog fix)
 
-### Sprint 2 — Phase 1 (security)
+### Sprint +1 — Phase 1 (Security)
 - 1.1, 1.2, 1.3 (auth integrity)
 - 1.4 (AES key provisioning) — P0 implications
+- 1.5, 1.6 (R2 cleanup on delete)
 
-### Sprint 3+ — Phase 2 (edge cases)
+### Sprint +2+ — Phase 2 (Feature Edge Cases)
 Tackle per feature. Suggestion: 1 feature per sprint.
 - F006 (largest), F008 (most complex), F012 (most security-sensitive) first.
 
-### Backlog — Phase 3
-P3 items are nice-to-have; not blocking for v1.
+### Backlog — Phase 5
+P3 items (UX polish, mobile sync) nice-to-have; not blocking for v1.
 
 ## Cross-References
 

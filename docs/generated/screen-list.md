@@ -48,6 +48,11 @@
 | SCR036 | AdminFinancePage | atomic | ~3 | Refund history, credit adjustments, tier changes |
 | SCR037 | AdminLogsPage | atomic | ~2 | Log viewer with SSE stream + polling fallback |
 | SCR038 | AdminAuditPage | atomic | ~2 | Audit log table with filters + export |
+| SCR039 | AdminPageConfigPage | atomic | ~2 | PageFeatureFlag list + toggle switches |
+| SCR040 | WordFamilyPage | atomic | ~2 | WordFamilyCategory grid |
+| SCR041 | WordFamilyCategoryPage | atomic | ~2 | Root word chips + generate action |
+| SCR042 | WordFamilyDetailPage | atomic | ~5 | Word family tree/list, save, flashcard bridge |
+| SCR043 | AdminWordFamilyPage | atomic | ~3 | WordFamilyCategory CRUD table |
 
 ---
 
@@ -1235,10 +1240,144 @@ Audit log query page. Paginated antd Table showing `AdminAudit` rows: admin user
 
 ---
 
+## SCR039: AdminPageConfigPage
+
+**Type**: atomic
+
+### Description
+
+Admin screen listing every togglable page (`PageFeatureFlag` rows) with a `Switch` per row. Toggling calls the admin API with optimistic update + rollback on failure. Source: `examio-fe/src/pages/admin/AdminPageConfigPage.tsx`.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| PageConfigTable | atomic | antd Table listing key/label/enabled |
+| PageConfigSwitch | atomic | Per-row toggle with optimistic update + rollback |
+
+### Routes
+
+- `GET /api/v1/admin/page-config`
+- `PATCH /api/v1/admin/page-config/:key`
+
+### Auth
+
+- `AdminGuard` — `User.isAdmin = true` required.
+
+---
+
+## SCR040: WordFamilyPage
+
+**Type**: atomic
+
+### Description
+
+Category browse page — grid of `WordFamilyCategory` cards (image, name, description), filtered to `isActive = true`. Each card links to `SCR041`. Source: `examio-fe/src/pages/k/WordFamilyPage.tsx`.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| WordFamilyCategoryCard | atomic | Category image/name/description card |
+
+### Routes
+
+- `GET /api/v1/word-family/categories`
+
+### Auth
+
+- `AuthGuard` + `PageEnabledGuard` (`@TogglePage('word-family')`) — Bearer session required; hidden via 404 if the `word-family` page flag is disabled.
+
+---
+
+## SCR041: WordFamilyCategoryPage
+
+**Type**: atomic
+
+### Description
+
+Root-word list within one category, shown as chips. "Tạo thêm từ gốc" button triggers AI generation (`POST /generate`) then refetches with `forceRefresh`. Source: `examio-fe/src/pages/k/WordFamilyCategoryPage.tsx`.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| RootWordChipList | atomic | Chips for each root word, links to SCR042 |
+| GenerateWordFamilyButton | atomic | Triggers AI batch generation, shows loading state |
+
+### Routes
+
+- `GET /api/v1/word-family/categories/:slug/roots`
+- `POST /api/v1/word-family/generate`
+
+### Auth
+
+- `AuthGuard` + `PageEnabledGuard` (`@TogglePage('word-family')`).
+
+---
+
+## SCR042: WordFamilyDetailPage
+
+**Type**: atomic
+
+### Description
+
+Word family detail with Tree/List view toggle, word selection checkboxes, save-to-collection action, and "Tạo Flashcard (N)" bridge to a new `FlashCardSet`. Source: `examio-fe/src/pages/k/WordFamilyDetailPage.tsx`.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| TreeView | atomic | Word family as expandable tree (`components/k/word-family/TreeView.tsx`) |
+| ListView | atomic | Word family as flat list (`ListView.tsx`) |
+| WordFamilyNode | atomic | Single word node with affix breakdown |
+| CreateFlashcardModal | atomic | Confirms selected words → `POST /:id/to-flashcard` |
+
+### Routes
+
+- `GET /api/v1/word-family/category/:categorySlug/:rootWord`
+- `POST /api/v1/word-family/save`
+- `DELETE /api/v1/word-family/saved/:wordFamilyId`
+- `POST /api/v1/word-family/:id/to-flashcard`
+
+### Auth
+
+- `AuthGuard` + `PageEnabledGuard` (`@TogglePage('word-family')`).
+
+---
+
+## SCR043: AdminWordFamilyPage
+
+**Type**: atomic
+
+### Description
+
+Admin CRUD for `WordFamilyCategory` — antd Table + Modal, auto-slug generator from Vietnamese name. Calls admin-service endpoints (`/admin/word-family/*`), distinct from the exam-service admin category routes. Source: `examio-fe/src/pages/admin/AdminWordFamilyPage.tsx`.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| WordFamilyCategoryTable | atomic | Paginated category list |
+| WordFamilyCategoryModal | atomic | Create/edit form with auto-slug |
+
+### Routes
+
+- `GET /api/v1/admin/word-family/categories`
+- `POST /api/v1/admin/word-family/categories`
+- `PUT /api/v1/admin/word-family/categories/:id`
+- `DELETE /api/v1/admin/word-family/categories/:id` (soft-delete)
+
+### Auth
+
+- `AdminGuard` — `User.isAdmin = true` required.
+
+---
+
 ## Summary
 
-- **Total Screens**: 38
-- **Atomic**: 32 (SCR001–SCR012, SCR014–SCR015, SCR017, SCR019–SCR024, SCR026, SCR028–SCR038)
+- **Total Screens**: 43
+- **Atomic**: 37 (SCR001–SCR012, SCR014–SCR015, SCR017, SCR019–SCR024, SCR026, SCR028–SCR038, SCR039–SCR043)
 - **Composite**: 6 (SCR013, SCR016, SCR018, SCR025, SCR027)
 - **Total Regions**: 16 across composite screens
 
@@ -1246,7 +1385,7 @@ Audit log query page. Paginated antd Table showing `AdminAudit` rows: admin user
 
 ## Cross-Reference Validation
 
-- [x] All SCR### codes are unique (SCR001–SCR038)
+- [x] All SCR### codes are unique (SCR001–SCR043)
 - [x] All SCR### codes are referenced in ScreenFlow.md
 - [x] All route URLs are properly formatted
 - [x] All SCR### codes are referenced in FeatureList.md
