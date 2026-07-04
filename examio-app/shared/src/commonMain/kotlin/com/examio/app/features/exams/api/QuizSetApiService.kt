@@ -12,6 +12,8 @@ import com.examio.app.features.exams.models.QuizSetCreateResponse
 import com.examio.app.features.exams.models.QuizSetLabelsResponse
 import com.examio.app.features.exams.models.QuizSetListResponse
 import com.examio.app.features.exams.models.QuizSetQuestionsResponse
+import com.examio.app.features.exams.models.SaveHistoryResult
+import com.examio.app.features.exams.models.SaveHistoryToQuizsetRequest
 import com.examio.app.features.exams.models.UpdateQuestionRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.request.delete
@@ -54,4 +56,8 @@ class QuizSetApiService(private val client: HttpClient) {
     // Labels
     suspend fun getLabels(id: String): ApiResult<QuizSetLabelsResponse> =
         safeApiCall { client.get("${ApiEndpoints.QUIZ_SETS}/$id/labels") }
+
+    // Persist a generated quiz history into one or more sets.
+    suspend fun saveHistoryToQuizset(request: SaveHistoryToQuizsetRequest): ApiResult<SaveHistoryResult> =
+        safeApiCall { client.post("${ApiEndpoints.QUIZ_SETS}/save-history-to-quizset") { setBody(request) } }
 }

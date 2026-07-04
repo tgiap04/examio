@@ -23,6 +23,9 @@ import com.examio.app.features.exams.DeThiScreen
 import com.examio.app.features.exams.ExamNavState
 import com.examio.app.features.exams.ExamResultScreen
 import com.examio.app.features.exams.ExamTakingScreen
+import com.examio.app.features.ai.AiScreen
+import com.examio.app.features.ai.AiSection
+import com.examio.app.features.ai.repository.AIChatRepository
 import com.examio.app.features.exams.repository.ExamRepository
 import com.examio.app.features.study.api.StudentMaterialsApiService
 import com.examio.app.features.study.repository.FlashcardRepository
@@ -45,11 +48,14 @@ fun ExamioApp(
     studentMaterialsApi: StudentMaterialsApiService,
     historyRepository: HistoryRepository,
     examRepository: ExamRepository,
+    aiRepository: AIChatRepository,
 ) {
     var authState by remember { mutableStateOf<NavigationAuthState>(NavigationAuthState.Loading) }
     var selectedTab by remember { mutableStateOf(MainTab.TaiLieu) }
     var showProfile by remember { mutableStateOf(false) }
     var examNav by remember { mutableStateOf<ExamNavState>(ExamNavState.Idle) }
+    // Non-null while the AI generator overlay is open; holds the preset typeResult (1=quiz, 2=flashcard).
+    var aiGenerateType by remember { mutableStateOf<Int?>(null) }
 
     // Restore the persisted session on startup so a reload doesn't force re-login.
     // restoreSession() reads stored tokens, calls currentUser(), falls back to refresh()
@@ -104,6 +110,20 @@ fun ExamioApp(
         ExamNavState.Idle -> Unit
     }
 
+    // AI generation overlays the tab Scaffold, opened from Study/DeThi entry buttons.
+    aiGenerateType?.let { type ->
+        AiScreen(
+            aiRepository = aiRepository,
+            examRepository = examRepository,
+            flashcardRepository = flashcardRepository,
+            initialSection = AiSection.Tool,
+            initialTypeResult = type,
+            onClose = { aiGenerateType = null },
+            modifier = Modifier.fillMaxSize(),
+        )
+        return
+    }
+
     Scaffold(
         topBar = {
             AppHeader(onProfileTap = { showProfile = true })
@@ -118,13 +138,21 @@ fun ExamioApp(
         val modifier = Modifier.padding(innerPadding)
 
         when (selectedTab) {
-            MainTab.TaiLieu -> StudyScreen(flashcardRepository = flashcardRepository, modifier = modifier)
+            MainTab.TaiLieu -> StudyScreen(
+                flashcardRepository = flashcardRepository,
+                onGenerateWithAi = { aiGenerateType = 2 },
+                modifier = modifier,
+            )
             MainTab.BaiThi -> MyExamsScreen(
                 materialsApi = studentMaterialsApi,
                 onEnterExam = { sessionId, title -> examNav = ExamNavState.TakingExam(sessionId, title) },
                 modifier = modifier,
             )
-            MainTab.DeThi -> DeThiScreen(examRepository = examRepository, modifier = modifier)
+            MainTab.DeThi -> DeThiScreen(
+                examRepository = examRepository,
+                onGenerateWithAi = { aiGenerateType = 1 },
+                modifier = modifier,
+            )
             MainTab.LichSu -> LichSuScreen(historyRepository = historyRepository, modifier = modifier)
         }
     }

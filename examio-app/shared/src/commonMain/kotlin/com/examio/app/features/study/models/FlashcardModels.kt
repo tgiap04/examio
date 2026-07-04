@@ -131,6 +131,22 @@ data class CreateFlashcardRequest(
     val answer: String,
 )
 
+// Persist an AI generation history into one or more flashcard sets (mirrors FE
+// POST /flashcardsets/save-history-to-flashcardset).
+@Serializable
+data class SaveHistoryToFlashcardSetRequest(
+    val flashcardsetIds: List<String>,
+    val historyId: String,
+    val labelId: String? = null,
+    val labelName: String? = null,
+    val labelColor: String? = null,
+)
+
+@Serializable
+data class SaveHistoryToFlashcardSetResult(
+    val createdCount: Int = 0,
+)
+
 @Serializable
 data class UpdateFlashcardRequest(
     val question: String? = null,

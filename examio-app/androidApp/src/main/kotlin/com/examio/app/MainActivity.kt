@@ -31,6 +31,7 @@ class MainActivity : ComponentActivity() {
                     studentMaterialsApi = appContainer.studentMaterialsApi,
                     historyRepository = appContainer.historyRepository,
                     examRepository = appContainer.examRepository,
+                    aiRepository = appContainer.aiRepository,
                 )
             }
         }

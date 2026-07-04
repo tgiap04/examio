@@ -67,6 +67,7 @@ private struct AppHeaderView: View {
 
 struct DeThiView: View {
     private let examSets = ["Ôn tập Toán cao cấp", "Kiểm tra Sinh học 12", "Đề luyện tiếng Anh B1"]
+    @State private var showAi = false
 
     var body: some View {
         ScrollView {
@@ -90,8 +91,8 @@ struct DeThiView: View {
                     .padding()
                     .background(Color.examioCard, in: RoundedRectangle(cornerRadius: 18))
                 }
-                Button { } label: {
-                    Label("Tạo bộ đề", systemImage: "plus")
+                Button { showAi = true } label: {
+                    Label("Tạo đề bằng AI", systemImage: "sparkles")
                         .frame(maxWidth: .infinity)
                         .padding()
                 }
@@ -101,6 +102,9 @@ struct DeThiView: View {
             .padding(20)
         }
         .background(Color.examioCanvas)
+        .sheet(isPresented: $showAi) {
+            AiView(initialSection: .tool, initialTypeResult: 1, onClose: { showAi = false })
+        }
     }
 }
 

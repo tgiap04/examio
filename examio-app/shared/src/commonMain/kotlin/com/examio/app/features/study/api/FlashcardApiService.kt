@@ -16,6 +16,8 @@ import com.examio.app.features.study.models.FlashcardWithCodeRequest
 import com.examio.app.features.study.models.FlashcardSetListResponse
 import com.examio.app.features.study.models.LabelResponse
 import com.examio.app.features.study.models.LabelsResponse
+import com.examio.app.features.study.models.SaveHistoryToFlashcardSetRequest
+import com.examio.app.features.study.models.SaveHistoryToFlashcardSetResult
 import com.examio.app.features.study.models.UpdateFlashcardRequest
 import com.examio.app.features.study.models.UpdateLabelRequest
 import io.ktor.client.HttpClient
@@ -83,4 +85,8 @@ class FlashcardApiService(private val client: HttpClient) {
 
     suspend fun deleteLabel(setId: String, labelId: String): ApiResult<Unit> =
         safeUnitApiCall { client.delete("${ApiEndpoints.FLASHCARD_SETS}/$setId/labels/$labelId") }
+
+    // Persist a generated flashcard history into one or more sets.
+    suspend fun saveHistoryToFlashcardSet(request: SaveHistoryToFlashcardSetRequest): ApiResult<SaveHistoryToFlashcardSetResult> =
+        safeApiCall { client.post("${ApiEndpoints.FLASHCARD_SETS}/save-history-to-flashcardset") { setBody(request) } }
 }

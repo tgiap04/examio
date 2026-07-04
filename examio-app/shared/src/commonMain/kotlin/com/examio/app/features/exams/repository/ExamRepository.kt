@@ -15,6 +15,7 @@ import com.examio.app.features.exams.models.SecureQuizResponse
 import com.examio.app.features.exams.models.StartExamAttemptRequest
 import com.examio.app.features.exams.models.SubmitExamAttemptRequest
 import com.examio.app.features.exams.models.UpdateProgressRequest
+import com.examio.app.features.exams.models.SaveHistoryToQuizsetRequest
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
@@ -33,6 +34,7 @@ class ExamRepository(
     suspend fun addQuestion(id: String, request: CreateQuestionRequest) = quizSets.addQuestion(id, request)
     suspend fun updateQuestion(id: String, questionId: String, request: UpdateQuestionRequest) = quizSets.updateQuestion(id, questionId, request)
     suspend fun deleteQuestion(id: String, questionId: String) = quizSets.deleteQuestion(id, questionId)
+    suspend fun saveHistoryToQuizset(request: SaveHistoryToQuizsetRequest) = quizSets.saveHistoryToQuizset(request)
     suspend fun examRooms(page: Int = 1, limit: Int = 20) = rooms.list(page, limit)
     suspend fun examRoom(id: String) = rooms.get(id)
     suspend fun examRoomSessions(roomId: String) = rooms.sessions(roomId)
