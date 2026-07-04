@@ -22,6 +22,7 @@ import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -43,6 +44,7 @@ import com.examio.app.features.exams.repository.ExamRepository
 @Composable
 fun DeThiScreen(
     examRepository: ExamRepository,
+    onGenerateWithAi: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val vm = remember { DeThiViewModel(examRepository) }
@@ -76,6 +78,11 @@ fun DeThiScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
                     StatCard("${state.quizSets.size}", "Bộ đề", Icons.Outlined.Description, Modifier.weight(1f))
                     StatCard("${state.totalQuestions}", "Câu hỏi", Icons.Outlined.Quiz, Modifier.weight(1f))
+                }
+            }
+            item {
+                OutlinedButton(onClick = onGenerateWithAi, modifier = Modifier.fillMaxWidth()) {
+                    Text("Tạo đề bằng AI")
                 }
             }
             item {

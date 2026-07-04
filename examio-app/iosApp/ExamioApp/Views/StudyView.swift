@@ -3,16 +3,20 @@ import SwiftUI
 struct StudyView: View {
     @StateObject private var materialsVM = MyMaterialsViewModel()
     @State private var selectedSetId: String?
+    @State private var showAi = false
 
     var body: some View {
         Group {
             if let setId = selectedSetId {
                 FlashcardSetDetailView(setId: setId, onBack: { selectedSetId = nil })
             } else {
-                MyMaterialsView(vm: materialsVM, onOpenSet: { selectedSetId = $0 })
+                MyMaterialsView(vm: materialsVM, onOpenSet: { selectedSetId = $0 }, onGenerateWithAi: { showAi = true })
             }
         }
         .background(Color.examioCanvas)
+        .sheet(isPresented: $showAi) {
+            AiView(initialSection: .tool, initialTypeResult: 2, onClose: { showAi = false })
+        }
     }
 }
 
@@ -21,6 +25,7 @@ struct StudyView: View {
 private struct MyMaterialsView: View {
     @ObservedObject var vm: MyMaterialsViewModel
     let onOpenSet: (String) -> Void
+    let onGenerateWithAi: () -> Void
 
     var body: some View {
         ScrollView {
@@ -33,6 +38,13 @@ private struct MyMaterialsView: View {
                         .font(.body)
                         .foregroundStyle(.secondary)
                 }
+
+                Button(action: onGenerateWithAi) {
+                    Label("Tạo flashcard bằng AI", systemImage: "sparkles")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .tint(.examioPrimary)
 
                 if vm.isLoading {
                     HStack { Spacer(); ProgressView(); Spacer() }

@@ -38,16 +38,28 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.examio.app.features.ai.models.RecentUpload
 import com.examio.app.features.ai.repository.AIChatRepository
+import com.examio.app.features.exams.repository.ExamRepository
+import com.examio.app.features.study.repository.FlashcardRepository
 
 @Composable
 fun AiScreen(
     aiRepository: AIChatRepository,
+    examRepository: ExamRepository,
+    flashcardRepository: FlashcardRepository,
     modifier: Modifier = Modifier,
+    initialSection: AiSection = AiSection.Teacher,
+    initialTypeResult: Int? = null,
+    onClose: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
-    val vm = remember { AIToolViewModel(aiRepository, context) }
+    val vm = remember { AIToolViewModel(aiRepository, examRepository, flashcardRepository, context) }
     val state by vm.state.collectAsState()
-    var selectedSection by remember { mutableStateOf(AiSection.Teacher) }
+    var selectedSection by remember { mutableStateOf(initialSection) }
+
+    // When opened from a contextual entry (Study/DeThi), preset the generation type.
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        initialTypeResult?.let(vm::onTypeSelected)
+    }
 
     Column(
         modifier = modifier
@@ -56,6 +68,9 @@ fun AiScreen(
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        if (onClose != null) {
+            TextButton(onClick = onClose) { Text("‹ Quay lại") }
+        }
         Text("AI", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onBackground)
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             AiSection.entries.forEach { section ->
@@ -79,6 +94,8 @@ fun AiScreen(
                 onKeywordChange = vm::onKeywordChange,
                 onFileSelected = vm::onFileSelected,
                 onGenerate = vm::generate,
+                onSaveToNewSet = vm::saveToNewSet,
+                onSaveToExistingSet = vm::saveToExistingSet,
             )
             AiSection.History -> AIHistorySection(
                 state = state,
@@ -157,6 +174,8 @@ private fun AIGeneratorSection(
     onKeywordChange: (String) -> Unit,
     onFileSelected: (Uri) -> Unit,
     onGenerate: () -> Unit,
+    onSaveToNewSet: (String) -> Unit,
+    onSaveToExistingSet: (String) -> Unit,
 ) {
     val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let { onFileSelected(it) }
@@ -165,9 +184,12 @@ private fun AIGeneratorSection(
     Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         Text("Tạo học liệu từ PDF", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
 
+        // Lock the type once generation starts / a result exists — the saved domain
+        // must stay tied to what was actually generated (result.type).
+        val typeLocked = state.isGenerating || state.generatedResult != null
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = state.typeResult == 1, onClick = { onTypeSelected(1) }, label = { Text("Quiz") })
-            FilterChip(selected = state.typeResult == 2, onClick = { onTypeSelected(2) }, label = { Text("Flashcard") })
+            FilterChip(selected = state.typeResult == 1, onClick = { onTypeSelected(1) }, enabled = !typeLocked, label = { Text("Quiz") })
+            FilterChip(selected = state.typeResult == 2, onClick = { onTypeSelected(2) }, enabled = !typeLocked, label = { Text("Flashcard") })
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
@@ -197,16 +219,17 @@ private fun AIGeneratorSection(
         }
 
         state.jobStatus?.let { status ->
-            val label = when (status.status) {
-                "PENDING" -> "Đang chờ xử lý…"
-                "RUNNING" -> "Đang tạo… ${status.progress?.let { "$it%" } ?: ""}"
-                "DONE" -> "Tạo xong!"
-                "FAILED" -> "Thất bại: ${status.error ?: "lỗi không xác định"}"
-                "CANCELLED" -> "Đã huỷ"
+            val normalized = status.status.lowercase()
+            val label = when (normalized) {
+                "pending" -> "Đang chờ xử lý…"
+                "processing" -> "Đang tạo… ${status.progress?.let { "$it%" } ?: ""}"
+                "completed" -> "Tạo xong!"
+                "failed" -> "Thất bại: ${status.error ?: "lỗi không xác định"}"
+                "cancelled" -> "Đã huỷ"
                 else -> status.status
             }
             Text(label, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            if (status.status in setOf("PENDING", "RUNNING")) {
+            if (normalized in setOf("pending", "processing")) {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
             }
         }
@@ -218,6 +241,103 @@ private fun AIGeneratorSection(
         ) {
             if (state.isGenerating) CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp), strokeWidth = 2.dp)
             Text("Tạo học liệu")
+        }
+
+        // Completed result: preview + save-to-set.
+        state.generatedResult?.let { result ->
+            GeneratedResultPreview(
+                state = state,
+                result = result,
+                onSaveToNewSet = onSaveToNewSet,
+                onSaveToExistingSet = onSaveToExistingSet,
+            )
+        }
+    }
+}
+
+@Composable
+private fun GeneratedResultPreview(
+    state: AiScreenState,
+    result: com.examio.app.features.ai.models.JobResult,
+    onSaveToNewSet: (String) -> Unit,
+    onSaveToExistingSet: (String) -> Unit,
+) {
+    var newSetTitle by remember { mutableStateOf("") }
+
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+        val count = result.quizzes?.size ?: result.flashcards?.size ?: 0
+        Text("Kết quả ($count)", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+
+        // Preview a handful so the list stays light.
+        result.quizzes?.take(5)?.forEach { q ->
+            ExamioCard {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(q.question, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                    q.options.forEach { opt ->
+                        val correct = opt == q.answer
+                        Text(
+                            (if (correct) "✓ " else "• ") + opt,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (correct) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+        }
+        result.flashcards?.take(5)?.forEach { c ->
+            ExamioCard {
+                Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(c.question, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurface)
+                    Text(c.answer, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            }
+        }
+        if (count > 5) {
+            Text("… và ${count - 5} mục khác", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+
+        if (state.savedCount != null) {
+            Text("Đã lưu ${state.savedCount} mục vào bộ.", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
+        } else {
+            Text("Lưu vào bộ", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+
+            // Save into a new set.
+            OutlinedTextField(
+                value = newSetTitle,
+                onValueChange = { newSetTitle = it },
+                label = { Text("Tên bộ mới") },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = !state.isSaving,
+            )
+            Button(
+                onClick = { onSaveToNewSet(newSetTitle) },
+                modifier = Modifier.fillMaxWidth(),
+                enabled = newSetTitle.isNotBlank() && !state.isSaving,
+            ) {
+                if (state.isSaving) CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp), strokeWidth = 2.dp)
+                Text("Tạo bộ mới & lưu")
+            }
+
+            // Or save into an existing set — keyed off the result's own type.
+            val existing: List<Pair<String, String>> = if (result.type == "quiz") {
+                state.quizSets.map { it.id to it.title }
+            } else {
+                state.flashcardSets.map { it.id to it.title }
+            }
+            if (existing.isNotEmpty()) {
+                Text("Hoặc chọn bộ có sẵn:", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                existing.take(20).forEach { (id, title) ->
+                    OutlinedButton(
+                        onClick = { onSaveToExistingSet(id) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !state.isSaving,
+                    ) { Text(title) }
+                }
+            }
+        }
+
+        state.saveError?.let {
+            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

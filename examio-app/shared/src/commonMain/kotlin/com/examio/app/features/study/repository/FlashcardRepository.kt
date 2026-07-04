@@ -5,6 +5,7 @@ import com.examio.app.features.study.api.StudentMaterialsApiService
 import com.examio.app.features.study.models.CreateFlashcardRequest
 import com.examio.app.features.study.models.CreateFlashcardSetRequest
 import com.examio.app.features.study.models.CreateLabelRequest
+import com.examio.app.features.study.models.SaveHistoryToFlashcardSetRequest
 import com.examio.app.features.study.models.UpdateFlashcardRequest
 import com.examio.app.features.study.models.UpdateLabelRequest
 
@@ -24,6 +25,7 @@ class FlashcardRepository(
     suspend fun create(request: CreateFlashcardSetRequest) = flashcards.create(request)
     suspend fun update(id: String, request: CreateFlashcardSetRequest) = flashcards.update(id, request)
     suspend fun delete(id: String) = flashcards.delete(id)
+    suspend fun saveHistoryToFlashcardSet(request: SaveHistoryToFlashcardSetRequest) = flashcards.saveHistoryToFlashcardSet(request)
 
     // Flashcard CRUD
     suspend fun cards(setId: String, page: Int = 1, limit: Int = 100) = flashcards.flashcards(setId, page, limit)

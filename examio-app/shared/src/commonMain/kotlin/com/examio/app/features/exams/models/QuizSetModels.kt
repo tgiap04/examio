@@ -81,3 +81,22 @@ data class QuizSetLabelsResponse(
     val labels: List<QuizSetLabel>,
     val unlabeledCount: Int = 0,
 )
+
+// Persist an AI generation history into one or more quiz sets (mirrors FE
+// POST /quizsets/save-history-to-quizset). Provide labelId to reuse a label,
+// or labelName + labelColor to create a new one.
+@Serializable
+data class SaveHistoryToQuizsetRequest(
+    val quizsetIds: List<String>,
+    val historyId: String,
+    val labelId: String? = null,
+    val labelName: String? = null,
+    val labelColor: String? = null,
+)
+
+@Serializable
+data class SaveHistoryResult(
+    val createdCount: Int = 0,
+    val updatedCount: Int? = null,
+    val skippedCount: Int? = null,
+)
