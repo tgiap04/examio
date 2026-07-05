@@ -54,6 +54,22 @@ Per user, removed the keyword field from generation on both platforms. `generate
 ## Bugfix (2026-07-04): file picker strands user on system screen (Android)
 Root cause: `aiGenerateType` (AI overlay gate in `ExamioApp.kt`) used plain `remember` → when the system file picker foregrounds and Android recreates MainActivity (guaranteed with "Don't keep activities"), the overlay reset to null on return and the picker result (registered inside the now-uncomposed AiScreen) was dropped. Fix: `rememberSaveable` for `aiGenerateType` so the overlay + launcher survive recreation and the pending file result is redelivered. Verified: assembleDebug passes. (Note: could not repro headlessly — logcat needed if it persists; likely a stale-Activity-context crash-on-recreate would be the next suspect.)
 
+## Bugfix (2026-07-05): token refresh never worked → "Invalid or expired token" ~15m after login
+Root cause (proven from Ktor 2.3.12 source): Android `AuthInterceptor` drove the 401 refresh from a
+`try/catch (ClientRequestException)` around `execute(request)`, but that catch is **dead code**.
+`expectSuccess=true` installs `HttpCallValidator`, which registers its own OUTER `HttpSend` interceptor
+(`HttpSend` wraps interceptors last-registered-inward; the validator registered at client-build is outer,
+`AuthInterceptor.installOn` runs after so it's inner). The validator's `validateResponse()` throws the 401
+AFTER our inner `execute()` returns — so `execute()` never throws here and the refresh never ran; the raw
+401 surfaced (BE `auth.guard.ts` message). Access token TTL = `ACCESS_TOKEN_EXPIRATION || '15m'`; BE login
+returns `refreshToken` in JSON body and `POST /auth/refresh` accepts it from body → contract was fine.
+- **Android fix:** inspect `execute(request).response.status` directly (canonical Ktor pattern), refresh +
+  retry once on 401, return the 401 call unretried when refresh fails (outer validator surfaces it).
+- **iOS fix:** `ExamioAPIClient` had NO refresh at all — added single-flight `TokenRefresher` actor +
+  401→refresh→retry-once in `perform` and `delete`; shared `SessionKeychain` read/write.
+- Verified: `:androidApp:assembleDebug` OK; iOS `xcodebuild -sdk iphonesimulator` BUILD SUCCEEDED. Resolves
+  the earlier "iOS lacks auto token-refresh" deferred risk.
+
 ## Key constraints (backend contract, reuse as-is)
 - `POST /ai/generate-from-file` (multipart PDF, `typeResult` 1=quiz/2=flashcard, `quantityQuizz|quantityFlashcard` ≤50, `isNarrowSearch`, `keyword`) → `{jobId}`.
 - Poll `GET /ai/job/{jobId}` → `completed` → `result.{quizzes|flashcards}` + `historyId`.
