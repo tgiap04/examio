@@ -17,9 +17,7 @@ class AIGeneratorRepository(
         file: PlatformFile,
         typeResult: Int,
         quantity: Int,
-        isNarrowSearch: Boolean = false,
-        keyword: String? = null,
-    ) = generatorApi.generateFromFile(file, typeResult, quantity, isNarrowSearch, keyword)
+    ) = generatorApi.generateFromFile(file, typeResult, quantity)
 
     fun pollJob(jobId: String): Flow<JobStatus> = jobPoller.poll(jobId)
 }

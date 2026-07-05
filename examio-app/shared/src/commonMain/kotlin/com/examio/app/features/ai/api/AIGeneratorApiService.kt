@@ -19,8 +19,6 @@ class AIGeneratorApiService(
         file: PlatformFile,
         typeResult: Int,
         quantity: Int,
-        isNarrowSearch: Boolean = false,
-        keyword: String? = null,
     ): ApiResult<GenerateJobResponse> = safeApiCall {
         multipartHelper.upload(
             url = "${ApiEndpoints.AI}/generate-from-file",
@@ -30,8 +28,7 @@ class AIGeneratorApiService(
                 put("typeResult", typeResult.toString())
                 if (typeResult == 1) put("quantityQuizz", quantity.toString())
                 else put("quantityFlashcard", quantity.toString())
-                put("isNarrowSearch", isNarrowSearch.toString())
-                if (keyword != null) put("keyword", keyword)
+                put("isNarrowSearch", "false")
             },
         )
     }

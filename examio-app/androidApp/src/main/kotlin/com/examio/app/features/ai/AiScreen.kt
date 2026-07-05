@@ -74,20 +74,12 @@ fun AiScreen(
             FilterChip(selected = state.typeResult == 2, onClick = { vm.onTypeSelected(2) }, enabled = !typeLocked, label = { Text("Flashcard") })
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-            OutlinedTextField(
-                value = state.quantity.toString(),
-                onValueChange = { it.toIntOrNull()?.let(vm::onQuantityChange) },
-                label = { Text("Số lượng") },
-                modifier = Modifier.weight(0.8f),
-            )
-            OutlinedTextField(
-                value = state.keyword,
-                onValueChange = vm::onKeywordChange,
-                label = { Text("Từ khóa") },
-                modifier = Modifier.weight(1.2f),
-            )
-        }
+        OutlinedTextField(
+            value = state.quantity.toString(),
+            onValueChange = { it.toIntOrNull()?.let(vm::onQuantityChange) },
+            label = { Text("Số lượng") },
+            modifier = Modifier.fillMaxWidth(),
+        )
 
         val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             uri?.let(vm::onFileSelected)

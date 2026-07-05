@@ -37,19 +37,12 @@ struct AiView: View {
                     }
                 }
 
-                HStack(spacing: 10) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Số lượng").font(.caption).foregroundStyle(.secondary)
-                        TextField("5", value: $vm.quantity, format: .number)
-                            .textFieldStyle(.roundedBorder)
-                            .keyboardType(.numberPad)
-                            .frame(width: 72)
-                    }
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Từ khóa").font(.caption).foregroundStyle(.secondary)
-                        TextField("Tuỳ chọn", text: $vm.keyword)
-                            .textFieldStyle(.roundedBorder)
-                    }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Số lượng").font(.caption).foregroundStyle(.secondary)
+                    TextField("5", value: $vm.quantity, format: .number)
+                        .textFieldStyle(.roundedBorder)
+                        .keyboardType(.numberPad)
+                        .frame(width: 72)
                 }
 
                 Button(action: { showFilePicker = true }) {

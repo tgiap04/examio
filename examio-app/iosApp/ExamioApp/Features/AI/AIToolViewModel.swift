@@ -58,7 +58,6 @@ final class AIToolViewModel: ObservableObject {
     // generator inputs
     @Published var typeResult: Int = 1        // 1 = quiz, 2 = flashcard
     @Published var quantity: Int = 5
-    @Published var keyword = ""
     @Published var selectedFileName: String?
     @Published var isGenerating = false
     @Published var jobStatus: JobStatusResponse?
@@ -95,13 +94,11 @@ final class AIToolViewModel: ObservableObject {
 
         Task {
             do {
-                var fields: [(String, String)] = [
+                let fields: [(String, String)] = [
                     ("typeResult", "\(typeResult)"),
                     (typeResult == 1 ? "quantityQuizz" : "quantityFlashcard", "\(quantity)"),
                     ("isNarrowSearch", "false"),
                 ]
-                let kw = keyword.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !kw.isEmpty { fields.append(("keyword", kw)) }
 
                 let response: GenerateJobResponse = try await api.uploadMultipartWithFields(
                     "/ai/generate-from-file",
