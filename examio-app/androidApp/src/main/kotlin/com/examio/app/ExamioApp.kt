@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,7 +55,10 @@ fun ExamioApp(
     var showProfile by remember { mutableStateOf(false) }
     var examNav by remember { mutableStateOf<ExamNavState>(ExamNavState.Idle) }
     // Non-null while the AI generator overlay is open; holds the preset typeResult (1=quiz, 2=flashcard).
-    var aiGenerateType by remember { mutableStateOf<Int?>(null) }
+    // rememberSaveable so the overlay survives Activity recreation while the system file picker is
+    // foregrounded (guaranteed with "Don't keep activities", common under memory pressure) — otherwise
+    // the picked file returns to a recomposed screen where the overlay has been reset to null.
+    var aiGenerateType by rememberSaveable { mutableStateOf<Int?>(null) }
 
     // Restore the persisted session on startup so a reload doesn't force re-login.
     // restoreSession() reads stored tokens, calls currentUser(), falls back to refresh()
