@@ -51,6 +51,9 @@ Per user request, stripped the AI-teacher chat AND upload-history sections — t
 ## Follow-up (2026-07-04, later): removed "từ khóa" (keyword) input
 Per user, removed the keyword field from generation on both platforms. `generateFromFile` no longer takes `keyword`/`isNarrowSearch` (API service now hardcodes `isNarrowSearch=false`); dropped keyword state/UI in Android VM+AiScreen and iOS VM+AiView. Verified: Android compile + shared tests pass; iOS simulator BUILD SUCCEEDED; no lingering `keyword` refs.
 
+## Bugfix (2026-07-04): file picker strands user on system screen (Android)
+Root cause: `aiGenerateType` (AI overlay gate in `ExamioApp.kt`) used plain `remember` → when the system file picker foregrounds and Android recreates MainActivity (guaranteed with "Don't keep activities"), the overlay reset to null on return and the picker result (registered inside the now-uncomposed AiScreen) was dropped. Fix: `rememberSaveable` for `aiGenerateType` so the overlay + launcher survive recreation and the pending file result is redelivered. Verified: assembleDebug passes. (Note: could not repro headlessly — logcat needed if it persists; likely a stale-Activity-context crash-on-recreate would be the next suspect.)
+
 ## Key constraints (backend contract, reuse as-is)
 - `POST /ai/generate-from-file` (multipart PDF, `typeResult` 1=quiz/2=flashcard, `quantityQuizz|quantityFlashcard` ≤50, `isNarrowSearch`, `keyword`) → `{jobId}`.
 - Poll `GET /ai/job/{jobId}` → `completed` → `result.{quizzes|flashcards}` + `historyId`.
