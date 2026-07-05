@@ -24,8 +24,7 @@ import com.examio.app.features.exams.ExamNavState
 import com.examio.app.features.exams.ExamResultScreen
 import com.examio.app.features.exams.ExamTakingScreen
 import com.examio.app.features.ai.AiScreen
-import com.examio.app.features.ai.AiSection
-import com.examio.app.features.ai.repository.AIChatRepository
+import com.examio.app.features.ai.repository.AIGeneratorRepository
 import com.examio.app.features.exams.repository.ExamRepository
 import com.examio.app.features.study.api.StudentMaterialsApiService
 import com.examio.app.features.study.repository.FlashcardRepository
@@ -48,7 +47,7 @@ fun ExamioApp(
     studentMaterialsApi: StudentMaterialsApiService,
     historyRepository: HistoryRepository,
     examRepository: ExamRepository,
-    aiRepository: AIChatRepository,
+    aiRepository: AIGeneratorRepository,
 ) {
     var authState by remember { mutableStateOf<NavigationAuthState>(NavigationAuthState.Loading) }
     var selectedTab by remember { mutableStateOf(MainTab.TaiLieu) }
@@ -116,7 +115,6 @@ fun ExamioApp(
             aiRepository = aiRepository,
             examRepository = examRepository,
             flashcardRepository = flashcardRepository,
-            initialSection = AiSection.Tool,
             initialTypeResult = type,
             onClose = { aiGenerateType = null },
             modifier = Modifier.fillMaxSize(),

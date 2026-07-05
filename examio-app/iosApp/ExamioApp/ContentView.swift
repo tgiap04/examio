@@ -103,7 +103,7 @@ struct DeThiView: View {
         }
         .background(Color.examioCanvas)
         .sheet(isPresented: $showAi) {
-            AiView(initialSection: .tool, initialTypeResult: 1, onClose: { showAi = false })
+            AiView(initialTypeResult: 1, onClose: { showAi = false })
         }
     }
 }

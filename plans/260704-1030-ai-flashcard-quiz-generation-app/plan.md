@@ -41,6 +41,13 @@ The AI generation feature is **already coded on both platforms but orphaned** (n
 
 **Track structure:** P01→P02 is shared foundation. Android (03→04) and iOS (05→06) run in parallel after P02 — no cross-track blocking. P07 integrates both.
 
+## Follow-up (2026-07-04, later): removed "Giáo viên AI" chat
+Per user request, stripped the AI-teacher chat AND upload-history sections — the AI screen is now a single-purpose generator (quiz/flashcard only), no tab picker. Removed dead code both platforms:
+- Shared: deleted `AIChatApiService`, `SubjectApiService`, `AIChatModels`, `SubjectModels`, `SSEClient` (expect+2 actuals); slimmed `AIGeneratorApiService` (generate + job status only) + `AIGeneratorModels`; `AIChatRepository` → **`AIGeneratorRepository`** (generator-only).
+- Android: `AIToolViewModel`/`AiScreen` generator-only; deleted `AiModels.kt` (AiSection/AiChatMessage); DI + `ExamioApp` updated.
+- iOS: `AIToolViewModel.swift`/`AiView.swift` generator-only; removed AiSection + chat/history models & UI; entry sheets updated.
+- Verified: Android assembleDebug + shared tests pass; iOS simulator BUILD SUCCEEDED; zero dangling refs to removed classes.
+
 ## Key constraints (backend contract, reuse as-is)
 - `POST /ai/generate-from-file` (multipart PDF, `typeResult` 1=quiz/2=flashcard, `quantityQuizz|quantityFlashcard` ≤50, `isNarrowSearch`, `keyword`) → `{jobId}`.
 - Poll `GET /ai/job/{jobId}` → `completed` → `result.{quizzes|flashcards}` + `historyId`.
