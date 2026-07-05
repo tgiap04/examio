@@ -15,7 +15,7 @@ struct StudyView: View {
         }
         .background(Color.examioCanvas)
         .sheet(isPresented: $showAi) {
-            AiView(initialSection: .tool, initialTypeResult: 2, onClose: { showAi = false })
+            AiView(initialTypeResult: 2, onClose: { showAi = false })
         }
     }
 }

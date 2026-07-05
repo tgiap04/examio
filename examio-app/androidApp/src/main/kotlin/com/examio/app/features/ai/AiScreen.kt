@@ -5,19 +5,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import com.examio.app.design.ExamioCard
-import com.examio.app.design.ExamioCardShape
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -26,187 +22,76 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.examio.app.features.ai.models.RecentUpload
-import com.examio.app.features.ai.repository.AIChatRepository
+import com.examio.app.design.ExamioCard
+import com.examio.app.features.ai.models.JobResult
+import com.examio.app.features.ai.repository.AIGeneratorRepository
 import com.examio.app.features.exams.repository.ExamRepository
 import com.examio.app.features.study.repository.FlashcardRepository
 
 @Composable
 fun AiScreen(
-    aiRepository: AIChatRepository,
+    aiRepository: AIGeneratorRepository,
     examRepository: ExamRepository,
     flashcardRepository: FlashcardRepository,
     modifier: Modifier = Modifier,
-    initialSection: AiSection = AiSection.Teacher,
     initialTypeResult: Int? = null,
     onClose: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val vm = remember { AIToolViewModel(aiRepository, examRepository, flashcardRepository, context) }
     val state by vm.state.collectAsState()
-    var selectedSection by remember { mutableStateOf(initialSection) }
 
     // When opened from a contextual entry (Study/DeThi), preset the generation type.
-    androidx.compose.runtime.LaunchedEffect(Unit) {
-        initialTypeResult?.let(vm::onTypeSelected)
-    }
+    LaunchedEffect(Unit) { initialTypeResult?.let(vm::onTypeSelected) }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
     ) {
         if (onClose != null) {
             TextButton(onClick = onClose) { Text("‹ Quay lại") }
         }
-        Text("AI", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.onBackground)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            AiSection.entries.forEach { section ->
-                FilterChip(
-                    selected = selectedSection == section,
-                    onClick = { selectedSection = section },
-                    label = { Text(section.label) },
-                )
-            }
-        }
-        when (selectedSection) {
-            AiSection.Teacher -> AIChatSection(
-                state = state,
-                onInputChange = vm::onInputChange,
-                onSend = vm::sendMessage,
-            )
-            AiSection.Tool -> AIGeneratorSection(
-                state = state,
-                onTypeSelected = vm::onTypeSelected,
-                onQuantityChange = vm::onQuantityChange,
-                onKeywordChange = vm::onKeywordChange,
-                onFileSelected = vm::onFileSelected,
-                onGenerate = vm::generate,
-                onSaveToNewSet = vm::saveToNewSet,
-                onSaveToExistingSet = vm::saveToExistingSet,
-            )
-            AiSection.History -> AIHistorySection(
-                state = state,
-                onRetry = vm::loadUploads,
-                onDelete = vm::deleteUpload,
-            )
-        }
-    }
-}
-
-// ── Teacher / Chat ────────────────────────────────────────────────────────────
-
-@Composable
-private fun AIChatSection(
-    state: AiScreenState,
-    onInputChange: (String) -> Unit,
-    onSend: () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxSize()) {
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            items(state.messages) { msg -> ChatMessageBubble(msg) }
-        }
-        state.chatError?.let {
-            Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-        }
-        OutlinedTextField(
-            value = state.input,
-            onValueChange = onInputChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text("Nhập câu hỏi cho giáo viên AI") },
-            enabled = !state.isSending,
-        )
-        Button(
-            onClick = onSend,
-            modifier = Modifier.fillMaxWidth(),
-            enabled = state.input.isNotBlank() && !state.isSending,
-        ) {
-            if (state.isSending) CircularProgressIndicator(modifier = Modifier.padding(end = 8.dp), strokeWidth = 2.dp)
-            Text("Gửi")
-        }
-    }
-}
-
-@Composable
-private fun ChatMessageBubble(message: AiChatMessage) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (message.isUser) Arrangement.End else Arrangement.Start,
-    ) {
-        Text(
-            message.text,
-            modifier = Modifier
-                .fillMaxWidth(0.82f)
-                .clip(RoundedCornerShape(18.dp))
-                .background(
-                    if (message.isUser) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                    else MaterialTheme.colorScheme.surface,
-                )
-                .padding(14.dp),
-            color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.bodyMedium,
-        )
-    }
-}
-
-// ── Generator ─────────────────────────────────────────────────────────────────
-
-@Composable
-private fun AIGeneratorSection(
-    state: AiScreenState,
-    onTypeSelected: (Int) -> Unit,
-    onQuantityChange: (Int) -> Unit,
-    onKeywordChange: (String) -> Unit,
-    onFileSelected: (Uri) -> Unit,
-    onGenerate: () -> Unit,
-    onSaveToNewSet: (String) -> Unit,
-    onSaveToExistingSet: (String) -> Unit,
-) {
-    val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let { onFileSelected(it) }
-    }
-
-    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        Text("Tạo học liệu từ PDF", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
+        Text("Tạo học liệu từ PDF", style = MaterialTheme.typography.headlineSmall, color = MaterialTheme.colorScheme.onBackground)
 
         // Lock the type once generation starts / a result exists — the saved domain
         // must stay tied to what was actually generated (result.type).
         val typeLocked = state.isGenerating || state.generatedResult != null
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(selected = state.typeResult == 1, onClick = { onTypeSelected(1) }, enabled = !typeLocked, label = { Text("Quiz") })
-            FilterChip(selected = state.typeResult == 2, onClick = { onTypeSelected(2) }, enabled = !typeLocked, label = { Text("Flashcard") })
+            FilterChip(selected = state.typeResult == 1, onClick = { vm.onTypeSelected(1) }, enabled = !typeLocked, label = { Text("Quiz") })
+            FilterChip(selected = state.typeResult == 2, onClick = { vm.onTypeSelected(2) }, enabled = !typeLocked, label = { Text("Flashcard") })
         }
 
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
             OutlinedTextField(
                 value = state.quantity.toString(),
-                onValueChange = { it.toIntOrNull()?.let(onQuantityChange) },
+                onValueChange = { it.toIntOrNull()?.let(vm::onQuantityChange) },
                 label = { Text("Số lượng") },
                 modifier = Modifier.weight(0.8f),
             )
             OutlinedTextField(
                 value = state.keyword,
-                onValueChange = onKeywordChange,
+                onValueChange = vm::onKeywordChange,
                 label = { Text("Từ khóa") },
                 modifier = Modifier.weight(1.2f),
             )
         }
 
+        val filePicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri?.let(vm::onFileSelected)
+        }
         OutlinedButton(
             onClick = { filePicker.launch("application/pdf") },
             modifier = Modifier.fillMaxWidth(),
@@ -235,7 +120,7 @@ private fun AIGeneratorSection(
         }
 
         Button(
-            onClick = onGenerate,
+            onClick = vm::generate,
             modifier = Modifier.fillMaxWidth(),
             enabled = state.selectedFileName != null && !state.isGenerating,
         ) {
@@ -248,8 +133,8 @@ private fun AIGeneratorSection(
             GeneratedResultPreview(
                 state = state,
                 result = result,
-                onSaveToNewSet = onSaveToNewSet,
-                onSaveToExistingSet = onSaveToExistingSet,
+                onSaveToNewSet = vm::saveToNewSet,
+                onSaveToExistingSet = vm::saveToExistingSet,
             )
         }
     }
@@ -258,7 +143,7 @@ private fun AIGeneratorSection(
 @Composable
 private fun GeneratedResultPreview(
     state: AiScreenState,
-    result: com.examio.app.features.ai.models.JobResult,
+    result: JobResult,
     onSaveToNewSet: (String) -> Unit,
     onSaveToExistingSet: (String) -> Unit,
 ) {
@@ -338,72 +223,6 @@ private fun GeneratedResultPreview(
 
         state.saveError?.let {
             Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-        }
-    }
-}
-
-// ── History ────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun AIHistorySection(
-    state: AiScreenState,
-    onRetry: () -> Unit,
-    onDelete: (String) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Lịch sử tải lên", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSurface)
-
-        when {
-            state.uploadsLoading -> Box(Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-            }
-            state.uploadsError != null -> Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                Text(state.uploadsError, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
-                TextButton(onClick = onRetry) { Text("Thử lại") }
-            }
-            state.uploads.isEmpty() -> Text(
-                "Chưa có file nào được tải lên.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            else -> state.uploads.forEach { upload ->
-                UploadCard(upload = upload, onDelete = { onDelete(upload.id) })
-            }
-        }
-    }
-}
-
-@Composable
-private fun UploadCard(upload: RecentUpload, onDelete: () -> Unit) {
-    ExamioCard(
-        modifier = Modifier.fillMaxWidth(),
-        shape = ExamioCardShape,
-    ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    upload.filename,
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier.weight(1f),
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Text(
-                    upload.processingStatus ?: "",
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.labelSmall,
-                )
-            }
-            val detail = buildString {
-                upload.quizHistory?.let { append("${it.quizCount} quiz") }
-                upload.flashcardHistory?.let {
-                    if (isNotEmpty()) append(" · ")
-                    append("${it.flashcardCount} flashcard")
-                }
-            }
-            if (detail.isNotEmpty()) {
-                Text(detail, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-            }
-            TextButton(onClick = onDelete) { Text("Xoá", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelSmall) }
         }
     }
 }

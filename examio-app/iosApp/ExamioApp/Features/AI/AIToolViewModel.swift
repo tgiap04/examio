@@ -2,23 +2,6 @@ import Foundation
 
 // MARK: - Models
 
-struct RecentUploadItem: Decodable, Identifiable {
-    let id: String
-    let filename: String
-    let processingStatus: String?
-    let createdAt: String?
-    let quizHistory: UploadQuizSummary?
-    let flashcardHistory: UploadFlashcardSummary?
-}
-
-struct UploadQuizSummary: Decodable {
-    let quizCount: Int
-}
-
-struct UploadFlashcardSummary: Decodable {
-    let flashcardCount: Int
-}
-
 struct GenerateJobResponse: Decodable {
     let jobId: String
 }
@@ -68,38 +51,11 @@ struct SaveHistoryToQuizsetBody: Encodable { let quizsetIds: [String]; let histo
 struct SaveHistoryToFlashcardSetBody: Encodable { let flashcardsetIds: [String]; let historyId: String }
 struct SaveHistoryResult: Decodable { let createdCount: Int }
 
-struct AIChatMessageItem: Identifiable {
-    let id = UUID()
-    let text: String
-    let isUser: Bool
-}
-
-struct SendMessageBody: Encodable {
-    let chatId: String?
-    let content: String
-    let documentIds: [String]
-}
-
-struct SendMessageResponse: Decodable {
-    let id: String
-    let chatId: String
-    let role: String
-    let content: String
-}
-
 // MARK: - ViewModel
 
 @MainActor
 final class AIToolViewModel: ObservableObject {
-    // section
-    @Published var selectedSection: AiSection = .teacher
-    // chat
-    @Published var messages: [AIChatMessageItem] = []
-    @Published var input = ""
-    @Published var isSending = false
-    @Published var chatError: String?
-    private var activeChatId: String?
-    // generator
+    // generator inputs
     @Published var typeResult: Int = 1        // 1 = quiz, 2 = flashcard
     @Published var quantity: Int = 5
     @Published var keyword = ""
@@ -116,40 +72,9 @@ final class AIToolViewModel: ObservableObject {
     @Published var isSaving = false
     @Published var saveError: String?
     @Published var savedCount: Int?
-    // history
-    @Published var uploads: [RecentUploadItem] = []
-    @Published var uploadsLoading = false
-    @Published var uploadsError: String?
 
     private let api = ExamioAPIClient.shared
     private var pollTask: Task<Void, Never>?
-
-    init() {
-        Task { await loadUploads() }
-    }
-
-    // ── Chat ──────────────────────────────────────────────────────────────
-
-    func sendMessage() {
-        let text = input.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, !isSending else { return }
-        input = ""
-        isSending = true
-        chatError = nil
-        messages.append(AIChatMessageItem(text: text, isUser: true))
-
-        Task {
-            do {
-                let body = SendMessageBody(chatId: activeChatId, content: text, documentIds: [])
-                let reply: SendMessageResponse = try await api.postJSON("/ai/chat", body: body)
-                activeChatId = reply.chatId
-                messages.append(AIChatMessageItem(text: reply.content, isUser: false))
-            } catch {
-                chatError = error.localizedDescription
-            }
-            isSending = false
-        }
-    }
 
     // ── Generator ─────────────────────────────────────────────────────────
 
@@ -214,7 +139,6 @@ final class AIToolViewModel: ObservableObject {
                     isGenerating = false
                     if status.status.lowercased() == "completed" {
                         generatedResult = status.result
-                        await loadUploads()
                         await loadTargetSets()
                     }
                     return
@@ -222,26 +146,6 @@ final class AIToolViewModel: ObservableObject {
             }
             jobStatus = JobStatusResponse(jobId: jobId, status: "failed", progress: nil, message: nil, error: "Hết thời gian chờ", result: nil)
             isGenerating = false
-        }
-    }
-
-    // ── History ───────────────────────────────────────────────────────────
-
-    func loadUploads() async {
-        uploadsLoading = true
-        uploadsError = nil
-        do {
-            uploads = try await api.get("/ai/recent-uploads", query: ["limit": "20"])
-        } catch {
-            uploadsError = error.localizedDescription
-        }
-        uploadsLoading = false
-    }
-
-    func deleteUpload(id: String) {
-        Task {
-            try? await api.delete("/ai/upload/\(id)")
-            await loadUploads()
         }
     }
 
@@ -316,16 +220,5 @@ final class AIToolViewModel: ObservableObject {
         )
         savedCount = r.createdCount
         isSaving = false
-    }
-}
-
-enum AiSection: CaseIterable {
-    case teacher, tool, history
-    var label: String {
-        switch self {
-        case .teacher: "Giáo viên AI"
-        case .tool: "Tạo đề"
-        case .history: "Lịch sử"
-        }
     }
 }
