@@ -28,7 +28,6 @@ data class AiScreenState(
     // generator inputs
     val typeResult: Int = 1,
     val quantity: Int = 5,
-    val keyword: String = "",
     val selectedFileName: String? = null,
     val isGenerating: Boolean = false,
     val jobStatus: JobStatus? = null,
@@ -65,10 +64,6 @@ class AIToolViewModel(
         _state.value = _state.value.copy(quantity = quantity.coerceIn(1, 50))
     }
 
-    fun onKeywordChange(keyword: String) {
-        _state.value = _state.value.copy(keyword = keyword)
-    }
-
     fun onFileSelected(uri: Uri) {
         pendingUri = uri
         val name = resolveFilename(uri) ?: "file.pdf"
@@ -97,12 +92,10 @@ class AIToolViewModel(
                 mimeType = "application/pdf",
                 bytes = bytes,
             )
-            val keyword = _state.value.keyword.trim().takeIf { it.isNotEmpty() }
             when (val result = repository.generateFromFile(
                 file = platformFile,
                 typeResult = _state.value.typeResult,
                 quantity = _state.value.quantity,
-                keyword = keyword,
             )) {
                 is ApiResult.Success -> pollJob(result.data.jobId)
                 is ApiResult.HttpError -> _state.value = _state.value.copy(

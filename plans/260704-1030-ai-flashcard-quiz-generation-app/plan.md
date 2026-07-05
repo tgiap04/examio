@@ -48,6 +48,9 @@ Per user request, stripped the AI-teacher chat AND upload-history sections — t
 - iOS: `AIToolViewModel.swift`/`AiView.swift` generator-only; removed AiSection + chat/history models & UI; entry sheets updated.
 - Verified: Android assembleDebug + shared tests pass; iOS simulator BUILD SUCCEEDED; zero dangling refs to removed classes.
 
+## Follow-up (2026-07-04, later): removed "từ khóa" (keyword) input
+Per user, removed the keyword field from generation on both platforms. `generateFromFile` no longer takes `keyword`/`isNarrowSearch` (API service now hardcodes `isNarrowSearch=false`); dropped keyword state/UI in Android VM+AiScreen and iOS VM+AiView. Verified: Android compile + shared tests pass; iOS simulator BUILD SUCCEEDED; no lingering `keyword` refs.
+
 ## Key constraints (backend contract, reuse as-is)
 - `POST /ai/generate-from-file` (multipart PDF, `typeResult` 1=quiz/2=flashcard, `quantityQuizz|quantityFlashcard` ≤50, `isNarrowSearch`, `keyword`) → `{jobId}`.
 - Poll `GET /ai/job/{jobId}` → `completed` → `result.{quizzes|flashcards}` + `historyId`.
