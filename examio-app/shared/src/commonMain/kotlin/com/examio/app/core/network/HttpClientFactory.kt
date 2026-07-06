@@ -33,7 +33,10 @@ object HttpClientFactory {
                 connectTimeoutMillis = 15_000
                 socketTimeoutMillis = 30_000
             }
-            install(Logging) { level = LogLevel.INFO }
+            // No request logging in release builds — avoids leaking URLs/status to device logs.
+            install(Logging) {
+                level = if (config.environmentName == "release") LogLevel.NONE else LogLevel.INFO
+            }
             defaultRequest {
                 url(config.apiBaseUrl)
                 contentType(ContentType.Application.Json)
