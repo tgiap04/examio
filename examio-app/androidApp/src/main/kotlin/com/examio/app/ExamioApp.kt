@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.examio.app.core.network.ApiResult
+import com.examio.app.core.session.SessionEvents
 import com.examio.app.features.account.ProfileSheet
 import com.examio.app.features.account.repository.AccountRepository
 import com.examio.app.features.auth.AuthNavGraph
@@ -67,6 +68,14 @@ fun ExamioApp(
         authState = when (val result = authRepository.restoreSession()) {
             is ApiResult.Success -> NavigationAuthState.Authenticated(result.data.user.toSession())
             else -> NavigationAuthState.Unauthenticated
+        }
+    }
+
+    // Return to login the moment the session dies mid-use (unrecoverable 401 from the
+    // AuthInterceptor), so a revoked session doesn't leave the user stuck on authed screens.
+    LaunchedEffect(Unit) {
+        SessionEvents.expired.collect {
+            authState = NavigationAuthState.Unauthenticated
         }
     }
 

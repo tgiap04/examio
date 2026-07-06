@@ -1,6 +1,7 @@
 package com.examio.app.core.network
 
 import com.examio.app.core.config.AppConfig
+import com.examio.app.core.session.SessionEvents
 import com.examio.app.core.session.SessionTokens
 import com.examio.app.core.storage.SecureTokenStorage
 import com.examio.app.features.auth.models.AuthResponse
@@ -109,6 +110,7 @@ class AuthInterceptor(
 
         if (response.status.value !in 200..299) {
             tokenStorage.clearTokens()
+            SessionEvents.notifyExpired()
             return null
         }
 
@@ -116,6 +118,7 @@ class AuthInterceptor(
         val newAccess = refreshed?.let { it.accessToken ?: it.token }
         if (newAccess == null) {
             tokenStorage.clearTokens()
+            SessionEvents.notifyExpired()
             return null
         }
 
