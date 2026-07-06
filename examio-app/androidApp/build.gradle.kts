@@ -22,7 +22,13 @@ android {
         targetSdk = libs.versions.android.target.sdk.get().toInt()
         versionCode = 1
         versionName = "0.1.0"
-        buildConfigField("String", "API_BASE_URL", "\"http://10.0.2.2:3000\"")
+        // API base URL. Overridable per build (CI/release MUST inject an HTTPS prod URL via
+        // local.properties `apiBaseUrl=...` or `-PapiBaseUrl=...`); the dev default below is
+        // only for local emulator debug builds (cleartext to host loopback).
+        val apiBaseUrl = localProps.getProperty("apiBaseUrl")
+            ?: (project.findProperty("apiBaseUrl") as String?)
+            ?: "http://10.0.2.2:3000"
+        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
         // Secure-quiz AES key — must match BE/FE QUIZ_AES_KEY. Read from local.properties
         // (quizAesKey=...) or -PquizAesKey gradle property; never committed to source.
         val quizAesKey = localProps.getProperty("quizAesKey")
@@ -33,6 +39,20 @@ android {
 
     buildFeatures {
         buildConfig = true
+    }
+
+    buildTypes {
+        release {
+            // Shrink + obfuscate release code (raises the bar on reverse-engineering the
+            // embedded quiz key / logic). Keep-rules in proguard-rules.pro protect
+            // kotlinx.serialization + Ktor. Resource shrinking left off to avoid stripping
+            // Compose/theme resources. NOTE: requires an on-device release smoke test.
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+        }
     }
 
     compileOptions {
