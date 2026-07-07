@@ -58,6 +58,9 @@ final class ExamioAPIClient {
             response = try await session.data(for: request).1
         }
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            // A 401 that survives the refresh+replay means the session is dead — clear it
+            // and return the user to login (mirrors examio-fe + Android AuthInterceptor).
+            if (response as? HTTPURLResponse)?.statusCode == 401 { Self.handleSessionExpired() }
             throw APIError.invalidResponse
         }
     }
@@ -121,10 +124,15 @@ final class ExamioAPIClient {
         guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
         // Access token expires (~15m). On 401, refresh once (single-flight) and replay the
         // request with the fresh token; allowRefresh=false on the replay bounds it to one retry.
-        if http.statusCode == 401, allowRefresh, await refresher.refresh() {
-            var retried = request
-            attachToken(&retried)
-            return try await perform(retried, allowRefresh: false)
+        if http.statusCode == 401 {
+            if allowRefresh, await refresher.refresh() {
+                var retried = request
+                attachToken(&retried)
+                return try await perform(retried, allowRefresh: false)
+            }
+            // Refresh failed, or the replay itself came back 401 — the session is dead.
+            // Clear it and signal the UI to return to login (mirrors examio-fe + Android).
+            Self.handleSessionExpired()
         }
         guard (200..<300).contains(http.statusCode) else {
             let message = parseErrorMessage(data) ?? "HTTP \(http.statusCode)"
@@ -146,6 +154,21 @@ final class ExamioAPIClient {
         guard let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
         return obj["message"] as? String ?? obj["error"] as? String
     }
+
+    /// Clears the stored session and notifies the UI to return to login. Idempotent —
+    /// safe to call from multiple concurrent 401s. Posts on the main queue so SwiftUI
+    /// observers can update @Published state without a threading violation.
+    static func handleSessionExpired() {
+        SessionKeychain.clearAll()
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .examioSessionExpired, object: nil)
+        }
+    }
+}
+
+extension Notification.Name {
+    /// Posted when an authenticated request hits an unrecoverable 401 (refresh failed).
+    static let examioSessionExpired = Notification.Name("examio.sessionExpired")
 }
 
 /// Keychain read/write for the session tokens (service must match AuthViewModel's store).
@@ -178,6 +201,17 @@ private enum SessionKeychain {
         attributes[kSecValueData as String] = data
         attributes[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
         SecItemAdd(attributes as CFDictionary, nil)
+    }
+
+    static func clearAll() {
+        for account in ["accessToken", "refreshToken", "sessionId", "deviceId"] {
+            let query: [String: Any] = [
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: service,
+                kSecAttrAccount as String: account,
+            ]
+            SecItemDelete(query as CFDictionary)
+        }
     }
 }
 

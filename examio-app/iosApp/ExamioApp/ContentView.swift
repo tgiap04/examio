@@ -36,6 +36,9 @@ struct ContentView: View {
                     selectedTab = deepLink.targetTab
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: .examioSessionExpired)) { _ in
+                authViewModel.sessionExpired()
+            }
         } else {
             AuthFlowView(viewModel: authViewModel)
         }

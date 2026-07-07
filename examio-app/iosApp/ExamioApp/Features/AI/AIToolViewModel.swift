@@ -85,6 +85,9 @@ final class AIToolViewModel: ObservableObject {
 
     func generate() {
         guard let data = pendingFileData, let filename = pendingFileName else { return }
+        // Guard the request regardless of what the TextField allowed (matches Android's coerceIn).
+        let clampedQuantity = min(max(quantity, 1), 50)
+        quantity = clampedQuantity
         isGenerating = true
         generateError = nil
         jobStatus = nil
@@ -96,7 +99,7 @@ final class AIToolViewModel: ObservableObject {
             do {
                 let fields: [(String, String)] = [
                     ("typeResult", "\(typeResult)"),
-                    (typeResult == 1 ? "quantityQuizz" : "quantityFlashcard", "\(quantity)"),
+                    (typeResult == 1 ? "quantityQuizz" : "quantityFlashcard", "\(clampedQuantity)"),
                     ("isNarrowSearch", "false"),
                 ]
 
@@ -128,7 +131,21 @@ final class AIToolViewModel: ObservableObject {
                 elapsed += delayMs
                 delayMs = min(UInt64(Double(delayMs) * 1.5), 10_000)
 
-                guard let status: JobStatusResponse = try? await api.get("/ai/job/\(jobId)") else { continue }
+                let status: JobStatusResponse
+                do {
+                    status = try await api.get("/ai/job/\(jobId)")
+                } catch is CancellationError {
+                    return
+                } catch let APIError.server(message) {
+                    // Hard HTTP error (job failed / not found) — fail fast instead of polling
+                    // until timeout, mirroring the shared AiJobPoller's HttpError branch.
+                    jobStatus = JobStatusResponse(jobId: jobId, status: "failed", progress: nil, message: nil, error: message, result: nil)
+                    isGenerating = false
+                    return
+                } catch {
+                    // Transient network blip — keep polling.
+                    continue
+                }
                 jobStatus = status
                 // Backend emits lowercase pending|processing|completed|failed.
                 let terminal = ["completed", "failed", "cancelled"]
