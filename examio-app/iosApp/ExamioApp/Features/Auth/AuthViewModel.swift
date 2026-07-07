@@ -76,6 +76,14 @@ final class AuthViewModel: ObservableObject {
         successMessage = nil
     }
 
+    /// Called when an authenticated request hits an unrecoverable 401. The keychain has
+    /// already been cleared by ExamioAPIClient; flip the UI back to the login flow.
+    func sessionExpired() {
+        guard isAuthenticated else { return }
+        isAuthenticated = false
+        errorMessage = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+    }
+
     func completeOAuthCallback(url: URL) {
         guard url.scheme == "examio", url.host == "auth", url.path == "/callback" else { return }
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
