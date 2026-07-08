@@ -47,6 +47,7 @@ import com.examio.app.features.exams.room.ExamRoomsScreen
 fun DeThiScreen(
     examRepository: ExamRepository,
     onGenerateWithAi: () -> Unit = {},
+    onTakeSession: (sessionId: String, title: String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     val vm = remember { DeThiViewModel(examRepository) }
@@ -69,6 +70,7 @@ fun DeThiScreen(
         ExamRoomsScreen(
             examRepository = examRepository,
             onBack = { showRooms = false },
+            onTakeSession = onTakeSession,
             modifier = modifier,
         )
         return

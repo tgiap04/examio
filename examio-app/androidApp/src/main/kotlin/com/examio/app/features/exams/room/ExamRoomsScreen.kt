@@ -51,6 +51,7 @@ import com.examio.app.features.exams.repository.ExamRepository
 fun ExamRoomsScreen(
     examRepository: ExamRepository,
     onBack: () -> Unit,
+    onTakeSession: (sessionId: String, title: String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     var nav by remember { mutableStateOf<ExamRoomsNavState>(ExamRoomsNavState.List) }
@@ -75,6 +76,7 @@ fun ExamRoomsScreen(
             roomTitle = n.roomTitle,
             onBack = { nav = ExamRoomsNavState.List },
             onCreateSession = { nav = ExamRoomsNavState.CreateSession(n.roomId, n.roomTitle) },
+            onTakeSession = onTakeSession,
             modifier = modifier,
         )
         is ExamRoomsNavState.CreateSession -> CreateExamSessionScreen(
