@@ -47,8 +47,6 @@ import com.examio.app.features.exams.components.QuestionOptionRow
 import com.examio.app.features.exams.models.SecureSubmitResponse
 import com.examio.app.features.exams.repository.ExamRepository
 
-private val optionLabels = listOf("A", "B", "C", "D", "E", "F")
-
 @Composable
 fun ExamTakingScreen(
     examSessionId: String,
@@ -155,11 +153,12 @@ private fun ColumnScope.ExamBody(state: ExamTakingState, vm: ExamTakingViewModel
             }
         }
         itemsIndexed(question.options) { i, opt ->
+            val letter = answerLetter(i)
             QuestionOptionRow(
-                label = optionLabels.getOrElse(i) { "${i + 1}" },
+                label = letter,
                 text = opt,
-                selected = selected == opt,
-                onClick = { vm.selectAnswer(question.index, opt) },
+                selected = selected == letter,
+                onClick = { vm.selectAnswer(question.index, letter) },
             )
         }
     }
