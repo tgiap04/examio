@@ -48,6 +48,9 @@ class ExamRepository(
     suspend fun deleteExamSession(id: String) = sessions.delete(id)
     suspend fun availableLabels(roomId: String) = sessions.availableLabels(roomId)
     suspend fun searchUsers(query: String) = sessions.searchUsers(query)
+    suspend fun sessionAccess(id: String) = sessions.checkAccess(id)
+    suspend fun sessionInfo(id: String) = sessions.publicInfo(id)
+    suspend fun verifySessionCode(id: String, code: String) = sessions.verifyCode(id, code)
     suspend fun attempts(page: Int = 1, limit: Int = 20) = attempts.list(page, limit)
     /** Start/resume an attempt; unwraps the BE { examAttempt } envelope to the attempt itself. */
     suspend fun startAttempt(sessionId: String): ApiResult<ExamAttempt> =

@@ -28,6 +28,8 @@ import com.examio.app.features.exams.ExamTakingScreen
 import com.examio.app.features.ai.AiScreen
 import com.examio.app.features.ai.repository.AIGeneratorRepository
 import com.examio.app.features.exams.repository.ExamRepository
+import com.examio.app.features.exams.session.ExamSessionLandingScreen
+import com.examio.app.features.exams.session.JoinSessionScreen
 import com.examio.app.features.study.api.StudentMaterialsApiService
 import com.examio.app.features.study.repository.FlashcardRepository
 import com.examio.app.features.exams.MyExamsScreen
@@ -119,6 +121,24 @@ fun ExamioApp(
             )
             return
         }
+        ExamNavState.Joining -> {
+            JoinSessionScreen(
+                onBack = { examNav = ExamNavState.Idle },
+                onOpen = { sessionId -> examNav = ExamNavState.SessionLanding(sessionId) },
+                modifier = Modifier.fillMaxSize(),
+            )
+            return
+        }
+        is ExamNavState.SessionLanding -> {
+            ExamSessionLandingScreen(
+                sessionId = nav.sessionId,
+                examRepository = examRepository,
+                onBack = { examNav = ExamNavState.Idle },
+                onStart = { title -> examNav = ExamNavState.TakingExam(nav.sessionId, title) },
+                modifier = Modifier.fillMaxSize(),
+            )
+            return
+        }
         ExamNavState.Idle -> Unit
     }
 
@@ -157,11 +177,13 @@ fun ExamioApp(
             MainTab.BaiThi -> MyExamsScreen(
                 materialsApi = studentMaterialsApi,
                 onEnterExam = { sessionId, title -> examNav = ExamNavState.TakingExam(sessionId, title) },
+                onJoinSession = { examNav = ExamNavState.Joining },
                 modifier = modifier,
             )
             MainTab.DeThi -> DeThiScreen(
                 examRepository = examRepository,
                 onGenerateWithAi = { aiGenerateType = 1 },
+                onTakeSession = { sessionId, title -> examNav = ExamNavState.TakingExam(sessionId, title) },
                 modifier = modifier,
             )
             MainTab.LichSu -> LichSuScreen(historyRepository = historyRepository, modifier = modifier)

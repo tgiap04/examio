@@ -138,3 +138,44 @@ data class SearchUser(
     val name: String? = null,
     val email: String? = null,
 )
+
+// --- Study-session (join & take) ---
+
+@Serializable
+data class SessionAccessCheck(
+    val hasAccess: Boolean = false,
+    val accessType: String = "denied", // public / owner / whitelist / code_required / denied
+    val requiresCode: Boolean = false,
+)
+
+@Serializable
+data class SessionCreator(
+    val id: String,
+    val username: String? = null,
+    val name: String? = null,
+    val avatar: String? = null,
+)
+
+@Serializable
+data class SessionPublicInfo(
+    val id: String,
+    val title: String = "",
+    val description: String? = null,
+    val startTime: String? = null,
+    val endTime: String? = null,
+    val status: Int = 0,
+    val isPublic: Boolean = false,
+    val requiresCode: Boolean = false,
+    val creator: SessionCreator? = null,
+)
+
+@Serializable
+data class VerifyCodeRequest(
+    val accessCode: String,
+)
+
+@Serializable
+data class VerifyCodeResponse(
+    val valid: Boolean = false,
+    val message: String? = null,
+)

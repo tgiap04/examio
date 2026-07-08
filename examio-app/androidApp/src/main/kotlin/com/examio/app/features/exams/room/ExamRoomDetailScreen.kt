@@ -18,6 +18,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -48,11 +49,13 @@ fun ExamRoomDetailScreen(
     roomTitle: String,
     onBack: () -> Unit,
     onCreateSession: () -> Unit,
+    onTakeSession: (sessionId: String, title: String) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     val vm = remember(roomId) { ExamRoomDetailViewModel(roomId, examRepository) }
     val state by vm.state.collectAsState()
     var pendingDelete by remember { mutableStateOf<ExamSession?>(null) }
+    val roomName = state.room?.title ?: roomTitle
 
     Box(modifier = modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         LazyColumn(
@@ -99,7 +102,11 @@ fun ExamRoomDetailScreen(
             }
 
             items(state.sessions, key = { it.id }) { session ->
-                SessionCard(session = session, onDelete = { pendingDelete = session })
+                SessionCard(
+                    session = session,
+                    onTake = { onTakeSession(session.id, roomName) },
+                    onDelete = { pendingDelete = session },
+                )
             }
             item { Spacer(Modifier.height(24.dp)) }
         }
@@ -117,7 +124,7 @@ fun ExamRoomDetailScreen(
 }
 
 @Composable
-private fun SessionCard(session: ExamSession, onDelete: () -> Unit) {
+private fun SessionCard(session: ExamSession, onTake: () -> Unit, onDelete: () -> Unit) {
     ExamioCard(modifier = Modifier.fillMaxWidth(), shape = ExamioCardShape) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
@@ -132,6 +139,9 @@ private fun SessionCard(session: ExamSession, onDelete: () -> Unit) {
                         Text("Mã: $code", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
+            }
+            IconButton(onClick = onTake) {
+                Icon(Icons.Outlined.PlayArrow, contentDescription = "Vào làm bài", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
             }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Outlined.Delete, contentDescription = "Xóa", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(20.dp))

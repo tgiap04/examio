@@ -194,6 +194,19 @@ Acceptance criteria:
 - Validate dữ liệu bắt buộc trước khi submit; xóa phòng/phiên thi có xác nhận.
 - Android hiện đã hỗ trợ luồng này; iOS làm ở giai đoạn sau (feature parity tạm thời chưa đạt, xem quy tắc parity ở "Định hướng kỹ thuật").
 
+### US-046 — Tham gia và làm bài phiên thi (Student)
+
+Là student, tôi muốn tham gia một phiên thi bằng link/mã hoặc từ phòng thi của mình để làm bài ngay trên mobile.
+
+Acceptance criteria:
+
+- Người dùng có thể dán link/ID phiên thi để vào màn landing kiểm tra quyền truy cập trước khi làm bài.
+- Nếu phiên thi ở chế độ private, app yêu cầu nhập mã 6 số; sai mã hiển thị lỗi rõ, không cho vào thi.
+- Nếu phiên thi công khai hoặc mã hợp lệ, app cho phép bắt đầu làm bài.
+- Với phòng thi của chính mình, nút "Vào làm bài" trên thẻ phiên thi (session) trong chi tiết phòng thi đưa thẳng vào làm bài mà không cần nhập lại mã.
+- Vòng làm bài tái dùng màn hình làm bài thi hiện có, đảm bảo hành vi nhất quán với luồng US-010 (timer, tiến độ, xác nhận submit).
+- Android hiện đã hỗ trợ luồng này; iOS làm ở giai đoạn sau (feature parity tạm thời chưa đạt, xem quy tắc parity ở "Định hướng kỹ thuật").
+
 ## Epic 4 — Flashcard
 
 ### US-013 — Xem bộ flashcard

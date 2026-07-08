@@ -29,6 +29,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -51,6 +52,7 @@ import com.examio.app.features.study.api.StudentMaterialsApiService
 fun MyExamsScreen(
     materialsApi: StudentMaterialsApiService,
     onEnterExam: (sessionId: String, title: String) -> Unit,
+    onJoinSession: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val vm = remember { MyExamsViewModel(materialsApi) }
@@ -70,6 +72,7 @@ fun MyExamsScreen(
             onOpen = { selectedAttempt = it },
             onTogglePin = { vm.togglePin(it.examSession.examRoom.id) },
             onRetry = { vm.load() },
+            onJoinSession = onJoinSession,
             modifier = modifier,
         )
     }
@@ -81,6 +84,7 @@ private fun MyExamsListScreen(
     onOpen: (RecentExamAttempt) -> Unit,
     onTogglePin: (RecentExamAttempt) -> Unit,
     onRetry: () -> Unit,
+    onJoinSession: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -105,6 +109,12 @@ private fun MyExamsListScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+        }
+
+        item {
+            OutlinedButton(onClick = onJoinSession, modifier = Modifier.fillMaxWidth()) {
+                Text("Tham gia phiên thi")
             }
         }
 
