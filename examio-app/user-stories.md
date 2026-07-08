@@ -182,6 +182,18 @@ Acceptance criteria:
 - Người dùng làm từng câu, xem đúng/sai và lời giải nếu có.
 - Tiến độ luyện tập được lưu.
 
+### US-045 — Tạo phòng thi và phiên thi (Teacher)
+
+Là teacher/content creator, tôi muốn tạo phòng thi và các phiên thi trong phòng ngay trên mobile để giao đề cho học sinh mà không cần dùng web.
+
+Acceptance criteria:
+
+- Từ tab Đề thi, teacher xem được danh sách phòng thi mình quản lý và tạo phòng thi mới.
+- Vào chi tiết một phòng thi, teacher xem được danh sách phiên thi (session) thuộc phòng đó.
+- Tạo phiên thi mới cho phép cấu hình: thời gian bắt đầu/kết thúc, quyền truy cập (công khai/mã tham gia/whitelist), cấu hình câu hỏi và điểm đạt.
+- Validate dữ liệu bắt buộc trước khi submit; xóa phòng/phiên thi có xác nhận.
+- Android hiện đã hỗ trợ luồng này; iOS làm ở giai đoạn sau (feature parity tạm thời chưa đạt, xem quy tắc parity ở "Định hướng kỹ thuật").
+
 ## Epic 4 — Flashcard
 
 ### US-013 — Xem bộ flashcard

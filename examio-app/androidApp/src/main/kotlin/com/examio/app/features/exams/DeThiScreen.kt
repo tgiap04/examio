@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.MeetingRoom
 import androidx.compose.material.icons.outlined.Quiz
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -40,6 +41,7 @@ import com.examio.app.design.ExamioCard
 import com.examio.app.design.ExamioCardShape
 import com.examio.app.features.exams.models.QuizSet
 import com.examio.app.features.exams.repository.ExamRepository
+import com.examio.app.features.exams.room.ExamRoomsScreen
 
 @Composable
 fun DeThiScreen(
@@ -50,6 +52,7 @@ fun DeThiScreen(
     val vm = remember { DeThiViewModel(examRepository) }
     val state by vm.state.collectAsState()
     var managing by remember { mutableStateOf<QuizSet?>(null) }
+    var showRooms by remember { mutableStateOf(false) }
 
     managing?.let { set ->
         QuizSetManageScreen(
@@ -57,6 +60,15 @@ fun DeThiScreen(
             setTitle = set.title,
             repository = examRepository,
             onBack = { managing = null; vm.load() },
+            modifier = modifier,
+        )
+        return
+    }
+
+    if (showRooms) {
+        ExamRoomsScreen(
+            examRepository = examRepository,
+            onBack = { showRooms = false },
             modifier = modifier,
         )
         return
@@ -71,7 +83,7 @@ fun DeThiScreen(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text("Đề thi", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onBackground)
-                    Text("Quản lý bộ đề và câu hỏi của bạn.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Quản lý bộ đề, câu hỏi và phòng thi của bạn.", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
             item {
@@ -83,6 +95,13 @@ fun DeThiScreen(
             item {
                 OutlinedButton(onClick = onGenerateWithAi, modifier = Modifier.fillMaxWidth()) {
                     Text("Tạo đề bằng AI")
+                }
+            }
+            item {
+                OutlinedButton(onClick = { showRooms = true }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Outlined.MeetingRoom, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Quản lý phòng thi")
                 }
             }
             item {

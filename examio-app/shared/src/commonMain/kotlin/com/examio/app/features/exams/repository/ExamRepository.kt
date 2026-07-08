@@ -4,7 +4,10 @@ import com.examio.app.core.crypto.QuizDecryptor
 import com.examio.app.core.network.ApiResult
 import com.examio.app.features.exams.api.ExamAttemptApiService
 import com.examio.app.features.exams.api.ExamRoomApiService
+import com.examio.app.features.exams.api.ExamSessionApiService
 import com.examio.app.features.exams.api.QuizSetApiService
+import com.examio.app.features.exams.models.CreateExamRoomRequest
+import com.examio.app.features.exams.models.CreateExamSessionRequest
 import com.examio.app.features.exams.models.CreateQuestionRequest
 import com.examio.app.features.exams.models.CreateQuizSetRequest
 import com.examio.app.features.exams.models.DecryptedQuestion
@@ -23,6 +26,7 @@ import kotlinx.serialization.json.Json
 class ExamRepository(
     private val quizSets: QuizSetApiService,
     private val rooms: ExamRoomApiService,
+    private val sessions: ExamSessionApiService,
     private val attempts: ExamAttemptApiService,
     private val decryptor: QuizDecryptor? = null,
 ) {
@@ -35,9 +39,15 @@ class ExamRepository(
     suspend fun updateQuestion(id: String, questionId: String, request: UpdateQuestionRequest) = quizSets.updateQuestion(id, questionId, request)
     suspend fun deleteQuestion(id: String, questionId: String) = quizSets.deleteQuestion(id, questionId)
     suspend fun saveHistoryToQuizset(request: SaveHistoryToQuizsetRequest) = quizSets.saveHistoryToQuizset(request)
-    suspend fun examRooms(page: Int = 1, limit: Int = 20) = rooms.list(page, limit)
+    suspend fun examRooms(page: Int = 1, limit: Int = 20, search: String? = null) = rooms.list(page, limit, search)
     suspend fun examRoom(id: String) = rooms.get(id)
-    suspend fun examRoomSessions(roomId: String) = rooms.sessions(roomId)
+    suspend fun createExamRoom(request: CreateExamRoomRequest) = rooms.create(request)
+    suspend fun deleteExamRoom(id: String) = rooms.delete(id)
+    suspend fun examRoomSessions(roomId: String, page: Int = 1, limit: Int = 10) = rooms.sessions(roomId, page, limit)
+    suspend fun createExamSession(request: CreateExamSessionRequest) = sessions.create(request)
+    suspend fun deleteExamSession(id: String) = sessions.delete(id)
+    suspend fun availableLabels(roomId: String) = sessions.availableLabels(roomId)
+    suspend fun searchUsers(query: String) = sessions.searchUsers(query)
     suspend fun attempts(page: Int = 1, limit: Int = 20) = attempts.list(page, limit)
     /** Start/resume an attempt; unwraps the BE { examAttempt } envelope to the attempt itself. */
     suspend fun startAttempt(sessionId: String): ApiResult<ExamAttempt> =
