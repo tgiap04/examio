@@ -16,6 +16,7 @@ import com.examio.app.features.auth.api.AuthApiService
 import com.examio.app.features.auth.repository.AuthRepository
 import com.examio.app.features.exams.api.ExamAttemptApiService
 import com.examio.app.features.exams.api.ExamRoomApiService
+import com.examio.app.features.exams.api.ExamSessionApiService
 import com.examio.app.features.exams.api.QuizSetApiService
 import com.examio.app.features.exams.repository.ExamRepository
 import com.examio.app.features.history.api.HistoryApiService
@@ -56,6 +57,7 @@ class AndroidAppContainer(context: Context) {
     val examRepository = ExamRepository(
         quizSets = QuizSetApiService(httpClient),
         rooms = ExamRoomApiService(httpClient),
+        sessions = ExamSessionApiService(httpClient),
         attempts = ExamAttemptApiService(httpClient),
         decryptor = QuizDecryptor(MobileApiConfig.quizAesKey),
     )
