@@ -21,13 +21,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.examio.app.design.ExamioCard
+import com.examio.app.features.exams.answerLetter
 import com.examio.app.features.exams.models.ReviewQuestion
-
-private val optionLabels = listOf("A", "B", "C", "D", "E", "F")
+import com.examio.app.features.exams.resolveAnswerIndex
 
 /** One reviewed question: correct option green, the user's wrong pick red. */
 @Composable
 fun ReviewQuestionItem(number: Int, item: ReviewQuestion) {
+    // Answers are letter-based system-wide ("A"/"B"/...); the stored `answer` may be a
+    // letter, index, or option text, so normalize it to an index before comparing.
+    val correctIndex = resolveAnswerIndex(item.answer, item.options)
     ExamioCard(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             Text(
@@ -37,11 +40,12 @@ fun ReviewQuestionItem(number: Int, item: ReviewQuestion) {
                 color = MaterialTheme.colorScheme.onSurface,
             )
             item.options.forEachIndexed { i, opt ->
+                val letter = answerLetter(i)
                 ReviewOption(
-                    label = optionLabels.getOrElse(i) { "${i + 1}" },
+                    label = letter,
                     text = opt,
-                    isCorrect = opt == item.answer,
-                    isWrongPick = opt == item.userAnswer && item.userAnswer != item.answer,
+                    isCorrect = i == correctIndex,
+                    isWrongPick = item.userAnswer == letter && i != correctIndex,
                 )
             }
         }

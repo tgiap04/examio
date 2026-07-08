@@ -121,18 +121,22 @@ export class ExamAttemptService {
             },
         });
 
+        // The room host owns the exam and may re-take/preview their own session
+        // freely — retry limits apply only to participants, not the owner.
+        const isHost = examSession.examRoom.hostId === user.id;
+
         // Check retry limits (based on ExamSession, not ExamRoom)
         // maxAttempts means the number of RETRIES allowed (not including first attempt)
         // So total allowed attempts = 1 (first) + maxAttempts (retries)
         const totalAllowedAttempts = 1 + examSession.maxAttempts;
 
-        if (!examSession.allowRetake && completedAttempts > 0) {
+        if (!isHost && !examSession.allowRetake && completedAttempts > 0) {
             throw new BadRequestException(
                 'Bạn đã làm bài này rồi và không được phép làm lại'
             );
         }
 
-        if (completedAttempts >= totalAllowedAttempts) {
+        if (!isHost && completedAttempts >= totalAllowedAttempts) {
             throw new BadRequestException(
                 `Bạn đã đạt số lần thi tối đa (${totalAllowedAttempts} lần)`
             );
