@@ -13,7 +13,7 @@ export const RegisterSchema = z.object({
         .max(50, { message: 'Email must not exceed 50 characters' }),
     password: z
         .string()
-        .min(6, { message: 'Password must be at least 6 characters long' })
+        .min(8, { message: 'Password must be at least 8 characters long' })
         .max(100, { message: 'Password must not exceed 100 characters' }),
     turnstileToken: z.string().optional(),
 });

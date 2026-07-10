@@ -22,9 +22,13 @@ export class AuthStrictThrottlerGuard extends ThrottlerGuard {
     }
 
     protected async getTracker(req: Record<string, unknown>): Promise<string> {
-        const forwarded = req['x-forwarded-for'] as string | undefined;
-        if (forwarded) {
-            return forwarded.split(',')[0].trim();
+        // req.ips is only populated by Express when 'trust proxy' is set,
+        // and only reflects hops trusted by that config — unlike reading
+        // the x-forwarded-for header directly, it can't be spoofed by a
+        // client-supplied header when there is no trusted proxy in front.
+        const ips = req['ips'] as string[] | undefined;
+        if (ips && ips.length > 0) {
+            return ips[0];
         }
         return (req['ip'] as string) || 'unknown';
     }

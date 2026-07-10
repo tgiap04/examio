@@ -11,6 +11,7 @@ import {
 import { ClientGrpc } from '@nestjs/microservices';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
+import * as crypto from 'crypto';
 
 // Shared libs imports
 import { PrismaService } from '@examio/database';
@@ -52,6 +53,19 @@ export class AuthService {
         private readonly eventPublisher: EventPublisherService
     ) {}
 
+    /**
+     * Constant-time comparison for verification/reset/change codes, to
+     * avoid leaking match-length information through response timing.
+     */
+    private isCodeMatch(expected: string, provided: string): boolean {
+        const expectedBuf = Buffer.from(expected);
+        const providedBuf = Buffer.from(provided);
+        if (expectedBuf.length !== providedBuf.length) {
+            return false;
+        }
+        return crypto.timingSafeEqual(expectedBuf, providedBuf);
+    }
+
     async login(loginDto: LoginDto, deviceInfo?: DeviceInfo) {
         const { credential, password } = loginDto;
         if (!credential || !password) {
@@ -60,14 +74,18 @@ export class AuthService {
         try {
             const user = await this.userRepository.findByCredential(credential);
             if (!user) {
-                throw new NotFoundException('Không tìm thấy người dùng');
+                // Same error as a wrong password — do not reveal whether the
+                // account exists (prevents user enumeration).
+                throw new UnauthorizedException(
+                    'Thông tin đăng nhập không hợp lệ'
+                );
             }
             const isPasswordValid = await this.passwordService.comparePasswords(
                 password,
                 user.password || ''
             );
             if (!isPasswordValid) {
-                throw new BadRequestException(
+                throw new UnauthorizedException(
                     'Thông tin đăng nhập không hợp lệ'
                 );
             }
@@ -100,7 +118,8 @@ export class AuthService {
         } catch (error) {
             if (
                 error instanceof NotFoundException ||
-                error instanceof BadRequestException
+                error instanceof BadRequestException ||
+                error instanceof UnauthorizedException
             ) {
                 throw error;
             }
@@ -217,7 +236,7 @@ export class AuthService {
             if (error instanceof ConflictException) {
                 throw error;
             }
-            console.log(error);
+            console.log(error.message);
             throw new InternalServerErrorException('Đăng ký không thành công');
         }
     }
@@ -263,7 +282,7 @@ export class AuthService {
 
             return { message: 'Email xác minh đã được gửi' };
         } catch (error) {
-            console.log(error);
+            console.log(error.message);
             throw new InternalServerErrorException(
                 'Gửi email không thành công'
             );
@@ -281,7 +300,7 @@ export class AuthService {
                 throw new NotFoundException('Mã xác minh không hợp lệ');
             }
 
-            if (verificationCode.code !== code) {
+            if (!this.isCodeMatch(verificationCode.code, code)) {
                 throw new BadRequestException('Mã xác minh không chính xác');
             }
 
@@ -314,11 +333,16 @@ export class AuthService {
     }
 
     async sendCodeToResetPassword(email: string) {
+        // Always return the same response regardless of whether the email
+        // is registered — revealing account existence enables enumeration.
+        const genericResponse = {
+            message: 'Email đặt lại mật khẩu đã được gửi',
+        };
         try {
             const user = await this.userRepository.findByEmail(email, false);
 
             if (!user) {
-                throw new NotFoundException('Không tìm thấy người dùng');
+                return genericResponse;
             }
 
             const code = generateCode(6);
@@ -354,9 +378,9 @@ export class AuthService {
                     );
                 });
 
-            return { message: 'Email đặt lại mật khẩu đã được gửi' };
+            return genericResponse;
         } catch (error) {
-            console.log(error);
+            console.log(error.message);
             throw new InternalServerErrorException(
                 'Gửi email đặt lại mật khẩu không thành công'
             );
@@ -379,7 +403,7 @@ export class AuthService {
                 throw new NotFoundException('Mã đặt lại mật khẩu không hợp lệ');
             }
 
-            if (resetCode.code !== code) {
+            if (!this.isCodeMatch(resetCode.code, code)) {
                 throw new BadRequestException(
                     'Mã đặt lại mật khẩu không chính xác'
                 );
@@ -401,6 +425,10 @@ export class AuthService {
             await this.prisma.resetPasswordCode.delete({
                 where: { userId: user.id },
             });
+
+            // Invalidate all existing sessions so a session hijacked before
+            // the reset cannot survive the credential rotation.
+            await this.userSessionRepository.deactivateAllSessions(user.id);
 
             return { message: 'Mật khẩu đã được đặt lại thành công' };
         } catch (error) {
@@ -453,7 +481,7 @@ export class AuthService {
 
             return { message: 'Mã xác minh đã được gửi đến email của bạn' };
         } catch (error) {
-            console.log(error);
+            console.log(error.message);
             throw new InternalServerErrorException(
                 'Gửi mã xác minh không thành công'
             );
@@ -488,7 +516,7 @@ export class AuthService {
                 throw new NotFoundException('Mã xác minh không hợp lệ');
             }
 
-            if (resetCode.code !== code) {
+            if (!this.isCodeMatch(resetCode.code, code)) {
                 throw new BadRequestException('Mã xác minh không chính xác');
             }
 
@@ -508,6 +536,10 @@ export class AuthService {
             await this.prisma.resetPasswordCode.delete({
                 where: { userId: user.id },
             });
+
+            // Invalidate all existing sessions so a session hijacked before
+            // the change cannot survive the credential rotation.
+            await this.userSessionRepository.deactivateAllSessions(user.id);
 
             return { message: 'Mật khẩu đã được đổi thành công' };
         } catch (error) {
@@ -721,7 +753,7 @@ export class AuthService {
         userId: string,
         deviceInfo: DeviceInfo
     ): Promise<{ sessionId: string; refreshToken: string }> {
-        const sessionId = this.generateIdService.generateId();
+        const sessionId = this.generateIdService.generateSecureToken(16);
         const refreshToken = this.generateRefreshToken();
         const { browser, os, deviceName } = this.parseUserAgent(
             deviceInfo.userAgent || ''
@@ -746,7 +778,7 @@ export class AuthService {
     }
 
     private generateRefreshToken(): string {
-        return `${this.generateIdService.generateId()}_${this.generateIdService.generateId()}`;
+        return this.generateIdService.generateSecureToken(32);
     }
 
     private parseUserAgent(userAgent: string): {

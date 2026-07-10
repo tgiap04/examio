@@ -152,6 +152,22 @@ export class UserSessionRepository {
         });
     }
 
+    /**
+     * Deactivate every active session for a user, including the current
+     * one. Used after a password reset/change so a stolen session cannot
+     * survive the credential rotation.
+     */
+    async deactivateAllSessions(userId: string): Promise<number> {
+        const result = await this.prisma.userSession.updateMany({
+            where: {
+                userId,
+                isActive: true,
+            },
+            data: { isActive: false },
+        });
+        return result.count;
+    }
+
     async deactivateAllOtherSessions(
         userId: string,
         currentSessionId: string

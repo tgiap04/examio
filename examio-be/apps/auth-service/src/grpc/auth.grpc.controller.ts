@@ -49,7 +49,17 @@ interface CheckPermissionResponse {
 
 @Controller()
 export class AuthGrpcController {
-    constructor(private readonly prisma: PrismaService) {}
+    private readonly jwtSecret: string;
+
+    constructor(private readonly prisma: PrismaService) {
+        const secret = process.env.JWT_SECRET;
+        if (!secret) {
+            throw new Error(
+                'JWT_SECRET environment variable is required to start AuthGrpcController'
+            );
+        }
+        this.jwtSecret = secret;
+    }
 
     /**
      * Validate JWT token và trả về user info
@@ -74,8 +84,9 @@ export class AuthGrpcController {
             }
 
             // Verify JWT
-            const secret = process.env.JWT_SECRET || 'default_secret';
-            const decoded = jwt.verify(token, secret) as any;
+            const decoded = jwt.verify(token, this.jwtSecret, {
+                algorithms: ['HS256'],
+            }) as any;
 
             // Fetch user from database
             const user = await this.prisma.user.findUnique({
@@ -85,6 +96,9 @@ export class AuthGrpcController {
                     email: true,
                     username: true,
                     isAdmin: true,
+                    isBanned: true,
+                    deletedAt: true,
+                    isVerified: true,
                 },
             });
 
@@ -96,6 +110,17 @@ export class AuthGrpcController {
                     username: '',
                     role: 0,
                     message: 'User not found',
+                };
+            }
+
+            if (user.isBanned || user.deletedAt) {
+                return {
+                    valid: false,
+                    userId: '',
+                    email: '',
+                    username: '',
+                    role: 0,
+                    message: 'Account is disabled',
                 };
             }
 
@@ -194,7 +219,7 @@ export class AuthGrpcController {
 
             const user = await this.prisma.user.findUnique({
                 where: { id: userId },
-                select: { isAdmin: true },
+                select: { isAdmin: true, isBanned: true, deletedAt: true },
             });
 
             if (!user) {
@@ -204,22 +229,33 @@ export class AuthGrpcController {
                 };
             }
 
-            // Simple role-based permission check
-            // isAdmin = true means admin access
+            if (user.isBanned || user.deletedAt) {
+                return {
+                    allowed: false,
+                    message: 'Account is disabled',
+                };
+            }
+
+            // Role-based permission check. Deny by default.
+            // isAdmin = true means admin access.
             let allowed = false;
 
             if (user.isAdmin) {
                 // Admin có quyền mọi thứ
                 allowed = true;
             } else {
-                // User thường chỉ được read/write resource của mình
-                if (action === 'read' || action === 'write') {
-                    allowed = true;
-                } else if (action === 'delete') {
-                    // Delete cần check ownership ở service layer
-                    allowed = true;
-                }
+                // SECURITY: this RPC cannot verify per-resource ownership, so it
+                // must NOT blanket-authorize read/write/delete for normal users
+                // (that was a fail-open bug). Resource ownership is enforced at
+                // the owning service layer (e.g. `where: { id, userId }`), which
+                // is the source of truth. Deny here by default.
+                allowed = false;
             }
+
+            // `resource`/`action` intentionally unused: ownership lives at the
+            // service layer, so this RPC only distinguishes admin vs non-admin.
+            void resource;
+            void action;
 
             return {
                 allowed,

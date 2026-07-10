@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class GenerateIdService {
@@ -13,7 +14,17 @@ export class GenerateIdService {
         return oid;
     }
 
+    /**
+     * Generate a cryptographically secure random token (hex-encoded).
+     * Use this for credentials such as session IDs and refresh tokens
+     * where predictability would be a security risk — unlike generateId()
+     * which uses Math.random() and is only safe for non-secret entity IDs.
+     */
+    generateSecureToken(bytes = 32): string {
+        return crypto.randomBytes(bytes).toString('hex');
+    }
+
     generate6DigitCode(): string {
-        return Math.floor(100000 + Math.random() * 900000).toString();
+        return crypto.randomInt(100000, 1000000).toString();
     }
 }
