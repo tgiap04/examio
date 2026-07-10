@@ -63,7 +63,7 @@ export class R2ServiceController {
         return {
             success: true,
             file_id: key,
-            url: this.r2Service.getPublicUrl(key),
+            url: await this.r2Service.resolveUrl(key),
             key_r2: key,
             message: 'File uploaded successfully',
         };
@@ -110,7 +110,7 @@ export class R2ServiceController {
             return {
                 success: true,
                 file_id: key,
-                url: this.r2Service.getPublicUrl(key),
+                url: await this.r2Service.resolveUrl(key),
                 key_r2: key,
                 message: 'File uploaded successfully',
             };
@@ -128,10 +128,11 @@ export class R2ServiceController {
 
     @GrpcMethod('R2Service', 'GetFileUrl')
     async getFileUrl(data: GetFileUrlRequest) {
-        const url = this.r2Service.getPublicUrl(data.key_r2);
+        const expiresIn = data.expires_in_seconds || 3600;
+        const url = await this.r2Service.resolveUrl(data.key_r2, expiresIn);
         return {
             url,
-            expires_at: Date.now() + (data.expires_in_seconds || 3600) * 1000,
+            expires_at: Date.now() + expiresIn * 1000,
         };
     }
 
