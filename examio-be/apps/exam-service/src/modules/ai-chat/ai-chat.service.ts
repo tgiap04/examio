@@ -169,6 +169,18 @@ export class AIChatService implements OnModuleInit {
     ) {
         const chat = await this.getChatByIdAndValidateOwner(chatId, user);
 
+        // Caller-supplied document ids must belong to the requesting user
+        // before we let them influence AI context resolution
+        const requestedDocumentIds = [
+            ...(data.documentIds && Array.isArray(data.documentIds)
+                ? data.documentIds
+                : []),
+            ...(data.documentId ? [data.documentId] : []),
+        ];
+        if (requestedDocumentIds.length > 0) {
+            await this.verifyDocumentOwnership(requestedDocumentIds, user.id);
+        }
+
         // Create user message
         const userMessage = await this.chatRepository.createMessage({
             id: this.generateId(),
@@ -185,13 +197,7 @@ export class AIChatService implements OnModuleInit {
         const historyForAI = this.trimHistoryForAI(history);
 
         // Collect all document IDs: from DTO + from chat's linked documents
-        let effectiveDocumentIds: string[] = [];
-        if (data.documentIds && Array.isArray(data.documentIds)) {
-            effectiveDocumentIds.push(...data.documentIds);
-        }
-        if (data.documentId) {
-            effectiveDocumentIds.push(data.documentId);
-        }
+        let effectiveDocumentIds: string[] = [...requestedDocumentIds];
         // Add documents from chat's AIChatDocument table
         const chatDocIds = await this.chatRepository.getDocumentIds(chatId);
         effectiveDocumentIds.push(...chatDocIds);
@@ -200,7 +206,7 @@ export class AIChatService implements OnModuleInit {
 
         // Process documents on-demand if they haven't been OCR'd yet
         if (effectiveDocumentIds.length > 0) {
-            await this.checkAndProcessDocuments(effectiveDocumentIds);
+            await this.checkAndProcessDocuments(effectiveDocumentIds, user.id);
         }
 
         const userStorageId =
@@ -266,6 +272,18 @@ export class AIChatService implements OnModuleInit {
         // Check subscription limits
         await this.checkLimits(user.id, chatId);
 
+        // Caller-supplied document ids must belong to the requesting user
+        // before we let them influence AI context resolution
+        const requestedDocumentIds = [
+            ...(data.documentIds && Array.isArray(data.documentIds)
+                ? data.documentIds
+                : []),
+            ...(data.documentId ? [data.documentId] : []),
+        ];
+        if (requestedDocumentIds.length > 0) {
+            await this.verifyDocumentOwnership(requestedDocumentIds, user.id);
+        }
+
         // Get subject system prompt if chat has a subject
         let systemPrompt: string | null = null;
         if (chat.subjectId) {
@@ -279,13 +297,7 @@ export class AIChatService implements OnModuleInit {
         }
 
         // Collect all document IDs: from DTO + from chat's linked documents
-        let effectiveDocumentIds: string[] = [];
-        if (data.documentIds && Array.isArray(data.documentIds)) {
-            effectiveDocumentIds.push(...data.documentIds);
-        }
-        if (data.documentId) {
-            effectiveDocumentIds.push(data.documentId);
-        }
+        let effectiveDocumentIds: string[] = [...requestedDocumentIds];
         // Add documents from chat's AIChatDocument table
         const chatDocIds = await this.chatRepository.getDocumentIds(chatId);
         effectiveDocumentIds.push(...chatDocIds);
@@ -297,7 +309,7 @@ export class AIChatService implements OnModuleInit {
             this.logger.log(
                 `[streamMessage] Processing ${effectiveDocumentIds.length} documents on-demand...`
             );
-            await this.checkAndProcessDocuments(effectiveDocumentIds);
+            await this.checkAndProcessDocuments(effectiveDocumentIds, user.id);
         }
 
         // 1. Save User Message
@@ -520,6 +532,7 @@ export class AIChatService implements OnModuleInit {
         documentName: string
     ) {
         await this.getChatByIdAndValidateOwner(chatId, user);
+        await this.verifyDocumentOwnership([documentId], user.id);
         return this.chatRepository.addDocument({
             chatId,
             documentId,
@@ -550,18 +563,46 @@ export class AIChatService implements OnModuleInit {
     }
 
     /**
+     * Verify that every given UserStorage id belongs to the requesting user.
+     * Throws ForbiddenException if any id does not exist or belongs to
+     * another user, preventing cross-user document disclosure (IDOR).
+     */
+    private async verifyDocumentOwnership(
+        documentIds: string[],
+        userId: string
+    ): Promise<void> {
+        if (!documentIds.length) return;
+
+        const uniqueIds = [...new Set(documentIds)];
+        const owned = await this.prisma.userStorage.findMany({
+            where: { id: { in: uniqueIds }, userId },
+            select: { id: true },
+        });
+
+        if (owned.length !== uniqueIds.length) {
+            throw new ForbiddenException(
+                'Bạn không có quyền truy cập một hoặc nhiều tài liệu được yêu cầu'
+            );
+        }
+    }
+
+    /**
      * Check and process documents on-demand
      * If documents have PENDING/FAILED status, trigger OCR/vectorization via AI service
      */
     private async checkAndProcessDocuments(
-        documentIds: string[]
+        documentIds: string[],
+        userId: string
     ): Promise<void> {
         if (!documentIds.length) return;
 
-        // Find documents that need processing
+        // Find documents that need processing. Also constrained by userId
+        // as defense-in-depth; callers must already verify ownership of any
+        // caller-supplied ids before reaching this point.
         const pendingDocs = await this.prisma.userStorage.findMany({
             where: {
                 id: { in: documentIds },
+                userId,
                 processingStatus: { in: ['PENDING', 'FAILED'] },
             },
         });
