@@ -1,5 +1,6 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@examio/database';
+import { Prisma } from '@prisma/client';
 import { GenerateIdService } from '@examio/common';
 import {
     SUBSCRIPTION_TIER,
@@ -63,13 +64,31 @@ export class SubscriptionService {
 
     /**
      * Activate or upgrade subscription after successful payment
-     * Called from webhook after payment confirmation
+     * Called from webhook after payment confirmation.
+     *
+     * Accepts an optional Prisma transaction client so the caller (e.g. the
+     * webhook handler) can run the payment status update and the subscription
+     * activation atomically in a single transaction. When no `tx` is provided,
+     * this method opens its own transaction to keep the upsert + wallet credit
+     * atomic for any future standalone caller.
      */
     async activateSubscription(
         userId: string,
         tier: SUBSCRIPTION_TIER,
-        billingCycle: BillingCycle
+        billingCycle: BillingCycle,
+        tx?: Prisma.TransactionClient
     ) {
+        if (!tx) {
+            const subscription = await this.prisma.$transaction((innerTx) =>
+                this.activateSubscription(userId, tier, billingCycle, innerTx)
+            );
+            // Invalidate wallet cache only here (after commit) for standalone
+            // callers; when `tx` is provided the caller invalidates the cache
+            // itself once its own enclosing transaction has committed.
+            await this.walletRepository.invalidateUserCache(userId);
+            return subscription;
+        }
+
         const now = new Date();
         const nextPaymentDate = new Date(now);
 
@@ -80,7 +99,7 @@ export class SubscriptionService {
         }
 
         // Upsert subscription
-        const subscription = await this.prisma.userSubscription.upsert({
+        const subscription = await tx.userSubscription.upsert({
             where: { userId },
             update: {
                 tier,
@@ -109,7 +128,7 @@ export class SubscriptionService {
                 billingCycle === 'yearly'
                     ? benefits.creditsPerMonth * 12
                     : benefits.creditsPerMonth;
-            await this.addSubscriptionCredits(userId, creditsToAdd);
+            await this.addSubscriptionCredits(userId, creditsToAdd, tx);
         }
 
         this.logger.log(
@@ -120,64 +139,65 @@ export class SubscriptionService {
     }
 
     /**
-     * Add monthly subscription credits to wallet
+     * Add monthly subscription credits to wallet.
+     * Must be called with a Prisma transaction client so the wallet
+     * balance change and the ledger record stay atomic (and, when invoked
+     * from `activateSubscription`, share the same transaction as the
+     * payment status update).
      */
-    private async addSubscriptionCredits(userId: string, credits: number) {
-        const wallet = await this.walletRepository.findByUserId(userId, false);
+    private async addSubscriptionCredits(
+        userId: string,
+        credits: number,
+        tx: Prisma.TransactionClient
+    ) {
+        const wallet = await tx.wallet.findUnique({ where: { userId } });
 
         if (!wallet) {
-            await this.prisma.$transaction(async (tx) => {
-                const id = this.generateIdService.generateId();
-                await tx.wallet.create({
-                    data: {
-                        id,
-                        userId,
-                        balance: credits,
-                        createdBy: 'SUBSCRIPTION',
-                    },
-                });
+            const id = this.generateIdService.generateId();
+            await tx.wallet.create({
+                data: {
+                    id,
+                    userId,
+                    balance: credits,
+                    createdBy: 'SUBSCRIPTION',
+                },
+            });
 
-                // Create transaction record
-                await tx.walletTransaction.create({
-                    data: {
-                        id: this.generateIdService.generateId(),
-                        walletId: id,
-                        amount: credits,
-                        type: WALLET_TRANSACTION_TYPE.BUY_SUBSCRIPTION,
-                        direction: 'ADD',
-                        description: `Credits hàng tháng từ gói đăng ký (+${credits} credits)`,
-                        createdBy: 'SUBSCRIPTION',
-                    },
-                });
+            // Create transaction record
+            await tx.walletTransaction.create({
+                data: {
+                    id: this.generateIdService.generateId(),
+                    walletId: id,
+                    amount: credits,
+                    type: WALLET_TRANSACTION_TYPE.BUY_SUBSCRIPTION,
+                    direction: 'ADD',
+                    description: `Credits hàng tháng từ gói đăng ký (+${credits} credits)`,
+                    createdBy: 'SUBSCRIPTION',
+                },
             });
         } else {
-            await this.prisma.$transaction(async (tx) => {
-                // Update wallet balance
-                await tx.wallet.update({
-                    where: { id: wallet.id },
-                    data: {
-                        balance: wallet.balance + credits,
-                        updatedBy: 'SUBSCRIPTION',
-                    },
-                });
+            // Atomic increment to avoid lost updates under concurrent credit grants
+            await tx.wallet.update({
+                where: { id: wallet.id },
+                data: {
+                    balance: { increment: credits },
+                    updatedBy: 'SUBSCRIPTION',
+                },
+            });
 
-                // Create transaction record
-                await tx.walletTransaction.create({
-                    data: {
-                        id: this.generateIdService.generateId(),
-                        walletId: wallet.id,
-                        amount: credits,
-                        type: WALLET_TRANSACTION_TYPE.BUY_SUBSCRIPTION,
-                        direction: 'ADD',
-                        description: `Credits hàng tháng từ gói đăng ký (+${credits} credits)`,
-                        createdBy: 'SUBSCRIPTION',
-                    },
-                });
+            // Create transaction record
+            await tx.walletTransaction.create({
+                data: {
+                    id: this.generateIdService.generateId(),
+                    walletId: wallet.id,
+                    amount: credits,
+                    type: WALLET_TRANSACTION_TYPE.BUY_SUBSCRIPTION,
+                    direction: 'ADD',
+                    description: `Credits hàng tháng từ gói đăng ký (+${credits} credits)`,
+                    createdBy: 'SUBSCRIPTION',
+                },
             });
         }
-
-        // Invalidate wallet cache
-        await this.walletRepository.invalidateUserCache(userId);
 
         this.logger.log(
             `Added ${credits} subscription credits to user ${userId}`
