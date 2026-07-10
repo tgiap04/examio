@@ -1,8 +1,31 @@
+// SECURITY: client-side quiz decryption is a stopgap. The AES key must NOT
+// live in the client bundle — move decryption server-side (see security
+// follow-up). Do not reintroduce a default key.
 import CryptoJS from "crypto-js";
 import { env } from "@/lib/env";
 
 // AES key from environment - MUST match backend key
 const QUIZ_AES_KEY = env.quizAesKey;
+
+let hasWarnedMissingKey = false;
+
+/**
+ * Throws if the quiz AES key is not configured. Never falls back to a
+ * predictable/padded default key — an empty key means decryption must fail
+ * loudly rather than silently produce decryptable-by-anyone ciphertext.
+ */
+function requireQuizAesKey(): string {
+  if (!QUIZ_AES_KEY) {
+    if (!hasWarnedMissingKey) {
+      console.error(
+        "VITE_QUIZ_AES_KEY is not configured — quiz content cannot be decrypted. Set the env var (see .env.example).",
+      );
+      hasWarnedMissingKey = true;
+    }
+    throw new Error("Missing quiz AES key");
+  }
+  return QUIZ_AES_KEY;
+}
 
 /**
  * Decrypt quiz content using AES-256-CBC
@@ -11,6 +34,7 @@ const QUIZ_AES_KEY = env.quizAesKey;
  */
 export function decryptQuizContent(ciphertext: string): string {
   try {
+    const aesKey = requireQuizAesKey();
     const [ivBase64, dataBase64] = ciphertext.split(".");
 
     if (!ivBase64 || !dataBase64) {
@@ -22,7 +46,7 @@ export function decryptQuizContent(ciphertext: string): string {
     const iv = CryptoJS.enc.Base64.parse(ivBase64);
 
     // Ensure key is exactly 32 bytes
-    const keyString = QUIZ_AES_KEY.padEnd(32, "!").slice(0, 32);
+    const keyString = aesKey.padEnd(32, "!").slice(0, 32);
     const key = CryptoJS.enc.Utf8.parse(keyString);
 
     // Decrypt
