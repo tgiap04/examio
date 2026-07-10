@@ -27,6 +27,26 @@ export class ProxyService {
     constructor(private readonly httpService: HttpService) {}
 
     /**
+     * Handle a proxy/axios error uniformly: in production, log the full
+     * upstream detail server-side and return a generic message/status to
+     * the client (avoids leaking upstream internals); outside production,
+     * surface the verbose upstream error to ease debugging.
+     */
+    private handleProxyError(error: any): never {
+        if (error.response) {
+            if (process.env.NODE_ENV === 'production') {
+                this.logger.error(
+                    `Proxy upstream error ${error.response.status}: ${JSON.stringify(error.response.data)}`
+                );
+                throw new HttpException('Request failed', error.response.status);
+            }
+            throw new HttpException(error.response.data, error.response.status);
+        }
+        this.logger.error(`Proxy error: ${error.message}`);
+        throw new HttpException('Service unavailable', 503);
+    }
+
+    /**
      * Forward request tới target service
      */
     async forward(
@@ -69,14 +89,7 @@ export class ProxyService {
             );
             return response.data;
         } catch (error) {
-            if (error.response) {
-                throw new HttpException(
-                    error.response.data,
-                    error.response.status
-                );
-            }
-            this.logger.error(`Proxy error: ${error.message}`);
-            throw new HttpException('Service unavailable', 503);
+            this.handleProxyError(error);
         }
     }
 
@@ -198,14 +211,7 @@ export class ProxyService {
             );
             return response.data;
         } catch (error) {
-            if (error.response) {
-                throw new HttpException(
-                    error.response.data,
-                    error.response.status
-                );
-            }
-            this.logger.error(`Proxy error: ${error.message}`);
-            throw new HttpException('Service unavailable', 503);
+            this.handleProxyError(error);
         }
     }
 
@@ -233,6 +239,11 @@ export class ProxyService {
         delete headers.host;
         delete headers['content-length']; // Let axios recalculate
 
+        // Never trust a client-supplied X-Forwarded-For header (it can be
+        // spoofed to bypass downstream rate limiting). req.ip is derived by
+        // Express from the trusted proxy hop configured in main.ts.
+        headers['x-forwarded-for'] = req.ip || req.socket.remoteAddress || '';
+
         // Add authorization
         if (token) {
             headers.authorization = `Bearer ${token}`;
@@ -255,14 +266,7 @@ export class ProxyService {
             );
             return response.data;
         } catch (error) {
-            if (error.response) {
-                throw new HttpException(
-                    error.response.data,
-                    error.response.status
-                );
-            }
-            this.logger.error(`Proxy error: ${error.message}`);
-            throw new HttpException('Service unavailable', 503);
+            this.handleProxyError(error);
         }
     }
 }

@@ -55,10 +55,10 @@ export class WebhookProxyController {
     private extractHeaders(req: Request): Record<string, string> {
         return {
             'user-agent': req.headers['user-agent'] || '',
-            'x-forwarded-for':
-                (req.headers['x-forwarded-for'] as string) ||
-                req.socket.remoteAddress ||
-                '',
+            // Never trust a client-supplied X-Forwarded-For header (it can be
+            // spoofed). req.ip is derived by Express from the trusted proxy
+            // hop configured in main.ts.
+            'x-forwarded-for': req.ip || req.socket.remoteAddress || '',
             'content-type': req.headers['content-type'] || 'application/json',
         };
     }

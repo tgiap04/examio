@@ -190,7 +190,9 @@ export class ProfileProxyController {
     }
 
     @Post('upload-avatar')
-    @UseInterceptors(FileInterceptor('file'))
+    @UseInterceptors(
+        FileInterceptor('file', { limits: { fileSize: 2 * 1024 * 1024 } })
+    )
     @ApiOperation({ summary: 'Upload avatar' })
     async uploadAvatar(
         @Req() req: Request,
@@ -208,7 +210,9 @@ export class ProfileProxyController {
     }
 
     @Post('upload-banner')
-    @UseInterceptors(FileInterceptor('file'))
+    @UseInterceptors(
+        FileInterceptor('file', { limits: { fileSize: 2 * 1024 * 1024 } })
+    )
     @ApiOperation({ summary: 'Upload banner' })
     async uploadBanner(
         @Req() req: Request,

@@ -30,7 +30,9 @@ export class R2ProxyController {
     constructor(private readonly httpService: HttpService) {}
 
     @Post('image')
-    @UseInterceptors(FileInterceptor('file'))
+    @UseInterceptors(
+        FileInterceptor('file', { limits: { fileSize: 2 * 1024 * 1024 } })
+    )
     @ApiOperation({ summary: 'Upload image to R2 storage' })
     @ApiConsumes('multipart/form-data')
     @ApiResponse({ status: 201, description: 'Image uploaded successfully' })
@@ -94,7 +96,9 @@ export class R2ProxyController {
             );
             const errorMessage = error.response?.data?.message || error.message;
             throw new InternalServerErrorException(
-                `Upload failed: ${errorMessage}`
+                process.env.NODE_ENV === 'production'
+                    ? 'Upload failed'
+                    : `Upload failed: ${errorMessage}`
             );
         }
     }

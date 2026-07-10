@@ -6,9 +6,11 @@ import {
     Query,
     Req,
     Res,
+    UseGuards,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { HttpService } from '@nestjs/axios';
+import { AuthGuard } from '@examio/common';
 import { ProxyService } from '../services/proxy.service';
 
 /**
@@ -95,8 +97,15 @@ export class AdminProxyController {
     /**
      * Catch-all forward for any other `/api/v1/admin/*` request.
      * Re-injects Bearer, cookies, device ID, IP, UA via ProxyService.forward.
+     *
+     * Guarded at the edge with AuthGuard (requires a valid authenticated
+     * session) as defense-in-depth; admin-service remains the source of
+     * truth for `isAdmin` enforcement. Not applied to `streamLogs` above,
+     * since that route authenticates via a query-string ticket and cannot
+     * carry a Bearer/cookie token through EventSource.
      */
     @All('*')
+    @UseGuards(AuthGuard)
     async forwardAll(@Req() req: Request, @Res() res: Response) {
         const result = await this.proxyService.forward('admin', {
             method: req.method,
@@ -119,10 +128,10 @@ export class AdminProxyController {
         return {
             'user-agent': req.headers['user-agent'] || '',
             'x-device-id': (req.headers['x-device-id'] as string) || '',
-            'x-forwarded-for':
-                (req.headers['x-forwarded-for'] as string) ||
-                req.socket.remoteAddress ||
-                '',
+            // Never trust a client-supplied X-Forwarded-For header (it can be
+            // spoofed to bypass downstream rate limiting). req.ip is derived
+            // by Express from the trusted proxy hop configured in main.ts.
+            'x-forwarded-for': req.ip || req.socket.remoteAddress || '',
         };
     }
 }

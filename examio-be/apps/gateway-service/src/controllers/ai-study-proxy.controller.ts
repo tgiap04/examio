@@ -51,7 +51,9 @@ export class AIProxyController {
     ) {}
 
     @Post('quick-upload')
-    @UseInterceptors(FileInterceptor('file'))
+    @UseInterceptors(
+        FileInterceptor('file', { limits: { fileSize: 50 * 1024 * 1024 } })
+    )
     @ApiOperation({ summary: 'Quick upload file cho AI Teacher' })
     @ApiConsumes('multipart/form-data')
     async quickUpload(
@@ -109,13 +111,17 @@ export class AIProxyController {
             // Re-throw with proper error message from exam-service
             const errorMessage = error.response?.data?.message || error.message;
             throw new InternalServerErrorException(
-                `Upload failed: ${errorMessage}`
+                process.env.NODE_ENV === 'production'
+                    ? 'Upload failed'
+                    : `Upload failed: ${errorMessage}`
             );
         }
     }
 
     @Post('generate-from-file')
-    @UseInterceptors(FileInterceptor('file'))
+    @UseInterceptors(
+        FileInterceptor('file', { limits: { fileSize: 50 * 1024 * 1024 } })
+    )
     @ApiOperation({ summary: 'Upload file và tạo quiz/flashcard' })
     @ApiConsumes('multipart/form-data')
     async generateFromFile(
@@ -191,7 +197,9 @@ export class AIProxyController {
             );
             const errorMessage = error.response?.data?.message || error.message;
             throw new InternalServerErrorException(
-                `Generate from file failed: ${errorMessage}`
+                process.env.NODE_ENV === 'production'
+                    ? 'Generate from file failed'
+                    : `Generate from file failed: ${errorMessage}`
             );
         }
     }
