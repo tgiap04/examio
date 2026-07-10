@@ -7,6 +7,7 @@ import {
     Get,
     Res,
     UnauthorizedException,
+    BadRequestException,
     HttpCode,
     HttpStatus,
     Param,
@@ -127,6 +128,48 @@ export class AuthController {
         return `${frontendUrl}${safeRedirect || '/k'}`;
     }
 
+    /**
+     * Check whether an app-scheme/absolute redirect target is on the
+     * OAUTH_ALLOWED_APP_REDIRECTS allowlist. Prevents an open-redirect →
+     * account-takeover where an attacker supplies an arbitrary absolute URL
+     * (e.g. https://evil.com) as the OAuth redirect target and receives a
+     * one-time token exchange code.
+     */
+    private isAllowedAppRedirect(appCallback: string): boolean {
+        const allowlist = (process.env.OAUTH_ALLOWED_APP_REDIRECTS || '')
+            .split(',')
+            .map((entry) => entry.trim())
+            .filter(Boolean);
+
+        if (allowlist.length === 0) {
+            return false;
+        }
+
+        let target: URL;
+        try {
+            target = new URL(appCallback);
+        } catch {
+            return false;
+        }
+
+        return allowlist.some((allowed) => {
+            try {
+                const allowedUrl = new URL(
+                    allowed.includes('://') ? allowed : `${allowed}://`
+                );
+                const isCustomScheme = !['http:', 'https:'].includes(
+                    allowedUrl.protocol
+                );
+                if (isCustomScheme) {
+                    return target.protocol === allowedUrl.protocol;
+                }
+                return target.origin === allowedUrl.origin;
+            } catch {
+                return false;
+            }
+        });
+    }
+
     @Post('register')
     @UseGuards(AuthStrictThrottlerGuard)
     @Throttle({ default: { limit: 5, ttl: 60000 } })
@@ -141,7 +184,14 @@ export class AuthController {
         @Res({ passthrough: true }) res: ExpressResponse,
         @Req() request: Request
     ) {
-        // Verify Turnstile token
+        // Verify Turnstile token. Mandatory in production — a missing token
+        // must not silently skip the captcha check.
+        if (
+            process.env.NODE_ENV === 'production' &&
+            !registerDto.turnstileToken
+        ) {
+            throw new BadRequestException('Captcha verification required');
+        }
         if (registerDto.turnstileToken) {
             await this.turnstileService.verify(registerDto.turnstileToken);
         }
@@ -203,7 +253,14 @@ export class AuthController {
         @Res({ passthrough: true }) res: ExpressResponse,
         @Req() request: Request
     ): Promise<LoginResponse> {
-        // Verify Turnstile token
+        // Verify Turnstile token. Mandatory in production — a missing token
+        // must not silently skip the captcha check.
+        if (
+            process.env.NODE_ENV === 'production' &&
+            !loginDto.turnstileToken
+        ) {
+            throw new BadRequestException('Captcha verification required');
+        }
         if (loginDto.turnstileToken) {
             await this.turnstileService.verify(loginDto.turnstileToken);
         }
@@ -336,7 +393,8 @@ export class AuthController {
         description: 'User account verified successfully',
         type: AuthMessageResponseDto,
     })
-    @UseGuards(AuthGuard)
+    @UseGuards(AuthGuard, AuthStrictThrottlerGuard)
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiCookieAuth('cookie-auth')
     async verifyAccount(
         @Body('code') code: string,
@@ -490,7 +548,12 @@ export class AuthController {
         // If redirect target is a mobile app scheme (e.g. "examio://auth/callback"),
         // store tokens in Redis with a one-time exchange code and redirect with ?code=
         // This prevents tokens from appearing in URL, server logs, and Referer headers.
-        if (appCallback && /^[a-zA-Z][a-zA-Z0-9+\-.]*:\/\//.test(appCallback)) {
+        // Only allow this branch for allowlisted schemes/origins — otherwise an
+        // attacker-supplied absolute URL would receive a live exchange code
+        // (open-redirect → account-takeover). Anything not allowlisted falls
+        // through to resolveFrontendTarget(), which already rejects non-path
+        // targets and redirects to the safe default instead.
+        if (appCallback && this.isAllowedAppRedirect(appCallback)) {
             try {
                 const exchangeCode = crypto.randomBytes(32).toString('hex');
                 // Store tokens in Redis with 60s TTL — one-time use
@@ -545,14 +608,6 @@ export class AuthController {
     ) {
         const sessionId = request.cookies?.session_id || request.body?.sessionId;
 
-        console.log('[AuthController] sync-refresh-token request', {
-            userId: req.user.id,
-            sessionId,
-            cookieSessionId: request.cookies?.session_id,
-            bodySessionId: request.body?.sessionId,
-            hasRefreshCookie: Boolean(request.cookies?.refreshToken),
-        });
-
         if (!sessionId) {
             throw new UnauthorizedException('Session ID not found');
         }
@@ -568,12 +623,6 @@ export class AuthController {
         });
 
         response.cookie('refreshToken', result.refreshToken, cookieConfig);
-
-        console.log('[AuthController] sync-refresh-token success', {
-            userId: req.user.id,
-            sessionId,
-            refreshTokenPreview: result.refreshToken?.slice(0, 12),
-        });
 
         return {
             success: true,

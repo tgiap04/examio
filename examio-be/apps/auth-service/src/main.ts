@@ -13,6 +13,11 @@ async function bootstrap() {
     // Create HTTP application
     const app = await NestFactory.create(AuthServiceModule);
 
+    // Trust the first hop (gateway) so req.ip/req.ips reflect the real
+    // client IP from a trusted proxy chain rather than a client-spoofable
+    // X-Forwarded-For header read directly off the request.
+    app.getHttpAdapter().getInstance().set('trust proxy', 1);
+
     app.use(cookieParser());
 
     // Global prefix to match gateway proxy paths
