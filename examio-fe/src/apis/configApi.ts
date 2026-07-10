@@ -37,20 +37,15 @@ export function openConfigStream(
   let retryTimer: ReturnType<typeof setTimeout> | null = null;
   let activeController: AbortController | null = null;
 
-  function getToken(): string | null {
-    return localStorage.getItem("auth_token");
-  }
-
   async function connect(): Promise<void> {
     if (aborted) return;
 
-    const token = getToken();
+    // SECURITY: auth tokens live in httpOnly cookies set by the backend;
+    // never persist them in localStorage (XSS-exfiltratable). `credentials:
+    // "include"` below sends the cookie with the SSE request.
     const headers: Record<string, string> = {
       Accept: "text/event-stream",
     };
-    if (token) {
-      headers.Authorization = `Bearer ${token.replace(/"/g, "")}`;
-    }
 
     activeController = new AbortController();
 

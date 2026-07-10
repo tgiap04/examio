@@ -48,7 +48,7 @@ interface SidebarKitProps {
 }
 
 export function SidebarKit({ collapsed = false }: SidebarKitProps) {
-  const { user, getUser, logout } = useAuthStore();
+  const { user, isAuthenticated, getUser, logout } = useAuthStore();
   const [profile, setProfile] = React.useState<Profile>({
     name: "",
     email: "",
@@ -65,11 +65,13 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("auth_token")) {
+    // SECURITY: "already logged in?" comes from the auth store (hydrated via
+    // the httpOnly cookie), never from a localStorage token.
+    if (isAuthenticated) {
       getUser();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (user) {

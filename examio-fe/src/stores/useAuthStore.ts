@@ -18,14 +18,6 @@ import {
   SignupResponse,
 } from "@/apis/authApi";
 import { toast } from "@/components/antd/toast";
-import {
-  setAuthToken,
-  clearAuthToken,
-  setStoredRefreshToken,
-  clearStoredRefreshToken,
-  setStoredSessionId,
-  clearStoredSessionId,
-} from "@/hooks/useAuthSync";
 import { clearRedirectBackTarget, getRedirectBackTarget, normalizeReturnPath } from "@/lib/authRedirect";
 import { env } from "@/lib/env";
 
@@ -89,15 +81,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         });
         toast.success("Đăng nhập thành công");
 
-        if (response.token && typeof window !== "undefined") {
-          setAuthToken(response.token);
-        }
-        if (response.refreshToken && typeof window !== "undefined") {
-          setStoredRefreshToken(response.refreshToken);
-        }
-        if (response.sessionId && typeof window !== "undefined") {
-          setStoredSessionId(response.sessionId);
-        }
+        // SECURITY: auth tokens live in httpOnly cookies set by the backend
+        // on this same response; never persist them in localStorage
+        // (XSS-exfiltratable).
 
         const redirectTo = getRedirectBackTarget();
         clearRedirectBackTarget();
@@ -134,15 +120,9 @@ export const useAuthStore = create<AuthState>((set) => ({
         });
         toast.success(response.message || "Đăng ký thành công");
 
-        if (response.token && typeof window !== "undefined") {
-          setAuthToken(response.token);
-        }
-        if (response.refreshToken && typeof window !== "undefined") {
-          setStoredRefreshToken(response.refreshToken);
-        }
-        if (response.sessionId && typeof window !== "undefined") {
-          setStoredSessionId(response.sessionId);
-        }
+        // SECURITY: auth tokens live in httpOnly cookies set by the backend
+        // on this same response; never persist them in localStorage
+        // (XSS-exfiltratable).
 
         const redirectTo = getRedirectBackTarget();
         clearRedirectBackTarget();
@@ -213,10 +193,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       console.error("Logout API error:", error);
     }
+    // SECURITY: no client-side token to clear — logoutApi() above clears the
+    // httpOnly cookies server-side.
     set({ user: null, isAuthenticated: false });
-    clearAuthToken();
-    clearStoredRefreshToken();
-    clearStoredSessionId();
   },
 
   refreshSession: async () => {
@@ -227,12 +206,8 @@ export const useAuthStore = create<AuthState>((set) => ({
         throw new Error(response.message || "Làm mới phiên đăng nhập thất bại");
       }
 
-      if (typeof window !== "undefined") {
-        setAuthToken(response.token);
-        if (response.refreshToken) {
-          setStoredRefreshToken(response.refreshToken);
-        }
-      }
+      // SECURITY: the backend reissues httpOnly cookies on this response;
+      // never persist response.token/refreshToken in localStorage.
 
       set((state) => ({
         user: response.user ?? state.user,
@@ -242,9 +217,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       return response.token;
     } catch (error) {
       set({ user: null, isAuthenticated: false });
-      clearAuthToken();
-      clearStoredRefreshToken();
-      clearStoredSessionId();
       throw error;
     }
   },
@@ -259,10 +231,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     }));
     try {
       // Always call /auth/me — it reads the auth token from the httpOnly cookie
-      // (set by OAuth callback) via withCredentials, falling back to the bearer
-      // header from localStorage. skipAuthRefresh prevents the 401 handler from
-      // triggering an extra /auth/refresh roundtrip on first page load when the
-      // user simply isn't signed in.
+      // (set by login/OAuth/refresh) via withCredentials. skipAuthRefresh
+      // prevents the 401 handler from triggering an extra /auth/refresh
+      // roundtrip on first page load when the user simply isn't signed in.
       const user = await getUserApi(true, { skipAuthRefresh: true });
       if (user) {
         set({ user: user.user, isAuthenticated: true });
@@ -275,11 +246,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       // người dùng bị đăng xuất dù refresh token vẫn còn hợp lệ.
       try {
         const newToken = await refreshTokenApi();
+        // SECURITY: the backend reissues httpOnly cookies on this response;
+        // never persist newToken.token/refreshToken in localStorage.
         if (newToken?.success && newToken.token && typeof window !== "undefined") {
-          setAuthToken(newToken.token);
-          if (newToken.refreshToken) {
-            setStoredRefreshToken(newToken.refreshToken);
-          }
           const retried = await getUserApi(true, { skipAuthRefresh: true });
           if (retried) {
             set({ user: retried.user, isAuthenticated: true });
