@@ -76,6 +76,12 @@ export class WalletRepository extends BaseRepository<Wallet> {
 
     /**
      * Update balance
+     *
+     * Uses atomic Prisma increment/decrement instead of a read-modify-write
+     * so concurrent calls cannot cause lost updates. For 'subtract', the
+     * decrement is guarded by a conditional `updateMany` (balance >= amount)
+     * so the balance can never go negative under concurrency, while still
+     * throwing the same 'Insufficient balance' error the caller expects.
      */
     async updateBalance(
         userId: string,
@@ -87,22 +93,37 @@ export class WalletRepository extends BaseRepository<Wallet> {
             throw new Error('Wallet not found');
         }
 
-        const newBalance =
-            operation === 'add'
-                ? wallet.balance + amount
-                : wallet.balance - amount;
+        let updated: Wallet;
 
-        if (newBalance < 0) {
-            throw new Error('Insufficient balance');
+        if (operation === 'add') {
+            updated = await this.model.update({
+                where: { id: wallet.id },
+                data: {
+                    balance: { increment: amount },
+                    updatedBy: userId,
+                },
+            });
+        } else {
+            const result = await this.model.updateMany({
+                where: { id: wallet.id, balance: { gte: amount } },
+                data: {
+                    balance: { decrement: amount },
+                    updatedBy: userId,
+                },
+            });
+
+            if (result.count === 0) {
+                throw new Error('Insufficient balance');
+            }
+
+            updated = await this.model.findUniqueOrThrow({
+                where: { id: wallet.id },
+            });
         }
 
-        // BaseRepository.update() handles cache invalidation automatically for ID-based lookups
-        // But we need to explicitly invalidate user-scoped keys used by findByUserId
-        const updated = await this.update(
-            wallet.id,
-            { balance: newBalance },
-            userId
-        );
+        // Invalidate item/list cache (mirrors BaseRepository.update() semantics)
+        await this.invalidateItemCache(userId, wallet.id);
+        await this.invalidateUserListCache(userId);
 
         const userCacheKey = this.getUserScopedCacheKey(userId);
         await Promise.all([
