@@ -1374,27 +1374,42 @@ export class ExamAttemptService {
             throw new NotFoundException('Bài làm không tồn tại');
         }
 
+        const isHost =
+            (examAttempt as any).examSession.examRoom.hostId === user.id;
+
         // User can update their own attempt, host can update any attempt
-        if (
-            (examAttempt as any).userId !== user.id &&
-            (examAttempt as any).examSession.examRoom.hostId !== user.id
-        ) {
+        if ((examAttempt as any).userId !== user.id && !isHost) {
             throw new ForbiddenException(
                 'Bạn không có quyền chỉnh sửa bài làm này'
             );
         }
 
+        // score, status and violationCount reflect server-side grading and
+        // cheating detection results. Only the exam-room host may set them;
+        // a participant updating their own attempt must not be able to
+        // self-award a score or erase their violation count.
+        if (
+            !isHost &&
+            (dto.score !== undefined ||
+                dto.status !== undefined ||
+                dto.violationCount !== undefined)
+        ) {
+            throw new ForbiddenException(
+                'Bạn không có quyền cập nhật điểm số, trạng thái hoặc số lần vi phạm của bài làm này'
+            );
+        }
+
         const updateData: any = {};
 
-        if (dto.score !== undefined) {
+        if (isHost && dto.score !== undefined) {
             updateData.score = dto.score;
         }
 
-        if (dto.violationCount !== undefined) {
+        if (isHost && dto.violationCount !== undefined) {
             updateData.violationCount = dto.violationCount;
         }
 
-        if (dto.status !== undefined) {
+        if (isHost && dto.status !== undefined) {
             updateData.status = dto.status;
             // If status is COMPLETED or CANCELLED, set finishedAt
             if (
