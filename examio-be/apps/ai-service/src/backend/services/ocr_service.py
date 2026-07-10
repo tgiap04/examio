@@ -12,14 +12,17 @@ KHÔNG xử lý: Upload file, tạo UserStorage record (NestJS làm)
 """
 
 import asyncio
+import ipaddress
 import os
 import logging
+import socket
 import tempfile
 import time
 import httpx
 from typing import Optional, List, Tuple, Any, Dict
 from datetime import datetime
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 import asyncpg
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -29,14 +32,91 @@ from src.llm.gemini_embeddings import get_embedding_text_limit
 logger = logging.getLogger(__name__)
 
 DEFAULT_OCR_TEXT_CHUNK_OVERLAP = 200
+DEFAULT_MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024  # 50MB
 
 
 class FileExtractionError(Exception):
     """Raised when a file cannot be parsed into text."""
 
 
+class DownloadValidationError(FileExtractionError):
+    """Raised when a stored-file URL fails SSRF/security validation."""
+
+
 class NoContentExtractedError(Exception):
     """Raised when OCR/text extraction returns no usable content."""
+
+
+def _get_max_download_bytes() -> int:
+    return _get_int_env("MAX_DOWNLOAD_BYTES", DEFAULT_MAX_DOWNLOAD_BYTES)
+
+
+def _get_allowed_download_hosts() -> set[str]:
+    """Resolve the allow-listed hostnames for outbound file downloads.
+
+    Prefers the explicit ``R2_ALLOWED_HOSTS`` allowlist; falls back to the
+    hostname of the existing R2 public/CDN base URL (``R2_PUBLIC_URL``) used
+    elsewhere in the repo. Returns an empty set if neither is configured
+    (in which case host allow-listing is skipped, but scheme/IP checks
+    still apply).
+    """
+    raw = os.getenv("R2_ALLOWED_HOSTS", "")
+    hosts = {host.strip().lower() for host in raw.split(",") if host.strip()}
+    if hosts:
+        return hosts
+
+    r2_public_url = os.getenv("R2_PUBLIC_URL")
+    if r2_public_url:
+        hostname = urlparse(r2_public_url).hostname
+        if hostname:
+            return {hostname.lower()}
+
+    return set()
+
+
+def _validate_download_url(url: str) -> None:
+    """Validate a stored file URL before fetching it (SSRF hardening).
+
+    Requires an https scheme, an allow-listed host (when configured), and a
+    resolved address that is not private/loopback/link-local/reserved.
+    Redirects are kept disabled by the caller (httpx follow_redirects=False).
+    """
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        raise DownloadValidationError(
+            f"Refusing to download from non-https URL scheme: {parsed.scheme!r}"
+        )
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise DownloadValidationError("Download URL has no hostname")
+
+    allowed_hosts = _get_allowed_download_hosts()
+    if allowed_hosts and hostname.lower() not in allowed_hosts:
+        raise DownloadValidationError(
+            f"Host {hostname!r} is not in the allowed download host list"
+        )
+
+    try:
+        addr_infos = socket.getaddrinfo(hostname, None)
+    except socket.gaierror as exc:
+        raise DownloadValidationError(
+            f"Could not resolve download host {hostname!r}: {exc}"
+        ) from exc
+
+    link_local_v4 = ipaddress.ip_network("169.254.0.0/16")
+    for _family, _type, _proto, _canonname, sockaddr in addr_infos:
+        ip = ipaddress.ip_address(sockaddr[0])
+        if (
+            ip.is_private
+            or ip.is_loopback
+            or ip.is_link_local
+            or ip.is_reserved
+            or (ip.version == 4 and ip in link_local_v4)
+        ):
+            raise DownloadValidationError(
+                f"Refusing to download from {hostname!r}: resolves to disallowed address {ip}"
+            )
 
 
 def _get_int_env(name: str, default: int, min_value: int = 1) -> int:
@@ -246,7 +326,11 @@ class OCRProcessingService:
         Download file from R2 public URL
         Returns: (file_content, temp_file_path)
         """
-        from urllib.parse import quote, urlparse, urlunparse
+        from urllib.parse import quote, urlunparse
+
+        # SSRF hardening: only fetch https URLs pointing at an allow-listed,
+        # non-private/loopback/link-local/reserved host.
+        _validate_download_url(url)
 
         # Encode URL path to handle spaces and special characters
         parsed = urlparse(url)
@@ -255,10 +339,35 @@ class OCRProcessingService:
 
         logger.info(f"Downloading from encoded URL: {encoded_url}")
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.get(encoded_url)
-            response.raise_for_status()
-            content = response.content
+        max_bytes = _get_max_download_bytes()
+
+        # Redirects stay disabled (httpx default / explicit below) so a
+        # validated host can't redirect us to an internal address.
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=False) as client:
+            async with client.stream("GET", encoded_url) as response:
+                response.raise_for_status()
+
+                content_length = response.headers.get("content-length")
+                if content_length is not None:
+                    try:
+                        if int(content_length) > max_bytes:
+                            raise FileExtractionError(
+                                f"File too large: Content-Length={content_length} "
+                                f"exceeds limit of {max_bytes} bytes"
+                            )
+                    except ValueError:
+                        logger.warning(f"Invalid Content-Length header: {content_length!r}")
+
+                # Stream with a hard byte cap so a missing/lying Content-Length
+                # can't be used to exhaust memory.
+                buffer = bytearray()
+                async for chunk in response.aiter_bytes():
+                    buffer.extend(chunk)
+                    if len(buffer) > max_bytes:
+                        raise FileExtractionError(
+                            f"File exceeds maximum allowed download size of {max_bytes} bytes"
+                        )
+                content = bytes(buffer)
 
         # Determine file extension from URL
         ext = os.path.splitext(url.split('?')[0])[1] or '.pdf'

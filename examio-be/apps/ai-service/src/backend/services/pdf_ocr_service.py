@@ -24,6 +24,25 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+# Hard ceilings applied regardless of env overrides, so a misconfigured env
+# var can't reopen the DoS window these caps are meant to close.
+_MAX_PDF_PAGES_CEILING = 1000
+_MAX_PDF_DPI_CEILING = 400
+
+
+def _get_bounded_int_env(name: str, default: int, min_value: int, max_value: int) -> int:
+    """Read an int env var, clamped to [min_value, max_value]."""
+    raw = os.getenv(name)
+    value = default
+    if raw is not None:
+        try:
+            value = int(raw)
+        except ValueError:
+            logger.warning(f"Invalid {name}={raw!r}, using default={default}")
+            value = default
+    return max(min_value, min(value, max_value))
+
+
 # Check available libraries
 try:
     from pypdf import PdfReader, PdfWriter
@@ -65,7 +84,12 @@ class PdfOcrService:
     """
 
     CHUNK_SIZE = 10  # pages per chunk, giống be-main
-    DPI = 300  # Higher DPI = better OCR quality
+    DPI = _get_bounded_int_env(
+        "PDF_OCR_DPI", default=300, min_value=72, max_value=_MAX_PDF_DPI_CEILING
+    )  # Higher DPI = better OCR quality, capped to avoid unbounded memory/CPU use
+    MAX_PAGES = _get_bounded_int_env(
+        "MAX_PDF_PAGES", default=100, min_value=1, max_value=_MAX_PDF_PAGES_CEILING
+    )  # Cap pages rendered per convert_from_bytes() call (resource-exhaustion guard)
 
     def __init__(self):
         self._check_dependencies()
@@ -186,12 +210,20 @@ class PdfOcrService:
 
         try:
             logger.info("📷 Converting PDF to images for Tesseract...")
-            # Convert PDF pages to images at high DPI
+            # Convert PDF pages to images at high DPI, capped to MAX_PAGES to
+            # bound memory/CPU use against pathologically large PDFs.
             images = convert_from_bytes(
                 pdf_bytes,
                 dpi=self.DPI,
-                fmt='png'
+                fmt='png',
+                first_page=1,
+                last_page=self.MAX_PAGES,
             )
+
+            if len(images) >= self.MAX_PAGES:
+                logger.warning(
+                    f"⚠️ PDF chunk reached MAX_PDF_PAGES={self.MAX_PAGES}; rendering was truncated"
+                )
 
             logger.info(f"📄 Converted {len(images)} pages to images")
 
