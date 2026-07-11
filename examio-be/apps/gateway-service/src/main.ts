@@ -6,7 +6,6 @@ config({ path: join(process.cwd(), 'apps', 'gateway-service', '.env') });
 
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { GatewayModule } from './gateway.module';
 import * as cookieParser from 'cookie-parser';
@@ -41,12 +40,6 @@ async function bootstrap() {
 
     // Global prefix
     app.setGlobalPrefix('api/v1');
-
-    // Light defense-in-depth validation for typed DTOs. `whitelist` strips
-    // unknown properties; `forbidNonWhitelisted` is intentionally NOT set
-    // because several proxy handlers accept `@Body() body: any` and forward
-    // it as-is downstream.
-    app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
 
     const configuredOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || '')
         .split(',')
