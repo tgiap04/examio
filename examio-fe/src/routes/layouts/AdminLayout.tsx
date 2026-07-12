@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   BarChart3,
@@ -55,7 +55,9 @@ export function AdminLayout() {
     <div className="flex min-h-screen w-full bg-canvas text-ink">
       <aside className="hidden w-64 shrink-0 border-r border-hairline bg-canvas md:flex md:flex-col">
         <div className="flex h-16 items-center gap-2 border-b border-hairline px-5">
-          <Logo sizeLogo={28} sizeText={18} showText />
+          <Link to="/k" aria-label="Examio" className="flex items-center">
+            <Logo sizeLogo={28} sizeText={18} showText />
+          </Link>
         </div>
         <nav className="flex-1 space-y-1 px-3 py-4">
           {NAV_ITEMS.map((item) => (

@@ -245,7 +245,9 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
             "flex items-center border-b border-hairline px-3 py-4",
             collapsed ? "justify-center" : "justify-start"
           )}>
-            <Logo sizeLogo={collapsed ? 40 : 34} sizeText={22} showText={!collapsed} />
+            <Link to="/k" aria-label="Examio" className="flex items-center">
+              <Logo sizeLogo={collapsed ? 40 : 34} sizeText={22} showText={!collapsed} />
+            </Link>
           </div>
 
           <nav
