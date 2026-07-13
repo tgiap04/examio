@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useWordFamilyStore } from "@/stores/useWordFamilyStore";
-import { Skeleton, Button } from "antd";
+import { Skeleton, Button, Spin } from "antd";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -16,15 +16,58 @@ export default function WordFamilyCategoryPage() {
   const {
     currentCategory,
     loadingRootWords,
-    generating,
+    generatingSlug,
     error,
     fetchRootWords,
     generateWordFamily,
+    checkGenerationStatus,
+    abandonGeneration,
   } = useWordFamilyStore();
 
+  // Slug-scoped: only "generating" when the running job belongs to this category.
+  const generating = generatingSlug === slug;
+
   useEffect(() => {
-    if (slug) void fetchRootWords(slug);
-  }, [slug, fetchRootWords]);
+    if (!slug) return;
+    void fetchRootWords(slug);
+    // Detect a generation job already in progress (e.g. after a page reload)
+    // and resume the generating UI immediately.
+    void checkGenerationStatus(slug);
+  }, [slug, fetchRootWords, checkGenerationStatus]);
+
+  // While a job is in progress, poll its status; when it clears, refresh roots.
+  // Self-rescheduling timeout (not setInterval) so a slow response can never
+  // overlap the next tick and produce out-of-order writes.
+  useEffect(() => {
+    if (!slug || !generating) return;
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let elapsedMs = 0;
+    const POLL_INTERVAL_MS = 5000;
+    const MAX_WAIT_MS = 11 * 60 * 1000; // AI generation times out server-side at 10 min
+
+    const tick = async () => {
+      const stillGenerating = await checkGenerationStatus(slug);
+      if (cancelled) return;
+      if (!stillGenerating) {
+        void fetchRootWords(slug, true);
+        return;
+      }
+      elapsedMs += POLL_INTERVAL_MS;
+      if (elapsedMs >= MAX_WAIT_MS) {
+        // Lock likely orphaned by a server restart mid-generation — stop waiting.
+        abandonGeneration(slug);
+        return;
+      }
+      timeoutId = setTimeout(tick, POLL_INTERVAL_MS);
+    };
+
+    timeoutId = setTimeout(tick, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+  }, [slug, generating, checkGenerationStatus, fetchRootWords, abandonGeneration]);
 
   const handleGenerate = async () => {
     if (!slug) return;
@@ -68,6 +111,13 @@ export default function WordFamilyCategoryPage() {
           Tạo thêm từ gốc
         </Button>
       </div>
+
+      {generating && (
+        <div className="flex items-center gap-3 rounded-lg border border-coral/30 bg-coral/5 p-3 text-sm text-ink">
+          <Spin size="small" />
+          <span>Đang sinh word family, vui lòng đợi trong giây lát...</span>
+        </div>
+      )}
 
       {error && (
         <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
