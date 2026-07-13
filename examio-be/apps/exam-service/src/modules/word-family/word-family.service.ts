@@ -103,6 +103,23 @@ export class WordFamilyService {
 
     // ==================== AI Generation ====================
 
+    private generationLockKey(userId: string, categorySlug: string) {
+        return `wf:gen:lock:${userId}:${categorySlug}`;
+    }
+
+    async getGenerationStatus(user: User, categorySlug: string) {
+        // The lock value is a raw ISO timestamp set via getClient().set (not JSON),
+        // so read it through the raw client to avoid JSON.parse in redis.get().
+        const startedAt = await this.redis
+            .getClient()
+            .get(this.generationLockKey(user.id, categorySlug));
+        return {
+            categorySlug,
+            generating: startedAt !== null,
+            startedAt,
+        };
+    }
+
     async generateWordFamily(user: User, dto: GenerateWordFamilyDto) {
         const { categorySlug, numRootWords = 10, excludeRootWords = [] } = dto;
 
@@ -116,7 +133,7 @@ export class WordFamilyService {
         const allExcludes = [...new Set([...excludeRootWords, ...existingRoots])];
 
         // Acquire lock atomically to prevent duplicate generation
-        const lockKey = `wf:gen:lock:${user.id}:${categorySlug}`;
+        const lockKey = this.generationLockKey(user.id, categorySlug);
         const acquired = await this.redis.getClient().set(
             lockKey,
             new Date().toISOString(),

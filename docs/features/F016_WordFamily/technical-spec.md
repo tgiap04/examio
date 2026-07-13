@@ -6,7 +6,7 @@
 
 ## Overview
 
-AI-assisted vocabulary study grouped by root-word family. Students browse categories (`WordFamilyCategory`), generate new root-word groups via the Python AI service (deduplicated per category, concurrency-locked per user), save families to a personal collection, and can bridge selected words into a new `FlashCardSet` for spaced-repetition study. Two parallel admin CRUD surfaces exist for category management (admin-service primary, exam-service legacy). Redis caches every read path with a 30-minute TTL.
+AI-assisted vocabulary study grouped by root-word family. Students browse categories (`WordFamilyCategory`), generate new root-word groups via the Python AI service (deduplicated per category, concurrency-locked per user), save families to a personal collection, and can bridge selected words into a new `FlashCardSet` for spaced-repetition study. A read-only generation-status endpoint lets the category page detect an already-running job on load/reload and poll until it clears. Two parallel admin CRUD surfaces exist for category management (admin-service primary, exam-service legacy). Redis caches every read path with a 30-minute TTL.
 
 ## Polymorphic Behavior
 
@@ -25,8 +25,9 @@ N/A — no discriminator fields in Key Entities. (The AI-returned `data` JSON bl
 | FR-005 | Student can save/remove a word family to/from a personal collection | `WordFamilyService.saveToCollection` / `removeFromCollection` | yes |
 | FR-006 | Student can convert selected words into a new flashcard deck | `WordFamilyBridgeService.createFlashcardDeck` | yes |
 | FR-007 | Admin can CRUD categories (create, update, soft-delete) | `AdminWordFamilyController` / `WordFamilyController` category methods | yes |
+| FR-008 | On page load/reload, student sees whether an AI generation job is already running for the category and gets a "generating" state until it finishes | `WordFamilyController` `GET /generation-status/:slug` | yes |
 
-**Source:** `examio-be/apps/exam-service/src/modules/word-family/word-family.controller.ts:41-154`, `examio-be/apps/exam-service/src/modules/word-family/word-family-bridge.service.ts:24-97`, `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts:32-69`
+**Source:** `examio-be/apps/exam-service/src/modules/word-family/word-family.controller.ts:33-182`, `examio-be/apps/exam-service/src/modules/word-family/word-family-bridge.service.ts:24-97`, `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts:32-69`
 
 ### Business Rules
 
@@ -39,6 +40,7 @@ N/A — no discriminator fields in Key Entities. (The AI-returned `data` JSON bl
 - **BR-007**: The flashcard bridge operation is atomic — `FlashCardSet` creation, batch `FlashCard` creation, and batch `DetailsFlashCard` join creation all run inside one `prisma.$transaction`. Source: `word-family-bridge.service.ts:72`.
 - **BR-008**: If the AI response's `categorySlug` doesn't match the requested one, the Python service overrides it to the requested slug rather than failing the request. Source: `generation_service.py:944-953`.
 - **BR-009**: Word-family user routes require both a valid session AND the `word-family` page flag enabled at the gateway (`@TogglePage('word-family')`), tying this feature into F015 PageFeatureFlags. Source: `word-family-proxy.controller.ts:24-31`.
+- **BR-010**: Generation status is read-only and reuses the existing BR-002 lock rather than introducing new state — `GET /generation-status/:slug` reads `wf:gen:lock:{userId}:{categorySlug}` and reports `generating: true` for as long as that key exists, with `startedAt` set to the ISO timestamp stored in the lock value. Since the lock key is derived from the server-side authenticated user (`req.user.id`), the endpoint cannot leak another user's in-progress generation. Source: `word-family.service.ts:106-121`, `word-family.controller.ts:117-129`.
 
 ### Decision Logic
 
@@ -64,6 +66,7 @@ None.
 - **SC-002** — A second generation request for the same user+category while one is in-flight receives a conflict response, not a duplicate job.
 - **SC-003** — Converting words to a flashcard deck creates exactly one `FlashCardSet` with one `FlashCard` per selected word, and the operation is all-or-nothing.
 - **SC-004** — AI-generated word content rendered as flashcard question/answer cannot execute injected HTML/script.
+- **SC-005** — Reloading the category page while a generation job is in-flight for that user+category shows the "generating" state (not a blank/normal list), and the state clears and the root-word list refreshes once the job completes.
 
 ---
 
@@ -108,8 +111,8 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 | Symbol | Path | Purpose |
 |--------|------|---------|
 | WordFamilyCategory/WordFamily/UserSavedWordFamily (models) | `examio-be/libs/database/src/models/word-family.prisma:2-50` | Data models |
-| WordFamilyController | `examio-be/apps/exam-service/src/modules/word-family/word-family.controller.ts:41-154` | User + legacy admin routes |
-| WordFamilyService | `examio-be/apps/exam-service/src/modules/word-family/word-family.service.ts:33-221` | Category CRUD, generation orchestration, collection CRUD |
+| WordFamilyController | `examio-be/apps/exam-service/src/modules/word-family/word-family.controller.ts:33-182` | User + legacy admin routes, incl. `GET /generation-status/:slug` |
+| WordFamilyService | `examio-be/apps/exam-service/src/modules/word-family/word-family.service.ts:17-239` | Category CRUD, generation orchestration, collection CRUD, `getGenerationStatus` |
 | WordFamilyBridgeService | `examio-be/apps/exam-service/src/modules/word-family/word-family-bridge.service.ts:24-130` | Transactional flashcard conversion |
 | WordFamilyRepository | `examio-be/apps/exam-service/src/modules/word-family/word-family.repository.ts:18-196` | Redis-cached Prisma access, upsert dedup |
 | AdminWordFamilyController | `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts:32-69` | Primary admin category CRUD |
@@ -117,9 +120,9 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 | WordFamilyProxyController | `examio-be/apps/gateway-service/src/controllers/word-family-proxy.controller.ts:24-31` | Gateway proxy, `PageEnabledGuard` |
 | generation.py (AI endpoint) | `examio-be/apps/ai-service/src/backend/api/generation.py:235` | FastAPI word-family generation endpoint |
 | generation_service.py | `examio-be/apps/ai-service/src/backend/services/generation_service.py:862-1031` | Prompt build, parse, normalize |
-| useWordFamilyStore | `examio-fe/src/stores/useWordFamilyStore.ts` | FE state, cached fetches (30min/5min TTLs) |
-| wordFamilyApi | `examio-fe/src/apis/wordFamilyApi.ts:53-145` | API client (8 user + 4 admin routes) |
-| WordFamilyPage/CategoryPage/DetailPage | `examio-fe/src/pages/k/WordFamily*.tsx` | Student-facing screens |
+| useWordFamilyStore | `examio-fe/src/stores/useWordFamilyStore.ts` | FE state, cached fetches (30min/5min TTLs); slug-scoped `generatingSlug` + `checkGenerationStatus`/`abandonGeneration` for resume-on-reload |
+| wordFamilyApi | `examio-fe/src/apis/wordFamilyApi.ts:53-157` | API client (9 user + 4 admin routes), incl. `getWordFamilyGenerationStatusApi` |
+| WordFamilyPage/CategoryPage/DetailPage | `examio-fe/src/pages/k/WordFamily*.tsx` | Student-facing screens; `WordFamilyCategoryPage` polls generation status every 5s (capped ~11min) on mount and after a job clears |
 | AdminWordFamilyPage | `examio-fe/src/pages/admin/AdminWordFamilyPage.tsx` | Admin CRUD screen |
 
 ## Unresolved Questions

@@ -4,6 +4,7 @@ import {
   getRootWordsApi,
   getWordFamilyApi,
   generateWordFamilyApi,
+  getWordFamilyGenerationStatusApi,
   saveWordFamilyApi,
   getSavedWordFamiliesApi,
   removeSavedWordFamilyApi,
@@ -28,7 +29,9 @@ interface WordFamilyState {
   currentCategory: CategoryRootWords | null;
   currentWordFamily: WordFamilyData | null;
   savedIds: Set<string>;
-  generating: boolean;
+  // Slug of the category whose generation job is currently running (null = none).
+  // Scoped by slug so SPA-navigating between categories can't bleed state.
+  generatingSlug: string | null;
   loadingCategories: boolean;
   loadingRootWords: boolean;
   loadingDetail: boolean;
@@ -42,6 +45,8 @@ interface WordFamilyState {
     forceRefresh?: boolean,
   ) => Promise<void>;
   generateWordFamily: (body: GenerateWordFamilyBody) => Promise<boolean>;
+  checkGenerationStatus: (slug: string) => Promise<boolean>;
+  abandonGeneration: (slug: string) => void;
   saveWordFamily: (wordFamilyId: string) => Promise<boolean>;
   fetchSaved: (forceRefresh?: boolean) => Promise<void>;
   removeSaved: (wordFamilyId: string) => Promise<boolean>;
@@ -57,7 +62,7 @@ export const useWordFamilyStore = create<WordFamilyState>((set, get) => ({
   currentCategory: null,
   currentWordFamily: null,
   savedIds: new Set(),
-  generating: false,
+  generatingSlug: null,
   loadingCategories: false,
   loadingRootWords: false,
   loadingDetail: false,
@@ -118,17 +123,53 @@ export const useWordFamilyStore = create<WordFamilyState>((set, get) => ({
   },
 
   generateWordFamily: async (body) => {
-    set({ generating: true, error: null });
+    set({ generatingSlug: body.categorySlug, error: null });
     try {
       await generateWordFamilyApi(body);
       // Invalidate category roots cache
       storeCache.invalidate(`wf:roots:${body.categorySlug}`);
-      set({ generating: false });
+      set((s) => ({
+        generatingSlug:
+          s.generatingSlug === body.categorySlug ? null : s.generatingSlug,
+      }));
       return true;
     } catch (err) {
-      set({ generating: false, error: (err as Error).message });
+      set((s) => ({
+        generatingSlug:
+          s.generatingSlug === body.categorySlug ? null : s.generatingSlug,
+        error: (err as Error).message,
+      }));
       return false;
     }
+  },
+
+  checkGenerationStatus: async (slug) => {
+    try {
+      const { generating } = await getWordFamilyGenerationStatusApi(slug);
+      set((s) => ({
+        generatingSlug: generating
+          ? slug
+          : s.generatingSlug === slug
+            ? null
+            : s.generatingSlug,
+      }));
+      return generating;
+    } catch (err) {
+      // Status unknown on error: keep the current state and keep polling rather
+      // than falsely reporting "done" (which would clear the banner and spam a
+      // forced roots refetch). A persistent 401 unmounts the page via the axios
+      // interceptor, which tears the poll down.
+      console.error("Failed to check word-family generation status:", err);
+      return get().generatingSlug === slug;
+    }
+  },
+
+  abandonGeneration: (slug) => {
+    set((s) => ({
+      generatingSlug: s.generatingSlug === slug ? null : s.generatingSlug,
+      error:
+        "Quá trình sinh word family mất nhiều thời gian hơn dự kiến. Vui lòng thử lại sau.",
+    }));
   },
 
   saveWordFamily: async (wordFamilyId) => {
