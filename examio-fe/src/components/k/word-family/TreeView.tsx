@@ -30,30 +30,29 @@ export function TreeView({
   );
 
   return (
-    <div className="rounded-lg border border-hairline bg-surface-card p-4">
+    <div className="rounded-lg border border-hairline bg-surface-card p-5 md:p-6">
       {/* Root node */}
       <div className="flex items-center gap-3">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-coral/10 text-sm font-bold text-coral">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-coral/10 font-display text-base font-semibold text-coral">
           {rootWord.charAt(0).toUpperCase()}
         </div>
-        <span className="font-display text-lg font-medium text-ink">
+        <span className="font-display text-xl font-medium tracking-tight text-ink">
           {rootWord}
         </span>
       </div>
 
       {/* POS branches */}
-      <div className="ml-4 mt-3 border-l-2 border-hairline pl-4">
+      <div className="ml-5 mt-4 space-y-5 border-l border-hairline pl-5">
         {Object.entries(posGroups).map(([pos, items]) => (
-          <div key={pos} className="mb-3">
-            <div className="mb-1 flex items-center gap-2">
-              <div className="h-px flex-1 border-t border-dashed border-hairline" />
-              <span className="text-xs font-semibold uppercase tracking-wider text-ink/40">
+          <div key={pos}>
+            <div className="mb-2 flex items-center gap-3">
+              <span className="text-[11px] font-semibold uppercase tracking-[1.5px] text-ink/40">
                 {pos}
               </span>
               <div className="h-px flex-1 border-t border-dashed border-hairline" />
             </div>
 
-            <div className="ml-4 space-y-1 border-l-2 border-hairline pl-4">
+            <div className="ml-1 space-y-0.5 border-l border-hairline pl-4">
               {items.map(({ word, idx }) => (
                 <WordFamilyNode
                   key={idx}
