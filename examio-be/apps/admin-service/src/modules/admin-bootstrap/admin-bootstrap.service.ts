@@ -137,24 +137,33 @@ export class AdminBootstrapService implements OnModuleInit {
             action: BootstrapAction;
             userId?: string;
         }> = [];
+
+        // Single batched lookup instead of one findUnique per email (N+1).
+        let usersByEmail: Map<string, { id: string; isAdmin: boolean }>;
+        try {
+            const users = await this.prisma.user.findMany({
+                where: { email: { in: emails } },
+                select: { id: true, email: true, isAdmin: true },
+            });
+            usersByEmail = new Map(users.map((user) => [user.email, user]));
+        } catch (err) {
+            this.logger.error(
+                `Lookup failed for admin emails: ${(err as Error).message}`
+            );
+            return emails.map((email) => ({
+                email,
+                action: 'error' as BootstrapAction,
+            }));
+        }
+
         for (const email of emails) {
-            try {
-                const user = await this.prisma.user.findUnique({
-                    where: { email },
-                    select: { id: true, isAdmin: true },
-                });
-                if (!user) {
-                    intentions.push({ email, action: 'create' });
-                } else if (user.isAdmin === true) {
-                    intentions.push({ email, action: 'skip', userId: user.id });
-                } else {
-                    intentions.push({ email, action: 'grant', userId: user.id });
-                }
-            } catch (err) {
-                this.logger.error(
-                    `Lookup failed for ${email}: ${(err as Error).message}`
-                );
-                intentions.push({ email, action: 'error' });
+            const user = usersByEmail.get(email);
+            if (!user) {
+                intentions.push({ email, action: 'create' });
+            } else if (user.isAdmin === true) {
+                intentions.push({ email, action: 'skip', userId: user.id });
+            } else {
+                intentions.push({ email, action: 'grant', userId: user.id });
             }
         }
         return intentions;

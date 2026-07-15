@@ -577,48 +577,50 @@ export class ExamAttemptService {
 
         // If distinctUser is true, get only the latest attempt per user
         if (distinctUser) {
-            // Get all attempts ordered by startedAt desc
-            const allAttempts = await this.prisma.examAttempt.findMany({
-                where: {
-                    examSession: {
-                        examRoomId: examRoomId,
-                    },
+            const distinctWhere = {
+                examSession: {
+                    examRoomId: examRoomId,
                 },
-                include: {
-                    user: {
-                        select: {
-                            id: true,
-                            username: true,
-                            name: true,
-                            email: true,
-                            avatar: true,
+            };
+
+            // Let the DB pick the latest attempt per user (distinct + orderBy)
+            // and page directly over the distinct groups, instead of loading
+            // every attempt in the room into memory to dedup/slice in JS.
+            const [paginatedAttempts, distinctUserGroups] = await Promise.all([
+                this.prisma.examAttempt.findMany({
+                    where: distinctWhere,
+                    distinct: ['userId'],
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                username: true,
+                                name: true,
+                                email: true,
+                                avatar: true,
+                            },
+                        },
+                        examSession: {
+                            select: {
+                                id: true,
+                                startTime: true,
+                                endTime: true,
+                            },
                         },
                     },
-                    examSession: {
-                        select: {
-                            id: true,
-                            startTime: true,
-                            endTime: true,
-                        },
-                    },
-                },
-                orderBy: { startedAt: 'desc' },
-            });
+                    orderBy: { startedAt: 'desc' },
+                    skip,
+                    take: limit,
+                }),
+                // COUNT(DISTINCT userId) equivalent for the total, without
+                // fetching/joining every row.
+                this.prisma.examAttempt.groupBy({
+                    by: ['userId'],
+                    where: distinctWhere,
+                }),
+            ]);
 
-            // Group by userId and take the most recent (first occurrence)
-            const uniqueUserMap = new Map();
-            const uniqueAttempts: typeof allAttempts = [];
-
-            for (const attempt of allAttempts) {
-                if (!uniqueUserMap.has(attempt.userId)) {
-                    uniqueUserMap.set(attempt.userId, true);
-                    uniqueAttempts.push(attempt);
-                }
-            }
-
-            // Apply pagination to unique attempts
-            const paginatedAttempts = uniqueAttempts.slice(skip, skip + limit);
-            const total = uniqueAttempts.length;
+            const total = distinctUserGroups.length;
 
             // Transform data
             const transformedAttempts = paginatedAttempts.map((attempt) => {
@@ -901,97 +903,122 @@ export class ExamAttemptService {
         // If distinctUser is true, get only the best attempt per user
         // BUT aggregate violation counts from ALL attempts
         if (distinctUser) {
-            // Get all attempts ordered by score desc
-            const allAttempts = await this.prisma.examAttempt.findMany({
-                where: { examSessionId: sessionId },
-                include: {
-                    user: {
-                        select: {
-                            id: true,
-                            username: true,
-                            name: true,
-                            email: true,
-                            avatar: true,
-                        },
-                    },
-                    examSession: {
-                        select: {
-                            id: true,
-                            startTime: true,
-                            endTime: true,
-                        },
-                    },
-                },
-                orderBy: { score: 'desc' },
-            });
+            const baseWhere = { examSessionId: sessionId };
 
-            // Group by userId:
-            // - Take the best score attempt as representative
-            // - SUM violationCount from all attempts
-            // - COUNT total attempts per user
-            const userAttemptsMap = new Map<
+            // Page over users directly: groupBy computes the per-user
+            // violationCount sum + attempt count + best score in SQL, and
+            // orderBy/skip/take page the *users* (not the raw attempt rows).
+            const [userAggregates, allUserGroups] = await Promise.all([
+                this.prisma.examAttempt.groupBy({
+                    by: ['userId'],
+                    where: baseWhere,
+                    _sum: { violationCount: true },
+                    _count: { _all: true },
+                    _max: { score: true },
+                    orderBy: { _max: { score: 'desc' } },
+                    skip,
+                    take: limit,
+                }),
+                // COUNT(DISTINCT userId) equivalent for the total.
+                this.prisma.examAttempt.groupBy({
+                    by: ['userId'],
+                    where: baseWhere,
+                }),
+            ]);
+
+            const total = allUserGroups.length;
+            const pagedUserIds = userAggregates.map((g) => g.userId);
+
+            // Fetch the representative (best score) attempt per paged user in
+            // a single bounded query instead of loading the whole session.
+            const candidateAttempts = pagedUserIds.length
+                ? await this.prisma.examAttempt.findMany({
+                      where: {
+                          examSessionId: sessionId,
+                          userId: { in: pagedUserIds },
+                      },
+                      include: {
+                          user: {
+                              select: {
+                                  id: true,
+                                  username: true,
+                                  name: true,
+                                  email: true,
+                                  avatar: true,
+                              },
+                          },
+                          examSession: {
+                              select: {
+                                  id: true,
+                                  startTime: true,
+                                  endTime: true,
+                              },
+                          },
+                      },
+                      orderBy: { score: 'desc' },
+                  })
+                : [];
+
+            // First occurrence per userId in a score-desc list is the best
+            // attempt for that user - same tie-breaking semantics as before.
+            const bestAttemptByUser = new Map<
                 string,
-                {
-                    bestAttempt: (typeof allAttempts)[0];
-                    totalViolations: number;
-                    attemptCount: number;
-                }
+                (typeof candidateAttempts)[0]
             >();
-
-            for (const attempt of allAttempts) {
-                const existing = userAttemptsMap.get(attempt.userId);
-                if (existing) {
-                    existing.totalViolations += attempt.violationCount;
-                    existing.attemptCount += 1;
-                } else {
-                    userAttemptsMap.set(attempt.userId, {
-                        bestAttempt: attempt, // First one is best due to orderBy score desc
-                        totalViolations: attempt.violationCount,
-                        attemptCount: 1,
-                    });
+            for (const attempt of candidateAttempts) {
+                if (!bestAttemptByUser.has(attempt.userId)) {
+                    bestAttemptByUser.set(attempt.userId, attempt);
                 }
             }
 
-            const uniqueData = Array.from(userAttemptsMap.values());
+            const aggregateByUser = new Map(
+                userAggregates.map((g) => [g.userId, g])
+            );
 
-            // Apply pagination
-            const paginatedData = uniqueData.slice(skip, skip + limit);
-            const total = uniqueData.length;
+            // Transform data with aggregated violation count, preserving the
+            // best-score-desc user order produced by the groupBy above.
+            const transformedAttempts = pagedUserIds
+                .map((userId) => {
+                    const attempt = bestAttemptByUser.get(userId);
+                    const agg = aggregateByUser.get(userId);
+                    if (!attempt || !agg) {
+                        return null;
+                    }
 
-            // Transform data with aggregated violation count
-            const transformedAttempts = paginatedData.map((data) => {
-                const attempt = data.bestAttempt;
-                let timeSpentSeconds = 0;
-                if (attempt.finishedAt && attempt.startedAt) {
-                    timeSpentSeconds = Math.floor(
-                        (new Date(attempt.finishedAt).getTime() -
-                            new Date(attempt.startedAt).getTime()) /
-                            1000
-                    );
-                }
+                    let timeSpentSeconds = 0;
+                    if (attempt.finishedAt && attempt.startedAt) {
+                        timeSpentSeconds = Math.floor(
+                            (new Date(attempt.finishedAt).getTime() -
+                                new Date(attempt.startedAt).getTime()) /
+                                1000
+                        );
+                    }
 
-                return {
-                    id: attempt.id,
-                    status: attempt.status,
-                    score: attempt.score,
-                    totalQuestions: attempt.totalQuestions,
-                    correctAnswers: attempt.correctAnswers,
-                    startedAt: attempt.startedAt,
-                    finishedAt: attempt.finishedAt,
-                    timeSpentSeconds,
-                    // Return AGGREGATED violation count from all attempts
-                    violationCount: data.totalViolations,
-                    // Return count of attempts for this user
-                    attemptCount: data.attemptCount,
-                    answers: attempt.answers,
-                    user: attempt.user,
-                    session: {
-                        id: attempt.examSession.id,
-                        startTime: attempt.examSession.startTime,
-                        endTime: attempt.examSession.endTime,
-                    },
-                };
-            });
+                    return {
+                        id: attempt.id,
+                        status: attempt.status,
+                        score: attempt.score,
+                        totalQuestions: attempt.totalQuestions,
+                        correctAnswers: attempt.correctAnswers,
+                        startedAt: attempt.startedAt,
+                        finishedAt: attempt.finishedAt,
+                        timeSpentSeconds,
+                        // Return AGGREGATED violation count from all attempts
+                        violationCount: agg._sum.violationCount ?? 0,
+                        // Return count of attempts for this user
+                        attemptCount: agg._count._all,
+                        answers: attempt.answers,
+                        user: attempt.user,
+                        session: {
+                            id: attempt.examSession.id,
+                            startTime: attempt.examSession.startTime,
+                            endTime: attempt.examSession.endTime,
+                        },
+                    };
+                })
+                .filter(
+                    (item): item is NonNullable<typeof item> => item !== null
+                );
 
             return {
                 attempts: transformedAttempts,
@@ -1098,16 +1125,12 @@ export class ExamAttemptService {
             throw new BadRequestException('Phiên thi đã kết thúc');
         }
 
-        // Check if user has reached max attempts
-        const existingAttempts = await this.examAttemptRepository.findAll({
-            where: {
-                examSessionId: dto.examSessionId,
-                userId: user.id,
-            },
-            cache: true,
-        });
-
-        const attemptCount = existingAttempts.length;
+        // Check if user has reached max attempts - use a COUNT query instead
+        // of loading every prior attempt row just to read its length.
+        const attemptCount = await this.examAttemptRepository.countUserAttempts(
+            user.id,
+            dto.examSessionId
+        );
 
         // Use ExamSession settings for retry check
         if (!(examSession as any).allowRetake && attemptCount > 0) {
@@ -1481,7 +1504,7 @@ export class ExamAttemptService {
         }
 
         // Execute all count queries in parallel for O(1) performance
-        const [totalPDFs, examsCreated, flashcardSets, examAttempts] =
+        const [totalPDFs, examsCreated, flashcardSets, durationResult] =
             await Promise.all([
                 // Count PDFs uploaded by user (indexed on userId)
                 this.prisma.userStorage.count({
@@ -1495,31 +1518,20 @@ export class ExamAttemptService {
                 this.prisma.flashCardSet.count({
                     where: { userId: user.id },
                 }),
-                // Get total time spent on exams (for study hours calculation)
-                this.prisma.examAttempt.findMany({
-                    where: {
-                        userId: user.id,
-                        status: EXAM_ATTEMPT_STATUS.COMPLETED,
-                        finishedAt: { not: null },
-                    },
-                    select: {
-                        startedAt: true,
-                        finishedAt: true,
-                    },
-                }),
+                // Sum total time spent on exams directly in SQL instead of
+                // loading every completed attempt's timestamps into memory.
+                this.prisma.$queryRaw<{ totalSeconds: number | null }[]>`
+                    SELECT COALESCE(SUM(EXTRACT(EPOCH FROM ("finishedAt" - "startedAt"))), 0) AS "totalSeconds"
+                    FROM "ExamAttempt"
+                    WHERE "userId" = ${user.id}
+                        AND "status" = ${EXAM_ATTEMPT_STATUS.COMPLETED}
+                        AND "finishedAt" IS NOT NULL
+                `,
             ]);
 
-        // Calculate total study hours from exam attempts
-        let totalMinutes = 0;
-        for (const attempt of examAttempts) {
-            if (attempt.finishedAt && attempt.startedAt) {
-                const diffMs =
-                    new Date(attempt.finishedAt).getTime() -
-                    new Date(attempt.startedAt).getTime();
-                totalMinutes += diffMs / (1000 * 60);
-            }
-        }
-        const totalStudyHours = Math.round(totalMinutes / 60);
+        // Calculate total study hours from the summed duration (seconds -> hours)
+        const totalSeconds = Number(durationResult[0]?.totalSeconds ?? 0);
+        const totalStudyHours = Math.round(totalSeconds / 3600);
 
         const stats = {
             totalPDFs,

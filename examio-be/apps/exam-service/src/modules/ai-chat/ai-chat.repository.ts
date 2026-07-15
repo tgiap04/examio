@@ -98,6 +98,20 @@ export class AIChatRepository {
         });
     }
 
+    /**
+     * Fetch only the most recent `limit` messages for a chat, returned in
+     * chronological order. Used to build AI context without loading the
+     * entire (potentially unbounded) message history.
+     */
+    async findRecentMessages(chatId: string, limit: number) {
+        const messages = await this.prisma.aIChatMessage.findMany({
+            where: { chatId },
+            orderBy: { createdAt: 'desc' },
+            take: limit,
+        });
+        return messages.reverse();
+    }
+
     async findMessageById(messageId: string) {
         return this.prisma.aIChatMessage.findUnique({
             where: { id: messageId },
