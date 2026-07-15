@@ -698,6 +698,10 @@ export class FlashcardsetService {
                 });
 
                 const existingMap = new Map<string, Set<string>>();
+                const existingDetailMap = new Map<
+                    string,
+                    (typeof existingFlashcards)[number]
+                >();
                 for (const ef of existingFlashcards) {
                     const hash = this.hashFlashcard(
                         ef.flashCard.question,
@@ -707,6 +711,12 @@ export class FlashcardsetService {
                         existingMap.set(ef.flashCardSetId, new Set());
                     }
                     existingMap.get(ef.flashCardSetId)!.add(hash);
+
+                    const detailKey = `${ef.flashCardSetId}|${ef.flashCard.question}|${ef.flashCard.answer}`;
+                    if (!existingDetailMap.has(detailKey)) {
+                        // Preserve Array.prototype.find's first-match semantics
+                        existingDetailMap.set(detailKey, ef);
+                    }
                 }
 
                 const flashcardsToCreate: any[] = [];
@@ -756,12 +766,8 @@ export class FlashcardsetService {
 
                         if (existingSet && existingSet.has(hash)) {
                             // Check if labelId needs to be updated for existing flashcard
-                            const existingDetail = existingFlashcards.find(
-                                (ef) =>
-                                    ef.flashCardSetId === flashcardSetId &&
-                                    ef.flashCard.question ===
-                                        flashcard.question &&
-                                    ef.flashCard.answer === flashcard.answer
+                            const existingDetail = existingDetailMap.get(
+                                `${flashcardSetId}|${flashcard.question}|${flashcard.answer}`
                             );
 
                             if (
@@ -816,14 +822,32 @@ export class FlashcardsetService {
                 }
 
                 // Update existing flashcards with new labelId
+                // Group by target labelId so each distinct labelId issues a single updateMany
+                // instead of one query per (flashCardSetId, flashCardId) pair
+                const updatesByLabelId = new Map<
+                    string | null,
+                    { flashCardSetId: string; flashCardId: string }[]
+                >();
                 for (const update of detailsToUpdate) {
+                    if (!updatesByLabelId.has(update.labelId)) {
+                        updatesByLabelId.set(update.labelId, []);
+                    }
+                    updatesByLabelId.get(update.labelId)!.push({
+                        flashCardSetId: update.flashCardSetId,
+                        flashCardId: update.flashCardId,
+                    });
+                }
+
+                for (const [labelId, pairs] of updatesByLabelId) {
                     await tx.detailsFlashCard.updateMany({
                         where: {
-                            flashCardSetId: update.flashCardSetId,
-                            flashCardId: update.flashCardId,
+                            OR: pairs.map((pair) => ({
+                                flashCardSetId: pair.flashCardSetId,
+                                flashCardId: pair.flashCardId,
+                            })),
                         },
                         data: {
-                            labelId: update.labelId,
+                            labelId,
                         },
                     });
                 }

@@ -363,14 +363,13 @@ export class ExamRoomService {
                 },
             }),
             // Count distinct participants across ALL sessions in this room
-            this.prisma.examAttempt.findMany({
+            this.prisma.examAttempt.groupBy({
+                by: ['userId'],
                 where: {
                     examSession: {
                         examRoomId: examRoomId,
                     },
                 },
-                distinct: ['userId'],
-                select: { userId: true },
             }),
         ]);
 

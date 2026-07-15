@@ -30,6 +30,12 @@ export class AIChatService implements OnModuleInit {
     private readonly aiServiceUrl =
         process.env.AI_SERVICE_URL || 'http://localhost:8000/api';
     private subscriptionService: SubscriptionService;
+    /**
+     * trimHistoryForAI only keeps the last 4 messages for AI context, so we
+     * fetch a small buffer beyond that (6) instead of the full chat history,
+     * which would otherwise grow unbounded with conversation length.
+     */
+    private readonly aiHistoryFetchLimit = 6;
 
     constructor(
         private readonly chatRepository: AIChatRepository,
@@ -192,8 +198,12 @@ export class AIChatService implements OnModuleInit {
             documentName: data.documentName,
         });
 
-        // Get history for context - sliding window of 30 recent messages
-        const history = await this.chatRepository.findMessagesByChatId(chatId);
+        // Get history for context - fetch only the recent messages needed
+        // by trimHistoryForAI instead of the entire chat history
+        const history = await this.chatRepository.findRecentMessages(
+            chatId,
+            this.aiHistoryFetchLimit
+        );
         const historyForAI = this.trimHistoryForAI(history);
 
         // Collect all document IDs: from DTO + from chat's linked documents
@@ -325,8 +335,12 @@ export class AIChatService implements OnModuleInit {
 
         const subject = new Subject<any>();
 
-        // 2. Prepare History & Payload
-        const history = await this.chatRepository.findMessagesByChatId(chatId);
+        // 2. Prepare History & Payload - fetch only the recent messages
+        // needed by trimHistoryForAI instead of the entire chat history
+        const history = await this.chatRepository.findRecentMessages(
+            chatId,
+            this.aiHistoryFetchLimit
+        );
         const historyForAI = this.trimHistoryForAI(history);
 
         const userStorageId =
@@ -722,15 +736,21 @@ export class AIChatService implements OnModuleInit {
             const documentIds =
                 await this.chatRepository.getDocumentIds(chatId);
 
+            // Preload all file info in a single query to avoid an N+1
+            // findUnique call per document
+            const userStorages = await this.prisma.userStorage.findMany({
+                where: { id: { in: documentIds } },
+                select: { id: true, filename: true, keyR2: true },
+            });
+            const userStorageById = new Map(
+                userStorages.map((storage) => [storage.id, storage])
+            );
+
             // Delete each file from R2 and database
             for (const docId of documentIds) {
                 try {
                     // Get file info
-                    const userStorage =
-                        await this.prisma.userStorage.findUnique({
-                            where: { id: docId },
-                            select: { id: true, filename: true, keyR2: true },
-                        });
+                    const userStorage = userStorageById.get(docId);
 
                     if (userStorage) {
                         // Delete from R2

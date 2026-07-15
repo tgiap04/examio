@@ -716,16 +716,31 @@ export class QuizsetService {
                     }
                 );
 
-                const existingMap = new Map<string, Set<string>>();
+                // Map: quizSetId -> (hash -> existing detail).
+                // Hash is computed once per row here (instead of on every
+                // find() scan below), and the detail object is kept
+                // alongside the hash so we can look up labelId in O(1).
+                const existingMap = new Map<
+                    string,
+                    Map<string, { quizQuestionId: string; labelId: string | null }>
+                >();
                 for (const eq of existingQuestions) {
                     const hash = this.hashQuestion(
                         eq.quizQuestion.question,
                         eq.quizQuestion.answer
                     );
                     if (!existingMap.has(eq.quizSetId)) {
-                        existingMap.set(eq.quizSetId, new Set());
+                        existingMap.set(eq.quizSetId, new Map());
                     }
-                    existingMap.get(eq.quizSetId)!.add(hash);
+                    const detailsForSet = existingMap.get(eq.quizSetId)!;
+                    // Keep the first occurrence per (quizSetId, hash), matching
+                    // the previous Array.prototype.find() semantics.
+                    if (!detailsForSet.has(hash)) {
+                        detailsForSet.set(hash, {
+                            quizQuestionId: eq.quizQuestionId,
+                            labelId: eq.labelId,
+                        });
+                    }
                 }
 
                 const questionsToCreate: any[] = [];
@@ -771,25 +786,15 @@ export class QuizsetService {
                     const questionId = questionIdMap.get(hash)!;
 
                     for (const quizSetId of quizSetIds) {
-                        const existingSet = existingMap.get(quizSetId);
+                        const existingSetMap = existingMap.get(quizSetId);
                         const targetLabelId = labelMap.get(quizSetId) || null;
 
-                        if (existingSet && existingSet.has(hash)) {
+                        const existingDetail = existingSetMap?.get(hash);
+
+                        if (existingDetail) {
                             // Question already exists in this quizset
                             // Check if labelId needs to be updated
-                            const existingDetail = existingQuestions.find(
-                                (eq) =>
-                                    eq.quizSetId === quizSetId &&
-                                    this.hashQuestion(
-                                        eq.quizQuestion.question,
-                                        eq.quizQuestion.answer
-                                    ) === hash
-                            );
-
-                            if (
-                                existingDetail &&
-                                existingDetail.labelId !== targetLabelId
-                            ) {
+                            if (existingDetail.labelId !== targetLabelId) {
                                 // Update labelId for existing question
                                 detailsToUpdate.push({
                                     quizSetId,
@@ -812,10 +817,17 @@ export class QuizsetService {
                             labelId: targetLabelId,
                         });
 
-                        if (!existingSet) {
-                            existingMap.set(quizSetId, new Set([hash]));
+                        const newDetail = {
+                            quizQuestionId: questionId,
+                            labelId: targetLabelId,
+                        };
+                        if (!existingSetMap) {
+                            existingMap.set(
+                                quizSetId,
+                                new Map([[hash, newDetail]])
+                            );
                         } else {
-                            existingSet.add(hash);
+                            existingSetMap.set(hash, newDetail);
                         }
                     }
                 }
@@ -836,15 +848,36 @@ export class QuizsetService {
                     });
                 }
 
-                // Update existing questions with new labelId
+                // Update existing questions with new labelId.
+                // Group by target labelId so all rows sharing the same new
+                // labelId are updated in a single `updateMany` call, instead
+                // of issuing one UPDATE per row. Each pair is matched via the
+                // (quizSetId, quizQuestionId) unique constraint, so the same
+                // rows end up with the same labelId as before.
+                const updatesByLabelId = new Map<
+                    string | null,
+                    { quizSetId: string; quizQuestionId: string }[]
+                >();
                 for (const update of detailsToUpdate) {
+                    if (!updatesByLabelId.has(update.labelId)) {
+                        updatesByLabelId.set(update.labelId, []);
+                    }
+                    updatesByLabelId.get(update.labelId)!.push({
+                        quizSetId: update.quizSetId,
+                        quizQuestionId: update.quizQuestionId,
+                    });
+                }
+
+                for (const [labelId, pairs] of updatesByLabelId) {
                     await tx.detailsQuizQuestion.updateMany({
                         where: {
-                            quizSetId: update.quizSetId,
-                            quizQuestionId: update.quizQuestionId,
+                            OR: pairs.map((pair) => ({
+                                quizSetId: pair.quizSetId,
+                                quizQuestionId: pair.quizQuestionId,
+                            })),
                         },
                         data: {
-                            labelId: update.labelId,
+                            labelId,
                         },
                     });
                 }

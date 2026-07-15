@@ -28,8 +28,8 @@ export class StudentService {
                             avatar: true,
                         },
                     },
-                    detailsFlashCard: {
-                        select: { id: true },
+                    _count: {
+                        select: { detailsFlashCard: true },
                     },
                     userPins: {
                         where: { userId },
@@ -72,7 +72,7 @@ export class StudentService {
             description: set.description,
             thumbnail: set.thumbnail,
             viewCount: set.viewCount,
-            flashcardCount: set.detailsFlashCard.length,
+            flashcardCount: set._count.detailsFlashCard,
             lastViewedAt: set.updatedAt.toISOString(),
             createdAt: set.createdAt.toISOString(),
             creator: {

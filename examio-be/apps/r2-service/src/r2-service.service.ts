@@ -3,6 +3,7 @@ import {
     PutObjectCommand,
     GetObjectCommand,
     DeleteObjectCommand,
+    DeleteObjectsCommand,
     ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
@@ -154,32 +155,74 @@ export class R2ServiceService {
 
     /**
      * List files trong một directory
+     *
+     * Phân trang qua toàn bộ object trong prefix bằng ContinuationToken —
+     * `maxKeys` chỉ là kích thước mỗi trang gọi tới S3, không còn là giới hạn
+     * tổng số kết quả trả về (tránh under-listing khi directory có >1000 object).
      */
     async listFiles(directory?: string, maxKeys: number = 1000) {
-        const res = await this.s3.send(
-            new ListObjectsV2Command({
-                Bucket: r2Config.bucket,
-                Prefix: directory,
-                MaxKeys: maxKeys,
-            })
-        );
+        const items: {
+            key: string;
+            size: number;
+            lastModified: Date;
+            url: string;
+        }[] = [];
+        let continuationToken: string | undefined;
 
-        return (
-            res.Contents?.map((item) => ({
-                key: item.Key!,
-                size: item.Size!,
-                lastModified: item.LastModified!,
-                url: this.getPublicUrl(item.Key!),
-            })) || []
-        );
+        do {
+            const res = await this.s3.send(
+                new ListObjectsV2Command({
+                    Bucket: r2Config.bucket,
+                    Prefix: directory,
+                    MaxKeys: maxKeys,
+                    ContinuationToken: continuationToken,
+                })
+            );
+
+            for (const item of res.Contents ?? []) {
+                items.push({
+                    key: item.Key!,
+                    size: item.Size!,
+                    lastModified: item.LastModified!,
+                    url: this.getPublicUrl(item.Key!),
+                });
+            }
+
+            continuationToken = res.IsTruncated
+                ? res.NextContinuationToken
+                : undefined;
+        } while (continuationToken);
+
+        return items;
     }
 
     /**
      * Xóa nhiều files trong một directory
+     *
+     * Dùng DeleteObjectsCommand để batch-delete tối đa 1000 key/lần thay vì
+     * một DeleteObjectCommand cho mỗi object (giảm số round-trip HTTP tới R2).
+     * `listFiles` đã phân trang nên danh sách này bao gồm TOÀN BỘ object
+     * trong directory, kể cả khi vượt quá 1000 object.
      */
     async deleteDirectory(directory: string): Promise<number> {
         const files = await this.listFiles(directory);
-        await Promise.all(files.map((file) => this.deleteFile(file.key)));
+        if (!files.length) {
+            return 0;
+        }
+
+        const chunkSize = 1000;
+        for (let i = 0; i < files.length; i += chunkSize) {
+            const chunk = files.slice(i, i + chunkSize);
+            await this.s3.send(
+                new DeleteObjectsCommand({
+                    Bucket: r2Config.bucket,
+                    Delete: {
+                        Objects: chunk.map((file) => ({ Key: file.key })),
+                    },
+                })
+            );
+        }
+
         return files.length;
     }
 }

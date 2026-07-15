@@ -221,21 +221,23 @@ export class AdminUsersService {
                     data,
                 });
 
-                for (const field of diff) {
+                // Batch audit writes — one DB round-trip for all changed
+                // fields instead of one adminAudit.create per field.
+                const auditRows = diff.map((field) => {
                     const from = existing[field] as unknown;
                     const to = updated[field] as unknown;
-                    await this.auditWriter.write(
-                        {
-                            adminId: ctx.adminId,
-                            action: 'admin.user.update',
-                            targetId: id,
-                            payload: { field, from, to },
-                            ipAddress: ctx.ipAddress,
-                            userAgent: ctx.userAgent,
-                        },
-                        { tx }
-                    );
-                }
+                    return {
+                        adminId: ctx.adminId,
+                        action: 'admin.user.update',
+                        targetId: id,
+                        payload: { field, from, to },
+                        ipAddress: ctx.ipAddress ?? null,
+                        userAgent: ctx.userAgent ?? null,
+                    };
+                });
+
+                const client: any = tx;
+                await client.adminAudit.createMany({ data: auditRows });
 
                 return { user: updated, changedFields: diff };
             },
