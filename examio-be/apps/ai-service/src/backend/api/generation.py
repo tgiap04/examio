@@ -66,6 +66,10 @@ class GenerateWordFamilyBody(BaseModel):
         max_length=50,
         description="Root words to exclude (already generated)"
     )
+    rootWord: Optional[str] = Field(
+        default=None,
+        description="When set, generate the word family for THIS specific root word"
+    )
     modelType: Optional[str] = Field(
         default=None,
         description='Model id from registry'
@@ -256,6 +260,7 @@ async def generate_word_family(body: GenerateWordFamilyBody):
         category_name=body.categoryName,
         num_root_words=body.numRootWords,
         exclude_root_words=body.excludeRootWords,
+        root_word=body.rootWord,
         model_type=body.modelType,
     )
 

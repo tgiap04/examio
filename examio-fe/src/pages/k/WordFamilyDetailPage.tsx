@@ -12,6 +12,7 @@ import {
   SaveOutlined,
   ApartmentOutlined,
   UnorderedListOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 import {
   Breadcrumb,
@@ -32,9 +33,11 @@ export default function WordFamilyDetailPage() {
     loadingDetail,
     error,
     savedIds,
+    regeneratingRoot,
     fetchWordFamily,
     fetchSaved,
     saveWordFamily,
+    generateWordFamilyForRoot,
   } = useWordFamilyStore();
 
   const [viewMode, setViewMode] = useState<"tree" | "list">("tree");
@@ -86,6 +89,15 @@ export default function WordFamilyDetailPage() {
     const ok = await saveWordFamily(currentWordFamily.id);
     if (ok) toast.success("Đã lưu vào bộ sưu tập!");
     else toast.error("Lưu thất bại");
+  };
+
+  const isGenerating = !!rootWord && regeneratingRoot === rootWord;
+
+  const handleGenerate = async () => {
+    if (!slug || !rootWord) return;
+    const ok = await generateWordFamilyForRoot(slug, rootWord);
+    if (ok) toast.success(`Đã sinh từ con cho "${rootWord}"!`);
+    else toast.error("Sinh từ con thất bại. Vui lòng thử lại.");
   };
 
   const words = currentWordFamily?.words ?? [];
@@ -168,9 +180,17 @@ export default function WordFamilyDetailPage() {
             </div>
 
             <Button
+              icon={<ThunderboltOutlined />}
+              onClick={handleGenerate}
+              loading={isGenerating}
+            >
+              {isGenerating ? "Đang sinh..." : "Sinh lại từ con"}
+            </Button>
+
+            <Button
               icon={<SaveOutlined />}
               onClick={handleSave}
-              disabled={isSaved}
+              disabled={isSaved || isGenerating}
             >
               {isSaved ? "Đã lưu" : "Lưu"}
             </Button>
@@ -201,8 +221,19 @@ export default function WordFamilyDetailPage() {
         )}
 
         {!loadingDetail && words.length === 0 && !error && (
-          <div className="rounded-xl border border-dashed border-hairline bg-surface-soft/60 px-6 py-14 text-center text-sm text-ink/55">
-            Không có dữ liệu từ vựng.
+          <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-hairline bg-surface-soft/60 px-6 py-14 text-center">
+            <p className="text-sm text-ink/55">
+              Chưa có từ con cho từ gốc &ldquo;{rootWord}&rdquo;.
+            </p>
+            <Button
+              type="primary"
+              size="large"
+              icon={<ThunderboltOutlined />}
+              onClick={handleGenerate}
+              loading={isGenerating}
+            >
+              {isGenerating ? "Đang sinh..." : `Sinh từ con cho "${rootWord}"`}
+            </Button>
           </div>
         )}
 

@@ -14,6 +14,11 @@ export interface GenerateWordFamilyBody {
   excludeRootWords?: string[];
 }
 
+export interface GenerateRootWordFamilyBody {
+  categorySlug: string;
+  rootWord: string;
+}
+
 export interface CreateCategoryBody {
   name: string;
   slug: string;
@@ -82,6 +87,13 @@ export async function generateWordFamilyApi(
   body: GenerateWordFamilyBody,
 ): Promise<WordFamilyRecord> {
   const response = await api.post("/word-family/generate", body);
+  return response.data;
+}
+
+export async function generateWordFamilyForRootApi(
+  body: GenerateRootWordFamilyBody,
+): Promise<WordFamilyRecord> {
+  const response = await api.post("/word-family/generate-root", body);
   return response.data;
 }
 

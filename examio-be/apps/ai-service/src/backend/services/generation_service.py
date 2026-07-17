@@ -62,6 +62,10 @@ class WordFamilyRequest(BaseModel):
     category_name: str = Field(..., description="Category display name")
     num_root_words: int = Field(default=10, ge=1, le=20, description="Number of root words to generate")
     exclude_root_words: List[str] = Field(default_factory=list, description="Root words to exclude (already generated)")
+    root_word: Optional[str] = Field(
+        default=None,
+        description="When set, generate the word family for THIS specific root word instead of AI-picked ones",
+    )
     model_type: Optional[str] = Field(default=None, description="Model id from registry")
 
 
@@ -865,23 +869,42 @@ class ContentGenerationService:
         category_slug: str,
         num_words: int,
         exclude_root_words: List[str],
+        root_word: Optional[str] = None,
     ) -> str:
-        """Build prompt for word family generation"""
-        exclude_clause = ""
-        if exclude_root_words:
-            exclude_clause = (
-                "\nExclude these root words that have already been generated: "
-                + ", ".join(exclude_root_words)
+        """Build prompt for word family generation.
+
+        When ``root_word`` is provided, generate the word family for THAT specific
+        root word; otherwise let the model pick a category-relevant root word.
+        """
+        if root_word:
+            root_clause = (
+                f"Generate the complete word family for the specific root word "
+                f"\"{root_word}\" in the context of the category "
+                f"\"{category_name}\" (slug: {category_slug}).\n"
+                f'The "rootWord" field in the JSON MUST be exactly "{root_word}".\n'
+                "Provide 5-8 word family variations "
+                "(noun, verb, adjective, adverb forms) derived from this root."
+            )
+        else:
+            exclude_clause = ""
+            if exclude_root_words:
+                exclude_clause = (
+                    "\nExclude these root words that have already been generated: "
+                    + ", ".join(exclude_root_words)
+                )
+            root_clause = (
+                f"Generate {num_words} root words and their word family "
+                f"variations.{exclude_clause}\n"
+                "- Each root word must be common and relevant to the category\n"
+                "- For each root word, provide 3-5 word family variations "
+                "(noun, verb, adjective, adverb forms)"
             )
 
         return (
             f"You are an English vocabulary expert specializing in Word Family analysis.\n\n"
             f"Given the category \"{category_name}\" (slug: {category_slug}), "
-            f"generate {num_words} root words and their word family variations.{exclude_clause}\n\n"
+            f"{root_clause}\n\n"
             "Requirements:\n"
-            "- Each root word must be common and relevant to the category\n"
-            "- For each root word, provide 3-5 word family variations "
-            "(noun, verb, adjective, adverb forms)\n"
             "- Each variation must include:\n"
             "  - word: the derived word\n"
             "  - pos: part of speech (noun/verb/adjective/adverb)\n"
@@ -1022,6 +1045,7 @@ class ContentGenerationService:
             category_slug=request.category_slug,
             num_words=request.num_root_words,
             exclude_root_words=request.exclude_root_words,
+            root_word=request.root_word,
         )
 
         generation_start = time.perf_counter()
@@ -1047,6 +1071,16 @@ class ContentGenerationService:
                             f"Word family parse failed on attempt {attempt + 1}"
                         )
                         continue
+
+                    # When a specific root word was requested, force it verbatim so
+                    # the persisted record matches the unique (rootWord, categorySlug)
+                    # key the caller expects to overwrite.
+                    if request.root_word and parsed.rootWord != request.root_word:
+                        parsed = WordFamilyData(
+                            rootWord=request.root_word,
+                            categorySlug=parsed.categorySlug,
+                            words=parsed.words,
+                        )
 
                     normalized = self._normalize_word_family(parsed)
 

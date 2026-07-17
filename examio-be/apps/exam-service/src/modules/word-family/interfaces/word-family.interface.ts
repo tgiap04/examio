@@ -22,6 +22,7 @@ export interface AiWordFamilyRequest {
     categoryName: string;
     numRootWords: number;
     excludeRootWords: string[];
+    rootWord?: string;
     modelType?: string;
 }
 
