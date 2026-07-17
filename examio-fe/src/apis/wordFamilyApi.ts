@@ -19,6 +19,13 @@ export interface GenerateRootWordFamilyBody {
   rootWord: string;
 }
 
+export interface GenerateRootWordFamilyResponse {
+  generating: boolean;
+  categorySlug: string;
+  rootWord: string;
+  startedAt: string;
+}
+
 export interface CreateCategoryBody {
   name: string;
   slug: string;
@@ -92,7 +99,7 @@ export async function generateWordFamilyApi(
 
 export async function generateWordFamilyForRootApi(
   body: GenerateRootWordFamilyBody,
-): Promise<WordFamilyRecord> {
+): Promise<GenerateRootWordFamilyResponse> {
   const response = await api.post("/word-family/generate-root", body);
   return response.data;
 }
@@ -101,6 +108,23 @@ export async function getWordFamilyGenerationStatusApi(
   slug: string,
 ): Promise<GenerationStatusResponse> {
   const response = await api.get(`/word-family/generation-status/${slug}`);
+  return response.data;
+}
+
+export interface RootGenerationStatusResponse {
+  categorySlug: string;
+  rootWord: string;
+  generating: boolean;
+  startedAt: string | null;
+}
+
+export async function getRootWordFamilyGenerationStatusApi(
+  categorySlug: string,
+  rootWord: string,
+): Promise<RootGenerationStatusResponse> {
+  const response = await api.get(
+    `/word-family/generation-status/${categorySlug}/${encodeURIComponent(rootWord)}`,
+  );
   return response.data;
 }
 

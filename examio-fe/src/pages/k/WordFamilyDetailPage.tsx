@@ -7,7 +7,7 @@ import {
 } from "@/components/k/word-family";
 import { useWordFamilyStore } from "@/stores/useWordFamilyStore";
 import { toast } from "@/components/antd/toast";
-import { Button, Skeleton } from "antd";
+import { Button, Skeleton, Spin } from "antd";
 import {
   SaveOutlined,
   ApartmentOutlined,
@@ -33,12 +33,18 @@ export default function WordFamilyDetailPage() {
     loadingDetail,
     error,
     savedIds,
-    regeneratingRoot,
+    regeneratingKey,
     fetchWordFamily,
     fetchSaved,
     saveWordFamily,
     generateWordFamilyForRoot,
+    checkRootGenerationStatus,
+    abandonRootGeneration,
   } = useWordFamilyStore();
+
+  // Root-scoped: only this exact root's regenerate job drives the UI.
+  const generating =
+    !!slug && !!rootWord && regeneratingKey === `${slug}:${rootWord}`;
 
   const [viewMode, setViewMode] = useState<"tree" | "list">("tree");
   const [expandedWords, setExpandedWords] = useState<Set<number>>(() => new Set());
@@ -51,9 +57,47 @@ export default function WordFamilyDetailPage() {
     if (slug && rootWord) {
       void fetchWordFamily(slug, rootWord);
       void fetchSaved();
+      // Resume the generating UI if a job for THIS root is already running
+      // (e.g. after a page reload).
+      void checkRootGenerationStatus(slug, rootWord);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Zustand selectors return stable refs
   }, [slug, rootWord]);
+
+  // While a generation job runs, poll its status; when it clears, refetch the
+  // detail so the freshly generated words appear. Self-rescheduling timeout
+  // (not setInterval) so a slow response can never overlap the next tick.
+  useEffect(() => {
+    if (!slug || !rootWord || !generating) return;
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let elapsedMs = 0;
+    const POLL_INTERVAL_MS = 5000;
+    const MAX_WAIT_MS = 11 * 60 * 1000; // AI times out server-side at ~10 min
+
+    const tick = async () => {
+      const stillGenerating = await checkRootGenerationStatus(slug, rootWord);
+      if (cancelled) return;
+      if (!stillGenerating) {
+        await fetchWordFamily(slug, rootWord, true);
+        if (!cancelled) toast.success(`Đã sinh từ con cho "${rootWord}"!`);
+        return;
+      }
+      elapsedMs += POLL_INTERVAL_MS;
+      if (elapsedMs >= MAX_WAIT_MS) {
+        abandonRootGeneration(slug, rootWord);
+        return;
+      }
+      timeoutId = setTimeout(tick, POLL_INTERVAL_MS);
+    };
+
+    timeoutId = setTimeout(tick, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Zustand selectors return stable refs
+  }, [slug, rootWord, generating]);
 
   const toggleExpand = (idx: number) => {
     setExpandedWords((prev) => {
@@ -91,13 +135,11 @@ export default function WordFamilyDetailPage() {
     else toast.error("Lưu thất bại");
   };
 
-  const isGenerating = !!rootWord && regeneratingRoot === rootWord;
-
   const handleGenerate = async () => {
-    if (!slug || !rootWord) return;
+    if (!slug || !rootWord || generating) return;
     const ok = await generateWordFamilyForRoot(slug, rootWord);
-    if (ok) toast.success(`Đã sinh từ con cho "${rootWord}"!`);
-    else toast.error("Sinh từ con thất bại. Vui lòng thử lại.");
+    if (!ok) toast.error("Không thể bắt đầu sinh từ con. Vui lòng thử lại.");
+    // On success, the polling effect refetches + toasts when the job completes.
   };
 
   const words = currentWordFamily?.words ?? [];
@@ -182,15 +224,15 @@ export default function WordFamilyDetailPage() {
             <Button
               icon={<ThunderboltOutlined />}
               onClick={handleGenerate}
-              loading={isGenerating}
+              loading={generating}
             >
-              {isGenerating ? "Đang sinh..." : "Sinh lại từ con"}
+              {generating ? "Đang sinh..." : "Sinh lại từ con"}
             </Button>
 
             <Button
               icon={<SaveOutlined />}
               onClick={handleSave}
-              disabled={isSaved || isGenerating}
+              disabled={isSaved || generating}
             >
               {isSaved ? "Đã lưu" : "Lưu"}
             </Button>
@@ -206,9 +248,19 @@ export default function WordFamilyDetailPage() {
           </div>
         </div>
 
-        {error && (
+        {error && !generating && (
           <div className="rounded-lg border border-hairline bg-surface-soft px-4 py-3 text-sm text-[#c64545]">
             {error}
+          </div>
+        )}
+
+        {generating && (
+          <div className="flex items-center gap-3 rounded-lg border border-coral/30 bg-coral/5 px-4 py-3.5 text-sm text-ink">
+            <Spin size="small" />
+            <span>
+              Đang sinh từ con cho &ldquo;{rootWord}&rdquo;, vui lòng đợi trong
+              giây lát...
+            </span>
           </div>
         )}
 
@@ -220,7 +272,7 @@ export default function WordFamilyDetailPage() {
           </div>
         )}
 
-        {!loadingDetail && words.length === 0 && !error && (
+        {!loadingDetail && !generating && words.length === 0 && !error && (
           <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-hairline bg-surface-soft/60 px-6 py-14 text-center">
             <p className="text-sm text-ink/55">
               Chưa có từ con cho từ gốc &ldquo;{rootWord}&rdquo;.
@@ -230,9 +282,9 @@ export default function WordFamilyDetailPage() {
               size="large"
               icon={<ThunderboltOutlined />}
               onClick={handleGenerate}
-              loading={isGenerating}
+              loading={generating}
             >
-              {isGenerating ? "Đang sinh..." : `Sinh từ con cho "${rootWord}"`}
+              {generating ? "Đang sinh..." : `Sinh từ con cho "${rootWord}"`}
             </Button>
           </div>
         )}

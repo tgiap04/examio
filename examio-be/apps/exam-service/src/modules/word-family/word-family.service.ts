@@ -106,13 +106,35 @@ export class WordFamilyService {
                 `Không tìm thấy word family "${rootWord}" trong danh mục "${categorySlug}".`,
             );
         }
-        return family;
+        // The client (WordFamilyData) expects the payload flattened onto the
+        // record; the row stores it under the `data` JSON column. Flatten here so
+        // the detail page can read `words` directly.
+        const data = family.data as unknown as WordFamilyData;
+        return {
+            id: family.id,
+            rootWord: family.rootWord,
+            categorySlug: family.categorySlug,
+            words: data?.words ?? [],
+            createdAt: family.createdAt,
+            updatedAt: family.updatedAt,
+        };
     }
 
     // ==================== AI Generation ====================
 
     private generationLockKey(userId: string, categorySlug: string) {
         return `wf:gen:lock:${userId}:${categorySlug}`;
+    }
+
+    // Root-specific lock: keeps single-root regeneration independent from the
+    // category-wide "generate more" flow, so their status/UI never cross-bleed
+    // and two different roots can generate in parallel.
+    private rootGenerationLockKey(
+        userId: string,
+        categorySlug: string,
+        rootWord: string,
+    ) {
+        return `${this.generationLockKey(userId, categorySlug)}:${rootWord}`;
     }
 
     async getGenerationStatus(user: User, categorySlug: string) {
@@ -123,6 +145,22 @@ export class WordFamilyService {
             .get(this.generationLockKey(user.id, categorySlug));
         return {
             categorySlug,
+            generating: startedAt !== null,
+            startedAt,
+        };
+    }
+
+    async getRootGenerationStatus(
+        user: User,
+        categorySlug: string,
+        rootWord: string,
+    ) {
+        const startedAt = await this.redis
+            .getClient()
+            .get(this.rootGenerationLockKey(user.id, categorySlug, rootWord.trim()));
+        return {
+            categorySlug,
+            rootWord,
             generating: startedAt !== null,
             startedAt,
         };
@@ -234,22 +272,43 @@ export class WordFamilyService {
             throw new NotFoundException('Không tìm thấy danh mục.');
         }
 
-        // Lock scoped by root word so different roots can generate in parallel,
-        // but the same root can't be generated twice concurrently.
-        const lockKey = `${this.generationLockKey(user.id, categorySlug)}:${rootWord}`;
+        // Root-specific lock: independent from the category-wide flow and from
+        // other roots. The client polls generation-status/:slug/:rootWord.
+        const lockKey = this.rootGenerationLockKey(user.id, categorySlug, rootWord);
+        const startedAt = new Date().toISOString();
         const acquired = await this.redis.getClient().set(
             lockKey,
-            new Date().toISOString(),
+            startedAt,
             'EX',
             this.GENERATION_LOCK_TTL,
             'NX',
         );
         if (!acquired) {
             throw new ConflictException(
-                `Bạn đang sinh từ con cho "${rootWord}" chưa hoàn tất. Vui lòng đợi.`,
+                `Đang sinh từ con cho "${rootWord}" chưa hoàn tất. Vui lòng đợi.`,
             );
         }
 
+        // Run the AI call in the background and return immediately: the model
+        // call can take minutes, which would otherwise time out at the gateway
+        // proxy. The client polls generation-status/:slug and refetches the
+        // detail once the lock clears.
+        void this.runRootGeneration(category, categorySlug, rootWord, lockKey);
+
+        return { generating: true, categorySlug, rootWord, startedAt };
+    }
+
+    /**
+     * Background worker for single-root generation: calls the AI service, upserts
+     * the result, and ALWAYS releases the lock. Errors are logged, never thrown —
+     * no caller awaits this.
+     */
+    private async runRootGeneration(
+        category: { id: string; name: string },
+        categorySlug: string,
+        rootWord: string,
+        lockKey: string,
+    ) {
         try {
             const payload: AiWordFamilyRequest = {
                 categorySlug,
@@ -278,16 +337,17 @@ export class WordFamilyService {
             );
 
             if (!response.data?.success || !response.data.data) {
-                throw new BadRequestException(
-                    response.data?.error || 'Sinh từ con thất bại.',
+                this.logger.error(
+                    `AI word family generation failed for root=${rootWord}: ${response.data?.error || 'unknown error'}`,
                 );
+                return;
             }
 
             const wordFamilyData = response.data.data;
 
             // Force the requested root word so the upsert overwrites the exact
             // record the detail page is displaying.
-            const saved = await this.repository.createWordFamily({
+            await this.repository.createWordFamily({
                 rootWord,
                 categoryId: category.id,
                 categorySlug,
@@ -301,21 +361,10 @@ export class WordFamilyService {
             this.logger.log(
                 `Word family generated for root=${rootWord}, words=${wordFamilyData.words.length}`,
             );
-
-            return saved;
         } catch (error: any) {
-            if (
-                error instanceof BadRequestException ||
-                error instanceof NotFoundException
-            ) {
-                throw error;
-            }
             this.logger.error(
-                `Word family root generation failed: ${error.message}`,
-                error.stack,
-            );
-            throw new BadRequestException(
-                error?.message || 'Sinh từ con thất bại.',
+                `Word family root generation failed: ${error?.message}`,
+                error?.stack,
             );
         } finally {
             await this.redis.del(lockKey);

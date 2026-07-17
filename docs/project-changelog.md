@@ -11,19 +11,36 @@ last_updated: 2026-07-17
 
 #### Word Family — Single Root-Word Regeneration (F016)
 
-Backend-only capability to (re-)generate the child words for one specific root word on the detail page, overwriting the existing record.
+(Re-)generate the child words for one specific root word on the detail page, overwriting the existing record.
 
 **Backend — `exam-service` + `gateway-service` + `ai-service`**
 
-- New route `POST /api/v1/word-family/generate-root` — `WordFamilyController.generateWordFamilyForRoot` → `WordFamilyService.generateWordFamilyForRoot`
+- Route `POST /api/v1/word-family/generate-root` — `WordFamilyController.generateWordFamilyForRoot` → `WordFamilyService.generateWordFamilyForRoot`
 - Gateway proxy route added in `WordFamilyProxyController`
 - Python AI service `generate/word-family` request gained an optional `rootWord` field; when present, the prompt targets that exact root instead of proposing new ones
 - Always overwrites via the existing `[rootWord, categorySlug]` upsert; concurrency lock is scoped per `userId:categorySlug:rootWord`, so it doesn't contend with the category-wide `generate` lock
 
 **Frontend (`examio-fe`)**
 
-- `generateWordFamilyForRootApi` added to `src/apis/wordFamilyApi.ts`
-- Not yet wired: no `useWordFamilyStore` action or page button calls it — see Unresolved Questions in `docs/features/F016_WordFamily/technical-spec.md`
+- `generateWordFamilyForRootApi` added to `src/apis/wordFamilyApi.ts`; wired to a `useWordFamilyStore` action and a regenerate button on `WordFamilyDetailPage`
+
+### Fixed
+
+#### Word Family — background generate-root job + status endpoint (F016)
+
+Follow-up fix in the same round: `generate-root` originally awaited the AI HTTP call before responding, so a slow model call could exceed the gateway proxy timeout.
+
+**Backend — `exam-service` + `gateway-service`**
+
+- `WordFamilyService.generateWordFamilyForRoot` now acquires the `userId:categorySlug:rootWord` lock, fires the AI call + upsert via an unawaited `runRootGeneration` background worker, and returns `{ generating, categorySlug, rootWord, startedAt }` immediately instead of waiting on the AI response
+- New route `GET /api/v1/word-family/generation-status/:slug/:rootWord` — `WordFamilyService.getRootGenerationStatus`, proxied via `WordFamilyProxyController`; root-scoped status, independent of the existing category-level `generation-status/:slug`
+- `GET /api/v1/word-family/category/:categorySlug/:rootWord` (`getWordFamily`) now returns a flattened `{ id, rootWord, categorySlug, words, createdAt, updatedAt }` instead of the raw record with the payload nested under `.data`, matching the FE `WordFamilyData` type
+
+**Frontend (`examio-fe`)**
+
+- `generateWordFamilyForRootApi` return type changed from the full record to the background-job ack shape; new `getRootWordFamilyGenerationStatusApi` added to `src/apis/wordFamilyApi.ts`
+- `useWordFamilyStore`: renamed `regeneratingRoot` → `regeneratingKey` (`${categorySlug}:${rootWord}`); added `checkRootGenerationStatus` / `abandonRootGeneration`; `generateWordFamilyForRoot` now only fires the request — the poller triggers the refetch once the lock clears
+- `WordFamilyDetailPage` polls `generation-status/:slug/:rootWord` every 5s (capped ~11min) on mount and after triggering a regenerate
 
 ## [Unreleased] — 2026-07-03
 

@@ -33,6 +33,7 @@ describe('WordFamilyService', () => {
             createCategory: jest.fn(),
             findCategoryBySlug: jest.fn(),
             createWordFamily: jest.fn(),
+            findWordFamilyByRoot: jest.fn(),
         };
 
         // Mock HttpService
@@ -111,6 +112,57 @@ describe('WordFamilyService', () => {
         });
     });
 
+    describe('getRootGenerationStatus', () => {
+        const userId = 'user-test-123';
+        const categorySlug = 'english-verbs';
+        const rootWord = 'run';
+        const user = { id: userId } as any;
+
+        it('(a) should return generating=true and startedAt when lock is present', async () => {
+            const isoTimestamp = '2026-07-13T19:40:00.000Z';
+            mockRedisClient.get.mockResolvedValue(isoTimestamp);
+
+            const result = await service.getRootGenerationStatus(user, categorySlug, rootWord);
+
+            expect(result).toEqual({
+                categorySlug,
+                rootWord,
+                generating: true,
+                startedAt: isoTimestamp,
+            });
+            expect(mockRedisClient.get).toHaveBeenCalledWith(
+                `wf:gen:lock:${userId}:${categorySlug}:${rootWord}`
+            );
+        });
+
+        it('(b) should return generating=false and startedAt=null when lock is absent', async () => {
+            mockRedisClient.get.mockResolvedValue(null);
+
+            const result = await service.getRootGenerationStatus(user, categorySlug, rootWord);
+
+            expect(result).toEqual({
+                categorySlug,
+                rootWord,
+                generating: false,
+                startedAt: null,
+            });
+            expect(mockRedisClient.get).toHaveBeenCalledWith(
+                `wf:gen:lock:${userId}:${categorySlug}:${rootWord}`
+            );
+        });
+
+        it('(c) should trim rootWord when building the lock key', async () => {
+            mockRedisClient.get.mockResolvedValue(null);
+            const rootWordWithWhitespace = '  run  ';
+
+            await service.getRootGenerationStatus(user, categorySlug, rootWordWithWhitespace);
+
+            expect(mockRedisClient.get).toHaveBeenCalledWith(
+                `wf:gen:lock:${userId}:${categorySlug}:run`
+            );
+        });
+    });
+
     describe('generateWordFamilyForRoot', () => {
         const userId = 'user-test-123';
         const categorySlug = 'english-verbs';
@@ -121,6 +173,111 @@ describe('WordFamilyService', () => {
             slug: categorySlug,
             name: 'English Verbs',
         } as any;
+
+        describe('(a) Returns immediately with generation status; root-specific lock; fires background job', () => {
+            it('should return immediately with { generating: true, categorySlug, rootWord, startedAt } and acquire root-specific lock', async () => {
+                mockRepository.findCategoryBySlug.mockResolvedValue(category);
+                mockRedisClient.set.mockResolvedValue('OK'); // Lock acquired
+                mockHttpService.post.mockReturnValue(of({ data: { success: true, data: { words: [] } } }));
+
+                const dto = { categorySlug, rootWord };
+                const result = await service.generateWordFamilyForRoot(user, dto);
+
+                // Assert return value is immediate (not awaiting the background job result)
+                expect(result).toEqual({
+                    generating: true,
+                    categorySlug,
+                    rootWord,
+                    startedAt: expect.any(String), // ISO timestamp
+                });
+
+                // Assert category was looked up
+                expect(mockRepository.findCategoryBySlug).toHaveBeenCalledWith(categorySlug);
+
+                // Assert lock was acquired with ROOT-SPECIFIC key (includes rootWord)
+                const lockKey = `wf:gen:lock:${userId}:${categorySlug}:${rootWord}`;
+                expect(mockRedisClient.set).toHaveBeenCalledWith(
+                    lockKey,
+                    expect.any(String), // ISO timestamp
+                    'EX',
+                    1800, // TTL
+                    'NX',
+                );
+            });
+
+            it('should trim rootWord before returning', async () => {
+                mockRepository.findCategoryBySlug.mockResolvedValue(category);
+                mockRedisClient.set.mockResolvedValue('OK');
+                mockHttpService.post.mockReturnValue(of({ data: { success: true, data: { words: [] } } }));
+
+                const dtoWithWhitespace = { categorySlug, rootWord: '  run  ' };
+                const result = await service.generateWordFamilyForRoot(user, dtoWithWhitespace);
+
+                expect(result.rootWord).toBe('run'); // Trimmed
+            });
+        });
+
+        describe('(b) ConflictException if lock not acquired', () => {
+            it('should throw ConflictException when root-specific lock cannot be acquired', async () => {
+                mockRepository.findCategoryBySlug.mockResolvedValue(category);
+                mockRedisClient.set.mockResolvedValue(null); // Lock already held
+
+                const dto = { categorySlug, rootWord };
+
+                await expect(service.generateWordFamilyForRoot(user, dto)).rejects.toThrow(
+                    expect.objectContaining({
+                        message: expect.stringContaining(
+                            'Đang sinh từ con cho',
+                        ),
+                    }),
+                );
+
+                // Verify runRootGeneration was NOT started
+                expect(mockHttpService.post).not.toHaveBeenCalled();
+            });
+        });
+
+        describe('(c) NotFoundException if category missing; no lock acquired', () => {
+            it('should throw NotFoundException when category does not exist', async () => {
+                mockRepository.findCategoryBySlug.mockResolvedValue(null);
+
+                const dto = { categorySlug, rootWord };
+
+                await expect(service.generateWordFamilyForRoot(user, dto)).rejects.toThrow(
+                    expect.objectContaining({
+                        message: 'Không tìm thấy danh mục.',
+                    }),
+                );
+
+                // Verify lock was NOT acquired (early exit before lock)
+                expect(mockRedisClient.set).not.toHaveBeenCalled();
+            });
+        });
+
+        describe('(d) rootWord is trimmed', () => {
+            it('should trim whitespace from rootWord in return object', async () => {
+                mockRepository.findCategoryBySlug.mockResolvedValue(category);
+                mockRedisClient.set.mockResolvedValue('OK');
+
+                const dtoWithWhitespace = { categorySlug, rootWord: '  run  ' };
+                const result = await service.generateWordFamilyForRoot(user, dtoWithWhitespace);
+
+                expect(result.rootWord).toBe('run');
+            });
+        });
+    });
+
+    describe('runRootGeneration (background worker)', () => {
+        const userId = 'user-test-123';
+        const categorySlug = 'english-verbs';
+        const rootWord = 'run';
+        const user = { id: userId } as any;
+        const category = {
+            id: 'cat-123',
+            slug: categorySlug,
+            name: 'English Verbs',
+        } as any;
+        const lockKey = `wf:gen:lock:${userId}:${categorySlug}:${rootWord}`;
 
         const aiResponse = {
             success: true,
@@ -148,40 +305,19 @@ describe('WordFamilyService', () => {
             },
         };
 
-        const savedRecord = {
-            id: 'wf-123',
-            rootWord,
-            categorySlug,
-            categoryId: 'cat-123',
-            data: aiResponse.data,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        } as any;
-
-        describe('(a) Success path - forces dto.rootWord into saved record', () => {
-            it('should successfully generate word family for specific root and force rootWord/categorySlug', async () => {
-                mockRepository.findCategoryBySlug.mockResolvedValue(category);
-                mockRedisClient.set.mockResolvedValue('OK');
+        describe('(a) Success path: calls AI, saves with forced rootWord, releases lock', () => {
+            it('should call AI service, save via createWordFamily with forced rootWord, and release lock', async () => {
                 mockHttpService.post.mockReturnValue(of({ data: aiResponse }));
-                mockRepository.createWordFamily.mockResolvedValue(savedRecord);
+                mockRepository.createWordFamily.mockResolvedValue({
+                    id: 'wf-123',
+                    rootWord,
+                    categorySlug,
+                });
 
-                const dto = { categorySlug, rootWord };
-                const result = await service.generateWordFamilyForRoot(user, dto);
+                // Call the private method directly
+                await service['runRootGeneration'](category, categorySlug, rootWord, lockKey);
 
-                // Verify category was looked up
-                expect(mockRepository.findCategoryBySlug).toHaveBeenCalledWith(categorySlug);
-
-                // Verify lock was acquired with correct key
-                const lockKey = `wf:gen:lock:${userId}:${categorySlug}:${rootWord}`;
-                expect(mockRedisClient.set).toHaveBeenCalledWith(
-                    lockKey,
-                    expect.any(String), // ISO timestamp
-                    'EX',
-                    1800,
-                    'NX',
-                );
-
-                // Verify AI endpoint was called with correct payload
+                // Assert AI service was called
                 expect(mockHttpService.post).toHaveBeenCalledWith(
                     expect.stringContaining('/generate/word-family'),
                     expect.objectContaining({
@@ -194,7 +330,7 @@ describe('WordFamilyService', () => {
                     expect.any(Object),
                 );
 
-                // CRITICAL: Verify the saved record forces rootWord and categorySlug from DTO
+                // Assert repository was called with forced rootWord
                 expect(mockRepository.createWordFamily).toHaveBeenCalledWith({
                     rootWord,
                     categoryId: category.id,
@@ -205,142 +341,40 @@ describe('WordFamilyService', () => {
                     }),
                 });
 
-                // Verify lock was released
+                // Assert lock was released in finally
                 expect(mockRedisService.del).toHaveBeenCalledWith(lockKey);
-
-                // Verify return value
-                expect(result).toEqual(savedRecord);
-            });
-
-            it('should trim whitespace from rootWord before using it', async () => {
-                mockRepository.findCategoryBySlug.mockResolvedValue(category);
-                mockRedisClient.set.mockResolvedValue('OK');
-                mockHttpService.post.mockReturnValue(of({ data: aiResponse }));
-                mockRepository.createWordFamily.mockResolvedValue(savedRecord);
-
-                const dtoWithWhitespace = { categorySlug, rootWord: '  run  ' };
-                await service.generateWordFamilyForRoot(user, dtoWithWhitespace);
-
-                // Lock key should use trimmed rootWord
-                const expectedLockKey = `wf:gen:lock:${userId}:${categorySlug}:run`;
-                expect(mockRedisClient.set).toHaveBeenCalledWith(
-                    expectedLockKey,
-                    expect.any(String),
-                    'EX',
-                    expect.any(Number),
-                    'NX',
-                );
-
-                // createWordFamily should also use trimmed rootWord
-                expect(mockRepository.createWordFamily).toHaveBeenCalledWith(
-                    expect.objectContaining({
-                        rootWord: 'run',
-                    }),
-                );
             });
         });
 
-        describe('(e) Missing category → NotFoundException', () => {
-            it('should throw NotFoundException when category does not exist', async () => {
-                mockRepository.findCategoryBySlug.mockResolvedValue(null);
-
-                const dto = { categorySlug, rootWord };
-
-                await expect(service.generateWordFamilyForRoot(user, dto)).rejects.toThrow(
-                    expect.objectContaining({
-                        message: 'Không tìm thấy danh mục.',
-                    }),
-                );
-
-                // Verify lock was NOT acquired (early exit)
-                expect(mockRedisClient.set).not.toHaveBeenCalled();
-            });
-        });
-
-        describe('(b) Lock not acquired → ConflictException', () => {
-            it('should throw ConflictException when lock cannot be acquired', async () => {
-                mockRepository.findCategoryBySlug.mockResolvedValue(category);
-                // Return falsy value (lock already held)
-                mockRedisClient.set.mockResolvedValue(null);
-
-                const dto = { categorySlug, rootWord };
-
-                await expect(service.generateWordFamilyForRoot(user, dto)).rejects.toThrow(
-                    expect.objectContaining({
-                        message: expect.stringContaining(
-                            `Bạn đang sinh từ con cho "${rootWord}" chưa hoàn tất`,
-                        ),
-                    }),
-                );
-
-                // Verify AI service was NOT called (lock failed)
-                expect(mockHttpService.post).not.toHaveBeenCalled();
-            });
-
-            it('should construct unique lock keys for different roots (allowing parallel generation)', async () => {
-                mockRepository.findCategoryBySlug.mockResolvedValue(category);
-                mockRedisClient.set.mockResolvedValue('OK');
-                mockHttpService.post.mockReturnValue(of({ data: aiResponse }));
-                mockRepository.createWordFamily.mockResolvedValue(savedRecord);
-
-                const rootWord1 = 'run';
-                const rootWord2 = 'walk';
-
-                const dto1 = { categorySlug, rootWord: rootWord1 };
-                const dto2 = { categorySlug, rootWord: rootWord2 };
-
-                await service.generateWordFamilyForRoot(user, dto1);
-                await service.generateWordFamilyForRoot(user, dto2);
-
-                const lockKey1 = `wf:gen:lock:${userId}:${categorySlug}:${rootWord1}`;
-                const lockKey2 = `wf:gen:lock:${userId}:${categorySlug}:${rootWord2}`;
-
-                expect(mockRedisClient.set).toHaveBeenCalledWith(
-                    lockKey1,
-                    expect.any(String),
-                    'EX',
-                    expect.any(Number),
-                    'NX',
-                );
-                expect(mockRedisClient.set).toHaveBeenCalledWith(
-                    lockKey2,
-                    expect.any(String),
-                    'EX',
-                    expect.any(Number),
-                    'NX',
-                );
-            });
-        });
-
-        describe('(c) AI returns success:false → BadRequestException', () => {
-            it('should throw BadRequestException when AI response has success:false', async () => {
-                mockRepository.findCategoryBySlug.mockResolvedValue(category);
-                mockRedisClient.set.mockResolvedValue('OK');
-
+        describe('(b) AI returns success:false: no save, lock still released, no throw', () => {
+            it('should log error and release lock without throwing when AI returns success:false', async () => {
+                const loggerSpy = jest.spyOn(service['logger'], 'error');
                 const aiFailureResponse = {
                     success: false,
-                    error: 'AI generation failed: invalid root word',
+                    error: 'Invalid root word',
                 };
 
                 mockHttpService.post.mockReturnValue(of({ data: aiFailureResponse }));
 
-                const dto = { categorySlug, rootWord };
+                // Call runRootGeneration and expect NO throw
+                await expect(
+                    service['runRootGeneration'](category, categorySlug, rootWord, lockKey),
+                ).resolves.not.toThrow();
 
-                await expect(service.generateWordFamilyForRoot(user, dto)).rejects.toThrow(
-                    expect.objectContaining({
-                        message: 'AI generation failed: invalid root word',
-                    }),
-                );
+                // Assert no save was attempted
+                expect(mockRepository.createWordFamily).not.toHaveBeenCalled();
 
-                // Verify lock was still released in finally
-                const lockKey = `wf:gen:lock:${userId}:${categorySlug}:${rootWord}`;
+                // Assert lock was released in finally
                 expect(mockRedisService.del).toHaveBeenCalledWith(lockKey);
+
+                // Assert error was logged
+                expect(loggerSpy).toHaveBeenCalled();
+
+                loggerSpy.mockRestore();
             });
 
-            it('should throw BadRequestException when AI response has no data', async () => {
-                mockRepository.findCategoryBySlug.mockResolvedValue(category);
-                mockRedisClient.set.mockResolvedValue('OK');
-
+            it('should log error and release lock without throwing when AI response has no data', async () => {
+                const loggerSpy = jest.spyOn(service['logger'], 'error');
                 const aiNoDataResponse = {
                     success: true,
                     // data is missing
@@ -348,151 +382,133 @@ describe('WordFamilyService', () => {
 
                 mockHttpService.post.mockReturnValue(of({ data: aiNoDataResponse }));
 
-                const dto = { categorySlug, rootWord };
+                // Call runRootGeneration and expect NO throw
+                await expect(
+                    service['runRootGeneration'](category, categorySlug, rootWord, lockKey),
+                ).resolves.not.toThrow();
 
-                await expect(service.generateWordFamilyForRoot(user, dto)).rejects.toThrow(
-                    BadRequestException,
-                );
+                // Assert no save was attempted
+                expect(mockRepository.createWordFamily).not.toHaveBeenCalled();
 
-                // Verify lock was released
-                const lockKey = `wf:gen:lock:${userId}:${categorySlug}:${rootWord}`;
+                // Assert lock was released
                 expect(mockRedisService.del).toHaveBeenCalledWith(lockKey);
-            });
 
-            it('should use custom error message if AI response includes error field', async () => {
-                mockRepository.findCategoryBySlug.mockResolvedValue(category);
-                mockRedisClient.set.mockResolvedValue('OK');
-
-                const customError = 'Root word contains invalid characters';
-                const aiFailureResponse = {
-                    success: false,
-                    error: customError,
-                };
-
-                mockHttpService.post.mockReturnValue(of({ data: aiFailureResponse }));
-
-                const dto = { categorySlug, rootWord };
-
-                await expect(service.generateWordFamilyForRoot(user, dto)).rejects.toThrow(
-                    customError,
-                );
+                loggerSpy.mockRestore();
             });
         });
 
-        describe('(d) Lock released in finally on both success and error', () => {
-            it('should release lock in finally block on success', async () => {
-                mockRepository.findCategoryBySlug.mockResolvedValue(category);
-                mockRedisClient.set.mockResolvedValue('OK');
-                mockHttpService.post.mockReturnValue(of({ data: aiResponse }));
-                mockRepository.createWordFamily.mockResolvedValue(savedRecord);
-
-                const dto = { categorySlug, rootWord };
-
-                try {
-                    await service.generateWordFamilyForRoot(user, dto);
-                } catch {
-                    // Ignore
-                }
-
-                const lockKey = `wf:gen:lock:${userId}:${categorySlug}:${rootWord}`;
-                expect(mockRedisService.del).toHaveBeenCalledWith(lockKey);
-            });
-
-            it('should release lock in finally block even when AI returns failure', async () => {
-                mockRepository.findCategoryBySlug.mockResolvedValue(category);
-                mockRedisClient.set.mockResolvedValue('OK');
-
-                mockHttpService.post.mockReturnValue(
-                    of({ data: { success: false, error: 'AI error' } })
-                );
-
-                const dto = { categorySlug, rootWord };
-
-                try {
-                    await service.generateWordFamilyForRoot(user, dto);
-                } catch {
-                    // Expected to throw
-                }
-
-                const lockKey = `wf:gen:lock:${userId}:${categorySlug}:${rootWord}`;
-                expect(mockRedisService.del).toHaveBeenCalledWith(lockKey);
-            });
-
-            it('should release lock in finally block even when category lookup fails', async () => {
-                mockRepository.findCategoryBySlug.mockResolvedValue(null);
-
-                const dto = { categorySlug, rootWord };
-
-                try {
-                    await service.generateWordFamilyForRoot(user, dto);
-                } catch {
-                    // Expected to throw
-                }
-
-                // Lock was never acquired (early exit), so del should NOT be called
-                expect(mockRedisService.del).not.toHaveBeenCalled();
-            });
-
-            it('should release lock in finally block even when HTTP request throws', async () => {
-                mockRepository.findCategoryBySlug.mockResolvedValue(category);
-                mockRedisClient.set.mockResolvedValue('OK');
-
+        describe('(c) Error thrown: lock still released, no throw propagates', () => {
+            it('should release lock in finally and not throw when AI service throws', async () => {
+                const loggerSpy = jest.spyOn(service['logger'], 'error');
                 const httpError = new Error('Network error');
                 mockHttpService.post.mockReturnValue(throwError(() => httpError));
 
-                const dto = { categorySlug, rootWord };
+                // Call runRootGeneration and expect NO throw (errors are caught)
+                await expect(
+                    service['runRootGeneration'](category, categorySlug, rootWord, lockKey),
+                ).resolves.not.toThrow();
 
-                try {
-                    await service.generateWordFamilyForRoot(user, dto);
-                } catch {
-                    // Expected to throw
-                }
-
-                const lockKey = `wf:gen:lock:${userId}:${categorySlug}:${rootWord}`;
+                // Assert lock was released in finally
                 expect(mockRedisService.del).toHaveBeenCalledWith(lockKey);
-            });
-        });
 
-        describe('Edge cases and error handling', () => {
-            it('should convert thrown exception from repository to BadRequestException', async () => {
-                mockRepository.findCategoryBySlug.mockResolvedValue(category);
-                mockRedisClient.set.mockResolvedValue('OK');
+                // Assert error was logged
+                expect(loggerSpy).toHaveBeenCalled();
+
+                loggerSpy.mockRestore();
+            });
+
+            it('should release lock in finally and not throw when repository throws', async () => {
+                const loggerSpy = jest.spyOn(service['logger'], 'error');
                 mockHttpService.post.mockReturnValue(of({ data: aiResponse }));
 
                 const dbError = new Error('Database constraint violation');
                 mockRepository.createWordFamily.mockRejectedValue(dbError);
 
-                const dto = { categorySlug, rootWord };
+                // Call runRootGeneration and expect NO throw
+                await expect(
+                    service['runRootGeneration'](category, categorySlug, rootWord, lockKey),
+                ).resolves.not.toThrow();
 
-                await expect(service.generateWordFamilyForRoot(user, dto)).rejects.toThrow(
-                    BadRequestException,
-                );
-
-                // Lock still released
-                const lockKey = `wf:gen:lock:${userId}:${categorySlug}:${rootWord}`;
+                // Assert lock was released
                 expect(mockRedisService.del).toHaveBeenCalledWith(lockKey);
-            });
 
-            it('should log the generation request and success', async () => {
-                const loggerSpy = jest.spyOn(service['logger'], 'log');
-                mockRepository.findCategoryBySlug.mockResolvedValue(category);
-                mockRedisClient.set.mockResolvedValue('OK');
-                mockHttpService.post.mockReturnValue(of({ data: aiResponse }));
-                mockRepository.createWordFamily.mockResolvedValue(savedRecord);
-
-                const dto = { categorySlug, rootWord };
-                await service.generateWordFamilyForRoot(user, dto);
-
-                expect(loggerSpy).toHaveBeenCalledWith(
-                    expect.stringContaining(
-                        `Generating word family for root: category=${categorySlug}, rootWord=${rootWord}`,
-                    ),
-                );
-                expect(loggerSpy).toHaveBeenCalledWith(
-                    expect.stringContaining(`Word family generated for root=${rootWord}`),
-                );
+                // Assert error was logged
+                expect(loggerSpy).toHaveBeenCalled();
 
                 loggerSpy.mockRestore();
+            });
+        });
+    });
+
+    describe('getWordFamily', () => {
+        const rootWord = 'run';
+        const categorySlug = 'english-verbs';
+
+        describe('Success path: returns flattened object with words at top level', () => {
+            it('should return flattened object with words extracted from data.words', async () => {
+                const familyRecord = {
+                    id: 'wf-123',
+                    rootWord,
+                    categorySlug,
+                    categoryId: 'cat-123',
+                    data: {
+                        words: [
+                            { word: 'running', pos: 'verb' },
+                            { word: 'runner', pos: 'noun' },
+                        ],
+                    },
+                    createdAt: new Date('2026-07-13T10:00:00Z'),
+                    updatedAt: new Date('2026-07-13T10:00:00Z'),
+                };
+
+                mockRepository.findWordFamilyByRoot.mockResolvedValue(familyRecord);
+
+                const result = await service.getWordFamily(rootWord, categorySlug);
+
+                // Assert flattened structure with words at top level
+                expect(result).toEqual({
+                    id: 'wf-123',
+                    rootWord,
+                    categorySlug,
+                    words: [
+                        { word: 'running', pos: 'verb' },
+                        { word: 'runner', pos: 'noun' },
+                    ],
+                    createdAt: familyRecord.createdAt,
+                    updatedAt: familyRecord.updatedAt,
+                });
+            });
+
+            it('should return empty words array when data.words is missing', async () => {
+                const familyRecord = {
+                    id: 'wf-123',
+                    rootWord,
+                    categorySlug,
+                    categoryId: 'cat-123',
+                    data: {
+                        // words is missing
+                    },
+                    createdAt: new Date(),
+                    updatedAt: new Date(),
+                };
+
+                mockRepository.findWordFamilyByRoot.mockResolvedValue(familyRecord);
+
+                const result = await service.getWordFamily(rootWord, categorySlug);
+
+                expect(result.words).toEqual([]);
+            });
+        });
+
+        describe('Error path: NotFoundException when not found', () => {
+            it('should throw NotFoundException when word family does not exist', async () => {
+                mockRepository.findWordFamilyByRoot.mockResolvedValue(null);
+
+                await expect(service.getWordFamily(rootWord, categorySlug)).rejects.toThrow(
+                    expect.objectContaining({
+                        message: expect.stringContaining(`Không tìm thấy word family`),
+                    }),
+                );
             });
         });
     });
