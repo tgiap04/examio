@@ -10,8 +10,16 @@ import { firstValueFrom } from 'rxjs';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
 import { User } from '@prisma/client';
 import { WordFamilyRepository } from './word-family.repository';
-import { WordFamilyData, AiWordFamilyResponse } from './interfaces/word-family.interface';
-import { GenerateWordFamilyDto, SaveWordFamilyDto } from './dto/word-family.dto';
+import {
+    WordFamilyData,
+    AiWordFamilyRequest,
+    AiWordFamilyResponse,
+} from './interfaces/word-family.interface';
+import {
+    GenerateWordFamilyDto,
+    GenerateRootWordFamilyDto,
+    SaveWordFamilyDto,
+} from './dto/word-family.dto';
 
 @Injectable()
 export class WordFamilyService {
@@ -208,6 +216,106 @@ export class WordFamilyService {
             this.logger.error(`Word family generation failed: ${error.message}`, error.stack);
             throw new BadRequestException(
                 error?.message || 'Sinh word family thất bại.',
+            );
+        } finally {
+            await this.redis.del(lockKey);
+        }
+    }
+
+    async generateWordFamilyForRoot(
+        user: User,
+        dto: GenerateRootWordFamilyDto,
+    ) {
+        const { categorySlug } = dto;
+        const rootWord = dto.rootWord.trim();
+
+        const category = await this.repository.findCategoryBySlug(categorySlug);
+        if (!category) {
+            throw new NotFoundException('Không tìm thấy danh mục.');
+        }
+
+        // Lock scoped by root word so different roots can generate in parallel,
+        // but the same root can't be generated twice concurrently.
+        const lockKey = `${this.generationLockKey(user.id, categorySlug)}:${rootWord}`;
+        const acquired = await this.redis.getClient().set(
+            lockKey,
+            new Date().toISOString(),
+            'EX',
+            this.GENERATION_LOCK_TTL,
+            'NX',
+        );
+        if (!acquired) {
+            throw new ConflictException(
+                `Bạn đang sinh từ con cho "${rootWord}" chưa hoàn tất. Vui lòng đợi.`,
+            );
+        }
+
+        try {
+            const payload: AiWordFamilyRequest = {
+                categorySlug,
+                categoryName: category.name,
+                numRootWords: 1,
+                excludeRootWords: [],
+                rootWord,
+            };
+
+            this.logger.log(
+                `Generating word family for root: category=${categorySlug}, rootWord=${rootWord}`,
+            );
+
+            const response = await firstValueFrom(
+                this.httpService.post<AiWordFamilyResponse>(
+                    `${this.aiServiceUrl}/generate/word-family`,
+                    payload,
+                    {
+                        timeout: 600000,
+                        headers: {
+                            'x-internal-service-token':
+                                process.env.INTERNAL_SERVICE_TOKEN || '',
+                        },
+                    },
+                ),
+            );
+
+            if (!response.data?.success || !response.data.data) {
+                throw new BadRequestException(
+                    response.data?.error || 'Sinh từ con thất bại.',
+                );
+            }
+
+            const wordFamilyData = response.data.data;
+
+            // Force the requested root word so the upsert overwrites the exact
+            // record the detail page is displaying.
+            const saved = await this.repository.createWordFamily({
+                rootWord,
+                categoryId: category.id,
+                categorySlug,
+                data: {
+                    ...wordFamilyData,
+                    rootWord,
+                    categorySlug,
+                } as unknown as object,
+            });
+
+            this.logger.log(
+                `Word family generated for root=${rootWord}, words=${wordFamilyData.words.length}`,
+            );
+
+            return saved;
+        } catch (error: any) {
+            if (
+                error instanceof BadRequestException ||
+                error instanceof NotFoundException
+            ) {
+                throw error;
+            }
+            this.logger.error(
+                `Word family root generation failed: ${error.message}`,
+                error.stack,
+            );
+            throw new BadRequestException(
+                error?.message || 'Sinh từ con thất bại.',
             );
         } finally {
             await this.redis.del(lockKey);

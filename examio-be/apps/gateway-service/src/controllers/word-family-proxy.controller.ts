@@ -156,6 +156,21 @@ export class WordFamilyProxyController {
         );
     }
 
+    @Post('generate-root')
+    @ApiOperation({ summary: 'Sinh từ con cho một từ gốc cụ thể (ghi đè nếu đã có)' })
+    async generateWordFamilyForRoot(@Body() body: any, @Req() req: Request) {
+        return this.proxyService.forwardWithAuth(
+            'exam',
+            {
+                method: 'POST',
+                path: '/api/v1/word-family/generate-root',
+                body,
+                headers: this.h(req),
+            },
+            this.t(req),
+        );
+    }
+
     @Get('generation-status/:slug')
     @ApiOperation({ summary: 'Kiểm tra trạng thái sinh word family đang chạy' })
     @ApiParam({ name: 'slug', description: 'Category slug' })

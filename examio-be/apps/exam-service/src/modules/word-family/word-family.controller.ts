@@ -22,6 +22,7 @@ import { WordFamilyService } from './word-family.service';
 import { WordFamilyBridgeService } from './word-family-bridge.service';
 import {
     GenerateWordFamilyDto,
+    GenerateRootWordFamilyDto,
     SaveWordFamilyDto,
     ToFlashcardDto,
     CreateCategoryDto,
@@ -112,6 +113,17 @@ export class WordFamilyController {
         @Body() dto: GenerateWordFamilyDto,
     ) {
         return this.service.generateWordFamily(req.user, dto);
+    }
+
+    @Post('generate-root')
+    @UseGuards(AuthGuard)
+    @ApiCookieAuth('cookie-auth')
+    @ApiOperation({ summary: 'Sinh từ con cho một từ gốc cụ thể (ghi đè nếu đã có)' })
+    async generateWordFamilyForRoot(
+        @Req() req: AuthenticatedRequest,
+        @Body() dto: GenerateRootWordFamilyDto,
+    ) {
+        return this.service.generateWordFamilyForRoot(req.user, dto);
     }
 
     @Get('generation-status/:slug')

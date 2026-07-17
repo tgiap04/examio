@@ -1,9 +1,29 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-07-03
+last_updated: 2026-07-17
 ---
 
 # Examio Project Changelog
+
+## [Unreleased] — 2026-07-17
+
+### Added
+
+#### Word Family — Single Root-Word Regeneration (F016)
+
+Backend-only capability to (re-)generate the child words for one specific root word on the detail page, overwriting the existing record.
+
+**Backend — `exam-service` + `gateway-service` + `ai-service`**
+
+- New route `POST /api/v1/word-family/generate-root` — `WordFamilyController.generateWordFamilyForRoot` → `WordFamilyService.generateWordFamilyForRoot`
+- Gateway proxy route added in `WordFamilyProxyController`
+- Python AI service `generate/word-family` request gained an optional `rootWord` field; when present, the prompt targets that exact root instead of proposing new ones
+- Always overwrites via the existing `[rootWord, categorySlug]` upsert; concurrency lock is scoped per `userId:categorySlug:rootWord`, so it doesn't contend with the category-wide `generate` lock
+
+**Frontend (`examio-fe`)**
+
+- `generateWordFamilyForRootApi` added to `src/apis/wordFamilyApi.ts`
+- Not yet wired: no `useWordFamilyStore` action or page button calls it — see Unresolved Questions in `docs/features/F016_WordFamily/technical-spec.md`
 
 ## [Unreleased] — 2026-07-03
 

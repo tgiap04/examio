@@ -5,6 +5,7 @@ import {
   getWordFamilyApi,
   generateWordFamilyApi,
   getWordFamilyGenerationStatusApi,
+  generateWordFamilyForRootApi,
   saveWordFamilyApi,
   getSavedWordFamiliesApi,
   removeSavedWordFamilyApi,
@@ -32,6 +33,11 @@ interface WordFamilyState {
   // Slug of the category whose generation job is currently running (null = none).
   // Scoped by slug so SPA-navigating between categories can't bleed state.
   generatingSlug: string | null;
+  // Root word whose child-words are currently being (re)generated (null = none).
+  regeneratingRoot: string | null;
+  // Key (`${slug}:${rootWord}`) of the detail the user is currently viewing.
+  // Used to discard stale async results after SPA-navigation to another root.
+  activeDetailKey: string | null;
   loadingCategories: boolean;
   loadingRootWords: boolean;
   loadingDetail: boolean;
@@ -45,6 +51,10 @@ interface WordFamilyState {
     forceRefresh?: boolean,
   ) => Promise<void>;
   generateWordFamily: (body: GenerateWordFamilyBody) => Promise<boolean>;
+  generateWordFamilyForRoot: (
+    categorySlug: string,
+    rootWord: string,
+  ) => Promise<boolean>;
   checkGenerationStatus: (slug: string) => Promise<boolean>;
   abandonGeneration: (slug: string) => void;
   saveWordFamily: (wordFamilyId: string) => Promise<boolean>;
@@ -63,6 +73,8 @@ export const useWordFamilyStore = create<WordFamilyState>((set, get) => ({
   currentWordFamily: null,
   savedIds: new Set(),
   generatingSlug: null,
+  regeneratingRoot: null,
+  activeDetailKey: null,
   loadingCategories: false,
   loadingRootWords: false,
   loadingDetail: false,
@@ -106,18 +118,22 @@ export const useWordFamilyStore = create<WordFamilyState>((set, get) => ({
 
   fetchWordFamily: async (categorySlug, rootWord, forceRefresh = false) => {
     const key = `wf:detail:${categorySlug}:${rootWord}`;
+    const detailKey = `${categorySlug}:${rootWord}`;
     const cached = storeCache.get<WordFamilyData>(key, CacheTTL.FIVE_MINUTES);
     if (!forceRefresh && cached) {
-      set({ currentWordFamily: cached, loadingDetail: false });
+      set({ currentWordFamily: cached, loadingDetail: false, activeDetailKey: detailKey });
       return;
     }
     if (get().loadingDetail) return;
-    set({ loadingDetail: true, error: null });
+    set({ loadingDetail: true, error: null, activeDetailKey: detailKey });
     try {
       const data = await getWordFamilyApi(categorySlug, rootWord);
       storeCache.set(key, data);
+      // Discard if the user navigated to a different root while this was in flight.
+      if (get().activeDetailKey !== detailKey) return;
       set({ currentWordFamily: data, loadingDetail: false });
     } catch (err) {
+      if (get().activeDetailKey !== detailKey) return;
       set({ loadingDetail: false, error: (err as Error).message });
     }
   },
@@ -139,6 +155,32 @@ export const useWordFamilyStore = create<WordFamilyState>((set, get) => ({
           s.generatingSlug === body.categorySlug ? null : s.generatingSlug,
         error: (err as Error).message,
       }));
+      return false;
+    }
+  },
+
+  generateWordFamilyForRoot: async (categorySlug, rootWord) => {
+    const detailKey = `${categorySlug}:${rootWord}`;
+    set({ regeneratingRoot: rootWord, error: null });
+    try {
+      await generateWordFamilyForRootApi({ categorySlug, rootWord });
+      // Invalidate caches so the detail + roots list reflect the new data.
+      storeCache.invalidate(`wf:detail:${categorySlug}:${rootWord}`);
+      storeCache.invalidate(`wf:roots:${categorySlug}`);
+      // Only clear the spinner if this is still the root the user last generated.
+      if (get().regeneratingRoot === rootWord) {
+        set({ regeneratingRoot: null });
+      }
+      // Skip the refresh if the user navigated to a different root meanwhile —
+      // otherwise fetchWordFamily would clobber the currently-viewed detail.
+      if (get().activeDetailKey === detailKey) {
+        await get().fetchWordFamily(categorySlug, rootWord, true);
+      }
+      return true;
+    } catch (err) {
+      if (get().regeneratingRoot === rootWord) {
+        set({ regeneratingRoot: null, error: (err as Error).message });
+      }
       return false;
     }
   },
