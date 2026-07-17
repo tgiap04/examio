@@ -138,6 +138,20 @@ export class WordFamilyController {
         return this.service.getGenerationStatus(req.user, slug);
     }
 
+    @Get('generation-status/:slug/:rootWord')
+    @UseGuards(AuthGuard)
+    @ApiCookieAuth('cookie-auth')
+    @ApiOperation({ summary: 'Kiểm tra trạng thái sinh từ con cho một từ gốc' })
+    @ApiParam({ name: 'slug', description: 'Category slug' })
+    @ApiParam({ name: 'rootWord', description: 'Root word' })
+    async getRootGenerationStatus(
+        @Req() req: AuthenticatedRequest,
+        @Param('slug') slug: string,
+        @Param('rootWord') rootWord: string,
+    ) {
+        return this.service.getRootGenerationStatus(req.user, slug, rootWord);
+    }
+
     // ==================== User Collections ====================
 
     @Post('save')

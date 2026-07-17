@@ -186,6 +186,26 @@ export class WordFamilyProxyController {
         );
     }
 
+    @Get('generation-status/:slug/:rootWord')
+    @ApiOperation({ summary: 'Kiểm tra trạng thái sinh từ con cho một từ gốc' })
+    @ApiParam({ name: 'slug', description: 'Category slug' })
+    @ApiParam({ name: 'rootWord', description: 'Root word' })
+    async getRootGenerationStatus(
+        @Param('slug') slug: string,
+        @Param('rootWord') rootWord: string,
+        @Req() req: Request,
+    ) {
+        return this.proxyService.forwardWithAuth(
+            'exam',
+            {
+                method: 'GET',
+                path: `/api/v1/word-family/generation-status/${slug}/${encodeURIComponent(rootWord)}`,
+                headers: this.h(req),
+            },
+            this.t(req),
+        );
+    }
+
     // ==================== User Collections ====================
 
     @Post('save')

@@ -6,6 +6,7 @@ import {
   generateWordFamilyApi,
   getWordFamilyGenerationStatusApi,
   generateWordFamilyForRootApi,
+  getRootWordFamilyGenerationStatusApi,
   saveWordFamilyApi,
   getSavedWordFamiliesApi,
   removeSavedWordFamilyApi,
@@ -30,11 +31,13 @@ interface WordFamilyState {
   currentCategory: CategoryRootWords | null;
   currentWordFamily: WordFamilyData | null;
   savedIds: Set<string>;
-  // Slug of the category whose generation job is currently running (null = none).
+  // Slug of the category whose "generate more roots" job is running (null = none).
   // Scoped by slug so SPA-navigating between categories can't bleed state.
   generatingSlug: string | null;
-  // Root word whose child-words are currently being (re)generated (null = none).
-  regeneratingRoot: string | null;
+  // Key (`${categorySlug}:${rootWord}`) of the single-root regenerate job that is
+  // running. Independent from generatingSlug (separate server-side lock) so the
+  // two flows never cross-report each other's progress.
+  regeneratingKey: string | null;
   // Key (`${slug}:${rootWord}`) of the detail the user is currently viewing.
   // Used to discard stale async results after SPA-navigation to another root.
   activeDetailKey: string | null;
@@ -55,6 +58,11 @@ interface WordFamilyState {
     categorySlug: string,
     rootWord: string,
   ) => Promise<boolean>;
+  checkRootGenerationStatus: (
+    categorySlug: string,
+    rootWord: string,
+  ) => Promise<boolean>;
+  abandonRootGeneration: (categorySlug: string, rootWord: string) => void;
   checkGenerationStatus: (slug: string) => Promise<boolean>;
   abandonGeneration: (slug: string) => void;
   saveWordFamily: (wordFamilyId: string) => Promise<boolean>;
@@ -73,7 +81,7 @@ export const useWordFamilyStore = create<WordFamilyState>((set, get) => ({
   currentWordFamily: null,
   savedIds: new Set(),
   generatingSlug: null,
-  regeneratingRoot: null,
+  regeneratingKey: null,
   activeDetailKey: null,
   loadingCategories: false,
   loadingRootWords: false,
@@ -160,29 +168,56 @@ export const useWordFamilyStore = create<WordFamilyState>((set, get) => ({
   },
 
   generateWordFamilyForRoot: async (categorySlug, rootWord) => {
-    const detailKey = `${categorySlug}:${rootWord}`;
-    set({ regeneratingRoot: rootWord, error: null });
+    // Kick off a background job on the server and return immediately. The caller
+    // polls checkRootGenerationStatus(categorySlug, rootWord) and refetches the
+    // detail once the root-specific lock clears.
+    const key = `${categorySlug}:${rootWord}`;
+    set({ regeneratingKey: key, error: null });
     try {
       await generateWordFamilyForRootApi({ categorySlug, rootWord });
-      // Invalidate caches so the detail + roots list reflect the new data.
+      // Stale detail/roots caches must not mask the freshly generated data.
       storeCache.invalidate(`wf:detail:${categorySlug}:${rootWord}`);
       storeCache.invalidate(`wf:roots:${categorySlug}`);
-      // Only clear the spinner if this is still the root the user last generated.
-      if (get().regeneratingRoot === rootWord) {
-        set({ regeneratingRoot: null });
-      }
-      // Skip the refresh if the user navigated to a different root meanwhile —
-      // otherwise fetchWordFamily would clobber the currently-viewed detail.
-      if (get().activeDetailKey === detailKey) {
-        await get().fetchWordFamily(categorySlug, rootWord, true);
-      }
       return true;
     } catch (err) {
-      if (get().regeneratingRoot === rootWord) {
-        set({ regeneratingRoot: null, error: (err as Error).message });
-      }
+      set((s) => ({
+        regeneratingKey: s.regeneratingKey === key ? null : s.regeneratingKey,
+        error: (err as Error).message,
+      }));
       return false;
     }
+  },
+
+  checkRootGenerationStatus: async (categorySlug, rootWord) => {
+    const key = `${categorySlug}:${rootWord}`;
+    try {
+      const { generating } = await getRootWordFamilyGenerationStatusApi(
+        categorySlug,
+        rootWord,
+      );
+      set((s) => ({
+        regeneratingKey: generating
+          ? key
+          : s.regeneratingKey === key
+            ? null
+            : s.regeneratingKey,
+      }));
+      return generating;
+    } catch (err) {
+      // Status unknown: keep current state and keep polling rather than falsely
+      // reporting "done" (a persistent 401 tears the page down via interceptor).
+      console.error("Failed to check root word-family generation status:", err);
+      return get().regeneratingKey === key;
+    }
+  },
+
+  abandonRootGeneration: (categorySlug, rootWord) => {
+    const key = `${categorySlug}:${rootWord}`;
+    set((s) => ({
+      regeneratingKey: s.regeneratingKey === key ? null : s.regeneratingKey,
+      error:
+        "Quá trình sinh từ con mất nhiều thời gian hơn dự kiến. Vui lòng thử lại sau.",
+    }));
   },
 
   checkGenerationStatus: async (slug) => {

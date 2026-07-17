@@ -6,7 +6,7 @@
 
 ## Overview
 
-AI-assisted vocabulary study grouped by root-word family. Students browse categories (`WordFamilyCategory`), generate new root-word groups via the Python AI service (deduplicated per category, concurrency-locked per user), save families to a personal collection, and can bridge selected words into a new `FlashCardSet` for spaced-repetition study. A read-only generation-status endpoint lets the category page detect an already-running job on load/reload and poll until it clears. Two parallel admin CRUD surfaces exist for category management (admin-service primary, exam-service legacy). Redis caches every read path with a 30-minute TTL.
+AI-assisted vocabulary study grouped by root-word family. Students browse categories (`WordFamilyCategory`), generate new root-word groups via the Python AI service (deduplicated per category, concurrency-locked per user), save families to a personal collection, and can bridge selected words into a new `FlashCardSet` for spaced-repetition study. A read-only generation-status endpoint lets the category page detect an already-running job on load/reload and poll until it clears; a root-scoped counterpart (`GET /generation-status/:slug/:rootWord`) does the same for single-root regeneration, which itself runs as an unawaited background job so the request never blocks on the AI call. Two parallel admin CRUD surfaces exist for category management (admin-service primary, exam-service legacy). Redis caches every read path with a 30-minute TTL.
 
 ## Polymorphic Behavior
 
@@ -26,9 +26,9 @@ N/A — no discriminator fields in Key Entities. (The AI-returned `data` JSON bl
 | FR-006 | Student can convert selected words into a new flashcard deck | `WordFamilyBridgeService.createFlashcardDeck` | yes |
 | FR-007 | Admin can CRUD categories (create, update, soft-delete) | `AdminWordFamilyController` / `WordFamilyController` category methods | yes |
 | FR-008 | On page load/reload, student sees whether an AI generation job is already running for the category and gets a "generating" state until it finishes | `WordFamilyController` `GET /generation-status/:slug` | yes |
-| FR-009 | A specific root word's family can be (re-)generated on-demand, overwriting the existing record for that root | `WordFamilyController` `POST /word-family/generate-root` → `WordFamilyService.generateWordFamilyForRoot` | yes |
+| FR-009 | A specific root word's family can be (re-)generated on-demand as a background job — the endpoint acquires a root-specific lock and returns immediately (no gateway timeout), and the client polls a root-scoped status endpoint until the AI call completes and the record is overwritten | `WordFamilyController` `POST /word-family/generate-root` → `WordFamilyService.generateWordFamilyForRoot`; status via `GET /word-family/generation-status/:slug/:rootWord` → `getRootGenerationStatus` | yes |
 
-**Source:** `examio-be/apps/exam-service/src/modules/word-family/word-family.controller.ts:33-182`, `examio-be/apps/exam-service/src/modules/word-family/word-family-bridge.service.ts:24-97`, `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts:32-69`
+**Source:** `examio-be/apps/exam-service/src/modules/word-family/word-family.controller.ts:33-208`, `examio-be/apps/exam-service/src/modules/word-family/word-family-bridge.service.ts:24-97`, `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts:32-69`
 
 ### Business Rules
 
@@ -42,7 +42,8 @@ N/A — no discriminator fields in Key Entities. (The AI-returned `data` JSON bl
 - **BR-008**: If the AI response's `categorySlug` doesn't match the requested one, the Python service overrides it to the requested slug rather than failing the request. Source: `generation_service.py:944-953`.
 - **BR-009**: Word-family user routes require both a valid session AND the `word-family` page flag enabled at the gateway (`@TogglePage('word-family')`), tying this feature into F015 PageFeatureFlags. Source: `word-family-proxy.controller.ts:24-31`.
 - **BR-010**: Generation status is read-only and reuses the existing BR-002 lock rather than introducing new state — `GET /generation-status/:slug` reads `wf:gen:lock:{userId}:{categorySlug}` and reports `generating: true` for as long as that key exists, with `startedAt` set to the ISO timestamp stored in the lock value. Since the lock key is derived from the server-side authenticated user (`req.user.id`), the endpoint cannot leak another user's in-progress generation. Source: `word-family.service.ts:106-121`, `word-family.controller.ts:117-129`.
-- **BR-011**: `generateWordFamilyForRoot` targets a single root word directly (AI request carries `numRootWords: 1`, `excludeRootWords: []`, and the new `rootWord` field) and always overwrites via the existing `[rootWord, categorySlug]` upsert (BR-001), forcing the AI response's `rootWord`/`categorySlug` to match the request rather than trusting the AI's echo. The concurrency lock is scoped per `userId:categorySlug:rootWord` (not just per category), so regenerating one root word does not block a concurrent category-level `generate` or a different root's `generate-root` call. Source: `word-family.service.ts:225-266`, `word-family.controller.ts:118-126`.
+- **BR-011**: `generateWordFamilyForRoot` acquires the `userId:categorySlug:rootWord` lock synchronously (rejecting a concurrent call with `ConflictException` if already held), then fires the AI call + upsert via an unawaited `runRootGeneration` background worker and returns `{ generating: true, categorySlug, rootWord, startedAt }` immediately — the request no longer blocks on the AI response, avoiding a gateway proxy timeout on slow generations. The worker's AI request carries `numRootWords: 1`, `excludeRootWords: []`, and the `rootWord` field; on success it always overwrites via the existing `[rootWord, categorySlug]` upsert (BR-001), forcing the response's `rootWord`/`categorySlug` to match the request rather than trusting the AI's echo. The lock is released in the worker's `finally` regardless of outcome, and worker errors are only logged — never thrown, since no caller is still awaiting the request. The concurrency lock stays scoped per `userId:categorySlug:rootWord` (not just per category), so regenerating one root word does not block a concurrent category-level `generate` or a different root's `generate-root` call. Source: `word-family.service.ts:263-372`, `word-family.controller.ts:118-127`.
+- **BR-012**: `getWordFamily` (`GET /category/:categorySlug/:rootWord`) flattens the stored record before returning it — `{ id, rootWord, categorySlug, words, createdAt, updatedAt }` — reading `words` out of the `data` JSON column, instead of the previous raw-record shape with the payload nested under `.data`. This matches the FE `WordFamilyData` type, which reads `words` directly off the response. Source: `word-family.service.ts:102-121`.
 
 ### Decision Logic
 
@@ -60,7 +61,7 @@ None.
 
 ### External Integrations
 
-- **Python AI service** — `POST {AI_SERVICE_URL}/generate/word-family`, 600s timeout, `x-internal-service-token` auth header, body `{categorySlug, categoryName, numRootWords, excludeRootWords, rootWord?}`. The optional `rootWord` field (added for BR-011) switches the prompt to generate variations for that exact root instead of proposing new roots. Returns 503 with `{code, message}` on `ModelUnavailableError`, 400 on other failures. Source: `word-family.service.ts:145-157,225-266`, `generation.py:69,235,263`, `generation_service.py:54,65,871-890,1048`.
+- **Python AI service** — `POST {AI_SERVICE_URL}/generate/word-family`, 600s timeout, `x-internal-service-token` auth header, body `{categorySlug, categoryName, numRootWords, excludeRootWords, rootWord?}`. The optional `rootWord` field (added for BR-011) switches the prompt to generate variations for that exact root instead of proposing new roots. For `generate-root`, this call now happens inside the unawaited `runRootGeneration` background worker rather than on the request path. Returns 503 with `{code, message}` on `ModelUnavailableError`, 400 on other failures (category-level `generate` path only — the root-specific worker logs and swallows failures instead of propagating an HTTP error). Source: `word-family.service.ts:208-220,325-337`, `generation.py:69,235,263`, `generation_service.py:54,65,871-890,1048`.
 
 ### Verification
 
@@ -70,6 +71,7 @@ None.
 - **SC-004** — AI-generated word content rendered as flashcard question/answer cannot execute injected HTML/script.
 - **SC-005** — Reloading the category page while a generation job is in-flight for that user+category shows the "generating" state (not a blank/normal list), and the state clears and the root-word list refreshes once the job completes.
 - **SC-006** — Calling `generate-root` for a root word that already has a saved `WordFamily` record overwrites that exact record (same `id`, refreshed `data`) rather than creating a duplicate.
+- **SC-007** — `POST /word-family/generate-root` responds immediately with `{ generating: true, ... }` rather than waiting for the AI call to finish; the detail page's poll against `GET /word-family/generation-status/:slug/:rootWord` reflects `generating: false` (and the refreshed detail) only once the background worker completes and releases the lock.
 
 ---
 
@@ -114,18 +116,18 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 | Symbol | Path | Purpose |
 |--------|------|---------|
 | WordFamilyCategory/WordFamily/UserSavedWordFamily (models) | `examio-be/libs/database/src/models/word-family.prisma:2-50` | Data models |
-| WordFamilyController | `examio-be/apps/exam-service/src/modules/word-family/word-family.controller.ts:33-182` | User + legacy admin routes, incl. `GET /generation-status/:slug`, `POST /generate-root` |
-| WordFamilyService | `examio-be/apps/exam-service/src/modules/word-family/word-family.service.ts:17-310` | Category CRUD, generation orchestration, collection CRUD, `getGenerationStatus`, `generateWordFamilyForRoot` |
+| WordFamilyController | `examio-be/apps/exam-service/src/modules/word-family/word-family.controller.ts:33-208` | User + legacy admin routes, incl. `GET /generation-status/:slug`, `POST /generate-root`, `GET /generation-status/:slug/:rootWord` |
+| WordFamilyService | `examio-be/apps/exam-service/src/modules/word-family/word-family.service.ts:17-396` | Category CRUD, generation orchestration, collection CRUD, `getGenerationStatus`, `generateWordFamilyForRoot` (fires unawaited background job), `runRootGeneration` worker, `getRootGenerationStatus`, flattened `getWordFamily` response |
 | WordFamilyBridgeService | `examio-be/apps/exam-service/src/modules/word-family/word-family-bridge.service.ts:24-130` | Transactional flashcard conversion |
 | WordFamilyRepository | `examio-be/apps/exam-service/src/modules/word-family/word-family.repository.ts:18-196` | Redis-cached Prisma access, upsert dedup |
 | AdminWordFamilyController | `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts:32-69` | Primary admin category CRUD |
 | AdminWordFamilyService | `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.service.ts:41-179` | Transactional CRUD + audit diff |
-| WordFamilyProxyController | `examio-be/apps/gateway-service/src/controllers/word-family-proxy.controller.ts:24-31,159-167` | Gateway proxy, `PageEnabledGuard`, incl. `POST generate-root` |
+| WordFamilyProxyController | `examio-be/apps/gateway-service/src/controllers/word-family-proxy.controller.ts:24-31,159-172,189-207` | Gateway proxy, `PageEnabledGuard`, incl. `POST generate-root`, `GET generation-status/:slug/:rootWord` |
 | generation.py (AI endpoint) | `examio-be/apps/ai-service/src/backend/api/generation.py:69,235,263` | FastAPI word-family generation endpoint; `rootWord` request field |
 | generation_service.py | `examio-be/apps/ai-service/src/backend/services/generation_service.py:862-1031` | Prompt build, parse, normalize; `root_word` param switches to single-root prompt (BR-011) |
-| useWordFamilyStore | `examio-fe/src/stores/useWordFamilyStore.ts` | FE state, cached fetches (30min/5min TTLs); slug-scoped `generatingSlug` + `checkGenerationStatus`/`abandonGeneration` for resume-on-reload; `generateWordFamilyForRoot` action + `activeDetailKey` navigation guard for the single-root regenerate flow (FR-009). |
-| wordFamilyApi | `examio-fe/src/apis/wordFamilyApi.ts:53-157` | API client (10 user + 4 admin routes), incl. `getWordFamilyGenerationStatusApi` and `generateWordFamilyForRootApi` (called by the `generateWordFamilyForRoot` store action). |
-| WordFamilyPage/CategoryPage/DetailPage | `examio-fe/src/pages/k/WordFamily*.tsx` | Student-facing screens; `WordFamilyCategoryPage` polls generation status every 5s (capped ~11min) on mount and after a job clears |
+| useWordFamilyStore | `examio-fe/src/stores/useWordFamilyStore.ts` | FE state, cached fetches (30min/5min TTLs); slug-scoped `generatingSlug` + `checkGenerationStatus`/`abandonGeneration` for the category-level resume-on-reload; root-scoped `regeneratingKey` (`categorySlug:rootWord`) + `checkRootGenerationStatus`/`abandonRootGeneration` for the background single-root regenerate flow (FR-009) — `generateWordFamilyForRoot` only fires the request, the poller triggers the refetch once the lock clears. |
+| wordFamilyApi | `examio-fe/src/apis/wordFamilyApi.ts:53-193` | API client (11 user + 4 admin routes), incl. `getWordFamilyGenerationStatusApi`, `generateWordFamilyForRootApi` (now returns a background-job ack `{generating, categorySlug, rootWord, startedAt}`, not the full record), and `getRootWordFamilyGenerationStatusApi` (root-scoped status poll). |
+| WordFamilyPage/CategoryPage/DetailPage | `examio-fe/src/pages/k/WordFamily*.tsx` | Student-facing screens; `WordFamilyCategoryPage` polls category-level generation status, `WordFamilyDetailPage` polls root-level generation status — both every 5s, capped ~11min, on mount and after triggering/resuming a job |
 | AdminWordFamilyPage | `examio-fe/src/pages/admin/AdminWordFamilyPage.tsx` | Admin CRUD screen |
 
 ## Unresolved Questions
