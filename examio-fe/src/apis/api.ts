@@ -17,6 +17,29 @@ type RetryableRequestConfig = AxiosRequestConfig & {
 
 let refreshPromise: Promise<string | null> | null = null;
 
+// Endpoints where the caller has no established session yet — a 401 here means
+// bad credentials / an invalid code, NOT an expired access token. Running the
+// refresh-and-retry flow for these fails (there is nothing to refresh) and
+// masks the real error with a confusing "Phiên đăng nhập đã hết hạn" message
+// plus an unwanted redirect to /login. Let their 401 fall through so the
+// backend's actual message (e.g. wrong email/password) reaches the UI.
+// Only endpoints that are unauthenticated on the backend (no AuthGuard) belong
+// here — their 401 means bad credentials / invalid code. Do NOT add
+// AuthGuard-protected endpoints (e.g. /auth/verifyAccount, /auth/change-password):
+// their 401 means an expired access token and MUST still trigger a refresh.
+const PRE_AUTH_PATHS = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/reset-password",
+  "/auth/google/one-tap",
+  "/auth/refresh",
+];
+
+function isPreAuthRequest(url?: string): boolean {
+  if (!url) return false;
+  return PRE_AUTH_PATHS.some((path) => url.includes(path));
+}
+
 function handleAuthFailure() {
   // SECURITY: auth tokens live in httpOnly cookies set by the backend; there
   // is nothing to clear on the client. A full-page navigateTo("/login")
@@ -90,7 +113,8 @@ api.interceptors.response.use(
       error.response?.status === 401 &&
       originalRequest &&
       !originalRequest._retry &&
-      !originalRequest.skipAuthRefresh
+      !originalRequest.skipAuthRefresh &&
+      !isPreAuthRequest(originalRequest.url)
     ) {
       console.warn("[auth-api] interceptor caught 401, attempting refresh");
       try {

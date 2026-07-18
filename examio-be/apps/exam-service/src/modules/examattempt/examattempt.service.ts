@@ -1850,6 +1850,21 @@ export class ExamAttemptService {
             );
         }
 
+        // If the client sent answers but NONE passed token verification, the
+        // question tokens are stale/invalid wholesale (e.g. signed before a
+        // QUIZ_JWT_SECRET rotation/restart, or expired). Do NOT overwrite the
+        // saved progress with an empty result and mark the attempt done — that
+        // silently wipes the user's work and shows a confusing 0/N "chưa trả
+        // lời". Reject instead so the attempt stays IN_PROGRESS; reloading the
+        // page issues fresh tokens and restores the auto-saved answers for
+        // resubmission. (A genuinely empty submission sends no answers, so it
+        // is unaffected.)
+        if (answers.length > 0 && Object.keys(verifiedAnswers).length === 0) {
+            throw new BadRequestException(
+                'Phiên làm bài không hợp lệ hoặc đã hết hạn. Vui lòng tải lại trang rồi nộp lại — câu trả lời của bạn vẫn được lưu.'
+            );
+        }
+
         const totalQuestions = questionMap.size;
         const score =
             totalQuestions > 0 ? (correctCount / totalQuestions) * 100 : 0;
