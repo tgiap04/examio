@@ -54,6 +54,19 @@ export class AuthService {
     ) {}
 
     /**
+     * Sign an access token. When `sessionId` is known, it is embedded as a
+     * claim so AuthGuard/AdminGuard can look up the UserSession and reject
+     * the token immediately once that session is deactivated (logout,
+     * "logout other devices", password reset) instead of waiting for the
+     * JWT to expire naturally.
+     */
+    signAccessToken(userId: string, sessionId?: string): string {
+        return this.jwtService.sign(
+            sessionId ? { userId, sessionId } : { userId }
+        );
+    }
+
+    /**
      * Constant-time comparison for verification/reset/change codes, to
      * avoid leaking match-length information through response timing.
      */
@@ -89,8 +102,6 @@ export class AuthService {
                     'Thông tin đăng nhập không hợp lệ'
                 );
             }
-            const token = this.jwtService.sign({ userId: user.id });
-
             try {
                 // Extract device info from request if available
                 let sessionId: string | undefined;
@@ -103,6 +114,7 @@ export class AuthService {
                     sessionId = session.sessionId;
                     refreshToken = session.refreshToken;
                 }
+                const token = this.signAccessToken(user.id, sessionId);
 
                 return {
                     token,
@@ -209,8 +221,8 @@ export class AuthService {
                     );
                 });
 
-            // Auto-login: Generate token and create session
-            const token = this.jwtService.sign({ userId: newUser.id });
+            // Auto-login: create session first, then sign the token so it
+            // can carry the sessionId claim.
             let sessionId: string | undefined;
             let refreshToken: string | undefined;
 
@@ -222,6 +234,7 @@ export class AuthService {
                 sessionId = session.sessionId;
                 refreshToken = session.refreshToken;
             }
+            const token = this.signAccessToken(newUser.id, sessionId);
 
             return {
                 message: 'Đăng ký thành công',
@@ -604,9 +617,10 @@ export class AuthService {
                 });
         }
 
-        const token = this.jwtService.sign({ userId: existingUser.id });
-
-        // Create session for OAuth login
+        // Create session for OAuth login first so the access token can carry
+        // the sessionId claim. When deviceInfo is unavailable at this call
+        // site (e.g. the passport Google strategy), the session is created
+        // later by the controller, which re-signs the token at that point.
         let sessionId: string | undefined;
         let refreshToken: string | undefined;
         if (deviceInfo) {
@@ -617,6 +631,7 @@ export class AuthService {
             sessionId = session.sessionId;
             refreshToken = session.refreshToken;
         }
+        const token = this.signAccessToken(existingUser.id, sessionId);
 
         return {
             token,
@@ -705,7 +720,7 @@ export class AuthService {
         // Generate new access token. rotateRefreshTokenIfCurrent trả về refresh
         // token hợp lệ để cấp lại: token mới nếu rotate thành công, hoặc token
         // hiện hành nếu request đến trong grace window (tab khác đã rotate).
-        const token = this.jwtService.sign({ userId: user.id });
+        const token = this.signAccessToken(user.id, session.sessionId);
         const nextRefreshToken = this.generateRefreshToken();
         const effectiveRefreshToken =
             await this.userSessionRepository.rotateRefreshTokenIfCurrent(

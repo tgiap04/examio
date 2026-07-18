@@ -16,6 +16,7 @@ import {
     EXAM_SESSION_STATUS,
     EXAM_ATTEMPT_STATUS,
     QUESTION_SELECTION_MODE,
+    ASSESS_TYPE,
     LabelQuestionConfig,
 } from '../../types';
 import { CreateExamAttemptDto } from './dto/create-examattempt.dto';
@@ -41,6 +42,54 @@ export class ExamAttemptService {
         private readonly cryptoService: CryptoService,
         private readonly turnstileService: TurnstileService
     ) {}
+
+    /**
+     * Enforce exam-session access control before an attempt is created.
+     * A guessed/leaked examSessionId must NOT let a non-participant into a
+     * private, whitelisted, or code-gated session — both startExamAttempt and
+     * createExamAttempt route through here. Mirrors ExamSessionService.checkAccess.
+     */
+    private assertSessionAccess(
+        examSession: any,
+        user: User,
+        providedCode?: string
+    ): void {
+        // Public sessions are open to any authenticated user.
+        if (examSession.assessType === ASSESS_TYPE.PUBLIC) {
+            return;
+        }
+
+        // The room host always has access to their own session.
+        if (examSession.examRoom?.hostId === user.id) {
+            return;
+        }
+
+        // Whitelisted participants have access.
+        if (
+            Array.isArray(examSession.whitelist) &&
+            examSession.whitelist.includes(user.id)
+        ) {
+            return;
+        }
+
+        // Code-gated sessions require the correct access code at start time.
+        if (examSession.accessCode) {
+            if (
+                providedCode &&
+                providedCode === examSession.accessCode.toString()
+            ) {
+                return;
+            }
+            throw new ForbiddenException(
+                'Yêu cầu mã truy cập hợp lệ để bắt đầu làm bài'
+            );
+        }
+
+        // Private with no code and not whitelisted → denied.
+        throw new ForbiddenException(
+            'Bạn không có quyền truy cập phiên thi này'
+        );
+    }
 
     /**
      * Start a new exam attempt or resume existing one
@@ -104,13 +153,21 @@ export class ExamAttemptService {
         });
 
         if (existingInProgress) {
-            // Resume existing attempt
+            // Resume existing attempt. An owned in-progress attempt already
+            // proves prior legitimate access, so don't re-challenge the code
+            // here — resuming from a new tab / the dashboard "Tiếp tục" button
+            // has no access code in hand.
             return {
                 message: 'Tiếp tục làm bài',
                 examAttempt: existingInProgress,
                 isResume: true,
             };
         }
+
+        // Access control: block non-participants from private / whitelisted /
+        // code-gated sessions before a NEW attempt row is created. (Resume above
+        // is already gated by ownership of the in-progress attempt.)
+        this.assertSessionAccess(examSession, user, dto.accessCode);
 
         // Count completed attempts
         const completedAttempts = await this.prisma.examAttempt.count({
@@ -1116,6 +1173,10 @@ export class ExamAttemptService {
             throw new NotFoundException('Phiên thi không tồn tại');
         }
 
+        // Access control: block non-participants from private / whitelisted /
+        // code-gated sessions before any attempt row is created.
+        this.assertSessionAccess(examSession, user, dto.accessCode);
+
         // Check if exam has started
         if ((examSession as any).status === EXAM_SESSION_STATUS.UPCOMING) {
             throw new BadRequestException('Phiên thi chưa bắt đầu');
@@ -1608,7 +1669,11 @@ export class ExamAttemptService {
                 );
         }
 
-        // Generate secure questions with JWT tokens and encrypted content
+        // Generate secure questions with per-question JWT tokens.
+        // Content is served as plaintext over TLS (auth-scoped to the attempt
+        // owner, answers never included). The previous AES layer used a key
+        // shipped in the client bundle, so it provided no real protection —
+        // decryption is no longer done client-side. See security audit C5.
         const secureQuestions = filteredQuestionDetails.map((d, index) => {
             const q = d.quizQuestion;
 
@@ -1624,19 +1689,11 @@ export class ExamAttemptService {
                 expirySeconds
             );
 
-            // Encrypt question content and options
-            const questionEncrypted = this.cryptoService.encryptContent(
-                q.question
-            );
-            const optionsEncrypted = this.cryptoService.encryptOptions(
-                q.options
-            );
-
             return {
                 index,
                 token,
-                question_encrypted: questionEncrypted,
-                options_encrypted: optionsEncrypted,
+                question: q.question,
+                options: q.options,
             };
         });
 

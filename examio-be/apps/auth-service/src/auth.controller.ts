@@ -90,8 +90,16 @@ export class AuthController {
             deviceInfo
         );
 
+        // The original oauthUser.token was signed before this session
+        // existed, so it does not carry the sessionId claim AuthGuard needs
+        // to enforce revocation. Re-sign it now that the session is known.
+        const token = this.authService.signAccessToken(
+            oauthUser.user.id,
+            session.sessionId
+        );
+
         return {
-            token: oauthUser.token,
+            token,
             user: oauthUser.user,
             sessionId: session.sessionId,
             refreshToken: session.refreshToken,
@@ -100,6 +108,7 @@ export class AuthController {
 
     private parseOAuthState(state?: string): {
         redirect?: string;
+        nonce?: string;
     } {
         if (!state) {
             return {};
@@ -114,6 +123,10 @@ export class AuthController {
                 redirect:
                     typeof parsed?.redirect === 'string'
                         ? parsed.redirect
+                        : undefined,
+                nonce:
+                    typeof parsed?.nonce === 'string'
+                        ? parsed.nonce
                         : undefined,
             };
         } catch {
@@ -440,7 +453,8 @@ export class AuthController {
         description: 'Code sent successfully',
         type: AuthMessageResponseDto,
     })
-    @UseGuards(AuthGuard)
+    @UseGuards(AuthGuard, AuthStrictThrottlerGuard)
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiCookieAuth('cookie-auth')
     async sendCodeChangePassword(@Req() req: AuthenticatedRequest) {
         return this.authService.sendCodeToChangePassword(req.user);
@@ -453,7 +467,8 @@ export class AuthController {
         description: 'Password changed successfully',
         type: AuthMessageResponseDto,
     })
-    @UseGuards(AuthGuard)
+    @UseGuards(AuthGuard, AuthStrictThrottlerGuard)
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiCookieAuth('cookie-auth')
     async changePassword(
         @Body('code') code: string,
@@ -518,6 +533,26 @@ export class AuthController {
         @Res({ passthrough: true }) res: ExpressResponse,
         @Req() request: Request
     ) {
+        // Verify the OAuth state nonce BEFORE creating any session. The
+        // nonce was generated server-side in GoogleAuthGuard and bound to a
+        // short-lived httpOnly cookie on the initiation request; requiring
+        // it to match here prevents login-CSRF/session-fixation (an
+        // attacker cannot forge a valid state without also controlling the
+        // victim's oauth_nonce cookie).
+        const oauthState = this.parseOAuthState(
+            request.query.state as string | undefined
+        );
+        const nonceCookie = request.cookies?.oauth_nonce;
+        res.clearCookie('oauth_nonce');
+
+        if (
+            !nonceCookie ||
+            !oauthState.nonce ||
+            nonceCookie !== oauthState.nonce
+        ) {
+            throw new UnauthorizedException('Invalid OAuth state');
+        }
+
         const oauthPayload = await this.ensureOauthSession(request, req.user);
         const { token, sessionId, refreshToken, user } = oauthPayload;
 
@@ -538,9 +573,6 @@ export class AuthController {
             process.env.FRONTEND_URL || 'http://localhost:3001'
         ).replace(/\/+$/, '');
         const redirectFromCookie = request.cookies?.oauth_redirect;
-        const oauthState = this.parseOAuthState(
-            request.query.state as string | undefined
-        );
         res.clearCookie('oauth_redirect');
 
         const appCallback = redirectFromCookie || oauthState.redirect;

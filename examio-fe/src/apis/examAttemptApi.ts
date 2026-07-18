@@ -85,11 +85,13 @@ export interface SubmitExamAttemptResponse {
  */
 export async function startExamAttemptApi(
   examSessionId: string,
-  turnstileToken?: string
+  turnstileToken?: string,
+  accessCode?: string
 ): Promise<StartExamAttemptResponse> {
   const response = await api.post("/examattempts/start", {
     examSessionId,
     ...(turnstileToken ? { turnstileToken } : {}),
+    ...(accessCode ? { accessCode } : {}),
   });
   return response.data;
 }
@@ -267,13 +269,15 @@ export async function getMyAttemptsBySessionApi(
 // ==================== SECURE QUIZ API ====================
 
 /**
- * Secure question with JWT token and encrypted content
+ * Secure question with per-question JWT token.
+ * Content is served as plaintext over TLS (auth-scoped, no answers) — the
+ * former client-side AES layer shipped its key in the bundle and is removed.
  */
 export interface SecureQuestion {
   index: number;
   token: string;
-  question_encrypted: string;
-  options_encrypted: string;
+  question: string;
+  options: string[];
 }
 
 /**

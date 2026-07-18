@@ -25,9 +25,25 @@ export class OptionalAuthGuard implements CanActivate {
         }
 
         try {
-            const decoded = await this.jwtService.verifyAsync(token, {
-                secret: process.env.JWT_SECRET,
-            });
+            const decoded: { userId?: string; sessionId?: string } =
+                await this.jwtService.verifyAsync(token, {
+                    secret: process.env.JWT_SECRET,
+                });
+
+            // Parity with AuthGuard: a token whose session was deactivated
+            // (logout / password reset) must not authenticate. Fail soft here —
+            // treat as anonymous rather than throwing, since auth is optional.
+            if (decoded.sessionId) {
+                const session = await this.prisma.userSession.findUnique({
+                    where: { sessionId: decoded.sessionId },
+                    select: { isActive: true },
+                });
+
+                if (!session || !session.isActive) {
+                    request['user'] = undefined;
+                    return true;
+                }
+            }
 
             const user = await this.prisma.user.findUnique({
                 where: { id: decoded.userId },

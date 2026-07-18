@@ -31,33 +31,6 @@ import { ProxyService } from '../services/proxy.service';
 export class AuthProxyController {
     constructor(private readonly proxyService: ProxyService) {}
 
-    private extractCookieValue(
-        cookies: string[] | string | undefined,
-        cookieName: string
-    ): string | undefined {
-        const cookieList = Array.isArray(cookies)
-            ? cookies
-            : typeof cookies === 'string'
-              ? [cookies]
-              : [];
-
-        for (const cookie of cookieList) {
-            const [nameValue] = cookie.split(';');
-            const separatorIndex = nameValue.indexOf('=');
-            if (separatorIndex === -1) {
-                continue;
-            }
-
-            const name = nameValue.slice(0, separatorIndex).trim();
-            const value = nameValue.slice(separatorIndex + 1).trim();
-            if (name === cookieName && value) {
-                return value;
-            }
-        }
-
-        return undefined;
-    }
-
     // ==================== PUBLIC ENDPOINTS ====================
 
     @Post('login')
@@ -384,31 +357,18 @@ export class AuthProxyController {
             res.setHeader('Set-Cookie', setCookieHeaders);
         }
 
-        // Redirect to frontend - auth service may provide a redirectUrl
+        // Redirect to frontend - auth service may provide a redirectUrl.
+        // The httpOnly cookies set above already carry the auth session, so
+        // NEVER append token/refreshToken/session_id (or any access token) as
+        // query params here - a query string leaks into browser history,
+        // server access logs, and the Referer header of whatever page the
+        // frontend navigates to next. Any legitimate non-sensitive params
+        // already present on rawRedirectUrl (e.g. redirect/returnTo) are left
+        // untouched since we never mutate searchParams.
         const rawRedirectUrl = result.redirectUrl || frontendUrl;
 
         try {
             const redirectUrl = new URL(rawRedirectUrl);
-            const token =
-                result.data?.token ||
-                this.extractCookieValue(setCookieHeaders, 'token') ||
-                this.extractCookieValue(setCookieHeaders, 'accessToken');
-            const refreshToken =
-                result.data?.refreshToken ||
-                this.extractCookieValue(setCookieHeaders, 'refreshToken');
-            const sessionId =
-                result.data?.sessionId ||
-                this.extractCookieValue(setCookieHeaders, 'session_id');
-
-            if (token) {
-                redirectUrl.searchParams.set('token', token);
-            }
-            if (refreshToken) {
-                redirectUrl.searchParams.set('refreshToken', refreshToken);
-            }
-            if (sessionId) {
-                redirectUrl.searchParams.set('sessionId', sessionId);
-            }
             res.redirect(redirectUrl.toString());
             return;
         } catch {

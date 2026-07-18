@@ -253,6 +253,22 @@ export class AIRepository {
         });
     }
     /**
+     * Count how many files a user has uploaded since the start of the
+     * current calendar month. Used to enforce the subscription's
+     * `filesPerMonth` quota before accepting a new upload.
+     */
+    async countUserStorageThisMonth(userId: string): Promise<number> {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        return this.prisma.userStorage.count({
+            where: {
+                userId,
+                createdAt: { gte: startOfMonth },
+            },
+        });
+    }
+
+    /**
      * Find existing file by name and size to prevent duplicates
      */
     async findDuplicateUserStorage(

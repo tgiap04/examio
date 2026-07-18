@@ -26,9 +26,31 @@ export class AuthGuard implements CanActivate {
         }
 
         try {
-            const decoded = await this.jwtService.verifyAsync(token, {
-                secret: process.env.JWT_SECRET,
-            });
+            const decoded: { userId?: string; sessionId?: string } =
+                await this.jwtService.verifyAsync(token, {
+                    secret: process.env.JWT_SECRET,
+                });
+
+            // When the token carries a sessionId claim, the underlying
+            // UserSession must still be active. This is what makes logout /
+            // "logout other devices" / password-reset actually revoke an
+            // access token instead of leaving it valid until JWT expiry.
+            // Tokens signed before this claim existed have no sessionId and
+            // fall through unchecked here — they expire naturally within
+            // ACCESS_TOKEN_EXPIRATION (short-lived) as clients refresh onto
+            // sessionId-bearing tokens.
+            if (decoded.sessionId) {
+                const session = await this.prisma.userSession.findUnique({
+                    where: { sessionId: decoded.sessionId },
+                    select: { isActive: true },
+                });
+
+                if (!session || !session.isActive) {
+                    throw new UnauthorizedException(
+                        'Session has been invalidated'
+                    );
+                }
+            }
 
             const user = await this.prisma.user.findUnique({
                 where: { id: decoded.userId },
