@@ -1,0 +1,142 @@
+/**
+ * Org-chart style connectors for the word-family tree.
+ * Classic pure-CSS technique: nested <ul>/<li> with pseudo-element elbow
+ * connectors. Colors come from the theme tokens so it themes light/dark.
+ */
+
+.wft {
+  overflow-x: auto;
+  padding: 20px 20px 32px;
+  background-color: var(--surface-soft);
+  background-image: radial-gradient(var(--hairline) 1.2px, transparent 1.2px);
+  background-size: 22px 22px;
+}
+
+.wft-title {
+  margin-bottom: 8px;
+  text-align: center;
+  font-size: 13px;
+  color: color-mix(in srgb, var(--ink) 55%, transparent);
+}
+
+.wft-title b {
+  color: var(--coral);
+  font-weight: 600;
+}
+
+.wft > ul {
+  width: max-content;
+  min-width: 100%;
+  margin-inline: auto;
+}
+
+.wft ul {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  padding-top: 30px;
+  margin: 0;
+  list-style: none;
+}
+
+.wft li {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px 16px 0;
+  list-style: none;
+}
+
+/* Elbow connectors from each node up to its sibling bus. */
+.wft li::before,
+.wft li::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  width: 50%;
+  height: 30px;
+  border-top: 1.5px solid var(--hairline);
+}
+
+.wft li::before {
+  right: 50%;
+}
+
+.wft li::after {
+  left: 50%;
+  border-left: 1.5px solid var(--hairline);
+}
+
+/* Single child: straight drop, no horizontal bus. */
+.wft li:only-child::before,
+.wft li:only-child::after {
+  display: none;
+}
+
+/* Trim the outer ends of the horizontal bus + round the corners. */
+.wft li:first-child::before,
+.wft li:last-child::after {
+  border: 0 none;
+}
+
+.wft li:last-child::before {
+  border-right: 1.5px solid var(--hairline);
+  border-radius: 0 10px 0 0;
+}
+
+.wft li:first-child::after {
+  border-radius: 10px 0 0 0;
+}
+
+/* Vertical drop from a parent node down into its children bus. */
+.wft ul ul::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 0;
+  height: 30px;
+  border-left: 1.5px solid var(--hairline);
+}
+
+/* Root node: no connector above it. */
+.wft > ul {
+  padding-top: 0;
+}
+
+.wft > ul > li {
+  padding-top: 0;
+}
+
+.wft > ul > li::before,
+.wft > ul > li::after {
+  display: none;
+}
+
+/* A node wrapper anchors its count badge onto the drop line below it. */
+.wft-node {
+  position: relative;
+  z-index: 1;
+}
+
+.wft-badge {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, 50%);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--coral);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  box-shadow: 0 0 0 3px var(--surface-soft);
+}

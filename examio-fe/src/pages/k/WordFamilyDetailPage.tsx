@@ -290,12 +290,7 @@ export default function WordFamilyDetailPage() {
         )}
 
       {!loadingDetail && words.length > 0 && viewMode === "tree" && (
-        <TreeView
-          rootWord={rootWord!}
-          words={words}
-          expandedWords={expandedWords}
-          onToggleExpand={toggleExpand}
-        />
+        <TreeView rootWord={rootWord!} words={words} />
       )}
 
       {!loadingDetail && words.length > 0 && viewMode === "list" && (
