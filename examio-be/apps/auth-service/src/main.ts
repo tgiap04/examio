@@ -19,6 +19,18 @@ async function bootstrap() {
         );
     }
 
+    // Fail fast on misconfiguration: refresh tokens are encrypted at rest
+    // with this key (RefreshTokenCipherService). A missing or weak key
+    // would either crash on first use or weaken the at-rest protection.
+    if (
+        !process.env.REFRESH_TOKEN_ENC_KEY ||
+        process.env.REFRESH_TOKEN_ENC_KEY.length < 32
+    ) {
+        throw new Error(
+            'REFRESH_TOKEN_ENC_KEY is missing or too short (minimum 32 characters required)'
+        );
+    }
+
     // Create HTTP application
     const app = await NestFactory.create(AuthServiceModule);
 

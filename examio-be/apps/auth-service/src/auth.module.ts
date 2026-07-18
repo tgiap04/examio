@@ -15,6 +15,7 @@ import {
     EventsModule,
     EventPublisherService,
     TurnstileService,
+    RefreshTokenCipherService,
 } from '@examio/common';
 import { RedisModule, RedisService } from '@examio/redis';
 
@@ -61,6 +62,7 @@ import { ProfileModule } from './profile/profile.module';
         AuthGuard,
         UserRepository,
         TurnstileService,
+        RefreshTokenCipherService,
         // Global rate limiting applied to all auth endpoints
         { provide: APP_GUARD, useClass: ThrottlerGuard },
     ],

@@ -24,6 +24,7 @@ import {
     WALLET_SERVICE,
     EventPublisherService,
     EventType,
+    RefreshTokenCipherService,
 } from '@examio/common';
 
 // Local imports
@@ -50,7 +51,8 @@ export class AuthService {
         private readonly mailService: MailService,
         private readonly passwordService: PasswordService,
         private readonly generateIdService: GenerateIdService,
-        private readonly eventPublisher: EventPublisherService
+        private readonly eventPublisher: EventPublisherService,
+        private readonly refreshTokenCipher: RefreshTokenCipherService
     ) {}
 
     /**
@@ -759,8 +761,10 @@ export class AuthService {
 
         await this.userSessionRepository.updateLastActivity(session.sessionId);
 
+        // session.refreshToken is stored sealed at rest — open() it before
+        // handing it back to the client, which must only ever see plaintext.
         return {
-            refreshToken: session.refreshToken,
+            refreshToken: this.refreshTokenCipher.open(session.refreshToken),
         };
     }
 

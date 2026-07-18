@@ -5,6 +5,7 @@ import { HttpService } from '@nestjs/axios';
 import { AIService } from './ai.service';
 import { AIRepository } from './ai.repository';
 import { GenerateIdService, R2ClientService } from '@examio/common';
+import { RedisService } from '@examio/redis';
 import { FinanceClientService } from '../finance-client/finance-client.service';
 
 describe('AIService', () => {
@@ -17,6 +18,7 @@ describe('AIService', () => {
         countDocumentsByUserStorageId: jest.Mock;
         createUserStorage: jest.Mock;
         deleteUploadAggregate: jest.Mock;
+        countUserStorageThisMonth: jest.Mock;
     };
     let r2ClientService: {
         uploadFile: jest.Mock;
@@ -38,6 +40,7 @@ describe('AIService', () => {
             countDocumentsByUserStorageId: jest.fn(),
             createUserStorage: jest.fn(),
             deleteUploadAggregate: jest.fn(),
+            countUserStorageThisMonth: jest.fn().mockResolvedValue(0),
         };
 
         r2ClientService = {
@@ -63,11 +66,24 @@ describe('AIService', () => {
                 },
                 {
                     provide: FinanceClientService,
-                    useValue: { deductCredits: jest.fn() },
+                    useValue: {
+                        deductCredits: jest.fn(),
+                        getUserBenefits: jest
+                            .fn()
+                            .mockResolvedValue({ files_per_month: -1 }),
+                    },
                 },
                 {
                     provide: R2ClientService,
                     useValue: r2ClientService,
+                },
+                {
+                    provide: RedisService,
+                    useValue: {
+                        get: jest.fn(),
+                        set: jest.fn(),
+                        del: jest.fn(),
+                    },
                 },
             ],
         }).compile();

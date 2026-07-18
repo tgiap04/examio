@@ -6,6 +6,7 @@ import {
 import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '@examio/database';
 import * as cookie from 'cookie';
+import { RefreshTokenCipherService } from '../services/refresh-token-cipher.service';
 
 /**
  * SessionValidationMiddleware
@@ -16,7 +17,10 @@ import * as cookie from 'cookie';
  */
 @Injectable()
 export class SessionValidationMiddleware implements NestMiddleware {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly refreshTokenCipher: RefreshTokenCipherService
+    ) {}
 
     async use(req: Request, res: Response, next: NextFunction) {
         // Skip validation for public endpoints
@@ -48,9 +52,11 @@ export class SessionValidationMiddleware implements NestMiddleware {
         }
 
         try {
-            // Check if session is still active
+            // Check if session is still active. Refresh tokens are stored
+            // sealed at rest (deterministic AES-256-GCM) — never query by
+            // the raw incoming token.
             const session = await this.prisma.userSession.findUnique({
-                where: { refreshToken },
+                where: { refreshToken: this.refreshTokenCipher.seal(refreshToken) },
                 select: {
                     isActive: true,
                     expiresAt: true,

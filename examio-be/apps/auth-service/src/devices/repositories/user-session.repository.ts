@@ -1,11 +1,21 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@examio/database';
 import { UserSession } from '@prisma/client';
+import { RefreshTokenCipherService } from '@examio/common';
 
 @Injectable()
 export class UserSessionRepository {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly refreshTokenCipher: RefreshTokenCipherService
+    ) {}
 
+    /**
+     * Refresh tokens are encrypted at rest (deterministic AES-256-GCM via
+     * RefreshTokenCipherService). Every write stores `seal(plaintext)`,
+     * every lookup queries by `seal(incoming)` — the raw token is never
+     * persisted and never used directly in a `where` clause.
+     */
     async create(data: {
         id: string;
         userId: string;
@@ -20,7 +30,12 @@ export class UserSessionRepository {
         city?: string | null;
         expiresAt: Date;
     }): Promise<UserSession> {
-        return this.prisma.userSession.create({ data });
+        return this.prisma.userSession.create({
+            data: {
+                ...data,
+                refreshToken: this.refreshTokenCipher.seal(data.refreshToken),
+            },
+        });
     }
 
     async findByRefreshToken(
@@ -30,12 +45,13 @@ export class UserSessionRepository {
         // inside its grace window. This keeps concurrent tabs/requests that
         // hold the just-rotated token from being treated as invalid.
         const now = new Date();
+        const sealed = this.refreshTokenCipher.seal(refreshToken);
         return this.prisma.userSession.findFirst({
             where: {
                 OR: [
-                    { refreshToken },
+                    { refreshToken: sealed },
                     {
-                        previousRefreshToken: refreshToken,
+                        previousRefreshToken: sealed,
                         previousTokenExpiresAt: { gt: now },
                     },
                 ],
@@ -73,7 +89,7 @@ export class UserSessionRepository {
         await this.prisma.userSession.update({
             where: { sessionId },
             data: {
-                refreshToken,
+                refreshToken: this.refreshTokenCipher.seal(refreshToken),
                 lastActivity: new Date(),
             },
         });
@@ -103,18 +119,22 @@ export class UserSessionRepository {
         const graceUntil = new Date(
             now.getTime() + UserSessionRepository.REFRESH_GRACE_MS
         );
+        const sealedCurrent = this.refreshTokenCipher.seal(currentRefreshToken);
+        const sealedNext = this.refreshTokenCipher.seal(nextRefreshToken);
 
-        // Trường hợp 1: token hiện hành → rotate.
+        // Trường hợp 1: token hiện hành → rotate. `nextRefreshToken` is
+        // returned as-is (plaintext) — it is the caller's own freshly
+        // generated value, never something read back from the sealed column.
         const rotated = await this.prisma.userSession.updateMany({
             where: {
                 sessionId,
-                refreshToken: currentRefreshToken,
+                refreshToken: sealedCurrent,
                 isActive: true,
                 expiresAt: { gt: now },
             },
             data: {
-                refreshToken: nextRefreshToken,
-                previousRefreshToken: currentRefreshToken,
+                refreshToken: sealedNext,
+                previousRefreshToken: sealedCurrent,
                 previousTokenExpiresAt: graceUntil,
                 lastActivity: now,
             },
@@ -125,17 +145,22 @@ export class UserSessionRepository {
         }
 
         // Trường hợp 2: token nằm trong grace window (đã rotate ở request khác).
+        // `session.refreshToken` is the sealed current token stored by the
+        // request that won the rotation race — open() it before handing it
+        // back to the caller, which must return plaintext to the client.
         const session = await this.prisma.userSession.findFirst({
             where: {
                 sessionId,
-                previousRefreshToken: currentRefreshToken,
+                previousRefreshToken: sealedCurrent,
                 previousTokenExpiresAt: { gt: now },
                 isActive: true,
                 expiresAt: { gt: now },
             },
         });
 
-        return session ? session.refreshToken : null;
+        return session
+            ? this.refreshTokenCipher.open(session.refreshToken)
+            : null;
     }
 
     async deactivateSession(id: string): Promise<void> {
@@ -147,7 +172,7 @@ export class UserSessionRepository {
 
     async deactivateByRefreshToken(refreshToken: string): Promise<void> {
         await this.prisma.userSession.updateMany({
-            where: { refreshToken },
+            where: { refreshToken: this.refreshTokenCipher.seal(refreshToken) },
             data: { isActive: false },
         });
     }
