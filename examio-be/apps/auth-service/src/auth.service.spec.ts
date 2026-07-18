@@ -11,6 +11,13 @@ describe('AuthService refresh token flow', () => {
     const mockEventPublisher = {
         publishAuthEvent: jest.fn(),
     };
+    // Refresh tokens are sealed at rest; the mock mirrors real seal/open
+    // behavior deterministically enough for these tests, which assert on
+    // plaintext flowing to/from the repository boundary.
+    const mockRefreshTokenCipher = {
+        seal: jest.fn((plaintext: string) => `sealed:${plaintext}`),
+        open: jest.fn((blob: string) => blob.replace(/^sealed:/, '')),
+    };
 
     let userRepository: {
         findByIdWithRelations: jest.Mock;
@@ -28,6 +35,7 @@ describe('AuthService refresh token flow', () => {
     };
     let generateIdService: {
         generateId: jest.Mock;
+        generateSecureToken: jest.Mock;
     };
     let authService: AuthService;
 
@@ -51,7 +59,11 @@ describe('AuthService refresh token flow', () => {
 
         generateIdService = {
             generateId: jest.fn(),
+            generateSecureToken: jest.fn(),
         };
+
+        mockRefreshTokenCipher.seal.mockClear();
+        mockRefreshTokenCipher.open.mockClear();
 
         authService = new AuthService(
             mockPrisma as any,
@@ -61,7 +73,8 @@ describe('AuthService refresh token flow', () => {
             mockMailService as any,
             mockPasswordService as any,
             generateIdService as any,
-            mockEventPublisher as any
+            mockEventPublisher as any,
+            mockRefreshTokenCipher as any
         );
     });
 
@@ -81,9 +94,9 @@ describe('AuthService refresh token flow', () => {
             isAdmin: false,
         });
         jwtService.sign.mockReturnValue('new-access-token');
-        generateIdService.generateId
-            .mockReturnValueOnce('refresh-part-1')
-            .mockReturnValueOnce('refresh-part-2');
+        generateIdService.generateSecureToken.mockReturnValue(
+            'refresh-part-1_refresh-part-2'
+        );
 
         userSessionRepository.rotateRefreshTokenIfCurrent.mockResolvedValue(
             'refresh-part-1_refresh-part-2'
@@ -91,7 +104,10 @@ describe('AuthService refresh token flow', () => {
 
         const result = await authService.refreshAccessToken('old-refresh-token');
 
-        expect(jwtService.sign).toHaveBeenCalledWith({ userId: 'user-123' });
+        expect(jwtService.sign).toHaveBeenCalledWith({
+            userId: 'user-123',
+            sessionId: 'session-123',
+        });
         expect(
             userSessionRepository.rotateRefreshTokenIfCurrent
         ).toHaveBeenCalledWith(
@@ -127,9 +143,9 @@ describe('AuthService refresh token flow', () => {
             isAdmin: false,
         });
         jwtService.sign.mockReturnValue('new-access-token');
-        generateIdService.generateId
-            .mockReturnValueOnce('refresh-part-1')
-            .mockReturnValueOnce('refresh-part-2');
+        generateIdService.generateSecureToken.mockReturnValue(
+            'refresh-part-1_refresh-part-2'
+        );
         // Grace path: a concurrent request already rotated, so the repo returns
         // the existing current token instead of the freshly generated one.
         userSessionRepository.rotateRefreshTokenIfCurrent.mockResolvedValue(
@@ -158,9 +174,9 @@ describe('AuthService refresh token flow', () => {
             isAdmin: false,
         });
         jwtService.sign.mockReturnValue('new-access-token');
-        generateIdService.generateId
-            .mockReturnValueOnce('refresh-part-1')
-            .mockReturnValueOnce('refresh-part-2');
+        generateIdService.generateSecureToken.mockReturnValue(
+            'refresh-part-1_refresh-part-2'
+        );
         userSessionRepository.rotateRefreshTokenIfCurrent.mockResolvedValue(null);
 
         await expect(
@@ -204,5 +220,47 @@ describe('AuthService refresh token flow', () => {
         await expect(
             authService.refreshAccessToken('refresh-token')
         ).rejects.toThrow(new NotFoundException('User not found'));
+    });
+
+    describe('syncRefreshTokenBySession', () => {
+        it('opens the sealed stored token and returns plaintext to the caller', async () => {
+            userSessionRepository.findBySessionId.mockResolvedValue({
+                id: 'session-row-id',
+                sessionId: 'session-123',
+                userId: 'user-123',
+                isActive: true,
+                expiresAt: new Date(Date.now() + 60_000),
+                refreshToken: 'sealed:plaintext-current-token',
+            });
+
+            const result = await authService.syncRefreshTokenBySession(
+                'user-123',
+                'session-123'
+            );
+
+            expect(mockRefreshTokenCipher.open).toHaveBeenCalledWith(
+                'sealed:plaintext-current-token'
+            );
+            expect(result).toEqual({ refreshToken: 'plaintext-current-token' });
+            expect(
+                userSessionRepository.updateLastActivity
+            ).toHaveBeenCalledWith('session-123');
+        });
+
+        it('rejects when the session belongs to a different user', async () => {
+            userSessionRepository.findBySessionId.mockResolvedValue({
+                id: 'session-row-id',
+                sessionId: 'session-123',
+                userId: 'someone-else',
+                isActive: true,
+                expiresAt: new Date(Date.now() + 60_000),
+                refreshToken: 'sealed:plaintext-current-token',
+            });
+
+            await expect(
+                authService.syncRefreshTokenBySession('user-123', 'session-123')
+            ).rejects.toThrow(new UnauthorizedException('Session không hợp lệ'));
+            expect(mockRefreshTokenCipher.open).not.toHaveBeenCalled();
+        });
     });
 });

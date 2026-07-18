@@ -10,6 +10,7 @@ export * from './services/crypto.service';
 export * from './services/pdf.service';
 export * from './services/image-preprocessing.service';
 export * from './services/turnstile.service';
+export * from './services/refresh-token-cipher.service';
 
 // Guards
 export * from './guard/auth.guard';
