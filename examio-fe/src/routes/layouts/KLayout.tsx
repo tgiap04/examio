@@ -114,8 +114,14 @@ export function KLayout({ children }: PropsWithChildren) {
       <SidebarKit collapsed={sidebarCollapsed} />
 
       <main
-        className="m-0 w-full overflow-x-clip pb-5 pt-10 xl:pb-0"
-        style={{ marginLeft: isDesktop ? sidebarWidth : 0 }}
+        className="m-0 overflow-x-clip pb-5 pt-10 xl:pb-0"
+        style={{
+          marginLeft: isDesktop ? sidebarWidth : 0,
+          // Width must exclude the sidebar gutter — using w-full (100%) together
+          // with marginLeft pushed main's box past the viewport by sidebarWidth,
+          // creating a phantom horizontal overflow on every desktop page.
+          width: isDesktop ? `calc(100% - ${sidebarWidth}px)` : "100%",
+        }}
       >
         {showVerificationBanner && (
           <div className="mx-4 mt-4 flex w-auto flex-col items-start justify-between gap-2 rounded-lg border border-warning/25 bg-warning/10 px-3 py-2 text-body shadow-[0_1px_3px_rgba(20,20,19,0.08)] sm:flex-row sm:items-center sm:gap-4 sm:px-4 sm:py-2.5">
