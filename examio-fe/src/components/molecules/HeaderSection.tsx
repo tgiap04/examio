@@ -67,7 +67,7 @@ export default function HeaderSection() {
           )}
         >
           <Link to="/" aria-label="Examio" className="flex items-center">
-            <Logo sizeLogo={28} sizeText={18} />
+            <Logo sizeLogo={44} sizeText={26} />
           </Link>
 
           <ul className="hidden items-center gap-7 lg:flex !mt-3">
