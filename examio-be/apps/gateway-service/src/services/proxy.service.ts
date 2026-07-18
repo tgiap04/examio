@@ -34,13 +34,21 @@ export class ProxyService {
      */
     private handleProxyError(error: any): never {
         if (error.response) {
+            const status = error.response.status;
             if (process.env.NODE_ENV === 'production') {
                 this.logger.error(
-                    `Proxy upstream error ${error.response.status}: ${JSON.stringify(error.response.data)}`
+                    `Proxy upstream error ${status}: ${JSON.stringify(error.response.data)}`
                 );
-                throw new HttpException('Request failed', error.response.status);
+                // Client errors (4xx) carry intentional user-facing messages
+                // (validation, business rules, e.g. "Email hoặc mật khẩu không
+                // đúng") — pass them through. Server errors (5xx) may leak
+                // internal detail/stack, so keep those generic.
+                if (status >= 400 && status < 500) {
+                    throw new HttpException(error.response.data, status);
+                }
+                throw new HttpException('Request failed', status);
             }
-            throw new HttpException(error.response.data, error.response.status);
+            throw new HttpException(error.response.data, status);
         }
         this.logger.error(`Proxy error: ${error.message}`);
         throw new HttpException('Service unavailable', 503);

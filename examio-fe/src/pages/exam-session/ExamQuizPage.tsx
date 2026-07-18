@@ -115,8 +115,15 @@ export default function ExamQuizPage() {
     [attemptId, answers, currentQuestionIndex, markedForReview, isSubmitted],
   );
 
+  const autoSubmittingRef = useRef(false);
+  const [autoSubmitFailed, setAutoSubmitFailed] = useState(false);
+
   const handleAutoSubmit = useCallback(async () => {
     if (!attemptId || tokenMap.size === 0) return;
+    // Re-entry guard: the time-up effect re-fires every second; don't stack
+    // overlapping auto-submits.
+    if (autoSubmittingRef.current) return;
+    autoSubmittingRef.current = true;
 
     try {
       await updateExamAttemptProgressApi(attemptId, {
@@ -141,8 +148,19 @@ export default function ExamQuizPage() {
       toast.info("Đã hết thời gian", {
         description: "Bài thi đã được tự động nộp",
       });
-    } catch (err) {
+    } catch (err: any) {
+      // Stop the per-second retry loop and surface the reason, so the user
+      // isn't stuck on the quiz with no feedback (e.g. stale tokens after a
+      // secret rotation, or timer drift past JWT expiry). Answers stay saved.
       console.error("Failed to auto-submit:", err);
+      setAutoSubmitFailed(true);
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Không thể tự động nộp bài. Vui lòng tải lại trang rồi nộp lại — câu trả lời của bạn vẫn được lưu.";
+      toast.error(message);
+    } finally {
+      autoSubmittingRef.current = false;
     }
   }, [attemptId, answers, currentQuestionIndex, markedForReview, tokenMap]);
 
@@ -314,11 +332,13 @@ export default function ExamQuizPage() {
         });
       }
 
-      if (remainingSeconds <= 0) {
+      // Stop retrying once an auto-submit has failed — otherwise this effect
+      // re-fires every second and loops the same error forever.
+      if (remainingSeconds <= 0 && !autoSubmitFailed) {
         handleAutoSubmit();
       }
     }
-  }, [timeSpentSeconds, timeLimitMinutes, loading, isSubmitted, hasWarned30s, handleAutoSubmit]);
+  }, [timeSpentSeconds, timeLimitMinutes, loading, isSubmitted, hasWarned30s, handleAutoSubmit, autoSubmitFailed]);
 
   useEffect(() => {
     if (attemptId && !loading && !isSubmitted) {
