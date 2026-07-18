@@ -7,6 +7,7 @@ import {
     InternalServerErrorException,
     ServiceUnavailableException,
     ConflictException,
+    ForbiddenException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { AxiosError } from 'axios';
@@ -179,6 +180,27 @@ export class AIService {
         throw new InternalServerErrorException(message);
     }
 
+    /**
+     * Enforce the subscription's `filesPerMonth` quota before accepting a
+     * new file upload. `-1` means unlimited. Fails safe: if the benefits
+     * lookup itself fails, FinanceClientService.getUserBenefits already
+     * falls back to conservative Free-tier defaults, so the quota is still
+     * applied rather than skipped.
+     */
+    private async enforceFileUploadQuota(userId: string): Promise<void> {
+        const benefits = await this.financeClient.getUserBenefits(userId);
+        if (benefits.files_per_month === -1) return;
+
+        const uploadedThisMonth =
+            await this.aiRepository.countUserStorageThisMonth(userId);
+
+        if (uploadedThisMonth >= benefits.files_per_month) {
+            throw new ForbiddenException(
+                `Bạn đã đạt giới hạn ${benefits.files_per_month} file/tháng. Vui lòng nâng cấp gói hoặc thử lại vào tháng sau.`
+            );
+        }
+    }
+
     private async clearAiServiceCache(userStorageId: string) {
         try {
             await firstValueFrom(
@@ -219,6 +241,9 @@ export class AIService {
         this.logger.log(
             `Quick upload file: ${file.originalname} (${file.size} bytes, ${file.mimetype})`
         );
+
+        // Enforce monthly file upload quota before doing any expensive work
+        await this.enforceFileUploadQuota(user.id);
 
         try {
             // 1. Upload to R2 via gRPC - returns key (string)
@@ -415,6 +440,11 @@ export class AIService {
                     newBalance,
                 };
             }
+
+            // Enforce monthly file upload quota before doing any expensive
+            // work. Only applies to genuinely new files - the duplicate-file
+            // reuse path above does not consume a new upload slot.
+            await this.enforceFileUploadQuota(user.id);
 
             // 1b. Upload to R2 via gRPC
             // Sanitize filename to handle Vietnamese characters
@@ -975,6 +1005,9 @@ export class AIService {
      * Create a new upload and trigger OCR processing
      */
     async createUpload(user: User, dto: UploadFileDto) {
+        // Enforce monthly file upload quota before doing any expensive work
+        await this.enforceFileUploadQuota(user.id);
+
         // Calculate credits: 1 credit per 2MB
         const sizeMB = dto.size / (1024 * 1024);
         const credits = Math.ceil(sizeMB / 2);

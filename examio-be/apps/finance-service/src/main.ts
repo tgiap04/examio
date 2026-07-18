@@ -9,6 +9,12 @@ import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 import { FinanceServiceModule } from './finance-service.module';
 
 async function bootstrap() {
+    // Fail fast on a missing/weak signing secret instead of degrading into
+    // per-request 401s (or, worse, a guessable key). See security audit H8/H6.
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+        throw new Error('JWT_SECRET missing or too short (min 32 chars)');
+    }
+
     // HTTP server
     const app = await NestFactory.create(FinanceServiceModule);
 

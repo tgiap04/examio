@@ -129,7 +129,7 @@ async def generate_quiz(body: GenerateQuizBody):
                 },
             )
         raise HTTPException(
-            status_code=400,
+            status_code=result.get("status_code", 400),
             detail=result.get("error", "Failed to generate quiz")
         )
 
@@ -187,7 +187,7 @@ async def generate_flashcards(body: GenerateFlashcardBody):
                 },
             )
         raise HTTPException(
-            status_code=400,
+            status_code=result.get("status_code", 400),
             detail=result.get("error", "Failed to generate flashcards")
         )
 

@@ -30,6 +30,7 @@ import { ProxyService } from '../services/proxy.service';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import * as FormData from 'form-data';
+import { Throttle } from '@nestjs/throttler';
 import { AuthGuard } from '@examio/common';
 import { PageEnabledGuard } from '../guards/page-enabled.guard';
 import { TogglePage } from '../guards/toggle-page.decorator';
@@ -51,6 +52,7 @@ export class AIProxyController {
     ) {}
 
     @Post('quick-upload')
+    @Throttle({ default: { limit: 10, ttl: 60000 } })
     @UseInterceptors(
         FileInterceptor('file', { limits: { fileSize: 50 * 1024 * 1024 } })
     )
@@ -119,6 +121,7 @@ export class AIProxyController {
     }
 
     @Post('generate-from-file')
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @UseInterceptors(
         FileInterceptor('file', { limits: { fileSize: 50 * 1024 * 1024 } })
     )
@@ -287,6 +290,7 @@ export class AIProxyController {
     }
 
     @Post('regenerate/:uploadId')
+    @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiOperation({ summary: 'Tạo lại quiz/flashcard từ file' })
     async regenerate(
         @Param('uploadId') uploadId: string,
@@ -430,6 +434,7 @@ export class AIChatProxyController {
     }
 
     @Post(':chatId/stream')
+    @Throttle({ default: { limit: 10, ttl: 60000 } })
     @ApiOperation({ summary: 'Gửi message với streaming' })
     async streamMessage(
         @Param('chatId') chatId: string,
@@ -566,6 +571,7 @@ export class AIChatProxyController {
     }
 
     @Post('message/:messageId/regenerate-stream')
+    @Throttle({ default: { limit: 10, ttl: 60000 } })
     @ApiOperation({ summary: 'Regenerate response với streaming' })
     async regenerateMessageStream(
         @Param('messageId') messageId: string,

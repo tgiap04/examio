@@ -8,6 +8,12 @@ import { NestFactory } from '@nestjs/core';
 import { ExamServiceModule } from './exam-service.module';
 
 async function bootstrap() {
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+        throw new Error(
+            'JWT_SECRET is missing or too short (must be >= 32 characters). Refusing to start.'
+        );
+    }
+
     const app = await NestFactory.create(ExamServiceModule);
 
     // Global prefix to match gateway proxy paths

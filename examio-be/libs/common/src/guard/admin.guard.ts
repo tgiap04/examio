@@ -34,13 +34,29 @@ export class AdminGuard implements CanActivate {
             throw new UnauthorizedException('Token is required');
         }
 
-        let decoded: { userId?: string };
+        let decoded: { userId?: string; sessionId?: string };
         try {
             decoded = await this.jwtService.verifyAsync(token, {
                 secret: process.env.JWT_SECRET,
             });
         } catch {
             throw new UnauthorizedException('Invalid or expired token');
+        }
+
+        // See AuthGuard for rationale: a sessionId claim must map to a
+        // still-active UserSession, otherwise a revoked session's token
+        // stays valid for admin routes as well.
+        if (decoded.sessionId) {
+            const session = await this.prisma.userSession.findUnique({
+                where: { sessionId: decoded.sessionId },
+                select: { isActive: true },
+            });
+
+            if (!session || !session.isActive) {
+                throw new UnauthorizedException(
+                    'Session has been invalidated'
+                );
+            }
         }
 
         const user = await this.prisma.user.findUnique({

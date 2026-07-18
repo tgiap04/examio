@@ -10,6 +10,15 @@ import { AuthServiceModule } from './auth-service.module';
 import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
+    // Fail fast on misconfiguration: a missing or weak JWT_SECRET would let
+    // access tokens be forged or brute-forced. Refuse to boot rather than
+    // silently running with an insecure secret.
+    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+        throw new Error(
+            'JWT_SECRET is missing or too short (minimum 32 characters required)'
+        );
+    }
+
     // Create HTTP application
     const app = await NestFactory.create(AuthServiceModule);
 

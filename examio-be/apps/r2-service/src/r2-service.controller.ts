@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { GrpcMethod } from '@nestjs/microservices';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { timingSafeEqual } from 'crypto';
 import { R2ServiceService } from './r2-service.service';
 
 // gRPC DTOs matching the proto file
@@ -71,7 +72,16 @@ export class R2ServiceController {
 
     private assertInternalToken(token?: string): void {
         const expected = process.env.INTERNAL_SERVICE_TOKEN;
-        if (!expected || !token || token !== expected) {
+        if (!expected || !token) {
+            throw new UnauthorizedException('Invalid internal service token');
+        }
+        // Constant-time comparison to avoid leaking the token via timing.
+        const expectedBuf = Buffer.from(expected);
+        const tokenBuf = Buffer.from(token);
+        if (
+            expectedBuf.length !== tokenBuf.length ||
+            !timingSafeEqual(expectedBuf, tokenBuf)
+        ) {
             throw new UnauthorizedException('Invalid internal service token');
         }
     }

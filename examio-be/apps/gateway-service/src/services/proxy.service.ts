@@ -56,10 +56,11 @@ export class ProxyService {
         const baseUrl = this.serviceUrls[service];
         const url = `${baseUrl}${request.path}`;
 
-        // Debug logging for cookies
+        // Debug logging for cookies - log only cookie NAMES, never values
+        // (values are session/auth secrets and must not hit application logs).
         if (request.cookies) {
             this.logger.debug(
-                `Forwarding cookies: ${JSON.stringify(request.cookies)}`
+                `Forwarding cookies: ${Object.keys(request.cookies).join(', ')}`
             );
         }
 

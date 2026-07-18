@@ -56,22 +56,42 @@ export class SubjectRepository {
     }
 
     /**
+     * Public-safe field selection for a single subject. Excludes
+     * `systemPrompt` (proprietary LLM prompt) since these methods are
+     * exposed via an unauthenticated public controller. Callers that
+     * legitimately need the system prompt must use
+     * `getSubjectSystemPrompt` instead.
+     */
+    private readonly publicSubjectSelect = {
+        id: true,
+        categoryId: true,
+        name: true,
+        slug: true,
+        description: true,
+        icon: true,
+        color: true,
+        order: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        category: {
+            select: {
+                id: true,
+                name: true,
+                slug: true,
+                icon: true,
+                color: true,
+            },
+        },
+    };
+
+    /**
      * Get a subject by ID
      */
     async getSubjectById(id: string) {
         return this.prisma.subject.findUnique({
             where: { id },
-            include: {
-                category: {
-                    select: {
-                        id: true,
-                        name: true,
-                        slug: true,
-                        icon: true,
-                        color: true,
-                    },
-                },
-            },
+            select: this.publicSubjectSelect,
         });
     }
 
@@ -81,17 +101,7 @@ export class SubjectRepository {
     async getSubjectBySlug(slug: string) {
         return this.prisma.subject.findUnique({
             where: { slug },
-            include: {
-                category: {
-                    select: {
-                        id: true,
-                        name: true,
-                        slug: true,
-                        icon: true,
-                        color: true,
-                    },
-                },
-            },
+            select: this.publicSubjectSelect,
         });
     }
 

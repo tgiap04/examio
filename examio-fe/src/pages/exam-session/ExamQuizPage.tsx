@@ -217,8 +217,16 @@ export default function ExamQuizPage() {
           return;
         }
 
-        // Case 2 & 3: normal flow (new or resume)
-        const startResult = await startExamAttemptApi(examSessionId);
+        // Case 2 & 3: normal flow (new or resume). Forward the verified access
+        // code (if any) so the server can enforce access for code-gated
+        // sessions when the attempt is created (C3).
+        const storedAccessCode =
+          sessionStorage.getItem(`examio:exam-code:${examSessionId}`) ?? undefined;
+        const startResult = await startExamAttemptApi(
+          examSessionId,
+          undefined,
+          storedAccessCode,
+        );
         setAttemptId(startResult.examAttempt.id);
 
         const secureQuizData = await fetchAndDecryptSecureQuiz(startResult.examAttempt.id);
@@ -262,6 +270,14 @@ export default function ExamQuizPage() {
         }
       } catch (err: any) {
         const message = err?.response?.data?.message || err?.message || "Không thể bắt đầu bài thi";
+        // Access denied (e.g. code-gated session opened without a verified
+        // code) — send the user to the session page to enter the access code
+        // instead of dead-ending here.
+        if (err?.response?.status === 403) {
+          toast.error(message);
+          navigate(`/exam-session/${examSessionId}`, { replace: true });
+          return;
+        }
         setError(message);
         toast.error(message);
       } finally {

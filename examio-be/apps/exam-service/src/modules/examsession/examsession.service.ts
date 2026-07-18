@@ -845,6 +845,23 @@ export class ExamSessionService {
      * - progress: from latest in-progress attempt
      */
     async getExamSessionStatsForStudent(id: string, userId: string) {
+        // Enforce the same access control as getExamSessionForStudy so
+        // private/whitelisted session config cannot leak to unauthorized users.
+        const accessInfo = await this.checkAccess(id, userId);
+
+        if (
+            !accessInfo.hasAccess &&
+            accessInfo.accessType !== 'code_required'
+        ) {
+            throw new ForbiddenException(
+                'Bạn không có quyền truy cập phiên thi này'
+            );
+        }
+
+        if (accessInfo.accessType === 'code_required') {
+            throw new ForbiddenException('Yêu cầu mã truy cập');
+        }
+
         const examSession = await this.prisma.examSession.findUnique({
             where: { id },
             select: {

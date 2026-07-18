@@ -175,6 +175,9 @@ export class AIChatService implements OnModuleInit {
     ) {
         const chat = await this.getChatByIdAndValidateOwner(chatId, user);
 
+        // Check subscription limits
+        await this.checkLimits(user.id, chatId);
+
         // Caller-supplied document ids must belong to the requesting user
         // before we let them influence AI context resolution
         const requestedDocumentIds = [
@@ -677,29 +680,38 @@ export class AIChatService implements OnModuleInit {
             return;
         }
 
+        // Conservative Free-tier defaults used whenever we cannot reliably
+        // determine the user's real subscription benefits. Failing open
+        // (no limit) would let unauthenticated/misconfigured paths bypass
+        // rate limiting entirely, so we fail SAFE instead.
+        const freeTierDefaults = {
+            tier: 0,
+            tier_name: 'Free',
+            files_per_month: 5,
+            messages_per_minute: 5,
+            chat_messages_limit: 30,
+        };
+
         let benefits;
         try {
             if (!this.subscriptionService) {
                 this.logger.warn(
-                    'SubscriptionService GRPC client not initialized'
+                    'SubscriptionService GRPC client not initialized, applying Free-tier default limits'
                 );
-                return;
+                benefits = freeTierDefaults;
+            } else {
+                benefits = await firstValueFrom(
+                    this.subscriptionService.getUserBenefits({
+                        userId: userId,
+                    })
+                );
             }
-            benefits = await firstValueFrom(
-                this.subscriptionService.getUserBenefits({ userId: userId })
-            );
         } catch (error) {
             this.logger.error(
                 `Error getting subscription benefits: ${error.message}`
             );
             // Fallback to Free defaults
-            benefits = {
-                tier: 0,
-                tier_name: 'Free',
-                files_per_month: 5,
-                messages_per_minute: 5,
-                chat_messages_limit: 30,
-            };
+            benefits = freeTierDefaults;
         }
 
         // Check Rate Limit (Messages per minute)

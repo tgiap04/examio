@@ -120,6 +120,9 @@ export default function ExamSessionPage() {
       const sessionStats = await getExamSessionStatsApi(id);
       setStats(sessionStats);
       setAccessInfo({ hasAccess: true, accessType: "whitelist" });
+      // Persist the verified code so the server can re-check access when the
+      // attempt is actually started (start endpoint enforces access — C3).
+      sessionStorage.setItem(`examio:exam-code:${id}`, accessCode);
       setShowCodeDialog(false);
       toast.success("Xác thực thành công!");
     } catch {

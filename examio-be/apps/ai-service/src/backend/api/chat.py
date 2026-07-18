@@ -23,13 +23,22 @@ router = APIRouter()
 
 # ==================== Request Models ====================
 
+# Caps below bound the cost/memory of a single request (no hard limit on
+# untrusted client text would let a caller force arbitrarily large
+# prompts/history onto the LLM pipeline -- see security audit H9).
+_QUERY_MAX_LENGTH = 8000
+_SYSTEM_PROMPT_MAX_LENGTH = 4000
+_HISTORY_ITEM_CONTENT_MAX_LENGTH = 8000
+_HISTORY_MAX_ITEMS = 200
+
+
 class Message(BaseModel):
     role: str = Field(..., description="user or assistant")
-    content: str = Field(..., description="Message content")
+    content: str = Field(..., max_length=_HISTORY_ITEM_CONTENT_MAX_LENGTH, description="Message content")
 
 class ChatRequest(BaseModel):
-    query: str = Field(..., description="Current user question")
-    history: List[Message] = Field(default=[], description="Previous conversation history")
+    query: str = Field(..., max_length=_QUERY_MAX_LENGTH, description="Current user question")
+    history: List[Message] = Field(default=[], max_length=_HISTORY_MAX_ITEMS, description="Previous conversation history")
     user_storage_id: Optional[str] = Field(None, description="ID for RAG context from a specific file")
     department: Optional[str] = Field(None, description="Department context for general RAG")
     model_type: Optional[str] = Field(
@@ -40,6 +49,7 @@ class ChatRequest(BaseModel):
     system_prompt: Optional[str] = Field(
         default=None,
         alias="systemPrompt",
+        max_length=_SYSTEM_PROMPT_MAX_LENGTH,
         description="Custom system prompt for the AI model"
     )
 

@@ -524,6 +524,22 @@ class ContentGenerationService:
             if not file_info:
                 return {"success": False, "error": "File not found"}
 
+            # IDOR guard: the file's real owner (from UserStorage) must match
+            # the requester. Never trust request.user_id alone.
+            if file_info.user_id != request.user_id:
+                logger.warning(
+                    "Forbidden quiz generation attempt: user_storage_id=%s owner=%s requester=%s",
+                    request.user_storage_id,
+                    file_info.user_id,
+                    request.user_id,
+                )
+                return {
+                    "success": False,
+                    "error": "Access denied: file does not belong to this user",
+                    "error_code": "FORBIDDEN",
+                    "status_code": 403,
+                }
+
             if file_info.processing_status not in ["COMPLETED", "PROCESSING"]:
                 return {"success": False, "error": f"File not processed yet. Status: {file_info.processing_status}"}
 
@@ -701,6 +717,22 @@ class ContentGenerationService:
             file_info = await ocr_service.get_file_info(request.user_storage_id)
             if not file_info:
                 return {"success": False, "error": "File not found"}
+
+            # IDOR guard: the file's real owner (from UserStorage) must match
+            # the requester. Never trust request.user_id alone.
+            if file_info.user_id != request.user_id:
+                logger.warning(
+                    "Forbidden flashcard generation attempt: user_storage_id=%s owner=%s requester=%s",
+                    request.user_storage_id,
+                    file_info.user_id,
+                    request.user_id,
+                )
+                return {
+                    "success": False,
+                    "error": "Access denied: file does not belong to this user",
+                    "error_code": "FORBIDDEN",
+                    "status_code": 403,
+                }
 
             if file_info.processing_status not in ["COMPLETED", "PROCESSING"]:
                 return {"success": False, "error": f"File not processed yet. Status: {file_info.processing_status}"}

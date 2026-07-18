@@ -56,9 +56,11 @@ def _get_allowed_download_hosts() -> set[str]:
 
     Prefers the explicit ``R2_ALLOWED_HOSTS`` allowlist; falls back to the
     hostname of the existing R2 public/CDN base URL (``R2_PUBLIC_URL``) used
-    elsewhere in the repo. Returns an empty set if neither is configured
-    (in which case host allow-listing is skipped, but scheme/IP checks
-    still apply).
+    elsewhere in the repo. Returns an empty set if neither is configured.
+
+    An empty set means the allowlist is NOT configured. Callers must treat
+    that as fail-closed (reject the download) rather than "any public host
+    is allowed" -- see ``_validate_download_url``.
     """
     raw = os.getenv("R2_ALLOWED_HOSTS", "")
     hosts = {host.strip().lower() for host in raw.split(",") if host.strip()}
@@ -74,12 +76,23 @@ def _get_allowed_download_hosts() -> set[str]:
     return set()
 
 
-def _validate_download_url(url: str) -> None:
+def _validate_download_url(url: str) -> str:
     """Validate a stored file URL before fetching it (SSRF hardening).
 
-    Requires an https scheme, an allow-listed host (when configured), and a
+    Requires an https scheme, a configured and allow-listed host, and a
     resolved address that is not private/loopback/link-local/reserved.
     Redirects are kept disabled by the caller (httpx follow_redirects=False).
+
+    The allowlist is fail-closed: if neither ``R2_ALLOWED_HOSTS`` nor
+    ``R2_PUBLIC_URL`` is configured, downloads are refused entirely instead
+    of silently permitting any public host.
+
+    Returns:
+        The single validated IP address the caller must connect to. Returning
+        it (rather than just validating and letting the caller re-resolve
+        the hostname) closes the DNS-rebinding TOCTOU window where the name
+        could resolve to a different (internal) address between validation
+        time and connect time.
     """
     parsed = urlparse(url)
     if parsed.scheme != "https":
@@ -92,7 +105,12 @@ def _validate_download_url(url: str) -> None:
         raise DownloadValidationError("Download URL has no hostname")
 
     allowed_hosts = _get_allowed_download_hosts()
-    if allowed_hosts and hostname.lower() not in allowed_hosts:
+    if not allowed_hosts:
+        raise DownloadValidationError(
+            "Download host allowlist is not configured (set R2_ALLOWED_HOSTS "
+            "or R2_PUBLIC_URL); refusing to download to fail closed"
+        )
+    if hostname.lower() not in allowed_hosts:
         raise DownloadValidationError(
             f"Host {hostname!r} is not in the allowed download host list"
         )
@@ -105,6 +123,7 @@ def _validate_download_url(url: str) -> None:
         ) from exc
 
     link_local_v4 = ipaddress.ip_network("169.254.0.0/16")
+    validated_ip: Optional[str] = None
     for _family, _type, _proto, _canonname, sockaddr in addr_infos:
         ip = ipaddress.ip_address(sockaddr[0])
         if (
@@ -117,6 +136,15 @@ def _validate_download_url(url: str) -> None:
             raise DownloadValidationError(
                 f"Refusing to download from {hostname!r}: resolves to disallowed address {ip}"
             )
+        if validated_ip is None:
+            validated_ip = str(ip)
+
+    if validated_ip is None:
+        raise DownloadValidationError(
+            f"Could not resolve any address for download host {hostname!r}"
+        )
+
+    return validated_ip
 
 
 def _get_int_env(name: str, default: int, min_value: int = 1) -> int:
@@ -329,22 +357,47 @@ class OCRProcessingService:
         from urllib.parse import quote, urlunparse
 
         # SSRF hardening: only fetch https URLs pointing at an allow-listed,
-        # non-private/loopback/link-local/reserved host.
-        _validate_download_url(url)
+        # non-private/loopback/link-local/reserved host. The returned IP is
+        # the exact address we connect to below -- pinning it here closes
+        # the DNS-rebinding TOCTOU window between validation and connect
+        # (otherwise httpx/the OS resolver could re-resolve the hostname to
+        # a different, internal address at connect time).
+        validated_ip = _validate_download_url(url)
 
         # Encode URL path to handle spaces and special characters
         parsed = urlparse(url)
+        original_hostname = parsed.hostname
         encoded_path = quote(parsed.path, safe='/')
-        encoded_url = urlunparse(parsed._replace(path=encoded_path))
 
-        logger.info(f"Downloading from encoded URL: {encoded_url}")
+        # Rebuild the URL with the host swapped for the pinned IP, keeping
+        # the original Host header + TLS SNI so vhost routing and
+        # certificate verification still work correctly.
+        ip_obj = ipaddress.ip_address(validated_ip)
+        host_for_netloc = f"[{validated_ip}]" if ip_obj.version == 6 else validated_ip
+        userinfo = ""
+        if parsed.username:
+            userinfo = parsed.username
+            if parsed.password:
+                userinfo += f":{parsed.password}"
+            userinfo += "@"
+        netloc = f"{userinfo}{host_for_netloc}"
+        if parsed.port:
+            netloc += f":{parsed.port}"
+        pinned_url = urlunparse(parsed._replace(netloc=netloc, path=encoded_path))
+
+        logger.info(f"Downloading from {original_hostname!r} pinned to resolved address {validated_ip}")
 
         max_bytes = _get_max_download_bytes()
 
         # Redirects stay disabled (httpx default / explicit below) so a
         # validated host can't redirect us to an internal address.
         async with httpx.AsyncClient(timeout=60.0, follow_redirects=False) as client:
-            async with client.stream("GET", encoded_url) as response:
+            async with client.stream(
+                "GET",
+                pinned_url,
+                headers={"Host": original_hostname},
+                extensions={"sni_hostname": original_hostname},
+            ) as response:
                 response.raise_for_status()
 
                 content_length = response.headers.get("content-length")

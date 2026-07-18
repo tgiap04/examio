@@ -21,27 +21,95 @@ interface WalletService {
     }>;
 }
 
+interface SubscriptionService {
+    getUserBenefits(data: { userId: string }): Observable<UserBenefits>;
+}
+
+interface UserBenefits {
+    tier: number;
+    tier_name: string;
+    files_per_month: number;
+    messages_per_minute: number;
+    chat_messages_limit: number;
+}
+
 /**
- * FREE_MODE: Khi bật, bypass tất cả deduction credits
- * Đặt thành false khi triển khai production — chỉ dùng true cho dev local hoặc khi tắt tính năng tính tiền tạm thời
+ * AI_FREE_MODE: Khi bật, bypass tất cả deduction credits.
+ * Chỉ dùng cho dev local hoặc khi tắt tính năng tính tiền tạm thời.
+ * Mặc định TẮT (charging enabled) và KHÔNG BAO GIỜ được bật ở production —
+ * xem guard trong constructor bên dưới.
  */
-const FREE_MODE = true;
+function resolveFreeMode(): boolean {
+    return process.env.AI_FREE_MODE === 'true';
+}
 
 @Injectable()
 export class FinanceClientService implements OnModuleInit {
     private readonly logger = new Logger(FinanceClientService.name);
     private walletService: WalletService;
+    private subscriptionService: SubscriptionService;
+    private readonly freeMode: boolean;
 
-    constructor(@Inject('FINANCE_PACKAGE') private client: ClientGrpc) {}
+    constructor(@Inject('FINANCE_PACKAGE') private client: ClientGrpc) {
+        let freeMode = resolveFreeMode();
+
+        // Production must never run with credit charging disabled.
+        if (freeMode && process.env.NODE_ENV === 'production') {
+            this.logger.error(
+                'AI_FREE_MODE=true detected in production environment. Forcing free mode OFF to prevent revenue bypass.'
+            );
+            freeMode = false;
+        }
+
+        this.freeMode = freeMode;
+    }
 
     onModuleInit() {
         this.walletService =
             this.client.getService<WalletService>('WalletService');
+        this.subscriptionService =
+            this.client.getService<SubscriptionService>(
+                'SubscriptionService'
+            );
+    }
+
+    private getFreeTierDefaults(): UserBenefits {
+        return {
+            tier: 0,
+            tier_name: 'Free',
+            files_per_month: 5,
+            messages_per_minute: 5,
+            chat_messages_limit: 30,
+        };
+    }
+
+    /**
+     * Get subscription benefits for a user via gRPC.
+     * Fails safe to conservative Free-tier defaults if the subscription
+     * service is unavailable or the client isn't initialized yet.
+     */
+    async getUserBenefits(userId: string): Promise<UserBenefits> {
+        try {
+            if (!this.subscriptionService) {
+                this.logger.warn(
+                    'SubscriptionService GRPC client not initialized'
+                );
+                return this.getFreeTierDefaults();
+            }
+            return await firstValueFrom(
+                this.subscriptionService.getUserBenefits({ userId })
+            );
+        } catch (error) {
+            this.logger.error(
+                `Error getting subscription benefits: ${error.message}`
+            );
+            return this.getFreeTierDefaults();
+        }
     }
 
     async deductCredits(userId: string, amount: number, description: string) {
-        // FREE_MODE: Bypass credit deduction, always return success
-        if (FREE_MODE) {
+        // AI_FREE_MODE: Bypass credit deduction, always return success
+        if (this.freeMode) {
             this.logger.log(
                 `[FREE_MODE] Skipped deducting ${amount} credits from user ${userId}: ${description}`
             );
