@@ -45,7 +45,11 @@ export class GoogleAuthGuard extends AuthGuard('google') {
                 ...(cookieDomain && { domain: cookieDomain }),
             });
 
-            request.query.state = this.embedNonceInState(
+            // Express 5 exposes `req.query` as a getter that returns a FRESH
+            // parsed object on every access, so mutating `request.query.state`
+            // does not persist to when getAuthenticateOptions reads it back.
+            // Stash the state to send on a plain request property instead.
+            request.oauthStateToSend = this.embedNonceInState(
                 request.query?.state,
                 nonce
             );
@@ -56,7 +60,9 @@ export class GoogleAuthGuard extends AuthGuard('google') {
 
     getAuthenticateOptions(context: ExecutionContext) {
         const request = context.switchToHttp().getRequest();
-        const state = request.query?.state;
+        // Prefer the nonce-embedded state stashed on initiation; fall back to
+        // any client-supplied state (never mutated onto req.query — see above).
+        const state = request.oauthStateToSend ?? request.query?.state;
 
         return typeof state === 'string' ? { state } : {};
     }

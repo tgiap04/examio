@@ -57,6 +57,11 @@ export class GrpcClientsModule {
                         options: {
                             package: 'r2',
                             protoPath: getProtoPath('r2.proto'),
+                            // keepCase so snake_case proto fields (file_id,
+                            // key_r2) round-trip correctly — the r2 handlers
+                            // return snake_case; without this the loader
+                            // defaults to camelCase and silently drops them.
+                            loader: { keepCase: true },
                             url: process.env.R2_GRPC_URL || 'localhost:50054',
                             maxReceiveMessageLength: MAX_MESSAGE_SIZE,
                             maxSendMessageLength: MAX_MESSAGE_SIZE,
@@ -126,6 +131,11 @@ export class GrpcClientsModule {
                         options: {
                             package: 'r2',
                             protoPath: getProtoPath('r2.proto'),
+                            // keepCase so snake_case proto fields (file_id,
+                            // key_r2) round-trip correctly — the r2 handlers
+                            // return snake_case; without this the loader
+                            // defaults to camelCase and silently drops them.
+                            loader: { keepCase: true },
                             url: process.env.R2_GRPC_URL || 'localhost:50054',
                             maxReceiveMessageLength: MAX_MESSAGE_SIZE,
                             maxSendMessageLength: MAX_MESSAGE_SIZE,
