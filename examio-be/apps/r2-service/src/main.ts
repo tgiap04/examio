@@ -30,6 +30,10 @@ async function bootstrap() {
         options: {
             package: 'r2',
             protoPath,
+            // Match the client: keepCase so snake_case response fields
+            // (file_id, key_r2) and request fields (key_r2, expires_in_seconds)
+            // serialize instead of being dropped as camelCase mismatches.
+            loader: { keepCase: true },
             url: `0.0.0.0:${process.env.GRPC_PORT || 50054}`,
             maxReceiveMessageLength: MAX_MESSAGE_SIZE,
             maxSendMessageLength: MAX_MESSAGE_SIZE,
