@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import { env } from "@/lib/env";
 import { api } from "@/apis/api";
 import { useAuthStore } from "@/stores/useAuthStore";
 
@@ -52,7 +51,9 @@ export function GoogleOneTap() {
 
   async function handleCredentialResponse(response: { credential: string }) {
     try {
-      const result = await api.post(`${env.apiUrl}/auth/google/one-tap`, {
+      // `api` already has baseURL = env.apiUrl (/api/v1); use a relative path
+      // so it isn't prefixed twice (was producing /api/v1/api/v1/... → 404).
+      const result = await api.post(`/auth/google/one-tap`, {
         credential: response.credential,
       });
       // SECURITY: the backend already set the httpOnly auth cookie on this
