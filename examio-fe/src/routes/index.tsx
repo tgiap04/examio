@@ -30,6 +30,8 @@ import ManageExamRoomPage from "@/pages/k/ManageExamRoomPage";
 import ManageExamRoomDetailPage from "@/pages/k/ManageExamRoomDetailPage";
 import ExamRoomSessionAnalyticsPage from "@/pages/k/ExamRoomSessionAnalyticsPage";
 import MyExamsPage from "@/pages/k/MyExamsPage";
+import StudyRoomListPage from "@/pages/study-room/StudyRoomListPage";
+import StudyRoomPage from "@/pages/study-room/StudyRoomPage";
 import { PublicLayout } from "@/routes/layouts/PublicLayout";
 import { AuthLayout } from "@/routes/layouts/AuthLayout";
 import { KLayout } from "@/routes/layouts/KLayout";
@@ -371,6 +373,26 @@ export const router = createBrowserRouter([
             <MyExamsPage />
           </FeatureRoute>
         </KLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/k/study-room",
+    element: (
+      <ProtectedRoute>
+        <KLayout>
+          <FeatureRoute pageKey="study-room">
+            <StudyRoomListPage />
+          </FeatureRoute>
+        </KLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/k/study-room/:id",
+    element: (
+      <ProtectedRoute>
+        <StudyRoomPage />
       </ProtectedRoute>
     ),
   },
