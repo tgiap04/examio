@@ -12,6 +12,7 @@ export const TOGGLEABLE_PAGE_KEYS = [
   "flash-card",
   "manage-exam-room",
   "history",
+  "study-room",
 ] as const;
 
 export type PageKey = (typeof TOGGLEABLE_PAGE_KEYS)[number];
