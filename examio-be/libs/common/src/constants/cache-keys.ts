@@ -22,6 +22,7 @@ export const CACHE_MODULES = {
     EXAMSESSION: 'examsession',
     EXAMATTEMPT: 'examattempt',
     PARTICIPANT: 'participant',
+    STUDY_ROOM: 'study_room',
 
     // Finance
     PAYMENT: 'payment',

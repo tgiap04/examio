@@ -25,6 +25,7 @@ import { R2Module } from './modules/r2/r2.module';
 import { StudentModule } from './modules/student/student.module';
 import { FlashcardStudyModule } from './modules/flashcard-study/flashcard-study.module';
 import { WordFamilyModule } from './modules/word-family/word-family.module';
+import { StudyRoomModule } from './modules/study-room/study-room.module';
 
 @Module({
     imports: [
@@ -46,6 +47,7 @@ import { WordFamilyModule } from './modules/word-family/word-family.module';
         StudentModule,
         FlashcardStudyModule,
         WordFamilyModule,
+        StudyRoomModule,
     ],
     controllers: [ExamServiceController],
     providers: [
