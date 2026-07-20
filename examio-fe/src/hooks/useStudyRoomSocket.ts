@@ -15,9 +15,14 @@ import {
   TimerState,
 } from "@/types/studyRoom";
 
+// Socket.io endpoint origin. apiUrl tương đối ("/api/v1") hoặc rỗng → same-origin
+// ("" cho socket.io): dev đi qua Vite proxy /ws/study, prod qua reverse proxy.
+// apiUrl tuyệt đối → dùng origin của nó (BE khác domain).
 function wsOrigin(): string {
+  const apiUrl = env.apiUrl;
+  if (!apiUrl || apiUrl.startsWith("/")) return "";
   try {
-    return new URL(env.apiUrl).origin;
+    return new URL(apiUrl).origin;
   } catch {
     return "";
   }
