@@ -38,6 +38,8 @@ model User {
     flashcardStudyProgress    FlashcardStudyProgress[]
     adminAudits               AdminAudit[]
     savedWordFamilies         UserSavedWordFamily[]
+    hostedStudyRooms          StudyRoom[]
+    studyRoomMemberships      StudyRoomMember[]
 }
 
 // Subscription tiers: 0=none, 1=basic, 2=advanced, 3=vip

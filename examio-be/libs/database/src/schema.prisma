@@ -627,6 +627,51 @@ model UserStorageGraphGroup {
 }
 
 
+// Study-Together Room: nhiều người học chung, Pomodoro + YouTube đồng bộ, roster + chat + leaderboard.
+// Live state (timer/media/chat/presence) sống ở Redis; DB chỉ giữ cấu hình phòng + membership + focus tích luỹ.
+model StudyRoom {
+    id                    String   @id @default(cuid())
+    name                  String
+    description           String?
+    hostId                String
+    inviteCode            String   @unique // 6-digit
+    workMinutes           Int      @default(30)
+    breakMinutes          Int      @default(5)
+    longBreakMinutes      Int      @default(15)
+    cyclesBeforeLongBreak Int      @default(4)
+    currentMediaUrl       String? // YouTube URL đang phát (nhạc hoặc video)
+    isActive              Boolean  @default(true) // host đóng/mở phòng
+    maxParticipants       Int      @default(20)
+    createdAt             DateTime @default(now())
+    updatedAt             DateTime @updatedAt
+    createdBy             String?
+    updatedBy             String?
+
+    host    User              @relation(fields: [hostId], references: [id], onDelete: Cascade)
+    members StudyRoomMember[]
+
+    @@index([hostId])
+    @@index([inviteCode])
+}
+
+// Membership + role + thời gian tập trung tích luỹ. Một user một bản ghi mỗi phòng.
+model StudyRoomMember {
+    id                String   @id @default(cuid())
+    studyRoomId       String
+    userId            String
+    role              Int      @default(0) // 0 MEMBER, 1 COHOST, 2 HOST
+    totalFocusSeconds Int      @default(0)
+    joinedAt          DateTime @default(now())
+    lastSeenAt        DateTime @default(now())
+
+    studyRoom StudyRoom @relation(fields: [studyRoomId], references: [id], onDelete: Cascade)
+    user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([studyRoomId, userId])
+    @@index([userId])
+}
+
+
 // Subject Category - Nhóm môn học (VD: Toán học, Khoa học Tự nhiên, ...)
 model SubjectCategory {
     id          String   @id @default(cuid())
@@ -708,6 +753,8 @@ model User {
     flashcardStudyProgress    FlashcardStudyProgress[]
     adminAudits               AdminAudit[]
     savedWordFamilies         UserSavedWordFamily[]
+    hostedStudyRooms          StudyRoom[]
+    studyRoomMemberships      StudyRoomMember[]
 }
 
 // Subscription tiers: 0=none, 1=basic, 2=advanced, 3=vip
