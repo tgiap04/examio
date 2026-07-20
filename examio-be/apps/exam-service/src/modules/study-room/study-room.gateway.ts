@@ -8,6 +8,8 @@ import {
 } from '@nestjs/websockets';
 import { OnModuleDestroy } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import { RedisService } from '@examio/redis';
+import { CONFIG_PAGES_KEY } from '@examio/common';
 import { StudyRoomSocketAuth } from './study-room-socket-auth.service';
 import { StudyRoomService } from './study-room.service';
 import { StudyRoomRepository } from './study-room.repository';
@@ -62,8 +64,24 @@ export class StudyRoomGateway
         private readonly service: StudyRoomService,
         private readonly repo: StudyRoomRepository,
         private readonly state: StudyRoomStateService,
-        private readonly broadcaster: StudyRoomBroadcaster
+        private readonly broadcaster: StudyRoomBroadcaster,
+        private readonly redis: RedisService
     ) {}
+
+    // Phòng thủ lớp 2: gateway (phía trước) đã chặn upgrade khi trang bị tắt,
+    // nhưng nếu exam-service từng bị lộ thẳng (bỏ qua gateway) thì đây là chốt
+    // cuối. Cùng key Redis mà admin-service publish/gateway ConfigService đọc.
+    // Default-on — chỉ chặn khi === false; lỗi đọc Redis thì fail-open.
+    private async isStudyRoomPageEnabled(): Promise<boolean> {
+        try {
+            const pages = await this.redis.get<Record<string, boolean>>(
+                CONFIG_PAGES_KEY
+            );
+            return pages?.['study-room'] !== false;
+        } catch {
+            return true;
+        }
+    }
 
     afterInit(server: Server) {
         this.broadcaster.setServer(server);
@@ -81,6 +99,14 @@ export class StudyRoomGateway
             socket.emit(ServerEvents.ERROR, {
                 code: 'UNAUTHORIZED',
                 message: 'Token không hợp lệ',
+            });
+            socket.disconnect(true);
+            return;
+        }
+        if (!(await this.isStudyRoomPageEnabled())) {
+            socket.emit(ServerEvents.ERROR, {
+                code: 'PAGE_DISABLED',
+                message: 'Tính năng đang tạm khoá',
             });
             socket.disconnect(true);
             return;

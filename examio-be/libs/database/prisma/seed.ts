@@ -17,6 +17,7 @@ async function main() {
         { key: 'flash-card', label: 'Quản lý Flashcard' },
         { key: 'manage-exam-room', label: 'Quản lý Phòng thi' },
         { key: 'history', label: 'Lịch sử' },
+        { key: 'study-room', label: 'Phòng học chung' },
     ];
     for (const flag of pageFlags) {
         const saved = await prisma.pageFeatureFlag.upsert({

@@ -13,6 +13,7 @@ import {
   Rocket as RocketIcon,
   ScrollText as ReaderIcon,
   Shield as AdminIcon,
+  DoorOpen as StudyRoomIcon,
 } from "lucide-react";
 import { FloatingDock } from "@/components/atoms/k/FloatingDock";
 import ProfileDropdown from "@/components/atoms/ProfileDropdown";
@@ -153,6 +154,15 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
       active:
         currentPath === "/k/manage-exam-room" ||
         currentPath.startsWith("/k/manage-exam-room"),
+    },
+    {
+      name: "Study Room",
+      pageKey: "study-room",
+      href: "/k/study-room",
+      icon: <StudyRoomIcon className="w-5 h-5" />,
+      label: "Phòng học chung",
+      shortLabel: "Học chung",
+      active: currentPath.startsWith("/k/study-room"),
     },
     {
       name: "History",
