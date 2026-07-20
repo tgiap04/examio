@@ -7,8 +7,9 @@
 
 ## Overview
 
-- **Priority:** High · **Status:** pending
+- **Priority:** High · **Status:** ✓ done
 - Toàn bộ lớp dữ liệu FE: REST client, zustand store, socket.io hook với reconnect + snapshot. Chưa có UI.
+- Auth via httpOnly cookie with withCredentials; pomodoro engine deterministic client-side; socket hook manages reconnect + presence heartbeat + state sync.
 
 ## Implementation Steps
 
@@ -30,11 +31,11 @@
 
 ## Todo
 
-- [ ] socket.io-client + types mirror
-- [ ] studyRoomApi.ts
-- [ ] useStudyRoomStore.ts (REST + socket actions, cache đúng rule)
-- [ ] useStudyRoomSocket.ts (auth, join, reconnect→snapshot, heartbeat visible-only, cleanup)
-- [ ] lib/pomodoro.ts thuần + tính đúng long-break
+- [x] socket.io-client + types mirror (types/studyRoom.ts)
+- [x] studyRoomApi.ts (all endpoints)
+- [x] useStudyRoomStore.ts (REST + socket actions, cache per rule)
+- [x] useStudyRoomSocket.ts (auth, join, reconnect→snapshot, heartbeat visible-only, cleanup)
+- [x] lib/pomodoro.ts deterministic + long-break logic
 
 ## Success Criteria
 

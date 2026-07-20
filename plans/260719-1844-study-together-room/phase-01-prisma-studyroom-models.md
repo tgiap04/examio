@@ -8,8 +8,9 @@
 
 ## Overview
 
-- **Priority:** High · **Status:** pending
+- **Priority:** High · **Status:** ✓ done
 - Thêm 2 model mới cho phòng học chung. KHÔNG có model chat (ephemeral Redis). Live state (timer/media/presence) KHÔNG nằm trong DB.
+- **Post-review fix:** Added `createdBy` and `updatedBy` fields to `StudyRoom` (required by `BaseRepository.update`); migration pending manual apply on target DB.
 
 ## Requirements
 
@@ -66,10 +67,11 @@ model StudyRoomMember {
 
 ## Todo
 
-- [ ] StudyRoom + StudyRoomMember trong schema.prisma
-- [ ] Back-relations trên User
-- [ ] Merge + generate + migrate
-- [ ] Build xanh
+- [x] StudyRoom + StudyRoomMember trong schema.prisma
+- [x] Back-relations trên User
+- [x] createdBy + updatedBy fields added to StudyRoom
+- [x] Merge + generate (Prisma client regenerated)
+- [x] Build xanh
 
 ## Success Criteria
 
