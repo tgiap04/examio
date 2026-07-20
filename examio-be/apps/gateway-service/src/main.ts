@@ -9,6 +9,8 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { GatewayModule } from './gateway.module';
 import * as cookieParser from 'cookie-parser';
+import * as httpProxy from 'http-proxy';
+import { WS_STUDY_PATH } from './ws-study.constant';
 
 async function bootstrap() {
     // Fail fast at startup rather than per-request: a missing or too-short
@@ -132,6 +134,60 @@ Sử dụng JWT Bearer token hoặc Cookie-based auth.
             },
         });
     }
+
+    // WebSocket upgrade proxy cho phòng học chung → exam-service (giữ 1 điểm vào).
+    // Chỉ forward các upgrade tới path /ws/study; các upgrade khác bị đóng.
+    const examServiceUrl =
+        process.env.EXAM_SERVICE_URL || 'http://localhost:3002';
+    const wsProxy = httpProxy.createProxyServer({
+        target: examServiceUrl,
+        ws: true,
+        changeOrigin: true,
+    });
+    wsProxy.on('error', (err, _req, socket) => {
+        console.error('[Gateway WS proxy] error:', (err as Error).message);
+        if (socket && 'destroy' in socket) (socket as any).destroy();
+    });
+
+    // Rate-limit WS upgrade per-IP: ThrottlerGuard chỉ áp HTTP route, không áp
+    // raw upgrade — thiếu chốt này thì flood handshake đổ thẳng vào DB auth.
+    const WS_UPGRADE_LIMIT = 20; // mỗi IP / 10 giây
+    const WS_UPGRADE_WINDOW_MS = 10_000;
+    const wsUpgradeHits = new Map<string, { count: number; resetAt: number }>();
+    setInterval(() => {
+        const now = Date.now();
+        for (const [ip, e] of wsUpgradeHits) {
+            if (now > e.resetAt) wsUpgradeHits.delete(ip);
+        }
+    }, 30_000).unref();
+
+    app.getHttpServer().on(
+        'upgrade',
+        (req: any, socket: any, head: any) => {
+            if (typeof req.url !== 'string' || !req.url.startsWith(WS_STUDY_PATH)) {
+                socket.destroy();
+                return;
+            }
+            // trust proxy 1 hop (khớp app.set('trust proxy', 1) phía trên).
+            const xff = req.headers['x-forwarded-for'];
+            const ip =
+                (typeof xff === 'string' && xff.split(',')[0].trim()) ||
+                req.socket?.remoteAddress ||
+                'unknown';
+            const now = Date.now();
+            const entry = wsUpgradeHits.get(ip);
+            if (!entry || now > entry.resetAt) {
+                wsUpgradeHits.set(ip, {
+                    count: 1,
+                    resetAt: now + WS_UPGRADE_WINDOW_MS,
+                });
+            } else if (++entry.count > WS_UPGRADE_LIMIT) {
+                socket.destroy();
+                return;
+            }
+            wsProxy.ws(req, socket, head);
+        }
+    );
 
     const port = process.env.PORT || 3000;
     await app.listen(port);
