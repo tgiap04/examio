@@ -61,6 +61,14 @@ export default defineConfig({
         target: process.env.VITE_BACKEND_URL || "http://localhost:3000",
         changeOrigin: true,
       },
+      // WebSocket phòng học chung: FE nối same-origin (VITE_API_URL tương đối)
+      // nên dev server phải forward upgrade /ws/study sang gateway. ws:true bắt
+      // buộc — thiếu nó Vite nuốt upgrade rồi đóng kết nối.
+      "/ws/study": {
+        target: process.env.VITE_BACKEND_URL || "http://localhost:3000",
+        changeOrigin: true,
+        ws: true,
+      },
     },
   },
   preview: {
