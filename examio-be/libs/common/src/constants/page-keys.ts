@@ -16,6 +16,7 @@ export const TOGGLEABLE_PAGE_KEYS = [
     'flash-card',
     'manage-exam-room',
     'history',
+    'study-room',
 ] as const;
 
 export type PageKey = (typeof TOGGLEABLE_PAGE_KEYS)[number];
@@ -24,6 +25,23 @@ export type PageKey = (typeof TOGGLEABLE_PAGE_KEYS)[number];
 export function isToggleablePageKey(value: string): value is PageKey {
     return (TOGGLEABLE_PAGE_KEYS as readonly string[]).includes(value);
 }
+
+/**
+ * Nhãn hiển thị mặc định cho admin UI — dùng để tự sinh dòng cho key CHƯA có
+ * bản ghi PageFeatureFlag trong DB (tránh phải chạy seed thủ công khi thêm
+ * page key mới). Xem admin-page-config.service.ts → list()/toggle().
+ */
+export const PAGE_LABELS: Record<PageKey, string> = {
+    'ai-tool': 'Công cụ AI',
+    'word-family': 'Từ vựng tiếng Anh',
+    'my-materials': 'Tài liệu của tôi',
+    'my-exams': 'Bài thi của tôi',
+    'manage-exam': 'Quản lý Đề thi',
+    'flash-card': 'Quản lý Flashcard',
+    'manage-exam-room': 'Quản lý Phòng thi',
+    history: 'Lịch sử',
+    'study-room': 'Phòng học chung',
+};
 
 /**
  * Ánh xạ page key → các base-path proxy controller mà nó khống chế ở gateway.
@@ -42,4 +60,5 @@ export const PAGE_ROUTE_MAP: Record<PageKey, string[]> = {
     'flash-card': ['flashcardsets'],
     'manage-exam-room': ['examrooms'],
     history: [],
+    'study-room': ['studyrooms'],
 };

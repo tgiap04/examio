@@ -11,6 +11,7 @@ import { GatewayModule } from './gateway.module';
 import * as cookieParser from 'cookie-parser';
 import * as httpProxy from 'http-proxy';
 import { WS_STUDY_PATH } from './ws-study.constant';
+import { ConfigService } from './services/config.service';
 
 async function bootstrap() {
     // Fail fast at startup rather than per-request: a missing or too-short
@@ -149,6 +150,20 @@ Sử dụng JWT Bearer token hoặc Cookie-based auth.
         if (socket && 'destroy' in socket) (socket as any).destroy();
     });
 
+    // Cùng cơ chế PageEnabledGuard áp cho REST: admin tắt trang 'study-room'
+    // thì phòng học chung (kể cả socket đang định mở) không vào được nữa.
+    // Default-on — chỉ chặn khi map['study-room'] === false; lỗi đọc config
+    // thì fail-open (không để sự cố Redis/DB làm sập cả kênh WS).
+    const configService = app.get(ConfigService);
+    async function isStudyRoomEnabled(): Promise<boolean> {
+        try {
+            const pages = await configService.getPages();
+            return pages['study-room'] !== false;
+        } catch {
+            return true;
+        }
+    }
+
     // Rate-limit WS upgrade per-IP: ThrottlerGuard chỉ áp HTTP route, không áp
     // raw upgrade — thiếu chốt này thì flood handshake đổ thẳng vào DB auth.
     const WS_UPGRADE_LIMIT = 20; // mỗi IP / 10 giây
@@ -185,7 +200,13 @@ Sử dụng JWT Bearer token hoặc Cookie-based auth.
                 socket.destroy();
                 return;
             }
-            wsProxy.ws(req, socket, head);
+            void isStudyRoomEnabled().then((enabled) => {
+                if (!enabled) {
+                    socket.destroy();
+                    return;
+                }
+                wsProxy.ws(req, socket, head);
+            });
         }
     );
 

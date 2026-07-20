@@ -1,15 +1,12 @@
-import {
-    BadRequestException,
-    Injectable,
-    Logger,
-    NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@examio/database';
 import { RedisService } from '@examio/redis';
 import {
     CONFIG_PAGES_CHANNEL,
     CONFIG_PAGES_KEY,
     isToggleablePageKey,
+    PAGE_LABELS,
+    TOGGLEABLE_PAGE_KEYS,
 } from '@examio/common';
 
 export interface AuditContext {
@@ -42,19 +39,36 @@ export class AdminPageConfigService {
         private readonly redis: RedisService
     ) {}
 
-    /** Danh sách trang + trạng thái, sắp xếp theo key. */
+    /**
+     * Danh sách trang + trạng thái, sắp xếp theo key.
+     *
+     * Key nào thuộc TOGGLEABLE_PAGE_KEYS nhưng CHƯA có bản ghi DB (page mới
+     * thêm, chưa chạy seed) được tự sinh mặc định enabled=true — admin thấy
+     * ngay trong UI và bật/tắt được luôn, `toggle()` sẽ tạo bản ghi thật.
+     */
     async list(): Promise<{ pages: PageConfigRow[] }> {
         const rows = await this.prisma.pageFeatureFlag.findMany({
             orderBy: { key: 'asc' },
         });
-        return {
-            pages: rows.map((r) => ({
-                key: r.key,
-                label: r.label,
-                enabled: r.enabled,
-                updatedAt: r.updatedAt.toISOString(),
-            })),
-        };
+        const known = new Map(rows.map((r) => [r.key, r]));
+        const pages: PageConfigRow[] = TOGGLEABLE_PAGE_KEYS.map((key) => {
+            const row = known.get(key);
+            if (row) {
+                return {
+                    key: row.key,
+                    label: row.label,
+                    enabled: row.enabled,
+                    updatedAt: row.updatedAt.toISOString(),
+                };
+            }
+            return {
+                key,
+                label: PAGE_LABELS[key],
+                enabled: true,
+                updatedAt: new Date(0).toISOString(),
+            };
+        }).sort((a, b) => a.key.localeCompare(b.key));
+        return { pages };
     }
 
     /** Bật/tắt một trang. */
@@ -67,16 +81,13 @@ export class AdminPageConfigService {
             throw new BadRequestException(`Unknown page key: ${key}`);
         }
 
-        // 1. DB (source of truth)
-        let row;
-        try {
-            row = await this.prisma.pageFeatureFlag.update({
-                where: { key },
-                data: { enabled },
-            });
-        } catch {
-            throw new NotFoundException(`Page not found: ${key}`);
-        }
+        // 1. DB (source of truth) — upsert: key hợp lệ nhưng chưa từng seed
+        // (page mới thêm) vẫn toggle được ngay, không cần chạy seed thủ công.
+        const row = await this.prisma.pageFeatureFlag.upsert({
+            where: { key },
+            update: { enabled },
+            create: { key, label: PAGE_LABELS[key], enabled },
+        });
 
         // 2. Rebuild cache + 3. publish
         const map = await this.rebuildCache();

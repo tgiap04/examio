@@ -392,7 +392,9 @@ export const router = createBrowserRouter([
     path: "/k/study-room/:id",
     element: (
       <ProtectedRoute>
-        <StudyRoomPage />
+        <FeatureRoute pageKey="study-room">
+          <StudyRoomPage />
+        </FeatureRoute>
       </ProtectedRoute>
     ),
   },
