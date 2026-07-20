@@ -7,8 +7,9 @@
 
 ## Overview
 
-- **Priority:** High · **Status:** pending
+- **Priority:** High · **Status:** ✓ done
 - Toàn bộ hành vi phòng: Pomodoro state machine, đồng bộ YouTube, chat ephemeral, uỷ quyền co-host, tích luỹ thời gian tập trung.
+- Post-review fixes: server-side allowFocusCredit throttle (SET NX EX 25); focus flush now atomic (GETDEL); timer:config clamps to DTO bounds; YouTube regex anchored.
 
 ## Architecture — Redis live state (nguồn sự thật runtime)
 
@@ -47,13 +48,13 @@
 
 ## Todo
 
-- [ ] study-room-state.service.ts (Redis)
-- [ ] Timer handlers + normalize-on-read
-- [ ] Media handlers + YouTube validate
-- [ ] Chat handler + rate limit
-- [ ] role:grant/revoke
-- [ ] Focus INCRBY + flush (disconnect + interval)
-- [ ] Snapshot đầy đủ + room:closed
+- [x] study-room-state.service.ts (Redis)
+- [x] Timer handlers + normalize-on-read
+- [x] Media handlers + YouTube validate (anchored regex)
+- [x] Chat handler + rate limit (LTRIM cap 200)
+- [x] Focus INCRBY + flush (disconnect + interval; atomic GETDEL)
+- [x] Snapshot đầy đủ + room:closed broadcaster
+- [x] Dead constant STUDY_ROOM_CONTROL_CHANNEL removed
 
 ## Success Criteria
 

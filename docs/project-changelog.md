@@ -1,9 +1,69 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-07-17
+last_updated: 2026-07-19
 ---
 
 # Examio Project Changelog
+
+## [Unreleased] — 2026-07-19
+
+### Added
+
+#### Study-Together Room (web only)
+
+Dedicated page where multiple users study together in a private room: synchronized Pomodoro timer (work/break/long-break), shared YouTube media (play/pause/seek sync), live roster (studying/on-break), ephemeral chat, and a focus-time leaderboard. Host + co-hosts control the room via a 6-digit invite code. **Web only** (`examio-fe`) — no `examio-app` (mobile) counterpart yet.
+
+**Architecturally new — first WebSocket/Socket.io usage in the backend.** Previously the backend only had SSE + Redis pub/sub + RabbitMQ + gRPC for realtime/async communication (see `docs/system/architecture.md` § Cross-Service Communication).
+
+**Backend — `exam-service`**
+
+- New `StudyRoomModule` (`apps/exam-service/src/modules/study-room/`): `StudyRoomGateway` (Socket.io `@WebSocketGateway`, path `/ws/study`, websocket-only transport — long-polling intentionally dropped to avoid sticky sessions across gateway instances), `StudyRoomService`, `StudyRoomRepository`, `StudyRoomStateService` (Redis-backed live state), `StudyRoomBroadcaster`, `StudyRoomSocketAuth`, `StudyRoomPomodoro` (deterministic timer: server stores `{phase, cycle, phaseStartedAt, running}`, clients compute countdown locally)
+- `RedisIoAdapter` (`redis-io.adapter.ts`) wires `@socket.io/redis-adapter` so socket broadcasts fan out correctly across multiple `exam-service` instances
+- Socket handshake auth: JWT from `handshake.auth.token` (or `token` cookie fallback), same verify + active-session check as `AuthGuard`, in `StudyRoomSocketAuth`
+- REST surface under `/api/v1/studyrooms` (`StudyRoomController`): `POST /` create, `GET /mine`, `POST /join`, `GET /:id`, `PUT /:id`, `DELETE /:id`, `POST /:id/leave`, `POST /:id/regenerate-code`, `GET /:id/leaderboard`
+- Live state (timer phase/cycle, media play position, chat, presence) lives in Redis only; Prisma holds room config + membership. Chat is an ephemeral Redis LIST capped at 200 messages — **no** `StudyRoomMessage` Prisma model
+- Focus-time credit: 30s heartbeat increments a Redis counter per member, flushed to `StudyRoomMember.totalFocusSeconds` on room close and periodically via a 5-min sweep (`StudyRoomGateway.afterInit`)
+- WS event contract (`study-room.events.ts`, source of truth — FE mirrors it): client → server `room:join/leave`, `presence:heartbeat`, `timer:start/pause/reset/config`, `media:set/play/pause/seek`, `chat:send`, `role:grant/revoke`; server → client `room:snapshot`, `presence:updated`, `timer:updated`, `media:updated`, `chat:message`, `role:updated`, `room:closed`, `error`
+
+**Backend — `gateway-service`**
+
+- WebSocket upgrade proxy: `http-proxy` (`ws: true`) forwards `upgrade` requests whose URL starts with `WS_STUDY_PATH` (`/ws/study`) to `exam-service`; other upgrade requests are closed. This is a **net-new capability** — the gateway previously only did buffered HTTP/Axios proxying plus one SSE passthrough
+- `StudyRoomProxyController` (`/api/v1/studyrooms/*`, gated by `PageEnabledGuard` + `TogglePage('study-room')`) proxies the REST surface to `exam-service` via `ProxyService.forwardWithAuth`
+
+**Database — Prisma schema additions** (`libs/database/src/models/study-room.prisma`)
+
+```prisma
+model StudyRoom {
+  id, name, description, hostId, inviteCode (unique, 6-digit)
+  workMinutes, breakMinutes, longBreakMinutes, cyclesBeforeLongBreak
+  currentMediaUrl, isActive, maxParticipants
+}
+
+model StudyRoomMember {
+  studyRoomId, userId, role (0 MEMBER/1 COHOST/2 HOST)
+  totalFocusSeconds, joinedAt, lastSeenAt
+  @@unique([studyRoomId, userId])
+}
+```
+
+- **No migration has landed yet for these models** — schema change is present but not applied via `prisma:migrate`/`prisma:deploy`; treat as pending on the shared DB until a migration ships.
+
+**Frontend (`examio-fe`)**
+
+- New routes `/k/study-room` (`StudyRoomListPage`, gated by `FeatureRoute pageKey="study-room"`) and `/k/study-room/:id` (`StudyRoomPage`)
+- `src/apis/studyRoomApi.ts` — REST client for the `/studyrooms` surface
+- `src/hooks/useStudyRoomSocket.ts` + `src/stores/useStudyRoomStore.ts` — Socket.io client connection, event handling, and room state store
+- `src/types/studyRoom.ts` — mirrors the backend WS event contract
+
+**Key Design Decisions**
+
+- Socket.io/WebSocket chosen over SSE for this feature specifically because it needs bidirectional low-latency sync (timer control, media seek, chat) — unlike the existing SSE use cases (AI chat streaming, admin log tail, page-config push), which are all server-to-client only
+- Gateway remains the single public entry point — WS traffic is proxied through it rather than exposing `exam-service` directly
+- Scope: web only, private rooms, ~10–20 capacity; WebRTC excluded
+
+**Implementation plan**: `plans/260719-1844-study-together-room/`
+
+---
 
 ## [Unreleased] — 2026-07-17
 

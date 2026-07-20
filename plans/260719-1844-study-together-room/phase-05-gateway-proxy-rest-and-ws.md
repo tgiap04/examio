@@ -8,8 +8,9 @@
 
 ## Overview
 
-- **Priority:** High · **Status:** pending
-- Quyết định đã chốt: **(a) một điểm vào duy nhất** — gateway proxy cả REST lẫn WS upgrade cho study-room. Đây là phần net-new rủi ro nhất của plan → làm spike WS proxy ĐẦU TIÊN trong phase.
+- **Priority:** High · **Status:** ✓ done
+- Quyết định đã chốt: **(a) một điểm vào duy nhất** — gateway proxy cả REST lẫn WS upgrade cho study-room. Đây là phần net-new rủi ro nhất của plan → WS proxy via http-proxy implementation complete.
+- Gateway WS upgrade proxy path `/ws/study` configured; REST study-room routes proxied with `@TogglePage('study-room')`.
 
 ## Requirements
 
@@ -47,11 +48,12 @@ wsProxy.on('error', (err, req, socket) => { socket?.destroy?.(); /* + log qua lo
 
 ## Todo
 
-- [ ] Spike WS proxy chạy được (client → gateway → exam-service echo)
-- [ ] Chốt websocket-only transport
-- [ ] studyroom-proxy.controller.ts đủ route
-- [ ] TogglePage 'study-room' đăng ký
-- [ ] Ghi chú deploy (upgrade headers)
+- [x] Spike WS proxy chạy được (client → gateway → exam-service echo)
+- [x] Chốt websocket-only transport
+- [x] studyroom-proxy.controller.ts đủ route
+- [x] TogglePage 'study-room' đăng ký
+- [x] http-proxy integrated in main.ts
+- [x] Ghi chú deploy (upgrade headers)
 
 ## Success Criteria
 

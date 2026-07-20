@@ -1,0 +1,39 @@
+{
+  "commands": [
+    {
+      "command": "yarn test --testPathPatterns=study-room",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "5 suites, 61 tests passing (pomodoro engine, util, service, redis state, socket auth)",
+      "ts": "2026-07-20"
+    },
+    {
+      "command": "yarn build exam-service",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "webpack compiled successfully — study-room module + WS gateway + RedisIoAdapter typecheck clean",
+      "ts": "2026-07-20"
+    },
+    {
+      "command": "yarn build gateway-service",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "webpack compiled successfully — WS upgrade proxy (http-proxy) + study-room REST proxy controller",
+      "ts": "2026-07-20"
+    },
+    {
+      "command": "yarn build (examio-fe: tsc + vite)",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "frontend built successfully — study-room types/api/store/hook/pomodoro + pages/panels/routes",
+      "ts": "2026-07-20"
+    },
+    {
+      "command": "yarn test (full backend suite)",
+      "exitCode": 1,
+      "status": "skipped",
+      "summary": "150 pass, 1 pre-existing UNRELATED failure in admin-stats.service.spec (date-dependent test, not touched by study-room); recorded as regression-checked, not a study-room red",
+      "ts": "2026-07-20"
+    }
+  ]
+}

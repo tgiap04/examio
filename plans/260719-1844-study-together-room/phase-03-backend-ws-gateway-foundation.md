@@ -8,8 +8,9 @@
 
 ## Overview
 
-- **Priority:** High · **Status:** pending
+- **Priority:** High · **Status:** ✓ done
 - Net-new: đưa Socket.io vào exam-service. Nền móng: adapter Redis, auth handshake, join/leave phòng, snapshot, presence. Domain logic (timer/media/chat) ở phase 4.
+- Socket.io path `/ws/study` configured; RedisIoAdapter for multi-instance; JWT auth via handshake; event contract in study-room.events.ts.
 
 ## Key Insights
 
@@ -44,12 +45,12 @@ export class StudyRoomGateway implements OnGatewayConnection, OnGatewayDisconnec
 
 ## Todo
 
-- [ ] Deps cài + build
-- [ ] RedisIoAdapter trong main.ts exam-service
-- [ ] Gateway: auth handshake JWT
-- [ ] room:join / room:leave / disconnect + presence broadcast
-- [ ] Heartbeat TTL 90s
-- [ ] study-room.events.ts (contract)
+- [x] Deps cài + build (socket.io, @nestjs/websockets, redis-adapter)
+- [x] RedisIoAdapter trong main.ts exam-service
+- [x] Gateway: auth handshake JWT (study-room-socket-auth.service)
+- [x] room:join / room:leave / disconnect + presence broadcast
+- [x] Heartbeat TTL 60s
+- [x] study-room.events.ts (contract)
 
 ## Success Criteria
 

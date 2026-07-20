@@ -1,7 +1,7 @@
 ---
 title: System Architecture
-last_updated: 2026-06-06
-source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/)
+last_updated: 2026-07-19
+source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/); manually patched 2026-07-19 for Study-Together Room (first WebSocket transport)
 status: ACTIVE
 ---
 
@@ -16,7 +16,7 @@ graph TB
     end
 
     subgraph Edge[Edge Layer]
-        GW[gateway-service<br/>:3000 HTTP<br/>Rate limit 100 req/min<br/>Proxy + logging]
+        GW[gateway-service<br/>:3000 HTTP<br/>Rate limit 100 req/min<br/>Proxy + logging<br/>WS upgrade proxy /ws/study]
     end
 
     subgraph Backend[Backend — NestJS Monorepo]
@@ -39,8 +39,10 @@ graph TB
     end
 
     FE -->|HTTP + Bearer + X-Device-ID| GW
+    FE -->|WebSocket /ws/study, JWT handshake| GW
     GW -->|HTTP proxy| AUTH
     GW -->|HTTP proxy| EXAM
+    GW -->|WS upgrade proxy, http-proxy ws:true| EXAM
     GW -->|HTTP proxy| FIN
     GW -->|HTTP proxy| ADMIN
     GW -->|HTTP proxy| R2
@@ -66,9 +68,9 @@ graph TB
 
 | Service | HTTP Port | gRPC Port | Runtime | Role |
 |---------|----------:|----------:|---------|------|
-| `gateway-service` | 3000 | — | Node 20+ | Public HTTP entry, reverse proxy, rate limit |
+| `gateway-service` | 3000 | — | Node 20+ | Public HTTP entry, reverse proxy, rate limit, WS upgrade proxy (`/ws/study`) |
 | `auth-service` | 3001 | 50051 | Node 20+ | JWT issuer, OAuth, sessions, devices |
-| `exam-service` | 3002 | — | Node 20+ | Quiz/flashcard authoring, exam sessions, AI orchestration |
+| `exam-service` | 3002 | — | Node 20+ | Quiz/flashcard authoring, exam sessions, AI orchestration, Study-Together Room (Socket.io gateway) |
 | `finance-service` | 3003 | 50053 | Node 20+ | Wallet, SePay QR payments, subscriptions |
 | `r2-service` | 3004 | 50054 | Node 20+ | Cloudflare R2 object storage (proxy) |
 | `admin-service` | 3006 | 50056 | Node 20+ | Admin dashboard: users, stats, finance, logs, audit |
@@ -172,6 +174,33 @@ sequenceDiagram
     EX-->>FE: COMPLETED
 ```
 
+### 6. WebSocket / Socket.io (bidirectional realtime — Study-Together Room)
+
+**First WebSocket transport in the backend.** Prior to this, realtime/async communication was HTTP request-response, SSE (server → client only), RabbitMQ (async events), and gRPC (synchronous inter-service) — see sections 1–5 above. This is additive, not a replacement for any of those.
+
+```mermaid
+sequenceDiagram
+    participant FE as examio-fe
+    participant GW as gateway:3000
+    participant EX as exam-service<br/>StudyRoomGateway
+    participant R as Redis
+    FE->>GW: WS upgrade /ws/study (handshake.auth.token = JWT)
+    GW->>EX: http-proxy ws:true forward (single public entry preserved)
+    EX->>EX: StudyRoomSocketAuth.authenticate (JWT verify + active-session check)
+    EX-->>FE: room:snapshot (roster, timer, media, chat backlog)
+    FE->>EX: timer:start / media:play / chat:send / ...
+    EX->>R: read/write live state (timer, media position, chat LIST capped 200, presence)
+    EX-->>FE: timer:updated / media:updated / chat:message (broadcast to room)
+    Note over EX,R: @socket.io/redis-adapter (RedisIoAdapter) fans broadcasts out<br/>across multiple exam-service instances
+```
+
+- **Gateway**: `http-proxy` (`ws: true`) intercepts Node `upgrade` events; only requests whose URL starts with `WS_STUDY_PATH` (`/ws/study`) are forwarded to `exam-service` — all other upgrade attempts are closed. This keeps the gateway as the single public entry point even for WS traffic.
+- **exam-service**: `StudyRoomGateway` (`@nestjs/websockets`, path `/ws/study`), websocket-only transport (no long-polling, to avoid sticky-session requirements across gateway instances)
+- **Multi-instance fan-out**: `RedisIoAdapter` (`@socket.io/redis-adapter`) — required once `exam-service` runs more than one instance, otherwise a broadcast only reaches sockets connected to the same process
+- **Auth**: JWT passed via `handshake.auth.token` (cookie `token` fallback), verified with the same rules as HTTP `AuthGuard` (signature + active-session lookup)
+- **State model**: Redis holds all live/ephemeral state (timer phase/cycle, YouTube media position, chat, presence); Prisma (`StudyRoom`, `StudyRoomMember`) holds only room config and membership/focus-time totals
+- **Feature docs**: `docs/project-changelog.md` § Study-Together Room
+
 ## Data Flow — Quiz Taking
 
 ```mermaid
@@ -231,6 +260,7 @@ sequenceDiagram
 | Cache | Redis | 7+ |
 | Message broker | RabbitMQ | 3+ (topic exchange) |
 | gRPC | `@grpc/grpc-js` | latest |
+| WebSocket | `@nestjs/platform-socket.io`, `socket.io`, `@socket.io/redis-adapter` | latest |
 | Object storage | Cloudflare R2 | — |
 | Validation | Zod + `nestjs-zod` | latest |
 | Auth | JWT (7d expiry) + Passport Google OAuth | — |

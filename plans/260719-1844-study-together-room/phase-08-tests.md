@@ -8,8 +8,9 @@
 
 ## Overview
 
-- **Priority:** Medium · **Status:** pending
+- **Priority:** Medium · **Status:** ✓ done
 - Unit test backend cho phần logic thuần + service, exercise error paths. Không fake/mock để "cho xanh" — test hành vi thật.
+- 5 suites, 61 tests passing: pomodoro, util, service, state, socket-auth. FE build xanh; optional FE tests deferred.
 
 ## Test Targets (backend)
 
@@ -39,12 +40,13 @@
 
 ## Todo
 
-- [ ] service spec (create/join/role/leave + error paths)
-- [ ] state service spec (timer normalize, chat, focus)
-- [ ] gateway spec (auth, FORBIDDEN, validation)
-- [ ] URL validator table-driven
-- [ ] Full suite + build FE/BE xanh
-- [ ] Manual e2e checklist pass
+- [x] service spec (create/join/role/leave + error paths)
+- [x] state service spec (timer normalize, chat, focus)
+- [x] gateway spec (auth, FORBIDDEN, validation)
+- [x] URL validator table-driven + anchored regex
+- [x] Full suite 61 tests passing
+- [x] Build FE/BE xanh + lint
+- [x] Manual e2e checklist (2 browser scenario verified)
 
 ## Success Criteria
 

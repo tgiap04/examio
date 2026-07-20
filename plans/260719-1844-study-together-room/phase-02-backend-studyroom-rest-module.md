@@ -7,8 +7,9 @@
 
 ## Overview
 
-- **Priority:** High · **Status:** pending
+- **Priority:** High · **Status:** ✓ done
 - Module `study-room` mới trong exam-service: REST cho vòng đời phòng + membership + leaderboard. Chưa có WS ở phase này.
+- All endpoints implemented; invite code 6-digit generation with retry; role-based access control via `assertRole` helper.
 
 ## Requirements
 
@@ -54,10 +55,11 @@ examio-be/apps/exam-service/src/modules/study-room/
 
 ## Todo
 
-- [ ] Module/controller/service/repository/dto
-- [ ] Đăng ký vào ExamServiceModule
-- [ ] Role guard helper `assertRole`
-- [ ] Build + smoke
+- [x] Module/controller/service/repository/dto
+- [x] Đăng ký vào ExamServiceModule
+- [x] Role guard helper `assertRole`
+- [x] STUDY_ROOM added to libs/common CACHE_MODULES
+- [x] Build + smoke
 
 ## Success Criteria
 

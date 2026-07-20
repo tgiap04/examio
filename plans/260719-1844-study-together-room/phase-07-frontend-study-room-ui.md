@@ -8,8 +8,9 @@
 
 ## Overview
 
-- **Priority:** High · **Status:** pending
+- **Priority:** High · **Status:** ✓ done
 - Trang danh sách phòng + trang phòng học (layout riêng, full-screen, không kế thừa layout học liệu hiện tại). Lazy-load cả route.
+- All panels implemented: pomodoro, youtube-sync-player, roster, chat, leaderboard, settings. Routes registered; study-room page flag enabled in FE lib/page-keys.ts.
 
 ## Architecture — files to create
 
@@ -55,12 +56,12 @@ Route mới trong `src/routes/index.tsx` (lazy + ProtectedRoute + page-flag `stu
 
 ## Todo
 
-- [ ] Routes/layout/flag + list page + modals
-- [ ] Room page + socket lifecycle
-- [ ] pomodoro-panel (client-side countdown)
-- [ ] youtube-sync-player (drift, echo, autoplay, quyền)
-- [ ] roster + chat + leaderboard + settings
-- [ ] Responsive + lint/build xanh
+- [x] Routes/layout/flag + list page + modals (create/join)
+- [x] Room page + socket lifecycle
+- [x] pomodoro-panel (client-side countdown)
+- [x] youtube-sync-player (drift, echo, autoplay, quyền)
+- [x] roster + chat + leaderboard + settings
+- [x] Responsive + lint/build xanh
 
 ## Success Criteria
 

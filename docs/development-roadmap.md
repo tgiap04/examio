@@ -1,6 +1,6 @@
 ---
 title: Examio Development Roadmap
-last_updated: 2026-07-03
+last_updated: 2026-07-19
 source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/) + phase completions
 status: ACTIVE
 ---
@@ -32,6 +32,12 @@ The 2026-06-05 rebuild-spec baseline is now **873 files behind HEAD** (94k+ line
 - ⚠️ **NOT done**: full core artifact re-scan (route-list, data-model, entities, behavior-logic, architecture) against the 873-file diff — these may still miss changes in `examio-app/`, `word-family` AI-service internals not covered above, and other commits not specifically researched
 - ⚠️ **NOT done**: `docs/flows/*.md` and `docs/system/glossary.md` regeneration for the new features
 - **Recommendation**: run `/tkm:rebuild-spec --full` (core pass) via Claude Code IDE when feasible to catch anything this scoped pass missed, followed by `--flows` and `--glossary`
+
+## Documentation Coverage Note (2026-07-19)
+
+- ✅ Added Study-Together Room to `project-changelog.md` and this roadmap (Phase 6); recorded the new WebSocket/Socket.io transport in `docs/system/architecture.md` § Cross-Service Communication
+- ⚠️ **NOT done**: no `docs/features/F###_StudyTogetherRoom/` spec was generated — SDD mode was off for this feature and the spec was explicitly waived during planning (see `plans/260719-1844-study-together-room/`); `docs/generated/feature-list.md`, `route-list.md`, `api-map.md`, `screen-list.md`, `entities.md`, `user-stories.md`, and `permissions-matrix.md` do not yet reflect this feature (>10 source files changed — outside a scoped surgical pass)
+- **Recommendation**: run `/tkm:rebuild-spec --features F017` (or the next free F-code) if/when a formal feature spec is wanted for Study-Together Room
 
 ---
 
@@ -179,6 +185,24 @@ Key decisions made during implementation:
 - `PageEnabledGuard` runs after `JwtAuthGuard` to ensure authenticated context
 - Mobile sync (iosApp/androidApp) deferred to next phase
 
+## Phase 6 — Study-Together Room (Web)
+
+| # | Item | Owner | Status |
+|---|------|-------|--------|
+| 6.1 | `StudyRoom` + `StudyRoomMember` Prisma models | backend | ✅ Complete (⚠️ no migration applied yet) |
+| 6.2 | `StudyRoomModule` (Socket.io gateway, Redis-backed live state, Pomodoro timer, chat, presence, focus-credit) in `exam-service` | backend | ✅ Complete |
+| 6.3 | `@socket.io/redis-adapter` multi-instance fan-out | backend | ✅ Complete |
+| 6.4 | Gateway WS upgrade proxy (`/ws/study`, `http-proxy` `ws:true`) | backend | ✅ Complete |
+| 6.5 | REST surface `/api/v1/studyrooms/*` (create/join/detail/update/delete/leave/regenerate-code/leaderboard) | backend | ✅ Complete |
+| 6.6 | Frontend routes `/k/study-room`, `/k/study-room/:id` + Socket.io client + store | frontend | ✅ Complete |
+| 6.7 | Mobile (iosApp/androidApp) parity | mobile | ❌ Not started (web only by design) |
+
+Key decisions made during implementation:
+- Socket.io/WebSocket chosen over SSE — this feature needs bidirectional low-latency sync (timer control, media seek, chat), unlike existing SSE use cases which are server-to-client only
+- Websocket-only transport (no long-polling) to avoid sticky-session requirements across gateway/exam-service instances
+- Live state (timer, media position, chat, presence) lives in Redis only; Prisma holds room config + membership; chat is an ephemeral Redis LIST capped at 200 messages (no `StudyRoomMessage` model)
+- **Follow-up needed**: a Prisma migration for `StudyRoom`/`StudyRoomMember` has not landed yet — schema file changed but not deployed; block before this reaches an environment with `prisma:deploy` gating
+
 ## Phase 5 — UX Polish & Spec Completeness (P3)
 
 | # | Item | Source | Owner |
@@ -194,7 +218,7 @@ Key decisions made during implementation:
 
 ## Roadmap Stats
 
-- **Completed Phases**: Phase 3 (Admin Dashboard), Phase 4 (Page Feature Flags)
+- **Completed Phases**: Phase 3 (Admin Dashboard), Phase 4 (Page Feature Flags), Phase 6 (Study-Together Room — web only; migration pending, mobile parity not started)
 - **P0 (blocking/correctness)**: 6 items
 - **P1 (security/integrity)**: 6 items
 - **P2 (spec edge cases)**: 30+ items across 12 features
@@ -219,6 +243,9 @@ All 6 items complete. Dashboard live with audit, stats, user management, finance
 
 ### ✅ Completed — Phase 4 (Page Feature Flags)
 All 8 items complete. Dynamic page enable/disable without redeployment. SSE real-time sync.
+
+### ✅ Completed — Phase 6 (Study-Together Room, web only)
+6 of 7 items complete (mobile parity not started, by design). Synchronized Pomodoro + shared YouTube media + roster + chat + leaderboard over the backend's first WebSocket transport. **Blocker before any deploy that runs `prisma:deploy` gating**: no migration exists yet for `StudyRoom`/`StudyRoomMember`.
 
 ### Sprint Next — Phase 0 (System Correctness)
 Goal: remove blockers that mask real bugs
