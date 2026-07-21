@@ -1,11 +1,15 @@
 // Study-Together Room: nhiều người học chung, Pomodoro + YouTube đồng bộ, roster + chat + leaderboard.
 // Live state (timer/media/chat/presence) sống ở Redis; DB chỉ giữ cấu hình phòng + membership + focus tích luỹ.
+// Playlist items + moderation/block state cũng ở DB (bền); playback (currentIndex/position) ở Redis.
 model StudyRoom {
     id                    String   @id @default(cuid())
     name                  String
     description           String?
     hostId                String
     inviteCode            String   @unique // 6-digit
+    accessType            Int      @default(0) // 0 PUBLIC(auth) | 1 CODE | 2 WHITELIST
+    whitelist             String[] @default([]) // userId cho accessType=WHITELIST
+    playlistAddPermission Int      @default(1) // 0 EVERYONE | 1 COHOST+ | 2 HOST
     workMinutes           Int      @default(30)
     breakMinutes          Int      @default(5)
     longBreakMinutes      Int      @default(15)
@@ -18,8 +22,9 @@ model StudyRoom {
     createdBy             String?
     updatedBy             String?
 
-    host    User              @relation(fields: [hostId], references: [id], onDelete: Cascade)
-    members StudyRoomMember[]
+    host     User                    @relation(fields: [hostId], references: [id], onDelete: Cascade)
+    members  StudyRoomMember[]
+    playlist StudyRoomPlaylistItem[]
 
     @@index([hostId])
     @@index([inviteCode])
@@ -32,6 +37,8 @@ model StudyRoomMember {
     userId            String
     role              Int      @default(0) // 0 MEMBER, 1 COHOST, 2 HOST
     totalFocusSeconds Int      @default(0)
+    isBanned          Boolean  @default(false) // bị host/cohost cấm khỏi phòng
+    isMuted           Boolean  @default(false) // bị cấm chat (cả phòng)
     joinedAt          DateTime @default(now())
     lastSeenAt        DateTime @default(now())
 
@@ -40,4 +47,32 @@ model StudyRoomMember {
 
     @@unique([studyRoomId, userId])
     @@index([userId])
+}
+
+// Một mục trong playlist YouTube của phòng. kind=1 khi url là YT-playlist (chạy như 1 đơn vị).
+model StudyRoomPlaylistItem {
+    id            String   @id @default(cuid())
+    studyRoomId   String
+    url           String
+    kind          Int      @default(0) // 0 VIDEO | 1 PLAYLIST
+    title         String?
+    addedByUserId String
+    order         Int      @default(0)
+    createdAt     DateTime @default(now())
+
+    studyRoom StudyRoom @relation(fields: [studyRoomId], references: [id], onDelete: Cascade)
+
+    @@index([studyRoomId, order])
+}
+
+// Chặn chat cá nhân (chỉ ẩn với người chặn). Room-scoped, lưu server để đồng bộ đa thiết bị.
+model StudyRoomChatBlock {
+    id          String   @id @default(cuid())
+    studyRoomId String
+    blockerId   String // user thực hiện chặn
+    blockedId   String // user bị chặn
+    createdAt   DateTime @default(now())
+
+    @@unique([studyRoomId, blockerId, blockedId])
+    @@index([studyRoomId, blockerId])
 }
