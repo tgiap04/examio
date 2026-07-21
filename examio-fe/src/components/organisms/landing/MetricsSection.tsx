@@ -11,14 +11,14 @@ function AnimatedCounter({ end, suffix = "", prefix = "" }: { end: number; suffi
             ([entry]) => {
                 if (entry.isIntersecting && !hasAnimated) {
                     setHasAnimated(true);
-                    let start = 0;
+                    const start = 0;
                     const duration = 2000;
                     const startTime = performance.now();
 
                     const animate = (currentTime: number) => {
                         const elapsed = currentTime - startTime;
                         const progress = Math.min(elapsed / duration, 1);
-                        const eased = 1 - Math.pow(1 - progress, 3);
+                        const eased = 1 - (1 - progress)**3;
                         setCount(Math.floor(eased * end));
 
                         if (progress < 1) {

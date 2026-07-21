@@ -2,7 +2,6 @@ import NumberFlow from "@number-flow/react";
 import { Check, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
 
 export interface PricingTierFeature {
     label: string;

@@ -1,10 +1,9 @@
-/* eslint-disable react-dom/no-dangerously-set-innerhtml */
+ 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/antd/button";
 import { Card, CardContent } from "@/components/antd/card";
 import { Progress } from "@/components/antd/progress";
-import { ScrollArea } from "@/components/antd/scroll-area";
 import {
   AlertTriangle,
   BarChart3,

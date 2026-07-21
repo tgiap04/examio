@@ -1,5 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X,
+  Plus,
+  Trash2,
+  FileText,
+  Edit,
+  ChevronLeft,
+  ChevronRight } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { useQuizSetStore } from "@/stores/useQuizSetStore";
 import { Button } from "@/components/antd/button";
@@ -8,14 +14,6 @@ import { Badge } from "@/components/antd/badge";
 import { Skeleton } from "@/components/antd/skeleton";
 import { isCorrectAnswer, quizOptionToText } from "@/lib/quizAnswerUtils";
 import { cn } from "@/lib/utils";
-import {
-  Plus,
-  Trash2,
-  FileText,
-  Edit,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
 import type { Quizz } from "@/types/quizset";
 import { DeleteConfirmDialog } from "@/components/organisms/DeleteConfirmDialog";
 import { InlineQuestionEditor, type InlineQuestionFormData } from "@/components/organisms/InlineQuestionEditor";
@@ -394,8 +392,8 @@ export default function ManageQuizSetDetailPage() {
                             {question.options.map((option, optIndex) => {
                               const isCorrect = isCorrectAnswer(question.answer, optIndex, question.options);
                               const optionText = quizOptionToText(option);
-                              const hasPrefix = /^[A-D]\s*[\.\)\:]\s+/.test(optionText);
-                              const displayText = hasPrefix ? optionText.replace(/^[A-D]\s*[\.\)\:]\s+/, "") : optionText;
+                              const hasPrefix = /^[A-D]\s*[.):]\s+/.test(optionText);
+                              const displayText = hasPrefix ? optionText.replace(/^[A-D]\s*[.):]\s+/, "") : optionText;
 
                               return (
                                 <div

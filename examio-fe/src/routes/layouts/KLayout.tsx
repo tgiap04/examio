@@ -1,6 +1,6 @@
 import { type FormEvent, type PropsWithChildren, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { AlertTriangle, Languages, Mail, Moon, PanelLeft, Search, Sun, X } from "lucide-react";
+import { AlertTriangle, Mail, Moon, PanelLeft, Search, Sun, X } from "lucide-react";
 import ProfileDropdown from "@/components/atoms/ProfileDropdown";
 import { SidebarKit } from "@/components/organisms/k/SideBar";
 import { PendingJobDialog } from "@/components/organisms/PendingJobDialog";

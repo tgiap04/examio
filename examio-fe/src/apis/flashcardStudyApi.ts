@@ -1,7 +1,6 @@
 import { api } from "./api";
 import {
   FlashcardStudySession,
-  FlashcardSetProgress,
   Flashcard,
 } from "@/types/flashcardSet";
 

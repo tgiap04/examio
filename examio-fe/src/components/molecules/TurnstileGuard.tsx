@@ -1,7 +1,6 @@
 "use client";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
-import { ShieldCheck } from "lucide-react";
 import { env } from "@/lib/env";
 
 interface TurnstileGuardProps {

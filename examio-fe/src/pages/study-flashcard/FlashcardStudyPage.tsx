@@ -1,4 +1,4 @@
-/* eslint-disable react-dom/no-dangerously-set-innerhtml */
+ 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/antd/button";
