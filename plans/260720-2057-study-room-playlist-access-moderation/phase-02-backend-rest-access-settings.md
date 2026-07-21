@@ -6,7 +6,7 @@
 - Gateway proxy: `apps/gateway-service/src/controllers/study-room-proxy.controller.ts`
 
 ## Overview
-- **Priority:** High · **Status:** pending
+- **Priority:** High · **Status:** done
 - Rework luồng join theo `accessType`; cho host cấu hình access + whitelist + playlistAddPermission.
 
 ## Implementation Steps

@@ -7,7 +7,7 @@
 - **Model tách file + generate qua prisma-merge** — sửa `models/*.prisma`, KHÔNG sửa schema.prisma trực tiếp.
 
 ## Overview
-- **Priority:** High · **Status:** pending
+- **Priority:** High · **Status:** done
 - Thêm cấu hình access + playlist add-permission vào StudyRoom; cờ moderation vào StudyRoomMember; 2 bảng mới (playlist item, chat block).
 
 ## Implementation Steps

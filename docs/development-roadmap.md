@@ -1,6 +1,6 @@
 ---
 title: Examio Development Roadmap
-last_updated: 2026-07-19
+last_updated: 2026-07-21
 source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/) + phase completions
 status: ACTIVE
 ---
@@ -38,6 +38,13 @@ The 2026-06-05 rebuild-spec baseline is now **873 files behind HEAD** (94k+ line
 - ✅ Added Study-Together Room to `project-changelog.md` and this roadmap (Phase 6); recorded the new WebSocket/Socket.io transport in `docs/system/architecture.md` § Cross-Service Communication
 - ⚠️ **NOT done**: no `docs/features/F###_StudyTogetherRoom/` spec was generated — SDD mode was off for this feature and the spec was explicitly waived during planning (see `plans/260719-1844-study-together-room/`); `docs/generated/feature-list.md`, `route-list.md`, `api-map.md`, `screen-list.md`, `entities.md`, `user-stories.md`, and `permissions-matrix.md` do not yet reflect this feature (>10 source files changed — outside a scoped surgical pass)
 - **Recommendation**: run `/tkm:rebuild-spec --features F017` (or the next free F-code) if/when a formal feature spec is wanted for Study-Together Room
+
+## Documentation Coverage Note (2026-07-21)
+
+- ✅ Added Study Room — Playlist, Access & Moderation (extends Phase 6) to `project-changelog.md` and this roadmap (new rows under Phase 6); extended `docs/system/architecture.md` § Cross-Service Communication § 6 with the new WS events and Prisma models
+- ⚠️ Same spec gap as 2026-07-19 carries forward: no formal `docs/features/F###/` spec exists for Study Room at all (base or this extension) — SDD waived; `docs/generated/*` inventories still do not reflect any Study Room surface
+- ⚠️ **Migration still pending**: `StudyRoomPlaylistItem` and `StudyRoomChatBlock` (plus the new `accessType`/`whitelist`/`playlistAddPermission` fields on `StudyRoom` and `isBanned`/`isMuted` on `StudyRoomMember`) were applied to the dev DB via raw `psql`, not `prisma migrate`/`prisma:deploy` — same unresolved gap as the original `StudyRoom`/`StudyRoomMember` models from 2026-07-19, now larger in scope
+- **Recommendation**: generate one migration covering all Study Room schema changes (base + this extension) before any `prisma:deploy`-gated environment; run `/tkm:rebuild-spec --features F017` if a formal spec is later wanted
 
 ---
 
@@ -196,12 +203,20 @@ Key decisions made during implementation:
 | 6.5 | REST surface `/api/v1/studyrooms/*` (create/join/detail/update/delete/leave/regenerate-code/leaderboard) | backend | ✅ Complete |
 | 6.6 | Frontend routes `/k/study-room`, `/k/study-room/:id` + Socket.io client + store | frontend | ✅ Complete |
 | 6.7 | Mobile (iosApp/androidApp) parity | mobile | ❌ Not started (web only by design) |
+| 6.8 | Playlist: `StudyRoomPlaylistItem` model + add/remove/reorder/next/prev/jump + leader-reported `media:ended` auto-advance (no YouTube Data API) | backend | ✅ Complete (⚠️ no migration applied yet) |
+| 6.9 | Access modes: `StudyRoom.accessType` (PUBLIC/CODE/WHITELIST) + `POST /studyrooms/:id/join` | backend | ✅ Complete (⚠️ no migration applied yet) |
+| 6.10 | Moderation: `StudyRoomMember.isBanned`/`.isMuted` (host/cohost ban+mute, cross-instance kick via redis-adapter) | backend | ✅ Complete (⚠️ no migration applied yet) |
+| 6.11 | Personal chat block: `StudyRoomChatBlock` model, server-persisted + client-filtered | backend | ✅ Complete (⚠️ no migration applied yet) |
+| 6.12 | Frontend playlist/access/moderation UI wired into existing study-room pages + store | frontend | ✅ Complete |
 
 Key decisions made during implementation:
 - Socket.io/WebSocket chosen over SSE — this feature needs bidirectional low-latency sync (timer control, media seek, chat), unlike existing SSE use cases which are server-to-client only
 - Websocket-only transport (no long-polling) to avoid sticky-session requirements across gateway/exam-service instances
 - Live state (timer, media position, chat, presence) lives in Redis only; Prisma holds room config + membership; chat is an ephemeral Redis LIST capped at 200 messages (no `StudyRoomMessage` model)
-- **Follow-up needed**: a Prisma migration for `StudyRoom`/`StudyRoomMember` has not landed yet — schema file changed but not deployed; block before this reaches an environment with `prisma:deploy` gating
+- Playlist items and moderation/block state ARE persisted to Prisma (unlike timer/media/chat) — they need to survive Redis flushes and reconnects; only live playback position (`currentIndex`, leader assignment) stays in Redis
+- Auto-advance is leader-client-reported, not server-polled — avoids adding a YouTube Data API dependency
+- Access modes mirror the existing `ExamSession` PUBLIC/CODE/WHITELIST shape rather than a new model
+- **Follow-up needed**: a Prisma migration covering ALL Study Room models/fields (`StudyRoom`/`StudyRoomMember` from 2026-07-19, plus `StudyRoomPlaylistItem`/`StudyRoomChatBlock`/new fields from 2026-07-21) has not landed yet — applied to dev via raw `psql` only; block before this reaches an environment with `prisma:deploy` gating
 
 ## Phase 5 — UX Polish & Spec Completeness (P3)
 
@@ -218,7 +233,7 @@ Key decisions made during implementation:
 
 ## Roadmap Stats
 
-- **Completed Phases**: Phase 3 (Admin Dashboard), Phase 4 (Page Feature Flags), Phase 6 (Study-Together Room — web only; migration pending, mobile parity not started)
+- **Completed Phases**: Phase 3 (Admin Dashboard), Phase 4 (Page Feature Flags), Phase 6 (Study-Together Room + Playlist/Access/Moderation — web only; migration pending, mobile parity not started)
 - **P0 (blocking/correctness)**: 6 items
 - **P1 (security/integrity)**: 6 items
 - **P2 (spec edge cases)**: 30+ items across 12 features
@@ -245,7 +260,7 @@ All 6 items complete. Dashboard live with audit, stats, user management, finance
 All 8 items complete. Dynamic page enable/disable without redeployment. SSE real-time sync.
 
 ### ✅ Completed — Phase 6 (Study-Together Room, web only)
-6 of 7 items complete (mobile parity not started, by design). Synchronized Pomodoro + shared YouTube media + roster + chat + leaderboard over the backend's first WebSocket transport. **Blocker before any deploy that runs `prisma:deploy` gating**: no migration exists yet for `StudyRoom`/`StudyRoomMember`.
+11 of 12 items complete (mobile parity not started, by design). Synchronized Pomodoro + shared YouTube media + roster + chat + leaderboard over the backend's first WebSocket transport, extended with an ordered playlist (leader-reported auto-advance), PUBLIC/CODE/WHITELIST access modes, host/cohost ban+mute moderation, and personal chat blocking. **Blocker before any deploy that runs `prisma:deploy` gating**: no migration exists yet for any Study Room model (`StudyRoom`, `StudyRoomMember`, `StudyRoomPlaylistItem`, `StudyRoomChatBlock`).
 
 ### Sprint Next — Phase 0 (System Correctness)
 Goal: remove blockers that mask real bugs

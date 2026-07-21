@@ -1,7 +1,8 @@
 ---
 title: Study Room — Playlist, Access Modes & Moderation
-status: pending
+status: completed
 created: 2026-07-20
+completed: 2026-07-21
 work_type: feature
 spec_waived: "SDD mode disabled (takumi.sddMode: off)"
 blockedBy: []
@@ -23,11 +24,11 @@ Mở rộng feature phòng học chung (đã ship ở `../260719-1844-study-toge
 
 | # | Phase | Status | Depends on |
 |---|-------|--------|------------|
-| 1 | [Prisma: playlist/access/moderation/block models](phase-01-prisma-models.md) | pending | — |
-| 2 | [Backend REST: access modes + settings](phase-02-backend-rest-access-settings.md) | pending | 1 |
-| 3 | [Backend WS: playlist + block + moderation](phase-03-backend-ws-domain.md) | pending | 2 |
-| 4 | [Frontend: playlist/access/block/moderation UI](phase-04-frontend-ui.md) | pending | 3 |
-| 5 | [Tests + manual e2e](phase-05-tests.md) | pending | 3, 4 |
+| 1 | [Prisma: playlist/access/moderation/block models](phase-01-prisma-models.md) | done | — |
+| 2 | [Backend REST: access modes + settings](phase-02-backend-rest-access-settings.md) | done | 1 |
+| 3 | [Backend WS: playlist + block + moderation](phase-03-backend-ws-domain.md) | done | 2 |
+| 4 | [Frontend: playlist/access/block/moderation UI](phase-04-frontend-ui.md) | done | 3 |
+| 5 | [Tests + manual e2e](phase-05-tests.md) | done | 3, 4 |
 
 ## Key Decisions (sealed)
 
@@ -44,6 +45,24 @@ Mở rộng feature phòng học chung (đã ship ở `../260719-1844-study-toge
 3. Ban chính mình / ban host / cohost ban cohost khác — chặn ở server (không cho hạ host; cohost không ban được host/cohost).
 4. Access đổi từ code→public khi đang có người: không đá ai; đổi public→whitelist: người ngoài whitelist đang trong phòng có bị đá? (quyết: KHÔNG đá real-time, chỉ chặn join mới — ghi rõ).
 5. Block room-scoped: khi rời và vào phòng khác không mang theo block.
+
+## Follow-ups / Unresolved
+
+**Critical (H1)** — DONE: leader re-election broadcast on member leave/disconnect (prevent playlist stall if leader drops).
+
+**Medium Priority**
+- M1 DONE: playlist cap `MAX_PLAYLIST_ITEMS=100` enforced.
+- M2 DONE: `media:ended` throttled via `allowControl` guard.
+- M3 DONE: `countMembers` excludes banned (banned don't occupy capacity).
+- M4 TODO: gateway-level auth tests (moderate role-hierarchy, canAddPlaylist, onJoin-banned) — logic verified by review; add when WS test harness exists.
+
+**Low Priority**
+- L1 DONE: remove no longer restarts playback when removing item BEFORE current one (only shifts index).
+- L2 TODO: reorder duplicate-id artifact (minor visual issue).
+- L3 TODO: whitelist accepts non-existent userIds (should validate at upsert).
+- Pre-existing: admin-stats.service.spec.ts date-dependent failure (unrelated to this feature).
+
+**Migration Note** — dev DB patched via psql; deploy uses `db push`. Pending money float→int migration blocks `db push --accept-data-loss=false` (pre-existing). Generate proper Prisma migration file before clean-slate deploy.
 
 ## Success Criteria
 
