@@ -11,10 +11,18 @@ const PomodoroConfigSchema = {
     maxParticipants: z.number().int().min(2).max(20).optional(),
 };
 
+// Cấu hình access + playlist (dùng cho create/update).
+const AccessConfigSchema = {
+    accessType: z.number().int().min(0).max(2).optional(), // 0 public | 1 code | 2 whitelist
+    whitelist: z.array(z.string().min(1)).max(200).optional(),
+    playlistAddPermission: z.number().int().min(0).max(2).optional(),
+};
+
 export const CreateStudyRoomSchema = z.object({
     name: z.string().min(1, { message: 'Tên phòng không được để trống' }).max(100),
     description: z.string().max(500).optional(),
     ...PomodoroConfigSchema,
+    ...AccessConfigSchema,
 });
 
 export class CreateStudyRoomDto extends createZodDto(CreateStudyRoomSchema) {
@@ -30,6 +38,7 @@ export const UpdateStudyRoomSchema = z.object({
     description: z.string().max(500).optional(),
     isActive: z.boolean().optional(),
     ...PomodoroConfigSchema,
+    ...AccessConfigSchema,
 });
 
 export class UpdateStudyRoomDto extends createZodDto(UpdateStudyRoomSchema) {}
@@ -43,4 +52,17 @@ export const JoinByCodeSchema = z.object({
 export class JoinByCodeDto extends createZodDto(JoinByCodeSchema) {
     @ApiProperty({ example: '123456' })
     inviteCode: string;
+}
+
+// Join bằng roomId (public/whitelist không cần mã; code thì kèm inviteCode).
+export const JoinRoomSchema = z.object({
+    inviteCode: z
+        .string()
+        .regex(/^\d{6}$/, { message: 'Mã mời phải gồm 6 chữ số' })
+        .optional(),
+});
+
+export class JoinRoomDto extends createZodDto(JoinRoomSchema) {
+    @ApiProperty({ required: false, example: '123456' })
+    inviteCode?: string;
 }

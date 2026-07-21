@@ -15,14 +15,22 @@ import { StudyRoomService } from './study-room.service';
 import { StudyRoomRepository } from './study-room.repository';
 import { StudyRoomStateService } from './study-room-state.service';
 import { StudyRoomBroadcaster } from './study-room-broadcaster.service';
-import { StudyRoomRole, FOCUS_CREDIT_SECONDS } from './study-room.constants';
+import {
+    StudyRoomRole,
+    FOCUS_CREDIT_SECONDS,
+    PlaylistAddPermission,
+    MAX_PLAYLIST_ITEMS,
+} from './study-room.constants';
 import { PomodoroConfig } from './study-room-pomodoro';
 import { isValidYouTubeUrl, sanitizeChat } from './study-room.util';
+import { StudyRoomPlaylistService } from './study-room-playlist.service';
 import {
     WS_STUDY_PATH,
     ClientEvents,
     ServerEvents,
     RosterEntry,
+    MediaState,
+    PlaylistState,
 } from './study-room.events';
 
 const cfgFromRoom = (r: any): PomodoroConfig => ({
@@ -65,7 +73,8 @@ export class StudyRoomGateway
         private readonly repo: StudyRoomRepository,
         private readonly state: StudyRoomStateService,
         private readonly broadcaster: StudyRoomBroadcaster,
-        private readonly redis: RedisService
+        private readonly redis: RedisService,
+        private readonly playlist: StudyRoomPlaylistService
     ) {}
 
     // Phòng thủ lớp 2: gateway (phía trước) đã chặn upgrade khi trang bị tắt,
@@ -126,13 +135,22 @@ export class StudyRoomGateway
     @SubscribeMessage(ClientEvents.JOIN)
     async onJoin(socket: Socket, { roomId }: { roomId: string }) {
         const user = socket.data.user;
+        let member;
         try {
-            await this.service.assertRole(roomId, user.id);
+            member = await this.service.assertRole(roomId, user.id);
         } catch {
             socket.emit(ServerEvents.ERROR, {
                 code: 'FORBIDDEN',
                 message: 'Bạn không ở trong phòng này',
             });
+            return;
+        }
+        if (member.isBanned) {
+            socket.emit(ServerEvents.ERROR, {
+                code: 'BANNED',
+                message: 'Bạn đã bị cấm khỏi phòng này',
+            });
+            socket.disconnect(true);
             return;
         }
         socket.join(roomId);
@@ -161,6 +179,12 @@ export class StudyRoomGateway
             online: false,
             status: null,
         });
+        // Leader có thể vừa rời → bầu lại + broadcast để client không giữ leader cũ
+        // (nếu không, không ai gửi media:ended, playlist đứng). Chỉ khi có playlist.
+        const state = await this.playlist.getState(roomId);
+        if (state.items.length > 0) {
+            socket.to(roomId).emit(ServerEvents.PLAYLIST_UPDATED, state);
+        }
     }
 
     @SubscribeMessage(ClientEvents.HEARTBEAT)
@@ -295,9 +319,17 @@ export class StudyRoomGateway
     @SubscribeMessage(ClientEvents.CHAT_SEND)
     async onChat(socket: Socket, { roomId, content }: { roomId: string; content: string }) {
         const user = socket.data.user;
+        let member;
         try {
-            await this.service.assertRole(roomId, user.id);
+            member = await this.service.assertRole(roomId, user.id);
         } catch {
+            return;
+        }
+        if (member.isMuted) {
+            socket.emit(ServerEvents.ERROR, {
+                code: 'MUTED',
+                message: 'Bạn đã bị cấm chat trong phòng này',
+            });
             return;
         }
         const clean = sanitizeChat(content);
@@ -322,6 +354,120 @@ export class StudyRoomGateway
     @SubscribeMessage(ClientEvents.ROLE_REVOKE)
     async onRevoke(socket: Socket, { roomId, userId }: { roomId: string; userId: string }) {
         await this.changeRole(socket, roomId, userId, StudyRoomRole.MEMBER);
+    }
+
+    // ---- Playlist ------------------------------------------------------------
+    @SubscribeMessage(ClientEvents.PLAYLIST_ADD)
+    async onPlaylistAdd(socket: Socket, { roomId, url }: { roomId: string; url: string }) {
+        if (!(await this.canAddPlaylist(socket, roomId))) return;
+        if (!isValidYouTubeUrl(url)) {
+            socket.emit(ServerEvents.ERROR, {
+                code: 'VALIDATION',
+                message: 'Link YouTube không hợp lệ',
+            });
+            return;
+        }
+        const current = await this.playlist.getState(roomId);
+        if (current.items.length >= MAX_PLAYLIST_ITEMS) {
+            socket.emit(ServerEvents.ERROR, {
+                code: 'PLAYLIST_FULL',
+                message: `Playlist đã đạt tối đa ${MAX_PLAYLIST_ITEMS} bài`,
+            });
+            return;
+        }
+        const state = await this.playlist.add(roomId, url, socket.data.user.id);
+        this.server.to(roomId).emit(ServerEvents.PLAYLIST_UPDATED, state);
+    }
+
+    @SubscribeMessage(ClientEvents.PLAYLIST_REMOVE)
+    async onPlaylistRemove(socket: Socket, { roomId, itemId }: { roomId: string; itemId: string }) {
+        if (!(await this.control(socket, roomId))) return;
+        this.broadcastPlaylist(roomId, await this.playlist.remove(roomId, itemId));
+    }
+
+    @SubscribeMessage(ClientEvents.PLAYLIST_REORDER)
+    async onPlaylistReorder(socket: Socket, { roomId, itemIds }: { roomId: string; itemIds: string[] }) {
+        if (!(await this.control(socket, roomId))) return;
+        if (!Array.isArray(itemIds) || itemIds.length > MAX_PLAYLIST_ITEMS) return;
+        const state = await this.playlist.reorder(roomId, itemIds);
+        this.server.to(roomId).emit(ServerEvents.PLAYLIST_UPDATED, state);
+    }
+
+    @SubscribeMessage(ClientEvents.PLAYLIST_NEXT)
+    async onPlaylistNext(socket: Socket, { roomId }: { roomId: string }) {
+        if (!(await this.control(socket, roomId))) return;
+        this.broadcastPlaylist(roomId, await this.playlist.step(roomId, 1));
+    }
+
+    @SubscribeMessage(ClientEvents.PLAYLIST_PREV)
+    async onPlaylistPrev(socket: Socket, { roomId }: { roomId: string }) {
+        if (!(await this.control(socket, roomId))) return;
+        this.broadcastPlaylist(roomId, await this.playlist.step(roomId, -1));
+    }
+
+    @SubscribeMessage(ClientEvents.PLAYLIST_JUMP)
+    async onPlaylistJump(socket: Socket, { roomId, index }: { roomId: string; index: number }) {
+        if (!(await this.control(socket, roomId))) return;
+        this.broadcastPlaylist(roomId, await this.playlist.jump(roomId, Number(index) || 0));
+    }
+
+    // CHỈ leader được báo hết video → server tự advance (chống client giả mạo tua playlist).
+    @SubscribeMessage(ClientEvents.MEDIA_ENDED)
+    async onMediaEnded(socket: Socket, { roomId, index }: { roomId: string; index: number }) {
+        const user = socket.data.user;
+        if (!(socket.data.rooms as Set<string>)?.has(roomId)) return;
+        if (!(await this.state.allowControl(roomId, user.id))) return; // throttle spam
+        const leader = await this.playlist.computeLeader(roomId);
+        if (leader !== user.id) return; // không phải leader → bỏ qua
+        const result = await this.playlist.advanceOnEnded(roomId, Number(index) || 0);
+        if (result) this.broadcastPlaylist(roomId, result);
+    }
+
+    // ---- Chặn cá nhân (server-persist, client-filter) ------------------------
+    @SubscribeMessage(ClientEvents.CHAT_BLOCK)
+    async onChatBlock(socket: Socket, { roomId, userId }: { roomId: string; userId: string }) {
+        const me = socket.data.user;
+        if (!userId || userId === me.id) return;
+        try {
+            await this.service.assertRole(roomId, me.id);
+        } catch {
+            return;
+        }
+        await this.repo.addBlock(roomId, me.id, userId);
+        await this.emitMyBlocks(socket, roomId, me.id);
+    }
+
+    @SubscribeMessage(ClientEvents.CHAT_UNBLOCK)
+    async onChatUnblock(socket: Socket, { roomId, userId }: { roomId: string; userId: string }) {
+        const me = socket.data.user;
+        try {
+            await this.service.assertRole(roomId, me.id);
+        } catch {
+            return;
+        }
+        await this.repo.removeBlock(roomId, me.id, userId);
+        await this.emitMyBlocks(socket, roomId, me.id);
+    }
+
+    // ---- Moderation (HOST/COHOST) --------------------------------------------
+    @SubscribeMessage(ClientEvents.MEMBER_BAN)
+    async onBan(socket: Socket, { roomId, userId }: { roomId: string; userId: string }) {
+        await this.moderate(socket, roomId, userId, 'ban');
+    }
+
+    @SubscribeMessage(ClientEvents.MEMBER_UNBAN)
+    async onUnban(socket: Socket, { roomId, userId }: { roomId: string; userId: string }) {
+        await this.moderate(socket, roomId, userId, 'unban');
+    }
+
+    @SubscribeMessage(ClientEvents.MEMBER_MUTE)
+    async onMute(socket: Socket, { roomId, userId }: { roomId: string; userId: string }) {
+        await this.moderate(socket, roomId, userId, 'mute');
+    }
+
+    @SubscribeMessage(ClientEvents.MEMBER_UNMUTE)
+    async onUnmute(socket: Socket, { roomId, userId }: { roomId: string; userId: string }) {
+        await this.moderate(socket, roomId, userId, 'unmute');
     }
 
     // ---- Helpers -------------------------------------------------------------
@@ -376,6 +522,100 @@ export class StudyRoomGateway
         this.server.to(roomId).emit(ServerEvents.TIMER_UPDATED, { timer, config });
     }
 
+    // Quyền thêm bài theo playlistAddPermission + role của caller.
+    private async canAddPlaylist(socket: Socket, roomId: string): Promise<boolean> {
+        let member;
+        try {
+            member = await this.service.assertRole(roomId, socket.data.user.id);
+        } catch {
+            return false;
+        }
+        const room = await this.repo.findRoomCached(roomId);
+        const perm = room?.playlistAddPermission ?? PlaylistAddPermission.COHOST;
+        const min =
+            perm === PlaylistAddPermission.EVERYONE
+                ? StudyRoomRole.MEMBER
+                : perm === PlaylistAddPermission.HOST
+                  ? StudyRoomRole.HOST
+                  : StudyRoomRole.COHOST;
+        if (member.role < min) {
+            socket.emit(ServerEvents.ERROR, {
+                code: 'FORBIDDEN',
+                message: 'Bạn không có quyền thêm bài vào playlist',
+            });
+            return false;
+        }
+        return true;
+    }
+
+    private broadcastPlaylist(
+        roomId: string,
+        result: { state: PlaylistState; media?: MediaState }
+    ) {
+        this.server.to(roomId).emit(ServerEvents.PLAYLIST_UPDATED, result.state);
+        if (result.media) {
+            this.server.to(roomId).emit(ServerEvents.MEDIA_UPDATED, result.media);
+        }
+    }
+
+    // Gửi danh sách block cập nhật CHỈ cho chính người chặn (không broadcast).
+    private async emitMyBlocks(socket: Socket, roomId: string, userId: string) {
+        const blockedUserIds = await this.repo.listBlockedIds(roomId, userId);
+        socket.emit(ServerEvents.BLOCKS_UPDATED, { blockedUserIds });
+    }
+
+    // COHOST+ ban/mute; không tác động được lên role >= mình (không hạ host/cohost ngang cấp).
+    private async moderate(
+        socket: Socket,
+        roomId: string,
+        targetUserId: string,
+        action: 'ban' | 'unban' | 'mute' | 'unmute'
+    ) {
+        let caller;
+        try {
+            caller = await this.service.assertRole(
+                roomId,
+                socket.data.user.id,
+                StudyRoomRole.COHOST
+            );
+        } catch {
+            socket.emit(ServerEvents.ERROR, {
+                code: 'FORBIDDEN',
+                message: 'Bạn không có quyền kiểm duyệt',
+            });
+            return;
+        }
+        if (!targetUserId || targetUserId === socket.data.user.id) return;
+        const target = await this.repo.findMember(roomId, targetUserId);
+        if (!target || target.role >= caller.role) return; // không đụng ngang/trên cấp
+
+        if (action === 'ban' || action === 'unban') {
+            const isBanned = action === 'ban';
+            await this.repo.setBanned(roomId, targetUserId, isBanned);
+            this.server
+                .to(roomId)
+                .emit(ServerEvents.MEMBER_MODERATED, { userId: targetUserId, isBanned });
+            if (isBanned) await this.kickUser(roomId, targetUserId);
+        } else {
+            const isMuted = action === 'mute';
+            await this.repo.setMuted(roomId, targetUserId, isMuted);
+            this.server
+                .to(roomId)
+                .emit(ServerEvents.MEMBER_MODERATED, { userId: targetUserId, isMuted });
+        }
+    }
+
+    // Đá mọi socket của user khỏi phòng (mọi instance qua redis-adapter).
+    private async kickUser(roomId: string, userId: string) {
+        const sockets = await this.server.in(roomId).fetchSockets();
+        for (const s of sockets) {
+            if ((s.data as any)?.user?.id === userId) {
+                s.emit(ServerEvents.ROOM_KICKED, { roomId });
+                s.disconnect(true);
+            }
+        }
+    }
+
     private async buildSnapshot(roomId: string, userId: string) {
         const room = await this.repo.findByIdWithMembers(roomId);
         if (!room) return null;
@@ -383,14 +623,19 @@ export class StudyRoomGateway
         const presence = await this.state.getPresenceMap(roomId);
         const myRole =
             room.members.find((m: any) => m.userId === userId)?.role ?? 0;
-        const roster: RosterEntry[] = room.members.map((m: any) => ({
-            userId: m.userId,
-            name: m.user?.name ?? null,
-            avatar: m.user?.avatar ?? null,
-            role: m.role,
-            online: !!presence[m.userId],
-            status: presence[m.userId] ?? null,
-        }));
+        const canSeeSensitive = myRole >= StudyRoomRole.COHOST;
+        const roster: RosterEntry[] = room.members
+            .filter((m: any) => !m.isBanned) // banned không hiện trong roster
+            .map((m: any) => ({
+                userId: m.userId,
+                name: m.user?.name ?? null,
+                avatar: m.user?.avatar ?? null,
+                role: m.role,
+                online: !!presence[m.userId],
+                status: presence[m.userId] ?? null,
+                isBanned: m.isBanned,
+                isMuted: m.isMuted,
+            }));
         return {
             room: {
                 id: room.id,
@@ -399,13 +644,18 @@ export class StudyRoomGateway
                 isActive: room.isActive,
                 maxParticipants: room.maxParticipants,
                 hostId: room.hostId,
-                inviteCode: myRole >= StudyRoomRole.COHOST ? room.inviteCode : undefined,
+                accessType: room.accessType,
+                playlistAddPermission: room.playlistAddPermission,
+                inviteCode: canSeeSensitive ? room.inviteCode : undefined,
+                whitelist: canSeeSensitive ? room.whitelist : undefined,
             },
             config: cfg,
             timer: await this.state.getTimer(roomId, cfg),
             media: await this.state.getMedia(roomId),
             chat: await this.state.getChat(roomId, 50),
             roster,
+            playlist: await this.playlist.getState(roomId),
+            myBlocks: await this.repo.listBlockedIds(roomId, userId),
             myRole,
         };
     }

@@ -117,6 +117,35 @@ export class StudyRoomStateService {
         return media;
     }
 
+    // Phát item playlist mới từ đầu (dùng khi next/prev/jump/auto-advance).
+    async playItem(roomId: string, url: string | null): Promise<MediaState> {
+        const media: MediaState = {
+            url,
+            playing: !!url,
+            positionSec: 0,
+            updatedAt: Date.now(),
+        };
+        await this.saveMedia(roomId, media);
+        return media;
+    }
+
+    // ---- Playback index (playlist) ------------------------------------------
+    async getCurrentIndex(roomId: string): Promise<number> {
+        const raw = await this.client.get(StudyRoomKeys.playback(roomId));
+        if (!raw) return 0;
+        const parsed = parseInt(raw, 10);
+        return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    async setCurrentIndex(roomId: string, index: number): Promise<void> {
+        await this.client.set(
+            StudyRoomKeys.playback(roomId),
+            String(Math.max(0, index)),
+            'EX',
+            STUDY_ROOM_LIVE_TTL
+        );
+    }
+
     async playMedia(roomId: string): Promise<MediaState> {
         const media = await this.getMedia(roomId);
         const next: MediaState = { ...media, playing: true, updatedAt: Date.now() };

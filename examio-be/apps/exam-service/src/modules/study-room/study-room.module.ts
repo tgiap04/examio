@@ -9,6 +9,7 @@ import { StudyRoomStateService } from './study-room-state.service';
 import { StudyRoomGateway } from './study-room.gateway';
 import { StudyRoomSocketAuth } from './study-room-socket-auth.service';
 import { StudyRoomBroadcaster } from './study-room-broadcaster.service';
+import { StudyRoomPlaylistService } from './study-room-playlist.service';
 
 @Module({
     imports: [AuthModule],
@@ -22,6 +23,7 @@ import { StudyRoomBroadcaster } from './study-room-broadcaster.service';
         StudyRoomGateway,
         StudyRoomSocketAuth,
         StudyRoomBroadcaster,
+        StudyRoomPlaylistService,
     ],
     controllers: [StudyRoomController],
     exports: [StudyRoomService, StudyRoomRepository],

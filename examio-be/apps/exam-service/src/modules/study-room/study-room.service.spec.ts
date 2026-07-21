@@ -14,6 +14,7 @@ function make() {
         inviteCodeExists: jest.fn().mockResolvedValue(false),
         createWithHost: jest.fn().mockResolvedValue({ id: 'r1' }),
         findByInviteCode: jest.fn(),
+        findRoom: jest.fn(),
         findMember: jest.fn(),
         findMemberCached: jest.fn(),
         countMembers: jest.fn(),
@@ -188,6 +189,85 @@ describe('StudyRoomService', () => {
             });
             const room = await service.joinByCode(user, '123456');
             expect(room.inviteCode).toBeUndefined();
+        });
+    });
+
+    describe('joinById — access modes', () => {
+        it('PUBLIC: user auth join thẳng (tạo member)', async () => {
+            const { service, repo } = make();
+            repo.findRoom.mockResolvedValue({
+                id: 'r1',
+                isActive: true,
+                accessType: 0,
+                maxParticipants: 20,
+            });
+            repo.findMember.mockResolvedValue(null);
+            repo.countMembers.mockResolvedValue(1);
+            await service.joinById(user, 'r1');
+            expect(repo.addMember).toHaveBeenCalledWith('r1', 'u1', StudyRoomRole.MEMBER);
+        });
+
+        it('WHITELIST: ngoài danh sách → Forbidden', async () => {
+            const { service, repo } = make();
+            repo.findRoom.mockResolvedValue({
+                id: 'r1',
+                isActive: true,
+                accessType: 2,
+                whitelist: ['someone-else'],
+                maxParticipants: 20,
+            });
+            repo.findMember.mockResolvedValue(null);
+            await expect(service.joinById(user, 'r1')).rejects.toBeInstanceOf(
+                ForbiddenException
+            );
+            expect(repo.addMember).not.toHaveBeenCalled();
+        });
+
+        it('WHITELIST: trong danh sách → vào được', async () => {
+            const { service, repo } = make();
+            repo.findRoom.mockResolvedValue({
+                id: 'r1',
+                isActive: true,
+                accessType: 2,
+                whitelist: ['u1'],
+                maxParticipants: 20,
+            });
+            repo.findMember.mockResolvedValue(null);
+            repo.countMembers.mockResolvedValue(0);
+            await service.joinById(user, 'r1');
+            expect(repo.addMember).toHaveBeenCalled();
+        });
+
+        it('CODE: thiếu/sai mã → Forbidden; đúng mã → vào được', async () => {
+            const { service, repo } = make();
+            repo.findRoom.mockResolvedValue({
+                id: 'r1',
+                isActive: true,
+                accessType: 1,
+                inviteCode: '123456',
+                maxParticipants: 20,
+            });
+            repo.findMember.mockResolvedValue(null);
+            repo.countMembers.mockResolvedValue(0);
+            await expect(service.joinById(user, 'r1', '000000')).rejects.toBeInstanceOf(
+                ForbiddenException
+            );
+            await service.joinById(user, 'r1', '123456');
+            expect(repo.addMember).toHaveBeenCalledTimes(1);
+        });
+
+        it('banned → Forbidden mọi mode', async () => {
+            const { service, repo } = make();
+            repo.findRoom.mockResolvedValue({
+                id: 'r1',
+                isActive: true,
+                accessType: 0,
+                maxParticipants: 20,
+            });
+            repo.findMember.mockResolvedValue({ role: 0, isBanned: true });
+            await expect(service.joinById(user, 'r1')).rejects.toBeInstanceOf(
+                ForbiddenException
+            );
         });
     });
 
