@@ -8,7 +8,11 @@ import {
 } from "@/components/antd/card";
 import { Button } from "@/components/antd/button";
 import { Input } from "@/components/antd/input";
-import { useStudyRoomStore } from "@/stores/useStudyRoomStore";
+import { useAuthStore } from "@/stores/useAuthStore";
+import {
+  selectVisibleChat,
+  useStudyRoomStore,
+} from "@/stores/useStudyRoomStore";
 import { StudyRoomActions } from "./study-room-actions";
 
 interface Props {
@@ -23,7 +27,11 @@ function formatTime(at: number): string {
 }
 
 function ChatPanelBase({ actions }: Props) {
-  const chat = useStudyRoomStore((s) => s.chat);
+  const chat = useStudyRoomStore(selectVisibleChat);
+  const myId = String(useAuthStore.getState().user?.id ?? "");
+  const muted = useStudyRoomStore(
+    (s) => s.roster.find((r) => r.userId === myId)?.isMuted ?? false,
+  );
   const [text, setText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
   const nearBottom = useRef(true);
@@ -42,7 +50,7 @@ function ChatPanelBase({ actions }: Props) {
 
   const send = () => {
     const content = text.trim();
-    if (!content) return;
+    if (!content || muted) return;
     actions.sendChat(content.slice(0, 500));
     setText("");
     nearBottom.current = true;
@@ -81,13 +89,14 @@ function ChatPanelBase({ actions }: Props) {
         </div>
         <div className="flex items-center gap-2">
           <Input
-            placeholder="Nhập tin nhắn…"
+            placeholder={muted ? "Bạn đã bị cấm chat" : "Nhập tin nhắn…"}
             value={text}
             maxLength={500}
+            disabled={muted}
             onChange={(e) => setText(e.target.value)}
             onPressEnter={send}
           />
-          <Button size="icon" onClick={send} disabled={!text.trim()}>
+          <Button size="icon" onClick={send} disabled={muted || !text.trim()}>
             <SendHorizonal className="h-4 w-4" />
           </Button>
         </div>

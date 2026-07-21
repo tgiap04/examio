@@ -10,6 +10,7 @@ import {
   WS_STUDY_PATH,
   ChatMessage,
   MediaState,
+  PlaylistState,
   PomodoroConfig,
   RoomSnapshot,
   TimerState,
@@ -32,6 +33,7 @@ function wsOrigin(): string {
 export function useStudyRoomSocket(
   roomId: string | undefined,
   onClosed?: () => void,
+  onKicked?: () => void,
 ) {
   const socketRef = useRef<Socket | null>(null);
   const myId = String(useAuthStore.getState().user?.id ?? "");
@@ -97,6 +99,22 @@ export function useStudyRoomSocket(
     socket.on(ServerEvents.ROOM_CLOSED, () => {
       onClosed?.();
     });
+    socket.on(ServerEvents.PLAYLIST_UPDATED, (p: PlaylistState) =>
+      store().applyPlaylist(p),
+    );
+    socket.on(
+      ServerEvents.BLOCKS_UPDATED,
+      (p: { blockedUserIds: string[] }) =>
+        store().applyBlocks(p.blockedUserIds),
+    );
+    socket.on(
+      ServerEvents.MEMBER_MODERATED,
+      (p: { userId: string; isBanned?: boolean; isMuted?: boolean }) =>
+        store().applyModerated(p),
+    );
+    socket.on(ServerEvents.ROOM_KICKED, () => {
+      onKicked?.();
+    });
 
     const hb = setInterval(sendHeartbeat, 30_000);
     const onVisible = () => sendHeartbeat();
@@ -134,5 +152,32 @@ export function useStudyRoomSocket(
       emit(ClientEvents.ROLE_GRANT, { roomId, userId }),
     revokeRole: (userId: string) =>
       emit(ClientEvents.ROLE_REVOKE, { roomId, userId }),
+    // Playlist
+    addToPlaylist: (url: string) =>
+      emit(ClientEvents.PLAYLIST_ADD, { roomId, url }),
+    removePlaylistItem: (itemId: string) =>
+      emit(ClientEvents.PLAYLIST_REMOVE, { roomId, itemId }),
+    reorderPlaylist: (itemIds: string[]) =>
+      emit(ClientEvents.PLAYLIST_REORDER, { roomId, itemIds }),
+    playlistNext: () => emit(ClientEvents.PLAYLIST_NEXT, { roomId }),
+    playlistPrev: () => emit(ClientEvents.PLAYLIST_PREV, { roomId }),
+    playlistJump: (index: number) =>
+      emit(ClientEvents.PLAYLIST_JUMP, { roomId, index }),
+    mediaEnded: (index: number) =>
+      emit(ClientEvents.MEDIA_ENDED, { roomId, index }),
+    // Chặn cá nhân
+    blockUser: (userId: string) =>
+      emit(ClientEvents.CHAT_BLOCK, { roomId, userId }),
+    unblockUser: (userId: string) =>
+      emit(ClientEvents.CHAT_UNBLOCK, { roomId, userId }),
+    // Moderation
+    banUser: (userId: string) =>
+      emit(ClientEvents.MEMBER_BAN, { roomId, userId }),
+    unbanUser: (userId: string) =>
+      emit(ClientEvents.MEMBER_UNBAN, { roomId, userId }),
+    muteUser: (userId: string) =>
+      emit(ClientEvents.MEMBER_MUTE, { roomId, userId }),
+    unmuteUser: (userId: string) =>
+      emit(ClientEvents.MEMBER_UNMUTE, { roomId, userId }),
   };
 }

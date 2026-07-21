@@ -14,6 +14,7 @@ import { regenerateStudyRoomCodeApi } from "@/apis/studyRoomApi";
 import { useStudyRoomStore } from "@/stores/useStudyRoomStore";
 import { PomodoroConfig, StudyRoomSummary } from "@/types/studyRoom";
 import { PomodoroConfigFields } from "./pomodoro-config-fields";
+import { RoomAccessSettings } from "./room-access-settings";
 import { DEFAULT_POMODORO } from "./study-room-actions";
 
 interface Props {
@@ -117,6 +118,12 @@ export function RoomSettingsMenu({ room, config, onClosed }: Props) {
                   Lưu cấu hình
                 </Button>
               </div>
+            </div>
+            <div>
+              <p className="mb-2 text-sm text-muted-foreground">
+                Quyền truy cập & danh sách phát
+              </p>
+              <RoomAccessSettings room={room} />
             </div>
           </div>
           <DialogFooter className="!justify-between">

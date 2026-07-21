@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/antd/button";
@@ -8,6 +8,7 @@ import { useStudyRoomStore } from "@/stores/useStudyRoomStore";
 import { StudyRoomRole } from "@/types/studyRoom";
 import { PomodoroPanel } from "./components/pomodoro-panel";
 import { YouTubeSyncPlayer } from "./components/youtube-sync-player";
+import { PlaylistPanel } from "./components/playlist-panel";
 import { RosterPanel } from "./components/roster-panel";
 import { ChatPanel } from "./components/chat-panel";
 import { LeaderboardPanel } from "./components/leaderboard-panel";
@@ -29,7 +30,47 @@ export default function StudyRoomPage() {
     navigate("/k/study-room");
   }, [navigate]);
 
-  const actions = useStudyRoomSocket(id, onClosed);
+  const onKicked = useCallback(() => {
+    toast.error("Bạn đã bị mời khỏi phòng");
+    navigate("/k/study-room");
+  }, [navigate]);
+
+  const myRooms = useStudyRoomStore((s) => s.myRooms);
+  const joinById = useStudyRoomStore((s) => s.joinById);
+  const fetchMyRooms = useStudyRoomStore((s) => s.fetchMyRooms);
+
+  // Deep-link/refresh thẳng vào phòng: myRooms có thể rỗng nên phải xác định
+  // membership TRƯỚC khi quyết định auto-join (tránh POST join thừa mỗi lần tải
+  // cho người đã là member). Đã là member → WS tự lấy snapshot. Chưa là member →
+  // thử join public/whitelist; thất bại (cần mã / không có quyền) thì báo rõ,
+  // không nuốt lỗi âm thầm. Phòng dùng mã vẫn vào qua modal nhập mã ở trang danh sách.
+  useEffect(() => {
+    if (!id) return;
+    let cancelled = false;
+    void (async () => {
+      if (myRooms.length === 0) {
+        await fetchMyRooms().catch(() => {});
+      }
+      if (cancelled) return;
+      const mine = useStudyRoomStore.getState().myRooms;
+      if (mine.some((r) => r.id === id)) return;
+      try {
+        await joinById(id);
+      } catch {
+        if (!cancelled) {
+          toast.error(
+            "Không vào được phòng. Phòng có thể yêu cầu mã mời hoặc bạn không có quyền truy cập.",
+          );
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  const actions = useStudyRoomSocket(id, onClosed, onKicked);
 
   const room = useStudyRoomStore((s) => s.room);
   const config = useStudyRoomStore((s) => s.config);
@@ -80,6 +121,7 @@ export default function StudyRoomPage() {
           <div className="sticky top-[68px] z-10 lg:static">
             <YouTubeSyncPlayer actions={actions} myRole={myRole} />
           </div>
+          <PlaylistPanel actions={actions} myRole={myRole} />
           <PomodoroPanel actions={actions} myRole={myRole} />
         </section>
 
