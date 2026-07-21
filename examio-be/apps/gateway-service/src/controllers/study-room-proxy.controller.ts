@@ -52,6 +52,16 @@ export class StudyRoomProxyController {
         return this.fwd(req, 'POST', '/api/v1/studyrooms/join', body);
     }
 
+    @Post(':id/join')
+    @ApiOperation({ summary: 'Vào phòng bằng ID (public/whitelist/code)' })
+    async joinById(
+        @Param('id') id: string,
+        @Body() body: any,
+        @Req() req: Request
+    ) {
+        return this.fwd(req, 'POST', `/api/v1/studyrooms/${id}/join`, body ?? {});
+    }
+
     @Get(':id')
     @ApiOperation({ summary: 'Chi tiết phòng' })
     async detail(@Param('id') id: string, @Req() req: Request) {
