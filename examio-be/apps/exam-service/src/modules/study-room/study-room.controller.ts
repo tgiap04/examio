@@ -16,6 +16,7 @@ import {
     CreateStudyRoomDto,
     UpdateStudyRoomDto,
     JoinByCodeDto,
+    JoinRoomDto,
 } from './dto/study-room.dto';
 
 @ApiTags('StudyRooms')
@@ -44,6 +45,17 @@ export class StudyRoomController {
     @ApiOperation({ summary: 'Vào phòng bằng mã mời' })
     async join(@Req() req: AuthenticatedRequest, @Body() dto: JoinByCodeDto) {
         return this.service.joinByCode(req.user, dto.inviteCode);
+    }
+
+    @Post(':id/join')
+    @ApiOperation({ summary: 'Vào phòng bằng ID (public/whitelist; code cần inviteCode)' })
+    @ApiParam({ name: 'id' })
+    async joinById(
+        @Req() req: AuthenticatedRequest,
+        @Param('id') id: string,
+        @Body() dto: JoinRoomDto
+    ) {
+        return this.service.joinById(req.user, id, dto.inviteCode);
     }
 
     @Get(':id')

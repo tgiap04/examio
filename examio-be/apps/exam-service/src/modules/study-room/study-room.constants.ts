@@ -5,6 +5,26 @@ export enum StudyRoomRole {
     HOST = 2,
 }
 
+// Chế độ vào phòng (mirror ExamSession.assessType).
+export enum AccessType {
+    PUBLIC = 0, // user đã đăng nhập là vào được
+    CODE = 1, // cần mã mời 6 số
+    WHITELIST = 2, // chỉ userId trong whitelist
+}
+
+// Ai được thêm bài vào playlist.
+export enum PlaylistAddPermission {
+    EVERYONE = 0,
+    COHOST = 1, // cohost trở lên
+    HOST = 2,
+}
+
+// Loại item playlist.
+export enum PlaylistItemKind {
+    VIDEO = 0,
+    PLAYLIST = 1, // url là YT-playlist, player chạy như 1 đơn vị
+}
+
 // Redis key helpers cho live state (timer/media/chat/presence/focus).
 // DB chỉ giữ cấu hình phòng + membership; mọi state runtime nằm ở Redis.
 export const StudyRoomKeys = {
@@ -26,6 +46,7 @@ export const StudyRoomKeys = {
     room: (roomId: string) => `studyroom:${roomId}:room`,
     presenceSet: (roomId: string) => `studyroom:${roomId}:presence-set`,
     focusDirtySet: () => 'studyroom:focus-dirty',
+    playback: (roomId: string) => `studyroom:${roomId}:playback`, // {currentIndex}
 };
 
 export const FOCUS_CREDIT_SECONDS = 30; // cộng mỗi nhịp heartbeat hợp lệ
@@ -34,3 +55,4 @@ export const FOCUS_CREDIT_WINDOW = 25; // giây — cửa sổ chống farm (< n
 export const STUDY_ROOM_LIVE_TTL = 60 * 60 * 24; // 24h
 export const PRESENCE_TTL = 90; // giây
 export const CHAT_HISTORY_MAX = 200;
+export const MAX_PLAYLIST_ITEMS = 100; // trần số bài trong playlist mỗi phòng

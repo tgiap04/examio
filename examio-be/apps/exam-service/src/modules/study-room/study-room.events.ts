@@ -35,6 +35,23 @@ export interface RosterEntry {
     role: number;
     online: boolean;
     status: 'studying' | 'break' | null;
+    isBanned: boolean;
+    isMuted: boolean;
+}
+
+export interface PlaylistItem {
+    id: string;
+    url: string;
+    kind: number; // 0 VIDEO | 1 PLAYLIST
+    title: string | null;
+    addedByUserId: string;
+    order: number;
+}
+
+export interface PlaylistState {
+    items: PlaylistItem[];
+    currentIndex: number;
+    leaderUserId: string | null; // client duy nhất được báo media:ended
 }
 
 // Client → Server
@@ -53,6 +70,22 @@ export const ClientEvents = {
     CHAT_SEND: 'chat:send',
     ROLE_GRANT: 'role:grant',
     ROLE_REVOKE: 'role:revoke',
+    // Playlist
+    PLAYLIST_ADD: 'playlist:add',
+    PLAYLIST_REMOVE: 'playlist:remove',
+    PLAYLIST_REORDER: 'playlist:reorder',
+    PLAYLIST_NEXT: 'playlist:next',
+    PLAYLIST_PREV: 'playlist:prev',
+    PLAYLIST_JUMP: 'playlist:jump',
+    MEDIA_ENDED: 'media:ended', // CHỈ leader gửi
+    // Chặn cá nhân
+    CHAT_BLOCK: 'chat:block',
+    CHAT_UNBLOCK: 'chat:unblock',
+    // Moderation (HOST/COHOST)
+    MEMBER_BAN: 'member:ban',
+    MEMBER_UNBAN: 'member:unban',
+    MEMBER_MUTE: 'member:mute',
+    MEMBER_UNMUTE: 'member:unmute',
 } as const;
 
 // Server → Client
@@ -64,5 +97,9 @@ export const ServerEvents = {
     CHAT_MESSAGE: 'chat:message',
     ROLE_UPDATED: 'role:updated',
     ROOM_CLOSED: 'room:closed',
+    PLAYLIST_UPDATED: 'playlist:updated', // {items, currentIndex, leaderUserId}
+    BLOCKS_UPDATED: 'blocks:updated', // {blockedUserIds} — chỉ gửi cho chính người chặn
+    MEMBER_MODERATED: 'member:moderated', // {userId, isBanned?, isMuted?}
+    ROOM_KICKED: 'room:kicked', // gửi cho người bị ban trước khi disconnect
     ERROR: 'error',
 } as const;

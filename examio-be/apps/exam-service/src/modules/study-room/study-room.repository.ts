@@ -30,6 +30,14 @@ export class StudyRoomRepository extends BaseRepository<StudyRoom> {
         return this.prisma.studyRoomMember;
     }
 
+    private get playlistModel() {
+        return this.prisma.studyRoomPlaylistItem;
+    }
+
+    private get blockModel() {
+        return this.prisma.studyRoomChatBlock;
+    }
+
     async findByInviteCode(inviteCode: string): Promise<StudyRoom | null> {
         return this.model.findUnique({ where: { inviteCode } });
     }
@@ -115,7 +123,13 @@ export class StudyRoomRepository extends BaseRepository<StudyRoom> {
     async createWithHost(
         data: Omit<
             StudyRoom,
-            'createdAt' | 'updatedAt' | 'createdBy' | 'updatedBy'
+            | 'createdAt'
+            | 'updatedAt'
+            | 'createdBy'
+            | 'updatedBy'
+            | 'accessType'
+            | 'whitelist'
+            | 'playlistAddPermission'
         >,
         hostUserId: string
     ): Promise<any> {
@@ -160,8 +174,22 @@ export class StudyRoomRepository extends BaseRepository<StudyRoom> {
         await this.invalidateMemberCache(studyRoomId, userId);
     }
 
+    // Đếm cho sức chứa — KHÔNG tính member bị ban (họ không chiếm chỗ).
     async countMembers(studyRoomId: string): Promise<number> {
-        return this.memberModel.count({ where: { studyRoomId } });
+        return this.memberModel.count({
+            where: { studyRoomId, isBanned: false },
+        });
+    }
+
+    // Danh sách member gọn (userId/role/joinedAt) theo thứ tự vào — dùng bầu leader.
+    async listMembersLite(studyRoomId: string): Promise<
+        { userId: string; role: number; joinedAt: Date }[]
+    > {
+        return this.memberModel.findMany({
+            where: { studyRoomId },
+            orderBy: { joinedAt: 'asc' },
+            select: { userId: true, role: true, joinedAt: true },
+        });
     }
 
     async setMemberRole(
@@ -200,5 +228,119 @@ export class StudyRoomRepository extends BaseRepository<StudyRoom> {
             orderBy: { totalFocusSeconds: 'desc' },
             include: { user: { select: MEMBER_USER_SELECT } },
         });
+    }
+
+    async setBanned(
+        studyRoomId: string,
+        userId: string,
+        isBanned: boolean
+    ): Promise<void> {
+        await this.memberModel.updateMany({
+            where: { studyRoomId, userId },
+            data: { isBanned },
+        });
+        await this.invalidateMemberCache(studyRoomId, userId);
+    }
+
+    async setMuted(
+        studyRoomId: string,
+        userId: string,
+        isMuted: boolean
+    ): Promise<void> {
+        await this.memberModel.updateMany({
+            where: { studyRoomId, userId },
+            data: { isMuted },
+        });
+        await this.invalidateMemberCache(studyRoomId, userId);
+    }
+
+    // Playlist -----------------------------------------------------------------
+    async listPlaylist(studyRoomId: string): Promise<any[]> {
+        return this.playlistModel.findMany({
+            where: { studyRoomId },
+            orderBy: { order: 'asc' },
+        });
+    }
+
+    async addPlaylistItem(data: {
+        studyRoomId: string;
+        url: string;
+        kind: number;
+        title?: string | null;
+        addedByUserId: string;
+    }): Promise<any> {
+        const last = await this.playlistModel.findFirst({
+            where: { studyRoomId: data.studyRoomId },
+            orderBy: { order: 'desc' },
+            select: { order: true },
+        });
+        const order = (last?.order ?? -1) + 1;
+        return this.playlistModel.create({
+            data: { ...data, title: data.title ?? null, order },
+        });
+    }
+
+    async removePlaylistItem(
+        studyRoomId: string,
+        itemId: string
+    ): Promise<void> {
+        await this.playlistModel.deleteMany({
+            where: { id: itemId, studyRoomId },
+        });
+    }
+
+    // Gán lại order theo thứ tự itemIds (chỉ những item thuộc phòng).
+    async reorderPlaylist(
+        studyRoomId: string,
+        itemIds: string[]
+    ): Promise<void> {
+        await this.prisma.$transaction(
+            itemIds.map((id, index) =>
+                this.playlistModel.updateMany({
+                    where: { id, studyRoomId },
+                    data: { order: index },
+                })
+            )
+        );
+    }
+
+    // Chặn cá nhân -------------------------------------------------------------
+    async addBlock(
+        studyRoomId: string,
+        blockerId: string,
+        blockedId: string
+    ): Promise<void> {
+        await this.blockModel.upsert({
+            where: {
+                studyRoomId_blockerId_blockedId: {
+                    studyRoomId,
+                    blockerId,
+                    blockedId,
+                },
+            },
+            update: {},
+            create: { studyRoomId, blockerId, blockedId },
+        });
+    }
+
+    async removeBlock(
+        studyRoomId: string,
+        blockerId: string,
+        blockedId: string
+    ): Promise<void> {
+        await this.blockModel.deleteMany({
+            where: { studyRoomId, blockerId, blockedId },
+        });
+    }
+
+    async listBlockedIds(
+        studyRoomId: string,
+        blockerId: string
+    ): Promise<string[]> {
+        const rows = await this.blockModel.findMany({
+            where: { studyRoomId, blockerId },
+            select: { blockedId: true },
+        });
+        return rows.map((r) => r.blockedId);
     }
 }

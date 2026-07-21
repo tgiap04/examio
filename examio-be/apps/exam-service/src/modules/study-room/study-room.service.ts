@@ -9,7 +9,7 @@ import { GenerateIdService } from '@examio/common';
 import { User, StudyRoomMember } from '@prisma/client';
 import { randomInt } from 'crypto';
 import { StudyRoomRepository } from './study-room.repository';
-import { StudyRoomRole } from './study-room.constants';
+import { StudyRoomRole, AccessType } from './study-room.constants';
 import { CreateStudyRoomDto, UpdateStudyRoomDto } from './dto/study-room.dto';
 import { StudyRoomBroadcaster } from './study-room-broadcaster.service';
 
@@ -30,13 +30,10 @@ export class StudyRoomService {
         throw new ConflictException('Không tạo được mã mời, thử lại sau');
     }
 
-    // inviteCode chỉ dành cho COHOST+ — REST và WS phải cùng luật, không được drift.
-    private redactInviteCode<T extends { inviteCode?: string | null }>(
-        room: T,
-        canSee: boolean
-    ): T {
+    // inviteCode + whitelist chỉ dành cho COHOST+ — REST và WS phải cùng luật, không drift.
+    private redactSensitive<T extends object>(room: T, canSee: boolean): T {
         if (canSee) return room;
-        const { inviteCode: _hidden, ...rest } = room as any;
+        const { inviteCode: _c, whitelist: _w, ...rest } = room as any;
         return rest as T;
     }
 
@@ -63,9 +60,9 @@ export class StudyRoomService {
 
     async getMyRooms(user: User) {
         const rooms = await this.repo.findMine(user.id);
-        // Trong list chỉ host thấy mã mời; co-host lấy qua detail/snapshot.
+        // Trong list chỉ host thấy mã mời/whitelist; co-host lấy qua detail/snapshot.
         return rooms.map((r: any) =>
-            this.redactInviteCode(r, r.hostId === user.id)
+            this.redactSensitive(r, r.hostId === user.id)
         );
     }
 
@@ -90,7 +87,7 @@ export class StudyRoomService {
         const member = await this.assertRole(id, user.id);
         const room = await this.repo.findByIdWithMembers(id);
         if (!room) throw new NotFoundException('Phòng không tồn tại');
-        return this.redactInviteCode(room, member.role >= StudyRoomRole.COHOST);
+        return this.redactSensitive(room, member.role >= StudyRoomRole.COHOST);
     }
 
     async updateRoom(id: string, user: User, dto: UpdateStudyRoomDto) {
@@ -112,16 +109,49 @@ export class StudyRoomService {
         return { success: true };
     }
 
+    // Vào phòng bằng mã mời (không cần biết roomId trước).
     async joinByCode(user: User, inviteCode: string) {
         const room = await this.repo.findByInviteCode(inviteCode);
         if (!room) throw new NotFoundException('Mã mời không hợp lệ');
-        if (!room.isActive) {
-            throw new ForbiddenException('Phòng đang đóng');
+        return this.applyJoin(user, room, true);
+    }
+
+    // Vào phòng bằng roomId — dùng cho public/whitelist; code thì cần inviteCode khớp.
+    async joinById(user: User, roomId: string, inviteCode?: string) {
+        const room = await this.repo.findRoom(roomId);
+        if (!room) throw new NotFoundException('Phòng không tồn tại');
+        const codeVerified =
+            room.accessType === AccessType.CODE &&
+            !!inviteCode &&
+            inviteCode === room.inviteCode;
+        return this.applyJoin(user, room, codeVerified);
+    }
+
+    // Áp luật vào phòng theo accessType + chặn banned. codeVerified = đã xác thực mã.
+    private async applyJoin(user: User, room: any, codeVerified: boolean) {
+        if (!room.isActive) throw new ForbiddenException('Phòng đang đóng');
+
+        const existing = await this.repo.findMember(room.id, user.id);
+        if (existing?.isBanned) {
+            throw new ForbiddenException('Bạn đã bị cấm khỏi phòng này');
         }
 
-        // Đã là member → idempotent, trả về phòng luôn.
-        const existing = await this.repo.findMember(room.id, user.id);
+        // Chưa là member → kiểm quyền vào. Biết mã (codeVerified) thì luôn được vào,
+        // bất kể accessType; ngoài ra tuỳ mode: PUBLIC cho mọi user auth, WHITELIST theo list.
         if (!existing) {
+            const allowed =
+                codeVerified ||
+                room.accessType === AccessType.PUBLIC ||
+                (room.accessType === AccessType.WHITELIST &&
+                    (room.whitelist ?? []).includes(user.id));
+            if (!allowed) {
+                if (room.accessType === AccessType.WHITELIST) {
+                    throw new ForbiddenException(
+                        'Bạn không nằm trong danh sách được phép vào phòng'
+                    );
+                }
+                throw new ForbiddenException('Phòng yêu cầu mã mời hợp lệ');
+            }
             const count = await this.repo.countMembers(room.id);
             if (count >= room.maxParticipants) {
                 throw new ConflictException('Phòng đã đầy');
@@ -131,7 +161,7 @@ export class StudyRoomService {
 
         const detail = await this.repo.findByIdWithMembers(room.id);
         const role = existing?.role ?? StudyRoomRole.MEMBER;
-        return this.redactInviteCode(detail, role >= StudyRoomRole.COHOST);
+        return this.redactSensitive(detail, role >= StudyRoomRole.COHOST);
     }
 
     async leaveRoom(id: string, user: User) {
