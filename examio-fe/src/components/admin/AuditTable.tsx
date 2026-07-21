@@ -87,7 +87,7 @@ export function AuditTable({
       from: defaultDateRange?.[0],
       to: defaultDateRange?.[1],
       page,
-      pageSize: pageSize,
+      pageSize,
     }),
     [defaultAction, defaultAdminId, defaultDateRange, page, pageSize],
   );

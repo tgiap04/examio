@@ -68,7 +68,7 @@ export function UserTable({ onAction }: UserTableProps) {
       from: filters.dateRange?.[0],
       to: filters.dateRange?.[1],
       page,
-      pageSize: pageSize,
+      pageSize,
     }),
     [debouncedSearch, filters, page, pageSize],
   );

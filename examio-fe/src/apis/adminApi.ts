@@ -1,5 +1,7 @@
 import { api } from "@/apis/api";
 
+import { env } from "@/lib/env";
+
 // ==================== Types ====================
 
 export interface UserRow {
@@ -182,8 +184,6 @@ export async function postLogTicketApi(
   const response = await api.post(`/admin/logs/ticket`, { service });
   return response.data;
 }
-
-import { env } from "@/lib/env";
 
 export function streamLogsUrl(service: string, ticket: string): string {
   // env.apiUrl already includes /api/v1 (e.g. "/api/v1" or "http://localhost:3000/api/v1")

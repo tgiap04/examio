@@ -364,8 +364,8 @@ export function TestGenerator() {
                           <div className="grid gap-2 sm:grid-cols-2">
                             {q.options.map((opt: string, optIdx: number) => {
                               const isCorrect = answerIndex === optIdx;
-                              const hasPrefix = /^[A-D]\s*[\.\)\:]\s+/.test(opt);
-                              const displayText = hasPrefix ? opt.replace(/^[A-D]\s*[\.\)\:]\s+/, "") : opt;
+                              const hasPrefix = /^[A-D]\s*[.):]\s+/.test(opt);
+                              const displayText = hasPrefix ? opt.replace(/^[A-D]\s*[.):]\s+/, "") : opt;
 
                               return (
                                 <div

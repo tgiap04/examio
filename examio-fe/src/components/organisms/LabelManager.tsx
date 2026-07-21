@@ -659,7 +659,7 @@ export function LabelManager({ quizSetId, onLabelChange }: LabelManagerProps) {
                             <span className="flex-1 min-w-0 mt-3">
                               <RichTextViewer
                                 content={quizOptionToText(option).replace(
-                                  /^[A-D][\.\)\:\s]+/i,
+                                  /^[A-D][.):\s]+/i,
                                   "",
                                 )}
                               />

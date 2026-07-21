@@ -9,7 +9,7 @@ export function normalizeReturnPath(path?: string | null) {
   }
 
   const trimmed = path.trim();
-  if (!trimmed || trimmed.includes("\\") || /[\x00-\x1f\x7f]/.test(trimmed)) {
+  if (!trimmed || trimmed.includes("\\") || /[\x00-\x1F\x7F]/.test(trimmed)) {
     return DEFAULT_RETURN_PATH;
   }
 
