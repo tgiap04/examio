@@ -17,6 +17,9 @@ export type CreateStudyRoomPayload = {
 
 export type UpdateStudyRoomPayload = Partial<CreateStudyRoomPayload> & {
   isActive?: boolean;
+  accessType?: number;
+  whitelist?: string[];
+  playlistAddPermission?: number;
 };
 
 export async function createStudyRoomApi(payload: CreateStudyRoomPayload) {
@@ -31,6 +34,12 @@ export async function getMyStudyRoomsApi() {
 
 export async function joinStudyRoomByCodeApi(inviteCode: string) {
   const res = await api.post("/studyrooms/join", { inviteCode });
+  return res.data as RoomSnapshot["room"] & { members?: unknown[] };
+}
+
+// Vào phòng bằng id: public/whitelist không cần mã; code truyền inviteCode.
+export async function joinStudyRoomByIdApi(id: string, inviteCode?: string) {
+  const res = await api.post(`/studyrooms/${id}/join`, { inviteCode });
   return res.data as RoomSnapshot["room"] & { members?: unknown[] };
 }
 

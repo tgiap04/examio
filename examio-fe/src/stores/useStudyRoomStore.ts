@@ -3,6 +3,7 @@ import {
   createStudyRoomApi,
   getMyStudyRoomsApi,
   joinStudyRoomByCodeApi,
+  joinStudyRoomByIdApi,
   updateStudyRoomApi,
   deleteStudyRoomApi,
   leaveStudyRoomApi,
@@ -13,6 +14,7 @@ import { storeCache, CacheTTL } from "@/lib/storeCache";
 import {
   ChatMessage,
   MediaState,
+  PlaylistState,
   PomodoroConfig,
   RoomSnapshot,
   RosterEntry,
@@ -20,6 +22,12 @@ import {
   StudyRoomSummary,
   TimerState,
 } from "@/types/studyRoom";
+
+const EMPTY_PLAYLIST: PlaylistState = {
+  items: [],
+  currentIndex: 0,
+  leaderUserId: null,
+};
 
 const MY_ROOMS_KEY = "study-rooms:mine";
 
@@ -37,6 +45,8 @@ interface StudyRoomStore {
   media: MediaState | null;
   roster: RosterEntry[];
   chat: ChatMessage[];
+  playlist: PlaylistState;
+  myBlocks: string[];
   myRole: number;
   connState: ConnState;
 
@@ -46,6 +56,7 @@ interface StudyRoomStore {
   updateRoom: (id: string, p: UpdateStudyRoomPayload) => Promise<boolean>;
   deleteRoom: (id: string) => Promise<boolean>;
   joinByCode: (code: string) => Promise<string | null>; // trả về roomId
+  joinById: (id: string, inviteCode?: string) => Promise<string | null>;
   leaveRoom: (id: string) => Promise<boolean>;
 
   // Socket-driven mutations (gọi bởi useStudyRoomSocket)
@@ -60,8 +71,41 @@ interface StudyRoomStore {
   }) => void;
   appendChat: (message: ChatMessage) => void;
   applyRole: (userId: string, role: number, isSelf?: boolean) => void;
+  applyPlaylist: (playlist: PlaylistState) => void;
+  applyBlocks: (blockedUserIds: string[]) => void;
+  applyModerated: (p: {
+    userId: string;
+    isBanned?: boolean;
+    isMuted?: boolean;
+  }) => void;
   resetRoom: () => void;
 }
+
+// Selector: chat đã lọc bỏ tin của người mình đã chặn.
+// Cache theo tham chiếu [chat, myBlocks] để trả về CÙNG một mảng khi hai
+// nguồn này không đổi — nếu không, filter cấp mảng mới mỗi lần gọi sẽ phá
+// cơ chế bailout bằng Object.is của Zustand và khiến ChatPanel re-render trên
+// mọi tick store (presence/media/timer…).
+let visibleChatCache: {
+  chat: ChatMessage[];
+  blocks: string[];
+  result: ChatMessage[];
+} | null = null;
+
+export const selectVisibleChat = (s: StudyRoomStore): ChatMessage[] => {
+  if (s.myBlocks.length === 0) return s.chat;
+  if (
+    visibleChatCache &&
+    visibleChatCache.chat === s.chat &&
+    visibleChatCache.blocks === s.myBlocks
+  ) {
+    return visibleChatCache.result;
+  }
+  const blocked = new Set(s.myBlocks);
+  const result = s.chat.filter((m) => !blocked.has(m.userId));
+  visibleChatCache = { chat: s.chat, blocks: s.myBlocks, result };
+  return result;
+};
 
 export const useStudyRoomStore = create<StudyRoomStore>((set, get) => ({
   myRooms: [],
@@ -72,6 +116,8 @@ export const useStudyRoomStore = create<StudyRoomStore>((set, get) => ({
   media: null,
   roster: [],
   chat: [],
+  playlist: EMPTY_PLAYLIST,
+  myBlocks: [],
   myRole: 0,
   connState: "idle",
 
@@ -124,6 +170,13 @@ export const useStudyRoomStore = create<StudyRoomStore>((set, get) => ({
     return room?.id ?? null;
   },
 
+  async joinById(id, inviteCode) {
+    const room = await joinStudyRoomByIdApi(id, inviteCode);
+    storeCache.invalidate(MY_ROOMS_KEY);
+    await get().fetchMyRooms({ forceRefresh: true });
+    return room?.id ?? id;
+  },
+
   async leaveRoom(id) {
     await leaveStudyRoomApi(id);
     storeCache.invalidate(MY_ROOMS_KEY);
@@ -143,6 +196,8 @@ export const useStudyRoomStore = create<StudyRoomStore>((set, get) => ({
       media: s.media,
       roster: s.roster,
       chat: s.chat,
+      playlist: s.playlist ?? EMPTY_PLAYLIST,
+      myBlocks: s.myBlocks ?? [],
       myRole: s.myRole,
     });
   },
@@ -173,6 +228,8 @@ export const useStudyRoomStore = create<StudyRoomStore>((set, get) => ({
               role: 0,
               online: p.online,
               status: p.status,
+              isBanned: false,
+              isMuted: false,
             },
           ];
       return { roster };
@@ -190,6 +247,34 @@ export const useStudyRoomStore = create<StudyRoomStore>((set, get) => ({
     }));
   },
 
+  applyPlaylist(playlist) {
+    set({ playlist });
+  },
+
+  applyBlocks(blockedUserIds) {
+    set({ myBlocks: blockedUserIds });
+  },
+
+  applyModerated(p) {
+    set((st) => {
+      // Bị ban → rơi khỏi roster; các thay đổi khác cập nhật cờ tại chỗ.
+      if (p.isBanned) {
+        return { roster: st.roster.filter((r) => r.userId !== p.userId) };
+      }
+      return {
+        roster: st.roster.map((r) =>
+          r.userId === p.userId
+            ? {
+                ...r,
+                isBanned: p.isBanned ?? r.isBanned,
+                isMuted: p.isMuted ?? r.isMuted,
+              }
+            : r,
+        ),
+      };
+    });
+  },
+
   resetRoom() {
     set({
       room: null,
@@ -198,6 +283,8 @@ export const useStudyRoomStore = create<StudyRoomStore>((set, get) => ({
       media: null,
       roster: [],
       chat: [],
+      playlist: EMPTY_PLAYLIST,
+      myBlocks: [],
       myRole: 0,
       connState: "idle",
     });
