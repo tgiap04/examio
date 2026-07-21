@@ -1,9 +1,69 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-07-19
+last_updated: 2026-07-21
 ---
 
 # Examio Project Changelog
+
+## [Unreleased] — 2026-07-21
+
+### Added
+
+#### Study Room — Playlist, Access & Moderation (web only)
+
+Extends the Study-Together Room feature (2026-07-19 entry below) with an ordered YouTube playlist, room access control, and host/cohost moderation. **Web only** — no `examio-app` counterpart.
+
+**Backend — `exam-service`**
+
+- **Playlist**: `StudyRoomPlaylistItem` (Prisma, `libs/database/src/models/study-room.prisma`) — ordered list of videos or YouTube playlists (`kind` 0 VIDEO / 1 PLAYLIST) per room, persisted (unlike timer/media/chat, which stay Redis-only). Auto-advance is **server-authoritative but keyless** — no YouTube Data API call; instead a designated "leader client" (one member, tracked in Redis `PlaylistState.leaderUserId`) reports `media:ended` and the server advances `currentIndex` and broadcasts the new item to everyone else
+  - Host/cohost can skip via `playlist:next`/`playlist:prev`/`playlist:jump`; add/remove/reorder gated by `StudyRoom.playlistAddPermission` (0 EVERYONE / 1 COHOST+ / 2 HOST)
+- **Access control**: `StudyRoom.accessType` (0 PUBLIC — any authenticated user / 1 CODE — 6-digit invite / 2 WHITELIST — explicit `userId[]` in `StudyRoom.whitelist`), mirroring the existing `ExamSession` access model. New `POST /api/v1/studyrooms/:id/join` (`StudyRoomController.joinById`) alongside the existing code-based `POST /studyrooms/join`
+- **Moderation**: `StudyRoomMember.isBanned` (kick + block rejoin) and `.isMuted` (room-wide chat block), settable only by host/cohost, enforced server-side on every mutating socket event. Ban propagates cross-instance via the existing `@socket.io/redis-adapter` (`RedisIoAdapter`) so a banned member is kicked from whichever `exam-service` instance holds their socket
+- **Personal chat block**: `StudyRoomChatBlock` (Prisma) — per-user, room-scoped block list; server persists the block and also tells the blocking client's UI to filter (`blocks:updated` sends `{blockedUserIds}` to the blocker only — not broadcast room-wide)
+- WS event contract (`study-room.events.ts`, still the source of truth) gains:
+  - client → server: `playlist:add`, `playlist:remove`, `playlist:reorder`, `playlist:next`, `playlist:prev`, `playlist:jump`, `media:ended` (leader-only), `chat:block`, `chat:unblock`, `member:ban`, `member:unban`, `member:mute`, `member:unmute`
+  - server → client: `playlist:updated` (`{items, currentIndex, leaderUserId}`), `blocks:updated` (`{blockedUserIds}`, blocker-only), `member:moderated` (`{userId, isBanned?, isMuted?}`), `room:kicked` (sent to the banned member just before forced disconnect)
+
+**Database — Prisma schema additions** (`libs/database/src/models/study-room.prisma`)
+
+```prisma
+model StudyRoom {
+  // ...existing fields...
+  accessType            Int      @default(0) // 0 PUBLIC | 1 CODE | 2 WHITELIST
+  whitelist             String[] @default([])
+  playlistAddPermission Int      @default(1) // 0 EVERYONE | 1 COHOST+ | 2 HOST
+  playlist StudyRoomPlaylistItem[]
+}
+
+model StudyRoomMember {
+  // ...existing fields...
+  isBanned Boolean @default(false)
+  isMuted  Boolean @default(false)
+}
+
+model StudyRoomPlaylistItem {
+  id, studyRoomId, url, kind (0 VIDEO/1 PLAYLIST), title, addedByUserId, order, createdAt
+}
+
+model StudyRoomChatBlock {
+  id, studyRoomId, blockerId, blockedId, createdAt
+  @@unique([studyRoomId, blockerId, blockedId])
+}
+```
+
+- **Migration status**: applied directly to the dev database via `psql` for local verification; **no migration file has been generated/committed yet** (same gap flagged for the base Study-Together Room models on 2026-07-19 — `StudyRoom`/`StudyRoomMember` still have no migration either). Block before any environment that runs `prisma:deploy` gating.
+
+**Frontend (`examio-fe`)**
+
+- Playlist UI, access-mode room settings, and moderation controls (ban/mute, personal chat block) wired into the existing `/k/study-room` / `/k/study-room/:id` pages, `useStudyRoomSocket.ts`, `useStudyRoomStore.ts`, and `src/types/studyRoom.ts` (mirrors the event contract above)
+
+**Key Design Decisions**
+
+- No YouTube Data API dependency for auto-advance — a single "leader" client (not the server) detects end-of-media via the YouTube IFrame API and reports it; the server treats that report as authoritative and fans the advance out to the room. Keeps the feature within the existing Redis-authoritative live-state model instead of adding a new external API integration
+- Access modes reuse the `ExamSession` PUBLIC/CODE/WHITELIST shape rather than inventing a new access model
+- Moderation state (`isBanned`/`isMuted`) lives on `StudyRoomMember`, not Redis, so bans/mutes survive reconnects and Redis flushes; propagation to other room instances rides the same `@socket.io/redis-adapter` already in place for broadcasts
+
+---
 
 ## [Unreleased] — 2026-07-19
 

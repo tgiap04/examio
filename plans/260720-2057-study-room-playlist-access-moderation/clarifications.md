@@ -10,3 +10,28 @@
 - Q: Auto-advance kích hoạt thế nào (không có YouTube Data API)? → A: DUYỆT — "leader client" (host nếu online, không thì member online lâu nhất) bắn onEnded → media:ended → server tăng index. Fallback bầu lại leader + cohost next tay
 - Q: Item playlist là YT-playlist thì xử lý sao? → A: DUYỆT — coi như 1 đơn vị, player chạy hết nội bộ rồi sang item kế; sync bên trong best-effort (bung từng video cần YouTube Data API — chưa làm)
 - Q: Chặn cá nhân lọc ở đâu? → A: DUYỆT — list lưu server, LỌC ở client (tin vẫn broadcast, ẩn khi nhận theo myBlocks trong snapshot); "chặn thật không gửi" để sau
+
+## Session 2026-07-21 (Post-Review Fixes & Follow-ups)
+
+### Critical Fixes Applied
+- H1: Leader re-election broadcast on member leave/disconnect; prevents playlist stall if leader drops.
+
+### Medium Fixes Applied
+- M1: Playlist item cap `MAX_PLAYLIST_ITEMS=100` enforced server-side.
+- M2: `media:ended` throttled via `allowControl` guard (prevent client race).
+- M3: `countMembers` excludes banned members (banned don't occupy room capacity).
+
+### Low Fixes Applied
+- L1: Remove item no longer triggers playback restart if item is BEFORE current index (only index shifts).
+
+### Follow-ups (TODO)
+- M4: Gateway-level auth tests (role-hierarchy, canAddPlaylist, onJoin-banned) — logic verified by code review; blocked by test harness availability.
+- L2: Reorder duplicate-id artifact (visual; minor priority).
+- L3: Whitelist validation — accept non-existent userIds (should validate at upsert; low priority UX).
+
+### Pre-existing Issues (Unrelated)
+- Admin-stats.service.spec.ts date-dependent failure (pre-existing; not part of this feature).
+
+### Migration Strategy
+- Dev DB: SQL applied directly via psql (isolated, additive); no migration file generated (project deploys via `db push`).
+- Pre-existing blocker: money float→int migration blocks `db push --accept-data-loss=false`. Generate proper Prisma migration file before clean-slate deploy.

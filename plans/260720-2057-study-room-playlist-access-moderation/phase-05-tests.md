@@ -1,4 +1,4 @@
-# Phase 05 — Tests + Manual E2E
+# Phase 05 — Tests + Manual E2E (DONE)
 
 ## Context Links
 - Plan: [plan.md](plan.md) · Depends: phase-03 (BE), phase-04 (FE)

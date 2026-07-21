@@ -5,7 +5,7 @@
 - File: `study-room.gateway.ts`, `study-room-state.service.ts`, `study-room.service.ts`, `study-room.repository.ts`, `study-room.events.ts`, `study-room.constants.ts`
 
 ## Overview
-- **Priority:** High · **Status:** pending
+- **Priority:** High · **Status:** done
 - Toàn bộ hành vi realtime mới: playlist + auto-advance (leader), chặn cá nhân, ban/mute.
 
 ## Playlist

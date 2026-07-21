@@ -6,7 +6,7 @@
 - Design-system wrappers `@/components/antd/*`; style FE (nháy kép, 2 spaces)
 
 ## Overview
-- **Priority:** High · **Status:** pending
+- **Priority:** High · **Status:** done
 - Mirror contract mới vào FE + dựng UI cho 5 mảng.
 
 ## Implementation Steps

@@ -1,0 +1,33 @@
+{
+  "task": "Study Room enhancement: YouTube playlist (DB-persisted, leader-driven auto-advance), access modes (public-auth/code/whitelist), configurable playlist-add permission, personal chat block (server-persisted, client-filtered), and host/cohost moderation (ban + room-wide mute).",
+  "mode": "code",
+  "acceptanceCriteria": [
+    "exam-service and gateway-service compile green after adding playlist service, access modes, moderation and block handlers",
+    "study-room test suite passes (playlist service leader/advance/index, joinById access modes PUBLIC/CODE/WHITELIST + banned)",
+    "joinById enforces access modes server-side: PUBLIC allows any authenticated user, WHITELIST checks userId, CODE requires matching invite code, banned members are rejected in every mode",
+    "playlist auto-advance is guarded: only the elected leader's media:ended advances, and only when the reported index matches the current index",
+    "playlist index stays in bounds across remove/reorder/jump/step and removing an item before the current one shifts index without restarting playback",
+    "moderation is authorized server-side: cohost cannot ban/mute a host or another cohost and cannot self-ban (target.role >= caller.role denied); mute rejects chat server-side and membership cache is invalidated",
+    "frontend builds green (tsc + vite) with playlist panel, access settings, block and moderation UI wired to the new WS contract"
+  ],
+  "touchpoints": [
+    "examio-be/apps/exam-service/src/modules/study-room/study-room-playlist.service.ts",
+    "examio-be/apps/exam-service/src/modules/study-room/study-room.gateway.ts",
+    "examio-be/apps/exam-service/src/modules/study-room/study-room.service.ts",
+    "examio-be/apps/exam-service/src/modules/study-room/study-room.repository.ts",
+    "examio-be/libs/database/src/models/study-room.prisma",
+    "examio-be/apps/gateway-service/src/controllers/study-room-proxy.controller.ts",
+    "examio-fe/src/pages/study-room/components/playlist-panel.tsx",
+    "examio-fe/src/hooks/useStudyRoomSocket.ts"
+  ],
+  "blastRadius": [
+    "Additive Prisma changes (new columns with defaults + two new tables) applied to dev DB via psql; no existing model altered",
+    "study-room WS event contract extended (new events); existing events unchanged",
+    "join flow reworked (joinByCode + new joinById) but code-join behavior preserved",
+    "No change to other exam-service modules or other services beyond the gateway proxy route"
+  ],
+  "contracts": [
+    "WS events: examio-be/.../study-room/study-room.events.ts mirrored by examio-fe/src/types/studyRoom.ts",
+    "REST /studyrooms/:id/join proxied by gateway to exam-service"
+  ]
+}
