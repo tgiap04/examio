@@ -1,5 +1,11 @@
 import { memo, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/antd/card";
+import { toast } from "@/components/antd/toast";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/antd/tooltip";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useStudyRoomStore } from "@/stores/useStudyRoomStore";
 import { PlaylistItemKind, StudyRoomRole } from "@/types/studyRoom";
@@ -45,6 +51,8 @@ function YouTubeSyncPlayerBase({ actions, myRole }: Props) {
   const myId = String(useAuthStore.getState().user?.id ?? "");
   const canControl = myRole >= StudyRoomRole.COHOST;
   const current = playlist.items[playlist.currentIndex];
+  // Có nguồn để phát khi playlist có bài HOẶC đã có media url đang phát chung.
+  const hasSource = playlist.items.length > 0 || !!media?.url;
   const hostRef = useRef<HTMLDivElement>(null);
   const playerRef = useRef<YTPlayer | null>(null);
   const isSyncing = useRef(false);
@@ -69,9 +77,15 @@ function YouTubeSyncPlayerBase({ actions, myRole }: Props) {
       playerRef.current = new w.YT.Player(hostRef.current, {
         width: "100%",
         height: "100%",
-        playerVars: canControlRef.current
-          ? { rel: 0, playsinline: 1 }
-          : { controls: 0, disablekb: 1, rel: 0, playsinline: 1 },
+        // origin: YouTube khuyến nghị luôn khai báo origin cho IFrame API.
+        playerVars: {
+          origin: window.location.origin,
+          rel: 0,
+          playsinline: 1,
+          ...(canControlRef.current
+            ? {}
+            : { controls: 0, disablekb: 1 }),
+        },
         events: {
           onReady: () => setReady(true),
           // Chỉ leader báo media:ended để server tự sang bài kế (tránh N client cùng gửi).
@@ -79,6 +93,22 @@ function YouTubeSyncPlayerBase({ actions, myRole }: Props) {
             if (e.data !== YT_ENDED) return;
             const pl = useStudyRoomStore.getState().playlist;
             if (myId && myId === pl.leaderUserId) {
+              actions.mediaEnded(pl.currentIndex);
+            }
+          },
+          // Video không phát được (thường gặp: bản quyền chặn phát nhúng → mã 101/150,
+          // hoặc video bị gỡ/riêng tư → 100, tham số sai → 2, lỗi player → 5).
+          // Không để user chỉ thấy màn lỗi khó hiểu của YouTube: báo rõ + leader tự
+          // chuyển sang bài kế (dùng lại đường advance của media:ended).
+          onError: (e: { data: number }) => {
+            const embedBlocked = e.data === 101 || e.data === 150;
+            toast.error(
+              embedBlocked
+                ? "Video này bị chặn phát nhúng (bản quyền). Hãy thử link khác."
+                : "Không phát được video này. Hãy thử link khác.",
+            );
+            const pl = useStudyRoomStore.getState().playlist;
+            if (myId && myId === pl.leaderUserId && pl.items.length > 1) {
               actions.mediaEnded(pl.currentIndex);
             }
           },
@@ -158,16 +188,28 @@ function YouTubeSyncPlayerBase({ actions, myRole }: Props) {
             )}
           </>
         ) : (
-          <button
-            type="button"
-            onClick={() => setJoined(true)}
-            className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-on-dark"
-          >
-            <span className="text-4xl">▶</span>
-            <span className="text-sm font-medium">
-              Bấm để tham gia phát chung
-            </span>
-          </button>
+          <Tooltip>
+            <TooltipTrigger>
+              <button
+                type="button"
+                aria-disabled={!hasSource}
+                onClick={() => hasSource && setJoined(true)}
+                className={`absolute inset-0 flex flex-col items-center justify-center gap-2 text-on-dark ${
+                  hasSource ? "" : "cursor-not-allowed opacity-60"
+                }`}
+              >
+                <span className="text-4xl">▶</span>
+                <span className="text-sm font-medium">
+                  {hasSource
+                    ? "Bấm để tham gia phát chung"
+                    : "Chưa có video để phát"}
+                </span>
+              </button>
+            </TooltipTrigger>
+            {!hasSource && (
+              <TooltipContent>Cần có link video để phát chung</TooltipContent>
+            )}
+          </Tooltip>
         )}
       </div>
       {canControl && <MediaControlBar actions={actions} media={media} />}
