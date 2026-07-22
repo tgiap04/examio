@@ -1,5 +1,4 @@
 import {
-    OnGatewayConnection,
     OnGatewayDisconnect,
     OnGatewayInit,
     SubscribeMessage,
@@ -62,7 +61,7 @@ function wsAllowedOrigins(): string[] {
     cors: { origin: wsAllowedOrigins(), credentials: true },
 })
 export class StudyRoomGateway
-    implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, OnModuleDestroy
+    implements OnGatewayInit, OnGatewayDisconnect, OnModuleDestroy
 {
     @WebSocketServer() server: Server;
     private focusSweep?: NodeJS.Timeout;
@@ -94,34 +93,32 @@ export class StudyRoomGateway
 
     afterInit(server: Server) {
         this.broadcaster.setServer(server);
+        // Auth + page-gate CHẠY TRONG handshake (socket.io middleware), không phải
+        // handleConnection. Lý do: handleConnection là async nhưng socket.io KHÔNG
+        // await nó — client nhận 'connect' và emit room:join ngay, nên nếu set
+        // socket.data.user trong handleConnection thì onJoin có thể chạy trước khi
+        // auth xong (socket.data.user=undefined → assertRole ném → FORBIDDEN giả).
+        // Middleware bảo đảm socket.data.user đã sẵn sàng TRƯỚC mọi message handler.
+        server.use(async (socket: Socket, next: (err?: Error) => void) => {
+            try {
+                const user = await this.auth.authenticate(socket);
+                if (!user) return next(new Error('UNAUTHORIZED'));
+                if (!(await this.isStudyRoomPageEnabled())) {
+                    return next(new Error('PAGE_DISABLED'));
+                }
+                socket.data.user = user;
+                socket.data.rooms = new Set<string>();
+                next();
+            } catch {
+                next(new Error('UNAUTHORIZED'));
+            }
+        });
         // Flush focus tích luỹ về DB định kỳ (an toàn nếu client rớt mà không disconnect sạch).
         this.focusSweep = setInterval(() => void this.flushAllFocus(), 5 * 60_000);
     }
 
     onModuleDestroy() {
         if (this.focusSweep) clearInterval(this.focusSweep);
-    }
-
-    async handleConnection(socket: Socket) {
-        const user = await this.auth.authenticate(socket);
-        if (!user) {
-            socket.emit(ServerEvents.ERROR, {
-                code: 'UNAUTHORIZED',
-                message: 'Token không hợp lệ',
-            });
-            socket.disconnect(true);
-            return;
-        }
-        if (!(await this.isStudyRoomPageEnabled())) {
-            socket.emit(ServerEvents.ERROR, {
-                code: 'PAGE_DISABLED',
-                message: 'Tính năng đang tạm khoá',
-            });
-            socket.disconnect(true);
-            return;
-        }
-        socket.data.user = user;
-        socket.data.rooms = new Set<string>();
     }
 
     async handleDisconnect(socket: Socket) {
