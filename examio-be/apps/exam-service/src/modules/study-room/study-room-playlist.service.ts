@@ -4,11 +4,13 @@ import { StudyRoomStateService } from './study-room-state.service';
 import { StudyRoomRole, PlaylistItemKind } from './study-room.constants';
 import { PlaylistItem, PlaylistState, MediaState } from './study-room.events';
 
-// URL là YT-playlist thuần (playlist?list=... hoặc có list= mà không có v=) → PLAYLIST.
+// Có tham số list= → phát dạng PLAYLIST (kể cả radio RD<videoId> và playlist PL...,
+// đều nhúng được). NGOẠI TRỪ "My Mix" cá nhân (list=RDMM...) — YouTube không cho
+// nhúng (IFrame API trả error 150) → phát item như VIDEO lẻ (dùng v= nếu có).
 function detectKind(url: string): number {
-    const hasList = /[?&]list=/.test(url);
-    const hasVideo = /[?&]v=[\w-]{11}/.test(url) || /youtu\.be\/[\w-]{11}/.test(url);
-    return hasList && !hasVideo ? PlaylistItemKind.PLAYLIST : PlaylistItemKind.VIDEO;
+    const listId = url.match(/[?&]list=([\w-]+)/)?.[1];
+    const embeddableList = !!listId && !listId.startsWith('RDMM');
+    return embeddableList ? PlaylistItemKind.PLAYLIST : PlaylistItemKind.VIDEO;
 }
 
 const toItem = (r: any): PlaylistItem => ({
