@@ -21,7 +21,11 @@ import {
     MAX_PLAYLIST_ITEMS,
 } from './study-room.constants';
 import { PomodoroConfig } from './study-room-pomodoro';
-import { isValidYouTubeUrl, sanitizeChat } from './study-room.util';
+import {
+    isValidYouTubeUrl,
+    isUnplayableRadioMix,
+    sanitizeChat,
+} from './study-room.util';
 import { StudyRoomPlaylistService } from './study-room-playlist.service';
 import {
     WS_STUDY_PATH,
@@ -361,6 +365,14 @@ export class StudyRoomGateway
             socket.emit(ServerEvents.ERROR, {
                 code: 'VALIDATION',
                 message: 'Link YouTube không hợp lệ',
+            });
+            return;
+        }
+        if (isUnplayableRadioMix(url)) {
+            socket.emit(ServerEvents.ERROR, {
+                code: 'VALIDATION',
+                message:
+                    "Link 'Mix' cá nhân của YouTube không phát được. Hãy dùng link video hoặc link playlist (playlist?list=PL...).",
             });
             return;
         }

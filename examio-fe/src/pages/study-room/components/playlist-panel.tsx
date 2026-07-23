@@ -55,6 +55,16 @@ function PlaylistPanelBase({ actions, myRole }: Props) {
   const add = () => {
     const trimmed = url.trim();
     const parsed = parseYouTube(trimmed);
+    // Chỉ "My Mix" cá nhân (list=RDMM...) là không nhúng được; nếu không kèm video
+    // thì không còn gì phát → chặn rõ ràng. Radio theo video (RD<videoId>) và
+    // playlist (PL...) đều nhúng được nên vẫn thêm bình thường.
+    const isMyMix = parsed.listId?.startsWith("RDMM") ?? false;
+    if (isMyMix && !parsed.videoId) {
+      toast.error(
+        "Link 'Mix' cá nhân của YouTube không phát được. Hãy dùng link video hoặc link playlist (playlist?list=PL...).",
+      );
+      return;
+    }
     if (!trimmed || (!parsed.videoId && !parsed.listId)) {
       toast.error("Link YouTube không hợp lệ");
       return;

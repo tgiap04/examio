@@ -1,30 +1,19 @@
-import { useState } from "react";
-import { Pause, Play, RotateCcw, RotateCw, Youtube } from "lucide-react";
+import { Pause, Play, RotateCcw, RotateCw } from "lucide-react";
 import { Button } from "@/components/antd/button";
-import { Input } from "@/components/antd/input";
-import { toast } from "@/components/antd/toast";
+import { useStudyRoomStore } from "@/stores/useStudyRoomStore";
 import { MediaState } from "@/types/studyRoom";
 import { StudyRoomActions } from "./study-room-actions";
-import { parseYouTube } from "./youtube-loader";
 
 interface Props {
   actions: StudyRoomActions;
   media: MediaState | null;
 }
 
-// Thanh điều khiển media (chỉ hiện với host/co-host).
+// Thanh điều khiển phát (chỉ host/co-host). Nguồn phát DUY NHẤT là danh sách phát:
+// thêm link ở PlaylistPanel, thanh này chỉ điều khiển item đang phát.
 export function MediaControlBar({ actions, media }: Props) {
-  const [url, setUrl] = useState("");
-
-  const applyUrl = () => {
-    const trimmed = url.trim();
-    if (!trimmed || !parseYouTube(trimmed).videoId) {
-      toast.error("Link YouTube không hợp lệ");
-      return;
-    }
-    actions.setMedia(trimmed);
-    setUrl("");
-  };
+  const playlist = useStudyRoomStore((s) => s.playlist);
+  const hasItems = playlist.items.length > 0;
 
   const seekBy = (delta: number) => {
     if (!media?.url) return;
@@ -34,20 +23,15 @@ export function MediaControlBar({ actions, media }: Props) {
     actions.seekMedia(Math.max(0, base + delta));
   };
 
+  // Bấm phát: đang có media thì tiếp tục; chưa có thì phát item đang chọn trong
+  // danh sách (mặc định item đầu ở currentIndex = 0).
+  const onPlay = () => {
+    if (media?.url) actions.playMedia();
+    else if (hasItems) actions.playlistJump(playlist.currentIndex);
+  };
+
   return (
     <div className="flex flex-wrap items-center gap-2 border-t border-hairline p-3">
-      <div className="flex min-w-0 flex-1 items-center gap-2">
-        <Youtube className="h-4 w-4 shrink-0 text-muted-foreground" />
-        <Input
-          placeholder="Dán link YouTube để phát chung"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          onPressEnter={applyUrl}
-        />
-      </div>
-      <Button variant="secondary" onClick={applyUrl}>
-        Đặt video
-      </Button>
       <Button
         variant="outline"
         size="icon"
@@ -72,12 +56,15 @@ export function MediaControlBar({ actions, media }: Props) {
         <Button
           variant="outline"
           size="icon"
-          onClick={actions.playMedia}
-          disabled={!media?.url}
+          onClick={onPlay}
+          disabled={!media?.url && !hasItems}
         >
           <Play className="h-4 w-4" />
         </Button>
       )}
+      <span className="ml-1 text-xs text-muted-foreground">
+        Thêm link ở danh sách phát bên dưới
+      </span>
     </div>
   );
 }

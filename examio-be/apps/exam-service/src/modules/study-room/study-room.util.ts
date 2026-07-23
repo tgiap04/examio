@@ -15,6 +15,18 @@ export function isValidYouTubeUrl(url: string): boolean {
     return YT_PATTERNS.some((re) => re.test(url.trim()));
 }
 
+// "My Mix" cá nhân của YouTube (list=RDMM...) là danh sách tự sinh theo tài khoản —
+// IFrame API KHÔNG nhúng được (error 150). Radio theo video (RD<videoId>) và playlist
+// (PL...) thì nhúng được nên KHÔNG chặn. Chỉ chặn khi My Mix đứng một mình (không kèm
+// video id) — vì lúc đó không còn gì phát nhúng được.
+export function isUnplayableRadioMix(url: string): boolean {
+    if (typeof url !== 'string') return false;
+    const hasVideo =
+        /[?&]v=[\w-]{11}/.test(url) || /youtu\.be\/[\w-]{11}/.test(url);
+    const listId = url.match(/[?&]list=([\w-]+)/)?.[1];
+    return !!listId?.startsWith('RDMM') && !hasVideo;
+}
+
 export function sanitizeChat(content: unknown): string | null {
     if (typeof content !== 'string') return null;
     const trimmed = content.trim();
