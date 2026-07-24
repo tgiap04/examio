@@ -496,7 +496,7 @@ export class AuthController {
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiOperation({ summary: 'Đăng nhập Google One Tap' })
     async googleOneTap(
-        @Body() body: { credential: string },
+        @Body() body: { credential: string; utmSource?: string },
         @Req() request: Request,
         @Res({ passthrough: true }) res: ExpressResponse
     ) {
@@ -506,7 +506,8 @@ export class AuthController {
         };
         const result = await this.authService.googleOneTapLogin(
             body.credential,
-            deviceInfo
+            deviceInfo,
+            body.utmSource
         );
 
         const cookieConfig = getCookieConfig({

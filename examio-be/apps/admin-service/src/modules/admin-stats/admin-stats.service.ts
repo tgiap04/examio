@@ -8,6 +8,7 @@ import {
     SeriesPoint,
     SeriesRange,
     SeriesResponse,
+    SourceBreakdownResponse,
     fillDateGaps,
     rangeToDays,
     startOfNDaysAgo,
@@ -127,6 +128,56 @@ export class AdminStatsService {
             range,
             bucket: 'day',
             points: filled,
+        };
+
+        await this.redis.set(cacheKey, response, SERIES_CACHE_TTL_SECONDS);
+        return response;
+    }
+
+    /**
+     * Quy kết nguồn đăng ký: đếm User theo utm_source (null/'' → 'direct'),
+     * giảm dần, top 20. range không truyền → toàn thời gian; có range → lọc theo
+     * createdAt. Cache 5' theo mẫu series.
+     */
+    async getSourceBreakdown(
+        range?: SeriesRange
+    ): Promise<SourceBreakdownResponse> {
+        const cacheKey = `admin:stats:sources:${range ?? 'all'}`;
+        const cached =
+            await this.redis.get<SourceBreakdownResponse>(cacheKey);
+        if (cached) {
+            return cached;
+        }
+
+        const rows = range
+            ? await this.prisma.$queryRaw<
+                  { source: string; count: bigint }[]
+              >`
+                    SELECT COALESCE(NULLIF("utmSource", ''), 'direct') AS source,
+                           COUNT(*) AS count
+                    FROM "User"
+                    WHERE "createdAt" >= ${startOfNDaysAgo(rangeToDays(range))}
+                    GROUP BY 1
+                    ORDER BY count DESC
+                    LIMIT 20
+                `
+            : await this.prisma.$queryRaw<
+                  { source: string; count: bigint }[]
+              >`
+                    SELECT COALESCE(NULLIF("utmSource", ''), 'direct') AS source,
+                           COUNT(*) AS count
+                    FROM "User"
+                    GROUP BY 1
+                    ORDER BY count DESC
+                    LIMIT 20
+                `;
+
+        const response: SourceBreakdownResponse = {
+            range: range ?? 'all',
+            rows: rows.map((r) => ({
+                source: r.source,
+                count: Number(r.count),
+            })),
         };
 
         await this.redis.set(cacheKey, response, SERIES_CACHE_TTL_SECONDS);

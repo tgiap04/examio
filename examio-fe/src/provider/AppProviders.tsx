@@ -1,9 +1,10 @@
-import type { PropsWithChildren } from "react";
+import { useEffect, type PropsWithChildren } from "react";
 import { ConfigProvider, theme as antTheme } from "antd";
 import { ThemeProvider, useThemeContext } from "@/provider/ThemeProvider";
 import { ToastProvider } from "@/components/antd/toast";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import { AuthSyncBootstrap } from "@/components/auth/AuthSyncBootstrap";
+import { captureUtmSource } from "@/lib/utmSource";
 
 function AntdConfigProvider({ children }: PropsWithChildren) {
   const { isDarkMode } = useThemeContext();
@@ -45,6 +46,11 @@ function AntdConfigProvider({ children }: PropsWithChildren) {
 }
 
 export function AppProviders({ children }: PropsWithChildren) {
+  // Bắt utm_source first-touch ngay lần load đầu (giữ tới khi đăng ký).
+  useEffect(() => {
+    captureUtmSource();
+  }, []);
+
   return (
     <ThemeProvider
         attribute="class"

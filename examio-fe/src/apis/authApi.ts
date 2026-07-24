@@ -13,6 +13,7 @@ export interface CredentialsSignup {
   password: string;
   email: string;
   turnstileToken?: string;
+  utmSource?: string;
 }
 
 export interface LoginResponse {

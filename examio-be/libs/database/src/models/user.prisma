@@ -11,6 +11,7 @@ model User {
     isBanned   Boolean  @default(false)
     deletedAt  DateTime?
     password   String?
+    utmSource  String?  @db.VarChar(64) // nguồn first-touch lúc đăng ký (utm_source); null = direct
     createdAt  DateTime @default(now())
     updatedAt  DateTime @updatedAt
     createdBy  String?
@@ -40,6 +41,8 @@ model User {
     savedWordFamilies         UserSavedWordFamily[]
     hostedStudyRooms          StudyRoom[]
     studyRoomMemberships      StudyRoomMember[]
+
+    @@index([utmSource])
 }
 
 // Subscription tiers: 0=none, 1=basic, 2=advanced, 3=vip

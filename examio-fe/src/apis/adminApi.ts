@@ -50,6 +50,16 @@ export interface SeriesResponse {
   points: SeriesPoint[];
 }
 
+export interface SourceBreakdownRow {
+  source: string;
+  count: number;
+}
+
+export interface SourceBreakdownResponse {
+  range: string;
+  rows: SourceBreakdownRow[];
+}
+
 export interface ListUsersQuery {
   search?: string;
   isAdmin?: boolean;
@@ -151,6 +161,13 @@ export async function getOverviewApi(): Promise<OverviewKpi> {
 export async function getSeriesApi(name: string, range: "7d" | "30d" | "90d") {
   const response = await api.get(`/admin/series/${name}`, { params: { range } });
   return response.data as SeriesResponse;
+}
+
+export async function getSourcesApi(range?: "7d" | "30d" | "90d") {
+  const response = await api.get("/admin/sources", {
+    params: range ? { range } : {},
+  });
+  return response.data as SourceBreakdownResponse;
 }
 
 export async function refundApi(body: RefundBody) {
