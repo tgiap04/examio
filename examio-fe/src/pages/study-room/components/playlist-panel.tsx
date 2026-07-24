@@ -43,14 +43,16 @@ function canAddToPlaylist(perm: number | undefined, myRole: number): boolean {
 function PlaylistPanelBase({ actions, myRole }: Props) {
   const playlist = useStudyRoomStore((s) => s.playlist);
   const room = useStudyRoomStore((s) => s.room);
-  const roster = useStudyRoomStore((s) => s.roster);
+  // Chỉ lấy TÊN leader (string) thay vì subscribe cả roster — để heartbeat của
+  // thành viên (đổi roster mỗi ~30s) không khiến list playlist re-render vô ích.
+  const leaderName = useStudyRoomStore(
+    (s) => s.roster.find((r) => r.userId === s.playlist.leaderUserId)?.name ?? null,
+  );
   const [url, setUrl] = useState("");
   const dragIndex = useRef<number | null>(null);
 
   const canControl = myRole >= StudyRoomRole.COHOST;
   const canAdd = canAddToPlaylist(room?.playlistAddPermission, myRole);
-  const leaderName =
-    roster.find((r) => r.userId === playlist.leaderUserId)?.name ?? null;
 
   const add = () => {
     const trimmed = url.trim();

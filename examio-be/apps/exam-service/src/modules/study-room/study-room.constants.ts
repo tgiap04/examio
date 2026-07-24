@@ -47,6 +47,7 @@ export const StudyRoomKeys = {
     presenceSet: (roomId: string) => `studyroom:${roomId}:presence-set`,
     focusDirtySet: () => 'studyroom:focus-dirty',
     playback: (roomId: string) => `studyroom:${roomId}:playback`, // {currentIndex}
+    playlistCount: (roomId: string) => `studyroom:${roomId}:plcount`, // số item playlist (gate onLeave)
 };
 
 export const FOCUS_CREDIT_SECONDS = 30; // cộng mỗi nhịp heartbeat hợp lệ

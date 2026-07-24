@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useMemo } from "react";
 import { io, Socket } from "socket.io-client";
 import { env } from "@/lib/env";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -135,7 +135,10 @@ export function useStudyRoomSocket(
     socketRef.current?.emit(event, { ...payload });
   }, []);
 
-  return {
+  // Ổn định identity của `actions` (emit ổn định, chỉ đổi theo roomId) — nếu để
+  // object literal mới mỗi render sẽ phá memo() của mọi panel nhận prop này.
+  return useMemo(
+    () => ({
     startTimer: () => emit(ClientEvents.TIMER_START, { roomId }),
     pauseTimer: () => emit(ClientEvents.TIMER_PAUSE, { roomId }),
     resetTimer: () => emit(ClientEvents.TIMER_RESET, { roomId }),
@@ -179,5 +182,7 @@ export function useStudyRoomSocket(
       emit(ClientEvents.MEMBER_MUTE, { roomId, userId }),
     unmuteUser: (userId: string) =>
       emit(ClientEvents.MEMBER_UNMUTE, { roomId, userId }),
-  };
+    }),
+    [emit, roomId],
+  );
 }

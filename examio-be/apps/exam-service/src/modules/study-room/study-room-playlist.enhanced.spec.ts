@@ -13,6 +13,7 @@ function make() {
     };
     const state: any = {
         getPresenceMap: jest.fn().mockResolvedValue({}),
+        setPlaylistCount: jest.fn().mockResolvedValue(undefined),
         getCurrentIndex: jest.fn(async () => currentIndex),
         setCurrentIndex: jest.fn(async (_r: string, i: number) => {
             currentIndex = i;
@@ -203,7 +204,7 @@ describe('StudyRoomPlaylistService.add — kind detection', () => {
         expect(call.kind).toBe(PlaylistItemKind.PLAYLIST);
     });
 
-    it('phát hiện VIDEO khi có list= cùng v= (list bị ignore)', async () => {
+    it('phát hiện PLAYLIST khi có list=PL... nhúng được (kể cả kèm v=)', async () => {
         const { service, repo } = make();
         repo.listPlaylist.mockResolvedValue([]);
         await service.add(
@@ -212,7 +213,20 @@ describe('StudyRoomPlaylistService.add — kind detection', () => {
             'u1'
         );
         const call = repo.addPlaylistItem.mock.calls[0][0];
-        expect(call.kind).toBe(PlaylistItemKind.VIDEO); // v= có → VIDEO
+        // list=PL... nhúng được → PLAYLIST (theo detectKind sau fix "My Mix").
+        expect(call.kind).toBe(PlaylistItemKind.PLAYLIST);
+    });
+
+    it('phát hiện VIDEO khi "My Mix" cá nhân (list=RDMM...) không nhúng được', async () => {
+        const { service, repo } = make();
+        repo.listPlaylist.mockResolvedValue([]);
+        await service.add(
+            'r1',
+            'https://youtube.com/watch?v=dQw4w9WgXcQ&list=RDMMabcdef',
+            'u1'
+        );
+        const call = repo.addPlaylistItem.mock.calls[0][0];
+        expect(call.kind).toBe(PlaylistItemKind.VIDEO); // RDMM → VIDEO lẻ
     });
 
     it('trim URL trước lưu', async () => {

@@ -212,27 +212,36 @@ export const useStudyRoomStore = create<StudyRoomStore>((set, get) => ({
 
   applyPresence(p) {
     set((st) => {
-      const exists = st.roster.some((r) => r.userId === p.userId);
-      const roster = exists
-        ? st.roster.map((r) =>
+      const current = st.roster.find((r) => r.userId === p.userId);
+      if (current) {
+        // Không đổi online/status → giữ nguyên tham chiếu roster để mọi
+        // subscriber bỏ qua re-render (heartbeat 30s/lần thường không đổi gì).
+        if (current.online === p.online && current.status === p.status) {
+          return st;
+        }
+        return {
+          roster: st.roster.map((r) =>
             r.userId === p.userId
               ? { ...r, online: p.online, status: p.status }
               : r,
-          )
-        : [
-            ...st.roster,
-            {
-              userId: p.userId,
-              name: null,
-              avatar: null,
-              role: 0,
-              online: p.online,
-              status: p.status,
-              isBanned: false,
-              isMuted: false,
-            },
-          ];
-      return { roster };
+          ),
+        };
+      }
+      return {
+        roster: [
+          ...st.roster,
+          {
+            userId: p.userId,
+            name: null,
+            avatar: null,
+            role: 0,
+            online: p.online,
+            status: p.status,
+            isBanned: false,
+            isMuted: false,
+          },
+        ],
+      };
     });
   },
 
