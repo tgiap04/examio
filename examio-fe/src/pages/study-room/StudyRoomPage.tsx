@@ -9,9 +9,7 @@ import { StudyRoomRole } from "@/types/studyRoom";
 import { PomodoroPanel } from "./components/pomodoro-panel";
 import { YouTubeSyncPlayer } from "./components/youtube-sync-player";
 import { PlaylistPanel } from "./components/playlist-panel";
-import { RosterPanel } from "./components/roster-panel";
-import { ChatPanel } from "./components/chat-panel";
-import { LeaderboardPanel } from "./components/leaderboard-panel";
+import { RoomRailTabs } from "./components/room-rail-tabs";
 import { RoomSettingsMenu } from "./components/room-settings-menu";
 
 const CONN_LABEL: Record<string, string> = {
@@ -81,8 +79,8 @@ export default function StudyRoomPage() {
   const connected = connState === "connected";
 
   return (
-    <div className="flex min-h-screen flex-col bg-canvas">
-      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-hairline bg-surface-card/90 px-4 py-3 backdrop-blur">
+    <div className="flex h-[100dvh] flex-col bg-canvas">
+      <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-3 border-b border-hairline bg-surface-card/90 px-4 backdrop-blur">
         <Button
           variant="ghost"
           size="icon"
@@ -91,7 +89,7 @@ export default function StudyRoomPage() {
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate font-display text-lg text-ink">
+          <h1 className="truncate font-display text-lg leading-tight text-ink">
             {room?.name ?? "Phòng học"}
           </h1>
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -116,23 +114,20 @@ export default function StudyRoomPage() {
         )}
       </header>
 
-      <main className="mx-auto grid w-full max-w-7xl flex-1 grid-cols-1 gap-4 p-4 lg:grid-cols-12">
-        <section className="flex flex-col gap-4 lg:col-span-5">
-          <div className="sticky top-[68px] z-10 lg:static">
-            <YouTubeSyncPlayer actions={actions} myRole={myRole} />
-          </div>
+      {/* Bố cục xem chung: video là trung tâm (cột trái lớn), cột phải gọn cho
+          hẹn giờ + trò chuyện/thành viên/xếp hạng để người dùng tập trung. */}
+      <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-4 overflow-y-auto p-4 lg:flex-row lg:overflow-hidden">
+        <section className="flex min-w-0 flex-1 flex-col gap-4 lg:overflow-y-auto lg:pr-1">
+          <YouTubeSyncPlayer actions={actions} myRole={myRole} />
           <PlaylistPanel actions={actions} myRole={myRole} />
+        </section>
+
+        <aside className="flex w-full shrink-0 flex-col gap-4 lg:h-full lg:w-[360px] xl:w-[400px]">
           <PomodoroPanel actions={actions} myRole={myRole} />
-        </section>
-
-        <section className="flex flex-col gap-4 lg:col-span-4">
-          <RosterPanel actions={actions} myRole={myRole} />
-          {id && <LeaderboardPanel roomId={id} />}
-        </section>
-
-        <section className="flex min-h-[24rem] flex-col lg:col-span-3">
-          <ChatPanel actions={actions} />
-        </section>
+          {id && (
+            <RoomRailTabs actions={actions} myRole={myRole} roomId={id} />
+          )}
+        </aside>
       </main>
     </div>
   );
