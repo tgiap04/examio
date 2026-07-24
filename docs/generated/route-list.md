@@ -607,6 +607,8 @@ All admin routes are proxied from gateway via `/api/v1/admin/*` to `admin-servic
 |--------|------|-------------|------|
 | GET | /api/v1/admin/bootstrap | Application bootstrap + health | Admin |
 | GET | /api/v1/admin/stats | KPI overview + time-series data | Admin |
+| GET | /api/v1/admin/stats/sources | Signup breakdown by `utm_source` (null → "direct"), top 20 desc | Admin |
+| GET | /api/v1/admin/sources | Alias of `/admin/stats/sources` for FE dashboard | Admin |
 | GET | /api/v1/admin/users | User list with pagination + filters | Admin |
 | PUT | /api/v1/admin/users/:id/ban | Ban user (`isBanned = true`) | Admin |
 | PUT | /api/v1/admin/users/:id/unban | Unban user (`isBanned = false`) | Admin |

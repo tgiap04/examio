@@ -105,6 +105,7 @@ erDiagram
 | isVerified | Boolean | NOT NULL, DEFAULT false | Email verified flag |
 | deletedAt | DateTime | NULL | Soft-delete timestamp; null = active |
 | password | String | NULL | Bcrypt hash (null for OAuth-only) |
+| utmSource | String(64) | NULL, INDEX | First-touch signup attribution source (`utm_source`); null = direct |
 | createdAt | DateTime | NOT NULL | Account creation |
 | updatedAt | DateTime | NOT NULL | Last update |
 

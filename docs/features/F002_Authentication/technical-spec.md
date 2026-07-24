@@ -76,6 +76,12 @@ send verification email with OTP
 **Applies to:** LoginPage mount
 **Rule:** Authenticated users are redirected away from login and register pages to `/k/my-materials`.
 
+### BR-006_UtmSourceAttribution
+**Linked FR:** FR-002, FR-003
+**Source:** `examio-fe/src/lib/utmSource.ts`, `examio-be/apps/auth-service/src/utils/utm-source.util.ts`
+**Applies to:** `POST /api/v1/auth/register`, Google OAuth callback, Google One Tap
+**Rule:** FE captures `?utm_source` first-touch on initial page load (persisted client-side until signup, never overwritten). Value is sanitized (`[\w.-]+` pattern; `direct` rejected as a spoofed value) and stamped onto `User.utmSource` at email/OAuth/One-Tap signup. OAuth flows carry it through the `state` param. Null/missing → `utmSource` stays null (attributed as "direct" by admin reporting).
+
 ### Decision Logic
 
 
@@ -246,7 +252,7 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 | Entity | Table | Key Columns | Purpose |
 |--------|-------|-------------|---------|
-| User | `User` | id, email, username, password, isVerified | Read on login; created on register |
+| User | `User` | id, email, username, password, isVerified, utmSource | Read on login; created on register. `utmSource` stamped from first-touch capture at signup |
 | UserSession | `UserSession` | id, userId, sessionId, refreshToken, deviceId, isActive, expiresAt | Created on login; validated on every protected request |
 | VerifyAccountCode | `VerifyAccountCode` | id, userId, code, expiresAt | Created on register; consumed on US011 |
 | ResetPasswordCode | `ResetPasswordCode` | id, userId, code, expiresAt | Created on US006; consumed on US007 |
@@ -283,6 +289,8 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 | AuthSyncBootstrap | `examio-fe/src/components/auth/AuthSyncBootstrap.tsx` | OAuth callback token sync on frontend |
 | LoginPage | `examio-fe/src/pages/LoginPage.tsx` | Login form UI |
 | RegisterPage | `examio-fe/src/pages/RegisterPage.tsx` | Registration form with Turnstile |
+| utmSource lib | `examio-fe/src/lib/utmSource.ts` | Captures/persists first-touch `utm_source`; encodes into OAuth `state` |
+| utm-source util | `examio-be/apps/auth-service/src/utils/utm-source.util.ts` | Sanitizes `utm_source`; extracts from OAuth `state` |
 
 ## Unresolved Questions
 

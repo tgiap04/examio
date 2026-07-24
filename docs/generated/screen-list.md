@@ -43,7 +43,7 @@
 | SCR031 | ExamSessionPage | atomic | ~1 | ExamRoomDetailTemplate |
 | SCR032 | ExamQuizPage | atomic | ~3 | Exam attempt, questions, cheating detection |
 | SCR033 | AdminOverviewPage | atomic | ~2 | KPI cards, quick stats, recent activity |
-| SCR034 | AdminStatsPage | atomic | ~4 | Time-series charts, user/exam/finance metrics |
+| SCR034 | AdminStatsPage | atomic | ~5 | Time-series charts, user/exam/finance metrics, signup-source breakdown |
 | SCR035 | AdminUsersPage | atomic | ~3 | User table with ban/unban/delete/grant actions |
 | SCR036 | AdminFinancePage | atomic | ~3 | Refund history, credit adjustments, tier changes |
 | SCR037 | AdminLogsPage | atomic | ~2 | Log viewer with SSE stream + polling fallback |
@@ -1106,7 +1106,7 @@ Admin dashboard home page. Displays KPI cards (total users, active sessions, rev
 
 ### Description
 
-Detailed analytics page with time-series charts for user growth, exam sessions, revenue, and AI usage. Date range picker and export functionality.
+Detailed analytics page with time-series charts for user growth, exam sessions, revenue, and AI usage. Date range picker, export functionality, and a signup-source ("Top nguồn") breakdown card.
 
 ### Components
 
@@ -1115,10 +1115,12 @@ Detailed analytics page with time-series charts for user growth, exam sessions, 
 | AdminTimeSeriesChart | atomic | Recharts time-series chart |
 | AdminDateRangePicker | atomic | Date range filter |
 | AdminStatsExport | atomic | CSV/JSON export |
+| SourceBreakdownChart | atomic | Signup breakdown by `utm_source` (null → "direct") |
 
 ### Routes
 
 - `GET /api/v1/admin/stats`
+- `GET /api/v1/admin/stats/sources` (+ alias `GET /api/v1/admin/sources`)
 
 ### Auth
 

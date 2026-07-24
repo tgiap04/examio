@@ -1,9 +1,23 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-07-21
+last_updated: 2026-07-24
 ---
 
 # Examio Project Changelog
+
+## [Unreleased] — 2026-07-24
+
+### Added
+
+#### UTM Signup Attribution (Admin Dashboard + Auth)
+
+Tracks first-touch `utm_source` for new signups and surfaces a breakdown on the admin stats dashboard.
+
+- **Database**: `User.utmSource String? @db.VarChar(64)` (indexed) — `libs/database/src/models/user.prisma`.
+- **Auth capture**: `RegisterDto.utmSource` (email signup); Google OAuth carries it through the `state` param; Google One Tap accepts it in the request body. Sanitized server-side (`sanitizeUtmSource` — whitelist charset, 64-char cap, rejects a spoofed literal `"direct"`) before being stamped on `User` at signup.
+- **FE capture**: `src/lib/utmSource.ts` grabs `?utm_source` on first page load and persists it client-side (first-touch only) until signup; encoded into the OAuth `state` for Google flows.
+- **Admin API**: `GET /admin/stats/sources` (canonical, `AdminStatsController`) + `GET /admin/sources` (FE-facing alias, `AdminStatsFeRoutesController`) — signup counts grouped by `utm_source` (null → `"direct"`), top 20 desc, optional date range.
+- **Admin UI**: new "Top nguồn" (`SourceBreakdownChart`) card on `AdminStatsPage` (SCR034).
 
 ## [Unreleased] — 2026-07-21
 
