@@ -30,6 +30,7 @@ import {
 // Local imports
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { sanitizeUtmSource } from './utils/utm-source.util';
 import { UserRepository } from './repositories/user.repository';
 import { UserSessionRepository } from './devices/repositories/user-session.repository';
 
@@ -145,6 +146,7 @@ export class AuthService {
 
     async register(registerDto: RegisterDto, deviceInfo?: DeviceInfo) {
         const { username, email, password } = registerDto;
+        const utmSource = sanitizeUtmSource(registerDto.utmSource);
         if (!username || !email || !password) {
             throw new BadRequestException('Thông tin đăng ký không hợp lệ');
         }
@@ -173,6 +175,7 @@ export class AuthService {
                         username,
                         email,
                         password: hashedPassword,
+                        utmSource,
                     },
                 });
 
@@ -574,7 +577,8 @@ export class AuthService {
         email: string,
         username: string,
         avatar?: string,
-        deviceInfo?: DeviceInfo
+        deviceInfo?: DeviceInfo,
+        utmSource?: string | null
     ) {
         let existingUser = await this.userRepository.findByEmail(email, false);
 
@@ -588,6 +592,8 @@ export class AuthService {
                         avatar,
                         isVerified: true,
                         password: null,
+                        // Chỉ gắn nguồn khi TẠO user mới (first-touch); đăng nhập lại không đụng.
+                        utmSource: sanitizeUtmSource(utmSource),
                     },
                 });
 
@@ -645,13 +651,27 @@ export class AuthService {
         };
     }
 
-    async googleLogin(user: any, deviceInfo?: DeviceInfo) {
+    async googleLogin(
+        user: any,
+        deviceInfo?: DeviceInfo,
+        utmSource?: string | null
+    ) {
         const { email, picture } = user;
         const username = email.split('@')[0];
-        return this.handleOAuthLogin(email, username, picture, deviceInfo);
+        return this.handleOAuthLogin(
+            email,
+            username,
+            picture,
+            deviceInfo,
+            utmSource
+        );
     }
 
-    async googleOneTapLogin(credential: string, deviceInfo?: DeviceInfo) {
+    async googleOneTapLogin(
+        credential: string,
+        deviceInfo?: DeviceInfo,
+        utmSource?: string | null
+    ) {
         const { OAuth2Client } = await import('google-auth-library');
         const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
         const ticket = await client.verifyIdToken({
@@ -664,7 +684,13 @@ export class AuthService {
         }
         const { email, picture, name } = payload;
         const username = name || email.split('@')[0];
-        return this.handleOAuthLogin(email, username, picture, deviceInfo);
+        return this.handleOAuthLogin(
+            email,
+            username,
+            picture,
+            deviceInfo,
+            utmSource
+        );
     }
 
 

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import {
   getOverviewApi,
   getSeriesApi,
+  getSourcesApi,
   listAuditApi,
   listUsersApi,
   OverviewKpi,
@@ -10,6 +11,7 @@ import {
   type ListUsersQuery,
   type AuditRow,
   type UserRow,
+  type SourceBreakdownResponse,
 } from "@/apis/adminApi";
 
 interface ResourceState<T> {
@@ -51,6 +53,8 @@ const ADMIN_LIST_CACHE_MS = 10 * 60 * 1000;
 interface AdminState {
   overview: ResourceState<OverviewKpi>;
   series: Record<string, ResourceState<SeriesResponse>>;
+  /** Signup-source breakdown, keyed by range ('all' | '7d' | '30d' | '90d'). */
+  sources: Record<string, ResourceState<SourceBreakdownResponse>>;
   users: ResourceState<PageEnvelope<UserRow>>;
   audit: ResourceState<PageEnvelope<AuditRow>>;
   /** Cached list of admin users for filter dropdowns. */
@@ -65,12 +69,14 @@ interface AdminState {
     range: "7d" | "30d" | "90d",
     force?: boolean,
   ) => Promise<void>;
+  fetchSources: (range?: "7d" | "30d" | "90d", force?: boolean) => Promise<void>;
   fetchUsers: (query: ListUsersQuery, force?: boolean) => Promise<void>;
   fetchAudit: (query: ListAuditQuery, force?: boolean) => Promise<void>;
   /** Fetch admin list for filter dropdowns with built-in caching. */
   fetchAdminList: () => Promise<UserRow[]>;
   invalidateOverview: () => void;
   invalidateSeries: (name?: string) => void;
+  invalidateSources: () => void;
   invalidateUsers: () => void;
   invalidateAudit: () => void;
 }
@@ -90,6 +96,7 @@ function queryKey(query: unknown): string {
 export const useAdminStore = create<AdminState>((set, get) => ({
   overview: empty<OverviewKpi>(),
   series: {},
+  sources: {},
   users: empty(),
   audit: empty(),
   adminList: null,
@@ -151,6 +158,46 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         series: {
           ...s.series,
           [compoundKey]: {
+            ...current,
+            loading: false,
+            error: (error as Error).message,
+          },
+        },
+      }));
+    }
+  },
+
+  fetchSources: async (range, force) => {
+    const key = range ?? "all";
+    const current = get().sources[key] ?? empty<SourceBreakdownResponse>();
+    if (!force && current.data && isFresh(current.lastFetched)) return;
+    if (current.loading) return;
+
+    set((s) => ({
+      sources: {
+        ...s.sources,
+        [key]: { ...current, loading: true, error: null },
+      },
+    }));
+    try {
+      const data = await getSourcesApi(range);
+      set((s) => ({
+        sources: {
+          ...s.sources,
+          [key]: {
+            data,
+            loading: false,
+            error: null,
+            lastFetched: Date.now(),
+            lastQueryKey: null,
+          },
+        },
+      }));
+    } catch (error) {
+      set((s) => ({
+        sources: {
+          ...s.sources,
+          [key]: {
             ...current,
             loading: false,
             error: (error as Error).message,
@@ -246,6 +293,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       });
       return { series: next };
     }),
+  invalidateSources: () => set(() => ({ sources: {} })),
   invalidateUsers: () =>
     set((s) => ({
       users: { ...s.users, data: null, lastFetched: null, lastQueryKey: null },

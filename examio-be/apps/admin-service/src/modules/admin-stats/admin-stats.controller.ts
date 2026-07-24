@@ -34,4 +34,15 @@ export class AdminStatsController {
     async getSeries(@Query() query: SeriesQueryDto) {
         return this.adminStatsService.getSeries(query.name, query.range);
     }
+
+    @Get('sources')
+    @ApiOperation({
+        summary:
+            'Signup attribution: user counts grouped by utm_source (null → "direct"), top 20 desc.',
+    })
+    async getSources(@Query('range') range?: '7d' | '30d' | '90d') {
+        return this.adminStatsService.getSourceBreakdown(
+            range && ['7d', '30d', '90d'].includes(range) ? range : undefined
+        );
+    }
 }

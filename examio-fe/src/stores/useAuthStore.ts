@@ -19,6 +19,7 @@ import {
 } from "@/apis/authApi";
 import { toast } from "@/components/antd/toast";
 import { clearRedirectBackTarget, getRedirectBackTarget, normalizeReturnPath } from "@/lib/authRedirect";
+import { clearUtmSource, encodeUtmState, getUtmSource } from "@/lib/utmSource";
 import { env } from "@/lib/env";
 
 interface AuthState {
@@ -111,8 +112,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   signup: async (credentials) => {
     set({ loading: true });
     try {
-      const response = await signupApi(credentials);
+      // Gắn nguồn first-touch (nếu có) để quy kết đăng ký.
+      const utmSource = getUtmSource() ?? undefined;
+      const response = await signupApi({ ...credentials, utmSource });
       if (response.success && response.token) {
+        clearUtmSource();
         set({
           user: response.user,
           isAuthenticated: true,
@@ -319,6 +323,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   loginWithGoogle: async () => {
     const redirectPath = getOAuthRedirectPath();
     const redirect = encodeURIComponent(redirectPath);
-    window.location.href = `${env.apiUrl}/auth/google?redirect=${redirect}`;
+    // Đưa utm_source vào OAuth `state` để quy kết user đăng ký qua Google
+    // (redirect vẫn đi qua cookie oauth_redirect như cũ — không đụng).
+    const utm = getUtmSource();
+    const stateParam = utm
+      ? `&state=${encodeURIComponent(encodeUtmState(utm))}`
+      : "";
+    // consume-once: utm đã nằm trong `state` gửi đi → xoá bản local để lần đăng
+    // ký sau (email/tài khoản khác cùng trình duyệt) không bị dính nguồn cũ.
+    if (utm) clearUtmSource();
+    window.location.href = `${env.apiUrl}/auth/google?redirect=${redirect}${stateParam}`;
   },
 }));

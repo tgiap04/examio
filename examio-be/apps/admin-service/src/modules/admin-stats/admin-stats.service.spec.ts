@@ -159,6 +159,56 @@ describe('AdminStatsService', () => {
         });
     });
 
+    describe('getSourceBreakdown', () => {
+        it('returns cached breakdown and skips the database', async () => {
+            const cached = {
+                range: 'all' as const,
+                rows: [{ source: 'unikorn', count: 3 }],
+            };
+            redis.get.mockResolvedValue(cached);
+
+            const result = await service.getSourceBreakdown();
+
+            expect(result).toEqual(cached);
+            expect(prisma.$queryRaw).not.toHaveBeenCalled();
+        });
+
+        it('maps bigint counts + caches all-time breakdown on miss', async () => {
+            redis.get.mockResolvedValue(null);
+            prisma.$queryRaw.mockResolvedValue([
+                { source: 'unikorn', count: BigInt(7) },
+                { source: 'direct', count: BigInt(4) },
+            ]);
+
+            const result = await service.getSourceBreakdown();
+
+            expect(result.range).toBe('all');
+            expect(result.rows).toEqual([
+                { source: 'unikorn', count: 7 },
+                { source: 'direct', count: 4 },
+            ]);
+            expect(redis.set).toHaveBeenCalledWith(
+                'admin:stats:sources:all',
+                result,
+                300
+            );
+        });
+
+        it('keys cache by range when a window is given', async () => {
+            redis.get.mockResolvedValue(null);
+            prisma.$queryRaw.mockResolvedValue([]);
+
+            const result = await service.getSourceBreakdown('30d');
+
+            expect(result.range).toBe('30d');
+            expect(redis.set).toHaveBeenCalledWith(
+                'admin:stats:sources:30d',
+                result,
+                300
+            );
+        });
+    });
+
     describe('invalidate', () => {
         it('deletes overview key', async () => {
             redis.del.mockResolvedValue(undefined);

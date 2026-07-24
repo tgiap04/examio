@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useAdminStore } from "@/stores/useAdminStore";
 import { KpiCard } from "@/components/admin/KpiCard";
 import { MiniChartCard } from "@/components/admin/MiniChartCard";
+import { SourceBreakdownChart } from "@/components/admin/SourceBreakdownChart";
 
 // IMPORTANT: select the entry by its stable `s.series[name]` reference.
 // `useSyncExternalStore` requires `getSnapshot` to return the SAME
@@ -10,6 +11,14 @@ import { MiniChartCard } from "@/components/admin/MiniChartCard";
 // builds a new object literal each call (e.g. `{ data, loading, error }`)
 // breaks that contract and triggers "Maximum update depth exceeded".
 const EMPTY_SERIES = {
+  data: null,
+  loading: false,
+  error: null,
+  lastFetched: null,
+  lastQueryKey: null,
+} as const;
+
+const EMPTY_SOURCES = {
   data: null,
   loading: false,
   error: null,
@@ -41,12 +50,15 @@ export default function AdminOverviewPage() {
   const signups = useAdminStore((s) => s.series["signups:7d"] ?? EMPTY_SERIES);
   const traffic = useAdminStore((s) => s.series["traffic:7d"] ?? EMPTY_SERIES);
   const revenue = useAdminStore((s) => s.series["revenue:7d"] ?? EMPTY_SERIES);
+  // Nguồn đăng ký toàn thời gian (key 'all').
+  const sources = useAdminStore((s) => s.sources.all ?? EMPTY_SOURCES);
 
   useEffect(() => {
     void useAdminStore.getState().fetchOverview();
     void useAdminStore.getState().fetchSeries("signups", "7d");
     void useAdminStore.getState().fetchSeries("traffic", "7d");
     void useAdminStore.getState().fetchSeries("revenue", "7d");
+    void useAdminStore.getState().fetchSources();
   }, []);
 
   const handleRetryOverview = () => {
@@ -60,6 +72,9 @@ export default function AdminOverviewPage() {
   };
   const handleRetryRevenue = () => {
     void useAdminStore.getState().fetchSeries("revenue", "7d", true);
+  };
+  const handleRetrySources = () => {
+    void useAdminStore.getState().fetchSources(undefined, true);
   };
 
   return (
@@ -127,6 +142,15 @@ export default function AdminOverviewPage() {
           onRetry={handleRetryRevenue}
         />
       </div>
+
+      <SourceBreakdownChart
+        title="Top nguồn đăng ký"
+        data={(sources.data?.rows ?? []).slice(0, 5)}
+        loading={sources.loading}
+        error={sources.error}
+        onRetry={handleRetrySources}
+        height={260}
+      />
     </div>
   );
 }

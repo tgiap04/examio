@@ -16,6 +16,12 @@ export const RegisterSchema = z.object({
         .min(8, { message: 'Password must be at least 8 characters long' })
         .max(100, { message: 'Password must not exceed 100 characters' }),
     turnstileToken: z.string().optional(),
+    utmSource: z
+        .string()
+        .trim()
+        .max(64)
+        .regex(/^[\w.-]+$/, { message: 'Invalid utm_source' })
+        .optional(),
 });
 
 export class RegisterDto extends createZodDto(RegisterSchema) {
@@ -42,4 +48,11 @@ export class RegisterDto extends createZodDto(RegisterSchema) {
         required: false,
     })
     turnstileToken?: string;
+
+    @ApiProperty({
+        description: 'utm_source first-touch để quy kết nguồn đăng ký',
+        required: false,
+        example: 'unikorn',
+    })
+    utmSource?: string;
 }

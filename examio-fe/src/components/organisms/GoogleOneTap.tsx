@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { api } from "@/apis/api";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { clearUtmSource, getUtmSource } from "@/lib/utmSource";
 
 declare global {
   interface Window {
@@ -55,11 +56,13 @@ export function GoogleOneTap() {
       // so it isn't prefixed twice (was producing /api/v1/api/v1/... → 404).
       const result = await api.post(`/auth/google/one-tap`, {
         credential: response.credential,
+        utmSource: getUtmSource() ?? undefined,
       });
       // SECURITY: the backend already set the httpOnly auth cookie on this
       // response; never persist result.data.token in localStorage. Reload so
       // the app re-hydrates auth state from the cookie.
       if (result.data?.token) {
+        clearUtmSource(); // consume-once: đã quy kết xong
         window.location.reload();
       }
     } catch (error) {
