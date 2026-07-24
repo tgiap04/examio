@@ -12,6 +12,7 @@ function make() {
     };
     const state: any = {
         getPresenceMap: jest.fn().mockResolvedValue({}),
+        setPlaylistCount: jest.fn().mockResolvedValue(undefined),
         getCurrentIndex: jest.fn(async () => currentIndex),
         setCurrentIndex: jest.fn(async (_r: string, i: number) => {
             currentIndex = i;
@@ -75,6 +76,24 @@ describe('StudyRoomPlaylistService.getState', () => {
         const s = await service.getState('r1');
         expect(s.currentIndex).toBe(1); // len-1
         expect(s.items).toHaveLength(2);
+    });
+
+    it('mirror số item sang Redis để onLeave khỏi soi DB', async () => {
+        const { service, repo, state } = make();
+        repo.listPlaylist.mockResolvedValue(items(3));
+        await service.getState('r1');
+        expect(state.setPlaylistCount).toHaveBeenCalledWith('r1', 3);
+    });
+
+    it('nhận sẵn members+presence → KHÔNG query lại listMembersLite/presence', async () => {
+        const { service, repo, state } = make();
+        repo.listPlaylist.mockResolvedValue(items(1));
+        const members = [{ userId: 'host', role: 2 }];
+        const presence = { host: 'studying' as const };
+        const s = await service.getState('r1', members, presence);
+        expect(repo.listMembersLite).not.toHaveBeenCalled();
+        expect(state.getPresenceMap).not.toHaveBeenCalled();
+        expect(s.leaderUserId).toBe('host'); // vẫn bầu leader đúng từ dữ liệu truyền vào
     });
 });
 

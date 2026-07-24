@@ -146,6 +146,25 @@ export class StudyRoomStateService {
         );
     }
 
+    // Số item playlist — mirror Redis để onLeave bỏ qua DB cho phòng không phát.
+    // Cập nhật mỗi lần getState chạy (join/thêm/xoá/sắp xếp) nên luôn đủ tươi.
+    async setPlaylistCount(roomId: string, count: number): Promise<void> {
+        await this.client.set(
+            StudyRoomKeys.playlistCount(roomId),
+            String(count),
+            'EX',
+            STUDY_ROOM_LIVE_TTL
+        );
+    }
+
+    // null = chưa có key (hết TTL/chưa từng getState) → caller tự soi DB để chắc chắn.
+    async getPlaylistCount(roomId: string): Promise<number | null> {
+        const raw = await this.client.get(StudyRoomKeys.playlistCount(roomId));
+        if (raw === null) return null;
+        const n = parseInt(raw, 10);
+        return Number.isFinite(n) ? n : null;
+    }
+
     async playMedia(roomId: string): Promise<MediaState> {
         const media = await this.getMedia(roomId);
         const next: MediaState = { ...media, playing: true, updatedAt: Date.now() };

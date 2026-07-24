@@ -182,6 +182,10 @@ export class StudyRoomGateway
         });
         // Leader có thể vừa rời → bầu lại + broadcast để client không giữ leader cũ
         // (nếu không, không ai gửi media:ended, playlist đứng). Chỉ khi có playlist.
+        // Đọc số item từ Redis trước: phòng không phát (count=0) thoát sớm, KHÔNG
+        // đụng DB. count=null (hiếm: hết TTL) → soi DB để không bỏ sót lượt bầu lại.
+        const count = await this.state.getPlaylistCount(roomId);
+        if (count === 0) return;
         const state = await this.playlist.getState(roomId);
         if (state.items.length > 0) {
             socket.to(roomId).emit(ServerEvents.PLAYLIST_UPDATED, state);
@@ -629,7 +633,17 @@ export class StudyRoomGateway
         const room = await this.repo.findByIdWithMembers(roomId);
         if (!room) return null;
         const cfg = cfgFromRoom(room);
+        // presence cần cho cả roster lẫn bầu leader → lấy trước, rồi chạy song song
+        // các nhánh còn lại. playlist.getState tái dùng room.members + presence sẵn
+        // có, KHÔNG query lại listMembersLite/getPresenceMap.
         const presence = await this.state.getPresenceMap(roomId);
+        const [timer, media, chat, myBlocks, playlist] = await Promise.all([
+            this.state.getTimer(roomId, cfg),
+            this.state.getMedia(roomId),
+            this.state.getChat(roomId, 50),
+            this.repo.listBlockedIds(roomId, userId),
+            this.playlist.getState(roomId, room.members, presence),
+        ]);
         const myRole =
             room.members.find((m: any) => m.userId === userId)?.role ?? 0;
         const canSeeSensitive = myRole >= StudyRoomRole.COHOST;
@@ -659,12 +673,12 @@ export class StudyRoomGateway
                 whitelist: canSeeSensitive ? room.whitelist : undefined,
             },
             config: cfg,
-            timer: await this.state.getTimer(roomId, cfg),
-            media: await this.state.getMedia(roomId),
-            chat: await this.state.getChat(roomId, 50),
+            timer,
+            media,
+            chat,
             roster,
-            playlist: await this.playlist.getState(roomId),
-            myBlocks: await this.repo.listBlockedIds(roomId, userId),
+            playlist,
+            myBlocks,
             myRole,
         };
     }

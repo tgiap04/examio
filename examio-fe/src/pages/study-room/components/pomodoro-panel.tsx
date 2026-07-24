@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { Pause, Play, RotateCcw, Settings2 } from "lucide-react";
 import { Card, CardContent } from "@/components/antd/card";
 import { Button } from "@/components/antd/button";
@@ -24,14 +24,24 @@ function PomodoroPanelBase({ actions, myRole }: Props) {
   const [, forceTick] = useState(0);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState<PomodoroConfig | null>(null);
-  const lastPhase = useRef<string | null>(null);
 
   useEffect(() => {
     const id = setInterval(() => forceTick((n) => n + 1), 500);
     return () => clearInterval(id);
   }, []);
 
-  if (!timer || !config) {
+  const view =
+    timer && config ? computeTimerView(timer, config, Date.now()) : null;
+
+  // Cập nhật document.title trong effect (không phải trong render) — chỉ chạy
+  // khi phase đổi thật, tránh side-effect ở render phase.
+  useEffect(() => {
+    if (view) document.title = `${PHASE_LABEL[view.phase]} · Phòng học`;
+    // Chỉ chạy khi phase đổi — KHÔNG thêm `view` (object mới mỗi tick 500ms).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view?.phase]);
+
+  if (!timer || !config || !view) {
     return (
       <Card>
         <CardContent className="py-10 text-center text-muted-foreground">
@@ -40,12 +50,6 @@ function PomodoroPanelBase({ actions, myRole }: Props) {
       </Card>
     );
   }
-
-  const view = computeTimerView(timer, config, Date.now());
-  if (lastPhase.current && lastPhase.current !== view.phase) {
-    document.title = `${PHASE_LABEL[view.phase]} · Phòng học`;
-  }
-  lastPhase.current = view.phase;
 
   const canControl = myRole >= StudyRoomRole.COHOST;
   const isHost = myRole >= StudyRoomRole.HOST;
