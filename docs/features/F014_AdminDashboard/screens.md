@@ -3,7 +3,7 @@
 ## Screen List
 
 - SCR033: AdminOverviewPage — KPI cards, quick stats, recent activity
-- SCR034: AdminStatsPage — time-series charts, user/exam/finance metrics
+- SCR034: AdminStatsPage — time-series charts, user/exam/finance metrics, "Top nguồn" signup-source breakdown card
 - SCR035: AdminUsersPage — user table with ban/unban/delete/grant actions
 - SCR036: AdminFinancePage — refund history, credit adjustments, tier changes
 - SCR037: AdminLogsPage — log viewer with SSE stream + polling fallback

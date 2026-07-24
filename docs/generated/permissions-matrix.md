@@ -25,7 +25,7 @@ Source artifacts: `permissions.md`, `screen-list.md`, `route-list.md`, `scout-re
 | PERM016 | RabbitMQ events | No | No | No | No | Internal services | Topic exchange `examio.events`. |
 | PERM017 | Mobile auth flows | Yes | N/A | N/A | N/A | No | Android/iOS email+OAuth auth real. |
 | PERM018 | Mobile non-auth feature data | No | Intended auth | Intended own data | Yes | No | Shared API/repo ready; platform UI mostly mock-backed. |
-| PERM046 | Admin dashboard access | No | No | No | Yes | No | AdminGuard in `@examio/common`; `User.isAdmin = true` required. |
+| PERM046 | Admin dashboard access | No | No | No | Yes | No | AdminGuard in `@examio/common`; `User.isAdmin = true` required. Includes `GET /admin/stats/sources` (+ alias `GET /admin/sources`) — signup breakdown by `utm_source`. |
 | PERM047 | Admin user management (ban/unban/delete) | No | No | No | Yes | No | AdminUsersModule; all mutations write AdminAudit rows. |
 | PERM048 | Admin grant/revoke admin role | No | No | No | Yes | No | AdminUsersModule; all mutations write AdminAudit rows. |
 | PERM049 | Admin wallet refund | No | No | No | Yes | No | AdminFinanceModule; writes WalletTransaction refund + AdminAudit. |

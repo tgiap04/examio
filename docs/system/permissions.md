@@ -1410,6 +1410,8 @@ All `/api/v1/admin/*` routes require a valid JWT bearer token and `User.isAdmin 
 
 - (GET) `/api/v1/admin/bootstrap`
 - (GET) `/api/v1/admin/stats`
+- (GET) `/api/v1/admin/stats/sources`
+- (GET) `/api/v1/admin/sources` (FE-facing alias of `/admin/stats/sources`)
 - (GET) `/api/v1/admin/users`
 - (PUT) `/api/v1/admin/users/:id/ban`
 - (PUT) `/api/v1/admin/users/:id/unban`

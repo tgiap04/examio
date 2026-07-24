@@ -12,4 +12,5 @@
 | New password does not meet strength requirements | Validation fails; 400 returned | "Password must be at least 8 characters and include a number." |
 | Authenticated user visits /login | AuthGuard detects valid session; redirects to /k/my-materials | None — silent redirect |
 | OAuth callback with expired/invalid state | OAuth state validation fails; error shown | "Sign-in failed. Please try again." |
+| Signup with spoofed `utm_source=direct` or invalid charset | Server-side sanitizer rejects the value; stored as null (attributed as "direct") | None — silent, registration proceeds normally |
 | Session token expired during use | Middleware returns 401; frontend clears tokens and redirects to login | "Your session has expired. Please log in again." |

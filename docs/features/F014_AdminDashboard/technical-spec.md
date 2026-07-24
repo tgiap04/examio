@@ -19,6 +19,7 @@ N/A — no discriminator fields in Key Entities.
 | Code | Description | Endpoint/Handler | Verifiable |
 |------|-------------|-----------------|------------|
 | FR-001 | Admin can view platform KPI overview and time-series analytics | `admin-stats` module | yes |
+| FR-007 | Admin can view signup breakdown by `utm_source` (null → "direct"), top 20 desc | `GET /admin/stats/sources` (+ alias `GET /admin/sources`) | yes |
 | FR-002 | Admin can list, ban, unban, delete, grant/revoke admin on users | `admin-users` module | yes |
 | FR-003 | Admin can refund a payment, adjust credit balance, or change subscription tier | `admin-finance` module | yes |
 | FR-004 | Admin can view and stream server logs in real time | `admin-logs` module (SSE ticket exchange) | yes |
@@ -49,6 +50,7 @@ None.
 ### Algorithms
 
 - **Stats aggregation**: `admin-stats` computes KPI overview (6 metrics) + 3 time-series (signups/traffic/revenue) via raw SQL `date_trunc` queries, cached in Redis for 5 minutes.
+- **Signup source breakdown**: `getSourceBreakdown` groups `User` rows by `COALESCE(NULLIF("utmSource", ''), 'direct')`, optional date range, top 20 desc.
 
 ### External Integrations
 
@@ -80,7 +82,7 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 | Entity | Table | Key Columns | Purpose |
 |--------|-------|-------------|---------|
-| User | `User` | isBanned, deletedAt, isAdmin | Soft-delete + admin-role fields added for this feature |
+| User | `User` | isBanned, deletedAt, isAdmin, utmSource | Soft-delete + admin-role fields added for this feature; `utmSource` (indexed) backs the signup-source breakdown |
 | AdminAudit | `AdminAudit` | id, adminId, action, targetId, payload, reason, ipAddress, userAgent, createdAt | One row per changed field per admin mutation |
 
 ## Artifact References
@@ -104,7 +106,8 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 |--------|------|---------|
 | AdminGuard | `examio-be/libs/common/src/guard/admin.guard.ts` | Standalone JWT + `isAdmin` check |
 | AuditWriterService | `examio-be/apps/admin-service/src/modules/*/audit-writer.service.ts` (shared) | Per-field `AdminAudit` row writer |
-| admin-stats module | `examio-be/apps/admin-service/src/modules/admin-stats/` | KPI + time-series, Redis 5-min cache |
+| admin-stats module | `examio-be/apps/admin-service/src/modules/admin-stats/` | KPI + time-series + signup-source breakdown, Redis 5-min cache |
+| AdminStatsFeRoutesController | `examio-be/apps/admin-service/src/modules/admin-stats/admin-stats-fe-routes.controller.ts` | Top-level `/admin/{overview,series,sources}` alias routes for FE dashboard |
 | admin-users module | `examio-be/apps/admin-service/src/modules/admin-users/` | List/detail/ban/unban/grant/revoke |
 | admin-finance module | `examio-be/apps/admin-service/src/modules/admin-finance/` | Refund/credit/tier, `$transaction` Serializable |
 | admin-logs module | `examio-be/apps/admin-service/src/modules/admin-logs/` | Redactor, ticket-exchange SSE |
