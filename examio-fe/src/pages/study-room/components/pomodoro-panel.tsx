@@ -52,12 +52,12 @@ function PomodoroPanelBase({ actions, myRole }: Props) {
 
   return (
     <Card>
-      <CardContent className="flex flex-col items-center gap-4 py-6">
+      <CardContent className="flex flex-col items-center gap-3 py-5">
         <span className="rounded-full bg-surface-cream-strong px-3 py-1 text-xs font-semibold uppercase tracking-wide text-ink">
           {PHASE_LABEL[view.phase]} · Chu kỳ {view.cycle}/
           {config.cyclesBeforeLongBreak}
         </span>
-        <div className="font-display text-6xl tabular-nums tracking-tight text-ink">
+        <div className="font-display text-5xl tabular-nums tracking-tight text-ink">
           {formatRemaining(view.remainingMs)}
         </div>
         <Progress value={view.progress * 100} className="w-full" />

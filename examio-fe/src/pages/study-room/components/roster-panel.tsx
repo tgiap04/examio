@@ -24,12 +24,12 @@ function RosterPanelBase({ actions, myRole }: Props) {
   const blockedSet = new Set(myBlocks);
 
   return (
-    <Card>
-      <CardHeader className="flex items-center justify-between">
+    <Card className="flex h-full flex-col">
+      <CardHeader className="flex shrink-0 items-center justify-between">
         <CardTitle className="!text-base">Thành viên</CardTitle>
         <Badge variant="secondary">{online} trực tuyến</Badge>
       </CardHeader>
-      <CardContent className="max-h-72 divide-y divide-hairline overflow-y-auto pb-4">
+      <CardContent className="min-h-0 flex-1 divide-y divide-hairline overflow-y-auto pb-4">
         {roster.length === 0 ? (
           <p className="py-6 text-center text-sm text-muted-foreground">
             Chưa có thành viên
