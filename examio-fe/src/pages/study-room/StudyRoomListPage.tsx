@@ -1,26 +1,24 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogIn, Plus, Users } from "lucide-react";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/antd/card";
 import { Button } from "@/components/antd/button";
-import { Badge } from "@/components/antd/badge";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useStudyRoomStore } from "@/stores/useStudyRoomStore";
+import { StudyRoomListItem } from "@/types/studyRoom";
 import { CreateRoomModal } from "./components/create-room-modal";
 import { JoinByCodeModal } from "./components/join-by-code-modal";
+import { RoomCard } from "./components/room-card";
+import { RoomAccessModal } from "./components/room-access-modal";
 
 export default function StudyRoomListPage() {
   const navigate = useNavigate();
   const myRooms = useStudyRoomStore((s) => s.myRooms);
   const loading = useStudyRoomStore((s) => s.loadingMine);
   const fetchMyRooms = useStudyRoomStore((s) => s.fetchMyRooms);
+  const myId = useAuthStore((s) => String(s.user?.id ?? ""));
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
+  const [configRoom, setConfigRoom] = useState<StudyRoomListItem | null>(null);
 
   useEffect(() => {
     fetchMyRooms();
@@ -29,79 +27,70 @@ export default function StudyRoomListPage() {
   const enter = (id: string) => navigate(`/k/study-room/${id}`);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-canvas">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8 mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        {/* Header */}
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h1 className="font-display text-2xl tracking-tight text-ink">
+            <h1 className="font-display text-2xl tracking-tight text-ink sm:text-3xl">
               Phòng học nhóm
             </h1>
-            <p className="text-xs text-muted-foreground md:text-sm">
+            <p className="mt-1 text-sm text-muted-foreground">
               Học cùng nhau với Pomodoro, nhạc nền và trò chuyện thời gian thực
             </p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setJoinOpen(true)}>
-              <LogIn className="mr-1 h-4 w-4" /> Nhập mã
+              <LogIn className="mr-1.5 h-4 w-4" /> Nhập mã
             </Button>
             <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-1 h-4 w-4" /> Tạo phòng
+              <Plus className="mr-1.5 h-4 w-4" /> Tạo phòng
             </Button>
           </div>
         </div>
 
+        {/* Content */}
         {loading && myRooms.length === 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="h-36 animate-pulse rounded-lg bg-muted" />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-44 animate-pulse rounded-xl border border-hairline bg-surface-card"
+              />
             ))}
           </div>
         ) : myRooms.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-              <Users className="h-10 w-10 text-muted-foreground" />
-              <p className="text-muted-foreground">
-                Bạn chưa tham gia phòng học nào
+          <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-hairline bg-surface-card py-20 text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+              <Users className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <p className="font-display text-lg text-ink">
+                Chưa có phòng học nào
               </p>
-              <Button onClick={() => setCreateOpen(true)}>
-                <Plus className="mr-1 h-4 w-4" /> Tạo phòng đầu tiên
+              <p className="mt-1 text-sm text-muted-foreground">
+                Tạo phòng đầu tiên hoặc nhập mã để tham gia phòng của bạn bè
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setJoinOpen(true)}>
+                <LogIn className="mr-1.5 h-4 w-4" /> Nhập mã
               </Button>
-            </CardContent>
-          </Card>
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus className="mr-1.5 h-4 w-4" /> Tạo phòng
+              </Button>
+            </div>
+          </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {myRooms.map((room) => (
-              <button
+              <RoomCard
                 key={room.id}
-                type="button"
-                onClick={() => enter(room.id)}
-                className="text-left"
-              >
-                <Card className="h-full transition-shadow hover:!shadow-md">
-                  <CardHeader>
-                    <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="!text-lg">{room.name}</CardTitle>
-                      {!room.isActive && (
-                        <Badge variant="secondary">Đã đóng</Badge>
-                      )}
-                    </div>
-                    {room.description && (
-                      <CardDescription className="line-clamp-2">
-                        {room.description}
-                      </CardDescription>
-                    )}
-                  </CardHeader>
-                  <CardContent className="flex items-center justify-between pb-6 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      {room._count?.members ?? 0}/{room.maxParticipants}
-                    </span>
-                    <span className="truncate">
-                      {room.host?.name ?? "Chủ phòng"}
-                    </span>
-                  </CardContent>
-                </Card>
-              </button>
+                room={room}
+                isHost={room.hostId === myId}
+                onEnter={enter}
+                onConfig={setConfigRoom}
+              />
             ))}
           </div>
         )}
@@ -116,6 +105,11 @@ export default function StudyRoomListPage() {
         open={joinOpen}
         onOpenChange={setJoinOpen}
         onJoined={enter}
+      />
+      <RoomAccessModal
+        room={configRoom}
+        open={!!configRoom}
+        onOpenChange={(o) => !o && setConfigRoom(null)}
       />
     </div>
   );

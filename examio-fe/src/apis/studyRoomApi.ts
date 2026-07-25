@@ -13,6 +13,7 @@ export type CreateStudyRoomPayload = {
   longBreakMinutes?: number;
   cyclesBeforeLongBreak?: number;
   maxParticipants?: number;
+  accessType?: number;
 };
 
 export type UpdateStudyRoomPayload = Partial<CreateStudyRoomPayload> & {

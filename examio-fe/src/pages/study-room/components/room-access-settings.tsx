@@ -59,7 +59,7 @@ export function RoomAccessSettings({ room }: Props) {
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 mt-2.5">
       <div>
         <p className="mb-1.5 text-sm text-muted-foreground">Chế độ vào phòng</p>
         <Select
