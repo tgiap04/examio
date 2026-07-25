@@ -11,9 +11,16 @@ import {
 import { Button } from "@/components/antd/button";
 import { Input } from "@/components/antd/input";
 import { Textarea } from "@/components/antd/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/antd/select";
 import { toast } from "@/components/antd/toast";
 import { useStudyRoomStore } from "@/stores/useStudyRoomStore";
-import { PomodoroConfig } from "@/types/studyRoom";
+import { AccessType, PomodoroConfig } from "@/types/studyRoom";
 import { PomodoroConfigFields } from "./pomodoro-config-fields";
 import { DEFAULT_POMODORO } from "./study-room-actions";
 
@@ -28,6 +35,7 @@ export function CreateRoomModal({ open, onOpenChange, onCreated }: Props) {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [maxParticipants, setMaxParticipants] = useState(15);
+  const [accessType, setAccessType] = useState<number>(AccessType.PUBLIC);
   const [config, setConfig] = useState<PomodoroConfig>(DEFAULT_POMODORO);
   const [saving, setSaving] = useState(false);
 
@@ -42,6 +50,7 @@ export function CreateRoomModal({ open, onOpenChange, onCreated }: Props) {
         name: name.trim(),
         description: description.trim() || undefined,
         maxParticipants,
+        accessType,
         ...config,
       });
       if (room?.id) {
@@ -88,6 +97,28 @@ export function CreateRoomModal({ open, onOpenChange, onCreated }: Props) {
               onChange={(v) => setMaxParticipants(Number(v ?? 15))}
             />
           </label>
+          <div>
+            <p className="mb-1.5 text-sm text-muted-foreground">Chế độ vào phòng</p>
+            <Select
+              value={String(accessType)}
+              onValueChange={(v) => setAccessType(Number(v))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={String(AccessType.PUBLIC)}>
+                  Công khai — ai đăng nhập cũng vào được
+                </SelectItem>
+                <SelectItem value={String(AccessType.CODE)}>
+                  Mã số — cần mã mời để vào
+                </SelectItem>
+                <SelectItem value={String(AccessType.WHITELIST)}>
+                  Riêng tư — chỉ người được thêm vào danh sách
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <PomodoroConfigFields value={config} onChange={setConfig} />
         </div>
         <DialogFooter>
