@@ -1,14 +1,13 @@
-# Examio
+# KMAEdu
 
 Nền tảng học tập trực tuyến hỗ trợ bởi AI — biến tài liệu thành quiz, flashcard và phòng luyện thi.
 
 ## Cấu trúc
 
 ```
-examio/
-├── examio-be/     # Backend — NestJS microservices + Python AI service
-├── examio-fe/     # Frontend — React 19 + Vite
-|-- examio-app/    # App native
+kmaedu/
+├── kmaedu-be/     # Backend — NestJS microservices + Python AI service
+├── kmaedu-fe/     # Frontend — React 19 + Vite
 ├── DESIGN.md      # Design system tokens (cream + coral + dark navy)
 └── CLAUDE.md      # Hướng dẫn cho AI coding assistants
 ```
@@ -27,7 +26,7 @@ Backend và frontend là hai package root riêng biệt. Chạy lệnh trong đ�
 ### Frontend
 
 ```bash
-cd examio-fe
+cd kmaedu-fe
 corepack enable
 yarn install
 yarn dev
@@ -38,7 +37,7 @@ Chạy ở `http://localhost:5173`.
 ### Backend
 
 ```bash
-cd examio-be
+cd kmaedu-be
 yarn install
 yarn dev:all
 ```
@@ -48,7 +47,7 @@ Cần PostgreSQL, Redis, RabbitMQ chạy local hoặc qua Docker.
 ### AI Service
 
 ```bash
-cd examio-be/apps/ai-service
+cd kmaedu-be/apps/ai-service
 python -m venv venv
 ./venv/bin/pip install -r requirements.txt
 ./venv/bin/uvicorn src.backend.main:app --reload --port 8000
@@ -83,7 +82,7 @@ python -m venv venv
 
 ## Deploy
 
-Hiện chưa có deploy tự động: workflow `deploy.yml` đã bị gỡ để làm lại flow CD. Deploy tay theo `examio-be/deploy/README.md` (script `deploy/deploy-service.sh`).
+Hiện chưa có deploy tự động: workflow `deploy.yml` đã bị gỡ để làm lại flow CD. Deploy tay theo `kmaedu-be/deploy/README.md` (script `deploy/deploy-service.sh`).
 
 Flow nhánh: tách nhánh feature từ `develop` rồi PR vào `develop`; release là PR từ `develop` vào `main`.
 
@@ -99,4 +98,4 @@ Flow nhánh: tách nhánh feature từ `develop` rồi PR vào `develop`; releas
 
 ## License
 
-Private — Examio Team.
+Private — KMAEdu Team.

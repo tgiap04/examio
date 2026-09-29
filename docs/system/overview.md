@@ -1,6 +1,6 @@
 # System Overview
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Architecture Type**: Distributed multi-service (NestJS monorepo + Python AI service + React 19 SPA)
 
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-examio is a multi-tenant exam/quiz platform serving students and teachers. Authoring users create quiz sets, flashcard sets, and exam rooms; students take timed sessions under AES-256-CBC question encryption with JWT answer tokens. The backend is a NestJS monorepo of 10 services (gateway, auth, content, assessment, ai-chat, study-room, vocabulary, document, r2, admin) plus one Python AI service (gRPC + worker), fronted by a YAML-routed gateway (streaming proxy, no database). Each service owns its own database schema. There is no wallet, subscription or payment: usage is not metered, and AI cost is guarded only by the gateway rate limits. AI features (generation, document RAG, AI teacher chat) are offloaded to the Python AI service. Infrastructure runs on PostgreSQL + Redis + RabbitMQ (topic exchange `examio.events`).
+kmaedu is a multi-tenant exam/quiz platform serving students and teachers. Authoring users create quiz sets, flashcard sets, and exam rooms; students take timed sessions under AES-256-CBC question encryption with JWT answer tokens. The backend is a NestJS monorepo of 10 services (gateway, auth, content, assessment, ai-chat, study-room, vocabulary, document, r2, admin) plus one Python AI service (gRPC + worker), fronted by a YAML-routed gateway (streaming proxy, no database). Each service owns its own database schema. There is no wallet, subscription or payment: usage is not metered, and AI cost is guarded only by the gateway rate limits. AI features (generation, document RAG, AI teacher chat) are offloaded to the Python AI service. Infrastructure runs on PostgreSQL + Redis + RabbitMQ (topic exchange `kmaedu.events`).
 
 For architecture diagrams and tech stack details, see [architecture.md](architecture.md).
 
@@ -36,17 +36,17 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 **Context**: Several services need to be called by other services synchronously (e.g., content-service asking document-service to confirm the caller owns a file before generating AI content, assessment-service reading a quiz snapshot from content, or document-service fetching a signed R2 URL).
 
-**Decision**: The services that others call expose gRPC on port 50051 per container: auth, r2, admin, vocabulary, document and content (plus the gateway's internal `GatewayControl` and the Python ai-service). assessment, ai-chat and study-room have no gRPC server; they are clients. Callers use the `@examio/grpc` client modules rather than HTTP-calling the gateway. Proto definitions live in `examio-be/proto/examio/<svc>/v1` (buf-managed); generated TS stubs are `@examio/contracts`.
+**Decision**: The services that others call expose gRPC on port 50051 per container: auth, r2, admin, vocabulary, document and content (plus the gateway's internal `GatewayControl` and the Python ai-service). assessment, ai-chat and study-room have no gRPC server; they are clients. Callers use the `@kmaedu/grpc` client modules rather than HTTP-calling the gateway. Proto definitions live in `kmaedu-be/proto/kmaedu/<svc>/v1` (buf-managed); generated TS stubs are `@kmaedu/contracts`.
 
 **Rationale**: gRPC provides typed contracts, bidirectional streaming support, and lower latency than HTTP proxy chains for internal calls. Avoids circular gateway routing.
 
-**Update (phase 10, 2026-10-23)**: gRPC is also how a service reads or writes data owned by another service. Each Prisma model has exactly one owning service (`examio-be/scripts/check-model-ownership.ts`, enforced in CI by `yarn check:ownership` and `yarn check:deps`); exam (now content and assessment), admin and the gateway call auth, vocabulary (word-family admin and `GetWordFamily`), admin (page flags) and gateway (`SetPageFlags`) RPCs. Update (phase 11): the database is no longer shared at the access level; each service has its own schema and role. Update (phase 12, 2026-10-24): `WordFamilyAdminService` moved from exam to the new vocabulary-service, which also serves `WordFamilyService.GetWordFamily` to content. Update (phase 14, 2026-10-25): exam-service was split into content-service (gRPC server `ContentService`, used by assessment-service) and assessment-service (no gRPC server). Update (phase 15): document-service owns uploads and serves `DocumentService`. Details: [architecture](architecture.md) § gRPC.
+**Update (phase 10, 2026-10-23)**: gRPC is also how a service reads or writes data owned by another service. Each Prisma model has exactly one owning service (`kmaedu-be/scripts/check-model-ownership.ts`, enforced in CI by `yarn check:ownership` and `yarn check:deps`); exam (now content and assessment), admin and the gateway call auth, vocabulary (word-family admin and `GetWordFamily`), admin (page flags) and gateway (`SetPageFlags`) RPCs. Update (phase 11): the database is no longer shared at the access level; each service has its own schema and role. Update (phase 12, 2026-10-24): `WordFamilyAdminService` moved from exam to the new vocabulary-service, which also serves `WordFamilyService.GetWordFamily` to content. Update (phase 14, 2026-10-25): exam-service was split into content-service (gRPC server `ContentService`, used by assessment-service) and assessment-service (no gRPC server). Update (phase 15): document-service owns uploads and serves `DocumentService`. Details: [architecture](architecture.md) § gRPC.
 
 ### Decision 4: RabbitMQ Topic Exchange for Async Event-Driven Workflows
 
 **Context**: Identity and permission changes (a role grant, a ban, a password change) must reach the gateway and study-room-service reliably, without coupling auth-service to them at the HTTP level.
 
-**Decision**: auth-service writes `auth.user.authz_changed` to a transactional outbox in the same tx as every role / admin / ban / password change (`auth.user.registered` is still written at registration, with no consumer); its worker relay publishes to the durable topic exchange `examio.events` (library `@examio/messaging`). The gateway (stale-token state) and study-room-service (close stale sockets) consume it with idempotent handlers (retry tier 30 s, per-service DLQ). Per-service RabbitMQ users restrict publishing to each service's own routing-key prefix. Legacy `EventType` enum values remain unused.
+**Decision**: auth-service writes `auth.user.authz_changed` to a transactional outbox in the same tx as every role / admin / ban / password change (`auth.user.registered` is still written at registration, with no consumer); its worker relay publishes to the durable topic exchange `kmaedu.events` (library `@kmaedu/messaging`). The gateway (stale-token state) and study-room-service (close stale sockets) consume it with idempotent handlers (retry tier 30 s, per-service DLQ). Per-service RabbitMQ users restrict publishing to each service's own routing-key prefix. Legacy `EventType` enum values remain unused.
 
 **Rationale**: Decouples service lifecycle and failure domains. If the gateway is down during a role change, the event is retained and replayed. New cross-service workflows can be added by publishing/consuming events without code changes to unrelated services.
 
@@ -54,7 +54,7 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 **Context**: AI workloads (embedding generation, vector search with FAISS, document OCR via Docling, ReAct agent orchestration) are I/O-heavy, stateful, and require different runtime characteristics (Python 3.12+, LangChain/LangGraph, Gemini). NestJS is not ideal for these workloads.
 
-**Decision**: AI capabilities are extracted into a standalone Python service (`ai-service`) with its own process and its own database schema (`ai`). Synchronous AI calls go over gRPC (`examio.ai.v1.AiService`, service tokens only); long work (OCR, generation) runs through RabbitMQ events between document-service, content-service and ai-service. AI chat (`ai-chat-service`) and word-family generation (`vocabulary-service`) also use gRPC since phase 13; ai-service HTTP serves only `/` and `/health`, and `AI_SERVICE_URL` and `INTERNAL_SERVICE_TOKEN` no longer exist. Frontend streams AI chat responses via SSE.
+**Decision**: AI capabilities are extracted into a standalone Python service (`ai-service`) with its own process and its own database schema (`ai`). Synchronous AI calls go over gRPC (`kmaedu.ai.v1.AiService`, service tokens only); long work (OCR, generation) runs through RabbitMQ events between document-service, content-service and ai-service. AI chat (`ai-chat-service`) and word-family generation (`vocabulary-service`) also use gRPC since phase 13; ai-service HTTP serves only `/` and `/health`, and `AI_SERVICE_URL` and `INTERNAL_SERVICE_TOKEN` no longer exist. Frontend streams AI chat responses via SSE.
 
 **Rationale**: Allows independent scaling, different dependency management, and GPU resource isolation. The AI service can be updated/replaced without touching the NestJS monorepo. content-service and document-service act as coordinators, not processors; ai-service never touches another service's tables.
 
@@ -64,7 +64,7 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     examio-fe (React 19 SPA)                │
+│                     kmaedu-fe (React 19 SPA)                │
 │            Zustand stores · Axios · React Router            │
 └────────────────────────┬────────────────────────────────────┘
                          │ HTTPS via FE nginx (the only host port)
@@ -89,7 +89,7 @@ gRPC between services (user token forwarded, or service token from auth):
   admin      → auth · vocabulary · gateway                     auth → gateway (revoke / stale) · r2
   ai-service (Python): gRPC :50051 (service tokens only) + /health, plus ai-worker (events)
 
-Events (RabbitMQ topic exchange examio.events, outbox per service):
+Events (RabbitMQ topic exchange kmaedu.events, outbox per service):
   auth → gateway · study-room · content · assessment (authz_changed, user.updated)
   content ⇄ ai · assessment    document ⇄ ai · content · ai-chat
 
@@ -118,7 +118,7 @@ Infrastructure: PostgreSQL (one schema + role per service, Prisma per service; a
 
 ### HTTP Proxy (gateway → downstream)
 
-gateway-service proxies HTTP requests to downstream services per `config/routes.yaml` (upstreams from `AUTH_SERVICE_URL`, `CONTENT_SERVICE_URL`, `ASSESSMENT_SERVICE_URL`, `STUDYROOM_SERVICE_URL`, `VOCABULARY_SERVICE_URL`, `DOCUMENT_SERVICE_URL`, `AICHAT_SERVICE_URL`, `ADMIN_SERVICE_URL`). Admin routes (`/api/v1/admin/*`) go to `admin-service` with `admin:access` checked at the edge as well. The gateway forwards the verified token as `Authorization: Bearer` and strips client-supplied `x-user-*` / `x-forwarded-*`. Auth and admin push revoke/stale-token signals to the gateway over gRPC `GatewayControl` and durable events. Every service also verifies the RS256 access token itself with `@examio/auth-jwt` (JWKS from auth, no DB or gRPC call per request); access is declared per handler (`@RequirePermissions('admin:access')` on admin routes). Details: [architecture](architecture.md) § 7.
+gateway-service proxies HTTP requests to downstream services per `config/routes.yaml` (upstreams from `AUTH_SERVICE_URL`, `CONTENT_SERVICE_URL`, `ASSESSMENT_SERVICE_URL`, `STUDYROOM_SERVICE_URL`, `VOCABULARY_SERVICE_URL`, `DOCUMENT_SERVICE_URL`, `AICHAT_SERVICE_URL`, `ADMIN_SERVICE_URL`). Admin routes (`/api/v1/admin/*`) go to `admin-service` with `admin:access` checked at the edge as well. The gateway forwards the verified token as `Authorization: Bearer` and strips client-supplied `x-user-*` / `x-forwarded-*`. Auth and admin push revoke/stale-token signals to the gateway over gRPC `GatewayControl` and durable events. Every service also verifies the RS256 access token itself with `@kmaedu/auth-jwt` (JWKS from auth, no DB or gRPC call per request); access is declared per handler (`@RequirePermissions('admin:access')` on admin routes). Details: [architecture](architecture.md) § 7.
 
 ### gRPC (synchronous, internal)
 
@@ -131,7 +131,7 @@ Every container uses HTTP 3000 / gRPC 50051 (unified ports; separate network nam
 
 ### RabbitMQ (async, event-driven)
 
-Exchange: `examio.events` (topic, durable). Main flows: `auth.user.authz_changed` (outbox) → the gateway (stale-token state) and study-room (close stale sockets); `auth.user.updated` → content, assessment and study-room profile caches; `document.uploaded|deleted`, `ai.document.*`, `content.generation.requested`, `ai.generation.*` between document, content and ai-service; `content.quizset.deleted` → assessment. `auth.user.registered` is published but has no consumer. Each consumer has a 30 s retry tier and a DLQ. See [architecture](architecture.md) § RabbitMQ.
+Exchange: `kmaedu.events` (topic, durable). Main flows: `auth.user.authz_changed` (outbox) → the gateway (stale-token state) and study-room (close stale sockets); `auth.user.updated` → content, assessment and study-room profile caches; `document.uploaded|deleted`, `ai.document.*`, `content.generation.requested`, `ai.generation.*` between document, content and ai-service; `content.quizset.deleted` → assessment. `auth.user.registered` is published but has no consumer. Each consumer has a 30 s retry tier and a DLQ. See [architecture](architecture.md) § RabbitMQ.
 
 ### AI Orchestration (gRPC + events, content-service → ai-service)
 
@@ -144,7 +144,7 @@ Exchange: `examio.events` (topic, durable). Main flows: `auth.user.authz_changed
 1. User submits credentials → `POST /auth/login` → auth-service → returns `accessToken` (RS256 JWT, 15 min; claims `sub`, `sid`, `roles`, `email_verified`, `av`) + `refreshToken` (both HttpOnly cookies set by auth) + `sessionId`; roles are `STUDENT` (default) or `TEACHER`, plus `SYSTEM_ADMIN` for flagged admins
 2. Axios (`apis/api.ts`, `withCredentials`) sends the cookies and the `X-Device-ID` header on every request; the token is never in `localStorage`
 3. Each service's `JwtAuthGuard` verifies the token against auth's JWKS (stateless) and `PermissionsGuard` checks the declared permission (deny by default). `POST /auth/refresh` reloads the role, so a role change reaches the token within 15 min; `GET /auth/me` (and login/refresh) returns `{ user, roles, permissions }` with `user.isSystemAdmin`, no wallet/subscription (the feature was removed)
-4. OAuth (Google): redirect → backend `/auth/google` (or One Tap) → `/auth/google/callback` sets the `accessToken` / `refreshToken` cookies and redirects to the frontend; the mobile app instead receives a one-time `?code=` and swaps it at `POST /auth/exchange`. `AuthSyncBootstrap` only hydrates the user from `/auth/me`
+4. OAuth (Google): redirect → backend `/auth/google` (or One Tap) → `/auth/google/callback` sets the `accessToken` / `refreshToken` cookies and redirects to the frontend; a native client (allowlisted app redirect) instead receives a one-time `?code=` and swaps it at `POST /auth/exchange`. `AuthSyncBootstrap` only hydrates the user from `/auth/me`
 5. Device tracking: `X-Device-ID` header from `getOrCreateDeviceId()`; sessions tracked per device in `UserSession` table
 6. Session cleanup: `session-cleanup.cron.ts` (scheduled job) invalidates expired sessions
 7. Cloudflare Turnstile: `TurnstileGuard` on sensitive auth forms (signup, login, forgot password)
@@ -185,7 +185,7 @@ Exchange: `examio.events` (topic, durable). Main flows: `auth.user.authz_changed
 ## Security Overview
 
 - **Authentication**: JWT cookie (`accessToken`) + `refreshToken` cookie; Google OAuth via One Tap; Cloudflare Turnstile on auth forms
-- **Authorization**: `@examio/auth-jwt` guards in every service (permission per route, deny by default; [permissions](permissions.md)); frontend routes go through `guarded()` → `RequirePermission` (UX only; `ProtectedRoute` / `PublicRoute` for login-only and public pages); service tokens (`POST /internal/token`) on gRPC / inter-service calls
+- **Authorization**: `@kmaedu/auth-jwt` guards in every service (permission per route, deny by default; [permissions](permissions.md)); frontend routes go through `guarded()` → `RequirePermission` (UX only; `ProtectedRoute` / `PublicRoute` for login-only and public pages); service tokens (`POST /internal/token`) on gRPC / inter-service calls
 - **Data Encryption**: AES-256-CBC question encryption (server-side secret); client decrypts with `VITE_QUIZ_AES_KEY`; JWT answer token prevents tampering
 - **API Security**: HttpOnly cookie `accessToken` (or Bearer) + `X-Device-ID` header; rate limit at gateway (default 100 req/min per user or IP, 5 req/min on credential routes); error envelope `{statusCode, code, message, requestId}`; 401 codes `TOKEN_MISSING`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `SESSION_REVOKED`, `TOKEN_STALE`; session invalidation on logout/device revocation takes effect at the gateway on the next request
 
