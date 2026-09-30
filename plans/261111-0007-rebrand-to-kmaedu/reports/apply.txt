@@ -1,0 +1,19 @@
+mode: apply
+files with content changes: 1154
+  api-url  5
+  api-host 4
+  r2-host  2
+  site-host 59
+  ghcr     219
+  repo     1
+  EXAMIO   7
+  ExamIO   6
+  Examio   319
+  examio   15734
+path moves: 10
+  docx/examio-full-spec-bundle.docx -> docx/kmaedu-full-spec-bundle.docx
+  docx/examio-full-spec-bundle.md -> docx/kmaedu-full-spec-bundle.md
+  plans/260512-1928-examio-mobile-codebase-setup -> plans/260512-1928-kmaedu-mobile-codebase-setup
+  examio-be -> kmaedu-be
+  examio-fe -> kmaedu-fe
+binary files still containing the old name: 0
