@@ -1,6 +1,6 @@
 ---
 title: Đổi thương hiệu Examio → KMAEdu (toàn bộ repo, repo GitHub, thư mục máy)
-status: in-progress
+status: completed
 priority: high
 work_type: feature
 spec_waived: "Đổi tên thuần, không thêm hành vi mới; quyết định nằm trong clarifications.md"
@@ -41,7 +41,7 @@ Thư mục plan này và đúng một mục changelog "đổi tên từ Examio" 
 | 05 | [Tài liệu hiện hành + gỡ phần mobile](phase-05-current-docs-and-mobile-removal.md) | done |
 | 06 | [Tài liệu lịch sử (plans, journals, archive, docx)](phase-06-historical-docs.md) | done |
 | 07 | [Kiểm tra toàn bộ + soát sót](phase-07-verification-and-residue-gate.md) | done |
-| 08 | [Commit, PR, đổi repo GitHub, đổi thư mục máy](phase-08-ship-repo-and-local-folder.md) | pending |
+| 08 | [Commit, PR, đổi repo GitHub, đổi thư mục máy](phase-08-ship-repo-and-local-folder.md) | done |
 
 ## Phụ thuộc
 

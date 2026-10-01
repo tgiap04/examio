@@ -62,11 +62,11 @@ cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ai-service && rm -rf venv && pyth
 Giữ thư mục trí nhớ cũ cho tới khi phiên mới chạy ổn rồi mới xóa.
 
 ## Todo
-- [ ] 5 commit (sau khi được phép)
-- [ ] Label + PR có label + CI xanh
-- [ ] Đổi repo + remote (sau khi được phép)
-- [ ] Danh sách `.env` gửi bạn
-- [ ] Đổi thư mục máy + trí nhớ + venv
+- [x] 5 commit (e685f54..1c0d4c8, thêm fix ce278b8)
+- [x] Label + PR có label + CI xanh (PR #14, merge 54edea3)
+- [x] Đổi repo + remote (`tgiap04/kmaedu`, remote SSH mới)
+- [x] Danh sách `.env` gửi bạn (mục C, C2)
+- [x] Đổi thư mục máy + trí nhớ + venv (2026-11-11: xóa 6 trí nhớ mobile, đổi tên 7 file `examio-*` → `kmaedu-*`, tạo lại venv ai-service)
 
 ## Success Criteria
 - PR merge với CI xanh.
