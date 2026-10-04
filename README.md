@@ -106,22 +106,23 @@ ROLE=migrate ./venv/bin/python -m src.main     # tạo schema ai (Alembic), ch�
 cd ../.. && yarn dev:ai                         # gRPC AiService + worker event
 ```
 
-Mẫu env của ai-service mặc định `GRPC_PORT=50051`, trùng auth; khi chạy cả hai trên máy hãy đổi cổng gRPC của ai-service và `AI_GRPC_URL` ở các service gọi nó.
+Mỗi service có cổng gRPC riêng khi chạy trên máy (bảng dưới), các file `.env.example` đã trỏ sẵn theo bảng này. Trong container mọi service đều nghe gRPC 50051.
 
 Frontend ngoài Docker: `cd kmaedu-fe && cp -n .env.example .env && yarn install && yarn dev` (`VITE_BACKEND_URL=http://localhost:3000`, Vite proxy `/api` và `/ws/study` sang gateway).
 
 | Service | HTTP | gRPC |
 |---|---|---|
-| gateway | 3000 | — |
+| gateway | 3000 | 50052 |
 | auth | 3001 | 50051 |
 | r2 | 3004 | 50054 |
-| admin | 7006 | — |
+| admin | 7006 | 50053 |
 | study-room | 3009 | — |
 | vocabulary | 3010 | 50055 |
 | document | 3011 | 50056 |
 | ai-chat | 3012 | — |
 | content | 3013 | 50057 |
 | assessment | 3014 | — |
+| ai (Python) | 3434 | 50058 |
 
 ## Kiểm tra code
 

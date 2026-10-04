@@ -195,7 +195,7 @@ Script này không gọi LLM generate toàn bộ nội dung, mà tập trung đo
 To run the AI service locally (from `kmaedu-be`):
 
 1. Create the schema: `cd apps/ai-service && ROLE=migrate ./venv/bin/python -m src.main` (needs `DATABASE_URL` for role `ai_svc` and `DB_SEARCH_PATH=ai,extensions`; see `.env.example`).
-2. Start it: `yarn dev:ai` (gRPC on 50051, `/health` on `PORT`, event worker).
+2. Start it: `yarn dev:ai` (gRPC on `GRPC_PORT`, 50058 in the local `.env.example` so it does not clash with auth's 50051; `/health` on `PORT`; event worker).
 
 ## Environment Variables
 
@@ -205,7 +205,7 @@ Copy `.env.example` to `.env` and fill it. The groups that matter:
 DATABASE_URL=postgresql://ai_svc:...@localhost:5432/kmaedu   # no ?schema=
 DB_SEARCH_PATH=ai,extensions
 ROLE=api            # api | worker | migrate (comma-separated, migrate is exclusive)
-GRPC_PORT=50051
+GRPC_PORT=50058     # 50051 inside the container
 AUTH_JWKS_URL=...   # service-token verification (aud=ai)
 R2_ALLOWED_HOSTS=   # hosts document.uploaded may download from (fail-closed if empty and no R2_PUBLIC_URL)
 GEMINI_API_KEYS=...
