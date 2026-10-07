@@ -3,7 +3,7 @@
 # Infrastructure (Postgres, Redis, RabbitMQ, Traefik), the deps job and the <svc>-migrate jobs start
 # on their own; an app that is not listed does not run (requests that need it answer 502/503).
 #
-# The full stack needs about 10-12 GB of RAM for Docker Desktop. On a smaller machine keep only:
+# The full stack peaks at about 7 GiB of RAM in Docker Desktop. On a smaller machine keep only:
 #   gateway auth content assessment fe
 gateway
 auth
