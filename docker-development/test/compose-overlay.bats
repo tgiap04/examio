@@ -19,7 +19,7 @@ setup() {
   # `config` folds env_file into environment: a secrets.env value proves the generated file was read
   want="$(sed -n "s/^REFRESH_TOKEN_ENC_KEY='\(.*\)'$/\1/p" "$GEN/secrets.env")"
   [ -n "$want" ] && [ "$(q '.services.auth.environment.REFRESH_TOKEN_ENC_KEY')" = "$want" ]
-  [ "$(q '.services.content.environment.TURNSTILE_SECRET_KEY')" = 1x0000000000000000000000000000000AA ]
+  [ "$(q '[.services[].environment // {} | keys[] | select(startswith("TURNSTILE_"))] | length')" = 0 ]
   [ "$(q '.services.ai.environment | has("GEMINI_API_KEYS")')" = true ]
   run grep -E '/deploy/env/|/deploy/\.env' "$CFG"
   assert_failure

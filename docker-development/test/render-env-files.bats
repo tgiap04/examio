@@ -68,14 +68,15 @@ render() { "$PROJECT" render; }
   grep -qx "R2_ALLOWED_HOSTS='other.example.com'" "$GEN/compose.env"
 }
 
-@test "user values land where the services read them; defaults for Turnstile" {
+@test "user values land where the services read them; no Turnstile key anywhere" {
   printf 'ADMIN_EMAILS=a@x.io,b@x.io\nGEMINI_API_KEYS=k1,k2\nGOOGLE_CLIENT_ID=gid\nADMIN_DEFAULT_PASSWORD=Local-Admin-Pass-123\n' >"$KMAEDU_DEV_ENV_FILE"
   render
   grep -qx "ADMIN_EMAILS='a@x.io,b@x.io'" "$GEN/env/auth.env"
   grep -qx "ADMIN_DEFAULT_PASSWORD='Local-Admin-Pass-123'" "$GEN/env/auth.env"
   grep -qx "GEMINI_API_KEYS='k1,k2'" "$GEN/env/ai.env"
   grep -qx "VITE_GOOGLE_CLIENT_ID='gid'" "$GEN/compose.env"
-  grep -qx "TURNSTILE_SECRET_KEY='1x0000000000000000000000000000000AA'" "$GEN/env/content.env"
+  run grep -rq TURNSTILE "$GEN/env" "$GEN/compose.env"
+  assert_failure
   grep -qx "EMAIL_USER=''" "$GEN/env/auth.env"
 }
 

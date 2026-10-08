@@ -4,8 +4,6 @@
 # docker-development/.env. deploy/.env and deploy/env/*.env (real secrets) are never opened. bash 3.2 safe.
 # shellcheck shell=bash
 
-TURNSTILE_TEST_SECRET=1x0000000000000000000000000000000AA
-TURNSTILE_TEST_SITE_KEY=1x00000000000000000000AA
 # auth's passport Google strategy throws on an empty clientID and stops the service; with this value auth
 # starts and only Google login fails (VITE_GOOGLE_CLIENT_ID stays empty).
 GOOGLE_PLACEHOLDER_CLIENT_ID=not-configured.apps.googleusercontent.com
@@ -33,7 +31,6 @@ _resolve() {
     JWT_RETIRED_PUBLIC_KEYS | EMAIL_USER | EMAIL_PASS) VAL="" ;;
     JWT_ISSUER | JWT_AUDIENCE) VAL="$(_user_or "$key" "$(dotenv_get "$tpl" "$key")")" ;;
     ADMIN_DEFAULT_PASSWORD) VAL="$(_user_or "$key" "$(secret_get "$key")")" ;;
-    TURNSTILE_SECRET_KEY) VAL="$(_user_or "$key" "$TURNSTILE_TEST_SECRET")" ;;
     GOOGLE_CLIENT_ID) VAL="$(_user_or "$key" "$GOOGLE_PLACEHOLDER_CLIENT_ID")" ;;
     R2_ALLOWED_HOSTS)
       v="$(_user R2_ENDPOINT)"
@@ -86,7 +83,6 @@ _overlay_vars() {
   _env_line KMAEDU_REDIS_PORT "$REDIS_PORT"
   _env_line KMAEDU_RABBITMQ_PORT "$RABBITMQ_PORT"
   _env_line KMAEDU_WATCH_POLL "$WATCH_POLL"
-  _env_line VITE_TURNSTILE_SITE_KEY "$(_user_or VITE_TURNSTILE_SITE_KEY "$TURNSTILE_TEST_SITE_KEY")"
   _env_line VITE_GOOGLE_CLIENT_ID "$(_user GOOGLE_CLIENT_ID)"
   _env_line VITE_MEASUREMENT_ID "$(_user VITE_MEASUREMENT_ID)"
   _env_line VITE_GENAI_TUTOR_ALLOWED_EMAILS "$(_user VITE_GENAI_TUTOR_ALLOWED_EMAILS)"

@@ -67,7 +67,7 @@ Chỉ chứa khóa cho dịch vụ ngoài (mẫu: `.env.example`, đã gitignore
 | `ADMIN_EMAILS` | Các email này thành SYSTEM_ADMIN khi auth khởi động và trong `./project seed` |
 
 Thiếu khóa Google thì auth tự dùng một client id giữ chỗ, chỉ đăng nhập Google lỗi; đăng nhập email vẫn chạy.
-Cloudflare Turnstile mặc định dùng khóa test luôn-qua của Cloudflare. Các khóa tùy chọn khác nằm cuối `.env.example`.
+Các khóa tùy chọn khác nằm cuối `.env.example`.
 
 Secret còn lại (mật khẩu DB/Redis/RabbitMQ, JWT, service secret) được sinh một lần vào `.generated/secrets.env` (quyền 700,
 gitignore). Xóa file này mà volume Postgres còn thì `up` dừng và bảo chạy `./project db:reset`, vì role DB giữ mật khẩu cũ.
