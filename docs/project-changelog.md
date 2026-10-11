@@ -1,11 +1,17 @@
 ---
 title: KMAEdu Project Changelog
-last_updated: 2026-11-11
+last_updated: 2026-11-13
 ---
 
 # KMAEdu Project Changelog
 
 ## [Unreleased]
+
+- **Removed: Cloudflare Turnstile (bot check)**. Login, register, starting an exam attempt and studying a flashcard set by code no longer ask for or verify a Turnstile token. Plan `plans/261113-1600-remove-cloudflare-turnstile/`.
+  - **API**: `turnstileToken` is gone from `POST /auth/login`, `POST /auth/register` (both schemas are strict, so sending it is now a 400), `POST /examattempts/start`, `POST /flashcardsets/study/:id/with-code` and the `GET /flashcardsets/study/:id` query. Ship FE and BE together: an old FE bundle still sends the field to login/register.
+  - **Env**: `TURNSTILE_SECRET_KEY`, `TURNSTILE_ENFORCE` and `VITE_TURNSTILE_SITE_KEY` no longer exist (deploy env templates, FE Dockerfile/compose, docker-development). content and assessment leave the `egress` network: Turnstile was their only internet call.
+  - **Code**: `TurnstileService` removed from `@kmaedu/common`; FE `TurnstileGuard`, the unused `FullscreenConfirmDialog` and the `@marsidev/react-turnstile` package removed; the "protected by Cloudflare Turnstile" footer and cookie-policy text updated. Credential routes stay behind the gateway rate limit (5 requests/minute).
+- **Fixed: env completeness**. auth gets `R2_PUBLIC_URL` (replaced avatars/banners are deleted from R2 again); auth and gateway examples list the required `RABBITMQ_URL`; dead variables (`AI_FREE_MODE`, `THROTTLE_ADMIN_LIMIT`, `TUTOR_FAST_RETRIEVAL_TIMEOUT_SECONDS` and old monolith keys) removed; every service has its own local gRPC port in the `.env.example` files (auth 50051 … ai 50058).
 
 - **Added: `docker-development/`, dev stack with one command**. `cd docker-development && ./project up` runs the whole project from source with hot reload (commands `up down ps logs sh seed db:reset`); open `http://localhost:5173`. Branch `feat/docker-development`, plan `plans/261111-0159-docker-development/`. No production file changes: `kmaedu-be/deploy/**` and service code are untouched.
   - **How**: dev overlays (`docker-development/compose/*.dev.yaml`) on `kmaedu-be/deploy/compose/*.yml` under compose project `kmaedu-dev` (needs Compose 2.24+). `deploy/.env` and `deploy/env/*.env` are never read; every host `.env*` file (root, `deploy/`, each `apps/*/`, `kmaedu-fe`) and `deploy/rabbitmq/definitions.json` are masked inside containers. Local secrets are generated once into `docker-development/.generated/secrets.env`; your R2, Gemini, Google keys and `ADMIN_EMAILS` go in `docker-development/.env` (a missing key disables only its feature).

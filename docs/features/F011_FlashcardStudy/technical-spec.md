@@ -202,7 +202,7 @@ stateDiagram-v2
 | Entities | [entities.md](../../docs/generated/entities.md) | MODEL-012, MODEL-014, MODEL-023 | [ ] |
 | Screens | [screens.md](../F011_FlashcardStudy/screens.md) | SCR030 | [ ] |
 | Behavior Logic | [behavior-logic.md](../../docs/system/behavior-logic.md) | BL-C02 | [ ] |
-| Permissions | [permissions.md](../../docs/system/permissions.md) | PERM032, PERM033, PERM034, PERM042 | [ ] |
+| Permissions | [permissions.md](../../docs/system/permissions.md) | PERM032, PERM033, PERM034 | [ ] |
 | User Stories | [user-stories.md](../../docs/generated/user-stories.md) | US053, US054, US055 | [ ] |
 
 ## Assumptions

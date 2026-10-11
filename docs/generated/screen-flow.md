@@ -159,7 +159,6 @@ graph TD
 - To SCR008: Click "Đã có tài khoản"
 
 **Decision Points**:
-- Bot blocked by Turnstile → form stays, error shown
 - Registration success → auto-login + redirect
 
 ---
@@ -458,7 +457,6 @@ graph TD
 
 **Decision Points**:
 - Not authenticated → redirect to `/login?from=...`
-- Turnstile token required → show guard before access check
 - No access + requires code → show AccessModal
 - No access + denied → show denied state
 - Cards loaded → show flip interface

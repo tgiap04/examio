@@ -56,7 +56,6 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Cloudflare R2** — Object storage service used to store user-uploaded files (PDFs, images). Files are accessed via signed R2 URLs served through r2-service.
 
-**Cloudflare Turnstile** — Bot-protection challenge displayed on sensitive auth forms (signup, login, forgot password). Prevents automated fake account creation.
 
 **Community (Graph)** — A cluster of related chunks detected by the Louvain community detection algorithm within a UserStorageGraph. Represents a semantically coherent section of the document used for selective RAG retrieval.
 
@@ -268,7 +267,6 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Teacher** — A platform user with base role `TEACHER` (granted only by a SYSTEM_ADMIN) who authors quiz sets, flashcard decks, and exam rooms, and reviews student performance analytics.
 
-**Turnstile** — See Cloudflare Turnstile.
 
 ---
 

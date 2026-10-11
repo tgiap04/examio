@@ -20,7 +20,7 @@
 | SCR006 | CookiesPage | atomic | ~1 | Static content |
 | SCR007 | SecurityPage | atomic | ~1 | Static content |
 | SCR008 | LoginPage | atomic | ~2 | OAuth + Email/Password |
-| SCR009 | RegisterPage | atomic | ~2 | Registration form + Turnstile |
+| SCR009 | RegisterPage | atomic | ~2 | Registration form |
 | SCR010 | ForgotPasswordPage | atomic | ~1 | Email reset form |
 | SCR011 | ResetPasswordPage | atomic | ~1 | OTP + new password form |
 | SCR012 | KRootRedirect | atomic | ~1 | Redirect logic |
@@ -269,14 +269,13 @@ Authentication page supporting email/password and Google OAuth. Renders sign-in 
 
 ### Description
 
-Account registration page with Turnstile bot protection.
+Account registration page.
 
 ### Components
 
 | Component | Type | Purpose |
 |-----------|------|---------|
 | SignupForm | form | Registration fields |
-| TurnstileGuard | guard | Bot protection |
 
 ### Data Displayed
 
@@ -933,7 +932,7 @@ Student exam session browser with session cards, attempt history dialog, and pag
 
 ### Description
 
-Flashcard study interface with flip animation, keyboard navigation, sound effects, shuffle, and progress tracking. Access-gated (Turnstile + optional code).
+Flashcard study interface with flip animation, keyboard navigation, sound effects, shuffle, and progress tracking. Access-gated (optional code).
 
 ### Components
 
@@ -943,7 +942,6 @@ Flashcard study interface with flip animation, keyboard navigation, sound effect
 | ProgressBar | bar | Study progress indicator |
 | NavControls | controls | Previous/Next + card dots |
 | AccessModal | dialog | Access code gate |
-| TurnstileGuard | guard | Bot protection on access check |
 
 ### Data Displayed
 

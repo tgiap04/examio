@@ -97,7 +97,7 @@ Trước đây backend là **distributed monolith**: tách process nhưng vẫn 
 | 7 | **Gateway viết tay 208 route, chỉ 3 controller kiểm tra JWT** | 17 file `*-proxy.controller.ts` (+ `config.controller.ts`), 11 file chép lại helper `h()`/`t()`. `AuthGuard` chỉ có ở ai, ai-chat, một method admin và một method config. Các hàm `ProxyService.forward*` chỉ trả `response.data`, làm mất status và header (trừ `forwardWithRedirect`). Chỉ admin-logs và config là tự stream. | Thêm endpoint phải sửa hai nơi. SSE của AI chat bị gom hết rồi mới trả (`proxy.service.ts:189-225`), nên không stream. |
 | 8 | **gRPC dùng nửa vời** | Proto nạp lúc chạy, interface TS viết tay và phải thêm biến thể camelCase không có trong proto (`fileId?`, `keyR2?` ở `r2-client.service.ts`). Không ai gọi `auth.proto`. `admin.proto` được tham chiếu nhưng không tồn tại. `ocr` và `finance` cùng cổng `50053`. | Contract không phải nguồn sự thật. |
 | 9 | **Event bus mong manh** | Chỉ có một luồng thật là `user.created` (auth → finance). Không có outbox. Consumer ack cả khi lỗi, không có DLQ (`event-subscriber.service.ts:50-55`). Luồng `ai.ocr.requested` không ai publish. | Mất event là không biết. Ví có thể không được tạo. |
-| 10 | **`libs/common` chứa nghiệp vụ** | Mail, password, refresh-token cipher, turnstile, PDF, OAuth guard, `sanitizeUser`, enum event của mọi domain, `BaseRepository` dùng `prisma[modelName]`. | Sửa lib là rebuild và redeploy mọi service. |
+| 10 | **`libs/common` chứa nghiệp vụ** | Mail, password, refresh-token cipher, PDF, OAuth guard, `sanitizeUser`, enum event của mọi domain, `BaseRepository` dùng `prisma[modelName]`. | Sửa lib là rebuild và redeploy mọi service. |
 | 11 | **Deploy khoá chặt với nhau** | Một `deploy/Dockerfile` build cả monorepo theo `SERVICE_NAME`. CI chạy `docker compose build` → `down` → `up` cho **toàn bộ** backend. Không có registry, image tag, test hay lint trong CI. | Downtime mỗi lần deploy. Không rollback được từng service. |
 | 12 | **Lộ hạ tầng và bảo mật lỏng** | Postgres publish ra host `5411`. `entrypoint-seed.sh` in `DATABASE_URL` ra log. Cookie bị set hai lần (auth 7 ngày, gateway 30 ngày, `SameSite=None`). | Bề mặt tấn công lớn. |
 | 13 | **Không có observability** | Health check trả tĩnh `{status:'ok'}`, không kiểm tra DB. Không có tracing hay metrics. Log đẩy vào Redis list và admin đọc file. Rate limit lưu in-memory theo instance. | Khó lần lỗi xuyên service. Scale ngang thì rate limit sai. |
@@ -709,7 +709,7 @@ kmaedu-be/
 | Hiện ở `libs/common` | Chuyển về |
 |---|---|
 | Guard đọc Prisma (`auth.guard.ts`, `admin.guard.ts`, `optional-auth.guard.ts`) | `libs/auth-jwt` (bản không DB; guard cũ đã xóa) |
-| Mail, password, refresh-token cipher, turnstile, Google OAuth guard, `sanitizeUser` | auth-service |
+| Mail, password, refresh-token cipher, Google OAuth guard, `sanitizeUser` | auth-service |
 | PDF, image processing | document-service hoặc ai-service |
 | Enum và payload event của mọi domain | `proto/kmaedu/events/v1` |
 | `BaseRepository` (`prisma[modelName]`) | Bỏ. Mỗi service viết repository kiểu tường minh. |
@@ -889,7 +889,7 @@ Stack nằm ở `kmaedu-be/deploy/docker-compose.yml`, ghép từ `deploy/compos
 networks:
   edge:      {}                       # nginx FE ↔ gateway
   internal:  { internal: true }       # gateway ↔ service ↔ data; không ra Internet trực tiếp
-  egress:    {}                       # chỉ service cần gọi ra ngoài (ai, r2, auth/OAuth/mail, Turnstile)
+  egress:    {}                       # chỉ service cần gọi ra ngoài (ai, r2, auth/OAuth/mail)
 
 services:
   gateway-a:                          # gateway-b giống hệt; alias mạng: gateway

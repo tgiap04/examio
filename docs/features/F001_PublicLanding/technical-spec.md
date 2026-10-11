@@ -143,4 +143,4 @@ None.
 ## Unresolved Questions
 
 1. **{HomePage}**: Whether content is server-side rendered or fetched client-side on mount — not confirmed from source.
-2. **{ContactForm}**: Whether rate limiting or spam protection (other than Turnstile) is applied — not confirmed.
+2. **{ContactForm}**: Whether rate limiting or spam protection (other than the gateway rate limit) is applied — not confirmed.

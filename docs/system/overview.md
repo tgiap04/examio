@@ -147,7 +147,6 @@ Exchange: `kmaedu.events` (topic, durable). Main flows: `auth.user.authz_changed
 4. OAuth (Google): redirect → backend `/auth/google` (or One Tap) → `/auth/google/callback` sets the `accessToken` / `refreshToken` cookies and redirects to the frontend; a native client (allowlisted app redirect) instead receives a one-time `?code=` and swaps it at `POST /auth/exchange`. `AuthSyncBootstrap` only hydrates the user from `/auth/me`
 5. Device tracking: `X-Device-ID` header from `getOrCreateDeviceId()`; sessions tracked per device in `UserSession` table
 6. Session cleanup: `session-cleanup.cron.ts` (scheduled job) invalidates expired sessions
-7. Cloudflare Turnstile: `TurnstileGuard` on sensitive auth forms (signup, login, forgot password)
 
 ---
 
@@ -184,7 +183,7 @@ Exchange: `kmaedu.events` (topic, durable). Main flows: `auth.user.authz_changed
 
 ## Security Overview
 
-- **Authentication**: JWT cookie (`accessToken`) + `refreshToken` cookie; Google OAuth via One Tap; Cloudflare Turnstile on auth forms
+- **Authentication**: JWT cookie (`accessToken`) + `refreshToken` cookie; Google OAuth via One Tap; credential routes rate-limited at the gateway (5 req/min)
 - **Authorization**: `@kmaedu/auth-jwt` guards in every service (permission per route, deny by default; [permissions](permissions.md)); frontend routes go through `guarded()` → `RequirePermission` (UX only; `ProtectedRoute` / `PublicRoute` for login-only and public pages); service tokens (`POST /internal/token`) on gRPC / inter-service calls
 - **Data Encryption**: AES-256-CBC question encryption (server-side secret); client decrypts with `VITE_QUIZ_AES_KEY`; JWT answer token prevents tampering
 - **API Security**: HttpOnly cookie `accessToken` (or Bearer) + `X-Device-ID` header; rate limit at gateway (default 100 req/min per user or IP, 5 req/min on credential routes); error envelope `{statusCode, code, message, requestId}`; 401 codes `TOKEN_MISSING`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `SESSION_REVOKED`, `TOKEN_STALE`; session invalidation on logout/device revocation takes effect at the gateway on the next request

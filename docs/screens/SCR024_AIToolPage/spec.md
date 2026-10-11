@@ -138,7 +138,6 @@ KLayout-wrapped page containing 2 tab panels (Test / Flashcard) driven by `useAI
 | Guard | Type | Consequence if bypassed |
 |-------|------|------------------------|
 | `ProtectedRoute` (parent) | auth | redirect to /login |
-| TurnstileGuard on /ai-tool | auth (bot) | bypass bot detection |
 | `SessionValidationMiddleware` (server) | auth | 401 SESSION_INVALIDATED |
 | R2 multipart upload size cap (50MB) | permission | server OOM |
 

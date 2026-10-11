@@ -141,7 +141,7 @@ Phase 15 (document-service and ai-service database) is committed on `refactor/mi
 
 | # | Item | Source | Owner | Deps |
 |---|------|--------|-------|------|
-| 1.1 | **Confirm Turnstile enforcement on login page** (bot protection on repeated failed attempts) | F002 Q1 | backend | 0.1 |
+| 1.1 | **Removed 2026-11-13:** Turnstile was removed from the system; login relies on the gateway rate limit (5 req/min) instead of a captcha | F002 Q1 | backend | 0.1 |
 | 1.2 | **Define session TTL + refresh token rotation policy** (currently undocumented) | F002 Q2 | backend | — |
 | 1.3 | **Configure Google One Tap domain/email allowlist** (or document why not) | F002 Q3 | platform | — |
 | 1.4 | **AES-256-CBC key provisioning mechanism** for quiz decryption (embed in JWT vs separate fetch) | F012 Q1 | backend | 0.1 |
@@ -154,7 +154,7 @@ Phase 15 (document-service and ai-service database) is committed on `refactor/mi
 | # | Item | Owner |
 |---|------|-------|
 | 2.1.1 | Decide SSR vs CSR for HomePage content | frontend |
-| 2.1.2 | Add contact form rate limiting (beyond Turnstile) | backend |
+| 2.1.2 | Add contact form rate limiting (beyond the gateway rate limit) | backend |
 
 ### F003 AccountManagement
 | # | Item | Owner |

@@ -112,8 +112,8 @@ Compose publishes no backend port on the host: the only host port is the FE ngin
 |---------|----------:|----------:|---------|------|
 | `gateway-service` | 3000 | 50051 (GatewayControl, internal only) | Node 22 | Public HTTP entry: YAML-routed streaming proxy, JWT verify, revoke/stale checks, rate limit, WS upgrade proxy (`/ws/study`). No database |
 | `auth-service` | 3000 | 50051 | Node 22 | RS256 JWT issuer + JWKS, service tokens, OAuth, sessions, devices, roles (RBAC) |
-| `content-service` | 3000 (local 3013) | 50051 (`ContentService`, local 50057, forwarded user token only) | Node 22 | Quiz/flashcard authoring and sharing, practice, flashcard study, `GenerationJob` (quiz/flashcard generation, no charge), `recent-uploads`, `word-family/:id/to-flashcard` bridge, `/student/*` content routes; schema `content`; `ROLE=api,worker` (outbox relay, generation reaper, `r2_delete_tasks` worker); needs `egress` for Turnstile |
-| `assessment-service` | 3000 (local 3014) | none | Node 22 | Exam rooms, sessions, attempts, cheating log, `/student/*` exam routes; schema `assessment`; quizzes are read only from the per-session snapshot; `ROLE=api,worker` (outbox relay, purge); needs `egress` for Turnstile |
+| `content-service` | 3000 (local 3013) | 50051 (`ContentService`, local 50057, forwarded user token only) | Node 22 | Quiz/flashcard authoring and sharing, practice, flashcard study, `GenerationJob` (quiz/flashcard generation, no charge), `recent-uploads`, `word-family/:id/to-flashcard` bridge, `/student/*` content routes; schema `content`; `ROLE=api,worker` (outbox relay, generation reaper, `r2_delete_tasks` worker); no `egress` (no internet calls) |
+| `assessment-service` | 3000 (local 3014) | none | Node 22 | Exam rooms, sessions, attempts, cheating log, `/student/*` exam routes; schema `assessment`; quizzes are read only from the per-session snapshot; `ROLE=api,worker` (outbox relay, purge); no `egress` (no internet calls) |
 | `ai-chat-service` | 3000 | none | Node 22 | AI chat (HTTP `/api/v1/ai-chat/*`, SSE stream and regenerate-stream) and public `/api/v1/subjects/*` (since phase 13); schema `aichat`; `ROLE=api,worker` (`r2_delete_tasks` worker for message images); consumes `aichat.events` in the API process |
 | `study-room-service` | 3000 | none | Node 22 | Study-Together Room: HTTP `/api/v1/studyrooms/*` and Socket.io `/ws/study`; one container, consumes `studyroom.events` in the API process |
 | `vocabulary-service` | 3000 | 50051 (`WordFamilyAdminService`, `WordFamilyService`, internal only) | Node 22 | Word families and categories, AI generation (gRPC `GenerateWordFamily` to ai-service), `r2_delete_tasks` worker (`ROLE=api,worker`) |
@@ -423,7 +423,6 @@ sequenceDiagram
 | Auth | RS256 JWT (access 15 min, JWKS) + Passport Google OAuth | — |
 | Encryption | AES-256-CBC + JWT answer tokens | — |
 | Image preprocessing | jimp + cv (OpenCV.js) | — |
-| Bot protection | Cloudflare Turnstile | — |
 | Email | Nodemailer (Gmail SMTP); transport built lazily on first send, JSON transport (no network) when `NODE_ENV=test` or `MAIL_TRANSPORT=json`, production requires `EMAIL_USER`/`EMAIL_PASS` | — |
 | Cron | @nestjs/schedule | latest |
 | File upload | multipart/form-data (max 50MB for gRPC R2) | — |
@@ -494,7 +493,6 @@ One Postgres database, one schema and one login role per service. `libs/database
 | Cache invalidation | `BaseRepository` scoped to userId + itemId. Since phase 06 a cached `findOne` lives under the scope writes invalidate (`{id, owner}` item scope, `{id}` public scope, `{owner}` user `one:` scope), so create/update/delete/upsert/updateMany clear it. |
 | Request validation | Zod via `ZodValidationPipe` on content-service and assessment-service controllers; see § 7 |
 | AMQP channel errors | `RabbitMQService.createChannel` (`libs/common`) and `AmqpConnection` (`libs/messaging`) attach an `error` listener to every channel (warn log; ChannelWrapper `error` / `Channel ended` no longer crash the process), and `RabbitMQService` closes its channels before the connection on shutdown |
-| Bot protection | Cloudflare Turnstile on sensitive forms |
 | Image preprocessing | jimp + OpenCV.js (grayscale → CLAHE → threshold → denoise → sharpen) |
 | PDF OCR | pdf2pic + tesseract.js + ImagePreprocessingService |
 
@@ -595,7 +593,7 @@ graph LR
 |---|---|---|
 | `edge` (`kmaedu-edge`) | gateway, FE nginx | only way in; bring this stack up first (it creates the network) |
 | `internal` (`kmaedu-internal`, `internal: true`) | every service, Postgres, Redis, RabbitMQ | no route out |
-| `egress` (`kmaedu-egress`) | auth, content, assessment, r2, ai | services that really call the internet; admin has none |
+| `egress` (`kmaedu-egress`) | auth, r2, ai, ai-worker | services that really call the internet; admin has none |
 
 - No backend container publishes a host port (`deploy/compose-topology.spec.cjs` fails CI if one returns). The only host port is the FE nginx (`FE_PORT`, 6368); the former `127.0.0.1:6369` gateway port is gone.
 - The gateway runs as two instances, `gateway-a` and `gateway-b` (`compose/gateway.yml`), both on `edge` and `internal`; they keep no local state (Redis and RabbitMQ hold revoke/authz/rate-limit state), so either serves any request. nginx upstream `gw` re-resolves both names (`resolve`, needs nginx 1.27.3+), retries idempotent requests on the other instance (`proxy_next_upstream`, `proxy_connect_timeout 3s`), and is never reloaded during a deploy.

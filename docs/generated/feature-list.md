@@ -98,7 +98,7 @@
 ### F002: Authentication
 
 **Type**: ui
-**Description**: Full authentication flow including email/password login, Google OAuth (One Tap), account registration with Turnstile bot protection, and session management with device tracking.
+**Description**: Full authentication flow including email/password login, Google OAuth (One Tap), account registration, and session management with device tracking.
 
 **Workspace**: kmaedu-fe
 **Languages**: TypeScript
@@ -140,7 +140,6 @@
 **Related Permissions**:
 - PERM004: LoginAccess
 - PERM005: RegisterAccess
-- PERM042: TurnstileBotProtection
 
 ---
 
@@ -572,7 +571,7 @@
 ### F011: FlashcardStudy
 
 **Type**: ui
-**Description**: Flashcard study interface with flip animation, keyboard navigation, sound effects, shuffle, and progress tracking. Access-gated (Turnstile + optional access code). Progress auto-saved per user per set.
+**Description**: Flashcard study interface with flip animation, keyboard navigation, sound effects, shuffle, and progress tracking. Access-gated (optional access code). Progress auto-saved per user per set.
 
 **Workspace**: kmaedu-fe
 **Languages**: TypeScript
@@ -604,7 +603,6 @@
 - PERM032: FlashcardStudyAccess
 - PERM033: FlashcardStudyAccessCode
 - PERM034: FlashcardStudyProgress
-- PERM042: TurnstileBotProtection
 
 ---
 
