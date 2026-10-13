@@ -1,5 +1,4 @@
 import { Link } from "react-router-dom";
-import { BookCopy, GraduationCap, Sparkles } from "lucide-react";
 import Logo from "@/components/atoms/Logo";
 import { cn } from "@/lib/utils";
 import { brandCardClass, sidebarSectionLabelClass } from "./sidebar-styles";
@@ -36,14 +35,17 @@ export function SidebarSectionLabel({ text, collapsed = false }: { text: string;
   return <p className={sidebarSectionLabelClass}>{text}</p>;
 }
 
-/** Small vector stand-in for the "graduation cap on books" illustration (no raster asset needed). */
+/** "Graduation cap on books" illustration of the promo card (public/promo-graduation.webp, background removed). */
 export function PromoIllustration() {
   return (
-    <span aria-hidden className="relative block h-12 w-12 shrink-0">
-      <BookCopy className="absolute bottom-0 left-1 h-9 w-9 text-coral" strokeWidth={1.8} fill="#fde4e2" />
-      <GraduationCap className="absolute left-3 top-0 h-8 w-8 text-ink" strokeWidth={1.8} fill="#0f172a" />
-      <Sparkles className="absolute left-0 top-1 h-3.5 w-3.5 text-coral" strokeWidth={2} />
-      <Sparkles className="absolute bottom-1 right-0 h-3 w-3 text-accent-amber" strokeWidth={2} />
-    </span>
+    <img
+      src="/promo-graduation.webp"
+      alt=""
+      aria-hidden
+      width={109}
+      height={96}
+      loading="lazy"
+      className="h-12 w-auto shrink-0 object-contain drop-shadow-[0_4px_6px_rgba(217,45,41,0.18)]"
+    />
   );
 }
