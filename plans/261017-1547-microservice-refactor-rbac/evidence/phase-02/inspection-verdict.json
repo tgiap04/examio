@@ -1,0 +1,35 @@
+{
+  "score": 8,
+  "criticalCount": 0,
+  "decision": "SEALED",
+  "acceptanceCovered": [
+    "yarn proto:lint, proto:gen, typecheck, build:all and test exit 0 (temper 25/25 evidence; not re-run by reviewer)",
+    "no hand-written gRPC TS interfaces and no runtime protos/ path references remain in apps or libs",
+    "all gRPC servers bind 50051 and HTTP binds 3000; no 50053/50054/50056 in apps or compose (compose/main.ts clean; local-dev .env.example retains distinct ports, see warning)",
+    "auth proto exposes BaseRole + is_system_admin with no numeric role and no actor_id in any request",
+    "finance WalletService defines Debit/Credit/Refund with idempotency keys (UNIMPLEMENTED until P10) and keeps deprecated UpdateBalance",
+    "r2 DeleteObjects implemented and idempotent",
+    "libs/grpc retries only IDEMPOTENT_RPCS, explicit metadata param, no AsyncLocalStorage, gRPC status mapped to HTTP",
+    "libs/http error envelope filter built and unit-tested but not registered",
+    "ai-service python stubs generated from the same protos and importable",
+    "exam AI generation still debits credits via gRPC"
+  ],
+  "regressionChecked": [
+    "exam -> finance credit check and debit (FinanceClient whole-number guard, UpdateBalance not retried, camelCase benefits)",
+    "exam/auth -> r2 upload and delete (UploadFile excluded from retry, DeleteObjects chunking/errors)",
+    "service boot ports and compose wiring (3000/50051, ai PORT=3000 honored by Dockerfile CMD)",
+    "FE container -> gateway BACKEND_URL (http://examio-gateway:3000)",
+    "ai-service import of generated stubs (pins grpcio 1.71.2, protobuf 5.29.6)",
+    "ci.yml buf lint/breaking and be-boot dummy env (no real secrets)"
+  ],
+  "contractStatus": "CHANGED",
+  "refuted": [],
+  "unproven": [],
+  "reachableRegressions": [],
+  "findings": [
+    { "severity": "Warning", "category": "Config", "location": "examio-be/apps/finance-service/.env.example:7", "summary": "local-dev .env.example keeps 50053/50054 (r2:10, exam:22-23); documented as local-only but literally contradicts the no-50053/54/56 criterion; consider env-var defaults all 50051 with per-host override note", "disposition": "Defer" },
+    { "severity": "Warning", "category": "Money", "location": "examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts:95", "summary": "400 INVALID_AMOUNT from assertWholeCredits is masked as generic 403 in deductCredits; safe (no debit, fail closed) but misleading to caller", "disposition": "Defer" },
+    { "severity": "Suggestion", "category": "Security", "location": "examio-be/apps/r2-service/src/r2-service.controller.ts:162", "summary": "DeleteObjects accepts arbitrary keys with no prefix/ownership check; relies on phase 04 service auth, ensure it lands before exposure", "disposition": "Defer" },
+    { "severity": "Suggestion", "category": "Money", "location": "examio-be/libs/grpc/src/idempotent-rpcs.ts:16", "summary": "Debit/Credit/Refund are in retry allowlist before the server dedupes on key (P10); safe now since UNIMPLEMENTED, add a P10 gate test that dedupe exists", "disposition": "Defer" }
+  ]
+}

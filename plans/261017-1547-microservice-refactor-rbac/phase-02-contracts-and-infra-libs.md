@@ -8,7 +8,7 @@
 - Scout: [current state](./reports/scout-current-state-report.md) "gRPC / events"
 
 ## Overview
-- Priority: P1 · Status: Pending · Effort: 2.25d <!-- Red Team: RT-1, RT-8 (was 2d: +money/delete contracts, +DeleteObjects server; −ALS middleware, −filter rollout) --> · Depends on: 01
+- Priority: P1 · Status: Completed (2026-10-18) · Effort: 2.25d <!-- Red Team: RT-1, RT-8 (was 2d: +money/delete contracts, +DeleteObjects server; −ALS middleware, −filter rollout) --> · Depends on: 01
 - Make `examio-be/proto/` the single contract source. Generate TS (ts-proto) and Python stubs. Unify ports. Add the `libs/contracts`, `libs/grpc`, `libs/http` skeletons. Move every existing gRPC caller and server onto generated types. Define the idempotent money and delete contracts now so later phases code against them.
 
 ## Key Insights
@@ -118,15 +118,15 @@ File ownership (globs): `examio-be/proto/**`, `examio-be/libs/{contracts,grpc,ht
 - Existing exam finance-client specs keep passing (debit fail-closed behaviour unchanged).
 
 ## Todo List
-- [ ] buf config + 7 proto files lint-clean (incl. Debit/Credit/Refund, DeleteObjects, SetUserStatus, GetPublicProfilesByIds) <!-- Red Team: RT-1, RT-8, RT-15 -->
-- [ ] proto:gen + aliases + gitignore
-- [ ] libs/grpc (client module, explicit metadata, deadline, allowlisted retry, error map) <!-- Red Team: RT-1, RT-2 -->
-- [ ] libs/http error envelope filter (built + tested, not registered) <!-- Red Team: RT-11 -->
-- [ ] r2 (+DeleteObjects), finance, auth gRPC servers on generated types
-- [ ] TS callers moved to clients/*.client.ts; libs/common grpc + protos deleted
-- [ ] Python stubs regenerated from proto/
-- [ ] Ports unified (compose 3000/50051; local env distinct; FE `BACKEND_URL` default `:3000`) <!-- Reconcile: X9 -->
-- [ ] CI buf lint/breaking + proto:gen before build
+- [x] buf config + proto files lint-clean (incl. Debit/Credit/Refund, DeleteObjects, SetUserStatus, GetPublicProfilesByIds) — evidence: 6 proto files (plan text said "7"; Create list has 6), `proto:lint` exit 0 · <!-- Red Team: RT-1, RT-8, RT-15 -->
+- [x] proto:gen + aliases + gitignore — `proto:gen` exit 0; `@examio/{contracts,grpc,http}` aliases in tsconfig + jest; `libs/contracts/src/generated/` gitignored
+- [x] libs/grpc (client module, explicit metadata, deadline, allowlisted retry, error map) — 36 tests pass with libs/http <!-- Red Team: RT-1, RT-2 -->
+- [x] libs/http error envelope filter (built + tested, not registered) <!-- Red Team: RT-11 -->
+- [x] r2 (+DeleteObjects), finance, auth gRPC servers on generated types — r2 7, finance 48, auth 12 tests pass
+- [x] TS callers moved to clients/*.client.ts; libs/common grpc + protos deleted — `clients/{r2,finance}.client.ts` (exam), `libs/common/src/{grpc,protos}` absent
+- [x] Python stubs regenerated from proto/ — import OK, grpcio 1.71.2 / protobuf 5.29.6
+- [x] Ports unified (compose 3000/50051; local env distinct; FE `BACKEND_URL` default `:3000`) — `.env.example` local ports tracked as deferred item 1 <!-- Reconcile: X9 -->
+- [x] CI buf lint/breaking + proto:gen before build — `ci.yml` buf job (`breaking_against` PR base), `proto:gen` before be-check and build jobs
 
 ## Success Criteria
 - `cd examio-be && yarn proto:lint && yarn proto:gen && yarn typecheck && yarn build:all && yarn test`: exit 0.
@@ -158,3 +158,12 @@ File ownership (globs): `examio-be/proto/**`, `examio-be/libs/{contracts,grpc,ht
 - [CROSS-PHASE] `gateway_control.proto` and `ListRoleChanges` are defined here (not listed in the brief's 02 scope) so that 04 can code its clients before the 05 server exists. Phases 04/05/08 rely on this.
 - [CROSS-PHASE] The brief says "rewrite 5 protos". `ocr.proto` is deleted in 01, so the 5th is the new `gateway_control.proto`. Finance `ChangeTier` stays for phase 10; `Debit/Credit/Refund` contracts are here, servers in 10. <!-- Red Team: RT-1 -->
 - [CROSS-PHASE] `DeleteObjects` is the only delete path the P11+ `r2_delete_tasks` worker uses. <!-- Red Team: RT-8 -->
+
+### Deferred / carried (from phase 02 inspection + temper, 2026-10-18)
+1. Per-service `.env.example` keep distinct local gRPC ports 50053/50054 for single-host dev. Criterion "no 50053/50054/50056" is scoped to `src` + compose only. Owner: P02 follow-up / docs sync (P19).
+2. r2 `DeleteObjects` has no key ownership/prefix check. MUST be guarded by P04 `@ServiceOnly` before exposure. Owner: P04.
+3. P10 must add a test proving `Debit`/`Credit`/`Refund` idempotency-key dedupe (already in `IDEMPOTENT_RPCS`). Owner: P10.
+4. Client money guard (whole-number, range) must be added to future `Debit`/`Credit` wrappers. Owner: P10.
+5. CI `be-boot` dummy env must track new boot-time required vars (`JWT_SECRET`, `QUIZ_*`, `PAYMENT_*`, `GOOGLE_*`, etc.) as services change. Owner: each phase that adds a required env var.
+6. Behaviour change: subscription limits (files per month, AI chat) now enforced after the camelCase fix. Expect quota-blocked requests that previously passed. Owner: P06 QA / release notes.
+7. `docs/` and `ARCHITECTURE.md:70` still mention old ports (docs sync). Owner: P19.
