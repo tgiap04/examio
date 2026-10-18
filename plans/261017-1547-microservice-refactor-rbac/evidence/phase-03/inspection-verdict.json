@@ -1,0 +1,38 @@
+{
+  "score": 9,
+  "criticalCount": 0,
+  "decision": "SEALED",
+  "acceptanceCovered": [
+    "yarn typecheck, build:all and test exit 0",
+    "finance user-registered e2e passes",
+    "registering a user while RabbitMQ is down still returns 201 and the wallet appears within 5s after RabbitMQ returns (no event loss)",
+    "duplicate deliveries are absorbed by processed_events (handler effect applied once)",
+    "envelope source/type mismatch goes to the DLQ; transient failures retry via <svc>.retry.30s and land in <svc>.dlq after 5 attempts",
+    "per-service RabbitMQ users exist and finance can only publish ^finance\\. on examio.events",
+    "relay holds no DB lock across the broker call and uses its own small pg pool",
+    "state events without a numeric data.version are rejected by createEnvelope",
+    "no USER_CREATED, traceparent or amq.default references remain",
+    "deploy/rabbitmq/definitions.json is gitignored and never committed"
+  ],
+  "regressionChecked": [
+    "user registration email path: outbox.add inside the same prisma tx as user create, fire-and-forget publish removed",
+    "Google OAuth new-user path: outbox.add inside the same tx, fire-and-forget publish removed",
+    "finance wallet bootstrap: wallet.findUnique guard + processed_events insert in same tx, ack after commit",
+    "service boot: parseRoles default api,worker, invalid ROLE throws, bootstrap catch exits 1",
+    "relay shutdown order: loop stopped in beforeApplicationShutdown, pool.end in onApplicationShutdown",
+    "broker auth for all services incl. ai legacy queue and exam-service queue permissions",
+    "deploy.yml renders definitions under set -e before compose down; compose requires all RABBITMQ_*_PASS",
+    "migration SQL vs schema.prisma (partial index only in SQL, drift check recorded clean)",
+    "libs/messaging has no prisma imports; all new files under 200 lines"
+  ],
+  "contractStatus": "CHANGED",
+  "refuted": [],
+  "unproven": [],
+  "reachableRegressions": [],
+  "findings": [
+    { "severity": "Low", "category": "Logic", "location": "examio-be/libs/messaging/src/outbox-relay.service.ts:113", "summary": "rows of a batch are published concurrently via Promise.allSettled, so per-aggregate order is not guaranteed at the broker; consumers must rely on data.version for state events (already enforced by createEnvelope)", "disposition": "Defer" },
+    { "severity": "Low", "category": "Reliability", "location": "examio-be/libs/messaging/src/outbox-relay.service.ts:39", "summary": "no max-attempts for outbox rows: permanently failing rows retry every 5 min forever; only the stale ALERT log surfaces them", "disposition": "Defer" },
+    { "severity": "Low", "category": "Deploy", "location": "examio-be/deploy/docker-compose.yml:354", "summary": "existing deployed rabbitmq_data volume keeps the old default user and orphaned finance.user.created queues after the switch to definitions; clean up manually", "disposition": "Defer" },
+    { "severity": "Low", "category": "Concurrency", "location": "examio-be/libs/messaging/src/event-consumer.service.ts:88", "summary": "handleMessage is fire-and-forget (void); in-flight deliveries are not drained at shutdown, relying on broker redelivery plus dedupe (safe, just noisy)", "disposition": "Defer" }
+  ]
+}

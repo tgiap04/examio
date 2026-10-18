@@ -8,7 +8,7 @@
 - Scout: [current state](./reports/scout-current-state-report.md) "gRPC / events"
 
 ## Overview
-- Priority: P1 · Status: Pending · Effort: 2.5d <!-- Red Team: RT-2, RT-10 (was 2d: +per-service broker users, +claim-then-publish relay, +purge, +source/version rules; −Python helper, −2 retry tiers, −traceparent) --> · Depends on: 02
+- Priority: P1 · Status: Completed (2026-10-18) · Effort: 2.5d <!-- Red Team: RT-2, RT-10 (was 2d: +per-service broker users, +claim-then-publish relay, +purge, +source/version rules; −Python helper, −2 retry tiers, −traceparent) --> · Depends on: 02
 - Build `libs/messaging`: envelope v1, transactional outbox + claim-then-publish relay, confirm publisher, idempotent consumer with source validation, ONE TTL retry tier, DLQ, daily purge. Add `ROLE=worker`. One RabbitMQ user per service with topic permissions. Move the one live event (`user.created`, auth → finance) to `auth.user.registered` via the outbox.
 
 ## Key Insights
@@ -156,14 +156,14 @@ File ownership (globs): `examio-be/libs/messaging/**`, `examio-be/libs/database/
 - Integration (`libs/messaging/test/outbox-purge.e2e-spec.ts`): rows published 8 days ago and processed 15 days ago are deleted; newer rows and unpublished rows stay. <!-- Red Team: RT-10 -->
 
 ## Todo List
-- [ ] Failing unit tests for envelope/consumer/relay/render script
-- [ ] libs/messaging implementation + alias (claim-then-publish relay, relay pool, purge, source validation, state-event registry) <!-- Red Team: RT-2, RT-10 -->
-- [ ] messaging.prisma + migration (partial index, `locked_until`)
-- [ ] Per-service RabbitMQ users: definitions template + render script + compose wiring <!-- Red Team: RT-2 -->
-- [ ] auth register/OAuth → outbox; fire-and-forget removed
-- [ ] ROLE=worker entry (auth, finance)
-- [ ] finance `auth.user.registered` handler (idempotent)
-- [ ] e2e: duplicate delivery → single wallet credit; cross-domain publish refused
+- [x] Failing unit tests for envelope/consumer/relay/render script
+- [x] libs/messaging implementation + alias (claim-then-publish relay, relay pool, purge, source validation, state-event registry) <!-- Red Team: RT-2, RT-10 -->
+- [x] messaging.prisma + migration (partial index, `locked_until`)
+- [x] Per-service RabbitMQ users: definitions template + render script + compose wiring <!-- Red Team: RT-2 -->
+- [x] auth register/OAuth → outbox; fire-and-forget removed
+- [x] ROLE=worker entry (auth, finance)
+- [x] finance `auth.user.registered` handler (idempotent)
+- [x] e2e: duplicate delivery → single wallet credit; cross-domain publish refused
 
 ## Success Criteria
 - `cd examio-be && yarn typecheck && yarn build:all && yarn test`: exit 0.
@@ -197,3 +197,12 @@ File ownership (globs): `examio-be/libs/messaging/**`, `examio-be/libs/database/
 - [CROSS-PHASE] Phase 05 adds RabbitMQ user `gateway` (consumes `auth.user.authz_changed`, `dedupe:false`); phases 12–15 add their users to `definitions.template.json` with the same pattern. <!-- Red Team: RT-2 -->
 - [CROSS-PHASE] Phase 11 must recreate `outbox_events` / `processed_events` per service schema (keep `consumer` column or drop it), with no data carry-over (DB reset), and set the relay pool `search_path`.
 - [CROSS-PHASE] `traceparent` propagation is deferred to phase 17 (RT-10).
+
+### Deferred / carried (from Phase 03 close-out, 2026-10-18; inspection SEALED 9/10, 0 critical)
+1. Outbox rows have no max-attempts or parked state: a permanently failing row retries every 5 min forever, and only the stale alert surfaces it. Consider in P16.
+2. Relay batch publishes concurrently (`Promise.allSettled`), so there is no strict per-aggregate order at the broker. State events rely on `data.version`.
+3. Consumer `handleMessage` is not drained at shutdown. Safe via broker redelivery + `processed_events` dedupe.
+4. The existing deployed `rabbitmq_data` volume needs a one-time cleanup at cutover (old default user + orphan `finance.user.created` queue). Owner: P16 runbook.
+5. Docker Desktop erlang-cookie EACCES on this host (bind-mounted data dirs only; compose uses a named volume). Verify on the CI runner.
+6. Outage-drill timing: wallet credited 257 ms after broker ready (5.6 s including broker boot).
+7. CI/deploy messaging changes (`deploy.yml` render step, compose wiring) not yet run on GitHub or the VPS. Owner: lead, before P16.

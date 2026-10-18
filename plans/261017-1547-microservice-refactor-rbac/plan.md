@@ -26,7 +26,7 @@ Decisions (authoritative): [reports/decisions.md](./reports/decisions.md). Input
 |---|-------|--------|--------|-----------|
 | 01 | [Guardrails & Cleanup](./phase-01-guardrails-and-cleanup.md) | Completed | 2.25d | — |
 | 02 | [Contracts & Infra Libs](./phase-02-contracts-and-infra-libs.md) | Completed | 2.25d | 01 |
-| 03 | [Messaging Foundation](./phase-03-messaging-foundation.md) | Pending | 2.5d | 02 |
+| 03 | [Messaging Foundation](./phase-03-messaging-foundation.md) | Completed | 2.5d | 02 |
 | 04 | [Identity & RBAC Core](./phase-04-identity-and-rbac-core.md) | Pending | 5d | 02, 03 |
 | 05 | [Gateway Rewrite](./phase-05-gateway-rewrite.md) | Pending | 4.25d | 02, 03, 04 |
 | 06 | [RBAC Enforcement & Security Fixes](./phase-06-rbac-enforcement-and-security-fixes.md) | Pending | 4.75d | 04 |
