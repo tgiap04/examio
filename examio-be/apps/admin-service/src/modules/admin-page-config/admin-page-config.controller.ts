@@ -5,12 +5,10 @@ import {
     Param,
     Patch,
     Req,
-    UseGuards,
     UsePipes,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ZodValidationPipe } from 'nestjs-zod';
-import { AdminGuard } from '@examio/common';
 import {
     ApiBearerAuth,
     ApiOperation,
@@ -21,11 +19,12 @@ import { Request } from 'express';
 
 import { AdminPageConfigService, AuditContext } from './admin-page-config.service';
 import { TogglePageBodyDto } from './dto/toggle-page.body';
+import { RequirePermissions } from '@examio/auth-jwt';
 
 @ApiTags('Admin / Page Config')
 @ApiBearerAuth()
 @Controller('admin/page-config')
-@UseGuards(AdminGuard)
+@RequirePermissions('admin:access')
 @Throttle({ admin: { ttl: 60000, limit: 30 } })
 @UsePipes(ZodValidationPipe)
 export class AdminPageConfigController {

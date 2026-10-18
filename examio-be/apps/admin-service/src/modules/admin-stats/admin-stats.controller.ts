@@ -1,7 +1,6 @@
-import { Controller, Get, Query, UseGuards, UsePipes } from '@nestjs/common';
+import { Controller, Get, Query, UsePipes } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ZodValidationPipe } from 'nestjs-zod';
-import { AdminGuard } from '@examio/common';
 import {
     ApiBearerAuth,
     ApiOperation,
@@ -10,11 +9,12 @@ import {
 
 import { AdminStatsService } from './admin-stats.service';
 import { SeriesQueryDto } from './dto/series.query';
+import { RequirePermissions } from '@examio/auth-jwt';
 
 @ApiTags('Admin / Stats')
 @ApiBearerAuth()
 @Controller('admin/stats')
-@UseGuards(AdminGuard)
+@RequirePermissions('admin:access')
 @UsePipes(ZodValidationPipe)
 @Throttle({ admin: { ttl: 60000, limit: 30 } })
 export class AdminStatsController {

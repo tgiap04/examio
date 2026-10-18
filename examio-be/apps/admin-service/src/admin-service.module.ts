@@ -5,20 +5,19 @@ import {
     DatabaseReadinessCheck,
     PrismaService,
 } from '@examio/database';
-import { AuthModule } from '@examio/common';
 import { RedisModule, RedisReadinessCheck } from '@examio/redis';
 
 import { AdminServiceController } from './admin-service.controller';
 import { AdminServiceService } from './admin-service.service';
 import { AdminFinanceModule } from './modules/admin-finance/admin-finance.module';
 import { AdminStatsModule } from './modules/admin-stats/admin-stats.module';
-import { AdminBootstrapModule } from './modules/admin-bootstrap/admin-bootstrap.module';
 import { AdminLogsModule } from './modules/admin-logs/admin-logs.module';
 import { AdminUsersModule } from './modules/admin-users/admin-users.module';
 import { AdminAuditModule } from './modules/admin-audit/admin-audit.module';
 import { AdminWordFamilyModule } from './modules/admin-word-family/admin-word-family.module';
 import { AdminPageConfigModule } from './modules/admin-page-config/admin-page-config.module';
 import { HealthModule, LoggerModule } from '@examio/observability';
+import { AuthJwtModule } from '@examio/auth-jwt';
 
 @Module({
     imports: [
@@ -28,7 +27,7 @@ import { HealthModule, LoggerModule } from '@examio/observability';
         }),
         DatabaseModule,
         RedisModule,
-        AuthModule,
+        AuthJwtModule.forRoot({ serviceName: 'admin' }),
         ThrottlerModule.forRoot([
             {
                 name: 'admin',
@@ -38,7 +37,6 @@ import { HealthModule, LoggerModule } from '@examio/observability';
         ]),
         AdminStatsModule,
         AdminFinanceModule,
-        AdminBootstrapModule,
         AdminLogsModule,
         AdminUsersModule,
         AdminAuditModule,

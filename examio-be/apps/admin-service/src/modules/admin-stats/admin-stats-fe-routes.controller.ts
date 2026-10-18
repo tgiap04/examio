@@ -4,14 +4,13 @@ import {
     Get,
     Param,
     Query,
-    UseGuards,
     UsePipes,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ZodValidationPipe } from 'nestjs-zod';
-import { AdminGuard } from '@examio/common';
 
 import { AdminStatsService } from './admin-stats.service';
+import { RequirePermissions } from '@examio/auth-jwt';
 
 const ALLOWED_SERIES = ['signups', 'traffic', 'revenue'] as const;
 type AllowedSeries = (typeof ALLOWED_SERIES)[number];
@@ -29,7 +28,7 @@ type AllowedSeries = (typeof ALLOWED_SERIES)[number];
  * controller is the thin pass-through the FE expects.
  */
 @Controller('admin')
-@UseGuards(AdminGuard)
+@RequirePermissions('admin:access')
 @UsePipes(ZodValidationPipe)
 @Throttle({ admin: { ttl: 60000, limit: 30 } })
 export class AdminStatsFeRoutesController {

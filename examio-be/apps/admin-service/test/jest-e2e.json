@@ -6,8 +6,7 @@
   ],
   "rootDir": ".",
   "testEnvironment": "node",
-  "testRegex": "app\\.e2e-spec\\.ts$",
-  "//": "admin.e2e-spec.ts is excluded until Phase 04 rewrites it for the RBAC admin surface (its file list already includes it). Do not delete.",
+  "testRegex": ".e2e-spec.ts$",
   "transform": {
     "^.+\\.(t|j)s$": "ts-jest"
   },
@@ -18,7 +17,9 @@
     "^@examio/observability(.*)$": "<rootDir>/../../../libs/observability/src/$1",
     "^@examio/contracts(.*)$": "<rootDir>/../../../libs/contracts/src/$1",
     "^@examio/grpc(.*)$": "<rootDir>/../../../libs/grpc/src/$1",
-    "^@examio/http(.*)$": "<rootDir>/../../../libs/http/src/$1"
+    "^@examio/http(.*)$": "<rootDir>/../../../libs/http/src/$1",
+    "^@examio/auth-jwt(.*)$": "<rootDir>/../../../libs/auth-jwt/src/$1",
+    "^@examio/messaging(.*)$": "<rootDir>/../../../libs/messaging/src/$1"
   },
   "testTimeout": 60000,
   "forceExit": true

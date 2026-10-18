@@ -5,18 +5,17 @@ import {
     HttpStatus,
     Post,
     Req,
-    UseGuards,
     UsePipes,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { Request } from 'express';
-import { AdminGuard } from '@examio/common';
 
 import { AdminFinanceService, AuditContext } from './admin-finance.service';
 import { CreditBody, CreditBodyDto } from './dto/credit.body';
 import { RefundBody, RefundBodyDto } from './dto/refund.body';
 import { SetTierBody, SetTierBodyDto } from './dto/set-tier.body';
+import { RequirePermissions } from '@examio/auth-jwt';
 
 interface AuthedAdminRequest extends Request {
     user?: { id: string };
@@ -32,7 +31,7 @@ interface AuthedAdminRequest extends Request {
  * the plain inferred type which we forward to the service.
  */
 @Controller('admin/finance')
-@UseGuards(AdminGuard)
+@RequirePermissions('admin:access')
 @Throttle({ admin: { ttl: 60000, limit: 10 } })
 @UsePipes(ZodValidationPipe)
 export class AdminFinanceController {
@@ -97,8 +96,8 @@ export class AdminFinanceController {
     private buildAuditContext(req: AuthedAdminRequest): AuditContext {
         const adminId = req.user?.id;
         if (!adminId) {
-            // AdminGuard guarantees req.user, but stay defensive.
-            throw new Error('AdminGuard did not attach req.user');
+            // the permission guard guarantees req.user, but stay defensive.
+            throw new Error('admin principal missing on request.user');
         }
 
         const headers = req.headers ?? {};

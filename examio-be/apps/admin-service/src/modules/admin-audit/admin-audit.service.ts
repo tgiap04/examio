@@ -44,7 +44,7 @@ function deriveTargetType(action: string): string | null {
 /**
  * AdminAuditService — read-only query layer over AdminAudit rows.
  *
- * All endpoints are `@UseGuards(AdminGuard)` so only authenticated
+ * All endpoints require `admin:access` so only authenticated
  * admins may view audit history. Password-like fields do not exist on
  * AdminAudit — no explicit exclusion needed.
  */

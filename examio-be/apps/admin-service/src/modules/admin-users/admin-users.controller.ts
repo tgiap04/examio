@@ -10,13 +10,11 @@ import {
     Post,
     Query,
     Req,
-    UseGuards,
     UsePipes,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { Request } from 'express';
-import { AdminGuard } from '@examio/common';
 import {
     ApiBearerAuth,
     ApiOperation,
@@ -26,6 +24,7 @@ import {
 import { AdminUsersService, AuditContext } from './admin-users.service';
 import { ListUsersQueryDto } from './dto/list-users.query';
 import { UpdateUserBodyDto } from './dto/update-user.body';
+import { RequirePermissions, forwardUser } from '@examio/auth-jwt';
 
 interface AuthedAdminRequest extends Request {
     user?: { id: string };
@@ -34,7 +33,7 @@ interface AuthedAdminRequest extends Request {
 @ApiTags('Admin / Users')
 @ApiBearerAuth()
 @Controller('admin/users')
-@UseGuards(AdminGuard)
+@RequirePermissions('admin:access')
 @Throttle({ admin: { ttl: 60000, limit: 30 } })
 @UsePipes(ZodValidationPipe)
 export class AdminUsersController {
@@ -109,7 +108,7 @@ export class AdminUsersController {
         @Req() req: AuthedAdminRequest
     ) {
         const ctx = this.buildAuditContext(req);
-        const user = await this.adminUsers.grantAdmin(id, ctx);
+        const user = await this.adminUsers.grantAdmin(id, ctx, forwardUser(req));
         return { user };
     }
 
@@ -123,7 +122,7 @@ export class AdminUsersController {
         @Req() req: AuthedAdminRequest
     ) {
         const ctx = this.buildAuditContext(req);
-        const user = await this.adminUsers.revokeAdmin(id, ctx);
+        const user = await this.adminUsers.revokeAdmin(id, ctx, forwardUser(req));
         return { user };
     }
 
@@ -135,8 +134,8 @@ export class AdminUsersController {
     private buildAuditContext(req: AuthedAdminRequest): AuditContext {
         const adminId = req.user?.id;
         if (!adminId) {
-            // AdminGuard guarantees req.user; stay defensive.
-            throw new Error('AdminGuard did not attach req.user');
+            // the permission guard guarantees req.user; stay defensive.
+            throw new Error('admin principal missing on request.user');
         }
 
         const headers = req.headers ?? {};

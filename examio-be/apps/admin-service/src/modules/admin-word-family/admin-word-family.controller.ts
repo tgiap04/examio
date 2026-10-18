@@ -9,18 +9,17 @@ import {
     Post,
     Put,
     Req,
-    UseGuards,
     UsePipes,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { Request } from 'express';
-import { AdminGuard } from '@examio/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
 import { AdminWordFamilyService, AuditContext } from './admin-word-family.service';
 import { CreateCategoryBodyDto } from './dto/create-category.body';
 import { UpdateCategoryBodyDto } from './dto/update-category.body';
+import { RequirePermissions } from '@examio/auth-jwt';
 
 interface AuthedAdminRequest extends Request {
     user?: { id: string };
@@ -29,7 +28,7 @@ interface AuthedAdminRequest extends Request {
 @ApiTags('Admin / Word Family')
 @ApiBearerAuth()
 @Controller('admin/word-family')
-@UseGuards(AdminGuard)
+@RequirePermissions('admin:access')
 @Throttle({ admin: { ttl: 60000, limit: 30 } })
 @UsePipes(ZodValidationPipe)
 export class AdminWordFamilyController {
@@ -80,7 +79,7 @@ export class AdminWordFamilyController {
     private buildAuditContext(req: AuthedAdminRequest): AuditContext {
         const adminId = req.user?.id;
         if (!adminId) {
-            throw new Error('AdminGuard did not attach req.user');
+            throw new Error('admin principal missing on request.user');
         }
 
         const headers = req.headers ?? {};

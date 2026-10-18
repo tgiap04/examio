@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@examio/database';
+import { Metadata } from '@grpc/grpc-js';
+import { AuthClient } from '../../clients/auth.client';
 
 import { AuditWriterService } from '../../common/audit-writer.service';
 import { ListUsersQuery } from './dto/list-users.query';
@@ -47,7 +49,7 @@ export interface UpdateUserResult {
     changedFields: string[];
 }
 
-const MUTABLE_FIELDS = ['isAdmin', 'isVerified', 'isBanned', 'name', 'bio'] as const;
+const MUTABLE_FIELDS = ['isVerified', 'isBanned', 'name', 'bio'] as const;
 type MutableField = (typeof MUTABLE_FIELDS)[number];
 
 /**
@@ -67,7 +69,8 @@ type MutableField = (typeof MUTABLE_FIELDS)[number];
 export class AdminUsersService {
     constructor(
         private readonly prisma: PrismaService,
-        private readonly auditWriter: AuditWriterService
+        private readonly auditWriter: AuditWriterService,
+        private readonly authClient: AuthClient
     ) {}
 
     /**
@@ -83,8 +86,8 @@ export class AdminUsersService {
                 { username: { contains: query.search, mode: 'insensitive' } },
             ];
         }
-        if (query.isAdmin !== undefined) {
-            where.isAdmin = query.isAdmin;
+        if (query.isSystemAdmin !== undefined) {
+            where.isSystemAdmin = query.isSystemAdmin;
         }
         if (query.isVerified !== undefined) {
             where.isVerified = query.isVerified;
@@ -342,90 +345,64 @@ export class AdminUsersService {
     }
 
     /**
-     * Grant admin privileges. Refuses to grant to a banned user.
+     * Grant admin privileges through auth `SetSystemAdmin` (advisory lock,
+     * RoleChangeLog, authzVersion bump, outbox event), acting as the calling
+     * admin via their forwarded token. Refuses a banned target up front.
      */
-    async grantAdmin(id: string, ctx: AuditContext): Promise<UserSafeRow> {
-        return this.prisma.$transaction(
-            async (tx) => {
-                const existing = await tx.user.findUnique({
-                    where: { id },
-                    select: userSelectSafe,
-                });
-                if (!existing) {
-                    throw new NotFoundException('User not found');
-                }
-                if (existing.isBanned) {
-                    throw new NotFoundException(
-                        'Cannot grant admin to a banned user'
-                    );
-                }
-
-                const updated = await tx.user.update({
-                    where: { id },
-                    select: userSelectSafe,
-                    data: { isAdmin: true, updatedBy: ctx.adminId },
-                });
-
-                await this.auditWriter.write(
-                    {
-                        adminId: ctx.adminId,
-                        action: 'admin.user.grant',
-                        targetId: id,
-                        payload: { from: existing.isAdmin, to: true },
-                        ipAddress: ctx.ipAddress,
-                        userAgent: ctx.userAgent,
-                    },
-                    { tx }
-                );
-
-                return updated;
-            },
-            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-        );
+    async grantAdmin(
+        id: string,
+        ctx: AuditContext,
+        metadata: Metadata
+    ): Promise<UserSafeRow> {
+        const existing = await this.findSafe(id);
+        if (existing.isBanned) {
+            throw new NotFoundException('Cannot grant admin to a banned user');
+        }
+        return this.changeAdmin(existing, true, 'admin.user.grant', ctx, metadata);
     }
 
     /**
-     * Revoke admin privileges. Refuses to revoke the calling admin's
-     * own privileges — that would lock the system out of all admin
-     * operations if it were the only admin.
+     * Revoke admin privileges through auth `SetSystemAdmin`. Auth refuses
+     * self-revocation (403 CANNOT_CHANGE_OWN_ROLE) and removing the last active
+     * admin (409 LAST_SYSTEM_ADMIN); those errors reach the client unchanged.
      */
-    async revokeAdmin(id: string, ctx: AuditContext): Promise<UserSafeRow> {
-        if (id === ctx.adminId) {
-            throw new NotFoundException('Cannot revoke own admin');
-        }
+    async revokeAdmin(
+        id: string,
+        ctx: AuditContext,
+        metadata: Metadata
+    ): Promise<UserSafeRow> {
+        const existing = await this.findSafe(id);
+        return this.changeAdmin(existing, false, 'admin.user.revoke', ctx, metadata);
+    }
 
-        return this.prisma.$transaction(
-            async (tx) => {
-                const existing = await tx.user.findUnique({
-                    where: { id },
-                    select: userSelectSafe,
-                });
-                if (!existing) {
-                    throw new NotFoundException('User not found');
-                }
+    private async findSafe(id: string): Promise<UserSafeRow> {
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            select: userSelectSafe,
+        });
+        if (!user) throw new NotFoundException('User not found');
+        return user;
+    }
 
-                const updated = await tx.user.update({
-                    where: { id },
-                    select: userSelectSafe,
-                    data: { isAdmin: false, updatedBy: ctx.adminId },
-                });
-
-                await this.auditWriter.write(
-                    {
-                        adminId: ctx.adminId,
-                        action: 'admin.user.revoke',
-                        targetId: id,
-                        payload: { from: existing.isAdmin, to: false },
-                        ipAddress: ctx.ipAddress,
-                        userAgent: ctx.userAgent,
-                    },
-                    { tx }
-                );
-
-                return updated;
-            },
-            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-        );
+    private async changeAdmin(
+        existing: UserSafeRow,
+        isSystemAdmin: boolean,
+        action: 'admin.user.grant' | 'admin.user.revoke',
+        ctx: AuditContext,
+        metadata: Metadata
+    ): Promise<UserSafeRow> {
+        await this.authClient.setSystemAdmin(existing.id, isSystemAdmin, metadata);
+        // Auth committed; read the result back and record the admin-side audit row.
+        const updated = await this.findSafe(existing.id);
+        await this.auditWriter.write({
+            adminId: ctx.adminId,
+            action,
+            targetId: existing.id,
+            payload: { from: existing.isSystemAdmin, to: updated.isSystemAdmin },
+            ipAddress: ctx.ipAddress,
+            userAgent: ctx.userAgent,
+        });
+        return updated;
     }
 
     /**

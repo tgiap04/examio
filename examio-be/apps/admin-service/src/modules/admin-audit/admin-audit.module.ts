@@ -1,14 +1,13 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule, PrismaService } from '@examio/database';
-import { AdminGuard, AuthModule } from '@examio/common';
 
 import { AdminAuditController } from './admin-audit.controller';
 import { AdminAuditService } from './admin-audit.service';
 
 @Module({
-    imports: [DatabaseModule, AuthModule],
+    imports: [DatabaseModule],
     controllers: [AdminAuditController],
-    providers: [AdminAuditService, PrismaService, AdminGuard],
+    providers: [AdminAuditService, PrismaService],
     exports: [AdminAuditService],
 })
 export class AdminAuditModule {}
