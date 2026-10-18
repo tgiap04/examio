@@ -6,6 +6,8 @@
     "scripts": {
         "build": "nest build",
         "start": "nest start",
+        "proto:lint": "buf lint proto",
+        "proto:gen": "cd proto && buf generate",
         "typecheck:auth": "tsc --noEmit -p apps/auth-service/tsconfig.app.json",
         "typecheck:exam": "tsc --noEmit -p apps/exam-service/tsconfig.app.json",
         "typecheck:finance": "tsc --noEmit -p apps/finance-service/tsconfig.app.json",
@@ -13,7 +15,7 @@
         "typecheck:r2": "tsc --noEmit -p apps/r2-service/tsconfig.app.json",
         "typecheck:gateway": "tsc --noEmit -p apps/gateway-service/tsconfig.app.json",
         "typecheck": "yarn typecheck:auth && yarn typecheck:exam && yarn typecheck:finance && yarn typecheck:admin && yarn typecheck:r2 && yarn typecheck:gateway",
-        "build:all": "nest build auth-service && nest build exam-service && nest build finance-service && nest build admin-service && nest build r2-service && nest build gateway-service",
+        "build:all": "yarn proto:gen && nest build auth-service && nest build exam-service && nest build finance-service && nest build admin-service && nest build r2-service && nest build gateway-service",
         "test": "jest",
         "test:watch": "jest --watch",
         "test:cov": "jest --coverage",
@@ -107,6 +109,7 @@
         "zod": "^3.23.8"
     },
     "devDependencies": {
+        "@bufbuild/buf": "1.74.0",
         "@nestjs/cli": "^11.0.7",
         "@nestjs/schematics": "^11.0.5",
         "@nestjs/testing": "^11.1.11",
@@ -129,6 +132,7 @@
         "supertest": "^7.1.4",
         "ts-jest": "^29.4.6",
         "ts-loader": "^9.5.4",
+        "ts-proto": "2.15.3",
         "typescript": "^5.8.3"
     }
 }

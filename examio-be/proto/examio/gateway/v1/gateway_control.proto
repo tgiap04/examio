@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package examio.gateway.v1;
+
+// Control plane the gateway exposes to auth/admin (server lands in phase 05).
+service GatewayControl {
+  // Deny a session id until its natural expiry.
+  rpc RevokeSession(RevokeSessionRequest) returns (RevokeSessionResponse);
+  // Publish the latest authz version of a user so stale tokens are rejected.
+  rpc InvalidateUser(InvalidateUserRequest) returns (InvalidateUserResponse);
+  rpc SetPageFlags(SetPageFlagsRequest) returns (SetPageFlagsResponse);
+}
+
+message RevokeSessionRequest {
+  string sid = 1;
+  // Token expiry, unix epoch seconds.
+  int64 exp = 2;
+}
+
+message RevokeSessionResponse {}
+
+message InvalidateUserRequest {
+  string user_id = 1;
+  int64 authz_version = 2;
+}
+
+message InvalidateUserResponse {}
+
+message SetPageFlagsRequest {
+  map<string, bool> flags = 1;
+}
+
+message SetPageFlagsResponse {}

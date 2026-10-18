@@ -1138,6 +1138,96 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@bufbuild/buf-darwin-arm64@npm:1.74.0":
+  version: 1.74.0
+  resolution: "@bufbuild/buf-darwin-arm64@npm:1.74.0"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@bufbuild/buf-darwin-x64@npm:1.74.0":
+  version: 1.74.0
+  resolution: "@bufbuild/buf-darwin-x64@npm:1.74.0"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@bufbuild/buf-linux-aarch64@npm:1.74.0":
+  version: 1.74.0
+  resolution: "@bufbuild/buf-linux-aarch64@npm:1.74.0"
+  conditions: os=linux & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@bufbuild/buf-linux-armv7@npm:1.74.0":
+  version: 1.74.0
+  resolution: "@bufbuild/buf-linux-armv7@npm:1.74.0"
+  conditions: os=linux & cpu=arm
+  languageName: node
+  linkType: hard
+
+"@bufbuild/buf-linux-x64@npm:1.74.0":
+  version: 1.74.0
+  resolution: "@bufbuild/buf-linux-x64@npm:1.74.0"
+  conditions: os=linux & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@bufbuild/buf-win32-arm64@npm:1.74.0":
+  version: 1.74.0
+  resolution: "@bufbuild/buf-win32-arm64@npm:1.74.0"
+  conditions: os=win32 & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"@bufbuild/buf-win32-x64@npm:1.74.0":
+  version: 1.74.0
+  resolution: "@bufbuild/buf-win32-x64@npm:1.74.0"
+  conditions: os=win32 & cpu=x64
+  languageName: node
+  linkType: hard
+
+"@bufbuild/buf@npm:1.74.0":
+  version: 1.74.0
+  resolution: "@bufbuild/buf@npm:1.74.0"
+  dependencies:
+    "@bufbuild/buf-darwin-arm64": "npm:1.74.0"
+    "@bufbuild/buf-darwin-x64": "npm:1.74.0"
+    "@bufbuild/buf-linux-aarch64": "npm:1.74.0"
+    "@bufbuild/buf-linux-armv7": "npm:1.74.0"
+    "@bufbuild/buf-linux-x64": "npm:1.74.0"
+    "@bufbuild/buf-win32-arm64": "npm:1.74.0"
+    "@bufbuild/buf-win32-x64": "npm:1.74.0"
+  dependenciesMeta:
+    "@bufbuild/buf-darwin-arm64":
+      optional: true
+    "@bufbuild/buf-darwin-x64":
+      optional: true
+    "@bufbuild/buf-linux-aarch64":
+      optional: true
+    "@bufbuild/buf-linux-armv7":
+      optional: true
+    "@bufbuild/buf-linux-x64":
+      optional: true
+    "@bufbuild/buf-win32-arm64":
+      optional: true
+    "@bufbuild/buf-win32-x64":
+      optional: true
+  bin:
+    buf: bin/buf
+    protoc-gen-buf-breaking: bin/protoc-gen-buf-breaking
+    protoc-gen-buf-lint: bin/protoc-gen-buf-lint
+  checksum: 10c0/d36e5fc455e5108d21417f7e8ffb0a989cebbe197af7da7dc6bd0b7f80873feae2f8f8e02c1362209cee84fae8136723bbca0e6de1f0470d83719b7de583db56
+  languageName: node
+  linkType: hard
+
+"@bufbuild/protobuf@npm:^2.0.0, @bufbuild/protobuf@npm:^2.14.1":
+  version: 2.16.0
+  resolution: "@bufbuild/protobuf@npm:2.16.0"
+  checksum: 10c0/ba3bc677e801a71d9cf0bdc138174144e493706efec3a47865eb07e956423315a80ff12301f6835d352202ae4d6599f2946a7c67338cf0079ed2a06af1a18097
+  languageName: node
+  linkType: hard
+
 "@colors/colors@npm:1.5.0":
   version: 1.5.0
   resolution: "@colors/colors@npm:1.5.0"
@@ -5260,6 +5350,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"case-anything@npm:^2.1.13":
+  version: 2.1.13
+  resolution: "case-anything@npm:2.1.13"
+  checksum: 10c0/b02ffa51d7d58b9a32df7b40973836e16afad131eae7d343e64cb3ca7be57a936bf3d6c9d57a7aa242cf2f545d9a33990b755e93bcac2517761d77773a4a6a30
+  languageName: node
+  linkType: hard
+
 "chalk@npm:4.1.2, chalk@npm:^4.1.0, chalk@npm:^4.1.2":
   version: 4.1.2
   resolution: "chalk@npm:4.1.2"
@@ -5434,6 +5531,7 @@ __metadata:
   dependencies:
     "@aws-sdk/client-s3": "npm:^3.896.0"
     "@aws-sdk/s3-request-presigner": "npm:^3.1084.0"
+    "@bufbuild/buf": "npm:1.74.0"
     "@google/genai": "npm:^1.19.0"
     "@grpc/grpc-js": "npm:^1.14.4"
     "@grpc/proto-loader": "npm:^0.8.0"
@@ -5513,6 +5611,7 @@ __metadata:
     tesseract.js: "npm:5.0.1"
     ts-jest: "npm:^29.4.6"
     ts-loader: "npm:^9.5.4"
+    ts-proto: "npm:2.15.3"
     typescript: "npm:^5.8.3"
     ulid: "npm:3.0.2"
     zod: "npm:^3.23.8"
@@ -5853,6 +5952,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"detect-libc@npm:^1.0.3":
+  version: 1.0.3
+  resolution: "detect-libc@npm:1.0.3"
+  bin:
+    detect-libc: ./bin/detect-libc.js
+  checksum: 10c0/4da0deae9f69e13bc37a0902d78bf7169480004b1fed3c19722d56cff578d16f0e11633b7fbf5fb6249181236c72e90024cbd68f0b9558ae06e281f47326d50d
+  languageName: node
+  linkType: hard
+
 "detect-newline@npm:^3.1.0":
   version: 3.1.0
   resolution: "detect-newline@npm:3.1.0"
@@ -5906,6 +6014,15 @@ __metadata:
   version: 17.4.2
   resolution: "dotenv@npm:17.4.2"
   checksum: 10c0/164f8e77a646c8446867d5b588d26ea6005c8ea7c5eb41cf926f6113d23f2191355f6e0cfd95ea9bab98394a5b0a3f1e51a8399711b666fe55cc7b0bd745f942
+  languageName: node
+  linkType: hard
+
+"dprint-node@npm:^1.0.8":
+  version: 1.0.8
+  resolution: "dprint-node@npm:1.0.8"
+  dependencies:
+    detect-libc: "npm:^1.0.3"
+  checksum: 10c0/39c1f8511833226cde773129afc5862dfd05babe062375e6b1f5824e221a5743a4d9c48626f32f7c2080113566270fe80521a50acb9029a20a2e80a3cd5e4106
   languageName: node
   linkType: hard
 
@@ -10537,6 +10654,38 @@ __metadata:
     typescript: "*"
     webpack: ^5.0.0
   checksum: 10c0/e68d997962046afc40fbb6131a5f329128691917bf288d18df4f95719ca1557e72f614bf078e06544ab0c970f734495a356f3eeb5f11ca18459944237b3635a1
+  languageName: node
+  linkType: hard
+
+"ts-poet@npm:^6.12.0":
+  version: 6.12.0
+  resolution: "ts-poet@npm:6.12.0"
+  dependencies:
+    dprint-node: "npm:^1.0.8"
+  checksum: 10c0/605ac770055259b618ba657b88995f7851d8a6106d9c335e71c8442be51a9b8a87c501aa7ab4babb43700a32ff47dc1cd877f78892c15166ded87c311c878735
+  languageName: node
+  linkType: hard
+
+"ts-proto-descriptors@npm:2.1.0":
+  version: 2.1.0
+  resolution: "ts-proto-descriptors@npm:2.1.0"
+  dependencies:
+    "@bufbuild/protobuf": "npm:^2.0.0"
+  checksum: 10c0/5695def6c31b7f3f8561876361a2db9f1ad859613fdcf1c7ffd093c3477fea4552ccccef9c99cd63ca2a215a7187e20e0de1fc942e2996d6671c25c6b190bf31
+  languageName: node
+  linkType: hard
+
+"ts-proto@npm:2.15.3":
+  version: 2.15.3
+  resolution: "ts-proto@npm:2.15.3"
+  dependencies:
+    "@bufbuild/protobuf": "npm:^2.14.1"
+    case-anything: "npm:^2.1.13"
+    ts-poet: "npm:^6.12.0"
+    ts-proto-descriptors: "npm:2.1.0"
+  bin:
+    protoc-gen-ts_proto: protoc-gen-ts_proto
+  checksum: 10c0/5c4e390da68025a527c53fbc3732a87f4b805e4be68ba1615162ab50e56ee246e365280235bfd9c31642770248ee4485f45f0c1b33eb05b5bdb08e391c0331a1
   languageName: node
   linkType: hard
 

@@ -46,6 +46,18 @@
                         "include": "../../templates/**/*",
                         "outDir": "dist/apps/auth-service",
                         "watchAssets": true
+                    },
+                    {
+                        "include": "../../../proto/examio/auth/**/*.proto",
+                        "outDir": "dist/apps/auth-service/proto/examio/auth"
+                    },
+                    {
+                        "include": "../../../proto/examio/common/**/*.proto",
+                        "outDir": "dist/apps/auth-service/proto/examio/common"
+                    },
+                    {
+                        "include": "../../../proto/examio/r2/**/*.proto",
+                        "outDir": "dist/apps/auth-service/proto/examio/r2"
                     }
                 ]
             }
@@ -80,6 +92,14 @@
                         "include": "../../templates/**/*",
                         "outDir": "dist/apps/exam-service",
                         "watchAssets": true
+                    },
+                    {
+                        "include": "../../../proto/examio/finance/**/*.proto",
+                        "outDir": "dist/apps/exam-service/proto/examio/finance"
+                    },
+                    {
+                        "include": "../../../proto/examio/r2/**/*.proto",
+                        "outDir": "dist/apps/exam-service/proto/examio/r2"
                     }
                 ]
             }
@@ -90,7 +110,13 @@
             "entryFile": "main",
             "sourceRoot": "apps/finance-service/src",
             "compilerOptions": {
-                "tsConfigPath": "apps/finance-service/tsconfig.app.json"
+                "tsConfigPath": "apps/finance-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../../../proto/examio/finance/**/*.proto",
+                        "outDir": "dist/apps/finance-service/proto/examio/finance"
+                    }
+                ]
             }
         },
         "admin-service": {
@@ -108,7 +134,13 @@
             "entryFile": "main",
             "sourceRoot": "apps/r2-service/src",
             "compilerOptions": {
-                "tsConfigPath": "apps/r2-service/tsconfig.app.json"
+                "tsConfigPath": "apps/r2-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../../../proto/examio/r2/**/*.proto",
+                        "outDir": "dist/apps/r2-service/proto/examio/r2"
+                    }
+                ]
             }
         },
         "gateway-service": {
@@ -136,6 +168,33 @@
             "sourceRoot": "libs/redis/src",
             "compilerOptions": {
                 "tsConfigPath": "libs/redis/tsconfig.lib.json"
+            }
+        },
+        "contracts": {
+            "type": "library",
+            "root": "libs/contracts",
+            "entryFile": "index",
+            "sourceRoot": "libs/contracts/src",
+            "compilerOptions": {
+                "tsConfigPath": "libs/contracts/tsconfig.lib.json"
+            }
+        },
+        "grpc": {
+            "type": "library",
+            "root": "libs/grpc",
+            "entryFile": "index",
+            "sourceRoot": "libs/grpc/src",
+            "compilerOptions": {
+                "tsConfigPath": "libs/grpc/tsconfig.lib.json"
+            }
+        },
+        "http": {
+            "type": "library",
+            "root": "libs/http",
+            "entryFile": "index",
+            "sourceRoot": "libs/http/src",
+            "compilerOptions": {
+                "tsConfigPath": "libs/http/tsconfig.lib.json"
             }
         }
     }

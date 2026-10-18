@@ -1,0 +1,13 @@
+version: v2
+modules:
+  - path: .
+lint:
+  use:
+    - STANDARD
+  ignore_only:
+    # Contract name fixed by the architecture (examio.gateway.v1.GatewayControl).
+    SERVICE_SUFFIX:
+      - examio/gateway/v1/gateway_control.proto
+breaking:
+  use:
+    - FILE

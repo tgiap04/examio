@@ -14,6 +14,9 @@ module.exports = {
         '^@examio/common(.*)$': '<rootDir>/libs/common/src/$1',
         '^@examio/redis(.*)$': '<rootDir>/libs/redis/src/$1',
         '^@examio/observability(.*)$': '<rootDir>/libs/observability/src/$1',
+        '^@examio/contracts(.*)$': '<rootDir>/libs/contracts/src/$1',
+        '^@examio/grpc(.*)$': '<rootDir>/libs/grpc/src/$1',
+        '^@examio/http(.*)$': '<rootDir>/libs/http/src/$1',
     },
     testTimeout: 30000,
 };

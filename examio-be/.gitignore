@@ -35,3 +35,5 @@ __pycache__/
 data-source/
 apps/ai-service/data-source/
 graphify-out/
+# Generated gRPC/ts-proto contracts (yarn proto:gen)
+libs/contracts/src/generated/

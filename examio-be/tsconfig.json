@@ -44,6 +44,24 @@
       ],
       "@examio/observability/*": [
         "libs/observability/src/*"
+      ],
+      "@examio/contracts": [
+        "libs/contracts/src"
+      ],
+      "@examio/contracts/*": [
+        "libs/contracts/src/*"
+      ],
+      "@examio/grpc": [
+        "libs/grpc/src"
+      ],
+      "@examio/grpc/*": [
+        "libs/grpc/src/*"
+      ],
+      "@examio/http": [
+        "libs/http/src"
+      ],
+      "@examio/http/*": [
+        "libs/http/src/*"
       ]
     },
     "skipLibCheck": true,
