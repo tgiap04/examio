@@ -37,16 +37,16 @@ services:
                 SERVICE_NAME: gateway-service
         container_name: examio-gateway
         ports:
-            - '6369:7000'
+            - '6369:3000'
         environment:
             - NODE_ENV=production
-            - PORT=7000
+            - PORT=3000
             - FRONTEND_URL=${FRONTEND_URL}
-            - AUTH_SERVICE_URL=http://auth:7001
-            - EXAM_SERVICE_URL=http://exam:7002
-            - FINANCE_SERVICE_URL=http://finance:7003
-            - ADMIN_SERVICE_URL=http://admin:7006
-            - AI_SERVICE_URL=http://ai:7005/api
+            - AUTH_SERVICE_URL=http://auth:3000
+            - EXAM_SERVICE_URL=http://exam:3000
+            - FINANCE_SERVICE_URL=http://finance:3000
+            - ADMIN_SERVICE_URL=http://admin:3000
+            - AI_SERVICE_URL=http://ai:3000/api
             - DATABASE_URL=${DATABASE_URL}
             - REDIS_HOST=redis
             - REDIS_PORT=6379
@@ -79,7 +79,7 @@ services:
                     'wget',
                     '-q',
                     '--spider',
-                    'http://localhost:7000/health/ready',
+                    'http://localhost:3000/health/ready',
                 ]
         restart: unless-stopped
         logging: *default-logging
@@ -94,14 +94,13 @@ services:
         container_name: examio-auth
         environment:
             - NODE_ENV=production
-            - PORT=7001
+            - PORT=3000
             - DATABASE_URL=${DATABASE_URL}
             - REDIS_HOST=redis
             - REDIS_PORT=6379
             - REDIS_PASSWORD=${REDIS_PASSWORD:-}
             - GRPC_PORT=50051
-            - WALLET_GRPC_URL=finance:50053
-            - R2_GRPC_URL=r2:50054
+            - R2_GRPC_URL=r2:50051
         env_file:
             - .env
         depends_on:
@@ -125,7 +124,7 @@ services:
                     'wget',
                     '-q',
                     '--spider',
-                    'http://localhost:7001/health/ready',
+                    'http://localhost:3000/health/ready',
                 ]
         restart: unless-stopped
         logging: *default-logging
@@ -141,16 +140,16 @@ services:
         container_name: examio-exam
         environment:
             - NODE_ENV=production
-            - PORT=7002
-            - AI_SERVICE_URL=http://ai:7005/api
-            - R2_SERVICE_URL=r2:7004
+            - PORT=3000
+            - AI_SERVICE_URL=http://ai:3000/api
+            - R2_SERVICE_URL=r2:3000
             - RABBITMQ_URL=${RABBITMQ_URL}
             - DATABASE_URL=${DATABASE_URL}
             - REDIS_HOST=redis
             - REDIS_PORT=6379
             - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-            - R2_GRPC_URL=r2:50054
-            - FINANCE_SERVICE_GRPC_URL=finance:50053
+            - R2_GRPC_URL=r2:50051
+            - FINANCE_GRPC_URL=finance:50051
         env_file:
             - .env
         depends_on:
@@ -176,7 +175,7 @@ services:
                     'wget',
                     '-q',
                     '--spider',
-                    'http://localhost:7002/health/ready',
+                    'http://localhost:3000/health/ready',
                 ]
         restart: unless-stopped
         logging: *default-logging
@@ -191,12 +190,12 @@ services:
         container_name: examio-finance
         environment:
             - NODE_ENV=production
-            - PORT=7003
+            - PORT=3000
             - DATABASE_URL=${DATABASE_URL}
             - REDIS_HOST=redis
             - REDIS_PORT=6379
             - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-            - GRPC_PORT=50053
+            - GRPC_PORT=50051
         env_file:
             - .env
         depends_on:
@@ -216,7 +215,7 @@ services:
                     'wget',
                     '-q',
                     '--spider',
-                    'http://localhost:7003/health/ready',
+                    'http://localhost:3000/health/ready',
                 ]
         restart: unless-stopped
         logging: *default-logging
@@ -231,13 +230,12 @@ services:
         container_name: examio-admin
         environment:
             - NODE_ENV=production
-            - PORT=7006
-            - GRPC_PORT=50056
+            - PORT=3000
             - DATABASE_URL=${DATABASE_URL}
             - REDIS_HOST=redis
             - REDIS_PORT=6379
             - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-            - ADMIN_SERVICE_URL=http://admin:7006
+            - ADMIN_SERVICE_URL=http://admin:3000
             - ADMIN_EMAILS=${ADMIN_EMAILS}
             - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD}
             - THROTTLE_ADMIN_LIMIT=30
@@ -260,7 +258,7 @@ services:
                     'wget',
                     '-q',
                     '--spider',
-                    'http://localhost:7006/health/ready',
+                    'http://localhost:3000/health/ready',
                 ]
         restart: unless-stopped
         logging: *default-logging
@@ -275,8 +273,8 @@ services:
         container_name: examio-r2
         environment:
             - NODE_ENV=production
-            - PORT=7004
-            - GRPC_PORT=50054
+            - PORT=3000
+            - GRPC_PORT=50051
         env_file:
             - .env
         depends_on:
@@ -292,7 +290,7 @@ services:
                     'wget',
                     '-q',
                     '--spider',
-                    'http://localhost:7004/health/ready',
+                    'http://localhost:3000/health/ready',
                 ]
         restart: unless-stopped
         logging: *default-logging
@@ -305,7 +303,7 @@ services:
         container_name: examio-ai
         environment:
             - PYTHONUNBUFFERED=1
-            - PORT=7005
+            - PORT=3000
             - RABBITMQ_URL=${RABBITMQ_URL}
             - DATABASE_URL=${DATABASE_URL}
             - REDIS_HOST=redis
@@ -339,7 +337,7 @@ services:
         networks:
             - examio-network
         healthcheck:
-            test: ['CMD', 'curl', '-f', 'http://localhost:7005/health']
+            test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
             interval: 30s
             timeout: 10s
             retries: 3

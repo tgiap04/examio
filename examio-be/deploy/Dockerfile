@@ -31,8 +31,11 @@ FROM deps AS builder
 ARG SERVICE_NAME
 COPY libs ./libs
 COPY apps ./apps
+COPY proto ./proto
 COPY tsconfig*.json nest-cli.json ./
-RUN yarn prisma:merge && yarn prisma:generate && yarn build ${SERVICE_NAME}
+# proto:gen emits libs/contracts/src/generated (gitignored); the .proto files
+# themselves are copied into dist/apps/<svc>/proto by the nest-cli assets.
+RUN yarn proto:gen && yarn prisma:merge && yarn prisma:generate && yarn build ${SERVICE_NAME}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 4: Production deps - Minimal node_modules
@@ -75,7 +78,8 @@ COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=prod-deps /app/libs ./libs
 
-EXPOSE 3000
+# HTTP 3000, gRPC 50051 (never published to the host)
+EXPOSE 3000 50051
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=30s \
     CMD wget -q --spider http://localhost:${PORT:-3000}/health/ready || exit 1

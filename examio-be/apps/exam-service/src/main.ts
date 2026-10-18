@@ -52,7 +52,7 @@ async function bootstrap() {
     await redisIoAdapter.connectToRedis();
     app.useWebSocketAdapter(redisIoAdapter);
 
-    const port = process.env.PORT ?? 3002;
+    const port = process.env.PORT ?? 3000;
     await app.listen(port);
     console.log(`🚀 Exam Service is running on port ${port}`);
 }

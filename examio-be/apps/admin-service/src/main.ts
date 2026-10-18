@@ -41,7 +41,7 @@ async function bootstrap() {
         credentials: true,
     });
 
-    const httpPort = process.env.PORT || 7006;
+    const httpPort = process.env.PORT || 3000;
     await app.listen(httpPort);
 
     console.log(`🚀 Admin Service HTTP running on port ${httpPort}`);

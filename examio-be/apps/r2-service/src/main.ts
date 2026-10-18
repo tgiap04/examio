@@ -5,9 +5,11 @@ import { join } from 'path';
 config({ path: join(process.cwd(), 'apps', 'r2-service', '.env') });
 
 import { NestFactory } from '@nestjs/core';
-import { Transport, MicroserviceOptions } from '@nestjs/microservices';
+import { MicroserviceOptions } from '@nestjs/microservices';
 import { R2ServiceModule } from './r2-service.module';
 import { Logger } from '@examio/observability';
+import { PROTO_FILES } from '@examio/contracts';
+import { grpcServerOptions, LARGE_MESSAGE_BYTES } from '@examio/grpc';
 
 async function bootstrap() {
     // HTTP server for health checks
@@ -16,40 +18,18 @@ async function bootstrap() {
     });
     app.useLogger(app.get(Logger));
 
-    // Use absolute path from process.cwd() for proto file
-    const protoPath = join(
-        process.cwd(),
-        'libs',
-        'common',
-        'src',
-        'protos',
-        'r2.proto'
+    // gRPC microservice (generated contracts, proto root resolved at runtime).
+    // Larger message limit for file uploads.
+    app.connectMicroservice<MicroserviceOptions>(
+        grpcServerOptions([PROTO_FILES.r2], LARGE_MESSAGE_BYTES)
     );
-    console.log(`📄 Using proto file: ${protoPath}`);
-
-    // gRPC microservice with increased message size limit for file uploads
-    const MAX_MESSAGE_SIZE = 500 * 1024 * 1024; // 50MB limit for file uploads
-    app.connectMicroservice<MicroserviceOptions>({
-        transport: Transport.GRPC,
-        options: {
-            package: 'r2',
-            protoPath,
-            // Match the client: keepCase so snake_case response fields
-            // (file_id, key_r2) and request fields (key_r2, expires_in_seconds)
-            // serialize instead of being dropped as camelCase mismatches.
-            loader: { keepCase: true },
-            url: `0.0.0.0:${process.env.GRPC_PORT || 50054}`,
-            maxReceiveMessageLength: MAX_MESSAGE_SIZE,
-            maxSendMessageLength: MAX_MESSAGE_SIZE,
-        },
-    });
 
     await app.startAllMicroservices();
-    await app.listen(process.env.PORT ?? 3004);
+    const httpPort = process.env.PORT ?? 3000;
+    const grpcPort = process.env.GRPC_PORT || 50051;
+    await app.listen(httpPort);
 
-    console.log(`🚀 R2 Service is running on port ${process.env.PORT ?? 3004}`);
-    console.log(
-        `📡 gRPC server is running on port ${process.env.GRPC_PORT || 50054}`
-    );
+    console.log(`🚀 R2 Service is running on port ${httpPort}`);
+    console.log(`📡 gRPC server is running on port ${grpcPort}`);
 }
 bootstrap();

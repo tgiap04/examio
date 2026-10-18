@@ -5,12 +5,14 @@ import { join } from 'path';
 config({ path: join(process.cwd(), 'apps', 'finance-service', '.env') });
 
 import { NestFactory } from '@nestjs/core';
-import { Transport, MicroserviceOptions } from '@nestjs/microservices';
+import { MicroserviceOptions } from '@nestjs/microservices';
 import { FinanceServiceModule } from './finance-service.module';
 import {
     HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
     Logger,
 } from '@examio/observability';
+import { PROTO_FILES } from '@examio/contracts';
+import { grpcServerOptions } from '@examio/grpc';
 
 async function bootstrap() {
     // Fail fast on a missing/weak signing secret instead of degrading into
@@ -40,30 +42,17 @@ async function bootstrap() {
         credentials: true,
     });
 
-    // gRPC microservice for WalletService
-    app.connectMicroservice<MicroserviceOptions>({
-        transport: Transport.GRPC,
-        options: {
-            package: ['wallet', 'subscription'],
-            protoPath: [
-                join(__dirname, '../../../libs/common/src/protos/wallet.proto'),
-                join(
-                    __dirname,
-                    '../../../libs/common/src/protos/subscription.proto'
-                ),
-            ],
-            url: `0.0.0.0:${process.env.GRPC_PORT || 50053}`,
-        },
-    });
+    // gRPC microservice (WalletService + SubscriptionService)
+    app.connectMicroservice<MicroserviceOptions>(
+        grpcServerOptions([PROTO_FILES.wallet, PROTO_FILES.subscription])
+    );
 
     await app.startAllMicroservices();
-    await app.listen(process.env.PORT ?? 3003);
+    const httpPort = process.env.PORT ?? 3000;
+    const grpcPort = process.env.GRPC_PORT || 50051;
+    await app.listen(httpPort);
 
-    console.log(
-        `🚀 Finance Service is running on port ${process.env.PORT ?? 3003}`
-    );
-    console.log(
-        `📡 gRPC server is running on port ${process.env.GRPC_PORT || 50053}`
-    );
+    console.log(`🚀 Finance Service is running on port ${httpPort}`);
+    console.log(`📡 gRPC server is running on port ${grpcPort}`);
 }
 bootstrap();

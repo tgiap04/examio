@@ -5,12 +5,14 @@ import { join } from 'path';
 config({ path: join(process.cwd(), 'apps', 'auth-service', '.env') });
 
 import { NestFactory } from '@nestjs/core';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { MicroserviceOptions } from '@nestjs/microservices';
 import { AuthServiceModule } from './auth-service.module';
 import {
     HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
     Logger,
 } from '@examio/observability';
+import { PROTO_FILES } from '@examio/contracts';
+import { grpcServerOptions } from '@examio/grpc';
 import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
@@ -65,23 +67,15 @@ async function bootstrap() {
 
     // Connect gRPC microservice
     const grpcPort = process.env.GRPC_PORT || '50051';
-    app.connectMicroservice<MicroserviceOptions>({
-        transport: Transport.GRPC,
-        options: {
-            package: 'auth',
-            protoPath: join(
-                __dirname,
-                '../../../libs/common/src/protos/auth.proto'
-            ),
-            url: `0.0.0.0:${grpcPort}`,
-        },
-    });
+    app.connectMicroservice<MicroserviceOptions>(
+        grpcServerOptions([PROTO_FILES.auth])
+    );
 
     // Start all microservices
     await app.startAllMicroservices();
 
     // Start HTTP server
-    const httpPort = process.env.PORT || 3001;
+    const httpPort = process.env.PORT || 3000;
     await app.listen(httpPort);
 
     console.log(`🚀 Auth Service HTTP running on port ${httpPort}`);

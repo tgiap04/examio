@@ -17,6 +17,26 @@ env:
   NODE_VERSION: '22'
 
 jobs:
+  # Contract source of truth: lint always, breaking-change check against the PR base.
+  buf:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bufbuild/buf-action@v1
+        with:
+          version: 1.74.0
+          input: examio-be/proto
+          lint: true
+          format: false
+          breaking: ${{ github.event_name == 'pull_request' }}
+          breaking_against: ${{ github.event.repository.clone_url }}#format=git,commit=${{ github.event.pull_request.base.sha }},subdir=examio-be/proto
+          push: false
+          archive: false
+          comment: true
+
   # Typecheck + compile every Node service. `yarn build` alone only builds the
   # default project, so each service is built explicitly.
   be-check:
@@ -42,9 +62,82 @@ jobs:
         run: |
           yarn prisma:merge
           git diff --exit-code -- libs/database/src/schema.prisma
+      - run: yarn proto:gen
       - run: yarn prisma:generate
       - run: yarn typecheck:${{ matrix.svc }}
       - run: yarn nest build ${{ matrix.svc }}-service
+
+  # Boots every built service from dist (not ts-jest) against real infra, so
+  # runtime-only failures (missing proto assets, DI/client wiring) fail CI.
+  be-boot:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examio-be
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: examio
+          POSTGRES_PASSWORD: examio
+          POSTGRES_DB: examio_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U examio -d examio_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      rabbitmq:
+        image: rabbitmq:3.13
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://examio:examio@localhost:5432/examio_ci
+      REDIS_HOST: localhost
+      REDIS_PORT: '6379'
+      RABBITMQ_URL: amqp://guest:guest@localhost:5672
+      JWT_SECRET: ci-only-jwt-secret-0123456789abcdef0123456789
+      REFRESH_TOKEN_ENC_KEY: ci-only-refresh-key-0123456789abcdef0123456789
+      FRONTEND_URL: http://localhost:5173
+      # Boot-time required config; inert placeholders (nothing calls these providers).
+      GOOGLE_CLIENT_ID: ci-dummy
+      GOOGLE_CLIENT_SECRET: ci-dummy
+      PAYMENT_SERVICE_SEPAY_KEY: ci-dummy
+      PAYMENT_QR_BANK_ACCOUNT: ci-dummy
+      PAYMENT_QR_BANK_CODE: ci-dummy
+      QUIZ_JWT_SECRET: ci-dummy-quiz-jwt-secret-0123456789abcdef
+      QUIZ_AES_KEY: ci-dummy-quiz-aes-key-0123456789
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: examio-be/yarn.lock
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn prisma:generate
+      - run: yarn build:all
+      - name: Apply migrations to an empty database
+        run: npx prisma migrate deploy --schema=libs/database/src/schema.prisma
+      - name: Boot each built service from dist and probe /health/live
+        run: ./scripts/boot-built-services.sh
 
   be-unit:
     runs-on: ubuntu-latest
@@ -60,6 +153,7 @@ jobs:
           cache-dependency-path: examio-be/yarn.lock
       - run: corepack enable
       - run: yarn install --immutable
+      - run: yarn proto:gen
       - run: yarn prisma:generate
       - run: yarn test --ci
 
@@ -121,6 +215,7 @@ jobs:
           cache-dependency-path: examio-be/yarn.lock
       - run: corepack enable
       - run: yarn install --immutable
+      - run: yarn proto:gen
       - run: yarn prisma:generate
       - name: Apply migrations to an empty database
         run: npx prisma migrate deploy --schema=libs/database/src/schema.prisma
