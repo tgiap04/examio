@@ -1,0 +1,42 @@
+{
+  "task": "Phase 01 Guardrails & Cleanup: CI gate, health/pino, Prisma 6.19 bump + spike, dead-code removal, unverified-guard fix, baseline migration, deploy hygiene",
+  "mode": "code",
+  "acceptanceCriteria": [
+    "yarn typecheck and yarn build:all exit 0 for all 6 Node services",
+    "yarn test exit 0",
+    "each Node service serves /health/live and /health/ready; ready returns 503 when a dependency check fails",
+    "request logs are JSON with X-Request-Id and redact authorization/cookie headers",
+    "unverified user can reach logout, sendVerificationEmail, verifyAccount, me; elsewhere gets 403 not 401",
+    "fresh DB comes up via prisma migrate deploy from a single baseline (no db push)",
+    "Postgres port 5411 not published, DATABASE_URL not echoed, Node 22 images",
+    "dead code removed (ocr-service, unregistered proxies, ai-service score/agent/benchmark, FE dead APIs) and ai-service still imports and boots",
+    "route inventory snapshot committed and differs from HEAD only by the removed dead routes",
+    "examio-fe yarn build and yarn lint exit 0",
+    "Prisma spike verdict recorded in plan.md"
+  ],
+  "touchpoints": [
+    ".github/workflows/ci.yml",
+    ".github/workflows/deploy.yml",
+    "examio-be/libs/observability",
+    "examio-be/libs/common/src/guard/auth.guard.ts",
+    "examio-be/apps/*/src/main.ts",
+    "examio-be/libs/database/src/migrations",
+    "examio-be/deploy",
+    "examio-be/apps/ai-service/src",
+    "examio-fe/src"
+  ],
+  "blastRadius": [
+    "all service boot paths (logger + health wiring)",
+    "auth guard behaviour for verified/unverified/banned users",
+    "gateway routing (dead proxy removal)",
+    "DB schema creation (baseline migration)",
+    "ai-service startup",
+    "deploy workflow gating",
+    "FE flashcard study page and auth redirect"
+  ],
+  "contracts": [
+    "public /api/v1 routes unchanged except removed dead proxies",
+    "health endpoints moved from /api/v1/health to /health/live|ready",
+    "prisma schema identical except BenchmarkItem removed"
+  ]
+}

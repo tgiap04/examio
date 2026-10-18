@@ -1,0 +1,55 @@
+{
+  "score": 8,
+  "criticalCount": 0,
+  "decision": "SEALED",
+  "acceptanceCovered": [
+    "yarn typecheck and yarn build:all exit 0 for all 6 Node services",
+    "yarn test exit 0",
+    "each Node service serves /health/live and /health/ready; ready returns 503 when a dependency check fails",
+    "request logs are JSON with X-Request-Id and redact authorization/cookie headers",
+    "unverified user can reach logout, sendVerificationEmail, verifyAccount, me; elsewhere gets 403 not 401",
+    "fresh DB comes up via prisma migrate deploy from a single baseline (no db push)",
+    "Postgres port 5411 not published, DATABASE_URL not echoed, Node 22 images",
+    "dead code removed (ocr-service, unregistered proxies, ai-service score/agent/benchmark, FE dead APIs) and ai-service still imports and boots",
+    "route inventory snapshot committed and differs from HEAD only by the removed dead routes",
+    "examio-fe yarn build and yarn lint exit 0",
+    "Prisma spike verdict recorded in plan.md"
+  ],
+  "regressionChecked": [
+    "auth guard: AllowUnverified only on logout/sendVerificationEmail/verifyAccount/me; banned/deleted still 401, unverified elsewhere 403 (HttpException rethrow)",
+    "health wiring + /health/* excluded from api/v1 prefix in all 6 services; compose/deploy probes moved to /health/ready",
+    "pino redaction (authorization, cookie, internal token, set-cookie) + request-id sanitised; readiness 503 body omits driver errors",
+    "deploy.yml needs [quality, detect-changes]; ci.yml reusable via workflow_call; Node 22 images; 5411 unpublished; seed no longer echoes DATABASE_URL",
+    "migration entrypoint uses migrate deploy only; baseline + migration_lock present; CI drift check via migrate diff",
+    "gateway dead-proxy removal: no FE/mobile callers of removed quiz-practice-attempts or flashcard-study session routes",
+    "ai-service imports cleanly after score/agent/streamlit removal",
+    "new files under 200 lines"
+  ],
+  "contractStatus": "CHANGED",
+  "refuted": [],
+  "unproven": [],
+  "reachableRegressions": [],
+  "findings": [
+    {
+      "severity": "Low",
+      "category": "Hygiene",
+      "location": "examio-be/.DS_Store:1",
+      "summary": "untracked .DS_Store; add to .gitignore, do not commit",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Contract",
+      "location": "examio-be/apps/gateway-service/src/gateway.module.ts:44",
+      "summary": "QuizPracticeProxyController and 4 flashcard-study session routes were registered at HEAD (not unregistered); removal is documented in inventory diff and has no FE/mobile callers",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Build",
+      "location": "plans/261017-1547-microservice-refactor-rbac/plan.md:61",
+      "summary": "Prisma spike validated on arm64 only; confirm amd64 in CI before P11",
+      "disposition": "Defer"
+    }
+  ]
+}
