@@ -11,12 +11,11 @@ import {
     PasswordService,
     GenerateIdService,
     AuthGuard,
-    EventsModule,
-    EventPublisherService,
     TurnstileService,
     RefreshTokenCipherService,
 } from '@examio/common';
 import { RedisModule, RedisService } from '@examio/redis';
+import { MessagingModule } from '@examio/messaging';
 
 // Local imports
 import { AuthService } from './auth.service';
@@ -30,7 +29,7 @@ import { ProfileModule } from './profile/profile.module';
     imports: [
         DatabaseModule,
         RedisModule,
-        EventsModule,
+        MessagingModule.forRoot({ service: 'auth' }),
         JwtModule.register({
             secret: process.env.JWT_SECRET,
             signOptions: {

@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package examio.events.v1;
+
+// Payload (`data`) of the `auth.user.registered` event. Published through the
+// outbox in the registration transaction (email and Google OAuth paths).
+// A fact event: it carries no aggregate version.
+message UserRegistered {
+  string user_id = 1;
+  string email = 2;
+  string username = 3;
+  // First-touch attribution; absent when the signup had no utm_source.
+  optional string utm_source = 4;
+}

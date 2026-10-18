@@ -20,10 +20,10 @@ import {
     GenerateIdService,
     sanitizeUser,
     generateCode,
-    EventPublisherService,
-    EventType,
     RefreshTokenCipherService,
 } from '@examio/common';
+import { OutboxService } from '@examio/messaging';
+import type { UserRegistered } from '@examio/contracts/generated/examio/events/v1/auth_events';
 
 // Local imports
 import { LoginDto } from './dto/login.dto';
@@ -50,7 +50,7 @@ export class AuthService {
         private readonly mailService: MailService,
         private readonly passwordService: PasswordService,
         private readonly generateIdService: GenerateIdService,
-        private readonly eventPublisher: EventPublisherService,
+        private readonly outbox: OutboxService,
         private readonly refreshTokenCipher: RefreshTokenCipherService
     ) {}
 
@@ -142,6 +142,18 @@ export class AuthService {
         }
     }
 
+    /** Payload of `auth.user.registered` (proto `examio.events.v1.UserRegistered`). */
+    private userRegisteredData(
+        user: User
+    ): Omit<UserRegistered, 'utmSource'> & { utmSource: string | null } {
+        return {
+            userId: user.id,
+            email: user.email,
+            username: user.username,
+            utmSource: user.utmSource ?? null,
+        };
+    }
+
     async register(registerDto: RegisterDto, deviceInfo?: DeviceInfo) {
         const { username, email, password } = registerDto;
         const utmSource = sanitizeUtmSource(registerDto.utmSource);
@@ -188,22 +200,14 @@ export class AuthService {
                     },
                 });
 
+                await this.outbox.add(
+                    tx,
+                    'auth.user.registered',
+                    this.userRegisteredData(user)
+                );
+
                 return user;
             });
-
-            // Publish USER_CREATED event for other services (fire-and-forget to avoid timeout)
-            this.eventPublisher
-                .publishAuthEvent(EventType.USER_CREATED, {
-                    userId: newUser.id,
-                    email: newUser.email,
-                    username: newUser.username,
-                })
-                .catch((error) => {
-                    console.error(
-                        `Failed to publish USER_CREATED event for user ${newUser.id}:`,
-                        error
-                    );
-                });
 
             // Send welcome email
             this.mailService
@@ -605,22 +609,14 @@ export class AuthService {
                     },
                 });
 
+                await this.outbox.add(
+                    tx,
+                    'auth.user.registered',
+                    this.userRegisteredData(user)
+                );
+
                 return user;
             });
-
-            // Publish USER_CREATED event for wallet creation and other services (fire-and-forget to avoid timeout)
-            this.eventPublisher
-                .publishAuthEvent(EventType.USER_CREATED, {
-                    userId: existingUser.id,
-                    email: existingUser.email,
-                    username: existingUser.username,
-                })
-                .catch((error) => {
-                    console.error(
-                        `Failed to publish USER_CREATED event for user ${existingUser?.id}:`,
-                        error
-                    );
-                });
         }
 
         // Create session for OAuth login first so the access token can carry

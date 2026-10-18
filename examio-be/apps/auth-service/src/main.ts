@@ -13,9 +13,21 @@ import {
 } from '@examio/observability';
 import { PROTO_FILES } from '@examio/contracts';
 import { grpcServerOptions } from '@examio/grpc';
+import { parseRoles } from '@examio/messaging';
 import * as cookieParser from 'cookie-parser';
+import { WorkerModule } from './worker.module';
 
-async function bootstrap() {
+async function startWorker() {
+    // Outbox relay + purge. No HTTP/gRPC listener.
+    const worker = await NestFactory.createApplicationContext(WorkerModule, {
+        bufferLogs: true,
+    });
+    worker.useLogger(worker.get(Logger));
+    worker.enableShutdownHooks();
+    console.log('📮 Auth Service worker running (outbox relay)');
+}
+
+async function startApi() {
     // Fail fast on misconfiguration: a missing or weak JWT_SECRET would let
     // access tokens be forged or brute-forced. Refuse to boot rather than
     // silently running with an insecure secret.
@@ -81,4 +93,14 @@ async function bootstrap() {
     console.log(`🚀 Auth Service HTTP running on port ${httpPort}`);
     console.log(`🔌 Auth Service gRPC running on port ${grpcPort}`);
 }
-bootstrap();
+
+async function bootstrap() {
+    // ROLE=api | worker | api,worker (default api,worker).
+    const roles = parseRoles();
+    if (roles.has('api')) await startApi();
+    if (roles.has('worker')) await startWorker();
+}
+bootstrap().catch((err) => {
+    console.error(err);
+    process.exit(1);
+});

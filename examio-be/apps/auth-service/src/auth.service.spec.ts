@@ -8,8 +8,8 @@ describe('AuthService refresh token flow', () => {
         comparePasswords: jest.fn(),
         hashPassword: jest.fn(),
     };
-    const mockEventPublisher = {
-        publishAuthEvent: jest.fn(),
+    const mockOutbox = {
+        add: jest.fn(),
     };
     // Refresh tokens are sealed at rest; the mock mirrors real seal/open
     // behavior deterministically enough for these tests, which assert on
@@ -73,7 +73,7 @@ describe('AuthService refresh token flow', () => {
             mockMailService as any,
             mockPasswordService as any,
             generateIdService as any,
-            mockEventPublisher as any,
+            mockOutbox as any,
             mockRefreshTokenCipher as any
         );
     });
