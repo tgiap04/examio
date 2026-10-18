@@ -1,9 +1,26 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-07-24
+last_updated: 2026-10-18
 ---
 
 # Examio Project Changelog
+
+## [Unreleased] — 2026-10-18
+
+### Changed
+
+#### Microservice refactor, phase 01 (guardrails and cleanup; uncommitted on `refactor/microservice-rbac`)
+
+- **CI**: new `.github/workflows/ci.yml` quality gate; `deploy.yml` depends on it.
+- **Runtime**: Node 22 images (`examio-be/Dockerfile`); pino JSON logs with `X-Request-Id`.
+- **Health**: `GET /health/live` and `GET /health/ready` replace `GET /api/v1/health`.
+- **Database**: `db push` replaced by a single baseline migration + `prisma migrate deploy`; `prisma:push` script removed. Postgres is no longer published on host port 5411 (SSH tunnel; see `examio-be/deploy/README.md`).
+- **Auth**: unverified users may reach only logout, sendVerificationEmail, verifyAccount, me; other guarded routes return 403.
+
+### Removed
+
+- `ocr-service` (and `yarn dev:ocr`).
+- ai-service: `score/`, dev agent, Streamlit UI, benchmark index.
 
 ## [Unreleased] — 2026-07-24
 
@@ -281,7 +298,7 @@ Full-stack admin dashboard implementation, completing Phase 3 of the development
 - Ticket exchange SSE: `POST /admin/logs/ticket` → Redis `sse:ticket:{uuid}` (300s, single-use) → `GET /admin/logs/stream?ticket=`
 - Rate limiting: 30 req/min per admin (ThrottlerModule `name: 'admin'`)
 - PII redaction: email, Bearer token, password JSON, JWT patterns
-- Healthcheck: `GET /api/v1/health`
+- Healthcheck: `GET /health/live`, `GET /health/ready` (moved from `/api/v1/health` on 2026-10-18)
 - gRPC: `ENABLE_ADMIN_GRPC=true` enables reflection on port 50056
 
 **Frontend (`examio-fe`, route `/admin`)**

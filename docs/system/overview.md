@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-examio is a multi-tenant exam/quiz platform serving students and teachers. Authoring users create quiz sets, flashcard sets, and exam rooms; students take timed sessions under AES-256-CBC question encryption with JWT answer tokens. The backend is a NestJS monorepo of 7 services (gateway, auth, exam, finance, r2, ocr, admin) plus one Python FastAPI AI service, fronted by a gateway HTTP proxy. Payments are handled via SePay QR code and an internal wallet with credit-based subscription gating. AI features (generation, document RAG, AI teacher chat) are offloaded to a Python FastAPI worker. Infrastructure runs on PostgreSQL + Redis + RabbitMQ (topic exchange `examio.events`).
+examio is a multi-tenant exam/quiz platform serving students and teachers. Authoring users create quiz sets, flashcard sets, and exam rooms; students take timed sessions under AES-256-CBC question encryption with JWT answer tokens. The backend is a NestJS monorepo of 6 services (gateway, auth, exam, finance, r2, admin) plus one Python FastAPI AI service, fronted by a gateway HTTP proxy. Payments are handled via SePay QR code and an internal wallet with credit-based subscription gating. AI features (generation, document RAG, AI teacher chat) are offloaded to a Python FastAPI worker. Infrastructure runs on PostgreSQL + Redis + RabbitMQ (topic exchange `examio.events`).
 
 For architecture diagrams and tech stack details, see [architecture.md](architecture.md).
 
@@ -18,7 +18,7 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 ### Decision 1: Gateway HTTP Proxy as the Single Public Entry Point
 
-**Context**: Six backend services (gateway, auth, exam, finance, r2, ocr) plus one Python AI service each expose HTTP/gRPC listeners. Exposing them directly to the public internet creates a large attack surface and makes CORS/CORS and rate-limiting inconsistent.
+**Context**: Six backend services (gateway, auth, exam, finance, r2) plus one Python AI service each expose HTTP/gRPC listeners. Exposing them directly to the public internet creates a large attack surface and makes CORS/CORS and rate-limiting inconsistent.
 
 **Decision**: All public HTTP traffic enters through `gateway-service` (port 3000). The gateway proxies requests to downstream services based on URL prefix rules defined in `ProxyService`. Downstream services are network-isolated; only the gateway has a public port.
 
@@ -73,7 +73,7 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
    │      │      │      │      │      │      │ HTTP
    │gRPC  │gRPC  │gRPC  │gRPC  │gRPC  │gRPC  │ (AI study proxy)
    ▼      ▼      ▼      ▼      ▼      ▼      ▼
-auth:3001 exam:3002 finance:3003 r2:3004 admin:7006 ocr-service
+auth:3001 exam:3002 finance:3003 r2:3004 admin:7006
 gRPC:50051      gRPC:50053 gRPC:50054 gRPC:50056
          exam-service ←──────────────────┐
                   │ HTTP                │ gRPC (wallet check)
@@ -94,7 +94,6 @@ Infrastructure: PostgreSQL (Prisma shared) · Redis (cache) · RabbitMQ (topic e
 | finance-service | 3003 HTTP / 50053 gRPC | HTTP + gRPC | Wallet, SePay QR payments, subscriptions |
 | r2-service | 3004 HTTP / 50054 gRPC | HTTP + gRPC | Cloudflare R2 storage |
 | admin-service | 7006 HTTP / 50056 gRPC | HTTP + gRPC | Admin dashboard: users, stats, finance, logs, audit |
-| ocr-service | gRPC 50053 (default) | gRPC | OCR processing (delegates to Python FastAPI worker) |
 | ai-service | 8000 | HTTP | RAG, document processing, AI chat (Python FastAPI) |
 
 ---
@@ -111,9 +110,7 @@ gateway-service proxies HTTP requests to downstream services by URL prefix. Admi
 - finance-service `WalletService` (port 50053): credit deduction, balance check
 - r2-service `R2Service` (port 50054): signed upload URLs, file deletion
 - admin-service `AdminService` (port 50056): admin operations (not yet exposed to other services)
-- ocr-service `OcrService` (port 50053 default): document OCR
 
-> **Unresolved**: ocr-service defaults to gRPC port 50053, colliding with finance-service. Needs port reassignment.
 
 ### RabbitMQ (async, event-driven)
 
@@ -197,7 +194,6 @@ exam-service calls `aiApi.generateExamApi` (multipart) → returns `jobId` → f
 
 ## Unresolved Questions
 
-1. ocr-service and finance-service both default gRPC port 50053 — likely port collision; needs port reassignment.
 2. Gateway has duplicate finance routes (`wallet-profile-proxy.controller.ts` + `finance-proxy.controller.ts`) — consolidate or clarify.
 3. `AuthService.ValidateToken` gRPC wired but unused — services use `AuthGuard` (Prisma-direct) instead; evaluate if gRPC path is needed.
 4. `FREE_MODE = true` shipped in production code path in `FinanceClientService.deductCredits` — credit gating bypassed; needs env-gate or removal.

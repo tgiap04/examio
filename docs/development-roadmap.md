@@ -48,12 +48,16 @@ The 2026-06-05 rebuild-spec baseline is now **873 files behind HEAD** (94k+ line
 
 ---
 
+## Progress Note (2026-10-18) — microservice-refactor plan, phase 01
+
+Phase 01 (guardrails and cleanup) is implemented but uncommitted on `refactor/microservice-rbac`: CI quality gate, `ocr-service` removed, baseline Prisma migration, health probes, pino logs. See [changelog](project-changelog.md). Plan: `plans/261017-1547-microservice-refactor-rbac/`.
+
 ## Phase 0 — System Correctness (P0, blocking)
 
 | # | Item | Source | Owner | Deps |
 |---|------|--------|-------|------|
 | 0.1 | **Remove `FREE_MODE = true` from `FinanceClientService.deductCredits`** — credit bypass shipped in production code path | W7a + scout | backend | — |
-| 0.2 | **Fix `ocr-service` gRPC port collision** (default 50053 conflicts with `finance-service`) | W7a + scout | platform | — |
+| 0.2 | ~~Fix `ocr-service` gRPC port collision~~ — resolved 2026-10-18: `ocr-service` deleted (microservice-refactor phase 01) | W7a + scout | platform | — |
 | 0.3 | **Remove duplicate finance routes** in gateway (`wallet-profile-proxy.controller.ts` vs `finance-proxy.controller.ts` both expose `/payment/*`, `/subscription*`) | W7a | backend | — |
 | 0.4 | **Decide `AuthService.ValidateToken` gRPC** — wired but unused; either remove or have downstream services use it instead of Prisma-direct lookup | W7a | backend | — |
 | 0.5 | **Verify `ExamAttempt.submit` legacy endpoint** — `submitSecureQuiz` is canonical, but `submitExamAttemptApi` still exists; remove if unused | W7a | backend | — |
@@ -170,7 +174,7 @@ Key decisions made during implementation:
 - Ticket exchange uses SSE (no WebSocket); graceful fallback to polling if SSE fails
 - User soft-delete: `isBanned = true` + `deletedAt = now()`; hard delete deferred
 - All admin mutations write one `AdminAudit` row per changed field
-- Admin service healthcheck: `GET /api/v1/health` (same pattern as other NestJS services)
+- Admin service healthcheck: `GET /health/live` and `GET /health/ready` (shared `libs/observability` controller; moved from `/api/v1/health` in microservice-refactor phase 01)
 
 ## Phase 4 — Page Feature Flags (Feature Toggling)
 

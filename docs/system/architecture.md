@@ -24,7 +24,6 @@ graph TB
         EXAM[exam-service<br/>:3002 HTTP<br/>Quiz/Flashcard/Exam/AI/OCR]
         FIN[finance-service<br/>:3003 HTTP<br/>:50053 gRPC<br/>Wallet/Payment/Sub]
         R2[r2-service<br/>:3004 HTTP<br/>:50054 gRPC<br/>Cloudflare R2]
-        OCR[ocr-service<br/>gRPC<br/>PDF → Python]
     end
 
     subgraph AI[AI Layer — Python FastAPI]
@@ -49,7 +48,6 @@ graph TB
     EXAM -->|gRPC wallet check| FIN
     EXAM -->|gRPC R2 upload| R2
     EXAM -->|HTTP multipart| AISVC
-    OCR -->|HTTP| AISVC
     AUTH -->|publish auth.user.created| RMQ
     FIN -->|subscribe auth.user.created| RMQ
     AUTH -->|Prisma| PG
@@ -68,13 +66,12 @@ graph TB
 
 | Service | HTTP Port | gRPC Port | Runtime | Role |
 |---------|----------:|----------:|---------|------|
-| `gateway-service` | 3000 | — | Node 20+ | Public HTTP entry, reverse proxy, rate limit, WS upgrade proxy (`/ws/study`) |
-| `auth-service` | 3001 | 50051 | Node 20+ | JWT issuer, OAuth, sessions, devices |
-| `exam-service` | 3002 | — | Node 20+ | Quiz/flashcard authoring, exam sessions, AI orchestration, Study-Together Room (Socket.io gateway) |
-| `finance-service` | 3003 | 50053 | Node 20+ | Wallet, SePay QR payments, subscriptions |
-| `r2-service` | 3004 | 50054 | Node 20+ | Cloudflare R2 object storage (proxy) |
-| `admin-service` | 3006 | 50056 | Node 20+ | Admin dashboard: users, stats, finance, logs, audit |
-| `ocr-service` | — | 50053 (default — **port collision with finance**) | Node 20+ | OCR processing (delegates to Python) |
+| `gateway-service` | 3000 | — | Node 22 | Public HTTP entry, reverse proxy, rate limit, WS upgrade proxy (`/ws/study`) |
+| `auth-service` | 3001 | 50051 | Node 22 | JWT issuer, OAuth, sessions, devices |
+| `exam-service` | 3002 | — | Node 22 | Quiz/flashcard authoring, exam sessions, AI orchestration, Study-Together Room (Socket.io gateway) |
+| `finance-service` | 3003 | 50053 | Node 22 | Wallet, SePay QR payments, subscriptions |
+| `r2-service` | 3004 | 50054 | Node 22 | Cloudflare R2 object storage (proxy) |
+| `admin-service` | 3006 | 50056 | Node 22 | Admin dashboard: users, stats, finance, logs, audit |
 | `ai-service` | 8000 | — | Python 3.12+ | RAG, document processing, AI chat (LangChain + LangGraph) |
 
 ## Cross-Service Communication
@@ -111,7 +108,6 @@ sequenceDiagram
 - `auth.proto` — `ValidateToken`, `GetUserInfo`, `CheckPermission`
 - `wallet.proto` — `CreateWallet`, `GetWallet`, `UpdateBalance`
 - `r2.proto` — `UploadFile`, `GetFileUrl`, `DeleteFile`, `ListUserFiles`
-- `ocr.proto` — `ProcessPdf`, `HealthCheck`
 - `subscription.proto` — `GetUserBenefits`
 
 ### 3. RabbitMQ Topic Exchange (async events)
@@ -337,7 +333,6 @@ graph TB
         ADMIN[admin :3006/:50056]
         R2[r2 :3004/:50054]
         AI[ai :8000]
-        OCR[ocr :gRPC]
         PG[(PostgreSQL HA)]
         REDIS[(Redis HA)]
         RMQ[RabbitMQ HA]
@@ -349,7 +344,6 @@ graph TB
     GW --> ADMIN
     GW --> R2
     EXAM --> AI
-    OCR --> AI
     AUTH --> PG
     EXAM --> PG
     FIN --> PG
@@ -368,7 +362,7 @@ Docker Compose file: `examio-be/deploy/docker-compose.yml` (production-grade)
 
 | # | Issue | Source | Owner | Priority |
 |---|-------|--------|-------|:--------:|
-| A.1 | `ocr-service` defaults to gRPC port 50053 — collision with `finance-service` | scout + W7a | platform | P0 |
+| A.1 | ~~`ocr-service` gRPC port collision~~ — resolved 2026-10-18: service deleted | scout + W7a | platform | P0 |
 | A.2 | `FREE_MODE = true` shipped in `FinanceClientService.deductCredits` — credit gating bypassed | scout + W7a | backend | P0 |
 | A.3 | `AuthService.ValidateToken` gRPC wired but unused — services use Prisma-direct | W7a | backend | P2 |
 | A.4 | `EventType` enum defines 14+ events; only `auth.user.created` is wired | W7a | backend | P3 |
@@ -384,3 +378,13 @@ Docker Compose file: `examio-be/deploy/docker-compose.yml` (production-grade)
 - Business rules: `docs/system/business-rules.md`
 - Permissions: `docs/system/permissions.md`
 - API map: `docs/generated/api-map.md`
+
+
+## Operational Notes (2026-10-18, microservice-refactor phase 01)
+
+- Health probes: `GET /health/live` and `GET /health/ready` (`libs/observability`), replacing `/api/v1/health`.
+- Logs: pino JSON with `X-Request-Id` correlation.
+- Schema: single baseline migration (`libs/database/src/migrations/20261017194544_baseline`) applied with `prisma migrate deploy`; `db push` is no longer used.
+- Postgres is not published on a host port; use an SSH tunnel (`examio-be/deploy/README.md`).
+- Unverified users may only reach logout, sendVerificationEmail, verifyAccount, me (`@AllowUnverified`); other guarded routes return 403.
+- CI: `.github/workflows/ci.yml` runs as a quality gate that `deploy.yml` requires before deploying.

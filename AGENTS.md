@@ -34,13 +34,12 @@ yarn dev:exam
 yarn dev:finance
 yarn dev:gateway
 yarn dev:r2
-yarn dev:ocr
+yarn dev:admin
 yarn dev:ai
 yarn dev:all
 yarn prisma:merge
 yarn prisma:generate
 yarn prisma:migrate
-yarn prisma:push
 yarn prisma:studio
 yarn prisma:deploy
 yarn prisma:seed
@@ -117,7 +116,6 @@ Backend là một root package dùng Yarn, tổ chức theo kiểu Nest monorepo
 - `exam-service`: domain chính cho thi cử và học tập.
 - `finance-service`: ví, thanh toán, subscription và luồng khởi tạo ví theo event.
 - `r2-service`: service lưu trữ tệp.
-- `ocr-service`: service TypeScript phục vụ OCR.
 - `ai-service`: FastAPI service viết bằng Python cho RAG, OCR/xử lý tài liệu và các luồng AI chat/generation.
 
 ### Shared backend libraries
