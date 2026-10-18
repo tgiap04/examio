@@ -164,19 +164,6 @@ export default function FlashcardStudyPage() {
     checkAccess();
   }, [id, initializing, isAuthenticated, loadFlashcards, location, navigate]);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowLeft") handlePrevious();
-      else if (e.key === "ArrowRight") handleNext();
-      else if (e.key === " " || e.key === "Enter") {
-        e.preventDefault();
-        handleFlip();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  });
-
   const handleVerifyCode = async () => {
     if (!accessCode.trim()) {
       setAccessError("Vui lòng nhập mã truy cập");
@@ -225,6 +212,19 @@ export default function FlashcardStudyPage() {
     setCurrentCardIndex(0);
     setIsFlipped(false);
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") handlePrevious();
+      else if (e.key === "ArrowRight") handleNext();
+      else if (e.key === " " || e.key === "Enter") {
+        e.preventDefault();
+        handleFlip();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  });
 
   // Loading state
   if (isCheckingAccess) {
