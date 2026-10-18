@@ -36,10 +36,11 @@
         "prisma:seed": "./node_modules/.bin/ts-node libs/database/prisma/seed.ts",
         "seed:dev": "./node_modules/.bin/jiti libs/database/prisma/seed-dev.ts",
         "start:prod": "node dist/apps/codecraft-be/main",
-        "bootstrap:admin": "node -r tsconfig-paths/register apps/admin-service/dist/commands/cli.js",
-        "bootstrap:admin:list": "node -r tsconfig-paths/register apps/admin-service/dist/commands/cli.js list",
-        "bootstrap:admin:grant": "ts-node -r tsconfig-paths/register apps/admin-service/src/commands/cli.ts grant",
-        "bootstrap:admin:revoke": "ts-node -r tsconfig-paths/register apps/admin-service/src/commands/cli.ts revoke"
+        "bootstrap:admin": "ts-node -r tsconfig-paths/register apps/auth-service/src/commands/cli.ts sync",
+        "bootstrap:admin:list": "ts-node -r tsconfig-paths/register apps/auth-service/src/commands/cli.ts list",
+        "bootstrap:admin:grant": "ts-node -r tsconfig-paths/register apps/auth-service/src/commands/cli.ts grant",
+        "bootstrap:admin:revoke": "ts-node -r tsconfig-paths/register apps/auth-service/src/commands/cli.ts revoke",
+        "finance:reconcile-teachers": "ts-node -r tsconfig-paths/register apps/finance-service/src/commands/cli.ts reconcile-teachers"
     },
     "keywords": [],
     "author": "",
@@ -84,6 +85,7 @@
         "http-proxy": "^1.18.1",
         "ioredis": "^5.8.2",
         "jimp": "^1.6.0",
+        "jose": "5.10.0",
         "jsonwebtoken": "^9.0.2",
         "multer": "^2.2.0",
         "nestjs-pino": "5.3.1",
@@ -132,6 +134,7 @@
         "supertest": "^7.1.4",
         "ts-jest": "^29.4.6",
         "ts-loader": "^9.5.4",
+        "ts-node": "10.9.2",
         "ts-proto": "2.15.3",
         "typescript": "^5.8.3"
     }

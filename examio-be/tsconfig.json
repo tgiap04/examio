@@ -63,6 +63,12 @@
       "@examio/http/*": [
         "libs/http/src/*"
       ],
+      "@examio/auth-jwt": [
+        "libs/auth-jwt/src"
+      ],
+      "@examio/auth-jwt/*": [
+        "libs/auth-jwt/src/*"
+      ],
       "@examio/messaging": [
         "libs/messaging/src"
       ],
