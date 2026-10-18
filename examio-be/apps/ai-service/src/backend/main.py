@@ -57,14 +57,6 @@ async def lifespan(app: FastAPI):
         logger.error(f'Failed to ensure graph storage schema: {e}')
 
     try:
-        from .services.benchmark_index_service import benchmark_index_service
-
-        await benchmark_index_service.seed_from_fixtures()
-        logger.info('Benchmark index schema ensured and fixture data seeded')
-    except Exception as e:
-        logger.error(f'Failed to ensure benchmark index schema: {e}')
-
-    try:
         yield
     except asyncio.CancelledError:
         logger.info("AI service lifespan cancelled during shutdown")

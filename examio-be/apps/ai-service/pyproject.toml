@@ -61,24 +61,15 @@ dependencies = [
 
 [tool.poetry]
 packages = [
-    {include = "agent", from = "src"},
     {include = "backend", from = "src"},
     {include = "genai_tutor", from = "src"},
     {include = "rag", from = "src"},
     {include = "llm", from = "src"},
-    {include = "score", from = "src"},
-    {include = "streamlit_ui", from = "src"},
 ]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0", "setuptools>=73.0.0", "wheel"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.setuptools]
-packages = ["langgraph.templates.agent", "agent"]
-[tool.setuptools.package-dir]
-"langgraph.templates.agent" = "src/agent"
-"agent" = "src/agent"
 
 [tool.setuptools.package-data]
 "*" = ["py.typed"]

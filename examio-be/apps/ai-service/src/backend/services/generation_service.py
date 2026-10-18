@@ -23,7 +23,7 @@ from src.backend.services.hybrid_retrieval_service import (
     hybrid_retrieval_service,
     GenerationGroup,
 )
-from src.llm.model_manager import model_manager
+from src.llm.model_manager import ModelUnavailableError, model_manager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
