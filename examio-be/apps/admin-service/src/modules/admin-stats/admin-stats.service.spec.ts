@@ -127,35 +127,66 @@ describe('AdminStatsService', () => {
             expect(prisma.$queryRaw).not.toHaveBeenCalled();
         });
 
-        it('queries raw SQL and caches the filled series', async () => {
-            redis.get.mockResolvedValue(null);
-            const today = new Date();
-            const yesterday = new Date(
-                Date.UTC(
-                    today.getUTCFullYear(),
-                    today.getUTCMonth(),
-                    today.getUTCDate() - 1
-                )
-            );
-            prisma.$queryRaw.mockResolvedValue([
-                { date: yesterday, value: BigInt(5) },
-            ]);
+        describe('with a pinned clock', () => {
+            // 23:30 UTC: already the next calendar day in UTC+7, so a
+            // local-time bucketing bug would shift the expected index.
+            const NOW = new Date('2026-03-10T23:30:00.000Z');
 
-            const result = await service.getSeries('signups', '7d');
+            beforeEach(() => {
+                // Fake only Date so promise/microtask scheduling stays real.
+                jest.useFakeTimers({
+                    now: NOW,
+                    doNotFake: [
+                        'hrtime',
+                        'nextTick',
+                        'performance',
+                        'queueMicrotask',
+                        'requestAnimationFrame',
+                        'cancelAnimationFrame',
+                        'requestIdleCallback',
+                        'cancelIdleCallback',
+                        'setImmediate',
+                        'clearImmediate',
+                        'setInterval',
+                        'clearInterval',
+                        'setTimeout',
+                        'clearTimeout',
+                    ],
+                });
+            });
 
-            expect(prisma.$queryRaw).toHaveBeenCalled();
-            expect(result.points).toHaveLength(7);
-            expect(result.points[6].value).toBe(5);
-            expect(
-                result.points
-                    .slice(0, 6)
-                    .every((p) => p.value === 0)
-            ).toBe(true);
-            expect(redis.set).toHaveBeenCalledWith(
-                'admin:stats:series:signups:7d',
-                result,
-                300
-            );
+            afterEach(() => {
+                jest.useRealTimers();
+            });
+
+            it('queries raw SQL and caches the filled series', async () => {
+                redis.get.mockResolvedValue(null);
+                // A 7d series covers [today-6 .. today] in UTC, so the last
+                // point is today (index 6) and yesterday is index 5.
+                const yesterday = new Date('2026-03-09T00:00:00.000Z');
+                prisma.$queryRaw.mockResolvedValue([
+                    { date: yesterday, value: BigInt(5) },
+                ]);
+
+                const result = await service.getSeries('signups', '7d');
+
+                expect(prisma.$queryRaw).toHaveBeenCalled();
+                expect(result.points).toHaveLength(7);
+                expect(result.points[0].date).toBe('2026-03-04T00:00:00.000Z');
+                expect(result.points[6].date).toBe('2026-03-10T00:00:00.000Z');
+                expect(result.points[5].date).toBe(yesterday.toISOString());
+                expect(result.points[5].value).toBe(5);
+                expect(
+                    result.points
+                        .filter((_, i) => i !== 5)
+                        .every((p) => p.value === 0)
+                ).toBe(true);
+                expect(redis.set).toHaveBeenCalledWith(
+                    'admin:stats:series:signups:7d',
+                    result,
+                    300
+                );
+            });
         });
     });
 

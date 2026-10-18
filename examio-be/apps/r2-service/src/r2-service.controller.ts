@@ -2,7 +2,6 @@ import {
     BadRequestException,
     Body,
     Controller,
-    Get,
     Headers,
     Logger,
     Post,
@@ -38,11 +37,6 @@ export class R2ServiceController {
     private readonly logger = new Logger(R2ServiceController.name);
 
     constructor(private readonly r2Service: R2ServiceService) {}
-
-    @Get('health')
-    health() {
-        return { status: 'ok', service: 'r2-service' };
-    }
 
     @Post('internal/upload')
     @UseInterceptors(FileInterceptor('file'))

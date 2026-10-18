@@ -388,7 +388,7 @@ async function seedPageFlags() {
 
 async function main() {
     console.log('🌱 Seed script starting...');
-    console.log('   Database URL:', process.env.DATABASE_URL ?? '(not set — using default)');
+    console.log('   Database URL:', process.env.DATABASE_URL ? '<set>' : '(not set — using default)');
 
     try {
         // PageFeatureFlag may not exist on an older schema. Probe before writing.

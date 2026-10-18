@@ -25,12 +25,7 @@ describe('R2ServiceController', () => {
         controller = app.get<R2ServiceController>(R2ServiceController);
     });
 
-    describe('health', () => {
-        it('should return health status', () => {
-            expect(controller.health()).toEqual({
-                status: 'ok',
-                service: 'r2-service',
-            });
-        });
+    it('is defined', () => {
+        expect(controller).toBeDefined();
     });
 });
