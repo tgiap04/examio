@@ -184,8 +184,9 @@ Check service health:
 # Check all containers are running
 docker compose ps
 
-# Check gateway health
-curl http://localhost:6369/api/v1/health
+# Liveness (process is up) and readiness (database/redis reachable) of the gateway
+curl http://localhost:6369/health/live
+curl http://localhost:6369/health/ready
 
 # Check RabbitMQ management (if exposed)
 # Access http://your-server:15672 (default: admin/admin)
@@ -202,7 +203,8 @@ docker compose logs migration
 Lưu ý quan trọng:
 - các service ứng dụng (`gateway`, `auth`, `exam`, `finance`, `r2`, `ai`) hiện phụ thuộc vào container `migration` với điều kiện `service_completed_successfully`;
 - nghĩa là khi bạn `docker compose build && docker compose up -d`, migration sẽ chạy trước, sau đó các service mới khởi động;
-- migration hiện dùng `prisma migrate deploy`, đây là cơ chế áp dụng migration an toàn theo migration files đã commit, không phải `prisma db push`, nên không chủ động làm mất dữ liệu cũ;
+- migration hiện dùng `prisma migrate deploy`, đây là cơ chế áp dụng migration an toàn theo migration files đã commit, không đẩy schema trực tiếp vào DB, nên không chủ động làm mất dữ liệu cũ;
+- migration đầu tiên là `baseline` (tạo extension `vector`, `uuid-ossp` và toàn bộ bảng); DB mới (volume rỗng) chỉ cần chạy `migrate deploy`;
 - tuy vậy, nếu bạn thay đổi schema mới, hãy tạo migration chuẩn trước khi deploy để tránh lệch schema giữa code và DB.
 
 ## Container Ports
@@ -256,6 +258,20 @@ docker compose exec gateway sh
 docker compose exec postgres psql -U examio
 docker compose exec redis redis-cli
 ```
+
+## Accessing PostgreSQL from your machine
+
+PostgreSQL is **not published** on a host port. To connect with a local client, open an SSH tunnel to the container network and forward a local port:
+
+```bash
+# Find the postgres container IP on the VPS, then tunnel through SSH
+ssh -N -L 5432:$(ssh user@your-server "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' examio-postgres"):5432 user@your-server
+
+# In another terminal
+psql "postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:5432/$POSTGRES_DB"
+```
+
+For one-off queries on the server itself, use `docker compose exec postgres psql -U examio`.
 
 ## Troubleshooting
 

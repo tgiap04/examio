@@ -1,6 +1,6 @@
 # Prisma Migration Runner - Minimal image
-# Strategy: db push (create schema) + migrate resolve (mark migrations applied)
-FROM node:20-alpine AS base
+# Strategy: `prisma migrate deploy` applies the committed migration files (baseline first).
+FROM node:22-alpine AS base
 RUN corepack enable && corepack prepare yarn@4.9.2 --activate
 WORKDIR /app
 

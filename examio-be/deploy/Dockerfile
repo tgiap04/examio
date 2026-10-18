@@ -12,7 +12,7 @@ ARG ENABLE_OCR=false
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 1: Base - Shared dependencies (cached across all services)
 # ─────────────────────────────────────────────────────────────────────────────
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 RUN corepack enable && corepack prepare yarn@4.9.2 --activate
 WORKDIR /app
 
@@ -59,7 +59,7 @@ RUN yarn install --immutable --mode=skip-build && \
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 5: Runner - Minimal production image
 # ─────────────────────────────────────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM node:22-alpine AS runner
 ARG SERVICE_NAME
 ARG ENABLE_OCR
 ENV SERVICE_NAME=${SERVICE_NAME} NODE_ENV=production
@@ -78,6 +78,6 @@ COPY --from=prod-deps /app/libs ./libs
 EXPOSE 3000
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=30s \
-    CMD wget -q --spider http://localhost:${PORT:-3000}/api/v1/health || exit 1
+    CMD wget -q --spider http://localhost:${PORT:-3000}/health/ready || exit 1
 
 CMD ["sh", "-c", "node dist/apps/${SERVICE_NAME}/main"]

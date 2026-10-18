@@ -38,6 +38,12 @@
       ],
       "@examio/redis/*": [
         "libs/redis/src/*"
+      ],
+      "@examio/observability": [
+        "libs/observability/src"
+      ],
+      "@examio/observability/*": [
+        "libs/observability/src/*"
       ]
     },
     "skipLibCheck": true,

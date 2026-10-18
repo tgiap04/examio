@@ -79,7 +79,7 @@ services:
                     'wget',
                     '-q',
                     '--spider',
-                    'http://localhost:7000/api/v1/health',
+                    'http://localhost:7000/health/ready',
                 ]
         restart: unless-stopped
         logging: *default-logging
@@ -125,7 +125,7 @@ services:
                     'wget',
                     '-q',
                     '--spider',
-                    'http://localhost:7001/api/v1/health',
+                    'http://localhost:7001/health/ready',
                 ]
         restart: unless-stopped
         logging: *default-logging
@@ -176,7 +176,7 @@ services:
                     'wget',
                     '-q',
                     '--spider',
-                    'http://localhost:7002/api/v1/health',
+                    'http://localhost:7002/health/ready',
                 ]
         restart: unless-stopped
         logging: *default-logging
@@ -216,7 +216,7 @@ services:
                     'wget',
                     '-q',
                     '--spider',
-                    'http://localhost:7003/api/v1/health',
+                    'http://localhost:7003/health/ready',
                 ]
         restart: unless-stopped
         logging: *default-logging
@@ -260,7 +260,7 @@ services:
                     'wget',
                     '-q',
                     '--spider',
-                    'http://localhost:7006/api/v1/health',
+                    'http://localhost:7006/health/ready',
                 ]
         restart: unless-stopped
         logging: *default-logging
@@ -292,7 +292,7 @@ services:
                     'wget',
                     '-q',
                     '--spider',
-                    'http://localhost:7004/health',
+                    'http://localhost:7004/health/ready',
                 ]
         restart: unless-stopped
         logging: *default-logging
@@ -371,8 +371,6 @@ services:
     postgres:
         image: pgvector/pgvector:pg16
         container_name: examio-postgres
-        ports:
-            - '5411:5432'
         environment:
             - POSTGRES_USER=${POSTGRES_USER:?POSTGRES_USER is required}
             - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
