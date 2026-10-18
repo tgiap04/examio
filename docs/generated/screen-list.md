@@ -1096,7 +1096,7 @@ Admin dashboard home page. Displays KPI cards (total users, active sessions, rev
 
 ### Auth
 
-- `AdminGuard` — `User.isAdmin = true` required. Non-admins receive 403.
+- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required. Non-admins receive 403.
 
 ---
 
@@ -1124,7 +1124,7 @@ Detailed analytics page with time-series charts for user growth, exam sessions, 
 
 ### Auth
 
-- `AdminGuard` — `User.isAdmin = true` required.
+- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required.
 
 ---
 
@@ -1150,12 +1150,12 @@ User management page with paginated antd Table. Columns: avatar, name, email, ro
 - `PUT /api/v1/admin/users/:id/ban`
 - `PUT /api/v1/admin/users/:id/unban`
 - `DELETE /api/v1/admin/users/:id`
-- `PUT /api/v1/admin/users/:id/grant-admin`
-- `DELETE /api/v1/admin/users/:id/revoke-admin`
+- `POST /api/v1/admin/users/:id/grant-admin`
+- `POST /api/v1/admin/users/:id/revoke-admin`
 
 ### Auth
 
-- `AdminGuard` — `User.isAdmin = true` required.
+- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required.
 
 ---
 
@@ -1185,7 +1185,7 @@ Finance management page with tabs: Refund History, Credit Adjustments, Subscript
 
 ### Auth
 
-- `AdminGuard` — `User.isAdmin = true` required.
+- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required.
 
 ---
 
@@ -1212,7 +1212,7 @@ Server-side log viewer with real-time SSE streaming (ticket exchange) and pollin
 
 ### Auth
 
-- `AdminGuard` — `User.isAdmin = true` required.
+- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required.
 
 ---
 
@@ -1238,7 +1238,7 @@ Audit log query page. Paginated antd Table showing `AdminAudit` rows: admin user
 
 ### Auth
 
-- `AdminGuard` — `User.isAdmin = true` required.
+- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required.
 
 ---
 
@@ -1264,7 +1264,7 @@ Admin screen listing every togglable page (`PageFeatureFlag` rows) with a `Switc
 
 ### Auth
 
-- `AdminGuard` — `User.isAdmin = true` required.
+- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required.
 
 ---
 
@@ -1372,7 +1372,7 @@ Admin CRUD for `WordFamilyCategory` — antd Table + Modal, auto-slug generator 
 
 ### Auth
 
-- `AdminGuard` — `User.isAdmin = true` required.
+- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required.
 
 ---
 

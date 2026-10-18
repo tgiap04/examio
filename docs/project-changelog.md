@@ -1,9 +1,25 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-10-18
+last_updated: 2026-10-19
 ---
 
 # Examio Project Changelog
+
+## [Unreleased] — 2026-10-19
+
+### Changed
+
+#### Microservice refactor, phase 04 (identity and RBAC core; uncommitted on `refactor/microservice-rbac`)
+
+- **Roles**: `User.isAdmin` replaced by `User.role` (`BaseRole` STUDENT | TEACHER, default STUDENT), `User.isSystemAdmin` and `User.authzVersion`; new `RoleChangeLog` model; migration `20261018093802_rbac_core`. Only a SYSTEM_ADMIN grants TEACHER / admin; self-change blocked (`CANNOT_CHANGE_OWN_ROLE`), last active admin protected (`LAST_SYSTEM_ADMIN`).
+- **JWT**: RS256 + JWKS (`GET /.well-known/jwks.json` on auth), claims `sub`, `sid`, `roles`, `email_verified`, `av`, access TTL 15 min; `JWT_SECRET` / `JWT_EXPIRATION` removed. Refresh reloads the role in a transaction. `GET /auth/me` returns `roles`, `permissions` and `user.isSystemAdmin`.
+- **New lib `@examio/auth-jwt`** (stateless `JwtAuthGuard` -> `PermissionsGuard`, deny by default; `@Public`, `@Authenticated`, `@AllowUnverified`, `@RequirePermissions`, `@ServiceOnly`, `@RequirePermissionsOrService`; permission catalog; `ServiceTokenClient`; `assertSelfOrService`). Removed from `@examio/common`: `AuthGuard`, `OptionalAuthGuard`, `AdminGuard`, `AuthModule`, `AllowUnverified`, `sanitize-user`. No DB query per request.
+- **Service tokens**: `POST /internal/token` (client_credentials, 5 min TTL); gRPC calls carry `authorization` metadata. Auth stores sha256 hashes in `SERVICE_CLIENTS`. Scripts: `scripts/gen-jwt-keypair.sh`, `scripts/gen-service-secret.sh`.
+- **Finance**: `UserRegisteredHandler` removed; wallet (20 credits, once) + Free subscription row now provisioned on `auth.user.authz_changed` with `role = TEACHER`, lazily on wallet read for `wallet:use` callers, and by `yarn finance:reconcile-teachers`. STUDENTs have no wallet. `auth.user.registered` is still published, with no consumer.
+- **Admin bootstrap** moved from admin-service to auth-service (`yarn bootstrap:admin`, `:list`, `:grant <email> [--teacher]`, `:revoke <email>`); admin-service grant/revoke call auth gRPC `SetSystemAdmin`.
+- **Env (names)**: auth `JWT_PRIVATE_KEY`, `JWT_KID`, `JWT_RETIRED_PUBLIC_KEYS`, `JWT_ISSUER`, `JWT_AUDIENCE`, `SERVICE_CLIENTS`, `GATEWAY_CONTROL_ENABLED`; all services `AUTH_JWKS_URL`; callers `AUTH_TOKEN_URL`, `SERVICE_CLIENT_SECRET`; admin and finance `AUTH_GRPC_URL`.
+- **Known gaps**: frontend still reads `user.isAdmin` (fixed in a later phase); `deploy/docker-compose.yml` still passes `ADMIN_EMAILS` / `ADMIN_DEFAULT_PASSWORD` to the admin container, not to auth.
+- **Docs**: `docs/system/permissions.md` gains the current role-to-permission catalog; legacy `PERM###` text is rewritten in plan phase 19.
 
 ## [Unreleased] — 2026-10-18
 

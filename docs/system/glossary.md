@@ -22,7 +22,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **AI Service** — Standalone Python FastAPI service responsible for RAG (document retrieval), embedding generation, AI chat orchestration, and AI-assisted quiz/flashcard generation. Exam-service calls it via HTTP.
 
-**Admin Service** — NestJS service providing the admin dashboard backend. Handles KPI/stats, user management (ban/unban/delete/grant admin), finance operations (refund/credit adjust/tier change), log streaming (SSE via ticket exchange), and audit log query. Exposed via gateway proxy at `/api/v1/admin/*` (HTTP port 3000 in containers; no gRPC server). Uses `AdminGuard` in `@examio/common` (standalone JWT verify + `User.isAdmin` check) instead of `AuthGuard`.
+**Admin Service** — NestJS service providing the admin dashboard backend. Handles KPI/stats, user management (ban/unban/delete/grant admin), finance operations (refund/credit adjust/tier change), log streaming (SSE via ticket exchange), and audit log query. Exposed via gateway proxy at `/api/v1/admin/*` (HTTP port 3000 in containers; no gRPC server). Every controller requires `admin:access` (`@examio/auth-jwt`, `SYSTEM_ADMIN` role); grant/revoke admin go through auth `SetSystemAdmin`.
 
 **Answer Token (JWT)** — A signed JSON Web Token submitted by the client when a student finishes an exam. Contains the map of question IDs to selected answers. The server validates the signature before grading — preventing answer forgery or tampering.
 
@@ -30,9 +30,13 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Auth Service** — NestJS service handling authentication, OAuth (Google), session management, device tracking, and account verification. Exposes both HTTP (port 3000) and gRPC (port 50051) interfaces.
 
+**Authz Version (`av`)** — Monotonic integer on `User.authzVersion`, bumped in the same transaction as every role, admin-flag, ban or password change and carried in the access token as claim `av` so stale tokens are detectable.
+
 ---
 
 ## B
+
+**Base Role** — `User.role`: `STUDENT` (default on register) or `TEACHER`; mutually exclusive. SYSTEM_ADMIN is a separate flag, not a base role.
 
 **Bcrypt Hash** — The hashed representation of a user's password stored in the database. OAuth-only accounts have a null password field.
 
@@ -54,7 +58,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Community (Graph)** — A cluster of related chunks detected by the Louvain community detection algorithm within a UserStorageGraph. Represents a semantically coherent section of the document used for selective RAG retrieval.
 
-**Credits** — The platform's virtual currency. Used to pay for AI-powered quiz and flashcard generation. Users purchase credits via SePay bank transfer; new users receive a 20-credit welcome bonus on wallet creation.
+**Credits** — The platform's virtual currency. Used to pay for AI-powered quiz and flashcard generation. Users purchase credits via SePay bank transfer; TEACHERs receive a 20-credit welcome bonus on wallet creation.
 
 ---
 
@@ -128,7 +132,9 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 ## J
 
-**JWT (access token)** — JSON Web Token issued on login. Stored in browser localStorage and sent as `Authorization: Bearer` on every API request. Validated by SessionValidationMiddleware at the gateway.
+**JWKS** — JSON Web Key Set served by auth-service at `GET /.well-known/jwks.json`; services fetch it to verify RS256 access and service tokens.
+
+**JWT (access token)** — JSON Web Token issued on login. RS256-signed by auth-service (15 min; claims `sub`, `sid`, `roles`, `email_verified`, `av`). Stored in browser localStorage and sent as `Authorization: Bearer` on every API request. Verified statelessly by each service against auth's JWKS.
 
 ---
 
@@ -157,6 +163,8 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 ## P
 
 **Payment** — A payment intent record tracking a SePay virtual account order. Tracks amount, currency, status (unpaid/paid/overdue/cancelled), and payment type (credits or subscription).
+
+**Permission** — A string such as `quizset:manage` from the catalog in `libs/auth-jwt/src/permissions.ts`. Roles hold fixed permission sets; permissions are derived from the token `roles`, never carried in the token. See [permissions](permissions.md).
 
 **Prisma** — ORM used across all NestJS services to interact with the shared PostgreSQL database. Schema lives in `@examio/database`.
 
@@ -204,6 +212,8 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **R2 Service** — NestJS service managing Cloudflare R2 object storage. Exposes gRPC R2Service on port 50051 for signed upload URL generation and file deletion (`DeleteObjects` for batch).
 
+**RoleChangeLog** — Audit table of every role / admin-flag change (target, actor, from/to role and admin, reason, source `admin-ui` | `cli` | `bootstrap`).
+
 ---
 
 ## S
@@ -211,6 +221,8 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 **Score** — A floating-point value representing the student's exam result, typically expressed as a percentage (0–100). Compared against the ExamSession's passingScore to determine pass/fail.
 
 **SePay** — Vietnamese payment provider enabling bank transfers via virtual account numbers and QR codes. The platform generates a SePay VA for each payment; a webhook confirms when the transfer is received.
+
+**Service Token** — Short-lived (5 min) JWT for service-to-service calls (`sub = svc:<name>`, `roles = ["SERVICE"]`), obtained from `POST /internal/token` with client credentials and sent as `authorization` header / gRPC metadata.
 
 **Session** — See UserSession.
 
@@ -222,17 +234,21 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **SSE (Server-Sent Events)** — HTTP-based streaming mechanism used for AI chat responses. The server pushes tokens to the client in real time as the AI generates them.
 
+**Student** — A platform user with base role `STUDENT` (the default): studies flashcards, practices quizzes, takes exams, joins study rooms. Has no wallet.
+
 **Subject** — An AI teacher persona defined by a name, icon, and system prompt stored in the database. Students select a Subject when starting an AI chat session.
 
 **SubjectCategory** — A top-level grouping of AI teacher Subjects (e.g., "Mathematics", "Natural Sciences"). Used for UI navigation and organizing the Subject catalog.
 
 **Subscription Tier** — A discriminator on UserSubscription gating feature access: `0=none` (free), `1=basic`, `2=advanced`, `3=vip`. Controls upload limits and AI feature quotas.
 
+**SYSTEM_ADMIN** — Role of an account with `User.isSystemAdmin = true` (replaces `isAdmin`). Holds the admin permissions; can grant TEACHER and the admin flag. Cannot change their own role; the last active one cannot be demoted.
+
 ---
 
 ## T
 
-**Teacher** — A platform user who authors quiz sets, flashcard decks, and exam rooms, and reviews student performance analytics.
+**Teacher** — A platform user with base role `TEACHER` (granted only by a SYSTEM_ADMIN) who authors quiz sets, flashcard decks, and exam rooms, and reviews student performance analytics.
 
 **Turnstile** — See Cloudflare Turnstile.
 
@@ -276,13 +292,13 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 ## W
 
-**Wallet** — A per-user credit balance. The wallet balance is the sum of all WalletTransactions (credits added and spent). Created automatically when a new user registers (with a 20-credit welcome bonus).
+**Wallet** — A per-user credit balance. The wallet balance is the sum of all WalletTransactions (credits added and spent). Exists only for TEACHERs: created when the account becomes a TEACHER (with a 20-credit welcome bonus); STUDENTs have none.
 
 **Wallet Transaction** — An immutable ledger entry recording a credit change on a Wallet. Includes type (buy credits, subscription, refund, admin adjustment, use services) and direction (ADD or SUBTRACT).
 
 **Webhook (SePay)** — An automated HTTP POST from SePay notifying the platform that a bank transfer was received. Triggers credit activation or subscription renewal.
 
-**Welcome Bonus** — 20 credits automatically added to a new user's wallet on registration, funded by the finance-service's `UserRegisteredHandler` consuming the `auth.user.registered` RabbitMQ event.
+**Welcome Bonus** — 20 credits added once to a TEACHER's wallet when it is provisioned, by the finance-service's `UserAuthzChangedHandler` consuming `auth.user.authz_changed` with `role = TEACHER` (or lazily on first wallet read).
 
 **Whitelist** — A list of user IDs with explicit access to a private exam session or flashcard deck. In addition to access codes, teachers can grant access to specific students by adding their user IDs.
 

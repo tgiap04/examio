@@ -601,7 +601,7 @@ Internal service routes — not directly exposed to clients (gateway proxies to 
 
 #### Admin
 
-All admin routes are proxied from gateway via `/api/v1/admin/*` to `admin-service` (port 7006). Auth: `AdminGuard` (JWT + `User.isAdmin = true`), not standard `AuthGuard`.
+All admin routes are proxied from gateway via `/api/v1/admin/*` to `admin-service` (HTTP 3000 in containers). Auth: class-level `@RequirePermissions('admin:access')` (stateless JWT, `SYSTEM_ADMIN` role in token).
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
@@ -613,8 +613,8 @@ All admin routes are proxied from gateway via `/api/v1/admin/*` to `admin-servic
 | PUT | /api/v1/admin/users/:id/ban | Ban user (`isBanned = true`) | Admin |
 | PUT | /api/v1/admin/users/:id/unban | Unban user (`isBanned = false`) | Admin |
 | DELETE | /api/v1/admin/users/:id | Soft-delete user (`deletedAt = now()`) | Admin |
-| PUT | /api/v1/admin/users/:id/grant-admin | Grant admin role (`isAdmin = true`) | Admin |
-| DELETE | /api/v1/admin/users/:id/revoke-admin | Revoke admin role (`isAdmin = false`) | Admin |
+| POST | /api/v1/admin/users/:id/grant-admin | Grant admin role (`isSystemAdmin = true`, via auth `SetSystemAdmin`) | Admin |
+| POST | /api/v1/admin/users/:id/revoke-admin | Revoke admin role (`isSystemAdmin = false`, via auth `SetSystemAdmin`) | Admin |
 | GET | /api/v1/admin/finance/refunds | List refund history | Admin |
 | POST | /api/v1/admin/finance/refund | Issue wallet refund | Admin |
 | POST | /api/v1/admin/finance/adjust-credit | Manual credit adjustment | Admin |

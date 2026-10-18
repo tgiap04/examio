@@ -1,6 +1,6 @@
 ---
 title: Examio Development Roadmap
-last_updated: 2026-07-21
+last_updated: 2026-10-19
 source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/) + phase completions
 status: ACTIVE
 ---
@@ -59,6 +59,10 @@ Phase 02 (contracts and infra libs) is implemented but uncommitted on `refactor/
 ## Progress Note (2026-10-18) — microservice-refactor plan, phase 03
 
 Phase 03 (messaging foundation) is implemented but uncommitted on `refactor/microservice-rbac`: `@examio/messaging` (outbox + relay, idempotent consumer, retry/DLQ, `ROLE`), `auth.user.created` replaced by `auth.user.registered`, per-service RabbitMQ users rendered from definitions at deploy, RabbitMQ 3.13. See [changelog](project-changelog.md).
+
+## Progress Note (2026-10-19) — microservice-refactor plan, phase 04
+
+Phase 04 (identity and RBAC core) is implemented but uncommitted on `refactor/microservice-rbac`: roles STUDENT/TEACHER + `isSystemAdmin` (replaces `isAdmin`), RS256/JWKS tokens, new `@examio/auth-jwt` (deny-by-default guards, permission catalog), service tokens, TEACHER-only wallets, admin bootstrap moved to auth CLI. Roadmap item 1.2 (session/refresh policy) is partly addressed: access 15 min, refresh reloads role. Frontend still reads `isAdmin`. See [changelog](project-changelog.md) and [permissions](system/permissions.md).
 
 ## Phase 0 — System Correctness (P0, blocking)
 
@@ -178,7 +182,7 @@ Phase 03 (messaging foundation) is implemented but uncommitted on `refactor/micr
 | 3.6 | antd Table with pagination + filters on all list pages | frontend | ✅ Complete |
 
 Key decisions made during implementation:
-- `AdminGuard` lives in `@examio/common` — standalone JWT verify + DB lookup, avoids double `canActivate` from inheritance
+- Admin routes are guarded by `@RequirePermissions('admin:access')` from `@examio/auth-jwt` (stateless JWT; `AdminGuard` removed in microservice-refactor phase 04)
 - Ticket exchange uses SSE (no WebSocket); graceful fallback to polling if SSE fails
 - User soft-delete: `isBanned = true` + `deletedAt = now()`; hard delete deferred
 - All admin mutations write one `AdminAudit` row per changed field

@@ -19,12 +19,19 @@ Every night, the system scans all active user sessions. Any session whose expiry
 
 ---
 
-### A new user automatically receives a welcome wallet
+### A new user is a STUDENT; only a TEACHER gets a wallet and the welcome credits
 
-When a user completes registration, the system creates a wallet for them and awards a welcome bonus of 20 credits. This is asynchronous — the wallet may not appear immediately after registration but will be available within moments.
+Registration (email or Google) creates the account with base role `STUDENT`. Students have no wallet. The wallet and the 20-credit welcome bonus are provisioned when the account becomes a `TEACHER`. This is asynchronous — the wallet may not appear for a moment after the role change.
 
-**Applies when:** An `auth.user.registered` event is written to the auth outbox when a new account is created (email or Google).
-**Says:** A wallet is created and 20 credits are added. If the event fires twice (idempotency), no duplicate wallet or bonus is created.
+**Applies when:** Finance receives `auth.user.authz_changed` with `role = TEACHER` (published by auth through the outbox in the role-change transaction). A TEACHER who calls the wallet API before the event is processed gets the wallet created lazily (`ensureWallet`). The `reconcile-teachers` CLI re-ensures a wallet for every TEACHER.
+**Says:** A wallet with 20 credits (one `Welcome bonus credits` transaction) and an inactive Free subscription row are created once. Replays and the lazy path never duplicate the wallet or the bonus. Demoting a TEACHER keeps the wallet but it is unreachable without `wallet:use`.
+
+### Roles: STUDENT or TEACHER, plus the SYSTEM_ADMIN flag
+
+An account has exactly one base role (`STUDENT` or `TEACHER`) and an independent `isSystemAdmin` flag. Only an active SYSTEM_ADMIN can grant TEACHER or the admin flag (admin UI through auth `SetUserRole` / `SetSystemAdmin`, or the auth CLI `yarn bootstrap:admin:grant <email> [--teacher]`).
+
+**Applies when:** A role or admin flag is changed.
+**Says:** A user cannot change their own role (`CANNOT_CHANGE_OWN_ROLE`); the last active SYSTEM_ADMIN cannot be demoted (`LAST_SYSTEM_ADMIN`). Each change is serialized by an advisory lock, bumps `authzVersion`, writes a `RoleChangeLog` row and emits `auth.user.authz_changed` in one transaction. The new role reaches the user's token on its next refresh (access tokens live 15 minutes). The role-to-permission table is in [permissions](permissions.md).
 
 ---
 
@@ -37,12 +44,12 @@ Users can sign in with an email/password combination or via Google OAuth. On suc
 
 ---
 
-### Every non-public request must carry a valid active session token
+### Every route declares its access; undeclared routes are denied
 
-All API endpoints except auth and public routes require a bearer token or a valid session cookie. The token is validated against the database: inactive sessions and expired sessions are rejected with a 401 response. This applies to every service in the backend — gateway, exam-service, finance-service, and any downstream call.
+Access tokens are RS256 JWTs signed by auth-service and verified by each service against auth's JWKS, with no database lookup per request. Every handler must declare `@Public`, `@Authenticated`, `@RequirePermissions(...)`, `@ServiceOnly(...)` or `@RequirePermissionsOrService(...)`; a handler with no declaration is refused with 403 `NO_AUTHZ_DECLARED`. Unverified emails get 403 except on the `@AllowUnverified` onboarding routes.
 
-**Applies when:** Any HTTP request reaches a protected route without an explicit public exemption.
-**Says:** The request is rejected at the middleware level before it reaches any controller logic.
+**Applies when:** Any HTTP or gRPC request reaches a service (the study-room WebSocket verifies its token in the socket middleware instead).
+**Says:** A missing or invalid token is 401 on a protected route; a valid token without the needed permission is 403. Service-to-service calls carry a service token (`POST /internal/token`, client credentials, 5 minute TTL) in the `authorization` header / gRPC metadata. Session revocation and refresh still go through auth-service.
 
 ---
 
@@ -93,12 +100,12 @@ When a user initiates a subscription purchase, the system creates a payment reco
 
 ---
 
-### Wallet is bootstrapped from a user event
+### Wallet is provisioned from an authz event
 
-When a user is created via any path (direct registration, OAuth), the finance service consumes the `auth.user.registered` RabbitMQ event and creates a wallet if one does not already exist. This decoupled approach means the wallet is created regardless of which auth path the user took.
+Finance consumes `auth.user.authz_changed` from the `examio.events` exchange. Only `role = TEACHER` provisions a wallet; other roles are ignored. See "A new user is a STUDENT" above. `auth.user.registered` is still published by auth but finance no longer consumes it.
 
-**Applies when:** A `user.created` event is published on the `examio.events` exchange.
-**Says:** A wallet record is created with zero balance. Welcome bonus may be awarded as a separate transaction.
+**Applies when:** `auth.user.authz_changed` (outbox, idempotent consumer) reaches finance.
+**Says:** Wallet (20 credits, once) and Free subscription row exist for the TEACHER afterwards.
 
 ---
 

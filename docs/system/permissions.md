@@ -6,6 +6,76 @@
 
 ---
 
+## Current RBAC Catalog (microservice refactor phase 04, 2026-10-19)
+
+> Authoritative for the code on `refactor/microservice-rbac`. Source: `examio-be/libs/auth-jwt/src/permissions.ts` (`ROLE_PERMISSIONS`). The legacy `PERM###` sections below pre-date it and still describe `AuthGuard` / `AdminGuard` / `User.isAdmin`, which no longer exist; where they conflict, this section wins (full rewrite is phase 19 of the plan).
+
+### Roles
+
+| Role | Where it lives | Notes |
+|---|---|---|
+| `STUDENT` | `User.role = STUDENT` (default on register) | Exclusive with `TEACHER`. |
+| `TEACHER` | `User.role = TEACHER` | Exclusive with `STUDENT`. Only a SYSTEM_ADMIN can grant it. |
+| `SYSTEM_ADMIN` | `User.isSystemAdmin = true` | Flag that combines with either base role. Replaces `User.isAdmin`. |
+| `SERVICE` | Service token (`sub = svc:<name>`) | A token kind, not a user role; has no entry in `ROLE_PERMISSIONS`. |
+
+Token `roles` = `[baseRole]`, plus `SYSTEM_ADMIN` when flagged (`rolesFor`). Permissions never travel in the token; they are derived from `roles` at check time (`permissionsOf`, union, no wildcard).
+
+### Role to permission table
+
+| Permission | STUDENT | TEACHER | SYSTEM_ADMIN |
+|---|:-:|:-:|:-:|
+| `flashcard:study` | x | | |
+| `quiz:practice` | x | | |
+| `exam:take` | x | | |
+| `study_room:join` | x | x | |
+| `word_family:read` | x | x | |
+| `word_family:save` | x | x | |
+| `quizset:manage` | | x | |
+| `flashcardset:manage` | | x | |
+| `exam_room:manage` | | x | |
+| `exam_session:manage` | | x | |
+| `exam_result:view` | | x | |
+| `content:share` | | x | |
+| `user:search` | | x | |
+| `ai:generate` | | x | |
+| `ai_chat:use` | | x | |
+| `document:upload` | | x | |
+| `study_room:create` | | x | |
+| `word_family:generate` | | x | |
+| `wallet:use` | | x | |
+| `subscription:manage` | | x | |
+| `admin:access` | | | x |
+| `user:manage` | | | x |
+| `role:assign` | | | x |
+| `finance:admin` | | | x |
+| `stats:read` | | | x |
+| `logs:read` | | | x |
+| `audit:read` | | | x |
+| `page_config:manage` | | | x |
+| `word_family:admin` | | | x |
+
+A SYSTEM_ADMIN who is also a STUDENT/TEACHER holds the union of both columns. A bare admin (`STUDENT` + flag) does not get `quizset:manage` etc.; admin permissions do not imply teacher permissions.
+
+### Enforcement (`@examio/auth-jwt`)
+
+| Declaration | Meaning |
+|---|---|
+| `@Public()` | Anonymous allowed; an invalid token is ignored. |
+| `@Authenticated()` | Any verified user; unverified email gets 403 unless `@AllowUnverified()`. |
+| `@RequirePermissions(...p)` | User token holding ALL listed permissions (AND); unverified email always 403; service tokens rejected. |
+| `@ServiceOnly(...callers)` | Service token whose name is in `callers`. |
+| `@RequirePermissionsOrService(p[], { callers? })` | User holding `p` (empty = any verified user) OR an allowlisted service token. |
+| none | `PermissionsGuard` denies: 403 `NO_AUTHZ_DECLARED` (deny by default). |
+
+- Guard order: `JwtAuthGuard` (stateless RS256/JWKS verify, no DB per request) then `PermissionsGuard`. Registered as global `APP_GUARD`s by `AuthJwtModule.forRoot` (`globalGuards` defaults to true; the gateway sets it to `false` for now). WebSocket contexts are skipped; the study-room socket middleware verifies the token itself.
+- IDOR rule for gRPC RPCs that take a `user_id`: `assertSelfOrService(metadata, userId)`; a user token may only name its own `sub`, an allowlisted service may name anyone.
+- Role changes (`SetUserRole`, `SetSystemAdmin` on auth) require `role:assign`; only a SYSTEM_ADMIN can grant TEACHER or admin. A user cannot change their own role (403 `CANNOT_CHANGE_OWN_ROLE`); the last active SYSTEM_ADMIN cannot be demoted (409 `LAST_SYSTEM_ADMIN`). Every change writes `RoleChangeLog`, bumps `User.authzVersion` and emits `auth.user.authz_changed` in the same transaction.
+- Stale tokens: a role change takes effect when the access token is refreshed (15 min max); the refresh reloads the role in a transaction and refuses banned/deleted accounts (401 `ACCOUNT_DISABLED`).
+- `GET /auth/me` returns `{ user, roles, permissions }`; `user.isSystemAdmin` replaces `isAdmin`.
+
+---
+
 ## Curated View
 
 - **Public (guest)** can view the landing page, browse featured quiz sets, flashcard sets, and exam rooms. Can register an account and log in. Cannot access any protected area without an active session.
@@ -81,7 +151,7 @@ RBAC with resource-ownership checks. Authenticated users have base access; teach
 | PERM043 | QuizSetVisibilityControl | resource-ownership | ManageQuizSetDetailPage |
 | PERM044 | FlashcardSetVisibilityControl | resource-ownership | ManageFlashcardSetDetailPage |
 | PERM045 | ExamRoomVisibilityControl | resource-ownership | ManageExamRoomDetailPage |
-| PERM046 | AdminRouteAccess | route-guard | AdminGuard / `@examio/common` |
+| PERM046 | AdminRouteAccess | route-guard | `@RequirePermissions('admin:access')` / `@examio/auth-jwt` |
 | PERM047 | AdminUserManagement | action-permission | AdminUsersModule |
 | PERM048 | AdminGrantRevoke | action-permission | AdminUsersModule |
 | PERM049 | AdminFinanceRefund | action-permission | AdminFinanceModule |
@@ -1400,11 +1470,11 @@ An exam room owner can control access via: public (anyone with link), whitelist 
 ## PERM046: AdminRouteAccess
 
 **Type**: route-guard
-**Enforced At**: `AdminGuard` in `@examio/common` — standalone JWT verify + Prisma user lookup (avoids double `canActivate` from inheritance). Admin status checked via `User.isAdmin`.
+**Enforced At**: class-level `@RequirePermissions('admin:access')` on every admin-service controller (`@examio/auth-jwt` `JwtAuthGuard` then `PermissionsGuard`; stateless, no DB lookup). `admin:access` comes from the `SYSTEM_ADMIN` role in the token.
 
 ### Description
 
-All `/api/v1/admin/*` routes require a valid JWT bearer token and `User.isAdmin = true`. AdminGuard performs its own JWT verification and Prisma user lookup independently of AuthGuard to avoid circular dependencies. ThrottlerModule enforces 30 req/min per admin session.
+All `/api/v1/admin/*` routes require a valid JWT bearer token and `User.isSystemAdmin = true`. The token is verified statelessly against auth's JWKS (no per-request DB lookup); the `SYSTEM_ADMIN` role must be in the token `roles`. ThrottlerModule enforces 30 req/min per admin session.
 
 ### Related Routes
 
@@ -1416,8 +1486,8 @@ All `/api/v1/admin/*` routes require a valid JWT bearer token and `User.isAdmin 
 - (PUT) `/api/v1/admin/users/:id/ban`
 - (PUT) `/api/v1/admin/users/:id/unban`
 - (DELETE) `/api/v1/admin/users/:id`
-- (PUT) `/api/v1/admin/users/:id/grant-admin`
-- (DELETE) `/api/v1/admin/users/:id/revoke-admin`
+- (POST) `/api/v1/admin/users/:id/grant-admin`
+- (POST) `/api/v1/admin/users/:id/revoke-admin`
 - (GET) `/api/v1/admin/finance/refunds`
 - (POST) `/api/v1/admin/finance/refund`
 - (POST) `/api/v1/admin/finance/adjust-credit`
@@ -1442,7 +1512,7 @@ All `/api/v1/admin/*` routes require a valid JWT bearer token and `User.isAdmin 
 | guest | ✗ | Must authenticate as admin |
 | student | ✗ | 403 Forbidden |
 | teacher | ✗ | 403 Forbidden |
-| admin | ✓ | `User.isAdmin = true` + valid JWT |
+| admin | ✓ | `User.isSystemAdmin = true` + valid JWT |
 
 ---
 
@@ -1469,7 +1539,7 @@ An admin can ban a user (`User.isBanned = true`), unban a user, or soft-delete a
 
 | Role | Allow | Conditions |
 |------|-------|------------|
-| admin | ✓ | `User.isAdmin = true` |
+| admin | ✓ | `User.isSystemAdmin = true` |
 | non-admin | ✗ | 403 Forbidden |
 
 ---
@@ -1477,16 +1547,16 @@ An admin can ban a user (`User.isBanned = true`), unban a user, or soft-delete a
 ## PERM048: AdminGrantRevoke
 
 **Type**: action-permission
-**Enforced At**: `AdminUsersModule` — `PUT /api/v1/admin/users/:id/grant-admin`, `DELETE /api/v1/admin/users/:id/revoke-admin`
+**Enforced At**: `AdminUsersModule` — `POST /api/v1/admin/users/:id/grant-admin`, `POST /api/v1/admin/users/:id/revoke-admin`
 
 ### Description
 
-An admin can grant or revoke admin privileges for any user. Granting admin sets `User.isAdmin = true`; revoking sets it to `false`. This permission is distinct from PERM047 because it affects system-level roles, not account state. Every mutation writes an `AdminAudit` row.
+An admin can grant or revoke admin privileges for any user. Granting admin sets `User.isSystemAdmin = true`; revoking sets it to `false`. This permission is distinct from PERM047 because it affects system-level roles, not account state. Every mutation writes an `AdminAudit` row.
 
 ### Related Routes
 
-- (PUT) `/api/v1/admin/users/:id/grant-admin`
-- (DELETE) `/api/v1/admin/users/:id/revoke-admin`
+- (POST) `/api/v1/admin/users/:id/grant-admin`
+- (POST) `/api/v1/admin/users/:id/revoke-admin`
 
 ### Related Screens
 
@@ -1496,7 +1566,7 @@ An admin can grant or revoke admin privileges for any user. Granting admin sets 
 
 | Role | Allow | Conditions |
 |------|-------|------------|
-| admin | ✓ | `User.isAdmin = true` |
+| admin | ✓ | `User.isSystemAdmin = true` |
 | non-admin | ✗ | 403 Forbidden |
 
 ---
@@ -1522,7 +1592,7 @@ An admin can initiate a wallet refund for a user. The refund creates a `WalletTr
 
 | Role | Allow | Conditions |
 |------|-------|------------|
-| admin | ✓ | `User.isAdmin = true` |
+| admin | ✓ | `User.isSystemAdmin = true` |
 | non-admin | ✗ | 403 Forbidden |
 
 ---
@@ -1548,7 +1618,7 @@ An admin can manually adjust a user's credit balance (positive or negative). The
 
 | Role | Allow | Conditions |
 |------|-------|------------|
-| admin | ✓ | `User.isAdmin = true` |
+| admin | ✓ | `User.isSystemAdmin = true` |
 | non-admin | ✗ | 403 Forbidden |
 
 ---
@@ -1574,7 +1644,7 @@ An admin can change a user's subscription tier (upgrade/downgrade/cancel). The c
 
 | Role | Allow | Conditions |
 |------|-------|------------|
-| admin | ✓ | `User.isAdmin = true` |
+| admin | ✓ | `User.isSystemAdmin = true` |
 | non-admin | ✗ | 403 Forbidden |
 
 ---
@@ -1600,7 +1670,7 @@ An admin can query the audit log — one row per changed field per admin mutatio
 
 | Role | Allow | Conditions |
 |------|-------|------------|
-| admin | ✓ | `User.isAdmin = true` |
+| admin | ✓ | `User.isSystemAdmin = true` |
 | non-admin | ✗ | 403 Forbidden |
 
 ---
@@ -1627,7 +1697,7 @@ An admin can retrieve server-side application logs and stream them in real time 
 
 | Role | Allow | Conditions |
 |------|-------|------------|
-| admin | ✓ | `User.isAdmin = true` |
+| admin | ✓ | `User.isSystemAdmin = true` |
 | non-admin | ✗ | 403 Forbidden |
 
 ---
@@ -1635,7 +1705,7 @@ An admin can retrieve server-side application logs and stream them in real time 
 ## PERM054: AdminPageConfigManagement
 
 **Type**: action-permission
-**Enforced At**: `AdminPageConfigController` — `AdminGuard`, `GET/PATCH /api/v1/admin/page-config*`, throttled 30 req/60s.
+**Enforced At**: `AdminPageConfigController` — `@RequirePermissions('admin:access')`, `GET/PATCH /api/v1/admin/page-config*`, throttled 30 req/60s.
 
 ### Description
 
@@ -1654,7 +1724,7 @@ An admin can view all `PageFeatureFlag` rows and toggle a page's `enabled` state
 
 | Role | Allow | Conditions |
 |------|-------|------------|
-| admin | ✓ | `User.isAdmin = true` |
+| admin | ✓ | `User.isSystemAdmin = true` |
 | non-admin | ✗ | 403 Forbidden |
 
 ---
@@ -1727,7 +1797,7 @@ All user-facing word-family routes (browse categories, view root words/detail, g
 ## PERM057: AdminWordFamilyManagement
 
 **Type**: action-permission
-**Enforced At**: `admin-word-family.controller.ts` (`AdminGuard`, class-level) + duplicate category CRUD in `word-family.controller.ts` (`AuthGuard` + `AdminGuard`, method-level)
+**Enforced At**: `admin-word-family.controller.ts` (`@RequirePermissions('admin:access')`, class-level) + duplicate category CRUD in `word-family.controller.ts` (method-level `word_family:admin`)
 
 ### Description
 
@@ -1748,7 +1818,7 @@ Admin-only CRUD on `WordFamilyCategory` (create, update, soft-delete via `isActi
 
 | Role | Allow | Conditions |
 |------|-------|------------|
-| admin | ✓ | `User.isAdmin = true` |
+| admin | ✓ | `User.isSystemAdmin = true` |
 | non-admin | ✗ | 403 Forbidden |
 
 ---

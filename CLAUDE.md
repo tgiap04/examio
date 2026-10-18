@@ -47,6 +47,13 @@ yarn prisma:migrate
 yarn prisma:studio
 yarn prisma:deploy
 yarn prisma:seed
+yarn bootstrap:admin               # đồng bộ ADMIN_EMAILS (auth-service CLI)
+yarn bootstrap:admin:list
+yarn bootstrap:admin:grant <email> [--teacher]
+yarn bootstrap:admin:revoke <email>
+yarn finance:reconcile-teachers    # đảm bảo mỗi TEACHER có ví (finance-service CLI)
+scripts/gen-jwt-keypair.sh         # in JWT_KID + JWT_PRIVATE_KEY (không commit)
+scripts/gen-service-secret.sh <exam|finance|admin>  # in secret + hash cho SERVICE_CLIENTS
 ```
 
 ### Chạy một test backend cụ thể
@@ -127,12 +134,13 @@ Backend là một root package dùng Yarn, tổ chức theo kiểu Nest monorepo
 
 Mã hạ tầng dùng chung nằm trong `examio-be/libs/`:
 
-- `@examio/common`: export các Nest module dùng chung, guards, auth helpers, mail/password/id services, event helpers, utils (gRPC client helpers và file protobuf đã chuyển sang `@examio/grpc`, `@examio/contracts` và thư mục `examio-be/proto/`).
+- `@examio/common`: export các Nest module dùng chung, mail/password/id services, event helpers, utils (gRPC client helpers và file protobuf đã chuyển sang `@examio/grpc`, `@examio/contracts` và thư mục `examio-be/proto/`).
 - `@examio/database`: Prisma schema/client và database module.
 - `@examio/redis`: Redis module/service dùng chung.
 - `@examio/contracts`: type/decorator gRPC sinh bằng ts-proto từ `examio-be/proto/examio/<svc>/v1` (buf). Thư mục `libs/contracts/src/generated/` bị gitignore; chạy `yarn proto:gen` sau khi clone hoặc sửa `.proto` (`yarn proto:lint` để lint). Python ai-service sinh stub bằng `apps/ai-service/scripts/gen_grpc.sh`.
 - `@examio/grpc`: gRPC client module, deadline/retry, ánh xạ lỗi gRPC, metadata helper.
 - `@examio/http`: HTTP error envelope filter dùng chung.
+- `@examio/auth-jwt`: authn/authz stateless dùng chung (thay `AuthGuard`/`AdminGuard` cũ của `@examio/common`): verify JWT RS256 qua JWKS của auth (không query DB mỗi request), `JwtAuthGuard` → `PermissionsGuard` deny-by-default đăng ký global bởi `AuthJwtModule.forRoot({ serviceName })`, decorator `@Public`/`@Authenticated`/`@AllowUnverified`/`@RequirePermissions`/`@ServiceOnly`/`@RequirePermissionsOrService`, catalog permission + `ROLE_PERMISSIONS` trong `libs/auth-jwt/src/permissions.ts`, `ServiceTokenClient` (service token), `assertSelfOrService` (chống IDOR cho RPC có `user_id`). Route mới không khai báo decorator sẽ bị 403 `NO_AUTHZ_DECLARED`.
 - `@examio/messaging`: envelope v1, transactional outbox (`outbox_events`) + relay claim-then-publish, consumer idempotent (`processed_events`, `@EventHandler`), validate `source`, một tầng retry 30s + DLQ theo service (`<svc>.dlq`), purge hằng ngày, env `ROLE` (`api` | `worker` | `api,worker`). Auth và finance dùng lib này; exam/ai vẫn dùng module events cũ trong `@examio/common`.
 
 Ưu tiên dùng các shared library này thay vì lặp lại code hạ tầng trong từng service.
@@ -143,10 +151,10 @@ Backend không phải là một monolith duy nhất dù các service dùng chung
 
 - Gateway public các HTTP route và đẩy request xuống downstream service thông qua các proxy controller và `ProxyService`.
 - Auth, finance và storage còn giao tiếp với nhau qua gRPC client/proto từ `@examio/grpc` và `@examio/contracts` (URL qua env `AUTH_GRPC_URL`, `R2_GRPC_URL`, `FINANCE_GRPC_URL`; container dùng HTTP `3000` / gRPC `50051`).
-- Các workflow bất đồng bộ giữa service dùng RabbitMQ: auth/finance qua `@examio/messaging` (outbox, event `auth.user.registered`); exam/ai còn dùng events module cũ. Mỗi service có RabbitMQ user riêng (`RABBITMQ_URL` riêng; mật khẩu `RABBITMQ_<SVC>_PASS` phải URL-safe) chỉ được publish routing key của domain mình; user/permission render từ `deploy/rabbitmq/definitions.template.json` bởi container one-shot `rabbitmq-defs` (`definitions.json` bị gitignore). RabbitMQ 3.13.
+- Các workflow bất đồng bộ giữa service dùng RabbitMQ: auth/finance qua `@examio/messaging` (outbox, event `auth.user.registered` không còn consumer, `auth.user.authz_changed` do finance consume); exam/ai còn dùng events module cũ. Mỗi service có RabbitMQ user riêng (`RABBITMQ_URL` riêng; mật khẩu `RABBITMQ_<SVC>_PASS` phải URL-safe) chỉ được publish routing key của domain mình; user/permission render từ `deploy/rabbitmq/definitions.template.json` bởi container one-shot `rabbitmq-defs` (`definitions.json` bị gitignore). RabbitMQ 3.13.
 - Ví dụ từ wiring hiện tại:
   - gateway biết URL của downstream service qua env như `AUTH_SERVICE_URL`, `EXAM_SERVICE_URL`, `FINANCE_SERVICE_URL`, `AI_SERVICE_URL`.
-  - auth đăng ký wallet gRPC client.
+  - service-to-service: caller lấy service token từ auth (`POST /internal/token`, env `AUTH_TOKEN_URL`, `SERVICE_CLIENT_SECRET`) và gửi trong gRPC metadata `authorization`; admin-service gọi auth gRPC (`AUTH_GRPC_URL`, `SetSystemAdmin`) để grant/revoke admin.
   - exam đăng ký R2 client và import finance client module.
   - finance consume `auth.user.registered` (qua outbox của auth) để tạo ví.
   - AI chat trong exam cũng đăng ký finance subscription gRPC client.
@@ -158,11 +166,17 @@ Khi thay đổi ranh giới giữa các service, hãy kiểm tra đồng thời 
 Các Nest service chủ yếu đi theo cấu trúc feature-module, không phải chỉ là một cặp controller/service phẳng.
 
 - `exam-service` là domain service lớn nhất. `ExamServiceModule` ghép nhiều module chức năng như quiz set, flashcard, exam room, exam session, exam attempt, cheating log, subject, AI generation, AI chat, statistics, student, finance client integration và R2 integration.
-- `auth-service` ghép `AuthModule`, device management, profile handling, OAuth strategy, repository và một gRPC controller.
-- `finance-service` ghép wallet module, SePay module và có handler `auth.user.registered` để bootstrap ví.
+- `auth-service` ghép `AuthModule`, device management, profile handling, OAuth strategy, repository, một gRPC controller, `token` (ký JWT RS256, `GET /.well-known/jwks.json`, `POST /internal/token`), `roles` (`RoleChangeService`, `RoleChangeLog`, outbox `auth.user.authz_changed`) và `admin-bootstrap` (CLI `bootstrap:admin*`).
+- `finance-service` ghép wallet module, SePay module và có handler `auth.user.authz_changed` để tạo ví (+20 credit) cho TEACHER (STUDENT không có ví).
 - `gateway-service` được tổ chức thành nhiều proxy controller theo domain: auth, exam resources, AI/study, wallet/profile, R2, webhook, statistics và student.
 
 Khi làm backend, hãy nghĩ theo feature module cộng với shared infra module, không chỉ theo từng file rời.
+
+### Auth, role và permission (backend)
+
+- Role: `User.role` (`STUDENT` mặc định | `TEACHER`, loại trừ nhau) + `User.isSystemAdmin` (thay `isAdmin`) + `User.authzVersion` (claim `av`). Chỉ SYSTEM_ADMIN cấp TEACHER/admin (CLI `bootstrap:admin:grant [--teacher]` hoặc admin UI qua auth `SetUserRole`/`SetSystemAdmin`); không tự đổi role của mình, không hạ admin cuối cùng; mọi thay đổi ghi `RoleChangeLog`. Bootstrap admin đã chuyển từ admin-service sang auth-service.
+- Access token RS256 15 phút, claims `sub`, `sid`, `roles`, `email_verified`, `av`; refresh nạp lại role trong transaction. `GET /auth/me` trả `roles`, `permissions`, `user.isSystemAdmin`. Bảng role → permission: `docs/system/permissions.md`.
+- Biến môi trường (chỉ tên): auth `JWT_PRIVATE_KEY`, `JWT_KID`, `JWT_RETIRED_PUBLIC_KEYS`, `JWT_ISSUER`, `JWT_AUDIENCE`, `SERVICE_CLIENTS`, `ADMIN_EMAILS`; mọi service verify cần `AUTH_JWKS_URL`; service gọi service khác cần `AUTH_TOKEN_URL` + `SERVICE_CLIENT_SECRET`; admin và finance cần `AUTH_GRPC_URL`. `AUTH_JWKS_URL`/`AUTH_TOKEN_URL` chỉ dùng http trên mạng nội bộ.
 
 ### Hình dạng dữ liệu
 

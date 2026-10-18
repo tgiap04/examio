@@ -48,8 +48,8 @@ graph TB
     EXAM -->|gRPC wallet check| FIN
     EXAM -->|gRPC R2 upload| R2
     EXAM -->|HTTP multipart| AISVC
-    AUTH -->|outbox: auth.user.registered| RMQ
-    FIN -->|subscribe auth.user.registered| RMQ
+    AUTH -->|outbox: auth.user.registered, auth.user.authz_changed| RMQ
+    FIN -->|subscribe auth.user.authz_changed| RMQ
     AUTH -->|Prisma| PG
     EXAM -->|Prisma| PG
     FIN -->|Prisma| PG
@@ -69,7 +69,7 @@ Ports are unified in containers (`deploy/docker-compose.yml`): every Nest servic
 | Service | HTTP Port | gRPC Port | Runtime | Role |
 |---------|----------:|----------:|---------|------|
 | `gateway-service` | 3000 | — | Node 22 | Public HTTP entry, reverse proxy, rate limit, WS upgrade proxy (`/ws/study`) |
-| `auth-service` | 3000 | 50051 | Node 22 | JWT issuer, OAuth, sessions, devices |
+| `auth-service` | 3000 | 50051 | Node 22 | RS256 JWT issuer + JWKS, service tokens, OAuth, sessions, devices, roles (RBAC) |
 | `exam-service` | 3000 | — | Node 22 | Quiz/flashcard authoring, exam sessions, AI orchestration, Study-Together Room (Socket.io gateway) |
 | `finance-service` | 3000 | 50051 | Node 22 | Wallet, SePay QR payments, subscriptions |
 | `r2-service` | 3000 | 50051 | Node 22 | Cloudflare R2 object storage (proxy) |
@@ -116,7 +116,7 @@ Finance `WalletService` money fields are `int32` (credits are whole numbers). Th
 graph LR
     AUTH[auth API] -->|same tx| OUTBOX[(outbox_events<br/>source=auth)]
     OUTBOX -->|auth worker relay<br/>claim, publish, mark| EXCHANGE[examio.events<br/>topic, durable]
-    EXCHANGE -->|auth.user.registered| FQ[finance.events]
+    EXCHANGE -->|auth.user.authz_changed| FQ[finance.events]
     FQ -->|finance worker consumer<br/>processed_events dedupe| WALLET[(Wallet<br/>WalletTransaction)]
     FQ -.->|transient error| RETRY[finance.retry.30s<br/>TTL 30s, max 5]
     RETRY -.-> FQ
@@ -139,7 +139,8 @@ graph LR
 **Broker security**: one RabbitMQ user per service (`auth`, `finance`, `exam`, `ai`) plus the ops user from `RABBITMQ_USER`/`RABBITMQ_PASS` (management UI only). Per user: configure/write/read limited to `examio.events` and `<svc>.*` (legacy: `exam-service` for exam, `ai-service-queue` for ai). Topic permissions on `examio.events`: write only `^<domain>\.`, read `.*`. So a validated `source` cannot be forged. Users come from `deploy/rabbitmq/definitions.template.json` (committed, no secrets), rendered by the one-shot `rabbitmq-defs` compose service (`render-definitions.cjs`) into the gitignored `definitions.json` and loaded at broker boot (`rabbitmq.conf`). Each service gets its own `RABBITMQ_URL`; broker passwords must be URL-safe because they are embedded in `amqp://` URLs. Broker image: `rabbitmq:3.13-management-alpine`.
 
 **Currently wired events**:
-- `auth.user.registered` (auth-service -> finance-service): `{ userId, email, username, utmSource|null }`, written to the outbox in the register tx (email and Google OAuth paths). Finance creates the wallet with a 20-credit welcome transaction, skipping if a wallet already exists. Replaces `auth.user.created`.
+- `auth.user.registered` (auth-service): `{ userId, email, username, utmSource|null }`, written to the outbox in the register tx (email and Google OAuth paths). No consumer since phase 04 (finance's `UserRegisteredHandler` was removed; STUDENTs have no wallet). Replaces `auth.user.created`.
+- `auth.user.authz_changed` (auth-service -> finance-service): `{ userId, authzVersion, role, isSystemAdmin, isBanned, reason, version }` (proto `UserAuthzChanged`, `reason` is one of role, admin, password, ban, unban, reapply). Written to the outbox in the same tx as the change. Finance (`UserAuthzChangedHandler`) provisions wallet (20 credits, once) + Free subscription row only when `role = TEACHER`; everything else is a no-op.
 
 **Defined but unused**: the remaining `EventType` enum values in `libs/common/src/events` (`USER_CREATED` was removed).
 
@@ -149,12 +150,11 @@ graph LR
 **HTTP Port**: 3000 (container)
 **gRPC Port**: none in the current compose/`main.ts`
 
-**Auth**: `AdminGuard` in `@examio/common` — standalone JWT verify + Prisma user lookup (avoids double `canActivate` from inheritance). Admin status checked via `User.isAdmin`.
+**Auth**: class-level `@RequirePermissions('admin:access')` from `@examio/auth-jwt` (stateless JWT, `SYSTEM_ADMIN` role). Grant/revoke admin call auth gRPC `SetSystemAdmin` with the caller's token (`AUTH_GRPC_URL`); admin-service no longer owns the bootstrap (see § 7).
 
 **Proxy**: gateway routes `/api/v1/admin/*` to `admin-service` via `ProxyService.forwardWithAuth`.
 
-**Modules** (6 total):
-- `AdminBootstrapModule` — application bootstrap, health
+**Modules**:
 - `AdminStatsModule` — KPI overview + time-series charts
 - `AdminFinanceModule` — wallet refunds, credit adjustments, subscription tier changes
 - `AdminLogsModule` — server-side log retrieval
@@ -199,7 +199,7 @@ sequenceDiagram
     participant R as Redis
     FE->>GW: WS upgrade /ws/study (handshake.auth.token = JWT)
     GW->>EX: http-proxy ws:true forward (single public entry preserved)
-    EX->>EX: StudyRoomSocketAuth.authenticate (JWT verify + active-session check)
+    EX->>EX: StudyRoomSocketAuth.authenticate (stateless JWT verify + banned/deleted check)
     EX-->>FE: room:snapshot (roster, timer, media, chat backlog)
     FE->>EX: timer:start / media:play / chat:send / ...
     EX->>R: read/write live state (timer, media position, chat LIST capped 200, presence)
@@ -210,7 +210,7 @@ sequenceDiagram
 - **Gateway**: `http-proxy` (`ws: true`) intercepts Node `upgrade` events; only requests whose URL starts with `WS_STUDY_PATH` (`/ws/study`) are forwarded to `exam-service` — all other upgrade attempts are closed. This keeps the gateway as the single public entry point even for WS traffic.
 - **exam-service**: `StudyRoomGateway` (`@nestjs/websockets`, path `/ws/study`), websocket-only transport (no long-polling, to avoid sticky-session requirements across gateway instances)
 - **Multi-instance fan-out**: `RedisIoAdapter` (`@socket.io/redis-adapter`) — required once `exam-service` runs more than one instance, otherwise a broadcast only reaches sockets connected to the same process; also used to force-disconnect a banned member's socket regardless of which instance holds it (see Moderation below)
-- **Auth**: JWT passed via `handshake.auth.token` (cookie `token` fallback), verified with the same rules as HTTP `AuthGuard` (signature + active-session lookup)
+- **Auth**: JWT passed via `handshake.auth.token` (cookie `token` fallback), verified in the socket `server.use` middleware by `@examio/auth-jwt`'s `TOKEN_VERIFIER` (RS256/JWKS, `email_verified` required). The guards skip `ws` contexts. A DB read remains only for display data and a banned/deleted check
 - **State model**: Redis holds all live/ephemeral state (timer phase/cycle, YouTube media position, playlist playback position/leader, chat, presence); Prisma (`StudyRoom`, `StudyRoomMember`, `StudyRoomPlaylistItem`, `StudyRoomChatBlock`) holds room config, membership/focus-time totals, playlist item list (persisted, unlike other live state), and moderation/block state (persisted so it survives Redis flushes and reconnects)
 - **Access control** (added 2026-07-21): `StudyRoom.accessType` — 0 PUBLIC (any authenticated user), 1 CODE (6-digit invite, existing), 2 WHITELIST (`StudyRoom.whitelist` userId list) — mirrors the `ExamSession` access model. `POST /api/v1/studyrooms/:id/join` added alongside the existing code-based `POST /studyrooms/join`
 - **Playlist** (added 2026-07-21): `StudyRoomPlaylistItem` (ordered, `kind` 0 VIDEO / 1 PLAYLIST) per room; auto-advance is reported by a single designated "leader client" via `media:ended` (no YouTube Data API call) — the server treats that report as authoritative and advances `currentIndex`, broadcasting to the rest of the room. Add/remove/reorder gated by `StudyRoom.playlistAddPermission` (0 EVERYONE / 1 COHOST+ / 2 HOST); next/prev/jump reserved to host/cohost
@@ -220,6 +220,18 @@ sequenceDiagram
   - client → server: `playlist:add`, `playlist:remove`, `playlist:reorder`, `playlist:next`, `playlist:prev`, `playlist:jump`, `media:ended` (leader-only), `chat:block`, `chat:unblock`, `member:ban`, `member:unban`, `member:mute`, `member:unmute`
   - server → client: `playlist:updated` (`{items, currentIndex, leaderUserId}`), `blocks:updated` (`{blockedUserIds}`, blocker-only), `member:moderated` (`{userId, isBanned?, isMuted?}`), `room:kicked` (sent to the banned member before forced disconnect)
 - **Feature docs**: `docs/project-changelog.md` § Study-Together Room, § Study Room — Playlist, Access & Moderation
+
+### 7. Identity and Authorization (phase 04)
+
+Source of truth: `examio-be/libs/auth-jwt` (`@examio/auth-jwt`), `apps/auth-service/src/{token,roles,admin-bootstrap}`. Role-to-permission table: [permissions](permissions.md).
+
+- **Tokens**: auth signs RS256 access tokens (`typ at+jwt`, default 15 min via `ACCESS_TOKEN_EXPIRATION`) with claims `sub`, `sid`, `roles`, `email_verified`, `av` (authz version). Public keys are served at `GET /.well-known/jwks.json` on auth (current key plus `JWT_RETIRED_PUBLIC_KEYS`). Refresh (`POST /auth/refresh`) reloads the account in a transaction, so the new token carries the current role/`av`; banned or deleted accounts are refused (`ACCOUNT_DISABLED`) and the session revoked.
+- **Verification**: every service uses `AuthJwtModule.forRoot({ serviceName })`, which registers global `JwtAuthGuard` (verify against JWKS, no DB per request) then `PermissionsGuard` (deny by default, 403 `NO_AUTHZ_DECLARED`). The gateway registers it with `globalGuards: false` and applies `JwtAuthGuard` only where it declares it.
+- **Declarations**: `@Public`, `@Authenticated`, `@AllowUnverified`, `@RequirePermissions`, `@ServiceOnly`, `@RequirePermissionsOrService`. `apps/auth-service/test/allow-unverified-allowlist.spec.ts` pins the `@AllowUnverified` handlers.
+- **Service tokens**: callers fetch `POST /internal/token` on auth (`client_credentials`: `client_id`, `client_secret`, `audience`; 5 min TTL; `ServiceTokenClient` caches per audience and refreshes 60 s early). Auth stores only sha256 hashes (`SERVICE_CLIENTS`). Service tokens have `sub = svc:<name>`, `roles = ["SERVICE"]`. gRPC calls send them in `authorization` metadata (`@examio/auth-jwt` `grpc-metadata`); RPCs taking a `user_id` use `assertSelfOrService`.
+- **Roles**: `User.role` (`BaseRole` STUDENT | TEACHER), `User.isSystemAdmin`, `User.authzVersion`; every change goes through `RoleChangeService` (advisory lock, self-change and last-admin guards, `RoleChangeLog`, outbox event). Optional fast-path `InvalidateUser` to the gateway is behind `GATEWAY_CONTROL_ENABLED` (default false).
+- **Admin bootstrap** moved from admin-service to auth-service: `ADMIN_EMAILS` synced on auth start and by `yarn bootstrap:admin` (`:list`, `:grant <email> [--teacher]`, `:revoke <email>`), all through `RoleChangeService` with source `cli`/`bootstrap`. Re-running `grant` re-emits the event (recovery path).
+- **Finance**: `yarn finance:reconcile-teachers` pages auth `ListUsers(role=TEACHER)` and ensures each wallet; `wallet:use` callers also get the wallet lazily on read.
 
 ## Data Flow — Quiz Taking
 
@@ -283,7 +295,7 @@ sequenceDiagram
 | WebSocket | `@nestjs/platform-socket.io`, `socket.io`, `@socket.io/redis-adapter` | latest |
 | Object storage | Cloudflare R2 | — |
 | Validation | Zod + `nestjs-zod` | latest |
-| Auth | JWT (7d expiry) + Passport Google OAuth | — |
+| Auth | RS256 JWT (access 15 min, JWKS) + Passport Google OAuth | — |
 | Encryption | AES-256-CBC + JWT answer tokens | — |
 | Image preprocessing | jimp + cv (OpenCV.js) | — |
 | Bot protection | Cloudflare Turnstile | — |
@@ -317,21 +329,20 @@ sequenceDiagram
 
 1. **Gateway as single public entry** — every cross-origin request hits gateway first
 2. **Shared Prisma schema** — all backend services consume the same `libs/database/schema.prisma`
-3. **Shared infra libs** — `@examio/common`, `@examio/database`, `@examio/redis`, `@examio/messaging`
+3. **Shared infra libs** — `@examio/common`, `@examio/database`, `@examio/redis`, `@examio/messaging`, `@examio/auth-jwt`
 4. **Repository pattern with cache** — `BaseRepository<T>` wraps Prisma + Redis invalidation
 5. **Composite screen detection** — single page with independent regions (REG###)
 6. **Backend-for-frontend (BFF) pattern** — exam-service orchestrates AI calls rather than frontend calling ai-service directly
 7. **Optimistic UI with sendBeacon** — quiz auto-save uses `navigator.sendBeacon` on unload
-8. **Event-driven wallet bootstrap** — `auth.user.registered` (outbox) → finance creates wallet idempotently
+8. **Event-driven wallet bootstrap** — `auth.user.authz_changed` (outbox) with `role=TEACHER` → finance creates wallet idempotently
 
 ## Cross-Cutting Concerns
 
 | Concern | Implementation |
 |---------|---------------|
-| Auth | `AuthGuard` (JWT verify + Prisma session lookup), `OptionalAuthGuard` |
+| Auth | `@examio/auth-jwt`: `JwtAuthGuard` + `PermissionsGuard` (stateless, deny by default); see § 7 |
 | Rate limiting | `ThrottlerModule` 100 req/min on gateway |
 | Logging | `LoggingInterceptor` (sanitizes sensitive body fields) |
-| Session validation | `SessionValidationMiddleware` (rejects inactive/expired) |
 | Cache invalidation | `BaseRepository` scoped to userId + itemId |
 | Bot protection | Cloudflare Turnstile on sensitive forms |
 | Image preprocessing | jimp + OpenCV.js (grayscale → CLAHE → threshold → denoise → sharpen) |
@@ -381,9 +392,7 @@ Docker Compose file: `examio-be/deploy/docker-compose.yml` (production-grade)
 |---|-------|--------|-------|:--------:|
 | A.1 | ~~`ocr-service` gRPC port collision~~ — resolved 2026-10-18: service deleted | scout + W7a | platform | P0 |
 | A.2 | `FREE_MODE = true` shipped in `FinanceClientService.deductCredits` — credit gating bypassed | scout + W7a | backend | P0 |
-| A.3 | `AuthService.ValidateToken` gRPC wired but unused — services use Prisma-direct | W7a | backend | P2 |
-| A.4 | `EventType` enum defines legacy events (unused); only `auth.user.registered` is wired via `@examio/messaging` | W7a | backend | P3 |
-| A.5 | `auth-service` is the only service that creates a wallet via gRPC (others use HTTP) — inconsistency | scout | backend | P3 |
+| A.4 | `EventType` enum defines legacy events (unused); only `auth.user.authz_changed` is consumed (finance); `auth.user.registered` is published without a consumer | W7a | backend | P3 |
 | A.6 | `r2/image` (≤2MB cap) routed through `exam-service` rather than directly to `r2-service` | W7a | backend | P3 |
 | A.7 | 12 v3.x legacy feature spec dirs in `docs/features/f001-*` (kebab-case) — now archived to `_archive/legacy-v3x/` | rebuild-spec | devops | ✅ done |
 

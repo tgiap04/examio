@@ -3,6 +3,8 @@
 > Note: This matrix is a grouped permission summary. `permissions.md` is the canonical detailed permission catalog (`PERM001`-`PERM040`); this matrix intentionally collapses related detailed permissions into broader capability rows for quick review.
 
 
+> Current roles (phase 04): `STUDENT`, `TEACHER`, `SYSTEM_ADMIN` (flag). The role-to-permission table is in `docs/system/permissions.md` § Current RBAC Catalog (source `libs/auth-jwt/src/permissions.ts`). "Auth User" below means STUDENT or TEACHER; "Owner/Host" rows that author content (PERM006-PERM008, PERM011) now additionally require the TEACHER role; legacy columns are otherwise unchanged and will be regenerated in plan phase 19.
+
 Source artifacts: `permissions.md`, `screen-list.md`, `route-list.md`, `scout-report.md`.
 
 | Code | Capability | Public | Auth User | Owner/Host | Admin | System/API Key | Notes |
@@ -21,13 +23,13 @@ Source artifacts: `permissions.md`, `screen-list.md`, `route-list.md`, `scout-re
 | PERM012 | GenAI tutor knowledge management | No | Yes | Owner? | Yes | No | Access rules clarified; admin-service enforces. |
 | PERM013 | Wallet/payment/subscription | No | Yes | Own wallet/payment | Yes | SePay webhook | Webhook protected by API key. |
 | PERM014 | R2 storage operations | No | Yes | Own files | Yes | gRPC internal | Product rule: deleting DB record with R2 asset should delete R2 object too. |
-| PERM015 | Service-to-service gRPC auth/wallet/r2/ocr/subscription | No | No | No | No | Internal services | Proto contracts in `libs/common/src/protos`. |
+| PERM015 | Service-to-service gRPC auth/wallet/r2/ocr/subscription | No | No | No | No | Internal services | Proto contracts in `examio-be/proto/`; callers present a service token (`authorization` gRPC metadata). |
 | PERM016 | RabbitMQ events | No | No | No | No | Internal services | Topic exchange `examio.events`. |
 | PERM017 | Mobile auth flows | Yes | N/A | N/A | N/A | No | Android/iOS email+OAuth auth real. |
 | PERM018 | Mobile non-auth feature data | No | Intended auth | Intended own data | Yes | No | Shared API/repo ready; platform UI mostly mock-backed. |
-| PERM046 | Admin dashboard access | No | No | No | Yes | No | AdminGuard in `@examio/common`; `User.isAdmin = true` required. Includes `GET /admin/stats/sources` (+ alias `GET /admin/sources`) — signup breakdown by `utm_source`. |
+| PERM046 | Admin dashboard access | No | No | No | Yes | No | `@RequirePermissions('admin:access')` (`@examio/auth-jwt`); `SYSTEM_ADMIN` role (`User.isSystemAdmin`) required. Includes `GET /admin/stats/sources` (+ alias `GET /admin/sources`) — signup breakdown by `utm_source`. |
 | PERM047 | Admin user management (ban/unban/delete) | No | No | No | Yes | No | AdminUsersModule; all mutations write AdminAudit rows. |
-| PERM048 | Admin grant/revoke admin role | No | No | No | Yes | No | AdminUsersModule; all mutations write AdminAudit rows. |
+| PERM048 | Admin grant/revoke admin role | No | No | No | Yes | No | AdminUsersModule via auth `SetSystemAdmin` (`role:assign`); self-change blocked, last admin protected; writes AdminAudit + RoleChangeLog. TEACHER grant: auth CLI only. |
 | PERM049 | Admin wallet refund | No | No | No | Yes | No | AdminFinanceModule; writes WalletTransaction refund + AdminAudit. |
 | PERM050 | Admin credit adjustment | No | No | No | Yes | No | AdminFinanceModule; writes WalletTransaction adjustment + AdminAudit. |
 | PERM051 | Admin subscription tier change | No | No | No | Yes | No | AdminFinanceModule; updates UserSubscription + AdminAudit. |

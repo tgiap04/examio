@@ -736,8 +736,8 @@
 - (PUT) `/api/v1/admin/users/:id/ban`
 - (PUT) `/api/v1/admin/users/:id/unban`
 - (DELETE) `/api/v1/admin/users/:id`
-- (PUT) `/api/v1/admin/users/:id/grant-admin`
-- (DELETE) `/api/v1/admin/users/:id/revoke-admin`
+- (POST) `/api/v1/admin/users/:id/grant-admin`
+- (POST) `/api/v1/admin/users/:id/revoke-admin`
 - (GET) `/api/v1/admin/finance/refunds`
 - (POST) `/api/v1/admin/finance/refund`
 - (POST) `/api/v1/admin/finance/adjust-credit`

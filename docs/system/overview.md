@@ -42,11 +42,11 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 ### Decision 4: RabbitMQ Topic Exchange for Async Event-Driven Workflows
 
-**Context**: Wallet creation must happen automatically when a new user registers, without coupling auth-service to finance-service at the HTTP level.
+**Context**: Wallet creation must happen automatically when an account becomes a TEACHER, without coupling auth-service to finance-service at the HTTP level.
 
-**Decision**: auth-service writes `auth.user.registered` to a transactional outbox in the register tx; its worker relay publishes it to the durable topic exchange `examio.events` (library `@examio/messaging`). finance-service's `UserRegisteredHandler` consumes it idempotently (`processed_events` dedupe, retry tier 30 s, per-service DLQ) and creates the wallet with a 20-credit welcome bonus. Per-service RabbitMQ users restrict publishing to each service's own routing-key prefix. Legacy `EventType` enum values remain unused.
+**Decision**: auth-service writes `auth.user.authz_changed` to a transactional outbox in the same tx as every role / admin / ban / password change (`auth.user.registered` is still written at registration, with no consumer); its worker relay publishes to the durable topic exchange `examio.events` (library `@examio/messaging`). finance-service's `UserAuthzChangedHandler` consumes it idempotently (`processed_events` dedupe, retry tier 30 s, per-service DLQ) and, only for `role = TEACHER`, creates the wallet with a 20-credit welcome bonus. STUDENTs have no wallet. Per-service RabbitMQ users restrict publishing to each service's own routing-key prefix. Legacy `EventType` enum values remain unused.
 
-**Rationale**: Decouples service lifecycle and failure domains. If finance-service is down during registration, the event is retained and replayed. New cross-service workflows can be added by publishing/consuming events without code changes to unrelated services.
+**Rationale**: Decouples service lifecycle and failure domains. If finance-service is down during a role change, the event is retained and replayed. New cross-service workflows can be added by publishing/consuming events without code changes to unrelated services.
 
 ### Decision 5: Separate Python AI Service for RAG, Document Processing, and AI Chat
 
@@ -89,7 +89,7 @@ Infrastructure: PostgreSQL (Prisma shared) · Redis (cache) · RabbitMQ (topic e
 | Service | Port | Protocol | Role |
 |---|---|---|---|
 | gateway-service | 3000 | HTTP | Public entry, proxy, rate limit |
-| auth-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | JWT auth, Google OAuth, session/device management |
+| auth-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | RS256 JWT + JWKS, service tokens, roles (RBAC), Google OAuth, session/device management |
 | exam-service | 3000 | HTTP | Quiz/flashcard/exam authoring, attempts, AI orchestration |
 | finance-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | Wallet, SePay QR payments, subscriptions |
 | r2-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | Cloudflare R2 storage |
@@ -102,7 +102,7 @@ Infrastructure: PostgreSQL (Prisma shared) · Redis (cache) · RabbitMQ (topic e
 
 ### HTTP Proxy (gateway → downstream)
 
-gateway-service proxies HTTP requests to downstream services by URL prefix. Admin routes (`/api/v1/admin/*`) are routed to `admin-service` (port 3000) via `ProxyService.forwardWithAuth`. Downstream services use shared `AuthGuard` (Prisma-direct session validation via `SessionValidationMiddleware`) rather than calling the gRPC AuthService for every request. Admin routes use `AdminGuard` (standalone JWT verify + Prisma lookup) instead of `AuthGuard`.
+gateway-service proxies HTTP requests to downstream services by URL prefix. Admin routes (`/api/v1/admin/*`) are routed to `admin-service` (port 3000) via `ProxyService.forwardWithAuth`. Every service verifies the RS256 access token itself with `@examio/auth-jwt` (JWKS from auth, no DB or gRPC call per request); access is declared per handler (`@RequirePermissions('admin:access')` on admin routes). Details: [architecture](architecture.md) § 7.
 
 ### gRPC (synchronous, internal)
 
@@ -115,7 +115,7 @@ Every container uses HTTP 3000 / gRPC 50051 (unified ports; separate network nam
 
 ### RabbitMQ (async, event-driven)
 
-Exchange: `examio.events` (topic, durable). Only wired event: `auth.user.registered` (outbox) → `UserRegisteredHandler` in finance-service (wallet creation). See [architecture](architecture.md) § RabbitMQ.
+Exchange: `examio.events` (topic, durable). Only consumed event: `auth.user.authz_changed` (outbox) → `UserAuthzChangedHandler` in finance-service (wallet for TEACHER). `auth.user.registered` is published but has no consumer. See [architecture](architecture.md) § RabbitMQ.
 
 ### AI Orchestration (HTTP, exam-service → ai-service)
 
@@ -125,9 +125,9 @@ exam-service calls `aiApi.generateExamApi` (multipart) → returns `jobId` → f
 
 ## Auth / Session Flow
 
-1. User submits credentials → `POST /auth/login` → auth-service → returns `accessToken` (JWT) + `refreshToken` (cookie) + `sessionId`
+1. User submits credentials → `POST /auth/login` → auth-service → returns `accessToken` (RS256 JWT, 15 min; claims `sub`, `sid`, `roles`, `email_verified`, `av`) + `refreshToken` (cookie) + `sessionId`; roles are `STUDENT` (default) or `TEACHER`, plus `SYSTEM_ADMIN` for flagged admins
 2. Axios interceptor in `apis/api.ts` attaches `Authorization: Bearer {token}` + `X-Device-ID` header on every request
-3. `SessionValidationMiddleware` on every non-public gateway route: checks `UserSession.isActive && expiresAt > now` → 401 `SESSION_INVALIDATED`/`SESSION_EXPIRED`
+3. Each service's `JwtAuthGuard` verifies the token against auth's JWKS (stateless) and `PermissionsGuard` checks the declared permission (deny by default). `POST /auth/refresh` reloads the role, so a role change reaches the token within 15 min; `GET /auth/me` returns `roles`, `permissions` and `user.isSystemAdmin`
 4. OAuth (Google): redirect → backend `/auth/google` → Google One Tap → callback URL with `?token=&refreshToken=&sessionId=` → `AuthSyncBootstrap` stores in localStorage + cookie → `syncRefreshTokenApi`
 5. Device tracking: `X-Device-ID` header from `getOrCreateDeviceId()`; sessions tracked per device in `UserSession` table
 6. Session cleanup: `session-cleanup.cron.ts` (scheduled job) invalidates expired sessions
@@ -158,7 +158,7 @@ exam-service calls `aiApi.generateExamApi` (multipart) → returns `jobId` → f
 
 ## Wallet / Payment Flow
 
-1. New user registers → `auth.user.registered` event (outbox) → `UserRegisteredHandler` creates wallet with 20-credit welcome bonus
+1. A SYSTEM_ADMIN grants TEACHER → `auth.user.authz_changed` (outbox) → `UserAuthzChangedHandler` creates the wallet with a 20-credit welcome bonus (also lazily on first wallet read; `yarn finance:reconcile-teachers` repairs missed ones). New registrations are STUDENTs without a wallet
 2. Teacher purchases subscription → `POST /finance/payment/create-sepay-qr` → SePay QR returned → student scans and pays
 3. SePay webhook (`POST /webhook/sepay`) confirms payment → wallet credited
 4. AI generation deducts credits via `FinanceClientService.deductCredits` (gRPC call to finance-service)
@@ -179,7 +179,7 @@ exam-service calls `aiApi.generateExamApi` (multipart) → returns `jobId` → f
 ## Security Overview
 
 - **Authentication**: JWT cookie (`accessToken`) + `refreshToken` cookie; Google OAuth via One Tap; Cloudflare Turnstile on auth forms
-- **Authorization**: `AuthGuard` + `SessionValidationMiddleware` on gateway; role-based guards (`TeacherRoute`, `ProtectedRoute`, `PublicRoute`) on frontend routes; gRPC `AuthGuard` for inter-service calls
+- **Authorization**: `@examio/auth-jwt` guards in every service (permission per route, deny by default; [permissions](permissions.md)); role-based guards (`TeacherRoute`, `ProtectedRoute`, `PublicRoute`) on frontend routes; service tokens (`POST /internal/token`) on gRPC / inter-service calls
 - **Data Encryption**: AES-256-CBC question encryption (server-side secret); client decrypts with `VITE_QUIZ_AES_KEY`; JWT answer token prevents tampering
 - **API Security**: Bearer token + `X-Device-ID` header on all proxied requests; rate limit 100 req/min at gateway; session invalidation on logout/device revocation
 
@@ -196,7 +196,6 @@ exam-service calls `aiApi.generateExamApi` (multipart) → returns `jobId` → f
 ## Unresolved Questions
 
 2. Gateway has duplicate finance routes (`wallet-profile-proxy.controller.ts` + `finance-proxy.controller.ts`) — consolidate or clarify.
-3. `AuthService.ValidateToken` gRPC wired but unused — services use `AuthGuard` (Prisma-direct) instead; evaluate if gRPC path is needed.
 4. `FREE_MODE = true` shipped in production code path in `FinanceClientService.deductCredits` — credit gating bypassed; needs env-gate or removal.
 5. `ExamAttempt.submit` via `submitSecureQuiz` vs legacy `submitExamAttemptApi` — clarify canonical submission path.
 6. `PendingJobDialog` rendered unconditionally in `KLayout` — check if it should be scoped to AI tool pages only.

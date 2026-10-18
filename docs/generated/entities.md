@@ -16,7 +16,9 @@ erDiagram
         string username UK
         string name
         string avatar
-        boolean isAdmin
+        string role
+        boolean isSystemAdmin
+        int authzVersion
         boolean isBanned
         boolean isVerified
         datetime deletedAt
@@ -100,7 +102,9 @@ erDiagram
 | avatar | String | NULL | Avatar URL |
 | banner | String | NULL | Banner image URL |
 | bio | String | NULL | Short bio |
-| isAdmin | Boolean | NOT NULL, DEFAULT false | Admin flag |
+| role | BaseRole | NOT NULL, DEFAULT STUDENT, INDEX | Base role: `STUDENT` or `TEACHER` (mutually exclusive) |
+| isSystemAdmin | Boolean | NOT NULL, DEFAULT false, INDEX | SYSTEM_ADMIN flag; combines with either base role. Replaces `isAdmin` |
+| authzVersion | Int | NOT NULL, DEFAULT 0 | JWT claim `av`; bumped in the same tx as every role / admin / ban / password change |
 | isBanned | Boolean | NOT NULL, DEFAULT false | Soft-ban flag; banned users see 403 "Account suspended" |
 | isVerified | Boolean | NOT NULL, DEFAULT false | Email verified flag |
 | deletedAt | DateTime | NULL | Soft-delete timestamp; null = active |
@@ -303,6 +307,24 @@ erDiagram
 
 **Unique Codes**:
 - `MODEL-006-UK-01`: `userId + yearMonth` (composite unique)
+
+---
+
+### RoleChangeLog (phase 04)
+
+Audit trail of every role / admin-flag change. No foreign keys (rows outlive accounts; emails are snapshotted). Source: `libs/database/src/models/role-change-log.prisma`.
+
+| Field | Type | Constraints | Description |
+|---|---|---|---|
+| id | String | PK | |
+| targetUserId / targetEmail | String | NOT NULL | Account changed |
+| actorUserId | String | NULL | Null for CLI / bootstrap |
+| actorEmail | String | NOT NULL | |
+| fromRole / toRole | BaseRole | NOT NULL | |
+| fromAdmin / toAdmin | Boolean | NOT NULL | |
+| reason | String | NULL | |
+| source | String | NOT NULL | `admin-ui`, `cli` or `bootstrap` |
+| createdAt | DateTime | DEFAULT now(), INDEX (targetUserId, createdAt DESC) and (createdAt DESC) | |
 
 ---
 
