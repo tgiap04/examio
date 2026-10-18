@@ -6,6 +6,10 @@ config({ path: join(process.cwd(), 'apps', 'exam-service', '.env') });
 
 import { NestFactory } from '@nestjs/core';
 import { ExamServiceModule } from './exam-service.module';
+import {
+    HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
+    Logger,
+} from '@examio/observability';
 import { RedisIoAdapter } from './modules/study-room/redis-io.adapter';
 
 async function bootstrap() {
@@ -23,10 +27,15 @@ async function bootstrap() {
         );
     }
 
-    const app = await NestFactory.create(ExamServiceModule);
+    const app = await NestFactory.create(ExamServiceModule, {
+        bufferLogs: true,
+    });
+    app.useLogger(app.get(Logger));
 
     // Global prefix to match gateway proxy paths
-    app.setGlobalPrefix('api/v1');
+    app.setGlobalPrefix('api/v1', {
+        exclude: HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
+    });
 
     // Enable CORS
     app.enableCors({

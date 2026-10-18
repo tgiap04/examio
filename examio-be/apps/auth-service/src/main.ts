@@ -7,6 +7,10 @@ config({ path: join(process.cwd(), 'apps', 'auth-service', '.env') });
 import { NestFactory } from '@nestjs/core';
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { AuthServiceModule } from './auth-service.module';
+import {
+    HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
+    Logger,
+} from '@examio/observability';
 import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
@@ -32,7 +36,10 @@ async function bootstrap() {
     }
 
     // Create HTTP application
-    const app = await NestFactory.create(AuthServiceModule);
+    const app = await NestFactory.create(AuthServiceModule, {
+        bufferLogs: true,
+    });
+    app.useLogger(app.get(Logger));
 
     // Trust the first hop (gateway) so req.ip/req.ips reflect the real
     // client IP from a trusted proxy chain rather than a client-spoofable
@@ -42,7 +49,9 @@ async function bootstrap() {
     app.use(cookieParser());
 
     // Global prefix to match gateway proxy paths
-    app.setGlobalPrefix('api/v1');
+    app.setGlobalPrefix('api/v1', {
+        exclude: HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
+    });
 
     // Enable CORS
     app.enableCors({

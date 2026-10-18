@@ -1,6 +1,14 @@
 import { Module } from '@nestjs/common';
-import { DatabaseModule, PrismaService } from '@examio/database';
-import { RedisModule, RedisService } from '@examio/redis';
+import {
+    DatabaseModule,
+    DatabaseReadinessCheck,
+    PrismaService,
+} from '@examio/database';
+import {
+    RedisModule,
+    RedisReadinessCheck,
+    RedisService,
+} from '@examio/redis';
 import {
     GenerateIdService,
     CryptoService,
@@ -26,9 +34,14 @@ import { StudentModule } from './modules/student/student.module';
 import { FlashcardStudyModule } from './modules/flashcard-study/flashcard-study.module';
 import { WordFamilyModule } from './modules/word-family/word-family.module';
 import { StudyRoomModule } from './modules/study-room/study-room.module';
+import { HealthModule, LoggerModule } from '@examio/observability';
 
 @Module({
     imports: [
+        LoggerModule.forRoot('exam-service'),
+        HealthModule.forRoot({
+            checks: [DatabaseReadinessCheck, RedisReadinessCheck],
+        }),
         DatabaseModule,
         RedisModule,
         EventsModule,

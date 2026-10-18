@@ -1,8 +1,12 @@
 import { Module } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
-import { DatabaseModule, PrismaService } from '@examio/database';
+import {
+    DatabaseModule,
+    DatabaseReadinessCheck,
+    PrismaService,
+} from '@examio/database';
 import { AuthModule } from '@examio/common';
-import { RedisModule } from '@examio/redis';
+import { RedisModule, RedisReadinessCheck } from '@examio/redis';
 
 import { AdminServiceController } from './admin-service.controller';
 import { AdminServiceService } from './admin-service.service';
@@ -14,9 +18,14 @@ import { AdminUsersModule } from './modules/admin-users/admin-users.module';
 import { AdminAuditModule } from './modules/admin-audit/admin-audit.module';
 import { AdminWordFamilyModule } from './modules/admin-word-family/admin-word-family.module';
 import { AdminPageConfigModule } from './modules/admin-page-config/admin-page-config.module';
+import { HealthModule, LoggerModule } from '@examio/observability';
 
 @Module({
     imports: [
+        LoggerModule.forRoot('admin-service'),
+        HealthModule.forRoot({
+            checks: [DatabaseReadinessCheck, RedisReadinessCheck],
+        }),
         DatabaseModule,
         RedisModule,
         AuthModule,

@@ -7,6 +7,10 @@ config({ path: join(process.cwd(), 'apps', 'finance-service', '.env') });
 import { NestFactory } from '@nestjs/core';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 import { FinanceServiceModule } from './finance-service.module';
+import {
+    HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
+    Logger,
+} from '@examio/observability';
 
 async function bootstrap() {
     // Fail fast on a missing/weak signing secret instead of degrading into
@@ -16,10 +20,15 @@ async function bootstrap() {
     }
 
     // HTTP server
-    const app = await NestFactory.create(FinanceServiceModule);
+    const app = await NestFactory.create(FinanceServiceModule, {
+        bufferLogs: true,
+    });
+    app.useLogger(app.get(Logger));
 
     // Global prefix to match gateway proxy paths
-    app.setGlobalPrefix('api/v1');
+    app.setGlobalPrefix('api/v1', {
+        exclude: HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
+    });
 
     // Enable CORS
     app.enableCors({

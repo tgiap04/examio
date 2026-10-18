@@ -3,7 +3,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { HttpModule } from '@nestjs/axios';
 import { AuthModule } from '@examio/common';
-import { RedisModule } from '@examio/redis';
+import { RedisModule, RedisReadinessCheck } from '@examio/redis';
 import { DatabaseModule } from '@examio/database';
 
 import { GatewayController } from './gateway.controller';
@@ -41,7 +41,6 @@ import {
     AIProxyController,
     AIChatProxyController,
     FlashcardStudyProxyController,
-    QuizPracticeProxyController,
     CheatingLogProxyController,
 } from './controllers/ai-study-proxy.controller';
 
@@ -57,9 +56,12 @@ import { WordFamilyProxyController } from './controllers/word-family-proxy.contr
 
 // Admin
 import { AdminProxyController } from './controllers/admin-proxy.controller';
+import { HealthModule, LoggerModule } from '@examio/observability';
 
 @Module({
     imports: [
+        LoggerModule.forRoot('gateway-service'),
+        HealthModule.forRoot({ checks: [RedisReadinessCheck] }),
         AuthModule,
         RedisModule,
         DatabaseModule,
@@ -96,7 +98,6 @@ import { AdminProxyController } from './controllers/admin-proxy.controller';
         AIProxyController,
         AIChatProxyController,
         FlashcardStudyProxyController,
-        QuizPracticeProxyController,
         CheatingLogProxyController,
         // R2 Storage
         R2ProxyController,

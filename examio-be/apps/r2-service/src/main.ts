@@ -7,10 +7,14 @@ config({ path: join(process.cwd(), 'apps', 'r2-service', '.env') });
 import { NestFactory } from '@nestjs/core';
 import { Transport, MicroserviceOptions } from '@nestjs/microservices';
 import { R2ServiceModule } from './r2-service.module';
+import { Logger } from '@examio/observability';
 
 async function bootstrap() {
     // HTTP server for health checks
-    const app = await NestFactory.create(R2ServiceModule);
+    const app = await NestFactory.create(R2ServiceModule, {
+        bufferLogs: true,
+    });
+    app.useLogger(app.get(Logger));
 
     // Use absolute path from process.cwd() for proto file
     const protoPath = join(

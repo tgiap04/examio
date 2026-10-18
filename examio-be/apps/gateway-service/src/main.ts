@@ -8,6 +8,10 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { GatewayModule } from './gateway.module';
+import {
+    HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
+    Logger,
+} from '@examio/observability';
 import * as cookieParser from 'cookie-parser';
 import * as httpProxy from 'http-proxy';
 import { WS_STUDY_PATH } from './ws-study.constant';
@@ -21,7 +25,10 @@ async function bootstrap() {
         throw new Error('JWT_SECRET missing or too short (min 32 chars)');
     }
 
-    const app = await NestFactory.create(GatewayModule);
+    const app = await NestFactory.create(GatewayModule, {
+        bufferLogs: true,
+    });
+    app.useLogger(app.get(Logger));
 
     // Trust the first hop (load balancer / reverse proxy) so req.ip reflects
     // the real client IP instead of the LB's address. This MUST be set before
@@ -49,7 +56,9 @@ async function bootstrap() {
     app.use(cookieParser());
 
     // Global prefix
-    app.setGlobalPrefix('api/v1');
+    app.setGlobalPrefix('api/v1', {
+        exclude: HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
+    });
 
     const configuredOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || '')
         .split(',')
