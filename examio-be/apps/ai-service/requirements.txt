@@ -64,3 +64,8 @@ tenacity>=8.1.0
 
 # Message Queue
 aio-pika>=9.0.0,<10.0.0
+
+# gRPC stubs (src/backend/grpc_generated). Keep in sync with pyproject.toml.
+grpcio==1.71.2
+grpcio-status==1.71.2
+protobuf==5.29.6
