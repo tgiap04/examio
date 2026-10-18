@@ -20,14 +20,14 @@ graph TB
     end
 
     subgraph Backend[Backend — NestJS Monorepo]
-        AUTH[auth-service<br/>:3001 HTTP<br/>:50051 gRPC]
-        EXAM[exam-service<br/>:3002 HTTP<br/>Quiz/Flashcard/Exam/AI/OCR]
-        FIN[finance-service<br/>:3003 HTTP<br/>:50053 gRPC<br/>Wallet/Payment/Sub]
-        R2[r2-service<br/>:3004 HTTP<br/>:50054 gRPC<br/>Cloudflare R2]
+        AUTH[auth-service<br/>:3000 HTTP<br/>:50051 gRPC]
+        EXAM[exam-service<br/>:3000 HTTP<br/>Quiz/Flashcard/Exam/AI/OCR]
+        FIN[finance-service<br/>:3000 HTTP<br/>:50051 gRPC<br/>Wallet/Payment/Sub]
+        R2[r2-service<br/>:3000 HTTP<br/>:50051 gRPC<br/>Cloudflare R2]
     end
 
     subgraph AI[AI Layer — Python FastAPI]
-        AISVC[ai-service<br/>:8000 HTTP<br/>RAG · LangGraph · Gemini]
+        AISVC[ai-service<br/>:3000 HTTP<br/>RAG · LangGraph · Gemini]
     end
 
     subgraph Infra[Infrastructure]
@@ -64,15 +64,17 @@ graph TB
 
 ## Service Topology
 
+Ports are unified in containers (`deploy/docker-compose.yml`): every Nest service listens on HTTP `3000`; services with a gRPC server (auth, finance, r2) use `50051`. `ai-service` also gets `PORT=3000` in compose (local dev default `3434`, `yarn dev:ai` uses `8000`). Each container has its own network namespace, so there is no collision. Local `yarn dev:*` runs set `PORT`/`GRPC_PORT` per service in each `.env`.
+
 | Service | HTTP Port | gRPC Port | Runtime | Role |
 |---------|----------:|----------:|---------|------|
 | `gateway-service` | 3000 | — | Node 22 | Public HTTP entry, reverse proxy, rate limit, WS upgrade proxy (`/ws/study`) |
-| `auth-service` | 3001 | 50051 | Node 22 | JWT issuer, OAuth, sessions, devices |
-| `exam-service` | 3002 | — | Node 22 | Quiz/flashcard authoring, exam sessions, AI orchestration, Study-Together Room (Socket.io gateway) |
-| `finance-service` | 3003 | 50053 | Node 22 | Wallet, SePay QR payments, subscriptions |
-| `r2-service` | 3004 | 50054 | Node 22 | Cloudflare R2 object storage (proxy) |
-| `admin-service` | 3006 | 50056 | Node 22 | Admin dashboard: users, stats, finance, logs, audit |
-| `ai-service` | 8000 | — | Python 3.12+ | RAG, document processing, AI chat (LangChain + LangGraph) |
+| `auth-service` | 3000 | 50051 | Node 22 | JWT issuer, OAuth, sessions, devices |
+| `exam-service` | 3000 | — | Node 22 | Quiz/flashcard authoring, exam sessions, AI orchestration, Study-Together Room (Socket.io gateway) |
+| `finance-service` | 3000 | 50051 | Node 22 | Wallet, SePay QR payments, subscriptions |
+| `r2-service` | 3000 | 50051 | Node 22 | Cloudflare R2 object storage (proxy) |
+| `admin-service` | 3000 | — | Node 22 | Admin dashboard: users, stats, finance, logs, audit |
+| `ai-service` | 3000 (compose) | — | Python 3.12+ | RAG, document processing, AI chat (LangChain + LangGraph) |
 
 ## Cross-Service Communication
 
@@ -82,7 +84,7 @@ graph TB
 sequenceDiagram
     participant FE as examio-fe
     participant GW as gateway:3000
-    participant EX as exam:3002
+    participant EX as exam:3000
     FE->>GW: POST /api/v1/examrooms (Bearer token)
     GW->>GW: RateLimit check (100 req/min)
     GW->>GW: ProxyService.forwardWithAuth
@@ -98,17 +100,15 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant EX as exam-service
-    participant FIN as finance-service:50053
+    participant FIN as finance-service:50051
     EX->>FIN: gRPC WalletService.GetWallet(userId)
     FIN-->>EX: { balance: 100 }
     Note over EX,FIN: Used for credit gating before AI generation
 ```
 
-**Proto definitions**: `libs/common/src/protos/`
-- `auth.proto` — `ValidateToken`, `GetUserInfo`, `CheckPermission`
-- `wallet.proto` — `CreateWallet`, `GetWallet`, `UpdateBalance`
-- `r2.proto` — `UploadFile`, `GetFileUrl`, `DeleteFile`, `ListUserFiles`
-- `subscription.proto` — `GetUserBenefits`
+**Proto definitions**: `examio-be/proto/examio/<svc>/v1/` (packages `auth`, `common`, `finance`, `gateway`, `r2`), linted and generated with buf. `yarn proto:lint` runs `buf lint proto`; `yarn proto:gen` runs `buf generate` (ts-proto, output `libs/contracts/src/generated/`, gitignored) and is exposed as `@examio/contracts`. The Python ai-service generates its stubs with `apps/ai-service/scripts/gen_grpc.sh`. Client helpers live in `@examio/grpc`, HTTP helpers in `@examio/http`.
+
+Finance `WalletService` money fields are `int32` (credits are whole numbers). The `Debit`, `Credit` and `Refund` RPCs are declared in the contract but the server answers `UNIMPLEMENTED` until a later phase; `R2Service` gained `DeleteObjects`. gRPC env: `AUTH_GRPC_URL`, `R2_GRPC_URL`, `FINANCE_GRPC_URL` (replaces `FINANCE_SERVICE_GRPC_URL` / `WALLET_GRPC_URL`).
 
 ### 3. RabbitMQ Topic Exchange (async events)
 
@@ -129,8 +129,8 @@ graph LR
 ### 4. Admin Service
 
 **Location**: `apps/admin-service/`
-**HTTP Port**: 7006 (mapped to 3006 externally)
-**gRPC Port**: 50056
+**HTTP Port**: 3000 (container)
+**gRPC Port**: none in the current compose/`main.ts`
 
 **Auth**: `AdminGuard` in `@examio/common` — standalone JWT verify + Prisma user lookup (avoids double `canActivate` from inheritance). Admin status checked via `User.isAdmin`.
 
@@ -154,7 +154,7 @@ graph LR
 sequenceDiagram
     participant FE as examio-fe
     participant EX as exam-service
-    participant AI as ai-service:8000
+    participant AI as ai-service:3000
     participant FIN as finance-service
     FE->>EX: POST /ai-study/generate (multipart)
     EX->>AI: Forward multipart
@@ -327,12 +327,12 @@ graph TB
     subgraph Production
         LB[Load Balancer<br/>HTTPS termination]
         GW[gateway :3000]
-        AUTH[auth :3001/:50051]
-        EXAM[exam :3002]
-        FIN[finance :3003/:50053]
-        ADMIN[admin :3006/:50056]
-        R2[r2 :3004/:50054]
-        AI[ai :8000]
+        AUTH[auth :3000/:50051]
+        EXAM[exam :3000]
+        FIN[finance :3000/:50051]
+        ADMIN[admin :3000]
+        R2[r2 :3000/:50051]
+        AI[ai :3000]
         PG[(PostgreSQL HA)]
         REDIS[(Redis HA)]
         RMQ[RabbitMQ HA]

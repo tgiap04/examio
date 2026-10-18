@@ -22,13 +22,13 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **AI Service** — Standalone Python FastAPI service responsible for RAG (document retrieval), embedding generation, AI chat orchestration, and AI-assisted quiz/flashcard generation. Exam-service calls it via HTTP.
 
-**Admin Service** — NestJS service providing the admin dashboard backend. Handles KPI/stats, user management (ban/unban/delete/grant admin), finance operations (refund/credit adjust/tier change), log streaming (SSE via ticket exchange), and audit log query. Exposed via gateway proxy at `/api/v1/admin/*` (HTTP port 7006) and gRPC on port 50056. Uses `AdminGuard` in `@examio/common` (standalone JWT verify + `User.isAdmin` check) instead of `AuthGuard`.
+**Admin Service** — NestJS service providing the admin dashboard backend. Handles KPI/stats, user management (ban/unban/delete/grant admin), finance operations (refund/credit adjust/tier change), log streaming (SSE via ticket exchange), and audit log query. Exposed via gateway proxy at `/api/v1/admin/*` (HTTP port 3000 in containers; no gRPC server). Uses `AdminGuard` in `@examio/common` (standalone JWT verify + `User.isAdmin` check) instead of `AuthGuard`.
 
 **Answer Token (JWT)** — A signed JSON Web Token submitted by the client when a student finishes an exam. Contains the map of question IDs to selected answers. The server validates the signature before grading — preventing answer forgery or tampering.
 
 **Assess Type** — A discriminator on ExamSession controlling access mode: `0=PUBLIC` means anyone with the link can join; `1=PRIVATE` requires an access code or explicit whitelist.
 
-**Auth Service** — NestJS service handling authentication, OAuth (Google), session management, device tracking, and account verification. Exposes both HTTP (port 3001) and gRPC (port 50051) interfaces.
+**Auth Service** — NestJS service handling authentication, OAuth (Google), session management, device tracking, and account verification. Exposes both HTTP (port 3000) and gRPC (port 50051) interfaces.
 
 ---
 
@@ -94,7 +94,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **FAISS** — Facebook AI Similarity Search. Library used by the Python AI service to perform fast vector similarity search over document embeddings.
 
-**Finance Service** — NestJS service managing the credit wallet, SePay payment integration, and subscription lifecycle. Exposes gRPC WalletService on port 50053 for synchronous credit operations.
+**Finance Service** — NestJS service managing the credit wallet, SePay payment integration, and subscription lifecycle. Exposes gRPC WalletService on port 50051 for synchronous credit operations (`Debit`/`Credit`/`Refund` declared in the contract, `UNIMPLEMENTED` until a later phase).
 
 **FlashCard** — A reusable question/answer pair (front and back). Can appear in multiple FlashCardSets via DetailsFlashCard join records.
 
@@ -202,7 +202,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **ResetPasswordCode** — A one-time 6-digit code sent to the user's email when they request a password reset. Valid for a limited time window.
 
-**R2 Service** — NestJS service managing Cloudflare R2 object storage. Exposes gRPC R2Service on port 50054 for signed upload URL generation and file deletion.
+**R2 Service** — NestJS service managing Cloudflare R2 object storage. Exposes gRPC R2Service on port 50051 for signed upload URL generation and file deletion (`DeleteObjects` for batch).
 
 ---
 

@@ -39,6 +39,8 @@ yarn dev:r2
 yarn dev:admin
 yarn dev:ai
 yarn dev:all
+yarn proto:lint
+yarn proto:gen
 yarn prisma:merge
 yarn prisma:generate
 yarn prisma:migrate
@@ -125,9 +127,12 @@ Backend là một root package dùng Yarn, tổ chức theo kiểu Nest monorepo
 
 Mã hạ tầng dùng chung nằm trong `examio-be/libs/`:
 
-- `@examio/common`: export các Nest module dùng chung, guards, auth helpers, mail/password/id services, event helpers, gRPC client helpers, utils và các file protobuf.
+- `@examio/common`: export các Nest module dùng chung, guards, auth helpers, mail/password/id services, event helpers, utils (gRPC client helpers và file protobuf đã chuyển sang `@examio/grpc`, `@examio/contracts` và thư mục `examio-be/proto/`).
 - `@examio/database`: Prisma schema/client và database module.
 - `@examio/redis`: Redis module/service dùng chung.
+- `@examio/contracts`: type/decorator gRPC sinh bằng ts-proto từ `examio-be/proto/examio/<svc>/v1` (buf). Thư mục `libs/contracts/src/generated/` bị gitignore; chạy `yarn proto:gen` sau khi clone hoặc sửa `.proto` (`yarn proto:lint` để lint). Python ai-service sinh stub bằng `apps/ai-service/scripts/gen_grpc.sh`.
+- `@examio/grpc`: gRPC client module, deadline/retry, ánh xạ lỗi gRPC, metadata helper.
+- `@examio/http`: HTTP error envelope filter dùng chung.
 
 Ưu tiên dùng các shared library này thay vì lặp lại code hạ tầng trong từng service.
 
@@ -136,7 +141,7 @@ Mã hạ tầng dùng chung nằm trong `examio-be/libs/`:
 Backend không phải là một monolith duy nhất dù các service dùng chung Prisma và shared libs.
 
 - Gateway public các HTTP route và đẩy request xuống downstream service thông qua các proxy controller và `ProxyService`.
-- Auth, finance và storage còn giao tiếp với nhau qua gRPC client/proto từ `@examio/common`.
+- Auth, finance và storage còn giao tiếp với nhau qua gRPC client/proto từ `@examio/grpc` và `@examio/contracts` (URL qua env `AUTH_GRPC_URL`, `R2_GRPC_URL`, `FINANCE_GRPC_URL`; container dùng HTTP `3000` / gRPC `50051`).
 - Các workflow bất đồng bộ giữa service dùng RabbitMQ qua shared events module.
 - Ví dụ từ wiring hiện tại:
   - gateway biết URL của downstream service qua env như `AUTH_SERVICE_URL`, `EXAM_SERVICE_URL`, `FINANCE_SERVICE_URL`, `AI_SERVICE_URL`.

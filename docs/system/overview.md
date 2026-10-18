@@ -36,7 +36,7 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 **Context**: auth-service, finance-service, and r2-service all need to be called by other services synchronously (e.g., exam-service verifying subscription credits before generating AI content, or fetching a signed R2 upload URL).
 
-**Decision**: These three services expose gRPC APIs on dedicated ports (auth=50051, wallet=50053, r2=50054). exam-service and auth-service embed gRPC client modules rather than HTTP-calling the gateway. Proto definitions live in `@examio/common`.
+**Decision**: These three services expose gRPC APIs on gRPC port 50051 per container (auth, finance, r2). exam-service and auth-service embed gRPC client modules rather than HTTP-calling the gateway. Proto definitions live in `examio-be/proto/examio/<svc>/v1` (buf-managed); generated TS stubs are `@examio/contracts`.
 
 **Rationale**: gRPC provides typed contracts, bidirectional streaming support, and lower latency than HTTP proxy chains for internal calls. Avoids circular gateway routing.
 
@@ -73,12 +73,12 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
    │      │      │      │      │      │      │ HTTP
    │gRPC  │gRPC  │gRPC  │gRPC  │gRPC  │gRPC  │ (AI study proxy)
    ▼      ▼      ▼      ▼      ▼      ▼      ▼
-auth:3001 exam:3002 finance:3003 r2:3004 admin:7006
-gRPC:50051      gRPC:50053 gRPC:50054 gRPC:50056
+auth:3000 exam:3000 finance:3000 r2:3000 admin:3000
+gRPC:50051      gRPC:50051 gRPC:50051   (containers)
          exam-service ←──────────────────┐
                   │ HTTP                │ gRPC (wallet check)
                   ▼                     │
-           ai-service :8000 (Python FastAPI)
+           ai-service :3000 in compose (Python FastAPI)
            RAG · embedding · AI chat · ReAct agent
 
 Infrastructure: PostgreSQL (Prisma shared) · Redis (cache) · RabbitMQ (topic exchange examio.events)
@@ -89,12 +89,12 @@ Infrastructure: PostgreSQL (Prisma shared) · Redis (cache) · RabbitMQ (topic e
 | Service | Port | Protocol | Role |
 |---|---|---|---|
 | gateway-service | 3000 | HTTP | Public entry, proxy, rate limit |
-| auth-service | 3001 HTTP / 50051 gRPC | HTTP + gRPC | JWT auth, Google OAuth, session/device management |
-| exam-service | 3002 | HTTP | Quiz/flashcard/exam authoring, attempts, AI orchestration |
-| finance-service | 3003 HTTP / 50053 gRPC | HTTP + gRPC | Wallet, SePay QR payments, subscriptions |
-| r2-service | 3004 HTTP / 50054 gRPC | HTTP + gRPC | Cloudflare R2 storage |
-| admin-service | 7006 HTTP / 50056 gRPC | HTTP + gRPC | Admin dashboard: users, stats, finance, logs, audit |
-| ai-service | 8000 | HTTP | RAG, document processing, AI chat (Python FastAPI) |
+| auth-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | JWT auth, Google OAuth, session/device management |
+| exam-service | 3000 | HTTP | Quiz/flashcard/exam authoring, attempts, AI orchestration |
+| finance-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | Wallet, SePay QR payments, subscriptions |
+| r2-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | Cloudflare R2 storage |
+| admin-service | 3000 HTTP | HTTP | Admin dashboard: users, stats, finance, logs, audit |
+| ai-service | 3000 (compose) | HTTP | RAG, document processing, AI chat (Python FastAPI) |
 
 ---
 
@@ -102,14 +102,15 @@ Infrastructure: PostgreSQL (Prisma shared) · Redis (cache) · RabbitMQ (topic e
 
 ### HTTP Proxy (gateway → downstream)
 
-gateway-service proxies HTTP requests to downstream services by URL prefix. Admin routes (`/api/v1/admin/*`) are routed to `admin-service` (port 7006) via `ProxyService.forwardWithAuth`. Downstream services use shared `AuthGuard` (Prisma-direct session validation via `SessionValidationMiddleware`) rather than calling the gRPC AuthService for every request. Admin routes use `AdminGuard` (standalone JWT verify + Prisma lookup) instead of `AuthGuard`.
+gateway-service proxies HTTP requests to downstream services by URL prefix. Admin routes (`/api/v1/admin/*`) are routed to `admin-service` (port 3000) via `ProxyService.forwardWithAuth`. Downstream services use shared `AuthGuard` (Prisma-direct session validation via `SessionValidationMiddleware`) rather than calling the gRPC AuthService for every request. Admin routes use `AdminGuard` (standalone JWT verify + Prisma lookup) instead of `AuthGuard`.
 
 ### gRPC (synchronous, internal)
 
 - auth-service `AuthService` (port 50051): token validation, session lookup
-- finance-service `WalletService` (port 50053): credit deduction, balance check
-- r2-service `R2Service` (port 50054): signed upload URLs, file deletion
-- admin-service `AdminService` (port 50056): admin operations (not yet exposed to other services)
+- finance-service `WalletService` (port 50051): credit deduction, balance check (`Debit`/`Credit`/`Refund` declared, `UNIMPLEMENTED` until a later phase)
+- r2-service `R2Service` (port 50051): signed upload URLs, file deletion (incl. `DeleteObjects`)
+
+Every container uses HTTP 3000 / gRPC 50051 (unified ports; separate network namespaces). admin-service has no gRPC server in the current compose.
 
 
 ### RabbitMQ (async, event-driven)

@@ -9,6 +9,15 @@ last_updated: 2026-10-18
 
 ### Changed
 
+#### Microservice refactor, phase 02 (contracts and infra libs; uncommitted on `refactor/microservice-rbac`)
+
+- **Protos**: moved from `libs/common/src/protos` to `examio-be/proto/examio/<svc>/v1` (auth, common, finance, gateway, r2), managed by buf. `yarn proto:lint` / `yarn proto:gen` (ts-proto into gitignored `libs/contracts/src/generated`); ai-service stubs via `apps/ai-service/scripts/gen_grpc.sh`.
+- **Libs**: new `@examio/contracts`, `@examio/grpc` (client module, deadline/retry, error map), `@examio/http` (error envelope filter). `@examio/common` no longer exports gRPC client modules or protos.
+- **Ports**: every container now listens on HTTP 3000; gRPC servers (auth, finance, r2) on 50051. The 7000-7006 / 50053 / 50054 / 50056 ports are gone; admin-service no longer opens gRPC.
+- **Env**: `FINANCE_GRPC_URL` replaces `FINANCE_SERVICE_GRPC_URL` and `WALLET_GRPC_URL`.
+- **Finance proto**: money fields are `int32`; `Debit`/`Credit`/`Refund` declared but `UNIMPLEMENTED` until a later phase. r2 proto gains `DeleteObjects`.
+- **Behaviour change**: subscription limits (files per month, AI chat messages) are now actually enforced. A snake_case/camelCase field mismatch had silently disabled them; users over their tier limit will now be rejected.
+
 #### Microservice refactor, phase 01 (guardrails and cleanup; uncommitted on `refactor/microservice-rbac`)
 
 - **CI**: new `.github/workflows/ci.yml` quality gate; `deploy.yml` depends on it.

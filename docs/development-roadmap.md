@@ -52,6 +52,10 @@ The 2026-06-05 rebuild-spec baseline is now **873 files behind HEAD** (94k+ line
 
 Phase 01 (guardrails and cleanup) is implemented but uncommitted on `refactor/microservice-rbac`: CI quality gate, `ocr-service` removed, baseline Prisma migration, health probes, pino logs. See [changelog](project-changelog.md). Plan: `plans/261017-1547-microservice-refactor-rbac/`.
 
+## Progress Note (2026-10-18) — microservice-refactor plan, phase 02
+
+Phase 02 (contracts and infra libs) is implemented but uncommitted on `refactor/microservice-rbac`: protos moved to `examio-be/proto/` (buf), new libs `@examio/contracts`, `@examio/grpc`, `@examio/http`, unified container ports (HTTP 3000 / gRPC 50051), `FINANCE_GRPC_URL` env. Subscription limits are now enforced. See [changelog](project-changelog.md).
+
 ## Phase 0 — System Correctness (P0, blocking)
 
 | # | Item | Source | Owner | Deps |
@@ -162,7 +166,7 @@ Phase 01 (guardrails and cleanup) is implemented but uncommitted on `refactor/mi
 
 | # | Item | Owner | Status |
 |---|------|-------|--------|
-| 3.1 | Admin service (port 7006, gRPC 50056) | backend | ✅ Complete |
+| 3.1 | Admin service (HTTP port 3000 in containers since microservice-refactor phase 02; originally 7006 / gRPC 50056, no gRPC server now) | backend | ✅ Complete |
 | 3.2 | 6 admin modules: bootstrap, stats, finance, logs, users, audit | backend | ✅ Complete |
 | 3.3 | Frontend admin pages (6 pages: overview, stats, users, finance, logs, audit) | frontend | ✅ Complete |
 | 3.4 | Ticket exchange SSE (server-sent events for real-time updates) | backend | ✅ Complete |
