@@ -23,6 +23,11 @@ env:
   COMPOSE_DOCKER_CLI_BUILD: 1
 
 jobs:
+  # CI gate: typecheck/build/unit/e2e for BE, build/lint for FE. A red check
+  # here blocks every deploy job below.
+  quality:
+    uses: ./.github/workflows/ci.yml
+
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
@@ -68,7 +73,7 @@ jobs:
           fi
 
   deploy:
-    needs: detect-changes
+    needs: [quality, detect-changes]
     if: needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.frontend == 'true'
     runs-on: ubuntu-latest
     concurrency:
@@ -145,7 +150,7 @@ jobs:
               MAX_RETRIES=5
               HEALTHY=false
               for i in $(seq 1 $MAX_RETRIES); do
-                if docker compose exec -T gateway wget -q --spider http://localhost:7000/api/v1/health 2>/dev/null; then
+                if docker compose exec -T gateway wget -q --spider http://localhost:7000/health/ready 2>/dev/null; then
                   HEALTHY=true
                   break
                 fi

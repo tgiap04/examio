@@ -1,0 +1,157 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # Typecheck + compile every Node service. `yarn build` alone only builds the
+  # default project, so each service is built explicitly.
+  be-check:
+    name: be-check (${{ matrix.svc }})
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examio-be
+    strategy:
+      fail-fast: false
+      matrix:
+        svc: [auth, exam, finance, admin, r2, gateway]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: examio-be/yarn.lock
+      - run: corepack enable
+      - run: yarn install --immutable
+      - name: Prisma schema is in sync with models
+        run: |
+          yarn prisma:merge
+          git diff --exit-code -- libs/database/src/schema.prisma
+      - run: yarn prisma:generate
+      - run: yarn typecheck:${{ matrix.svc }}
+      - run: yarn nest build ${{ matrix.svc }}-service
+
+  be-unit:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examio-be
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: examio-be/yarn.lock
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn prisma:generate
+      - run: yarn test --ci
+
+  # Boots every service module against empty pgvector Postgres + Redis +
+  # RabbitMQ (migrations applied from the committed baseline) and probes
+  # /health/live and /health/ready.
+  be-e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examio-be
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: examio
+          POSTGRES_PASSWORD: examio
+          POSTGRES_DB: examio_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U examio -d examio_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      rabbitmq:
+        image: rabbitmq:3.13
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://examio:examio@localhost:5432/examio_ci
+      REDIS_HOST: localhost
+      REDIS_PORT: '6379'
+      RABBITMQ_URL: amqp://guest:guest@localhost:5672
+      JWT_SECRET: ci-only-jwt-secret-0123456789abcdef0123456789
+      REFRESH_TOKEN_ENC_KEY: ci-only-refresh-key-0123456789abcdef0123456789
+      FRONTEND_URL: http://localhost:5173
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: examio-be/yarn.lock
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn prisma:generate
+      - name: Apply migrations to an empty database
+        run: npx prisma migrate deploy --schema=libs/database/src/schema.prisma
+      - name: Migrations cover the whole schema (no drift)
+        run: >-
+          npx prisma migrate diff
+          --from-url "$DATABASE_URL"
+          --to-schema-datamodel libs/database/src/schema.prisma
+          --exit-code
+      - name: Service health e2e
+        run: |
+          for svc in auth exam finance admin r2 gateway; do
+            echo "::group::$svc-service e2e"
+            (cd apps/$svc-service && ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec)
+            echo "::endgroup::"
+          done
+
+  # FE tests (vitest) are added by the frontend RBAC phase.
+  fe:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examio-fe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: examio-fe/yarn.lock
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn build
+      - run: yarn lint
