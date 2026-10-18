@@ -76,8 +76,21 @@ REDIS_PASSWORD=  # Leave empty or set a password
 
 #### Security (REQUIRED - Change these!)
 ```bash
-JWT_SECRET=change_this_to_a_secure_random_string_min_32_chars
-JWT_EXPIRATION=1d
+# RS256 access tokens: `scripts/gen-jwt-keypair.sh` prints both lines (never commit the key)
+JWT_PRIVATE_KEY=<pkcs8 pem on one line, newlines as \n>
+JWT_KID=<kid>
+JWT_ISSUER=examio-auth
+JWT_AUDIENCE=examio
+ACCESS_TOKEN_EXPIRATION=15m
+# Service tokens: `scripts/gen-service-secret.sh <exam|finance|admin>` prints the secret
+# (that service only) and the hash that goes into auth's SERVICE_CLIENTS.
+SERVICE_CLIENTS={"exam":"<sha256>","finance":"<sha256>","admin":"<sha256>"}
+EXAM_SERVICE_CLIENT_SECRET=<secret>
+FINANCE_SERVICE_CLIENT_SECRET=<secret>
+ADMIN_SERVICE_CLIENT_SECRET=<secret>
+# AUTH_JWKS_URL / AUTH_TOKEN_URL are plain http on the INTERNAL network (compose: http://auth:3000/...).
+# Never point them at a public http host: whoever controls the JWKS controls who is an admin.
+# A public JWKS must be https.
 REFRESH_TOKEN_SECRET=change_this_to_another_secure_string
 REFRESH_TOKEN_EXPIRATION=7d
 QUIZ_JWT_SECRET=change_this_to_quiz_secret_32_chars_min
@@ -143,7 +156,8 @@ PAYMENT_WEBHOOK_SECRET_KEY=your_webhook_secret
 
 #### Admin Bootstrap & Seed
 ```bash
-# Comma-separated list of admin emails (bootstrap on admin-service startup)
+# Comma-separated list of SYSTEM_ADMIN emails (synced by auth-service on startup
+# and by `yarn bootstrap:admin`; moved from admin-service in phase 04)
 ADMIN_EMAILS=admin@examio.vn
 # Default password for newly created admin accounts. ALSO consumed by
 # `yarn run seed:dev` (libs/database/prisma/seed-dev.ts) so seeded users
@@ -158,7 +172,10 @@ ADMIN_DEFAULT_PASSWORD=ChangeMe123!
 > `yarn run seed:dev` against the production `DATABASE_URL`, then exits.
 > The script picks up `ADMIN_DEFAULT_PASSWORD` from `deploy/.env`, so
 > seeded users share the same password as admins created by the
-> admin-service bootstrap. Idempotent — safe to re-run.
+> auth-service bootstrap. Idempotent — safe to re-run.
+>
+> Roles: new accounts are STUDENT; promote with `yarn bootstrap:admin:grant <email> [--teacher]`
+> (auth-service CLI) and run `yarn finance:reconcile-teachers` if a TEACHER wallet is missing.
 >
 > To re-seed manually (e.g. after editing `seed-dev.ts`):
 > ```bash

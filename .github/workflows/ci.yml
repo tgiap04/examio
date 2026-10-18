@@ -112,9 +112,15 @@ jobs:
       REDIS_HOST: localhost
       REDIS_PORT: '6379'
       RABBITMQ_URL: amqp://guest:guest@localhost:5672
-      JWT_SECRET: ci-only-jwt-secret-0123456789abcdef0123456789
       REFRESH_TOKEN_ENC_KEY: ci-only-refresh-key-0123456789abcdef0123456789
       FRONTEND_URL: http://localhost:5173
+      JWT_ISSUER: examio-auth
+      JWT_AUDIENCE: examio
+      AUTH_JWKS_URL: http://localhost:3000/.well-known/jwks.json
+      AUTH_TOKEN_URL: http://localhost:3000/internal/token
+      AUTH_GRPC_URL: localhost:50051
+      # JWT_PRIVATE_KEY / JWT_KID / SERVICE_CLIENTS / SERVICE_CLIENT_SECRET are
+      # generated per job below (ephemeral; nothing key-like is committed).
       # Boot-time required config; inert placeholders (nothing calls these providers).
       GOOGLE_CLIENT_ID: ci-dummy
       GOOGLE_CLIENT_SECRET: ci-dummy
@@ -134,6 +140,11 @@ jobs:
       - run: yarn install --immutable
       - run: yarn prisma:generate
       - run: yarn build:all
+      - name: Ephemeral JWT key and service clients
+        run: |
+          ./scripts/ci-ephemeral-auth-env.sh > "$RUNNER_TEMP/auth-env.txt"
+          grep '^::add-mask::' "$RUNNER_TEMP/auth-env.txt"
+          grep -v '^::' "$RUNNER_TEMP/auth-env.txt" >> "$GITHUB_ENV"
       - name: Apply migrations to an empty database
         run: npx prisma migrate deploy --schema=libs/database/src/schema.prisma
       - name: Boot each built service from dist and probe /health/live
@@ -203,9 +214,13 @@ jobs:
       RABBITMQ_FINANCE_PASS: ci-only-finance-pass
       RABBITMQ_EXAM_PASS: ci-only-exam-pass
       RABBITMQ_AI_PASS: ci-only-ai-pass
-      JWT_SECRET: ci-only-jwt-secret-0123456789abcdef0123456789
       REFRESH_TOKEN_ENC_KEY: ci-only-refresh-key-0123456789abcdef0123456789
       FRONTEND_URL: http://localhost:5173
+      JWT_ISSUER: examio-auth
+      JWT_AUDIENCE: examio
+      AUTH_JWKS_URL: http://localhost:3000/.well-known/jwks.json
+      AUTH_TOKEN_URL: http://localhost:3000/internal/token
+      AUTH_GRPC_URL: localhost:50051
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -217,6 +232,11 @@ jobs:
       - run: yarn install --immutable
       - run: yarn proto:gen
       - run: yarn prisma:generate
+      - name: Ephemeral JWT key and service clients
+        run: |
+          ./scripts/ci-ephemeral-auth-env.sh > "$RUNNER_TEMP/auth-env.txt"
+          grep '^::add-mask::' "$RUNNER_TEMP/auth-env.txt"
+          grep -v '^::' "$RUNNER_TEMP/auth-env.txt" >> "$GITHUB_ENV"
       - name: RabbitMQ with the rendered per-service users and topic permissions
         run: |
           node deploy/rabbitmq/render-definitions.cjs
@@ -254,9 +274,15 @@ jobs:
       - name: Messaging e2e (outbox relay, idempotent consumer, broker permissions, purge)
         run: |
           export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"
-          (cd apps/finance-service && RABBITMQ_URL="amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-registered.e2e-spec.ts)
           (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/register-outbox.e2e-spec.ts)
           (cd libs/messaging && ../../node_modules/.bin/jest --config test/jest-e2e.json)
+      - name: Identity and RBAC e2e (tokens, service tokens, role change, gRPC guards, teacher wallet, admin)
+        run: |
+          export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"
+          export SERVICE_NAME="auth-service"
+          (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/token.e2e-spec.ts test/service-token.e2e-spec.ts test/role-change.e2e-spec.ts test/public-profiles.e2e-spec.ts)
+          (cd apps/finance-service && RABBITMQ_URL="amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-authz-changed.e2e-spec.ts)
+          (cd apps/admin-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin.e2e-spec.ts test/admin-roles.e2e-spec.ts)
 
   # FE tests (vitest) are added by the frontend RBAC phase.
   fe:

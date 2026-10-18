@@ -52,6 +52,9 @@ services:
             - REDIS_PORT=6379
             - REDIS_PASSWORD=${REDIS_PASSWORD:-}
             - AUTH_GRPC_URL=auth:50051
+            - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
+            - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
+            - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
         env_file:
             - .env
         depends_on:
@@ -103,6 +106,16 @@ services:
             - RABBITMQ_URL=amqp://auth:${RABBITMQ_AUTH_PASS:?RABBITMQ_AUTH_PASS is required}@rabbitmq:5672
             - ROLE=api,worker
             - R2_GRPC_URL=r2:50051
+            - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
+            - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
+            - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY:?JWT_PRIVATE_KEY is required (scripts/gen-jwt-keypair.sh)}
+            - JWT_KID=${JWT_KID:?JWT_KID is required}
+            - JWT_RETIRED_PUBLIC_KEYS=${JWT_RETIRED_PUBLIC_KEYS:-}
+            - SERVICE_CLIENTS=${SERVICE_CLIENTS:?SERVICE_CLIENTS is required (scripts/gen-service-secret.sh)}
+            - GATEWAY_CONTROL_ENABLED=${GATEWAY_CONTROL_ENABLED:-false}
+            # Boot-time admin bootstrap (moved from admin-service in phase 04)
+            - ADMIN_EMAILS=${ADMIN_EMAILS}
+            - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD}
         env_file:
             - .env
         depends_on:
@@ -152,6 +165,11 @@ services:
             - REDIS_PASSWORD=${REDIS_PASSWORD:-}
             - R2_GRPC_URL=r2:50051
             - FINANCE_GRPC_URL=finance:50051
+            - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
+            - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
+            - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
+            - AUTH_TOKEN_URL=http://auth:3000/internal/token
+            - SERVICE_CLIENT_SECRET=${EXAM_SERVICE_CLIENT_SECRET:?EXAM_SERVICE_CLIENT_SECRET is required}
         env_file:
             - .env
         depends_on:
@@ -200,6 +218,12 @@ services:
             - GRPC_PORT=50051
             - RABBITMQ_URL=amqp://finance:${RABBITMQ_FINANCE_PASS:?RABBITMQ_FINANCE_PASS is required}@rabbitmq:5672
             - ROLE=api,worker
+            - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
+            - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
+            - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
+            - AUTH_TOKEN_URL=http://auth:3000/internal/token
+            - SERVICE_CLIENT_SECRET=${FINANCE_SERVICE_CLIENT_SECRET:?FINANCE_SERVICE_CLIENT_SECRET is required}
+            - AUTH_GRPC_URL=auth:50051
         env_file:
             - .env
         depends_on:
@@ -240,9 +264,14 @@ services:
             - REDIS_PORT=6379
             - REDIS_PASSWORD=${REDIS_PASSWORD:-}
             - ADMIN_SERVICE_URL=http://admin:3000
-            - ADMIN_EMAILS=${ADMIN_EMAILS}
-            - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD}
             - THROTTLE_ADMIN_LIMIT=30
+            - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
+            - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
+            - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
+            - AUTH_TOKEN_URL=http://auth:3000/internal/token
+            - SERVICE_CLIENT_SECRET=${ADMIN_SERVICE_CLIENT_SECRET:?ADMIN_SERVICE_CLIENT_SECRET is required}
+            # Admin privilege changes go through auth SetSystemAdmin (caller's token forwarded)
+            - AUTH_GRPC_URL=auth:50051
         env_file:
             - .env
         depends_on:
@@ -279,6 +308,9 @@ services:
             - NODE_ENV=production
             - PORT=3000
             - GRPC_PORT=50051
+            - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
+            - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
+            - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
         env_file:
             - .env
         depends_on:
@@ -460,7 +492,7 @@ services:
     # Runs `yarn run seed:dev` once and exits. Idempotent — safe to re-run.
     # Picks up ADMIN_DEFAULT_PASSWORD / ADMIN_EMAILS from `deploy/.env`
     # via env_file so seeded users share the same password as admins
-    # created by the admin-service bootstrap.
+    # created by the auth-service bootstrap.
     seed:
         build:
             context: ..

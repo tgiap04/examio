@@ -125,7 +125,17 @@
             "entryFile": "main",
             "sourceRoot": "apps/admin-service/src",
             "compilerOptions": {
-                "tsConfigPath": "apps/admin-service/tsconfig.app.json"
+                "tsConfigPath": "apps/admin-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../../../proto/examio/auth/**/*.proto",
+                        "outDir": "dist/apps/admin-service/proto/examio/auth"
+                    },
+                    {
+                        "include": "../../../proto/examio/common/**/*.proto",
+                        "outDir": "dist/apps/admin-service/proto/examio/common"
+                    }
+                ]
             }
         },
         "r2-service": {
