@@ -16,6 +16,8 @@ describe('AuthService registration outbox', () => {
         user: { create: jest.Mock };
         userSubscription: { create: jest.Mock };
     };
+    let accessTokens: { issue: jest.Mock };
+    let sessions: { create: jest.Mock };
     let prisma: { $transaction: jest.Mock };
     let outbox: { add: jest.Mock };
     let mail: { sendMail: jest.Mock };
@@ -41,18 +43,33 @@ describe('AuthService registration outbox', () => {
             usernameExists: jest.fn().mockResolvedValue(false),
             findByEmail: jest.fn().mockResolvedValue(null),
         };
+        accessTokens = {
+            issue: jest.fn().mockResolvedValue({
+                token: 'jwt',
+                user,
+                roles: ['STUDENT'],
+                permissions: ['flashcard:study'],
+            }),
+        };
+        sessions = { create: jest.fn().mockResolvedValue({}) };
         service = new AuthService(
             prisma as never,
             userRepository as never,
-            {} as never,
-            { sign: jest.fn().mockReturnValue('jwt') } as never,
+            sessions as never,
+            accessTokens as never,
             mail as never,
             { hashPassword: jest.fn().mockResolvedValue('hash') } as never,
-            { generateId: jest.fn().mockReturnValue('gen-id') } as never,
+            {
+                generateId: jest.fn().mockReturnValue('gen-id'),
+                generateSecureToken: jest.fn().mockReturnValue('secure-token'),
+            } as never,
             outbox as never,
-            {} as never
+            {} as never,
+            { publish: jest.fn() } as never
         );
     });
+
+    const device = { deviceId: 'dev-1' };
 
     it('register writes auth.user.registered inside the user transaction', async () => {
         await service.register({
@@ -60,7 +77,7 @@ describe('AuthService registration outbox', () => {
             email: 'new@example.com',
             password: 'Passw0rd!',
             utmSource: 'fb',
-        } as never);
+        } as never, device);
 
         expect(outbox.add).toHaveBeenCalledTimes(1);
         expect(outbox.add).toHaveBeenCalledWith(tx, 'auth.user.registered', {
@@ -75,6 +92,29 @@ describe('AuthService registration outbox', () => {
         );
     });
 
+    it('register creates a STUDENT with NO subscription and signs a token for the new session', async () => {
+        const result = await service.register({
+            username: 'newbie',
+            email: 'new@example.com',
+            password: 'Passw0rd!',
+        } as never, device);
+
+        expect(tx.userSubscription.create).not.toHaveBeenCalled();
+        const userData = tx.user.create.mock.calls[0][0].data;
+        expect(userData).not.toHaveProperty('role');
+        expect(userData).not.toHaveProperty('isSystemAdmin');
+        expect(accessTokens.issue).toHaveBeenCalledWith(
+            'user-1',
+            expect.any(String),
+            expect.anything()
+        );
+        expect(result).toMatchObject({
+            token: 'jwt',
+            roles: ['STUDENT'],
+            permissions: ['flashcard:study'],
+        });
+    });
+
     it('register sends null utmSource when the signup has none', async () => {
         tx.user.create.mockResolvedValue({ ...user, utmSource: null });
 
@@ -82,7 +122,7 @@ describe('AuthService registration outbox', () => {
             username: 'newbie',
             email: 'new@example.com',
             password: 'Passw0rd!',
-        } as never);
+        } as never, device);
 
         expect(outbox.add.mock.calls[0][2].utmSource).toBeNull();
     });
@@ -95,9 +135,14 @@ describe('AuthService registration outbox', () => {
                 username: 'newbie',
                 email: 'new@example.com',
                 password: 'Passw0rd!',
-            } as never)
+            } as never, device)
         ).rejects.toBeInstanceOf(InternalServerErrorException);
         expect(mail.sendMail).not.toHaveBeenCalled();
+    });
+
+    it('Google OAuth creation creates no subscription either', async () => {
+        await (service as any).handleOAuthLogin('new@example.com', 'newbie');
+        expect(tx.userSubscription.create).not.toHaveBeenCalled();
     });
 
     it('Google OAuth creation writes auth.user.registered in the same tx', async () => {

@@ -16,6 +16,7 @@ import { grpcServerOptions } from '@examio/grpc';
 import { parseRoles } from '@examio/messaging';
 import * as cookieParser from 'cookie-parser';
 import { WorkerModule } from './worker.module';
+import { AUTH_UNPREFIXED_ROUTES } from './token/unprefixed-routes';
 
 async function startWorker() {
     // Outbox relay + purge. No HTTP/gRPC listener.
@@ -28,14 +29,9 @@ async function startWorker() {
 }
 
 async function startApi() {
-    // Fail fast on misconfiguration: a missing or weak JWT_SECRET would let
-    // access tokens be forged or brute-forced. Refuse to boot rather than
-    // silently running with an insecure secret.
-    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-        throw new Error(
-            'JWT_SECRET is missing or too short (minimum 32 characters required)'
-        );
-    }
+    // The RS256 key (JWT_PRIVATE_KEY/JWT_KID) and SERVICE_CLIENTS are validated
+    // at boot by TokenService / ServiceTokenController: a service that cannot
+    // sign, or has no client registry, refuses to start.
 
     // Fail fast on misconfiguration: refresh tokens are encrypted at rest
     // with this key (RefreshTokenCipherService). A missing or weak key
@@ -63,8 +59,13 @@ async function startApi() {
     app.use(cookieParser());
 
     // Global prefix to match gateway proxy paths
+    // JWKS and the internal service-token endpoint live outside `api/v1`; the
+    // gateway never routes either.
     app.setGlobalPrefix('api/v1', {
-        exclude: HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
+        exclude: [
+            ...HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
+            ...AUTH_UNPREFIXED_ROUTES,
+        ],
     });
 
     // Enable CORS
@@ -80,7 +81,8 @@ async function startApi() {
     // Connect gRPC microservice
     const grpcPort = process.env.GRPC_PORT || '50051';
     app.connectMicroservice<MicroserviceOptions>(
-        grpcServerOptions([PROTO_FILES.auth])
+        grpcServerOptions([PROTO_FILES.auth]),
+        { inheritAppConfig: true }
     );
 
     // Start all microservices

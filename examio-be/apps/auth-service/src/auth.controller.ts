@@ -11,7 +11,9 @@ import {
     HttpCode,
     HttpStatus,
     Param,
+    UsePipes,
 } from '@nestjs/common';
+import { ZodValidationPipe } from 'nestjs-zod';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService, DeviceInfo } from './auth.service';
 import { RedisService } from '@examio/redis';
@@ -25,12 +27,16 @@ import {
     ApiCookieAuth,
 } from '@nestjs/swagger';
 import {
-    AuthGuard,
     GoogleAuthGuard,
     getCookieConfig,
     TurnstileService,
-    AllowUnverified,
 } from '@examio/common';
+import {
+    AllowUnverified,
+    Authenticated,
+    Public,
+    type AuthUser,
+} from '@examio/auth-jwt';
 import { AuthStrictThrottlerGuard } from './auth/guards/auth-strict-throttler.guard';
 import {
     AuthenticatedRequest,
@@ -72,11 +78,7 @@ export class AuthController {
         request: Request,
         oauthUser: AuthenticatedOauthRequest['user']
     ): Promise<{ token: string; sessionId?: string; refreshToken?: string; user?: any }> {
-        if (!oauthUser.token) {
-            throw new UnauthorizedException('OAuth token not found');
-        }
-
-        if (oauthUser.sessionId && oauthUser.refreshToken) {
+        if (oauthUser.token && oauthUser.sessionId && oauthUser.refreshToken) {
             return {
                 token: oauthUser.token,
                 sessionId: oauthUser.sessionId,
@@ -91,10 +93,9 @@ export class AuthController {
             deviceInfo
         );
 
-        // The original oauthUser.token was signed before this session
-        // existed, so it does not carry the sessionId claim AuthGuard needs
-        // to enforce revocation. Re-sign it now that the session is known.
-        const token = this.authService.signAccessToken(
+        // The passport strategy has no device info, so the token is issued
+        // here, once the session (its `sid` claim) exists.
+        const { token } = await this.authService.issueAccess(
             oauthUser.user.id,
             session.sessionId
         );
@@ -185,6 +186,8 @@ export class AuthController {
     }
 
     @Post('register')
+    @Public()
+    @UsePipes(ZodValidationPipe)
     @UseGuards(AuthStrictThrottlerGuard)
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiOperation({ summary: 'Register a new user' })
@@ -216,13 +219,14 @@ export class AuthController {
         const {
             token,
             user,
+            roles,
+            permissions,
             success,
             sessionId,
             refreshToken,
             deviceId,
             message,
-        } =
-            await this.authService.register(registerDto, deviceInfo);
+        } = await this.authService.register(registerDto, deviceInfo);
 
         const cookieConfig = getCookieConfig({
             feOrigin: request.headers.origin,
@@ -241,6 +245,8 @@ export class AuthController {
         return {
             message,
             user,
+            roles,
+            permissions,
             success,
             token,
             refreshToken,
@@ -249,6 +255,8 @@ export class AuthController {
     }
 
     @Post('login')
+    @Public()
+    @UsePipes(ZodValidationPipe)
     @UseGuards(AuthStrictThrottlerGuard)
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiOperation({
@@ -282,8 +290,16 @@ export class AuthController {
         // Extract device info from request
         const deviceInfo = this.extractDeviceInfo(request);
 
-        const { token, user, success, sessionId, refreshToken, deviceId } =
-            await this.authService.login(loginDto, deviceInfo);
+        const {
+            token,
+            user,
+            roles,
+            permissions,
+            success,
+            sessionId,
+            refreshToken,
+            deviceId,
+        } = await this.authService.login(loginDto, deviceInfo);
 
         const cookieConfig = getCookieConfig({
             feOrigin: request.headers.origin,
@@ -300,6 +316,8 @@ export class AuthController {
 
         return {
             user,
+            roles,
+            permissions,
             success,
             token,
             refreshToken,
@@ -314,11 +332,11 @@ export class AuthController {
         description: 'User logged out successfully',
         type: LogoutResponseDto,
     })
+    @Authenticated()
     @AllowUnverified()
-    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     async logout(
-        @Req() request: Request,
+        @Req() request: Request & { user: AuthUser },
         @Res({ passthrough: true }) response: ExpressResponse
     ) {
         const cookieConfig = getCookieConfig({
@@ -326,13 +344,8 @@ export class AuthController {
             isProductionBE: process.env.NODE_ENV === 'production',
         });
 
-        // Extract session ID from cookie
-        const sessionId = request.cookies?.session_id;
-
-        // Deactivate session in database if exists
-        if (sessionId) {
-            await this.authService.logout(sessionId);
-        }
+        // The session is the token's own `sid` claim, not a client cookie.
+        await this.authService.logout(request.user.sid);
 
         // Clear cookies
         response.clearCookie('token', cookieConfig);
@@ -343,6 +356,7 @@ export class AuthController {
     }
 
     @Post('refresh')
+    @Public()
     @ApiOperation({ summary: 'Refresh access token using refresh token' })
     @ApiResponse({
         status: 200,
@@ -382,8 +396,12 @@ export class AuthController {
                 token: result.token,
                 refreshToken: result.refreshToken,
                 user: result.user,
+                roles: result.roles,
+                permissions: result.permissions,
             };
         } catch (error) {
+            // Keep a deliberate 401 (e.g. ACCOUNT_DISABLED) intact.
+            if (error instanceof UnauthorizedException) throw error;
             throw new UnauthorizedException('Invalid or expired refresh token');
         }
     }
@@ -395,11 +413,11 @@ export class AuthController {
         description: 'Verification email sent successfully',
         type: AuthMessageResponseDto,
     })
+    @Authenticated()
     @AllowUnverified()
-    @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     async sendVerificationEmail(@Req() req: AuthenticatedRequest) {
-        return this.authService.sendVerificationEmail(req.user);
+        return this.authService.sendVerificationEmail(req.user.id);
     }
 
     @Post('verifyAccount')
@@ -409,18 +427,35 @@ export class AuthController {
         description: 'User account verified successfully',
         type: AuthMessageResponseDto,
     })
+    @Authenticated()
     @AllowUnverified()
-    @UseGuards(AuthGuard, AuthStrictThrottlerGuard)
+    @UseGuards(AuthStrictThrottlerGuard)
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiCookieAuth('cookie-auth')
     async verifyAccount(
         @Body('code') code: string,
-        @Req() req: AuthenticatedRequest
+        @Req() req: AuthenticatedRequest,
+        @Req() request: Request,
+        @Res({ passthrough: true }) res: ExpressResponse
     ) {
-        return this.authService.verifyAccount(req.user.id, code);
+        const result = await this.authService.verifyAccount(
+            req.user.id,
+            code,
+            req.user.sid
+        );
+
+        // The old access token still says email_verified=false: swap it now.
+        const cookieConfig = getCookieConfig({
+            feOrigin: request.headers.origin,
+            isProductionBE: process.env.NODE_ENV === 'production',
+        });
+        res.cookie('token', result.token, cookieConfig);
+        res.cookie('accessToken', result.token, cookieConfig);
+        return result;
     }
 
     @Post('send-code-reset-password')
+    @Public()
     @UseGuards(AuthStrictThrottlerGuard)
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiOperation({ summary: 'Send code to reset password' })
@@ -434,6 +469,7 @@ export class AuthController {
     }
 
     @Post('reset-password')
+    @Public()
     @UseGuards(AuthStrictThrottlerGuard)
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiOperation({ summary: 'Reset user password' })
@@ -457,11 +493,13 @@ export class AuthController {
         description: 'Code sent successfully',
         type: AuthMessageResponseDto,
     })
-    @UseGuards(AuthGuard, AuthStrictThrottlerGuard)
+    @Authenticated()
+    @AllowUnverified()
+    @UseGuards(AuthStrictThrottlerGuard)
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiCookieAuth('cookie-auth')
     async sendCodeChangePassword(@Req() req: AuthenticatedRequest) {
-        return this.authService.sendCodeToChangePassword(req.user);
+        return this.authService.sendCodeToChangePassword(req.user.id);
     }
 
     @Post('change-password')
@@ -471,7 +509,9 @@ export class AuthController {
         description: 'Password changed successfully',
         type: AuthMessageResponseDto,
     })
-    @UseGuards(AuthGuard, AuthStrictThrottlerGuard)
+    @Authenticated()
+    @AllowUnverified()
+    @UseGuards(AuthStrictThrottlerGuard)
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiCookieAuth('cookie-auth')
     async changePassword(
@@ -481,7 +521,7 @@ export class AuthController {
         @Req() req: AuthenticatedRequest
     ) {
         return this.authService.changePassword(
-            req.user,
+            req.user.id,
             code,
             currentPassword,
             newPassword
@@ -489,6 +529,7 @@ export class AuthController {
     }
 
     @Get('google')
+    @Public()
     @UseGuards(GoogleAuthGuard)
     @ApiOperation({ summary: 'Đăng nhập Google OAuth' })
     async googleAuth(@Req() req) {
@@ -496,6 +537,7 @@ export class AuthController {
     }
 
     @Post('google/one-tap')
+    @Public()
     @UseGuards(AuthStrictThrottlerGuard)
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiOperation({ summary: 'Đăng nhập Google One Tap' })
@@ -531,6 +573,7 @@ export class AuthController {
     }
 
     @Get('google/callback')
+    @Public()
     @UseGuards(GoogleAuthGuard)
     @ApiOperation({ summary: 'Google OAuth callback' })
     async googleAuthRedirect(
@@ -622,8 +665,8 @@ export class AuthController {
     }
 
     @Get('me')
+    @Authenticated()
     @AllowUnverified()
-    @UseGuards(AuthGuard)
     @ApiOperation({ summary: 'Lấy thông tin người dùng hiện tại' })
     @ApiCookieAuth('cookie-auth')
     @ApiResponse({
@@ -632,11 +675,12 @@ export class AuthController {
         type: GetUserResponseDto,
     })
     async getUser(@Req() req: AuthenticatedRequest) {
-        return this.authService.getUser(req.user);
+        return this.authService.getUser(req.user.id, req.user.roles);
     }
 
     @Post('sync-refresh-token')
-    @UseGuards(AuthGuard)
+    @Authenticated()
+    @AllowUnverified()
     @ApiOperation({ summary: 'Đồng bộ lại refresh token từ session hiện tại' })
     @ApiCookieAuth('cookie-auth')
     async syncRefreshToken(
@@ -644,15 +688,9 @@ export class AuthController {
         @Req() request: Request,
         @Res({ passthrough: true }) response: ExpressResponse
     ) {
-        const sessionId = request.cookies?.session_id || request.body?.sessionId;
-
-        if (!sessionId) {
-            throw new UnauthorizedException('Session ID not found');
-        }
-
         const result = await this.authService.syncRefreshTokenBySession(
             req.user.id,
-            sessionId
+            req.user.sid
         );
 
         const cookieConfig = getCookieConfig({
@@ -710,6 +748,7 @@ export class AuthController {
      * This prevents tokens from leaking via URL, server logs, or Referer headers.
      */
     @Post('exchange')
+    @Public()
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Exchange OAuth code for tokens (mobile app)' })
     @ApiResponse({ status: 200, description: 'Tokens exchanged successfully' })

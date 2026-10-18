@@ -3,6 +3,7 @@ import { ClientGrpc } from '@nestjs/microservices';
 import { Metadata } from '@grpc/grpc-js';
 import { PROTO_FILES, r2V1 } from '@examio/contracts';
 import { GrpcClientRegistration, invokeRpc } from '@examio/grpc';
+import { ServiceMetadata } from '@examio/auth-jwt';
 
 export const R2_GRPC = 'R2_GRPC';
 
@@ -21,7 +22,10 @@ const RPC = `${PROTO_FILES.r2.pkg}.${r2V1.R2_SERVICE_NAME}`;
 export class R2Client implements OnModuleInit {
     private r2!: r2V1.R2ServiceClient;
 
-    constructor(@Inject(R2_GRPC) private readonly client: ClientGrpc) {}
+    constructor(
+        @Inject(R2_GRPC) private readonly client: ClientGrpc,
+        private readonly serviceMetadata: ServiceMetadata
+    ) {}
 
     onModuleInit(): void {
         this.r2 = this.client.getService<r2V1.R2ServiceClient>(
@@ -29,23 +33,26 @@ export class R2Client implements OnModuleInit {
         );
     }
 
-    uploadFile(
+    /** Runs as `svc:auth` (locally signed service token). */
+    async uploadFile(
         request: r2V1.UploadFileRequest,
         metadata: Metadata
     ): Promise<r2V1.UploadFileResponse> {
+        const md = await this.serviceMetadata.attach(metadata, 'r2');
         return invokeRpc(
             `${RPC}/UploadFile`,
-            (options) => this.r2.uploadFile(request, metadata, options),
+            (options) => this.r2.uploadFile(request, md, options),
             { deadlineMs: 60_000 }
         );
     }
 
-    deleteFile(
+    async deleteFile(
         keyR2: string,
         metadata: Metadata
     ): Promise<r2V1.DeleteFileResponse> {
+        const md = await this.serviceMetadata.attach(metadata, 'r2');
         return invokeRpc(`${RPC}/DeleteFile`, (options) =>
-            this.r2.deleteFile({ keyR2 }, metadata, options)
+            this.r2.deleteFile({ keyR2 }, md, options)
         );
     }
 }

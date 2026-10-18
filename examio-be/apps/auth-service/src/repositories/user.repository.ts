@@ -166,16 +166,24 @@ export class UserRepository {
             data,
         });
 
-        // Invalidate caches
-        await this.redis.delPattern(`${this.cachePrefix}:*${id}*`);
-        await this.redis.del(
-            this.getCacheKey(`email:${result.email.toLowerCase()}`)
-        );
-        await this.redis.del(
-            this.getCacheKey(`username:${result.username.toLowerCase()}`)
-        );
+        await this.invalidateCaches(result);
 
         return result;
+    }
+
+    /** Drops every cached view of a user (by id, email and username). */
+    async invalidateCaches(user: {
+        id: string;
+        email: string;
+        username: string;
+    }): Promise<void> {
+        await this.redis.delPattern(`${this.cachePrefix}:*${user.id}*`);
+        await this.redis.del(
+            this.getCacheKey(`email:${user.email.toLowerCase()}`)
+        );
+        await this.redis.del(
+            this.getCacheKey(`username:${user.username.toLowerCase()}`)
+        );
     }
 
     /**

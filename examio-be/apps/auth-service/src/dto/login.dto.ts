@@ -3,13 +3,18 @@ import { createZodDto } from 'nestjs-zod';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '@prisma/client';
 
-export const LoginSchema = z.object({
-    credential: z.string().min(1, { message: 'Credential must not be empty' }),
-    password: z
-        .string()
-        .min(6, { message: 'Password must be at least 6 characters long' }),
-    turnstileToken: z.string().optional(),
-});
+export const LoginSchema = z
+    .object({
+        credential: z
+            .string()
+            .min(1, { message: 'Credential must not be empty' }),
+        password: z
+            .string()
+            .min(6, { message: 'Password must be at least 6 characters long' }),
+        turnstileToken: z.string().optional(),
+    })
+    // Unknown keys (e.g. an injected `role` / `isSystemAdmin`) are a 400, never ignored.
+    .strict();
 
 export class LoginDto extends createZodDto(LoginSchema) {
     @ApiProperty({
@@ -36,6 +41,18 @@ export class LoginResponse {
         type: Object,
     })
     user: Omit<User, 'password'>;
+
+    @ApiProperty({
+        description: 'Roles of the account (e.g. ["TEACHER", "SYSTEM_ADMIN"])',
+        type: [String],
+    })
+    roles: string[];
+
+    @ApiProperty({
+        description: 'Permissions granted by those roles',
+        type: [String],
+    })
+    permissions: string[];
 
     @ApiProperty({
         description: 'Indicates if the login was successful',
