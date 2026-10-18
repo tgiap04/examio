@@ -383,5 +383,5 @@ Groups backend routes by domain. Each route maps to a BL handler (from `behavior
 - `BL004` (FinanceClientService) maps only to `/wallet/details` — other finance/payment routes are unmapped. Likely handled by finance-service controllers not yet covered by BL inventory.
 - `BL005` (R2ClientService) covers avatar/banner upload but no other R2 operations in exam-service.
 - BL inventory covers 16 behavior logic items; ~165 routes lack explicit BL mapping. These routes are handled by NestJS controllers/services scanned in Wave 0 but not yet attributed to a named BL entry.
-- `BL001` (SessionCleanupCron) and `BL002` (UserEventHandler) have no HTTP route — internal/scheduled/event-driven only.
+- `BL001` (SessionCleanupCron) and `BL002` (UserRegisteredHandler) have no HTTP route — internal/scheduled/event-driven only.
 - `BL007` (OcrService), `BL012` (AuthSyncBootstrap), `BL014` (ExportPDFHook) — no HTTP route mapping.

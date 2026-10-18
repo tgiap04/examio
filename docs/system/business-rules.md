@@ -23,7 +23,7 @@ Every night, the system scans all active user sessions. Any session whose expiry
 
 When a user completes registration, the system creates a wallet for them and awards a welcome bonus of 20 credits. This is asynchronous — the wallet may not appear immediately after registration but will be available within moments.
 
-**Applies when:** A `user.created` event is published after a new account is confirmed.
+**Applies when:** An `auth.user.registered` event is written to the auth outbox when a new account is created (email or Google).
 **Says:** A wallet is created and 20 credits are added. If the event fires twice (idempotency), no duplicate wallet or bonus is created.
 
 ---
@@ -95,7 +95,7 @@ When a user initiates a subscription purchase, the system creates a payment reco
 
 ### Wallet is bootstrapped from a user event
 
-When a user is created via any path (direct registration, OAuth), the finance service listens for the `user.created` RabbitMQ event and creates a wallet if one does not already exist. This decoupled approach means the wallet is created regardless of which auth path the user took.
+When a user is created via any path (direct registration, OAuth), the finance service consumes the `auth.user.registered` RabbitMQ event and creates a wallet if one does not already exist. This decoupled approach means the wallet is created regardless of which auth path the user took.
 
 **Applies when:** A `user.created` event is published on the `examio.events` exchange.
 **Says:** A wallet record is created with zero balance. Welcome bonus may be awarded as a separate transaction.

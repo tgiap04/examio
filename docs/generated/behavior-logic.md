@@ -11,7 +11,7 @@
 | Code | Name | Type | Trigger |
 |------|------|------|---------|
 | BL001 | SessionCleanupCron | scheduled-job | Cron (daily) |
-| BL002 | UserEventHandler | event-listener | `auth.user.created` RabbitMQ event |
+| BL002 | UserRegisteredHandler | event-listener | `auth.user.registered` RabbitMQ event |
 | BL003 | AuthService | integration | Login, OAuth, token validation |
 | BL004 | FinanceClientService | integration | Credit deduction, wallet check |
 | BL005 | R2ClientService | integration | File upload to R2 |
@@ -54,16 +54,16 @@ Daily cron job that scans all `UserSession` records and deactivates expired sess
 
 ---
 
-## BL002: UserEventHandler
+## BL002: UserRegisteredHandler
 
 **Type**: event-listener
-**Trigger**: RabbitMQ topic `auth.user.created` on `examio.events` durable exchange
-**Source File**: `examio-be/apps/finance-service/src/user-event.handler.ts`
-**Source Symbol**: `UserEventHandler` (class with `@EventHandler()` or equivalent)
+**Trigger**: RabbitMQ topic `auth.user.registered` on `examio.events` durable exchange (queue `finance.events`)
+**Source File**: `examio-be/apps/finance-service/src/events/handlers/user-registered.handler.ts`
+**Source Symbol**: `UserRegisteredHandler` (`@EventHandler('auth.user.registered')` from `@examio/messaging`)
 
 ### Description
 
-Idempotent event listener that handles the `auth.user.created` RabbitMQ event. On user creation, it creates a Wallet record for the new user and optionally awards a welcome bonus (20 credits). Checks if wallet already exists before creation to ensure idempotency.
+Idempotent event listener that handles the `auth.user.registered` RabbitMQ event (published via auth-service transactional outbox). Runs in the consumer's dedupe transaction (`processed_events`), skips if the wallet already exists, otherwise creates a Wallet with a 20-credit welcome transaction.
 
 ### Related Modules
 

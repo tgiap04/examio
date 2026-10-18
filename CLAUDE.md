@@ -133,6 +133,7 @@ Mã hạ tầng dùng chung nằm trong `examio-be/libs/`:
 - `@examio/contracts`: type/decorator gRPC sinh bằng ts-proto từ `examio-be/proto/examio/<svc>/v1` (buf). Thư mục `libs/contracts/src/generated/` bị gitignore; chạy `yarn proto:gen` sau khi clone hoặc sửa `.proto` (`yarn proto:lint` để lint). Python ai-service sinh stub bằng `apps/ai-service/scripts/gen_grpc.sh`.
 - `@examio/grpc`: gRPC client module, deadline/retry, ánh xạ lỗi gRPC, metadata helper.
 - `@examio/http`: HTTP error envelope filter dùng chung.
+- `@examio/messaging`: envelope v1, transactional outbox (`outbox_events`) + relay claim-then-publish, consumer idempotent (`processed_events`, `@EventHandler`), validate `source`, một tầng retry 30s + DLQ theo service (`<svc>.dlq`), purge hằng ngày, env `ROLE` (`api` | `worker` | `api,worker`). Auth và finance dùng lib này; exam/ai vẫn dùng module events cũ trong `@examio/common`.
 
 Ưu tiên dùng các shared library này thay vì lặp lại code hạ tầng trong từng service.
 
@@ -142,12 +143,12 @@ Backend không phải là một monolith duy nhất dù các service dùng chung
 
 - Gateway public các HTTP route và đẩy request xuống downstream service thông qua các proxy controller và `ProxyService`.
 - Auth, finance và storage còn giao tiếp với nhau qua gRPC client/proto từ `@examio/grpc` và `@examio/contracts` (URL qua env `AUTH_GRPC_URL`, `R2_GRPC_URL`, `FINANCE_GRPC_URL`; container dùng HTTP `3000` / gRPC `50051`).
-- Các workflow bất đồng bộ giữa service dùng RabbitMQ qua shared events module.
+- Các workflow bất đồng bộ giữa service dùng RabbitMQ: auth/finance qua `@examio/messaging` (outbox, event `auth.user.registered`); exam/ai còn dùng events module cũ. Mỗi service có RabbitMQ user riêng (`RABBITMQ_URL` riêng; mật khẩu `RABBITMQ_<SVC>_PASS` phải URL-safe) chỉ được publish routing key của domain mình; user/permission render từ `deploy/rabbitmq/definitions.template.json` bởi container one-shot `rabbitmq-defs` (`definitions.json` bị gitignore). RabbitMQ 3.13.
 - Ví dụ từ wiring hiện tại:
   - gateway biết URL của downstream service qua env như `AUTH_SERVICE_URL`, `EXAM_SERVICE_URL`, `FINANCE_SERVICE_URL`, `AI_SERVICE_URL`.
   - auth đăng ký wallet gRPC client.
   - exam đăng ký R2 client và import finance client module.
-  - finance lắng nghe user event để tạo ví.
+  - finance consume `auth.user.registered` (qua outbox của auth) để tạo ví.
   - AI chat trong exam cũng đăng ký finance subscription gRPC client.
 
 Khi thay đổi ranh giới giữa các service, hãy kiểm tra đồng thời HTTP proxy route, gRPC contract, event publisher/consumer và các service URL cấu hình qua env.
@@ -158,7 +159,7 @@ Các Nest service chủ yếu đi theo cấu trúc feature-module, không phải
 
 - `exam-service` là domain service lớn nhất. `ExamServiceModule` ghép nhiều module chức năng như quiz set, flashcard, exam room, exam session, exam attempt, cheating log, subject, AI generation, AI chat, statistics, student, finance client integration và R2 integration.
 - `auth-service` ghép `AuthModule`, device management, profile handling, OAuth strategy, repository và một gRPC controller.
-- `finance-service` ghép wallet module, SePay module và có user event handler để bootstrap ví.
+- `finance-service` ghép wallet module, SePay module và có handler `auth.user.registered` để bootstrap ví.
 - `gateway-service` được tổ chức thành nhiều proxy controller theo domain: auth, exam resources, AI/study, wallet/profile, R2, webhook, statistics và student.
 
 Khi làm backend, hãy nghĩ theo feature module cộng với shared infra module, không chỉ theo từng file rời.

@@ -9,6 +9,13 @@ last_updated: 2026-10-18
 
 ### Changed
 
+#### Microservice refactor, phase 03 (messaging foundation; uncommitted on `refactor/microservice-rbac`)
+
+- **Lib**: new `@examio/messaging`: envelope v1, transactional outbox (`outbox_events`) with claim-then-publish relay, idempotent consumer (`processed_events`), `source` validation against the routing key, one 30 s retry tier + per-service DLQ, daily purge (published outbox rows > 7 d, `processed_events` > 14 d). New env `ROLE` (`api` | `worker` | `api,worker`, default `api,worker`); auth and finance gain `worker.module.ts`. New Prisma models + migration `20261018065200_messaging`.
+- **Event rename**: `auth.user.created` -> `auth.user.registered`, written to the outbox inside the register transaction (email and Google). Finance consumes it (`UserRegisteredHandler`: wallet + 20 credits welcome transaction, skipped if the wallet exists). Fire-and-forget publish and `USER_CREATED` removed; the finance subscriber previously acked on error with no DLQ.
+- **RabbitMQ**: image `3.13`; one broker user per service (`auth`, `finance`, `exam`, `ai`) plus the ops user, with topic permissions (write only own domain prefix). Definitions are rendered from `deploy/rabbitmq/definitions.template.json` by the one-shot `rabbitmq-defs` service into the gitignored `definitions.json`. Each service has its own `RABBITMQ_URL`.
+- **Env (deploy)**: new `RABBITMQ_AUTH_PASS`, `RABBITMQ_FINANCE_PASS`, `RABBITMQ_EXAM_PASS`, `RABBITMQ_AI_PASS` (required; must be URL-safe); `RABBITMQ_URL` is no longer a shared `.env` value; `RABBITMQ_USER`/`RABBITMQ_PASS` now only the ops user. `setup-env.sh` and `deploy.yml` render definitions before `up`.
+
 #### Microservice refactor, phase 02 (contracts and infra libs; uncommitted on `refactor/microservice-rbac`)
 
 - **Protos**: moved from `libs/common/src/protos` to `examio-be/proto/examio/<svc>/v1` (auth, common, finance, gateway, r2), managed by buf. `yarn proto:lint` / `yarn proto:gen` (ts-proto into gitignored `libs/contracts/src/generated`); ai-service stubs via `apps/ai-service/scripts/gen_grpc.sh`.

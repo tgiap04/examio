@@ -56,6 +56,10 @@ Phase 01 (guardrails and cleanup) is implemented but uncommitted on `refactor/mi
 
 Phase 02 (contracts and infra libs) is implemented but uncommitted on `refactor/microservice-rbac`: protos moved to `examio-be/proto/` (buf), new libs `@examio/contracts`, `@examio/grpc`, `@examio/http`, unified container ports (HTTP 3000 / gRPC 50051), `FINANCE_GRPC_URL` env. Subscription limits are now enforced. See [changelog](project-changelog.md).
 
+## Progress Note (2026-10-18) — microservice-refactor plan, phase 03
+
+Phase 03 (messaging foundation) is implemented but uncommitted on `refactor/microservice-rbac`: `@examio/messaging` (outbox + relay, idempotent consumer, retry/DLQ, `ROLE`), `auth.user.created` replaced by `auth.user.registered`, per-service RabbitMQ users rendered from definitions at deploy, RabbitMQ 3.13. See [changelog](project-changelog.md).
+
 ## Phase 0 — System Correctness (P0, blocking)
 
 | # | Item | Source | Owner | Deps |

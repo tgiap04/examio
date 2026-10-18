@@ -86,10 +86,18 @@ QUIZ_AES_KEY=change_this_to_aes_key_32_chars_min
 
 #### RabbitMQ Configuration
 ```bash
+# Ops/admin user (management UI only; apps do not connect with it)
 RABBITMQ_USER=admin
 RABBITMQ_PASS=secure_password_here
-RABBITMQ_URL=amqp://admin:secure_password_here@rabbitmq:5672
+# One broker user per service; docker-compose.yml builds each service's RABBITMQ_URL.
+# Passwords go into amqp:// URLs: use URL-safe characters (e.g. `openssl rand -hex 24`).
+RABBITMQ_AUTH_PASS=...
+RABBITMQ_FINANCE_PASS=...
+RABBITMQ_EXAM_PASS=...
+RABBITMQ_AI_PASS=...
 ```
+
+Broker users and permissions are rendered from `rabbitmq/definitions.template.json` into the gitignored `rabbitmq/definitions.json` by the one-shot `rabbitmq-defs` service. `setup-env.sh` and the deploy workflow run `docker compose run --rm rabbitmq-defs` before `up`; it fails if any password above is missing.
 
 #### AI Service
 ```bash

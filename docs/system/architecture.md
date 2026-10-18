@@ -1,6 +1,6 @@
 ---
 title: System Architecture
-last_updated: 2026-07-21
+last_updated: 2026-10-18
 source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/); manually patched 2026-07-19 for Study-Together Room (first WebSocket transport); patched 2026-07-21 for Study Room playlist/access/moderation extension
 status: ACTIVE
 ---
@@ -48,8 +48,8 @@ graph TB
     EXAM -->|gRPC wallet check| FIN
     EXAM -->|gRPC R2 upload| R2
     EXAM -->|HTTP multipart| AISVC
-    AUTH -->|publish auth.user.created| RMQ
-    FIN -->|subscribe auth.user.created| RMQ
+    AUTH -->|outbox: auth.user.registered| RMQ
+    FIN -->|subscribe auth.user.registered| RMQ
     AUTH -->|Prisma| PG
     EXAM -->|Prisma| PG
     FIN -->|Prisma| PG
@@ -114,17 +114,34 @@ Finance `WalletService` money fields are `int32` (credits are whole numbers). Th
 
 ```mermaid
 graph LR
-    AUTH[auth-service] -->|publish auth.user.created| EXCHANGE[examio.events<br/>topic, durable]
-    EXCHANGE -->|auth.# binding| FIN[finance-service<br/>UserEventHandler]
-    FIN -->|create wallet + 20 credit bonus| WALLET[(Wallet<br/>WalletTransaction)]
+    AUTH[auth API] -->|same tx| OUTBOX[(outbox_events<br/>source=auth)]
+    OUTBOX -->|auth worker relay<br/>claim, publish, mark| EXCHANGE[examio.events<br/>topic, durable]
+    EXCHANGE -->|auth.user.registered| FQ[finance.events]
+    FQ -->|finance worker consumer<br/>processed_events dedupe| WALLET[(Wallet<br/>WalletTransaction)]
+    FQ -.->|transient error| RETRY[finance.retry.30s<br/>TTL 30s, max 5]
+    RETRY -.-> FQ
+    FQ -.->|permanent / 5 retries| DLQ[finance.dlq]
 ```
 
-**Routing keys**: `auth.<type>`, `finance.<type>`, `exam.<type>`
+**Library**: `@examio/messaging` (`examio-be/libs/messaging`), used by auth and finance. exam-service and ai-service still use the old `libs/common/src/events` module and the `ai.*` flows until a later refactor phase.
+
+**Envelope v1**: `{ id: "evt_<ulid>", type, version: 1, occurredAt, source, correlationId, data }`. AMQP props: `messageId=id`, persistent, `application/json`. `parseEnvelope` rejects `version !== 1` as permanent. State events (`*.updated`, `*.changed`, `*_changed`) must carry a numeric version (`data.version`, or `data.authzVersion` for `auth.user.authz_changed`); `createEnvelope` throws otherwise.
+
+**Producer (transactional outbox)**: `OutboxService.add(tx, type, data)` inserts into `outbox_events` inside the caller's Prisma transaction (shared schema; each row has a `source`). The relay (worker role) polls every 500 ms: (1) short claim tx sets `locked_until = now()+30s` on up to 100 unpublished rows of its own `source` (`FOR UPDATE SKIP LOCKED`); (2) publishes with broker confirms outside any tx; (3) marks `published_at`, or on failure `attempts+1`, `next_attempt_at` with backoff `min(2^attempts, 300)s`, `last_error`. A crash between publish and mark re-publishes after the lock expires; consumers absorb duplicates. The relay uses its own `pg.Pool({ max: 2 })`. A daily purge (03:00, `node-cron`) deletes `outbox_events` published more than 7 days ago and `processed_events` older than 14 days, in batches of 5 000.
+
+**Consumer**: `@EventHandler('<type>', { dedupe?: boolean })` methods are discovered and bound to `<svc>.events` (prefetch 10).
+- Source validation: `envelope.type` must equal the routing key and `envelope.source` its first segment, else `PermanentEventError('SOURCE_MISMATCH')` goes to the DLQ.
+- Dedupe (default): in one tx, `INSERT processed_events(consumer, event_id) ON CONFLICT DO NOTHING`; zero rows means duplicate, ack. Otherwise the handler runs with `(envelope, tx)` and acks after commit. `dedupe: false` is for handlers idempotent by construction.
+- Transient error: republished to `<svc>.retry` (fanout) with `x-retry-count+1` and the original routing key, then acked. After `<svc>.retry.30s` (TTL 30 s) it dead-letters via `<svc>.requeue` back to `<svc>.events`. Count >= 5 or `PermanentEventError`: `nack(requeue=false)` to `<svc>.dead` then `<svc>.dlq`.
+
+**Process role**: env `ROLE` = `api` | `worker` | `api,worker` (default `api,worker`; compose sets `api,worker` for auth and finance). `worker` runs the relay/purge (auth) or the consumer (finance) via `worker.module.ts`.
+
+**Broker security**: one RabbitMQ user per service (`auth`, `finance`, `exam`, `ai`) plus the ops user from `RABBITMQ_USER`/`RABBITMQ_PASS` (management UI only). Per user: configure/write/read limited to `examio.events` and `<svc>.*` (legacy: `exam-service` for exam, `ai-service-queue` for ai). Topic permissions on `examio.events`: write only `^<domain>\.`, read `.*`. So a validated `source` cannot be forged. Users come from `deploy/rabbitmq/definitions.template.json` (committed, no secrets), rendered by the one-shot `rabbitmq-defs` compose service (`render-definitions.cjs`) into the gitignored `definitions.json` and loaded at broker boot (`rabbitmq.conf`). Each service gets its own `RABBITMQ_URL`; broker passwords must be URL-safe because they are embedded in `amqp://` URLs. Broker image: `rabbitmq:3.13-management-alpine`.
 
 **Currently wired events**:
-- `auth.user.created` (auth-service → finance-service) — **only one in use**
+- `auth.user.registered` (auth-service -> finance-service): `{ userId, email, username, utmSource|null }`, written to the outbox in the register tx (email and Google OAuth paths). Finance creates the wallet with a 20-credit welcome transaction, skipping if a wallet already exists. Replaces `auth.user.created`.
 
-**Defined but unused** (14 in `EventType` enum): all others
+**Defined but unused**: the remaining `EventType` enum values in `libs/common/src/events` (`USER_CREATED` was removed).
 
 ### 4. Admin Service
 
@@ -261,7 +278,7 @@ sequenceDiagram
 | ORM | Prisma | latest |
 | Database | PostgreSQL | 15+ |
 | Cache | Redis | 7+ |
-| Message broker | RabbitMQ | 3+ (topic exchange) |
+| Message broker | RabbitMQ | 3.13 (topic exchange) |
 | gRPC | `@grpc/grpc-js` | latest |
 | WebSocket | `@nestjs/platform-socket.io`, `socket.io`, `@socket.io/redis-adapter` | latest |
 | Object storage | Cloudflare R2 | — |
@@ -292,7 +309,7 @@ sequenceDiagram
 |-----------|---------|
 | PostgreSQL 15+ | System of record (Prisma) |
 | Redis 7+ | Cache + pub/sub for events |
-| RabbitMQ 3+ | Async event bus |
+| RabbitMQ 3.13 | Async event bus |
 | Cloudflare R2 | User file storage |
 | Docker Compose | Local dev (gateway + 5 services + 3 infra + migration) |
 
@@ -300,12 +317,12 @@ sequenceDiagram
 
 1. **Gateway as single public entry** — every cross-origin request hits gateway first
 2. **Shared Prisma schema** — all backend services consume the same `libs/database/schema.prisma`
-3. **Shared infra libs** — `@examio/common`, `@examio/database`, `@examio/redis`
+3. **Shared infra libs** — `@examio/common`, `@examio/database`, `@examio/redis`, `@examio/messaging`
 4. **Repository pattern with cache** — `BaseRepository<T>` wraps Prisma + Redis invalidation
 5. **Composite screen detection** — single page with independent regions (REG###)
 6. **Backend-for-frontend (BFF) pattern** — exam-service orchestrates AI calls rather than frontend calling ai-service directly
 7. **Optimistic UI with sendBeacon** — quiz auto-save uses `navigator.sendBeacon` on unload
-8. **Event-driven wallet bootstrap** — `auth.user.created` → finance creates wallet idempotently
+8. **Event-driven wallet bootstrap** — `auth.user.registered` (outbox) → finance creates wallet idempotently
 
 ## Cross-Cutting Concerns
 
@@ -365,7 +382,7 @@ Docker Compose file: `examio-be/deploy/docker-compose.yml` (production-grade)
 | A.1 | ~~`ocr-service` gRPC port collision~~ — resolved 2026-10-18: service deleted | scout + W7a | platform | P0 |
 | A.2 | `FREE_MODE = true` shipped in `FinanceClientService.deductCredits` — credit gating bypassed | scout + W7a | backend | P0 |
 | A.3 | `AuthService.ValidateToken` gRPC wired but unused — services use Prisma-direct | W7a | backend | P2 |
-| A.4 | `EventType` enum defines 14+ events; only `auth.user.created` is wired | W7a | backend | P3 |
+| A.4 | `EventType` enum defines legacy events (unused); only `auth.user.registered` is wired via `@examio/messaging` | W7a | backend | P3 |
 | A.5 | `auth-service` is the only service that creates a wallet via gRPC (others use HTTP) — inconsistency | scout | backend | P3 |
 | A.6 | `r2/image` (≤2MB cap) routed through `exam-service` rather than directly to `r2-service` | W7a | backend | P3 |
 | A.7 | 12 v3.x legacy feature spec dirs in `docs/features/f001-*` (kebab-case) — now archived to `_archive/legacy-v3x/` | rebuild-spec | devops | ✅ done |

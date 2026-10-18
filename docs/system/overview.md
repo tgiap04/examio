@@ -44,7 +44,7 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 **Context**: Wallet creation must happen automatically when a new user registers, without coupling auth-service to finance-service at the HTTP level.
 
-**Decision**: auth-service publishes `auth.user.created` to the durable topic exchange `examio.events`. finance-service's `UserEventHandler` subscribes to this event and creates a wallet idempotently (with a 20-credit welcome bonus). 14+ event types are defined in `EventType` enum but currently unused.
+**Decision**: auth-service writes `auth.user.registered` to a transactional outbox in the register tx; its worker relay publishes it to the durable topic exchange `examio.events` (library `@examio/messaging`). finance-service's `UserRegisteredHandler` consumes it idempotently (`processed_events` dedupe, retry tier 30 s, per-service DLQ) and creates the wallet with a 20-credit welcome bonus. Per-service RabbitMQ users restrict publishing to each service's own routing-key prefix. Legacy `EventType` enum values remain unused.
 
 **Rationale**: Decouples service lifecycle and failure domains. If finance-service is down during registration, the event is retained and replayed. New cross-service workflows can be added by publishing/consuming events without code changes to unrelated services.
 
@@ -115,7 +115,7 @@ Every container uses HTTP 3000 / gRPC 50051 (unified ports; separate network nam
 
 ### RabbitMQ (async, event-driven)
 
-Exchange: `examio.events` (topic, durable). Only wired event: `auth.user.created` → `UserEventHandler` in finance-service (wallet creation).
+Exchange: `examio.events` (topic, durable). Only wired event: `auth.user.registered` (outbox) → `UserRegisteredHandler` in finance-service (wallet creation). See [architecture](architecture.md) § RabbitMQ.
 
 ### AI Orchestration (HTTP, exam-service → ai-service)
 
@@ -158,7 +158,7 @@ exam-service calls `aiApi.generateExamApi` (multipart) → returns `jobId` → f
 
 ## Wallet / Payment Flow
 
-1. New user registers → `auth.user.created` event → `UserEventHandler` creates wallet with 20-credit welcome bonus
+1. New user registers → `auth.user.registered` event (outbox) → `UserRegisteredHandler` creates wallet with 20-credit welcome bonus
 2. Teacher purchases subscription → `POST /finance/payment/create-sepay-qr` → SePay QR returned → student scans and pays
 3. SePay webhook (`POST /webhook/sepay`) confirms payment → wallet credited
 4. AI generation deducts credits via `FinanceClientService.deductCredits` (gRPC call to finance-service)

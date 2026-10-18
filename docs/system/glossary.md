@@ -192,7 +192,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **RAG (Retrieval-Augmented Generation)** — AI technique where the system retrieves relevant document chunks before generating a response, grounding AI answers in the user's uploaded course materials rather than generic training data.
 
-**RabbitMQ** — Message broker using a topic exchange (`examio.events`) for asynchronous event-driven workflows between services. Currently used for wallet creation on user registration.
+**RabbitMQ** — Message broker using a topic exchange (`examio.events`) for asynchronous event-driven workflows between services. Events go through a transactional outbox and an idempotent consumer (`@examio/messaging`). Currently used for wallet creation on user registration.
 
 **ReAct Agent** — An AI agent pattern (Reason + Act) used by the Python AI service to reason about user questions, retrieve relevant document chunks, and generate grounded responses.
 
@@ -282,7 +282,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Webhook (SePay)** — An automated HTTP POST from SePay notifying the platform that a bank transfer was received. Triggers credit activation or subscription renewal.
 
-**Welcome Bonus** — 20 credits automatically added to a new user's wallet on registration, funded by the finance-service's UserEventHandler listening to the `auth.user.created` RabbitMQ event.
+**Welcome Bonus** — 20 credits automatically added to a new user's wallet on registration, funded by the finance-service's `UserRegisteredHandler` consuming the `auth.user.registered` RabbitMQ event.
 
 **Whitelist** — A list of user IDs with explicit access to a private exam session or flashcard deck. In addition to access codes, teachers can grant access to specific students by adding their user IDs.
 
