@@ -10,7 +10,7 @@
 - ARCHITECTURE.md §5.1–5.4
 
 ## Overview
-- Priority: P1 · Status: Pending · Effort: 5d <!-- Red Team: RT-2, RT-3, RT-9, RT-15 (was 3d: +service tokens/decorators 0.75d, +authzVersion/refresh tx/authz event 0.5d, +robust provisioning/ensureWallet/reconcile 0.5d, +public profiles/advisory lock/ban guard 0.25d) --> · Depends on: 02, 03
+- Priority: P1 · Status: Completed (2026-10-19) · Effort: 5d <!-- Red Team: RT-2, RT-3, RT-9, RT-15 (was 3d: +service tokens/decorators 0.75d, +authzVersion/refresh tx/authz event 0.5d, +robust provisioning/ensureWallet/reconcile 0.5d, +public profiles/advisory lock/ban guard 0.25d) --> · Depends on: 02, 03
 - Add the role model and RS256/JWKS tokens with `roles` and `av` (authz version). Build `libs/auth-jwt`: a stateless verifier, the permission catalog, global deny-by-default guards, and service tokens for service-to-service calls. Swap it in for every `libs/common` guard. Add the role-change flow (auth gRPC), robust finance teacher provisioning, and admin bootstrap → `isSystemAdmin`.
 - Guard swap is **mechanical, behaviour-preserving** (relative to phase 01). Endpoints are tightened per permission in phase 06.
 
@@ -211,20 +211,20 @@ File ownership (globs): `examio-be/libs/auth-jwt/**`, `examio-be/libs/common/src
 - Money e2e (`apps/finance-service/test/user-authz-changed.e2e-spec.ts`) <!-- Red Team: RT-9 --> <!-- Reconcile: X2 -->: promote → wallet 20 + Free sub. Demote + re-promote → still 20 (no second bonus). Duplicate event → no-op. Two `ensureWallet` calls racing for the same user → 1 wallet, 1 welcome tx. Re-apply (`grant --teacher` twice) for a TEACHER whose wallet row was deleted in the fixture → wallet recreated. `GET /wallet/info` by a TEACHER without a wallet → 200 with balance 20. `reconcile-teachers` on a fixture with 2 missing wallets → 2 created.
 
 ## Todo List
-- [ ] libs/auth-jwt (catalog, verify, guards incl. ws skip, decorators incl. AllowUnverified/ServiceOnly/RequirePermissionsOrService, service-token client, grpc metadata, module) + tests <!-- Red Team: RT-2, RT-5, RT-6 -->
-- [ ] Prisma role enum, isSystemAdmin, authzVersion, RoleChangeLog + migration <!-- Red Team: RT-3 -->
-- [ ] RS256 keys, JWKS endpoint, new claims incl. `av`, 15m
-- [ ] `/internal/token` service tokens + `SERVICE_CLIENTS` + secrets script <!-- Red Team: RT-2 -->
-- [ ] login/refresh sign in FOR SHARE tx; roles+permissions; ban check; verify re-issue; register w/o subscription; `/auth/me` has `isSystemAdmin`, no `isAdmin` alias <!-- Red Team: RT-3 --> <!-- Updated: Validation Session 1 - no compat fields -->
-- [ ] Password change/reset bump authzVersion + `authz_changed` <!-- Red Team: RT-3 -->
-- [ ] Guard swap in all services (mapping table) + RPC guard table + req.user fixes <!-- Red Team: RT-2 -->
-- [ ] Client wrappers send user/service metadata <!-- Red Team: RT-2 -->
-- [ ] Study-room socket + gateway guard sites on libs/auth-jwt
-- [ ] Demotion keeps ownership/content; e2e asserts content untouched <!-- Updated: Validation Session 1 - demotion keeps content -->
-- [ ] RoleChangeService (advisory lock, re-apply, av, 1 `authz_changed` event, 409 retry) <!-- Reconcile: X2 --> + auth gRPC admin RPCs + GetPublicProfilesByIds + GatewayControl client (flagged) <!-- Red Team: RT-3, RT-15 -->
-- [ ] Finance ensureWallet (ON CONFLICT), `authz_changed` consumer (role=TEACHER), lazy ensure, reconcile CLI; registered handler removed <!-- Red Team: RT-9 --> <!-- Reconcile: X2 -->
-- [ ] Bootstrap CLI moved to auth (+ --teacher)
-- [ ] admin-service compile fixes (`isSystemAdmin` rename; no ban logic) <!-- Reconcile: X1 -->
+- [x] libs/auth-jwt (catalog, verify, guards incl. ws skip, decorators incl. AllowUnverified/ServiceOnly/RequirePermissionsOrService, service-token client, grpc metadata, module) + tests <!-- Red Team: RT-2, RT-5, RT-6 --> — evidence: runs 1–3, 50–51, 36
+- [x] Prisma role enum, isSystemAdmin, authzVersion, RoleChangeLog + migration <!-- Red Team: RT-3 --> — evidence: runs 13–15, 24, 45
+- [x] RS256 keys, JWKS endpoint, new claims incl. `av`, 15m — evidence: runs 17, 22, 49 (JWKS verify, claims), `scripts/gen-jwt-keypair.sh`
+- [x] `/internal/token` service tokens + `SERVICE_CLIENTS` + secrets script <!-- Red Team: RT-2 --> — evidence: runs 17, 36; `scripts/gen-service-secret.sh`
+- [x] login/refresh sign in FOR SHARE tx; roles+permissions; ban check; verify re-issue; register w/o subscription; `/auth/me` has `isSystemAdmin`, no `isAdmin` alias <!-- Red Team: RT-3 --> <!-- Updated: Validation Session 1 - no compat fields --> — evidence: runs 17, 52
+- [x] Password change/reset bump authzVersion + `authz_changed` <!-- Red Team: RT-3 --> — evidence: run 17
+- [x] Guard swap in all services (mapping table) + RPC guard table + req.user fixes <!-- Red Team: RT-2 --> — evidence: runs 11, 28, 30, 35, 52
+- [x] Client wrappers send user/service metadata <!-- Red Team: RT-2 --> — evidence: runs 12, 33, 36
+- [x] Study-room socket + gateway guard sites on libs/auth-jwt — evidence: `study-room-socket-auth.service.ts` uses `TOKEN_VERIFIER`; gateway sites use `JwtAuthGuard` (grep)
+- [x] Demotion keeps ownership/content; e2e asserts content untouched <!-- Updated: Validation Session 1 - demotion keeps content --> — evidence: run 17 (role-change e2e)
+- [x] RoleChangeService (advisory lock, re-apply, av, 1 `authz_changed` event, 409 retry) <!-- Reconcile: X2 --> + auth gRPC admin RPCs + GetPublicProfilesByIds + GatewayControl client (flagged) <!-- Red Team: RT-3, RT-15 --> — evidence: runs 7, 17, 36, 49
+- [x] Finance ensureWallet (ON CONFLICT), `authz_changed` consumer (role=TEACHER), lazy ensure, reconcile CLI; registered handler removed <!-- Red Team: RT-9 --> <!-- Reconcile: X2 --> — evidence: runs 9, 18, 33, 36, 60
+- [x] Bootstrap CLI moved to auth (+ --teacher) — evidence: run manual bootstrap grant; `admin-bootstrap/` and admin `commands/cli.ts` deleted
+- [x] admin-service compile fixes (`isSystemAdmin` rename; no ban logic) <!-- Reconcile: X1 --> — evidence: runs 25, 49, 53
 
 ## Success Criteria
 - `cd examio-be && yarn typecheck && yarn build:all && yarn test`: exit 0.
@@ -267,3 +267,15 @@ File ownership (globs): `examio-be/libs/auth-jwt/**`, `examio-be/libs/common/src
 - [CROSS-PHASE] Phase 08 implements auth `SetUserStatus` (ban/unban; durable `authz_changed(reason:'ban')`, `InvalidateUser` from auth after commit). Admin-service calls it with `forwardUser(req)` and never calls `InvalidateUser`. Phase 10 does not touch ban. <!-- Reconcile: X1 -->
 - [CROSS-PHASE] <!-- Red Team: RT-9 --> Phase 10 adds the `welcome:<userId>` idempotency key to the welcome tx (needs its `WalletTransaction.idempotencyKey` column) and calls `ensureWallet` from `Debit`; the ON CONFLICT provisioning, reapply consumer, lazy ensure, and reconcile CLI already exist from here.
 - [CROSS-PHASE] Bootstrap CLI moved admin → auth here. Phase 10 no longer needs to cut that cross-DB write.
+
+### Deferred / carried (from P04 completion, 2026-10-19)
+1. P08: PATCH `isBanned` can still ban the last SYSTEM_ADMIN. `SetUserStatus` must guard it (advisory lock, last-admin check). Owner: P08 implementer.
+2. P05: old access tokens stay valid up to 15 min after a role change until the gateway `av` check lands. Owner: P05 implementer.
+3. P06: STUDENT can still call teacher routes (e.g. `POST /quizsets`). Per-endpoint permissions required. Owner: P06 implementer.
+4. P06/P12: study-room socket auth still reads name/avatar/banned from DB. Move to token claims or the WS middleware. Owner: P06 (WS) then P12 (extraction).
+5. Any allowlisted service can read any wallet (accepted by design). Document in the service-token section of the deploy README. Owner: P16 docs sync (P19).
+6. Admin FE still sends `isAdmin` in PATCH, so it gets 400 until the P08 rename. Owner: P08 FE changes.
+7. Public JWKS must be https or internal-only (documented in `deploy/README.md`). Verify at the P16 cutover runbook. Owner: P16.
+8. Node 22 CI run pending (local runs used Node 24). Owner: whoever pushes the branch; mark done when CI is green on Node 22.
+9. Repo-wide unit coverage ~40% lines; e2e coverage unmeasured. Owner: P06 CI gate work; done when coverage is measured and reported.
+10. Admin grant/revoke pulled forward to auth `SetSystemAdmin`. P08 builds the rest of the role screen on it. Owner: P08 implementer.

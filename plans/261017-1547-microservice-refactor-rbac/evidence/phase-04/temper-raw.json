@@ -1,0 +1,260 @@
+[
+  {
+    "command": "yarn install --immutable",
+    "exitCode": 0,
+    "summary": "[s1-install] exit 0 in 1s; last line: ➤ YN0000: · Done with warnings in 0s 787ms",
+    "ts": "2026-10-18T20:29:44Z"
+  },
+  {
+    "command": "git diff -- examio-be/libs/database/src/schema.prisma examio-be/proto examio-be/libs/contracts | shasum -a 256 > /private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/gen-before.sha",
+    "exitCode": 0,
+    "summary": "[s0-gen-snapshot-before] exit 0 in 0s; last line: ",
+    "ts": "2026-10-18T20:29:44Z"
+  },
+  {
+    "command": "yarn prisma:merge",
+    "exitCode": 0,
+    "summary": "[s1-prisma-merge] exit 0 in 0s; last line: Merged prima files into libs/database/src/schema.prisma",
+    "ts": "2026-10-18T20:29:44Z"
+  },
+  {
+    "command": "yarn proto:gen",
+    "exitCode": 0,
+    "summary": "[s1-proto-gen] exit 0 in 1s; last line: ",
+    "ts": "2026-10-18T20:29:45Z"
+  },
+  {
+    "command": "git diff -- examio-be/libs/database/src/schema.prisma examio-be/proto examio-be/libs/contracts | shasum -a 256 | diff - /private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/gen-before.sha",
+    "exitCode": 0,
+    "summary": "[s1-gen-no-new-diff] exit 0 in 0s; last line: ",
+    "ts": "2026-10-18T20:29:45Z"
+  },
+  {
+    "command": "yarn prisma:generate",
+    "exitCode": 0,
+    "summary": "[s1-prisma-generate] exit 0 in 2s; last line: Tip: Interested in query caching in just a few lines of code? Try Accelerate today! https://pris.ly/tip-3-accelerate",
+    "ts": "2026-10-18T20:29:47Z"
+  },
+  {
+    "command": "yarn typecheck",
+    "exitCode": 0,
+    "summary": "[s1-typecheck] exit 0 in 12s; last line: ",
+    "ts": "2026-10-18T20:29:59Z"
+  },
+  {
+    "command": "yarn build:all",
+    "exitCode": 0,
+    "summary": "[s1-build-all] exit 0 in 23s; last line: webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 1996 ms",
+    "ts": "2026-10-18T20:30:22Z"
+  },
+  {
+    "command": "TZ=UTC yarn test --ci --json --outputFile=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/logs/unit.json",
+    "exitCode": 0,
+    "summary": "[s1-unit-test] exit 0: 669 tests in 89 suites: 669 passed, 0 failed, 0 skipped; failed suites 0",
+    "ts": "2026-10-18T20:30:33Z"
+  },
+  {
+    "command": "npx prisma migrate deploy --schema=libs/database/src/schema.prisma",
+    "exitCode": 0,
+    "summary": "[s2-migrate-deploy] exit 0 in 1s; last line: All migrations have been successfully applied.",
+    "ts": "2026-10-18T20:30:34Z"
+  },
+  {
+    "command": "npx prisma migrate diff --from-url \"$DATABASE_URL\" --to-schema-datamodel libs/database/src/schema.prisma --exit-code",
+    "exitCode": 0,
+    "summary": "[s2-migrate-diff-url] exit 0 in 1s; last line: No difference detected.",
+    "ts": "2026-10-18T20:30:35Z"
+  },
+  {
+    "command": "npx prisma migrate diff --from-migrations libs/database/src/migrations --to-schema-datamodel libs/database/src/schema.prisma --shadow-database-url postgresql://examio:examio@localhost:55432/examio_p4_shadow --exit-code",
+    "exitCode": 0,
+    "summary": "[s2-migrate-diff-migrations] exit 0 in 1s; last line: No difference detected.",
+    "ts": "2026-10-18T20:30:36Z"
+  },
+  {
+    "command": "npx prisma migrate status --schema=libs/database/src/schema.prisma",
+    "exitCode": 0,
+    "summary": "[s2-migrate-status] exit 0 in 1s; last line: Database schema is up to date!",
+    "ts": "2026-10-18T20:30:37Z"
+  },
+  {
+    "command": "SERVICE_NAME=auth-service RABBITMQ_URL=$RABBITMQ_AUTH_URL ../../node_modules/.bin/jest --config test/jest-e2e.json --json --outputFile=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/logs/e2e-auth.json",
+    "exitCode": 0,
+    "summary": "[s3-e2e-auth] exit 0: 38 tests in 6 suites: 38 passed, 0 failed, 0 skipped; failed suites 0",
+    "ts": "2026-10-18T20:30:50Z"
+  },
+  {
+    "command": "RABBITMQ_URL=$RABBITMQ_URL ../../node_modules/.bin/jest --config test/jest-e2e.json --json --outputFile=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/logs/e2e-finance.json",
+    "exitCode": 0,
+    "summary": "[s3-e2e-finance] exit 0: 14 tests in 2 suites: 14 passed, 0 failed, 0 skipped; failed suites 0",
+    "ts": "2026-10-18T20:30:58Z"
+  },
+  {
+    "command": "RABBITMQ_URL=$RABBITMQ_AUTH_URL ../../node_modules/.bin/jest --config test/jest-e2e.json --json --outputFile=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/logs/e2e-admin.json",
+    "exitCode": 0,
+    "summary": "[s3-e2e-admin] exit 0: 20 tests in 3 suites: 20 passed, 0 failed, 0 skipped; failed suites 0",
+    "ts": "2026-10-18T20:31:05Z"
+  },
+  {
+    "command": "RABBITMQ_URL=$RABBITMQ_AUTH_URL ../../node_modules/.bin/jest --config test/jest-e2e.json --json --outputFile=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/logs/e2e-messaging.json",
+    "exitCode": 0,
+    "summary": "[s3-e2e-messaging] exit 0: 1 tests in 1 suites: 1 passed, 0 failed, 0 skipped; failed suites 0",
+    "ts": "2026-10-18T20:31:08Z"
+  },
+  {
+    "command": "SERVICE_NAME=auth-service RABBITMQ_URL=$RABBITMQ_AUTH_URL ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec --json --outputFile=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/logs/e2e-health-auth.json",
+    "exitCode": 0,
+    "summary": "[s3-health-auth] exit 0: 3 tests in 1 suites: 3 passed, 0 failed, 0 skipped; failed suites 0",
+    "ts": "2026-10-18T20:31:11Z"
+  },
+  {
+    "command": "SERVICE_NAME=exam-service RABBITMQ_URL=$RABBITMQ_EXAM_URL ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec --json --outputFile=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/logs/e2e-health-exam.json",
+    "exitCode": 0,
+    "summary": "[s3-health-exam] exit 0: 3 tests in 1 suites: 3 passed, 0 failed, 0 skipped; failed suites 0",
+    "ts": "2026-10-18T20:31:16Z"
+  },
+  {
+    "command": "SERVICE_NAME=finance-service RABBITMQ_URL=$RABBITMQ_URL ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec --json --outputFile=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/logs/e2e-health-finance.json",
+    "exitCode": 0,
+    "summary": "[s3-health-finance] exit 0: 3 tests in 1 suites: 3 passed, 0 failed, 0 skipped; failed suites 0",
+    "ts": "2026-10-18T20:31:19Z"
+  },
+  {
+    "command": "SERVICE_NAME=admin-service RABBITMQ_URL=$RABBITMQ_AUTH_URL ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec --json --outputFile=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/logs/e2e-health-admin.json",
+    "exitCode": 0,
+    "summary": "[s3-health-admin] exit 0: 3 tests in 1 suites: 3 passed, 0 failed, 0 skipped; failed suites 0",
+    "ts": "2026-10-18T20:31:22Z"
+  },
+  {
+    "command": "SERVICE_NAME=r2-service RABBITMQ_URL=$RABBITMQ_AUTH_URL ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec --json --outputFile=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/logs/e2e-health-r2.json",
+    "exitCode": 0,
+    "summary": "[s3-health-r2] exit 0: 3 tests in 1 suites: 3 passed, 0 failed, 0 skipped; failed suites 0",
+    "ts": "2026-10-18T20:31:25Z"
+  },
+  {
+    "command": "SERVICE_NAME=gateway-service RABBITMQ_URL=$RABBITMQ_AUTH_URL ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec --json --outputFile=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/logs/e2e-health-gateway.json",
+    "exitCode": 0,
+    "summary": "[s3-health-gateway] exit 0: 3 tests in 1 suites: 3 passed, 0 failed, 0 skipped; failed suites 0",
+    "ts": "2026-10-18T20:31:28Z"
+  },
+  {
+    "command": "DATABASE_URL=postgresql://examio:examio@localhost:55432/examio_p4_seed npx prisma migrate deploy --schema=libs/database/src/schema.prisma",
+    "exitCode": 0,
+    "summary": "[s6-seed-db-migrate] exit 0 in 1s; last line: All migrations have been successfully applied.",
+    "ts": "2026-10-18T20:31:29Z"
+  },
+  {
+    "command": "DATABASE_URL=postgresql://examio:examio@localhost:55432/examio_p4_seed /Users/tgiap.dev/devs/examio/examio-be/node_modules/.bin/jiti /Users/tgiap.dev/devs/examio/examio-be/libs/database/prisma/seed-dev.ts",
+    "exitCode": 0,
+    "summary": "[s6-seed-dev] exit 0 in 1s; last line:    Admin login: ",
+    "ts": "2026-10-18T20:31:30Z"
+  },
+  {
+    "command": "npx prisma migrate deploy --schema=libs/database/src/schema.prisma",
+    "exitCode": 0,
+    "summary": "[s4-boot-migrate] exit 0 in 1s; last line: All migrations have been successfully applied.",
+    "ts": "2026-10-18T20:31:31Z"
+  },
+  {
+    "command": "SERVICES='auth exam finance admin r2 gateway' ./scripts/boot-built-services.sh",
+    "exitCode": 0,
+    "summary": "[s4-boot-script] exit 0 in 6s; last line: ok   gateway-service (http 13100, grpc n/a)",
+    "ts": "2026-10-18T20:31:37Z"
+  },
+  {
+    "command": "for p in 13000 13002 13003 13004 13005; do curl -fsS http://127.0.0.1:$p/health/live >/dev/null || exit 1; done && echo all-live",
+    "exitCode": 0,
+    "summary": "[s5-live-up] exit 0 in 0s; last line: all-live",
+    "ts": "2026-10-18T20:31:40Z"
+  },
+  {
+    "command": "node probes-ae.cjs",
+    "exitCode": 0,
+    "summary": "[s5-probes-a-e] exit 0 in 11s; last line: TOTAL 37 PASS 37 FAIL 0",
+    "ts": "2026-10-18T20:31:51Z"
+  },
+  {
+    "command": "node probe-d.cjs",
+    "exitCode": 0,
+    "summary": "[s5-probe-d-grpc] exit 0 in 0s; last line: TOTAL 9 PASS 9 FAIL 0",
+    "ts": "2026-10-18T20:31:51Z"
+  },
+  {
+    "command": "node probe-fgh.cjs",
+    "exitCode": 0,
+    "summary": "[s5-probes-f-g-h] exit 0 in 12s; last line: TOTAL 14 PASS 14 FAIL 0",
+    "ts": "2026-10-18T20:32:03Z"
+  },
+  {
+    "command": "node probe-benefits.cjs",
+    "exitCode": 0,
+    "summary": "[s5-probe-benefits-crossuser] exit 0 in 6s; last line: TOTAL 10 PASS 10 FAIL 0",
+    "ts": "2026-10-18T20:32:09Z"
+  },
+  {
+    "command": "node probe-signed.cjs",
+    "exitCode": 0,
+    "summary": "[s5-probe-signed-and-getfileurl] exit 0 in 0s; last line: TOTAL 7 PASS 7 FAIL 0",
+    "ts": "2026-10-18T20:32:09Z"
+  },
+  {
+    "command": "node probe-admin-http.cjs",
+    "exitCode": 0,
+    "summary": "[s5-probe-admin-http] exit 0 in 1s; last line: TOTAL 18 PASS 18 FAIL 0",
+    "ts": "2026-10-18T20:32:10Z"
+  },
+  {
+    "command": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/bin/cli-race.sh sole",
+    "exitCode": 0,
+    "summary": "[s5-cli-sole-admin-revoke-409] exit 0 in 2s; last line: 409 message present",
+    "ts": "2026-10-18T20:32:13Z"
+  },
+  {
+    "command": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/bin/cli-race.sh race",
+    "exitCode": 0,
+    "summary": "[s5-cli-two-admin-race] exit 0 in 3s; last line: exactly one winner",
+    "ts": "2026-10-18T20:32:16Z"
+  },
+  {
+    "command": "! (lsof -nP -iTCP -sTCP:ESTABLISHED 2>/dev/null | grep -E \"^node|^postgres\" | grep -vE \"127\\.0\\.0\\.1|\\[::1\\]\")",
+    "exitCode": 0,
+    "summary": "[s5-no-remote-connections] exit 0 in 0s; last line: ",
+    "ts": "2026-10-18T20:32:16Z"
+  },
+  {
+    "command": "! (grep -rnE \"AuthGuard\\b|AdminGuard|OptionalAuthGuard|JWT_SECRET\" apps libs --include=\"*.ts\" | grep -vE \"GoogleAuthGuard|AuthStrictThrottlerGuard|JwtAuthGuard|QUIZ_JWT_SECRET\" | grep -v \"libs/common/src/guard/google-auth.guard.ts\")",
+    "exitCode": 0,
+    "summary": "[g6-guard-names] exit 0 in 0s; last line: ",
+    "ts": "2026-10-18T20:32:16Z"
+  },
+  {
+    "command": "! grep -rnE \"userSession|prisma\" libs/auth-jwt",
+    "exitCode": 0,
+    "summary": "[g6-authjwt-no-userSession-prisma] exit 0 in 0s; last line: ",
+    "ts": "2026-10-18T20:32:16Z"
+  },
+  {
+    "command": "! git ls-files | grep -iE \"\\.pem$|private.*key\"",
+    "exitCode": 0,
+    "summary": "[g6-no-key-files-tracked] exit 0 in 0s; last line: ",
+    "ts": "2026-10-18T20:32:16Z"
+  },
+  {
+    "command": "! grep -rn \"isAdmin\" apps/auth-service/src",
+    "exitCode": 0,
+    "summary": "[g6-no-isAdmin-auth-service] exit 0 in 0s; last line: ",
+    "ts": "2026-10-18T20:32:16Z"
+  },
+  {
+    "command": "TZ=UTC yarn test --ci libs/auth-jwt/src/permissions.spec.ts --json --outputFile=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/logs/perm.json",
+    "exitCode": 0,
+    "summary": "[s7-permissions-spec] exit 0: 12 tests in 1 suites: 12 passed, 0 failed, 0 skipped; failed suites 0",
+    "ts": "2026-10-18T20:32:19Z"
+  },
+  {
+    "command": "TZ=UTC yarn test:cov --ci --coverageReporters=json-summary --coverageReporters=text-summary --coverageDirectory=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/cov --json --outputFile=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p4/logs/unit-cov.json",
+    "exitCode": 0,
+    "summary": "[s8-coverage-unit] exit 0: 669 tests in 89 suites: 669 passed, 0 failed, 0 skipped; failed suites 0 | coverage lines 39.57% (4962/12537), branches 21.42%, functions 22.72%, statements 41.54%",
+    "ts": "2026-10-18T20:32:39Z"
+  }
+]

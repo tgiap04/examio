@@ -27,7 +27,7 @@ Decisions (authoritative): [reports/decisions.md](./reports/decisions.md). Input
 | 01 | [Guardrails & Cleanup](./phase-01-guardrails-and-cleanup.md) | Completed | 2.25d | — |
 | 02 | [Contracts & Infra Libs](./phase-02-contracts-and-infra-libs.md) | Completed | 2.25d | 01 |
 | 03 | [Messaging Foundation](./phase-03-messaging-foundation.md) | Completed | 2.5d | 02 |
-| 04 | [Identity & RBAC Core](./phase-04-identity-and-rbac-core.md) | Pending | 5d | 02, 03 |
+| 04 | [Identity & RBAC Core](./phase-04-identity-and-rbac-core.md) | Completed | 5d | 02, 03 |
 | 05 | [Gateway Rewrite](./phase-05-gateway-rewrite.md) | Pending | 4.25d | 02, 03, 04 |
 | 06 | [RBAC Enforcement & Security Fixes](./phase-06-rbac-enforcement-and-security-fixes.md) | Pending | 4.75d | 04 |
 | 07 | [Quiz Sharing & Student Practice](./phase-07-quiz-sharing-and-student-practice.md) | Pending | 2.75d | 06 |
@@ -47,6 +47,7 @@ Decisions (authoritative): [reports/decisions.md](./reports/decisions.md). Input
 ## Execution Strategy
 - **Branching/deploy (validated):** one long branch `refactor/microservice-rbac`. Sync `main` into it weekly; every phase ends green on the branch. Production deploys **once**, at the final merge, with a DB reset (cutover runbook in P16). Milestones are verified on local compose only.
 - Milestone A (01–09): RBAC usable end to end on the current topology, with the new auth and gateway. 04 + 05 + 08 are verified together (04 alone has no revoke list).
+- P04 admin grant/revoke already route via auth (`SetSystemAdmin`, with the admin's token forwarded). P08 builds the rest of the role screen on that path; admin-service never writes `isSystemAdmin` directly.
 - Milestone B (10–11): data ownership. Each service gets its own schema and role. `libs/database` is removed. 10's FE edits land after 09 (shared `useAuthStore.ts`, `types/user.ts`).
 - Milestone C (12–15): exam-service is split away. Order: **12 ∥ 15 → 13 → 14** (15 also needs 10's idempotent `Debit`/`Refund`). 13 needs 15 (document-service + gRPC `AiService`). 12/13/14 share `apps/exam-service/src/exam-service.module.ts` and `apps/gateway-service/config/routes.yaml` (single file, named entries per phase). Edits to shared files (`routes.yaml`, `nest-cli.json`, `package.json`, `jest.config.js`, compose includes) are append-only, and merges are serialized.
 - Milestone D (16, 19): independent deploy + docs. 17 deferred (K8s, observability stack, Redis ACL).
