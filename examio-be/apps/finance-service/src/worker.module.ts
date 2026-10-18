@@ -3,7 +3,8 @@ import { DatabaseModule, PrismaService } from '@examio/database';
 import { GenerateIdService } from '@examio/common';
 import { MessagingModule } from '@examio/messaging';
 import { LoggerModule } from '@examio/observability';
-import { UserRegisteredHandler } from './events/handlers/user-registered.handler';
+import { UserAuthzChangedHandler } from './events/handlers/user-authz-changed.handler';
+import { EnsureWalletService } from './modules/wallet/ensure-wallet.service';
 
 /**
  * Worker-role module (`ROLE=worker`): consumes `finance.events`. Handlers run
@@ -18,6 +19,6 @@ import { UserRegisteredHandler } from './events/handlers/user-registered.handler
             consume: { db: PrismaService },
         }),
     ],
-    providers: [GenerateIdService, UserRegisteredHandler],
+    providers: [GenerateIdService, EnsureWalletService, UserAuthzChangedHandler],
 })
 export class WorkerModule {}

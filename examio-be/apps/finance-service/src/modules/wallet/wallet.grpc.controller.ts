@@ -1,9 +1,10 @@
 import { Controller } from '@nestjs/common';
-import { status } from '@grpc/grpc-js';
+import { Metadata, status } from '@grpc/grpc-js';
 import { RpcException } from '@nestjs/microservices';
 import { PrismaService } from '@examio/database';
 import { GenerateIdService } from '@examio/common';
 import { walletV1 } from '@examio/contracts';
+import { RequirePermissionsOrService, ServiceOnly, assertSelfOrService } from '@examio/auth-jwt';
 
 const unimplemented = (rpc: string): never => {
     throw new RpcException({
@@ -20,6 +21,7 @@ export class WalletGrpcController implements walletV1.WalletServiceController {
         private readonly generateIdService: GenerateIdService
     ) {}
 
+    @ServiceOnly('auth')
     async createWallet(
         data: walletV1.CreateWalletRequest
     ): Promise<walletV1.CreateWalletResponse> {
@@ -57,9 +59,13 @@ export class WalletGrpcController implements walletV1.WalletServiceController {
         }
     }
 
+    @RequirePermissionsOrService([])
     async getWallet(
-        data: walletV1.GetWalletRequest
+        data: walletV1.GetWalletRequest,
+        metadata: Metadata
     ): Promise<walletV1.GetWalletResponse> {
+        // A user token may only read its OWN wallet; allowlisted services any.
+        assertSelfOrService(metadata, data.userId);
         const wallet = await this.prisma.wallet.findUnique({
             where: { userId: data.userId },
         });
@@ -79,20 +85,24 @@ export class WalletGrpcController implements walletV1.WalletServiceController {
         };
     }
 
+    @ServiceOnly('exam')
     // Idempotent money RPCs: contract defined in phase 02, server in phase 10.
     debit(_data: walletV1.DebitRequest): Promise<walletV1.DebitResponse> {
         return unimplemented('Debit');
     }
 
+    @ServiceOnly('exam')
     credit(_data: walletV1.CreditRequest): Promise<walletV1.CreditResponse> {
         return unimplemented('Credit');
     }
 
+    @ServiceOnly('exam')
     refund(_data: walletV1.RefundRequest): Promise<walletV1.RefundResponse> {
         return unimplemented('Refund');
     }
 
     /** @deprecated Replaced by Debit/Credit in phase 10. */
+    @ServiceOnly('exam')
     async updateBalance(
         data: walletV1.UpdateBalanceRequest
     ): Promise<walletV1.UpdateBalanceResponse> {

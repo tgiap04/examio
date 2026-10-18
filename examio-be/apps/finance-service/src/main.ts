@@ -27,12 +27,6 @@ async function startWorker() {
 }
 
 async function startApi() {
-    // Fail fast on a missing/weak signing secret instead of degrading into
-    // per-request 401s (or, worse, a guessable key). See security audit H8/H6.
-    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-        throw new Error('JWT_SECRET missing or too short (min 32 chars)');
-    }
-
     // HTTP server
     const app = await NestFactory.create(FinanceServiceModule, {
         bufferLogs: true,
@@ -56,7 +50,8 @@ async function startApi() {
 
     // gRPC microservice (WalletService + SubscriptionService)
     app.connectMicroservice<MicroserviceOptions>(
-        grpcServerOptions([PROTO_FILES.wallet, PROTO_FILES.subscription])
+        grpcServerOptions([PROTO_FILES.wallet, PROTO_FILES.subscription]),
+        { inheritAppConfig: true }
     );
 
     await app.startAllMicroservices();

@@ -1,6 +1,8 @@
 import { Controller } from '@nestjs/common';
+import { Metadata } from '@grpc/grpc-js';
 import { subscriptionV1 } from '@examio/contracts';
 import { SubscriptionService } from './subscription.service';
+import { RequirePermissionsOrService, assertSelfOrService } from '@examio/auth-jwt';
 
 @Controller()
 @subscriptionV1.SubscriptionServiceControllerMethods()
@@ -9,9 +11,13 @@ export class SubscriptionGrpcController
 {
     constructor(private readonly subscriptionService: SubscriptionService) {}
 
+    @RequirePermissionsOrService([])
     async getUserBenefits(
-        data: subscriptionV1.GetUserBenefitsRequest
+        data: subscriptionV1.GetUserBenefitsRequest,
+        metadata: Metadata
     ): Promise<subscriptionV1.GetUserBenefitsResponse> {
+        // A user token may only read its OWN benefits; allowlisted services any.
+        assertSelfOrService(metadata, data.userId);
         const benefits =
             await this.subscriptionService.getUserSubscriptionBenefits(
                 data.userId

@@ -1,4 +1,4 @@
-import { Controller, UseGuards, Req, Get, Query } from '@nestjs/common';
+import { Controller, Req, Get, Query } from '@nestjs/common';
 import {
     ApiTags,
     ApiResponse,
@@ -7,11 +7,12 @@ import {
     ApiCookieAuth,
     ApiQuery,
 } from '@nestjs/swagger';
-import { AuthGuard, AuthenticatedRequest } from '@examio/common';
+import { AuthenticatedRequest } from '@examio/common';
 import { WalletService } from './wallet.service';
 import { WalletDto } from './dto/wallet-response.dto';
 import { WalletDetailsDto } from './dto/wallet-details-response.dto';
 import { GetTransactionsDto } from './dto/get-transactions.dto';
+import { Authenticated } from '@examio/auth-jwt';
 
 @ApiTags('Wallet')
 @ApiExtraModels(WalletDto, WalletDetailsDto)
@@ -20,7 +21,7 @@ export class WalletController {
     constructor(private readonly walletService: WalletService) {}
 
     @Get('info')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy thông tin ví' })
     @ApiResponse({
@@ -33,7 +34,7 @@ export class WalletController {
     }
 
     @Get('details')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Lấy thông tin chi tiết ví với lịch sử giao dịch',

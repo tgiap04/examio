@@ -6,7 +6,7 @@ import {
     ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '@examio/database';
-import { User } from '@prisma/client';
+
 import { GenerateIdService } from '@examio/common';
 import { SePayService } from './sepay.service';
 import { PAYMENT_STATUS } from '../../types/payment';
@@ -16,6 +16,7 @@ import {
     getSubscriptionPrice,
     calculateCreditsPrice,
 } from '../../types/subscription';
+import type { AuthUser } from '@examio/auth-jwt';
 
 export interface CreatePaymentDto {
     type: 'credits' | 'subscription';
@@ -53,7 +54,7 @@ export class PaymentService {
      * - Otherwise: create new payment
      */
     async createPayment(
-        user: User,
+        user: AuthUser,
         dto: CreatePaymentDto
     ): Promise<PaymentWithQR> {
         try {

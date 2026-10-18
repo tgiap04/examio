@@ -12,6 +12,7 @@ import { WalletGrpcController } from './modules/wallet/wallet.grpc.controller';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { SePayModule } from './modules/sepay/sepay.module';
 import { HealthModule, LoggerModule } from '@examio/observability';
+import { AuthJwtModule } from '@examio/auth-jwt';
 
 @Module({
     imports: [
@@ -21,6 +22,7 @@ import { HealthModule, LoggerModule } from '@examio/observability';
         }),
         DatabaseModule,
         RedisModule,
+        AuthJwtModule.forRoot({ serviceName: 'finance', serviceClient: true }),
         WalletModule,
         SePayModule,
     ],
