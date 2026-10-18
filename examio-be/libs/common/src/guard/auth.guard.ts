@@ -2,19 +2,23 @@ import {
     CanActivate,
     ExecutionContext,
     ForbiddenException,
+    HttpException,
     Injectable,
     UnauthorizedException,
 } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
 import { PrismaService } from '@examio/database';
 import * as cookie from 'cookie';
+import { ALLOW_UNVERIFIED_KEY } from '../decorators/allow-unverified.decorator';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
     constructor(
         private readonly jwtService: JwtService,
-        private readonly prisma: PrismaService
+        private readonly prisma: PrismaService,
+        private readonly reflector: Reflector
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -75,13 +79,24 @@ export class AuthGuard implements CanActivate {
                 throw new UnauthorizedException('Account is disabled');
             }
 
-            if (!user.isVerified) {
+            const allowUnverified = this.reflector.getAllAndOverride<boolean>(
+                ALLOW_UNVERIFIED_KEY,
+                [context.getHandler(), context.getClass()]
+            );
+            if (!user.isVerified && !allowUnverified) {
                 throw new ForbiddenException('Email not verified');
             }
 
             request['user'] = user;
             return true;
         } catch (err) {
+            // Deliberate HTTP errors above (403 unverified, 401 banned /
+            // session revoked) must reach the client unchanged; only
+            // unexpected failures (bad signature, expiry, DB errors) are
+            // collapsed into a generic 401.
+            if (err instanceof HttpException) {
+                throw err;
+            }
             throw new UnauthorizedException('Invalid or expired token');
         }
     }

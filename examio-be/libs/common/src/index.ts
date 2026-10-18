@@ -12,6 +12,9 @@ export * from './services/image-preprocessing.service';
 export * from './services/turnstile.service';
 export * from './services/refresh-token-cipher.service';
 
+// Decorators
+export * from './decorators/allow-unverified.decorator';
+
 // Guards
 export * from './guard/auth.guard';
 export * from './guard/admin.guard';

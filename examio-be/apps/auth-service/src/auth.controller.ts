@@ -29,6 +29,7 @@ import {
     GoogleAuthGuard,
     getCookieConfig,
     TurnstileService,
+    AllowUnverified,
 } from '@examio/common';
 import { AuthStrictThrottlerGuard } from './auth/guards/auth-strict-throttler.guard';
 import {
@@ -313,6 +314,7 @@ export class AuthController {
         description: 'User logged out successfully',
         type: LogoutResponseDto,
     })
+    @AllowUnverified()
     @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     async logout(
@@ -393,6 +395,7 @@ export class AuthController {
         description: 'Verification email sent successfully',
         type: AuthMessageResponseDto,
     })
+    @AllowUnverified()
     @UseGuards(AuthGuard)
     @ApiCookieAuth('cookie-auth')
     async sendVerificationEmail(@Req() req: AuthenticatedRequest) {
@@ -406,6 +409,7 @@ export class AuthController {
         description: 'User account verified successfully',
         type: AuthMessageResponseDto,
     })
+    @AllowUnverified()
     @UseGuards(AuthGuard, AuthStrictThrottlerGuard)
     @Throttle({ default: { limit: 5, ttl: 60000 } })
     @ApiCookieAuth('cookie-auth')
@@ -618,6 +622,7 @@ export class AuthController {
     }
 
     @Get('me')
+    @AllowUnverified()
     @UseGuards(AuthGuard)
     @ApiOperation({ summary: 'Lấy thông tin người dùng hiện tại' })
     @ApiCookieAuth('cookie-auth')
