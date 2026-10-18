@@ -62,6 +62,12 @@
       ],
       "@examio/http/*": [
         "libs/http/src/*"
+      ],
+      "@examio/messaging": [
+        "libs/messaging/src"
+      ],
+      "@examio/messaging/*": [
+        "libs/messaging/src/*"
       ]
     },
     "skipLibCheck": true,

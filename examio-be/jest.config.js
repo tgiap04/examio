@@ -17,6 +17,7 @@ module.exports = {
         '^@examio/contracts(.*)$': '<rootDir>/libs/contracts/src/$1',
         '^@examio/grpc(.*)$': '<rootDir>/libs/grpc/src/$1',
         '^@examio/http(.*)$': '<rootDir>/libs/http/src/$1',
+        '^@examio/messaging(.*)$': '<rootDir>/libs/messaging/src/$1',
     },
     testTimeout: 30000,
 };
