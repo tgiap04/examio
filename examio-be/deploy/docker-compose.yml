@@ -100,6 +100,8 @@ services:
             - REDIS_PORT=6379
             - REDIS_PASSWORD=${REDIS_PASSWORD:-}
             - GRPC_PORT=50051
+            - RABBITMQ_URL=amqp://auth:${RABBITMQ_AUTH_PASS:?RABBITMQ_AUTH_PASS is required}@rabbitmq:5672
+            - ROLE=api,worker
             - R2_GRPC_URL=r2:50051
         env_file:
             - .env
@@ -143,7 +145,7 @@ services:
             - PORT=3000
             - AI_SERVICE_URL=http://ai:3000/api
             - R2_SERVICE_URL=r2:3000
-            - RABBITMQ_URL=${RABBITMQ_URL}
+            - RABBITMQ_URL=amqp://exam:${RABBITMQ_EXAM_PASS:?RABBITMQ_EXAM_PASS is required}@rabbitmq:5672
             - DATABASE_URL=${DATABASE_URL}
             - REDIS_HOST=redis
             - REDIS_PORT=6379
@@ -196,6 +198,8 @@ services:
             - REDIS_PORT=6379
             - REDIS_PASSWORD=${REDIS_PASSWORD:-}
             - GRPC_PORT=50051
+            - RABBITMQ_URL=amqp://finance:${RABBITMQ_FINANCE_PASS:?RABBITMQ_FINANCE_PASS is required}@rabbitmq:5672
+            - ROLE=api,worker
         env_file:
             - .env
         depends_on:
@@ -304,7 +308,7 @@ services:
         environment:
             - PYTHONUNBUFFERED=1
             - PORT=3000
-            - RABBITMQ_URL=${RABBITMQ_URL}
+            - RABBITMQ_URL=amqp://ai:${RABBITMQ_AI_PASS:?RABBITMQ_AI_PASS is required}@rabbitmq:5672
             - DATABASE_URL=${DATABASE_URL}
             - REDIS_HOST=redis
             - REDIS_PORT=6379
@@ -347,13 +351,17 @@ services:
 
     # ==================== RABBITMQ ====================
     rabbitmq:
-        image: rabbitmq:3.12-management-alpine
+        image: rabbitmq:3.13-management-alpine
         container_name: examio-rabbitmq
-        environment:
-            - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER:?RABBITMQ_USER is required}
-            - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASS:?RABBITMQ_PASS is required}
+        # Users + permissions come from the rendered definitions (no
+        # RABBITMQ_DEFAULT_USER: importing definitions skips the default user).
         volumes:
             - rabbitmq_data:/var/lib/rabbitmq
+            - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/20-definitions.conf:ro
+            - ./rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+        depends_on:
+            rabbitmq-defs:
+                condition: service_completed_successfully
         networks:
             - examio-network
         healthcheck:
@@ -363,6 +371,26 @@ services:
             retries: 5
             start_period: 30s
         restart: unless-stopped
+        logging: *default-logging
+
+    # Renders definitions.template.json -> definitions.json (password hashes;
+    # gitignored). Fails the stack early if any broker password is missing.
+    # Passwords land in amqp:// URLs, so use URL-safe characters (hex/base64url).
+    rabbitmq-defs:
+        image: node:22-alpine
+        container_name: examio-rabbitmq-defs
+        working_dir: /defs
+        command: ['node', 'render-definitions.cjs']
+        environment:
+            - RABBITMQ_USER=${RABBITMQ_USER:?RABBITMQ_USER is required}
+            - RABBITMQ_PASS=${RABBITMQ_PASS:?RABBITMQ_PASS is required}
+            - RABBITMQ_AUTH_PASS=${RABBITMQ_AUTH_PASS:?RABBITMQ_AUTH_PASS is required}
+            - RABBITMQ_FINANCE_PASS=${RABBITMQ_FINANCE_PASS:?RABBITMQ_FINANCE_PASS is required}
+            - RABBITMQ_EXAM_PASS=${RABBITMQ_EXAM_PASS:?RABBITMQ_EXAM_PASS is required}
+            - RABBITMQ_AI_PASS=${RABBITMQ_AI_PASS:?RABBITMQ_AI_PASS is required}
+        volumes:
+            - ./rabbitmq:/defs
+        restart: 'no'
         logging: *default-logging
 
     # ==================== POSTGRESQL ====================

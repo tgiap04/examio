@@ -18,5 +18,17 @@ else
     exit 1
 fi
 
+# Render the RabbitMQ users/permissions (definitions.json holds password
+# hashes only and is gitignored). Fails fast when a broker password is missing.
+if command -v docker >/dev/null 2>&1; then
+    (cd "$SCRIPT_DIR" && docker compose run --rm rabbitmq-defs) || {
+        echo "✗ Could not render RabbitMQ definitions (see RABBITMQ_*_PASS in .env)"
+        exit 1
+    }
+    echo "✓ Rendered rabbitmq/definitions.json"
+else
+    echo "! docker not found: run 'docker compose run --rm rabbitmq-defs' before 'up'"
+fi
+
 echo ""
 echo "You can now run: docker compose up -d --build"

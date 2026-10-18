@@ -37,3 +37,6 @@ apps/ai-service/data-source/
 graphify-out/
 # Generated gRPC/ts-proto contracts (yarn proto:gen)
 libs/contracts/src/generated/
+
+# Rendered RabbitMQ definitions (password hashes; render-definitions.cjs)
+deploy/rabbitmq/definitions.json

@@ -1,0 +1,111 @@
+{
+  "users": [
+    {
+      "name": "{{ENV:RABBITMQ_USER}}",
+      "password_hash": "{{HASH:RABBITMQ_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": [
+        "administrator"
+      ]
+    },
+    {
+      "name": "auth",
+      "password_hash": "{{HASH:RABBITMQ_AUTH_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
+    },
+    {
+      "name": "finance",
+      "password_hash": "{{HASH:RABBITMQ_FINANCE_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
+    },
+    {
+      "name": "exam",
+      "password_hash": "{{HASH:RABBITMQ_EXAM_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
+    },
+    {
+      "name": "ai",
+      "password_hash": "{{HASH:RABBITMQ_AI_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "{{ENV:RABBITMQ_USER}}",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "auth",
+      "vhost": "/",
+      "configure": "^(examio\\.events|auth\\..*)$",
+      "write": "^(examio\\.events|auth\\..*)$",
+      "read": "^(examio\\.events|auth\\..*)$"
+    },
+    {
+      "user": "finance",
+      "vhost": "/",
+      "configure": "^(examio\\.events|finance\\..*)$",
+      "write": "^(examio\\.events|finance\\..*)$",
+      "read": "^(examio\\.events|finance\\..*)$"
+    },
+    {
+      "user": "exam",
+      "vhost": "/",
+      "configure": "^(examio\\.events|exam\\..*|exam-service)$",
+      "write": "^(examio\\.events|exam\\..*|exam-service)$",
+      "read": "^(examio\\.events|exam\\..*|exam-service)$"
+    },
+    {
+      "user": "ai",
+      "vhost": "/",
+      "configure": "^(examio\\.events|ai\\..*|ai-service-queue)$",
+      "write": "^(examio\\.events|ai\\..*|ai-service-queue)$",
+      "read": "^(examio\\.events|ai\\..*|ai-service-queue)$"
+    }
+  ],
+  "topic_permissions": [
+    {
+      "user": "auth",
+      "vhost": "/",
+      "exchange": "examio.events",
+      "write": "^auth\\.",
+      "read": ".*"
+    },
+    {
+      "user": "finance",
+      "vhost": "/",
+      "exchange": "examio.events",
+      "write": "^finance\\.",
+      "read": ".*"
+    },
+    {
+      "user": "exam",
+      "vhost": "/",
+      "exchange": "examio.events",
+      "write": "^exam\\.",
+      "read": ".*"
+    },
+    {
+      "user": "ai",
+      "vhost": "/",
+      "exchange": "examio.events",
+      "write": "^ai\\.",
+      "read": ".*"
+    }
+  ],
+  "exchanges": [],
+  "queues": [],
+  "bindings": []
+}

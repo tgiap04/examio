@@ -156,6 +156,8 @@ jobs:
       - run: yarn proto:gen
       - run: yarn prisma:generate
       - run: yarn test --ci
+      - name: RabbitMQ definitions renderer
+        run: node --test deploy/rabbitmq/render-definitions.spec.cjs
 
   # Boots every service module against empty pgvector Postgres + Redis +
   # RabbitMQ (migrations applied from the committed baseline) and probes
@@ -188,21 +190,19 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
-      rabbitmq:
-        image: rabbitmq:3.13
-        ports:
-          - 5672:5672
-        options: >-
-          --health-cmd "rabbitmq-diagnostics -q ping"
-          --health-interval 10s
-          --health-timeout 10s
-          --health-retries 10
     env:
       NODE_ENV: test
       DATABASE_URL: postgresql://examio:examio@localhost:5432/examio_ci
       REDIS_HOST: localhost
       REDIS_PORT: '6379'
-      RABBITMQ_URL: amqp://guest:guest@localhost:5672
+      # CI-only broker credentials (the broker runs from the rendered
+      # definitions, so there is no guest user): one per service.
+      RABBITMQ_USER: ci_admin
+      RABBITMQ_PASS: ci-only-admin-pass
+      RABBITMQ_AUTH_PASS: ci-only-auth-pass
+      RABBITMQ_FINANCE_PASS: ci-only-finance-pass
+      RABBITMQ_EXAM_PASS: ci-only-exam-pass
+      RABBITMQ_AI_PASS: ci-only-ai-pass
       JWT_SECRET: ci-only-jwt-secret-0123456789abcdef0123456789
       REFRESH_TOKEN_ENC_KEY: ci-only-refresh-key-0123456789abcdef0123456789
       FRONTEND_URL: http://localhost:5173
@@ -217,6 +217,18 @@ jobs:
       - run: yarn install --immutable
       - run: yarn proto:gen
       - run: yarn prisma:generate
+      - name: RabbitMQ with the rendered per-service users and topic permissions
+        run: |
+          node deploy/rabbitmq/render-definitions.cjs
+          docker run -d --name rabbitmq -p 5672:5672 \
+            -v "$PWD/deploy/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro" \
+            -v "$PWD/deploy/rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/20-definitions.conf:ro" \
+            rabbitmq:3.13
+          for i in $(seq 1 30); do
+            docker exec rabbitmq rabbitmq-diagnostics -q ping && break
+            sleep 2
+          done
+          docker exec rabbitmq rabbitmq-diagnostics -q ping
       - name: Apply migrations to an empty database
         run: npx prisma migrate deploy --schema=libs/database/src/schema.prisma
       - name: Migrations cover the whole schema (no drift)
@@ -229,9 +241,22 @@ jobs:
         run: |
           for svc in auth exam finance admin r2 gateway; do
             echo "::group::$svc-service e2e"
+            # Services without a broker user of their own boot with auth's.
+            case "$svc" in auth|exam|finance) user=$svc ;; *) user=auth ;; esac
+            pass_var="RABBITMQ_$(echo "$user" | tr a-z A-Z)_PASS"
+            export RABBITMQ_URL="amqp://$user:${!pass_var}@localhost:5672"
+            # exam's legacy event subscriber declares a queue named SERVICE_NAME,
+            # which is the only non-prefixed queue the exam broker user may touch.
+            export SERVICE_NAME="$svc-service"
             (cd apps/$svc-service && ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec)
             echo "::endgroup::"
           done
+      - name: Messaging e2e (outbox relay, idempotent consumer, broker permissions, purge)
+        run: |
+          export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"
+          (cd apps/finance-service && RABBITMQ_URL="amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-registered.e2e-spec.ts)
+          (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/register-outbox.e2e-spec.ts)
+          (cd libs/messaging && ../../node_modules/.bin/jest --config test/jest-e2e.json)
 
   # FE tests (vitest) are added by the frontend RBAC phase.
   fe:

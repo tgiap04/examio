@@ -137,6 +137,9 @@ jobs:
                 exit 1
               fi
 
+              echo "   Rendering RabbitMQ definitions..."
+              docker compose run --rm rabbitmq-defs
+
               echo "   Building..."
               docker compose build $BUILD_ARGS --parallel
 
