@@ -9,6 +9,7 @@ import {
     invokeRpc,
     redactMetadata,
 } from '@examio/grpc';
+import { ServiceMetadata } from '@examio/auth-jwt';
 import { Observable } from 'rxjs';
 
 export const R2_GRPC = 'R2_GRPC';
@@ -33,7 +34,10 @@ export class R2Client implements OnModuleInit {
     private readonly logger = new Logger(R2Client.name);
     private r2!: r2V1.R2ServiceClient;
 
-    constructor(@Inject(R2_GRPC) private readonly client: ClientGrpc) {}
+    constructor(
+        @Inject(R2_GRPC) private readonly client: ClientGrpc,
+        private readonly serviceMetadata: ServiceMetadata
+    ) {}
 
     onModuleInit(): void {
         this.r2 = this.client.getService<r2V1.R2ServiceClient>(
@@ -41,15 +45,23 @@ export class R2Client implements OnModuleInit {
         );
     }
 
-    /** Runs one RPC; failures are logged with redacted metadata, then rethrown. */
+    /**
+     * Runs one RPC as `svc:exam` (a forwarded user token in `metadata` wins);
+     * failures are logged with redacted metadata, then rethrown.
+     */
     private async call<T>(
         op: string,
         metadata: Metadata,
-        invoke: (options: CallOptions) => Observable<T>,
+        invoke: (options: CallOptions, md: Metadata) => Observable<T>,
         options?: InvokeOptions
     ): Promise<T> {
         try {
-            return await invokeRpc(`${RPC}/${op}`, invoke, options);
+            const md = await this.serviceMetadata.attach(metadata, 'r2');
+            return await invokeRpc(
+                `${RPC}/${op}`,
+                (callOptions) => invoke(callOptions, md),
+                options
+            );
         } catch (error) {
             this.logger.error(
                 `R2 ${op} failed: ${(error as Error).message} ${JSON.stringify(redactMetadata(metadata))}`
@@ -69,7 +81,7 @@ export class R2Client implements OnModuleInit {
         const response = await this.call(
             'UploadFile',
             metadata,
-            (options) =>
+            (options, md) =>
                 this.r2.uploadFile(
                     {
                         userId: '',
@@ -78,7 +90,7 @@ export class R2Client implements OnModuleInit {
                         mimetype,
                         folder: folder ?? '',
                     },
-                    metadata,
+                    md,
                     options
                 ),
             { deadlineMs: 60_000 }
@@ -98,8 +110,8 @@ export class R2Client implements OnModuleInit {
         keyR2: string,
         metadata: Metadata
     ): Promise<void> {
-        const response = await this.call('DeleteFile', metadata, (options) =>
-            this.r2.deleteFile({ keyR2 }, metadata, options)
+        const response = await this.call('DeleteFile', metadata, (options, md) =>
+            this.r2.deleteFile({ keyR2 }, md, options)
         );
         if (!response.success) {
             this.logger.warn(`Failed to delete file: ${response.message}`);
@@ -114,7 +126,7 @@ export class R2Client implements OnModuleInit {
         const response = await this.call(
             'DeleteObjects',
             metadata,
-            (options) => this.r2.deleteObjects({ keys }, metadata, options),
+            (options, md) => this.r2.deleteObjects({ keys }, md, options),
             { deadlineMs: 30_000 }
         );
         return response.deletedCount;

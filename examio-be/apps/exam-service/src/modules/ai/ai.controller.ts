@@ -8,7 +8,6 @@ import {
     Body,
     Param,
     Query,
-    UseGuards,
     Req,
     UseInterceptors,
     UploadedFile,
@@ -25,7 +24,7 @@ import {
     ApiConsumes,
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { AuthGuard, AuthenticatedRequest } from '@examio/common';
+import { AuthenticatedRequest } from '@examio/common';
 import { AIService } from './ai.service';
 import {
     UploadFileDto,
@@ -33,6 +32,7 @@ import {
     UploadImageDto,
     GenerateFromFileDto,
 } from './dto/ai.dto';
+import { Authenticated } from '@examio/auth-jwt';
 
 @ApiTags('AI')
 @Controller('ai')
@@ -42,7 +42,7 @@ export class AIController {
     constructor(private readonly aiService: AIService) {}
 
     @Post('quick-upload')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @UseInterceptors(FileInterceptor('file'))
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
@@ -84,7 +84,7 @@ export class AIController {
     }
 
     @Post('generate-from-file')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @UseInterceptors(FileInterceptor('file'))
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
@@ -123,7 +123,7 @@ export class AIController {
     }
 
     @Get('recent-uploads')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy danh sách file đã upload (Teacher & Student)' })
     @ApiQuery({ name: 'page', required: false, type: Number })
@@ -142,7 +142,7 @@ export class AIController {
     }
 
     @Get('models')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lay catalog model AI cho frontend' })
     @ApiResponse({ status: 200, description: 'Danh sach model AI' })
@@ -151,7 +151,7 @@ export class AIController {
     }
 
     @Get('upload/:uploadId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy chi tiết file đã upload (Teacher & Student)' })
     @ApiParam({ name: 'uploadId', description: 'ID của upload' })
@@ -164,7 +164,7 @@ export class AIController {
     }
 
     @Delete('upload/:uploadId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Xóa file upload (Teacher & Student)' })
     @ApiParam({ name: 'uploadId', description: 'ID của upload' })
@@ -177,7 +177,7 @@ export class AIController {
     }
 
     @Post('upload')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Tạo upload mới và trigger OCR (Teacher & Student)' })
     @ApiResponse({ status: 201, description: 'Upload đã được tạo' })
@@ -189,7 +189,7 @@ export class AIController {
     }
 
     @Post('upload-image')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Upload image cho AI chat (Teacher & Student)' })
     @ApiResponse({ status: 201, description: 'Image đã được upload' })
@@ -205,7 +205,7 @@ export class AIController {
     }
 
     @Post('regenerate/:uploadId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Tạo lại quiz/flashcard từ file (Teacher only)' })
     @ApiParam({ name: 'uploadId', description: 'ID của upload' })
@@ -219,7 +219,7 @@ export class AIController {
     }
 
     @Get('job/:jobId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy trạng thái job (Teacher & Student)' })
     @ApiParam({ name: 'jobId', description: 'ID của job (userStorageId)' })
@@ -240,7 +240,7 @@ export class AIController {
     }
 
     @Delete('job/:jobId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Hủy job đang xử lý (Teacher & Student)' })
     @ApiParam({ name: 'jobId', description: 'ID của job (userStorageId)' })
@@ -261,7 +261,7 @@ export class AIController {
     }
 
     @Get('upload/:uploadId/history')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Lấy lịch sử quiz và flashcard đã tạo cho một file (Teacher & Student)',

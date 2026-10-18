@@ -7,6 +7,7 @@
     "^.+\\.(t|j)s$": "ts-jest"
   },
   "moduleNameMapper": {
+    "^@examio/auth-jwt(.*)$": "<rootDir>/../src/$1",
     "^@examio/messaging(.*)$": "<rootDir>/../src/$1"
   },
   "testTimeout": 60000,

@@ -11,9 +11,13 @@ function setup(overrides: Record<string, jest.Mock> = {}) {
         deleteObjects: jest.fn((..._a: unknown[]) => of({ deletedCount: 2 })),
         ...overrides,
     };
-    const client = new R2Client({ getService: () => service } as unknown as ClientGrpc);
+    const serviceMetadata = { attach: jest.fn(async (md: Metadata, _audience: string) => md) };
+    const client = new R2Client(
+        { getService: () => service } as unknown as ClientGrpc,
+        serviceMetadata as never
+    );
     client.onModuleInit();
-    return { client, service };
+    return { client, service, serviceMetadata };
 }
 
 describe('R2Client', () => {
@@ -22,6 +26,16 @@ describe('R2Client', () => {
         const md = buildMetadata({ requestId: 'req_1' });
         await client.deleteFile('a/b.png', md);
         expect(service.deleteFile.mock.calls[0][1]).toBe(md);
+    });
+
+    it('calls r2 as a service: every operation attaches a token for the r2 audience', async () => {
+        const { client, serviceMetadata } = setup();
+        const md = buildMetadata();
+        await client.deleteFile('a.png', md);
+        await client.deleteObjects(['a'], md);
+        await client.uploadFile('f.png', Buffer.from('x'), 'image/png', undefined, md);
+        expect(serviceMetadata.attach).toHaveBeenCalledTimes(3);
+        for (const call of serviceMetadata.attach.mock.calls) expect(call[1]).toBe('r2');
     });
 
     it('uploadFile returns the key and passes metadata', async () => {

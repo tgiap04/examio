@@ -13,6 +13,7 @@ import { AIChatRepository } from './ai-chat.repository';
 import { R2UploadService } from '../r2/r2-upload.service';
 import { User } from '@prisma/client';
 import { PrismaService } from '@examio/database';
+import type { AuthUser } from '@examio/auth-jwt';
 
 
 @Injectable()
@@ -58,7 +59,7 @@ export class AIChatService {
 
     // ==================== CHAT ====================
 
-    async getChats(user: User) {
+    async getChats(user: AuthUser) {
         const chats = await this.chatRepository.findChatsByUserId(user.id);
         return {
             chats: chats.map((chat) => ({
@@ -84,7 +85,7 @@ export class AIChatService {
         };
     }
 
-    async createChat(user: User, title?: string, subjectId?: string) {
+    async createChat(user: AuthUser, title?: string, subjectId?: string) {
         let chatTitle = title || '';
 
         // If no custom title and has subject, use subject name as title
@@ -123,12 +124,12 @@ export class AIChatService {
         return chat;
     }
 
-    async updateChat(chatId: string, user: User, title: string) {
+    async updateChat(chatId: string, user: AuthUser, title: string) {
         const chat = await this.getChatByIdAndValidateOwner(chatId, user);
         return this.chatRepository.updateChat(chat.id, { title });
     }
 
-    async deleteChat(chatId: string, user: User) {
+    async deleteChat(chatId: string, user: AuthUser) {
         await this.getChatByIdAndValidateOwner(chatId, user);
         await this.chatRepository.deleteChat(chatId);
         return { success: true, message: 'Chat deleted' };
@@ -141,14 +142,14 @@ export class AIChatService {
 
     // ==================== MESSAGES ====================
 
-    async getMessages(chatId: string, user: User) {
+    async getMessages(chatId: string, user: AuthUser) {
         await this.getChatByIdAndValidateOwner(chatId, user);
         return this.chatRepository.findMessagesByChatId(chatId);
     }
 
     async sendMessage(
         chatId: string,
-        user: User,
+        user: AuthUser,
         data: {
             message: string;
             imageUrl?: string;
@@ -254,7 +255,7 @@ export class AIChatService {
 
     async streamMessage(
         chatId: string,
-        user: User,
+        user: AuthUser,
         data: {
             message: string;
             imageUrl?: string;
@@ -440,7 +441,7 @@ export class AIChatService {
         return subject.asObservable();
     }
 
-    async updateMessage(messageId: string, user: User, content: string) {
+    async updateMessage(messageId: string, user: AuthUser, content: string) {
         const message = await this.chatRepository.findMessageById(messageId);
         if (!message) throw new NotFoundException('Message not found');
 
@@ -450,7 +451,7 @@ export class AIChatService {
         return this.chatRepository.updateMessage(messageId, { content });
     }
 
-    async deleteMessage(messageId: string, user: User) {
+    async deleteMessage(messageId: string, user: AuthUser) {
         const message = await this.chatRepository.findMessageById(messageId);
         if (!message) throw new NotFoundException('Message not found');
 
@@ -460,7 +461,7 @@ export class AIChatService {
         return { success: true, message: 'Message deleted' };
     }
 
-    async regenerateFromMessage(messageId: string, user: User) {
+    async regenerateFromMessage(messageId: string, user: AuthUser) {
         const message = await this.chatRepository.findMessageById(messageId);
         if (!message) throw new NotFoundException('Message not found');
         if (message.role !== 'user')
@@ -490,7 +491,7 @@ export class AIChatService {
 
     async regenerateFromMessageStream(
         messageId: string,
-        user: User
+        user: AuthUser
     ): Promise<Observable<any>> {
         const message = await this.chatRepository.findMessageById(messageId);
         if (!message) throw new NotFoundException('Message not found');
@@ -521,14 +522,14 @@ export class AIChatService {
 
     // ==================== DOCUMENTS ====================
 
-    async getDocuments(chatId: string, user: User) {
+    async getDocuments(chatId: string, user: AuthUser) {
         await this.getChatByIdAndValidateOwner(chatId, user);
         return this.chatRepository.findDocumentsByChatId(chatId);
     }
 
     async addDocument(
         chatId: string,
-        user: User,
+        user: AuthUser,
         documentId: string,
         documentName: string
     ) {
@@ -541,7 +542,7 @@ export class AIChatService {
         });
     }
 
-    async removeDocument(chatId: string, user: User, documentId: string) {
+    async removeDocument(chatId: string, user: AuthUser, documentId: string) {
         await this.getChatByIdAndValidateOwner(chatId, user);
         await this.chatRepository.removeDocument(chatId, documentId);
         return { success: true };
@@ -549,7 +550,7 @@ export class AIChatService {
 
     // ==================== HELPERS ====================
 
-    private async getChatByIdAndValidateOwner(chatId: string, user: User) {
+    private async getChatByIdAndValidateOwner(chatId: string, user: AuthUser) {
         const chat = await this.chatRepository.findChatById(chatId);
         if (!chat || chat.userId !== user.id) {
             throw new NotFoundException('Chat not found');
@@ -713,7 +714,7 @@ export class AIChatService {
         }
     }
 
-    async clearChat(chatId: string, user: User, deleteFiles: boolean = false) {
+    async clearChat(chatId: string, user: AuthUser, deleteFiles: boolean = false) {
         // Validate chat ownership
         await this.getChatByIdAndValidateOwner(chatId, user);
 

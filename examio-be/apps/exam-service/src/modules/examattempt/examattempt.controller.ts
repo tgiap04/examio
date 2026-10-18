@@ -2,7 +2,6 @@ import {
     Controller,
     Post,
     Body,
-    UseGuards,
     Req,
     Get,
     Put,
@@ -18,11 +17,12 @@ import {
     ApiCookieAuth,
     ApiParam,
 } from '@nestjs/swagger';
-import { AuthGuard, AuthenticatedRequest } from '@examio/common';
+import { AuthenticatedRequest } from '@examio/common';
 import { ExamAttemptService } from './examattempt.service';
 import { CreateExamAttemptDto } from './dto/create-examattempt.dto';
 import { UpdateExamAttemptDto } from './dto/update-examattempt.dto';
 import { GetExamAttemptsDto } from './dto/get-examattempt.dto';
+import { Authenticated } from '@examio/auth-jwt';
 
 @ApiTags('ExamAttempts')
 @ApiExtraModels(CreateExamAttemptDto, UpdateExamAttemptDto, GetExamAttemptsDto)
@@ -33,7 +33,7 @@ export class ExamAttemptController {
     // ==================== HISTORY STATS ENDPOINT ====================
 
     @Get('history-stats')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get aggregated history statistics for user' })
     @ApiResponse({
@@ -48,7 +48,7 @@ export class ExamAttemptController {
     // ==================== NEW QUIZ ENDPOINTS ====================
 
     @Post('start')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Start or resume an exam attempt (with retry limit check)',
@@ -66,7 +66,7 @@ export class ExamAttemptController {
     }
 
     @Put(':id/progress')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update exam attempt progress (auto-save)' })
     @ApiParam({ name: 'id', description: 'Exam attempt ID' })
@@ -93,7 +93,7 @@ export class ExamAttemptController {
     }
 
     @Post(':id/submit')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Submit exam attempt and calculate score' })
     @ApiParam({ name: 'id', description: 'Exam attempt ID' })
@@ -110,7 +110,7 @@ export class ExamAttemptController {
     }
 
     @Get(':id/quiz')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get exam attempt with questions for quiz view' })
     @ApiParam({ name: 'id', description: 'Exam attempt ID' })
@@ -129,7 +129,7 @@ export class ExamAttemptController {
     // ==================== SECURE QUIZ ENDPOINTS ====================
 
     @Get(':id/secure-quiz')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Get exam attempt with encrypted questions and JWT tokens',
@@ -148,7 +148,7 @@ export class ExamAttemptController {
     }
 
     @Post(':id/secure-submit')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Submit exam attempt with JWT token verification',
@@ -173,7 +173,7 @@ export class ExamAttemptController {
     }
 
     @Get('list-by-room/:examRoomId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Get all exam attempts for an exam room (owner only)',
@@ -201,7 +201,7 @@ export class ExamAttemptController {
     }
 
     @Get('list-by-session/:sessionId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Get all exam attempts for a session (owner only)',
@@ -230,7 +230,7 @@ export class ExamAttemptController {
     }
 
     @Get(':id/detail')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Get exam attempt details for slider view (owner only)',
@@ -254,7 +254,7 @@ export class ExamAttemptController {
     // ==================== EXISTING ENDPOINTS ====================
 
     @Post()
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Start a new exam attempt' })
     @ApiResponse({
@@ -273,7 +273,7 @@ export class ExamAttemptController {
     }
 
     @Get('get-by-id/:id')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get an exam attempt by ID' })
     @ApiParam({ name: 'id', description: 'Exam attempt ID' })
@@ -290,7 +290,7 @@ export class ExamAttemptController {
     }
 
     @Put(':id')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update an exam attempt by ID' })
     @ApiParam({ name: 'id', description: 'Exam attempt ID' })
@@ -312,7 +312,7 @@ export class ExamAttemptController {
     }
 
     @Get('list')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get a list of exam attempts' })
     @ApiResponse({
@@ -331,7 +331,7 @@ export class ExamAttemptController {
     }
 
     @Delete(':id')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete an exam attempt by ID' })
     @ApiParam({ name: 'id', description: 'Exam attempt ID' })

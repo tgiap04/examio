@@ -1,6 +1,5 @@
 import {
     Controller,
-    UseGuards,
     Req,
     Get,
     Put,
@@ -18,7 +17,7 @@ import {
     ApiConsumes,
     ApiBody,
 } from '@nestjs/swagger';
-import { AuthGuard } from '@examio/common';
+import { Authenticated } from '@examio/auth-jwt';
 import { ProfileService } from './profile.service';
 import { AuthenticatedRequest } from '../dto/request-with-auth.dto';
 import { UpdateProfileDto, ProfileResponseDto } from './dto/profile.dto';
@@ -30,7 +29,7 @@ export class ProfileController {
     constructor(private readonly profileService: ProfileService) {}
 
     @Get()
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy thông tin hồ sơ người dùng' })
     @ApiResponse({
@@ -43,7 +42,7 @@ export class ProfileController {
     }
 
     @Put()
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Cập nhật hồ sơ người dùng' })
     @ApiResponse({
@@ -59,7 +58,7 @@ export class ProfileController {
     }
 
     @Post('upload-avatar')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @UseInterceptors(FileInterceptor('file'))
     @ApiConsumes('multipart/form-data')
@@ -88,7 +87,7 @@ export class ProfileController {
     }
 
     @Post('upload-banner')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @UseInterceptors(FileInterceptor('file'))
     @ApiConsumes('multipart/form-data')

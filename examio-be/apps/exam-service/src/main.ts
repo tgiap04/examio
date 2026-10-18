@@ -13,12 +13,6 @@ import {
 import { RedisIoAdapter } from './modules/study-room/redis-io.adapter';
 
 async function bootstrap() {
-    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-        throw new Error(
-            'JWT_SECRET is missing or too short (must be >= 32 characters). Refusing to start.'
-        );
-    }
-
     // WS gateway (study-room) dùng cookie auth sameSite=none ở prod — origin
     // allowlist bắt buộc, không được fail-open. Xem wsAllowedOrigins().
     if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL) {

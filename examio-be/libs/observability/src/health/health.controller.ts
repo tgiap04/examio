@@ -7,6 +7,7 @@ import {
     ServiceUnavailableException,
 } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
+import { Public } from '@examio/auth-jwt';
 import {
     HealthCheck,
     HealthCheckService,
@@ -20,7 +21,9 @@ import {
     ReadinessCheck,
 } from './readiness-check';
 
-// Probes are hit every few seconds by the orchestrator; never rate-limit them.
+// Probes are hit every few seconds by the orchestrator; never rate-limit them
+// and never ask them for credentials (@Public: deny-by-default skips probes).
+@Public()
 @SkipThrottle()
 @Controller('health')
 export class HealthController {

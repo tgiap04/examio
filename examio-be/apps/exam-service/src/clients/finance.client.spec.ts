@@ -10,9 +10,13 @@ function setup() {
             of({ success: true, newBalance: 15, message: '' })
         ),
     };
-    const client = new FinanceClient({ getService: () => wallet } as unknown as ClientGrpc);
+    const serviceMetadata = { attach: jest.fn(async (md: unknown) => md) };
+    const client = new FinanceClient(
+        { getService: () => wallet } as unknown as ClientGrpc,
+        serviceMetadata as never
+    );
     client.onModuleInit();
-    return { client, wallet };
+    return { client, wallet, serviceMetadata };
 }
 
 const update = (amount: number) => ({
@@ -43,6 +47,13 @@ describe('FinanceClient money guard', () => {
             newBalance: 15,
         });
         expect(wallet.updateBalance.mock.calls[0][0]).toMatchObject({ amount: 5 });
+    });
+
+    it('calls finance as a service (token for the finance audience)', async () => {
+        const { client, serviceMetadata } = setup();
+        const md = buildMetadata();
+        await client.updateBalance(update(5), md);
+        expect(serviceMetadata.attach).toHaveBeenCalledWith(md, 'finance');
     });
 
     it('assertWholeCredits accepts the int32 maximum', () => {

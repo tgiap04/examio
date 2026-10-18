@@ -1,11 +1,12 @@
-import { Controller, Get, Post, Param, Body, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { AuthGuard, AuthenticatedRequest } from '@examio/common';
+import { AuthenticatedRequest } from '@examio/common';
 import { FlashcardStudyService } from './flashcard-study.service';
+import { Authenticated } from '@examio/auth-jwt';
 
 @ApiTags('Flashcard Study')
 @Controller('flashcard-study')
-@UseGuards(AuthGuard)
+@Authenticated()
 @ApiBearerAuth('access-token')
 export class FlashcardStudyController {
     constructor(private readonly flashcardStudyService: FlashcardStudyService) {}

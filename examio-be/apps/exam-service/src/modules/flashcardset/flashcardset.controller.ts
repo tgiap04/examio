@@ -2,7 +2,6 @@ import {
     Controller,
     Post,
     Body,
-    UseGuards,
     Req,
     Get,
     Put,
@@ -23,12 +22,7 @@ import {
     ApiParam,
     ApiHeader,
 } from '@nestjs/swagger';
-import {
-    AuthGuard,
-    OptionalAuthGuard,
-    AuthenticatedRequest,
-    TurnstileService,
-} from '@examio/common';
+import { AuthenticatedRequest, TurnstileService } from '@examio/common';
 import { FlashcardsetService } from './flashcardset.service';
 import { CreateFlashcardsetDto } from './dto/create-flashcardset.dto';
 import { UpdateFlashcardSetDto } from './dto/update-flashcardset.dto';
@@ -64,6 +58,7 @@ import {
     UpdateFlashcardLabelDto,
     AssignFlashcardsToLabelDto,
 } from './dto/flashcard-label.dto';
+import { Authenticated, Public } from '@examio/auth-jwt';
 
 @ApiTags('Flashcardsets')
 @ApiExtraModels(
@@ -85,7 +80,7 @@ export class FlashcardsetController {
     ) {}
 
     @Post()
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @UseInterceptors(FileInterceptor('thumbnail'))
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Create a new flashcard set (Teacher only)' })
@@ -129,7 +124,7 @@ export class FlashcardsetController {
     }
 
     @Get('stats')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get flashcard set statistics' })
     @ApiResponse({
@@ -141,7 +136,7 @@ export class FlashcardsetController {
     }
 
     @Get(':id')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get a flashcard set by ID' })
     @ApiResponse({
@@ -157,7 +152,7 @@ export class FlashcardsetController {
     }
 
     @Get(':id/flashcards')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get paginated flashcards for a flashcard set' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
@@ -180,7 +175,7 @@ export class FlashcardsetController {
     }
 
     @Put(':id')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @UseInterceptors(FileInterceptor('thumbnail'))
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update a flashcard set by ID (Teacher only)' })
@@ -226,7 +221,7 @@ export class FlashcardsetController {
     }
 
     @Get()
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get a list of flashcard sets' })
     @ApiResponse({
@@ -245,7 +240,7 @@ export class FlashcardsetController {
     }
 
     @Delete(':id')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete a flashcard set by ID (Teacher only)' })
     @ApiResponse({
@@ -261,7 +256,7 @@ export class FlashcardsetController {
     }
 
     @Post(':id/share')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Generate share link and access code for flashcard set' })
     @ApiResponse({
@@ -276,7 +271,7 @@ export class FlashcardsetController {
     }
 
     @Get('public/:id')
-    @UseGuards(OptionalAuthGuard)
+    @Public()
     @ApiOperation({ summary: 'Get a public flashcard set by ID' })
     @ApiResponse({
         status: 200,
@@ -288,7 +283,7 @@ export class FlashcardsetController {
     }
 
     @Post('set-flashcards-to-flashcardset')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Set flashcards to a flashcard set' })
     @ApiResponse({
@@ -307,7 +302,7 @@ export class FlashcardsetController {
     }
 
     @Post('save-history-to-flashcardset')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Lưu flashcards từ history vào flashcard sets với label',
@@ -325,7 +320,7 @@ export class FlashcardsetController {
     }
 
     @Get(':flashcardSetId/labels')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get all labels for a flashcard set' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -341,7 +336,7 @@ export class FlashcardsetController {
     }
 
     @Post(':flashcardSetId/labels')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Create a new label for a flashcard set' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -358,7 +353,7 @@ export class FlashcardsetController {
     }
 
     @Put(':flashcardSetId/labels/:labelId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update a label' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -382,7 +377,7 @@ export class FlashcardsetController {
     }
 
     @Delete(':flashcardSetId/labels/:labelId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete a label' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -400,7 +395,7 @@ export class FlashcardsetController {
     }
 
     @Post(':flashcardSetId/labels/:labelId/flashcards')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Assign flashcards to a label' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -424,7 +419,7 @@ export class FlashcardsetController {
     }
 
     @Delete(':flashcardSetId/labels/:labelId/flashcards')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Remove flashcards from a label' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -448,7 +443,7 @@ export class FlashcardsetController {
     }
 
     @Get(':flashcardSetId/labels/:labelId/flashcards')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get flashcards by label' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -474,7 +469,7 @@ export class FlashcardsetController {
     // ==================== FLASHCARD CRUD ENDPOINTS ====================
 
     @Post(':flashcardSetId/flashcards')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Add a flashcard to a flashcard set' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -496,7 +491,7 @@ export class FlashcardsetController {
     }
 
     @Put(':flashcardSetId/flashcards/:flashcardId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update a flashcard in a flashcard set' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -521,7 +516,7 @@ export class FlashcardsetController {
     }
 
     @Delete(':flashcardSetId/flashcards/:flashcardId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete a flashcard from a flashcard set' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -546,7 +541,7 @@ export class FlashcardsetController {
     // ==================== SHARING & ACCESS ENDPOINTS ====================
 
     @Get('study/:id/access')
-    @UseGuards(OptionalAuthGuard)
+    @Public()
     @ApiOperation({ summary: 'Check access for a flashcard set' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
     @ApiResponse({
@@ -561,6 +556,7 @@ export class FlashcardsetController {
         return this.flashcardsetService.checkAccess(id, req.user?.id);
     }
 
+    @Public()
     @Get('study/:id/info')
     @ApiOperation({ summary: 'Get public info for a flashcard set' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
@@ -574,7 +570,7 @@ export class FlashcardsetController {
     }
 
     @Get('study/:id')
-    @UseGuards(OptionalAuthGuard)
+    @Public()
     @ApiOperation({ summary: 'Get flashcard set for study with access check' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
     @ApiResponse({
@@ -596,6 +592,7 @@ export class FlashcardsetController {
         );
     }
 
+    @Public()
     @Post('study/:id/verify-code')
     @ApiOperation({ summary: 'Verify access code for a private flashcard set' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
@@ -612,7 +609,7 @@ export class FlashcardsetController {
     }
 
     @Post('study/:id/with-code')
-    @UseGuards(OptionalAuthGuard)
+    @Public()
     @ApiOperation({ summary: 'Get flashcard set using access code' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
     @ApiResponse({
@@ -636,7 +633,7 @@ export class FlashcardsetController {
     }
 
     @Get(':id/sharing')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get sharing settings for a flashcard set' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
@@ -652,7 +649,7 @@ export class FlashcardsetController {
     }
 
     @Put(':id/sharing')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update sharing settings for a flashcard set' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
@@ -674,7 +671,7 @@ export class FlashcardsetController {
     }
 
     @Post(':id/generate-code')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Generate a new access code' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
@@ -696,7 +693,7 @@ export class FlashcardsetController {
     }
 
     @Get('users/search')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Search users by username for whitelist' })
     @ApiResponse({

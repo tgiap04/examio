@@ -9,7 +9,7 @@ import {
     ForbiddenException,
 } from '@nestjs/common';
 import { GenerateIdService, sanitizeFilename } from '@examio/common';
-import { User } from '@prisma/client';
+
 import { CreateFlashcardsetDto } from './dto/create-flashcardset.dto';
 import { GetFlashcardsetsDto } from './dto/get-flashcardset.dto';
 import { UpdateFlashcardSetDto } from './dto/update-flashcardset.dto';
@@ -24,6 +24,7 @@ import {
 import { FlashCardSetRepository } from './flashcardset.repository';
 import { R2Client } from '../../clients/r2.client';
 import { buildMetadata } from '@examio/grpc';
+import type { AuthUser } from '@examio/auth-jwt';
 
 @Injectable()
 export class FlashcardsetService {
@@ -35,7 +36,7 @@ export class FlashcardsetService {
     ) {}
 
     async createFlashcardSet(
-        user: User,
+        user: AuthUser,
         dto: CreateFlashcardsetDto,
         thumbnailFile?: Express.Multer.File
     ) {
@@ -96,7 +97,7 @@ export class FlashcardsetService {
         }
     }
 
-    async getFlashcardSetStats(user: User) {
+    async getFlashcardSetStats(user: AuthUser) {
         try {
             // Get total count and total view count in a single query
             const stats = await this.prisma.flashCardSet.aggregate({
@@ -130,7 +131,7 @@ export class FlashcardsetService {
         }
     }
 
-    async getFlashcardSetById(id: string, user: User) {
+    async getFlashcardSetById(id: string, user: AuthUser) {
         const flashcardSet = await this.flashcardSetRepository.findOne({
             where: { id, userId: user.id },
             include: {
@@ -163,7 +164,7 @@ export class FlashcardsetService {
      */
     async getFlashcardSetFlashcards(
         id: string,
-        user: User,
+        user: AuthUser,
         page: number = 1,
         limit: number = 10,
         labelId?: string | null
@@ -237,7 +238,7 @@ export class FlashcardsetService {
         };
     }
 
-    async deleteFlashcardSet(id: string, user: User) {
+    async deleteFlashcardSet(id: string, user: AuthUser) {
         // Check ownership
         const flashcardSet = await this.flashcardSetRepository.findOne({
             where: { id, userId: user.id },
@@ -298,7 +299,7 @@ export class FlashcardsetService {
         };
     }
 
-    async getFlashcardSets(user: User, dto: GetFlashcardsetsDto) {
+    async getFlashcardSets(user: AuthUser, dto: GetFlashcardsetsDto) {
         const where: any = {
             userId: user.id,
         };
@@ -355,7 +356,7 @@ export class FlashcardsetService {
 
     async updateFlashcardSet(
         id: string,
-        user: User,
+        user: AuthUser,
         dto: UpdateFlashcardSetDto,
         thumbnailFile?: Express.Multer.File
     ) {
@@ -466,7 +467,7 @@ export class FlashcardsetService {
     }
 
     async setFlashcardsToFlashcardSet(
-        user: User,
+        user: AuthUser,
         dto: SetFlashcardToFlashcardsetDto
     ) {
         try {
@@ -558,7 +559,7 @@ export class FlashcardsetService {
      * - Check duplicate theo nội dung flashcard (question + answer)
      */
     async saveHistoryToFlashcardSet(
-        user: User,
+        user: AuthUser,
         dto: SaveHistoryToFlashcardsetDto
     ) {
         try {
@@ -907,7 +908,7 @@ export class FlashcardsetService {
      */
     async addFlashcardToFlashcardSet(
         flashcardSetId: string,
-        user: User,
+        user: AuthUser,
         dto: { question: string; answer: string }
     ) {
         // Check ownership
@@ -959,7 +960,7 @@ export class FlashcardsetService {
     async updateFlashcardInFlashcardSet(
         flashcardSetId: string,
         flashcardId: string,
-        user: User,
+        user: AuthUser,
         dto: { question?: string; answer?: string }
     ) {
         // Check ownership of flashcardset
@@ -1010,7 +1011,7 @@ export class FlashcardsetService {
     async deleteFlashcardFromFlashcardSet(
         flashcardSetId: string,
         flashcardId: string,
-        user: User
+        user: AuthUser
     ) {
         // Check ownership of flashcardset
         const flashcardSet = await this.flashcardSetRepository.findOne({
@@ -1324,7 +1325,7 @@ export class FlashcardsetService {
      */
     async updateSharingSettings(
         id: string,
-        user: User,
+        user: AuthUser,
         dto: FlashcardSetUpdateSharingSettingsDto
     ) {
         // Check ownership
@@ -1374,7 +1375,7 @@ export class FlashcardsetService {
     /**
      * Get sharing settings for owner
      */
-    async getSharingSettings(id: string, user: User) {
+    async getSharingSettings(id: string, user: AuthUser) {
         const flashcardSet = await this.prisma.flashCardSet.findFirst({
             where: { id, userId: user.id },
             select: {
@@ -1453,7 +1454,7 @@ export class FlashcardsetService {
     /**
      * Get all labels for a flashcard set
      */
-    async getLabels(flashcardSetId: string, user: User) {
+    async getLabels(flashcardSetId: string, user: AuthUser) {
         // Check ownership
         const flashcardSet = await this.flashcardSetRepository.findOne({
             where: { id: flashcardSetId, userId: user.id },
@@ -1493,7 +1494,7 @@ export class FlashcardsetService {
      */
     async createLabel(
         flashcardSetId: string,
-        user: User,
+        user: AuthUser,
         dto: CreateFlashcardLabelDto
     ) {
         // Check ownership
@@ -1524,7 +1525,7 @@ export class FlashcardsetService {
     async updateLabel(
         flashcardSetId: string,
         labelId: string,
-        user: User,
+        user: AuthUser,
         dto: UpdateFlashcardLabelDto
     ) {
         // Check ownership
@@ -1560,7 +1561,7 @@ export class FlashcardsetService {
     /**
      * Delete a label
      */
-    async deleteLabel(flashcardSetId: string, labelId: string, user: User) {
+    async deleteLabel(flashcardSetId: string, labelId: string, user: AuthUser) {
         // Check ownership
         const flashcardSet = await this.flashcardSetRepository.findOne({
             where: { id: flashcardSetId, userId: user.id },
@@ -1598,7 +1599,7 @@ export class FlashcardsetService {
     async assignFlashcardsToLabel(
         flashcardSetId: string,
         labelId: string,
-        user: User,
+        user: AuthUser,
         flashcardIds: string[]
     ) {
         // Check ownership
@@ -1647,7 +1648,7 @@ export class FlashcardsetService {
     async removeFlashcardsFromLabel(
         flashcardSetId: string,
         labelId: string,
-        user: User,
+        user: AuthUser,
         flashcardIds: string[]
     ) {
         // Check ownership
@@ -1682,7 +1683,7 @@ export class FlashcardsetService {
     async getFlashcardsByLabel(
         flashcardSetId: string,
         labelId: string,
-        user: User,
+        user: AuthUser,
         query: any
     ) {
         // Check ownership

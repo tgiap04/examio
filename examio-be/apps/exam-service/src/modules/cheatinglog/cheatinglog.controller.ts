@@ -4,7 +4,6 @@ import {
     Get,
     Body,
     Param,
-    UseGuards,
     Req,
 } from '@nestjs/common';
 import {
@@ -15,7 +14,8 @@ import {
 } from '@nestjs/swagger';
 import { CheatingLogService } from './cheatinglog.service';
 import { CreateCheatingLogDto } from './dto/create-cheatinglog.dto';
-import { AuthGuard, AuthenticatedRequest } from '@examio/common';
+import { AuthenticatedRequest } from '@examio/common';
+import { Authenticated } from '@examio/auth-jwt';
 
 @ApiTags('Cheating Logs')
 @Controller('cheatinglogs')
@@ -23,7 +23,7 @@ export class CheatingLogController {
     constructor(private readonly cheatingLogService: CheatingLogService) {}
 
     @Post()
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Log a cheating violation' })
     async logViolation(
@@ -34,7 +34,7 @@ export class CheatingLogController {
     }
 
     @Get('attempt/:id')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get cheating logs for an attempt (host only)' })
     @ApiParam({ name: 'id', description: 'Exam attempt ID' })
@@ -46,7 +46,7 @@ export class CheatingLogController {
     }
 
     @Get('session/:id/stats')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get cheating stats for a session (host only)' })
     @ApiParam({ name: 'id', description: 'Exam session ID' })
@@ -58,7 +58,7 @@ export class CheatingLogController {
     }
 
     @Get('session/:sessionId/user/:userId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary:

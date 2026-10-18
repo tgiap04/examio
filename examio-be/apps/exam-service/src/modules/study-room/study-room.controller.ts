@@ -2,7 +2,6 @@ import {
     Controller,
     Post,
     Body,
-    UseGuards,
     Req,
     Get,
     Put,
@@ -10,7 +9,7 @@ import {
     Param,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiCookieAuth, ApiParam } from '@nestjs/swagger';
-import { AuthGuard, AuthenticatedRequest } from '@examio/common';
+import { AuthenticatedRequest } from '@examio/common';
 import { StudyRoomService } from './study-room.service';
 import {
     CreateStudyRoomDto,
@@ -18,10 +17,11 @@ import {
     JoinByCodeDto,
     JoinRoomDto,
 } from './dto/study-room.dto';
+import { Authenticated } from '@examio/auth-jwt';
 
 @ApiTags('StudyRooms')
 @Controller('studyrooms')
-@UseGuards(AuthGuard)
+@Authenticated()
 @ApiCookieAuth('cookie-auth')
 export class StudyRoomController {
     constructor(private readonly service: StudyRoomService) {}

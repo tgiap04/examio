@@ -4,7 +4,24 @@ import { PrismaService } from '@examio/database';
 import { GenerateIdService } from '@examio/common';
 import { PROTO_FILES } from '@examio/contracts';
 import { GrpcClientModule } from '@examio/grpc';
-import { startTestGrpcServer, TestGrpcServer } from '@examio/grpc/testing';
+import { createTestGrpcClient, startTestGrpcServer, TestGrpcServer } from '@examio/grpc/testing';
+import { lastValueFrom } from 'rxjs';
+import { Metadata } from '@grpc/grpc-js';
+import { PROTO_FILES as PF, walletV1 } from '@examio/contracts';
+import {
+    AuthJwtModule,
+    ServiceMetadata,
+    ServiceTokenClient,
+    createTokenVerifier,
+} from '@examio/auth-jwt';
+import {
+    TEST_AUDIENCE,
+    TEST_ISSUER,
+    createTestKeyPair,
+    serviceClaims,
+    signTestToken,
+    type TestKeyPair,
+} from '@examio/auth-jwt/testing';
 import { WalletGrpcController } from '../../finance-service/src/modules/wallet/wallet.grpc.controller';
 import { SubscriptionGrpcController } from '../../finance-service/src/modules/sepay/subscription.grpc.controller';
 import { SubscriptionService } from '../../finance-service/src/modules/sepay/subscription.service';
@@ -20,6 +37,8 @@ describe('exam -> finance debit over gRPC', () => {
     let server: TestGrpcServer;
     let service: FinanceClientService;
     let consumer: { close(): Promise<void> };
+    let keys: TestKeyPair;
+    let rawWallet: walletV1.WalletServiceClient;
 
     const tx = {
         wallet: { updateMany: jest.fn(), findUniqueOrThrow: jest.fn(), update: jest.fn() },
@@ -32,7 +51,21 @@ describe('exam -> finance debit over gRPC', () => {
     };
 
     beforeAll(async () => {
+        keys = await createTestKeyPair('k1');
         const financeModule = await Test.createTestingModule({
+            imports: [
+                AuthJwtModule.forRoot({
+                    serviceName: 'finance',
+                    verifier: {
+                        useFactory: () =>
+                            createTokenVerifier({
+                                issuer: TEST_ISSUER,
+                                audiences: [TEST_AUDIENCE, 'finance'],
+                                localJwks: { keys: [keys.publicJwk] },
+                            }),
+                    },
+                }),
+            ],
             controllers: [WalletGrpcController, SubscriptionGrpcController],
             providers: [
                 { provide: PrismaService, useValue: prisma },
@@ -45,9 +78,30 @@ describe('exam -> finance debit over gRPC', () => {
         process.env[FINANCE_GRPC_REGISTRATION.urlEnv] = server.url;
         const examModule = await Test.createTestingModule({
             imports: [GrpcClientModule.register(FINANCE_GRPC_REGISTRATION)],
-            providers: [FinanceClient, FinanceClientService],
+            providers: [
+                FinanceClient,
+                FinanceClientService,
+                {
+                    provide: ServiceMetadata,
+                    useFactory: () =>
+                        new ServiceMetadata(
+                            new ServiceTokenClient({
+                                fetch: async (audience) => ({
+                                    token: await signTestToken(keys, {
+                                        claims: serviceClaims('exam'),
+                                        audience,
+                                    }),
+                                    expiresAt: Date.now() + 300_000,
+                                }),
+                            })
+                        ),
+                },
+            ],
         }).compile();
         await examModule.init();
+        rawWallet = createTestGrpcClient(server.url, [PF.wallet, PF.subscription]).getService<walletV1.WalletServiceClient>(
+            walletV1.WALLET_SERVICE_NAME
+        );
         service = examModule.get(FinanceClientService);
         consumer = examModule;
     });
@@ -96,7 +150,11 @@ describe('exam -> finance debit over gRPC', () => {
         process.env.DEAD_FINANCE_URL = '127.0.0.1:1';
         const mod = await Test.createTestingModule({
             imports: [GrpcClientModule.register({ ...FINANCE_GRPC_REGISTRATION, urlEnv: 'DEAD_FINANCE_URL' })],
-            providers: [FinanceClient, FinanceClientService],
+            providers: [
+                FinanceClient,
+                FinanceClientService,
+                { provide: ServiceMetadata, useValue: { attach: async (m: Metadata) => m } },
+            ],
         }).compile();
         await mod.init();
         try {
@@ -107,6 +165,28 @@ describe('exam -> finance debit over gRPC', () => {
             await mod.close();
             delete process.env.DEAD_FINANCE_URL;
         }
+    });
+
+    describe('UpdateBalance is service-only (guard on the real gRPC server)', () => {
+        const req = { userId: 'u1', amount: 5, transactionType: 'SUBTRACT', description: 'x' };
+
+        it('a call without metadata is UNAUTHENTICATED', async () => {
+            await expect(lastValueFrom(rawWallet.updateBalance(req, new Metadata()))).rejects.toMatchObject({ code: 16 });
+            expect(prisma.wallet.findUnique).not.toHaveBeenCalled();
+        });
+
+        it('a user token (even an admin) is PERMISSION_DENIED', async () => {
+            const md = new Metadata();
+            md.set('authorization', `Bearer ${await signTestToken(keys, { claims: { roles: ['SYSTEM_ADMIN'] }, audience: 'finance' })}`);
+            await expect(lastValueFrom(rawWallet.updateBalance(req, md))).rejects.toMatchObject({ code: 7 });
+        });
+
+        it('svc:auth is PERMISSION_DENIED, only svc:exam passes', async () => {
+            const md = new Metadata();
+            md.set('authorization', `Bearer ${await signTestToken(keys, { claims: serviceClaims('auth'), audience: 'finance' })}`);
+            await expect(lastValueFrom(rawWallet.updateBalance(req, md))).rejects.toMatchObject({ code: 7 });
+            expect(tx.wallet.updateMany).not.toHaveBeenCalled();
+        });
     });
 
     it('reads subscription benefits as camelCase fields', async () => {

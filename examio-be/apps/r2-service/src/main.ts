@@ -21,7 +21,8 @@ async function bootstrap() {
     // gRPC microservice (generated contracts, proto root resolved at runtime).
     // Larger message limit for file uploads.
     app.connectMicroservice<MicroserviceOptions>(
-        grpcServerOptions([PROTO_FILES.r2], LARGE_MESSAGE_BYTES)
+        grpcServerOptions([PROTO_FILES.r2], LARGE_MESSAGE_BYTES),
+        { inheritAppConfig: true }
     );
 
     await app.startAllMicroservices();

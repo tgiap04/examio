@@ -30,7 +30,7 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import * as FormData from 'form-data';
 import { Throttle } from '@nestjs/throttler';
-import { AuthGuard } from '@examio/common';
+import { JwtAuthGuard } from '@examio/auth-jwt';
 import { PageEnabledGuard } from '../guards/page-enabled.guard';
 import { TogglePage } from '../guards/toggle-page.decorator';
 
@@ -38,7 +38,7 @@ import { TogglePage } from '../guards/toggle-page.decorator';
 
 @ApiTags('AI')
 @Controller('ai')
-@UseGuards(AuthGuard, PageEnabledGuard)
+@UseGuards(JwtAuthGuard, PageEnabledGuard)
 @TogglePage('ai-tool')
 @ApiBearerAuth('access-token')
 @ApiCookieAuth('cookie-auth')
@@ -368,7 +368,7 @@ export class AIProxyController {
 
 @ApiTags('AI Chat')
 @Controller('ai-chat')
-@UseGuards(AuthGuard)
+@UseGuards(JwtAuthGuard)
 @ApiBearerAuth('access-token')
 @ApiCookieAuth('cookie-auth')
 export class AIChatProxyController {

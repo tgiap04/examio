@@ -20,6 +20,7 @@ import {
     GenerateRootWordFamilyDto,
     SaveWordFamilyDto,
 } from './dto/word-family.dto';
+import type { AuthUser } from '@examio/auth-jwt';
 
 @Injectable()
 export class WordFamilyService {
@@ -137,7 +138,7 @@ export class WordFamilyService {
         return `${this.generationLockKey(userId, categorySlug)}:${rootWord}`;
     }
 
-    async getGenerationStatus(user: User, categorySlug: string) {
+    async getGenerationStatus(user: AuthUser, categorySlug: string) {
         // The lock value is a raw ISO timestamp set via getClient().set (not JSON),
         // so read it through the raw client to avoid JSON.parse in redis.get().
         const startedAt = await this.redis
@@ -151,7 +152,7 @@ export class WordFamilyService {
     }
 
     async getRootGenerationStatus(
-        user: User,
+        user: AuthUser,
         categorySlug: string,
         rootWord: string,
     ) {
@@ -166,7 +167,7 @@ export class WordFamilyService {
         };
     }
 
-    async generateWordFamily(user: User, dto: GenerateWordFamilyDto) {
+    async generateWordFamily(user: AuthUser, dto: GenerateWordFamilyDto) {
         const { categorySlug, numRootWords = 10, excludeRootWords = [] } = dto;
 
         const category = await this.repository.findCategoryBySlug(categorySlug);
@@ -261,7 +262,7 @@ export class WordFamilyService {
     }
 
     async generateWordFamilyForRoot(
-        user: User,
+        user: AuthUser,
         dto: GenerateRootWordFamilyDto,
     ) {
         const { categorySlug } = dto;
@@ -373,7 +374,7 @@ export class WordFamilyService {
 
     // ==================== User Collections ====================
 
-    async saveToCollection(user: User, dto: SaveWordFamilyDto) {
+    async saveToCollection(user: AuthUser, dto: SaveWordFamilyDto) {
         const family = await this.repository.findWordFamilyById(dto.wordFamilyId);
         if (!family) {
             throw new NotFoundException('Không tìm thấy word family.');
@@ -384,11 +385,11 @@ export class WordFamilyService {
         return saved;
     }
 
-    async getSavedCollections(user: User) {
+    async getSavedCollections(user: AuthUser) {
         return this.repository.findSavedWordFamilies(user.id);
     }
 
-    async removeFromCollection(user: User, wordFamilyId: string) {
+    async removeFromCollection(user: AuthUser, wordFamilyId: string) {
         await this.repository.removeSavedWordFamily(user.id, wordFamilyId);
         await this.redis.del(`wf:saved:${user.id}`);
         return { message: 'Đã xóa khỏi bộ sưu tập.' };

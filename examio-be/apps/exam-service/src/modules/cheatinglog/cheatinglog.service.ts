@@ -9,8 +9,8 @@ import {
     CHEATING_TYPE,
 } from './dto/create-cheatinglog.dto';
 import { PrismaService } from '@examio/database';
-import { User } from '@prisma/client';
 import { EXAM_ATTEMPT_STATUS } from '../../types';
+import type { AuthUser } from '@examio/auth-jwt';
 
 @Injectable()
 export class CheatingLogService {
@@ -23,7 +23,7 @@ export class CheatingLogService {
      * Log a cheating violation - upsert to increment count
      * Also updates violationCount on ExamAttempt
      */
-    async logViolation(user: User, dto: CreateCheatingLogDto) {
+    async logViolation(user: AuthUser, dto: CreateCheatingLogDto) {
         // Verify the attempt exists and belongs to the user
         const attempt = await this.prisma.examAttempt.findUnique({
             where: { id: dto.examAttemptId },
@@ -73,7 +73,7 @@ export class CheatingLogService {
     /**
      * Get cheating logs for an attempt (owner only)
      */
-    async getAttemptLogs(attemptId: string, user: User) {
+    async getAttemptLogs(attemptId: string, user: AuthUser) {
         // Check if user is the owner of the exam session
         const attempt = await this.prisma.examAttempt.findUnique({
             where: { id: attemptId },
@@ -105,7 +105,7 @@ export class CheatingLogService {
     /**
      * Get session-wide cheating stats (owner only)
      */
-    async getSessionStats(sessionId: string, user: User) {
+    async getSessionStats(sessionId: string, user: AuthUser) {
         // Verify user is the host
         const session = await this.prisma.examSession.findUnique({
             where: { id: sessionId },
@@ -136,7 +136,7 @@ export class CheatingLogService {
     async getUserAttemptsWithLogs(
         sessionId: string,
         userId: string,
-        requestingUser: User
+        requestingUser: AuthUser
     ) {
         // Verify user is the host
         const session = await this.prisma.examSession.findUnique({

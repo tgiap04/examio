@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { GenerateIdService, sanitizeFilename } from '@examio/common';
 import { EXPIRED_TIME } from '@examio/redis';
-import { User } from '@prisma/client';
+
 import { CreateQuizsetDto } from './dto/create-quizset.dto';
 import { GetQuizsetsDto } from './dto/get-quizset.dto';
 import { UpdateQuizSetDto } from './dto/update-quizset.dto';
@@ -18,6 +18,7 @@ import { SaveHistoryToQuizsetDto } from './dto/save-history-to-quizset.dto';
 import { QuizSetRepository } from './quizset.repository';
 import { R2Client } from '../../clients/r2.client';
 import { buildMetadata } from '@examio/grpc';
+import type { AuthUser } from '@examio/auth-jwt';
 
 @Injectable()
 export class QuizsetService {
@@ -29,7 +30,7 @@ export class QuizsetService {
     ) {}
 
     async createQuizSet(
-        user: User,
+        user: AuthUser,
         dto: CreateQuizsetDto,
         thumbnailFile?: Express.Multer.File
     ) {
@@ -85,7 +86,7 @@ export class QuizsetService {
         }
     }
 
-    async getQuizSetStats(user: User) {
+    async getQuizSetStats(user: AuthUser) {
         try {
             // Get total count
             const totalCount = await this.prisma.quizSet.count({
@@ -123,7 +124,7 @@ export class QuizsetService {
         }
     }
 
-    async getQuizSetById(id: string, user: User) {
+    async getQuizSetById(id: string, user: AuthUser) {
         // Use repository with cache
         const quizSet = await this.quizSetRepository.findOne({
             where: { id, userId: user.id },
@@ -163,7 +164,7 @@ export class QuizsetService {
      */
     async getQuizSetQuestions(
         id: string,
-        user: User,
+        user: AuthUser,
         page: number = 1,
         limit: number = 10
     ) {
@@ -223,7 +224,7 @@ export class QuizsetService {
         };
     }
 
-    async deleteQuizSet(id: string, user: User) {
+    async deleteQuizSet(id: string, user: AuthUser) {
         // Check ownership first
         const quizSet = await this.quizSetRepository.findOne({
             where: { id, userId: user.id },
@@ -272,7 +273,7 @@ export class QuizsetService {
         };
     }
 
-    async getQuizSets(user: User, dto: GetQuizsetsDto) {
+    async getQuizSets(user: AuthUser, dto: GetQuizsetsDto) {
         const where: any = {
             userId: user.id,
         };
@@ -340,7 +341,7 @@ export class QuizsetService {
      * Get all quiz sets for a user without pagination
      * Used for dropdowns and selection lists
      */
-    async getAllQuizSets(user: User) {
+    async getAllQuizSets(user: AuthUser) {
         const quizSets = await this.prisma.quizSet.findMany({
             where: {
                 userId: user.id,
@@ -370,7 +371,7 @@ export class QuizsetService {
 
     async updateQuizSet(
         id: string,
-        user: User,
+        user: AuthUser,
         dto: UpdateQuizSetDto,
         thumbnailFile?: Express.Multer.File
     ) {
@@ -480,7 +481,7 @@ export class QuizsetService {
         }
     }
 
-    async setQuizzsToQuizSet(user: User, dto: SetQuizzToQuizsetDto) {
+    async setQuizzsToQuizSet(user: AuthUser, dto: SetQuizzToQuizsetDto) {
         try {
             // Validate input
             if (!dto.quizsetIds || dto.quizsetIds.length === 0) {
@@ -586,7 +587,7 @@ export class QuizsetService {
      * - Tạo DetailsQuizQuestion với historyGeneratedQuizzId để track và prevent duplicate
      * - Constraint @@unique([quizSetId, historyGeneratedQuizzId]) sẽ tự động ngăn lưu trùng
      */
-    async saveHistoryToQuizSet(user: User, dto: SaveHistoryToQuizsetDto) {
+    async saveHistoryToQuizSet(user: AuthUser, dto: SaveHistoryToQuizsetDto) {
         try {
             // Validate input
             if (!dto.quizsetIds || dto.quizsetIds.length === 0) {
@@ -934,7 +935,7 @@ export class QuizsetService {
      */
     async addQuestionToQuizSet(
         quizSetId: string,
-        user: User,
+        user: AuthUser,
         dto: {
             question: string;
             options: string[];
@@ -993,7 +994,7 @@ export class QuizsetService {
     async updateQuestionInQuizSet(
         quizSetId: string,
         questionId: string,
-        user: User,
+        user: AuthUser,
         dto: {
             question?: string;
             options?: string[];
@@ -1061,7 +1062,7 @@ export class QuizsetService {
     async deleteQuestionFromQuizSet(
         quizSetId: string,
         questionId: string,
-        user: User
+        user: AuthUser
     ) {
         // Check ownership of quizset
         const quizSet = await this.quizSetRepository.findOne({
@@ -1105,7 +1106,7 @@ export class QuizsetService {
     /**
      * Get all labels for a quiz set
      */
-    async getLabels(quizSetId: string, user: User) {
+    async getLabels(quizSetId: string, user: AuthUser) {
         // Check ownership
         const quizSet = await this.quizSetRepository.findOne({
             where: { id: quizSetId, userId: user.id },
@@ -1145,7 +1146,7 @@ export class QuizsetService {
      */
     async createLabel(
         quizSetId: string,
-        user: User,
+        user: AuthUser,
         dto: {
             name: string;
             description?: string;
@@ -1195,7 +1196,7 @@ export class QuizsetService {
     async updateLabel(
         quizSetId: string,
         labelId: string,
-        user: User,
+        user: AuthUser,
         dto: {
             name?: string;
             description?: string | null;
@@ -1254,7 +1255,7 @@ export class QuizsetService {
     /**
      * Delete a label (questions will have labelId set to null)
      */
-    async deleteLabel(quizSetId: string, labelId: string, user: User) {
+    async deleteLabel(quizSetId: string, labelId: string, user: AuthUser) {
         // Check ownership
         const quizSet = await this.quizSetRepository.findOne({
             where: { id: quizSetId, userId: user.id },
@@ -1289,7 +1290,7 @@ export class QuizsetService {
     async assignQuestionsToLabel(
         quizSetId: string,
         labelId: string,
-        user: User,
+        user: AuthUser,
         questionIds: string[]
     ) {
         // Check ownership
@@ -1336,7 +1337,7 @@ export class QuizsetService {
     async removeQuestionsFromLabel(
         quizSetId: string,
         labelId: string,
-        user: User,
+        user: AuthUser,
         questionIds: string[]
     ) {
         return this.assignQuestionsToLabel(quizSetId, '', user, questionIds);
@@ -1348,7 +1349,7 @@ export class QuizsetService {
     async getQuestionsByLabel(
         quizSetId: string,
         labelId: string | null,
-        user: User,
+        user: AuthUser,
         page: number = 1,
         limit: number = 10
     ) {

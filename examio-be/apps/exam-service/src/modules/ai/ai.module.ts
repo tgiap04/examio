@@ -1,11 +1,7 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { PrismaService } from '@examio/database';
-import {
-    GenerateIdService,
-    AuthModule,
-    EventsModule,
-} from '@examio/common';
+import { GenerateIdService, EventsModule } from '@examio/common';
 import { GrpcClientModule } from '@examio/grpc';
 import { RedisModule } from '@examio/redis';
 import { R2_GRPC_REGISTRATION, R2Client } from '../../clients/r2.client';
@@ -15,7 +11,6 @@ import { AIRepository } from './ai.repository';
 
 @Module({
     imports: [
-        AuthModule,
         EventsModule,
         HttpModule,
         RedisModule,

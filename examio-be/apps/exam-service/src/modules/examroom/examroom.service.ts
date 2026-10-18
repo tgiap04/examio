@@ -7,12 +7,13 @@ import {
     ForbiddenException,
 } from '@nestjs/common';
 import { GenerateIdService } from '@examio/common';
-import { User } from '@prisma/client';
+
 import { CreateExamRoomDto } from './dto/create-examroom.dto';
 import { GetExamRoomsDto } from './dto/get-examroom.dto';
 import { UpdateExamRoomDto } from './dto/update-examroom.dto';
 import { ExamRoomRepository } from './examroom.repository';
 import { QuizSetRepository } from '../quizset/quizset.repository';
+import type { AuthUser } from '@examio/auth-jwt';
 
 @Injectable()
 export class ExamRoomService {
@@ -23,7 +24,7 @@ export class ExamRoomService {
         private readonly generateIdService: GenerateIdService
     ) {}
 
-    async createExamRoom(user: User, dto: CreateExamRoomDto) {
+    async createExamRoom(user: AuthUser, dto: CreateExamRoomDto) {
         if (!dto.title || dto.title.trim() === '') {
             throw new ConflictException('Tiêu đề không được để trống');
         }
@@ -79,7 +80,7 @@ export class ExamRoomService {
         }
     }
 
-    async getExamRoomById(id: string, user: User) {
+    async getExamRoomById(id: string, user: AuthUser) {
         const examRoom = await this.examRoomRepository.findOne({
             where: { id, hostId: user.id },
             include: {
@@ -106,7 +107,7 @@ export class ExamRoomService {
         return examRoom;
     }
 
-    async deleteExamRoom(id: string, user: User) {
+    async deleteExamRoom(id: string, user: AuthUser) {
         // Check ownership
         const examRoom = await this.examRoomRepository.findOne({
             where: { id, hostId: user.id },
@@ -151,7 +152,7 @@ export class ExamRoomService {
         return examRoom;
     }
 
-    async getExamRooms(user: User, dto: GetExamRoomsDto) {
+    async getExamRooms(user: AuthUser, dto: GetExamRoomsDto) {
         const where: any = {
             hostId: user.id,
         };
@@ -206,7 +207,7 @@ export class ExamRoomService {
      * Get all exam rooms for a user without pagination
      * Used for dropdowns and selection lists
      */
-    async getAllExamRooms(user: User) {
+    async getAllExamRooms(user: AuthUser) {
         const examRooms = await this.prisma.examRoom.findMany({
             where: {
                 hostId: user.id,
@@ -240,7 +241,7 @@ export class ExamRoomService {
         };
     }
 
-    async updateExamRoom(id: string, user: User, dto: UpdateExamRoomDto) {
+    async updateExamRoom(id: string, user: AuthUser, dto: UpdateExamRoomDto) {
         // Check if exam room exists and belongs to user
         const existingRoom = await this.examRoomRepository.findOne({
             where: { id },
@@ -319,7 +320,7 @@ export class ExamRoomService {
      */
     async getExamSessions(
         examRoomId: string,
-        user: User,
+        user: AuthUser,
         page = 1,
         limit = 10
     ) {

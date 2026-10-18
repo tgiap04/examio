@@ -5,8 +5,9 @@ import {
     BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '@examio/database';
-import { User } from '@prisma/client';
+
 import { WordFamilyRepository } from './word-family.repository';
+import type { AuthUser } from '@examio/auth-jwt';
 
 @Injectable()
 export class WordFamilyBridgeService {
@@ -22,7 +23,7 @@ export class WordFamilyBridgeService {
      * Uses Prisma transaction: create FlashCardSet + N FlashCards + N DetailsFlashCards.
      */
     async createFlashcardDeck(
-        user: User,
+        user: AuthUser,
         wordFamilyId: string,
         selectedIndices?: number[],
     ) {

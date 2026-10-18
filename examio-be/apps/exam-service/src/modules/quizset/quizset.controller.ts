@@ -2,7 +2,6 @@ import {
     Controller,
     Post,
     Body,
-    UseGuards,
     Req,
     Get,
     Res,
@@ -22,7 +21,7 @@ import {
     ApiCookieAuth,
     ApiParam,
 } from '@nestjs/swagger';
-import { AuthGuard, AuthenticatedRequest } from '@examio/common';
+import { AuthenticatedRequest } from '@examio/common';
 import { QuizsetService } from './quizset.service';
 import { CreateQuizsetDto } from './dto/create-quizset.dto';
 import { UpdateQuizSetDto } from './dto/update-quizset.dto';
@@ -50,6 +49,7 @@ import {
     UpdateLabelDto,
     AssignQuestionsToLabelDto,
 } from './dto/label.dto';
+import { Authenticated, Public } from '@examio/auth-jwt';
 
 @ApiTags('Quizsets')
 @ApiExtraModels(
@@ -68,7 +68,7 @@ export class QuizsetController {
     constructor(private readonly quizsetService: QuizsetService) {}
 
     @Post()
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @UseInterceptors(FileInterceptor('thumbnail'))
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Create a new quiz set (Teacher only)' })
@@ -112,7 +112,7 @@ export class QuizsetController {
     }
 
     @Get('stats')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get quiz set statistics' })
     @ApiResponse({
@@ -124,7 +124,7 @@ export class QuizsetController {
     }
 
     @Get(':id')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get a quiz set by ID' })
     @ApiResponse({
@@ -140,7 +140,7 @@ export class QuizsetController {
     }
 
     @Get(':id/questions')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get paginated questions for a quiz set' })
     @ApiParam({ name: 'id', description: 'Quiz set ID' })
@@ -162,7 +162,7 @@ export class QuizsetController {
     }
 
     @Put(':id')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @UseInterceptors(FileInterceptor('thumbnail'))
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update a quiz set by ID (Teacher only)' })
@@ -208,7 +208,7 @@ export class QuizsetController {
     }
 
     @Get()
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get a list of quiz sets' })
     @ApiResponse({
@@ -224,7 +224,7 @@ export class QuizsetController {
     }
 
     @Get('list/all')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get all quiz sets without pagination' })
     @ApiResponse({
@@ -238,7 +238,7 @@ export class QuizsetController {
     }
 
     @Delete(':id')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete a quiz set by ID (Teacher only)' })
     @ApiResponse({
@@ -253,6 +253,7 @@ export class QuizsetController {
         return this.quizsetService.deleteQuizSet(id, req.user);
     }
 
+    @Public()
     @Get('public/:id')
     @ApiOperation({ summary: 'Get a public quiz set by ID' })
     @ApiResponse({
@@ -265,7 +266,7 @@ export class QuizsetController {
     }
 
     @Post('set-quizzes-to-quizset')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Set quizz to quizset' })
     @ApiResponse({
@@ -281,7 +282,7 @@ export class QuizsetController {
     }
 
     @Post('save-history-to-quizset')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Save history generated quizzes to quizset' })
     @ApiResponse({
@@ -299,7 +300,7 @@ export class QuizsetController {
     // ==================== QUESTION CRUD ENDPOINTS ====================
 
     @Post(':quizSetId/questions')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Add a question to a quiz set (Teacher only)' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -321,7 +322,7 @@ export class QuizsetController {
     }
 
     @Put(':quizSetId/questions/:questionId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update a question in a quiz set (Teacher only)' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -346,7 +347,7 @@ export class QuizsetController {
     }
 
     @Delete(':quizSetId/questions/:questionId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete a question from a quiz set (Teacher only)' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -371,7 +372,7 @@ export class QuizsetController {
     // ==================== LABEL CRUD ENDPOINTS ====================
 
     @Get(':quizSetId/labels')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get all labels for a quiz set' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -387,7 +388,7 @@ export class QuizsetController {
     }
 
     @Post(':quizSetId/labels')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Create a new label for a quiz set' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -404,7 +405,7 @@ export class QuizsetController {
     }
 
     @Put(':quizSetId/labels/:labelId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update a label' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -428,7 +429,7 @@ export class QuizsetController {
     }
 
     @Delete(':quizSetId/labels/:labelId')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete a label' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -446,7 +447,7 @@ export class QuizsetController {
     }
 
     @Post(':quizSetId/labels/:labelId/questions')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Assign questions to a label' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -470,7 +471,7 @@ export class QuizsetController {
     }
 
     @Delete(':quizSetId/labels/:labelId/questions')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Remove questions from a label' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -494,7 +495,7 @@ export class QuizsetController {
     }
 
     @Get(':quizSetId/labels/:labelId/questions')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get questions by label' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })

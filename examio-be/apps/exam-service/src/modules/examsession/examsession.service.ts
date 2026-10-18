@@ -7,7 +7,7 @@ import {
     BadRequestException,
 } from '@nestjs/common';
 import { GenerateIdService } from '@examio/common';
-import { User } from '@prisma/client';
+
 import { EXAM_SESSION_STATUS, ASSESS_TYPE, QUESTION_SELECTION_MODE, LabelQuestionConfig } from '../../types';
 import { CreateExamSessionDto } from './dto/create-examsession.dto';
 import { GetExamSessionsDto } from './dto/get-examsession.dto';
@@ -15,6 +15,7 @@ import { UpdateExamSessionDto } from './dto/update-examsession.dto';
 import { ExamSessionUpdateSharingSettingsDto } from './dto/sharing.dto';
 import { ExamSessionRepository } from './examsession.repository';
 import { ExamRoomRepository } from '../examroom/examroom.repository';
+import type { AuthUser } from '@examio/auth-jwt';
 
 @Injectable()
 export class ExamSessionService {
@@ -25,7 +26,7 @@ export class ExamSessionService {
         private readonly generateIdService: GenerateIdService
     ) {}
 
-    async createExamSession(user: User, dto: CreateExamSessionDto) {
+    async createExamSession(user: AuthUser, dto: CreateExamSessionDto) {
         // Verify exam room exists and belongs to user
         const examRoom = await this.examRoomRepository.findOne({
             where: { id: dto.examRoomId },
@@ -114,7 +115,7 @@ export class ExamSessionService {
         }
     }
 
-    async getExamSessionById(id: string, user: User) {
+    async getExamSessionById(id: string, user: AuthUser) {
         const examSession = await this.examSessionRepository.findOne({
             where: { id },
             include: {
@@ -152,7 +153,7 @@ export class ExamSessionService {
         return examSession;
     }
 
-    async deleteExamSession(id: string, user: User) {
+    async deleteExamSession(id: string, user: AuthUser) {
         const examSession = await this.examSessionRepository.findOne({
             where: { id },
             include: { examRoom: true },
@@ -215,7 +216,7 @@ export class ExamSessionService {
         return examSession;
     }
 
-    async getExamSessions(user: User, dto: GetExamSessionsDto) {
+    async getExamSessions(user: AuthUser, dto: GetExamSessionsDto) {
         const where: any = {
             examRoom: {
                 hostId: user.id,
@@ -271,7 +272,7 @@ export class ExamSessionService {
         };
     }
 
-    async updateExamSession(id: string, user: User, dto: UpdateExamSessionDto) {
+    async updateExamSession(id: string, user: AuthUser, dto: UpdateExamSessionDto) {
         const examSession = await this.examSessionRepository.findOne({
             where: { id },
             include: { examRoom: true },
@@ -691,7 +692,7 @@ export class ExamSessionService {
      */
     async updateSharingSettings(
         id: string,
-        user: User,
+        user: AuthUser,
         dto: ExamSessionUpdateSharingSettingsDto
     ) {
         // Check ownership
@@ -746,7 +747,7 @@ export class ExamSessionService {
     /**
      * Get sharing settings for owner
      */
-    async getSharingSettings(id: string, user: User) {
+    async getSharingSettings(id: string, user: AuthUser) {
         const examSession = await this.prisma.examSession.findFirst({
             where: { id },
             select: {
@@ -1100,7 +1101,7 @@ export class ExamSessionService {
      * Get available labels and their question counts for a quiz set linked to an exam room
      * This is used by the frontend to display label options for configuration
      */
-    async getAvailableLabelsForExamRoom(examRoomId: string, user: User) {
+    async getAvailableLabelsForExamRoom(examRoomId: string, user: AuthUser) {
         const examRoom = await this.prisma.examRoom.findUnique({
             where: { id: examRoomId },
             include: {

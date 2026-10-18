@@ -34,6 +34,7 @@ import { FlashcardStudyModule } from './modules/flashcard-study/flashcard-study.
 import { WordFamilyModule } from './modules/word-family/word-family.module';
 import { StudyRoomModule } from './modules/study-room/study-room.module';
 import { HealthModule, LoggerModule } from '@examio/observability';
+import { AuthJwtModule } from '@examio/auth-jwt';
 
 @Module({
     imports: [
@@ -43,6 +44,7 @@ import { HealthModule, LoggerModule } from '@examio/observability';
         }),
         DatabaseModule,
         RedisModule,
+        AuthJwtModule.forRoot({ serviceName: 'exam', serviceClient: true }),
         EventsModule,
         FinanceClientModule,
         QuizsetModule,

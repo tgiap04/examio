@@ -9,12 +9,13 @@ import {
     UnauthorizedException,
     UseInterceptors,
 } from '@nestjs/common';
-import { status } from '@grpc/grpc-js';
+import { Metadata, status } from '@grpc/grpc-js';
 import { RpcException } from '@nestjs/microservices';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { timingSafeEqual } from 'crypto';
 import { r2V1 } from '@examio/contracts';
 import { R2ServiceService } from './r2-service.service';
+import { Public, RequirePermissionsOrService, ServiceOnly, assertSelfOrService } from '@examio/auth-jwt';
 
 const MAX_DELETE_KEYS = 10_000;
 
@@ -27,6 +28,7 @@ export class R2ServiceController implements r2V1.R2ServiceController {
 
     @Post('internal/upload')
     @UseInterceptors(FileInterceptor('file'))
+    @Public()
     async uploadFileHttp(
         @Headers('x-internal-service-token') internalToken: string | undefined,
         @UploadedFile() file: Express.Multer.File,
@@ -82,6 +84,7 @@ export class R2ServiceController implements r2V1.R2ServiceController {
         }
     }
 
+    @ServiceOnly('exam', 'auth')
     async uploadFile(
         data: r2V1.UploadFileRequest
     ): Promise<r2V1.UploadFileResponse> {
@@ -121,6 +124,9 @@ export class R2ServiceController implements r2V1.R2ServiceController {
         }
     }
 
+    // Keyed by a storage key (a capability, not owned by a user id) and nobody
+    // but the internal services that wrote the key needs it: service-only.
+    @ServiceOnly('exam', 'auth')
     async getFileUrl(
         data: r2V1.GetFileUrlRequest
     ): Promise<r2V1.GetFileUrlResponse> {
@@ -132,6 +138,7 @@ export class R2ServiceController implements r2V1.R2ServiceController {
         };
     }
 
+    @ServiceOnly('exam', 'auth')
     async deleteFile(
         data: r2V1.DeleteFileRequest
     ): Promise<r2V1.DeleteFileResponse> {
@@ -149,13 +156,17 @@ export class R2ServiceController implements r2V1.R2ServiceController {
         }
     }
 
-    listUserFiles(): never {
+    @RequirePermissionsOrService([])
+    listUserFiles(data: r2V1.ListUserFilesRequest, metadata: Metadata): never {
+        // A user token may only name itself; allowlisted services any user.
+        assertSelfOrService(metadata, data.userId);
         throw new RpcException({
             code: status.UNIMPLEMENTED,
             message: 'ListUserFiles is not implemented',
         });
     }
 
+    @ServiceOnly('exam', 'auth')
     async deleteObjects(
         data: r2V1.DeleteObjectsRequest
     ): Promise<r2V1.DeleteObjectsResponse> {

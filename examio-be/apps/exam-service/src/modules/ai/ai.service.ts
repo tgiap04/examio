@@ -28,6 +28,7 @@ import {
 import { firstValueFrom } from 'rxjs';
 import { FinanceClientService } from '../finance-client/finance-client.service';
 import { buildMetadata } from '@examio/grpc';
+import type { AuthUser } from '@examio/auth-jwt';
 
 @Injectable()
 export class AIService {
@@ -225,7 +226,7 @@ export class AIService {
      * OCR happens on-demand when first message is sent.
      */
     async quickUpload(
-        user: User,
+        user: AuthUser,
         file: Express.Multer.File
     ): Promise<{
         success: boolean;
@@ -321,7 +322,7 @@ export class AIService {
      * Returns immediately after creating job - processing happens async via RabbitMQ
      */
     async generateFromFile(
-        user: User,
+        user: AuthUser,
         file: Express.Multer.File,
         dto: GenerateFromFileDto
     ): Promise<{
@@ -871,7 +872,7 @@ export class AIService {
      * Get recent uploads for a user
      * Returns array directly for frontend compatibility
      */
-    async getRecentUploads(user: User, page = 1, size = 10) {
+    async getRecentUploads(user: AuthUser, page = 1, size = 10) {
         const result = await this.aiRepository.findUserStoragesByUserId(
             user.id,
             { page, size }
@@ -884,7 +885,7 @@ export class AIService {
     /**
      * Get upload details by ID
      */
-    async getUploadDetail(uploadId: string, user: User) {
+    async getUploadDetail(uploadId: string, user: AuthUser) {
         const upload = await this.aiRepository.findUserStorageById(uploadId);
 
         if (!upload) {
@@ -901,7 +902,7 @@ export class AIService {
     /**
      * Delete an upload and its file from R2
      */
-    async deleteUpload(uploadId: string, user: User) {
+    async deleteUpload(uploadId: string, user: AuthUser) {
         const upload = await this.getUploadDetail(uploadId, user);
         let r2DeleteError: Error | null = null;
 
@@ -953,7 +954,7 @@ export class AIService {
      * Cancel a job that is in progress
      * This will delete the UserStorage and refund credits if applicable
      */
-    async cancelJob(jobId: string, user: User) {
+    async cancelJob(jobId: string, user: AuthUser) {
         const upload = await this.aiRepository.findUserStorageById(jobId);
 
         if (!upload) {
@@ -1007,7 +1008,7 @@ export class AIService {
     /**
      * Create a new upload and trigger OCR processing
      */
-    async createUpload(user: User, dto: UploadFileDto) {
+    async createUpload(user: AuthUser, dto: UploadFileDto) {
         // Enforce monthly file upload quota before doing any expensive work
         await this.enforceFileUploadQuota(user.id);
 
@@ -1075,7 +1076,7 @@ export class AIService {
      * Regenerate quiz/flashcard from an existing upload
      * Calls AI service to actually generate content
      */
-    async regenerate(uploadId: string, user: User, dto: RegenerateDto) {
+    async regenerate(uploadId: string, user: AuthUser, dto: RegenerateDto) {
         const upload = await this.getUploadDetail(uploadId, user);
 
         // Guard: prevent duplicate generation of same type for this user
@@ -1219,7 +1220,7 @@ export class AIService {
      * Get job status (check processing status and return result if available)
      * Returns result for FE polling pattern
      */
-    async getJobStatus(jobId: string, user: User) {
+    async getJobStatus(jobId: string, user: AuthUser) {
         const upload = await this.aiRepository.findUserStorageWithLatestHistories(jobId);
 
         if (!upload) {
@@ -1322,7 +1323,7 @@ export class AIService {
      * Get full history (quiz and flashcard) for an upload
      * Used when selecting a recent file to load previous results
      */
-    async getUploadHistory(uploadId: string, user: User) {
+    async getUploadHistory(uploadId: string, user: AuthUser) {
         const upload = await this.aiRepository.findUserStorageWithLatestHistories(uploadId);
 
         if (!upload) {

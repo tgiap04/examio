@@ -1,7 +1,8 @@
-import { Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { StudentService } from './student.service';
-import { AuthGuard, AuthenticatedRequest } from '@examio/common';
+import { AuthenticatedRequest } from '@examio/common';
+import { Authenticated } from '@examio/auth-jwt';
 
 @ApiTags('Student')
 @Controller('student')
@@ -10,7 +11,7 @@ export class StudentController {
     constructor(private readonly studentService: StudentService) {}
 
     @Get('recent-flashcards')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiOperation({ summary: 'Get recent flashcard sets viewed by student' })
     @ApiQuery({ name: 'limit', required: false, type: Number })
     @ApiQuery({ name: 'page', required: false, type: Number })
@@ -25,7 +26,7 @@ export class StudentController {
     }
 
     @Get('recent-exams')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiOperation({ summary: 'Get recent exam attempts by student' })
     @ApiQuery({ name: 'limit', required: false, type: Number })
     @ApiQuery({ name: 'page', required: false, type: Number })
@@ -40,7 +41,7 @@ export class StudentController {
     }
 
     @Post('pin-flashcard/:id')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiOperation({ summary: 'Toggle pin/unpin a flashcard set for the current user' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
     async togglePinFlashcard(
@@ -51,7 +52,7 @@ export class StudentController {
     }
 
     @Post('pin-exam-room/:id')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiOperation({ summary: 'Toggle pin/unpin an exam room for the current user' })
     @ApiParam({ name: 'id', description: 'Exam room ID' })
     async togglePinExamRoom(

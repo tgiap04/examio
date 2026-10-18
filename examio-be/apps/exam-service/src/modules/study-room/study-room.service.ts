@@ -6,12 +6,13 @@ import {
     BadRequestException,
 } from '@nestjs/common';
 import { GenerateIdService } from '@examio/common';
-import { User, StudyRoomMember } from '@prisma/client';
+import { StudyRoomMember } from '@prisma/client';
 import { randomInt } from 'crypto';
 import { StudyRoomRepository } from './study-room.repository';
 import { StudyRoomRole, AccessType } from './study-room.constants';
 import { CreateStudyRoomDto, UpdateStudyRoomDto } from './dto/study-room.dto';
 import { StudyRoomBroadcaster } from './study-room-broadcaster.service';
+import type { AuthUser } from '@examio/auth-jwt';
 
 @Injectable()
 export class StudyRoomService {
@@ -37,7 +38,7 @@ export class StudyRoomService {
         return rest as T;
     }
 
-    async createRoom(user: User, dto: CreateStudyRoomDto) {
+    async createRoom(user: AuthUser, dto: CreateStudyRoomDto) {
         const inviteCode = await this.generateUniqueInviteCode();
         return this.repo.createWithHost(
             {
@@ -58,7 +59,7 @@ export class StudyRoomService {
         );
     }
 
-    async getMyRooms(user: User) {
+    async getMyRooms(user: AuthUser) {
         const rooms = await this.repo.findMine(user.id);
         // Trong list chỉ host thấy mã mời/whitelist; co-host lấy qua detail/snapshot.
         return rooms.map((r: any) =>
@@ -83,14 +84,14 @@ export class StudyRoomService {
         return member;
     }
 
-    async getRoomDetail(id: string, user: User) {
+    async getRoomDetail(id: string, user: AuthUser) {
         const member = await this.assertRole(id, user.id);
         const room = await this.repo.findByIdWithMembers(id);
         if (!room) throw new NotFoundException('Phòng không tồn tại');
         return this.redactSensitive(room, member.role >= StudyRoomRole.COHOST);
     }
 
-    async updateRoom(id: string, user: User, dto: UpdateStudyRoomDto) {
+    async updateRoom(id: string, user: AuthUser, dto: UpdateStudyRoomDto) {
         await this.assertRole(id, user.id, StudyRoomRole.HOST);
         const updated = await this.repo.update(id, dto, user.id);
         await this.repo.invalidateRoomCache(id);
@@ -101,7 +102,7 @@ export class StudyRoomService {
         return updated;
     }
 
-    async deleteRoom(id: string, user: User) {
+    async deleteRoom(id: string, user: AuthUser) {
         await this.assertRole(id, user.id, StudyRoomRole.HOST);
         await this.broadcaster.closeRoom(id);
         await this.repo.delete(id, user.id);
@@ -110,14 +111,14 @@ export class StudyRoomService {
     }
 
     // Vào phòng bằng mã mời (không cần biết roomId trước).
-    async joinByCode(user: User, inviteCode: string) {
+    async joinByCode(user: AuthUser, inviteCode: string) {
         const room = await this.repo.findByInviteCode(inviteCode);
         if (!room) throw new NotFoundException('Mã mời không hợp lệ');
         return this.applyJoin(user, room, true);
     }
 
     // Vào phòng bằng roomId — dùng cho public/whitelist; code thì cần inviteCode khớp.
-    async joinById(user: User, roomId: string, inviteCode?: string) {
+    async joinById(user: AuthUser, roomId: string, inviteCode?: string) {
         const room = await this.repo.findRoom(roomId);
         if (!room) throw new NotFoundException('Phòng không tồn tại');
         const codeVerified =
@@ -128,7 +129,7 @@ export class StudyRoomService {
     }
 
     // Áp luật vào phòng theo accessType + chặn banned. codeVerified = đã xác thực mã.
-    private async applyJoin(user: User, room: any, codeVerified: boolean) {
+    private async applyJoin(user: AuthUser, room: any, codeVerified: boolean) {
         if (!room.isActive) throw new ForbiddenException('Phòng đang đóng');
 
         const existing = await this.repo.findMember(room.id, user.id);
@@ -164,7 +165,7 @@ export class StudyRoomService {
         return this.redactSensitive(detail, role >= StudyRoomRole.COHOST);
     }
 
-    async leaveRoom(id: string, user: User) {
+    async leaveRoom(id: string, user: AuthUser) {
         const member = await this.assertRole(id, user.id);
         if (member.role === StudyRoomRole.HOST) {
             throw new BadRequestException(
@@ -175,7 +176,7 @@ export class StudyRoomService {
         return { success: true };
     }
 
-    async regenerateCode(id: string, user: User) {
+    async regenerateCode(id: string, user: AuthUser) {
         await this.assertRole(id, user.id, StudyRoomRole.HOST);
         const inviteCode = await this.generateUniqueInviteCode();
         await this.repo.update(id, { inviteCode }, user.id);
@@ -183,7 +184,7 @@ export class StudyRoomService {
         return { inviteCode };
     }
 
-    async getLeaderboard(id: string, user: User) {
+    async getLeaderboard(id: string, user: AuthUser) {
         await this.assertRole(id, user.id);
         return this.repo.leaderboard(id);
     }

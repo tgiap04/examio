@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { HttpService } from '@nestjs/axios';
-import { AuthGuard } from '@examio/common';
+import { JwtAuthGuard } from '@examio/auth-jwt';
 import { ProxyService } from '../services/proxy.service';
 
 /**
@@ -98,14 +98,14 @@ export class AdminProxyController {
      * Catch-all forward for any other `/api/v1/admin/*` request.
      * Re-injects Bearer, cookies, device ID, IP, UA via ProxyService.forward.
      *
-     * Guarded at the edge with AuthGuard (requires a valid authenticated
+     * Guarded at the edge with JwtAuthGuard (requires a valid authenticated
      * session) as defense-in-depth; admin-service remains the source of
      * truth for `isAdmin` enforcement. Not applied to `streamLogs` above,
      * since that route authenticates via a query-string ticket and cannot
      * carry a Bearer/cookie token through EventSource.
      */
     @All('*')
-    @UseGuards(AuthGuard)
+    @UseGuards(JwtAuthGuard)
     async forwardAll(@Req() req: Request, @Res() res: Response) {
         const result = await this.proxyService.forward('admin', {
             method: req.method,

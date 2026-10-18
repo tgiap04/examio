@@ -5,11 +5,6 @@ import { AIController } from './ai.controller';
 import { AIService } from './ai.service';
 
 jest.mock('@examio/common', () => ({
-    AuthGuard: class AuthGuard {
-        canActivate() {
-            return true;
-        }
-    },
     Roles: () => () => undefined,
 }));
 

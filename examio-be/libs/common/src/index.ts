@@ -12,17 +12,8 @@ export * from './services/image-preprocessing.service';
 export * from './services/turnstile.service';
 export * from './services/refresh-token-cipher.service';
 
-// Decorators
-export * from './decorators/allow-unverified.decorator';
-
-// Guards
-export * from './guard/auth.guard';
-export * from './guard/admin.guard';
-export * from './guard/optional-auth.guard';
+// Guards (authn/authz guards live in @examio/auth-jwt)
 export * from './guard/google-auth.guard';
-
-// Auth Module (includes JwtModule + Guards)
-export * from './auth/auth.module';
 
 // Events (Pub/Sub)
 export * from './events';

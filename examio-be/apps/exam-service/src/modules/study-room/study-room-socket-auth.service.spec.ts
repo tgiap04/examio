@@ -1,287 +1,108 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@examio/database';
+import { TOKEN_VERIFIER, TokenVerificationError } from '@examio/auth-jwt';
 import { StudyRoomSocketAuth } from './study-room-socket-auth.service';
 import { Socket } from 'socket.io';
 
 describe('StudyRoomSocketAuth', () => {
     let service: StudyRoomSocketAuth;
-    let jwtService: any;
-    let prisma: any;
+    let verify: jest.Mock;
+    let prisma: { user: { findUnique: jest.Mock } };
+
+    const user = (over: Record<string, unknown> = {}) => ({
+        kind: 'user' as const,
+        id: 'user1',
+        sid: 's1',
+        roles: ['STUDENT'],
+        emailVerified: true,
+        av: 0,
+        ...over,
+    });
+    const row = (over: Record<string, unknown> = {}) => ({
+        id: 'user1',
+        name: 'Alice',
+        avatar: 'https://example.com/avatar.png',
+        isBanned: false,
+        deletedAt: null,
+        ...over,
+    });
 
     beforeEach(async () => {
-        const mockJwt = { verifyAsync: jest.fn() };
-        const mockPrisma = {
-            userSession: { findUnique: jest.fn() },
-            user: { findUnique: jest.fn() },
-        };
-
+        verify = jest.fn();
+        prisma = { user: { findUnique: jest.fn() } };
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 StudyRoomSocketAuth,
-                {
-                    provide: JwtService,
-                    useValue: mockJwt,
-                },
-                {
-                    provide: PrismaService,
-                    useValue: mockPrisma,
-                },
+                { provide: TOKEN_VERIFIER, useValue: verify },
+                { provide: PrismaService, useValue: prisma },
             ],
         }).compile();
-
-        service = module.get<StudyRoomSocketAuth>(StudyRoomSocketAuth);
-        jwtService = module.get(JwtService);
-        prisma = module.get(PrismaService);
+        service = module.get(StudyRoomSocketAuth);
     });
 
-    describe('authenticate', () => {
-        const mockSocket = (authToken?: string, cookie?: string): Socket => ({
-            handshake: {
-                auth: authToken ? { token: authToken } : {},
-                headers: {
-                    cookie: cookie,
-                },
-            },
-        } as any);
+    const mockSocket = (authToken?: string, headers: Record<string, string> = {}): Socket =>
+        ({
+            handshake: { auth: authToken ? { token: authToken } : {}, headers },
+        }) as unknown as Socket;
 
-        it('returns null when no token provided', async () => {
-            const socket = mockSocket();
-            const result = await service.authenticate(socket);
-            expect(result).toBeNull();
+    it('returns null when no token provided and never verifies', async () => {
+        expect(await service.authenticate(mockSocket())).toBeNull();
+        expect(verify).not.toHaveBeenCalled();
+    });
+
+    it('verifies handshake.auth.token and returns the display user', async () => {
+        verify.mockResolvedValue(user());
+        prisma.user.findUnique.mockResolvedValue(row());
+
+        const result = await service.authenticate(mockSocket('auth-token'));
+
+        expect(verify).toHaveBeenCalledWith('auth-token');
+        expect(result).toEqual({
+            id: 'user1',
+            name: 'Alice',
+            avatar: 'https://example.com/avatar.png',
         });
+    });
 
-        it('extracts token from handshake.auth.token', async () => {
-            const socket = mockSocket('auth-token');
-            jwtService.verifyAsync.mockResolvedValue({ userId: 'user1' });
-            prisma.user.findUnique.mockResolvedValue({
-                id: 'user1',
-                name: 'Alice',
-                avatar: 'https://example.com/avatar.png',
-                isBanned: false,
-                isVerified: true,
-                deletedAt: null,
-            } as any);
+    it('falls back to the accessToken cookie, then the legacy token cookie', async () => {
+        verify.mockResolvedValue(user({ id: 'user2' }));
+        prisma.user.findUnique.mockResolvedValue(row({ id: 'user2', name: 'Bob', avatar: null }));
+        await service.authenticate(mockSocket(undefined, { cookie: 'accessToken=ck; Path=/' }));
+        expect(verify).toHaveBeenLastCalledWith('ck');
+        await service.authenticate(mockSocket(undefined, { cookie: 'token=legacy; Path=/' }));
+        expect(verify).toHaveBeenLastCalledWith('legacy');
+    });
 
-            const result = await service.authenticate(socket);
+    it('prefers handshake.auth.token over cookies', async () => {
+        verify.mockResolvedValue(user());
+        prisma.user.findUnique.mockResolvedValue(row());
+        await service.authenticate(mockSocket('auth-token', { cookie: 'token=cookie-token' }));
+        expect(verify).toHaveBeenCalledWith('auth-token');
+    });
 
-            expect(jwtService.verifyAsync).toHaveBeenCalledWith('auth-token', {
-                secret: process.env.JWT_SECRET,
-            });
-            expect(result).toEqual({
-                id: 'user1',
-                name: 'Alice',
-                avatar: 'https://example.com/avatar.png',
-            });
-        });
+    it('rejects an unverified email, a service token and a failed verification', async () => {
+        verify.mockResolvedValueOnce(user({ emailVerified: false }));
+        expect(await service.authenticate(mockSocket('t'))).toBeNull();
+        verify.mockResolvedValueOnce({ kind: 'service', name: 'exam' });
+        expect(await service.authenticate(mockSocket('t'))).toBeNull();
+        verify.mockRejectedValueOnce(new TokenVerificationError('TOKEN_EXPIRED'));
+        expect(await service.authenticate(mockSocket('t'))).toBeNull();
+        expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    });
 
-        it('falls back to cookie token when handshake token absent', async () => {
-            const socket = mockSocket(undefined, 'token=cookie-token; Path=/');
-            jwtService.verifyAsync.mockResolvedValue({ userId: 'user2' });
-            prisma.user.findUnique.mockResolvedValue({
-                id: 'user2',
-                name: 'Bob',
-                avatar: null,
-                isBanned: false,
-                isVerified: true,
-                deletedAt: null,
-            } as any);
+    it('rejects banned, deleted and missing accounts', async () => {
+        verify.mockResolvedValue(user());
+        prisma.user.findUnique.mockResolvedValueOnce(row({ isBanned: true }));
+        expect(await service.authenticate(mockSocket('t'))).toBeNull();
+        prisma.user.findUnique.mockResolvedValueOnce(row({ deletedAt: new Date() }));
+        expect(await service.authenticate(mockSocket('t'))).toBeNull();
+        prisma.user.findUnique.mockResolvedValueOnce(null);
+        expect(await service.authenticate(mockSocket('t'))).toBeNull();
+    });
 
-            const result = await service.authenticate(socket);
-
-            expect(jwtService.verifyAsync).toHaveBeenCalledWith('cookie-token', {
-                secret: process.env.JWT_SECRET,
-            });
-            expect(result).toEqual({
-                id: 'user2',
-                name: 'Bob',
-                avatar: null,
-            });
-        });
-
-        it('prefers handshake.auth.token over cookie', async () => {
-            const socket = mockSocket('auth-token', 'token=cookie-token; Path=/');
-            jwtService.verifyAsync.mockResolvedValue({ userId: 'user3' });
-            prisma.user.findUnique.mockResolvedValue({
-                id: 'user3',
-                name: 'Charlie',
-                avatar: null,
-                isBanned: false,
-                isVerified: true,
-                deletedAt: null,
-            } as any);
-
-            await service.authenticate(socket);
-
-            expect(jwtService.verifyAsync).toHaveBeenCalledWith('auth-token', {
-                secret: process.env.JWT_SECRET,
-            });
-        });
-
-        it('validates session when sessionId present in token', async () => {
-            const socket = mockSocket('auth-token');
-            jwtService.verifyAsync.mockResolvedValue({
-                userId: 'user1',
-                sessionId: 'session1',
-            });
-            prisma.userSession.findUnique.mockResolvedValue({
-                isActive: true,
-            } as any);
-            prisma.user.findUnique.mockResolvedValue({
-                id: 'user1',
-                name: 'Alice',
-                avatar: null,
-                isBanned: false,
-                isVerified: true,
-                deletedAt: null,
-            } as any);
-
-            const result = await service.authenticate(socket);
-
-            expect(prisma.userSession.findUnique).toHaveBeenCalledWith({
-                where: { sessionId: 'session1' },
-                select: { isActive: true },
-            });
-            expect(result).toEqual({
-                id: 'user1',
-                name: 'Alice',
-                avatar: null,
-            });
-        });
-
-        it('returns null when session not found', async () => {
-            const socket = mockSocket('auth-token');
-            jwtService.verifyAsync.mockResolvedValue({
-                userId: 'user1',
-                sessionId: 'invalid-session',
-            });
-            prisma.userSession.findUnique.mockResolvedValue(null);
-
-            const result = await service.authenticate(socket);
-
-            expect(result).toBeNull();
-        });
-
-        it('returns null when session inactive', async () => {
-            const socket = mockSocket('auth-token');
-            jwtService.verifyAsync.mockResolvedValue({
-                userId: 'user1',
-                sessionId: 'session1',
-            });
-            prisma.userSession.findUnique.mockResolvedValue({
-                isActive: false,
-            } as any);
-
-            const result = await service.authenticate(socket);
-
-            expect(result).toBeNull();
-        });
-
-        it('returns null when user not found', async () => {
-            const socket = mockSocket('auth-token');
-            jwtService.verifyAsync.mockResolvedValue({ userId: 'nonexistent' });
-            prisma.user.findUnique.mockResolvedValue(null);
-
-            const result = await service.authenticate(socket);
-
-            expect(result).toBeNull();
-        });
-
-        it('returns null when user is banned', async () => {
-            const socket = mockSocket('auth-token');
-            jwtService.verifyAsync.mockResolvedValue({ userId: 'banned-user' });
-            prisma.user.findUnique.mockResolvedValue({
-                id: 'banned-user',
-                name: 'Banned',
-                avatar: null,
-                isBanned: true,
-                isVerified: true,
-                deletedAt: null,
-            } as any);
-
-            const result = await service.authenticate(socket);
-
-            expect(result).toBeNull();
-        });
-
-        it('returns null when user is deleted', async () => {
-            const socket = mockSocket('auth-token');
-            jwtService.verifyAsync.mockResolvedValue({ userId: 'deleted-user' });
-            prisma.user.findUnique.mockResolvedValue({
-                id: 'deleted-user',
-                name: 'Deleted',
-                avatar: null,
-                isBanned: false,
-                isVerified: true,
-                deletedAt: new Date('2026-01-01'),
-            } as any);
-
-            const result = await service.authenticate(socket);
-
-            expect(result).toBeNull();
-        });
-
-        it('returns null when user not verified', async () => {
-            const socket = mockSocket('auth-token');
-            jwtService.verifyAsync.mockResolvedValue({ userId: 'unverified' });
-            prisma.user.findUnique.mockResolvedValue({
-                id: 'unverified',
-                name: 'Unverified',
-                avatar: null,
-                isBanned: false,
-                isVerified: false,
-                deletedAt: null,
-            } as any);
-
-            const result = await service.authenticate(socket);
-
-            expect(result).toBeNull();
-        });
-
-        it('returns null when JWT verification fails', async () => {
-            const socket = mockSocket('invalid-token');
-            jwtService.verifyAsync.mockRejectedValue(new Error('Invalid token'));
-
-            const result = await service.authenticate(socket);
-
-            expect(result).toBeNull();
-        });
-
-        it('returns null on any unexpected error', async () => {
-            const socket = mockSocket('auth-token');
-            jwtService.verifyAsync.mockResolvedValue({ userId: 'user1' });
-            prisma.user.findUnique.mockRejectedValue(new Error('Database error'));
-
-            const result = await service.authenticate(socket);
-
-            expect(result).toBeNull();
-        });
-
-        it('successfully authenticates valid user with all checks passing', async () => {
-            const socket = mockSocket('valid-token');
-            jwtService.verifyAsync.mockResolvedValue({
-                userId: 'valid-user',
-                sessionId: 'valid-session',
-            });
-            prisma.userSession.findUnique.mockResolvedValue({
-                isActive: true,
-            } as any);
-            prisma.user.findUnique.mockResolvedValue({
-                id: 'valid-user',
-                name: 'Valid User',
-                avatar: 'https://example.com/avatar.jpg',
-                isBanned: false,
-                isVerified: true,
-                deletedAt: null,
-            } as any);
-
-            const result = await service.authenticate(socket);
-
-            expect(result).toEqual({
-                id: 'valid-user',
-                name: 'Valid User',
-                avatar: 'https://example.com/avatar.jpg',
-            });
-        });
+    it('returns null on an unexpected (database) error', async () => {
+        verify.mockResolvedValue(user());
+        prisma.user.findUnique.mockRejectedValue(new Error('Database error'));
+        expect(await service.authenticate(mockSocket('t'))).toBeNull();
     });
 });

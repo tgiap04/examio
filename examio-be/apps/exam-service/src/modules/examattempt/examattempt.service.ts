@@ -30,6 +30,7 @@ import {
     CACHE_MODULES,
     getListCachePattern,
 } from '@examio/common';
+import type { AuthUser } from '@examio/auth-jwt';
 
 @Injectable()
 export class ExamAttemptService {
@@ -51,7 +52,7 @@ export class ExamAttemptService {
      */
     private assertSessionAccess(
         examSession: any,
-        user: User,
+        user: AuthUser,
         providedCode?: string
     ): void {
         // Public sessions are open to any authenticated user.
@@ -95,7 +96,7 @@ export class ExamAttemptService {
      * Start a new exam attempt or resume existing one
      * Checks retry limits based on ExamSession settings
      */
-    async startExamAttempt(user: User, dto: CreateExamAttemptDto) {
+    async startExamAttempt(user: AuthUser, dto: CreateExamAttemptDto) {
         if (dto.turnstileToken) {
             await this.turnstileService.verify(dto.turnstileToken);
         }
@@ -319,7 +320,7 @@ export class ExamAttemptService {
      */
     async updateExamAttemptProgress(
         attemptId: string,
-        user: User,
+        user: AuthUser,
         dto: {
             answers?: Record<string, string>;
             currentIndex?: number;
@@ -370,7 +371,7 @@ export class ExamAttemptService {
      * Submit exam attempt - calculate score
      * Returns detailed answers based on showAnswersAfterSubmit setting
      */
-    async submitExamAttempt(attemptId: string, user: User) {
+    async submitExamAttempt(attemptId: string, user: AuthUser) {
         // Get attempt with session and questions
         const attempt = await this.prisma.examAttempt.findFirst({
             where: { id: attemptId, userId: user.id },
@@ -505,7 +506,7 @@ export class ExamAttemptService {
      * Get exam attempt with questions for quiz
      * Answers are stripped for students (only included for owners or after submit if allowed)
      */
-    async getExamAttemptForQuiz(attemptId: string, user: User) {
+    async getExamAttemptForQuiz(attemptId: string, user: AuthUser) {
         const attempt = await this.prisma.examAttempt.findFirst({
             where: { id: attemptId, userId: user.id },
             include: {
@@ -611,7 +612,7 @@ export class ExamAttemptService {
      */
     async getExamAttemptsByRoom(
         examRoomId: string,
-        user: User,
+        user: AuthUser,
         page: number = 1,
         limit: number = 10,
         distinctUser: boolean = false
@@ -811,7 +812,7 @@ export class ExamAttemptService {
      * Get single exam attempt details by ID
      * For displaying in detail slider
      */
-    async getExamAttemptDetailForSlider(attemptId: string, user: User) {
+    async getExamAttemptDetailForSlider(attemptId: string, user: AuthUser) {
         const attempt = await this.prisma.examAttempt.findUnique({
             where: { id: attemptId },
             include: {
@@ -932,7 +933,7 @@ export class ExamAttemptService {
      */
     async getExamAttemptsBySession(
         sessionId: string,
-        user: User,
+        user: AuthUser,
         page: number = 1,
         limit: number = 50,
         distinctUser: boolean = false
@@ -1159,7 +1160,7 @@ export class ExamAttemptService {
 
     // ==================== EXISTING METHODS ====================
 
-    async createExamAttempt(user: User, dto: CreateExamAttemptDto) {
+    async createExamAttempt(user: AuthUser, dto: CreateExamAttemptDto) {
         // Verify exam session exists
         const examSession = await this.examSessionRepository.findOne({
             where: { id: dto.examSessionId },
@@ -1252,7 +1253,7 @@ export class ExamAttemptService {
         }
     }
 
-    async getExamAttemptById(id: string, user: User) {
+    async getExamAttemptById(id: string, user: AuthUser) {
         const examAttempt = await this.examAttemptRepository.findOne({
             where: { id },
             include: {
@@ -1317,7 +1318,7 @@ export class ExamAttemptService {
         return examAttempt;
     }
 
-    async deleteExamAttempt(id: string, user: User) {
+    async deleteExamAttempt(id: string, user: AuthUser) {
         const examAttempt = await this.examAttemptRepository.findOne({
             where: { id },
             include: {
@@ -1344,7 +1345,7 @@ export class ExamAttemptService {
         return { message: 'Xóa bài làm thành công' };
     }
 
-    async getExamAttempts(user: User, dto: GetExamAttemptsDto) {
+    async getExamAttempts(user: AuthUser, dto: GetExamAttemptsDto) {
         const where: any = {};
 
         // If examSessionId is provided, check if user is host or participant
@@ -1441,7 +1442,7 @@ export class ExamAttemptService {
         };
     }
 
-    async updateExamAttempt(id: string, user: User, dto: UpdateExamAttemptDto) {
+    async updateExamAttempt(id: string, user: AuthUser, dto: UpdateExamAttemptDto) {
         const examAttempt = await this.examAttemptRepository.findOne({
             where: { id },
             include: {
@@ -1549,7 +1550,7 @@ export class ExamAttemptService {
      * Get aggregated history statistics for user
      * Optimized with COUNT queries (O(1) with indexed fields) and Redis caching
      */
-    async getHistoryStats(user: User) {
+    async getHistoryStats(user: AuthUser) {
         const cacheKey = getUserCacheKey('QUIZ_STATS', user.id) + ':history';
 
         // Check cache first
@@ -1613,7 +1614,7 @@ export class ExamAttemptService {
      * Get exam attempt with encrypted questions and JWT tokens
      * NEVER returns answer field - secure endpoint for quiz taking
      */
-    async getSecureQuizQuestions(attemptId: string, user: User) {
+    async getSecureQuizQuestions(attemptId: string, user: AuthUser) {
         const attempt = await this.prisma.examAttempt.findFirst({
             where: { id: attemptId, userId: user.id },
             include: {
@@ -1726,7 +1727,7 @@ export class ExamAttemptService {
      */
     async submitSecureExamAttempt(
         attemptId: string,
-        user: User,
+        user: AuthUser,
         answers: Array<{ token: string; chosen_option: string }>
     ) {
         // Get attempt with session and questions

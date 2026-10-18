@@ -2,7 +2,6 @@ import {
     Controller,
     Post,
     Body,
-    UseGuards,
     Req,
     Get,
     Put,
@@ -19,11 +18,12 @@ import {
     ApiParam,
     ApiQuery,
 } from '@nestjs/swagger';
-import { AuthGuard, AuthenticatedRequest } from '@examio/common';
+import { AuthenticatedRequest } from '@examio/common';
 import { ExamRoomService } from './examroom.service';
 import { CreateExamRoomDto } from './dto/create-examroom.dto';
 import { UpdateExamRoomDto } from './dto/update-examroom.dto';
 import { GetExamRoomsDto } from './dto/get-examroom.dto';
+import { Authenticated, Public } from '@examio/auth-jwt';
 
 @ApiTags('ExamRooms')
 @ApiExtraModels(CreateExamRoomDto, UpdateExamRoomDto, GetExamRoomsDto)
@@ -32,7 +32,7 @@ export class ExamRoomController {
     constructor(private readonly examRoomService: ExamRoomService) {}
 
     @Post()
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Create a new exam room (Teacher only)' })
     @ApiResponse({
@@ -48,7 +48,7 @@ export class ExamRoomController {
     }
 
     @Get('detail/:id')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get an exam room by ID' })
     @ApiParam({ name: 'id', description: 'Exam room ID' })
@@ -65,7 +65,7 @@ export class ExamRoomController {
     }
 
     @Put(':id')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update an exam room by ID (Teacher only)' })
     @ApiParam({ name: 'id', description: 'Exam room ID' })
@@ -87,7 +87,7 @@ export class ExamRoomController {
     }
 
     @Get('list')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get a list of exam rooms' })
     @ApiResponse({
@@ -103,7 +103,7 @@ export class ExamRoomController {
     }
 
     @Get('list-all')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get all exam rooms without pagination' })
     @ApiResponse({
@@ -116,7 +116,7 @@ export class ExamRoomController {
     }
 
     @Delete(':id')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete an exam room by ID (Teacher only)' })
     @ApiParam({ name: 'id', description: 'Exam room ID' })
@@ -132,6 +132,7 @@ export class ExamRoomController {
         return this.examRoomService.deleteExamRoom(id, req.user);
     }
 
+    @Public()
     @Get('get-public/:id')
     @ApiOperation({ summary: 'Get a public exam room by ID' })
     @ApiParam({ name: 'id', description: 'Exam room ID' })
@@ -145,7 +146,7 @@ export class ExamRoomController {
     }
 
     @Get(':id/sessions')
-    @UseGuards(AuthGuard)
+    @Authenticated()
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get exam sessions for an exam room' })
     @ApiParam({ name: 'id', description: 'Exam room ID' })

@@ -12,6 +12,7 @@ import {
     walletV1,
 } from '@examio/contracts';
 import { GrpcClientRegistration, invokeRpc } from '@examio/grpc';
+import { ServiceMetadata } from '@examio/auth-jwt';
 
 export const FINANCE_GRPC = 'FINANCE_GRPC';
 
@@ -50,7 +51,10 @@ export class FinanceClient implements OnModuleInit {
     private wallet!: walletV1.WalletServiceClient;
     private subscription!: subscriptionV1.SubscriptionServiceClient;
 
-    constructor(@Inject(FINANCE_GRPC) private readonly client: ClientGrpc) {}
+    constructor(
+        @Inject(FINANCE_GRPC) private readonly client: ClientGrpc,
+        private readonly serviceMetadata: ServiceMetadata
+    ) {}
 
     onModuleInit(): void {
         this.wallet = this.client.getService<walletV1.WalletServiceClient>(
@@ -62,12 +66,14 @@ export class FinanceClient implements OnModuleInit {
             );
     }
 
-    getUserBenefits(
+    /** Every call runs as `svc:exam` unless `metadata` already forwards a user token. */
+    async getUserBenefits(
         userId: string,
         metadata: Metadata
     ): Promise<subscriptionV1.GetUserBenefitsResponse> {
+        const md = await this.serviceMetadata.attach(metadata, 'finance');
         return invokeRpc(`${SUBSCRIPTION}/GetUserBenefits`, (options) =>
-            this.subscription.getUserBenefits({ userId }, metadata, options)
+            this.subscription.getUserBenefits({ userId }, md, options)
         );
     }
 
@@ -80,8 +86,9 @@ export class FinanceClient implements OnModuleInit {
         metadata: Metadata
     ): Promise<walletV1.UpdateBalanceResponse> {
         assertWholeCredits(request.amount);
+        const md = await this.serviceMetadata.attach(metadata, 'finance');
         return invokeRpc(`${WALLET}/UpdateBalance`, (options) =>
-            this.wallet.updateBalance(request, metadata, options)
+            this.wallet.updateBalance(request, md, options)
         );
     }
 }

@@ -2,7 +2,7 @@ import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { HttpModule } from '@nestjs/axios';
-import { AuthModule } from '@examio/common';
+import { AuthJwtModule } from '@examio/auth-jwt';
 import { RedisModule, RedisReadinessCheck } from '@examio/redis';
 import { DatabaseModule } from '@examio/database';
 
@@ -62,7 +62,8 @@ import { HealthModule, LoggerModule } from '@examio/observability';
     imports: [
         LoggerModule.forRoot('gateway-service'),
         HealthModule.forRoot({ checks: [RedisReadinessCheck] }),
-        AuthModule,
+        // Verify-only guards (no global ones until phase 05's dispatcher).
+        AuthJwtModule.forRoot({ serviceName: 'gateway', globalGuards: false }),
         RedisModule,
         DatabaseModule,
         // Rate limiting: 100 requests per minute

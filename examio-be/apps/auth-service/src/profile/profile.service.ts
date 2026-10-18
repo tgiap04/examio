@@ -22,7 +22,7 @@ export class ProfileService {
     /**
      * Get user profile - O(1) with cache
      */
-    async getProfile(user: User): Promise<ProfileResponseDto> {
+    async getProfile(user: { id: string }): Promise<ProfileResponseDto> {
         const userData = await this.userRepository.findByIdWithRelations(
             user.id,
             [],
@@ -40,7 +40,7 @@ export class ProfileService {
      * Update user profile - invalidates cache
      */
     async updateProfile(
-        user: User,
+        user: { id: string },
         dto: UpdateProfileDto
     ): Promise<ProfileResponseDto> {
         const updateData: Partial<User> = {};
@@ -71,7 +71,7 @@ export class ProfileService {
      * Upload profile image (avatar or banner) via gRPC to R2 Service
      */
     async uploadProfileImage(
-        user: User,
+        user: { id: string },
         file: Express.Multer.File,
         type: 'avatar' | 'banner'
     ): Promise<{ url: string }> {

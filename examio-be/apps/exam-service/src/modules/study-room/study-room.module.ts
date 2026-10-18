@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PrismaService } from '@examio/database';
 import { RedisService } from '@examio/redis';
-import { GenerateIdService, AuthModule } from '@examio/common';
+import { GenerateIdService } from '@examio/common';
 import { StudyRoomController } from './study-room.controller';
 import { StudyRoomService } from './study-room.service';
 import { StudyRoomRepository } from './study-room.repository';
@@ -12,7 +12,7 @@ import { StudyRoomBroadcaster } from './study-room-broadcaster.service';
 import { StudyRoomPlaylistService } from './study-room-playlist.service';
 
 @Module({
-    imports: [AuthModule],
+    imports: [],
     providers: [
         PrismaService,
         RedisService,

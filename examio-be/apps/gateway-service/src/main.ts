@@ -18,13 +18,6 @@ import { WS_STUDY_PATH } from './ws-study.constant';
 import { ConfigService } from './services/config.service';
 
 async function bootstrap() {
-    // Fail fast at startup rather than per-request: a missing or too-short
-    // JWT_SECRET would otherwise let weak/guessable signing keys slip into
-    // production undetected until the first auth-related request fails.
-    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-        throw new Error('JWT_SECRET missing or too short (min 32 chars)');
-    }
-
     const app = await NestFactory.create(GatewayModule, {
         bufferLogs: true,
     });

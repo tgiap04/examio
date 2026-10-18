@@ -8,7 +8,7 @@ import { HEALTH_ROUTES_EXCLUDED_FROM_PREFIX } from '@examio/observability';
  * Boots the real gateway-service module. Needs the local/CI infra from
  * .github/workflows/ci.yml (Postgres with migrations applied, Redis,
  * RabbitMQ) and the matching env vars (DATABASE_URL, REDIS_HOST,
- * REDIS_PORT, JWT_SECRET, ...).
+ * REDIS_PORT, JWT_PRIVATE_KEY, ...).
  */
 describe('gateway-service health (e2e)', () => {
     const originalCwd = process.cwd();
