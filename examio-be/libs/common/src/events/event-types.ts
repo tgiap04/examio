@@ -4,7 +4,6 @@
 
 export enum EventType {
     // Auth Events
-    USER_CREATED = 'user.created',
     USER_UPDATED = 'user.updated',
     USER_DELETED = 'user.deleted',
     USER_VERIFIED = 'user.verified',
@@ -53,12 +52,6 @@ export interface BaseEvent<T = any> {
 }
 
 // ==================== Event Payloads ====================
-
-export interface UserCreatedPayload {
-    userId: string;
-    email: string;
-    username?: string;
-}
 
 export interface UserDeletedPayload {
     userId: string;

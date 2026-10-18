@@ -13,8 +13,20 @@ import {
 } from '@examio/observability';
 import { PROTO_FILES } from '@examio/contracts';
 import { grpcServerOptions } from '@examio/grpc';
+import { parseRoles } from '@examio/messaging';
+import { WorkerModule } from './worker.module';
 
-async function bootstrap() {
+async function startWorker() {
+    // Event consumer (auth.user.registered, ...). No HTTP/gRPC listener.
+    const worker = await NestFactory.createApplicationContext(WorkerModule, {
+        bufferLogs: true,
+    });
+    worker.useLogger(worker.get(Logger));
+    worker.enableShutdownHooks();
+    console.log('📥 Finance Service worker running (event consumer)');
+}
+
+async function startApi() {
     // Fail fast on a missing/weak signing secret instead of degrading into
     // per-request 401s (or, worse, a guessable key). See security audit H8/H6.
     if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
@@ -55,4 +67,14 @@ async function bootstrap() {
     console.log(`🚀 Finance Service is running on port ${httpPort}`);
     console.log(`📡 gRPC server is running on port ${grpcPort}`);
 }
-bootstrap();
+
+async function bootstrap() {
+    // ROLE=api | worker | api,worker (default api,worker).
+    const roles = parseRoles();
+    if (roles.has('api')) await startApi();
+    if (roles.has('worker')) await startWorker();
+}
+bootstrap().catch((err) => {
+    console.error(err);
+    process.exit(1);
+});

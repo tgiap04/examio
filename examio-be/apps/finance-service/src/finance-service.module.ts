@@ -4,12 +4,11 @@ import {
     DatabaseReadinessCheck,
     PrismaService,
 } from '@examio/database';
-import { GenerateIdService, EventsModule } from '@examio/common';
+import { GenerateIdService } from '@examio/common';
 import { RedisModule, RedisReadinessCheck } from '@examio/redis';
 import { FinanceServiceController } from './finance-service.controller';
 import { FinanceServiceService } from './finance-service.service';
 import { WalletGrpcController } from './modules/wallet/wallet.grpc.controller';
-import { UserEventHandler } from './events/user-event.handler';
 import { WalletModule } from './modules/wallet/wallet.module';
 import { SePayModule } from './modules/sepay/sepay.module';
 import { HealthModule, LoggerModule } from '@examio/observability';
@@ -22,7 +21,6 @@ import { HealthModule, LoggerModule } from '@examio/observability';
         }),
         DatabaseModule,
         RedisModule,
-        EventsModule,
         WalletModule,
         SePayModule,
     ],
@@ -31,7 +29,6 @@ import { HealthModule, LoggerModule } from '@examio/observability';
         FinanceServiceService,
         PrismaService,
         GenerateIdService,
-        UserEventHandler,
     ],
 })
 export class FinanceServiceModule {}
