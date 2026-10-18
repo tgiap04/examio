@@ -22,7 +22,8 @@ import {
     AssignFlashcardsToLabelDto,
 } from './dto/flashcard-label.dto';
 import { FlashCardSetRepository } from './flashcardset.repository';
-import { R2ClientService } from '@examio/common';
+import { R2Client } from '../../clients/r2.client';
+import { buildMetadata } from '@examio/grpc';
 
 @Injectable()
 export class FlashcardsetService {
@@ -30,7 +31,7 @@ export class FlashcardsetService {
         private readonly prisma: PrismaService,
         private readonly flashcardSetRepository: FlashCardSetRepository,
         private readonly generateIdService: GenerateIdService,
-        private readonly r2Service: R2ClientService
+        private readonly r2Service: R2Client
     ) {}
 
     async createFlashcardSet(
@@ -51,7 +52,8 @@ export class FlashcardsetService {
                     fileName,
                     thumbnailFile.buffer,
                     thumbnailFile.mimetype,
-                    'flashcardset-thumbnails'
+                    'flashcardset-thumbnails',
+                    buildMetadata()
                 );
                 thumbnailUrl = this.r2Service.getPublicUrl(r2Key);
             }
@@ -250,7 +252,7 @@ export class FlashcardsetService {
         await this.flashcardSetRepository.delete(id, user.id);
         const key = flashcardSet.thumbnail?.replace(/^https?:\/\/[^/]+\//, '');
         if (key) {
-            await this.r2Service.deleteFile(key);
+            await this.r2Service.deleteFile(key, buildMetadata());
         }
 
         return { message: 'Xóa bộ thẻ ghi nhớ thành công' };
@@ -382,7 +384,8 @@ export class FlashcardsetService {
                     fileName,
                     thumbnailFile.buffer,
                     thumbnailFile.mimetype,
-                    'flashcardset-thumbnails'
+                    'flashcardset-thumbnails',
+                    buildMetadata()
                 );
                 thumbnailUrl = this.r2Service.getPublicUrl(r2Key);
 
@@ -393,7 +396,7 @@ export class FlashcardsetService {
                         ''
                     );
                     if (oldKey) {
-                        await this.r2Service.deleteFile(oldKey).catch((err) => {
+                        await this.r2Service.deleteFile(oldKey, buildMetadata()).catch((err) => {
                             console.warn(
                                 'Failed to delete old flashcardset thumbnail from R2:',
                                 err

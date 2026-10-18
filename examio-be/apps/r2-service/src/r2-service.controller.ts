@@ -9,31 +9,18 @@ import {
     UnauthorizedException,
     UseInterceptors,
 } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
+import { status } from '@grpc/grpc-js';
+import { RpcException } from '@nestjs/microservices';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { timingSafeEqual } from 'crypto';
+import { r2V1 } from '@examio/contracts';
 import { R2ServiceService } from './r2-service.service';
 
-// gRPC DTOs matching the proto file
-interface UploadFileRequest {
-    user_id: string;
-    filename: string;
-    mimetype: string;
-    content: Buffer;
-    folder?: string;
-}
-
-interface GetFileUrlRequest {
-    key_r2: string;
-    expires_in_seconds?: number;
-}
-
-interface DeleteFileRequest {
-    key_r2: string;
-}
+const MAX_DELETE_KEYS = 10_000;
 
 @Controller()
-export class R2ServiceController {
+@r2V1.R2ServiceControllerMethods()
+export class R2ServiceController implements r2V1.R2ServiceController {
     private readonly logger = new Logger(R2ServiceController.name);
 
     constructor(private readonly r2Service: R2ServiceService) {}
@@ -95,8 +82,9 @@ export class R2ServiceController {
         }
     }
 
-    @GrpcMethod('R2Service', 'UploadFile')
-    async uploadFile(data: UploadFileRequest) {
+    async uploadFile(
+        data: r2V1.UploadFileRequest
+    ): Promise<r2V1.UploadFileResponse> {
         this.logger.log(
             `UploadFile request: filename=${data.filename}, mimetype=${data.mimetype}, folder=${data.folder}, contentSize=${data.content?.length || 0}`
         );
@@ -113,9 +101,9 @@ export class R2ServiceController {
 
             return {
                 success: true,
-                file_id: key,
+                fileId: key,
                 url: await this.r2Service.resolveUrl(key),
-                key_r2: key,
+                keyR2: key,
                 message: 'File uploaded successfully',
             };
         } catch (error) {
@@ -125,25 +113,30 @@ export class R2ServiceController {
             );
             return {
                 success: false,
+                fileId: '',
+                url: '',
+                keyR2: '',
                 message: `Upload failed: ${error.message}`,
             };
         }
     }
 
-    @GrpcMethod('R2Service', 'GetFileUrl')
-    async getFileUrl(data: GetFileUrlRequest) {
-        const expiresIn = data.expires_in_seconds || 3600;
-        const url = await this.r2Service.resolveUrl(data.key_r2, expiresIn);
+    async getFileUrl(
+        data: r2V1.GetFileUrlRequest
+    ): Promise<r2V1.GetFileUrlResponse> {
+        const expiresIn = data.expiresInSeconds || 3600;
+        const url = await this.r2Service.resolveUrl(data.keyR2, expiresIn);
         return {
             url,
-            expires_at: Date.now() + expiresIn * 1000,
+            expiresAt: String(Date.now() + expiresIn * 1000),
         };
     }
 
-    @GrpcMethod('R2Service', 'DeleteFile')
-    async deleteFile(data: DeleteFileRequest) {
+    async deleteFile(
+        data: r2V1.DeleteFileRequest
+    ): Promise<r2V1.DeleteFileResponse> {
         try {
-            await this.r2Service.deleteFile(data.key_r2);
+            await this.r2Service.deleteFile(data.keyR2);
             return {
                 success: true,
                 message: 'File deleted successfully',
@@ -153,6 +146,40 @@ export class R2ServiceController {
                 success: false,
                 message: `Delete failed: ${error.message}`,
             };
+        }
+    }
+
+    listUserFiles(): never {
+        throw new RpcException({
+            code: status.UNIMPLEMENTED,
+            message: 'ListUserFiles is not implemented',
+        });
+    }
+
+    async deleteObjects(
+        data: r2V1.DeleteObjectsRequest
+    ): Promise<r2V1.DeleteObjectsResponse> {
+        const keys = [...new Set(data.keys)];
+        if (keys.length > MAX_DELETE_KEYS) {
+            throw new RpcException({
+                code: status.INVALID_ARGUMENT,
+                message: `At most ${MAX_DELETE_KEYS} keys per call`,
+            });
+        }
+        if (keys.some((key) => !key.trim())) {
+            throw new RpcException({
+                code: status.INVALID_ARGUMENT,
+                message: 'Keys must be non-empty',
+            });
+        }
+        try {
+            return { deletedCount: await this.r2Service.deleteObjects(keys) };
+        } catch (error) {
+            this.logger.error(`DeleteObjects failed: ${error.message}`);
+            throw new RpcException({
+                code: status.INTERNAL,
+                message: 'DeleteObjects failed',
+            });
         }
     }
 }

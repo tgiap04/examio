@@ -1,37 +1,14 @@
 import {
     Injectable,
-    Inject,
-    OnModuleInit,
     ForbiddenException,
+    HttpException,
     Logger,
 } from '@nestjs/common';
-import { ClientGrpc } from '@nestjs/microservices';
-import { firstValueFrom, Observable } from 'rxjs';
+import { buildMetadata } from '@examio/grpc';
+import { subscriptionV1 } from '@examio/contracts';
+import { FinanceClient } from '../../clients/finance.client';
 
-interface WalletService {
-    updateBalance(data: {
-        userId: string;
-        amount: number;
-        transactionType: string;
-        description: string;
-    }): Observable<{
-        success: boolean;
-        newBalance: number;
-        message: string;
-    }>;
-}
-
-interface SubscriptionService {
-    getUserBenefits(data: { userId: string }): Observable<UserBenefits>;
-}
-
-interface UserBenefits {
-    tier: number;
-    tier_name: string;
-    files_per_month: number;
-    messages_per_minute: number;
-    chat_messages_limit: number;
-}
+type UserBenefits = subscriptionV1.GetUserBenefitsResponse;
 
 /**
  * AI_FREE_MODE: Khi bật, bypass tất cả deduction credits.
@@ -44,13 +21,11 @@ function resolveFreeMode(): boolean {
 }
 
 @Injectable()
-export class FinanceClientService implements OnModuleInit {
+export class FinanceClientService {
     private readonly logger = new Logger(FinanceClientService.name);
-    private walletService: WalletService;
-    private subscriptionService: SubscriptionService;
     private readonly freeMode: boolean;
 
-    constructor(@Inject('FINANCE_PACKAGE') private client: ClientGrpc) {
+    constructor(private readonly finance: FinanceClient) {
         let freeMode = resolveFreeMode();
 
         // Production must never run with credit charging disabled.
@@ -64,22 +39,13 @@ export class FinanceClientService implements OnModuleInit {
         this.freeMode = freeMode;
     }
 
-    onModuleInit() {
-        this.walletService =
-            this.client.getService<WalletService>('WalletService');
-        this.subscriptionService =
-            this.client.getService<SubscriptionService>(
-                'SubscriptionService'
-            );
-    }
-
     private getFreeTierDefaults(): UserBenefits {
         return {
             tier: 0,
-            tier_name: 'Free',
-            files_per_month: 5,
-            messages_per_minute: 5,
-            chat_messages_limit: 30,
+            tierName: 'Free',
+            filesPerMonth: 5,
+            messagesPerMinute: 5,
+            chatMessagesLimit: 30,
         };
     }
 
@@ -90,15 +56,7 @@ export class FinanceClientService implements OnModuleInit {
      */
     async getUserBenefits(userId: string): Promise<UserBenefits> {
         try {
-            if (!this.subscriptionService) {
-                this.logger.warn(
-                    'SubscriptionService GRPC client not initialized'
-                );
-                return this.getFreeTierDefaults();
-            }
-            return await firstValueFrom(
-                this.subscriptionService.getUserBenefits({ userId })
-            );
+            return await this.finance.getUserBenefits(userId, buildMetadata());
         } catch (error) {
             this.logger.error(
                 `Error getting subscription benefits: ${error.message}`
@@ -128,13 +86,14 @@ export class FinanceClientService implements OnModuleInit {
             }; // No charge
 
         try {
-            const result = await firstValueFrom(
-                this.walletService.updateBalance({
+            const result = await this.finance.updateBalance(
+                {
                     userId: userId,
                     amount: amount,
                     transactionType: 'SUBTRACT',
                     description: description,
-                })
+                },
+                buildMetadata()
             );
 
             if (!result.success) {
@@ -151,6 +110,8 @@ export class FinanceClientService implements OnModuleInit {
         } catch (error) {
             this.logger.error(`Failed to deduct credits: ${error.message}`);
             if (error instanceof ForbiddenException) throw error;
+            // Invalid amount (400 INVALID_AMOUNT from the client guard) keeps its reason
+            if (error instanceof HttpException && error.getStatus() === 400) throw error;
             // For connection errors, do we fail open or closed?
             // "tuân thủ đúng". STRICT. Fail closed.
             throw new ForbiddenException(
@@ -168,13 +129,14 @@ export class FinanceClientService implements OnModuleInit {
             };
 
         try {
-            const result = await firstValueFrom(
-                this.walletService.updateBalance({
+            const result = await this.finance.updateBalance(
+                {
                     userId: userId,
                     amount: amount,
                     transactionType: 'ADD',
                     description: description,
-                })
+                },
+                buildMetadata()
             );
 
             this.logger.log(

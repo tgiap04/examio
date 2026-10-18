@@ -14,10 +14,10 @@ import { AxiosError } from 'axios';
 import { User } from '@prisma/client';
 import {
     GenerateIdService,
-    R2ClientService,
     sanitizeFilename,
 } from '@examio/common';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
+import { R2Client } from '../../clients/r2.client';
 import { AIRepository } from './ai.repository';
 import {
     UploadFileDto,
@@ -27,6 +27,7 @@ import {
 } from './dto/ai.dto';
 import { firstValueFrom } from 'rxjs';
 import { FinanceClientService } from '../finance-client/finance-client.service';
+import { buildMetadata } from '@examio/grpc';
 
 @Injectable()
 export class AIService {
@@ -39,7 +40,7 @@ export class AIService {
         private readonly generateIdService: GenerateIdService,
         private readonly httpService: HttpService,
         private readonly financeClient: FinanceClientService,
-        private readonly r2ClientService: R2ClientService,
+        private readonly r2ClientService: R2Client,
         private readonly redisService: RedisService
     ) {
         this.aiServiceUrl =
@@ -189,14 +190,14 @@ export class AIService {
      */
     private async enforceFileUploadQuota(userId: string): Promise<void> {
         const benefits = await this.financeClient.getUserBenefits(userId);
-        if (benefits.files_per_month === -1) return;
+        if (benefits.filesPerMonth === -1) return;
 
         const uploadedThisMonth =
             await this.aiRepository.countUserStorageThisMonth(userId);
 
-        if (uploadedThisMonth >= benefits.files_per_month) {
+        if (uploadedThisMonth >= benefits.filesPerMonth) {
             throw new ForbiddenException(
-                `Bạn đã đạt giới hạn ${benefits.files_per_month} file/tháng. Vui lòng nâng cấp gói hoặc thử lại vào tháng sau.`
+                `Bạn đã đạt giới hạn ${benefits.filesPerMonth} file/tháng. Vui lòng nâng cấp gói hoặc thử lại vào tháng sau.`
             );
         }
     }
@@ -256,7 +257,8 @@ export class AIService {
                     sanitizedName,
                     file.buffer,
                     file.mimetype,
-                    'ai-teacher'
+                    'ai-teacher',
+                    buildMetadata()
                 );
             } catch (grpcError) {
                 this.logger.error(
@@ -455,7 +457,8 @@ export class AIService {
                 sanitizedName,
                 file.buffer,
                 file.mimetype,
-                'ai-uploads'
+                'ai-uploads',
+                buildMetadata()
             );
             this.logger.log(
                 `R2 upload success in ${Date.now() - uploadStart}ms, key: ${keyR2}`
@@ -905,7 +908,7 @@ export class AIService {
         // Delete file from R2 if keyR2 exists
         if (upload.keyR2) {
             try {
-                await this.r2ClientService.deleteFile(upload.keyR2);
+                await this.r2ClientService.deleteFile(upload.keyR2, buildMetadata());
                 this.logger.log(`Deleted file from R2: ${upload.keyR2}`);
             } catch (error) {
                 r2DeleteError = error;

@@ -1,11 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { R2ClientService, sanitizeFilename } from '@examio/common';
+import { sanitizeFilename } from '@examio/common';
+import { R2Client } from '../../clients/r2.client';
+import { buildMetadata } from '@examio/grpc';
 
 @Injectable()
 export class R2UploadService {
     private readonly logger = new Logger(R2UploadService.name);
 
-    constructor(private readonly r2Client: R2ClientService) {}
+    constructor(private readonly r2Client: R2Client) {}
 
     /**
      * Upload image to R2 storage
@@ -33,7 +35,8 @@ export class R2UploadService {
             filename,
             file.buffer,
             file.mimetype,
-            folder
+            folder,
+            buildMetadata()
         );
 
         const url = this.r2Client.getPublicUrl(keyR2);
@@ -47,7 +50,7 @@ export class R2UploadService {
      * Delete image from R2 storage
      */
     async deleteImage(keyR2: string): Promise<void> {
-        await this.r2Client.deleteFile(keyR2);
+        await this.r2Client.deleteFile(keyR2, buildMetadata());
         this.logger.log(`Image deleted: ${keyR2}`);
     }
 }

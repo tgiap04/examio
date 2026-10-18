@@ -12,7 +12,6 @@ import {
 import {
     GenerateIdService,
     CryptoService,
-    GrpcClientsModule,
     EventsModule,
 } from '@examio/common';
 import { ExamServiceController } from './exam-service.controller';
@@ -45,7 +44,6 @@ import { HealthModule, LoggerModule } from '@examio/observability';
         DatabaseModule,
         RedisModule,
         EventsModule,
-        GrpcClientsModule.registerR2Client(),
         FinanceClientModule,
         QuizsetModule,
         ExamRoomModule,

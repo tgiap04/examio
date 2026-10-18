@@ -24,10 +24,6 @@ export * from './guard/google-auth.guard';
 // Auth Module (includes JwtModule + Guards)
 export * from './auth/auth.module';
 
-// gRPC Clients
-export * from './grpc/grpc-clients.module';
-export * from './grpc/r2-client.service';
-
 // Events (Pub/Sub)
 export * from './events';
 

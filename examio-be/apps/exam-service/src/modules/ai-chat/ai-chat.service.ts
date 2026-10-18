@@ -2,34 +2,24 @@ import {
     Injectable,
     Logger,
     NotFoundException,
-    Inject,
-    OnModuleInit,
     ForbiddenException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, Observable, Subject } from 'rxjs';
-import { ClientGrpc } from '@nestjs/microservices';
+import { buildMetadata } from '@examio/grpc';
+import { subscriptionV1 } from '@examio/contracts';
+import { FinanceClient } from '../../clients/finance.client';
 import { AIChatRepository } from './ai-chat.repository';
 import { R2UploadService } from '../r2/r2-upload.service';
 import { User } from '@prisma/client';
 import { PrismaService } from '@examio/database';
 
-interface SubscriptionService {
-    getUserBenefits(data: { userId: string }): Observable<{
-        tier: number;
-        tier_name: string;
-        files_per_month: number;
-        messages_per_minute: number;
-        chat_messages_limit: number;
-    }>;
-}
 
 @Injectable()
-export class AIChatService implements OnModuleInit {
+export class AIChatService {
     private readonly logger = new Logger(AIChatService.name);
     private readonly aiServiceUrl =
         process.env.AI_SERVICE_URL || 'http://localhost:8000/api';
-    private subscriptionService: SubscriptionService;
     /**
      * trimHistoryForAI only keeps the last 4 messages for AI context, so we
      * fetch a small buffer beyond that (6) instead of the full chat history,
@@ -41,7 +31,7 @@ export class AIChatService implements OnModuleInit {
         private readonly chatRepository: AIChatRepository,
         private readonly httpService: HttpService,
         private readonly r2UploadService: R2UploadService,
-        @Inject('FINANCE_PACKAGE') private client: ClientGrpc,
+        private readonly finance: FinanceClient,
         private readonly prisma: PrismaService
     ) {}
 
@@ -54,12 +44,6 @@ export class AIChatService implements OnModuleInit {
             'x-internal-service-token':
                 process.env.INTERNAL_SERVICE_TOKEN || '',
         };
-    }
-
-    onModuleInit() {
-        this.subscriptionService = this.client.getService<SubscriptionService>(
-            'SubscriptionService'
-        );
     }
 
     private trimHistoryForAI(history: { role: string; content: string }[]) {
@@ -686,26 +670,18 @@ export class AIChatService implements OnModuleInit {
         // rate limiting entirely, so we fail SAFE instead.
         const freeTierDefaults = {
             tier: 0,
-            tier_name: 'Free',
-            files_per_month: 5,
-            messages_per_minute: 5,
-            chat_messages_limit: 30,
+            tierName: 'Free',
+            filesPerMonth: 5,
+            messagesPerMinute: 5,
+            chatMessagesLimit: 30,
         };
 
-        let benefits;
+        let benefits: subscriptionV1.GetUserBenefitsResponse;
         try {
-            if (!this.subscriptionService) {
-                this.logger.warn(
-                    'SubscriptionService GRPC client not initialized, applying Free-tier default limits'
-                );
-                benefits = freeTierDefaults;
-            } else {
-                benefits = await firstValueFrom(
-                    this.subscriptionService.getUserBenefits({
-                        userId: userId,
-                    })
-                );
-            }
+            benefits = await this.finance.getUserBenefits(
+                userId,
+                buildMetadata()
+            );
         } catch (error) {
             this.logger.error(
                 `Error getting subscription benefits: ${error.message}`
@@ -715,23 +691,23 @@ export class AIChatService implements OnModuleInit {
         }
 
         // Check Rate Limit (Messages per minute)
-        if (benefits.messages_per_minute !== -1) {
+        if (benefits.messagesPerMinute !== -1) {
             const count =
                 await this.chatRepository.countMessagesLastMinute(userId);
-            if (count >= benefits.messages_per_minute) {
+            if (count >= benefits.messagesPerMinute) {
                 throw new ForbiddenException(
-                    `Giới hạn tốc độ: ${benefits.messages_per_minute} tin nhắn/phút. Vui lòng chờ giây lát.`
+                    `Giới hạn tốc độ: ${benefits.messagesPerMinute} tin nhắn/phút. Vui lòng chờ giây lát.`
                 );
             }
         }
 
         // Check Chat Message Limit (Context Length)
-        if (benefits.chat_messages_limit !== -1) {
+        if (benefits.chatMessagesLimit !== -1) {
             const count =
                 await this.chatRepository.countUserMessagesInChat(chatId);
-            if (count >= benefits.chat_messages_limit) {
+            if (count >= benefits.chatMessagesLimit) {
                 throw new ForbiddenException(
-                    `Giới hạn hội thoại: ${benefits.chat_messages_limit} tin nhắn. Vui lòng tạo đoạn chat mới.`
+                    `Giới hạn hội thoại: ${benefits.chatMessagesLimit} tin nhắn. Vui lòng tạo đoạn chat mới.`
                 );
             }
         }

@@ -8,7 +8,6 @@ import {
     Inject,
     OnModuleInit,
 } from '@nestjs/common';
-import { ClientGrpc } from '@nestjs/microservices';
 import { JwtService } from '@nestjs/jwt';
 import { User } from '@prisma/client';
 import * as crypto from 'crypto';
@@ -21,7 +20,6 @@ import {
     GenerateIdService,
     sanitizeUser,
     generateCode,
-    WALLET_SERVICE,
     EventPublisherService,
     EventType,
     RefreshTokenCipherService,

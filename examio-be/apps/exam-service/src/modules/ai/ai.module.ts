@@ -5,10 +5,10 @@ import {
     GenerateIdService,
     AuthModule,
     EventsModule,
-    GrpcClientsModule,
-    R2ClientService,
 } from '@examio/common';
+import { GrpcClientModule } from '@examio/grpc';
 import { RedisModule } from '@examio/redis';
+import { R2_GRPC_REGISTRATION, R2Client } from '../../clients/r2.client';
 import { AIController } from './ai.controller';
 import { AIService } from './ai.service';
 import { AIRepository } from './ai.repository';
@@ -19,7 +19,7 @@ import { AIRepository } from './ai.repository';
         EventsModule,
         HttpModule,
         RedisModule,
-        GrpcClientsModule.registerR2Client(),
+        GrpcClientModule.register(R2_GRPC_REGISTRATION),
     ],
     controllers: [AIController],
     providers: [
@@ -27,7 +27,7 @@ import { AIRepository } from './ai.repository';
         AIRepository,
         PrismaService,
         GenerateIdService,
-        R2ClientService,
+        R2Client,
     ],
     exports: [AIService, AIRepository],
 })

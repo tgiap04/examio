@@ -1,10 +1,12 @@
+import { Metadata } from '@grpc/grpc-js';
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { of, throwError } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { AIService } from './ai.service';
 import { AIRepository } from './ai.repository';
-import { GenerateIdService, R2ClientService } from '@examio/common';
+import { GenerateIdService } from '@examio/common';
+import { R2Client } from '../../clients/r2.client';
 import { RedisService } from '@examio/redis';
 import { FinanceClientService } from '../finance-client/finance-client.service';
 
@@ -70,11 +72,11 @@ describe('AIService', () => {
                         deductCredits: jest.fn(),
                         getUserBenefits: jest
                             .fn()
-                            .mockResolvedValue({ files_per_month: -1 }),
+                            .mockResolvedValue({ filesPerMonth: -1 }),
                     },
                 },
                 {
-                    provide: R2ClientService,
+                    provide: R2Client,
                     useValue: r2ClientService,
                 },
                 {
@@ -203,7 +205,8 @@ describe('AIService', () => {
         );
 
         expect(r2ClientService.deleteFile).toHaveBeenCalledWith(
-            'ai-uploads/file.pdf'
+            'ai-uploads/file.pdf',
+            expect.any(Metadata)
         );
         expect(aiRepository.deleteUploadAggregate).toHaveBeenCalledWith(
             'upload-delete-1'

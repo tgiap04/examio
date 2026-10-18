@@ -11,7 +11,6 @@ import {
     PasswordService,
     GenerateIdService,
     AuthGuard,
-    GrpcClientsModule,
     EventsModule,
     EventPublisherService,
     TurnstileService,
@@ -32,7 +31,6 @@ import { ProfileModule } from './profile/profile.module';
         DatabaseModule,
         RedisModule,
         EventsModule,
-        GrpcClientsModule.registerWalletClient(),
         JwtModule.register({
             secret: process.env.JWT_SECRET,
             signOptions: {

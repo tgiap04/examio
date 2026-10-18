@@ -1,34 +1,39 @@
 import { Controller } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
+import { status } from '@grpc/grpc-js';
+import { RpcException } from '@nestjs/microservices';
 import { PrismaService } from '@examio/database';
 import { GenerateIdService } from '@examio/common';
+import { walletV1 } from '@examio/contracts';
 
-// gRPC DTOs matching wallet.proto (mapped to camelCase by NestJS)
-interface CreateWalletRequest {
-    userId: string;
-    initialBalance: number;
-}
-
-interface GetWalletRequest {
-    userId: string;
-}
-
-interface UpdateBalanceRequest {
-    userId: string;
-    amount: number;
-    transactionType: string;
-    description: string;
-}
+const unimplemented = (rpc: string): never => {
+    throw new RpcException({
+        code: status.UNIMPLEMENTED,
+        message: `${rpc} is not implemented yet`,
+    });
+};
 
 @Controller()
-export class WalletGrpcController {
+@walletV1.WalletServiceControllerMethods()
+export class WalletGrpcController implements walletV1.WalletServiceController {
     constructor(
         private readonly prisma: PrismaService,
         private readonly generateIdService: GenerateIdService
     ) {}
 
-    @GrpcMethod('WalletService', 'CreateWallet')
-    async createWallet(data: CreateWalletRequest) {
+    async createWallet(
+        data: walletV1.CreateWalletRequest
+    ): Promise<walletV1.CreateWalletResponse> {
+        if (
+            data.initialBalance !== 0 &&
+            (!Number.isInteger(data.initialBalance) || data.initialBalance < 0)
+        ) {
+            return {
+                success: false,
+                walletId: '',
+                message: 'Initial balance must be a non-negative integer',
+            };
+        }
+
         try {
             const wallet = await this.prisma.wallet.create({
                 data: {
@@ -40,46 +45,63 @@ export class WalletGrpcController {
 
             return {
                 success: true,
-                wallet_id: wallet.id,
+                walletId: wallet.id,
                 message: 'Wallet created successfully',
             };
         } catch (error) {
             return {
                 success: false,
+                walletId: '',
                 message: `Failed to create wallet: ${error.message}`,
             };
         }
     }
 
-    @GrpcMethod('WalletService', 'GetWallet')
-    async getWallet(data: GetWalletRequest) {
+    async getWallet(
+        data: walletV1.GetWalletRequest
+    ): Promise<walletV1.GetWalletResponse> {
         const wallet = await this.prisma.wallet.findUnique({
             where: { userId: data.userId },
         });
 
         if (!wallet) {
             return {
-                wallet_id: '',
-                user_id: data.userId,
+                walletId: '',
+                userId: data.userId,
                 balance: 0,
             };
         }
 
         return {
-            wallet_id: wallet.id,
-            user_id: wallet.userId,
+            walletId: wallet.id,
+            userId: wallet.userId,
             balance: wallet.balance,
         };
     }
 
-    @GrpcMethod('WalletService', 'UpdateBalance')
-    async updateBalance(data: UpdateBalanceRequest) {
+    // Idempotent money RPCs: contract defined in phase 02, server in phase 10.
+    debit(_data: walletV1.DebitRequest): Promise<walletV1.DebitResponse> {
+        return unimplemented('Debit');
+    }
+
+    credit(_data: walletV1.CreditRequest): Promise<walletV1.CreditResponse> {
+        return unimplemented('Credit');
+    }
+
+    refund(_data: walletV1.RefundRequest): Promise<walletV1.RefundResponse> {
+        return unimplemented('Refund');
+    }
+
+    /** @deprecated Replaced by Debit/Credit in phase 10. */
+    async updateBalance(
+        data: walletV1.UpdateBalanceRequest
+    ): Promise<walletV1.UpdateBalanceResponse> {
         try {
-            if (!Number.isFinite(data.amount) || data.amount <= 0) {
+            if (!Number.isInteger(data.amount) || data.amount <= 0) {
                 return {
                     success: false,
-                    new_balance: 0,
-                    message: 'Amount must be a positive number',
+                    newBalance: 0,
+                    message: 'Amount must be a positive integer',
                 };
             }
 
@@ -90,7 +112,7 @@ export class WalletGrpcController {
             if (!wallet) {
                 return {
                     success: false,
-                    new_balance: 0,
+                    newBalance: 0,
                     message: 'Wallet not found',
                 };
             }
@@ -154,7 +176,7 @@ export class WalletGrpcController {
             if (!result.ok) {
                 return {
                     success: false,
-                    new_balance: 0,
+                    newBalance: 0,
                     message: 'Insufficient balance',
                 };
             }
@@ -167,7 +189,7 @@ export class WalletGrpcController {
         } catch (error) {
             return {
                 success: false,
-                new_balance: 0,
+                newBalance: 0,
                 message: `Failed to update balance: ${error.message}`,
             };
         }

@@ -16,7 +16,8 @@ import { UpdateQuizSetDto } from './dto/update-quizset.dto';
 import { SetQuizzToQuizsetDto } from './dto/set-quizz-to-quizset.dto';
 import { SaveHistoryToQuizsetDto } from './dto/save-history-to-quizset.dto';
 import { QuizSetRepository } from './quizset.repository';
-import { R2ClientService } from '@examio/common';
+import { R2Client } from '../../clients/r2.client';
+import { buildMetadata } from '@examio/grpc';
 
 @Injectable()
 export class QuizsetService {
@@ -24,7 +25,7 @@ export class QuizsetService {
         private readonly prisma: PrismaService,
         private readonly quizSetRepository: QuizSetRepository,
         private readonly generateIdService: GenerateIdService,
-        private readonly r2Service: R2ClientService
+        private readonly r2Service: R2Client
     ) {}
 
     async createQuizSet(
@@ -45,7 +46,8 @@ export class QuizsetService {
                     fileName,
                     thumbnailFile.buffer,
                     thumbnailFile.mimetype,
-                    'quizset-thumbnails'
+                    'quizset-thumbnails',
+                    buildMetadata()
                 );
                 thumbnailUrl = this.r2Service.getPublicUrl(r2Key);
             }
@@ -236,7 +238,7 @@ export class QuizsetService {
         await this.quizSetRepository.delete(id, user.id);
         const key = quizSet.thumbnail?.replace(/^https?:\/\/[^/]+\//, '');
         if (key) {
-            await this.r2Service.deleteFile(key);
+            await this.r2Service.deleteFile(key, buildMetadata());
         }
 
         return { message: 'Xóa bộ câu hỏi thành công' };
@@ -397,7 +399,8 @@ export class QuizsetService {
                     fileName,
                     thumbnailFile.buffer,
                     thumbnailFile.mimetype,
-                    'quizset-thumbnails'
+                    'quizset-thumbnails',
+                    buildMetadata()
                 );
                 thumbnailUrl = this.r2Service.getPublicUrl(r2Key);
 
@@ -408,7 +411,7 @@ export class QuizsetService {
                         ''
                     );
                     if (oldKey) {
-                        await this.r2Service.deleteFile(oldKey).catch((err) => {
+                        await this.r2Service.deleteFile(oldKey, buildMetadata()).catch((err) => {
                             console.warn(
                                 'Failed to delete old quizset thumbnail from R2:',
                                 err

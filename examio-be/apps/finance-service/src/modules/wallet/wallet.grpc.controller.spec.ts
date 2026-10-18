@@ -45,6 +45,15 @@ describe('WalletGrpcController - Security Validation', () => {
     jest.clearAllMocks();
   });
 
+  describe('CreateWallet - Input Validation', () => {
+    it.each([1.5, -1, NaN])('should reject initialBalance %p', async (initialBalance) => {
+      const result = await controller.createWallet({ userId: 'u', initialBalance });
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('non-negative integer');
+    });
+  });
+
   describe('UpdateBalance - Input Validation', () => {
     it('should reject amount <= 0 with error message', async () => {
       const result = await controller.updateBalance({
@@ -55,7 +64,7 @@ describe('WalletGrpcController - Security Validation', () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('positive number');
+      expect(result.message).toContain('positive integer');
     });
 
     it('should reject negative amount', async () => {
@@ -67,7 +76,7 @@ describe('WalletGrpcController - Security Validation', () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('positive number');
+      expect(result.message).toContain('positive integer');
     });
 
     it('should reject non-finite amounts', async () => {
@@ -79,7 +88,20 @@ describe('WalletGrpcController - Security Validation', () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('positive number');
+      expect(result.message).toContain('positive integer');
+    });
+
+    it('should reject fractional amounts (credits are whole numbers)', async () => {
+      const result = await controller.updateBalance({
+        userId: 'user-123',
+        amount: 1.5,
+        transactionType: 'SUBTRACT',
+        description: 'test',
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.message).toContain('positive integer');
+      expect(prismaService.wallet.findUnique).not.toHaveBeenCalled();
     });
 
     it('should reject NaN amounts', async () => {
@@ -91,7 +113,7 @@ describe('WalletGrpcController - Security Validation', () => {
       });
 
       expect(result.success).toBe(false);
-      expect(result.message).toContain('positive number');
+      expect(result.message).toContain('positive integer');
     });
   });
 
@@ -300,7 +322,7 @@ describe('WalletGrpcController - Security Validation', () => {
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('Insufficient balance');
-      expect(result.new_balance).toBe(0);
+      expect(result.newBalance).toBe(0);
 
       // Verify the guard was checked
       expect(mockTx.wallet.updateMany).toHaveBeenCalledWith({

@@ -2,58 +2,22 @@ import {
     Injectable,
     NotFoundException,
     BadRequestException,
-    Inject,
-    OnModuleInit,
 } from '@nestjs/common';
-import { ClientGrpc } from '@nestjs/microservices';
-import { firstValueFrom, Observable } from 'rxjs';
 import { User } from '@prisma/client';
-import {
-    GenerateIdService,
-    sanitizeFilename,
-    R2_SERVICE,
-} from '@examio/common';
+import { GenerateIdService, sanitizeFilename } from '@examio/common';
+import { buildMetadata } from '@examio/grpc';
+import { r2V1 } from '@examio/contracts';
+import { R2Client } from '../clients/r2.client';
 import { UserRepository } from '../repositories/user.repository';
 import { UpdateProfileDto, ProfileResponseDto } from './dto/profile.dto';
 
-// gRPC R2 Service interface (NestJS gRPC returns Observable, not Promise)
-interface R2GrpcService {
-    uploadFile(data: {
-        user_id: string;
-        filename: string;
-        mimetype: string;
-        content: Buffer;
-        folder?: string;
-    }): Observable<{
-        success: boolean;
-        file_id: string;
-        url: string;
-        key_r2: string;
-        message: string;
-    }>;
-    getFileUrl(data: {
-        key_r2: string;
-        expires_in_seconds?: number;
-    }): Observable<{ url: string; expires_at: number }>;
-    deleteFile(data: {
-        key_r2: string;
-    }): Observable<{ success: boolean; message: string }>;
-}
-
 @Injectable()
-export class ProfileService implements OnModuleInit {
-    private r2GrpcService: R2GrpcService;
-
+export class ProfileService {
     constructor(
         private readonly userRepository: UserRepository,
         private readonly generateIdService: GenerateIdService,
-        @Inject(R2_SERVICE) private readonly r2Client: ClientGrpc
+        private readonly r2Client: R2Client
     ) {}
-
-    onModuleInit() {
-        this.r2GrpcService =
-            this.r2Client.getService<R2GrpcService>('R2Service');
-    }
 
     /**
      * Get user profile - O(1) with cache
@@ -147,24 +111,25 @@ export class ProfileService implements OnModuleInit {
         const directory = type === 'avatar' ? 'avatars' : 'banners';
 
         // Upload via gRPC to R2 Service
-        let uploadResult;
+        let uploadResult: r2V1.UploadFileResponse | undefined;
         try {
             console.log('Calling R2 gRPC uploadFile with:', {
-                user_id: user.id,
+                userId: user.id,
                 filename,
                 mimetype: file.mimetype,
                 contentLength: file.buffer.length,
                 folder: directory,
             });
 
-            uploadResult = await firstValueFrom(
-                this.r2GrpcService.uploadFile({
-                    user_id: user.id,
+            uploadResult = await this.r2Client.uploadFile(
+                {
+                    userId: user.id,
                     filename,
                     mimetype: file.mimetype,
                     content: file.buffer,
                     folder: directory,
-                })
+                },
+                buildMetadata()
             );
 
             console.log('R2 gRPC uploadFile result:', uploadResult);
@@ -199,11 +164,14 @@ export class ProfileService implements OnModuleInit {
         if (oldImageUrl) {
             const oldKey = this.extractR2Key(oldImageUrl);
             if (oldKey) {
-                await firstValueFrom(
-                    this.r2GrpcService.deleteFile({ key_r2: oldKey })
-                ).catch((err) => {
-                    console.warn(`Failed to delete old ${type} from R2:`, err);
-                });
+                await this.r2Client
+                    .deleteFile(oldKey, buildMetadata())
+                    .catch((err) => {
+                        console.warn(
+                            `Failed to delete old ${type} from R2:`,
+                            err
+                        );
+                    });
             }
         }
 

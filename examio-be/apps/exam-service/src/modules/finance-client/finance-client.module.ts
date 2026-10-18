@@ -1,34 +1,15 @@
 import { Module, Global } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
-import { join } from 'path';
+import { GrpcClientModule } from '@examio/grpc';
 import { FinanceClientService } from './finance-client.service';
+import {
+    FINANCE_GRPC_REGISTRATION,
+    FinanceClient,
+} from '../../clients/finance.client';
 
 @Global()
 @Module({
-    imports: [
-        ClientsModule.register([
-            {
-                name: 'FINANCE_PACKAGE',
-                transport: Transport.GRPC,
-                options: {
-                    package: ['wallet', 'subscription'],
-                    protoPath: [
-                        join(
-                            process.cwd(),
-                            'libs/common/src/protos/wallet.proto'
-                        ),
-                        join(
-                            process.cwd(),
-                            'libs/common/src/protos/subscription.proto'
-                        ),
-                    ],
-                    url:
-                        process.env.FINANCE_SERVICE_GRPC_URL || '0.0.0.0:50053',
-                },
-            },
-        ]),
-    ],
-    providers: [FinanceClientService],
-    exports: [ClientsModule, FinanceClientService],
+    imports: [GrpcClientModule.register(FINANCE_GRPC_REGISTRATION)],
+    providers: [FinanceClient, FinanceClientService],
+    exports: [FinanceClient, FinanceClientService],
 })
 export class FinanceClientModule {}
