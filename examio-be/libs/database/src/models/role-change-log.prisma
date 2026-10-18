@@ -1,0 +1,20 @@
+// Audit trail of every role / admin-flag change. No foreign keys: rows must
+// outlive the accounts they describe (emails are snapshotted).
+model RoleChangeLog {
+    id          String   @id
+    targetUserId String
+    targetEmail String
+    actorUserId String?
+    actorEmail  String
+    fromRole    BaseRole
+    toRole      BaseRole
+    fromAdmin   Boolean
+    toAdmin     Boolean
+    reason      String?
+    // 'admin-ui' | 'cli' | 'bootstrap'
+    source      String
+    createdAt   DateTime @default(now())
+
+    @@index([targetUserId, createdAt(sort: Desc)])
+    @@index([createdAt(sort: Desc)])
+}

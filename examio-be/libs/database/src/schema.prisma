@@ -534,6 +534,28 @@ model WalletTransaction {
 }
 
 
+// Audit trail of every role / admin-flag change. No foreign keys: rows must
+// outlive the accounts they describe (emails are snapshotted).
+model RoleChangeLog {
+    id          String   @id
+    targetUserId String
+    targetEmail String
+    actorUserId String?
+    actorEmail  String
+    fromRole    BaseRole
+    toRole      BaseRole
+    fromAdmin   Boolean
+    toAdmin     Boolean
+    reason      String?
+    // 'admin-ui' | 'cli' | 'bootstrap'
+    source      String
+    createdAt   DateTime @default(now())
+
+    @@index([targetUserId, createdAt(sort: Desc)])
+    @@index([createdAt(sort: Desc)])
+}
+
+
 model UserStorage {
     id               String   @unique
     userId           String
@@ -755,6 +777,13 @@ model Subject {
 }
 
 
+// Base role of an account. STUDENT and TEACHER are mutually exclusive;
+// SYSTEM_ADMIN is the separate `isSystemAdmin` flag and combines with either.
+enum BaseRole {
+    STUDENT
+    TEACHER
+}
+
 model User {
     id         String   @unique
     email      String   @unique
@@ -763,7 +792,11 @@ model User {
     avatar     String?
     banner     String?
     bio        String?
-    isAdmin    Boolean  @default(false)
+    role          BaseRole @default(STUDENT)
+    isSystemAdmin Boolean  @default(false)
+    // Monotonic authz version (JWT claim `av`): bumped in the same tx as every
+    // role / admin-flag / ban / password change so stale tokens are detectable.
+    authzVersion  Int      @default(0)
     isVerified Boolean  @default(false)
     isBanned   Boolean  @default(false)
     deletedAt  DateTime?
@@ -800,6 +833,8 @@ model User {
     studyRoomMemberships      StudyRoomMember[]
 
     @@index([utmSource])
+    @@index([role])
+    @@index([isSystemAdmin])
 }
 
 // Subscription tiers: 0=none, 1=basic, 2=advanced, 3=vip

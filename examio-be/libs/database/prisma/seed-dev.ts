@@ -44,9 +44,9 @@ function daysLater(n: number): Date {
  *
  * Resolution order:
  *   1. SEED_PASSWORD (per-run override, e.g. CI)
- *   2. ADMIN_DEFAULT_PASSWORD (env-defined default, used by admin-service
+ *   2. ADMIN_DEFAULT_PASSWORD (env-defined default, used by auth-service
  *      for bootstrapping admin accounts — see
- *      admin-service/src/modules/admin-bootstrap/admin-bootstrap.service.ts)
+ *      auth-service/src/admin-bootstrap/admin-bootstrap.service.ts)
  *   3. 'password123' (last-resort dev default)
  */
 const DEV_PASSWORD =
@@ -63,115 +63,11 @@ async function seedUsers() {
 
     const adminEmail = process.env.ADMIN_EMAILS?.split(',')[0].trim() || 'admin@examio.vn';
 
-    // Probe remote schema. The generated Prisma client is built from local
-    // schema (which has `isBanned`/`deletedAt`), so ANY prisma.user.* call
-    // will reference those columns even if we don't include them in the
-    // payload. When the remote DB is on an older migration we must bypass
-    // the generated client and write via raw SQL.
-    const userCols = await prisma.$queryRawUnsafe<{ column_name: string }[]>(
-        "SELECT column_name FROM information_schema.columns WHERE table_name = 'User'",
-    );
-    const colSet = new Set(userCols.map((c) => c.column_name));
-    const hasIsBanned = colSet.has('isBanned');
-    const hasDeletedAt = colSet.has('deletedAt');
-    const useRaw = !hasIsBanned || !hasDeletedAt;
-
-    if (useRaw) {
-        console.log('   ⚠️  remote User is missing columns — using raw SQL fallback');
-        if (!hasIsBanned) console.log('      - missing: isBanned');
-        if (!hasDeletedAt) console.log('      - missing: deletedAt');
-
-        const baseSelect =
-            'id, email, username, name, avatar, "isAdmin", "isVerified"';
-        const baseFrom = 'FROM "User"';
-
-        const fetchUser = async (email: string) =>
-            prisma.$queryRawUnsafe<{ id: string; email: string }[]>(
-                `SELECT id, email ${baseFrom} WHERE email = $1`,
-                email,
-            );
-
-        const upsertUser = async (u: {
-            email: string;
-            username: string;
-            name: string;
-            isBanned?: boolean;
-            isAdmin: boolean;
-            createdAt?: Date;
-        }) => {
-            const existing = await fetchUser(u.email);
-            const id = existing[0]?.id ?? uid();
-            const passwordHash = await devPasswordHash();
-            await prisma.$executeRawUnsafe(
-                `INSERT INTO "User" (id, email, username, name, avatar, "isAdmin", "isVerified", password, "createdAt", "updatedAt")
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, now())
-                 ON CONFLICT (email) DO UPDATE SET
-                    username = EXCLUDED.username,
-                    name = EXCLUDED.name,
-                    "isAdmin" = EXCLUDED."isAdmin",
-                    "isVerified" = EXCLUDED."isVerified",
-                    password = EXCLUDED.password,
-                    "updatedAt" = now()`,
-                id,
-                u.email,
-                u.username,
-                u.name,
-                '',
-                u.isAdmin,
-                true,
-                passwordHash,
-                u.createdAt ?? daysAgo(60),
-            );
-            return { id, email: u.email };
-        };
-
-        const admin = await upsertUser({
-            email: adminEmail,
-            username: 'admin',
-            name: 'Admin User',
-            isAdmin: true,
-            createdAt: daysAgo(90),
-        });
-        console.log(`   ✅ Admin: ${admin.email}`);
-
-        const testUsers: Array<{
-            email: string;
-            username: string;
-            name: string;
-            balance: number;
-            isBanned?: boolean;
-        }> = [
-            { email: 'user1@examio.vn', username: 'user1', name: 'Nguyễn Văn A', balance: 150000 },
-            { email: 'user2@examio.vn', username: 'user2', name: 'Trần Thị B', balance: 0 },
-            { email: 'user3@examio.vn', username: 'user3', name: 'Lê Văn C', balance: 50000 },
-            { email: 'user4@examio.vn', username: 'user4', name: 'Phạm Thị D', balance: 200000 },
-            { email: 'user5@examio.vn', username: 'user5', name: 'Hoàng Văn E', balance: 75000 },
-            { email: 'user6@examio.vn', username: 'user6', name: 'Đặng Thị F', balance: 300000 },
-            { email: 'banned@examio.vn', username: 'banned', name: 'User Banned', balance: 10000, isBanned: true },
-        ];
-
-        const created: Array<{ id: string; email: string; balance: number }> = [];
-        for (const u of testUsers) {
-            const user = await upsertUser({
-                email: u.email,
-                username: u.username,
-                name: u.name,
-                isAdmin: false,
-                createdAt: daysAgo(Math.floor(Math.random() * 60) + 1),
-            });
-            created.push({ id: user.id, email: user.email, balance: u.balance });
-            console.log(`   ${u.isBanned ? '🚫' : '✅'} ${u.email} (balance: ${u.balance})`);
-        }
-
-        return { admin, users: created };
-    }
-
-    // Generated-client path: remote DB already has all columns.
     const adminPasswordHash = await devPasswordHash();
     const admin = await prisma.user.upsert({
         where: { email: adminEmail },
         update: {
-            isAdmin: true,
+            isSystemAdmin: true,
             isVerified: true,
             isBanned: false,
             deletedAt: null,
@@ -183,7 +79,8 @@ async function seedUsers() {
             username: 'admin',
             name: 'Admin User',
             avatar: '',
-            isAdmin: true,
+            // SYSTEM_ADMIN is the `isSystemAdmin` flag (base role stays STUDENT).
+            isSystemAdmin: true,
             isVerified: true,
             isBanned: false,
             password: adminPasswordHash,
@@ -208,6 +105,8 @@ async function seedUsers() {
         const user = await prisma.user.upsert({
             where: { email: u.email },
             update: {
+                // Dev users own a wallet, so they are TEACHERs (wallets are teacher-only).
+                role: 'TEACHER',
                 isBanned: u.isBanned ?? false,
                 isVerified: true,
                 deletedAt: null,
@@ -219,7 +118,8 @@ async function seedUsers() {
                 username: u.username,
                 name: u.name,
                 avatar: '',
-                isAdmin: false,
+                role: 'TEACHER',
+                isSystemAdmin: false,
                 isVerified: true,
                 isBanned: u.isBanned ?? false,
                 password: userPasswordHash,
@@ -402,7 +302,8 @@ async function main() {
         }
 
         const { admin, users } = await seedUsers();
-        await seedWallets([admin, ...users]);
+        // Wallets are teacher-only: the SYSTEM_ADMIN account gets none.
+        await seedWallets(users);
 
         const allUsers = await prisma.$queryRawUnsafe<{ id: string; email: string }[]>(
             'SELECT id, email FROM "User"',
