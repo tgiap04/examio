@@ -23,7 +23,7 @@ services:
             - '${FE_PORT:-6368}:80'
         restart: unless-stopped
         networks:
-            - examio-network
+            - edge
         healthcheck:
             test: ['CMD', 'curl', '-f', 'http://localhost:80/']
             interval: 30s
@@ -36,7 +36,8 @@ services:
                 max-size: '5m'
                 max-file: '3'
 
+# Created by the backend compose (examio-be/deploy): bring that stack up first.
 networks:
-    examio-network:
+    edge:
         external: true
-        name: examio-network
+        name: examio-edge
