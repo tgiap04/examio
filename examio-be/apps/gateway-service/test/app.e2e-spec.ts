@@ -31,6 +31,10 @@ describe('gateway-service health (e2e)', () => {
     });
 
     afterAll(async () => {
+        // The gateway consumes `gateway.events` in-process: let the consumer
+        // channel finish its setup, or closing mid-setup surfaces an unhandled
+        // "Channel ended" from amqp-connection-manager.
+        await new Promise((resolve) => setTimeout(resolve, 1500));
         // Known issue: closing right after boot can hang on the RabbitMQ
         // channel teardown (libs/common events). Bound it so the suite
         // reports its real result; jest-e2e.json sets forceExit.

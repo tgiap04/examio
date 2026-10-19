@@ -50,7 +50,7 @@ function ensureEnv(): void {
  * Boots the REAL auth-service module (HTTP, optional gRPC) against the local
  * Postgres/Redis/RabbitMQ from the env. Needs the migrations applied.
  */
-export async function bootAuthApp(options: { grpc?: boolean } = {}): Promise<AuthApp> {
+export async function bootAuthApp(options: { grpc?: boolean; realThrottle?: boolean } = {}): Promise<AuthApp> {
     ensureEnv();
     const originalCwd = process.cwd();
     // Proto/template paths resolve against examio-be/.
@@ -63,10 +63,12 @@ export async function bootAuthApp(options: { grpc?: boolean } = {}): Promise<Aut
     const noLimit = {
         increment: async () => ({ totalHits: 1, timeToExpire: 0, isBlocked: false, timeToBlockExpire: 0 }),
     };
-    const moduleRef = await Test.createTestingModule({ imports: [AuthServiceModule] })
-        .overrideProvider(ThrottlerStorage)
-        .useValue(noLimit)
-        .compile();
+    const builder = Test.createTestingModule({ imports: [AuthServiceModule] });
+    // `realThrottle` keeps the real storage for the suites that exercise the limits.
+    const moduleRef = await (options.realThrottle
+        ? builder
+        : builder.overrideProvider(ThrottlerStorage).useValue(noLimit)
+    ).compile();
     const app = moduleRef.createNestApplication();
     app.use(cookieParser());
     app.setGlobalPrefix('api/v1', {

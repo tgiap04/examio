@@ -64,13 +64,14 @@ describe('StudyRoomSocketAuth', () => {
         });
     });
 
-    it('falls back to the accessToken cookie, then the legacy token cookie', async () => {
+    it('falls back to the accessToken cookie and ignores the retired token cookie', async () => {
         verify.mockResolvedValue(user({ id: 'user2' }));
         prisma.user.findUnique.mockResolvedValue(row({ id: 'user2', name: 'Bob', avatar: null }));
         await service.authenticate(mockSocket(undefined, { cookie: 'accessToken=ck; Path=/' }));
         expect(verify).toHaveBeenLastCalledWith('ck');
-        await service.authenticate(mockSocket(undefined, { cookie: 'token=legacy; Path=/' }));
-        expect(verify).toHaveBeenLastCalledWith('legacy');
+        verify.mockClear();
+        expect(await service.authenticate(mockSocket(undefined, { cookie: 'token=legacy; Path=/' }))).toBeNull();
+        expect(verify).not.toHaveBeenCalled();
     });
 
     it('prefers handshake.auth.token over cookies', async () => {
