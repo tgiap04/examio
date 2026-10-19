@@ -9,7 +9,7 @@
 - Scout: [current state](./reports/scout-current-state-report.md) "Gateway" · phase 01 `apps/gateway-service/test/fixtures/route-inventory.json`
 
 ## Overview
-- Priority: P1 · Status: Pending · Effort: 4.25d <!-- Red Team: RT-2, RT-3, RT-4, RT-6, RT-15 (was 3d: +compose networks 0.25d, +durable av worker 0.25d, +rate-limit port 0.25d, +helmet/CORS/OPTIONS/real-ip/XFF 0.5d) --> · Depends on: 02, 03, 04
+- Priority: P1 · Status: Completed (2026-10-20) · Effort: 4.25d <!-- Red Team: RT-2, RT-3, RT-4, RT-6, RT-15 (was 3d: +compose networks 0.25d, +durable av worker 0.25d, +rate-limit port 0.25d, +helmet/CORS/OPTIONS/real-ip/XFF 0.5d) --> · Depends on: 02, 03, 04
 - Replace 17 hand-written proxy controllers (208 handlers) with one YAML-driven streaming proxy. Add JWT verify, revoke + `av` staleness checks, coarse prefix permissions, a Redis rate limiter carrying every current per-route limit, the `GatewayControl` gRPC server, a durable `authz_changed` consumer, authenticated WS upgrade, and the edge hardening (helmet, CORS, real client IP). Segment the compose networks. Only auth sets cookies. The gateway stops touching Postgres.
 
 ## Key Insights
@@ -199,17 +199,17 @@ File ownership (globs): `examio-be/apps/gateway-service/**`, `examio-be/libs/aut
 - Config: `docker compose config` passes; a CI step asserts no `ports:` on `postgres|redis|rabbitmq` and that `postgres` is only on `internal`. `docker run --rm -v $PWD/examio-fe/nginx.conf:/etc/nginx/templates/default.conf.template -v $PWD/examio-fe/nginx/cloudflare-real-ip.conf:/etc/nginx/cloudflare-real-ip.conf -e BACKEND_URL=http://x:3000 nginx:1.27-alpine nginx -t` → exit 0. <!-- Red Team: RT-2, RT-15 -->
 
 ## Todo List
-- [ ] Coverage contract test (red) → routes.yaml (green), incl. rate-limit parity <!-- Red Team: RT-4 -->
-- [ ] Route schema/table/matcher + rateLimits table + hpm per route <!-- Red Team: RT-4 -->
-- [ ] Pipeline: auth, MGET revoke+av (Redis-down policy), coarse perms, page flag, Lua limiter, envelope errors, XFF overwrite, optional strip <!-- Red Team: RT-3, RT-6, RT-11, RT-15 -->
-- [ ] main.ts bodyParser:false + helmet + CORS + dispatcher + WS upgrade handler (proxy-addr IP) <!-- Red Team: RT-15 -->
-- [ ] GatewayControl gRPC server (`@ServiceOnly`) + `authz_changed` consumer; auth callers wired; flag on <!-- Red Team: RT-2, RT-3 -->
-- [ ] Gateway DB/Auth/Throttler/Http modules removed; admin warms page-flag cache
-- [ ] Cookies: only auth, accessToken/refreshToken, Lax, legacy names cleared; auth envelope filter <!-- Red Team: RT-11 -->
-- [ ] Compose networks edge/internal/egress; data host ports removed; FE compose + nginx real_ip <!-- Red Team: RT-2, RT-15 -->
-- [ ] Gateway log publisher ported into the dispatcher (`request-log.ts`) <!-- Reconcile: X9 -->
-- [ ] Old controllers/ProxyService/guards deleted
-- [ ] e2e + manual FE smoke + compose smoke
+- [x] Coverage contract test (red) → routes.yaml (green), incl. rate-limit parity <!-- Red Team: RT-4 -->
+- [x] Route schema/table/matcher + rateLimits table + hpm per route <!-- Red Team: RT-4 -->
+- [x] Pipeline: auth, MGET revoke+av (Redis-down policy), coarse perms, page flag, Lua limiter, envelope errors, XFF overwrite, optional strip <!-- Red Team: RT-3, RT-6, RT-11, RT-15 -->
+- [x] main.ts bodyParser:false + helmet + CORS + dispatcher + WS upgrade handler (proxy-addr IP) <!-- Red Team: RT-15 -->
+- [x] GatewayControl gRPC server (`@ServiceOnly`) + `authz_changed` consumer; auth callers wired; flag on <!-- Red Team: RT-2, RT-3 -->
+- [x] Gateway DB/Auth/Throttler/Http modules removed; admin warms page-flag cache
+- [x] Cookies: only auth, accessToken/refreshToken, Lax, legacy names cleared; auth envelope filter <!-- Red Team: RT-11 -->
+- [x] Compose networks edge/internal/egress; data host ports removed; FE compose + nginx real_ip <!-- Red Team: RT-2, RT-15 -->
+- [x] Gateway log publisher ported into the dispatcher (`request-log.ts`) <!-- Reconcile: X9 -->
+- [x] Old controllers/ProxyService/guards deleted
+- [ ] e2e + manual FE smoke + compose smoke (OPEN: e2e green; no browser FE smoke and no `docker compose up` of the real stack in evidence; static `compose config` + live curl/nginx checks only)
 
 ## Success Criteria
 - `cd examio-be && yarn typecheck && yarn build:all && yarn test`: exit 0. `cd examio-be/apps/gateway-service && ../../node_modules/.bin/jest --config test/jest-e2e.json`: exit 0.
@@ -258,3 +258,15 @@ File ownership (globs): `examio-be/apps/gateway-service/**`, `examio-be/libs/aut
 - [CROSS-PHASE] Ban is auth `SetUserStatus`, implemented in phase 08 (durable `authz_changed(reason:'ban')` + auth-side `InvalidateUser`). 04 + 05 + 08 are verified together on local compose and reach production only in the single final-merge deploy, so there is no interim gap. <!-- Reconcile: X1 --> <!-- Updated: Validation Session 1 - single production deploy -->
 - [CROSS-PHASE] <!-- Red Team: RT-2 --> Phase 16 no longer owns the network split or data-port removal; it adds `gateway-a/b`, drops the gateway host port, and adds the nginx `/ws/` location (nginx has none today, `examio-fe/nginx.conf` proxies only `/api/`).
 - [CROSS-PHASE] <!-- Red Team: RT-4 --> Phases 06/07 add per-resource code-failure counters behind the `flashcard-code`/`examsession-code`/`quiz-unlock` gateway limits.
+
+### Deferred / carried (closed 2026-10-20)
+1. P16: loopback-bound gateway port `127.0.0.1:6369`. Local callers can still choose XFF (accepted residual). Remove the host port with gateway-a/b.
+2. WS upgrade has no Origin allowlist. SameSite=Lax mitigates.
+3. Gateway sits on the non-internal `edge` network (unneeded egress). Tighten in P16.
+4. `POST /auth/exchange` is `@Public` in auth but routed as required-auth. Unused. Delete or expose deliberately.
+5. `SessionRevoker` writes one outbox row per session in a loop. Batch later.
+6. Real-Cloudflare client-IP check at the P16 cutover smoke.
+7. Admin `SetPageFlags` caller is P10.
+8. New durable event `auth.session.revoked` added beyond plan (user-approved). Reflect in ARCHITECTURE.md at P19.
+
+<!-- Updated: 2026-10-20 user decision --> **Todo 11 (manual FE + full `docker compose up` smoke) → moved to the phase-16 cutover smoke** (user decision 2026-10-20). Local verification evidence: evidence/phase-05/ (80/80) and evidence/phase-05-runs.md rounds 1–6.

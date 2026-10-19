@@ -28,7 +28,7 @@ Decisions (authoritative): [reports/decisions.md](./reports/decisions.md). Input
 | 02 | [Contracts & Infra Libs](./phase-02-contracts-and-infra-libs.md) | Completed | 2.25d | 01 |
 | 03 | [Messaging Foundation](./phase-03-messaging-foundation.md) | Completed | 2.5d | 02 |
 | 04 | [Identity & RBAC Core](./phase-04-identity-and-rbac-core.md) | Completed | 5d | 02, 03 |
-| 05 | [Gateway Rewrite](./phase-05-gateway-rewrite.md) | Pending | 4.25d | 02, 03, 04 |
+| 05 | [Gateway Rewrite](./phase-05-gateway-rewrite.md) | Completed | 4.25d | 02, 03, 04 |
 | 06 | [RBAC Enforcement & Security Fixes](./phase-06-rbac-enforcement-and-security-fixes.md) | Pending | 4.75d | 04 |
 | 07 | [Quiz Sharing & Student Practice](./phase-07-quiz-sharing-and-student-practice.md) | Pending | 2.75d | 06 |
 | 08 | [Admin Role-Management Screen](./phase-08-admin-role-management-screen.md) | Pending | 2.75d | 04, 06 |
@@ -93,6 +93,7 @@ Session 1 (2026-10-18), 7 questions. Full record: [validation-session-1.md](./re
 - Mobile is unreleased: no compat fields (reverses RT-13). P18 must finish before the first store release.
 - ai-service `score/` and `BenchmarkItem` are deleted (P01).
 - Propagated to phases ([report](./reports/validation-propagation-report.md)). Lead accepted 4 calls: new R2 bucket at cutover (old kept 24h for rollback), P01 also removes the dev-only `streamlit_ui/` + `evaluate_chatbot.py`, seeding via `ROLE=seed`, `CUTOVER_DONE` deploy gate. Unresolved contradictions: **none**.
+- Milestone A local verification now covers 04 + 05 (08 pending). Evidence: [phase-04-runs.md](./evidence/phase-04-runs.md), [phase-05-runs.md](./evidence/phase-05-runs.md). Phase 05 closed 2026-10-20 (forge + 6 fix rounds; temper 80/80; inspection SEALED 9/10, 0 critical). Phase 05 Todo "e2e + manual FE smoke + compose smoke" still open (see phase-05 file).
 
 ## Cross-Plan Notes
 - Supersedes the role removal of `260513-2045-remove-user-role` and `260513-1957-unify-backend-role-access` (roles re-introduced, new model).

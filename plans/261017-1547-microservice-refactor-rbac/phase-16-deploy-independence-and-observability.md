@@ -181,3 +181,5 @@ Write first:
 
 ## Next Steps
 - 19 documents the deploy runbook (waves, contract flow, P3009 procedure) and the one-time cutover runbook (links `deploy/cutover-runbook.md`). <!-- Updated: Validation Session 1 - one-time production cutover runbook --> 17 (deferred) adds observability, Redis ACL and K8s.
+
+<!-- Updated: 2026-10-20 carried from P05 Todo 11 --> **Cutover smoke additions (carried from P05):** browser run through the FE nginx covering login (cookies accessToken/refreshToken only, SameSite=Lax), AI chat token streaming, a 20 MB PDF upload, study-room join over `/ws/study`, admin log SSE, page-flag toggle; plus on the new compose networks: Google login, SePay plan list, AI generation; real Cloudflare client IPs visible in gateway logs.
