@@ -7,6 +7,8 @@ import {
     HttpStatus,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { BaseRpcExceptionFilter } from '@nestjs/microservices';
+import type { Observable } from 'rxjs';
 
 export interface ErrorEnvelope {
     statusCode: number;
@@ -30,11 +32,17 @@ function textOf(value: unknown, fallback: string): string {
 /**
  * Normalises every error to `{ statusCode, code, message, requestId }`.
  * Registered by gateway + auth in phase 05; other services register it when a
- * later phase touches them.
+ * later phase touches them. HTTP only: other contexts re-throw untouched.
  */
 @Catch()
 export class HttpErrorEnvelopeFilter implements ExceptionFilter {
-    catch(exception: unknown, host: ArgumentsHost): void {
+    private readonly rpc = new BaseRpcExceptionFilter();
+
+    catch(exception: unknown, host: ArgumentsHost): Observable<unknown> | void {
+        // Hybrid apps (HTTP + gRPC) inherit global filters; RPC errors keep
+        // Nest's own mapping (RpcException payload -> gRPC status).
+        if (host.getType() !== 'http') return this.rpc.catch(exception, host);
+
         const ctx = host.switchToHttp();
         const req = ctx.getRequest<Request>();
         const res = ctx.getResponse<Response>();

@@ -1,10 +1,13 @@
 import { ArgumentsHost, BadRequestException, HttpException } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
+import { firstValueFrom, Observable } from 'rxjs';
 import { HttpErrorEnvelopeFilter } from './http-error-envelope.filter';
 
 function host(headers: Record<string, string> = {}) {
     const json = jest.fn();
     const status = jest.fn().mockReturnValue({ json });
     const h = {
+        getType: () => 'http',
         switchToHttp: () => ({
             getRequest: () => ({ headers }),
             getResponse: () => ({ status }),
@@ -69,6 +72,23 @@ describe('HttpErrorEnvelopeFilter', () => {
         });
         expect(typeof body.requestId).toBe('string');
         expect(JSON.stringify(body)).not.toContain('hunter2');
+    });
+
+    describe('non-HTTP contexts (hybrid gRPC apps inherit global filters)', () => {
+        const rpc = { getType: () => 'rpc' } as unknown as ArgumentsHost;
+        const rejection = (error: unknown) =>
+            firstValueFrom(filter.catch(error, rpc) as unknown as Observable<never>).catch((e) => e);
+
+        it('keeps the RpcException payload (gRPC status code) intact', async () => {
+            await expect(
+                rejection(new RpcException({ code: 7, message: 'PERMISSION_DENIED' }))
+            ).resolves.toEqual({ code: 7, message: 'PERMISSION_DENIED' });
+        });
+
+        it('answers an unexpected error the way Nest does by default', async () => {
+            const result = await rejection(new Error('boom'));
+            expect(result).toMatchObject({ status: 'error', message: 'Internal server error' });
+        });
     });
 
     it('generates a requestId when the header is missing', () => {
