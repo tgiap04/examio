@@ -26,6 +26,11 @@ export class LogPublisherService implements OnModuleDestroy {
 
     constructor(private readonly redis: RedisService) {}
 
+    /** True once the shared Redis connection has been closed (application shutdown). */
+    isClosed(): boolean {
+        return this.redis.getClient()?.status === 'end';
+    }
+
     /**
      * Register a service so flush() closes its subscription.
      */
