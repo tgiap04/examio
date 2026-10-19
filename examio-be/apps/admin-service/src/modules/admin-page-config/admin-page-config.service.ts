@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '@examio/database';
 import { RedisService } from '@examio/redis';
 import {
@@ -31,13 +31,26 @@ export interface PageConfigRow {
  *   4. Ghi audit (bọc try/catch — không để audit lỗi làm hỏng toggle)
  */
 @Injectable()
-export class AdminPageConfigService {
+export class AdminPageConfigService implements OnModuleInit {
     private readonly logger = new Logger(AdminPageConfigService.name);
 
     constructor(
         private readonly prisma: PrismaService,
         private readonly redis: RedisService
     ) {}
+
+    /**
+     * Gateway không còn đọc DB: cache miss = mọi trang bật. Nên admin dựng cache
+     * lúc boot để cờ đã tắt vẫn có hiệu lực sau khi Redis bị xóa/khởi động lại.
+     * Không bao giờ chặn admin-service khởi động.
+     */
+    async onModuleInit(): Promise<void> {
+        try {
+            await this.rebuildCache();
+        } catch (err) {
+            this.logger.warn(`page-flag cache warm-up failed: ${String(err)}`);
+        }
+    }
 
     /**
      * Danh sách trang + trạng thái, sắp xếp theo key.

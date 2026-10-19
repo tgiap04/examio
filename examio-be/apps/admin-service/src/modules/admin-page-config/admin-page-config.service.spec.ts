@@ -17,6 +17,28 @@ function make() {
 }
 
 describe('AdminPageConfigService', () => {
+    describe('onModuleInit (warms the gateway page-flag cache)', () => {
+        it('writes the full DB map to Redis at boot, without publishing', async () => {
+            const { service, prisma, redis } = make();
+            prisma.pageFeatureFlag.findMany.mockResolvedValue([
+                { key: 'study-room', enabled: false },
+                { key: 'flash-card', enabled: true },
+            ]);
+            await service.onModuleInit();
+            expect(redis.set).toHaveBeenCalledWith('config:pages:flags', {
+                'study-room': false,
+                'flash-card': true,
+            });
+            expect(redis.publish).not.toHaveBeenCalled();
+        });
+
+        it('a Redis or DB failure never blocks the admin service from booting', async () => {
+            const { service, prisma } = make();
+            prisma.pageFeatureFlag.findMany.mockRejectedValue(new Error('db down'));
+            await expect(service.onModuleInit()).resolves.toBeUndefined();
+        });
+    });
+
     describe('list', () => {
         it('tự sinh dòng cho key thuộc TOGGLEABLE_PAGE_KEYS nhưng chưa có bản ghi DB', async () => {
             const { service } = make();
