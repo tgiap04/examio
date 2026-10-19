@@ -149,6 +149,10 @@ jobs:
         run: npx prisma migrate deploy --schema=libs/database/src/schema.prisma
       - name: Boot each built service from dist and probe /health/live
         run: ./scripts/boot-built-services.sh
+      # The compose file turns on GATEWAY_CONTROL_ENABLED and the api+worker roles;
+      # those paths load protos/clients a flag-off boot never touches.
+      - name: Boot each built service again with the docker-compose default feature flags
+        run: COMPOSE_DEFAULTS=1 ./scripts/boot-built-services.sh
 
   be-unit:
     runs-on: ubuntu-latest
@@ -169,6 +173,8 @@ jobs:
       - run: yarn test --ci
       - name: RabbitMQ definitions renderer
         run: node --test deploy/rabbitmq/render-definitions.spec.cjs
+      - name: Compose topology (no data-store host ports, edge/internal/egress split)
+        run: node --test deploy/compose-topology.spec.cjs
 
   # Boots every service module against empty pgvector Postgres + Redis +
   # RabbitMQ (migrations applied from the committed baseline) and probes
@@ -214,6 +220,7 @@ jobs:
       RABBITMQ_FINANCE_PASS: ci-only-finance-pass
       RABBITMQ_EXAM_PASS: ci-only-exam-pass
       RABBITMQ_AI_PASS: ci-only-ai-pass
+      RABBITMQ_GATEWAY_PASS: ci-only-gateway-pass
       REFRESH_TOKEN_ENC_KEY: ci-only-refresh-key-0123456789abcdef0123456789
       FRONTEND_URL: http://localhost:5173
       JWT_ISSUER: examio-auth
@@ -262,7 +269,7 @@ jobs:
           for svc in auth exam finance admin r2 gateway; do
             echo "::group::$svc-service e2e"
             # Services without a broker user of their own boot with auth's.
-            case "$svc" in auth|exam|finance) user=$svc ;; *) user=auth ;; esac
+            case "$svc" in auth|exam|finance|gateway) user=$svc ;; *) user=auth ;; esac
             pass_var="RABBITMQ_$(echo "$user" | tr a-z A-Z)_PASS"
             export RABBITMQ_URL="amqp://$user:${!pass_var}@localhost:5672"
             # exam's legacy event subscriber declares a queue named SERVICE_NAME,
@@ -280,9 +287,42 @@ jobs:
         run: |
           export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"
           export SERVICE_NAME="auth-service"
-          (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/token.e2e-spec.ts test/service-token.e2e-spec.ts test/role-change.e2e-spec.ts test/public-profiles.e2e-spec.ts)
+          (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/token.e2e-spec.ts test/service-token.e2e-spec.ts test/role-change.e2e-spec.ts test/public-profiles.e2e-spec.ts test/login-throttle.e2e-spec.ts)
           (cd apps/finance-service && RABBITMQ_URL="amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-authz-changed.e2e-spec.ts)
           (cd apps/admin-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin.e2e-spec.ts test/admin-roles.e2e-spec.ts)
+      - name: Gateway e2e (streaming proxy, revoke/av incl. durable path, rate limits, CORS, WS upgrade, Lua scripts)
+        run: |
+          export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"
+          export RABBITMQ_URL="amqp://gateway:$RABBITMQ_GATEWAY_PASS@localhost:5672"
+          (cd apps/gateway-service && ../../node_modules/.bin/jest --config test/jest-e2e.json \
+            test/gateway.e2e-spec.ts test/gateway-streaming.e2e-spec.ts test/gateway-expect.e2e-spec.ts test/gateway-authz.e2e-spec.ts test/gateway-control.e2e-spec.ts test/gateway-edge.e2e-spec.ts test/redis-scripts.e2e-spec.ts)
+          # Real auth + real gateway + outbox relay: cookies, logout revoke, role-change staleness (fast + durable)
+          export RABBITMQ_URL="$RABBITMQ_AUTH_URL"
+          export RABBITMQ_GATEWAY_URL="amqp://gateway:$RABBITMQ_GATEWAY_PASS@localhost:5672"
+          (cd apps/auth-service && SERVICE_NAME=auth-service ../../node_modules/.bin/jest --config test/jest-e2e.json test/gateway-integration.e2e-spec.ts)
+
+  # Deploy configuration that only fails at `up` time: the compose file must
+  # render, and nginx must accept the real-ip include. Dummy values only.
+  deploy-config:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: docker compose config renders (dummy env)
+        working-directory: examio-be/deploy
+        run: |
+          for v in FRONTEND_URL DATABASE_URL REDIS_PASSWORD JWT_PRIVATE_KEY JWT_KID SERVICE_CLIENTS \
+            RABBITMQ_USER RABBITMQ_PASS RABBITMQ_AUTH_PASS RABBITMQ_FINANCE_PASS RABBITMQ_EXAM_PASS \
+            RABBITMQ_AI_PASS RABBITMQ_GATEWAY_PASS EXAM_SERVICE_CLIENT_SECRET FINANCE_SERVICE_CLIENT_SECRET \
+            ADMIN_SERVICE_CLIENT_SECRET POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB ADMIN_EMAILS \
+            ADMIN_DEFAULT_PASSWORD GEMINI_API_KEYS GEMINI_MODEL_NAMES; do echo "$v=ci-dummy"; done > .env
+          docker compose config --quiet
+          rm -f .env
+      - name: nginx accepts the Cloudflare real-ip include
+        run: |
+          docker run --rm \
+            -v "$PWD/examio-fe/nginx.conf:/etc/nginx/templates/default.conf.template" \
+            -v "$PWD/examio-fe/nginx/cloudflare-real-ip.conf:/etc/nginx/cloudflare-real-ip.conf" \
+            -e BACKEND_URL=http://127.0.0.1:3000 nginx:1.27-alpine nginx -t
 
   # FE tests (vitest) are added by the frontend RBAC phase.
   fe:

@@ -6,16 +6,28 @@
 # JWT_SECRET, REFRESH_TOKEN_ENC_KEY). Services run one at a time on the same ports.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+ROOT="$PWD"
+
+# COMPOSE_DEFAULTS=1 boots with the feature flags deploy/docker-compose.yml turns on
+# (auth -> gateway control plane, api+worker roles). Their code paths load extra
+# protos/clients that a flag-off boot never touches.
+if [[ "${COMPOSE_DEFAULTS:-0}" == "1" ]]; then
+    export GATEWAY_CONTROL_ENABLED="${GATEWAY_CONTROL_ENABLED:-true}"
+    export GATEWAY_GRPC_URL="${GATEWAY_GRPC_URL:-127.0.0.1:50051}"
+    export ROLE="${ROLE:-api,worker}"
+fi
+# BOOT_CWD: run from a directory without service .env files (default: the repo root).
+BOOT_CWD="${BOOT_CWD:-$ROOT}"
 
 SERVICES="${SERVICES:-auth exam finance admin r2 gateway}"
-GRPC_SERVICES="${GRPC_SERVICES:-auth finance r2}"
+GRPC_SERVICES="${GRPC_SERVICES:-auth finance r2 gateway}"
 export PORT="${PORT:-3000}"
 export GRPC_PORT="${GRPC_PORT:-50051}"
 failed=0
 
 for svc in ${SERVICES}; do
     log="$(mktemp)"
-    node "dist/apps/${svc}-service/main.js" >"${log}" 2>&1 &
+    (cd "${BOOT_CWD}" && exec node "${ROOT}/dist/apps/${svc}-service/main.js") >"${log}" 2>&1 &
     pid=$!
     http=0
     for _ in $(seq 1 60); do

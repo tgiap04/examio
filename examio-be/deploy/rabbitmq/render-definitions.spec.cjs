@@ -16,6 +16,7 @@ const ENV = {
     RABBITMQ_FINANCE_PASS: 'f',
     RABBITMQ_EXAM_PASS: 'e',
     RABBITMQ_AI_PASS: 'i',
+    RABBITMQ_GATEWAY_PASS: 'g',
 };
 
 test('hashPassword matches the RabbitMQ documentation reference (salt 908DC60A, test12)', () => {
@@ -32,7 +33,7 @@ test('renderDefinitions substitutes users, hashes and the admin name', () => {
         ENV
     );
     const names = out.users.map((u) => u.name).sort();
-    assert.deepStrictEqual(names, ['ai', 'auth', 'exam', 'finance', 'ops']);
+    assert.deepStrictEqual(names, ['ai', 'auth', 'exam', 'finance', 'gateway', 'ops']);
     assert.ok(out.users.every((u) => u.hashing_algorithm === 'rabbit_password_hashing_sha256'));
     assert.ok(out.users.find((u) => u.name === 'ops').tags.includes('administrator'));
     assert.ok(!JSON.stringify(out).includes('{{'));
@@ -51,6 +52,32 @@ test('finance may publish only ^finance\\. on examio.events and touch only its o
     const re = new RegExp(perm.configure);
     assert.ok(re.test('examio.events') && re.test('finance.events') && re.test('finance.dlq'));
     assert.ok(!re.test('auth.events') && !re.test('amq.default'));
+});
+
+test('gateway may only read examio.events and touch gateway.* queues, and publishes nothing', () => {
+    const out = renderDefinitions(
+        fs.readFileSync(path.join(__dirname, 'definitions.template.json'), 'utf8'),
+        ENV
+    );
+    const topic = out.topic_permissions.find((p) => p.user === 'gateway');
+    assert.strictEqual(topic.exchange, 'examio.events');
+    assert.strictEqual(topic.write, '^gateway\\.');
+    assert.strictEqual(topic.read, '.*');
+    const perm = out.permissions.find((p) => p.user === 'gateway');
+    const re = new RegExp(perm.configure);
+    assert.ok(re.test('examio.events') && re.test('gateway.events') && re.test('gateway.dlq'));
+    assert.ok(!re.test('auth.events') && !re.test('finance.events') && !re.test('amq.default'));
+});
+
+test('auth.session.revoked flows auth -> gateway: auth may publish it, the gateway may bind it', () => {
+    const out = renderDefinitions(
+        fs.readFileSync(path.join(__dirname, 'definitions.template.json'), 'utf8'),
+        ENV
+    );
+    const topic = (user) => out.topic_permissions.find((p) => p.user === user);
+    assert.ok(new RegExp(topic('auth').write).test('auth.session.revoked'));
+    assert.ok(new RegExp(topic('gateway').read).test('auth.session.revoked'));
+    assert.ok(!new RegExp(topic('gateway').write).test('auth.session.revoked'));
 });
 
 test('CLI exits 1 when a password is missing and writes nothing', () => {
@@ -75,6 +102,6 @@ test('CLI writes definitions.json (world-readable, the broker user must read the
         encoding: 'utf8',
     });
     assert.strictEqual(res.status, 0, res.stderr);
-    assert.strictEqual(JSON.parse(fs.readFileSync(out, 'utf8')).users.length, 5);
+    assert.strictEqual(JSON.parse(fs.readFileSync(out, 'utf8')).users.length, 6);
     assert.strictEqual(fs.statSync(out).mode & 0o777, 0o644);
 });

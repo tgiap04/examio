@@ -31,6 +31,12 @@
       "password_hash": "{{HASH:RABBITMQ_AI_PASS}}",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
       "tags": []
+    },
+    {
+      "name": "gateway",
+      "password_hash": "{{HASH:RABBITMQ_GATEWAY_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
     }
   ],
   "vhosts": [
@@ -73,6 +79,13 @@
       "configure": "^(examio\\.events|ai\\..*|ai-service-queue)$",
       "write": "^(examio\\.events|ai\\..*|ai-service-queue)$",
       "read": "^(examio\\.events|ai\\..*|ai-service-queue)$"
+    },
+    {
+      "user": "gateway",
+      "vhost": "/",
+      "configure": "^(examio\\.events|gateway\\..*)$",
+      "write": "^(examio\\.events|gateway\\..*)$",
+      "read": "^(examio\\.events|gateway\\..*)$"
     }
   ],
   "topic_permissions": [
@@ -102,6 +115,13 @@
       "vhost": "/",
       "exchange": "examio.events",
       "write": "^ai\\.",
+      "read": ".*"
+    },
+    {
+      "user": "gateway",
+      "vhost": "/",
+      "exchange": "examio.events",
+      "write": "^gateway\\.",
       "read": ".*"
     }
   ],

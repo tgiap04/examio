@@ -8,7 +8,7 @@ The deployment consists of the following containers:
 - **PostgreSQL** (Database)
 - **Redis** (Cache)
 - **RabbitMQ** (Message Queue)
-- **Gateway Service** (API Gateway)
+- **Gateway Service** (YAML-routed streaming proxy; JWT verify, revoke/stale checks, rate limits; no database)
 - **Auth Service** (Authentication)
 - **Exam Service** (Exam Management)
 - **Finance Service** (Payment & Wallet)
@@ -108,6 +108,7 @@ RABBITMQ_AUTH_PASS=...
 RABBITMQ_FINANCE_PASS=...
 RABBITMQ_EXAM_PASS=...
 RABBITMQ_AI_PASS=...
+RABBITMQ_GATEWAY_PASS=...
 ```
 
 Broker users and permissions are rendered from `rabbitmq/definitions.template.json` into the gitignored `rabbitmq/definitions.json` by the one-shot `rabbitmq-defs` service. `setup-env.sh` and the deploy workflow run `docker compose run --rm rabbitmq-defs` before `up`; it fails if any password above is missing.
@@ -232,15 +233,52 @@ Lưu ý quan trọng:
 - migration đầu tiên là `baseline` (tạo extension `vector`, `uuid-ossp` và toàn bộ bảng); DB mới (volume rỗng) chỉ cần chạy `migrate deploy`;
 - tuy vậy, nếu bạn thay đổi schema mới, hãy tạo migration chuẩn trước khi deploy để tránh lệch schema giữa code và DB.
 
-## Container Ports
+## Container Ports and Networks
 
-External ports exposed to host:
+Only the gateway publishes a host port:
 
-- **6369** → Gateway (7000 internally)
-- **5432** → PostgreSQL
-- **6379** → Redis
-- **5672** → RabbitMQ
-- **15672** → RabbitMQ Management UI
+- **127.0.0.1:6369** → Gateway (3000 internally), bound to loopback only; the FE nginx reaches it over `examio-edge`. Phase 16 moves it behind nginx. A host-level proxy on the same machine may use this port.
+
+PostgreSQL, Redis and RabbitMQ publish **no** host port (a static check,
+`compose-topology.spec.cjs`, fails CI if one comes back). Reach them from the
+host through the containers:
+
+```bash
+docker compose exec postgres psql -U "$POSTGRES_USER" "$POSTGRES_DB"
+docker compose exec redis redis-cli -a "$REDIS_PASSWORD"
+docker compose exec rabbitmq rabbitmqctl list_queues
+```
+
+Networks (`docker-compose.yml`):
+
+| Network | Name | Members | Why |
+|---|---|---|---|
+| `edge` | `examio-edge` | gateway, FE nginx (joins from `examio-fe/docker-compose.yml`) | the only way in |
+| `internal` (`internal: true`, no route out) | `examio-internal` | every service, Postgres, Redis, RabbitMQ, migration, seed | service-to-service traffic |
+| `egress` | `examio-egress` | auth (Google OAuth, SMTP), exam (Turnstile), finance (SePay), r2 (Cloudflare R2), ai (Gemini) | the only services with a real internet dependency |
+
+`admin` is on `internal` only. If a service gains an internet dependency, add it
+to `egress` and to the list in `compose-topology.spec.cjs`.
+
+Bring-up order: this stack first (it creates `examio-edge`), then the FE stack.
+Verify the split:
+
+```bash
+docker compose exec admin wget -qO- -T 3 https://example.com   # fails: no egress
+docker compose exec auth  wget -qO- -T 3 https://example.com   # succeeds
+```
+
+### Real client IP
+
+Cloudflare → nginx (`examio-fe`) → gateway. nginx takes `CF-Connecting-IP` only
+from Cloudflare ranges (`examio-fe/nginx/cloudflare-real-ip.conf`) and
+**overwrites** `X-Forwarded-For` with that address; the gateway trusts that one
+hop and keys every rate limit on it. Refresh the ranges from
+https://www.cloudflare.com/ips-v4 and `/ips-v6` a few times a year (steps are at
+the top of the file). If a host-level proxy or Cloudflare Tunnel sits between
+Cloudflare and nginx, add its address as another `set_real_ip_from`; confirm the
+production topology before the cutover (gateway logs must show distinct client
+addresses, not Cloudflare ranges).
 
 ## Data Persistence
 

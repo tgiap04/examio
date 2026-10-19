@@ -37,7 +37,7 @@ services:
                 SERVICE_NAME: gateway-service
         container_name: examio-gateway
         ports:
-            - '6369:3000'
+            - '127.0.0.1:6369:3000'
         environment:
             - NODE_ENV=production
             - PORT=3000
@@ -46,23 +46,23 @@ services:
             - EXAM_SERVICE_URL=http://exam:3000
             - FINANCE_SERVICE_URL=http://finance:3000
             - ADMIN_SERVICE_URL=http://admin:3000
-            - AI_SERVICE_URL=http://ai:3000/api
-            - DATABASE_URL=${DATABASE_URL}
             - REDIS_HOST=redis
             - REDIS_PORT=6379
             - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-            - AUTH_GRPC_URL=auth:50051
+            # GatewayControl gRPC server (auth/admin -> gateway), internal network only
+            - GRPC_PORT=50051
+            # Durable `auth.user.authz_changed` consumer (queue gateway.events)
+            - RABBITMQ_URL=amqp://gateway:${RABBITMQ_GATEWAY_PASS:?RABBITMQ_GATEWAY_PASS is required}@rabbitmq:5672
             - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
             - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
             - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
         env_file:
             - .env
+        # The gateway is a router: no database, so no postgres/migration dependency.
         depends_on:
-            migration:
-                condition: service_completed_successfully
-            postgres:
-                condition: service_healthy
             redis:
+                condition: service_healthy
+            rabbitmq:
                 condition: service_healthy
             auth:
                 condition: service_healthy
@@ -73,7 +73,8 @@ services:
             admin:
                 condition: service_healthy
         networks:
-            - examio-network
+            - edge
+            - internal
         healthcheck:
             <<: *nestjs-healthcheck
             test:
@@ -112,7 +113,9 @@ services:
             - JWT_KID=${JWT_KID:?JWT_KID is required}
             - JWT_RETIRED_PUBLIC_KEYS=${JWT_RETIRED_PUBLIC_KEYS:-}
             - SERVICE_CLIENTS=${SERVICE_CLIENTS:?SERVICE_CLIENTS is required (scripts/gen-service-secret.sh)}
-            - GATEWAY_CONTROL_ENABLED=${GATEWAY_CONTROL_ENABLED:-false}
+            # Fast-path revoke / invalidate calls into the gateway (phase 05)
+            - GATEWAY_CONTROL_ENABLED=${GATEWAY_CONTROL_ENABLED:-true}
+            - GATEWAY_GRPC_URL=gateway:50051
             # Boot-time admin bootstrap (moved from admin-service in phase 04)
             - ADMIN_EMAILS=${ADMIN_EMAILS}
             - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD}
@@ -130,7 +133,8 @@ services:
             r2:
                 condition: service_healthy
         networks:
-            - examio-network
+            - internal
+            - egress
         healthcheck:
             <<: *nestjs-healthcheck
             test:
@@ -186,7 +190,8 @@ services:
             finance:
                 condition: service_healthy
         networks:
-            - examio-network
+            - internal
+            - egress
         healthcheck:
             <<: *nestjs-healthcheck
             test:
@@ -234,7 +239,8 @@ services:
             redis:
                 condition: service_healthy
         networks:
-            - examio-network
+            - internal
+            - egress
         healthcheck:
             <<: *nestjs-healthcheck
             test:
@@ -282,7 +288,7 @@ services:
             auth:
                 condition: service_healthy
         networks:
-            - examio-network
+            - internal
         healthcheck:
             <<: *nestjs-healthcheck
             test:
@@ -317,7 +323,8 @@ services:
             migration:
                 condition: service_completed_successfully
         networks:
-            - examio-network
+            - internal
+            - egress
         healthcheck:
             <<: *nestjs-healthcheck
             test:
@@ -371,7 +378,8 @@ services:
             rabbitmq:
                 condition: service_healthy
         networks:
-            - examio-network
+            - internal
+            - egress
         healthcheck:
             test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
             interval: 30s
@@ -395,7 +403,7 @@ services:
             rabbitmq-defs:
                 condition: service_completed_successfully
         networks:
-            - examio-network
+            - internal
         healthcheck:
             test: ['CMD', 'rabbitmq-diagnostics', '-q', 'ping']
             interval: 15s
@@ -412,6 +420,7 @@ services:
         image: node:22-alpine
         container_name: examio-rabbitmq-defs
         working_dir: /defs
+        network_mode: none
         command: ['node', 'render-definitions.cjs']
         environment:
             - RABBITMQ_USER=${RABBITMQ_USER:?RABBITMQ_USER is required}
@@ -420,6 +429,7 @@ services:
             - RABBITMQ_FINANCE_PASS=${RABBITMQ_FINANCE_PASS:?RABBITMQ_FINANCE_PASS is required}
             - RABBITMQ_EXAM_PASS=${RABBITMQ_EXAM_PASS:?RABBITMQ_EXAM_PASS is required}
             - RABBITMQ_AI_PASS=${RABBITMQ_AI_PASS:?RABBITMQ_AI_PASS is required}
+            - RABBITMQ_GATEWAY_PASS=${RABBITMQ_GATEWAY_PASS:?RABBITMQ_GATEWAY_PASS is required}
         volumes:
             - ./rabbitmq:/defs
         restart: 'no'
@@ -437,7 +447,7 @@ services:
         volumes:
             - postgres_data:/var/lib/postgresql/data
         networks:
-            - examio-network
+            - internal
         healthcheck:
             test:
                 [
@@ -459,7 +469,7 @@ services:
         volumes:
             - redis_data:/data
         networks:
-            - examio-network
+            - internal
         healthcheck:
             test: ['CMD', 'redis-cli', 'ping']
             interval: 10s
@@ -484,7 +494,7 @@ services:
             postgres:
                 condition: service_healthy
         networks:
-            - examio-network
+            - internal
         restart: 'no'
         logging: *default-logging
 
@@ -510,13 +520,27 @@ services:
             postgres:
                 condition: service_healthy
         networks:
-            - examio-network
+            - internal
         restart: 'no'
         logging: *default-logging
 
+# Network segmentation (RT-2):
+#   edge     gateway + the FE nginx only (the only way in)
+#   internal no route out: every service, Postgres, Redis, RabbitMQ
+#   egress   services that really call the internet: auth (Google OAuth, SMTP),
+#            exam (Turnstile), finance (SePay), r2 (Cloudflare R2), ai (Gemini)
+# Data stores publish no host ports. Ops reach Postgres with
+#   docker compose exec postgres psql -U $POSTGRES_USER $POSTGRES_DB
 networks:
-    examio-network:
-        name: examio-network
+    edge:
+        name: examio-edge
+        driver: bridge
+    internal:
+        name: examio-internal
+        driver: bridge
+        internal: true
+    egress:
+        name: examio-egress
         driver: bridge
 
 volumes:
