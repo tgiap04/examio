@@ -11,7 +11,7 @@
 
 ### Gateway (`/api/v1/...`)
 
-Gateway proxies all requests to downstream services. Auth: Bearer token (forwarded as `Authorization: Bearer ...` header) or cookie `token`/`accessToken`.
+Gateway proxies all requests to downstream services. **Routing source of truth (2026-10-20): `examio-be/apps/gateway-service/config/routes.yaml`**; the per-domain proxy controllers this inventory was generated from no longer exist, so the tables below describe the downstream endpoints behind each YAML entry. Auth: `Authorization: Bearer` header or cookie `accessToken` (the legacy `token` cookie is no longer read); the gateway verifies the token and forwards it as `Authorization: Bearer`.
 
 #### Auth
 
@@ -701,9 +701,9 @@ React Router v6 `createBrowserRouter` — all routes use layout wrappers.
 
 ## Notes
 
-1. **Duplicate finance routes**: Gateway has two proxy controllers exposing wallet/payment routes — `wallet-profile-proxy.controller.ts` (prefix `/api/v1/wallet`, `/api/v1/payment`, `/api/v1/profile`) and `finance-proxy.controller.ts` (prefix `/api/v1/finance/wallet`, `/api/v1/finance/payment`). Both proxy to the same finance-service. The `wallet-profile-proxy` version is the primary; `finance-proxy` is a secondary path (not wired from frontend). The authoritative finance paths use the `/wallet`, `/payment` prefix directly.
+1. **Finance routes** (updated 2026-10-20): the duplicate gateway proxy controllers are gone. `routes.yaml` has one `wallet` entry (`/api/v1/wallet`) and one `payment` entry (`/api/v1/payment`, public `GET /payment/subscription/plans`), both `permissions: [wallet:use]`; `/api/v1/profile` routes to auth-service. SePay `POST /api/v1/webhook/sepay` is rewritten to `/api/v1/webhook` on finance.
 
-2. **Public vs optional vs authenticated**: Most routes use `AuthGuard` (authenticated). Public routes include: auth endpoints (login, register, reset, OAuth), subject list, public exam room/session/flashcard set access. Optional auth (`OptionalAuthGuard`) is used for study access checks that work with or without login.
+2. **Public vs optional vs authenticated** (updated 2026-10-20): each `routes.yaml` entry sets `auth: none | optional | required` (plus `public` method/path exceptions). Public: auth endpoints (login, register, reset, OAuth), `GET /status`, SePay webhook, admin log stream (ticket), public exam room/session/flashcard set access. `optional`: `/config/pages`, `/subjects`. Unmatched paths return 404 `ROUTE_NOT_FOUND`. Services still re-verify the token with `@examio/auth-jwt`.
 
 3. **Quiz encryption**: Exam attempts have two submission paths — legacy `submit` (plain answers) and secure `secure-submit` (answers wrapped in JWT tokens from encrypted quiz). The `secure-quiz` endpoint returns AES-256-CBC encrypted questions with server-signed JWT tokens.
 

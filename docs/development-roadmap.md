@@ -64,13 +64,17 @@ Phase 03 (messaging foundation) is implemented but uncommitted on `refactor/micr
 
 Phase 04 (identity and RBAC core) is implemented but uncommitted on `refactor/microservice-rbac`: roles STUDENT/TEACHER + `isSystemAdmin` (replaces `isAdmin`), RS256/JWKS tokens, new `@examio/auth-jwt` (deny-by-default guards, permission catalog), service tokens, TEACHER-only wallets, admin bootstrap moved to auth CLI. Roadmap item 1.2 (session/refresh policy) is partly addressed: access 15 min, refresh reloads role. Frontend still reads `isAdmin`. See [changelog](project-changelog.md) and [permissions](system/permissions.md).
 
+## Progress Note (2026-10-20) — microservice-refactor plan, phase 05
+
+Phase 05 (gateway rewrite) is implemented but uncommitted on `refactor/microservice-rbac`: YAML route table, streaming dispatcher, revoke/stale checks with `GatewayControl` + durable events, Redis rate limits, WS upgrade auth, network-segmented compose, `accessToken`/`refreshToken` cookies. Roadmap item 0.3 is resolved by removing the proxy controllers. See [changelog](project-changelog.md) and [architecture](system/architecture.md) § 1.
+
 ## Phase 0 — System Correctness (P0, blocking)
 
 | # | Item | Source | Owner | Deps |
 |---|------|--------|-------|------|
 | 0.1 | **Remove `FREE_MODE = true` from `FinanceClientService.deductCredits`** — credit bypass shipped in production code path | W7a + scout | backend | — |
 | 0.2 | ~~Fix `ocr-service` gRPC port collision~~ — resolved 2026-10-18: `ocr-service` deleted (microservice-refactor phase 01) | W7a + scout | platform | — |
-| 0.3 | **Remove duplicate finance routes** in gateway (`wallet-profile-proxy.controller.ts` vs `finance-proxy.controller.ts` both expose `/payment/*`, `/subscription*`) | W7a | backend | — |
+| 0.3 | ~~Remove duplicate finance routes in gateway~~ — resolved 2026-10-20: proxy controllers removed, `routes.yaml` has one `wallet` / `payment` entry (microservice-refactor phase 05) | W7a | backend | — |
 | 0.4 | **Decide `AuthService.ValidateToken` gRPC** — wired but unused; either remove or have downstream services use it instead of Prisma-direct lookup | W7a | backend | — |
 | 0.5 | **Verify `ExamAttempt.submit` legacy endpoint** — `submitSecureQuiz` is canonical, but `submitExamAttemptApi` still exists; remove if unused | W7a | backend | — |
 | 0.6 | **Fix `PendingJobDialog` unconditional render in `KLayout`** — should only appear on AI-tool pages | W7a | frontend | — |
@@ -215,7 +219,7 @@ Key decisions made during implementation:
 | 6.1 | `StudyRoom` + `StudyRoomMember` Prisma models | backend | ✅ Complete (⚠️ no migration applied yet) |
 | 6.2 | `StudyRoomModule` (Socket.io gateway, Redis-backed live state, Pomodoro timer, chat, presence, focus-credit) in `exam-service` | backend | ✅ Complete |
 | 6.3 | `@socket.io/redis-adapter` multi-instance fan-out | backend | ✅ Complete |
-| 6.4 | Gateway WS upgrade proxy (`/ws/study`, `http-proxy` `ws:true`) | backend | ✅ Complete |
+| 6.4 | Gateway WS upgrade proxy (`/ws/study`, `http-proxy` `ws:true`; authenticated at the gateway since phase 05) | backend | ✅ Complete |
 | 6.5 | REST surface `/api/v1/studyrooms/*` (create/join/detail/update/delete/leave/regenerate-code/leaderboard) | backend | ✅ Complete |
 | 6.6 | Frontend routes `/k/study-room`, `/k/study-room/:id` + Socket.io client + store | frontend | ✅ Complete |
 | 6.7 | Mobile (iosApp/androidApp) parity | mobile | ❌ Not started (web only by design) |
@@ -227,7 +231,7 @@ Key decisions made during implementation:
 
 Key decisions made during implementation:
 - Socket.io/WebSocket chosen over SSE — this feature needs bidirectional low-latency sync (timer control, media seek, chat), unlike existing SSE use cases which are server-to-client only
-- Websocket-only transport (no long-polling) to avoid sticky-session requirements across gateway/exam-service instances
+- FE client uses websocket-only transport (no long-polling) to avoid sticky-session requirements across gateway/exam-service instances
 - Live state (timer, media position, chat, presence) lives in Redis only; Prisma holds room config + membership; chat is an ephemeral Redis LIST capped at 200 messages (no `StudyRoomMessage` model)
 - Playlist items and moderation/block state ARE persisted to Prisma (unlike timer/media/chat) — they need to survive Redis flushes and reconnects; only live playback position (`currentIndex`, leader assignment) stays in Redis
 - Auto-advance is leader-client-reported, not server-polled — avoids adding a YouTube Data API dependency

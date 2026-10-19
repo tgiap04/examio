@@ -1,9 +1,24 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-10-19
+last_updated: 2026-10-20
 ---
 
 # Examio Project Changelog
+
+## [Unreleased] — 2026-10-20
+
+### Changed
+
+#### Microservice refactor, phase 05 (gateway rewrite; uncommitted on `refactor/microservice-rbac`)
+
+- **Gateway**: the 15 per-domain proxy controllers, `ProxyService`, `PageEnabledGuard`/`TogglePage` and the gateway's DB access are removed. Routing is now `apps/gateway-service/config/routes.yaml` (upstreams from `AUTH_/EXAM_/FINANCE_/ADMIN_SERVICE_URL`; `AI_SERVICE_URL` and `DATABASE_URL` no longer used). One dispatcher with `http-proxy-middleware` 3.0.7 streams bodies (SSE, multipart; no body parser). Pipeline: token verify (JWKS) -> revoked/`av` check -> permissions -> page flag -> body cap -> rate limit. Header hygiene runs on the incoming request (client `x-user-*` and `x-forwarded-*` stripped, `Expect` handled, `X-Forwarded-For` overwritten, `Authorization` built from the cookie). Per-route `maxBodySize` is enforced on streamed bytes (413 `PAYLOAD_TOO_LARGE`). Redis-backed (Lua) rate limits per route, default 100 / 60 s.
+- **Control plane**: gRPC `GatewayControl` (`RevokeSession`, `InvalidateUser`, `SetPageFlags`) on `GRPC_PORT`; durable consumers (queue `gateway.events`) for `auth.user.authz_changed` and new `auth.session.revoked`; Redis keys `gw:revoked:sid:*`, `gw:user:*:av`, `gw:rl:*`. Redis down: admin routes and state-changing requests fail closed (503 `AUTH_STATE_UNAVAILABLE`), non-admin reads pass. `GATEWAY_CONTROL_ENABLED` defaults to `true` in compose.
+- **WebSocket**: `/ws/study` upgrade is authenticated at the gateway (cookie/Bearer, revoke/`av`, `study-room` page flag, 20 upgrades / 10 s per IP); nginx gains a `/ws/` location.
+- **Edge**: helmet, CORS allowlist (`CORS_ORIGINS` or `FRONTEND_URL`, required in production), error envelope `{ statusCode, code, message, requestId }` on gateway and auth.
+- **Compose**: networks `edge` / `internal` / `egress`; Postgres, Redis and RabbitMQ no longer publish host ports; gateway published on `127.0.0.1:6369` only; gateway no longer depends on postgres/migration, but on rabbitmq. nginx takes the client IP from `CF-Connecting-IP` (`examio-fe/nginx/cloudflare-real-ip.conf`) and overwrites `X-Forwarded-For`. New required deploy env `RABBITMQ_GATEWAY_PASS`.
+- **Behaviour changes (clients)**: new 401 codes `TOKEN_EXPIRED`, `SESSION_REVOKED` (logout/device revoke applies on the next request), `TOKEN_STALE` (role changed; refresh); cookies are now `accessToken` (`Path=/`) and `refreshToken` (`Path=/api/v1/auth`), HttpOnly, SameSite=Lax (was `none` in production), Secure in production, no `Domain`; auth no longer sets `token` / `session_id` and logout clears them as legacy names; the `token` cookie is no longer accepted by the gateway or the study-room socket; credential routes (login, register, verify, reset/change password, Google One Tap) are limited to 5 / min per IP and counted once (`@StrictThrottle`); unmatched paths return 404 `ROUTE_NOT_FOUND`.
+- **Known gaps**: `apps/gateway-service/.env.example` still lists `AI_SERVICE_URL` and `AUTH_GRPC_URL`, which the gateway no longer reads; no admin-service caller of `SetPageFlags` yet (admin writes the cache itself).
+- **Docs**: gateway sections of `system/architecture.md`, `system/overview.md`, `system/glossary.md`, `generated/route-list.md` (note only), `CLAUDE.md`, `AGENTS.md` and `examio-be/deploy/README.md` updated; full legacy-text rewrite stays in plan phase 19.
 
 ## [Unreleased] — 2026-10-19
 

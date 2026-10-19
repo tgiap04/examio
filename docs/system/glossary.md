@@ -114,7 +114,9 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 ## G
 
-**Gateway Service** — The single public HTTP entry point for all backend traffic. Handles rate limiting (100 req/min), auth token extraction, and proxies requests to downstream NestJS services.
+**Gateway Service** — The single public HTTP entry point for all backend traffic. A YAML-routed streaming proxy (`apps/gateway-service/config/routes.yaml`): verifies the JWT, checks revoked-session and stale-`av` state in Redis, applies permissions, page flags, body caps and rate limits (default 100 req/min), then proxies to the downstream service. Has no database. Also upgrades WebSockets for `/ws/study` and exposes the internal gRPC `GatewayControl` server.
+
+**GatewayControl** — Internal gRPC service on the gateway (`GRPC_PORT`, default 50051; service token with `aud = gateway` required). `RevokeSession` and `InvalidateUser` (called by auth) write `gw:revoked:sid:<sid>` / `gw:user:<id>:av` in Redis; `SetPageFlags` (admin allowlisted) writes the page-flag cache. Backed by durable events `auth.session.revoked` and `auth.user.authz_changed`.
 
 **Gemini** — The LLM model used by the Python AI service for chat, generation, and reasoning tasks.
 
@@ -286,7 +288,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Violation Count** — The total number of cheating violations recorded against an ExamAttempt. Tracked per violation type in CheatingLog entries.
 
-**VPN Gateway** — The gateway service acts as the single HTTP entry point and reverse proxy for all backend services, centralizing rate limiting, auth, and logging.
+**VPN Gateway** — The gateway service acts as the single HTTP entry point and reverse proxy for all backend services, centralizing rate limiting, token verification, and logging.
 
 ---
 

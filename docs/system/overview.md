@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-examio is a multi-tenant exam/quiz platform serving students and teachers. Authoring users create quiz sets, flashcard sets, and exam rooms; students take timed sessions under AES-256-CBC question encryption with JWT answer tokens. The backend is a NestJS monorepo of 6 services (gateway, auth, exam, finance, r2, admin) plus one Python FastAPI AI service, fronted by a gateway HTTP proxy. Payments are handled via SePay QR code and an internal wallet with credit-based subscription gating. AI features (generation, document RAG, AI teacher chat) are offloaded to a Python FastAPI worker. Infrastructure runs on PostgreSQL + Redis + RabbitMQ (topic exchange `examio.events`).
+examio is a multi-tenant exam/quiz platform serving students and teachers. Authoring users create quiz sets, flashcard sets, and exam rooms; students take timed sessions under AES-256-CBC question encryption with JWT answer tokens. The backend is a NestJS monorepo of 6 services (gateway, auth, exam, finance, r2, admin) plus one Python FastAPI AI service, fronted by a YAML-routed gateway (streaming proxy, no database). Payments are handled via SePay QR code and an internal wallet with credit-based subscription gating. AI features (generation, document RAG, AI teacher chat) are offloaded to a Python FastAPI worker. Infrastructure runs on PostgreSQL + Redis + RabbitMQ (topic exchange `examio.events`).
 
 For architecture diagrams and tech stack details, see [architecture.md](architecture.md).
 
@@ -16,13 +16,13 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 ## Key Design Decisions
 
-### Decision 1: Gateway HTTP Proxy as the Single Public Entry Point
+### Decision 1: Gateway as the Single Public Entry Point
 
 **Context**: Six backend services (gateway, auth, exam, finance, r2) plus one Python AI service each expose HTTP/gRPC listeners. Exposing them directly to the public internet creates a large attack surface and makes CORS/CORS and rate-limiting inconsistent.
 
-**Decision**: All public HTTP traffic enters through `gateway-service` (port 3000). The gateway proxies requests to downstream services based on URL prefix rules defined in `ProxyService`. Downstream services are network-isolated; only the gateway has a public port.
+**Decision**: All public HTTP traffic enters through `gateway-service` (port 3000). The gateway matches each request against the route table in `apps/gateway-service/config/routes.yaml` (path regex, else longest prefix), checks the token, revoke/stale state, permissions, page flag, body size and rate limit, then streams it to the upstream. Downstream services sit on the internal compose network; only the gateway is published (`127.0.0.1:6369`, reached through the FE nginx).
 
-**Rationale**: Centralizes cross-cutting concerns (rate limiting at 100 req/min, auth token extraction, logging) in one place. Simplifies frontend API wiring — one base URL. Enables future auth middleware injection without touching every service.
+**Rationale**: Centralizes cross-cutting concerns (rate limiting: 100 req/min default plus per-route buckets, JWT verification, revoked-session check, logging) in one place. Simplifies frontend API wiring — one base URL. A new route is one entry in `routes.yaml`, not a new controller.
 
 ### Decision 2: AES-256-CBC Question Encryption with JWT Answer Token Map
 
@@ -68,7 +68,7 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
                          │ HTTP (X-Device-ID header)
 ┌────────────────────────▼────────────────────────────────────┐
 │               gateway-service :3000                        │
-│    HTTP proxy · rate limit 100 req/min · logging           │
+│ routes.yaml proxy · JWT/revoke check · rate limit · no DB  │
 └──┬──────┬──────┬──────┬──────┬──────┬──────┬──────────────────────┐
    │      │      │      │      │      │      │ HTTP
    │gRPC  │gRPC  │gRPC  │gRPC  │gRPC  │gRPC  │ (AI study proxy)
@@ -88,7 +88,7 @@ Infrastructure: PostgreSQL (Prisma shared) · Redis (cache) · RabbitMQ (topic e
 
 | Service | Port | Protocol | Role |
 |---|---|---|---|
-| gateway-service | 3000 | HTTP | Public entry, proxy, rate limit |
+| gateway-service | 3000 HTTP / 50051 gRPC (GatewayControl, internal) | HTTP + gRPC | Public entry: YAML-routed streaming proxy, JWT verify, revoke/stale check, rate limit, WS upgrade (`/ws/study`); no database |
 | auth-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | RS256 JWT + JWKS, service tokens, roles (RBAC), Google OAuth, session/device management |
 | exam-service | 3000 | HTTP | Quiz/flashcard/exam authoring, attempts, AI orchestration |
 | finance-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | Wallet, SePay QR payments, subscriptions |
@@ -102,7 +102,7 @@ Infrastructure: PostgreSQL (Prisma shared) · Redis (cache) · RabbitMQ (topic e
 
 ### HTTP Proxy (gateway → downstream)
 
-gateway-service proxies HTTP requests to downstream services by URL prefix. Admin routes (`/api/v1/admin/*`) are routed to `admin-service` (port 3000) via `ProxyService.forwardWithAuth`. Every service verifies the RS256 access token itself with `@examio/auth-jwt` (JWKS from auth, no DB or gRPC call per request); access is declared per handler (`@RequirePermissions('admin:access')` on admin routes). Details: [architecture](architecture.md) § 7.
+gateway-service proxies HTTP requests to downstream services per `config/routes.yaml` (upstreams from `AUTH_SERVICE_URL`, `EXAM_SERVICE_URL`, `FINANCE_SERVICE_URL`, `ADMIN_SERVICE_URL`). Admin routes (`/api/v1/admin/*`) go to `admin-service` with `admin:access` checked at the edge as well. The gateway forwards the verified token as `Authorization: Bearer` and strips client-supplied `x-user-*` / `x-forwarded-*`. Auth and admin push revoke/stale-token signals to the gateway over gRPC `GatewayControl` and durable events. Every service also verifies the RS256 access token itself with `@examio/auth-jwt` (JWKS from auth, no DB or gRPC call per request); access is declared per handler (`@RequirePermissions('admin:access')` on admin routes). Details: [architecture](architecture.md) § 7.
 
 ### gRPC (synchronous, internal)
 
@@ -181,7 +181,7 @@ exam-service calls `aiApi.generateExamApi` (multipart) → returns `jobId` → f
 - **Authentication**: JWT cookie (`accessToken`) + `refreshToken` cookie; Google OAuth via One Tap; Cloudflare Turnstile on auth forms
 - **Authorization**: `@examio/auth-jwt` guards in every service (permission per route, deny by default; [permissions](permissions.md)); role-based guards (`TeacherRoute`, `ProtectedRoute`, `PublicRoute`) on frontend routes; service tokens (`POST /internal/token`) on gRPC / inter-service calls
 - **Data Encryption**: AES-256-CBC question encryption (server-side secret); client decrypts with `VITE_QUIZ_AES_KEY`; JWT answer token prevents tampering
-- **API Security**: Bearer token + `X-Device-ID` header on all proxied requests; rate limit 100 req/min at gateway; session invalidation on logout/device revocation
+- **API Security**: HttpOnly cookie `accessToken` (or Bearer) + `X-Device-ID` header; rate limit at gateway (default 100 req/min per user or IP, 5 req/min on credential routes); error envelope `{statusCode, code, message, requestId}`; 401 codes `TOKEN_MISSING`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `SESSION_REVOKED`, `TOKEN_STALE`; session invalidation on logout/device revocation takes effect at the gateway on the next request
 
 ---
 
@@ -189,13 +189,13 @@ exam-service calls `aiApi.generateExamApi` (multipart) → returns `jobId` → f
 
 - **Current Capacity**: Single-instance per service; PostgreSQL shared across all NestJS services via Prisma; Redis for session/cache; RabbitMQ for async decoupling
 - **Scaling Strategy**: Service-level horizontal scaling behind gateway proxy; Redis cluster for session scale-out; RabbitMQ consumer groups for event processing parallelism; ai-service scales independently for GPU workloads
-- **Performance Targets**: Gateway rate limit 100 req/min per client; AI generation polling up to 360 attempts (60min timeout); Redis cache TTL 5 minutes default; cursor-based pagination for large datasets
+- **Performance Targets**: Gateway rate limit 100 req/min per client by default (per-route buckets in `routes.yaml`); AI generation polling up to 360 attempts (60min timeout); Redis cache TTL 5 minutes default; cursor-based pagination for large datasets
 
 ---
 
 ## Unresolved Questions
 
-2. Gateway has duplicate finance routes (`wallet-profile-proxy.controller.ts` + `finance-proxy.controller.ts`) — consolidate or clarify.
+2. ~~Gateway has duplicate finance routes~~ — resolved 2026-10-20: proxy controllers removed; one `wallet` and one `payment` entry in `routes.yaml`.
 4. `FREE_MODE = true` shipped in production code path in `FinanceClientService.deductCredits` — credit gating bypassed; needs env-gate or removal.
 5. `ExamAttempt.submit` via `submitSecureQuiz` vs legacy `submitExamAttemptApi` — clarify canonical submission path.
 6. `PendingJobDialog` rendered unconditionally in `KLayout` — check if it should be scoped to AI tool pages only.

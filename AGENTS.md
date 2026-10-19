@@ -112,6 +112,8 @@ cd examio-be/apps/ai-service
 - File docker compose dùng cho production/deploy của backend là `examio-be/deploy/docker-compose.yml`.
 - Cấu hình compose đó bao gồm PostgreSQL, Redis, RabbitMQ, gateway, auth, exam, finance, r2, ai và một migration container.
 - Backend hiện được thiết kế xoay quanh PostgreSQL + Redis + RabbitMQ cho persistence và messaging.
+- Compose dùng 3 network: `edge` (gateway + nginx FE), `internal` (không ra ngoài; mọi service + postgres/redis/rabbitmq) và `egress`. Postgres/Redis/RabbitMQ không publish port ra host; gateway chỉ publish `127.0.0.1:6369` (dev local chạy `yarn dev:gateway` vẫn dùng port `PORT` trong `.env`). Truy cập DB: `docker compose exec postgres psql ...`. Chi tiết: `examio-be/deploy/README.md`.
+- Cookie auth chỉ do auth-service set: `accessToken` và `refreshToken` (HttpOnly, SameSite=Lax, Secure ở production); cookie cũ `token`/`session_id` chỉ bị xóa khi logout. Route credential (login, register, ...) giới hạn 5 req/phút.
 - `examio-be/docker-compose.example.yml` có tồn tại nhưng chỉ mô tả một service tối giản kiểu frontend và không phản ánh đầy đủ stack backend.
 
 ## Kiến trúc backend
@@ -120,7 +122,7 @@ cd examio-be/apps/ai-service
 
 Backend là một root package dùng Yarn, tổ chức theo kiểu Nest monorepo với nhiều service nằm trong `examio-be/apps/`:
 
-- `gateway-service`: điểm vào HTTP public và lớp façade/proxy.
+- `gateway-service`: điểm vào HTTP public; streaming proxy cấu hình bằng YAML (`apps/gateway-service/config/routes.yaml`), verify JWT, kiểm tra revoke/stale (Redis), rate limit, WS upgrade `/ws/study`. Không có DB và không còn proxy controller.
 - `auth-service`: xác thực, OAuth providers, quản lý profile/session/device và các gRPC endpoint liên quan auth.
 - `exam-service`: domain chính cho thi cử và học tập.
 - `finance-service`: ví, thanh toán, subscription và luồng khởi tạo ví theo event.
@@ -146,17 +148,18 @@ Mã hạ tầng dùng chung nằm trong `examio-be/libs/`:
 
 Backend không phải là một monolith duy nhất dù các service dùng chung Prisma và shared libs.
 
-- Gateway public các HTTP route và đẩy request xuống downstream service thông qua các proxy controller và `ProxyService`.
+- Gateway public các HTTP route và đẩy request xuống downstream service theo bảng route trong `examio-be/apps/gateway-service/config/routes.yaml` (một dispatcher duy nhất + `http-proxy-middleware`, stream body, không body parser). **Thêm route mới = sửa `routes.yaml`** (upstream, `auth`, `permissions`, `pageFlag`, `maxBodySize`, `timeout`, `rateLimits`), không tạo controller.
 - Auth, finance và storage còn giao tiếp với nhau qua gRPC client/proto từ `@examio/grpc` và `@examio/contracts` (URL qua env `AUTH_GRPC_URL`, `R2_GRPC_URL`, `FINANCE_GRPC_URL`; container dùng HTTP `3000` / gRPC `50051`).
 - Các workflow bất đồng bộ giữa service dùng RabbitMQ: auth/finance qua `@examio/messaging` (outbox, event `auth.user.registered` không còn consumer, `auth.user.authz_changed` do finance consume); exam/ai còn dùng events module cũ. Mỗi service có RabbitMQ user riêng (`RABBITMQ_URL` riêng; mật khẩu `RABBITMQ_<SVC>_PASS` phải URL-safe) chỉ được publish routing key của domain mình; user/permission render từ `deploy/rabbitmq/definitions.template.json` bởi container one-shot `rabbitmq-defs` (`definitions.json` bị gitignore). RabbitMQ 3.13.
 - Ví dụ từ wiring hiện tại:
-  - gateway biết URL của downstream service qua env như `AUTH_SERVICE_URL`, `EXAM_SERVICE_URL`, `FINANCE_SERVICE_URL`, `AI_SERVICE_URL`.
+  - gateway biết URL của downstream service qua env `AUTH_SERVICE_URL`, `EXAM_SERVICE_URL`, `FINANCE_SERVICE_URL`, `ADMIN_SERVICE_URL` (nội suy vào `routes.yaml`).
+  - auth gọi gRPC `GatewayControl` của gateway (`RevokeSession`, `InvalidateUser`; `GATEWAY_GRPC_URL`, `GATEWAY_CONTROL_ENABLED`); gateway còn consume bền `auth.user.authz_changed` và `auth.session.revoked` (queue `gateway.events`, `RABBITMQ_GATEWAY_PASS`). Redis keys: `gw:revoked:sid:*`, `gw:user:*:av`, `gw:rl:*`.
   - service-to-service: caller lấy service token từ auth (`POST /internal/token`, env `AUTH_TOKEN_URL`, `SERVICE_CLIENT_SECRET`) và gửi trong gRPC metadata `authorization`; admin-service gọi auth gRPC (`AUTH_GRPC_URL`, `SetSystemAdmin`) để grant/revoke admin.
   - exam đăng ký R2 client và import finance client module.
   - finance consume `auth.user.registered` (qua outbox của auth) để tạo ví.
   - AI chat trong exam cũng đăng ký finance subscription gRPC client.
 
-Khi thay đổi ranh giới giữa các service, hãy kiểm tra đồng thời HTTP proxy route, gRPC contract, event publisher/consumer và các service URL cấu hình qua env.
+Khi thay đổi ranh giới giữa các service, hãy kiểm tra đồng thời route trong `routes.yaml`, gRPC contract, event publisher/consumer và các service URL cấu hình qua env.
 
 ### Cách tổ chức domain bên trong service
 
@@ -165,7 +168,7 @@ Các Nest service chủ yếu đi theo cấu trúc feature-module, không phải
 - `exam-service` là domain service lớn nhất. `ExamServiceModule` ghép nhiều module chức năng như quiz set, flashcard, exam room, exam session, exam attempt, cheating log, subject, AI generation, AI chat, statistics, student, finance client integration và R2 integration.
 - `auth-service` ghép `AuthModule`, device management, profile handling, OAuth strategy, repository, một gRPC controller, `token` (ký JWT RS256, `GET /.well-known/jwks.json`, `POST /internal/token`), `roles` (`RoleChangeService`, `RoleChangeLog`, outbox `auth.user.authz_changed`) và `admin-bootstrap` (CLI `bootstrap:admin*`).
 - `finance-service` ghép wallet module, SePay module và có handler `auth.user.authz_changed` để tạo ví (+20 credit) cho TEACHER (STUDENT không có ví).
-- `gateway-service` được tổ chức thành nhiều proxy controller theo domain: auth, exam resources, AI/study, wallet/profile, R2, webhook, statistics và student.
+- `gateway-service` không còn proxy controller: `config/routes.yaml` + `src/routing` (matcher), `src/pipeline` (guard chain, header hygiene, body cap, rate limit), `src/ws` (upgrade), `src/control` (gRPC GatewayControl), `src/events` (consumer), cùng vài controller tự phục vụ (`status`, `config/pages`, `config/stream`). Lỗi trả dạng `{ statusCode, code, message, requestId }`; 401 có thể là `TOKEN_EXPIRED`, `SESSION_REVOKED`, `TOKEN_STALE`.
 
 Khi làm backend, hãy nghĩ theo feature module cộng với shared infra module, không chỉ theo từng file rời.
 
