@@ -58,6 +58,10 @@
                     {
                         "include": "../../../proto/examio/r2/**/*.proto",
                         "outDir": "dist/apps/auth-service/proto/examio/r2"
+                    },
+                    {
+                        "include": "../../../proto/examio/gateway/**/*.proto",
+                        "outDir": "dist/apps/auth-service/proto/examio/gateway"
                     }
                 ]
             }
@@ -159,7 +163,21 @@
             "entryFile": "main",
             "sourceRoot": "apps/gateway-service/src",
             "compilerOptions": {
-                "tsConfigPath": "apps/gateway-service/tsconfig.app.json"
+                "tsConfigPath": "apps/gateway-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../config/*.yaml",
+                        "outDir": "dist/apps/gateway-service/config"
+                    },
+                    {
+                        "include": "pipeline/*.lua",
+                        "outDir": "dist/apps/gateway-service"
+                    },
+                    {
+                        "include": "../../../proto/examio/gateway/**/*.proto",
+                        "outDir": "dist/apps/gateway-service/proto/examio/gateway"
+                    }
+                ]
             }
         },
         "observability": {

@@ -1,10 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { Public } from '@examio/auth-jwt';
 
 @ApiTags('Gateway')
 @Controller()
 export class GatewayController {
     @Get('status')
+    @Public()
     @ApiOperation({ summary: 'Get all services status' })
     @ApiResponse({ status: 200, description: 'Services status' })
     async getStatus() {

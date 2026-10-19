@@ -1,0 +1,222 @@
+# Gateway route table (phase 05). One streaming proxy per route; the dispatcher
+# picks a route as: `match.path` regex (file order) first, then the longest
+# `match.prefix`. Regexes are full-match. `${VAR}` is required, `${VAR:-x}` falls
+# back. `upstream: self` is served by the gateway itself (Nest controllers).
+# Services never appear here unless the gateway must expose them: JWKS, auth
+# `/internal/token` and r2 `internal/*` are deliberately NOT routed.
+
+upstreams:
+  auth: ${AUTH_SERVICE_URL:-http://localhost:3001}
+  exam: ${EXAM_SERVICE_URL:-http://localhost:3002}
+  finance: ${FINANCE_SERVICE_URL:-http://localhost:3003}
+  admin: ${ADMIN_SERVICE_URL:-http://localhost:7006}
+
+routes:
+  # ---- served by the gateway ------------------------------------------------
+  - id: status
+    upstream: self
+    match: { path: '/api/v1/status' }
+    auth: none
+  - id: config-pages
+    upstream: self
+    match: { path: '/api/v1/config/pages' }
+    auth: optional
+  - id: config
+    upstream: self
+    match: { prefix: /api/v1/config }
+    auth: required
+    timeout: 0
+
+  # ---- auth-service ----------------------------------------------------------
+  - id: auth-public
+    upstream: auth
+    match: { path: '/api/v1/auth/(register|login|refresh|send-code-reset-password|reset-password|google|google/one-tap|google/callback)' }
+    auth: none
+  - id: auth
+    upstream: auth
+    match: { prefix: /api/v1/auth }
+    auth: required
+  - id: profile
+    upstream: auth
+    match: { prefix: /api/v1/profile }
+    auth: required
+    maxBodySize: 3mb
+  - id: devices
+    upstream: auth
+    match: { prefix: /api/v1/devices }
+    auth: required
+
+  # ---- finance-service -------------------------------------------------------
+  - id: wallet
+    upstream: finance
+    match: { prefix: /api/v1/wallet }
+    auth: required
+    permissions: [wallet:use]
+  - id: payment
+    upstream: finance
+    match: { prefix: /api/v1/payment }
+    auth: required
+    permissions: [wallet:use]
+    public:
+      - { method: GET, path: '/api/v1/payment/subscription/plans' }
+  - id: webhook-sepay
+    upstream: finance
+    match: { path: '/api/v1/webhook/sepay' }
+    methods: [POST]
+    auth: none
+    pathRewrite: { from: '^/api/v1/webhook/sepay', to: /api/v1/webhook }
+
+  # ---- admin-service ---------------------------------------------------------
+  # EventSource cannot send headers: admin-service authenticates this one with
+  # the single-use ticket from `POST /admin/logs/ticket` (query string).
+  - id: admin-logs-stream
+    upstream: admin
+    match: { path: '/api/v1/admin/logs/stream' }
+    methods: [GET]
+    auth: none
+    timeout: 0
+  - id: admin
+    upstream: admin
+    match: { prefix: /api/v1/admin }
+    auth: required
+    permissions: [admin:access]
+
+  # ---- exam-service: AI ------------------------------------------------------
+  - id: ai-upload
+    upstream: exam
+    match: { path: '/api/v1/ai/(upload.*|quick-upload|recent-uploads)' }
+    auth: required
+    permissions: [document:upload]
+    pageFlag: ai-tool
+    maxBodySize: 100mb
+    timeout: 120s
+  - id: ai
+    upstream: exam
+    match: { prefix: /api/v1/ai }
+    auth: required
+    permissions: [ai:generate]
+    pageFlag: ai-tool
+    timeout: 10m
+  - id: ai-chat-stream
+    upstream: exam
+    match: { path: '/api/v1/ai-chat/[^/]+/stream|/api/v1/ai-chat/message/[^/]+/regenerate-stream' }
+    methods: [POST]
+    auth: required
+    permissions: [ai_chat:use]
+    timeout: 0
+  - id: ai-chat
+    upstream: exam
+    match: { prefix: /api/v1/ai-chat }
+    auth: required
+    permissions: [ai_chat:use]
+    maxBodySize: 100mb
+    timeout: 5m
+
+  # ---- exam-service: content and exams ---------------------------------------
+  - id: quizsets
+    upstream: exam
+    match: { prefix: /api/v1/quizsets }
+    auth: required
+    pageFlag: manage-exam
+  - id: quiz-practice
+    upstream: exam
+    match: { prefix: /api/v1/quiz-practice }
+    auth: required
+  - id: flashcardsets
+    upstream: exam
+    match: { prefix: /api/v1/flashcardsets }
+    auth: required
+    pageFlag: flash-card
+    public:
+      - { method: GET, path: '/api/v1/flashcardsets/study/[^/]+(/access|/info)?' }
+      - { method: POST, path: '/api/v1/flashcardsets/study/[^/]+/(verify-code|with-code)' }
+  - id: flashcard-study
+    upstream: exam
+    match: { prefix: /api/v1/flashcard-study }
+    auth: required
+  - id: examrooms
+    upstream: exam
+    match: { prefix: /api/v1/examrooms }
+    auth: required
+    pageFlag: manage-exam-room
+    public:
+      - { method: GET, path: '/api/v1/examrooms/get-public/[^/]+' }
+  - id: examsessions
+    upstream: exam
+    match: { prefix: /api/v1/examsessions }
+    auth: required
+    public:
+      - { method: GET, path: '/api/v1/examsessions/get-public/[^/]+' }
+      - { method: GET, path: '/api/v1/examsessions/study/[^/]+(/access|/info)?' }
+      - { method: POST, path: '/api/v1/examsessions/study/[^/]+/(verify-code|with-code)' }
+  - id: examattempts
+    upstream: exam
+    match: { prefix: /api/v1/examattempts }
+    auth: required
+  - id: cheatinglogs
+    upstream: exam
+    match: { prefix: /api/v1/cheatinglogs }
+    auth: required
+  - id: student
+    upstream: exam
+    match: { prefix: /api/v1/student }
+    auth: required
+  - id: subjects
+    upstream: exam
+    match: { prefix: /api/v1/subjects }
+    auth: optional
+  - id: word-family
+    upstream: exam
+    match: { prefix: /api/v1/word-family }
+    auth: required
+    pageFlag: word-family
+  - id: studyrooms
+    upstream: exam
+    match: { prefix: /api/v1/studyrooms }
+    auth: required
+    pageFlag: study-room
+  - id: r2-image
+    upstream: exam
+    match: { path: '/api/v1/r2/image' }
+    methods: [POST]
+    auth: required
+    maxBodySize: 3mb
+
+  # ---- WebSocket (study room, served by exam-service socket.io) --------------
+  # The upgrade is authenticated here; study-room re-verifies in its own
+  # socket middleware. HTTP long-polling on the same path uses the same checks.
+  - id: study-ws
+    upstream: exam
+    match: { prefix: /ws/study }
+    auth: required
+    pageFlag: study-room
+    websocket: true
+    timeout: 0
+
+# Independent of routes: first match wins, else `defaultRateLimit`. One bucket
+# per entry; key = gw:rl:<id>:<user id | client ip>:<window start>.
+rateLimits:
+  - { id: auth-register, method: POST, path: '/api/v1/auth/register', window: 60s, max: 5 }
+  - { id: auth-login, method: POST, path: '/api/v1/auth/login', window: 60s, max: 5 }
+  - { id: auth-verify-account, method: POST, path: '/api/v1/auth/verifyAccount', window: 60s, max: 5 }
+  - { id: auth-send-reset-code, method: POST, path: '/api/v1/auth/send-code-reset-password', window: 60s, max: 5 }
+  - { id: auth-reset-password, method: POST, path: '/api/v1/auth/reset-password', window: 60s, max: 5 }
+  - { id: auth-send-change-code, method: POST, path: '/api/v1/auth/send-code-change-password', window: 60s, max: 5 }
+  - { id: auth-change-password, method: POST, path: '/api/v1/auth/change-password', window: 60s, max: 5 }
+  - { id: auth-google-one-tap, method: POST, path: '/api/v1/auth/google/one-tap', window: 60s, max: 5 }
+  - { id: auth-refresh, method: POST, path: '/api/v1/auth/refresh', window: 60s, max: 30 }
+  - { id: studyroom-join, method: POST, path: '/api/v1/studyrooms/join', window: 60s, max: 5 }
+  - { id: ai-quick-upload, method: POST, path: '/api/v1/ai/quick-upload', window: 60s, max: 10 }
+  - { id: ai-generate-from-file, method: POST, path: '/api/v1/ai/generate-from-file', window: 60s, max: 5 }
+  - { id: ai-regenerate, method: POST, path: '/api/v1/ai/regenerate/[^/]+', window: 60s, max: 5 }
+  - { id: ai-chat-stream, method: POST, path: '/api/v1/ai-chat/[^/]+/stream', window: 60s, max: 10 }
+  - { id: ai-chat-regenerate-stream, method: POST, path: '/api/v1/ai-chat/message/[^/]+/regenerate-stream', window: 60s, max: 10 }
+  - { id: flashcard-code, method: POST, path: '/api/v1/flashcardsets/study/[^/]+/(verify-code|with-code)', window: 60s, max: 5 }
+  - { id: examsession-code, method: POST, path: '/api/v1/examsessions/study/[^/]+/(verify-code|with-code)', window: 60s, max: 5 }
+  - { id: quiz-unlock, method: POST, path: '/api/v1/quiz-practice/sets/[^/]+/unlock', window: 60s, max: 5 }
+  - { id: word-family-generate, method: POST, path: '/api/v1/word-family/(generate|generate-root)', window: 60s, max: 5 }
+  - { id: flashcard-user-search, method: GET, path: '/api/v1/flashcardsets/users/search', window: 60s, max: 30 }
+  - { id: examsession-user-search, method: GET, path: '/api/v1/examsessions/users/search', window: 60s, max: 30 }
+  - { id: ws-upgrade, method: UPGRADE, path: '/ws/study(/.*)?', window: 10s, max: 20 }
+
+defaultRateLimit: { window: 60s, max: 100 }
