@@ -13,6 +13,7 @@ import {
 } from '@examio/observability';
 import { PROTO_FILES } from '@examio/contracts';
 import { grpcServerOptions } from '@examio/grpc';
+import { HttpErrorEnvelopeFilter } from '@examio/http';
 import { parseRoles } from '@examio/messaging';
 import * as cookieParser from 'cookie-parser';
 import { WorkerModule } from './worker.module';
@@ -57,6 +58,10 @@ async function startApi() {
     app.getHttpAdapter().getInstance().set('trust proxy', 1);
 
     app.use(cookieParser());
+
+    // `{ statusCode, code, message, requestId }`. Inherited by the gRPC server
+    // below; the filter leaves non-HTTP contexts to Nest's own RPC mapping.
+    app.useGlobalFilters(new HttpErrorEnvelopeFilter());
 
     // Global prefix to match gateway proxy paths
     // JWKS and the internal service-token endpoint live outside `api/v1`; the

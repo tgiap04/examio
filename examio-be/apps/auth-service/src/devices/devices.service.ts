@@ -4,6 +4,7 @@ import {
     BadRequestException,
     ForbiddenException,
 } from '@nestjs/common';
+import { SessionRevoker } from './session-revoker.service';
 import { UserSessionRepository } from './repositories/user-session.repository';
 import { DeviceDto, GetDevicesResponseDto } from './dto';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -12,7 +13,8 @@ import { vi } from 'date-fns/locale';
 @Injectable()
 export class DevicesService {
     constructor(
-        private readonly userSessionRepository: UserSessionRepository
+        private readonly userSessionRepository: UserSessionRepository,
+        private readonly sessionRevoker: SessionRevoker
     ) {}
 
     async getDevices(
@@ -64,7 +66,7 @@ export class DevicesService {
             );
         }
 
-        await this.userSessionRepository.deactivateSession(session.id);
+        await this.sessionRevoker.revokeById(session.id);
 
         return {
             success: true,
@@ -80,11 +82,11 @@ export class DevicesService {
         message: string;
         devicesLoggedOut: number;
     }> {
-        const count =
-            await this.userSessionRepository.deactivateAllOtherSessions(
-                userId,
-                currentSessionId
-            );
+        const revoked = await this.sessionRevoker.revokeAllOthers(
+            userId,
+            currentSessionId
+        );
+        const count = revoked.length;
 
         return {
             success: true,

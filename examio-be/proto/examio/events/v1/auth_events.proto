@@ -30,3 +30,18 @@ message UserAuthzChanged {
   // Same value as authz_version (the envelope-level ordering key).
   int32 version = 7;
 }
+
+// Payload (`data`) of `auth.session.revoked`: a session was deactivated (logout,
+// device logout, logout-all-others, password change/reset). Published through
+// the outbox in the SAME transaction as the deactivation, so a lost
+// `GatewayControl.RevokeSession` call cannot leave the session's access token
+// usable. A fact event (idempotent per `sid`; re-delivery just re-sets the key).
+message SessionRevoked {
+  string user_id = 1;
+  string sid = 2;
+  // Epoch seconds until which tokens of this session must be denied (the
+  // longest-lived access token it could hold); the gateway key expires then.
+  int64 exp = 3;
+  // Epoch seconds at which the revocation was committed.
+  int64 version = 4;
+}

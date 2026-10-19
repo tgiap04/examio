@@ -12,10 +12,7 @@ interface HeaderCarrier {
     headers: Record<string, string | string[] | undefined>;
 }
 
-/**
- * HTTP token order: Bearer header, cookie `accessToken`, legacy cookie
- * `token` (until phase 05 settles the cookie names).
- */
+/** HTTP token order: Bearer header, then cookie `accessToken`. Never the query string. */
 export function extractHttpToken(request: HeaderCarrier): string | undefined {
     const fromHeader = bearerOf(request.headers.authorization);
     if (fromHeader) return fromHeader;
@@ -23,7 +20,7 @@ export function extractHttpToken(request: HeaderCarrier): string | undefined {
     const rawCookie = request.headers.cookie;
     if (typeof rawCookie !== 'string' || !rawCookie) return undefined;
     const cookies = parseCookie(rawCookie);
-    return cookies.accessToken || cookies.token || undefined;
+    return cookies.accessToken || undefined;
 }
 
 /** gRPC: the forwarded or service token travels in `authorization` metadata. */

@@ -10,10 +10,10 @@ import {
     type Role,
     type TokenVerifier,
 } from '@examio/auth-jwt';
+import { accessTtlSeconds } from '@examio/common';
 import { loadSigningKeys } from './keys';
 
 const SERVICE_TOKEN_TTL_SECONDS = 300;
-const DEFAULT_ACCESS_TTL_SECONDS = 900;
 
 export interface UserTokenInput {
     userId: string;
@@ -26,14 +26,6 @@ export interface UserTokenInput {
 export interface SignedToken {
     token: string;
     expiresInSeconds: number;
-}
-
-function accessTtlSeconds(raw = process.env.ACCESS_TOKEN_EXPIRATION): number {
-    if (!raw) return DEFAULT_ACCESS_TTL_SECONDS;
-    const match = /^(\d+)\s*([smhd])$/.exec(raw.trim());
-    if (!match) throw new Error(`ACCESS_TOKEN_EXPIRATION "${raw}" is not like 15m`);
-    const unit = { s: 1, m: 60, h: 3600, d: 86400 }[match[2]] as number;
-    return Number(match[1]) * unit;
 }
 
 /** Signs RS256 access/service tokens and publishes the JWKS. Owns the private key. */

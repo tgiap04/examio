@@ -14,7 +14,6 @@ import {
     UsePipes,
 } from '@nestjs/common';
 import { ZodValidationPipe } from 'nestjs-zod';
-import { Throttle } from '@nestjs/throttler';
 import { AuthService, DeviceInfo } from './auth.service';
 import { RedisService } from '@examio/redis';
 import { RegisterDto } from './dto/register.dto';
@@ -28,7 +27,9 @@ import {
 } from '@nestjs/swagger';
 import {
     GoogleAuthGuard,
-    getCookieConfig,
+    accessTokenCookie,
+    clearAuthCookies,
+    refreshTokenCookie,
     TurnstileService,
 } from '@examio/common';
 import {
@@ -37,7 +38,7 @@ import {
     Public,
     type AuthUser,
 } from '@examio/auth-jwt';
-import { AuthStrictThrottlerGuard } from './auth/guards/auth-strict-throttler.guard';
+import { StrictThrottle } from './auth/guards/strict-throttle.decorator';
 import {
     AuthenticatedRequest,
     AuthenticatedOauthRequest,
@@ -188,8 +189,7 @@ export class AuthController {
     @Post('register')
     @Public()
     @UsePipes(ZodValidationPipe)
-    @UseGuards(AuthStrictThrottlerGuard)
-    @Throttle({ default: { limit: 5, ttl: 60000 } })
+    @StrictThrottle()
     @ApiOperation({ summary: 'Register a new user' })
     @ApiResponse({
         status: 201,
@@ -228,18 +228,10 @@ export class AuthController {
             message,
         } = await this.authService.register(registerDto, deviceInfo);
 
-        const cookieConfig = getCookieConfig({
-            feOrigin: request.headers.origin,
-            isProductionBE: process.env.NODE_ENV === 'production',
-        });
-
         // Set cookies like login does
-        res.cookie('token', token, cookieConfig);
-        if (sessionId) {
-            res.cookie('session_id', sessionId, cookieConfig);
-        }
+        res.cookie('accessToken', token, accessTokenCookie());
         if (refreshToken) {
-            res.cookie('refreshToken', refreshToken, cookieConfig);
+            res.cookie('refreshToken', refreshToken, refreshTokenCookie());
         }
 
         return {
@@ -257,8 +249,7 @@ export class AuthController {
     @Post('login')
     @Public()
     @UsePipes(ZodValidationPipe)
-    @UseGuards(AuthStrictThrottlerGuard)
-    @Throttle({ default: { limit: 5, ttl: 60000 } })
+    @StrictThrottle()
     @ApiOperation({
         summary: 'Login a user',
         description:
@@ -301,17 +292,9 @@ export class AuthController {
             deviceId,
         } = await this.authService.login(loginDto, deviceInfo);
 
-        const cookieConfig = getCookieConfig({
-            feOrigin: request.headers.origin,
-            isProductionBE: process.env.NODE_ENV === 'production',
-        });
-
-        res.cookie('token', token, cookieConfig);
-        if (sessionId) {
-            res.cookie('session_id', sessionId, cookieConfig);
-        }
+        res.cookie('accessToken', token, accessTokenCookie());
         if (refreshToken) {
-            res.cookie('refreshToken', refreshToken, cookieConfig);
+            res.cookie('refreshToken', refreshToken, refreshTokenCookie());
         }
 
         return {
@@ -339,19 +322,12 @@ export class AuthController {
         @Req() request: Request & { user: AuthUser },
         @Res({ passthrough: true }) response: ExpressResponse
     ) {
-        const cookieConfig = getCookieConfig({
-            feOrigin: request.headers.origin,
-            isProductionBE: process.env.NODE_ENV === 'production',
-        });
 
         // The session is the token's own `sid` claim, not a client cookie.
         await this.authService.logout(request.user.sid);
 
         // Clear cookies
-        response.clearCookie('token', cookieConfig);
-        response.clearCookie('accessToken', cookieConfig);
-        response.clearCookie('refreshToken', cookieConfig);
-        response.clearCookie('session_id', cookieConfig);
+        clearAuthCookies(response);
         return { success: true };
     }
 
@@ -382,14 +358,8 @@ export class AuthController {
             const result =
                 await this.authService.refreshAccessToken(refreshToken);
 
-            const cookieConfig = getCookieConfig({
-                feOrigin: request.headers.origin,
-                isProductionBE: process.env.NODE_ENV === 'production',
-            });
-
             // Set new access token
-            response.cookie('token', result.token, cookieConfig);
-            response.cookie('accessToken', result.token, cookieConfig);
+            response.cookie('accessToken', result.token, accessTokenCookie());
 
             return {
                 success: true,
@@ -429,8 +399,7 @@ export class AuthController {
     })
     @Authenticated()
     @AllowUnverified()
-    @UseGuards(AuthStrictThrottlerGuard)
-    @Throttle({ default: { limit: 5, ttl: 60000 } })
+    @StrictThrottle()
     @ApiCookieAuth('cookie-auth')
     async verifyAccount(
         @Body('code') code: string,
@@ -445,19 +414,13 @@ export class AuthController {
         );
 
         // The old access token still says email_verified=false: swap it now.
-        const cookieConfig = getCookieConfig({
-            feOrigin: request.headers.origin,
-            isProductionBE: process.env.NODE_ENV === 'production',
-        });
-        res.cookie('token', result.token, cookieConfig);
-        res.cookie('accessToken', result.token, cookieConfig);
+        res.cookie('accessToken', result.token, accessTokenCookie());
         return result;
     }
 
     @Post('send-code-reset-password')
     @Public()
-    @UseGuards(AuthStrictThrottlerGuard)
-    @Throttle({ default: { limit: 5, ttl: 60000 } })
+    @StrictThrottle()
     @ApiOperation({ summary: 'Send code to reset password' })
     @ApiResponse({
         status: 200,
@@ -470,8 +433,7 @@ export class AuthController {
 
     @Post('reset-password')
     @Public()
-    @UseGuards(AuthStrictThrottlerGuard)
-    @Throttle({ default: { limit: 5, ttl: 60000 } })
+    @StrictThrottle()
     @ApiOperation({ summary: 'Reset user password' })
     @ApiResponse({
         status: 200,
@@ -495,8 +457,7 @@ export class AuthController {
     })
     @Authenticated()
     @AllowUnverified()
-    @UseGuards(AuthStrictThrottlerGuard)
-    @Throttle({ default: { limit: 5, ttl: 60000 } })
+    @StrictThrottle()
     @ApiCookieAuth('cookie-auth')
     async sendCodeChangePassword(@Req() req: AuthenticatedRequest) {
         return this.authService.sendCodeToChangePassword(req.user.id);
@@ -511,8 +472,7 @@ export class AuthController {
     })
     @Authenticated()
     @AllowUnverified()
-    @UseGuards(AuthStrictThrottlerGuard)
-    @Throttle({ default: { limit: 5, ttl: 60000 } })
+    @StrictThrottle()
     @ApiCookieAuth('cookie-auth')
     async changePassword(
         @Body('code') code: string,
@@ -538,8 +498,7 @@ export class AuthController {
 
     @Post('google/one-tap')
     @Public()
-    @UseGuards(AuthStrictThrottlerGuard)
-    @Throttle({ default: { limit: 5, ttl: 60000 } })
+    @StrictThrottle()
     @ApiOperation({ summary: 'Đăng nhập Google One Tap' })
     async googleOneTap(
         @Body() body: { credential: string; utmSource?: string },
@@ -556,17 +515,9 @@ export class AuthController {
             body.utmSource
         );
 
-        const cookieConfig = getCookieConfig({
-            feOrigin: request.headers.origin,
-            isProductionBE: process.env.NODE_ENV === 'production',
-        });
-
-        res.cookie('token', result.token, cookieConfig);
-        if (result.sessionId) {
-            res.cookie('session_id', result.sessionId, cookieConfig);
-        }
+        res.cookie('accessToken', result.token, accessTokenCookie());
         if (result.refreshToken) {
-            res.cookie('refreshToken', result.refreshToken, cookieConfig);
+            res.cookie('refreshToken', result.refreshToken, refreshTokenCookie());
         }
 
         return result;
@@ -604,17 +555,9 @@ export class AuthController {
         const oauthPayload = await this.ensureOauthSession(request, req.user);
         const { token, sessionId, refreshToken, user } = oauthPayload;
 
-        const cookieConfig = getCookieConfig({
-            feOrigin: request.headers.origin,
-            isProductionBE: process.env.NODE_ENV === 'production',
-        });
-
-        res.cookie('token', token, cookieConfig);
-        if (sessionId) {
-            res.cookie('session_id', sessionId, cookieConfig);
-        }
+        res.cookie('accessToken', token, accessTokenCookie());
         if (refreshToken) {
-            res.cookie('refreshToken', refreshToken, cookieConfig);
+            res.cookie('refreshToken', refreshToken, refreshTokenCookie());
         }
 
         const frontendUrl = (
@@ -693,12 +636,7 @@ export class AuthController {
             req.user.sid
         );
 
-        const cookieConfig = getCookieConfig({
-            feOrigin: request.headers.origin,
-            isProductionBE: process.env.NODE_ENV === 'production',
-        });
-
-        response.cookie('refreshToken', result.refreshToken, cookieConfig);
+        response.cookie('refreshToken', result.refreshToken, refreshTokenCookie());
 
         return {
             success: true,

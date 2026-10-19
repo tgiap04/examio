@@ -98,7 +98,9 @@ describe('AuthService refresh token flow', () => {
             generateIdService as any,
             mockOutbox as any,
             mockRefreshTokenCipher as any,
-            { publish: jest.fn() } as any
+            { publish: jest.fn() } as any,
+            { invalidateUser: jest.fn(), revokeSession: jest.fn() } as any,
+            {} as any
         );
     });
 

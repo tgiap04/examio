@@ -19,6 +19,7 @@ export * from './guard/google-auth.guard';
 export * from './events';
 
 // Utils
+export * from './utils/access-ttl';
 export * from './utils/cookie-config';
 export * from './utils/generate-code';
 export * from './utils/sanitize-filename';

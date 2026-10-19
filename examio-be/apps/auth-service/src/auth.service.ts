@@ -35,6 +35,8 @@ import {
     AccessTokenService,
     AccountDisabledException,
 } from './token/access-token.service';
+import { GatewayControlClient, sessionRevokeExp } from './clients/gateway-control.client';
+import { SessionRevoker } from './devices/session-revoker.service';
 import { AuthzChangedPublisher } from './roles/authz-changed.publisher';
 
 /** Result of an OAuth login; without device info no session (and no token) exists yet. */
@@ -69,7 +71,9 @@ export class AuthService {
         private readonly generateIdService: GenerateIdService,
         private readonly outbox: OutboxService,
         private readonly refreshTokenCipher: RefreshTokenCipherService,
-        private readonly authzPublisher: AuthzChangedPublisher
+        private readonly authzPublisher: AuthzChangedPublisher,
+        private readonly gatewayControl: GatewayControlClient,
+        private readonly sessionRevoker: SessionRevoker
     ) {}
 
     /**
@@ -438,7 +442,7 @@ export class AuthService {
 
             // Invalidate all existing sessions so a session hijacked before
             // the reset cannot survive the credential rotation.
-            await this.userSessionRepository.deactivateAllSessions(user.id);
+            await this.sessionRevoker.revokeAll(user.id);
 
             return { message: 'Mật khẩu đã được đặt lại thành công' };
         } catch (error) {
@@ -541,7 +545,7 @@ export class AuthService {
 
             // Invalidate all existing sessions so a session hijacked before
             // the change cannot survive the credential rotation.
-            await this.userSessionRepository.deactivateAllSessions(user.id);
+            await this.sessionRevoker.revokeAll(user.id);
 
             return { message: 'Mật khẩu đã được đổi thành công' };
         } catch (error) {
@@ -564,7 +568,7 @@ export class AuthService {
      */
     private async rotatePassword(user: User, newPassword: string): Promise<void> {
         const password = await this.passwordService.hashPassword(newPassword);
-        await this.prisma.$transaction(async (tx) => {
+        const authzVersion = await this.prisma.$transaction(async (tx) => {
             const updated = await tx.user.update({
                 where: { id: user.id },
                 data: {
@@ -582,8 +586,11 @@ export class AuthService {
             });
             await tx.resetPasswordCode.delete({ where: { userId: user.id } });
             await this.authzPublisher.publish(tx, updated, 'password');
+            return updated.authzVersion;
         });
         await this.userRepository.invalidateCaches(user);
+        // Fast path; the committed authz_changed(reason:'password') event is the durable one.
+        await this.gatewayControl.invalidateUser(user.id, authzVersion);
     }
 
     private async handleOAuthLogin(
@@ -714,14 +721,12 @@ export class AuthService {
 
     async logout(sessionId: string): Promise<void> {
         try {
-            const session =
-                await this.userSessionRepository.findBySessionId(sessionId);
-            if (session) {
-                await this.userSessionRepository.deactivateSession(session.id);
-            }
+            // Deactivation + auth.session.revoked event in one transaction, then the gRPC fast path.
+            await this.sessionRevoker.revokeBySid(sessionId);
         } catch (error) {
-            console.error('Error deactivating session:', error);
-            // Don't throw error - allow logout to proceed even if session cleanup fails
+            console.error('Error revoking session:', error);
+            // Logout must still succeed; the token must still stop working at the edge.
+            await this.gatewayControl.revokeSession(sessionId, sessionRevokeExp());
         }
     }
 

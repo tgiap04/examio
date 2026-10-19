@@ -15,13 +15,13 @@ describe('extractHttpToken', () => {
         ).toBe('from-header');
     });
 
-    it('falls back to cookie accessToken, then the legacy token cookie', () => {
+    it('falls back to cookie accessToken and never reads the retired token cookie', () => {
         expect(
             extractHttpToken(req({ cookie: 'accessToken=a; token=legacy' }))
         ).toBe('a');
-        expect(extractHttpToken(req({ cookie: 'x=1; token=legacy' }))).toBe(
-            'legacy'
-        );
+        expect(
+            extractHttpToken(req({ cookie: 'x=1; token=legacy' }))
+        ).toBeUndefined();
     });
 
     it('returns undefined without credentials or with a non-Bearer scheme', () => {

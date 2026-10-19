@@ -65,7 +65,9 @@ describe('AuthService registration outbox', () => {
             } as never,
             outbox as never,
             {} as never,
-            { publish: jest.fn() } as never
+            { publish: jest.fn() } as never,
+            { invalidateUser: jest.fn(), revokeSession: jest.fn() } as never,
+            {} as never
         );
     });
 

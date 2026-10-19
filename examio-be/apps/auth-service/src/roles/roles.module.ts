@@ -25,6 +25,6 @@ import { RoleChangeService } from './role-change.service';
         GatewayControlClient,
         GenerateIdService,
     ],
-    exports: [RoleChangeService, AuthzChangedPublisher],
+    exports: [RoleChangeService, AuthzChangedPublisher, GatewayControlClient],
 })
 export class RolesModule {}
