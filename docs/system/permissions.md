@@ -6,7 +6,7 @@
 
 ---
 
-## Current RBAC Catalog (microservice refactor phase 04, 2026-10-19)
+## Current RBAC Catalog (microservice refactor phases 04 and 06, 2026-10-19 / 2026-10-20)
 
 > Authoritative for the code on `refactor/microservice-rbac`. Source: `examio-be/libs/auth-jwt/src/permissions.ts` (`ROLE_PERMISSIONS`). The legacy `PERM###` sections below pre-date it and still describe `AuthGuard` / `AdminGuard` / `User.isAdmin`, which no longer exist; where they conflict, this section wins (full rewrite is phase 19 of the plan).
 
@@ -73,6 +73,75 @@ A SYSTEM_ADMIN who is also a STUDENT/TEACHER holds the union of both columns. A 
 - Role changes (`SetUserRole`, `SetSystemAdmin` on auth) require `role:assign`; only a SYSTEM_ADMIN can grant TEACHER or admin. A user cannot change their own role (403 `CANNOT_CHANGE_OWN_ROLE`); the last active SYSTEM_ADMIN cannot be demoted (409 `LAST_SYSTEM_ADMIN`). Every change writes `RoleChangeLog`, bumps `User.authzVersion` and emits `auth.user.authz_changed` in the same transaction.
 - Stale tokens: a role change takes effect when the access token is refreshed (15 min max); the refresh reloads the role in a transaction and refuses banned/deleted accounts (401 `ACCOUNT_DISABLED`).
 - `GET /auth/me` returns `{ user, roles, permissions }`; `user.isSystemAdmin` replaces `isAdmin`.
+
+### Per-endpoint enforcement (phase 06, 2026-10-20)
+
+> Source: `@RequirePermissions` / `@RequireOwnerOrPermission` / `@Authenticated()` / `@Public()` on the exam, finance, admin and r2 controllers; `examio-be/test/authz/` (`handler-declarations.spec.ts` fails on an undeclared HTTP handler or WS gateway class, on an `@Authenticated()` handler missing from `authenticated-allowlist.ts`, or an entry without a two-user spec; `authz-matrix.spec.ts` proves STUDENT / TEACHER / admin-only per row).
+
+| Area (controller) | Routes | Declaration |
+|---|---|---|
+| quizset | all CRUD, stats, list, questions, labels, set/save-history | `quizset:manage`. `GET /quizsets/public/:id` removed |
+| flashcardset | CRUD, stats, labels, cards, set/save-history | `flashcardset:manage` |
+| | `:id/sharing` (GET/PUT), `:id/generate-code`, `:id/share` | `content:share`; `share` is owner-only |
+| | `users/search` | `user:search` |
+| | `public/:id`, `study/:id/info`, `study/:id/access` | `@Public()` (no code, no whitelist in the payload) |
+| | `study/:id` | `@RequireOwnerOrPermission('flashcard:study', FlashcardSetOwnerResolver)` (allowlist) |
+| | `study/:id/verify-code`, `study/:id/with-code` | `flashcard:study` + access-code guard |
+| flashcard-study | `progress/:flashCardSetId` (GET/POST) | `@RequireOwnerOrPermission('flashcard:study', ...)` (allowlist) + set access check (no access = 404) |
+| student | `recent-flashcards`, `pin-flashcard/:id` | `flashcard:study` (pin needs set access, else 404; unpin always allowed) |
+| | `recent-exams`, `pin-exam-room/:id` | `exam:take` (pin needs room access, else 404) |
+| examroom | CRUD, `detail/:id`, `list`, `list-all`, `:id/sessions` | `exam_room:manage` (host). `get-public/:id` `@Public()`: `{id,title,description,host:{name,avatar}}` only, and only for a room with a PUBLIC session |
+| examsession | CRUD, `get-by-id`, `:id/sharing`, `:id/generate-code`, `room/:roomId/available-labels` | `exam_session:manage` (host) |
+| | `users/search` | `user:search` |
+| | `get-public/:id`, `study/:id/info`, `study/:id/access` | `@Public()` (sanitised) |
+| | `study/:id`, `study/:id/stats` | `exam:take`; answer-free view |
+| | `study/:id/verify-code`, `study/:id/with-code` | `exam:take` + access-code guard |
+| examattempt | `history-stats`, `start`, `:id/progress`, `:id/submit`, `:id/quiz`, `:id/secure-*`, `POST /`, `list` | `exam:take` (own attempt). `start` no longer admits the room host |
+| | `list-by-room/:id`, `list-by-session/:id` | `exam_result:view` (host) |
+| | `DELETE :id` | `exam_session:manage` (host) |
+| | `:id/detail`, `get-by-id/:id`, `PUT :id` | `@Authenticated()` (allowlist); `examattempt-access.ts`: examinee with `exam:take`, or host with `exam_result:view` (read) / `exam_session:manage` (write); else 404 |
+| cheatinglog | `POST /` | `exam:take`; `attempt/:id`, `session/:id/stats`, `session/:sid/user/:uid`: `exam_result:view` (host, else 404) |
+| study-room | `POST /`, `PUT/DELETE :id`, `:id/regenerate-code` | `study_room:create` |
+| | `mine`, `join`, `:id/join`, `:id`, `:id/leave`, `:id/leaderboard` | `study_room:join` |
+| word-family | `categories`, `roots`, `category/...`, `generation-status/*` | `word_family:read` |
+| | `save`, `saved`, `DELETE saved/:id` | `word_family:save` |
+| | `generate`, `generate-root` | `word_family:generate` (TEACHER only; free; 20/day per user, 429 `WORD_FAMILY_DAILY_LIMIT`; 503 `GENERATION_LIMIT_UNAVAILABLE` if Redis is down) |
+| | `:id/to-flashcard` / categories POST/PUT/DELETE | `flashcardset:manage` / `word_family:admin` |
+| ai | `quick-upload`, `upload`, `upload-image`, `recent-uploads`, `GET/DELETE upload/:id` | `document:upload` (own) |
+| | `generate-from-file`, `regenerate/:id`, `job/:id`, `upload/:id/history`, `models` | `ai:generate` (own) |
+| ai-chat | all handlers (class-level) | `ai_chat:use` (own); `:chatId/exists` is `true` only for the caller's own chat |
+| subject | 4 GETs | `@Public()` |
+| r2 (exam) / r2-service | `POST /r2/image` / `internal/upload` | `document:upload` / `@Public()` (internal, not routed by the gateway) |
+| finance | `payment/create`, `status/:id`, `history`, `cancel/:id`; `wallet/info`, `wallet/details` | `wallet:use` |
+| | `payment/subscription` / `subscription/plans` / `POST /webhook` | `subscription:manage` / `@Public()` / `@Public()` (SePay key) |
+| admin | users (list, `:id`, PATCH, ban, unban) | `user:manage`; PATCH rejects `isAdmin`, `isSystemAdmin`, `role` |
+| | users `grant-admin`, `revoke-admin` | `role:assign` (interim, phase 08) |
+| | finance / logs / page-config / stats (`admin/stats/*`, `admin/overview`, `admin/series/:name`, `admin/sources`) / audit / word-family | `finance:admin` / `logs:read` / `page_config:manage` / `stats:read` / `audit:read` / `word_family:admin` (replaces the class-level `admin:access`) |
+
+Plain `@Authenticated()` handlers (allowlist, each with a two-user negative spec or `selfScoped: true`): examattempt `detail` / `get-by-id` / `update`; auth `logout`, `me`-style and profile handlers (self-scoped); `DevicesController` list/logout (two-user spec).
+
+**`@RequireOwnerOrPermission(perm, Resolver)`** (`libs/auth-jwt/src/owner-or-permission.*`): composes `@Authenticated()` plus a per-handler `OwnerOrPermissionGuard`. Passes when the token holds `perm`; otherwise `Resolver.resolveOwnerId(req)` must equal the token `sub`; else 403 `PERMISSION_DENIED` (identical whether the resource is missing or foreign; logged with user, route, perm). Holding `perm` never means "sees everything": the service still runs its access predicate. This is how a TEACHER previews their own flashcard set without `flashcard:study`.
+
+**Resource rules**
+
+- Non-owned resource: the service answers 404 (not 403) so existence does not leak. 403 `PERMISSION_DENIED` is only for a missing permission. Cheating-log reads, exam attempt reads/writes and exam session study access follow this.
+- Owner-role independence: access checks (`flashcardset-access.ts`, `examattempt-access.ts`, session study access) decide only from `isPublic`, `whitelist`, code unlock, session visibility and `ownerId === sub`. None reads the owner's `User.role` / `isSystemAdmin`. A demoted TEACHER's shared / whitelisted / public / code content stays studyable by others; the demoted owner gets 403 on every `*:manage` route (and may still study their own set as a STUDENT).
+- `generate-code` (flashcard set and exam session) replaces only the code; the whitelist and visibility are kept.
+- `users/search` (flashcard set and exam session): `user:search` (TEACHER); `q` trimmed, at least 3 characters (400 `QUERY_TOO_SHORT`); matches `username` / `name` by prefix or `email` by exact value (case-insensitive); max 10; self excluded; returns `{ id, username, name, avatar }`, never the email. Sharing views (`GET :id/sharing`) list whitelisted users with the same four fields.
+
+**Access-code lockout** (`exam-service/src/modules/common/access-code-guard.ts`; used by flashcard `verify-code`/`with-code`, exam session `verify-code`/`with-code`, and exam attempt `start` with an `accessCode`)
+
+| Rule | Behaviour |
+|---|---|
+| Format | Code must match `^\d{6}$`, else 400 `INVALID_CODE_FORMAT` (not counted). `GET study/:id` on a code-gated set the caller has no grant for: 403 `CODE_REQUIRED` (send the code to `with-code`) |
+| Counter | Redis `exam:codefail:<resourceId>:<userId>`; every evaluated attempt does an atomic `INCR` (`EXPIRE 900 NX`), so the limit is per resource AND user (an attacker only locks themselves) |
+| Lockout | More than 5 attempts in 15 min: 429 `CODE_LOCKED` `{ retryAfterSeconds }` before comparing (a correct code is refused too); the 5th wrong code also answers 429 |
+| Compare | `timingSafeEqual(sha256(stored), sha256(given))` (fixed length, no early exit). Wrong code below the limit: 400 `INVALID_CODE`. Success deletes the counter |
+| Redis down | 503 `CODE_CHECK_UNAVAILABLE` (fail-closed) |
+
+exam-service has no `ThrottlerModule`; per-IP rate limits for `verify-code` / `with-code` (5 / 60 s) and `users/search` (30 / 60 s) live in gateway `routes.yaml`.
+
+**WebSocket `/ws/study`** (`StudyRoomSocketAuth`, `server.use` in `StudyRoomGateway.afterInit`; the gateway class carries a declarative `@Authenticated()` because HTTP guards skip `ws`): checks run in order: token present (`handshake.auth.token`, then Bearer/cookie), signature / `iss` / `aud` / `exp`, `email_verified`, `study_room:join`, token `av` vs Redis `gw:user:<sub>:av` (lower = stale; key missing = pass), then account not banned/deleted, then the `study-room` page flag. A failure is a `connect_error` whose message is the code: `TOKEN_MISSING`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `EMAIL_NOT_VERIFIED`, `PERMISSION_DENIED`, `TOKEN_STALE`, `SERVICE_UNAVAILABLE` (Redis or DB error, fail-closed), `UNAUTHORIZED`, `PAGE_DISABLED`. `socket.data` holds `{ user, av, exp }`. `handleConnection` (sync) joins room `user:<id>` and schedules a disconnect at token `exp`; `handleDisconnect` clears the timer. Before the server disconnects it emits `auth:reauth { reason: 'TOKEN_EXPIRED' | 'AUTHZ_CHANGED' }` (client: refresh the token, reconnect). On `auth.user.authz_changed` (`study-room-authz.handler.ts`) sockets of that user whose `av` is below the event's `authzVersion` get `auth:reauth` then `disconnect(true)`. `room:kicked` remains for the in-room ban only.
 
 ---
 

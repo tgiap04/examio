@@ -68,6 +68,10 @@ Phase 04 (identity and RBAC core) is implemented but uncommitted on `refactor/mi
 
 Phase 05 (gateway rewrite) is implemented but uncommitted on `refactor/microservice-rbac`: YAML route table, streaming dispatcher, revoke/stale checks with `GatewayControl` + durable events, Redis rate limits, WS upgrade auth, network-segmented compose, `accessToken`/`refreshToken` cookies. Roadmap item 0.3 is resolved by removing the proxy controllers. See [changelog](project-changelog.md) and [architecture](system/architecture.md) § 1.
 
+## Progress Note (2026-10-20) — microservice-refactor plan, phase 06
+
+Phase 06 (RBAC enforcement and security fixes) is implemented but uncommitted on `refactor/microservice-rbac`: per-handler permissions on exam/finance/admin/r2, `@RequireOwnerOrPermission`, CI declaration + matrix + ownership specs, access-code lockout, trimmed study/public payloads, TEACHER-only user search and word-family generation (20/day), WebSocket permission/`av`/expiry checks. This extends the Phase 1 (Security & Auth Integrity) theme (IDOR, public-endpoint leakage, code brute force) without closing a numbered item; the frontend (phases 07 and 09) still has to adapt (share button, `auth:reauth`). See [changelog](project-changelog.md) and [permissions](system/permissions.md).
+
 ## Phase 0 — System Correctness (P0, blocking)
 
 | # | Item | Source | Owner | Deps |

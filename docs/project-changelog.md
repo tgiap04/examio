@@ -9,6 +9,36 @@ last_updated: 2026-10-20
 
 ### Changed
 
+#### Microservice refactor, phase 06 (RBAC enforcement and security fixes; uncommitted on `refactor/microservice-rbac`)
+
+- **Enforcement**: every exam/finance/admin/r2 handler declares a real permission (`@RequirePermissions`), or `@RequireOwnerOrPermission` / `@Authenticated()` on an allowlist with two-user negative specs. New decorator `@RequireOwnerOrPermission(perm, OwnerResolver)` in `@examio/auth-jwt`. Admin controllers use per-controller permissions instead of the class-level `admin:access`. CI: `test/authz` (declaration scan incl. WS gateways, STUDENT/TEACHER/admin matrix) and an exam e2e step with ownership + WebSocket specs. Per-endpoint table: [permissions](system/permissions.md).
+- **Security fixes**: public quiz-set read removed; study/public payloads whitelisted by mappers (no answer key, `accessCode`, `whitelist`, emails); `users/search` TEACHER-only, no emails; access-code lockout with constant-time compare; non-owned resources answer 404; exam attempt `start` no longer admits the room host; pin / progress / recent-* need set or room access; word-family generation TEACHER-only, 20/day; admin PATCH user rejects `isAdmin` / `isSystemAdmin` / `role`; study-room socket checks `study_room:join`, `av`, token expiry.
+- **Internals**: Zod validation pipe on 11 exam controllers; `BaseRepository.findOne` cache keys moved under the invalidated scopes; wallet/payment cache invalidation after commit, best effort (`invalidateWalletCachesBestEffort`); AMQP channels get `error` listeners; gateway `routes.yaml` exposes `GET /flashcardsets/public/:id` anonymously (matches the service `@Public()`).
+- **Behaviour changes (clients)**:
+
+| Area | Before | Now |
+|---|---|---|
+| Role scope | Any verified user | STUDENT on a TEACHER route, or TEACHER on `flashcard:study` / `exam:take` routes (except own-set preview): 403 `PERMISSION_DENIED` |
+| `GET /quizsets/public/:id` | 200 | Removed (404) |
+| `GET /flashcardsets/public/:id` | Via gateway needed a token | Anonymous; trimmed set (`tags`, cards, no code/whitelist) |
+| Flashcard `study/:id`, `with-code` | Full entity (incl. code, whitelist) | `{ id, title, description, userId, thumbnail, isPublic, isPinned, viewCount, tag, flashCards[{id,question,answer,createdAt,updatedAt}], cardCount, creator{id,username,name,avatar}, createdAt, updatedAt }`; code-gated set without grant: 403 `CODE_REQUIRED` |
+| Exam session `study/:id`, `with-code`, `get-public` | Included `answer`, `isCorrect`, `accessCode`, `whitelist`, host email | Question stem and options only; host as `{ id, username, name, avatar }` |
+| `examrooms/get-public/:id` | Room + quiz set + host email | `{ id, title, description, host:{name,avatar} }`, only for a room with a PUBLIC session (else 404) |
+| Exam attempt answers | Shown on completion | Examinee: only when COMPLETED and `showAnswersAfterSubmit`; host always |
+| Non-owned resource | 403 | 404: exam attempts, cheating logs, exam session study/sharing, flashcard study/progress, pins, `ai-chat/:id/exists` (now `false`) |
+| `verify-code` / `with-code` | Anonymous allowed, plain compare | Signed-in with `flashcard:study` / `exam:take`; 400 `INVALID_CODE_FORMAT` (not 6 digits), 400 `INVALID_CODE`, 429 `CODE_LOCKED { retryAfterSeconds }` after 5 wrong / 15 min, 503 `CODE_CHECK_UNAVAILABLE` |
+| `users/search` | `email contains`, returned email, any length | `q` >= 3 chars else 400 `QUERY_TOO_SHORT`; prefix on username/name or exact email; `{ id, username, name, avatar }` |
+| Sharing views, `generate-code` | Whitelist rows with email; new code wiped the whitelist | Whitelist rows without email; whitelist and visibility kept |
+| `POST /flashcardsets/:id/share` | Any user with access | Owner only (student share button needs phase 07) |
+| Set create/update (multipart) | Silent coercion | 400 `VALIDATION_FAILED`; other controllers: 400 from `nestjs-zod` |
+| `POST /word-family/generate*` | Any user | TEACHER only; 429 `WORD_FAMILY_DAILY_LIMIT` after 20/day, 503 `GENERATION_LIMIT_UNAVAILABLE` |
+| `recent-flashcards` | Every public set | Own, whitelisted or previously viewed sets |
+| `/ws/study` `connect_error` | `UNAUTHORIZED` | `TOKEN_MISSING`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `EMAIL_NOT_VERIFIED`, `PERMISSION_DENIED`, `TOKEN_STALE`, `SERVICE_UNAVAILABLE`, `UNAUTHORIZED`, `PAGE_DISABLED` |
+| `/ws/study` lifetime | Until the client left | Server emits `auth:reauth { reason: 'TOKEN_EXPIRED' \| 'AUTHZ_CHANGED' }` then disconnects (at token `exp`, or on a role/ban change); client must refresh and reconnect (frontend work: phase 09). `room:kicked` is only for an in-room ban |
+
+- **Known gaps**: the web student share button and quiz-set public access break until phases 07/09 (single production deploy of 06-09); `GET /quizsets/public/:id` removal is unchecked against mobile (`examio-app`); full legacy-text regeneration of the generated specs stays in plan phase 19.
+- **Docs**: `system/permissions.md`, `system/business-rules.md`, `system/architecture.md`, `generated/permissions-matrix.md`, `generated/route-list.md`, `CLAUDE.md`, `AGENTS.md` updated.
+
 #### Microservice refactor, phase 05 (gateway rewrite; uncommitted on `refactor/microservice-rbac`)
 
 - **Gateway**: the 15 per-domain proxy controllers, `ProxyService`, `PageEnabledGuard`/`TogglePage` and the gateway's DB access are removed. Routing is now `apps/gateway-service/config/routes.yaml` (upstreams from `AUTH_/EXAM_/FINANCE_/ADMIN_SERVICE_URL`; `AI_SERVICE_URL` and `DATABASE_URL` no longer used). One dispatcher with `http-proxy-middleware` 3.0.7 streams bodies (SSE, multipart; no body parser). Pipeline: token verify (JWKS) -> revoked/`av` check -> permissions -> page flag -> body cap -> rate limit. Header hygiene runs on the incoming request (client `x-user-*` and `x-forwarded-*` stripped, `Expect` handled, `X-Forwarded-For` overwritten, `Authorization` built from the cookie). Per-route `maxBodySize` is enforced on streamed bytes (413 `PAYLOAD_TOO_LARGE`). Redis-backed (Lua) rate limits per route, default 100 / 60 s.

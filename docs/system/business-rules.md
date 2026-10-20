@@ -176,6 +176,24 @@ The system enforces the session time limit. If a student does not manually submi
 
 ---
 
+### Correct answers are shown to the examinee only after the attempt is completed
+
+A student sees the answer key of an exam only when the attempt is COMPLETED and the session has `showAnswersAfterSubmit` on. Study views of a session (`study/:id`, `with-code`, `get-public`) never carry `answer` / `isCorrect`; the room host sees answers on attempts of their own sessions.
+
+**Applies when:** An examinee loads an attempt (`:id/quiz`, `:id/detail`, `get-by-id`) or opens a session for study.
+**Says:** In progress, or `showAnswersAfterSubmit` off: question text and options only. Completed with the setting on: answers and the examinee's own result. Another user's attempt is "not found" (404), not forbidden.
+
+---
+
+### Entering an access code is limited to 5 wrong tries per 15 minutes
+
+Flashcard-set and exam-session codes (6 digits) can only be entered by a signed-in user holding the study permission. Five wrong codes for the same resource lock that user out of it for the rest of the 15-minute window; a correct code is refused too while locked. The lock is per user and resource, so one person's guesses never block someone else.
+
+**Applies when:** A student submits a code to `verify-code`, `with-code` or starts an exam attempt with a code.
+**Says:** Wrong code: error `INVALID_CODE`. Malformed code (not 6 digits): `INVALID_CODE_FORMAT` (not counted). Locked: `CODE_LOCKED` with the seconds to wait. If the counter store (Redis) is down the check is refused (`CODE_CHECK_UNAVAILABLE`) rather than skipped. After a correct code the counter resets. Teachers generating a new code keep the existing whitelist and visibility.
+
+---
+
 ## AI Generation
 
 ### Pending AI jobs are resumed on page revisit
@@ -193,6 +211,15 @@ Users can export their flashcard study history or exam history as a PDF. The bro
 
 **Applies when:** A user clicks "Export PDF" on a history item.
 **Says:** The PDF is generated in the browser and a download is triggered.
+
+---
+
+### Word-family generation is for teachers, 20 per day
+
+Generating word families with AI (`generate`, `generate-root`) is a TEACHER permission, costs no credits, and is capped at 20 generations per user per UTC day. Students can read and save word families but not generate them.
+
+**Applies when:** A teacher triggers word-family generation.
+**Says:** The 21st attempt of the day is refused with `WORD_FAMILY_DAILY_LIMIT`. If the quota counter (Redis) is down the request is refused (`GENERATION_LIMIT_UNAVAILABLE`). The gateway also rate-limits the route per IP.
 
 ---
 
@@ -249,7 +276,7 @@ Each time a student moves to the next card in a study session, the card ID is re
 
 ### Flashcard study requires passing an access gate
 
-A flashcard set can be protected by an access code. Students must enter the correct code before the study interface is unlocked. The host of the set bypasses the code requirement.
+A flashcard set can be protected by an access code. Students must enter the correct code before the study interface is unlocked (limited to 5 wrong tries per 15 minutes, see Exam Integrity). The owner of the set bypasses the code requirement. A set the user has no grant for (not public, not owner, not whitelisted) answers "not found", never "forbidden". Access depends only on the set's own sharing settings, so a demoted teacher's shared set stays studyable.
 
 **Applies when:** A student navigates to a flashcard set that has access code protection enabled.
 **Says:** The study interface is locked behind an access dialog. The code must match the host-configured value.

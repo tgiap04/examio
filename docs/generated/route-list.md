@@ -13,6 +13,8 @@
 
 Gateway proxies all requests to downstream services. **Routing source of truth (2026-10-20): `examio-be/apps/gateway-service/config/routes.yaml`**; the per-domain proxy controllers this inventory was generated from no longer exist, so the tables below describe the downstream endpoints behind each YAML entry. Auth: `Authorization: Bearer` header or cookie `accessToken` (the legacy `token` cookie is no longer read); the gateway verifies the token and forwards it as `Authorization: Bearer`.
 
+> **Phase 06 (2026-10-20)**: every exam/finance/admin/r2 handler now declares a permission (`@RequirePermissions` / `@RequireOwnerOrPermission`; plain `@Authenticated()` only on an allowlist). The per-route permission is in `system/permissions.md` § Per-endpoint enforcement; "Bearer" below means a verified user holding that permission. Removed: `GET /api/v1/quizsets/public/:id` (404 `ROUTE_NOT_FOUND` at the gateway). The gateway lists `study/:id/(verify-code|with-code)` as `public` so anonymous callers reach the service, which still answers 401 without a token. Non-owned resources answer 404, not 403. Only rows whose guard changed were edited; full regeneration stays in plan phase 19.
+
 #### Auth
 
 | Method | Path | Description | Auth |
@@ -82,7 +84,8 @@ Gateway proxies all requests to downstream services. **Routing source of truth (
 |--------|------|-------------|------|
 | GET | /api/v1/flashcardsets | List flashcard sets (paginated) | Bearer |
 | GET | /api/v1/flashcardsets/stats | Get flashcard set statistics | Bearer |
-| GET | /api/v1/flashcardsets/users/search | Search users for whitelist | Bearer |
+| GET | /api/v1/flashcardsets/users/search | Search users for whitelist (`user:search`; `q` >= 3 chars, no email in result) | Bearer |
+| GET | /api/v1/flashcardsets/public/:id | Get public flashcard set (anonymous; `routes.yaml` public entry, phase 06) | public |
 | GET | /api/v1/flashcardsets/:id | Get flashcard set by ID | Bearer |
 | GET | /api/v1/flashcardsets/:id/flashcards | Get paginated flashcards | Bearer |
 | GET | /api/v1/flashcardsets/:id/labels | Get labels for flashcard set | Bearer |
@@ -101,8 +104,8 @@ Gateway proxies all requests to downstream services. **Routing source of truth (
 | POST | /api/v1/flashcardsets/:setId/flashcards | Add flashcard to set | Bearer |
 | PUT | /api/v1/flashcardsets/:setId/flashcards/:cardId | Update flashcard | Bearer |
 | DELETE | /api/v1/flashcardsets/:setId/flashcards/:cardId | Delete flashcard | Bearer |
-| GET | /api/v1/flashcardsets/study/:id/access | Check access to flashcard set | Bearer |
-| GET | /api/v1/flashcardsets/study/:id/info | Get public info for study | Bearer |
+| GET | /api/v1/flashcardsets/study/:id/access | Check access to flashcard set | public |
+| GET | /api/v1/flashcardsets/study/:id/info | Get public info for study | public |
 | GET | /api/v1/flashcardsets/study/:id | Get flashcard set for study | Bearer |
 | POST | /api/v1/flashcardsets/study/:id/verify-code | Verify access code | Bearer |
 | POST | /api/v1/flashcardsets/study/:id/with-code | Get set with access code | Bearer |
@@ -117,7 +120,7 @@ Gateway proxies all requests to downstream services. **Routing source of truth (
 | GET | /api/v1/examrooms/list | List exam rooms (paginated) | Bearer |
 | GET | /api/v1/examrooms/list-all | List all exam rooms | Bearer |
 | GET | /api/v1/examrooms/detail/:id | Get exam room by ID | Bearer |
-| GET | /api/v1/examrooms/get-public/:id | Get public exam room | Bearer |
+| GET | /api/v1/examrooms/get-public/:id | Get public exam room (teaser, no email) | public |
 | POST | /api/v1/examrooms | Create exam room | Bearer |
 | PUT | /api/v1/examrooms/:id | Update exam room | Bearer |
 | DELETE | /api/v1/examrooms/:id | Delete exam room | Bearer |
@@ -129,13 +132,13 @@ Gateway proxies all requests to downstream services. **Routing source of truth (
 |--------|------|-------------|------|
 | GET | /api/v1/examsessions/list | List exam sessions (paginated) | Bearer |
 | GET | /api/v1/examsessions/get-by-id/:id | Get exam session by ID | Bearer |
-| GET | /api/v1/examsessions/get-public/:id | Get public exam session | Bearer |
+| GET | /api/v1/examsessions/get-public/:id | Get public exam session (trimmed) | public |
 | POST | /api/v1/examsessions | Create exam session | Bearer |
 | PUT | /api/v1/examsessions/:id | Update exam session | Bearer |
 | DELETE | /api/v1/examsessions/:id | Delete exam session | Bearer |
-| GET | /api/v1/examsessions/users/search | Search users for whitelist | Bearer |
-| GET | /api/v1/examsessions/study/:id/access | Check access to exam session | Bearer |
-| GET | /api/v1/examsessions/study/:id/info | Get public info | Bearer |
+| GET | /api/v1/examsessions/users/search | Search users for whitelist (`user:search`; `q` >= 3 chars, no email) | Bearer |
+| GET | /api/v1/examsessions/study/:id/access | Check access to exam session | public |
+| GET | /api/v1/examsessions/study/:id/info | Get public info | public |
 | GET | /api/v1/examsessions/study/:id | Get exam session for study | Bearer |
 | POST | /api/v1/examsessions/study/:id/with-code | Get session with access code | Bearer |
 | POST | /api/v1/examsessions/study/:id/verify-code | Verify access code | Bearer |
@@ -362,7 +365,6 @@ Internal service routes — not directly exposed to clients (gateway proxies to 
 | POST | /api/v1/quizsets | Create quiz set | Bearer |
 | PUT | /api/v1/quizsets/:id | Update quiz set | Bearer |
 | DELETE | /api/v1/quizsets/:id | Delete quiz set | Bearer |
-| GET | /api/v1/quizsets/public/:id | Get public quiz set | public |
 | POST | /api/v1/quizsets/set-quizzes-to-quizset | Assign quizzes to set | Bearer |
 | POST | /api/v1/quizsets/save-history-to-quizset | Save AI-generated quizzes | Bearer |
 | POST | /api/v1/quizsets/:quizSetId/questions | Add question | Bearer |
@@ -382,15 +384,15 @@ Internal service routes — not directly exposed to clients (gateway proxies to 
 |--------|------|-------------|------|
 | GET | /api/v1/flashcardsets | List flashcard sets | Bearer |
 | GET | /api/v1/flashcardsets/stats | Flashcard set statistics | Bearer |
-| GET | /api/v1/flashcardsets/users/search | Search users for whitelist | Bearer |
+| GET | /api/v1/flashcardsets/users/search | Search users for whitelist (`user:search`; `q` >= 3 chars) | Bearer |
 | GET | /api/v1/flashcardsets/:id | Get flashcard set by ID | Bearer |
 | GET | /api/v1/flashcardsets/:id/flashcards | Get paginated flashcards | Bearer |
 | GET | /api/v1/flashcardsets/:id/labels | Get labels | Bearer |
 | POST | /api/v1/flashcardsets | Create flashcard set | Bearer |
 | PUT | /api/v1/flashcardsets/:id | Update flashcard set | Bearer |
 | DELETE | /api/v1/flashcardsets/:id | Delete flashcard set | Bearer |
-| GET | /api/v1/flashcardsets/public/:id | Get public flashcard set | optional |
-| POST | /api/v1/flashcardsets/:id/share | Generate share link | Bearer |
+| GET | /api/v1/flashcardsets/public/:id | Get public flashcard set (`@Public()`, trimmed view; also exposed anonymously via the gateway) | public |
+| POST | /api/v1/flashcardsets/:id/share | Generate share link (`content:share`, owner only) | Bearer |
 | POST | /api/v1/flashcardsets/set-flashcards-to-flashcardset | Assign flashcards | Bearer |
 | POST | /api/v1/flashcardsets/save-history-to-flashcardset | Save AI-generated flashcards | Bearer |
 | POST | /api/v1/flashcardsets/:flashcardSetId/labels | Create label | Bearer |
@@ -402,11 +404,11 @@ Internal service routes — not directly exposed to clients (gateway proxies to 
 | POST | /api/v1/flashcardsets/:flashcardSetId/flashcards | Add flashcard | Bearer |
 | PUT | /api/v1/flashcardsets/:flashcardSetId/flashcards/:flashcardId | Update flashcard | Bearer |
 | DELETE | /api/v1/flashcardsets/:flashcardSetId/flashcards/:flashcardId | Delete flashcard | Bearer |
-| GET | /api/v1/flashcardsets/study/:id/access | Check access | optional |
+| GET | /api/v1/flashcardsets/study/:id/access | Check access | public |
 | GET | /api/v1/flashcardsets/study/:id/info | Get public info | public |
-| GET | /api/v1/flashcardsets/study/:id | Get set for study | optional |
-| POST | /api/v1/flashcardsets/study/:id/verify-code | Verify access code | public |
-| POST | /api/v1/flashcardsets/study/:id/with-code | Get set with access code | optional |
+| GET | /api/v1/flashcardsets/study/:id | Get set for study (owner, or `flashcard:study` + public/whitelist; else 404) | Bearer |
+| POST | /api/v1/flashcardsets/study/:id/verify-code | Verify access code (`flashcard:study`; lockout, see permissions.md) | Bearer |
+| POST | /api/v1/flashcardsets/study/:id/with-code | Get set with access code (`flashcard:study`; lockout) | Bearer |
 | GET | /api/v1/flashcardsets/:id/sharing | Get sharing settings | Bearer |
 | PUT | /api/v1/flashcardsets/:id/sharing | Update sharing settings | Bearer |
 | POST | /api/v1/flashcardsets/:id/generate-code | Generate access code | Bearer |
@@ -421,7 +423,7 @@ Internal service routes — not directly exposed to clients (gateway proxies to 
 | GET | /api/v1/examrooms/list | List exam rooms | Bearer |
 | GET | /api/v1/examrooms/list-all | List all exam rooms | Bearer |
 | DELETE | /api/v1/examrooms/:id | Delete exam room | Bearer |
-| GET | /api/v1/examrooms/get-public/:id | Get public exam room | public |
+| GET | /api/v1/examrooms/get-public/:id | Teaser `{id,title,description,host:{name,avatar}}`, only for a room with a PUBLIC session | public |
 | GET | /api/v1/examrooms/:id/sessions | Get exam sessions for room | Bearer |
 
 #### Exam Sessions
@@ -433,17 +435,17 @@ Internal service routes — not directly exposed to clients (gateway proxies to 
 | PUT | /api/v1/examsessions/:id | Update exam session | Bearer |
 | GET | /api/v1/examsessions/list | List exam sessions | Bearer |
 | DELETE | /api/v1/examsessions/:id | Delete exam session | Bearer |
-| GET | /api/v1/examsessions/get-public/:id | Get public exam session | public |
-| GET | /api/v1/examsessions/study/:id/access | Check access | optional |
+| GET | /api/v1/examsessions/get-public/:id | Get public exam session (trimmed view, no answers/email) | public |
+| GET | /api/v1/examsessions/study/:id/access | Check access | public |
 | GET | /api/v1/examsessions/study/:id/info | Get public info | public |
-| GET | /api/v1/examsessions/study/:id | Get session for study | optional |
-| POST | /api/v1/examsessions/study/:id/verify-code | Verify access code | public |
-| POST | /api/v1/examsessions/study/:id/with-code | Get session with code | public |
+| GET | /api/v1/examsessions/study/:id | Get session for study (`exam:take`; answer-free view; no grant = 404) | Bearer |
+| POST | /api/v1/examsessions/study/:id/verify-code | Verify access code (`exam:take`; lockout) | Bearer |
+| POST | /api/v1/examsessions/study/:id/with-code | Get session with code (`exam:take`; lockout) | Bearer |
 | GET | /api/v1/examsessions/study/:id/stats | Get student stats | Bearer |
 | GET | /api/v1/examsessions/:id/sharing | Get sharing settings | Bearer |
 | PUT | /api/v1/examsessions/:id/sharing | Update sharing settings | Bearer |
 | POST | /api/v1/examsessions/:id/generate-code | Generate access code | Bearer |
-| GET | /api/v1/examsessions/users/search | Search users for whitelist | Bearer |
+| GET | /api/v1/examsessions/users/search | Search users for whitelist (`user:search`; `q` >= 3 chars, no email) | Bearer |
 | GET | /api/v1/examsessions/room/:roomId/available-labels | Get available labels | Bearer |
 
 #### Exam Attempts
