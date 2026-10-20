@@ -1,4 +1,5 @@
 import {
+    OnGatewayConnection,
     OnGatewayDisconnect,
     OnGatewayInit,
     SubscribeMessage,
@@ -9,7 +10,11 @@ import { OnModuleDestroy } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { RedisService } from '@examio/redis';
 import { CONFIG_PAGES_KEY } from '@examio/common';
-import { StudyRoomSocketAuth } from './study-room-socket-auth.service';
+import { Authenticated } from '@examio/auth-jwt';
+import {
+    SocketAuthError,
+    StudyRoomSocketAuth,
+} from './study-room-socket-auth.service';
 import { StudyRoomService } from './study-room.service';
 import { StudyRoomRepository } from './study-room.repository';
 import { StudyRoomStateService } from './study-room-state.service';
@@ -29,12 +34,16 @@ import {
 import { StudyRoomPlaylistService } from './study-room-playlist.service';
 import {
     WS_STUDY_PATH,
+    userRoom,
     ClientEvents,
     ServerEvents,
     RosterEntry,
     MediaState,
     PlaylistState,
 } from './study-room.events';
+
+// setTimeout overflows (fires immediately) above 2^31-1 ms.
+const MAX_TIMER_MS = 2 ** 31 - 1;
 
 const cfgFromRoom = (r: any): PomodoroConfig => ({
     workMinutes: r.workMinutes,
@@ -60,12 +69,20 @@ function wsAllowedOrigins(): string[] {
     ];
 }
 
+// `@Authenticated()` is declarative here: the HTTP guards skip `ws` contexts, so
+// the real gate is the `server.use` middleware in `afterInit` (verify,
+// email_verified, study_room:join, av, exp). The declaration test requires it.
+@Authenticated()
 @WebSocketGateway({
     path: WS_STUDY_PATH,
     cors: { origin: wsAllowedOrigins(), credentials: true },
 })
 export class StudyRoomGateway
-    implements OnGatewayInit, OnGatewayDisconnect, OnModuleDestroy
+    implements
+        OnGatewayInit,
+        OnGatewayConnection,
+        OnGatewayDisconnect,
+        OnModuleDestroy
 {
     @WebSocketServer() server: Server;
     private focusSweep?: NodeJS.Timeout;
@@ -105,16 +122,22 @@ export class StudyRoomGateway
         // Middleware bảo đảm socket.data.user đã sẵn sàng TRƯỚC mọi message handler.
         server.use(async (socket: Socket, next: (err?: Error) => void) => {
             try {
-                const user = await this.auth.authenticate(socket);
-                if (!user) return next(new Error('UNAUTHORIZED'));
+                const session = await this.auth.authenticate(socket);
                 if (!(await this.isStudyRoomPageEnabled())) {
                     return next(new Error('PAGE_DISABLED'));
                 }
-                socket.data.user = user;
+                socket.data.user = session.user;
+                socket.data.av = session.av;
+                socket.data.exp = session.exp;
                 socket.data.rooms = new Set<string>();
                 next();
-            } catch {
-                next(new Error('UNAUTHORIZED'));
+            } catch (err) {
+                // The code is the `connect_error` message ('TOKEN_STALE' => refresh + reconnect).
+                next(
+                    new Error(
+                        err instanceof SocketAuthError ? err.code : 'UNAUTHORIZED'
+                    )
+                );
             }
         });
         // Flush focus tích luỹ về DB định kỳ (an toàn nếu client rớt mà không disconnect sạch).
@@ -125,7 +148,31 @@ export class StudyRoomGateway
         if (this.focusSweep) clearInterval(this.focusSweep);
     }
 
+    /**
+     * Synchronous on purpose (socket.io does not await it): joins the
+     * per-user room used to target `auth.user.authz_changed` and schedules the
+     * disconnect at token expiry. All auth logic ran in the middleware.
+     */
+    handleConnection(socket: Socket) {
+        const user = socket.data.user;
+        if (!user) {
+            socket.disconnect(true);
+            return;
+        }
+        void socket.join(userRoom(user.id));
+        const remainingMs = Math.min(
+            Math.max(socket.data.exp * 1000 - Date.now(), 0),
+            MAX_TIMER_MS
+        );
+        socket.data.expTimer = setTimeout(() => {
+            socket.emit(ServerEvents.AUTH_REAUTH, { reason: 'TOKEN_EXPIRED' });
+            socket.disconnect(true);
+        }, remainingMs);
+        socket.data.expTimer.unref?.();
+    }
+
     async handleDisconnect(socket: Socket) {
+        clearTimeout(socket.data.expTimer);
         const user = socket.data.user;
         const rooms: Set<string> = socket.data.rooms ?? new Set();
         for (const roomId of rooms) {

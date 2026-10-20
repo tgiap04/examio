@@ -1,13 +1,26 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '@examio/database';
+import { RedisService } from '@examio/redis';
 import { TOKEN_VERIFIER, TokenVerificationError } from '@examio/auth-jwt';
-import { StudyRoomSocketAuth } from './study-room-socket-auth.service';
+import { SignJWT } from 'jose';
 import { Socket } from 'socket.io';
+import {
+    SocketAuthError,
+    StudyRoomSocketAuth,
+    authzVersionKey,
+} from './study-room-socket-auth.service';
 
 describe('StudyRoomSocketAuth', () => {
     let service: StudyRoomSocketAuth;
     let verify: jest.Mock;
     let prisma: { user: { findUnique: jest.Mock } };
+    let redisGet: jest.Mock;
+    const EXP = Math.floor(Date.now() / 1000) + 600;
+
+    /** A (fake-signed) JWT: the verifier is mocked, only the `exp` claim is read back. */
+    async function jwt(exp = EXP) {
+        return new SignJWT({}).setProtectedHeader({ alg: 'HS256' }).setExpirationTime(exp).sign(new TextEncoder().encode('k'.repeat(32)));
+    }
 
     const user = (over: Record<string, unknown> = {}) => ({
         kind: 'user' as const,
@@ -15,7 +28,7 @@ describe('StudyRoomSocketAuth', () => {
         sid: 's1',
         roles: ['STUDENT'],
         emailVerified: true,
-        av: 0,
+        av: 3,
         ...over,
     });
     const row = (over: Record<string, unknown> = {}) => ({
@@ -29,12 +42,14 @@ describe('StudyRoomSocketAuth', () => {
 
     beforeEach(async () => {
         verify = jest.fn();
-        prisma = { user: { findUnique: jest.fn() } };
+        redisGet = jest.fn().mockResolvedValue(null);
+        prisma = { user: { findUnique: jest.fn().mockResolvedValue(row()) } };
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 StudyRoomSocketAuth,
                 { provide: TOKEN_VERIFIER, useValue: verify },
                 { provide: PrismaService, useValue: prisma },
+                { provide: RedisService, useValue: { getClient: () => ({ get: redisGet }) } },
             ],
         }).compile();
         service = module.get(StudyRoomSocketAuth);
@@ -45,65 +60,123 @@ describe('StudyRoomSocketAuth', () => {
             handshake: { auth: authToken ? { token: authToken } : {}, headers },
         }) as unknown as Socket;
 
-    it('returns null when no token provided and never verifies', async () => {
-        expect(await service.authenticate(mockSocket())).toBeNull();
+    const codeOf = async (p: Promise<unknown>): Promise<string> => {
+        try {
+            await p;
+            return 'ok';
+        } catch (e) {
+            if (e instanceof SocketAuthError) return e.code;
+            throw e;
+        }
+    };
+
+    it('rejects a missing token with TOKEN_MISSING and never verifies', async () => {
+        expect(await codeOf(service.authenticate(mockSocket()))).toBe('TOKEN_MISSING');
         expect(verify).not.toHaveBeenCalled();
     });
 
-    it('verifies handshake.auth.token and returns the display user', async () => {
+    it('verifies handshake.auth.token and returns user, av and exp', async () => {
         verify.mockResolvedValue(user());
-        prisma.user.findUnique.mockResolvedValue(row());
-
-        const result = await service.authenticate(mockSocket('auth-token'));
-
-        expect(verify).toHaveBeenCalledWith('auth-token');
+        const token = await jwt();
+        const result = await service.authenticate(mockSocket(token));
+        expect(verify).toHaveBeenCalledWith(token);
         expect(result).toEqual({
-            id: 'user1',
-            name: 'Alice',
-            avatar: 'https://example.com/avatar.png',
+            user: { id: 'user1', name: 'Alice', avatar: 'https://example.com/avatar.png' },
+            av: 3,
+            exp: EXP,
         });
     });
 
     it('falls back to the accessToken cookie and ignores the retired token cookie', async () => {
         verify.mockResolvedValue(user({ id: 'user2' }));
         prisma.user.findUnique.mockResolvedValue(row({ id: 'user2', name: 'Bob', avatar: null }));
-        await service.authenticate(mockSocket(undefined, { cookie: 'accessToken=ck; Path=/' }));
-        expect(verify).toHaveBeenLastCalledWith('ck');
+        const token = await jwt();
+        await service.authenticate(mockSocket(undefined, { cookie: `accessToken=${token}; Path=/` }));
+        expect(verify).toHaveBeenLastCalledWith(token);
         verify.mockClear();
-        expect(await service.authenticate(mockSocket(undefined, { cookie: 'token=legacy; Path=/' }))).toBeNull();
+        expect(await codeOf(service.authenticate(mockSocket(undefined, { cookie: 'token=legacy; Path=/' })))).toBe('TOKEN_MISSING');
         expect(verify).not.toHaveBeenCalled();
     });
 
     it('prefers handshake.auth.token over cookies', async () => {
         verify.mockResolvedValue(user());
-        prisma.user.findUnique.mockResolvedValue(row());
-        await service.authenticate(mockSocket('auth-token', { cookie: 'token=cookie-token' }));
-        expect(verify).toHaveBeenCalledWith('auth-token');
+        const token = await jwt();
+        await service.authenticate(mockSocket(token, { cookie: 'token=cookie-token' }));
+        expect(verify).toHaveBeenCalledWith(token);
     });
 
-    it('rejects an unverified email, a service token and a failed verification', async () => {
-        verify.mockResolvedValueOnce(user({ emailVerified: false }));
-        expect(await service.authenticate(mockSocket('t'))).toBeNull();
-        verify.mockResolvedValueOnce({ kind: 'service', name: 'exam' });
-        expect(await service.authenticate(mockSocket('t'))).toBeNull();
+    it('maps verifier failures to TOKEN_EXPIRED / TOKEN_INVALID', async () => {
+        const t = await jwt();
         verify.mockRejectedValueOnce(new TokenVerificationError('TOKEN_EXPIRED'));
-        expect(await service.authenticate(mockSocket('t'))).toBeNull();
+        expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('TOKEN_EXPIRED');
+        verify.mockRejectedValueOnce(new TokenVerificationError('TOKEN_INVALID'));
+        expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('TOKEN_INVALID');
+        verify.mockRejectedValueOnce(new Error('boom'));
+        expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('TOKEN_INVALID');
+    });
+
+    it('rejects an unverified email and a service token', async () => {
+        const t = await jwt();
+        verify.mockResolvedValueOnce(user({ emailVerified: false }));
+        expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('EMAIL_NOT_VERIFIED');
+        verify.mockResolvedValueOnce({ kind: 'service', name: 'exam' });
+        expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('PERMISSION_DENIED');
         expect(prisma.user.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('requires study_room:join (SYSTEM_ADMIN-only is refused, STUDENT and TEACHER pass)', async () => {
+        const t = await jwt();
+        verify.mockResolvedValueOnce(user({ roles: ['SYSTEM_ADMIN'] }));
+        expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('PERMISSION_DENIED');
+        verify.mockResolvedValueOnce(user({ roles: ['TEACHER'] }));
+        expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('ok');
+        verify.mockResolvedValueOnce(user({ roles: ['STUDENT'] }));
+        expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('ok');
+    });
+
+    describe('authz version (av)', () => {
+        it('reads the gateway key gw:user:<sub>:av', async () => {
+            verify.mockResolvedValue(user());
+            await service.authenticate(mockSocket(await jwt()));
+            expect(redisGet).toHaveBeenCalledWith(authzVersionKey('user1'));
+            expect(authzVersionKey('abc')).toBe('gw:user:abc:av');
+        });
+
+        it('TOKEN_STALE when the token av is below the stored one', async () => {
+            verify.mockResolvedValue(user({ av: 3 }));
+            redisGet.mockResolvedValue('4');
+            expect(await codeOf(service.authenticate(mockSocket(await jwt())))).toBe('TOKEN_STALE');
+        });
+
+        it('passes when av equals or exceeds the stored one, or the key is missing', async () => {
+            verify.mockResolvedValue(user({ av: 3 }));
+            redisGet.mockResolvedValue('3');
+            expect(await codeOf(service.authenticate(mockSocket(await jwt())))).toBe('ok');
+            redisGet.mockResolvedValue(null);
+            expect(await codeOf(service.authenticate(mockSocket(await jwt())))).toBe('ok');
+        });
+
+        it('fails closed with SERVICE_UNAVAILABLE when Redis errors', async () => {
+            verify.mockResolvedValue(user());
+            redisGet.mockRejectedValue(new Error('redis down'));
+            expect(await codeOf(service.authenticate(mockSocket(await jwt())))).toBe('SERVICE_UNAVAILABLE');
+        });
     });
 
     it('rejects banned, deleted and missing accounts', async () => {
         verify.mockResolvedValue(user());
+        const t = await jwt();
         prisma.user.findUnique.mockResolvedValueOnce(row({ isBanned: true }));
-        expect(await service.authenticate(mockSocket('t'))).toBeNull();
+        expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('UNAUTHORIZED');
         prisma.user.findUnique.mockResolvedValueOnce(row({ deletedAt: new Date() }));
-        expect(await service.authenticate(mockSocket('t'))).toBeNull();
+        expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('UNAUTHORIZED');
         prisma.user.findUnique.mockResolvedValueOnce(null);
-        expect(await service.authenticate(mockSocket('t'))).toBeNull();
+        expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('UNAUTHORIZED');
     });
 
-    it('returns null on an unexpected (database) error', async () => {
+    it('fails closed with SERVICE_UNAVAILABLE on an unexpected database error', async () => {
         verify.mockResolvedValue(user());
         prisma.user.findUnique.mockRejectedValue(new Error('Database error'));
-        expect(await service.authenticate(mockSocket('t'))).toBeNull();
+        expect(await codeOf(service.authenticate(mockSocket(await jwt())))).toBe('SERVICE_UNAVAILABLE');
     });
 });

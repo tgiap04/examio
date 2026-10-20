@@ -4,6 +4,9 @@
 
 export const WS_STUDY_PATH = '/ws/study';
 
+/** Per-user socket.io room: every socket of a user joins it on connect. */
+export const userRoom = (userId: string): string => `user:${userId}`;
+
 export type TimerPhase = 'work' | 'break' | 'longbreak';
 
 export interface TimerState {
@@ -100,6 +103,9 @@ export const ServerEvents = {
     PLAYLIST_UPDATED: 'playlist:updated', // {items, currentIndex, leaderUserId}
     BLOCKS_UPDATED: 'blocks:updated', // {blockedUserIds} — chỉ gửi cho chính người chặn
     MEMBER_MODERATED: 'member:moderated', // {userId, isBanned?, isMuted?}
-    ROOM_KICKED: 'room:kicked', // gửi cho người bị ban trước khi disconnect
+    ROOM_KICKED: 'room:kicked', // gửi cho người bị ban trước khi disconnect (CHỈ ban trong phòng)
+    // Token hết hạn hoặc quyền đổi: {reason: 'TOKEN_EXPIRED' | 'AUTHZ_CHANGED'}. Gửi ngay trước
+    // khi server ngắt kết nối; client refresh token rồi kết nối lại.
+    AUTH_REAUTH: 'auth:reauth',
     ERROR: 'error',
 } as const;

@@ -7,6 +7,7 @@ import Redis from 'ioredis';
 // Không có adapter này thì client ở instance khác sẽ không nhận được event.
 export class RedisIoAdapter extends IoAdapter {
     private adapterConstructor: ReturnType<typeof createAdapter> | null = null;
+    private clients: Redis[] = [];
 
     async connectToRedis(): Promise<void> {
         const opts = {
@@ -24,7 +25,14 @@ export class RedisIoAdapter extends IoAdapter {
         subClient.on('error', (e) =>
             console.error('[StudyRoom Redis sub] error:', e.message)
         );
+        this.clients = [pubClient, subClient];
         this.adapterConstructor = createAdapter(pubClient, subClient);
+    }
+
+    /** Closes the pub/sub connections (graceful shutdown and tests). */
+    async dispose(): Promise<void> {
+        await Promise.allSettled(this.clients.map((c) => c.quit()));
+        this.clients = [];
     }
 
     createIOServer(port: number, options?: ServerOptions): Server {
