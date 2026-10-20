@@ -6,8 +6,9 @@ import {
     ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '@examio/database';
+import { RedisService } from '@examio/redis';
 
-import { GenerateIdService } from '@examio/common';
+import { GenerateIdService, invalidateWalletCachesBestEffort } from '@examio/common';
 import { SePayService } from './sepay.service';
 import { PAYMENT_STATUS } from '../../types/payment';
 import {
@@ -43,7 +44,8 @@ export class PaymentService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly generateIdService: GenerateIdService,
-        private readonly sePayService: SePayService
+        private readonly sePayService: SePayService,
+        private readonly redis: RedisService
     ) {}
 
     /**
@@ -127,6 +129,7 @@ export class PaymentService {
                             updatedBy: user.id,
                         },
                     });
+                    await invalidateWalletCachesBestEffort(this.redis, user.id);
                     paymentId = existingPayment.id;
                     this.logger.log(
                         `Payment updated: ${paymentId} - ${amount.toLocaleString('vi-VN')} VND (${isExpired ? 'expired' : 'amount changed'})`
@@ -154,6 +157,7 @@ export class PaymentService {
                         createdBy: user.id,
                     },
                 });
+                await invalidateWalletCachesBestEffort(this.redis, user.id);
 
                 this.logger.log(
                     `Payment created: ${paymentId} - ${amount.toLocaleString('vi-VN')} VND for ${description}`
@@ -208,6 +212,7 @@ export class PaymentService {
         await this.prisma.payment.delete({
             where: { id: paymentId },
         });
+        await invalidateWalletCachesBestEffort(this.redis, payment.userId);
 
         this.logger.log(`Payment cancelled by user: ${paymentId}`);
     }

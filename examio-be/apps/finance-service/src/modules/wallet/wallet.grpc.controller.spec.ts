@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '@examio/database';
+import { RedisService } from '@examio/redis';
 import { GenerateIdService } from '@examio/common';
 import { WalletGrpcController } from './wallet.grpc.controller';
 
@@ -12,6 +13,7 @@ describe('WalletGrpcController - Security Validation', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [WalletGrpcController],
       providers: [
+        { provide: RedisService, useValue: { del: jest.fn(), delPattern: jest.fn() } },
         {
           provide: PrismaService,
           useValue: {

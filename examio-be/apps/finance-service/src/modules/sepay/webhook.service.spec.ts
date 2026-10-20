@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '@examio/database';
+import { RedisService } from '@examio/redis';
 import { GenerateIdService } from '@examio/common';
 import { WebhookService } from './webhook.service';
 import { WalletRepository } from '../wallet/wallet.repository';
@@ -19,6 +20,7 @@ describe('WebhookService - SePay Idempotency Security', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
+        { provide: RedisService, useValue: { del: jest.fn(), delPattern: jest.fn() } },
         WebhookService,
         {
           provide: PrismaService,

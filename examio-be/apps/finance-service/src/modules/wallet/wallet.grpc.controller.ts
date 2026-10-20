@@ -2,7 +2,8 @@ import { Controller } from '@nestjs/common';
 import { Metadata, status } from '@grpc/grpc-js';
 import { RpcException } from '@nestjs/microservices';
 import { PrismaService } from '@examio/database';
-import { GenerateIdService } from '@examio/common';
+import { GenerateIdService, invalidateWalletCachesBestEffort } from '@examio/common';
+import { RedisService } from '@examio/redis';
 import { walletV1 } from '@examio/contracts';
 import { RequirePermissionsOrService, ServiceOnly, assertSelfOrService } from '@examio/auth-jwt';
 
@@ -18,7 +19,8 @@ const unimplemented = (rpc: string): never => {
 export class WalletGrpcController implements walletV1.WalletServiceController {
     constructor(
         private readonly prisma: PrismaService,
-        private readonly generateIdService: GenerateIdService
+        private readonly generateIdService: GenerateIdService,
+        private readonly redis: RedisService
     ) {}
 
     @ServiceOnly('auth')
@@ -45,6 +47,7 @@ export class WalletGrpcController implements walletV1.WalletServiceController {
                 },
             });
 
+            await invalidateWalletCachesBestEffort(this.redis, data.userId, wallet.id);
             return {
                 success: true,
                 walletId: wallet.id,
@@ -190,6 +193,9 @@ export class WalletGrpcController implements walletV1.WalletServiceController {
                     message: 'Insufficient balance',
                 };
             }
+
+            // After commit: the cached wallet, its transactions and statistics are stale.
+            await invalidateWalletCachesBestEffort(this.redis, data.userId, wallet.id);
 
             return {
                 success: true,

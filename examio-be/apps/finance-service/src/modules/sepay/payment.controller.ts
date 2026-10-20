@@ -18,7 +18,7 @@ import {
 import { AuthenticatedRequest } from '@examio/common';
 import { PaymentService, CreatePaymentDto } from './payment.service';
 import { SubscriptionService } from './subscription.service';
-import { Authenticated, Public } from '@examio/auth-jwt';
+import { Public, RequirePermissions } from '@examio/auth-jwt';
 
 @ApiTags('Payment')
 @Controller('payment')
@@ -29,7 +29,7 @@ export class PaymentController {
     ) {}
 
     @Post('create')
-    @Authenticated()
+    @RequirePermissions('wallet:use')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Tạo thanh toán và lấy QR code' })
     @ApiResponse({
@@ -44,7 +44,7 @@ export class PaymentController {
     }
 
     @Get('status/:paymentId')
-    @Authenticated()
+    @RequirePermissions('wallet:use')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Kiểm tra trạng thái thanh toán' })
     @ApiResponse({ status: 200, description: 'Trạng thái thanh toán' })
@@ -56,7 +56,7 @@ export class PaymentController {
     }
 
     @Get('history')
-    @Authenticated()
+    @RequirePermissions('wallet:use')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lịch sử thanh toán' })
     @ApiQuery({ name: 'page', required: false, type: Number })
@@ -75,7 +75,7 @@ export class PaymentController {
     }
 
     @Delete('cancel/:paymentId')
-    @Authenticated()
+    @RequirePermissions('wallet:use')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Hủy thanh toán đang chờ' })
     @ApiResponse({ status: 200, description: 'Thanh toán đã được hủy' })
@@ -89,7 +89,7 @@ export class PaymentController {
     }
 
     @Get('subscription')
-    @Authenticated()
+    @RequirePermissions('subscription:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy thông tin gói đăng ký hiện tại' })
     @ApiResponse({ status: 200, description: 'Thông tin gói đăng ký' })

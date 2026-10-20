@@ -12,7 +12,7 @@ import { WalletService } from './wallet.service';
 import { WalletDto } from './dto/wallet-response.dto';
 import { WalletDetailsDto } from './dto/wallet-details-response.dto';
 import { GetTransactionsDto } from './dto/get-transactions.dto';
-import { Authenticated } from '@examio/auth-jwt';
+import { RequirePermissions } from '@examio/auth-jwt';
 
 @ApiTags('Wallet')
 @ApiExtraModels(WalletDto, WalletDetailsDto)
@@ -21,7 +21,7 @@ export class WalletController {
     constructor(private readonly walletService: WalletService) {}
 
     @Get('info')
-    @Authenticated()
+    @RequirePermissions('wallet:use')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy thông tin ví' })
     @ApiResponse({
@@ -34,7 +34,7 @@ export class WalletController {
     }
 
     @Get('details')
-    @Authenticated()
+    @RequirePermissions('wallet:use')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Lấy thông tin chi tiết ví với lịch sử giao dịch',
