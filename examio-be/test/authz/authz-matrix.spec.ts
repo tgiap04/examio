@@ -4,6 +4,7 @@ import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { AuthJwtModule } from '@examio/auth-jwt';
 import { FlashcardSetOwnerResolver } from '../../apps/exam-service/src/modules/flashcardset/flashcardset-owner.resolver';
+import { QuizSetOwnerResolver } from '../../apps/exam-service/src/modules/quizset/quizset-owner.resolver';
 import { ExamServiceModule } from '../../apps/exam-service/src/exam-service.module';
 import { FinanceServiceModule } from '../../apps/finance-service/src/finance-service.module';
 import { AdminServiceModule } from '../../apps/admin-service/src/admin-service.module';
@@ -78,6 +79,10 @@ async function boot(
         providers: [
             {
                 provide: FlashcardSetOwnerResolver,
+                useClass: HeaderOwnerResolver,
+            },
+            {
+                provide: QuizSetOwnerResolver,
                 useClass: HeaderOwnerResolver,
             },
         ],

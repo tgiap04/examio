@@ -8,7 +8,7 @@ import {
     type TestUser,
 } from './support/exam-test-app';
 import { call } from './support/http';
-import { seedExamRoom, seedExamSession } from './support/seed';
+import { seedExamRoom, seedExamSession, seedQuizSet } from './support/seed';
 
 /**
  * Owner-role independence (decision 2026-10-18): access to shared content is
@@ -192,5 +192,35 @@ describe('demoted owner (e2e)', () => {
         });
         expect(row.role).toBe('STUDENT');
         expect(row.authzVersion).toBeGreaterThan(0);
+    });
+
+    it("a whitelisted STUDENT still lists and practices a quiz set whose TEACHER owner was demoted", async () => {
+        // seeded after the demotion: the set only has its own sharing fields to go on
+        const quiz = await seedQuizSet(t, teacher.id, {
+            whitelist: [student.id],
+        });
+        const list = await call(t.server, 'get', '/quiz-practice/sets', tok.student);
+        expect(list.status).toBe(200);
+        expect(list.body.sets.map((s: { id: string }) => s.id)).toContain(
+            quiz.id
+        );
+        const start = await call(
+            t.server,
+            'post',
+            '/quiz-practice/attempts',
+            tok.student,
+            { quizSetId: quiz.id }
+        );
+        expect([200, 201]).toContain(start.status);
+        // the demoted owner is a STUDENT now: their own set needs a grant like anyone's
+        // (owner relation still lets them preview it)
+        const own = await call(
+            t.server,
+            'post',
+            '/quiz-practice/attempts',
+            demotedToken,
+            { quizSetId: quiz.id }
+        );
+        expect([200, 201]).toContain(own.status);
     });
 });

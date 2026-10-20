@@ -42,6 +42,16 @@ export const AUTHENTICATED_ALLOWLIST: AllowlistEntry[] = [
         key: 'FlashcardStudyController.getProgress',
         spec: exam('flashcard-study'),
     },
+    // exam-service quiz practice (phase 07)
+    // `@RequireOwnerOrPermission('quiz:practice', QuizSetOwnerResolver)`: set owner or STUDENT; the service
+    // then needs a grant on the set (whitelist / code / public), proved in the spec below.
+    { key: 'QuizPracticeController.startAttempt', spec: exam('quiz-practice') },
+    // plain `@Authenticated()`: an attempt belongs to its examinee (owner in `where`) and an open one also
+    // needs the grant to still hold
+    { key: 'QuizPracticeController.getAttempt', spec: exam('quiz-practice') },
+    { key: 'QuizPracticeController.saveAttempt', spec: exam('quiz-practice') },
+    { key: 'QuizPracticeController.submitAttempt', spec: exam('quiz-practice') },
+    { key: 'QuizPracticeController.listAttempts', spec: exam('quiz-practice') },
 
     // auth-service: caller-only data, no path parameter
     { key: 'AuthController.logout', selfScoped: true },

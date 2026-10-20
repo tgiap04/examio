@@ -40,20 +40,36 @@ describe('static security rules (phase 06)', () => {
             'apps/exam-service/src/modules/flashcardset/flashcardset.service.ts',
             'apps/exam-service/src/modules/examsession/examsession.service.ts',
             'apps/exam-service/src/modules/examattempt/examattempt.service.ts',
+            'apps/exam-service/src/modules/quiz-practice/quiz-practice.service.ts',
         ]) {
             expect(read(join(ROOT, f))).toContain('verifyAccessCodeOrThrow');
         }
     });
 
-    it('access codes are generated with crypto.randomInt, never Math.random', () => {
+    it('access codes come from ONE crypto.randomInt generator; no Math.random in the sharing modules', () => {
+        const guard = read(
+            join(ROOT, 'apps/exam-service/src/modules/common/access-code-guard.ts')
+        );
+        expect(guard).toContain('randomInt(0, 1_000_000)');
+        expect(guard).not.toContain('Math.random');
+        for (const dir of ['flashcardset', 'examsession', 'quizset']) {
+            const files = sourceFiles(
+                join(ROOT, 'apps/exam-service/src/modules', dir)
+            );
+            expect(files.length).toBeGreaterThan(0);
+            for (const f of files) {
+                const src = read(f);
+                expect(`${f}: ${src.includes('Math.random')}`).toBe(`${f}: false`);
+            }
+        }
         for (const f of [
-            'apps/exam-service/src/modules/flashcardset/flashcardset.service.ts',
-            'apps/exam-service/src/modules/examsession/examsession.service.ts',
+            'flashcardset/flashcardset.service.ts',
+            'examsession/examsession.service.ts',
+            'quizset/quizset-sharing.service.ts',
         ]) {
-            const src = read(join(ROOT, f));
-            const gen = src.slice(src.indexOf('generateAccessCode()'));
-            expect(gen.slice(0, 200)).toContain('randomInt(100000, 1000000)');
-            expect(gen.slice(0, 200)).not.toContain('Math.random');
+            const src = read(join(ROOT, 'apps/exam-service/src/modules', f));
+            expect(src).toContain('generateAccessCode');
+            expect(src).not.toContain('randomInt');
         }
     });
 
@@ -71,6 +87,8 @@ describe('static security rules (phase 06)', () => {
     it("access helpers never look at the owner's role or admin flag (owner-role independence)", () => {
         for (const f of [
             'apps/exam-service/src/modules/flashcardset/flashcardset-access.ts',
+            'apps/exam-service/src/modules/quizset/quizset-access.ts',
+            'apps/exam-service/src/modules/quizset/quizset-owner.resolver.ts',
             'apps/exam-service/src/modules/examattempt/examattempt-access.ts',
             'apps/exam-service/src/modules/flashcardset/flashcardset-public.mapper.ts',
             'apps/exam-service/src/modules/examsession/examsession-public.mapper.ts',
