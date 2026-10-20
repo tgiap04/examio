@@ -1,8 +1,9 @@
+import { QueryIntPipe } from '../common/query-schema';
 import { Controller, Get, Param, Post, Query, Req } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { StudentService } from './student.service';
 import { AuthenticatedRequest } from '@examio/common';
-import { Authenticated } from '@examio/auth-jwt';
+import { RequirePermissions } from '@examio/auth-jwt';
 
 @ApiTags('Student')
 @Controller('student')
@@ -11,14 +12,14 @@ export class StudentController {
     constructor(private readonly studentService: StudentService) {}
 
     @Get('recent-flashcards')
-    @Authenticated()
+    @RequirePermissions('flashcard:study')
     @ApiOperation({ summary: 'Get recent flashcard sets viewed by student' })
     @ApiQuery({ name: 'limit', required: false, type: Number })
     @ApiQuery({ name: 'page', required: false, type: Number })
     async getRecentFlashcards(
         @Req() req: AuthenticatedRequest,
-        @Query('limit') limit?: string,
-        @Query('page') page?: string
+        @Query('limit', new QueryIntPipe({ max: 100 })) limit?: string,
+        @Query('page', new QueryIntPipe()) page?: string
     ) {
         const parsedLimit = limit ? parseInt(limit, 10) : 10;
         const parsedPage = page ? parseInt(page, 10) : 1;
@@ -26,14 +27,14 @@ export class StudentController {
     }
 
     @Get('recent-exams')
-    @Authenticated()
+    @RequirePermissions('exam:take')
     @ApiOperation({ summary: 'Get recent exam attempts by student' })
     @ApiQuery({ name: 'limit', required: false, type: Number })
     @ApiQuery({ name: 'page', required: false, type: Number })
     async getRecentExams(
         @Req() req: AuthenticatedRequest,
-        @Query('limit') limit?: string,
-        @Query('page') page?: string
+        @Query('limit', new QueryIntPipe({ max: 100 })) limit?: string,
+        @Query('page', new QueryIntPipe()) page?: string
     ) {
         const parsedLimit = limit ? parseInt(limit, 10) : 10;
         const parsedPage = page ? parseInt(page, 10) : 1;
@@ -41,7 +42,7 @@ export class StudentController {
     }
 
     @Post('pin-flashcard/:id')
-    @Authenticated()
+    @RequirePermissions('flashcard:study')
     @ApiOperation({ summary: 'Toggle pin/unpin a flashcard set for the current user' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
     async togglePinFlashcard(
@@ -52,7 +53,7 @@ export class StudentController {
     }
 
     @Post('pin-exam-room/:id')
-    @Authenticated()
+    @RequirePermissions('exam:take')
     @ApiOperation({ summary: 'Toggle pin/unpin an exam room for the current user' })
     @ApiParam({ name: 'id', description: 'Exam room ID' })
     async togglePinExamRoom(

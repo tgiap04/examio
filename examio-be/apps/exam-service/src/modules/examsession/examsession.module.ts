@@ -6,6 +6,7 @@ import { GenerateIdService } from '@examio/common';
 import { RedisService } from '@examio/redis';
 import { ExamSessionRepository } from './examsession.repository';
 import { ExamRoomRepository } from '../examroom/examroom.repository';
+import { UserSearchService } from '../common/user-search.service';
 
 @Module({
     imports: [],
@@ -16,6 +17,7 @@ import { ExamRoomRepository } from '../examroom/examroom.repository';
         GenerateIdService,
         ExamSessionRepository,
         ExamRoomRepository,
+        UserSearchService,
     ],
     controllers: [ExamSessionController],
     exports: [ExamSessionService, ExamSessionRepository],

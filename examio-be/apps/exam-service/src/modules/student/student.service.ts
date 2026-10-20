@@ -1,5 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@examio/database';
+import { canAccessFlashcardSet } from '../flashcardset/flashcardset-access';
+import { canAccessExamRoom } from './student-access';
 
 @Injectable()
 export class StudentService {
@@ -8,11 +10,24 @@ export class StudentService {
     async getRecentFlashcards(userId: string, limit: number, page: number) {
         const skip = (page - 1) * limit;
 
+        // Sets the user may open AND has a relation to (own, whitelisted, or
+        // viewed before): never every public set on the platform.
         const where = {
-            OR: [
-                { isPublic: true },
-                { userId: userId },
-                { whitelist: { has: userId } },
+            AND: [
+                {
+                    OR: [
+                        { isPublic: true },
+                        { userId },
+                        { whitelist: { has: userId } },
+                    ],
+                },
+                {
+                    OR: [
+                        { userId },
+                        { whitelist: { has: userId } },
+                        { viewHistories: { some: { userId } } },
+                    ],
+                },
             ],
         };
 
@@ -104,26 +119,22 @@ export class StudentService {
     }
 
     async togglePinFlashcard(userId: string, flashcardSetId: string) {
-        const flashcardSet = await this.prisma.flashCardSet.findUnique({
-            where: { id: flashcardSetId },
-            select: { id: true },
-        });
-
-        if (!flashcardSet) {
-            throw new NotFoundException('Flashcard set not found');
-        }
-
         const existing = await this.prisma.userPinnedFlashcard.findUnique({
             where: {
                 userId_flashcardSetId: { userId, flashcardSetId },
             },
         });
 
+        // Unpinning is always allowed (cleans up a set that is no longer shared).
         if (existing) {
             await this.prisma.userPinnedFlashcard.delete({
                 where: { id: existing.id },
             });
             return { pinned: false };
+        }
+
+        if (!(await canAccessFlashcardSet(this.prisma, flashcardSetId, userId))) {
+            throw new NotFoundException('Flashcard set not found');
         }
 
         await this.prisma.userPinnedFlashcard.create({
@@ -133,15 +144,6 @@ export class StudentService {
     }
 
     async togglePinExamRoom(userId: string, examRoomId: string) {
-        const examRoom = await this.prisma.examRoom.findUnique({
-            where: { id: examRoomId },
-            select: { id: true },
-        });
-
-        if (!examRoom) {
-            throw new NotFoundException('Exam room not found');
-        }
-
         const existing = await this.prisma.userPinnedExamRoom.findUnique({
             where: {
                 userId_examRoomId: { userId, examRoomId },
@@ -153,6 +155,10 @@ export class StudentService {
                 where: { id: existing.id },
             });
             return { pinned: false };
+        }
+
+        if (!(await canAccessExamRoom(this.prisma, examRoomId, userId))) {
+            throw new NotFoundException('Exam room not found');
         }
 
         await this.prisma.userPinnedExamRoom.create({

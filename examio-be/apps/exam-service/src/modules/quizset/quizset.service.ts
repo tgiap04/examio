@@ -1,4 +1,5 @@
 import { PrismaService } from '@examio/database';
+import { rethrowKnown } from '../common/rethrow-known';
 import {
     BadRequestException,
     ConflictException,
@@ -81,6 +82,7 @@ export class QuizsetService {
                 quizSet: newQuizSet,
             };
         } catch (error) {
+            rethrowKnown(error);
             console.log(error);
             throw new InternalServerErrorException('Tạo bộ câu hỏi thất bại');
         }
@@ -118,6 +120,7 @@ export class QuizsetService {
                 completionRate: 0,
             };
         } catch (error) {
+            rethrowKnown(error);
             throw new InternalServerErrorException(
                 'Lấy thống kê bộ câu hỏi thất bại'
             );
@@ -243,34 +246,6 @@ export class QuizsetService {
         }
 
         return { message: 'Xóa bộ câu hỏi thành công' };
-    }
-
-    async getQuizSetPublicById(id: string) {
-        // Use repository with cache for public quizsets
-        const quizSet = await this.quizSetRepository.findOne({
-            where: { id, isPublic: true },
-            include: {
-                detailsQuizQuestions: {
-                    include: {
-                        quizQuestion: true,
-                    },
-                },
-            },
-            cache: true,
-        });
-
-        if (!quizSet) {
-            throw new NotFoundException('Bộ câu hỏi không tồn tại');
-        }
-
-        // Transform để trả về questions như cũ
-        const { detailsQuizQuestions, ...quizSetData } = quizSet as any;
-        return {
-            ...quizSetData,
-            questions: detailsQuizQuestions.map(
-                (detail: any) => detail.quizQuestion
-            ),
-        };
     }
 
     async getQuizSets(user: AuthUser, dto: GetQuizsetsDto) {
@@ -472,6 +447,7 @@ export class QuizsetService {
                 quizSet: quizSetWithCount,
             };
         } catch (error) {
+            rethrowKnown(error);
             if (error instanceof NotFoundException) {
                 throw error;
             }
@@ -566,6 +542,7 @@ export class QuizsetService {
                 affectedQuizSets: result.affectedQuizSetsCount,
             };
         } catch (error) {
+            rethrowKnown(error);
             console.log('Error in setQuizzsToQuizSet:', error);
             if (
                 error instanceof NotFoundException ||
@@ -910,6 +887,7 @@ export class QuizsetService {
                 affectedQuizSets: result.affectedQuizSetsCount,
             };
         } catch (error) {
+            rethrowKnown(error);
             console.log('Error in saveHistoryToQuizSet:', error);
             if (
                 error instanceof NotFoundException ||
@@ -1184,6 +1162,9 @@ export class QuizsetService {
             },
         });
 
+        await this.quizSetRepository.invalidateItemCache(user.id, quizSetId);
+        await this.quizSetRepository.invalidateUserListCache(user.id);
+
         return {
             message: 'Tạo nhãn thành công',
             label,
@@ -1246,6 +1227,9 @@ export class QuizsetService {
             },
         });
 
+        await this.quizSetRepository.invalidateItemCache(user.id, quizSetId);
+        await this.quizSetRepository.invalidateUserListCache(user.id);
+
         return {
             message: 'Cập nhật nhãn thành công',
             label: updatedLabel,
@@ -1278,6 +1262,9 @@ export class QuizsetService {
         await this.prisma.quizSetLabel.delete({
             where: { id: labelId },
         });
+
+        await this.quizSetRepository.invalidateItemCache(user.id, quizSetId);
+        await this.quizSetRepository.invalidateUserListCache(user.id);
 
         return {
             message: 'Xóa nhãn thành công',
@@ -1324,6 +1311,9 @@ export class QuizsetService {
                 labelId: labelId || null,
             },
         });
+
+        await this.quizSetRepository.invalidateItemCache(user.id, quizSetId);
+        await this.quizSetRepository.invalidateUserListCache(user.id);
 
         return {
             message: `Đã gán ${result.count} câu hỏi vào nhãn`,

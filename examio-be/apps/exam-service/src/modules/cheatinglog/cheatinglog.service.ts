@@ -94,9 +94,7 @@ export class CheatingLogService {
 
         // Only the host can see detailed logs
         if (attempt.examSession.examRoom.hostId !== user.id) {
-            throw new ForbiddenException(
-                'Only the exam host can view cheating details'
-            );
+            throw new NotFoundException('Bài làm không tồn tại');
         }
 
         return this.cheatingLogRepository.getByAttemptId(attemptId);
@@ -121,9 +119,7 @@ export class CheatingLogService {
         }
 
         if (session.examRoom.hostId !== user.id) {
-            throw new ForbiddenException(
-                'Only the exam host can view session stats'
-            );
+            throw new NotFoundException('Bài làm không tồn tại');
         }
 
         return this.cheatingLogRepository.getSessionStats(sessionId);
@@ -153,9 +149,7 @@ export class CheatingLogService {
         }
 
         if (session.examRoom.hostId !== requestingUser.id) {
-            throw new ForbiddenException(
-                'Only the exam host can view user attempt details'
-            );
+            throw new NotFoundException('Bài làm không tồn tại');
         }
 
         return this.cheatingLogRepository.getUserAttemptsWithLogs(

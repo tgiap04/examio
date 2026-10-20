@@ -1,3 +1,5 @@
+import { QueryIntPipe } from '../common/query-schema';
+import { ZodValidationPipe } from 'nestjs-zod';
 import {
     Controller,
     Post,
@@ -8,6 +10,7 @@ import {
     Delete,
     Param,
     Query,
+    UsePipes,
 } from '@nestjs/common';
 import {
     ApiTags,
@@ -23,8 +26,9 @@ import { ExamRoomService } from './examroom.service';
 import { CreateExamRoomDto } from './dto/create-examroom.dto';
 import { UpdateExamRoomDto } from './dto/update-examroom.dto';
 import { GetExamRoomsDto } from './dto/get-examroom.dto';
-import { Authenticated, Public } from '@examio/auth-jwt';
+import { Public, RequirePermissions } from '@examio/auth-jwt';
 
+@UsePipes(ZodValidationPipe)
 @ApiTags('ExamRooms')
 @ApiExtraModels(CreateExamRoomDto, UpdateExamRoomDto, GetExamRoomsDto)
 @Controller('examrooms')
@@ -32,7 +36,7 @@ export class ExamRoomController {
     constructor(private readonly examRoomService: ExamRoomService) {}
 
     @Post()
-    @Authenticated()
+    @RequirePermissions('exam_room:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Create a new exam room (Teacher only)' })
     @ApiResponse({
@@ -48,7 +52,7 @@ export class ExamRoomController {
     }
 
     @Get('detail/:id')
-    @Authenticated()
+    @RequirePermissions('exam_room:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get an exam room by ID' })
     @ApiParam({ name: 'id', description: 'Exam room ID' })
@@ -65,7 +69,7 @@ export class ExamRoomController {
     }
 
     @Put(':id')
-    @Authenticated()
+    @RequirePermissions('exam_room:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update an exam room by ID (Teacher only)' })
     @ApiParam({ name: 'id', description: 'Exam room ID' })
@@ -87,7 +91,7 @@ export class ExamRoomController {
     }
 
     @Get('list')
-    @Authenticated()
+    @RequirePermissions('exam_room:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get a list of exam rooms' })
     @ApiResponse({
@@ -103,7 +107,7 @@ export class ExamRoomController {
     }
 
     @Get('list-all')
-    @Authenticated()
+    @RequirePermissions('exam_room:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get all exam rooms without pagination' })
     @ApiResponse({
@@ -116,7 +120,7 @@ export class ExamRoomController {
     }
 
     @Delete(':id')
-    @Authenticated()
+    @RequirePermissions('exam_room:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete an exam room by ID (Teacher only)' })
     @ApiParam({ name: 'id', description: 'Exam room ID' })
@@ -146,7 +150,7 @@ export class ExamRoomController {
     }
 
     @Get(':id/sessions')
-    @Authenticated()
+    @RequirePermissions('exam_room:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get exam sessions for an exam room' })
     @ApiParam({ name: 'id', description: 'Exam room ID' })
@@ -160,8 +164,8 @@ export class ExamRoomController {
     async getExamSessions(
         @Req() req: AuthenticatedRequest,
         @Param('id') id: string,
-        @Query('page') page?: number,
-        @Query('limit') limit?: number
+        @Query('page', new QueryIntPipe()) page?: number,
+        @Query('limit', new QueryIntPipe({ max: 100 })) limit?: number
     ) {
         return this.examRoomService.getExamSessions(
             id,

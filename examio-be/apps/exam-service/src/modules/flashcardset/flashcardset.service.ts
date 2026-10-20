@@ -1,4 +1,6 @@
+import { randomInt } from 'crypto';
 import { PrismaService } from '@examio/database';
+import { rethrowKnown } from '../common/rethrow-known';
 import {
     Injectable,
     ConflictException,
@@ -9,6 +11,7 @@ import {
     ForbiddenException,
 } from '@nestjs/common';
 import { GenerateIdService, sanitizeFilename } from '@examio/common';
+import { RedisService } from '@examio/redis';
 
 import { CreateFlashcardsetDto } from './dto/create-flashcardset.dto';
 import { GetFlashcardsetsDto } from './dto/get-flashcardset.dto';
@@ -25,6 +28,12 @@ import { FlashCardSetRepository } from './flashcardset.repository';
 import { R2Client } from '../../clients/r2.client';
 import { buildMetadata } from '@examio/grpc';
 import type { AuthUser } from '@examio/auth-jwt';
+import { verifyAccessCodeOrThrow } from '../common/access-code-guard';
+import { accessKindOf } from './flashcardset-access';
+import {
+    toFlashcardSetPublicView,
+    toFlashcardSetStudyView,
+} from './flashcardset-public.mapper';
 
 @Injectable()
 export class FlashcardsetService {
@@ -32,7 +41,8 @@ export class FlashcardsetService {
         private readonly prisma: PrismaService,
         private readonly flashcardSetRepository: FlashCardSetRepository,
         private readonly generateIdService: GenerateIdService,
-        private readonly r2Service: R2Client
+        private readonly r2Service: R2Client,
+        private readonly redis: RedisService
     ) {}
 
     async createFlashcardSet(
@@ -90,6 +100,7 @@ export class FlashcardsetService {
                 },
             };
         } catch (error) {
+            rethrowKnown(error);
             console.log(error);
             throw new InternalServerErrorException(
                 'Tạo bộ thẻ ghi nhớ thất bại'
@@ -125,6 +136,7 @@ export class FlashcardsetService {
                 totalViews: stats._sum?.viewCount || 0,
             };
         } catch (error) {
+            rethrowKnown(error);
             throw new InternalServerErrorException(
                 'Lấy thống kê bộ thẻ ghi nhớ thất bại'
             );
@@ -289,14 +301,11 @@ export class FlashcardsetService {
                 .catch(() => {});
         }
 
-        // Transform để trả về flashCards như cũ và map 'tag' to 'tags'
-        const { detailsFlashCard, tag, ...flashcardSetData } =
-            flashcardSet as any;
-        return {
-            ...flashcardSetData,
-            tags: tag,
-            flashCards: detailsFlashCard.map((detail: any) => detail.flashCard),
-        };
+        const { detailsFlashCard, ...flashcardSetData } = flashcardSet as any;
+        return toFlashcardSetPublicView(
+            flashcardSetData,
+            detailsFlashCard.map((detail: any) => detail.flashCard)
+        );
     }
 
     async getFlashcardSets(user: AuthUser, dto: GetFlashcardsetsDto) {
@@ -456,6 +465,7 @@ export class FlashcardsetService {
                 },
             };
         } catch (error) {
+            rethrowKnown(error);
             console.log('Error updating flashcard set:', error);
             if (error instanceof NotFoundException) {
                 throw error;
@@ -544,6 +554,7 @@ export class FlashcardsetService {
                 affectedFlashcardSets: result.affectedFlashcardSetsCount,
             };
         } catch (error) {
+            rethrowKnown(error);
             if (error instanceof NotFoundException) {
                 throw error;
             }
@@ -883,6 +894,7 @@ export class FlashcardsetService {
                 affectedFlashcardSets: result.affectedFlashcardSetsCount,
             };
         } catch (error) {
+            rethrowKnown(error);
             console.log('Error in saveHistoryToFlashcardSet:', error);
             if (
                 error instanceof NotFoundException ||
@@ -1072,29 +1084,8 @@ export class FlashcardsetService {
             throw new NotFoundException('Bộ thẻ ghi nhớ không tồn tại');
         }
 
-        // Public access
-        if (flashcardSet.isPublic) {
-            return {
-                hasAccess: true,
-                accessType: 'public' as const,
-            };
-        }
-
-        // Owner access
-        if (userId && flashcardSet.userId === userId) {
-            return {
-                hasAccess: true,
-                accessType: 'owner' as const,
-            };
-        }
-
-        // Whitelist access
-        if (userId && flashcardSet.whitelist.includes(userId)) {
-            return {
-                hasAccess: true,
-                accessType: 'whitelist' as const,
-            };
-        }
+        const kind = accessKindOf(flashcardSet, userId);
+        if (kind) return { hasAccess: true, accessType: kind };
 
         // Code required
         if (flashcardSet.accessCode) {
@@ -1112,10 +1103,10 @@ export class FlashcardsetService {
     }
 
     /**
-     * Verify access code for a private flashcard set
-     * O(1) indexed lookup
+     * Verify the access code of a set. Auth is required (see the controller),
+     * and the attempt counter lives per set and user in `access-code-guard`.
      */
-    async verifyAccessCode(id: string, accessCode: string) {
+    async verifyAccessCode(id: string, accessCode: unknown, userId: string) {
         const flashcardSet = await this.prisma.flashCardSet.findUnique({
             where: { id },
             select: { accessCode: true },
@@ -1125,9 +1116,12 @@ export class FlashcardsetService {
             throw new NotFoundException('Bộ thẻ ghi nhớ không tồn tại');
         }
 
-        if (flashcardSet.accessCode?.toString() !== accessCode) {
-            throw new ForbiddenException('Mã truy cập không đúng');
-        }
+        await verifyAccessCodeOrThrow(this.redis.getClient(), {
+            resourceId: id,
+            userId,
+            stored: flashcardSet.accessCode,
+            given: accessCode,
+        });
 
         return {
             valid: true,
@@ -1136,91 +1130,34 @@ export class FlashcardsetService {
     }
 
     /**
-     * Get flashcard set for study (with access check)
-     * Returns flashcards + creator info
+     * Get flashcard set for study (public | owner | whitelist). A caller with
+     * no grant gets 404 (no existence leak); a code-protected set asks for the code.
      */
-    async getFlashcardSetForStudy(id: string, userId?: string) {
-        // First check access
+    async getFlashcardSetForStudy(id: string, userId: string) {
         const accessInfo = await this.checkAccess(id, userId);
 
-        if (
-            !accessInfo.hasAccess &&
-            accessInfo.accessType !== 'code_required'
-        ) {
-            throw new ForbiddenException(
-                'Bạn không có quyền truy cập bộ thẻ này'
-            );
-        }
-
         if (accessInfo.accessType === 'code_required') {
-            throw new ForbiddenException('Yêu cầu mã truy cập');
+            throw new ForbiddenException({
+                statusCode: 403,
+                code: 'CODE_REQUIRED',
+                message: 'Yêu cầu mã truy cập',
+            });
+        }
+        if (!accessInfo.hasAccess) {
+            throw new NotFoundException('Bộ thẻ ghi nhớ không tồn tại');
         }
 
-        // Increment view count atomically
-        const flashcardSet = await this.prisma.flashCardSet.update({
-            where: { id },
-            data: { viewCount: { increment: 1 } },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        username: true,
-                        name: true,
-                        avatar: true,
-                    },
-                },
-                detailsFlashCard: {
-                    include: {
-                        flashCard: true,
-                    },
-                },
-                _count: {
-                    select: { detailsFlashCard: true },
-                },
-            },
-        });
-
-        // Record view history if userId is provided
-        if (userId) {
-            await this.prisma.flashCardViewHistory
-                .create({
-                    data: {
-                        id: this.generateIdService.generateId(),
-                        userId: userId,
-                        flashCardSetId: id,
-                    },
-                })
-                .catch((err) =>
-                    console.error(
-                        'Failed to record flashcard view history:',
-                        err
-                    )
-                );
-        }
-
-        const { detailsFlashCard, user, _count, ...flashcardSetData } =
-            flashcardSet;
-
-        return {
-            ...flashcardSetData,
-            flashCards: detailsFlashCard.map((detail) => detail.flashCard),
-            cardCount: _count.detailsFlashCard,
-            creator: user,
-        };
+        return this.loadStudyView(id, userId);
     }
 
-    /**
-     * Get flashcard set after code verification
-     */
-    async getFlashcardSetWithCode(
-        id: string,
-        accessCode: string,
-        userId?: string
-    ) {
-        // Verify code first
-        await this.verifyAccessCode(id, accessCode);
+    /** Get flashcard set after code verification. */
+    async getFlashcardSetWithCode(id: string, accessCode: unknown, userId: string) {
+        await this.verifyAccessCode(id, accessCode, userId);
+        return this.loadStudyView(id, userId);
+    }
 
-        // Increment view count atomically
+    /** Counts the view, records history and returns the answer-safe study payload. */
+    private async loadStudyView(id: string, userId: string) {
         const flashcardSet = await this.prisma.flashCardSet.update({
             where: { id },
             data: { viewCount: { increment: 1 } },
@@ -1238,39 +1175,32 @@ export class FlashcardsetService {
                         flashCard: true,
                     },
                 },
-                _count: {
-                    select: { detailsFlashCard: true },
-                },
             },
         });
 
-        // Record view history if userId is provided
-        if (userId) {
-            await this.prisma.flashCardViewHistory
-                .create({
-                    data: {
-                        id: this.generateIdService.generateId(),
-                        userId: userId,
-                        flashCardSetId: id,
-                    },
-                })
-                .catch((err) =>
-                    console.error(
-                        'Failed to record flashcard view history:',
-                        err
-                    )
-                );
-        }
+        // the owner's cached reads carry viewCount
+        await this.flashcardSetRepository.invalidateItemCache(
+            flashcardSet.userId,
+            id
+        );
 
-        const { detailsFlashCard, user, _count, ...flashcardSetData } =
-            flashcardSet;
+        await this.prisma.flashCardViewHistory
+            .create({
+                data: {
+                    id: this.generateIdService.generateId(),
+                    userId,
+                    flashCardSetId: id,
+                },
+            })
+            .catch((err) =>
+                console.error('Failed to record flashcard view history:', err)
+            );
 
-        return {
-            ...flashcardSetData,
-            flashCards: detailsFlashCard.map((detail) => detail.flashCard),
-            cardCount: _count.detailsFlashCard,
-            creator: user,
-        };
+        return toFlashcardSetStudyView(
+            flashcardSet,
+            flashcardSet.detailsFlashCard.map((detail) => detail.flashCard),
+            flashcardSet.user
+        );
     }
 
     /**
@@ -1369,7 +1299,28 @@ export class FlashcardsetService {
      * Generate a random 6-digit access code
      */
     generateAccessCode(): string {
-        return Math.floor(100000 + Math.random() * 900000).toString();
+        return randomInt(100000, 1000000).toString();
+    }
+
+    /**
+     * New access code for the owner's set. Only the code changes: the whitelist
+     * and the visibility are kept (the old flow wiped the whitelist).
+     */
+    async regenerateAccessCode(id: string, user: AuthUser) {
+        const flashcardSet = await this.prisma.flashCardSet.findFirst({
+            where: { id, userId: user.id },
+            select: { id: true },
+        });
+        if (!flashcardSet) {
+            throw new NotFoundException('Bộ thẻ ghi nhớ không tồn tại');
+        }
+        const accessCode = this.generateAccessCode();
+        await this.prisma.flashCardSet.update({
+            where: { id },
+            data: { accessCode },
+        });
+        await this.flashcardSetRepository.invalidateItemCache(user.id, id);
+        return { accessCode };
     }
 
     /**
@@ -1401,7 +1352,6 @@ export class FlashcardsetService {
                 username: true,
                 name: true,
                 avatar: true,
-                email: true,
             },
         });
 
@@ -1409,46 +1359,6 @@ export class FlashcardsetService {
             ...flashcardSet,
             whitelist: users,
         };
-    }
-
-    /**
-     * Search users by username for whitelist
-     * Excludes the current user
-     */
-    async searchUsers(query: string, currentUserId: string) {
-        if (!query || query.length < 2) {
-            return [];
-        }
-
-        const users = await this.prisma.user.findMany({
-            where: {
-                AND: [
-                    { id: { not: currentUserId } },
-                    {
-                        OR: [
-                            {
-                                username: {
-                                    contains: query,
-                                    mode: 'insensitive',
-                                },
-                            },
-                            { name: { contains: query, mode: 'insensitive' } },
-                            { email: { contains: query, mode: 'insensitive' } },
-                        ],
-                    },
-                ],
-            },
-            select: {
-                id: true,
-                username: true,
-                name: true,
-                avatar: true,
-                email: true,
-            },
-            take: 10,
-        });
-
-        return users;
     }
 
     /**
@@ -1516,6 +1426,9 @@ export class FlashcardsetService {
             },
         });
 
+        await this.flashcardSetRepository.invalidateItemCache(user.id, flashcardSetId);
+        await this.flashcardSetRepository.invalidateUserListCache(user.id);
+
         return { label };
     }
 
@@ -1555,6 +1468,9 @@ export class FlashcardsetService {
             },
         });
 
+        await this.flashcardSetRepository.invalidateItemCache(user.id, flashcardSetId);
+        await this.flashcardSetRepository.invalidateUserListCache(user.id);
+
         return { label: updatedLabel };
     }
 
@@ -1589,6 +1505,9 @@ export class FlashcardsetService {
         await this.prisma.flashCardSetLabel.delete({
             where: { id: labelId },
         });
+
+        await this.flashcardSetRepository.invalidateItemCache(user.id, flashcardSetId);
+        await this.flashcardSetRepository.invalidateUserListCache(user.id);
 
         return { message: 'Nhãn đã được xóa thành công' };
     }
@@ -1639,6 +1558,9 @@ export class FlashcardsetService {
             data: { labelId },
         });
 
+        await this.flashcardSetRepository.invalidateItemCache(user.id, flashcardSetId);
+        await this.flashcardSetRepository.invalidateUserListCache(user.id);
+
         return { message: 'Thẻ ghi nhớ đã được gán nhãn thành công' };
     }
 
@@ -1673,6 +1595,9 @@ export class FlashcardsetService {
             where: { id: { in: flashcardIds } },
             data: { labelId: null },
         });
+
+        await this.flashcardSetRepository.invalidateItemCache(user.id, flashcardSetId);
+        await this.flashcardSetRepository.invalidateUserListCache(user.id);
 
         return { message: 'Đã gỡ nhãn khỏi thẻ ghi nhớ thành công' };
     }
@@ -1740,20 +1665,13 @@ export class FlashcardsetService {
     }
 
     async generateShareLink(flashcardSetId: string, user: any) {
-        // Verify ownership or access
-        const flashcardSet = await this.prisma.flashCardSet.findUnique({
-            where: { id: flashcardSetId },
+        // Owner only (public or private); anyone else sees "not found".
+        const flashcardSet = await this.prisma.flashCardSet.findFirst({
+            where: { id: flashcardSetId, userId: user.id },
         });
 
         if (!flashcardSet) {
             throw new NotFoundException('Bộ flashcard không tồn tại');
-        }
-
-        // Only owner can generate share link for private sets
-        if (!flashcardSet.isPublic && flashcardSet.userId !== user.id) {
-            throw new ForbiddenException(
-                'Bạn không có quyền chia sẻ bộ flashcard này'
-            );
         }
 
         // Generate 6-digit access code if not exists
@@ -1769,6 +1687,9 @@ export class FlashcardsetService {
         // Generate share URL
         const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         const shareUrl = `${baseUrl}/study-flashcard/${flashcardSetId}`;
+
+        await this.flashcardSetRepository.invalidateItemCache(user.id, flashcardSetId);
+        await this.flashcardSetRepository.invalidateUserListCache(user.id);
 
         return {
             shareUrl,

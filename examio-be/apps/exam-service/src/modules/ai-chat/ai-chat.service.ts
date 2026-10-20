@@ -135,8 +135,9 @@ export class AIChatService {
         return { success: true, message: 'Chat deleted' };
     }
 
-    async chatExists(chatId: string) {
-        const exists = await this.chatRepository.chatExists(chatId);
+    /** `exists` is true only for the caller's own chat (another user's chat looks missing). */
+    async chatExists(chatId: string, user: AuthUser) {
+        const exists = await this.chatRepository.chatExists(chatId, user.id);
         return { exists };
     }
 

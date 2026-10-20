@@ -1,3 +1,5 @@
+import { AddDocumentDto, ClearChatDto, CreateChatDto, EditMessageDto, RenameChatDto, SendMessageDto } from './dto/ai-chat.dto';
+import { ZodValidationPipe } from 'nestjs-zod';
 import {
     Controller,
     Get,
@@ -9,6 +11,7 @@ import {
     Req,
     Res,
     Header,
+    UsePipes,
 } from '@nestjs/common';
 import { Response } from 'express';
 import {
@@ -20,11 +23,12 @@ import {
 import { AuthenticatedRequest } from '@examio/common';
 import { AIChatService } from './ai-chat.service';
 import { Observable } from 'rxjs';
-import { Authenticated } from '@examio/auth-jwt';
+import { RequirePermissions } from '@examio/auth-jwt';
 
+@UsePipes(ZodValidationPipe)
 @ApiTags('AI Chat')
 @Controller('ai-chat')
-@Authenticated()
+@RequirePermissions('ai_chat:use')
 @ApiCookieAuth('cookie-auth')
 export class AIChatController {
     constructor(private readonly chatService: AIChatService) {}
@@ -43,7 +47,7 @@ export class AIChatController {
     @ApiResponse({ status: 201, description: 'Chat đã tạo' })
     async createChat(
         @Req() req: AuthenticatedRequest,
-        @Body() body: { title?: string; subjectId?: string }
+        @Body() body: CreateChatDto
     ) {
         return this.chatService.createChat(req.user, body?.title, body?.subjectId);
     }
@@ -53,7 +57,7 @@ export class AIChatController {
     async updateChat(
         @Req() req: AuthenticatedRequest,
         @Param('chatId') chatId: string,
-        @Body() body: { title: string }
+        @Body() body: RenameChatDto
     ) {
         return this.chatService.updateChat(chatId, req.user, body.title);
     }
@@ -72,15 +76,18 @@ export class AIChatController {
     async clearChat(
         @Req() req: AuthenticatedRequest,
         @Param('chatId') chatId: string,
-        @Body() body: { deleteFiles?: boolean }
+        @Body() body: ClearChatDto
     ) {
         return this.chatService.clearChat(chatId, req.user, body.deleteFiles || false);
     }
 
     @Get(':chatId/exists')
     @ApiOperation({ summary: 'Kiểm tra chat tồn tại' })
-    async chatExists(@Param('chatId') chatId: string) {
-        return this.chatService.chatExists(chatId);
+    async chatExists(
+        @Param('chatId') chatId: string,
+        @Req() req: AuthenticatedRequest
+    ) {
+        return this.chatService.chatExists(chatId, req.user);
     }
 
     // ==================== MESSAGES ====================
@@ -99,14 +106,7 @@ export class AIChatController {
     async sendMessage(
         @Req() req: AuthenticatedRequest,
         @Param('chatId') chatId: string,
-        @Body()
-        body: {
-            message: string;
-            imageUrl?: string;
-            documentId?: string;
-            documentIds?: string[];
-            documentName?: string;
-        }
+        @Body() body: SendMessageDto
     ) {
         return this.chatService.sendMessage(chatId, req.user, body);
     }
@@ -117,15 +117,7 @@ export class AIChatController {
         @Req() req: AuthenticatedRequest,
         @Res() res: Response,
         @Param('chatId') chatId: string,
-        @Body()
-        body: {
-            message: string;
-            imageUrl?: string;
-            documentId?: string;
-            documentIds?: string[];
-            documentName?: string;
-            modelType?: string;
-        }
+        @Body() body: SendMessageDto
     ) {
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
@@ -163,7 +155,7 @@ export class AIChatController {
     async updateMessage(
         @Req() req: AuthenticatedRequest,
         @Param('messageId') messageId: string,
-        @Body() body: { content: string }
+        @Body() body: EditMessageDto
     ) {
         return this.chatService.updateMessage(
             messageId,
@@ -244,7 +236,7 @@ export class AIChatController {
     async addDocument(
         @Req() req: AuthenticatedRequest,
         @Param('chatId') chatId: string,
-        @Body() body: { documentId: string; documentName: string }
+        @Body() body: AddDocumentDto
     ) {
         return this.chatService.addDocument(
             chatId,

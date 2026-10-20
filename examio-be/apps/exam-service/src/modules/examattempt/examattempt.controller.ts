@@ -1,3 +1,6 @@
+import { UpdateProgressDto, SecureSubmitDto } from './dto/progress.dto';
+import { QueryIntPipe } from '../common/query-schema';
+import { ZodValidationPipe } from 'nestjs-zod';
 import {
     Controller,
     Post,
@@ -8,6 +11,7 @@ import {
     Delete,
     Param,
     Query,
+    UsePipes,
 } from '@nestjs/common';
 import {
     ApiTags,
@@ -22,8 +26,9 @@ import { ExamAttemptService } from './examattempt.service';
 import { CreateExamAttemptDto } from './dto/create-examattempt.dto';
 import { UpdateExamAttemptDto } from './dto/update-examattempt.dto';
 import { GetExamAttemptsDto } from './dto/get-examattempt.dto';
-import { Authenticated } from '@examio/auth-jwt';
+import { Authenticated, RequirePermissions } from '@examio/auth-jwt';
 
+@UsePipes(ZodValidationPipe)
 @ApiTags('ExamAttempts')
 @ApiExtraModels(CreateExamAttemptDto, UpdateExamAttemptDto, GetExamAttemptsDto)
 @Controller('examattempts')
@@ -33,7 +38,7 @@ export class ExamAttemptController {
     // ==================== HISTORY STATS ENDPOINT ====================
 
     @Get('history-stats')
-    @Authenticated()
+    @RequirePermissions('exam:take')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get aggregated history statistics for user' })
     @ApiResponse({
@@ -48,7 +53,7 @@ export class ExamAttemptController {
     // ==================== NEW QUIZ ENDPOINTS ====================
 
     @Post('start')
-    @Authenticated()
+    @RequirePermissions('exam:take')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Start or resume an exam attempt (with retry limit check)',
@@ -66,7 +71,7 @@ export class ExamAttemptController {
     }
 
     @Put(':id/progress')
-    @Authenticated()
+    @RequirePermissions('exam:take')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update exam attempt progress (auto-save)' })
     @ApiParam({ name: 'id', description: 'Exam attempt ID' })
@@ -78,12 +83,7 @@ export class ExamAttemptController {
     async updateExamAttemptProgress(
         @Req() req: AuthenticatedRequest,
         @Param('id') id: string,
-        @Body()
-        dto: {
-            answers?: Record<string, string>;
-            currentIndex?: number;
-            markedQuestions?: string[];
-        }
+        @Body() dto: UpdateProgressDto
     ) {
         return this.examAttemptService.updateExamAttemptProgress(
             id,
@@ -93,7 +93,7 @@ export class ExamAttemptController {
     }
 
     @Post(':id/submit')
-    @Authenticated()
+    @RequirePermissions('exam:take')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Submit exam attempt and calculate score' })
     @ApiParam({ name: 'id', description: 'Exam attempt ID' })
@@ -110,7 +110,7 @@ export class ExamAttemptController {
     }
 
     @Get(':id/quiz')
-    @Authenticated()
+    @RequirePermissions('exam:take')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get exam attempt with questions for quiz view' })
     @ApiParam({ name: 'id', description: 'Exam attempt ID' })
@@ -129,7 +129,7 @@ export class ExamAttemptController {
     // ==================== SECURE QUIZ ENDPOINTS ====================
 
     @Get(':id/secure-quiz')
-    @Authenticated()
+    @RequirePermissions('exam:take')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Get exam attempt with encrypted questions and JWT tokens',
@@ -148,7 +148,7 @@ export class ExamAttemptController {
     }
 
     @Post(':id/secure-submit')
-    @Authenticated()
+    @RequirePermissions('exam:take')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Submit exam attempt with JWT token verification',
@@ -162,8 +162,7 @@ export class ExamAttemptController {
     async submitSecureExamAttempt(
         @Req() req: AuthenticatedRequest,
         @Param('id') id: string,
-        @Body()
-        dto: { answers: Array<{ token: string; chosen_option: string }> }
+        @Body() dto: SecureSubmitDto
     ) {
         return this.examAttemptService.submitSecureExamAttempt(
             id,
@@ -173,7 +172,7 @@ export class ExamAttemptController {
     }
 
     @Get('list-by-room/:examRoomId')
-    @Authenticated()
+    @RequirePermissions('exam_result:view')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Get all exam attempts for an exam room (owner only)',
@@ -187,8 +186,8 @@ export class ExamAttemptController {
     async getExamAttemptsByRoom(
         @Req() req: AuthenticatedRequest,
         @Param('examRoomId') examRoomId: string,
-        @Query('page') page: string = '1',
-        @Query('limit') limit: string = '10',
+        @Query('page', new QueryIntPipe()) page: string = '1',
+        @Query('limit', new QueryIntPipe({ max: 100 })) limit: string = '10',
         @Query('distinctUser') distinctUser: string = 'false'
     ) {
         return this.examAttemptService.getExamAttemptsByRoom(
@@ -201,7 +200,7 @@ export class ExamAttemptController {
     }
 
     @Get('list-by-session/:sessionId')
-    @Authenticated()
+    @RequirePermissions('exam_result:view')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Get all exam attempts for a session (owner only)',
@@ -216,8 +215,8 @@ export class ExamAttemptController {
     async getExamAttemptsBySession(
         @Req() req: AuthenticatedRequest,
         @Param('sessionId') sessionId: string,
-        @Query('page') page: string = '1',
-        @Query('limit') limit: string = '50',
+        @Query('page', new QueryIntPipe()) page: string = '1',
+        @Query('limit', new QueryIntPipe({ max: 200 })) limit: string = '50',
         @Query('distinctUser') distinctUser: string = 'false'
     ) {
         return this.examAttemptService.getExamAttemptsBySession(
@@ -254,7 +253,7 @@ export class ExamAttemptController {
     // ==================== EXISTING ENDPOINTS ====================
 
     @Post()
-    @Authenticated()
+    @RequirePermissions('exam:take')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Start a new exam attempt' })
     @ApiResponse({
@@ -312,7 +311,7 @@ export class ExamAttemptController {
     }
 
     @Get('list')
-    @Authenticated()
+    @RequirePermissions('exam:take')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get a list of exam attempts' })
     @ApiResponse({
@@ -331,7 +330,7 @@ export class ExamAttemptController {
     }
 
     @Delete(':id')
-    @Authenticated()
+    @RequirePermissions('exam_session:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete an exam attempt by ID' })
     @ApiParam({ name: 'id', description: 'Exam attempt ID' })

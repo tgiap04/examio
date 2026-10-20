@@ -1,3 +1,4 @@
+import { ZodValidationPipe } from 'nestjs-zod';
 import {
     Controller,
     Get,
@@ -9,6 +10,7 @@ import {
     Req,
     HttpCode,
     HttpStatus,
+    UsePipes,
 } from '@nestjs/common';
 import {
     ApiTags,
@@ -27,8 +29,9 @@ import {
     CreateCategoryDto,
     UpdateCategoryDto,
 } from './dto/word-family.dto';
-import { Authenticated, RequirePermissions } from '@examio/auth-jwt';
+import { RequirePermissions } from '@examio/auth-jwt';
 
+@UsePipes(ZodValidationPipe)
 @ApiTags('Word Family')
 @Controller('word-family')
 export class WordFamilyController {
@@ -40,7 +43,7 @@ export class WordFamilyController {
     // ==================== Category Endpoints ====================
 
     @Get('categories')
-    @Authenticated()
+    @RequirePermissions('word_family:read')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy danh sách danh mục word family' })
     async getCategories() {
@@ -81,7 +84,7 @@ export class WordFamilyController {
     // ==================== Root Words & Detail ====================
 
     @Get('categories/:slug/roots')
-    @Authenticated()
+    @RequirePermissions('word_family:read')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy danh sách root words trong danh mục' })
     @ApiParam({ name: 'slug', description: 'Category slug' })
@@ -90,7 +93,7 @@ export class WordFamilyController {
     }
 
     @Get('category/:categorySlug/:rootWord')
-    @Authenticated()
+    @RequirePermissions('word_family:read')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy chi tiết word family' })
     @ApiParam({ name: 'categorySlug', description: 'Category slug' })
@@ -105,7 +108,7 @@ export class WordFamilyController {
     // ==================== Generation ====================
 
     @Post('generate')
-    @Authenticated()
+    @RequirePermissions('word_family:generate')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Sinh word family bằng AI' })
     async generateWordFamily(
@@ -116,7 +119,7 @@ export class WordFamilyController {
     }
 
     @Post('generate-root')
-    @Authenticated()
+    @RequirePermissions('word_family:generate')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Sinh từ con cho một từ gốc cụ thể (ghi đè nếu đã có)' })
     async generateWordFamilyForRoot(
@@ -127,7 +130,7 @@ export class WordFamilyController {
     }
 
     @Get('generation-status/:slug')
-    @Authenticated()
+    @RequirePermissions('word_family:read')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Kiểm tra trạng thái sinh word family đang chạy' })
     @ApiParam({ name: 'slug', description: 'Category slug' })
@@ -139,7 +142,7 @@ export class WordFamilyController {
     }
 
     @Get('generation-status/:slug/:rootWord')
-    @Authenticated()
+    @RequirePermissions('word_family:read')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Kiểm tra trạng thái sinh từ con cho một từ gốc' })
     @ApiParam({ name: 'slug', description: 'Category slug' })
@@ -155,7 +158,7 @@ export class WordFamilyController {
     // ==================== User Collections ====================
 
     @Post('save')
-    @Authenticated()
+    @RequirePermissions('word_family:save')
     @ApiCookieAuth('cookie-auth')
     @HttpCode(HttpStatus.CREATED)
     @ApiOperation({ summary: 'Lưu word family vào bộ sưu tập' })
@@ -167,7 +170,7 @@ export class WordFamilyController {
     }
 
     @Get('saved')
-    @Authenticated()
+    @RequirePermissions('word_family:save')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy bộ sưu tập word family đã lưu' })
     async getSavedCollections(@Req() req: AuthenticatedRequest) {
@@ -175,7 +178,7 @@ export class WordFamilyController {
     }
 
     @Delete('saved/:wordFamilyId')
-    @Authenticated()
+    @RequirePermissions('word_family:save')
     @ApiCookieAuth('cookie-auth')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Xóa khỏi bộ sưu tập' })
@@ -190,7 +193,7 @@ export class WordFamilyController {
     // ==================== FlashCard Bridge ====================
 
     @Post(':id/to-flashcard')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Chuyển word family thành bộ flashcard' })
     @ApiParam({ name: 'id', description: 'Word Family ID' })

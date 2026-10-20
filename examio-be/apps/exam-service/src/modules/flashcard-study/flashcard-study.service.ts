@@ -1,11 +1,20 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@examio/database';
+import { canAccessFlashcardSet } from '../flashcardset/flashcardset-access';
 
 @Injectable()
 export class FlashcardStudyService {
     constructor(private readonly prisma: PrismaService) {}
 
+    /** Gap 7: progress is only kept for sets the user may study (public, own, whitelisted). */
+    private async assertCanStudy(userId: string, flashCardSetId: string) {
+        if (!(await canAccessFlashcardSet(this.prisma, flashCardSetId, userId))) {
+            throw new NotFoundException('Flashcard set not found');
+        }
+    }
+
     async addStudiedCard(userId: string, flashCardSetId: string, cardId: string) {
+        await this.assertCanStudy(userId, flashCardSetId);
         const existing = await this.prisma.flashcardStudyProgress.findUnique({
             where: { userId_flashCardSetId: { userId, flashCardSetId } },
         });
@@ -64,6 +73,7 @@ export class FlashcardStudyService {
     }
 
     async saveProgress(userId: string, flashCardSetId: string, studiedCardIds: string[]) {
+        await this.assertCanStudy(userId, flashCardSetId);
         const flashCardSet = await this.prisma.flashCardSet.findUnique({
             where: { id: flashCardSetId },
             include: { detailsFlashCard: { select: { id: true } } },
@@ -101,6 +111,7 @@ export class FlashcardStudyService {
     }
 
     async getProgress(userId: string, flashCardSetId: string) {
+        await this.assertCanStudy(userId, flashCardSetId);
         const progress = await this.prisma.flashcardStudyProgress.findUnique({
             where: {
                 userId_flashCardSetId: { userId, flashCardSetId },

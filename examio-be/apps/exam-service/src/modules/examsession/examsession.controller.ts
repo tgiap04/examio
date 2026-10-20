@@ -1,3 +1,4 @@
+import { ZodValidationPipe } from 'nestjs-zod';
 import {
     Controller,
     Post,
@@ -8,6 +9,7 @@ import {
     Delete,
     Param,
     Query,
+    UsePipes,
 } from '@nestjs/common';
 import {
     ApiTags,
@@ -30,16 +32,21 @@ import {
     ExamSessionSharingSettingsResponseDto,
     ExamSessionPublicInfoDto,
 } from './dto/sharing.dto';
-import { Authenticated, Public } from '@examio/auth-jwt';
+import { Public, RequirePermissions } from '@examio/auth-jwt';
+import { SearchQueryPipe, UserSearchService } from '../common/user-search.service';
 
+@UsePipes(ZodValidationPipe)
 @ApiTags('ExamSessions')
 @ApiExtraModels(CreateExamSessionDto, UpdateExamSessionDto, GetExamSessionsDto)
 @Controller('examsessions')
 export class ExamSessionController {
-    constructor(private readonly examSessionService: ExamSessionService) {}
+    constructor(
+        private readonly examSessionService: ExamSessionService,
+        private readonly userSearch: UserSearchService
+    ) {}
 
     @Post()
-    @Authenticated()
+    @RequirePermissions('exam_session:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Create a new exam session' })
     @ApiResponse({
@@ -58,7 +65,7 @@ export class ExamSessionController {
     }
 
     @Get('get-by-id/:id')
-    @Authenticated()
+    @RequirePermissions('exam_session:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get an exam session by ID' })
     @ApiParam({ name: 'id', description: 'Exam session ID' })
@@ -75,7 +82,7 @@ export class ExamSessionController {
     }
 
     @Put(':id')
-    @Authenticated()
+    @RequirePermissions('exam_session:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update an exam session by ID' })
     @ApiParam({ name: 'id', description: 'Exam session ID' })
@@ -97,7 +104,7 @@ export class ExamSessionController {
     }
 
     @Get('list')
-    @Authenticated()
+    @RequirePermissions('exam_session:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get a list of exam sessions' })
     @ApiResponse({
@@ -116,7 +123,7 @@ export class ExamSessionController {
     }
 
     @Delete(':id')
-    @Authenticated()
+    @RequirePermissions('exam_session:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete an exam session by ID' })
     @ApiParam({ name: 'id', description: 'Exam session ID' })
@@ -177,7 +184,7 @@ export class ExamSessionController {
     }
 
     @Get('study/:id')
-    @Public()
+    @RequirePermissions('exam:take')
     @ApiOperation({ summary: 'Get exam session for study with access check' })
     @ApiParam({ name: 'id', description: 'Exam session ID' })
     @ApiResponse({
@@ -189,10 +196,10 @@ export class ExamSessionController {
         @Param('id') id: string,
         @Req() req: AuthenticatedRequest
     ) {
-        return this.examSessionService.getExamSessionForStudy(id, req.user?.id);
+        return this.examSessionService.getExamSessionForStudy(id, req.user.id);
     }
 
-    @Public()
+    @RequirePermissions('exam:take')
     @Post('study/:id/verify-code')
     @ApiOperation({ summary: 'Verify access code for a private exam session' })
     @ApiParam({ name: 'id', description: 'Exam session ID' })
@@ -203,12 +210,17 @@ export class ExamSessionController {
     })
     async verifyCode(
         @Param('id') id: string,
-        @Body() dto: ExamSessionVerifyAccessCodeDto
+        @Body() dto: ExamSessionVerifyAccessCodeDto,
+        @Req() req: AuthenticatedRequest
     ) {
-        return this.examSessionService.verifyAccessCode(id, dto.accessCode);
+        return this.examSessionService.verifyAccessCode(
+            id,
+            dto.accessCode,
+            req.user.id
+        );
     }
 
-    @Public()
+    @RequirePermissions('exam:take')
     @Post('study/:id/with-code')
     @ApiOperation({ summary: 'Get exam session using access code' })
     @ApiParam({ name: 'id', description: 'Exam session ID' })
@@ -219,16 +231,18 @@ export class ExamSessionController {
     })
     async getWithCode(
         @Param('id') id: string,
-        @Body() dto: ExamSessionVerifyAccessCodeDto
+        @Body() dto: ExamSessionVerifyAccessCodeDto,
+        @Req() req: AuthenticatedRequest
     ) {
         return this.examSessionService.getExamSessionWithCode(
             id,
-            dto.accessCode
+            dto.accessCode,
+            req.user.id
         );
     }
 
     @Get(':id/sharing')
-    @Authenticated()
+    @RequirePermissions('exam_session:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get sharing settings for an exam session' })
     @ApiParam({ name: 'id', description: 'Exam session ID' })
@@ -244,7 +258,7 @@ export class ExamSessionController {
     }
 
     @Put(':id/sharing')
-    @Authenticated()
+    @RequirePermissions('exam_session:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update sharing settings for an exam session' })
     @ApiParam({ name: 'id', description: 'Exam session ID' })
@@ -262,7 +276,7 @@ export class ExamSessionController {
     }
 
     @Post(':id/generate-code')
-    @Authenticated()
+    @RequirePermissions('exam_session:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Generate a new access code' })
     @ApiParam({ name: 'id', description: 'Exam session ID' })
@@ -274,17 +288,11 @@ export class ExamSessionController {
         @Param('id') id: string,
         @Req() req: AuthenticatedRequest
     ) {
-        const accessCode = this.examSessionService.generateAccessCode();
-        await this.examSessionService.updateSharingSettings(id, req.user, {
-            isPublic: false,
-            accessCode,
-            whitelist: [],
-        });
-        return { accessCode };
+        return this.examSessionService.regenerateAccessCode(id, req.user);
     }
 
     @Get('users/search')
-    @Authenticated()
+    @RequirePermissions('user:search')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Search users by username for whitelist' })
     @ApiResponse({
@@ -292,14 +300,14 @@ export class ExamSessionController {
         description: 'List of matching users',
     })
     async searchUsers(
-        @Query('q') query: string,
+        @Query('q', SearchQueryPipe) query: string,
         @Req() req: AuthenticatedRequest
     ) {
-        return this.examSessionService.searchUsers(query, req.user.id);
+        return this.userSearch.search(query, req.user.id);
     }
 
     @Get('study/:id/stats')
-    @Authenticated()
+    @RequirePermissions('exam:take')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Get exam session stats for student display',
@@ -321,7 +329,7 @@ export class ExamSessionController {
     }
 
     @Get('room/:roomId/available-labels')
-    @Authenticated()
+    @RequirePermissions('exam_session:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Get available labels and question counts for an exam room',

@@ -1,3 +1,4 @@
+import { ZodValidationPipe } from 'nestjs-zod';
 import {
     Controller,
     Post,
@@ -11,6 +12,7 @@ import {
     UseInterceptors,
     UploadedFile,
     Headers,
+    UsePipes,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -58,8 +60,12 @@ import {
     UpdateFlashcardLabelDto,
     AssignFlashcardsToLabelDto,
 } from './dto/flashcard-label.dto';
-import { Authenticated, Public } from '@examio/auth-jwt';
+import { createSetFormSchema, parseSetForm, updateSetFormSchema } from '../common/multipart-body';
+import { Public, RequireOwnerOrPermission, RequirePermissions } from '@examio/auth-jwt';
+import { FlashcardSetOwnerResolver } from './flashcardset-owner.resolver';
+import { SearchQueryPipe, UserSearchService } from '../common/user-search.service';
 
+@UsePipes(ZodValidationPipe)
 @ApiTags('Flashcardsets')
 @ApiExtraModels(
     CreateFlashcardsetDto,
@@ -76,11 +82,12 @@ import { Authenticated, Public } from '@examio/auth-jwt';
 export class FlashcardsetController {
     constructor(
         private readonly flashcardsetService: FlashcardsetService,
-        private readonly turnstileService: TurnstileService
+        private readonly turnstileService: TurnstileService,
+        private readonly userSearch: UserSearchService
     ) {}
 
     @Post()
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @UseInterceptors(FileInterceptor('thumbnail'))
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Create a new flashcard set (Teacher only)' })
@@ -93,28 +100,11 @@ export class FlashcardsetController {
         @Req() req: AuthenticatedRequest,
         @UploadedFile() thumbnail?: Express.Multer.File
     ) {
-        // Access body from req.body (Multer stores parsed fields here)
-        const body = req.body;
-
-        // Manually parse form data fields since @Body() doesn't work with multipart/form-data
-        const createFlashcardsetDto: CreateFlashcardsetDto = {
-            title: body.title,
-            description: body.description,
-            isPublic:
-                body.isPublic !== undefined
-                    ? body.isPublic === 'true' || body.isPublic === true
-                    : false,
-            isPinned:
-                body.isPinned !== undefined
-                    ? body.isPinned === 'true' || body.isPinned === true
-                    : false,
-            tags: body.tags
-                ? typeof body.tags === 'string'
-                    ? JSON.parse(body.tags)
-                    : body.tags
-                : [],
-            thumbnail: body.thumbnail,
-        };
+        // Multer leaves the text fields on req.body: validate them with the zod schema (400 on bad input)
+        const createFlashcardsetDto: CreateFlashcardsetDto = parseSetForm(
+            createSetFormSchema,
+            req.body
+        );
 
         return this.flashcardsetService.createFlashcardSet(
             req.user,
@@ -124,7 +114,7 @@ export class FlashcardsetController {
     }
 
     @Get('stats')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get flashcard set statistics' })
     @ApiResponse({
@@ -136,7 +126,7 @@ export class FlashcardsetController {
     }
 
     @Get(':id')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get a flashcard set by ID' })
     @ApiResponse({
@@ -152,7 +142,7 @@ export class FlashcardsetController {
     }
 
     @Get(':id/flashcards')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get paginated flashcards for a flashcard set' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
@@ -175,7 +165,7 @@ export class FlashcardsetController {
     }
 
     @Put(':id')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @UseInterceptors(FileInterceptor('thumbnail'))
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update a flashcard set by ID (Teacher only)' })
@@ -189,28 +179,11 @@ export class FlashcardsetController {
         @Param('id') id: string,
         @UploadedFile() thumbnail?: Express.Multer.File
     ) {
-        // Access body from req.body (Multer stores parsed fields here)
-        const body = req.body;
-
-        // Manually parse form data fields since @Body() doesn't work with multipart/form-data
-        const updateFlashcardSetDto: UpdateFlashcardSetDto = {
-            title: body.title,
-            description: body.description,
-            isPublic:
-                body.isPublic !== undefined
-                    ? body.isPublic === 'true' || body.isPublic === true
-                    : false,
-            isPinned:
-                body.isPinned !== undefined
-                    ? body.isPinned === 'true' || body.isPinned === true
-                    : false,
-            tags: body.tags
-                ? typeof body.tags === 'string'
-                    ? JSON.parse(body.tags)
-                    : body.tags
-                : [],
-            thumbnail: body.thumbnail,
-        };
+        // Multer leaves the text fields on req.body: validate them with the zod schema (400 on bad input)
+        const updateFlashcardSetDto: UpdateFlashcardSetDto = parseSetForm(
+            updateSetFormSchema,
+            req.body
+        );
 
         return this.flashcardsetService.updateFlashcardSet(
             id,
@@ -221,7 +194,7 @@ export class FlashcardsetController {
     }
 
     @Get()
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get a list of flashcard sets' })
     @ApiResponse({
@@ -240,7 +213,7 @@ export class FlashcardsetController {
     }
 
     @Delete(':id')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete a flashcard set by ID (Teacher only)' })
     @ApiResponse({
@@ -256,7 +229,7 @@ export class FlashcardsetController {
     }
 
     @Post(':id/share')
-    @Authenticated()
+    @RequirePermissions('content:share')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Generate share link and access code for flashcard set' })
     @ApiResponse({
@@ -283,7 +256,7 @@ export class FlashcardsetController {
     }
 
     @Post('set-flashcards-to-flashcardset')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Set flashcards to a flashcard set' })
     @ApiResponse({
@@ -302,7 +275,7 @@ export class FlashcardsetController {
     }
 
     @Post('save-history-to-flashcardset')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Lưu flashcards từ history vào flashcard sets với label',
@@ -320,7 +293,7 @@ export class FlashcardsetController {
     }
 
     @Get(':flashcardSetId/labels')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get all labels for a flashcard set' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -336,7 +309,7 @@ export class FlashcardsetController {
     }
 
     @Post(':flashcardSetId/labels')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Create a new label for a flashcard set' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -353,7 +326,7 @@ export class FlashcardsetController {
     }
 
     @Put(':flashcardSetId/labels/:labelId')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update a label' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -377,7 +350,7 @@ export class FlashcardsetController {
     }
 
     @Delete(':flashcardSetId/labels/:labelId')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete a label' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -395,7 +368,7 @@ export class FlashcardsetController {
     }
 
     @Post(':flashcardSetId/labels/:labelId/flashcards')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Assign flashcards to a label' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -419,7 +392,7 @@ export class FlashcardsetController {
     }
 
     @Delete(':flashcardSetId/labels/:labelId/flashcards')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Remove flashcards from a label' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -443,7 +416,7 @@ export class FlashcardsetController {
     }
 
     @Get(':flashcardSetId/labels/:labelId/flashcards')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get flashcards by label' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -469,7 +442,7 @@ export class FlashcardsetController {
     // ==================== FLASHCARD CRUD ENDPOINTS ====================
 
     @Post(':flashcardSetId/flashcards')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Add a flashcard to a flashcard set' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -491,7 +464,7 @@ export class FlashcardsetController {
     }
 
     @Put(':flashcardSetId/flashcards/:flashcardId')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update a flashcard in a flashcard set' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -516,7 +489,7 @@ export class FlashcardsetController {
     }
 
     @Delete(':flashcardSetId/flashcards/:flashcardId')
-    @Authenticated()
+    @RequirePermissions('flashcardset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete a flashcard from a flashcard set' })
     @ApiParam({ name: 'flashcardSetId', description: 'Flashcard set ID' })
@@ -570,7 +543,7 @@ export class FlashcardsetController {
     }
 
     @Get('study/:id')
-    @Public()
+    @RequireOwnerOrPermission('flashcard:study', FlashcardSetOwnerResolver)
     @ApiOperation({ summary: 'Get flashcard set for study with access check' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
     @ApiResponse({
@@ -588,11 +561,11 @@ export class FlashcardsetController {
         }
         return this.flashcardsetService.getFlashcardSetForStudy(
             id,
-            req.user?.id
+            req.user.id
         );
     }
 
-    @Public()
+    @RequirePermissions('flashcard:study')
     @Post('study/:id/verify-code')
     @ApiOperation({ summary: 'Verify access code for a private flashcard set' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
@@ -603,13 +576,18 @@ export class FlashcardsetController {
     })
     async verifyCode(
         @Param('id') id: string,
-        @Body() dto: FlashcardSetVerifyAccessCodeDto
+        @Body() dto: FlashcardSetVerifyAccessCodeDto,
+        @Req() req: AuthenticatedRequest
     ) {
-        return this.flashcardsetService.verifyAccessCode(id, dto.accessCode);
+        return this.flashcardsetService.verifyAccessCode(
+            id,
+            dto.accessCode,
+            req.user.id
+        );
     }
 
     @Post('study/:id/with-code')
-    @Public()
+    @RequirePermissions('flashcard:study')
     @ApiOperation({ summary: 'Get flashcard set using access code' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
     @ApiResponse({
@@ -628,12 +606,12 @@ export class FlashcardsetController {
         return this.flashcardsetService.getFlashcardSetWithCode(
             id,
             dto.accessCode,
-            req.user?.id
+            req.user.id
         );
     }
 
     @Get(':id/sharing')
-    @Authenticated()
+    @RequirePermissions('content:share')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get sharing settings for a flashcard set' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
@@ -649,7 +627,7 @@ export class FlashcardsetController {
     }
 
     @Put(':id/sharing')
-    @Authenticated()
+    @RequirePermissions('content:share')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update sharing settings for a flashcard set' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
@@ -671,7 +649,7 @@ export class FlashcardsetController {
     }
 
     @Post(':id/generate-code')
-    @Authenticated()
+    @RequirePermissions('content:share')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Generate a new access code' })
     @ApiParam({ name: 'id', description: 'Flashcard set ID' })
@@ -683,17 +661,11 @@ export class FlashcardsetController {
         @Param('id') id: string,
         @Req() req: AuthenticatedRequest
     ) {
-        const accessCode = this.flashcardsetService.generateAccessCode();
-        await this.flashcardsetService.updateSharingSettings(id, req.user, {
-            isPublic: false,
-            accessCode,
-            whitelist: [],
-        });
-        return { accessCode };
+        return this.flashcardsetService.regenerateAccessCode(id, req.user);
     }
 
     @Get('users/search')
-    @Authenticated()
+    @RequirePermissions('user:search')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Search users by username for whitelist' })
     @ApiResponse({
@@ -701,9 +673,9 @@ export class FlashcardsetController {
         description: 'List of matching users',
     })
     async searchUsers(
-        @Query('q') query: string,
+        @Query('q', SearchQueryPipe) query: string,
         @Req() req: AuthenticatedRequest
     ) {
-        return this.flashcardsetService.searchUsers(query, req.user.id);
+        return this.userSearch.search(query, req.user.id);
     }
 }

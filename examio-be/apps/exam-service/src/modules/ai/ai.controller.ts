@@ -1,3 +1,5 @@
+import { QueryIntPipe } from '../common/query-schema';
+import { ZodValidationPipe } from 'nestjs-zod';
 import {
     Controller,
     Get,
@@ -13,6 +15,7 @@ import {
     UploadedFile,
     Logger,
     BadRequestException,
+    UsePipes,
 } from '@nestjs/common';
 import {
     ApiTags,
@@ -32,8 +35,9 @@ import {
     UploadImageDto,
     GenerateFromFileDto,
 } from './dto/ai.dto';
-import { Authenticated } from '@examio/auth-jwt';
+import { RequirePermissions } from '@examio/auth-jwt';
 
+@UsePipes(ZodValidationPipe)
 @ApiTags('AI')
 @Controller('ai')
 export class AIController {
@@ -42,7 +46,7 @@ export class AIController {
     constructor(private readonly aiService: AIService) {}
 
     @Post('quick-upload')
-    @Authenticated()
+    @RequirePermissions('document:upload')
     @UseInterceptors(FileInterceptor('file'))
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
@@ -84,7 +88,7 @@ export class AIController {
     }
 
     @Post('generate-from-file')
-    @Authenticated()
+    @RequirePermissions('ai:generate')
     @UseInterceptors(FileInterceptor('file'))
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
@@ -123,7 +127,7 @@ export class AIController {
     }
 
     @Get('recent-uploads')
-    @Authenticated()
+    @RequirePermissions('document:upload')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy danh sách file đã upload (Teacher & Student)' })
     @ApiQuery({ name: 'page', required: false, type: Number })
@@ -131,8 +135,8 @@ export class AIController {
     @ApiResponse({ status: 200, description: 'Danh sách uploads' })
     async getRecentUploads(
         @Req() req: AuthenticatedRequest,
-        @Query('page') page?: number,
-        @Query('size') size?: number
+        @Query('page', new QueryIntPipe()) page?: number,
+        @Query('size', new QueryIntPipe({ max: 100 })) size?: number
     ) {
         return this.aiService.getRecentUploads(
             req.user,
@@ -142,7 +146,7 @@ export class AIController {
     }
 
     @Get('models')
-    @Authenticated()
+    @RequirePermissions('ai:generate')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lay catalog model AI cho frontend' })
     @ApiResponse({ status: 200, description: 'Danh sach model AI' })
@@ -151,7 +155,7 @@ export class AIController {
     }
 
     @Get('upload/:uploadId')
-    @Authenticated()
+    @RequirePermissions('document:upload')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy chi tiết file đã upload (Teacher & Student)' })
     @ApiParam({ name: 'uploadId', description: 'ID của upload' })
@@ -164,7 +168,7 @@ export class AIController {
     }
 
     @Delete('upload/:uploadId')
-    @Authenticated()
+    @RequirePermissions('document:upload')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Xóa file upload (Teacher & Student)' })
     @ApiParam({ name: 'uploadId', description: 'ID của upload' })
@@ -177,7 +181,7 @@ export class AIController {
     }
 
     @Post('upload')
-    @Authenticated()
+    @RequirePermissions('document:upload')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Tạo upload mới và trigger OCR (Teacher & Student)' })
     @ApiResponse({ status: 201, description: 'Upload đã được tạo' })
@@ -189,7 +193,7 @@ export class AIController {
     }
 
     @Post('upload-image')
-    @Authenticated()
+    @RequirePermissions('document:upload')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Upload image cho AI chat (Teacher & Student)' })
     @ApiResponse({ status: 201, description: 'Image đã được upload' })
@@ -205,7 +209,7 @@ export class AIController {
     }
 
     @Post('regenerate/:uploadId')
-    @Authenticated()
+    @RequirePermissions('ai:generate')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Tạo lại quiz/flashcard từ file (Teacher only)' })
     @ApiParam({ name: 'uploadId', description: 'ID của upload' })
@@ -219,7 +223,7 @@ export class AIController {
     }
 
     @Get('job/:jobId')
-    @Authenticated()
+    @RequirePermissions('ai:generate')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy trạng thái job (Teacher & Student)' })
     @ApiParam({ name: 'jobId', description: 'ID của job (userStorageId)' })
@@ -240,7 +244,7 @@ export class AIController {
     }
 
     @Delete('job/:jobId')
-    @Authenticated()
+    @RequirePermissions('ai:generate')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Hủy job đang xử lý (Teacher & Student)' })
     @ApiParam({ name: 'jobId', description: 'ID của job (userStorageId)' })
@@ -261,7 +265,7 @@ export class AIController {
     }
 
     @Get('upload/:uploadId/history')
-    @Authenticated()
+    @RequirePermissions('ai:generate')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({
         summary: 'Lấy lịch sử quiz và flashcard đã tạo cho một file (Teacher & Student)',

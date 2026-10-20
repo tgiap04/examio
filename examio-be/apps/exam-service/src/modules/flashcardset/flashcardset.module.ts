@@ -7,6 +7,8 @@ import { GrpcClientModule } from '@examio/grpc';
 import { RedisService } from '@examio/redis';
 import { R2_GRPC_REGISTRATION, R2Client } from '../../clients/r2.client';
 import { FlashCardSetRepository } from './flashcardset.repository';
+import { FlashcardSetOwnerResolver } from './flashcardset-owner.resolver';
+import { UserSearchService } from '../common/user-search.service';
 
 @Module({
     imports: [GrpcClientModule.register(R2_GRPC_REGISTRATION)],
@@ -18,6 +20,8 @@ import { FlashCardSetRepository } from './flashcardset.repository';
         R2Client,
         FlashCardSetRepository,
         TurnstileService,
+        FlashcardSetOwnerResolver,
+        UserSearchService,
     ],
     controllers: [FlashcardsetController],
     exports: [FlashcardsetService, FlashCardSetRepository],

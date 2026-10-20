@@ -16,7 +16,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthenticatedRequest } from '@examio/common';
 import { R2UploadService } from './r2-upload.service';
-import { Authenticated } from '@examio/auth-jwt';
+import { RequirePermissions } from '@examio/auth-jwt';
 
 @ApiTags('R2')
 @Controller('r2')
@@ -24,7 +24,7 @@ export class R2Controller {
     constructor(private readonly r2UploadService: R2UploadService) {}
 
     @Post('image')
-    @Authenticated()
+    @RequirePermissions('document:upload')
     @UseInterceptors(FileInterceptor('file'))
     @ApiCookieAuth('cookie-auth')
     @ApiConsumes('multipart/form-data')

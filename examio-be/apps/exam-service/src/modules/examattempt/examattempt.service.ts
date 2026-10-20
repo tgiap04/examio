@@ -1,4 +1,5 @@
 import { PrismaService } from '@examio/database';
+import { rethrowKnown } from '../common/rethrow-known';
 import {
     Injectable,
     NotFoundException,
@@ -30,7 +31,13 @@ import {
     CACHE_MODULES,
     getListCachePattern,
 } from '@examio/common';
-import type { AuthUser } from '@examio/auth-jwt';
+import { hasPermission, type AuthUser } from '@examio/auth-jwt';
+import { verifyAccessCodeOrThrow } from '../common/access-code-guard';
+import { canSeeAnswers, toAttemptView } from './examattempt-view.mapper';
+import {
+    attemptRelation,
+    type AttemptRelation,
+} from './examattempt-access';
 
 @Injectable()
 export class ExamAttemptService {
@@ -45,23 +52,19 @@ export class ExamAttemptService {
     ) {}
 
     /**
-     * Enforce exam-session access control before an attempt is created.
-     * A guessed/leaked examSessionId must NOT let a non-participant into a
-     * private, whitelisted, or code-gated session — both startExamAttempt and
-     * createExamAttempt route through here. Mirrors ExamSessionService.checkAccess.
+     * Enforce exam-session access control before an attempt is created: a
+     * guessed or leaked examSessionId must not let a non-participant into a
+     * private, whitelisted or code-gated session. The room host is NOT a
+     * participant here (hosts manage, they do not take). The code goes through
+     * the shared lockout + constant-time check.
      */
-    private assertSessionAccess(
+    private async assertSessionAccess(
         examSession: any,
         user: AuthUser,
         providedCode?: string
-    ): void {
-        // Public sessions are open to any authenticated user.
+    ): Promise<void> {
+        // Public sessions are open to any student.
         if (examSession.assessType === ASSESS_TYPE.PUBLIC) {
-            return;
-        }
-
-        // The room host always has access to their own session.
-        if (examSession.examRoom?.hostId === user.id) {
             return;
         }
 
@@ -75,21 +78,44 @@ export class ExamAttemptService {
 
         // Code-gated sessions require the correct access code at start time.
         if (examSession.accessCode) {
-            if (
-                providedCode &&
-                providedCode === examSession.accessCode.toString()
-            ) {
-                return;
+            if (typeof providedCode !== 'string') {
+                throw new ForbiddenException(
+                    'Yêu cầu mã truy cập hợp lệ để bắt đầu làm bài'
+                );
             }
-            throw new ForbiddenException(
-                'Yêu cầu mã truy cập hợp lệ để bắt đầu làm bài'
-            );
+            await verifyAccessCodeOrThrow(this.redisService.getClient(), {
+                resourceId: examSession.id,
+                userId: user.id,
+                stored: examSession.accessCode.toString(),
+                given: providedCode,
+            });
+            return;
         }
 
         // Private with no code and not whitelisted → denied.
         throw new ForbiddenException(
             'Bạn không có quyền truy cập phiên thi này'
         );
+    }
+
+    /** What this viewer's token lets them do on attempts (permissions, never an owner's record). */
+    private capabilities(user: AuthUser) {
+        return {
+            canTake: hasPermission(user.roles, 'exam:take'),
+            canViewResults: hasPermission(user.roles, 'exam_result:view'),
+            canManageSessions: hasPermission(user.roles, 'exam_session:manage'),
+        };
+    }
+
+    /** 404 unless the viewer is the examinee or the host (no existence leak). */
+    private relationOrNotFound(
+        attempt: { userId: string; examSession: { examRoom: { hostId: string } } },
+        user: AuthUser,
+        mode: 'read' | 'write'
+    ): AttemptRelation {
+        const relation = attemptRelation(attempt, user.id, mode, this.capabilities(user));
+        if (!relation) throw new NotFoundException('Bài làm không tồn tại');
+        return relation;
     }
 
     /**
@@ -168,7 +194,7 @@ export class ExamAttemptService {
         // Access control: block non-participants from private / whitelisted /
         // code-gated sessions before a NEW attempt row is created. (Resume above
         // is already gated by ownership of the in-progress attempt.)
-        this.assertSessionAccess(examSession, user, dto.accessCode);
+        await this.assertSessionAccess(examSession, user, dto.accessCode);
 
         // Count completed attempts
         const completedAttempts = await this.prisma.examAttempt.count({
@@ -179,22 +205,18 @@ export class ExamAttemptService {
             },
         });
 
-        // The room host owns the exam and may re-take/preview their own session
-        // freely — retry limits apply only to participants, not the owner.
-        const isHost = examSession.examRoom.hostId === user.id;
-
         // Check retry limits (based on ExamSession, not ExamRoom)
         // maxAttempts means the number of RETRIES allowed (not including first attempt)
         // So total allowed attempts = 1 (first) + maxAttempts (retries)
         const totalAllowedAttempts = 1 + examSession.maxAttempts;
 
-        if (!isHost && !examSession.allowRetake && completedAttempts > 0) {
+        if (!examSession.allowRetake && completedAttempts > 0) {
             throw new BadRequestException(
                 'Bạn đã làm bài này rồi và không được phép làm lại'
             );
         }
 
-        if (!isHost && completedAttempts >= totalAllowedAttempts) {
+        if (completedAttempts >= totalAllowedAttempts) {
             throw new BadRequestException(
                 `Bạn đã đạt số lần thi tối đa (${totalAllowedAttempts} lần)`
             );
@@ -231,6 +253,8 @@ export class ExamAttemptService {
                     selectedQuestionIds,
                 },
             });
+            await this.examAttemptRepository.invalidateUserListCache(user.id);
+            await this.examAttemptRepository.invalidateItemCache(user.id, newExamAttempt.id);
 
             return {
                 message: 'Bắt đầu làm bài thành công',
@@ -238,6 +262,7 @@ export class ExamAttemptService {
                 isResume: false,
             };
         } catch (error) {
+            rethrowKnown(error);
             throw new InternalServerErrorException('Bắt đầu làm bài thất bại');
         }
     }
@@ -357,12 +382,14 @@ export class ExamAttemptService {
                 where: { id: attemptId },
                 data: updateData,
             });
+            await this.examAttemptRepository.invalidateItemCache(user.id, attemptId);
 
             return {
                 message: 'Cập nhật bài làm thành công',
                 examAttempt: updatedAttempt,
             };
         } catch (error) {
+            rethrowKnown(error);
             throw new InternalServerErrorException('Cập nhật bài làm thất bại');
         }
     }
@@ -462,6 +489,7 @@ export class ExamAttemptService {
             const passed = score >= passingScore;
 
             await this.examAttemptRepository.invalidateUserListCache(user.id);
+            await this.examAttemptRepository.invalidateItemCache(user.id, attemptId);
 
             // Prepare response based on showAnswersAfterSubmit
             if (showAnswers) {
@@ -498,6 +526,7 @@ export class ExamAttemptService {
                 };
             }
         } catch (error) {
+            rethrowKnown(error);
             throw new InternalServerErrorException('Nộp bài thất bại');
         }
     }
@@ -628,7 +657,7 @@ export class ExamAttemptService {
         }
 
         if (examRoom.hostId !== user.id) {
-            throw new ForbiddenException('Bạn không có quyền xem dữ liệu này');
+            throw new NotFoundException('Bài làm không tồn tại');
         }
 
         const skip = (page - 1) * limit;
@@ -847,10 +876,8 @@ export class ExamAttemptService {
             throw new NotFoundException('Bài làm không tồn tại');
         }
 
-        // Only owner or attempt owner can see attempt details
-        if (attempt.examSession.examRoom.hostId !== user.id && attempt.userId !== user.id) {
-            throw new ForbiddenException('Bạn không có quyền xem dữ liệu này');
-        }
+        // Only the examinee or the room host can see attempt details (404 otherwise)
+        const relation = this.relationOrNotFound(attempt, user, 'read');
 
         // Calculate time spent
         let timeSpentSeconds = 0;
@@ -862,33 +889,28 @@ export class ExamAttemptService {
             );
         }
 
-        // Decrypt questions for attempt owner or host
-        let questions: Array<{ id: string; question: string; options: string[]; answer?: string; userAnswer?: string | null }> = [];
-        const canViewQuestions = attempt.userId === user.id || attempt.examSession.examRoom.hostId === user.id;
-        if (canViewQuestions) {
-            const showAnswers = attempt.status === EXAM_ATTEMPT_STATUS.COMPLETED;
-            const attemptAnswers = (attempt.answers as Record<string, string>) || {};
-            questions = attempt.examSession.examRoom.quizSet.detailsQuizQuestions.map((dq) => {
-              const q = dq.quizQuestion;
-              // Answers are keyed by quizQuestion.id (not dq.id)
-              const userAnswer = attemptAnswers[q.id] ?? null;
-              if (showAnswers) {
-                return {
-                  id: dq.id,
-                  question: q.question,
-                  options: q.options,
-                  answer: q.answer,
-                  userAnswer,
-                };
-              }
-              return {
+        // The viewer is the examinee or the host (checked above): show the
+        // questions, with answers only once the attempt is completed.
+        const showAnswers =
+            attempt.status === EXAM_ATTEMPT_STATUS.COMPLETED &&
+            canSeeAnswers(
+                relation,
+                attempt.status,
+                attempt.examSession.showAnswersAfterSubmit
+            );
+        const attemptAnswers = (attempt.answers as Record<string, string>) || {};
+        const questions = attempt.examSession.examRoom.quizSet.detailsQuizQuestions.map((dq) => {
+            const q = dq.quizQuestion;
+            // Answers are keyed by quizQuestion.id (not dq.id)
+            const userAnswer = attemptAnswers[q.id] ?? null;
+            return {
                 id: dq.id,
                 question: q.question,
                 options: q.options,
+                ...(showAnswers ? { answer: q.answer } : {}),
                 userAnswer,
-              };
-            });
-        }
+            };
+        });
 
         return {
             id: attempt.id,
@@ -953,7 +975,7 @@ export class ExamAttemptService {
         }
 
         if (session.examRoom.hostId !== user.id) {
-            throw new ForbiddenException('Bạn không có quyền xem dữ liệu này');
+            throw new NotFoundException('Bài làm không tồn tại');
         }
 
         const skip = (page - 1) * limit;
@@ -1176,7 +1198,7 @@ export class ExamAttemptService {
 
         // Access control: block non-participants from private / whitelisted /
         // code-gated sessions before any attempt row is created.
-        this.assertSessionAccess(examSession, user, dto.accessCode);
+        await this.assertSessionAccess(examSession, user, dto.accessCode);
 
         // Check if exam has started
         if ((examSession as any).status === EXAM_SESSION_STATUS.UPCOMING) {
@@ -1246,9 +1268,13 @@ export class ExamAttemptService {
 
             return {
                 message: 'Bắt đầu làm bài thành công',
-                examAttempt: examAttemptWithRelations,
+                examAttempt: toAttemptView(
+                    examAttemptWithRelations as any,
+                    'examinee'
+                ),
             };
         } catch (error) {
+            rethrowKnown(error);
             throw new InternalServerErrorException('Bắt đầu làm bài thất bại');
         }
     }
@@ -1289,33 +1315,11 @@ export class ExamAttemptService {
             throw new NotFoundException('Bài làm không tồn tại');
         }
 
-        // User can only view their own attempts, or host can view all attempts
-        if (
-            (examAttempt as any).userId !== user.id &&
-            (examAttempt as any).examSession.examRoom.hostId !== user.id
-        ) {
-            throw new ForbiddenException('Bạn không có quyền xem bài làm này');
-        }
+        // The examinee sees their own attempt, the host sees all attempts (404 otherwise)
+        const relation = this.relationOrNotFound(examAttempt as any, user, 'read');
 
-        // Filter questions based on selectedQuestionIds if available
-        const attemptData = examAttempt as any;
-        if (
-            attemptData.selectedQuestionIds &&
-            attemptData.selectedQuestionIds.length > 0
-        ) {
-            const allQuestionsMap = new Map(
-                attemptData.examSession.examRoom.quizSet.detailsQuizQuestions.map(
-                    (d: any) => [d.id, d]
-                )
-            );
-
-            attemptData.examSession.examRoom.quizSet.detailsQuizQuestions =
-                attemptData.selectedQuestionIds
-                    .map((id: string) => allQuestionsMap.get(id))
-                    .filter((d: any) => d !== undefined);
-        }
-
-        return examAttempt;
+        // Picked by name: no sharing secrets, answers only when allowed (see the mapper)
+        return toAttemptView(examAttempt as any, relation);
     }
 
     async deleteExamAttempt(id: string, user: AuthUser) {
@@ -1337,7 +1341,7 @@ export class ExamAttemptService {
 
         // Only host can delete attempts
         if ((examAttempt as any).examSession.examRoom.hostId !== user.id) {
-            throw new ForbiddenException('Bạn không có quyền xóa bài làm này');
+            throw new NotFoundException('Bài làm không tồn tại');
         }
 
         // Hard delete - pass userId (host) for proper cache invalidation
@@ -1459,15 +1463,9 @@ export class ExamAttemptService {
             throw new NotFoundException('Bài làm không tồn tại');
         }
 
+        // The examinee or the host (who may manage sessions) can update; 404 otherwise.
         const isHost =
-            (examAttempt as any).examSession.examRoom.hostId === user.id;
-
-        // User can update their own attempt, host can update any attempt
-        if ((examAttempt as any).userId !== user.id && !isHost) {
-            throw new ForbiddenException(
-                'Bạn không có quyền chỉnh sửa bài làm này'
-            );
-        }
+            this.relationOrNotFound(examAttempt as any, user, 'write') === 'host';
 
         // score, status and violationCount reflect server-side grading and
         // cheating detection results. Only the exam-room host may set them;
@@ -1536,9 +1534,13 @@ export class ExamAttemptService {
 
             return {
                 message: 'Cập nhật bài làm thành công',
-                examAttempt: updatedExamAttempt,
+                examAttempt: toAttemptView(
+                    updatedExamAttempt as any,
+                    isHost ? 'host' : 'examinee'
+                ),
             };
         } catch (error) {
+            rethrowKnown(error);
             if (error.code === 'P2025') {
                 throw new NotFoundException('Bài làm không tồn tại');
             }
@@ -1917,8 +1919,10 @@ export class ExamAttemptService {
             }
 
             await this.examAttemptRepository.invalidateUserListCache(user.id);
+            await this.examAttemptRepository.invalidateItemCache(user.id, attemptId);
             return response;
         } catch (error) {
+            rethrowKnown(error);
             throw new InternalServerErrorException('Nộp bài thất bại');
         }
     }

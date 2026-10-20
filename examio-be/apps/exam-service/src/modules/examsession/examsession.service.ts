@@ -1,4 +1,6 @@
+import { randomInt } from 'crypto';
 import { PrismaService } from '@examio/database';
+import { rethrowKnown } from '../common/rethrow-known';
 import {
     Injectable,
     NotFoundException,
@@ -7,6 +9,7 @@ import {
     BadRequestException,
 } from '@nestjs/common';
 import { GenerateIdService } from '@examio/common';
+import { RedisService } from '@examio/redis';
 
 import { EXAM_SESSION_STATUS, ASSESS_TYPE, QUESTION_SELECTION_MODE, LabelQuestionConfig } from '../../types';
 import { CreateExamSessionDto } from './dto/create-examsession.dto';
@@ -16,6 +19,11 @@ import { ExamSessionUpdateSharingSettingsDto } from './dto/sharing.dto';
 import { ExamSessionRepository } from './examsession.repository';
 import { ExamRoomRepository } from '../examroom/examroom.repository';
 import type { AuthUser } from '@examio/auth-jwt';
+import { verifyAccessCodeOrThrow } from '../common/access-code-guard';
+import {
+    toExamSessionPublicView,
+    toExamSessionStudyView,
+} from './examsession-public.mapper';
 
 @Injectable()
 export class ExamSessionService {
@@ -23,7 +31,8 @@ export class ExamSessionService {
         private readonly prisma: PrismaService,
         private readonly examSessionRepository: ExamSessionRepository,
         private readonly examRoomRepository: ExamRoomRepository,
-        private readonly generateIdService: GenerateIdService
+        private readonly generateIdService: GenerateIdService,
+        private readonly redis: RedisService
     ) {}
 
     async createExamSession(user: AuthUser, dto: CreateExamSessionDto) {
@@ -38,9 +47,7 @@ export class ExamSessionService {
         }
 
         if (examRoom.hostId !== user.id) {
-            throw new ForbiddenException(
-                'Bạn không có quyền tạo phiên thi cho phòng này'
-            );
+            throw new NotFoundException('Phiên thi không tồn tại');
         }
 
         const startTime = new Date(dto.startTime);
@@ -111,6 +118,7 @@ export class ExamSessionService {
                 examSession: examSessionWithRelations,
             };
         } catch (error) {
+            rethrowKnown(error);
             throw new InternalServerErrorException('Tạo phiên thi thất bại');
         }
     }
@@ -145,9 +153,7 @@ export class ExamSessionService {
         }
 
         if ((examSession as any).examRoom.hostId !== user.id) {
-            throw new ForbiddenException(
-                'Bạn không có quyền xem phiên thi này'
-            );
+            throw new NotFoundException('Phiên thi không tồn tại');
         }
 
         return examSession;
@@ -165,9 +171,7 @@ export class ExamSessionService {
         }
 
         if ((examSession as any).examRoom.hostId !== user.id) {
-            throw new ForbiddenException(
-                'Bạn không có quyền xóa phiên thi này'
-            );
+            throw new NotFoundException('Phiên thi không tồn tại');
         }
 
         // Hard delete - pass userId for proper cache invalidation
@@ -176,7 +180,7 @@ export class ExamSessionService {
     }
 
     async getExamSessionPublicById(id: string) {
-        const examSession = await this.examSessionRepository.findOne({
+        const examSession = await this.prisma.examSession.findUnique({
             where: { id },
             include: {
                 examRoom: {
@@ -192,14 +196,14 @@ export class ExamSessionService {
                         host: {
                             select: {
                                 id: true,
-                                email: true,
+                                username: true,
                                 name: true,
+                                avatar: true,
                             },
                         },
                     },
                 },
             },
-            cache: true,
         });
 
         if (!examSession) {
@@ -207,13 +211,13 @@ export class ExamSessionService {
         }
 
         // Check if public access
-        if ((examSession as any).assessType !== ASSESS_TYPE.PUBLIC) {
+        if (examSession.assessType !== ASSESS_TYPE.PUBLIC) {
             throw new ForbiddenException(
                 'Phiên thi này yêu cầu quyền truy cập'
             );
         }
 
-        return examSession;
+        return toExamSessionPublicView(examSession);
     }
 
     async getExamSessions(user: AuthUser, dto: GetExamSessionsDto) {
@@ -284,9 +288,7 @@ export class ExamSessionService {
         }
 
         if ((examSession as any).examRoom.hostId !== user.id) {
-            throw new ForbiddenException(
-                'Bạn không có quyền chỉnh sửa phiên thi này'
-            );
+            throw new NotFoundException('Phiên thi không tồn tại');
         }
 
         const updateData: any = {};
@@ -405,6 +407,7 @@ export class ExamSessionService {
                 examSession: updatedExamSession,
             };
         } catch (error) {
+            rethrowKnown(error);
             if (error.code === 'P2025') {
                 throw new NotFoundException('Phiên thi không tồn tại');
             }
@@ -479,9 +482,10 @@ export class ExamSessionService {
     }
 
     /**
-     * Verify access code for a private exam session
+     * Verify the access code of a session. Auth is required (see the
+     * controller); the attempt counter lives per session and user.
      */
-    async verifyAccessCode(id: string, accessCode: string) {
+    async verifyAccessCode(id: string, accessCode: unknown, userId: string) {
         const examSession = await this.prisma.examSession.findUnique({
             where: { id },
             select: { accessCode: true },
@@ -491,9 +495,12 @@ export class ExamSessionService {
             throw new NotFoundException('Phiên thi không tồn tại');
         }
 
-        if (examSession.accessCode?.toString() !== accessCode) {
-            throw new ForbiddenException('Mã truy cập không đúng');
-        }
+        await verifyAccessCodeOrThrow(this.redis.getClient(), {
+            resourceId: id,
+            userId,
+            stored: examSession.accessCode,
+            given: accessCode,
+        });
 
         return {
             valid: true,
@@ -502,87 +509,36 @@ export class ExamSessionService {
     }
 
     /**
-     * Get exam session for study (with access check)
+     * Get exam session for study. Public, host or whitelisted callers get the
+     * answer-free payload; a caller with no grant gets 404, a code-protected
+     * session asks for the code.
      */
-    async getExamSessionForStudy(id: string, userId?: string) {
-        // First check access
+    async getExamSessionForStudy(id: string, userId: string) {
         const accessInfo = await this.checkAccess(id, userId);
-
-        if (
-            !accessInfo.hasAccess &&
-            accessInfo.accessType !== 'code_required'
-        ) {
-            throw new ForbiddenException(
-                'Bạn không có quyền truy cập phiên thi này'
-            );
-        }
-
-        if (accessInfo.accessType === 'code_required') {
-            throw new ForbiddenException('Yêu cầu mã truy cập');
-        }
-
-        const examSession = await this.prisma.examSession.findUnique({
-            where: { id },
-            include: {
-                examRoom: {
-                    include: {
-                        quizSet: {
-                            include: {
-                                detailsQuizQuestions: {
-                                    include: {
-                                        quizQuestion: true,
-                                    },
-                                },
-                            },
-                        },
-                        host: {
-                            select: {
-                                id: true,
-                                username: true,
-                                name: true,
-                                avatar: true,
-                            },
-                        },
-                    },
-                },
-            },
-        });
-
-        if (!examSession) {
-            throw new NotFoundException('Phiên thi không tồn tại');
-        }
-
-        const isOwner = userId && examSession.examRoom.hostId === userId;
-
-        return {
-            ...examSession,
-            questions: examSession.examRoom.quizSet.detailsQuizQuestions.map(
-                (d) => {
-                    const q = d.quizQuestion;
-                    // Only include answer if user is the owner
-                    if (isOwner) {
-                        return q;
-                    }
-                    // Strip answer for non-owners
-                    return {
-                        id: q.id,
-                        question: q.question,
-                        options: q.options,
-                    };
-                }
-            ),
-            creator: examSession.examRoom.host,
-            isOwner,
-        };
+        this.assertStudyAccess(accessInfo);
+        return this.loadStudyView(id, userId);
     }
 
-    /**
-     * Get exam session after code verification
-     */
-    async getExamSessionWithCode(id: string, accessCode: string) {
-        // Verify code first
-        await this.verifyAccessCode(id, accessCode);
+    /** Get exam session after code verification (same answer-free payload). */
+    async getExamSessionWithCode(id: string, accessCode: unknown, userId: string) {
+        await this.verifyAccessCode(id, accessCode, userId);
+        return this.loadStudyView(id, userId);
+    }
 
+    private assertStudyAccess(accessInfo: { hasAccess: boolean; accessType: string }) {
+        if (accessInfo.accessType === 'code_required') {
+            throw new ForbiddenException({
+                statusCode: 403,
+                code: 'CODE_REQUIRED',
+                message: 'Yêu cầu mã truy cập',
+            });
+        }
+        if (!accessInfo.hasAccess) {
+            throw new NotFoundException('Phiên thi không tồn tại');
+        }
+    }
+
+    private async loadStudyView(id: string, userId: string) {
         const examSession = await this.prisma.examSession.findUnique({
             where: { id },
             include: {
@@ -614,22 +570,13 @@ export class ExamSessionService {
             throw new NotFoundException('Phiên thi không tồn tại');
         }
 
-        return {
-            ...examSession,
-            questions: examSession.examRoom.quizSet.detailsQuizQuestions.map(
-                (d) => {
-                    const q = d.quizQuestion;
-                    // Code access = not owner, strip answers
-                    return {
-                        id: q.id,
-                        question: q.question,
-                        options: q.options,
-                    };
-                }
+        return toExamSessionStudyView(
+            examSession,
+            examSession.examRoom.quizSet.detailsQuizQuestions.map(
+                (d) => d.quizQuestion
             ),
-            creator: examSession.examRoom.host,
-            isOwner: false,
-        };
+            examSession.examRoom.hostId === userId
+        );
     }
 
     /**
@@ -706,9 +653,7 @@ export class ExamSessionService {
         }
 
         if (examSession.examRoom.hostId !== user.id) {
-            throw new ForbiddenException(
-                'Bạn không có quyền chỉnh sửa phiên thi này'
-            );
+            throw new NotFoundException('Phiên thi không tồn tại');
         }
 
         // Update sharing settings
@@ -729,6 +674,9 @@ export class ExamSessionService {
             },
         });
 
+        await this.examSessionRepository.invalidateItemCache(user.id, id);
+        await this.examSessionRepository.invalidateUserListCache(user.id);
+
         return {
             message: 'Cập nhật cài đặt chia sẻ thành công',
             isPublic: updatedExamSession.assessType === ASSESS_TYPE.PUBLIC,
@@ -741,7 +689,34 @@ export class ExamSessionService {
      * Generate a random 6-digit access code
      */
     generateAccessCode(): string {
-        return Math.floor(100000 + Math.random() * 900000).toString();
+        return randomInt(100000, 1000000).toString();
+    }
+
+    /**
+     * New access code for the host's session. Only the code changes: the
+     * whitelist and the visibility are kept (the old flow wiped the whitelist
+     * and forced the session private).
+     */
+    async regenerateAccessCode(id: string, user: AuthUser) {
+        const examSession = await this.prisma.examSession.findUnique({
+            where: { id },
+            select: { id: true, examRoom: { select: { hostId: true } } },
+        });
+        if (!examSession) {
+            throw new NotFoundException('Phiên thi không tồn tại');
+        }
+        if (examSession.examRoom.hostId !== user.id) {
+            throw new NotFoundException('Phiên thi không tồn tại');
+        }
+        const accessCode = this.generateAccessCode();
+        await this.prisma.examSession.update({
+            where: { id },
+            data: { accessCode },
+        });
+        await this.examSessionRepository.invalidateItemCache(user.id, id);
+        await this.examSessionRepository.invalidateUserListCache(user.id);
+
+        return { accessCode };
     }
 
     /**
@@ -768,9 +743,7 @@ export class ExamSessionService {
         }
 
         if (examSession.examRoom.hostId !== user.id) {
-            throw new ForbiddenException(
-                'Bạn không có quyền xem cài đặt chia sẻ này'
-            );
+            throw new NotFoundException('Phiên thi không tồn tại');
         }
 
         const users = await this.prisma.user.findMany({
@@ -784,7 +757,6 @@ export class ExamSessionService {
                 username: true,
                 name: true,
                 avatar: true,
-                email: true,
             },
         });
 
@@ -794,45 +766,6 @@ export class ExamSessionService {
             accessCode: examSession.accessCode,
             whitelist: users,
         };
-    }
-
-    /**
-     * Search users by username for whitelist
-     */
-    async searchUsers(query: string, currentUserId: string) {
-        if (!query || query.length < 2) {
-            return [];
-        }
-
-        const users = await this.prisma.user.findMany({
-            where: {
-                AND: [
-                    { id: { not: currentUserId } },
-                    {
-                        OR: [
-                            {
-                                username: {
-                                    contains: query,
-                                    mode: 'insensitive',
-                                },
-                            },
-                            { name: { contains: query, mode: 'insensitive' } },
-                            { email: { contains: query, mode: 'insensitive' } },
-                        ],
-                    },
-                ],
-            },
-            select: {
-                id: true,
-                username: true,
-                name: true,
-                avatar: true,
-                email: true,
-            },
-            take: 10,
-        });
-
-        return users;
     }
 
     /**
@@ -849,19 +782,7 @@ export class ExamSessionService {
         // Enforce the same access control as getExamSessionForStudy so
         // private/whitelisted session config cannot leak to unauthorized users.
         const accessInfo = await this.checkAccess(id, userId);
-
-        if (
-            !accessInfo.hasAccess &&
-            accessInfo.accessType !== 'code_required'
-        ) {
-            throw new ForbiddenException(
-                'Bạn không có quyền truy cập phiên thi này'
-            );
-        }
-
-        if (accessInfo.accessType === 'code_required') {
-            throw new ForbiddenException('Yêu cầu mã truy cập');
-        }
+        this.assertStudyAccess(accessInfo);
 
         const examSession = await this.prisma.examSession.findUnique({
             where: { id },
@@ -1128,7 +1049,7 @@ export class ExamSessionService {
         }
 
         if (examRoom.hostId !== user.id) {
-            throw new ForbiddenException('Bạn không có quyền truy cập phòng này');
+            throw new NotFoundException('Phiên thi không tồn tại');
         }
 
         // Get unlabeled questions count

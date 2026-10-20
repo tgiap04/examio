@@ -1,10 +1,10 @@
 import { PrismaService } from '@examio/database';
+import { rethrowKnown } from '../common/rethrow-known';
 import {
     Injectable,
     ConflictException,
     NotFoundException,
     InternalServerErrorException,
-    ForbiddenException,
 } from '@nestjs/common';
 import { GenerateIdService } from '@examio/common';
 
@@ -14,6 +14,7 @@ import { UpdateExamRoomDto } from './dto/update-examroom.dto';
 import { ExamRoomRepository } from './examroom.repository';
 import { QuizSetRepository } from '../quizset/quizset.repository';
 import type { AuthUser } from '@examio/auth-jwt';
+import { ASSESS_TYPE } from '../../types';
 
 @Injectable()
 export class ExamRoomService {
@@ -76,6 +77,7 @@ export class ExamRoomService {
                 examRoom: examRoomWithRelations,
             };
         } catch (error) {
+            rethrowKnown(error);
             throw new InternalServerErrorException('Tạo phòng thi thất bại');
         }
     }
@@ -124,27 +126,20 @@ export class ExamRoomService {
         return { message: 'Xóa phòng thi thành công' };
     }
 
+    /**
+     * Anonymous teaser for a room that has at least one PUBLIC session: title,
+     * description and the host's display name and avatar. Never an email, the
+     * quiz set or any session data; any other room is "not found".
+     */
     async getExamRoomPublicById(id: string) {
-        const examRoom = await this.examRoomRepository.findOne({
-            where: { id },
-            include: {
-                quizSet: {
-                    select: {
-                        id: true,
-                        title: true,
-                        description: true,
-                        thumbnail: true,
-                    },
-                },
-                host: {
-                    select: {
-                        id: true,
-                        email: true,
-                        name: true,
-                    },
-                },
+        const examRoom = await this.prisma.examRoom.findFirst({
+            where: { id, examSessions: { some: { assessType: ASSESS_TYPE.PUBLIC } } },
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                host: { select: { name: true, avatar: true } },
             },
-            cache: true,
         });
         if (!examRoom) {
             throw new NotFoundException('Phòng thi không tồn tại');
@@ -253,9 +248,7 @@ export class ExamRoomService {
         }
 
         if (existingRoom.hostId !== user.id) {
-            throw new ForbiddenException(
-                'Bạn không có quyền chỉnh sửa phòng thi này'
-            );
+            throw new NotFoundException('Phòng thi không tồn tại');
         }
 
         // If updating quizSetId, verify it exists and belongs to user
@@ -306,6 +299,7 @@ export class ExamRoomService {
                 examRoom: updatedExamRoom,
             };
         } catch (error) {
+            rethrowKnown(error);
             if (error.code === 'P2025') {
                 throw new NotFoundException('Phòng thi không tồn tại');
             }

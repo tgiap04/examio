@@ -82,9 +82,9 @@ export class AIChatRepository {
         });
     }
 
-    async chatExists(chatId: string) {
+    async chatExists(chatId: string, userId: string) {
         const count = await this.prisma.aIChat.count({
-            where: { id: chatId },
+            where: { id: chatId, userId },
         });
         return count > 0;
     }

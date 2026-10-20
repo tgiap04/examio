@@ -1,3 +1,4 @@
+import { ZodValidationPipe } from 'nestjs-zod';
 import {
     Controller,
     Post,
@@ -11,6 +12,7 @@ import {
     Query,
     UseInterceptors,
     UploadedFile,
+    UsePipes,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
@@ -49,8 +51,10 @@ import {
     UpdateLabelDto,
     AssignQuestionsToLabelDto,
 } from './dto/label.dto';
-import { Authenticated, Public } from '@examio/auth-jwt';
+import { createSetFormSchema, parseSetForm, updateSetFormSchema } from '../common/multipart-body';
+import { RequirePermissions } from '@examio/auth-jwt';
 
+@UsePipes(ZodValidationPipe)
 @ApiTags('Quizsets')
 @ApiExtraModels(
     CreateQuizsetDto,
@@ -68,7 +72,7 @@ export class QuizsetController {
     constructor(private readonly quizsetService: QuizsetService) {}
 
     @Post()
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @UseInterceptors(FileInterceptor('thumbnail'))
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Create a new quiz set (Teacher only)' })
@@ -81,28 +85,11 @@ export class QuizsetController {
         @Req() req: AuthenticatedRequest,
         @UploadedFile() thumbnail?: Express.Multer.File
     ) {
-        // Access body from req.body (Multer stores parsed fields here)
-        const body = req.body;
-
-        // Manually parse form data fields since @Body() doesn't work with multipart/form-data
-        const createQuizsetDto: CreateQuizsetDto = {
-            title: body.title,
-            description: body.description,
-            isPublic:
-                body.isPublic !== undefined
-                    ? body.isPublic === 'true' || body.isPublic === true
-                    : false,
-            isPinned:
-                body.isPinned !== undefined
-                    ? body.isPinned === 'true' || body.isPinned === true
-                    : false,
-            tags: body.tags
-                ? typeof body.tags === 'string'
-                    ? JSON.parse(body.tags)
-                    : body.tags
-                : [],
-            thumbnail: body.thumbnail,
-        };
+        // Multer leaves the text fields on req.body: validate them with the zod schema (400 on bad input)
+        const createQuizsetDto: CreateQuizsetDto = parseSetForm(
+            createSetFormSchema,
+            req.body
+        );
 
         return this.quizsetService.createQuizSet(
             req.user,
@@ -112,7 +99,7 @@ export class QuizsetController {
     }
 
     @Get('stats')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get quiz set statistics' })
     @ApiResponse({
@@ -124,7 +111,7 @@ export class QuizsetController {
     }
 
     @Get(':id')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get a quiz set by ID' })
     @ApiResponse({
@@ -140,7 +127,7 @@ export class QuizsetController {
     }
 
     @Get(':id/questions')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get paginated questions for a quiz set' })
     @ApiParam({ name: 'id', description: 'Quiz set ID' })
@@ -162,7 +149,7 @@ export class QuizsetController {
     }
 
     @Put(':id')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @UseInterceptors(FileInterceptor('thumbnail'))
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update a quiz set by ID (Teacher only)' })
@@ -176,28 +163,11 @@ export class QuizsetController {
         @Param('id') id: string,
         @UploadedFile() thumbnail?: Express.Multer.File
     ) {
-        // Access body from req.body (Multer stores parsed fields here)
-        const body = req.body;
-
-        // Manually parse form data fields since @Body() doesn't work with multipart/form-data
-        const updateQuizSetDto: UpdateQuizSetDto = {
-            title: body.title,
-            description: body.description,
-            isPublic:
-                body.isPublic !== undefined
-                    ? body.isPublic === 'true' || body.isPublic === true
-                    : false,
-            isPinned:
-                body.isPinned !== undefined
-                    ? body.isPinned === 'true' || body.isPinned === true
-                    : false,
-            tags: body.tags
-                ? typeof body.tags === 'string'
-                    ? JSON.parse(body.tags)
-                    : body.tags
-                : [],
-            thumbnail: body.thumbnail,
-        };
+        // Multer leaves the text fields on req.body: validate them with the zod schema (400 on bad input)
+        const updateQuizSetDto: UpdateQuizSetDto = parseSetForm(
+            updateSetFormSchema,
+            req.body
+        );
 
         return this.quizsetService.updateQuizSet(
             id,
@@ -208,7 +178,7 @@ export class QuizsetController {
     }
 
     @Get()
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get a list of quiz sets' })
     @ApiResponse({
@@ -224,7 +194,7 @@ export class QuizsetController {
     }
 
     @Get('list/all')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get all quiz sets without pagination' })
     @ApiResponse({
@@ -238,7 +208,7 @@ export class QuizsetController {
     }
 
     @Delete(':id')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete a quiz set by ID (Teacher only)' })
     @ApiResponse({
@@ -253,20 +223,8 @@ export class QuizsetController {
         return this.quizsetService.deleteQuizSet(id, req.user);
     }
 
-    @Public()
-    @Get('public/:id')
-    @ApiOperation({ summary: 'Get a public quiz set by ID' })
-    @ApiResponse({
-        status: 200,
-        description: 'Public quiz set retrieved successfully',
-        type: QuizSetDto,
-    })
-    async getPublicQuizSetById(@Param('id') id: string) {
-        return this.quizsetService.getQuizSetPublicById(id);
-    }
-
     @Post('set-quizzes-to-quizset')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Set quizz to quizset' })
     @ApiResponse({
@@ -282,7 +240,7 @@ export class QuizsetController {
     }
 
     @Post('save-history-to-quizset')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Save history generated quizzes to quizset' })
     @ApiResponse({
@@ -300,7 +258,7 @@ export class QuizsetController {
     // ==================== QUESTION CRUD ENDPOINTS ====================
 
     @Post(':quizSetId/questions')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Add a question to a quiz set (Teacher only)' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -322,7 +280,7 @@ export class QuizsetController {
     }
 
     @Put(':quizSetId/questions/:questionId')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update a question in a quiz set (Teacher only)' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -347,7 +305,7 @@ export class QuizsetController {
     }
 
     @Delete(':quizSetId/questions/:questionId')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete a question from a quiz set (Teacher only)' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -372,7 +330,7 @@ export class QuizsetController {
     // ==================== LABEL CRUD ENDPOINTS ====================
 
     @Get(':quizSetId/labels')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get all labels for a quiz set' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -388,7 +346,7 @@ export class QuizsetController {
     }
 
     @Post(':quizSetId/labels')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Create a new label for a quiz set' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -405,7 +363,7 @@ export class QuizsetController {
     }
 
     @Put(':quizSetId/labels/:labelId')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Update a label' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -429,7 +387,7 @@ export class QuizsetController {
     }
 
     @Delete(':quizSetId/labels/:labelId')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Delete a label' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -447,7 +405,7 @@ export class QuizsetController {
     }
 
     @Post(':quizSetId/labels/:labelId/questions')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Assign questions to a label' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -471,7 +429,7 @@ export class QuizsetController {
     }
 
     @Delete(':quizSetId/labels/:labelId/questions')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Remove questions from a label' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
@@ -495,7 +453,7 @@ export class QuizsetController {
     }
 
     @Get(':quizSetId/labels/:labelId/questions')
-    @Authenticated()
+    @RequirePermissions('quizset:manage')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Get questions by label' })
     @ApiParam({ name: 'quizSetId', description: 'Quiz set ID' })
