@@ -266,7 +266,8 @@ jobs:
           --exit-code
       - name: Service health e2e
         run: |
-          for svc in auth exam finance admin r2 gateway; do
+          # exam's health e2e runs with the whole exam e2e folder in the RBAC step below
+          for svc in auth finance admin r2 gateway; do
             echo "::group::$svc-service e2e"
             # Services without a broker user of their own boot with auth's.
             case "$svc" in auth|exam|finance|gateway) user=$svc ;; *) user=auth ;; esac
@@ -290,6 +291,14 @@ jobs:
           (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/token.e2e-spec.ts test/service-token.e2e-spec.ts test/role-change.e2e-spec.ts test/public-profiles.e2e-spec.ts test/login-throttle.e2e-spec.ts)
           (cd apps/finance-service && RABBITMQ_URL="amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-authz-changed.e2e-spec.ts)
           (cd apps/admin-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin.e2e-spec.ts test/admin-roles.e2e-spec.ts)
+      - name: RBAC enforcement e2e (whole exam folder in one process, plus auth device ownership)
+        run: |
+          export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"
+          # The WHOLE exam e2e folder (health, ownership, validation, ws) in ONE jest process;
+          # jest-e2e.json maxWorkers 1 because the WebSocket spec consumes exam.events.
+          # RABBITMQ_AUTH_URL (exported above) is used by the ws spec to publish authz_changed.
+          (cd apps/exam-service && RABBITMQ_URL="amqp://exam:$RABBITMQ_EXAM_PASS@localhost:5672" SERVICE_NAME=exam-service ../../node_modules/.bin/jest --config test/jest-e2e.json)
+          (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" SERVICE_NAME=auth-service ../../node_modules/.bin/jest --config test/jest-e2e.json test/ownership)
       - name: Gateway e2e (streaming proxy, revoke/av incl. durable path, rate limits, CORS, WS upgrade, Lua scripts)
         run: |
           export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"

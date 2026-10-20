@@ -156,6 +156,14 @@ describe('coarse permission table', () => {
         ).toBe('required');
     });
 
+    it('flashcardsets/public/:id is public (auth optional) like the service @Public(), nothing else under it', () => {
+        const fs = route('GET', '/api/v1/flashcardsets/public/f1');
+        expect(table.effectiveAuth(fs, 'GET', '/api/v1/flashcardsets/public/f1')).toBe('optional');
+        expect(table.effectiveAuth(fs, 'POST', '/api/v1/flashcardsets/public/f1')).toBe('required');
+        expect(table.effectiveAuth(fs, 'GET', '/api/v1/flashcardsets/public/f1/extra')).toBe('required');
+        expect(table.effectiveAuth(fs, 'GET', '/api/v1/flashcardsets/f1')).toBe('required');
+    });
+
     it('SSE routes disable the upstream timeout', () => {
         expect(route('POST', '/api/v1/ai-chat/c1/stream').timeoutMs).toBe(0);
         expect(
