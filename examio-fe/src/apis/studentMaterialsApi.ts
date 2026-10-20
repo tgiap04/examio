@@ -86,13 +86,6 @@ export async function getRecentExamAttemptsApi(
   return response.data;
 }
 
-export async function generateShareLinkApi(
-  flashcardSetId: string
-): Promise<{ shareUrl: string; accessCode: string }> {
-  const response = await api.post(`/flashcardsets/${flashcardSetId}/share`);
-  return response.data;
-}
-
 export async function togglePinFlashcardApi(
   flashcardSetId: string
 ): Promise<{ pinned: boolean }> {

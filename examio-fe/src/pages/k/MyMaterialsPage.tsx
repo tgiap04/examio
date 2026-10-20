@@ -1,25 +1,15 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import {
-  generateShareLinkApi,
   togglePinFlashcardApi,
   type RecentFlashcardSet,
 } from "@/apis/studentMaterialsApi"
 import { Button } from "@/components/antd/button"
 import { Skeleton } from "@/components/antd/skeleton"
-import { BookOpen, Share2, Eye, Clock, User, Copy, Check, ChevronLeft, ChevronRight, Pin, PinOff, RefreshCw } from "lucide-react"
+import { BookOpen, Share2, Eye, Clock, User, ChevronLeft, ChevronRight, Pin, PinOff } from "lucide-react"
 import { useToast } from "@/components/antd/toast"
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/antd/dialog"
-import { Input } from "@/components/antd/input"
-import { updateSharingSettings } from "@/apis/flashcardSetApi"
-import { useAuthStore } from "@/stores/useAuthStore"
 import { useStudentMaterialsStore } from "@/stores/useStudentMaterialsStore"
+import { SharedQuizSection } from "./components/quiz-practice/SharedQuizSection"
 
 const PAGE_SIZE = 12
 
@@ -31,13 +21,11 @@ function sortWithPinnedFirst(items: RecentFlashcardSet[]): RecentFlashcardSet[] 
 
 function MaterialCard({
   material,
-  isOwner,
   onReview,
   onShare,
   onTogglePin,
 }: {
   material: RecentFlashcardSet
-  isOwner: boolean
   onReview: (id: string) => void
   onShare: (id: string) => void
   onTogglePin: (id: string) => void
@@ -128,16 +116,14 @@ function MaterialCard({
             >
               {material.isPinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
             </button>
-            {isOwner && (
-              <button
-                onClick={() => onShare(material.id)}
-                className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-surface-card hover:text-ink"
-                aria-label="Chia sẻ"
-                title="Chia sẻ"
-              >
-                <Share2 className="h-3.5 w-3.5" />
-              </button>
-            )}
+            <button
+              onClick={() => onShare(material.id)}
+              className="grid h-8 w-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-surface-card hover:text-ink"
+              aria-label="Sao chép liên kết"
+              title="Sao chép liên kết"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+            </button>
             <Button
               onClick={() => onReview(material.id)}
               size="sm"
@@ -238,141 +224,10 @@ function Pagination({
   )
 }
 
-function ShareDialog({
-  open,
-  onOpenChange,
-  shareUrl,
-  accessCode,
-  flashcardSetId,
-  onCodeChange,
-}: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  shareUrl: string
-  accessCode: string
-  flashcardSetId: string
-  onCodeChange: (code: string) => void
-}) {
-  const [copiedUrl, setCopiedUrl] = useState(false)
-  const [copiedCode, setCopiedCode] = useState(false)
-  const [code, setCode] = useState(accessCode)
-  const [saving, setSaving] = useState(false)
-
-  useEffect(() => {
-    setCode(accessCode)
-  }, [accessCode])
-
-  const handleCopy = (text: string, type: "url" | "code") => {
-    navigator.clipboard.writeText(text)
-    if (type === "url") {
-      setCopiedUrl(true)
-      setTimeout(() => setCopiedUrl(false), 2000)
-    } else {
-      setCopiedCode(true)
-      setTimeout(() => setCopiedCode(false), 2000)
-    }
-  }
-
-  const handleGenerate = () => {
-    setCode(Math.floor(100000 + Math.random() * 900000).toString())
-  }
-
-  const handleSaveCode = async () => {
-    if (!code || code.length < 6) return
-    try {
-      setSaving(true)
-      await updateSharingSettings(flashcardSetId, {
-        isPublic: false,
-        accessCode: code,
-        whitelist: [],
-      })
-      onCodeChange(code)
-    } catch {
-      // silent
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const codeChanged = code !== accessCode
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Chia sẻ tài liệu</DialogTitle>
-          <DialogDescription>
-            Chia sẻ bộ flashcard này với bạn bè của bạn
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-ink">Liên kết chia sẻ</label>
-            <div className="flex gap-2">
-              <Input value={shareUrl} readOnly className="flex-1" />
-              <Button
-                onClick={() => handleCopy(shareUrl, "url")}
-                size="sm"
-                variant={copiedUrl ? "outline" : "default"}
-              >
-                {copiedUrl ? <Check className="mr-1.5 h-3.5 w-3.5" /> : <Copy className="mr-1.5 h-3.5 w-3.5" />}
-                {copiedUrl ? "Đã chép" : "Sao chép"}
-              </Button>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-ink">Mã truy cập</label>
-            <div className="flex gap-2">
-              <Input
-                value={code}
-                onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                placeholder="Nhập mã 6 số"
-                className="flex-1 font-mono text-lg tracking-widest"
-                maxLength={6}
-              />
-              <Button
-                onClick={() => handleCopy(code, "code")}
-                size="sm"
-                variant={copiedCode ? "outline" : "default"}
-                disabled={!code}
-              >
-                {copiedCode ? <Check className="mr-1.5 h-3.5 w-3.5" /> : <Copy className="mr-1.5 h-3.5 w-3.5" />}
-                {copiedCode ? "Đã chép" : "Sao chép"}
-              </Button>
-              <Button
-                onClick={handleGenerate}
-                size="sm"
-                variant="outline"
-                title="Tạo mã ngẫu nhiên"
-              >
-                <RefreshCw className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Nhập mã hoặc bấm tạo ngẫu nhiên. Người khác cần mã này để truy cập.
-            </p>
-            {codeChanged && (
-              <Button
-                onClick={handleSaveCode}
-                size="sm"
-                disabled={saving || code.length < 6}
-                className="w-full"
-              >
-                {saving ? "Đang lưu..." : "Lưu mã mới"}
-              </Button>
-            )}
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
 export default function MyMaterialsPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { toast } = useToast()
-  const { user } = useAuthStore()
   const { fetchFlashcards, flashcardsLoading, updateFlashcardPin } = useStudentMaterialsStore()
 
   const currentPage = Number(searchParams.get("page")) || 1
@@ -381,17 +236,6 @@ export default function MyMaterialsPage() {
   const [totalPages, setTotalPages] = useState(1)
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [shareDialog, setShareDialog] = useState<{
-    open: boolean
-    shareUrl: string
-    accessCode: string
-    flashcardSetId: string
-  }>({
-    open: false,
-    shareUrl: "",
-    accessCode: "",
-    flashcardSetId: "",
-  })
 
   const loadMaterials = useCallback(async (page: number) => {
     try {
@@ -420,28 +264,14 @@ export default function MyMaterialsPage() {
     navigate(`/study-flashcard/${setId}`)
   }
 
-  const shareCache = useRef<Map<string, { shareUrl: string; accessCode: string }>>(new Map())
-
+  // Built on the client: no API call (sharing settings are the owner's, managed elsewhere).
   const handleShare = async (setId: string) => {
-    const cached = shareCache.current.get(setId)
-    if (cached) {
-      setShareDialog({ open: true, flashcardSetId: setId, ...cached })
-      return
-    }
-
+    const shareUrl = `${window.location.origin}/study-flashcard/${setId}`
     try {
-      const data = await generateShareLinkApi(setId)
-      const shareUrl = `${window.location.origin}/study-flashcard/${setId}`
-
-      shareCache.current.set(setId, { shareUrl, accessCode: data.accessCode })
-      setShareDialog({
-        open: true,
-        flashcardSetId: setId,
-        shareUrl,
-        accessCode: data.accessCode,
-      })
+      await navigator.clipboard.writeText(shareUrl)
+      toast.success("Đã sao chép liên kết")
     } catch {
-      toast.error("Không thể tạo liên kết chia sẻ")
+      toast.error("Không thể sao chép liên kết")
     }
   }
 
@@ -526,7 +356,6 @@ export default function MyMaterialsPage() {
                 >
                   <MaterialCard
                     material={material}
-                    isOwner={material.creator.id === String(user?.id)}
                     onReview={handleReview}
                     onShare={handleShare}
                     onTogglePin={handleTogglePin}
@@ -543,17 +372,7 @@ export default function MyMaterialsPage() {
           </>
         )}
 
-        <ShareDialog
-          open={shareDialog.open}
-          onOpenChange={(open) => setShareDialog((prev) => ({ ...prev, open }))}
-          shareUrl={shareDialog.shareUrl}
-          accessCode={shareDialog.accessCode}
-          flashcardSetId={shareDialog.flashcardSetId}
-          onCodeChange={(code) => {
-            setShareDialog((prev) => ({ ...prev, accessCode: code }))
-            shareCache.current.delete(shareDialog.flashcardSetId)
-          }}
-        />
+        <SharedQuizSection />
       </section>
     </div>
   )

@@ -30,6 +30,7 @@ import ManageExamRoomPage from "@/pages/k/ManageExamRoomPage";
 import ManageExamRoomDetailPage from "@/pages/k/ManageExamRoomDetailPage";
 import ExamRoomSessionAnalyticsPage from "@/pages/k/ExamRoomSessionAnalyticsPage";
 import MyExamsPage from "@/pages/k/MyExamsPage";
+import QuizPracticePage from "@/pages/k/QuizPracticePage";
 import StudyRoomListPage from "@/pages/study-room/StudyRoomListPage";
 import StudyRoomPage from "@/pages/study-room/StudyRoomPage";
 import { PublicLayout } from "@/routes/layouts/PublicLayout";
@@ -300,6 +301,16 @@ export const router = createBrowserRouter([
           <FeatureRoute pageKey="manage-exam">
             <ManageQuizSetDetailPage />
           </FeatureRoute>
+        </KLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/k/practice-quiz/:id",
+    element: (
+      <ProtectedRoute>
+        <KLayout>
+          <QuizPracticePage />
         </KLayout>
       </ProtectedRoute>
     ),

@@ -4,8 +4,13 @@ import {
   Flashcard,
   FlashcardSetPublicInfo,
   AccessCheckResult,
-  SharingSettings,
 } from "@/types/flashcardSet";
+import { acceptDomainStatuses, unwrap } from "@/lib/quiz-practice/api-failure";
+import type {
+  SharingDelta,
+  SharingSearchUser,
+  SharingView,
+} from "@/lib/quiz-practice/sharing-types";
 
 // FlashcardSetLabel type
 export interface FlashcardSetLabel {
@@ -347,35 +352,32 @@ export async function getFlashcardSetWithCode(
 }
 
 /**
- * Get sharing settings for a flashcard set (owner only)
+ * Get sharing settings for a flashcard set (owner only): whitelist and the
+ * users who unlocked the current code, as { id, username, name, avatar }.
  */
-export async function getSharingSettings(id: string): Promise<SharingSettings> {
+export async function getSharingSettings(id: string): Promise<SharingView> {
   const response = await api.get(`/flashcardsets/${id}/sharing`);
   return response.data;
 }
 
 /**
- * Update sharing settings for a flashcard set
+ * Apply a sharing delta (add/remove users, visibility, code on/off). Applied
+ * atomically on the server; 409 SHARE_LIST_FULL arrives as an `ApiFailure`.
  */
 export async function updateSharingSettings(
   id: string,
-  settings: {
-    isPublic: boolean;
-    accessCode?: string | null;
-    whitelist?: string[];
-  }
-): Promise<{
-  message: string;
-  isPublic: boolean;
-  accessCode: string | null;
-  whitelist: string[];
-}> {
-  const response = await api.put(`/flashcardsets/${id}/sharing`, settings);
-  return response.data;
+  delta: SharingDelta
+): Promise<SharingView> {
+  return unwrap(
+    await api.put(`/flashcardsets/${id}/sharing`, delta, {
+      validateStatus: acceptDomainStatuses,
+    })
+  );
 }
 
 /**
- * Generate a new access code for a flashcard set
+ * Rotate the access code. Everyone who unlocked the old code is asked again;
+ * whitelisted users keep access.
  */
 export async function generateAccessCode(
   id: string
@@ -384,28 +386,17 @@ export async function generateAccessCode(
   return response.data;
 }
 
-/**
- * Search user type for whitelist
- */
-export type SearchUser = {
-  id: string;
-  username: string;
-  name: string | null;
-  avatar: string | null;
-  email: string;
-};
+export type SearchUser = SharingSearchUser;
 
-/**
- * Search users by username for whitelist
- */
+/** Search users for the whitelist (TEACHER only; at least 3 characters, no email returned). */
 export async function searchUsersForWhitelist(
   query: string
 ): Promise<SearchUser[]> {
-  if (!query || query.length < 2) {
+  if (!query || query.trim().length < 3) {
     return [];
   }
   const response = await api.get(`/flashcardsets/users/search`, {
-    params: { q: query },
+    params: { q: query.trim() },
   });
   return response.data;
 }
