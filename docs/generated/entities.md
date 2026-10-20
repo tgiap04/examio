@@ -344,6 +344,9 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | isPublic | Boolean | NOT NULL, DEFAULT false | Public visibility flag |
 | isPinned | Boolean | NOT NULL, DEFAULT false | Pinned in author UI |
 | tags | String[] | NOT NULL, DEFAULT [] | Tag list for search/filter |
+| accessCode | String | NULL | 6-digit invite code (phase 07); null = code sharing off |
+| whitelist | String[] | NOT NULL, DEFAULT [], GIN index | User IDs granted by the owner (max 2000) |
+| codeGrantedIds | String[] | NOT NULL, DEFAULT [], GIN index | User IDs who unlocked with the code; emptied on code rotate/disable (max 2000) |
 | createdAt | DateTime | NOT NULL | Creation time |
 | updatedAt | DateTime | NOT NULL | Last update |
 | createdBy | String | NULL | Creator ID |
@@ -469,7 +472,8 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | isPinned | Boolean | NOT NULL, DEFAULT false | Pinned in author UI |
 | viewCount | Int | NOT NULL, DEFAULT 0 | Public view counter |
 | accessCode | String | NULL, INDEXED | 6-digit private access code |
-| whitelist | String[] | NOT NULL, DEFAULT [] | User IDs with explicit access |
+| whitelist | String[] | NOT NULL, DEFAULT [] | User IDs with explicit access (max 2000) |
+| codeGrantedIds | String[] | NOT NULL, DEFAULT [] | User IDs who unlocked with the code (phase 07); emptied on code rotate/disable |
 | createdAt | DateTime | NOT NULL | Creation time |
 | updatedBy | String | NULL | Updater ID |
 | createdBy | String | NULL | Creator ID |
@@ -624,7 +628,8 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | allowRetake | Boolean | NOT NULL, DEFAULT false | Allow multiple attempts |
 | maxAttempts | Int | NOT NULL, DEFAULT 1 | Max allowed attempts |
 | accessCode | String | NULL, INDEXED | 6-digit private code |
-| whitelist | String[] | NOT NULL, DEFAULT [] | User IDs with explicit access |
+| whitelist | String[] | NOT NULL, DEFAULT [] | User IDs with explicit access (max 2000 on write) |
+| codeGrantedIds | String[] | NOT NULL, DEFAULT [] | User IDs who unlocked with the code (phase 07); emptied when the code changes or is cleared |
 | showAnswersAfterSubmit | Boolean | NOT NULL, DEFAULT true | Show answer details on submit |
 | passingScore | Float | NOT NULL, DEFAULT 0 | Min score % to pass (0 = no min) |
 | questionCount | Int | NULL | Total questions to select (null = all) |
@@ -717,7 +722,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 
 ### MODEL-021 QuizPracticeAttempt
 
-**Description**: A student's practice or real exam attempt on a QuizSet (outside of a scheduled ExamSession). Tracks answers, time, and score. One record per user per quizSet per type.
+**Description**: A student's practice or real exam attempt on a QuizSet (outside of a scheduled ExamSession). Tracks answers, time, and score. Since phase 07 a user may hold many records per quizSet (history); at most one open (`isSubmitted=false`) attempt is resumed.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -732,6 +737,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | timeLimitMinutes | Int | NULL | Time limit in minutes (null = unlimited) |
 | isSubmitted | Boolean | NOT NULL, DEFAULT false | Submission flag |
 | score | Float | NULL | Calculated score (null until submitted) |
+| resultSnapshot | Json | NULL | Frozen per-question result (`id, question, options, selectedAnswer, correctAnswer, isCorrect`) written at submit; later edits to the set do not change it |
 | totalQuestions | Int | NOT NULL, DEFAULT 0 | Total questions |
 | correctAnswers | Int | NOT NULL, DEFAULT 0 | Correct answer count |
 | startedAt | DateTime | NOT NULL | Attempt start |
@@ -1278,7 +1284,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 
 | Rule | Field | Constraint | Error Message |
 |------|-------|------------|---------------|
-| VR-010 | quizSetId + userId + type | UNIQUE | One practice/real attempt per user per quizSet per type |
+| VR-010 | quizSetId + userId + type | ~~UNIQUE~~ removed (migration `20261020132225_quiz_sharing`) | Replaced by non-unique index `(quizSetId, userId, isSubmitted)`; attempt history is kept |
 
 ### MODEL-023 FlashcardStudyProgress
 

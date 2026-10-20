@@ -9,6 +9,15 @@ last_updated: 2026-10-20
 
 ### Changed
 
+#### Quiz sharing and student practice, phase 07 (uncommitted on `refactor/microservice-rbac`)
+
+- **New**: student quiz practice `/api/v1/quiz-practice/*` (granted sets list, access check, code unlock, start/resume, autosave, submit, history). No answer key before submit; the result is frozen in `QuizPracticeAttempt.resultSnapshot`; an open attempt answers 404 once the student loses access. Quiz sets gain `accessCode`, `whitelist`, `codeGrantedIds` plus owner routes `GET/PUT /quizsets/:id/sharing`, `POST /quizsets/:id/generate-code`, `GET /quizsets/users/search` (`content:share` / `user:search`, owner only, else 404). Web: `QuizPracticePage` (`/k/practice-quiz/:id`), `ShareQuizSetModal`.
+- **Sharing contract (quiz and flashcard sets)**: `PUT .../sharing` takes a delta (`addUserIds`, `removeUserIds`, `removeCodeGrantedIds`, `isPublic`, `codeEnabled`), lists capped at 2000 (409 `SHARE_LIST_FULL`); `GET` and `PUT` return `{ isPublic, accessCode, whitelist, codeGranted }`. A correct code is remembered (`codeGrantedIds` on quiz set, flashcard set, exam session) and evicted when the code is rotated, changed or disabled.
+- **Schema**: migration `20261020132225_quiz_sharing` (QuizSet `accessCode`/`whitelist`/`codeGrantedIds` with GIN indexes, `FlashCardSet.codeGrantedIds`, `ExamSession.codeGrantedIds`, `QuizPracticeAttempt.resultSnapshot`; unique `(quizSetId,userId,type)` dropped, index `(quizSetId,userId,isSubmitted)` added). Not applied on shared databases.
+- **Behaviour changes (clients)**: flashcard `PUT sharing` no longer accepts the full-replace body `{ isPublic, accessCode, whitelist }` (400 on other keys; `isPublic` alone keeps whitelist and code) and its GET/PUT shapes changed; `POST /flashcardsets/:id/share` is no longer called by the web (link built client-side); `users/search` minimum is 3 characters; `with-code` and exam attempt `start` with a code now remember the user; `accessType: 'code'` can appear on `study/:id/access`.
+- **Known gaps**: FE axios interceptor drops status and `code`, so practice calls use `unwrap()` from `src/lib/quiz-practice/api-failure.ts` (phase 09 may fix it centrally); mobile (`examio-app`) not adapted.
+- **Docs**: `system/business-rules.md`, `system/permissions.md`, `generated/{entities,route-list,api-map,feature-list,permissions-matrix}.md`, `features/F006_QuizAuthoring/*`, `flows/FLOW007` note.
+
 #### Microservice refactor, phase 06 (RBAC enforcement and security fixes; uncommitted on `refactor/microservice-rbac`)
 
 - **Enforcement**: every exam/finance/admin/r2 handler declares a real permission (`@RequirePermissions`), or `@RequireOwnerOrPermission` / `@Authenticated()` on an allowlist with two-user negative specs. New decorator `@RequireOwnerOrPermission(perm, OwnerResolver)` in `@examio/auth-jwt`. Admin controllers use per-controller permissions instead of the class-level `admin:access`. CI: `test/authz` (declaration scan incl. WS gateways, STUDENT/TEACHER/admin matrix) and an exam e2e step with ownership + WebSocket specs. Per-endpoint table: [permissions](system/permissions.md).

@@ -20,6 +20,8 @@ stateDiagram-v2
 
 ## State Transitions
 
+> Phase 07 (2026-10-20): student practice runs through `modules/quiz-practice` (`/quiz-practice/attempts`), not `quizset.service.ts`. An attempt is open (`isSubmitted=false`) or submitted (`resultSnapshot` frozen); the `(quizSetId, userId, type)` unique key is gone, so history accumulates. The source column below and the 30-day idle cron rows are legacy text pending regeneration (plan phase 19). See `features/F006_QuizAuthoring/technical-spec.md` FR-006_14..19.
+
 | ID | From | Trigger | To | Side Effects | Source |
 |----|------|---------|----|--------------|--------|
 | T1 | INIT | user-action | DRAFT_PRACTICE | practice.start type=0 | `examio-be/apps/exam-service/src/modules/quizset/quizset.service.ts:142` |

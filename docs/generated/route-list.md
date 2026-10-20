@@ -15,6 +15,8 @@ Gateway proxies all requests to downstream services. **Routing source of truth (
 
 > **Phase 06 (2026-10-20)**: every exam/finance/admin/r2 handler now declares a permission (`@RequirePermissions` / `@RequireOwnerOrPermission`; plain `@Authenticated()` only on an allowlist). The per-route permission is in `system/permissions.md` § Per-endpoint enforcement; "Bearer" below means a verified user holding that permission. Removed: `GET /api/v1/quizsets/public/:id` (404 `ROUTE_NOT_FOUND` at the gateway). The gateway lists `study/:id/(verify-code|with-code)` as `public` so anonymous callers reach the service, which still answers 401 without a token. Non-owned resources answer 404, not 403. Only rows whose guard changed were edited; full regeneration stays in plan phase 19.
 
+> **Phase 07 (2026-10-20)**: new `/quiz-practice/*` student routes (replace `/quiz-practice-attempts*`), quiz-set sharing routes (`/quizsets/:id/sharing`, `generate-code`, `users/search`) and the delta body of `PUT /flashcardsets/:id/sharing`. Source: `quiz-practice.controller.ts`, `quizset-sharing.controller.ts`, `routes.yaml`.
+
 #### Auth
 
 | Method | Path | Description | Auth |
@@ -77,6 +79,10 @@ Gateway proxies all requests to downstream services. **Routing source of truth (
 | POST | /api/v1/quizsets/:quizSetId/labels/:labelId/questions | Assign questions to label | Bearer |
 | DELETE | /api/v1/quizsets/:quizSetId/labels/:labelId/questions | Remove questions from label | Bearer |
 | GET | /api/v1/quizsets/:quizSetId/labels/:labelId/questions | Get questions by label | Bearer |
+| GET | /api/v1/quizsets/users/search | Search users for the whitelist picker (`q` >= 3 chars, max 10, no email; gateway limit 30 / 60 s) | `user:search` |
+| GET | /api/v1/quizsets/:id/sharing | Sharing settings `{ isPublic, accessCode, whitelist, codeGranted }` (owner only, else 404) | `content:share` |
+| PUT | /api/v1/quizsets/:id/sharing | Apply a sharing delta (see business rules); 409 `SHARE_LIST_FULL` | `content:share` |
+| POST | /api/v1/quizsets/:id/generate-code | Rotate the 6-digit code; clears code-granted users | `content:share` |
 
 #### Flashcard Sets
 
@@ -109,9 +115,9 @@ Gateway proxies all requests to downstream services. **Routing source of truth (
 | GET | /api/v1/flashcardsets/study/:id | Get flashcard set for study | Bearer |
 | POST | /api/v1/flashcardsets/study/:id/verify-code | Verify access code | Bearer |
 | POST | /api/v1/flashcardsets/study/:id/with-code | Get set with access code | Bearer |
-| GET | /api/v1/flashcardsets/:id/sharing | Get sharing settings | Bearer |
-| PUT | /api/v1/flashcardsets/:id/sharing | Update sharing settings | Bearer |
-| POST | /api/v1/flashcardsets/:id/generate-code | Generate new access code | Bearer |
+| GET | /api/v1/flashcardsets/:id/sharing | Get sharing settings `{ isPublic, accessCode, whitelist, codeGranted }` | Bearer |
+| PUT | /api/v1/flashcardsets/:id/sharing | Apply a sharing delta (`addUserIds`, `removeUserIds`, `removeCodeGrantedIds`, `isPublic`, `codeEnabled`; lists capped at 2000, 409 `SHARE_LIST_FULL`) | Bearer |
+| POST | /api/v1/flashcardsets/:id/generate-code | Generate new access code (clears code-granted users) | Bearer |
 
 #### Exam Rooms
 
@@ -274,15 +280,18 @@ Gateway proxies all requests to downstream services. **Routing source of truth (
 
 #### Quiz Practice
 
+Student practice on shared quiz sets (phase 07; routes.yaml entry `quiz-practice`, `auth: required`, `GET sets/:id/access` public). Practice questions never carry the answer key before submit; a submitted attempt returns the `resultSnapshot` frozen at submit. The old `/quiz-practice-attempts*` routes no longer exist.
+
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
-| POST | /api/v1/quiz-practice-attempts | Get or create practice attempt | Bearer |
-| GET | /api/v1/quiz-practice-attempts/by-quizset/:quizSetId | Get practice attempt by quiz set | Bearer |
-| GET | /api/v1/quiz-practice-attempts/stats/completion-rate | Get completion rate stats | Bearer |
-| GET | /api/v1/quiz-practice-attempts/:attemptId | Get practice attempt by ID | Bearer |
-| PUT | /api/v1/quiz-practice-attempts/:attemptId | Update practice attempt | Bearer |
-| POST | /api/v1/quiz-practice-attempts/:attemptId/submit | Submit practice attempt | Bearer |
-| POST | /api/v1/quiz-practice-attempts/:attemptId/reset | Reset practice attempt | Bearer |
+| GET | /api/v1/quiz-practice/sets | Sets shared with me (whitelist, code-unlocked, or public with an attempt), paginated (`page`, `limit` 1-50) | `quiz:practice` |
+| GET | /api/v1/quiz-practice/sets/:id/access | `{ canAccess, requiresCode, reason }`; anonymous on a code-protected set gets only `canAccess:false, requiresCode:true`; private set without grant: 404 | Public (token optional) |
+| POST | /api/v1/quiz-practice/sets/:id/unlock | Unlock with the 6-digit code (`{ code }`); `INVALID_CODE`, `CODE_LOCKED`, `SHARING_CHANGED`; gateway limit 5 / 60 s | `quiz:practice` |
+| POST | /api/v1/quiz-practice/attempts | Start or resume the open attempt (`{ quizSetId }`); questions without answers | Owner or `quiz:practice` |
+| GET | /api/v1/quiz-practice/attempts | My submitted attempts, newest first (`quizSetId`, `page`, `limit`) | Bearer (own data) |
+| GET | /api/v1/quiz-practice/attempts/:id | Open attempt (404 if the set is no longer accessible) or submitted result snapshot | Bearer (own, else 404) |
+| PUT | /api/v1/quiz-practice/attempts/:id | Autosave answers / index / marks / time; 409 `ALREADY_SUBMITTED` | Bearer (own) |
+| POST | /api/v1/quiz-practice/attempts/:id/submit | Server-side scoring (0-10, 2 decimals); 409 `ALREADY_SUBMITTED` | Bearer (own) |
 
 #### Cheating Logs
 
@@ -377,6 +386,10 @@ Internal service routes — not directly exposed to clients (gateway proxies to 
 | POST | /api/v1/quizsets/:quizSetId/labels/:labelId/questions | Assign questions to label | Bearer |
 | DELETE | /api/v1/quizsets/:quizSetId/labels/:labelId/questions | Remove questions from label | Bearer |
 | GET | /api/v1/quizsets/:quizSetId/labels/:labelId/questions | Get questions by label | Bearer |
+| GET | /api/v1/quizsets/users/search | Search users for the whitelist picker (`q` >= 3 chars, max 10, no email; gateway limit 30 / 60 s) | `user:search` |
+| GET | /api/v1/quizsets/:id/sharing | Sharing settings `{ isPublic, accessCode, whitelist, codeGranted }` (owner only, else 404) | `content:share` |
+| PUT | /api/v1/quizsets/:id/sharing | Apply a sharing delta (see business rules); 409 `SHARE_LIST_FULL` | `content:share` |
+| POST | /api/v1/quizsets/:id/generate-code | Rotate the 6-digit code; clears code-granted users | `content:share` |
 
 #### Flashcard Sets
 
@@ -409,8 +422,8 @@ Internal service routes — not directly exposed to clients (gateway proxies to 
 | GET | /api/v1/flashcardsets/study/:id | Get set for study (owner, or `flashcard:study` + public/whitelist; else 404) | Bearer |
 | POST | /api/v1/flashcardsets/study/:id/verify-code | Verify access code (`flashcard:study`; lockout, see permissions.md) | Bearer |
 | POST | /api/v1/flashcardsets/study/:id/with-code | Get set with access code (`flashcard:study`; lockout) | Bearer |
-| GET | /api/v1/flashcardsets/:id/sharing | Get sharing settings | Bearer |
-| PUT | /api/v1/flashcardsets/:id/sharing | Update sharing settings | Bearer |
+| GET | /api/v1/flashcardsets/:id/sharing | Get sharing settings `{ isPublic, accessCode, whitelist, codeGranted }` | Bearer |
+| PUT | /api/v1/flashcardsets/:id/sharing | Apply a sharing delta (`addUserIds`, `removeUserIds`, `removeCodeGrantedIds`, `isPublic`, `codeEnabled`; lists capped at 2000, 409 `SHARE_LIST_FULL`) | Bearer |
 | POST | /api/v1/flashcardsets/:id/generate-code | Generate access code | Bearer |
 
 #### Exam Rooms
@@ -698,7 +711,7 @@ React Router v6 `createBrowserRouter` — all routes use layout wrappers.
 | Exam service routes | ~130 |
 | Finance service routes | 10 |
 | Frontend pages | 26 |
-| **Total backend routes** | **~310** |
+| **Total backend routes** | **~320** |
 | **Total frontend routes** | **26** |
 
 ## Notes

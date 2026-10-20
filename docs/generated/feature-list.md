@@ -280,6 +280,8 @@
 - SCR021: ManageExamPage
 - SCR022: ManageQuizSetDetailPage
 - SCR024: AIToolPage (quiz generation portion)
+- QuizPracticePage (`/k/practice-quiz/:id`, phase 07; student practice on shared quiz sets, no SCR code assigned yet)
+- ShareQuizSetModal (phase 07; owner sharing dialog on ManageQuizSetDetailPage)
 - SCR017: FlashcardsPage (FlashcardSetModal for quiz-authoring context)
 
 **Related User Stories**:
@@ -313,6 +315,15 @@
 - (GET) `/api/v1/student/recent-flashcards`
 - (DELETE) `/api/v1/student/recent-flashcards`
 - (GET) `/api/v1/quizsets/stats`
+- (GET) `/api/v1/quizsets/users/search`
+- (GET|PUT) `/api/v1/quizsets/:id/sharing`
+- (POST) `/api/v1/quizsets/:id/generate-code`
+- (GET) `/api/v1/quiz-practice/sets`
+- (GET) `/api/v1/quiz-practice/sets/:id/access`
+- (POST) `/api/v1/quiz-practice/sets/:id/unlock`
+- (POST|GET) `/api/v1/quiz-practice/attempts`
+- (GET|PUT) `/api/v1/quiz-practice/attempts/:id`
+- (POST) `/api/v1/quiz-practice/attempts/:id/submit`
 - (POST) `/api/v1/ai/job`
 - (GET) `/api/v1/ai/job/:jobId`
 - (DELETE) `/api/v1/ai/job/:jobId`

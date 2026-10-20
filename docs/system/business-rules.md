@@ -276,7 +276,54 @@ Each time a student moves to the next card in a study session, the card ID is re
 
 ### Flashcard study requires passing an access gate
 
-A flashcard set can be protected by an access code. Students must enter the correct code before the study interface is unlocked (limited to 5 wrong tries per 15 minutes, see Exam Integrity). The owner of the set bypasses the code requirement. A set the user has no grant for (not public, not owner, not whitelisted) answers "not found", never "forbidden". Access depends only on the set's own sharing settings, so a demoted teacher's shared set stays studyable.
+A flashcard set can be protected by an access code. Students must enter the correct code before the study interface is unlocked (limited to 5 wrong tries per 15 minutes, see Exam Integrity). The owner of the set bypasses the code requirement. A correct code is remembered for that user until the owner changes the code (see "A correct code is remembered" below). A set the user has no grant for (not public, not owner, not whitelisted) answers "not found", never "forbidden". Access depends only on the set's own sharing settings, so a demoted teacher's shared set stays studyable.
 
 **Applies when:** A student navigates to a flashcard set that has access code protection enabled.
 **Says:** The study interface is locked behind an access dialog. The code must match the host-configured value.
+
+---
+
+### A correct code is remembered until the owner changes the code
+
+Unlocking a flashcard set, exam session or quiz set with a correct code adds the user to that resource's code-granted list (cap 2000), so later visits need no code. The owner rotating the code (`generate-code`, or a new/cleared `accessCode`) or switching the code off clears the whole list: everyone must enter the new code. Whitelist grants are separate and survive rotation. A quiz-set caller who is already owner, public or whitelisted is checked against the code but is not added to the list.
+
+**Applies when:** A user enters a correct code, or the owner changes the code.
+**Says:** After a correct code the next open of the resource succeeds without a code. After rotation or disabling the code, `CODE_REQUIRED` / `requiresCode` applies again. A code rotated while a user unlocks answers 409 `SHARING_CHANGED`.
+
+---
+
+### Sharing lists change by delta and hold at most 2000 users
+
+Quiz-set and flashcard-set owners change sharing with a delta (`addUserIds`, `removeUserIds`, `removeCodeGrantedIds`, `isPublic`, `codeEnabled`), applied in one atomic step; a field not sent is left unchanged, so toggling visibility never wipes the whitelist or code. `removeUserIds` removes a person from the whitelist and the code-granted list; `removeCodeGrantedIds` removes them from the code-granted list only. Ids that are not live accounts are ignored. Exam-session sharing still replaces the whole whitelist but obeys the same cap.
+
+**Applies when:** An owner edits who can open a set or session.
+**Says:** A list that would pass 2000 users is refused with 409 `SHARE_LIST_FULL`. A non-owner gets 404.
+
+---
+
+## Quiz Practice
+
+### Students practise only quiz sets they were granted
+
+A student sees a quiz set in "shared with me" when they are on its whitelist, unlocked it with the code, or the set is public and they already have an attempt. A private set with no grant answers "not found". Teachers cannot practise sets they do not own.
+
+**Applies when:** A student lists, opens or starts practice on a quiz set.
+**Says:** The access check never reveals the code or the lists. Anonymous callers on a code-protected set learn only that a code is required.
+
+---
+
+### Practice questions carry no answers until submit
+
+Opening or resuming an attempt returns question text and options only. The student's choices are autosaved; on submit the server scores from the stored answers (0-10, two decimals) and ignores any client score. The result (questions, key, verdicts) is frozen in the attempt, so later edits to the set do not change a submitted result.
+
+**Applies when:** A student starts, saves or submits a practice attempt.
+**Says:** Saving or submitting an attempt that is already submitted answers 409 `ALREADY_SUBMITTED`. A student keeps their history of submitted attempts per set.
+
+---
+
+### Losing access closes open attempts
+
+An open attempt can be read or saved only while its owner still has access (owner, public, current whitelist or current code). After the whitelist entry is removed or the code rotates, the open attempt answers 404. A submitted attempt stays readable.
+
+**Applies when:** An owner revokes access while a student has an unfinished attempt.
+**Says:** The student must unlock again to continue; progress is kept.

@@ -72,6 +72,10 @@ Phase 05 (gateway rewrite) is implemented but uncommitted on `refactor/microserv
 
 Phase 06 (RBAC enforcement and security fixes) is implemented but uncommitted on `refactor/microservice-rbac`: per-handler permissions on exam/finance/admin/r2, `@RequireOwnerOrPermission`, CI declaration + matrix + ownership specs, access-code lockout, trimmed study/public payloads, TEACHER-only user search and word-family generation (20/day), WebSocket permission/`av`/expiry checks. This extends the Phase 1 (Security & Auth Integrity) theme (IDOR, public-endpoint leakage, code brute force) without closing a numbered item; the frontend (phases 07 and 09) still has to adapt (share button, `auth:reauth`). See [changelog](project-changelog.md) and [permissions](system/permissions.md).
 
+## Progress Note (2026-10-20) — microservice-refactor plan, phase 07
+
+Phase 07 (quiz sharing and student practice) is implemented but uncommitted on `refactor/microservice-rbac`: quiz-set whitelist/code/public sharing, the delta sharing API (2000 cap) shared with flashcard sets, remembered code unlocks evicted on rotation, and `/quiz-practice/*` with server-side scoring and frozen results. Follow-ups: migration `20261020132225_quiz_sharing` is not applied on shared databases; mobile adaptation and a central axios error fix remain. See [changelog](project-changelog.md).
+
 ## Phase 0 — System Correctness (P0, blocking)
 
 | # | Item | Source | Owner | Deps |

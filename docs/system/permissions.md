@@ -81,6 +81,12 @@ A SYSTEM_ADMIN who is also a STUDENT/TEACHER holds the union of both columns. A 
 | Area (controller) | Routes | Declaration |
 |---|---|---|
 | quizset | all CRUD, stats, list, questions, labels, set/save-history | `quizset:manage`. `GET /quizsets/public/:id` removed |
+| quizset-sharing | `:id/sharing` (GET/PUT), `:id/generate-code` | `content:share` (owner only, else 404; `QuizsetSharingController`) |
+| | `users/search` | `user:search` |
+| quiz-practice | `sets`, `sets/:id/unlock` | `quiz:practice` (STUDENT) |
+| | `sets/:id/access` | `@Public()` (token optional; no code or lists in the payload) |
+| | `POST attempts` | `@RequireOwnerOrPermission('quiz:practice', QuizSetOwnerResolver)` (allowlist); no grant = 404 |
+| | `GET attempts`, `GET/PUT attempts/:id`, `attempts/:id/submit` | `@Authenticated()` (allowlist; own attempts only, else 404; open attempt also needs current set access) |
 | flashcardset | CRUD, stats, labels, cards, set/save-history | `flashcardset:manage` |
 | | `:id/sharing` (GET/PUT), `:id/generate-code`, `:id/share` | `content:share`; `share` is owner-only |
 | | `users/search` | `user:search` |

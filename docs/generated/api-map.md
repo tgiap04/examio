@@ -58,6 +58,10 @@ Groups backend routes by domain. Each route maps to a BL handler (from `behavior
 |--------|------|---------------|------|
 | GET | /api/v1/quizsets | [UNMAPPED] | Bearer |
 | GET | /api/v1/quizsets/stats | [UNMAPPED] | Bearer |
+| GET | /api/v1/quizsets/users/search | [UNMAPPED] | `user:search` |
+| GET | /api/v1/quizsets/:id/sharing | [UNMAPPED] | `content:share` |
+| PUT | /api/v1/quizsets/:id/sharing | [UNMAPPED] | `content:share` |
+| POST | /api/v1/quizsets/:id/generate-code | [UNMAPPED] | `content:share` |
 | GET | /api/v1/quizsets/list/all | [UNMAPPED] | Bearer |
 | GET | /api/v1/quizsets/:id | [UNMAPPED] | Bearer |
 | POST | /api/v1/quizsets | [UNMAPPED] | Bearer |
@@ -296,8 +300,20 @@ Groups backend routes by domain. Each route maps to a BL handler (from `behavior
 
 ## Quiz Practice
 
+Phase 07 (2026-10-20). Detail: `route-list.md` § Quiz Practice.
+
 | Method | Path | Handler BL### | Auth |
 |--------|------|---------------|------|
+| GET | /api/v1/quiz-practice/sets | [UNMAPPED] | `quiz:practice` |
+| GET | /api/v1/quiz-practice/sets/:id/access | [UNMAPPED] | Public (token optional) |
+| POST | /api/v1/quiz-practice/sets/:id/unlock | [UNMAPPED] | `quiz:practice` |
+| POST | /api/v1/quiz-practice/attempts | [UNMAPPED] | Owner or `quiz:practice` |
+| GET | /api/v1/quiz-practice/attempts | [UNMAPPED] | Bearer (own) |
+| GET | /api/v1/quiz-practice/attempts/:id | [UNMAPPED] | Bearer (own) |
+| PUT | /api/v1/quiz-practice/attempts/:id | [UNMAPPED] | Bearer (own) |
+| POST | /api/v1/quiz-practice/attempts/:id/submit | [UNMAPPED] | Bearer (own) |
+
+--------|------|---------------|------|
 | POST | /api/v1/quiz-practice-attempts | [UNMAPPED] | Bearer |
 | GET | /api/v1/quiz-practice-attempts/by-quizset/:quizSetId | [UNMAPPED] | Bearer |
 | GET | /api/v1/quiz-practice-attempts/stats/completion-rate | [UNMAPPED] | Bearer |

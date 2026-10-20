@@ -16,7 +16,7 @@ Source artifacts: `permissions.md`, `screen-list.md`, `route-list.md`, `scout-re
 | PERM003 | Current user/session/profile read | No | Yes | Own only | Yes | No | Uses JWT/cookie/Bearer/session guards. |
 | PERM004 | Profile update/avatar/banner upload | No | Yes | Own only | Yes | No | Media uses R2/image endpoints. |
 | PERM005 | Device/session management | No | Yes | Own sessions | Yes | No | Logout device/all others. |
-| PERM006 | Quiz set CRUD | No | Yes | Owner | Yes | No | `quizset:manage` (TEACHER). The public quiz read `GET /quizsets/public/:id` was removed in phase 06. |
+| PERM006 | Quiz set CRUD | No | Yes | Owner | Yes | No | `quizset:manage` (TEACHER). The public quiz read `GET /quizsets/public/:id` was removed in phase 06. Phase 07: quiz sets are shareable (`content:share`, owner only; whitelist, code, `isPublic`) and students practise granted sets via `quiz:practice` (`/quiz-practice/*`). |
 | PERM007 | Flashcard set CRUD/study/share | Mixed | Yes | Owner | Yes | No | Manage = `flashcardset:manage`; share = `content:share` (owner only); study = `flashcard:study` or owner. Access = public / owner / whitelist / code; no grant = 404. `GET /flashcardsets/public/:id` stays anonymous (trimmed payload). |
 | PERM008 | Exam room/session management | No | Yes | Host/owner | Yes | No | Rooms `exam_room:manage`, sessions `exam_session:manage` (host only, TEACHER). `GET /examrooms/get-public/:id` is an anonymous teaser (no email). |
 | PERM009 | Exam attempt participation | Mixed | Yes | Attempt owner | Host analytics | No | Taking = `exam:take` (STUDENT; hosts cannot start attempts). Results = `exam_result:view` (host). Code entry is authenticated and locks after 5 wrong codes / 15 min. |
