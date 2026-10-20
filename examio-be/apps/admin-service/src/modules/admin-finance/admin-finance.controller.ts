@@ -31,7 +31,7 @@ interface AuthedAdminRequest extends Request {
  * the plain inferred type which we forward to the service.
  */
 @Controller('admin/finance')
-@RequirePermissions('admin:access')
+@RequirePermissions('finance:admin')
 @Throttle({ admin: { ttl: 60000, limit: 10 } })
 @UsePipes(ZodValidationPipe)
 export class AdminFinanceController {

@@ -28,7 +28,7 @@ interface AuthedAdminRequest extends Request {
 @ApiTags('Admin / Word Family')
 @ApiBearerAuth()
 @Controller('admin/word-family')
-@RequirePermissions('admin:access')
+@RequirePermissions('word_family:admin')
 @Throttle({ admin: { ttl: 60000, limit: 30 } })
 @UsePipes(ZodValidationPipe)
 export class AdminWordFamilyController {

@@ -14,7 +14,7 @@ import { RequirePermissions } from '@examio/auth-jwt';
 @ApiTags('Admin / Stats')
 @ApiBearerAuth()
 @Controller('admin/stats')
-@RequirePermissions('admin:access')
+@RequirePermissions('stats:read')
 @UsePipes(ZodValidationPipe)
 @Throttle({ admin: { ttl: 60000, limit: 30 } })
 export class AdminStatsController {

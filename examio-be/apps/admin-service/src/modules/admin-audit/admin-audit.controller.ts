@@ -10,7 +10,7 @@ import { RequirePermissions } from '@examio/auth-jwt';
 @ApiTags('Admin / Audit')
 @ApiBearerAuth()
 @Controller('admin/audit')
-@RequirePermissions('admin:access')
+@RequirePermissions('audit:read')
 @Throttle({ admin: { ttl: 60000, limit: 30 } })
 @UsePipes(ZodValidationPipe)
 export class AdminAuditController {

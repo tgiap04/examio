@@ -5,7 +5,8 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { GenerateIdService } from '@examio/common';
+import { GenerateIdService, invalidateWalletCachesBestEffort } from '@examio/common';
+import { RedisService } from '@examio/redis';
 import { PrismaService } from '@examio/database';
 
 import { AuditWriterService } from '../../common/audit-writer.service';
@@ -85,7 +86,8 @@ export class AdminFinanceService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly auditWriter: AuditWriterService,
-        private readonly generateId: GenerateIdService
+        private readonly generateId: GenerateIdService,
+        private readonly redis: RedisService
     ) {}
 
     /**
@@ -97,7 +99,8 @@ export class AdminFinanceService {
         body: RefundBody,
         ctx: AuditContext
     ): Promise<RefundResult> {
-        return this.prisma.$transaction(
+        let adjustedWalletId: string | undefined;
+        const result = await this.prisma.$transaction(
             async (tx) => {
                 const payment = await tx.payment.findUnique({
                     where: { id: body.paymentId },
@@ -157,6 +160,7 @@ export class AdminFinanceService {
                         });
 
                         walletAdjusted = true;
+                        adjustedWalletId = wallet.id;
                     }
                 }
 
@@ -193,6 +197,11 @@ export class AdminFinanceService {
             },
             { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
         );
+
+        // After commit: payment lists/stats always change; the wallet only when adjusted.
+        // Interim: finance owns these caches and phase 10 replaces this with finance RPCs.
+        await invalidateWalletCachesBestEffort(this.redis, result.userId, adjustedWalletId);
+        return result;
     }
 
     /**
@@ -203,7 +212,7 @@ export class AdminFinanceService {
         body: CreditBody,
         ctx: AuditContext
     ): Promise<CreditResult> {
-        return this.prisma.$transaction(
+        const result = await this.prisma.$transaction(
             async (tx) => {
                 const user = await tx.user.findUnique({
                     where: { id: body.userId },
@@ -290,6 +299,9 @@ export class AdminFinanceService {
             },
             { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
         );
+
+        await invalidateWalletCachesBestEffort(this.redis, result.userId, result.walletId);
+        return result;
     }
 
     /**

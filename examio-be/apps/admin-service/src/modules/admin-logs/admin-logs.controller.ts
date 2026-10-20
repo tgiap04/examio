@@ -23,7 +23,7 @@ const TICKET_TTL_SECONDS = 300;
 const TICKET_KEY_PREFIX = 'sse:ticket:';
 
 @Controller('admin/logs')
-@RequirePermissions('admin:access')
+@RequirePermissions('logs:read')
 @Throttle({ admin: { ttl: 60000, limit: 30 } })
 export class AdminLogsController {
     constructor(

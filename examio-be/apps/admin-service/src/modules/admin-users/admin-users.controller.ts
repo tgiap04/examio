@@ -33,7 +33,7 @@ interface AuthedAdminRequest extends Request {
 @ApiTags('Admin / Users')
 @ApiBearerAuth()
 @Controller('admin/users')
-@RequirePermissions('admin:access')
+@RequirePermissions('user:manage')
 @Throttle({ admin: { ttl: 60000, limit: 30 } })
 @UsePipes(ZodValidationPipe)
 export class AdminUsersController {
@@ -101,6 +101,7 @@ export class AdminUsersController {
     }
 
     @Post(':id/grant-admin')
+    @RequirePermissions('role:assign')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Promote a user to admin.' })
     async grant(
@@ -113,6 +114,7 @@ export class AdminUsersController {
     }
 
     @Post(':id/revoke-admin')
+    @RequirePermissions('role:assign')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({
         summary: 'Revoke admin privileges. Refuses to revoke self.',

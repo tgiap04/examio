@@ -24,7 +24,7 @@ import { RequirePermissions } from '@examio/auth-jwt';
 @ApiTags('Admin / Page Config')
 @ApiBearerAuth()
 @Controller('admin/page-config')
-@RequirePermissions('admin:access')
+@RequirePermissions('page_config:manage')
 @Throttle({ admin: { ttl: 60000, limit: 30 } })
 @UsePipes(ZodValidationPipe)
 export class AdminPageConfigController {

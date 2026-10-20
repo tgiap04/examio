@@ -2,6 +2,7 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { GenerateIdService } from '@examio/common';
 import { PrismaService } from '@examio/database';
+import { RedisService } from '@examio/redis';
 
 import { AuditWriterService } from '../../common/audit-writer.service';
 import { AdminFinanceService } from './admin-finance.service';
@@ -27,6 +28,7 @@ describe('AdminFinanceService.refund', () => {
             providers: [
                 AdminFinanceService,
                 { provide: PrismaService, useValue: prisma },
+                { provide: RedisService, useValue: { del: jest.fn(), delPattern: jest.fn() } },
                 { provide: AuditWriterService, useValue: auditWriter },
                 { provide: GenerateIdService, useValue: generateId },
             ],
