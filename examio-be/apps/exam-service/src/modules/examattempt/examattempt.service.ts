@@ -33,6 +33,7 @@ import {
 } from '@examio/common';
 import { hasPermission, type AuthUser } from '@examio/auth-jwt';
 import { verifyAccessCodeOrThrow } from '../common/access-code-guard';
+import { appendCodeGranted } from '../common/sharing-list.util';
 import { canSeeAnswers, toAttemptView } from './examattempt-view.mapper';
 import {
     attemptRelation,
@@ -76,6 +77,14 @@ export class ExamAttemptService {
             return;
         }
 
+        // Unlocked the current code earlier: no second prompt until the code changes.
+        if (
+            Array.isArray(examSession.codeGrantedIds) &&
+            examSession.codeGrantedIds.includes(user.id)
+        ) {
+            return;
+        }
+
         // Code-gated sessions require the correct access code at start time.
         if (examSession.accessCode) {
             if (typeof providedCode !== 'string') {
@@ -89,6 +98,13 @@ export class ExamAttemptService {
                 stored: examSession.accessCode.toString(),
                 given: providedCode,
             });
+            await appendCodeGranted(
+                this.prisma,
+                'ExamSession',
+                examSession.id,
+                user.id,
+                providedCode
+            );
             return;
         }
 

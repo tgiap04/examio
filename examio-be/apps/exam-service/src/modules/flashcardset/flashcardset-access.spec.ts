@@ -7,11 +7,13 @@ const row = (
         userId: string;
         isPublic: boolean;
         whitelist: string[];
+        codeGrantedIds: string[];
     }> = {}
 ) => ({
     userId: 'owner',
     isPublic: false,
     whitelist: ['w'],
+    codeGrantedIds: ['c'],
     ...over,
 });
 
@@ -20,6 +22,7 @@ describe('flashcard set access', () => {
         [row({ isPublic: true }), undefined, 'public'],
         [row(), 'owner', 'owner'],
         [row(), 'w', 'whitelist'],
+        [row(), 'c', 'code'],
         [row(), 'stranger', null],
         [row(), undefined, null],
     ])('accessKindOf(%j, %p) = %p', (r, userId, expected) => {
@@ -36,7 +39,12 @@ describe('flashcard set access', () => {
         expect(await canAccessFlashcardSet(prisma, 's', 'w')).toBe(false);
         expect(findFirst).toHaveBeenCalledWith({
             where: { id: 's' },
-            select: { userId: true, isPublic: true, whitelist: true },
+            select: {
+                userId: true,
+                isPublic: true,
+                whitelist: true,
+                codeGrantedIds: true,
+            },
         });
     });
 

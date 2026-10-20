@@ -1,37 +1,26 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
 import { ApiProperty } from '@nestjs/swagger';
+import { SharingDeltaSchema } from '../../common/sharing-list.util';
 
-// DTO for updating sharing settings
-export const FlashcardSetUpdateSharingSettingsSchema = z.object({
-    isPublic: z.boolean(),
-    accessCode: z.string().length(6).optional().nullable(),
-    whitelist: z.array(z.string()).optional().default([]),
-});
-
+// DTO for updating sharing settings: deltas, applied atomically (same contract as quiz sets)
 export class FlashcardSetUpdateSharingSettingsDto extends createZodDto(
-    FlashcardSetUpdateSharingSettingsSchema
+    SharingDeltaSchema
 ) {
-    @ApiProperty({
-        description: 'Indicates if the flashcard set is public',
-        example: true,
-    })
-    isPublic: boolean;
+    @ApiProperty({ type: [String], required: false, description: 'User ids to add to the whitelist (max 2000)' })
+    addUserIds?: string[];
 
-    @ApiProperty({
-        description: '6-digit access code for private access',
-        example: '123456',
-        required: false,
-    })
-    accessCode?: string | null;
+    @ApiProperty({ type: [String], required: false, description: 'User ids to remove from the whitelist and the code-granted list (max 2000)' })
+    removeUserIds?: string[];
 
-    @ApiProperty({
-        description: 'List of user IDs who can access',
-        example: ['user1', 'user2'],
-        required: false,
-        type: [String],
-    })
-    whitelist: string[];
+    @ApiProperty({ type: [String], required: false, description: 'User ids whose code unlock is revoked; their whitelist grant stays (max 2000)' })
+    removeCodeGrantedIds?: string[];
+
+    @ApiProperty({ required: false, description: 'Visibility only; lists and code are kept' })
+    isPublic?: boolean;
+
+    @ApiProperty({ required: false, description: 'true: make sure a code exists; false: remove it and evict code users' })
+    codeEnabled?: boolean;
 }
 
 // DTO for verifying access code
@@ -56,17 +45,17 @@ export class FlashcardSetVerifyAccessCodeDto extends createZodDto(FlashcardSetVe
 
 // Response DTOs
 export class FlashcardSetSharingSettingsResponseDto {
-    @ApiProperty({ example: 'Cập nhật cài đặt chia sẻ thành công' })
-    message: string;
-
     @ApiProperty({ example: true })
     isPublic: boolean;
 
-    @ApiProperty({ example: '123456', required: false })
-    accessCode?: string | null;
+    @ApiProperty({ example: '123456', required: false, nullable: true })
+    accessCode: string | null;
 
-    @ApiProperty({ example: ['user1', 'user2'] })
-    whitelist: string[];
+    @ApiProperty({ description: 'Whitelisted users { id, username, name, avatar }', type: [Object] })
+    whitelist: object[];
+
+    @ApiProperty({ description: 'Users who unlocked the current code', type: [Object] })
+    codeGranted: object[];
 }
 
 export class FlashcardSetAccessCheckResponseDto {

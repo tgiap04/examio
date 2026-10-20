@@ -1,4 +1,3 @@
-import { randomInt } from 'crypto';
 import { PrismaService } from '@examio/database';
 import { rethrowKnown } from '../common/rethrow-known';
 import {
@@ -19,7 +18,15 @@ import { ExamSessionUpdateSharingSettingsDto } from './dto/sharing.dto';
 import { ExamSessionRepository } from './examsession.repository';
 import { ExamRoomRepository } from '../examroom/examroom.repository';
 import type { AuthUser } from '@examio/auth-jwt';
-import { verifyAccessCodeOrThrow } from '../common/access-code-guard';
+import {
+    generateAccessCode,
+    verifyAccessCodeOrThrow,
+} from '../common/access-code-guard';
+import {
+    SHARE_LIST_CAP,
+    ShareListFullException,
+    appendCodeGranted,
+} from '../common/sharing-list.util';
 import {
     toExamSessionPublicView,
     toExamSessionStudyView,
@@ -332,9 +339,14 @@ export class ExamSessionService {
 
         if (dto.accessCode !== undefined) {
             updateData.accessCode = dto.accessCode;
+            // A changed or removed code revokes everyone who unlocked the old one.
+            if (dto.accessCode !== examSession.accessCode) {
+                updateData.codeGrantedIds = [];
+            }
         }
 
         if (dto.whitelist !== undefined) {
+            this.assertWhitelistWithinCap(dto.whitelist);
             updateData.whitelist = dto.whitelist;
         }
 
@@ -430,6 +442,7 @@ export class ExamSessionService {
                 assessType: true,
                 accessCode: true,
                 whitelist: true,
+                codeGrantedIds: true,
                 examRoom: {
                     select: {
                         hostId: true,
@@ -463,6 +476,14 @@ export class ExamSessionService {
             return {
                 hasAccess: true,
                 accessType: 'whitelist' as const,
+            };
+        }
+
+        // Unlocked the current code earlier (cleared when the code changes)
+        if (userId && examSession.codeGrantedIds.includes(userId)) {
+            return {
+                hasAccess: true,
+                accessType: 'code' as const,
             };
         }
 
@@ -522,6 +543,8 @@ export class ExamSessionService {
     /** Get exam session after code verification (same answer-free payload). */
     async getExamSessionWithCode(id: string, accessCode: unknown, userId: string) {
         await this.verifyAccessCode(id, accessCode, userId);
+        // Remembered until the code changes, so the next visit skips the prompt.
+        await appendCodeGranted(this.prisma, 'ExamSession', id, userId, String(accessCode));
         return this.loadStudyView(id, userId);
     }
 
@@ -656,6 +679,11 @@ export class ExamSessionService {
             throw new NotFoundException('Phiên thi không tồn tại');
         }
 
+        this.assertWhitelistWithinCap(dto.whitelist);
+        const nextCode = dto.isPublic ? null : dto.accessCode;
+        const codeChanged =
+            nextCode !== undefined && nextCode !== examSession.accessCode;
+
         // Update sharing settings
         const updatedExamSession = await this.prisma.examSession.update({
             where: { id },
@@ -663,8 +691,9 @@ export class ExamSessionService {
                 assessType: dto.isPublic
                     ? ASSESS_TYPE.PUBLIC
                     : ASSESS_TYPE.PRIVATE,
-                accessCode: dto.isPublic ? null : dto.accessCode,
+                accessCode: nextCode,
                 whitelist: dto.isPublic ? [] : dto.whitelist || [],
+                ...(codeChanged ? { codeGrantedIds: [] } : {}),
             },
             select: {
                 id: true,
@@ -685,11 +714,11 @@ export class ExamSessionService {
         };
     }
 
-    /**
-     * Generate a random 6-digit access code
-     */
-    generateAccessCode(): string {
-        return randomInt(100000, 1000000).toString();
+    /** The exam session host form still replaces the whole whitelist; the list is capped like every other. */
+    private assertWhitelistWithinCap(whitelist: string[] | undefined): void {
+        if ((whitelist?.length ?? 0) > SHARE_LIST_CAP) {
+            throw new ShareListFullException();
+        }
     }
 
     /**
@@ -708,10 +737,11 @@ export class ExamSessionService {
         if (examSession.examRoom.hostId !== user.id) {
             throw new NotFoundException('Phiên thi không tồn tại');
         }
-        const accessCode = this.generateAccessCode();
+        const accessCode = generateAccessCode();
+        // Rotation: everyone who unlocked the old code loses access (whitelist kept).
         await this.prisma.examSession.update({
             where: { id },
-            data: { accessCode },
+            data: { accessCode, codeGrantedIds: [] },
         });
         await this.examSessionRepository.invalidateItemCache(user.id, id);
         await this.examSessionRepository.invalidateUserListCache(user.id);

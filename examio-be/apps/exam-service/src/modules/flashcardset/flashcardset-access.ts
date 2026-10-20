@@ -2,16 +2,18 @@ import { PrismaService } from '@examio/database';
 
 /**
  * Access to a flashcard set from the set's own sharing fields ONLY: public,
- * owner, whitelisted. It never looks at the owner's account, so a demoted
+ * owner, whitelisted, or unlocked with the current code. It never looks at the owner's account, so a demoted
  * owner's shared set stays studyable (decision 2026-10-18). Do not join other
  * tables here; `flashcardset-access.spec.ts` guards that with a static check.
  */
-export type FlashcardSetAccessKind = 'public' | 'owner' | 'whitelist';
+export type FlashcardSetAccessKind = 'public' | 'owner' | 'whitelist' | 'code';
 
 export interface FlashcardSetAccessRow {
     userId: string;
     isPublic: boolean;
     whitelist: string[];
+    /** Users who unlocked the CURRENT code; cleared whenever the code changes. */
+    codeGrantedIds: string[];
 }
 
 /** Pure decision, shared by the DB lookup below and `checkAccess`. */
@@ -23,6 +25,7 @@ export function accessKindOf(
     if (!userId) return null;
     if (row.userId === userId) return 'owner';
     if (row.whitelist.includes(userId)) return 'whitelist';
+    if (row.codeGrantedIds.includes(userId)) return 'code';
     return null;
 }
 
@@ -34,7 +37,12 @@ export async function canAccessFlashcardSet(
 ): Promise<boolean> {
     const row = await prisma.flashCardSet.findFirst({
         where: { id: flashCardSetId },
-        select: { userId: true, isPublic: true, whitelist: true },
+        select: {
+            userId: true,
+            isPublic: true,
+            whitelist: true,
+            codeGrantedIds: true,
+        },
     });
     return row !== null && accessKindOf(row, userId) !== null;
 }

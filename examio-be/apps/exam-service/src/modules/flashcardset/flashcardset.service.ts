@@ -1,4 +1,3 @@
-import { randomInt } from 'crypto';
 import { PrismaService } from '@examio/database';
 import { rethrowKnown } from '../common/rethrow-known';
 import {
@@ -20,6 +19,14 @@ import { SetFlashcardToFlashcardsetDto } from './dto/set-flashcard-to-flashcards
 import { SaveHistoryToFlashcardsetDto } from './dto/save-history-to-flashcardset.dto';
 import { FlashcardSetUpdateSharingSettingsDto } from './dto/sharing.dto';
 import {
+    appendCodeGranted,
+    applySharingUpdate,
+} from '../common/sharing-list.util';
+import {
+    prepareSharingUpdate,
+    toSharingView,
+} from '../common/sharing-view.util';
+import {
     CreateFlashcardLabelDto,
     UpdateFlashcardLabelDto,
     AssignFlashcardsToLabelDto,
@@ -28,7 +35,10 @@ import { FlashCardSetRepository } from './flashcardset.repository';
 import { R2Client } from '../../clients/r2.client';
 import { buildMetadata } from '@examio/grpc';
 import type { AuthUser } from '@examio/auth-jwt';
-import { verifyAccessCodeOrThrow } from '../common/access-code-guard';
+import {
+    generateAccessCode,
+    verifyAccessCodeOrThrow,
+} from '../common/access-code-guard';
 import { accessKindOf } from './flashcardset-access';
 import {
     toFlashcardSetPublicView,
@@ -1077,6 +1087,7 @@ export class FlashcardsetService {
                 userId: true,
                 accessCode: true,
                 whitelist: true,
+                codeGrantedIds: true,
             },
         });
 
@@ -1150,9 +1161,13 @@ export class FlashcardsetService {
         return this.loadStudyView(id, userId);
     }
 
-    /** Get flashcard set after code verification. */
+    /**
+     * Get flashcard set after code verification. A valid code is remembered
+     * (`codeGrantedIds`) until the code changes, so the next visit skips it.
+     */
     async getFlashcardSetWithCode(id: string, accessCode: unknown, userId: string) {
         await this.verifyAccessCode(id, accessCode, userId);
+        await appendCodeGranted(this.prisma, 'FlashCardSet', id, userId, String(accessCode));
         return this.loadStudyView(id, userId);
     }
 
@@ -1251,114 +1266,59 @@ export class FlashcardsetService {
     }
 
     /**
-     * Update sharing settings for a flashcard set
+     * Apply a sharing delta (add/remove users, visibility, code on/off) in ONE
+     * atomic statement; removing a user also revokes a code unlock.
      */
     async updateSharingSettings(
         id: string,
         user: AuthUser,
         dto: FlashcardSetUpdateSharingSettingsDto
     ) {
-        // Check ownership
-        const flashcardSet = await this.flashcardSetRepository.findOne({
-            where: { id, userId: user.id },
-            cache: false,
-        });
-
-        if (!flashcardSet) {
-            throw new NotFoundException('Bộ thẻ ghi nhớ không tồn tại');
-        }
-
-        // Update sharing settings
-        const updatedFlashcardSet = await this.prisma.flashCardSet.update({
-            where: { id },
-            data: {
-                isPublic: dto.isPublic,
-                accessCode: dto.isPublic ? null : dto.accessCode,
-                whitelist: dto.isPublic ? [] : dto.whitelist || [],
-            },
-            select: {
-                id: true,
-                isPublic: true,
-                accessCode: true,
-                whitelist: true,
-            },
-        });
-
-        // Invalidate cache
+        const input = await prepareSharingUpdate(
+            this.prisma,
+            id,
+            user.id,
+            dto,
+            generateAccessCode()
+        );
+        const row = await applySharingUpdate(this.prisma, 'FlashCardSet', input);
         await this.flashcardSetRepository.invalidateItemCache(user.id, id);
-
-        return {
-            message: 'Cập nhật cài đặt chia sẻ thành công',
-            isPublic: updatedFlashcardSet.isPublic,
-            accessCode: updatedFlashcardSet.accessCode,
-            whitelist: updatedFlashcardSet.whitelist,
-        };
-    }
-
-    /**
-     * Generate a random 6-digit access code
-     */
-    generateAccessCode(): string {
-        return randomInt(100000, 1000000).toString();
+        return toSharingView(this.prisma, row);
     }
 
     /**
      * New access code for the owner's set. Only the code changes: the whitelist
-     * and the visibility are kept (the old flow wiped the whitelist).
+     * and the visibility are kept, and everyone who unlocked with the old code
+     * loses access (`codeGrantedIds` is cleared in the same update).
      */
     async regenerateAccessCode(id: string, user: AuthUser) {
-        const flashcardSet = await this.prisma.flashCardSet.findFirst({
+        const accessCode = generateAccessCode();
+        const { count } = await this.prisma.flashCardSet.updateMany({
             where: { id, userId: user.id },
-            select: { id: true },
+            data: { accessCode, codeGrantedIds: [] },
         });
-        if (!flashcardSet) {
+        if (count === 0) {
             throw new NotFoundException('Bộ thẻ ghi nhớ không tồn tại');
         }
-        const accessCode = this.generateAccessCode();
-        await this.prisma.flashCardSet.update({
-            where: { id },
-            data: { accessCode },
-        });
         await this.flashcardSetRepository.invalidateItemCache(user.id, id);
         return { accessCode };
     }
 
-    /**
-     * Get sharing settings for owner
-     */
+    /** Sharing view for the owner: whitelist and code-granted users in one batch lookup (no email). */
     async getSharingSettings(id: string, user: AuthUser) {
         const flashcardSet = await this.prisma.flashCardSet.findFirst({
             where: { id, userId: user.id },
             select: {
-                id: true,
                 isPublic: true,
                 accessCode: true,
                 whitelist: true,
+                codeGrantedIds: true,
             },
         });
-
         if (!flashcardSet) {
             throw new NotFoundException('Bộ thẻ ghi nhớ không tồn tại');
         }
-
-        const users = await this.prisma.user.findMany({
-            where: {
-                id: {
-                    in: flashcardSet.whitelist,
-                },
-            },
-            select: {
-                id: true,
-                username: true,
-                name: true,
-                avatar: true,
-            },
-        });
-
-        return {
-            ...flashcardSet,
-            whitelist: users,
-        };
+        return toSharingView(this.prisma, flashcardSet);
     }
 
     /**
