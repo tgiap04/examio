@@ -134,6 +134,7 @@
         "jest": "^30.2.0",
         "prettier": "^3.6.2",
         "prisma-merge": "^0.2.0",
+        "socket.io-client": "^4.8",
         "supertest": "^7.1.4",
         "ts-jest": "^29.4.6",
         "ts-loader": "^9.5.4",

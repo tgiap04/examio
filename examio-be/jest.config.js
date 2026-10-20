@@ -8,7 +8,7 @@ module.exports = {
     collectCoverageFrom: ['**/*.(t|j)s'],
     coverageDirectory: './coverage',
     testEnvironment: 'node',
-    roots: ['<rootDir>/apps/', '<rootDir>/libs/'],
+    roots: ['<rootDir>/apps/', '<rootDir>/libs/', '<rootDir>/test/'],
     moduleNameMapper: {
         '^@examio/database(.*)$': '<rootDir>/libs/database/src/$1',
         '^@examio/common(.*)$': '<rootDir>/libs/common/src/$1',

@@ -242,13 +242,13 @@ describe('ensureWallet paths (e2e)', () => {
         expect((await walletOf(userId))?.balance).toBe(20);
     });
 
-    it('a STUDENT without a wallet gets 404 and no wallet is created', async () => {
+    it('a STUDENT is refused (403, no wallet:use) and no wallet is created', async () => {
         const userId = uid();
         await newUser(userId, 'STUDENT');
         const res = await request(app.getHttpServer())
             .get('/api/v1/wallet/info')
             .set('authorization', `Bearer ${await tokenFor(userId, ['STUDENT'])}`);
-        expect(res.status).toBe(404);
+        expect(res.status).toBe(403);
         expect(await walletOf(userId)).toBeNull();
     });
 

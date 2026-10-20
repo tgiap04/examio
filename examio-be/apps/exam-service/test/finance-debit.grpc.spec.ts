@@ -1,6 +1,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { PrismaService } from '@examio/database';
+import { RedisService } from '@examio/redis';
 import { GenerateIdService } from '@examio/common';
 import { PROTO_FILES } from '@examio/contracts';
 import { GrpcClientModule } from '@examio/grpc';
@@ -69,6 +70,7 @@ describe('exam -> finance debit over gRPC', () => {
             controllers: [WalletGrpcController, SubscriptionGrpcController],
             providers: [
                 { provide: PrismaService, useValue: prisma },
+                { provide: RedisService, useValue: { del: jest.fn(), delPattern: jest.fn() } },
                 { provide: GenerateIdService, useValue: { generateId: () => 'txn-1' } },
                 { provide: SubscriptionService, useValue: subscriptions },
             ],

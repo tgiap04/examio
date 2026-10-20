@@ -2,6 +2,7 @@ import { Metadata } from '@grpc/grpc-js';
 import { Test } from '@nestjs/testing';
 import { lastValueFrom } from 'rxjs';
 import { PrismaService } from '@examio/database';
+import { RedisService } from '@examio/redis';
 import { GenerateIdService } from '@examio/common';
 import { PROTO_FILES, subscriptionV1, walletV1 } from '@examio/contracts';
 import { createTestGrpcClient, startTestGrpcServer, TestGrpcServer } from '@examio/grpc/testing';
@@ -60,6 +61,7 @@ describe('WalletService / SubscriptionService gRPC contract (behind the real gua
             controllers: [WalletGrpcController, SubscriptionGrpcController],
             providers: [
                 { provide: PrismaService, useValue: prisma },
+                { provide: RedisService, useValue: { del: jest.fn(), delPattern: jest.fn() } },
                 { provide: GenerateIdService, useValue: { generateId: () => 'id-1' } },
                 { provide: SubscriptionService, useValue: subscriptions },
             ],
