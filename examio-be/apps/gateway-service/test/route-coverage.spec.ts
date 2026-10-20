@@ -96,6 +96,7 @@ describe('rate limits keep every current throttle (RT-4)', () => {
         ['word-family-generate', 'POST', '/api/v1/word-family/generate-root', 5],
         ['flashcard-user-search', 'GET', '/api/v1/flashcardsets/users/search', 30],
         ['examsession-user-search', 'GET', '/api/v1/examsessions/users/search', 30],
+        ['quizset-user-search', 'GET', '/api/v1/quizsets/users/search', 30],
     ])('%s: %s %s max %i / 60s', (id, method, path, max) => {
         expect(limit(method, path)).toEqual({ id, max, windowMs: 60_000 });
     });
@@ -162,6 +163,18 @@ describe('coarse permission table', () => {
         expect(table.effectiveAuth(fs, 'POST', '/api/v1/flashcardsets/public/f1')).toBe('required');
         expect(table.effectiveAuth(fs, 'GET', '/api/v1/flashcardsets/public/f1/extra')).toBe('required');
         expect(table.effectiveAuth(fs, 'GET', '/api/v1/flashcardsets/f1')).toBe('required');
+    });
+
+    it('quiz-practice: only GET sets/:id/access is auth-optional, everything else stays required', () => {
+        const qp = route('GET', '/api/v1/quiz-practice/sets/q1/access');
+        const eff = (m: string, p: string) => table.effectiveAuth(qp, m, p);
+        expect(eff('GET', '/api/v1/quiz-practice/sets/q1/access')).toBe('optional');
+        expect(eff('POST', '/api/v1/quiz-practice/sets/q1/access')).toBe('required');
+        expect(eff('GET', '/api/v1/quiz-practice/sets/q1/access/x')).toBe('required');
+        expect(eff('GET', '/api/v1/quiz-practice/sets')).toBe('required');
+        expect(eff('POST', '/api/v1/quiz-practice/sets/q1/unlock')).toBe('required');
+        expect(eff('POST', '/api/v1/quiz-practice/attempts')).toBe('required');
+        expect(eff('GET', '/api/v1/quiz-practice/attempts/a1')).toBe('required');
     });
 
     it('SSE routes disable the upstream timeout', () => {

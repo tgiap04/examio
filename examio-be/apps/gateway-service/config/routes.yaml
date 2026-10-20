@@ -122,6 +122,8 @@ routes:
     upstream: exam
     match: { prefix: /api/v1/quiz-practice }
     auth: required
+    public:
+      - { method: GET, path: '/api/v1/quiz-practice/sets/[^/]+/access' }
   - id: flashcardsets
     upstream: exam
     match: { prefix: /api/v1/flashcardsets }
@@ -217,6 +219,7 @@ rateLimits:
   - { id: quiz-unlock, method: POST, path: '/api/v1/quiz-practice/sets/[^/]+/unlock', window: 60s, max: 5 }
   - { id: word-family-generate, method: POST, path: '/api/v1/word-family/(generate|generate-root)', window: 60s, max: 5 }
   - { id: flashcard-user-search, method: GET, path: '/api/v1/flashcardsets/users/search', window: 60s, max: 30 }
+  - { id: quizset-user-search, method: GET, path: '/api/v1/quizsets/users/search', window: 60s, max: 30 }
   - { id: examsession-user-search, method: GET, path: '/api/v1/examsessions/users/search', window: 60s, max: 30 }
   - { id: ws-upgrade, method: UPGRADE, path: '/ws/study(/.*)?', window: 10s, max: 20 }
 

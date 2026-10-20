@@ -67,6 +67,18 @@ describe('gateway authorization (e2e)', () => {
             expect([res.status, await codeOf(res)]).toEqual([403, 'EMAIL_NOT_VERIFIED']);
         });
 
+        it('quiz-practice access check is auth-optional (garbage token stripped, anonymous allowed); its siblings stay required', async () => {
+            const access = '/api/v1/quiz-practice/sets/q1/access';
+            const bad = await get(access, 'not-a-jwt', via(6));
+            expect(bad.status).toBe(200);
+            expect(h.exam.seen.at(-1)!.headers.authorization).toBeUndefined();
+            expect((await fetch(`${h.baseUrl}${access}`, { headers: via(6) })).status).toBe(200);
+            for (const path of ['/api/v1/quiz-practice/sets', '/api/v1/quiz-practice/attempts/a1']) {
+                expect((await fetch(`${h.baseUrl}${path}`, { headers: via(6) })).status).toBe(401);
+                expect((await get(path, 'not-a-jwt', via(6))).status).toBe(401);
+            }
+        });
+
         it('optional route + revoked token: the upstream sees no credentials and the call succeeds (RT-6)', async () => {
             const token = await h.issuer.user('opt', ['STUDENT']);
             await callControl(h.grpcUrl, 'RevokeSession', { sid: sidOf('opt'), exp: String(Math.floor(Date.now() / 1000) + 600) }, await h.issuer.service('auth'));
