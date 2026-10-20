@@ -7,7 +7,7 @@
 - Decisions: [reports/decisions.md](./reports/decisions.md) (STUDENT scope, TEACHER previews own only; 2026-10-18 validation: demotion keeps content, TEACHER += `word_family:save`, word-family generation free) <!-- Updated: Validation Session 1 - decisions -->
 
 ## Overview
-- Priority: P1 · Status: Pending · Effort: 4.75d <!-- Red Team: RT-4, RT-5, RT-7 (was 3d: +code lockout, +WS middleware/av/exp/event disconnect + message e2e, +ownership specs + decorator) --> <!-- Updated: Validation Session 1 - +0.25d demoted-owner access spec --> · Depends on: 04
+- Priority: P1 · Status: Completed (2026-10-20) · Effort: 4.75d <!-- Red Team: RT-4, RT-5, RT-7 (was 3d: +code lockout, +WS middleware/av/exp/event disconnect + message e2e, +ownership specs + decorator) --> <!-- Updated: Validation Session 1 - +0.25d demoted-owner access spec --> · Depends on: 04
 - Replace phase-04's mechanical `@Authenticated()` with the real permission per handler (exam, finance, admin, r2). Close the 9 security gaps. Add a CI test that fails on any undeclared HTTP or WS handler, on an unapproved `@Authenticated()`, and on an allowlist entry without a linked two-user negative spec. Prove the matrix as actor × resource-relation with HTTP-level tests. Harden code entry (lockout + constant-time compare) and WebSocket auth. <!-- Red Team: RT-4, RT-5, RT-7 -->
 - Out of scope: auth-service (its Public/Authenticated set from 04 is final), gateway (05, incl. `routes.yaml` `rateLimit`), QuizSet sharing (07). <!-- Red Team: RT-4 -->
 
@@ -240,16 +240,16 @@ File ownership (globs): `examio-be/apps/exam-service/src/modules/**` (controller
   - the 21st word-family generation in a day → 429.
 
 ## Todo List
-- [ ] handler-declarations (HTTP + WS + allowlist spec links) + authz-matrix specs (red) <!-- Red Team: RT-5, RT-6, RT-7 -->
-- [ ] ownership e2e specs per resource family (two users) <!-- Red Team: RT-7 -->
-- [ ] demoted-owner spec: shared content still studyable, manage → 403; access helpers never read owner role <!-- Updated: Validation Session 1 - demotion keeps content -->
-- [ ] `@RequireOwnerOrPermission` decorator/guard + resolvers; examattempt access policy <!-- Red Team: RT-7 -->
-- [ ] exam-service controllers per table
-- [ ] finance, admin, r2 controllers per table; admin PATCH drops isAdmin
-- [ ] access-code-guard (Redis lockout, timingSafeEqual) on verify-code / with-code / attempt start <!-- Red Team: RT-4 -->
-- [ ] Gaps 1–9 fixed with unit tests
-- [ ] WS middleware (verify, email_verified, study_room:join, av), exp disconnect, authz_changed disconnect, message-level e2e <!-- Red Team: RT-5 -->
-- [ ] Manual smoke STUDENT vs TEACHER+ADMIN
+- [x] handler-declarations (HTTP + WS + allowlist spec links) + authz-matrix specs (red) <!-- Red Team: RT-5, RT-6, RT-7 --> (evidence: `yarn test test/authz` 191/191)
+- [x] ownership e2e specs per resource family (two users) <!-- Red Team: RT-7 --> (evidence: exam ownership + WS 153/153, auth ownership 4/4)
+- [x] demoted-owner spec: shared content still studyable, manage → 403; access helpers never read owner role <!-- Updated: Validation Session 1 - demotion keeps content --> (evidence: demoted-owner 3/3; static grep none)
+- [x] `@RequireOwnerOrPermission` decorator/guard + resolvers; examattempt access policy <!-- Red Team: RT-7 --> (evidence: owner-or-permission spec 9/9; examattempt ownership green)
+- [x] exam-service controllers per table (evidence: handler-declarations green; `@Authenticated()` grep = allowlisted examattempt handlers + WS gateway class only)
+- [x] finance, admin, r2 controllers per table; admin PATCH drops isAdmin (evidence: finance e2e 20/20, admin e2e 20/20, r2 e2e 3/3; `update-user.body.ts` rejects isAdmin/isSystemAdmin/role)
+- [x] access-code-guard (Redis lockout, timingSafeEqual) on verify-code / with-code / attempt start <!-- Red Team: RT-4 --> (evidence: unit 12/12; live 10 parallel guesses → 5 evaluated, correct code still 429)
+- [x] Gaps 1–9 fixed with unit tests (evidence: ownership specs + `word-family-generation-limit.spec.ts` in full `yarn test` 1408/1408)
+- [x] WS middleware (verify, email_verified, study_room:join, av), exp disconnect, authz_changed disconnect, message-level e2e <!-- Red Team: RT-5 --> (evidence: study-room-ws e2e 8/8; 5 mutants killed)
+- [ ] Manual smoke STUDENT vs TEACHER+ADMIN — **partial, left open:** API-level curl smoke run for STUDENT vs TEACHER (fresh signup, role set to TEACHER). Not run: browser FE pass, and a single TEACHER+ADMIN actor. Carried to P09 (see Next Steps item 10).
 
 ## Success Criteria
 - `cd examio-be && yarn typecheck && yarn build:all && yarn test`: exit 0, including `yarn test test/authz`.
@@ -288,3 +288,16 @@ File ownership (globs): `examio-be/apps/exam-service/src/modules/**` (controller
 - Resolved (reconciliation X4): on `authz_changed` the server emits `auth:reauth` then disconnects; `room:kicked` stays only for the in-room ban. P12 now matches this phase. <!-- Reconcile: X4 -->
 - [CROSS-PHASE] Deleting `GET /quizsets/public/:id` must be confirmed against mobile (`examio-app`, phase 18) — not in this checkout.
 - Resolved (validation Q1): word-family generation is free (no finance `Debit`), TEACHER-only (`word_family:generate`), rate-limited at the gateway (`word-family-generate`, P05) plus the 20/day per-user cap. <!-- Updated: Validation Session 1 - word-family gen free + gateway rate-limited -->
+
+### Deferred / carried (sync 2026-10-20)
+1. AMQP consumer setup failure only warns (`libs/messaging/src/amqp-connection.ts:74-80`). Add a readiness signal (P16/P17). Owner: P16 implementer.
+2. `users/search` exact-email match lets a TEACHER confirm an email is registered (`user-search.service.ts:60-70`; rate-limited 30/min). Product decision: keep or drop the exact-email clause. Owner: product (user).
+3. `libs/common/utils/generate-code.ts` (unused, `Math.random`): delete in cleanup. Delete only this path (outside `src/`). `libs/common/src/utils/generate-code.ts` is a different, CSPRNG file used by `auth-service` verification codes and must stay. Owner: P19 cleanup.
+4. Multipart with a real file is not tested live (needs R2). Cover in the P15/P16 cutover smoke. Owner: P16 cutover runbook.
+5. P09 must apply the response-shape change list in `evidence/phase-06/response-shape-changes.md` (sources: `evidence/phase-06-runs.md` and the implementer summaries). Owner: P09 implementer.
+6. Code-unlocked students' access is not remembered until P07 (a code unlock lasts one request). Owner: P07 implementer.
+7. `GET /quizsets/public/:id` removed. Confirm mobile does not call it during P18. Owner: P18 implementer (examio-app).
+8. Zod pipe now enforces DTOs. Run a browser pass on exam-session and study-room forms in P09. Owner: P09 implementer.
+9. BaseRepository cache key change affects all services using it (verified finance/exam only). Re-verify any other consumer in P10/P11. Owner: P10 implementer.
+10. Added by sync: manual smoke is API-level only (curl, STUDENT vs TEACHER). The browser FE pass and a single TEACHER+ADMIN actor are not in evidence. Run in P09 browser smoke. Owner: P09 implementer.
+11. Added by sync: mutant `grpc invalidation not best-effort` (finance `wallet.grpc.controller.ts`, phase-06-runs.md Follow-up 5) SURVIVED: no spec pins the best-effort wrap on that call site. The `UpdateBalance` variant is killed. Add a spec for the `CreateWallet` path or accept the gap. Owner: P10 implementer (finance touched there).

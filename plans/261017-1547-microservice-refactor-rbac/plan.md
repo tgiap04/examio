@@ -29,7 +29,7 @@ Decisions (authoritative): [reports/decisions.md](./reports/decisions.md). Input
 | 03 | [Messaging Foundation](./phase-03-messaging-foundation.md) | Completed | 2.5d | 02 |
 | 04 | [Identity & RBAC Core](./phase-04-identity-and-rbac-core.md) | Completed | 5d | 02, 03 |
 | 05 | [Gateway Rewrite](./phase-05-gateway-rewrite.md) | Completed | 4.25d | 02, 03, 04 |
-| 06 | [RBAC Enforcement & Security Fixes](./phase-06-rbac-enforcement-and-security-fixes.md) | Pending | 4.75d | 04 |
+| 06 | [RBAC Enforcement & Security Fixes](./phase-06-rbac-enforcement-and-security-fixes.md) | Completed | 4.75d | 04 |
 | 07 | [Quiz Sharing & Student Practice](./phase-07-quiz-sharing-and-student-practice.md) | Pending | 2.75d | 06 |
 | 08 | [Admin Role-Management Screen](./phase-08-admin-role-management-screen.md) | Pending | 2.75d | 04, 06 |
 | 09 | [Frontend RBAC](./phase-09-frontend-rbac.md) | Pending | 3.5d | 04, 07, 08 |

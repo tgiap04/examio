@@ -1,0 +1,151 @@
+{
+  "commands": [
+    {
+      "command": "cd examio-be && yarn prisma:generate",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "prisma client generated",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "npx prisma migrate deploy --schema=libs/database/src/schema.prisma (fresh local DB)",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "all migrations applied",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "cd examio-be && yarn typecheck",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "all six services typecheck clean",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "cd examio-be && yarn build:all",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "six services built from source, zero warnings",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "cd examio-be && TZ=UTC yarn test",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "1408 tests passed",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "cd examio-be && TZ=UTC yarn test test/authz",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "191 tests passed",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "exam: jest test/ (full folder, ONE process)",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "153 tests passed",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "finance: jest test/ (full)",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "20 tests passed",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "admin: jest test/ (full)",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "20 tests passed",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "gateway: jest test/ (full)",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "61 tests passed",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "auth: jest test/ (full)",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "52 tests passed",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "scripts/boot-built-services.sh per service, flags off, pinned CI-equivalent env, own broker user",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "6/6 boot and answer /health/live",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "COMPOSE_DEFAULTS=1 scripts/boot-built-services.sh per service, own broker user",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "6/6 boot with compose feature flags",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "live: whitelisted STUDENT on code-protected PRIVATE session: start, create, get-by-id, detail, list, list?examSessionId",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "no accessCode, whitelist or code value in any response (201/400/200 responses all scanned)",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "live: show=false completed attempt: examinee answer keys / host answer keys",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "examinee 0 answer keys; host sees 3",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "live: show=true completed attempt: examinee answer keys",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "examinee sees 3 answer keys",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "live: 10 parallel wrong codes on code session (direct exam)",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "INVALID_CODE 4, CODE_LOCKED 6 (5 evaluated, rest 429); correct code afterwards still 429 CODE_LOCKED",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "live: 25 generated session access codes",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "all 6-digit (/^\\d{6}$/), e.g. 542195, 319226",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "live: admin credit ADD 25 with Redis down, direct to admin-service",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "response 200, DB credited once (+25); wallet info stale (cache TTL ~274 s) until next invalidation",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "live: admin credit with Redis down through the gateway",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "fail closed: 503 AUTH_STATE_UNAVAILABLE, no commit (DB delta 0); edge behaviour, not a credit-path failure",
+      "ts": "2026-10-20T01:47:42.734Z"
+    },
+    {
+      "command": "live: next successful credit ADD 1 after Redis returns -> immediate wallet info",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "wallet info 46 = DB 46 (fresh after next invalidation)",
+      "ts": "2026-10-20T01:47:42.734Z"
+    }
+  ]
+}
