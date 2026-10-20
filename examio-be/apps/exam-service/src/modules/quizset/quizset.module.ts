@@ -7,6 +7,10 @@ import { GrpcClientModule } from '@examio/grpc';
 import { RedisService } from '@examio/redis';
 import { R2_GRPC_REGISTRATION, R2Client } from '../../clients/r2.client';
 import { QuizSetRepository } from './quizset.repository';
+import { QuizsetSharingController } from './quizset-sharing.controller';
+import { QuizsetSharingService } from './quizset-sharing.service';
+import { QuizSetOwnerResolver } from './quizset-owner.resolver';
+import { UserSearchService } from '../common/user-search.service';
 
 @Module({
     imports: [GrpcClientModule.register(R2_GRPC_REGISTRATION)],
@@ -17,8 +21,11 @@ import { QuizSetRepository } from './quizset.repository';
         GenerateIdService,
         R2Client,
         QuizSetRepository,
+        QuizsetSharingService,
+        QuizSetOwnerResolver,
+        UserSearchService,
     ],
-    controllers: [QuizsetController],
-    exports: [QuizsetService, QuizSetRepository],
+    controllers: [QuizsetController, QuizsetSharingController],
+    exports: [QuizsetService, QuizSetRepository, QuizSetOwnerResolver],
 })
 export class QuizsetModule {}

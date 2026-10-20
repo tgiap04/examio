@@ -4,6 +4,7 @@ import {
     CODE_FAIL_LIMIT,
     CODE_FAIL_WINDOW_SECONDS,
     codeFailKey,
+    generateAccessCode,
     verifyAccessCodeOrThrow,
 } from './access-code-guard';
 
@@ -246,5 +247,17 @@ describe('verifyAccessCodeOrThrow', () => {
         ]);
         // only the first 5 attempts (by arrival) may be evaluated; the right code at position 9 is refused
         expect(results[8]).toBe('429 CODE_LOCKED');
+    });
+});
+
+describe('generateAccessCode', () => {
+    it('is always 6 digits (leading zeros kept) and varies', () => {
+        const seen = new Set<string>();
+        for (let i = 0; i < 200; i++) {
+            const code = generateAccessCode();
+            expect(code).toMatch(/^\d{6}$/);
+            seen.add(code);
+        }
+        expect(seen.size).toBeGreaterThan(150);
     });
 });

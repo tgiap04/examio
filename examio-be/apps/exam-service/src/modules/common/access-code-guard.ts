@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from 'crypto';
+import { createHash, randomInt, timingSafeEqual } from 'crypto';
 import { BadRequestException, HttpException, Logger } from '@nestjs/common';
 import type Redis from 'ioredis';
 
@@ -7,6 +7,10 @@ export const CODE_FAIL_WINDOW_SECONDS = 900;
 const ACCESS_CODE_PATTERN = /^\d{6}$/;
 
 const logger = new Logger('AccessCodeGuard');
+
+/** The one place a new 6-digit invite code is made (CSPRNG, zero-padded, so 000000-999999 are all possible). */
+export const generateAccessCode = (): string =>
+    randomInt(0, 1_000_000).toString().padStart(6, '0');
 
 /** Failure counter key: per resource AND per user, so an attacker only locks themselves. */
 export const codeFailKey = (resourceId: string, userId: string): string =>
