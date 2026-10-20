@@ -37,7 +37,7 @@ export class ExamSessionUpdateSharingSettingsDto extends createZodDto(
 // ================== VERIFY ACCESS CODE ==================
 
 export const ExamSessionVerifyAccessCodeSchema = z.object({
-    accessCode: z.string().length(6),
+    accessCode: z.string().regex(/^\d{6}$/),
 });
 
 export class ExamSessionVerifyAccessCodeDto extends createZodDto(ExamSessionVerifyAccessCodeSchema) {

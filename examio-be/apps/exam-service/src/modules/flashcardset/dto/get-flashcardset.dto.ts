@@ -1,14 +1,15 @@
 import { z } from 'zod';
+import { queryBool, queryInt, queryStringArray } from '../../common/query-schema';
 import { createZodDto } from 'nestjs-zod';
 import { ApiProperty } from '@nestjs/swagger';
 
 export const GetFlashcardsetsSchema = z.object({
-    page: z.number().min(1).default(1),
-    limit: z.number().min(1).max(100).default(10),
+    page: queryInt(1).default(1),
+    limit: queryInt(1, 100).default(10),
     search: z.string().optional(),
-    tag: z.array(z.string()).optional(),
-    isPublic: z.boolean().optional(),
-    isPinned: z.boolean().optional(),
+    tag: queryStringArray.optional(),
+    isPublic: queryBool.optional(),
+    isPinned: queryBool.optional(),
 });
 
 export class GetFlashcardsetsDto extends createZodDto(GetFlashcardsetsSchema) {

@@ -1,13 +1,14 @@
 import { z } from 'zod';
+import { queryBool, queryInt, queryStringArray } from '../../common/query-schema';
 import { createZodDto } from 'nestjs-zod';
 import { ApiProperty } from '@nestjs/swagger';
 import { EXAM_SESSION_STATUS } from '../../../types';
 
 export const GetExamSessionsSchema = z.object({
-    page: z.number().min(1).default(1),
-    limit: z.number().min(1).max(100).default(10),
+    page: queryInt(1).default(1),
+    limit: queryInt(1, 100).default(10),
     examRoomId: z.string().optional(),
-    status: z.nativeEnum(EXAM_SESSION_STATUS).optional(),
+    status: z.coerce.number().pipe(z.nativeEnum(EXAM_SESSION_STATUS)).optional(),
 });
 
 export class GetExamSessionsDto extends createZodDto(GetExamSessionsSchema) {

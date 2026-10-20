@@ -36,7 +36,7 @@ export class FlashcardSetUpdateSharingSettingsDto extends createZodDto(
 
 // DTO for verifying access code
 export const FlashcardSetVerifyAccessCodeSchema = z.object({
-    accessCode: z.string().length(6),
+    accessCode: z.string().regex(/^\d{6}$/),
     turnstileToken: z.string().optional(),
 });
 

@@ -21,6 +21,7 @@ import {
     SaveWordFamilyDto,
 } from './dto/word-family.dto';
 import type { AuthUser } from '@examio/auth-jwt';
+import { consumeDailyGeneration } from './word-family-generation-limit';
 
 @Injectable()
 export class WordFamilyService {
@@ -175,6 +176,8 @@ export class WordFamilyService {
             throw new NotFoundException('Không tìm thấy danh mục.');
         }
 
+        await consumeDailyGeneration(this.redis.getClient(), user.id);
+
         // Dedup: get already generated root words
         const existingRoots = await this.repository.getExistingRootWords(categorySlug);
         const allExcludes = [...new Set([...excludeRootWords, ...existingRoots])];
@@ -272,6 +275,8 @@ export class WordFamilyService {
         if (!category) {
             throw new NotFoundException('Không tìm thấy danh mục.');
         }
+
+        await consumeDailyGeneration(this.redis.getClient(), user.id);
 
         // Root-specific lock: independent from the category-wide flow and from
         // other roots. The client polls generation-status/:slug/:rootWord.

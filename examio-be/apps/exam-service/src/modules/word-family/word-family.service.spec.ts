@@ -15,7 +15,14 @@ describe('WordFamilyService', () => {
 
     beforeEach(async () => {
         // Mock Redis client (what getClient() returns)
+        // Daily quota counter (multi().incr().expire().exec()): always under the cap here.
+        const quotaChain: any = {
+            incr: jest.fn().mockReturnThis(),
+            expire: jest.fn().mockReturnThis(),
+            exec: jest.fn().mockResolvedValue([[null, 1], [null, 1]]),
+        };
         mockRedisClient = {
+            multi: jest.fn().mockReturnValue(quotaChain),
             get: jest.fn(),
             set: jest.fn(),
             del: jest.fn(),
