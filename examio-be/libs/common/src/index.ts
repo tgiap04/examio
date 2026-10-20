@@ -24,6 +24,7 @@ export * from './utils/cookie-config';
 export * from './utils/generate-code';
 export * from './utils/sanitize-filename';
 export * from './utils/sanitize-user';
+export * from './utils/wallet-cache';
 
 // DTOs
 export * from './dto/authenticated-request.dto';

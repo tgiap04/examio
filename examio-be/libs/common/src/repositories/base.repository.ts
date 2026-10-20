@@ -126,6 +126,8 @@ export abstract class BaseRepository<T> {
         await this.redis.delPattern(pattern);
         // Also delete the direct item key
         await this.redis.del(getItemCacheKey(this.cacheModule, userId, itemId));
+        // `{id}`-only lookups are cached in the public item scope
+        await this.invalidateOneCache(undefined, itemId);
     }
 
     /**
@@ -192,6 +194,50 @@ export abstract class BaseRepository<T> {
         return this.model.findMany(queryParams);
     }
 
+
+    /**
+     * Key of a cached `findOne`. It lives under the scope the writes invalidate:
+     * `{id, owner}` -> the owner's item scope, `{id}` -> the public item scope,
+     * `{owner}` -> the owner's `one` scope. The old flat key was never matched by
+     * any invalidation, so a write stayed invisible for the whole TTL.
+     */
+    private oneCacheKey(where: any, hash: string): string {
+        const id = typeof where?.id === 'string' ? where.id : undefined;
+        const owner =
+            typeof where?.userId === 'string'
+                ? where.userId
+                : typeof where?.hostId === 'string'
+                  ? where.hostId
+                  : undefined;
+        if (id && owner) {
+            return getItemCacheKey(this.cacheModule, owner, id, `one:${hash}`);
+        }
+        if (id) {
+            return getPublicCacheKey(this.cacheModule, id, `one:${hash}`);
+        }
+        if (owner) {
+            return `${getUserCacheKey(this.cacheModule, owner)}:one:${hash}`;
+        }
+        return this.getCacheKey(`one:${hash}`);
+    }
+
+    /** Drops every cached `findOne` a write can have made stale. */
+    protected async invalidateOneCache(
+        userId?: string,
+        id?: string | number
+    ): Promise<void> {
+        if (userId) {
+            await this.redis.delPattern(
+                `${getUserCacheKey(this.cacheModule, userId)}:one:*`
+            );
+        }
+        if (id !== undefined) {
+            await this.redis.delPattern(
+                `${getPublicCacheKey(this.cacheModule, String(id))}:*`
+            );
+        }
+    }
+
     /**
      * Tìm một bản ghi theo điều kiện với cache
      */
@@ -209,8 +255,9 @@ export abstract class BaseRepository<T> {
         } = params;
 
         if (cache) {
-            const cacheKey = this.getCacheKey(
-                `one:${JSON.stringify(queryParams)}`
+            const cacheKey = this.oneCacheKey(
+                queryParams.where,
+                JSON.stringify(queryParams)
             );
             console.log(`[${this.modelName}] 🔍 GET cache key: ${cacheKey}`);
             const cached = await this.redis.get<T>(cacheKey);
@@ -292,6 +339,7 @@ export abstract class BaseRepository<T> {
                 `[${this.modelName}] 🗑️ CREATE -> invalidating list cache for user: ${userId}`
             );
             await this.invalidateUserListCache(userId);
+            await this.invalidateOneCache(userId);
         }
 
         return result;
@@ -342,6 +390,7 @@ export abstract class BaseRepository<T> {
             );
             await this.invalidateItemCache(userId, String(id));
             await this.invalidateUserListCache(userId);
+            await this.invalidateOneCache(userId, id);
         } else {
             // Fallback to legacy cache invalidation
             const legacyKey = this.getCacheKey(`id:${id}`);
@@ -349,6 +398,7 @@ export abstract class BaseRepository<T> {
                 `[${this.modelName}] 🗑️ UPDATE id:${id} -> deleting legacy cache: ${legacyKey}`
             );
             await this.redis.del(legacyKey);
+            await this.invalidateOneCache(undefined, id);
         }
 
         return result;
@@ -382,6 +432,10 @@ export abstract class BaseRepository<T> {
                 `[${this.modelName}] 🗑️ UPSERT -> invalidating list cache for user: ${params.userId}`
             );
             await this.invalidateUserListCache(params.userId);
+            await this.invalidateOneCache(
+                params.userId,
+                (result as any)?.id
+            );
             // Also invalidate item cache if we have an id
             if (result && (result as any).id) {
                 console.log(
@@ -419,6 +473,7 @@ export abstract class BaseRepository<T> {
                 `[${this.modelName}] 🗑️ UPDATE_MANY -> invalidating list cache for user: ${params.userId}`
             );
             await this.invalidateUserListCache(params.userId);
+            await this.invalidateOneCache(params.userId);
         }
 
         return result;
@@ -441,6 +496,7 @@ export abstract class BaseRepository<T> {
             );
             await this.invalidateItemCache(userId, String(id));
             await this.invalidateUserListCache(userId);
+            await this.invalidateOneCache(userId, id);
         } else {
             // Fallback to legacy cache invalidation
             const legacyKey = this.getCacheKey(`id:${id}`);
@@ -448,6 +504,7 @@ export abstract class BaseRepository<T> {
                 `[${this.modelName}] 🗑️ DELETE id:${id} -> deleting legacy cache: ${legacyKey}`
             );
             await this.redis.del(legacyKey);
+            await this.invalidateOneCache(undefined, id);
         }
 
         return result;
@@ -472,6 +529,7 @@ export abstract class BaseRepository<T> {
             );
             await this.invalidateItemCache(userId, String(id));
             await this.invalidateUserListCache(userId);
+            await this.invalidateOneCache(userId, id);
         } else {
             // Fallback to legacy cache invalidation
             const legacyKey = this.getCacheKey(`id:${id}`);
@@ -479,6 +537,7 @@ export abstract class BaseRepository<T> {
                 `[${this.modelName}] 🗑️ SOFT_DELETE id:${id} -> deleting legacy cache: ${legacyKey}`
             );
             await this.redis.del(legacyKey);
+            await this.invalidateOneCache(undefined, id);
         }
 
         return result;

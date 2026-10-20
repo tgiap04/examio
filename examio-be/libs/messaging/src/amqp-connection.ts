@@ -58,11 +58,25 @@ export class AmqpConnection implements OnApplicationShutdown {
         this.manager.on('disconnect', ({ err }) =>
             this.logger.warn(`AMQP disconnected: ${err?.message ?? 'unknown'}`)
         );
-        this.publisherChannel = this.manager.createChannel({
-            json: false,
-            setup: (ch: ConfirmChannel) =>
-                declareTopology(ch, this.options.service),
-        });
+        this.publisherChannel = this.guard(
+            this.manager.createChannel({
+                json: false,
+                setup: (ch: ConfirmChannel) =>
+                    declareTopology(ch, this.options.service),
+            }),
+            'publisher'
+        );
+    }
+
+    /**
+     * ChannelWrapper emits `error` for setup failures and `Channel ended` after a
+     * broker reset; with no listener that is an unhandled crash. Log at warn only.
+     */
+    private guard(channel: ChannelWrapper, name: string): ChannelWrapper {
+        channel.on('error', (err: Error) =>
+            this.logger.warn(`AMQP ${name} channel error: ${err?.message ?? err}`)
+        );
+        return channel;
     }
 
     get publisher(): ConfirmPublisher {
@@ -77,7 +91,10 @@ export class AmqpConnection implements OnApplicationShutdown {
     createConsumerChannel(
         setup: (ch: ConfirmChannel) => Promise<void>
     ): ChannelWrapper {
-        const channel = this.manager.createChannel({ json: false, setup });
+        const channel = this.guard(
+            this.manager.createChannel({ json: false, setup }),
+            `consumer${this.consumerChannels.length + 1}`
+        );
         this.consumerChannels.push(channel);
         return channel;
     }

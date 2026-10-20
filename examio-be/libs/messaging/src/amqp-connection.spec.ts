@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 
-const channels: Array<{ close: jest.Mock; setup: (ch: unknown) => Promise<unknown>; publish: jest.Mock }> = [];
+const channels: Array<{ close: jest.Mock; setup: (ch: unknown) => Promise<unknown>; publish: jest.Mock; emitter: EventEmitter; on: jest.Mock }> = [];
 let manager: EventEmitter & {
     createChannel: jest.Mock;
     isConnected: jest.Mock;
@@ -23,7 +23,10 @@ function makeManager() {
     });
     m.createChannel = jest.fn((opts: { setup: (ch: unknown) => Promise<unknown> }) => {
         const idx = channels.length;
+        const emitter = new EventEmitter();
         const channel = {
+            emitter,
+            on: jest.fn((event: string, fn: (...a: unknown[]) => void) => emitter.on(event, fn)),
             setup: opts.setup,
             publish: jest.fn().mockResolvedValue(true),
             close: jest.fn(async () => {
@@ -49,6 +52,16 @@ describe('AmqpConnection', () => {
 
     afterAll(() => {
         process.env.RABBITMQ_URL = OLD;
+    });
+
+    it('every channel has an error listener, so a "Channel ended" never becomes an unhandled crash', () => {
+        const conn = new AmqpConnection({ service: 'auth' });
+        conn.createConsumerChannel(async () => undefined);
+        expect(channels).toHaveLength(2);
+        for (const ch of channels) {
+            expect(ch.emitter.listenerCount('error')).toBeGreaterThan(0);
+            expect(() => ch.emitter.emit('error', new Error('Channel ended, no reply will be forthcoming'), { name: 'x' })).not.toThrow();
+        }
     });
 
     it('requires RABBITMQ_URL', () => {
