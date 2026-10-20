@@ -1,0 +1,30 @@
+student=6ad75da95fa11582b87a8e2f teacher=6ad75da9094a65fa6f29d30e student2=6ad75da9ce7288f6ab94489b
+TEACHER POST /quizsets                                                 -> 201
+   quiz=6ad75daafa7467ede3b08a21
+TEACHER POST /quizsets/:id/questions (1)                               -> 201
+TEACHER POST /quizsets/:id/questions (2)                               -> 201
+TEACHER PUT /quizsets/:id/sharing codeEnabled                          -> 200
+   code=993374
+STUDENT GET /quiz-practice/sets/:id/access                             -> 200
+{"title":"smokequiz","questionCount":2,"canAccess":false,"requiresCode":true,"reason":null}
+anonymous GET /quiz-practice/sets/:id/access (gateway: auth required)  -> 401
+STUDENT POST unlock (right code)                                       -> 200
+STUDENT GET /quiz-practice/sets                                        -> 200
+   sets: [('smokequiz', 2)]
+STUDENT POST /quiz-practice/attempts                                   -> 201
+   answer-ish keys in start response: []
+STUDENT PUT autosave                                                   -> 200
+STUDENT2 GET other student's attempt                                   -> 404
+STUDENT POST submit                                                    -> 200
+   attempt: {'isSubmitted': True, 'score': 0, 'correctAnswers': 0}
+STUDENT POST submit again                                              -> 409
+STUDENT GET history                                                    -> 200
+TEACHER owner POST attempts (preview)                                  -> 201
+TEACHER POST unlock                                                    -> 403
+TEACHER POST generate-code (rotate)                                    -> 200
+STUDENT GET /quiz-practice/sets after rotate                           -> 200
+   sets: []
+--- gateway unlock rate limit (5/60s per user): six wrong codes from student2
+400 400 400 400 429 429 429 
+--- ERROR lines in the exam log: 0
+smoke exit 0
