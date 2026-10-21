@@ -44,6 +44,7 @@ import { AdminRoute } from "@/routes/guards/AdminRoute";
 import { FeatureRoute } from "@/routes/guards/FeatureRoute";
 import AdminOverviewPage from "@/pages/admin/AdminOverviewPage";
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
+import AdminRolesPage from "@/pages/admin/AdminRolesPage";
 import AdminFinancePage from "@/pages/admin/AdminFinancePage";
 import AdminLogsPage from "@/pages/admin/AdminLogsPage";
 import AdminAuditPage from "@/pages/admin/AdminAuditPage";
@@ -456,6 +457,7 @@ export const router = createBrowserRouter([
       { index: true, element: <AdminOverviewPage /> },
       { path: "stats", element: <AdminStatsPage /> },
       { path: "users", element: <AdminUsersPage /> },
+      { path: "roles", element: <AdminRolesPage /> },
       { path: "finance", element: <AdminFinancePage /> },
       { path: "logs", element: <AdminLogsPage /> },
       { path: "audit", element: <AdminAuditPage /> },

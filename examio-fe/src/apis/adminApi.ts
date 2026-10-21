@@ -1,16 +1,20 @@
 import { api } from "@/apis/api";
 
 import { env } from "@/lib/env";
+import { unwrap } from "@/lib/quiz-practice/api-failure";
+import { acceptRoleStatuses } from "@/apis/adminRolesApi";
 
 // ==================== Types ====================
 
 export interface UserRow {
-  id: number;
+  /** Backend ids are cuid strings. */
+  id: string;
   email: string;
   username: string;
   name: string;
   avatar: string;
-  isAdmin: boolean;
+  role: "STUDENT" | "TEACHER";
+  isSystemAdmin: boolean;
   isBanned: boolean;
   isVerified: boolean;
   createdAt: string;
@@ -62,7 +66,7 @@ export interface SourceBreakdownResponse {
 
 export interface ListUsersQuery {
   search?: string;
-  isAdmin?: boolean;
+  isSystemAdmin?: boolean;
   isBanned?: boolean;
   page?: number;
   pageSize?: number;
@@ -118,34 +122,32 @@ export async function listUsersApi(query: ListUsersQuery = {}) {
   return response.data;
 }
 
-export async function getUserApi(id: number) {
+export async function getUserApi(id: string) {
   const response = await api.get(`/admin/users/${id}`);
   return response.data;
 }
 
-export async function updateUserApi(id: number, body: UpdateUserBody) {
+export async function updateUserApi(id: string, body: UpdateUserBody) {
   const response = await api.patch(`/admin/users/${id}`, body);
   return response.data;
 }
 
-export async function banUserApi(id: number) {
-  const response = await api.post(`/admin/users/${id}/ban`);
-  return response.data;
+/**
+ * Ban / unban accept every 4xx except 401 so the API `code` (LAST_SYSTEM_ADMIN,
+ * CANNOT_CHANGE_OWN_STATUS) reaches the UI as an `ApiFailure` (the shared
+ * interceptor would reduce it to a bare Error(message)).
+ */
+async function postStatus(path: string) {
+  const response = await api.post(path, undefined, { validateStatus: acceptRoleStatuses });
+  return unwrap(response);
 }
 
-export async function unbanUserApi(id: number) {
-  const response = await api.post(`/admin/users/${id}/unban`);
-  return response.data;
+export function banUserApi(id: string) {
+  return postStatus(`/admin/users/${encodeURIComponent(id)}/ban`);
 }
 
-export async function grantAdminApi(id: number) {
-  const response = await api.post(`/admin/users/${id}/grant-admin`);
-  return response.data;
-}
-
-export async function revokeAdminApi(id: number) {
-  const response = await api.post(`/admin/users/${id}/revoke-admin`);
-  return response.data;
+export function unbanUserApi(id: string) {
+  return postStatus(`/admin/users/${encodeURIComponent(id)}/unban`);
 }
 
 export async function listAuditApi(query: ListAuditQuery = {}) {

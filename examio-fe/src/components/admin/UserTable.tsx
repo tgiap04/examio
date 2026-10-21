@@ -6,29 +6,23 @@ import {
   DatePicker,
   Button,
   Space,
-  Popconfirm,
-  Tooltip,
   Skeleton,
   Alert,
 } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { SearchOutlined } from "@ant-design/icons";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAdminStore } from "@/stores/useAdminStore";
-import {
-  banUserApi,
-  unbanUserApi,
-  grantAdminApi,
-  revokeAdminApi,
-  UserRow,
-} from "@/apis/adminApi";
-import { toast } from "@/components/antd/toast";
+import { UserRow } from "@/apis/adminApi";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { UserDetailDrawer } from "@/components/admin/UserDetailDrawer";
 import { BadgePill } from "@/components/admin/BadgePill";
+import { RoleBadge } from "@/components/admin/roles/RoleBadge";
+import { UserBanActions } from "@/components/admin/roles/UserBanActions";
 
 const { RangePicker } = DatePicker;
 
@@ -38,7 +32,7 @@ interface UserTableProps {
 
 interface Filters {
   search: string;
-  isAdmin: "all" | "yes" | "no";
+  isSystemAdmin: "all" | "yes" | "no";
   isBanned: "all" | "yes" | "no";
   dateRange: [string, string] | null;
 }
@@ -47,14 +41,14 @@ export function UserTable({ onAction }: UserTableProps) {
   const { t } = useTranslation("admin");
   const [filters, setFilters] = useState<Filters>({
     search: "",
-    isAdmin: "all",
+    isSystemAdmin: "all",
     isBanned: "all",
     dateRange: null,
   });
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [drawerUserId, setDrawerUserId] = useState<number | null>(null);
-  const [actionLoading, setActionLoading] = useState<number | null>(null);
+  const [drawerUserId, setDrawerUserId] = useState<string | null>(null);
+  const [adminCount, setAdminCount] = useState(0);
 
   const debouncedSearch = useDebounce(filters.search, 300);
   const currentUser = useAuthStore((s) => s.user);
@@ -62,7 +56,8 @@ export function UserTable({ onAction }: UserTableProps) {
   const query = useMemo(
     () => ({
       search: debouncedSearch || undefined,
-      isAdmin: filters.isAdmin === "all" ? undefined : filters.isAdmin === "yes",
+      isSystemAdmin:
+        filters.isSystemAdmin === "all" ? undefined : filters.isSystemAdmin === "yes",
       isBanned:
         filters.isBanned === "all" ? undefined : filters.isBanned === "yes",
       from: filters.dateRange?.[0],
@@ -82,36 +77,26 @@ export function UserTable({ onAction }: UserTableProps) {
     useAdminStore.getState().fetchUsers(query);
   }, [query, usersVersion]);
 
-  const isSelf = (row: UserRow) => currentUser?.id === row.id;
+  const currentUserId = currentUser?.id != null ? String(currentUser.id) : null;
 
-  const handleAction = async (
-    row: UserRow,
-    action: "ban" | "unban" | "grant" | "revoke",
-  ) => {
-    if (actionLoading) return;
-    setActionLoading(row.id);
-    try {
-      if (action === "ban") await banUserApi(row.id);
-      else if (action === "unban") await unbanUserApi(row.id);
-      else if (action === "grant") await grantAdminApi(row.id);
-      else if (action === "revoke") await revokeAdminApi(row.id);
+  // Cached admin list (10 min, shared with the audit page): its length gates "Khóa" on the last admin.
+  useEffect(() => {
+    let cancelled = false;
+    useAdminStore.getState().fetchAdminList().then((list) => {
+      if (!cancelled) setAdminCount(list.length);
+    }).catch(() => undefined);
+    return () => { cancelled = true; };
+  }, [usersVersion]);
 
-      useAdminStore.getState().invalidateUsers();
-      useAdminStore.getState().invalidateOverview();
-      useAdminStore.getState().invalidateAudit();
-      // Re-fetch immediately so the table reflects the change
-      useAdminStore.getState().fetchUsers(query, true);
-      toast.success(t(`users.actions.${action}Success`));
-      onAction?.();
-    } catch (err) {
-      toast.error(
-        t(`users.actions.${action}Error`, {
-          message: (err as Error).message,
-        }),
-      );
-    } finally {
-      setActionLoading(null);
-    }
+  const handleChanged = () => {
+    const admin = useAdminStore.getState();
+    admin.invalidateUsers();
+    admin.invalidateOverview();
+    admin.invalidateAudit();
+    admin.invalidateAdminList();
+    // Re-fetch immediately so the table reflects the change
+    admin.fetchUsers(query, true);
+    onAction?.();
   };
 
   const columns: ColumnsType<UserRow> = [
@@ -128,15 +113,10 @@ export function UserTable({ onAction }: UserTableProps) {
       width: 140,
     },
     {
-      title: t("users.columns.isAdmin"),
-      dataIndex: "isAdmin",
-      key: "isAdmin",
-      width: 100,
-      render: (val: boolean) => (
-        <BadgePill variant={val ? "positive" : "neutral"}>
-          {val ? t("common.yes") : t("common.no")}
-        </BadgePill>
-      ),
+      title: t("users.columns.role"),
+      key: "role",
+      width: 190,
+      render: (_, row) => <RoleBadge role={row.role} isSystemAdmin={row.isSystemAdmin} />,
     },
     {
       title: t("users.columns.isVerified"),
@@ -170,64 +150,23 @@ export function UserTable({ onAction }: UserTableProps) {
     {
       title: t("users.columns.actions"),
       key: "actions",
-      width: 280,
+      width: 240,
       fixed: "right",
-      render: (_, row) => {
-        const self = isSelf(row);
-        return (
-          <div onClick={(e) => e.stopPropagation()} role="presentation">
-            <Space size="small">
-              {row.isAdmin ? (
-                <Tooltip
-                  title={self ? t("users.actions.cannotRevokeSelf") : ""}
-                >
-                  <Button
-                    size="small"
-                    danger
-                    disabled={self}
-                    loading={actionLoading === row.id}
-                    onClick={() => handleAction(row, "revoke")}
-                  >
-                    {t("users.actions.revokeAdmin")}
-                  </Button>
-                </Tooltip>
-              ) : (
-                <Button
-                  size="small"
-                  loading={actionLoading === row.id}
-                  onClick={() => handleAction(row, "grant")}
-                >
-                  {t("users.actions.grantAdmin")}
-                </Button>
-              )}
-              {row.isBanned ? (
-                <Button
-                  size="small"
-                  loading={actionLoading === row.id}
-                  onClick={() => handleAction(row, "unban")}
-                >
-                  {t("users.actions.unban")}
-                </Button>
-              ) : (
-                <Popconfirm
-                  title={t("users.actions.banConfirm")}
-                  onConfirm={() => handleAction(row, "ban")}
-                  okText={t("common.yes")}
-                  cancelText={t("common.no")}
-                >
-                  <Button
-                    size="small"
-                    danger
-                    loading={actionLoading === row.id}
-                  >
-                    {t("users.actions.ban")}
-                  </Button>
-                </Popconfirm>
-              )}
-            </Space>
-          </div>
-        );
-      },
+      render: (_, row) => (
+        <div onClick={(e) => e.stopPropagation()} role="presentation">
+          <Space size="small">
+            <Link to={`/admin/roles?q=${encodeURIComponent(row.email)}`}>
+              <Button size="small">{t("users.actions.manageRoles")}</Button>
+            </Link>
+            <UserBanActions
+              row={row}
+              currentUserId={currentUserId}
+              adminCount={adminCount}
+              onChanged={handleChanged}
+            />
+          </Space>
+        </div>
+      ),
     },
   ];
 
@@ -265,10 +204,10 @@ export function UserTable({ onAction }: UserTableProps) {
           style={{ width: 280 }}
         />
         <Select
-          value={filters.isAdmin}
+          value={filters.isSystemAdmin}
           style={{ width: 160 }}
           onChange={(val) => {
-            setFilters((f) => ({ ...f, isAdmin: val }));
+            setFilters((f) => ({ ...f, isSystemAdmin: val }));
             setPage(1);
           }}
           options={[
