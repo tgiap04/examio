@@ -62,6 +62,11 @@ message RoleChange {
   string reason = 8;
   // Unix epoch milliseconds.
   int64 created_at = 9;
+  // Email snapshots kept in the log (no FK), so history survives account changes.
+  string target_email = 10;
+  string actor_email = 11;
+  // 'admin-ui' | 'cli' | 'bootstrap'.
+  string source = 12;
 }
 
 message GetUserRequest {

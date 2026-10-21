@@ -10,6 +10,7 @@ import { RoleChangeService } from '../roles/role-change.service';
 import { fail, toRpcError } from './auth.grpc.errors';
 import { USER_SELECT, fromProtoRole, toUser } from './auth.grpc.mapper';
 import { UsersQueryService } from './users-query.service';
+import { UserStatusService } from '../user-status/user-status.service';
 import { PrismaService } from '@examio/database';
 
 /**
@@ -23,6 +24,7 @@ export class AuthGrpcController implements authV1.AuthServiceController {
     constructor(
         private readonly users: UsersQueryService,
         private readonly roles: RoleChangeService,
+        private readonly userStatus: UserStatusService,
         private readonly prisma: PrismaService
     ) {}
 
@@ -80,12 +82,27 @@ export class AuthGrpcController implements authV1.AuthServiceController {
         );
     }
 
-    // Implemented in phase 08 (ban, last-admin guard, session revoke).
-    @RequirePermissions('user:manage')
-    setUserStatus(
-        _data: authV1.SetUserStatusRequest
+    @RequirePermissions('role:assign')
+    async setUserStatus(
+        data: authV1.SetUserStatusRequest,
+        metadata: Metadata
     ): Promise<authV1.SetUserStatusResponse> {
-        return fail(status.UNIMPLEMENTED, 'SetUserStatus is not implemented yet');
+        if (!data.userId) fail(status.INVALID_ARGUMENT, 'user_id is required');
+        const principal = principalOfMetadata(metadata);
+        if (principal?.kind !== 'user') {
+            return fail(status.PERMISSION_DENIED, 'PERMISSION_DENIED');
+        }
+        try {
+            await this.userStatus.setStatus({
+                actorUserId: principal.id,
+                targetUserId: data.userId,
+                isBanned: data.isBanned,
+                reason: data.reason?.trim() || undefined,
+            });
+        } catch (err) {
+            return toRpcError(err);
+        }
+        return this.readUser(data.userId);
     }
 
     @RequirePermissions('role:assign')
@@ -117,8 +134,12 @@ export class AuthGrpcController implements authV1.AuthServiceController {
         } catch (err) {
             return toRpcError(err);
         }
+        return this.readUser(targetUserId);
+    }
+
+    private async readUser(id: string): Promise<{ user: authV1.User }> {
         const row = await this.prisma.user.findUniqueOrThrow({
-            where: { id: targetUserId },
+            where: { id },
             select: USER_SELECT,
         });
         return { user: toUser(row) };

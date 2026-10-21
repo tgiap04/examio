@@ -127,6 +127,9 @@ export class UsersQueryService {
                 toIsSystemAdmin: r.toAdmin,
                 reason: r.reason ?? '',
                 createdAt: String(r.createdAt.getTime()),
+                targetEmail: r.targetEmail,
+                actorEmail: r.actorEmail,
+                source: r.source,
             })),
             page: { total, page, limit },
         };

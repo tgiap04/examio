@@ -23,6 +23,7 @@ import { UserRepository } from './repositories/user.repository';
 import { DevicesModule } from './devices/devices.module';
 import { ProfileModule } from './profile/profile.module';
 import { RolesModule } from './roles/roles.module';
+import { UserStatusModule } from './user-status/user-status.module';
 import { TokenModule } from './token/token.module';
 import { AccessTokenService } from './token/access-token.service';
 import { HttpThrottlerGuard } from './auth/guards/http-throttler.guard';
@@ -34,6 +35,7 @@ import { HttpThrottlerGuard } from './auth/guards/http-throttler.guard';
         MessagingModule.forRoot({ service: 'auth' }),
         TokenModule,
         RolesModule,
+        UserStatusModule,
         PassportModule.register({ session: true }),
         DevicesModule,
         ProfileModule,
@@ -61,6 +63,6 @@ import { HttpThrottlerGuard } from './auth/guards/http-throttler.guard';
         { provide: APP_GUARD, useClass: HttpThrottlerGuard },
     ],
     controllers: [AuthController],
-    exports: [AuthService, UserRepository],
+    exports: [AuthService, UserRepository, UserStatusModule],
 })
 export class AuthModule {}
