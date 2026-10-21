@@ -15,6 +15,8 @@ import {
 import { useAuthStore } from "@/stores/useAuthStore";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/atoms/Logo";
+import { useCanFn } from "@/hooks/useCan";
+import { filterAdminNav } from "@/lib/rbac/nav-items";
 
 interface NavItem {
   to: string;
@@ -39,9 +41,13 @@ export function AdminLayout() {
   const { t } = useTranslation("admin");
   const { user, logout } = useAuthStore();
   const location = useLocation();
+  const can = useCanFn();
+  // Same permission table as the route guards: only links the user can open.
+  const allowed = new Set(filterAdminNav(can));
+  const navItems = NAV_ITEMS.filter((item) => allowed.has(item.to));
 
   const currentTitle = (() => {
-    const match = NAV_ITEMS.find((item) =>
+    const match = navItems.find((item) =>
       item.end
         ? location.pathname === item.to
         : location.pathname.startsWith(item.to),
@@ -62,7 +68,7 @@ export function AdminLayout() {
           </Link>
         </div>
         <nav className="flex-1 space-y-1 px-3 py-4">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

@@ -8,7 +8,6 @@ import { RoomStatsSection } from "@/components/organisms/k/RoomStatsSection";
 import { ExamRoomList, type ExamRoom as ExamRoomListType } from "@/components/organisms/k/ExamRoomList";
 import { RecentParticipantsList, type Participant } from "@/components/organisms/k/RecentParticipantsList";
 import { Button } from "@/components/antd/button";
-import { TeacherRoute } from "@/components/organisms/TeacherRoute";
 import type { ExamRoomFormData } from "@/components/molecules/ExamRoomForm";
 import { useExamRoomStore } from "@/stores/useExamRoomStore";
 import { useQuizSetStore } from "@/stores/useQuizSetStore";
@@ -205,74 +204,72 @@ export default function ManageExamRoomPage() {
   }
 
   return (
-    <TeacherRoute>
-      <div className="min-h-screen">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-8 mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h1 className="font-display text-2xl tracking-tight text-ink">Quản lý phòng thi</h1>
-              <p className="text-xs text-muted-foreground md:text-sm">Tạo và quản lý các phòng thi trực tuyến</p>
-            </div>
-            <Button onClick={() => setIsCreateModalOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Tạo phòng thi mới
-            </Button>
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-8 mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="font-display text-2xl tracking-tight text-ink">Quản lý phòng thi</h1>
+            <p className="text-xs text-muted-foreground md:text-sm">Tạo và quản lý các phòng thi trực tuyến</p>
           </div>
-
-          <RoomStatsSection stats={stats} />
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <ExamRoomList
-                rooms={transformedRooms}
-                onViewRoom={(id) => navigate(`/k/manage-exam-room/${id}`)}
-                onEditRoom={handleEditRoom}
-                onDeleteRoom={(id) => {
-                  setSelectedRoomId(id);
-                  setIsDeleteDialogOpen(true);
-                }}
-              />
-            </div>
-
-            <div className="lg:col-span-1">
-              {loadingParticipants ? (
-                <div className="animate-pulse">
-                  <div className="h-64 bg-muted rounded" />
-                </div>
-              ) : (
-                <RecentParticipantsList participants={recentParticipants} onViewAll={() => {}} />
-              )}
-            </div>
-          </div>
+          <Button onClick={() => setIsCreateModalOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Tạo phòng thi mới
+          </Button>
         </div>
 
-        <ExamRoomModal
-          open={isCreateModalOpen}
-          onOpenChange={setIsCreateModalOpen}
-          mode="create"
-          quizSets={quizSetOptions}
-          isLoading={loading}
-          onSubmit={handleCreateSubmit}
-        />
+        <RoomStatsSection stats={stats} />
 
-        <ExamRoomModal
-          open={isEditModalOpen}
-          onOpenChange={setIsEditModalOpen}
-          mode="edit"
-          quizSets={quizSetOptions}
-          isLoading={loading}
-          initialData={editFormData}
-          onSubmit={handleEditSubmit}
-        />
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <ExamRoomList
+              rooms={transformedRooms}
+              onViewRoom={(id) => navigate(`/k/manage-exam-room/${id}`)}
+              onEditRoom={handleEditRoom}
+              onDeleteRoom={(id) => {
+                setSelectedRoomId(id);
+                setIsDeleteDialogOpen(true);
+              }}
+            />
+          </div>
 
-        <DeleteConfirmDialog
-          open={isDeleteDialogOpen}
-          onOpenChange={setIsDeleteDialogOpen}
-          title="Xóa phòng thi"
-          description="Bạn có chắc chắn muốn xóa phòng thi này? Hành động này không thể hoàn tác."
-          onConfirm={handleConfirmDelete}
-        />
+          <div className="lg:col-span-1">
+            {loadingParticipants ? (
+              <div className="animate-pulse">
+                <div className="h-64 bg-muted rounded" />
+              </div>
+            ) : (
+              <RecentParticipantsList participants={recentParticipants} onViewAll={() => {}} />
+            )}
+          </div>
+        </div>
       </div>
-    </TeacherRoute>
+
+      <ExamRoomModal
+        open={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+        mode="create"
+        quizSets={quizSetOptions}
+        isLoading={loading}
+        onSubmit={handleCreateSubmit}
+      />
+
+      <ExamRoomModal
+        open={isEditModalOpen}
+        onOpenChange={setIsEditModalOpen}
+        mode="edit"
+        quizSets={quizSetOptions}
+        isLoading={loading}
+        initialData={editFormData}
+        onSubmit={handleEditSubmit}
+      />
+
+      <DeleteConfirmDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        title="Xóa phòng thi"
+        description="Bạn có chắc chắn muốn xóa phòng thi này? Hành động này không thể hoàn tác."
+        onConfirm={handleConfirmDelete}
+      />
+    </div>
   );
 }

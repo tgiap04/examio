@@ -58,7 +58,6 @@ import {
 } from "@/components/antd/table";
 import { ASSESS_TYPE } from "@/types/examSession";
 import type { ExamSessionBasic } from "@/types/examRoom";
-import { TeacherRoute } from "@/components/organisms/TeacherRoute";
 import { useExamRoomDetailStore } from "@/stores/useExamRoomDetailStore";
 import { useExamRoomStore } from "@/stores/useExamRoomStore";
 
@@ -234,217 +233,215 @@ export default function ManageExamRoomDetailPage() {
   }
 
   return (
-    <TeacherRoute>
-      <div className="min-h-screen">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="mb-8 mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-                <Breadcrumb className="mb-3">
-                  <BreadcrumbList>
-                    <BreadcrumbItem>
-                      <BreadcrumbLink asChild>
-                        <Link to="/k/manage-exam-room">Quản lý Phòng thi</Link>
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
-                    <BreadcrumbSeparator />
-                    <BreadcrumbItem>
-                      <BreadcrumbPage>{currentExamRoom.title}</BreadcrumbPage>
-                    </BreadcrumbItem>
-                  </BreadcrumbList>
-                </Breadcrumb>
-                <h1 className="font-display text-2xl tracking-tight text-ink">{currentExamRoom.title}</h1>
-                <p className="text-xs text-muted-foreground md:text-sm">Chi tiết phòng thi và các phiên thi liên quan</p>
-              </div>
-              <Button onClick={() => { setFormMode("create"); setEditingSession(null); setFormModalOpen(true); }} size="lg">
-                <Plus className="mr-2 h-4 w-4" />
-                Tạo phiên thi
-              </Button>
-          </div>
+    <div className="min-h-screen">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-8 mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+              <Breadcrumb className="mb-3">
+                <BreadcrumbList>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink asChild>
+                      <Link to="/k/manage-exam-room">Quản lý Phòng thi</Link>
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  <BreadcrumbSeparator />
+                  <BreadcrumbItem>
+                    <BreadcrumbPage>{currentExamRoom.title}</BreadcrumbPage>
+                  </BreadcrumbItem>
+                </BreadcrumbList>
+              </Breadcrumb>
+              <h1 className="font-display text-2xl tracking-tight text-ink">{currentExamRoom.title}</h1>
+              <p className="text-xs text-muted-foreground md:text-sm">Chi tiết phòng thi và các phiên thi liên quan</p>
+            </div>
+            <Button onClick={() => { setFormMode("create"); setEditingSession(null); setFormModalOpen(true); }} size="lg">
+              <Plus className="mr-2 h-4 w-4" />
+              Tạo phiên thi
+            </Button>
+        </div>
 
-          <div className="mb-8 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-lg border border-hairline bg-canvas p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-muted-foreground">Tổng phiên thi</p>
-                  <p className="mt-2 text-3xl font-bold text-ink">{stats.total}</p>
-                </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-coral/10 text-coral">
-                  <Calendar className="h-5 w-5" />
-                </div>
+        <div className="mb-8 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg border border-hairline bg-canvas p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Tổng phiên thi</p>
+                <p className="mt-2 text-3xl font-bold text-ink">{stats.total}</p>
               </div>
-            </div>
-            <div className="rounded-lg border border-hairline bg-canvas p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-muted-foreground">Đang diễn ra</p>
-                  <p className="mt-2 text-3xl font-bold text-ink">{stats.ongoing}</p>
-                </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-success/10 text-success">
-                  <PlayCircle className="h-5 w-5" />
-                </div>
-              </div>
-            </div>
-            <div className="rounded-lg border border-hairline bg-canvas p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-muted-foreground">Thí sinh tham gia</p>
-                  <p className="mt-2 text-3xl font-bold text-ink">{stats.totalParticipants}</p>
-                </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-accent-teal/10 text-accent-teal">
-                  <Users className="h-5 w-5" />
-                </div>
-              </div>
-            </div>
-            <div className="rounded-lg border border-hairline bg-canvas p-5">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-muted-foreground">Lượt làm bài</p>
-                  <p className="mt-2 text-3xl font-bold text-ink">{stats.totalAttempts}</p>
-                </div>
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-accent-amber/10 text-accent-amber">
-                  <CheckCircle2 className="h-5 w-5" />
-                </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-coral/10 text-coral">
+                <Calendar className="h-5 w-5" />
               </div>
             </div>
           </div>
-
-          <div className="mb-8 rounded-lg border border-hairline bg-canvas p-4">
-            <div className="mb-4 border-b border-hairline pb-4">
-              <h2 className="text-lg font-medium text-ink">Thông tin phòng thi</h2>
-            </div>
-            <div>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                <div className="flex items-start gap-3"><div className="rounded-lg bg-coral/10 p-2"><Calendar className="h-5 w-5 text-coral" /></div><div><p className="text-sm font-medium text-ink">Bộ đề</p><p className="text-sm text-muted-foreground">{currentExamRoom.quizSet?.title || "Chưa có bộ đề"}</p></div></div>
-                <div className="flex items-start gap-3"><div className="rounded-lg bg-accent-teal/10 p-2"><Users className="h-5 w-5 text-accent-teal" /></div><div><p className="text-sm font-medium text-ink">Người tổ chức</p><p className="text-sm text-muted-foreground">{currentExamRoom.host?.name || currentExamRoom.host?.username}</p></div></div>
-                <div className="flex items-start gap-3"><div className="rounded-lg bg-accent-amber/10 p-2"><Clock className="h-5 w-5 text-accent-amber" /></div><div><p className="text-sm font-medium text-ink">Ngày tạo</p><p className="text-sm text-muted-foreground">{format(new Date(currentExamRoom.createdAt), "dd/MM/yyyy")}</p></div></div>
+          <div className="rounded-lg border border-hairline bg-canvas p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Đang diễn ra</p>
+                <p className="mt-2 text-3xl font-bold text-ink">{stats.ongoing}</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-success/10 text-success">
+                <PlayCircle className="h-5 w-5" />
               </div>
             </div>
           </div>
-
-          <div className="rounded-lg border border-hairline bg-canvas p-4">
-            <div className="mb-4 border-b border-hairline pb-4">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <div>
-                  <h2 className="text-lg font-medium text-ink">Danh sách phiên thi</h2>
-                  <p className="text-sm text-muted-foreground mt-1">Quản lý các phiên thi trong phòng</p>
-                </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="outline" className="border-hairline text-coral"><Timer className="mr-1 h-3 w-3" />{stats.upcoming} sắp tới</Badge>
-                  <Badge variant="outline" className="border-hairline text-success"><PlayCircle className="mr-1 h-3 w-3" />{stats.ongoing} đang thi</Badge>
-                  <Badge variant="outline" className="border-hairline text-muted-foreground"><CheckCircle2 className="mr-1 h-3 w-3" />{stats.completed} đã kết thúc</Badge>
-                </div>
+          <div className="rounded-lg border border-hairline bg-canvas p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Thí sinh tham gia</p>
+                <p className="mt-2 text-3xl font-bold text-ink">{stats.totalParticipants}</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-accent-teal/10 text-accent-teal">
+                <Users className="h-5 w-5" />
               </div>
             </div>
-            <div>
-              {loadingSessions ? (
-                <div className="space-y-2">
-                  {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
-                </div>
-              ) : sessions.length === 0 ? (
-                <div className="py-12 text-center text-muted-foreground">
-                  <Calendar className="mx-auto mb-4 h-16 w-16 opacity-50" />
-                  <p className="mb-2 text-lg font-medium text-ink">Chưa có phiên thi nào</p>
-                  <p className="mb-4 text-sm">Tạo phiên thi đầu tiên để bắt đầu tổ chức bài kiểm tra</p>
-                  <Button onClick={() => { setFormMode("create"); setEditingSession(null); setFormModalOpen(true); }}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Tạo phiên thi đầu tiên
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <div className="overflow-hidden rounded-lg border border-hairline">
-                    <Table>
-                      <TableHeader>
-                        <TableRow className="border-hairline bg-surface-soft/70 hover:bg-transparent">
-                          <TableHead className="w-[140px] text-muted-foreground font-medium">Trạng thái</TableHead>
-                          <TableHead className="text-muted-foreground font-medium">Thời gian bắt đầu</TableHead>
-                          <TableHead className="text-muted-foreground font-medium">Thời gian kết thúc</TableHead>
-                          <TableHead className="text-center text-muted-foreground font-medium"><Users className="mr-1 inline h-4 w-4" />Thí sinh</TableHead>
-                          <TableHead className="text-center text-muted-foreground font-medium"><CheckCircle2 className="mr-1 inline h-4 w-4" />Bài làm</TableHead>
-                          <TableHead className="w-[100px] text-right text-muted-foreground font-medium">Hành động</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {sessions.map((session) => (
-                          <TableRow key={session.id} className="border-hairline hover:bg-surface-soft">
-                            <TableCell>{getStatusBadge(session.startTime, session.endTime || "")}</TableCell>
-                            <TableCell className="font-medium text-ink">{format(new Date(session.startTime), "dd/MM/yyyy HH:mm")}</TableCell>
-                            <TableCell>{session.endTime ? format(new Date(session.endTime), "dd/MM/yyyy HH:mm") : <span className="text-muted-foreground">—</span>}</TableCell>
-                            <TableCell className="text-center"><Badge variant="outline" className="border-hairline">{session.distinctUserCount || 0}</Badge></TableCell>
-                            <TableCell className="text-center"><Badge variant="outline" className="border-hairline">{session._count?.examAttempts || 0}</Badge></TableCell>
-                            <TableCell className="text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => { setSelectedSessionId(session.id); setShareDialogOpen(true); setCopied(false); }}><Share2 className="mr-2 h-4 w-4" />Chia sẻ</DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => navigate(`/k/manage-exam-room/${id}/session/${session.id}`)}><BarChart3 className="mr-2 h-4 w-4" />Xem thống kê</DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => { setFormMode("edit"); setEditingSession(session); setFormModalOpen(true); }}><Pencil className="mr-2 h-4 w-4" />Chỉnh sửa</DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem onClick={() => { setDeletingSessionId(session.id); setDeleteDialogOpen(true); }} className="text-red-600 focus:text-red-600"><Trash2 className="mr-2 h-4 w-4" />Xóa</DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                  {renderPagination()}
-                </>
-              )}
+          </div>
+          <div className="rounded-lg border border-hairline bg-canvas p-5">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-muted-foreground">Lượt làm bài</p>
+                <p className="mt-2 text-3xl font-bold text-ink">{stats.totalAttempts}</p>
+              </div>
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-accent-amber/10 text-accent-amber">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
             </div>
           </div>
+        </div>
 
-        <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
-          <DialogContent className="sm:max-w-md border-hairline bg-canvas">
-            <DialogHeader><DialogTitle className="text-ink">Chia sẻ phiên thi</DialogTitle></DialogHeader>
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  readOnly
-                  value={selectedSessionId ? `${window.location.origin}/exam-session/${selectedSessionId}` : ""}
-                  className="flex-1 rounded-md border border-hairline bg-surface-soft px-3 py-2 text-sm text-ink"
-                />
-                <Button variant="outline" size="sm" className="border-hairline" onClick={handleCopyLink}>
-                  {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+        <div className="mb-8 rounded-lg border border-hairline bg-canvas p-4">
+          <div className="mb-4 border-b border-hairline pb-4">
+            <h2 className="text-lg font-medium text-ink">Thông tin phòng thi</h2>
+          </div>
+          <div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="flex items-start gap-3"><div className="rounded-lg bg-coral/10 p-2"><Calendar className="h-5 w-5 text-coral" /></div><div><p className="text-sm font-medium text-ink">Bộ đề</p><p className="text-sm text-muted-foreground">{currentExamRoom.quizSet?.title || "Chưa có bộ đề"}</p></div></div>
+              <div className="flex items-start gap-3"><div className="rounded-lg bg-accent-teal/10 p-2"><Users className="h-5 w-5 text-accent-teal" /></div><div><p className="text-sm font-medium text-ink">Người tổ chức</p><p className="text-sm text-muted-foreground">{currentExamRoom.host?.name || currentExamRoom.host?.username}</p></div></div>
+              <div className="flex items-start gap-3"><div className="rounded-lg bg-accent-amber/10 p-2"><Clock className="h-5 w-5 text-accent-amber" /></div><div><p className="text-sm font-medium text-ink">Ngày tạo</p><p className="text-sm text-muted-foreground">{format(new Date(currentExamRoom.createdAt), "dd/MM/yyyy")}</p></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-hairline bg-canvas p-4">
+          <div className="mb-4 border-b border-hairline pb-4">
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <h2 className="text-lg font-medium text-ink">Danh sách phiên thi</h2>
+                <p className="text-sm text-muted-foreground mt-1">Quản lý các phiên thi trong phòng</p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className="border-hairline text-coral"><Timer className="mr-1 h-3 w-3" />{stats.upcoming} sắp tới</Badge>
+                <Badge variant="outline" className="border-hairline text-success"><PlayCircle className="mr-1 h-3 w-3" />{stats.ongoing} đang thi</Badge>
+                <Badge variant="outline" className="border-hairline text-muted-foreground"><CheckCircle2 className="mr-1 h-3 w-3" />{stats.completed} đã kết thúc</Badge>
+              </div>
+            </div>
+          </div>
+          <div>
+            {loadingSessions ? (
+              <div className="space-y-2">
+                {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-16 w-full" />)}
+              </div>
+            ) : sessions.length === 0 ? (
+              <div className="py-12 text-center text-muted-foreground">
+                <Calendar className="mx-auto mb-4 h-16 w-16 opacity-50" />
+                <p className="mb-2 text-lg font-medium text-ink">Chưa có phiên thi nào</p>
+                <p className="mb-4 text-sm">Tạo phiên thi đầu tiên để bắt đầu tổ chức bài kiểm tra</p>
+                <Button onClick={() => { setFormMode("create"); setEditingSession(null); setFormModalOpen(true); }}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Tạo phiên thi đầu tiên
                 </Button>
               </div>
-              <p className="text-sm text-muted-foreground">Chia sẻ link này để mọi người có thể truy cập phiên thi.</p>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        <ExamSessionFormModal
-          open={formModalOpen}
-          onOpenChange={setFormModalOpen}
-          mode={formMode}
-          examRoomId={id}
-          session={editingSession}
-          onSubmit={handleFormSubmit}
-          isLoading={mutationLoading}
-        />
-
-        <DeleteConfirmDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          title="Xóa phiên thi"
-          description="Bạn có chắc chắn muốn xóa phiên thi này? Tất cả dữ liệu liên quan sẽ bị xóa vĩnh viễn."
-          isLoading={mutationLoading}
-          onConfirm={async () => {
-            if (!deletingSessionId) return;
-            const success = await deleteSession(deletingSessionId, id);
-            if (success) {
-              setDeleteDialogOpen(false);
-              setDeletingSessionId(null);
-              fetchSessions(id, sessionsPage, PAGE_SIZE, { forceRefresh: true });
-            }
-          }}
-        />
+            ) : (
+              <>
+                <div className="overflow-hidden rounded-lg border border-hairline">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-hairline bg-surface-soft/70 hover:bg-transparent">
+                        <TableHead className="w-[140px] text-muted-foreground font-medium">Trạng thái</TableHead>
+                        <TableHead className="text-muted-foreground font-medium">Thời gian bắt đầu</TableHead>
+                        <TableHead className="text-muted-foreground font-medium">Thời gian kết thúc</TableHead>
+                        <TableHead className="text-center text-muted-foreground font-medium"><Users className="mr-1 inline h-4 w-4" />Thí sinh</TableHead>
+                        <TableHead className="text-center text-muted-foreground font-medium"><CheckCircle2 className="mr-1 inline h-4 w-4" />Bài làm</TableHead>
+                        <TableHead className="w-[100px] text-right text-muted-foreground font-medium">Hành động</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sessions.map((session) => (
+                        <TableRow key={session.id} className="border-hairline hover:bg-surface-soft">
+                          <TableCell>{getStatusBadge(session.startTime, session.endTime || "")}</TableCell>
+                          <TableCell className="font-medium text-ink">{format(new Date(session.startTime), "dd/MM/yyyy HH:mm")}</TableCell>
+                          <TableCell>{session.endTime ? format(new Date(session.endTime), "dd/MM/yyyy HH:mm") : <span className="text-muted-foreground">—</span>}</TableCell>
+                          <TableCell className="text-center"><Badge variant="outline" className="border-hairline">{session.distinctUserCount || 0}</Badge></TableCell>
+                          <TableCell className="text-center"><Badge variant="outline" className="border-hairline">{session._count?.examAttempts || 0}</Badge></TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => { setSelectedSessionId(session.id); setShareDialogOpen(true); setCopied(false); }}><Share2 className="mr-2 h-4 w-4" />Chia sẻ</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => navigate(`/k/manage-exam-room/${id}/session/${session.id}`)}><BarChart3 className="mr-2 h-4 w-4" />Xem thống kê</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => { setFormMode("edit"); setEditingSession(session); setFormModalOpen(true); }}><Pencil className="mr-2 h-4 w-4" />Chỉnh sửa</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => { setDeletingSessionId(session.id); setDeleteDialogOpen(true); }} className="text-red-600 focus:text-red-600"><Trash2 className="mr-2 h-4 w-4" />Xóa</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                {renderPagination()}
+              </>
+            )}
+          </div>
         </div>
+
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="sm:max-w-md border-hairline bg-canvas">
+          <DialogHeader><DialogTitle className="text-ink">Chia sẻ phiên thi</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                readOnly
+                value={selectedSessionId ? `${window.location.origin}/exam-session/${selectedSessionId}` : ""}
+                className="flex-1 rounded-md border border-hairline bg-surface-soft px-3 py-2 text-sm text-ink"
+              />
+              <Button variant="outline" size="sm" className="border-hairline" onClick={handleCopyLink}>
+                {copied ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </div>
+            <p className="text-sm text-muted-foreground">Chia sẻ link này để mọi người có thể truy cập phiên thi.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <ExamSessionFormModal
+        open={formModalOpen}
+        onOpenChange={setFormModalOpen}
+        mode={formMode}
+        examRoomId={id}
+        session={editingSession}
+        onSubmit={handleFormSubmit}
+        isLoading={mutationLoading}
+      />
+
+      <DeleteConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Xóa phiên thi"
+        description="Bạn có chắc chắn muốn xóa phiên thi này? Tất cả dữ liệu liên quan sẽ bị xóa vĩnh viễn."
+        isLoading={mutationLoading}
+        onConfirm={async () => {
+          if (!deletingSessionId) return;
+          const success = await deleteSession(deletingSessionId, id);
+          if (success) {
+            setDeleteDialogOpen(false);
+            setDeletingSessionId(null);
+            fetchSessions(id, sessionsPage, PAGE_SIZE, { forceRefresh: true });
+          }
+        }}
+      />
       </div>
-    </TeacherRoute>
+    </div>
   );
 }

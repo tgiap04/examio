@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useWordFamilyStore } from "@/stores/useWordFamilyStore";
 import { Button, Spin } from "antd";
+import { useCan } from "@/hooks/useCan";
+import { WORD_FAMILY_ACTION_PERMISSIONS } from "@/lib/rbac/nav-items";
 import { ArrowUpRight } from "lucide-react";
 import {
   Breadcrumb,
@@ -14,6 +16,7 @@ import {
 
 export default function WordFamilyCategoryPage() {
   const { slug } = useParams<{ slug: string }>();
+  const canGenerate = useCan(WORD_FAMILY_ACTION_PERMISSIONS.generate);
   const {
     currentCategory,
     loadingRootWords,
@@ -120,14 +123,16 @@ export default function WordFamilyCategoryPage() {
               {currentCategory?.total ?? 0} từ gốc
             </span>
           </div>
-          <Button
-            type="primary"
-            size="large"
-            loading={generating}
-            onClick={handleGenerate}
-          >
-            Tạo thêm từ gốc
-          </Button>
+          {canGenerate && (
+            <Button
+              type="primary"
+              size="large"
+              loading={generating}
+              onClick={handleGenerate}
+            >
+              Tạo thêm từ gốc
+            </Button>
+          )}
         </div>
 
         {error && (
@@ -160,8 +165,9 @@ export default function WordFamilyCategoryPage() {
               Chưa có từ gốc nào
             </p>
             <p className="max-w-sm text-sm text-ink/55">
-              Nhấn "Tạo thêm từ gốc" để AI sinh nhóm từ vựng đầu tiên cho danh
-              mục này.
+              {canGenerate
+                ? "Nhấn \"Tạo thêm từ gốc\" để AI sinh nhóm từ vựng đầu tiên cho danh mục này."
+                : "Giáo viên sẽ bổ sung từ vựng cho danh mục này."}
             </p>
           </div>
         )}

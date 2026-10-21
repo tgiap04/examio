@@ -7,6 +7,8 @@ import {
 } from "@/components/k/word-family";
 import { useWordFamilyStore } from "@/stores/useWordFamilyStore";
 import { toast } from "@/components/antd/toast";
+import { useCan } from "@/hooks/useCan";
+import { WORD_FAMILY_ACTION_PERMISSIONS } from "@/lib/rbac/nav-items";
 import { Button, Skeleton, Spin } from "antd";
 import {
   SaveOutlined,
@@ -52,11 +54,14 @@ export default function WordFamilyDetailPage() {
     () => new Set(),
   );
   const [showFlashcardModal, setShowFlashcardModal] = useState(false);
+  const canGenerate = useCan(WORD_FAMILY_ACTION_PERMISSIONS.generate);
+  const canSave = useCan(WORD_FAMILY_ACTION_PERMISSIONS.save);
+  const canToFlashcard = useCan(WORD_FAMILY_ACTION_PERMISSIONS.toFlashcard);
 
   useEffect(() => {
     if (slug && rootWord) {
       void fetchWordFamily(slug, rootWord);
-      void fetchSaved();
+      if (canSave) void fetchSaved();
       // Resume the generating UI if a job for THIS root is already running
       // (e.g. after a page reload).
       void checkRootGenerationStatus(slug, rootWord);
@@ -221,23 +226,27 @@ export default function WordFamilyDetailPage() {
               </button>
             </div>
 
-            <Button
-              icon={<ThunderboltOutlined />}
-              onClick={handleGenerate}
-              loading={generating}
-            >
-              {generating ? "Đang sinh..." : "Sinh lại từ con"}
-            </Button>
+            {canGenerate && (
+              <Button
+                icon={<ThunderboltOutlined />}
+                onClick={handleGenerate}
+                loading={generating}
+              >
+                {generating ? "Đang sinh..." : "Sinh lại từ con"}
+              </Button>
+            )}
 
-            <Button
-              icon={<SaveOutlined />}
-              onClick={handleSave}
-              disabled={isSaved || generating}
-            >
-              {isSaved ? "Đã lưu" : "Lưu"}
-            </Button>
+            {canSave && (
+              <Button
+                icon={<SaveOutlined />}
+                onClick={handleSave}
+                disabled={isSaved || generating}
+              >
+                {isSaved ? "Đã lưu" : "Lưu"}
+              </Button>
+            )}
 
-            {viewMode === "list" && selectedIndices.size > 0 && (
+            {canToFlashcard && viewMode === "list" && selectedIndices.size > 0 && (
               <Button
                 type="primary"
                 onClick={() => setShowFlashcardModal(true)}
@@ -277,15 +286,17 @@ export default function WordFamilyDetailPage() {
             <p className="text-sm text-ink/55">
               Chưa có từ con cho từ gốc &ldquo;{rootWord}&rdquo;.
             </p>
-            <Button
-              type="primary"
-              size="large"
-              icon={<ThunderboltOutlined />}
-              onClick={handleGenerate}
-              loading={generating}
-            >
-              {generating ? "Đang sinh..." : `Sinh từ con cho "${rootWord}"`}
-            </Button>
+            {canGenerate && (
+              <Button
+                type="primary"
+                size="large"
+                icon={<ThunderboltOutlined />}
+                onClick={handleGenerate}
+                loading={generating}
+              >
+                {generating ? "Đang sinh..." : `Sinh từ con cho "${rootWord}"`}
+              </Button>
+            )}
           </div>
         )}
 

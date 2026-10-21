@@ -56,7 +56,6 @@ import {
   TableRow,
 } from "@/components/antd/table";
 import { toast } from "@/components/antd/toast";
-import { TeacherRoute } from "@/components/organisms/TeacherRoute";
 
 const ATTEMPT_STATUS = {
   IN_PROGRESS: 0,
@@ -179,151 +178,149 @@ export default function ExamRoomSessionAnalyticsPage() {
   }
 
   return (
-    <TeacherRoute>
-      <div className="container mx-auto p-6 space-y-6">
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem><BreadcrumbLink asChild><Link to="/k/manage-exam-room">Quản lý Phòng thi</Link></BreadcrumbLink></BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbLink asChild><Link to={`/k/manage-exam-room/${examRoomId}`}>{sessionInfo?.title || "Phòng thi"}</Link></BreadcrumbLink></BreadcrumbItem>
-            <BreadcrumbSeparator />
-            <BreadcrumbItem><BreadcrumbPage>Thống kê phiên thi</BreadcrumbPage></BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
+    <div className="container mx-auto p-6 space-y-6">
+      <Breadcrumb>
+        <BreadcrumbList>
+          <BreadcrumbItem><BreadcrumbLink asChild><Link to="/k/manage-exam-room">Quản lý Phòng thi</Link></BreadcrumbLink></BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem><BreadcrumbLink asChild><Link to={`/k/manage-exam-room/${examRoomId}`}>{sessionInfo?.title || "Phòng thi"}</Link></BreadcrumbLink></BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem><BreadcrumbPage>Thống kê phiên thi</BreadcrumbPage></BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card><CardContent className="flex items-center gap-4 py-4"><Users className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{sortedAttempts.length}</p><p className="text-sm text-muted-foreground">Thí sinh hoàn thành</p></div></CardContent></Card>
-          <Card><CardContent className="flex items-center gap-4 py-4"><BarChart3 className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{avgScore.toFixed(1)}%</p><p className="text-sm text-muted-foreground">Điểm trung bình</p></div></CardContent></Card>
-          <Card><CardContent className="flex items-center gap-4 py-4"><Trophy className="h-8 w-8 text-yellow-500" /><div><p className="text-2xl font-bold">{passedCount}/{sortedAttempts.length}</p><p className="text-sm text-muted-foreground">Đạt yêu cầu</p></div></CardContent></Card>
-          <Card><CardContent className="flex items-center gap-4 py-4"><AlertTriangle className="h-8 w-8 text-red-500" /><div><p className="text-2xl font-bold">{totalViolations}</p><p className="text-sm text-muted-foreground">Lượt vi phạm</p></div></CardContent></Card>
-        </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card><CardContent className="flex items-center gap-4 py-4"><Users className="h-8 w-8 text-primary" /><div><p className="text-2xl font-bold">{sortedAttempts.length}</p><p className="text-sm text-muted-foreground">Thí sinh hoàn thành</p></div></CardContent></Card>
+        <Card><CardContent className="flex items-center gap-4 py-4"><BarChart3 className="h-8 w-8 text-green-500" /><div><p className="text-2xl font-bold">{avgScore.toFixed(1)}%</p><p className="text-sm text-muted-foreground">Điểm trung bình</p></div></CardContent></Card>
+        <Card><CardContent className="flex items-center gap-4 py-4"><Trophy className="h-8 w-8 text-yellow-500" /><div><p className="text-2xl font-bold">{passedCount}/{sortedAttempts.length}</p><p className="text-sm text-muted-foreground">Đạt yêu cầu</p></div></CardContent></Card>
+        <Card><CardContent className="flex items-center gap-4 py-4"><AlertTriangle className="h-8 w-8 text-red-500" /><div><p className="text-2xl font-bold">{totalViolations}</p><p className="text-sm text-muted-foreground">Lượt vi phạm</p></div></CardContent></Card>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-primary" />Phân bố điểm số</CardTitle></CardHeader>
-            <CardContent><div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={scoreDistribution}><CartesianGrid strokeDasharray="3 3" opacity={0.3} /><XAxis dataKey="range" fontSize={12} /><YAxis fontSize={12} allowDecimals={false} /><Tooltip formatter={(value) => [`${Number(value ?? 0)} thí sinh`, "Số lượng"]} labelFormatter={(label) => `Điểm ${Number(label) * 10 - 10}-${Number(label) * 10}%`} /><Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div></CardContent>
-          </Card>
-
-          {cheatingStats.length > 0 && (
-            <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-red-500" />Thống kê vi phạm</CardTitle></CardHeader>
-              <CardContent><div className="h-64"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={violationPieData} cx="50%" cy="50%" labelLine={false} label={({ name, percent }) => `${(name || "").substring(0, 10)}... ${(((percent || 0) * 100)).toFixed(0)}%`} outerRadius={80} fill="#8884d8" dataKey="value">{violationPieData.map((entry, index) => <Cell key={entry.type + index} fill={VIOLATION_COLORS[entry.type] || CHART_COLORS[index % CHART_COLORS.length]} />)}</Pie><Tooltip formatter={(value, name) => [`${Number(value ?? 0)} lần`, String(name ?? "")]} /><Legend /></PieChart></ResponsiveContainer></div></CardContent>
-            </Card>
-          )}
-        </div>
-
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5" />Bảng xếp hạng thí sinh</CardTitle></CardHeader>
-          <CardContent>
-            {sortedAttempts.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">Chưa có thí sinh nào hoàn thành bài thi</div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-16">Hạng</TableHead>
-                    <TableHead>Thí sinh</TableHead>
-                    <TableHead className="cursor-pointer select-none" onClick={() => { if (sortField === "score") setSortOrder((prev) => prev === "asc" ? "desc" : "asc"); else { setSortField("score"); setSortOrder("desc"); } }}><div className="flex items-center gap-1">Điểm cao nhất{sortField === "score" && (sortOrder === "desc" ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />)}</div></TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead>Thời gian làm</TableHead>
-                    <TableHead className="cursor-pointer select-none" onClick={() => { if (sortField === "violations") setSortOrder((prev) => prev === "asc" ? "desc" : "asc"); else { setSortField("violations"); setSortOrder("desc"); } }}><div className="flex items-center gap-1">Vi phạm{sortField === "violations" && (sortOrder === "desc" ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />)}</div></TableHead>
-                    <TableHead className="text-right">Chi tiết</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {sortedAttempts.map((attempt, index) => {
-                    const passed = attempt.score >= (sessionInfo?.passingScore || 0);
-                    const rank = index + 1;
-                    return (
-                      <TableRow key={attempt.user.id}>
-                        <TableCell><span className={`font-bold ${rank === 1 ? "text-yellow-500" : rank === 2 ? "text-gray-400" : rank === 3 ? "text-yellow-600" : ""}`}>#{rank}</span></TableCell>
-                        <TableCell><div><p className="font-medium">{attempt.user.name || attempt.user.username}</p><p className="text-xs text-muted-foreground">{attempt.user.email}</p></div></TableCell>
-                        <TableCell><span className="font-bold">{attempt.score.toFixed(1)}%</span><span className="text-xs text-muted-foreground ml-1">({attempt.correctAnswers}/{attempt.totalQuestions})</span></TableCell>
-                        <TableCell className="flex items-center gap-x-2">{passed ? <Badge variant="default" className="bg-green-500">Đạt</Badge> : <Badge variant="destructive">Chưa đạt</Badge>}</TableCell>
-                        <TableCell><div className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatDuration(attempt.timeSpentSeconds)}</div></TableCell>
-                        <TableCell>{(attempt.violationCount || 0) > 0 ? <Badge variant="outline" className="text-red-500 border-red-500">{attempt.violationCount}</Badge> : <span className="text-muted-foreground">0</span>}</TableCell>
-                        <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => handleViewDetail(attempt.user.id)}>Xem</Button></TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
+          <CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-primary" />Phân bố điểm số</CardTitle></CardHeader>
+          <CardContent><div className="h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={scoreDistribution}><CartesianGrid strokeDasharray="3 3" opacity={0.3} /><XAxis dataKey="range" fontSize={12} /><YAxis fontSize={12} allowDecimals={false} /><Tooltip formatter={(value) => [`${Number(value ?? 0)} thí sinh`, "Số lượng"]} labelFormatter={(label) => `Điểm ${Number(label) * 10 - 10}-${Number(label) * 10}%`} /><Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer></div></CardContent>
         </Card>
 
-        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent className="sm:max-w-lg overflow-y-auto">
-            <SheetHeader><SheetTitle>Chi tiết bài làm</SheetTitle><SheetDescription>Xem thông tin chi tiết và các vi phạm</SheetDescription></SheetHeader>
-            {loadingDetail ? (
-              <div className="space-y-4 mt-6"><Skeleton className="h-20 w-full" /><Skeleton className="h-40 w-full" /></div>
-            ) : selectedAttempt ? (
-              <div className="space-y-6 mt-6">
-                <div className="p-4 bg-muted rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center"><span className="text-lg font-bold">{(selectedAttempt.user.name || selectedAttempt.user.username).charAt(0).toUpperCase()}</span></div>
-                    <div><p className="font-semibold">{selectedAttempt.user.name || selectedAttempt.user.username}</p><p className="text-sm text-muted-foreground">{selectedAttempt.user.email}</p></div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <h4 className="font-semibold flex items-center gap-2"><Trophy className="h-4 w-4 text-yellow-500" />Điểm cao nhất</h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 border rounded-lg text-center"><p className="text-3xl font-bold text-primary">{selectedAttempt.score.toFixed(1)}%</p><p className="text-sm text-muted-foreground">Điểm số</p></div>
-                    <div className="p-4 border rounded-lg text-center"><p className="text-3xl font-bold">{formatDuration(selectedAttempt.timeSpentSeconds)}</p><p className="text-sm text-muted-foreground">Thời gian</p></div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <h4 className="font-semibold flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" />Lịch sử làm bài ({selectedUserAttempts.length} lần)</h4>
-                  <div className="space-y-2">
-                    {selectedUserAttempts.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()).map((attempt, index) => {
-                      const passed = attempt.score >= (sessionInfo?.passingScore || 0);
-                      return (
-                        <div key={attempt.id} className={`p-3 border rounded-lg ${attempt.id === selectedAttempt.id ? "bg-primary/5 border-primary" : ""}`}>
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex items-center gap-2"><span className="font-medium">Lần {selectedUserAttempts.length - index}</span>{attempt.id === selectedAttempt.id && <Badge variant="default" className="bg-yellow-500 text-xs">Cao nhất</Badge>}</div>
-                            <Badge variant={passed ? "default" : "destructive"} className={passed ? "bg-green-500" : ""}>{passed ? "Đạt" : "Chưa đạt"}</Badge>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div><span className="text-muted-foreground">Điểm:</span> <span className="font-bold">{attempt.score.toFixed(1)}%</span></div>
-                            <div><span className="text-muted-foreground">Thời gian:</span> {formatDuration(attempt.timeSpentSeconds)}</div>
-                            <div><span className="text-muted-foreground">Đúng:</span> {attempt.correctAnswers}/{attempt.totalQuestions}</div>
-                            <div><span className="text-muted-foreground">Vi phạm:</span> <span className={(attempt.violationCount || 0) > 0 ? "text-red-500 font-semibold" : ""}>{attempt.violationCount || 0}</span></div>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-2">{format(new Date(attempt.startedAt), "HH:mm:ss dd/MM/yyyy")}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {selectedLogs.length > 0 ? (
-                  <div className="space-y-3">
-                    <h4 className="font-semibold flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-red-500" />Chi tiết vi phạm tổng hợp ({selectedLogs.reduce((sum, log) => sum + log.totalCount, 0)} lần)</h4>
-                    <p className="text-sm text-muted-foreground">Tổng hợp vi phạm từ tất cả {selectedUserAttempts.length} lần thi</p>
-                    <div className="space-y-2">
-                      {selectedLogs.map((log) => (
-                        <div key={log.type} className="p-3 border border-red-200 bg-red-50 rounded-lg">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="font-medium">{CHEATING_TYPE_LABELS[log.type as CHEATING_TYPE] || log.type}</p>
-                              <p className="text-xs text-muted-foreground">{log.description}</p>
-                            </div>
-                            <Badge variant="destructive">{log.totalCount}x</Badge>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-4 border rounded-lg text-center text-muted-foreground"><CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500" /><p>Không có vi phạm</p></div>
-                )}
-              </div>
-            ) : null}
-          </SheetContent>
-        </Sheet>
+        {cheatingStats.length > 0 && (
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-red-500" />Thống kê vi phạm</CardTitle></CardHeader>
+            <CardContent><div className="h-64"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={violationPieData} cx="50%" cy="50%" labelLine={false} label={({ name, percent }) => `${(name || "").substring(0, 10)}... ${(((percent || 0) * 100)).toFixed(0)}%`} outerRadius={80} fill="#8884d8" dataKey="value">{violationPieData.map((entry, index) => <Cell key={entry.type + index} fill={VIOLATION_COLORS[entry.type] || CHART_COLORS[index % CHART_COLORS.length]} />)}</Pie><Tooltip formatter={(value, name) => [`${Number(value ?? 0)} lần`, String(name ?? "")]} /><Legend /></PieChart></ResponsiveContainer></div></CardContent>
+          </Card>
+        )}
       </div>
-    </TeacherRoute>
+
+      <Card>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Trophy className="h-5 w-5" />Bảng xếp hạng thí sinh</CardTitle></CardHeader>
+        <CardContent>
+          {sortedAttempts.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">Chưa có thí sinh nào hoàn thành bài thi</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-16">Hạng</TableHead>
+                  <TableHead>Thí sinh</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => { if (sortField === "score") setSortOrder((prev) => prev === "asc" ? "desc" : "asc"); else { setSortField("score"); setSortOrder("desc"); } }}><div className="flex items-center gap-1">Điểm cao nhất{sortField === "score" && (sortOrder === "desc" ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />)}</div></TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                  <TableHead>Thời gian làm</TableHead>
+                  <TableHead className="cursor-pointer select-none" onClick={() => { if (sortField === "violations") setSortOrder((prev) => prev === "asc" ? "desc" : "asc"); else { setSortField("violations"); setSortOrder("desc"); } }}><div className="flex items-center gap-1">Vi phạm{sortField === "violations" && (sortOrder === "desc" ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />)}</div></TableHead>
+                  <TableHead className="text-right">Chi tiết</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sortedAttempts.map((attempt, index) => {
+                  const passed = attempt.score >= (sessionInfo?.passingScore || 0);
+                  const rank = index + 1;
+                  return (
+                    <TableRow key={attempt.user.id}>
+                      <TableCell><span className={`font-bold ${rank === 1 ? "text-yellow-500" : rank === 2 ? "text-gray-400" : rank === 3 ? "text-yellow-600" : ""}`}>#{rank}</span></TableCell>
+                      <TableCell><div><p className="font-medium">{attempt.user.name || attempt.user.username}</p><p className="text-xs text-muted-foreground">{attempt.user.email}</p></div></TableCell>
+                      <TableCell><span className="font-bold">{attempt.score.toFixed(1)}%</span><span className="text-xs text-muted-foreground ml-1">({attempt.correctAnswers}/{attempt.totalQuestions})</span></TableCell>
+                      <TableCell className="flex items-center gap-x-2">{passed ? <Badge variant="default" className="bg-green-500">Đạt</Badge> : <Badge variant="destructive">Chưa đạt</Badge>}</TableCell>
+                      <TableCell><div className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatDuration(attempt.timeSpentSeconds)}</div></TableCell>
+                      <TableCell>{(attempt.violationCount || 0) > 0 ? <Badge variant="outline" className="text-red-500 border-red-500">{attempt.violationCount}</Badge> : <span className="text-muted-foreground">0</span>}</TableCell>
+                      <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => handleViewDetail(attempt.user.id)}>Xem</Button></TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="sm:max-w-lg overflow-y-auto">
+          <SheetHeader><SheetTitle>Chi tiết bài làm</SheetTitle><SheetDescription>Xem thông tin chi tiết và các vi phạm</SheetDescription></SheetHeader>
+          {loadingDetail ? (
+            <div className="space-y-4 mt-6"><Skeleton className="h-20 w-full" /><Skeleton className="h-40 w-full" /></div>
+          ) : selectedAttempt ? (
+            <div className="space-y-6 mt-6">
+              <div className="p-4 bg-muted rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center"><span className="text-lg font-bold">{(selectedAttempt.user.name || selectedAttempt.user.username).charAt(0).toUpperCase()}</span></div>
+                  <div><p className="font-semibold">{selectedAttempt.user.name || selectedAttempt.user.username}</p><p className="text-sm text-muted-foreground">{selectedAttempt.user.email}</p></div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-semibold flex items-center gap-2"><Trophy className="h-4 w-4 text-yellow-500" />Điểm cao nhất</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 border rounded-lg text-center"><p className="text-3xl font-bold text-primary">{selectedAttempt.score.toFixed(1)}%</p><p className="text-sm text-muted-foreground">Điểm số</p></div>
+                  <div className="p-4 border rounded-lg text-center"><p className="text-3xl font-bold">{formatDuration(selectedAttempt.timeSpentSeconds)}</p><p className="text-sm text-muted-foreground">Thời gian</p></div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <h4 className="font-semibold flex items-center gap-2"><BarChart3 className="h-4 w-4 text-primary" />Lịch sử làm bài ({selectedUserAttempts.length} lần)</h4>
+                <div className="space-y-2">
+                  {selectedUserAttempts.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()).map((attempt, index) => {
+                    const passed = attempt.score >= (sessionInfo?.passingScore || 0);
+                    return (
+                      <div key={attempt.id} className={`p-3 border rounded-lg ${attempt.id === selectedAttempt.id ? "bg-primary/5 border-primary" : ""}`}>
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-2"><span className="font-medium">Lần {selectedUserAttempts.length - index}</span>{attempt.id === selectedAttempt.id && <Badge variant="default" className="bg-yellow-500 text-xs">Cao nhất</Badge>}</div>
+                          <Badge variant={passed ? "default" : "destructive"} className={passed ? "bg-green-500" : ""}>{passed ? "Đạt" : "Chưa đạt"}</Badge>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div><span className="text-muted-foreground">Điểm:</span> <span className="font-bold">{attempt.score.toFixed(1)}%</span></div>
+                          <div><span className="text-muted-foreground">Thời gian:</span> {formatDuration(attempt.timeSpentSeconds)}</div>
+                          <div><span className="text-muted-foreground">Đúng:</span> {attempt.correctAnswers}/{attempt.totalQuestions}</div>
+                          <div><span className="text-muted-foreground">Vi phạm:</span> <span className={(attempt.violationCount || 0) > 0 ? "text-red-500 font-semibold" : ""}>{attempt.violationCount || 0}</span></div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">{format(new Date(attempt.startedAt), "HH:mm:ss dd/MM/yyyy")}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {selectedLogs.length > 0 ? (
+                <div className="space-y-3">
+                  <h4 className="font-semibold flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-red-500" />Chi tiết vi phạm tổng hợp ({selectedLogs.reduce((sum, log) => sum + log.totalCount, 0)} lần)</h4>
+                  <p className="text-sm text-muted-foreground">Tổng hợp vi phạm từ tất cả {selectedUserAttempts.length} lần thi</p>
+                  <div className="space-y-2">
+                    {selectedLogs.map((log) => (
+                      <div key={log.type} className="p-3 border border-red-200 bg-red-50 rounded-lg">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="font-medium">{CHEATING_TYPE_LABELS[log.type as CHEATING_TYPE] || log.type}</p>
+                            <p className="text-xs text-muted-foreground">{log.description}</p>
+                          </div>
+                          <Badge variant="destructive">{log.totalCount}x</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="p-4 border rounded-lg text-center text-muted-foreground"><CheckCircle2 className="h-8 w-8 mx-auto mb-2 text-green-500" /><p>Không có vi phạm</p></div>
+              )}
+            </div>
+          ) : null}
+        </SheetContent>
+      </Sheet>
+    </div>
   );
 }
