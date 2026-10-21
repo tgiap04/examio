@@ -333,7 +333,6 @@ jobs:
             -v "$PWD/examio-fe/nginx/cloudflare-real-ip.conf:/etc/nginx/cloudflare-real-ip.conf" \
             -e BACKEND_URL=http://127.0.0.1:3000 nginx:1.27-alpine nginx -t
 
-  # FE tests (vitest) are added by the frontend RBAC phase.
   fe:
     runs-on: ubuntu-latest
     defaults:
@@ -350,3 +349,29 @@ jobs:
       - run: yarn install --immutable
       - run: yarn build
       - run: yarn lint
+      - run: yarn test
+
+  # The FE Permission union is generated from the backend catalog: fail on drift.
+  fe-permissions-drift:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examio-be
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: examio-be/yarn.lock
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn gen:fe-permissions
+      # Fail if the file is missing or untracked (a bare `git diff` is vacuous
+      # for untracked files), then fail on any drift from the committed copy.
+      - name: Check generated file is tracked and unchanged
+        run: |
+          f=../examio-fe/src/types/permissions.generated.ts
+          test -f "$f"
+          git ls-files --error-unmatch "$f"
+          git diff --exit-code -- "$f"
