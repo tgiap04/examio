@@ -24,6 +24,7 @@ const TABLE: Array<[Ctor, string, Declaration]> = [
     [AuthGrpcController, 'listUsers', { kind: 'permissions-or-service', permissions: ['user:manage'], callers: ['finance'] }],
     [AuthGrpcController, 'setUserRole', { kind: 'permissions', permissions: ['role:assign'] }],
     [AuthGrpcController, 'setSystemAdmin', { kind: 'permissions', permissions: ['role:assign'] }],
+    [AuthGrpcController, 'setUserStatus', { kind: 'permissions', permissions: ['role:assign'] }],
     [AuthGrpcController, 'listRoleChanges', { kind: 'permissions', permissions: ['role:assign'] }],
     [WalletGrpcController, 'getWallet', anyUserOrService],
     [SubscriptionGrpcController, 'getUserBenefits', anyUserOrService],

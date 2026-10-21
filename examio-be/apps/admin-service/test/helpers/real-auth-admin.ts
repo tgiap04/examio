@@ -1,0 +1,91 @@
+import { INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import * as request from 'supertest';
+import {
+    AuthApp,
+    bootAuthApp,
+    loginVerified,
+    registerUser,
+} from '../../../auth-service/test/helpers/auth-app';
+
+/**
+ * Real auth-service (HTTP + gRPC) and real admin-service on one Postgres:
+ * admin calls auth over gRPC with the caller's own access token. Nothing in
+ * the guard / client path is mocked. Mirrors admin `main.ts` (error envelope).
+ */
+export interface Harness {
+    auth: AuthApp;
+    admin: INestApplication;
+    http(): ReturnType<typeof request>;
+    close(): Promise<void>;
+}
+
+const created: string[] = [];
+
+export async function bootHarness(): Promise<Harness> {
+    const auth = await bootAuthApp({ grpc: true });
+    // Start from a known state: no admin left over from an earlier suite or run
+    // (last-admin outcomes must not depend on leftovers).
+    await auth.prisma.user.updateMany({ where: { isSystemAdmin: true }, data: { isSystemAdmin: false } });
+    process.env.AUTH_JWKS_URL = `${auth.url}/.well-known/jwks.json`;
+    process.env.AUTH_GRPC_URL = auth.grpcUrl as string;
+    const { AdminServiceModule } = await import('../../src/admin-service.module');
+    const { HttpErrorEnvelopeFilter } = await import('@examio/http');
+    const moduleRef = await Test.createTestingModule({ imports: [AdminServiceModule] }).compile();
+    const admin = moduleRef.createNestApplication();
+    admin.useGlobalFilters(new HttpErrorEnvelopeFilter());
+    await admin.init();
+    return {
+        auth,
+        admin,
+        http: () => request(admin.getHttpServer()),
+        close: async () => {
+            await deactivateCreated(auth);
+            await Promise.race([admin.close(), new Promise((r) => setTimeout(r, 5000))]);
+            await auth.close();
+        },
+    };
+}
+
+/** Teardown: users this suite created stop being admins/sessions/accounts and lose their content. */
+async function deactivateCreated(auth: AuthApp): Promise<void> {
+    if (created.length === 0) return;
+    const ids = created.splice(0);
+    await auth.prisma.userSession.updateMany({ where: { userId: { in: ids } }, data: { isActive: false } });
+    await auth.prisma.quizSet.deleteMany({ where: { userId: { in: ids } } });
+    await auth.prisma.user.updateMany({
+        where: { id: { in: ids } },
+        data: { isSystemAdmin: false, deletedAt: new Date() },
+    });
+}
+
+export const bearer = (token: string) => ({ authorization: `Bearer ${token}` });
+
+export interface TestUser {
+    id: string;
+    email: string;
+    username: string;
+    token: string;
+    refreshToken: string;
+}
+
+/** Registers, optionally patches the row, verifies the email, logs in. */
+export async function makeUser(auth: AuthApp, data: Record<string, unknown> = {}): Promise<TestUser> {
+    const u = await registerUser(auth);
+    if (Object.keys(data).length) await auth.prisma.user.update({ where: { id: u.id }, data });
+    created.push(u.id);
+    const login = await loginVerified(auth, u.email);
+    return { id: u.id, email: u.email, username: u.username, token: login.body.token, refreshToken: login.body.refreshToken };
+}
+
+/** Leave exactly these users as the active admins (the DB is shared across suites). */
+export async function onlyAdmins(auth: AuthApp, ...ids: string[]): Promise<void> {
+    await auth.prisma.user.updateMany({ where: { isSystemAdmin: true, id: { notIn: ids } }, data: { isSystemAdmin: false } });
+    await auth.prisma.user.updateMany({ where: { id: { in: ids } }, data: { isSystemAdmin: true, isBanned: false } });
+}
+
+export const authzEvents = (auth: AuthApp, userId: string) =>
+    auth.prisma.outboxEvent.findMany({
+        where: { type: 'auth.user.authz_changed', envelope: { path: ['data', 'userId'], equals: userId } },
+        orderBy: { seq: 'asc' },
+    });

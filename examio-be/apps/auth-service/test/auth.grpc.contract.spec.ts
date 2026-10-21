@@ -17,6 +17,7 @@ import {
 import { AuthGrpcController } from '../src/grpc/auth.grpc.controller';
 import { UsersQueryService } from '../src/grpc/users-query.service';
 import { RoleChangeService } from '../src/roles/role-change.service';
+import { UserStatusService } from '../src/user-status/user-status.service';
 
 const protos = [PROTO_FILES.auth];
 
@@ -45,6 +46,7 @@ describe('AuthService gRPC contract (handlers behind the real guards)', () => {
         $transaction: jest.fn(),
     };
     const roles = { change: jest.fn() };
+    const userStatus = { setStatus: jest.fn() };
 
     const md = (token?: string) => {
         const m = new Metadata();
@@ -76,6 +78,7 @@ describe('AuthService gRPC contract (handlers behind the real guards)', () => {
                 UsersQueryService,
                 { provide: PrismaService, useValue: prisma },
                 { provide: RoleChangeService, useValue: roles },
+                { provide: UserStatusService, useValue: userStatus },
             ],
         }).compile();
         server = await startTestGrpcServer(moduleRef, protos);
@@ -211,12 +214,14 @@ describe('AuthService gRPC contract (handlers behind the real guards)', () => {
                     id: 'l1', targetUserId: 't', actorUserId: null, actorEmail: 'cli@system',
                     fromRole: 'STUDENT', toRole: 'TEACHER', fromAdmin: false, toAdmin: true,
                     reason: null, createdAt: new Date(1_700_000_000_000),
+                    targetEmail: 't@x.dev', source: 'cli',
                 },
             ]);
             prisma.roleChangeLog.count.mockResolvedValue(1);
             const res = await lastValueFrom(auth.listRoleChanges({ targetUserId: 't', page: 1, limit: 10 }, await asAdmin()));
             expect(res.changes[0]).toMatchObject({
                 id: 'l1', changedBy: 'cli@system', toRole: authV1.BaseRole.BASE_ROLE_TEACHER, toIsSystemAdmin: true, reason: '',
+                targetEmail: 't@x.dev', actorEmail: 'cli@system', source: 'cli',
             });
             expect(prisma.roleChangeLog.findMany.mock.calls[0][0].where).toEqual({ targetUserId: 't' });
         });
@@ -271,10 +276,49 @@ describe('AuthService gRPC contract (handlers behind the real guards)', () => {
             ).rejects.toMatchObject({ code: grpc, details: code });
         });
 
-        it('SetUserStatus stays UNIMPLEMENTED until phase 08', async () => {
+        it('SetUserStatus: the actor is the token sub, reason is trimmed, response is the fresh user', async () => {
+            userStatus.setStatus.mockResolvedValue({ changed: true });
+            prisma.user.findUniqueOrThrow.mockResolvedValue(row('t', { isBanned: true }));
+            const res = await lastValueFrom(
+                auth.setUserStatus({ userId: 't', isBanned: true, reason: ' spam ' }, await asAdmin())
+            );
+            expect(res.user).toMatchObject({ id: 't', isBanned: true });
+            expect(userStatus.setStatus).toHaveBeenCalledWith({
+                actorUserId: 'admin-1',
+                targetUserId: 't',
+                isBanned: true,
+                reason: 'spam',
+            });
+        });
+
+        it('SetUserStatus rejects a missing user id and a service token (user-only)', async () => {
             await expect(
-                lastValueFrom(auth.setUserStatus({ userId: 'u', isBanned: true, reason: '' }, await asAdmin()))
-            ).rejects.toMatchObject({ code: 12 });
+                lastValueFrom(auth.setUserStatus({ userId: '', isBanned: true, reason: '' }, await asAdmin()))
+            ).rejects.toMatchObject({ code: 3 });
+            await expect(
+                lastValueFrom(auth.setUserStatus({ userId: 't', isBanned: true, reason: '' }, await asService('admin')))
+            ).rejects.toMatchObject({ code: 7 });
+            expect(userStatus.setStatus).not.toHaveBeenCalled();
+        });
+
+        it('SetUserStatus is refused for a STUDENT token', async () => {
+            const student = md(await signTestToken(keys, { claims: { sub: 's1', roles: ['STUDENT'] } }));
+            await expect(
+                lastValueFrom(auth.setUserStatus({ userId: 't', isBanned: true, reason: '' }, student))
+            ).rejects.toMatchObject({ code: 7 });
+            expect(userStatus.setStatus).not.toHaveBeenCalled();
+        });
+
+        it.each([
+            [403, 'CANNOT_CHANGE_OWN_STATUS', 7],
+            [404, 'USER_NOT_FOUND', 5],
+            [409, 'LAST_SYSTEM_ADMIN', 10],
+            [409, 'ROLE_CHANGE_CONFLICT', 10],
+        ])('SetUserStatus maps %i %s to gRPC status %i with the code as detail', async (httpStatus, code, grpc) => {
+            userStatus.setStatus.mockRejectedValue(new HttpException({ statusCode: httpStatus, code, message: 'x' }, httpStatus));
+            await expect(
+                lastValueFrom(auth.setUserStatus({ userId: 't', isBanned: true, reason: '' }, await asAdmin()))
+            ).rejects.toMatchObject({ code: grpc, details: code });
         });
     });
 });

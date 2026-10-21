@@ -1,6 +1,5 @@
 import { INestApplicationContext } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { mailTransporter } from '@examio/common/config/mail.config';
 import { GatewayControlClient } from '../src/clients/gateway-control.client';
 import { RoleChangeService } from '../src/roles/role-change.service';
 import { reservePort } from '../../gateway-service/test/support/ports';
@@ -29,8 +28,6 @@ describe('auth <-> gateway (e2e)', () => {
     const xff = () => ({ 'x-forwarded-for': `203.0.113.9, 10.77.${Date.now() % 250}.${(n++ % 250) + 1}` });
 
     beforeAll(async () => {
-        // Registering sends a welcome mail through a hard-wired Gmail transport: keep the suite off the internet.
-        jest.spyOn(mailTransporter, 'sendMail').mockResolvedValue({} as never);
         const gatewayAmqp = process.env.RABBITMQ_GATEWAY_URL;
         if (!gatewayAmqp) throw new Error('RABBITMQ_GATEWAY_URL (gateway broker user) is required');
         const grpcPort = await reservePort();

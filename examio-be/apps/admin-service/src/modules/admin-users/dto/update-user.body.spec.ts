@@ -1,10 +1,9 @@
 import { UpdateUserBodySchema } from './update-user.body';
 
 describe('PATCH /admin/users/:id body', () => {
-    it('accepts the profile and moderation fields', () => {
+    it('accepts the profile fields', () => {
         expect(
             UpdateUserBodySchema.safeParse({
-                isBanned: true,
                 name: 'A',
                 bio: 'b',
                 isVerified: true,
@@ -12,7 +11,7 @@ describe('PATCH /admin/users/:id body', () => {
         ).toBe(true);
     });
 
-    it.each(['isAdmin', 'isSystemAdmin', 'role'])(
+    it.each(['isSystemAdmin', 'role', 'isBanned'])(
         'rejects %s (admin and role changes go through the role path only)',
         (field) => {
             expect(

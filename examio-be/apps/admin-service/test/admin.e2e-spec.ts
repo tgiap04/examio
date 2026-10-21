@@ -48,7 +48,12 @@ describe('AdminService (e2e, real guards)', () => {
     let app: INestApplication;
     let keys: TestKeyPair;
     let prisma: ReturnType<typeof fakePrisma>;
-    const authClient = { setSystemAdmin: jest.fn(async () => ({})) };
+    const authUser = { id: 'user-1', email: 'u@e.com', username: 'u', name: 'U', avatar: '', role: 1, isSystemAdmin: false, isVerified: true, isBanned: false, createdAt: '1760000000000' };
+    const authClient = {
+        getUser: jest.fn(async () => ({ user: authUser })),
+        setSystemAdmin: jest.fn(async () => ({ user: { ...authUser, isSystemAdmin: true } })),
+        setUserStatus: jest.fn(async () => ({ user: authUser })),
+    };
 
     beforeAll(async () => {
         // Proto paths resolve against examio-be/; import lazily so the chdir applies.
@@ -106,26 +111,63 @@ describe('AdminService (e2e, real guards)', () => {
                 .expect(200);
         });
 
-        it('PATCH with isSystemAdmin is 400 (admin changes go through grant/revoke -> auth)', async () => {
-            const res = await request(app.getHttpServer())
-                .patch('/admin/users/user-1')
-                .set(await admin())
-                .send({ isSystemAdmin: false });
-            expect(res.status).toBe(400);
+        it('PATCH with isSystemAdmin or isBanned is 400 (those go through auth)', async () => {
+            for (const body of [{ isSystemAdmin: false }, { isBanned: true }]) {
+                const res = await request(app.getHttpServer())
+                    .patch('/admin/users/user-1')
+                    .set(await admin())
+                    .send(body);
+                expect([res.status, res.body.code]).toEqual([400, 'VALIDATION_ERROR']);
+            }
             expect((prisma.user as { update: jest.Mock }).update).not.toHaveBeenCalled();
         });
 
-        it('POST /admin/users/:id/grant-admin calls auth with the admin token and writes the audit row', async () => {
+        it('PUT /admin/roles/users/:id/system-admin calls auth with the admin token and writes the audit row', async () => {
             const headers = await admin();
             const res = await request(app.getHttpServer())
-                .post('/admin/users/user-1/grant-admin')
-                .set(headers);
+                .put('/admin/roles/users/user-1/system-admin')
+                .set(headers)
+                .send({ isSystemAdmin: true, reason: 'ok' });
             expect(res.status).toBe(200);
-            const [targetId, flag, metadata] = authClient.setSystemAdmin.mock.calls.at(-1) as unknown as [string, boolean, { get(k: string): string[] }];
-            expect([targetId, flag]).toEqual(['user-1', true]);
+            const [targetId, flag, metadata, reason] = authClient.setSystemAdmin.mock.calls.at(-1) as unknown as [string, boolean, { get(k: string): string[] }, string];
+            expect([targetId, flag, reason]).toEqual(['user-1', true, 'ok']);
             expect(metadata.get('authorization')).toEqual([headers.authorization]);
-            expect(res.body).toHaveProperty('user');
+            expect(res.body.user).toMatchObject({ id: 'user-1', isSystemAdmin: true });
             expect((prisma.adminAudit as { create: jest.Mock }).create).toHaveBeenCalled();
+        });
+
+        it('POST /admin/users/:id/ban goes through auth SetUserStatus and never writes User', async () => {
+            const headers = await admin();
+            await request(app.getHttpServer()).post('/admin/users/user-1/ban').set(headers).expect(200);
+            const [, isBanned, metadata] = authClient.setUserStatus.mock.calls.at(-1) as unknown as [string, boolean, { get(k: string): string[] }];
+            expect(isBanned).toBe(true);
+            expect(metadata.get('authorization')).toEqual([headers.authorization]);
+            expect((prisma.user as { update: jest.Mock }).update).not.toHaveBeenCalled();
+        });
+
+        it('GET /admin/roles is the catalog; a bad body or query is 400 VALIDATION_ERROR', async () => {
+            const res = await request(app.getHttpServer()).get('/admin/roles').set(await admin()).expect(200);
+            expect(res.body.roles.map((r: { key: string }) => r.key)).toEqual(['STUDENT', 'TEACHER', 'SYSTEM_ADMIN']);
+            const bad = await request(app.getHttpServer())
+                .put('/admin/roles/users/user-1/role')
+                .set(await admin())
+                .send({ role: 'SYSTEM_ADMIN' });
+            expect([bad.status, bad.body.code]).toEqual([400, 'VALIDATION_ERROR']);
+            const badQuery = await request(app.getHttpServer()).get('/admin/roles/users?limit=101').set(await admin());
+            expect([badQuery.status, badQuery.body.code]).toEqual([400, 'VALIDATION_ERROR']);
+        });
+
+        it.each([['STUDENT'], ['TEACHER']])('a %s token is 403 on every /admin/roles route', async (role) => {
+            const h = await as({ sub: 'u', roles: [role] });
+            const server = app.getHttpServer();
+            const results = await Promise.all([
+                request(server).get('/admin/roles').set(h),
+                request(server).get('/admin/roles/users').set(h),
+                request(server).get('/admin/roles/changes').set(h),
+                request(server).put('/admin/roles/users/user-1/role').set(h).send({ role: 'TEACHER' }),
+                request(server).put('/admin/roles/users/user-1/system-admin').set(h).send({ isSystemAdmin: true }),
+            ]);
+            expect(results.map((r) => [r.status, r.body.code])).toEqual(Array(5).fill([403, 'PERMISSION_DENIED']));
         });
 
         it('GET /admin/audit is served; /admin/stats/overview passes the guards (its queries are not faked here)', async () => {

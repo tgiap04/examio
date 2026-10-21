@@ -32,7 +32,10 @@ function setup(opts: { actor?: AccountRow | null; target?: AccountRow | null; ad
             calls.push('findTarget');
             return opts.target === undefined ? account() : opts.target;
         }),
-        countActiveAdmins: jest.fn(async () => opts.admins ?? 2),
+        countActiveAdmins: jest.fn(async () => {
+            calls.push('count');
+            return opts.admins ?? 2;
+        }),
         updateAccount: jest.fn(async (_tx: never, _id: string, patch: { role: string; isSystemAdmin: boolean }) => {
             calls.push('update');
             return account({ ...patch, authzVersion: 5 } as Partial<AccountRow>);
@@ -122,6 +125,21 @@ describe('RoleChangeService.change', () => {
             await statusOf(service.change({ actor: adminActor, targetUserId: 'other-admin', isSystemAdmin: false, source: 'admin-ui' }))
         ).toEqual([409, 'LAST_SYSTEM_ADMIN']);
         expect(repo.updateAccount).not.toHaveBeenCalled();
+    });
+
+    it('LAST_SYSTEM_ADMIN is decided by the count taken AFTER the lock, the actor check and the target row lock; actor and target differ and nothing is written', async () => {
+        const { service, repo, publisher, gateway, calls } = setup({
+            actor: account({ id: 'admin', email: 'admin@x.io', isSystemAdmin: true }),
+            target: account({ id: 'sole', isSystemAdmin: true }),
+            admins: 1,
+        });
+        expect(
+            await statusOf(service.change({ actor: adminActor, targetUserId: 'sole', isSystemAdmin: false, source: 'admin-ui' }))
+        ).toEqual([409, 'LAST_SYSTEM_ADMIN']);
+        expect(calls).toEqual(['lock', 'findActor', 'findTarget', 'count']);
+        for (const w of [repo.updateAccount, repo.insertLog, publisher.publish, gateway.invalidateUser]) {
+            expect(w).not.toHaveBeenCalled();
+        }
     });
 
     it('allows demoting an admin when another active admin remains', async () => {

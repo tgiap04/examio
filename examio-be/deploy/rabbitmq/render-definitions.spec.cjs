@@ -105,3 +105,21 @@ test('CLI writes definitions.json (world-readable, the broker user must read the
     assert.strictEqual(JSON.parse(fs.readFileSync(out, 'utf8')).users.length, 6);
     assert.strictEqual(fs.statSync(out).mode & 0o777, 0o644);
 });
+
+test('CLI without --out never writes inside the repo tree: default is the OS temp dir', () => {
+    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'defs-default-'));
+    const inRepo = path.join(__dirname, 'definitions.json');
+    const hadRepoFile = fs.existsSync(inRepo);
+    const before = hadRepoFile ? fs.statSync(inRepo).mtimeMs : null;
+    const res = spawnSync(process.execPath, [SCRIPT], {
+        env: { PATH: process.env.PATH, TMPDIR: tmp, TMP: tmp, TEMP: tmp, ...ENV },
+        encoding: 'utf8',
+        cwd: tmp,
+    });
+    assert.strictEqual(res.status, 0, res.stderr);
+    const written = path.join(tmp, 'definitions.json');
+    assert.ok(fs.existsSync(written), 'default output lands in the temp dir');
+    assert.match(res.stdout, new RegExp(tmp.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+    assert.strictEqual(fs.existsSync(inRepo), hadRepoFile);
+    if (hadRepoFile) assert.strictEqual(fs.statSync(inRepo).mtimeMs, before);
+});
