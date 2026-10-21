@@ -8,7 +8,7 @@
 
 ## Current RBAC Catalog (microservice refactor phases 04 and 06, 2026-10-19 / 2026-10-20)
 
-> Authoritative for the code on `refactor/microservice-rbac`. Source: `examio-be/libs/auth-jwt/src/permissions.ts` (`ROLE_PERMISSIONS`). The legacy `PERM###` sections below pre-date it and still describe `AuthGuard` / `AdminGuard` / `User.isAdmin`, which no longer exist; where they conflict, this section wins (full rewrite is phase 19 of the plan).
+> Authoritative for the code on `refactor/microservice-rbac`. Source: `examio-be/libs/auth-jwt/src/permissions.ts` (`ROLE_PERMISSIONS`). The legacy `PERM###` sections below pre-date it and still describe `AuthGuard` / `AdminGuard` / `User.isAdmin`, which no longer exist; where they conflict, this section wins (full rewrite is phase 19 of the plan). The frontend route and nav tables are in § Frontend route guards.
 
 ### Roles
 
@@ -160,6 +160,54 @@ Plain `@Authenticated()` handlers (allowlist, each with a two-user negative spec
 exam-service has no `ThrottlerModule`; per-IP rate limits for `verify-code` / `with-code` (5 / 60 s) and `users/search` (30 / 60 s) live in gateway `routes.yaml`.
 
 **WebSocket `/ws/study`** (`StudyRoomSocketAuth`, `server.use` in `StudyRoomGateway.afterInit`; the gateway class carries a declarative `@Authenticated()` because HTTP guards skip `ws`): checks run in order: token present (`handshake.auth.token`, then Bearer/cookie), signature / `iss` / `aud` / `exp`, `email_verified`, `study_room:join`, token `av` vs Redis `gw:user:<sub>:av` (lower = stale; key missing = pass), then account not banned/deleted, then the `study-room` page flag. A failure is a `connect_error` whose message is the code: `TOKEN_MISSING`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `EMAIL_NOT_VERIFIED`, `PERMISSION_DENIED`, `TOKEN_STALE`, `SERVICE_UNAVAILABLE` (Redis or DB error, fail-closed), `UNAUTHORIZED`, `PAGE_DISABLED`. `socket.data` holds `{ user, av, exp }`. `handleConnection` (sync) joins room `user:<id>` and schedules a disconnect at token `exp`; `handleDisconnect` clears the timer. Before the server disconnects it emits `auth:reauth { reason: 'TOKEN_EXPIRED' | 'AUTHZ_CHANGED' }` (client: refresh the token, reconnect). On `auth.user.authz_changed` (`study-room-authz.handler.ts`) sockets of that user whose `av` is below the event's `authzVersion` get `auth:reauth` then `disconnect(true)`. `room:kicked` remains for the in-room ban only.
+
+### Frontend route guards (phase 09, 2026-10-22)
+
+UX gating only; the backend decisions above are authoritative. Source: `examio-fe/src/routes/index.tsx` (`guarded()` → `RequirePermission`), `examio-fe/src/lib/rbac/nav-items.ts`, `examio-fe/src/lib/rbac/landing-path.ts`. The permission names come from `examio-fe/src/types/permissions.generated.ts`, generated from `libs/auth-jwt/src/permissions.ts` by `yarn gen:fe-permissions` (in `examio-be`; CI job `fe-permissions-drift` fails when the file is stale). The session (`user`, `roles`, `permissions`) comes from `GET /auth/me` / login / refresh responses; the client never decodes the JWT.
+
+**Guard outcomes** (`lib/rbac/guard-decision.ts`): session loading → spinner; anonymous → `/login?from=<path>`; `/auth/me` unreachable and no session in memory → `SessionUnavailable` (retry button, no redirect); permission missing → `/403` (`ForbiddenPage`, link to the role landing path); otherwise render. `/403` itself only needs a login.
+
+| Route | Permission (any-of where listed) | Page flag |
+|---|---|---|
+| `/k`, `/k/profile`, `/k/verify` | login only | - |
+| `/k/subscription` | `subscription:manage` | - |
+| `/k/my-materials` | `flashcard:study` | `my-materials` |
+| `/k/flash-card`, `/k/manage-flashcard-set/:id` | `flashcardset:manage` | `flash-card` |
+| `/k/history` | `ai:generate` or `exam:take` | `history` |
+| `/k/history/exam` | `exam:take` | `history` |
+| `/k/history/pdf` | `ai:generate` | `history` |
+| `/study-flashcard/:id` | `flashcard:study` or `flashcardset:manage` (now requires login; was open) | - |
+| `/exam-session/:id` | none in the router (the page handles its own access) | - |
+| `/exam-session/:id/quiz`, `/k/my-exams` | `exam:take` | `my-exams` on `/k/my-exams` only |
+| `/k/manage-exam`, `/k/manage-quiz-set/:id` | `quizset:manage` | `manage-exam` |
+| `/k/practice-quiz/:id` | `quiz:practice` or `quizset:manage` (owner preview; backend decides) | - |
+| `/k/ai-tool` | `ai:generate` | `ai-tool` |
+| `/k/manage-exam-room`, `/k/manage-exam-room/:id` | `exam_room:manage` | `manage-exam-room` |
+| `/k/manage-exam-room/:id/session/:sessionId` | `exam_result:view` | `manage-exam-room` |
+| `/k/study-room`, `/k/study-room/:id` | `study_room:join` | `study-room` |
+| `/k/word-family`, `/:slug`, `/:slug/:rootWord` | `word_family:read` | `word-family` |
+| `/admin` shell | `admin:access`; each child adds its own permission (next table) | - |
+
+**Admin console** (`ADMIN_NAV_PERMISSIONS`, shared by route guard and nav; nav lists only entries the caller holds):
+
+| Route | Permission |
+|---|---|
+| `/admin`, `/admin/stats` | `stats:read` |
+| `/admin/users` | `user:manage` |
+| `/admin/roles` | `role:assign` |
+| `/admin/finance` | `finance:admin` |
+| `/admin/logs` | `logs:read` |
+| `/admin/audit` | `audit:read` |
+| `/admin/word-family` | `word_family:admin` |
+| `/admin/page-config` | `page_config:manage` |
+
+**Sidebar** (`NAV_ITEMS`): an item shows when the caller holds any of its `anyOf` permissions and its page flag is not `false`: AI tool `ai:generate`; word family `word_family:read`; my materials `flashcard:study`; my exams `exam:take`; manage exam `quizset:manage`; flashcard `flashcardset:manage`; exam rooms `exam_room:manage`; study room `study_room:join`; history `ai:generate` or `exam:take` (links to `/k/history/exam` when the caller lacks `ai:generate`); admin `admin:access`.
+
+**Role landing** (`/k`, `resolveLandingPath`): a safe same-origin `from` wins; else TEACHER `/k/ai-tool`, STUDENT who is also SYSTEM_ADMIN `/admin`, other STUDENT `/k/my-materials`; if that target is not visible, the first visible nav item, else `/k/profile`.
+
+**Error policy** (`lib/rbac/api-error-policy.ts`, `apis/api.ts`): 401 `TOKEN_EXPIRED` / `TOKEN_STALE` → one single-flight `/auth/refresh`, then retry; 401 `SESSION_REVOKED`, or a rejected refresh (401/403) → clear the session and go to `/login`; 403 `PERMISSION_DENIED` → toast and refetch `/auth/me` (at most every 5 s); 403 `EMAIL_NOT_VERIFIED` → `/k/verify`; 429, 5xx and network errors never end the session. `/auth/refresh` rotates the `refreshToken` cookie as well as `accessToken`. On a role change (refresh or `/auth/me` returns a different role set) and on logout, role-scoped Zustand stores and `storeCache` are reset.
+
+**Study-room socket**: `auth:reauth`, `TOKEN_EXPIRED`, `TOKEN_STALE` → refresh then reconnect (one retry, then logout); `PERMISSION_DENIED` → leave the room; `SERVICE_UNAVAILABLE` (Redis outage on exam-service) → bounded exponential backoff (1 s doubling, 30 s cap, 5 attempts), then a give-up notice.
 
 ---
 

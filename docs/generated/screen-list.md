@@ -6,6 +6,8 @@
 
 ---
 
+> **Phase 09 (2026-10-22)**: all non-public screens are now gated by `RequirePermission` (login, then permission; otherwise `/403`). Two non-SCR shells exist without a screen code: `/403` (`ForbiddenPage`, link back to the role landing) and `SessionUnavailable` (full-page retry notice when `/auth/me` is unreachable). `/study-flashcard/:id` (SCR030) now requires login plus `flashcard:study` or `flashcardset:manage`. Per-screen guards: `system/permissions.md` § Frontend route guards.
+
 ## Screen Index
 
 | Code | Name | Type | Components | Data Displayed |
@@ -1403,7 +1405,7 @@ Route `/admin/roles`, sidebar item "Phân quyền" (`nav.roles`, `AdminLayout`).
 
 ### Auth
 
-- `@RequirePermissions('role:assign')` (`user:manage` for ban/unban). Known gap until the phase 09 FE work: `AdminRoute` / `SideBar` still read `user.isAdmin`, which `/auth/me` no longer returns, so a real browser redirects an admin away from `/admin/*`.
+- `@RequirePermissions('role:assign')` (`user:manage` for ban/unban). Gap closed in phase 09: `AdminRoute` requires `admin:access` and each admin route its own permission (see [permissions](../system/permissions.md) § Frontend route guards).
 
 ---
 

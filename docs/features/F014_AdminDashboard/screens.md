@@ -14,8 +14,8 @@ See `docs/generated/screen-list.md` for full component breakdowns.
 
 ## User Journey
 
-1. Admin logs in and lands on `AdminOverviewPage` (SCR033) via the "Trang quản trị" sidebar link (visible only when `user.isAdmin`).
-2. From the sidebar, admin navigates freely between Overview, Stats, Users, Finance, Logs, and Audit — each an independent top-level page, no required sequence.
+1. Admin logs in and lands on `AdminOverviewPage` (SCR033) via the "Trang quản trị" sidebar link (visible only when the session holds `admin:access`).
+2. From the sidebar, admin navigates freely between Overview, Stats, Users, Roles, Finance, Logs, and Audit — each an independent top-level page, no required sequence. The admin nav lists only the pages whose permission the admin holds (`ADMIN_NAV_PERMISSIONS`: `stats:read`, `user:manage`, `role:assign`, `finance:admin`, `logs:read`, `audit:read`, ...); opening one without it goes to `/403`.
 3. Typical flow for a support case: `AdminUsersPage` (SCR035) → search/select a user → view detail drawer → ban/unban; to change role or admin flag go to `AdminRolesPage` (SCR044).
 4. Typical flow for a finance issue: `AdminFinancePage` (SCR036) → locate the payment → open `FinanceActionModal` → process refund/credit/tier change.
 5. Typical flow for an incident: `AdminLogsPage` (SCR037) → filter by service/level → watch live stream.

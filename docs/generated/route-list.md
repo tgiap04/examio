@@ -666,36 +666,60 @@ React Router v6 `createBrowserRouter` — all routes use layout wrappers.
 | /forgot-password | ForgotPasswordPage | AuthLayout | PublicRoute |
 | /reset-password | ResetPasswordPage | AuthLayout | PublicRoute |
 
-#### Protected Routes (auth required)
+#### Protected Routes (auth + permission)
 
-| Path | Component | Layout | Guard |
-|------|-----------|--------|-------|
-| /k | KRootRedirect | KLayout | ProtectedRoute |
-| /k/profile | ProfilePage | KLayout | ProtectedRoute |
-| /k/verify | VerifyPage | KLayout | ProtectedRoute |
-| /k/subscription | SubscriptionPage | KLayout | ProtectedRoute |
-| /k/my-materials | MyMaterialsPage | KLayout | ProtectedRoute |
-| /k/flash-card | FlashcardsPage | KLayout | ProtectedRoute |
-| /k/history | HistoryPage | KLayout | ProtectedRoute |
-| /k/history/exam | ExamHistoryPage | KLayout | ProtectedRoute |
-| /k/history/pdf | PDFHistoryPage | KLayout | ProtectedRoute |
-| /k/manage-exam | ManageExamPage | KLayout | ProtectedRoute |
-| /k/manage-quiz-set/:id | ManageQuizSetDetailPage | KLayout | ProtectedRoute |
-| /k/manage-flashcard-set/:id | ManageFlashcardSetDetailPage | KLayout | ProtectedRoute |
-| /k/ai-tool | AIToolPage | KLayout | ProtectedRoute |
-| /k/genai-knowledge | GenAIKnowledgePage | KLayout | ProtectedRoute |
-| /k/manage-exam-room | ManageExamRoomPage | KLayout | ProtectedRoute |
-| /k/manage-exam-room/:id | ManageExamRoomDetailPage | KLayout | ProtectedRoute |
-| /k/manage-exam-room/:id/session/:sessionId | ExamRoomSessionAnalyticsPage | KLayout | ProtectedRoute |
-| /k/my-exams | MyExamsPage | KLayout | ProtectedRoute |
+Updated 2026-10-22 (phase 09): every non-public route is wrapped by `guarded()` → `RequirePermission` (login, then permission, else `/403`). Per-route permissions and page flags: [permissions](../system/permissions.md) § Frontend route guards. `/403` (`ForbiddenPage`) only needs a login (`ProtectedRoute`). `TeacherRoute` no longer exists.
+
+| Path | Component | Layout | Required permission |
+|------|-----------|--------|---------------------|
+| /403 | ForbiddenPage | none | login only |
+| /k | KRootRedirect | KLayout | login only |
+| /k/profile | ProfilePage | KLayout | login only |
+| /k/verify | VerifyPage | KLayout | login only |
+| /k/subscription | SubscriptionPage | KLayout | `subscription:manage` |
+| /k/my-materials | MyMaterialsPage | KLayout | `flashcard:study` |
+| /k/flash-card | FlashcardsPage | KLayout | `flashcardset:manage` |
+| /k/history | HistoryPage | KLayout | `ai:generate` or `exam:take` |
+| /k/history/exam | ExamHistoryPage | KLayout | `exam:take` |
+| /k/history/pdf | PDFHistoryPage | KLayout | `ai:generate` |
+| /k/manage-exam | ManageExamPage | KLayout | `quizset:manage` |
+| /k/manage-quiz-set/:id | ManageQuizSetDetailPage | KLayout | `quizset:manage` |
+| /k/manage-flashcard-set/:id | ManageFlashcardSetDetailPage | KLayout | `flashcardset:manage` |
+| /k/practice-quiz/:id | QuizPracticePage | KLayout | `quiz:practice` or `quizset:manage` |
+| /k/ai-tool | AIToolPage | KLayout | `ai:generate` |
+| /k/manage-exam-room | ManageExamRoomPage | KLayout | `exam_room:manage` |
+| /k/manage-exam-room/:id | ManageExamRoomDetailPage | KLayout | `exam_room:manage` |
+| /k/manage-exam-room/:id/session/:sessionId | ExamRoomSessionAnalyticsPage | KLayout | `exam_result:view` |
+| /k/my-exams | MyExamsPage | KLayout | `exam:take` |
+| /k/study-room | StudyRoomListPage | KLayout | `study_room:join` |
+| /k/study-room/:id | StudyRoomPage | none | `study_room:join` |
+| /k/word-family | WordFamilyPage | KLayout | `word_family:read` |
+| /k/word-family/:slug | WordFamilyCategoryPage | KLayout | `word_family:read` |
+| /k/word-family/:slug/:rootWord | WordFamilyDetailPage | KLayout | `word_family:read` |
+
+#### Admin Routes
+
+Shell `/admin` (`AdminRoute` = `RequirePermission admin:access`, `AdminLayout`); each child adds its own permission.
+
+| Path | Component | Required permission |
+|------|-----------|---------------------|
+| /admin | AdminOverviewPage | `stats:read` |
+| /admin/stats | AdminStatsPage | `stats:read` |
+| /admin/users | AdminUsersPage | `user:manage` |
+| /admin/roles | AdminRolesPage | `role:assign` |
+| /admin/finance | AdminFinancePage | `finance:admin` |
+| /admin/logs | AdminLogsPage | `logs:read` |
+| /admin/audit | AdminAuditPage | `audit:read` |
+| /admin/word-family | AdminWordFamilyPage | `word_family:admin` |
+| /admin/page-config | AdminPageConfigPage | `page_config:manage` |
 
 #### Exam Session Routes (special layout)
 
-| Path | Component | Layout |
-|------|-----------|--------|
-| /study-flashcard/:id | FlashcardStudyPage | none |
-| /exam-session/:id | ExamSessionPage | ExamSessionLayout |
-| /exam-session/:id/quiz | ExamQuizPage | none |
+| Path | Component | Layout | Required permission |
+|------|-----------|--------|---------------------|
+| /study-flashcard/:id | FlashcardStudyPage | none | `flashcard:study` or `flashcardset:manage` (login now required; was open) |
+| /exam-session/:id | ExamSessionPage | ExamSessionLayout | none in the router |
+| /exam-session/:id/quiz | ExamQuizPage | none | `exam:take` |
 
 #### Catch-all
 
@@ -714,9 +738,9 @@ React Router v6 `createBrowserRouter` — all routes use layout wrappers.
 | Auth service routes | 17 |
 | Exam service routes | ~130 |
 | Finance service routes | 10 |
-| Frontend pages | 26 |
+| Frontend routes (router entries incl. `/admin` shell, 9 admin children, `/403`, catch-all) | 48 |
 | **Total backend routes** | **~320** |
-| **Total frontend routes** | **26** |
+| **Total frontend routes** | **48** |
 
 ## Notes
 

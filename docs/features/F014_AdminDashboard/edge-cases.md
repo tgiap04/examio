@@ -2,8 +2,8 @@
 
 | Scenario | What Happens | User-Facing Message |
 |----------|--------------|---------------------|
-| Non-admin user attempts any `/api/v1/admin/*` route | `AdminGuard` rejects with 403 | "Forbidden" / redirect to `/k` on FE |
-| Unauthenticated user visits `/admin/*` | FE `AdminRoute` guard redirects to `/login` | Standard login redirect |
+| Non-admin user attempts any `/api/v1/admin/*` route | `AdminGuard` rejects with 403 | "Forbidden"; FE sends the user to `/403` (route guard `RequirePermission`) |
+| Unauthenticated user visits `/admin/*` | FE `AdminRoute` (`RequirePermission admin:access`) redirects to `/login?from=...`; an admin lacking a page permission (e.g. `role:assign`) is sent to `/403` | Standard login redirect |
 | Admin exceeds 30 req/min on admin routes | `ThrottlerModule` returns 429 | Rate-limit error, retry after cooldown |
 | Admin bans a user who is currently logged in | auth `SetUserStatus` sets `isBanned`, revokes all sessions, bumps `authzVersion`; refresh is refused (`ACCOUNT_DISABLED`) | User is logged out on next request |
 | Admin changes or bans their own account | 403 `CANNOT_CHANGE_OWN_ROLE` / `CANNOT_CHANGE_OWN_STATUS` | FE locks the own row |

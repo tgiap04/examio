@@ -110,7 +110,7 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| AdminGuard | `examio-be/libs/common/src/guard/admin.guard.ts` | Standalone JWT + `isAdmin` check |
+| PermissionsGuard | `examio-be/libs/auth-jwt/src/` | Replaces the removed `AdminGuard`; admin controllers declare `@RequirePermissions(...)` (see `system/permissions.md`) |
 | AuditWriterService | `examio-be/apps/admin-service/src/modules/*/audit-writer.service.ts` (shared) | Per-field `AdminAudit` row writer |
 | admin-stats module | `examio-be/apps/admin-service/src/modules/admin-stats/` | KPI + time-series + signup-source breakdown, Redis 5-min cache |
 | AdminStatsFeRoutesController | `examio-be/apps/admin-service/src/modules/admin-stats/admin-stats-fe-routes.controller.ts` | Top-level `/admin/{overview,series,sources}` alias routes for FE dashboard |

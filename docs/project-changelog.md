@@ -1,13 +1,24 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-10-20
+last_updated: 2026-10-22
 ---
 
 # Examio Project Changelog
 
-## [Unreleased] — 2026-10-20
+## [Unreleased] — 2026-10-22
 
 ### Changed
+
+#### Frontend RBAC, phase 09 (uncommitted on `refactor/microservice-rbac`)
+
+- **Routing**: every non-public route goes through `guarded()` → `RequirePermission` (anonymous → `/login?from=`, missing permission → new `/403` `ForbiddenPage`, `/auth/me` unreachable → `SessionUnavailable` with retry). `TeacherRoute` (component and guard) removed; `AdminRoute` requires `admin:access` and each `/admin/*` child its own permission. Sidebar and admin nav derive from `src/lib/rbac/nav-items.ts`; `/k` lands by role (`landing-path.ts`). Tables: [permissions](system/permissions.md) § Frontend route guards.
+- **Generated permissions**: `src/types/permissions.generated.ts` comes from `examio-be/scripts/gen-fe-permissions.ts` (`yarn gen:fe-permissions` in `examio-be`); CI job `fe-permissions-drift` fails on drift. `User.id` is a string, `isAdmin` replaced by `isSystemAdmin` in the FE type; `useCan`/`useCanAny`/`useCanFn` for UI gating.
+- **API client**: `api.ts` throws `ApiRequestError` (`status`, `code`, `requestId`; resolves the phase 07 `unwrap()` gap centrally), single-flight `/auth/refresh`, 401/403 policy in `lib/rbac/api-error-policy.ts`; transient failures (429/5xx/network) no longer log the user out. Role change or logout resets role-scoped stores (`reset-role-scoped-state.ts`).
+- **Study-room socket**: reauth/refresh/reconnect, leave on `PERMISSION_DENIED`, bounded backoff on `SERVICE_UNAVAILABLE` (`study-room-socket-recovery.ts`, `lib/rbac/socket-reconnect.ts`). Closes the phase 05 `auth:reauth` client gap.
+- **Behaviour changes (users)**: `/study-flashcard/:id` now requires login plus `flashcard:study` or `flashcardset:manage` (was open); a user without the permission for a page sees `/403` instead of a broken page.
+- **Backend**: `POST /auth/refresh` now also rotates the `refreshToken` cookie (previously only `accessToken` was reset, so the next refresh failed after the grace window). exam-service: Redis outage answers 503 `SERVICE_UNAVAILABLE` on HTTP (`RedisUnavailableFilter`, `@examio/redis`) and as a WS `error` event code `SERVICE_UNAVAILABLE` on `/ws/study`; `@examio/redis` subscriber clients get an `error` listener.
+- **Tooling**: `examio-fe` gains Vitest (`yarn test`); CLAUDE.md no longer says the FE has no test script. New i18n keys in `en`/`vi`/`ja` (`rbac.permissionDenied`, `forbidden.*`, `session.unavailable.*`).
+- **Docs**: `CLAUDE.md`, `AGENTS.md`, `system/{permissions,architecture}.md`, `generated/{route-list,screen-list}.md`, `features/F014_AdminDashboard/*`, roadmap.
 
 #### Admin role management, phase 08 (uncommitted on `refactor/microservice-rbac`)
 

@@ -84,11 +84,13 @@ yarn build
 yarn start
 yarn lint
 yarn lint:fix
+yarn test        # vitest run (src/**/*.test.ts, môi trường node)
 ```
 
 Ghi chú:
 - Frontend dev server chạy trên port `5173` qua `vite --host 0.0.0.0 --port 5173`.
-- Frontend hiện chưa có script test trong `package.json`.
+- Frontend có `yarn test` (vitest, cấu hình `vitest.config.ts`); test hiện tập trung vào logic thuần trong `src/lib/**` (rbac, quiz-practice, admin-roles).
+- `src/types/permissions.generated.ts` được sinh từ `examio-be/libs/auth-jwt/src/permissions.ts`: không sửa tay, chạy `yarn gen:fe-permissions` trong `examio-be` sau khi đổi catalog; CI job `fe-permissions-drift` fail nếu file lệch.
 
 ### Python AI service (`examio-be/apps/ai-service`)
 
@@ -115,7 +117,7 @@ cd examio-be/apps/ai-service
 - Cấu hình compose đó bao gồm PostgreSQL, Redis, RabbitMQ, gateway, auth, exam, finance, r2, ai và một migration container.
 - Backend hiện được thiết kế xoay quanh PostgreSQL + Redis + RabbitMQ cho persistence và messaging.
 - Compose dùng 3 network: `edge` (gateway + nginx FE), `internal` (không ra ngoài; mọi service + postgres/redis/rabbitmq) và `egress`. Postgres/Redis/RabbitMQ không publish port ra host; gateway chỉ publish `127.0.0.1:6369` (dev local chạy `yarn dev:gateway` vẫn dùng port `PORT` trong `.env`). Truy cập DB: `docker compose exec postgres psql ...`. Chi tiết: `examio-be/deploy/README.md`.
-- Cookie auth chỉ do auth-service set: `accessToken` và `refreshToken` (HttpOnly, SameSite=Lax, Secure ở production); cookie cũ `token`/`session_id` chỉ bị xóa khi logout. Route credential (login, register, ...) giới hạn 5 req/phút.
+- Cookie auth chỉ do auth-service set: `accessToken` và `refreshToken` (HttpOnly, SameSite=Lax, Secure ở production); cookie cũ `token`/`session_id` chỉ bị xóa khi logout. `POST /auth/refresh` xoay refresh token mỗi lần gọi và set lại cả hai cookie (token cũ chỉ còn hiệu lực trong khoảng grace ngắn). Route credential (login, register, ...) giới hạn 5 req/phút.
 - `examio-be/docker-compose.example.yml` có tồn tại nhưng chỉ mô tả một service tối giản kiểu frontend và không phản ánh đầy đủ stack backend.
 
 ## Kiến trúc backend
@@ -137,7 +139,7 @@ Mã hạ tầng dùng chung nằm trong `examio-be/libs/`:
 
 - `@examio/common`: export các Nest module dùng chung, mail/password/id services, event helpers, utils (gRPC client helpers và file protobuf đã chuyển sang `@examio/grpc`, `@examio/contracts` và thư mục `examio-be/proto/`).
 - `@examio/database`: Prisma schema/client và database module.
-- `@examio/redis`: Redis module/service dùng chung.
+- `@examio/redis`: Redis module/service dùng chung; `RedisUnavailableFilter` (exam-service đăng ký global) đổi lỗi mất kết nối Redis trên HTTP thành 503 `SERVICE_UNAVAILABLE`, và client subscriber có listener `error`.
 - `@examio/contracts`: type/decorator gRPC sinh bằng ts-proto từ `examio-be/proto/examio/<svc>/v1` (buf). Thư mục `libs/contracts/src/generated/` bị gitignore; chạy `yarn proto:gen` sau khi clone hoặc sửa `.proto` (`yarn proto:lint` để lint). Python ai-service sinh stub bằng `apps/ai-service/scripts/gen_grpc.sh`.
 - `@examio/grpc`: gRPC client module, deadline/retry, ánh xạ lỗi gRPC, metadata helper.
 - `@examio/http`: HTTP error envelope filter dùng chung.
@@ -217,7 +219,7 @@ Khi chỉnh sửa AI chat hoặc generation flow, hãy kiểm tra đủ ba lớp
 
 - Frontend là một ứng dụng React 19 + Vite, bootstrap từ `examio-fe/src/main.tsx` và `examio-fe/src/App.tsx`.
 - Routing dùng React Router, được khai báo trong `src/routes/index.tsx`.
-- Protected route được chặn bởi route guards phía client như `ProtectedRoute` thay vì Next middleware.
+- Mọi route không public đi qua `guarded()` trong `src/routes/index.tsx` → `RequirePermission` (`src/routes/guards/RequirePermission.tsx`): chưa đăng nhập → `/login?from=`, thiếu permission → `/403` (`ForbiddenPage`), `/auth/me` không với tới được → màn `SessionUnavailable` (không đá về login). `/study-flashcard/:id` giờ cũng cần đăng nhập + `flashcard:study` hoặc `flashcardset:manage`. Chỉ là UX; backend mới là nơi enforce. `TeacherRoute` đã bị xóa.
 - App được bọc bởi providers trong `src/provider/AppProviders.tsx`.
 
 ### Phân lớp frontend
@@ -240,12 +242,13 @@ Pattern phổ biến là:
 
 Auth không chỉ được xử lý bởi route guards phía client.
 
-- `src/apis/api.ts` là nơi cấu hình Axios dùng chung, thêm bearer token từ `localStorage`, đồng thời gắn `X-Device-ID` để theo dõi session.
-- File này cũng xử lý trường hợp `401` do session bị vô hiệu hóa bằng cách xóa auth state local và redirect về `/login`.
-- `src/stores/useAuthStore.ts` là nơi quản lý auth state chính phía client cho login, signup, reset password, verify account, logout, OAuth redirect và cập nhật wallet balance.
+- `src/apis/api.ts` là nơi cấu hình Axios dùng chung (`withCredentials`, token nằm trong cookie httpOnly, không có token trong `localStorage`), gắn `X-Device-ID`, và ném `ApiRequestError` mang `status`/`code`/`requestId`. Chính sách 401/403 là hàm thuần trong `src/lib/rbac/api-error-policy.ts`: 401 `TOKEN_EXPIRED`/`TOKEN_STALE` → refresh một lần (single-flight `refreshAccessToken`) rồi retry; `SESSION_REVOKED` hoặc refresh bị từ chối → `/login`; 403 `PERMISSION_DENIED` → toast + refetch `/auth/me` (debounce 5s); 403 `EMAIL_NOT_VERIFIED` → `/k/verify`. Lỗi tạm thời (429/5xx/mạng) không đăng xuất.
+- `src/stores/useAuthStore.ts` giữ `user`, `roles`, `permissions` (do server trả, không decode JWT, không persist) và `sessionUnavailable`; `getUser` chạy `probeSession` (`/auth/me` → tối đa một refresh → một retry), dùng chung một lần gọi. Đổi role hoặc logout gọi `resetRoleScopedState` (`src/stores/reset-role-scoped-state.ts`, đăng ký trong `routes/index.tsx`) để xóa cache store + `storeCache`. Store khác gồm login, signup, reset password, verify account, OAuth redirect và cập nhật wallet balance.
+- Gating theo permission: hook `useCan`/`useCanAny`/`useCanFn` (`src/hooks/useCan.ts`); sidebar và nav admin lấy từ `src/lib/rbac/nav-items.ts`; `/k` chuyển tới trang theo role qua `src/lib/rbac/landing-path.ts`. Bảng route → permission: `docs/system/permissions.md` § Frontend route guards.
+- Study-room socket (`src/hooks/useStudyRoomSocket.ts`, `study-room-socket-recovery.ts`, `lib/rbac/socket-reconnect.ts`): `auth:reauth` / `TOKEN_*` → refresh rồi reconnect, `PERMISSION_DENIED` → rời phòng, `SERVICE_UNAVAILABLE` → backoff có giới hạn rồi báo bỏ cuộc.
 - Nút login bằng OAuth redirect trực tiếp tới backend auth endpoint thông qua `NEXT_PUBLIC_API_URL`.
 
-Nếu thay đổi hành vi auth, hãy cập nhật middleware, Axios behavior và Zustand auth store cùng nhau.
+Nếu thay đổi hành vi auth, hãy cập nhật route guards, Axios behavior (`api.ts` + `lib/rbac/api-error-policy.ts`) và Zustand auth store cùng nhau.
 
 ### Sự gắn kết giữa API và UI
 

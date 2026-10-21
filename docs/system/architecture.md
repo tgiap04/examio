@@ -327,7 +327,12 @@ sequenceDiagram
 | Charts | Recharts | latest |
 | Bot protection | react-google-recaptcha-v3 | latest |
 | i18n | i18next (`vi`, `en`, `ja`) | latest |
-| Auth sync | localStorage + `X-Device-ID` header | — |
+| Auth sync | httpOnly cookies (`withCredentials`) + `X-Device-ID` header; session (`user`, `roles`, `permissions`) from `/auth/me` held in Zustand, never persisted | — |
+| Tests | Vitest (`yarn test`, `src/**/*.test.ts`, node env) | latest |
+
+**Frontend RBAC (phase 09, 2026-10-22)**: routes go through `guarded()` → `RequirePermission` (`examio-fe/src/routes/index.tsx`); permission names are generated from `libs/auth-jwt/src/permissions.ts` into `src/types/permissions.generated.ts` (`yarn gen:fe-permissions`, CI `fe-permissions-drift`). `src/apis/api.ts` throws `ApiRequestError` (status, code, requestId) and applies the 401/403 policy of `src/lib/rbac/api-error-policy.ts` with a single-flight refresh shared with the study-room socket. Role change or logout resets role-scoped stores. Route, nav and error tables: [permissions](permissions.md) § Frontend route guards.
+
+**Redis outage handling (exam-service)**: HTTP requests that fail with ioredis `MaxRetriesPerRequestError` answer 503 `SERVICE_UNAVAILABLE` (`RedisUnavailableFilter` from `@examio/redis`, registered globally in `main.ts`); `/ws/study` message handlers answer with an `error` event `SERVICE_UNAVAILABLE` (`StudyRoomWsExceptionFilter`) and lifecycle/timer work runs through `runSafely` so a Redis failure is logged, not an unhandled rejection. The web client treats it as retryable (bounded backoff).
 
 ### Backend (`examio-be/`)
 

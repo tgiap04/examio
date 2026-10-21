@@ -1,6 +1,6 @@
 ---
 title: Examio Development Roadmap
-last_updated: 2026-10-19
+last_updated: 2026-10-22
 source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/) + phase completions
 status: ACTIVE
 ---
@@ -78,7 +78,11 @@ Phase 07 (quiz sharing and student practice) is implemented but uncommitted on `
 
 ## Progress Note (2026-10-20) — microservice-refactor plan, phase 08
 
-Phase 08 (admin role management) is implemented but uncommitted on `refactor/microservice-rbac`: `/admin/roles` API and the `/admin/roles` FE page, ban/unban through auth `SetUserStatus`, `grant-admin`/`revoke-admin` removed. Milestone A backend is complete; FE phase 09 is pending (admin route guards still read `user.isAdmin`). See [changelog](project-changelog.md) and [permissions](system/permissions.md).
+Phase 08 (admin role management) is implemented but uncommitted on `refactor/microservice-rbac`: `/admin/roles` API and the `/admin/roles` FE page, ban/unban through auth `SetUserStatus`, `grant-admin`/`revoke-admin` removed. Milestone A backend is complete. See [changelog](project-changelog.md) and [permissions](system/permissions.md).
+
+## Progress Note (2026-10-22) — microservice-refactor plan, phase 09
+
+Phase 09 (frontend RBAC) is implemented but uncommitted on `refactor/microservice-rbac`: permission-driven routing and nav, `/403`, generated permission types with a CI drift check, `ApiRequestError` plus the 401/403 policy, single-flight refresh, session-probe, role-scoped store reset, study-room socket recovery, Vitest for the FE, and backend fixes (refresh cookie rotation, exam-service Redis-outage 503). Follow-ups: `/study-flashcard/:id` now needs login; mobile (`examio-app`) still not adapted. See [changelog](project-changelog.md) and [permissions](system/permissions.md) § Frontend route guards.
 
 ## Phase 0 — System Correctness (P0, blocking)
 
