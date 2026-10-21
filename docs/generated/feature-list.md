@@ -723,7 +723,7 @@
 ### F014: AdminDashboard
 
 **Type**: ui
-**Description**: Admin dashboard providing privileged access to platform operations: KPI overview and analytics, user management (ban/unban/delete/grant admin), finance operations (refund/credit adjustment/subscription tier change), server-side log viewing with SSE streaming, and audit log query. Backed by `admin-service` (port 7006) with dedicated `AdminGuard`.
+**Description**: Admin dashboard providing privileged access to platform operations: KPI overview and analytics, user management (ban/unban), role management (`/admin/roles`), finance operations (refund/credit adjustment/subscription tier change), server-side log viewing with SSE streaming, and audit log query. Backed by `admin-service` (port 7006) with dedicated `AdminGuard`.
 
 **Workspace**: examio-fe + examio-be
 **Languages**: TypeScript
@@ -736,6 +736,7 @@
 - SCR036: AdminFinancePage
 - SCR037: AdminLogsPage
 - SCR038: AdminAuditPage
+- SCR044: AdminRolesPage
 
 **Related User Stories**:
 - (none — internal operational tool; no external user stories)
@@ -744,11 +745,13 @@
 - (GET) `/api/v1/admin/bootstrap`
 - (GET) `/api/v1/admin/stats`
 - (GET) `/api/v1/admin/users`
-- (PUT) `/api/v1/admin/users/:id/ban`
-- (PUT) `/api/v1/admin/users/:id/unban`
-- (DELETE) `/api/v1/admin/users/:id`
-- (POST) `/api/v1/admin/users/:id/grant-admin`
-- (POST) `/api/v1/admin/users/:id/revoke-admin`
+- (POST) `/api/v1/admin/users/:id/ban`
+- (POST) `/api/v1/admin/users/:id/unban`
+- (GET) `/api/v1/admin/roles`
+- (GET) `/api/v1/admin/roles/users`
+- (GET) `/api/v1/admin/roles/changes`
+- (PUT) `/api/v1/admin/roles/users/:id/role`
+- (PUT) `/api/v1/admin/roles/users/:id/system-admin`
 - (GET) `/api/v1/admin/finance/refunds`
 - (POST) `/api/v1/admin/finance/refund`
 - (POST) `/api/v1/admin/finance/adjust-credit`

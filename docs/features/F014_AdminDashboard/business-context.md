@@ -12,7 +12,7 @@ Running a platform with paying users, AI-generated content, and exam integrity r
 
 1. An admin opens the dashboard and sees an overview: today's signups, active users, revenue, and other key numbers at a glance.
 2. They can dig into detailed time-series charts for signups, traffic, and revenue over a chosen date range.
-3. When a user reports an issue or needs moderation, the admin searches the user list, views their detail, and can ban, unban, or grant/revoke admin access as needed.
+3. When a user reports an issue or needs moderation, the admin searches the user list, views their detail, and can ban or unban them; on the role management screen they assign Student / Teacher and grant or revoke System admin, and read the role change history.
 4. When a payment needs correcting, the admin processes a refund, adjusts a user's credit balance, or changes their subscription tier — all logged automatically.
 5. If something seems wrong with the platform, the admin opens the live log viewer to watch server activity in real time, filtered by service and severity.
 6. To answer "who did what and when," the admin queries the audit log, which records every admin action with full detail.

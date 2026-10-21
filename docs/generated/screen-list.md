@@ -44,7 +44,7 @@
 | SCR032 | ExamQuizPage | atomic | ~3 | Exam attempt, questions, cheating detection |
 | SCR033 | AdminOverviewPage | atomic | ~2 | KPI cards, quick stats, recent activity |
 | SCR034 | AdminStatsPage | atomic | ~5 | Time-series charts, user/exam/finance metrics, signup-source breakdown |
-| SCR035 | AdminUsersPage | atomic | ~3 | User table with ban/unban/delete/grant actions |
+| SCR035 | AdminUsersPage | atomic | ~3 | User table (role, admin flag) with ban/unban actions |
 | SCR036 | AdminFinancePage | atomic | ~3 | Refund history, credit adjustments, tier changes |
 | SCR037 | AdminLogsPage | atomic | ~2 | Log viewer with SSE stream + polling fallback |
 | SCR038 | AdminAuditPage | atomic | ~2 | Audit log table with filters + export |
@@ -53,6 +53,7 @@
 | SCR041 | WordFamilyCategoryPage | atomic | ~2 | Root word chips + generate action |
 | SCR042 | WordFamilyDetailPage | atomic | ~5 | Word family tree/list, save, flashcard bridge |
 | SCR043 | AdminWordFamilyPage | atomic | ~3 | WordFamilyCategory CRUD table |
+| SCR044 | AdminRolesPage | atomic | ~7 | Role assignment table, read-only permission matrix, role change history |
 
 ---
 
@@ -1134,28 +1135,25 @@ Detailed analytics page with time-series charts for user growth, exam sessions, 
 
 ### Description
 
-User management page with paginated antd Table. Columns: avatar, name, email, role, status, created date. Row actions: ban, unban, soft-delete, grant admin, revoke admin. Search and filter by status/role.
+User management page with paginated antd Table. Columns: avatar, name, email, role, status, created date. Row actions: ban, unban (role and admin flag are shown read-only; they are changed on SCR044). Search and filter by status/admin flag.
 
 ### Components
 
 | Component | Type | Purpose |
 |-----------|------|---------|
 | AdminUserTable | atomic | antd Table with pagination + filters |
-| AdminUserActions | atomic | Row action buttons (ban/unban/delete/grant) |
+| AdminUserActions | atomic | Row action buttons (ban/unban) |
 | AdminBanDialog | atomic | Confirmation dialog for ban/unban |
 
 ### Routes
 
 - `GET /api/v1/admin/users`
-- `PUT /api/v1/admin/users/:id/ban`
-- `PUT /api/v1/admin/users/:id/unban`
-- `DELETE /api/v1/admin/users/:id`
-- `POST /api/v1/admin/users/:id/grant-admin`
-- `POST /api/v1/admin/users/:id/revoke-admin`
+- `POST /api/v1/admin/users/:id/ban`
+- `POST /api/v1/admin/users/:id/unban`
 
 ### Auth
 
-- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required.
+- `@RequirePermissions('user:manage')` — `SYSTEM_ADMIN` role required.
 
 ---
 
@@ -1376,10 +1374,43 @@ Admin CRUD for `WordFamilyCategory` — antd Table + Modal, auto-slug generator 
 
 ---
 
+## SCR044: AdminRolesPage
+
+**Type**: atomic
+
+### Description
+
+Route `/admin/roles`, sidebar item "Phân quyền" (`nav.roles`, `AdminLayout`). Three tabs kept in the URL (`?tab=users|matrix|history`, filters `q`, `role`, `admin`, `page`; history `user`, `hpage`). Users tab: table with a STUDENT/TEACHER select and a SYSTEM_ADMIN switch per row, ban/unban actions, confirm dialog that lists the consequences. Own row is locked; the last active admin cannot be demoted. Matrix tab: read-only role to permission grid. History tab: `RoleChangeLog` rows (who, from/to, reason, source). Source: `examio-fe/src/pages/admin/AdminRolesPage.tsx`; the client rules mirror auth (server answers are authoritative).
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| RoleUserFilters / RoleUserTable | atomic | Search, role and admin filters; paginated rows |
+| RoleChangeDialog | atomic | Confirmation with consequences and optional reason |
+| UserBanActions | atomic | Ban / unban with confirmation |
+| PermissionMatrix | atomic | Read-only matrix grouped by permission group |
+| RoleChangeHistory / RoleBadge | atomic | History list, role chip |
+
+### Routes
+
+- `GET /api/v1/admin/roles`
+- `GET /api/v1/admin/roles/users`
+- `GET /api/v1/admin/roles/changes`
+- `PUT /api/v1/admin/roles/users/:id/role`
+- `PUT /api/v1/admin/roles/users/:id/system-admin`
+- `POST /api/v1/admin/users/:id/ban`, `POST /api/v1/admin/users/:id/unban`
+
+### Auth
+
+- `@RequirePermissions('role:assign')` (`user:manage` for ban/unban). Known gap until the phase 09 FE work: `AdminRoute` / `SideBar` still read `user.isAdmin`, which `/auth/me` no longer returns, so a real browser redirects an admin away from `/admin/*`.
+
+---
+
 ## Summary
 
-- **Total Screens**: 43
-- **Atomic**: 37 (SCR001–SCR012, SCR014–SCR015, SCR017, SCR019–SCR024, SCR026, SCR028–SCR038, SCR039–SCR043)
+- **Total Screens**: 44
+- **Atomic**: 38 (SCR001–SCR012, SCR014–SCR015, SCR017, SCR019–SCR024, SCR026, SCR028–SCR038, SCR039–SCR044)
 - **Composite**: 6 (SCR013, SCR016, SCR018, SCR025, SCR027)
 - **Total Regions**: 16 across composite screens
 
@@ -1387,7 +1418,7 @@ Admin CRUD for `WordFamilyCategory` — antd Table + Modal, auto-slug generator 
 
 ## Cross-Reference Validation
 
-- [x] All SCR### codes are unique (SCR001–SCR043)
+- [x] All SCR### codes are unique (SCR001–SCR044)
 - [x] All SCR### codes are referenced in ScreenFlow.md
 - [x] All route URLs are properly formatted
 - [x] All SCR### codes are referenced in FeatureList.md

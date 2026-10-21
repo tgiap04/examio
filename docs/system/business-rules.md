@@ -33,6 +33,13 @@ An account has exactly one base role (`STUDENT` or `TEACHER`) and an independent
 **Applies when:** A role or admin flag is changed.
 **Says:** A user cannot change their own role (`CANNOT_CHANGE_OWN_ROLE`); the last active SYSTEM_ADMIN cannot be demoted (`LAST_SYSTEM_ADMIN`). Each change is serialized by an advisory lock, bumps `authzVersion`, writes a `RoleChangeLog` row and emits `auth.user.authz_changed` in one transaction. The new role reaches the user's token on its next refresh (access tokens live 15 minutes). The role-to-permission table is in [permissions](permissions.md).
 
+**Admin screen (phase 08):** `/admin/roles` (`role:assign`) sets the base role (`PUT roles/users/:id/role`) and the flag (`PUT roles/users/:id/system-admin`) with an optional reason (max 500). A no-op change answers 200 and writes no `AdminAudit` row (auth still logs a `reapply` row and re-emits the event). `GET roles/changes` shows the log with `source` `admin-ui`, `cli` or `bootstrap`.
+
+### Banning a user
+
+**Applies when:** An admin bans or unbans an account (`POST /admin/users/:id/ban|unban`, `user:manage`).
+**Says:** Auth `SetUserStatus` does it: the admin cannot ban themselves (403 `CANNOT_CHANGE_OWN_STATUS`) and the last active SYSTEM_ADMIN cannot be banned (409 `LAST_SYSTEM_ADMIN`). A ban sets `isBanned` (not `deletedAt`), revokes every session and bumps `authzVersion`; unban bumps it too and also clears `deletedAt` for accounts banned before RBAC. Both publish `auth.user.authz_changed` (`reason` `ban` / `unban`), write a `RoleChangeLog` row and an `AdminAudit` row. `PATCH /admin/users/:id` never changes role, admin flag or ban state (400 `VALIDATION_ERROR`).
+
 ---
 
 ### Login requires valid credentials or a valid OAuth token

@@ -76,6 +76,10 @@ Phase 06 (RBAC enforcement and security fixes) is implemented but uncommitted on
 
 Phase 07 (quiz sharing and student practice) is implemented but uncommitted on `refactor/microservice-rbac`: quiz-set whitelist/code/public sharing, the delta sharing API (2000 cap) shared with flashcard sets, remembered code unlocks evicted on rotation, and `/quiz-practice/*` with server-side scoring and frozen results. Follow-ups: migration `20261020132225_quiz_sharing` is not applied on shared databases; mobile adaptation and a central axios error fix remain. See [changelog](project-changelog.md).
 
+## Progress Note (2026-10-20) — microservice-refactor plan, phase 08
+
+Phase 08 (admin role management) is implemented but uncommitted on `refactor/microservice-rbac`: `/admin/roles` API and the `/admin/roles` FE page, ban/unban through auth `SetUserStatus`, `grant-admin`/`revoke-admin` removed. Milestone A backend is complete; FE phase 09 is pending (admin route guards still read `user.isAdmin`). See [changelog](project-changelog.md) and [permissions](system/permissions.md).
+
 ## Phase 0 — System Correctness (P0, blocking)
 
 | # | Item | Source | Owner | Deps |

@@ -120,8 +120,8 @@ A SYSTEM_ADMIN who is also a STUDENT/TEACHER holds the union of both columns. A 
 | r2 (exam) / r2-service | `POST /r2/image` / `internal/upload` | `document:upload` / `@Public()` (internal, not routed by the gateway) |
 | finance | `payment/create`, `status/:id`, `history`, `cancel/:id`; `wallet/info`, `wallet/details` | `wallet:use` |
 | | `payment/subscription` / `subscription/plans` / `POST /webhook` | `subscription:manage` / `@Public()` / `@Public()` (SePay key) |
-| admin | users (list, `:id`, PATCH, ban, unban) | `user:manage`; PATCH rejects `isAdmin`, `isSystemAdmin`, `role` |
-| | users `grant-admin`, `revoke-admin` | `role:assign` (interim, phase 08) |
+| admin | users (list, `:id`, PATCH, ban, unban) | `user:manage`; PATCH rejects `isAdmin`, `isSystemAdmin`, `role`, `isBanned` (400 `VALIDATION_ERROR`) |
+| | `admin/roles` (matrix, `users`, `changes`), `PUT roles/users/:id/role`, `PUT roles/users/:id/system-admin` | `role:assign` (phase 08; `grant-admin` / `revoke-admin` removed) |
 | | finance / logs / page-config / stats (`admin/stats/*`, `admin/overview`, `admin/series/:name`, `admin/sources`) / audit / word-family | `finance:admin` / `logs:read` / `page_config:manage` / `stats:read` / `audit:read` / `word_family:admin` (replaces the class-level `admin:access`) |
 
 Plain `@Authenticated()` handlers (allowlist, each with a two-user negative spec or `selfScoped: true`): examattempt `detail` / `get-by-id` / `update`; auth `logout`, `me`-style and profile handlers (self-scoped); `DevicesController` list/logout (two-user spec).
@@ -134,6 +134,18 @@ Plain `@Authenticated()` handlers (allowlist, each with a two-user negative spec
 - Owner-role independence: access checks (`flashcardset-access.ts`, `examattempt-access.ts`, session study access) decide only from `isPublic`, `whitelist`, code unlock, session visibility and `ownerId === sub`. None reads the owner's `User.role` / `isSystemAdmin`. A demoted TEACHER's shared / whitelisted / public / code content stays studyable by others; the demoted owner gets 403 on every `*:manage` route (and may still study their own set as a STUDENT).
 - `generate-code` (flashcard set and exam session) replaces only the code; the whitelist and visibility are kept.
 - `users/search` (flashcard set and exam session): `user:search` (TEACHER); `q` trimmed, at least 3 characters (400 `QUERY_TOO_SHORT`); matches `username` / `name` by prefix or `email` by exact value (case-insensitive); max 10; self excluded; returns `{ id, username, name, avatar }`, never the email. Sharing views (`GET :id/sharing`) list whitelisted users with the same four fields.
+
+**Role management and ban (phase 08)** (`admin-service` `AdminRolesController`, `AdminUsersController`; source of truth is auth, admin-service forwards the admin's token via `forwardUser(req)`)
+
+| Rule | Behaviour |
+|---|---|
+| Who | `role:assign` for `/admin/roles*` (reading the history too: `ListRoleChanges` carries emails); `user:manage` for `/admin/users*` ban/unban |
+| Base role | `PUT roles/users/:id/role` `{ role: STUDENT or TEACHER, reason? }` (auth `SetUserRole`); own row 403 `CANNOT_CHANGE_OWN_ROLE`, unknown user 404 `USER_NOT_FOUND`, concurrent change 409 `ROLE_CHANGE_CONFLICT`. No-op is 200 without an `AdminAudit` row (auth still logs a `reapply` row) |
+| SYSTEM_ADMIN flag | `PUT roles/users/:id/system-admin` `{ isSystemAdmin, reason? }` (auth `SetSystemAdmin`); same errors plus 409 `LAST_SYSTEM_ADMIN` when the last active admin would be demoted |
+| Ban / unban | `POST users/:id/ban` and `unban` call auth `SetUserStatus` (`user:manage`, actor = token `sub`): self 403 `CANNOT_CHANGE_OWN_STATUS`, last active admin 409 `LAST_SYSTEM_ADMIN` (unreachable over HTTP), 409 `ROLE_CHANGE_CONFLICT`. Ban sets `isBanned` (no `deletedAt`), revokes every session; ban and unban bump `authzVersion` and publish `auth.user.authz_changed` with `reason` `ban` / `unban`. Unban also clears `deletedAt` of accounts banned before RBAC |
+| `PATCH /admin/users/:id` | Strict body: `role`, `isSystemAdmin`, `isAdmin`, `isBanned` give 400 `VALIDATION_ERROR` |
+| Audit | `AdminAudit` after a successful RPC: `admin.role.set_base` `{from,to,reason}`, `admin.role.set_system_admin` `{from,to,reason}`, `admin.user.ban` / `admin.user.unban` `{previousIsBanned}`. Auth writes `RoleChangeLog` for every change; ban / unban / re-apply rows keep the same role and flag on both sides and a `reason` starting `ban` / `unban` / `reapply` |
+| Lists | `GET roles/users` returns `{ data, meta, systemAdminCount }` (count of active, non-banned admins); rows carry `role` and `isSystemAdmin` (no `isAdmin`). `GET /admin/users` rows carry the same two fields; filter `isSystemAdmin=true|false` |
 
 **Access-code lockout** (`exam-service/src/modules/common/access-code-guard.ts`; used by flashcard `verify-code`/`with-code`, exam session `verify-code`/`with-code`, and exam attempt `start` with an `accessCode`)
 
@@ -1558,11 +1570,13 @@ All `/api/v1/admin/*` routes require a valid JWT bearer token and `User.isSystem
 - (GET) `/api/v1/admin/stats/sources`
 - (GET) `/api/v1/admin/sources` (FE-facing alias of `/admin/stats/sources`)
 - (GET) `/api/v1/admin/users`
-- (PUT) `/api/v1/admin/users/:id/ban`
-- (PUT) `/api/v1/admin/users/:id/unban`
-- (DELETE) `/api/v1/admin/users/:id`
-- (POST) `/api/v1/admin/users/:id/grant-admin`
-- (POST) `/api/v1/admin/users/:id/revoke-admin`
+- (POST) `/api/v1/admin/users/:id/ban`
+- (POST) `/api/v1/admin/users/:id/unban`
+- (GET) `/api/v1/admin/roles`
+- (GET) `/api/v1/admin/roles/users`
+- (GET) `/api/v1/admin/roles/changes`
+- (PUT) `/api/v1/admin/roles/users/:id/role`
+- (PUT) `/api/v1/admin/roles/users/:id/system-admin`
 - (GET) `/api/v1/admin/finance/refunds`
 - (POST) `/api/v1/admin/finance/refund`
 - (POST) `/api/v1/admin/finance/adjust-credit`
@@ -1593,18 +1607,19 @@ All `/api/v1/admin/*` routes require a valid JWT bearer token and `User.isSystem
 
 ## PERM047: AdminUserManagement
 
+> Current (phase 08): ban / unban are `POST` via auth `SetUserStatus` and no longer soft-delete; no `DELETE /admin/users/:id` route exists. See § Current RBAC Catalog, "Role management and ban".
+
 **Type**: action-permission
-**Enforced At**: `AdminUsersModule` — `PUT /api/v1/admin/users/:id/ban`, `PUT /api/v1/admin/users/:id/unban`, `DELETE /api/v1/admin/users/:id`
+**Enforced At**: `AdminUsersModule` — `POST /api/v1/admin/users/:id/ban`, `POST /api/v1/admin/users/:id/unban`
 
 ### Description
 
-An admin can ban a user (`User.isBanned = true`), unban a user, or soft-delete a user (`User.deletedAt = now()`). Soft-deleted users cannot log in. Banned users see a 403 "Account suspended" error. Every mutation writes an `AdminAudit` row via `AuditWriterService`.
+An admin can ban or unban a user (auth `SetUserStatus`: `User.isBanned`, sessions revoked on ban, `authzVersion` bumped). Banned users are refused at refresh (`ACCOUNT_DISABLED`). Every mutation writes an `AdminAudit` row.
 
 ### Related Routes
 
-- (PUT) `/api/v1/admin/users/:id/ban`
-- (PUT) `/api/v1/admin/users/:id/unban`
-- (DELETE) `/api/v1/admin/users/:id`
+- (POST) `/api/v1/admin/users/:id/ban`
+- (POST) `/api/v1/admin/users/:id/unban`
 
 ### Related Screens
 
@@ -1621,8 +1636,10 @@ An admin can ban a user (`User.isBanned = true`), unban a user, or soft-delete a
 
 ## PERM048: AdminGrantRevoke
 
+> Superseded (phase 08): `grant-admin` / `revoke-admin` were removed. The capability is `PUT /api/v1/admin/roles/users/:id/system-admin` (`role:assign`); see § Current RBAC Catalog, "Role management and ban".
+
 **Type**: action-permission
-**Enforced At**: `AdminUsersModule` — `POST /api/v1/admin/users/:id/grant-admin`, `POST /api/v1/admin/users/:id/revoke-admin`
+**Enforced At**: `AdminUsersModule` — `PUT /api/v1/admin/roles/users/:id/role`, `PUT /api/v1/admin/roles/users/:id/system-admin`
 
 ### Description
 
@@ -1630,12 +1647,15 @@ An admin can grant or revoke admin privileges for any user. Granting admin sets 
 
 ### Related Routes
 
-- (POST) `/api/v1/admin/users/:id/grant-admin`
-- (POST) `/api/v1/admin/users/:id/revoke-admin`
+- (GET) `/api/v1/admin/roles`
+- (GET) `/api/v1/admin/roles/users`
+- (GET) `/api/v1/admin/roles/changes`
+- (PUT) `/api/v1/admin/roles/users/:id/role`
+- (PUT) `/api/v1/admin/roles/users/:id/system-admin`
 
 ### Related Screens
 
-- SCR035 – AdminUsersPage
+- SCR044 – AdminRolesPage
 
 ### Permission Rules
 

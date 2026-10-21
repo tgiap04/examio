@@ -30,8 +30,8 @@ Source artifacts: `permissions.md`, `screen-list.md`, `route-list.md`, `scout-re
 | PERM017 | Mobile auth flows | Yes | N/A | N/A | N/A | No | Android/iOS email+OAuth auth real. |
 | PERM018 | Mobile non-auth feature data | No | Intended auth | Intended own data | Yes | No | Shared API/repo ready; platform UI mostly mock-backed. |
 | PERM046 | Admin dashboard access | No | No | No | Yes | No | `@RequirePermissions('stats:read')` on the stats controllers (the class-level `admin:access` was replaced per controller in phase 06); `SYSTEM_ADMIN` role (`User.isSystemAdmin`) required. Includes `GET /admin/stats/sources` (+ alias `GET /admin/sources`) — signup breakdown by `utm_source`. |
-| PERM047 | Admin user management (ban/unban/delete) | No | No | No | Yes | No | `user:manage`; PATCH no longer accepts `isAdmin`; AdminUsersModule; all mutations write AdminAudit rows. |
-| PERM048 | Admin grant/revoke admin role | No | No | No | Yes | No | AdminUsersModule via auth `SetSystemAdmin` (`role:assign`); self-change blocked, last admin protected; writes AdminAudit + RoleChangeLog. TEACHER grant: auth CLI only. |
+| PERM047 | Admin user management (ban/unban) | No | No | No | Yes | No | `user:manage`; PATCH rejects `isAdmin`/`isSystemAdmin`/`role`/`isBanned`; ban/unban via auth `SetUserStatus` (self 403, last admin 409, sessions revoked, `authzVersion` bumped); AdminAudit rows. |
+| PERM048 | Admin role management | No | No | No | Yes | No | Phase 08: `/admin/roles*` (`role:assign`): `PUT users/:id/role` (STUDENT/TEACHER) and `PUT users/:id/system-admin` via auth `SetUserRole` / `SetSystemAdmin`; self-change 403, last admin 409; writes AdminAudit + RoleChangeLog. `grant-admin` / `revoke-admin` removed. |
 | PERM049 | Admin wallet refund | No | No | No | Yes | No | AdminFinanceModule; writes WalletTransaction refund + AdminAudit. |
 | PERM050 | Admin credit adjustment | No | No | No | Yes | No | AdminFinanceModule; writes WalletTransaction adjustment + AdminAudit. |
 | PERM051 | Admin subscription tier change | No | No | No | Yes | No | AdminFinanceModule; updates UserSubscription + AdminAudit. |

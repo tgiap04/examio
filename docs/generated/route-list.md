@@ -616,7 +616,7 @@ Internal service routes — not directly exposed to clients (gateway proxies to 
 
 #### Admin
 
-All admin routes are proxied from gateway via `/api/v1/admin/*` to `admin-service` (HTTP 3000 in containers). Auth: class-level `@RequirePermissions('admin:access')` (stateless JWT, `SYSTEM_ADMIN` role in token).
+All admin routes are proxied from gateway via `/api/v1/admin/*` to `admin-service` (HTTP 3000 in containers). Auth: per-controller `@RequirePermissions(...)` (stateless JWT; the permission is named in the table, `SYSTEM_ADMIN` holds all). `grant-admin` / `revoke-admin` were removed in phase 08 (use `PUT /admin/roles/users/:id/system-admin`); `DELETE /admin/users/:id` does not exist in `AdminUsersController`. `/admin/users*` and `/admin/roles*` answer `{ statusCode, code, message, requestId }`; a bad body or query is 400 `VALIDATION_ERROR`. Details: [permissions](../system/permissions.md).
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
@@ -625,11 +625,15 @@ All admin routes are proxied from gateway via `/api/v1/admin/*` to `admin-servic
 | GET | /api/v1/admin/stats/sources | Signup breakdown by `utm_source` (null → "direct"), top 20 desc | Admin |
 | GET | /api/v1/admin/sources | Alias of `/admin/stats/sources` for FE dashboard | Admin |
 | GET | /api/v1/admin/users | User list with pagination + filters | Admin |
-| PUT | /api/v1/admin/users/:id/ban | Ban user (`isBanned = true`) | Admin |
-| PUT | /api/v1/admin/users/:id/unban | Unban user (`isBanned = false`) | Admin |
-| DELETE | /api/v1/admin/users/:id | Soft-delete user (`deletedAt = now()`) | Admin |
-| POST | /api/v1/admin/users/:id/grant-admin | Grant admin role (`isSystemAdmin = true`, via auth `SetSystemAdmin`) | Admin |
-| POST | /api/v1/admin/users/:id/revoke-admin | Revoke admin role (`isSystemAdmin = false`, via auth `SetSystemAdmin`) | Admin |
+| GET | /api/v1/admin/users/:id | User detail | Admin (`user:manage`) |
+| PATCH | /api/v1/admin/users/:id | Edit profile fields; `role`, `isSystemAdmin`, `isBanned`, `isAdmin` are rejected (400 `VALIDATION_ERROR`) | Admin (`user:manage`) |
+| POST | /api/v1/admin/users/:id/ban | Ban via auth `SetUserStatus`: revokes sessions, bumps `authzVersion`; self 403 `CANNOT_CHANGE_OWN_STATUS`, last admin 409 `LAST_SYSTEM_ADMIN` | Admin (`user:manage`) |
+| POST | /api/v1/admin/users/:id/unban | Unban via auth `SetUserStatus` (also clears a legacy `deletedAt`) | Admin (`user:manage`) |
+| GET | /api/v1/admin/roles | Read-only role to permission matrix `{ roles, permissions }` | Admin (`role:assign`) |
+| GET | /api/v1/admin/roles/users | Users with `role` / `isSystemAdmin`; filters `q`, `role`, `isSystemAdmin`, `page`, `limit` (max 100); returns `systemAdminCount` | Admin (`role:assign`) |
+| GET | /api/v1/admin/roles/changes | Role change history (`userId`, `page`, `limit`), newest first | Admin (`role:assign`) |
+| PUT | /api/v1/admin/roles/users/:id/role | Set base role `STUDENT` / `TEACHER` (`reason` optional); 403 `CANNOT_CHANGE_OWN_ROLE`, 404 `USER_NOT_FOUND`, 409 `ROLE_CHANGE_CONFLICT` | Admin (`role:assign`) |
+| PUT | /api/v1/admin/roles/users/:id/system-admin | Grant / revoke SYSTEM_ADMIN (`{ isSystemAdmin, reason? }`); also 409 `LAST_SYSTEM_ADMIN` | Admin (`role:assign`) |
 | GET | /api/v1/admin/finance/refunds | List refund history | Admin |
 | POST | /api/v1/admin/finance/refund | Issue wallet refund | Admin |
 | POST | /api/v1/admin/finance/adjust-credit | Manual credit adjustment | Admin |

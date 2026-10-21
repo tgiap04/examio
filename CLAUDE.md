@@ -74,6 +74,8 @@ cd examio-be/apps/finance-service && ../../node_modules/.bin/jest --config test/
 cd examio-be/apps/auth-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/app.e2e-spec.ts
 ```
 
+Môi trường test: `examio-be/jest.config.js` và mọi `test/jest-e2e.json` nạp `test/jest-env.setup.js` (setupFiles) đặt `NODE_ENV=test` và `MAIL_TRANSPORT=json`, nên jest không bao giờ gửi mail thật dù shell hay `.env` có `EMAIL_USER`/`EMAIL_PASS`. Khi chạy service local mà không muốn gửi mail thật, đặt `MAIL_TRANSPORT=json`; production (`NODE_ENV=production`) bắt buộc có `EMAIL_USER` và `EMAIL_PASS` (transport tạo lười ở lần gửi đầu, `libs/common/src/config/mail.config.ts`). Quản lý role/ban qua admin UI (`/admin/roles`) không có lệnh riêng; CLI `yarn bootstrap:admin*` vẫn là đường cấp admin đầu tiên.
+
 ### Frontend (`examio-fe`)
 
 ```bash
@@ -158,7 +160,7 @@ Backend không phải là một monolith duy nhất dù các service dùng chung
 - Ví dụ từ wiring hiện tại:
   - gateway biết URL của downstream service qua env `AUTH_SERVICE_URL`, `EXAM_SERVICE_URL`, `FINANCE_SERVICE_URL`, `ADMIN_SERVICE_URL` (nội suy vào `routes.yaml`).
   - auth gọi gRPC `GatewayControl` của gateway (`RevokeSession`, `InvalidateUser`; `GATEWAY_GRPC_URL`, `GATEWAY_CONTROL_ENABLED`); gateway còn consume bền `auth.user.authz_changed` và `auth.session.revoked` (queue `gateway.events`, `RABBITMQ_GATEWAY_PASS`). Redis keys: `gw:revoked:sid:*`, `gw:user:*:av`, `gw:rl:*`.
-  - service-to-service: caller lấy service token từ auth (`POST /internal/token`, env `AUTH_TOKEN_URL`, `SERVICE_CLIENT_SECRET`) và gửi trong gRPC metadata `authorization`; admin-service gọi auth gRPC (`AUTH_GRPC_URL`, `SetSystemAdmin`) để grant/revoke admin.
+  - service-to-service: caller lấy service token từ auth (`POST /internal/token`, env `AUTH_TOKEN_URL`, `SERVICE_CLIENT_SECRET`) và gửi trong gRPC metadata `authorization`; admin-service gọi auth gRPC (`AUTH_GRPC_URL`: `SetUserRole`, `SetSystemAdmin`, `SetUserStatus`, `ListUsers`, `ListRoleChanges`) kèm token của admin đang thao tác (màn `/admin/roles`, ban/unban).
   - exam đăng ký R2 client và import finance client module.
   - finance consume `auth.user.registered` (qua outbox của auth) để tạo ví.
   - AI chat trong exam cũng đăng ký finance subscription gRPC client.

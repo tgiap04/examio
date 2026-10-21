@@ -178,7 +178,7 @@ graph LR
 
 **Process role**: env `ROLE` = `api` | `worker` | `api,worker` (default `api,worker`; compose sets `api,worker` for auth and finance). `worker` runs the relay/purge (auth) or the consumer (finance) via `worker.module.ts`.
 
-**Broker security**: one RabbitMQ user per service (`auth`, `finance`, `exam`, `ai`) plus the ops user from `RABBITMQ_USER`/`RABBITMQ_PASS` (management UI only). Per user: configure/write/read limited to `examio.events` and `<svc>.*` (legacy: `exam-service` for exam, `ai-service-queue` for ai). Topic permissions on `examio.events`: write only `^<domain>\.`, read `.*`. So a validated `source` cannot be forged. Users come from `deploy/rabbitmq/definitions.template.json` (committed, no secrets), rendered by the one-shot `rabbitmq-defs` compose service (`render-definitions.cjs`) into the gitignored `definitions.json` and loaded at broker boot (`rabbitmq.conf`). Each service gets its own `RABBITMQ_URL`; broker passwords must be URL-safe because they are embedded in `amqp://` URLs. Broker image: `rabbitmq:3.13-management-alpine`.
+**Broker security**: one RabbitMQ user per service (`auth`, `finance`, `exam`, `ai`) plus the ops user from `RABBITMQ_USER`/`RABBITMQ_PASS` (management UI only). Per user: configure/write/read limited to `examio.events` and `<svc>.*` (legacy: `exam-service` for exam, `ai-service-queue` for ai). Topic permissions on `examio.events`: write only `^<domain>\.`, read `.*`. So a validated `source` cannot be forged. Users come from `deploy/rabbitmq/definitions.template.json` (committed, no secrets), rendered by the one-shot `rabbitmq-defs` compose service (`render-definitions.cjs`) into the gitignored `definitions.json` (compose and CI pass `--out`; without `--out` the script writes `<os.tmpdir()>/definitions.json`, never into the repo tree) and loaded at broker boot (`rabbitmq.conf`). Each service gets its own `RABBITMQ_URL`; broker passwords must be URL-safe because they are embedded in `amqp://` URLs. Broker image: `rabbitmq:3.13-management-alpine`.
 
 **Currently wired events**:
 - `auth.user.registered` (auth-service): `{ userId, email, username, utmSource|null }`, written to the outbox in the register tx (email and Google OAuth paths). No consumer since phase 04 (finance's `UserRegisteredHandler` was removed; STUDENTs have no wallet). Replaces `auth.user.created`.
@@ -192,7 +192,7 @@ graph LR
 **HTTP Port**: 3000 (container)
 **gRPC Port**: none in the current compose/`main.ts`
 
-**Auth**: class-level `@RequirePermissions('admin:access')` from `@examio/auth-jwt` (stateless JWT, `SYSTEM_ADMIN` role). Grant/revoke admin call auth gRPC `SetSystemAdmin` with the caller's token (`AUTH_GRPC_URL`); admin-service no longer owns the bootstrap (see § 7).
+**Auth**: per-controller `@RequirePermissions(...)` from `@examio/auth-jwt` (stateless JWT; `user:manage` for users, `role:assign` for `/admin/roles*`, others per phase 06). Role, admin-flag and ban changes are RPCs to auth (`AUTH_GRPC_URL`: `SetUserRole`, `SetSystemAdmin`, `SetUserStatus`, `ListUsers`, `ListRoleChanges`) that forward the calling admin's own token (`forwardUser(req)`), so auth decides from the token `sub` and permissions; admin-service writes `AdminAudit` only after the RPC succeeds and answers with the `HttpErrorEnvelopeFilter` envelope. It no longer owns the bootstrap (see § 7).
 
 **Proxy**: `routes.yaml` routes `/api/v1/admin/*` to `admin-service` (`auth: required`, `permissions: [admin:access]`); the SSE `GET /admin/logs/stream` is `auth: none` at the edge because EventSource cannot send headers, and admin-service checks the single-use ticket from `POST /admin/logs/ticket`.
 
@@ -200,7 +200,8 @@ graph LR
 - `AdminStatsModule` — KPI overview + time-series charts
 - `AdminFinanceModule` — wallet refunds, credit adjustments, subscription tier changes
 - `AdminLogsModule` — server-side log retrieval
-- `AdminUsersModule` — user CRUD, ban/unban, grant/revoke admin
+- `AdminUsersModule` — list/detail/patch, ban/unban (auth `SetUserStatus`)
+- `AdminRolesModule` — role matrix, user role list, role change history, set base role / SYSTEM_ADMIN (auth RPCs, `role:assign`)
 - `AdminAuditModule` — audit log query (one row per changed field per mutation)
 
 **Audit**: every admin mutation writes an `AdminAudit` row via `AuditWriterService` (shared, `@examio/common`). Fields captured: `adminId`, `targetId`, `action`, `payload` (JSON diff of changed fields), `ipAddress`, `userAgent`.
@@ -346,7 +347,7 @@ sequenceDiagram
 | Encryption | AES-256-CBC + JWT answer tokens | — |
 | Image preprocessing | jimp + cv (OpenCV.js) | — |
 | Bot protection | Cloudflare Turnstile | — |
-| Email | Nodemailer (Gmail SMTP) | — |
+| Email | Nodemailer (Gmail SMTP); transport built lazily on first send, JSON transport (no network) when `NODE_ENV=test` or `MAIL_TRANSPORT=json`, production requires `EMAIL_USER`/`EMAIL_PASS` | — |
 | Cron | @nestjs/schedule | latest |
 | File upload | multipart/form-data (max 50MB for gRPC R2) | — |
 
