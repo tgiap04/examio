@@ -13,6 +13,7 @@ import { AdminFinanceModule } from './modules/admin-finance/admin-finance.module
 import { AdminStatsModule } from './modules/admin-stats/admin-stats.module';
 import { AdminLogsModule } from './modules/admin-logs/admin-logs.module';
 import { AdminUsersModule } from './modules/admin-users/admin-users.module';
+import { AdminRolesModule } from './modules/admin-roles/admin-roles.module';
 import { AdminAuditModule } from './modules/admin-audit/admin-audit.module';
 import { AdminWordFamilyModule } from './modules/admin-word-family/admin-word-family.module';
 import { AdminPageConfigModule } from './modules/admin-page-config/admin-page-config.module';
@@ -39,6 +40,7 @@ import { AuthJwtModule } from '@examio/auth-jwt';
         AdminFinanceModule,
         AdminLogsModule,
         AdminUsersModule,
+        AdminRolesModule,
         AdminAuditModule,
         AdminWordFamilyModule,
         AdminPageConfigModule,

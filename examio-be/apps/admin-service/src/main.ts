@@ -7,6 +7,7 @@ config({ path: join(process.cwd(), 'apps', 'admin-service', '.env') });
 import { NestFactory } from '@nestjs/core';
 import * as cookieParser from 'cookie-parser';
 
+import { HttpErrorEnvelopeFilter } from '@examio/http';
 import { AdminServiceModule } from './admin-service.module';
 import {
     HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
@@ -24,6 +25,8 @@ async function bootstrap() {
         exclude: HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
     });
     app.use(cookieParser());
+    // `{ statusCode, code, message, requestId }`, like gateway + auth.
+    app.useGlobalFilters(new HttpErrorEnvelopeFilter());
 
     // Enable CORS
     app.enableCors({

@@ -1,20 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '@examio/database';
 import { Metadata } from '@grpc/grpc-js';
 import { AuthClient } from '../../clients/auth.client';
 
+import type { AuditContext } from '../admin-roles/audit-context';
 import { AuditWriterService } from '../../common/audit-writer.service';
+import { writeAuditBestEffort } from '../admin-roles/best-effort-audit';
 import { ListUsersQuery } from './dto/list-users.query';
 import { UpdateUserBody } from './dto/update-user.body';
 import { userSelectSafe, UserSafeRow } from './user-select.safe';
 
-export interface AuditContext {
-    adminId: string;
-    ipAddress?: string | null;
-    userAgent?: string | null;
-}
-
+export type { AuditContext } from '../admin-roles/audit-context';
 export interface ListUsersResult {
     rows: UserSafeRow[];
     total: number;
@@ -49,7 +46,7 @@ export interface UpdateUserResult {
     changedFields: string[];
 }
 
-const MUTABLE_FIELDS = ['isVerified', 'isBanned', 'name', 'bio'] as const;
+const MUTABLE_FIELDS = ['isVerified', 'name', 'bio'] as const;
 type MutableField = (typeof MUTABLE_FIELDS)[number];
 
 /**
@@ -60,13 +57,15 @@ type MutableField = (typeof MUTABLE_FIELDS)[number];
  *  - writes one AdminAudit row per changed field via AuditWriter
  *  - explicitly excludes `password` from every select (`userSelectSafe`)
  *
- * Safety guards:
- *  - `revokeAdmin` blocks the request when the target is the caller
- *    (defends against self-lockout)
- *  - `banUser` is also blocked on self (defends against self-ban)
+ * Role, admin-flag and ban changes are NOT written here: they are auth RPCs
+ * (`SetUserRole` / `SetSystemAdmin` / `SetUserStatus`) so every authz-relevant
+ * write bumps `authzVersion` inside auth. `updateUser` only touches profile
+ * fields (name, bio, isVerified).
  */
 @Injectable()
 export class AdminUsersService {
+    private readonly logger = new Logger(AdminUsersService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly auditWriter: AuditWriterService,
@@ -249,130 +248,18 @@ export class AdminUsersService {
     }
 
     /**
-     * Soft-ban a user: `isBanned = true`, `deletedAt = now()`. The
-     * `User` row is preserved so all FK relationships (payments,
-     * sessions, audit) keep their referential integrity.
+     * Ban through auth `SetUserStatus` (advisory lock, last-admin and self
+     * guards, authzVersion bump, sessions revoked, outbox) acting as the
+     * calling admin via their forwarded token. This service never writes
+     * `User` for a ban and never signals the gateway: auth does both.
      */
-    async banUser(id: string, ctx: AuditContext): Promise<UserSafeRow> {
-        if (id === ctx.adminId) {
-            throw new NotFoundException('Cannot ban own account');
-        }
-
-        return this.prisma.$transaction(
-            async (tx) => {
-                const existing = await tx.user.findUnique({
-                    where: { id },
-                    select: userSelectSafe,
-                });
-                if (!existing) {
-                    throw new NotFoundException('User not found');
-                }
-
-                const updated = await tx.user.update({
-                    where: { id },
-                    select: userSelectSafe,
-                    data: {
-                        isBanned: true,
-                        deletedAt: new Date(),
-                        updatedBy: ctx.adminId,
-                    },
-                });
-
-                await this.auditWriter.write(
-                    {
-                        adminId: ctx.adminId,
-                        action: 'admin.user.ban',
-                        targetId: id,
-                        payload: {
-                            previousIsBanned: existing.isBanned,
-                            previousDeletedAt: existing.deletedAt,
-                        },
-                        ipAddress: ctx.ipAddress,
-                        userAgent: ctx.userAgent,
-                    },
-                    { tx }
-                );
-
-                return updated;
-            },
-            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-        );
+    banUser(id: string, ctx: AuditContext, metadata: Metadata): Promise<UserSafeRow> {
+        return this.setBanned(id, true, 'admin.user.ban', ctx, metadata);
     }
 
-    /**
-     * Lift a soft-ban. Sets `isBanned = false, deletedAt = null`.
-     */
-    async unbanUser(id: string, ctx: AuditContext): Promise<UserSafeRow> {
-        return this.prisma.$transaction(
-            async (tx) => {
-                const existing = await tx.user.findUnique({
-                    where: { id },
-                    select: userSelectSafe,
-                });
-                if (!existing) {
-                    throw new NotFoundException('User not found');
-                }
-
-                const updated = await tx.user.update({
-                    where: { id },
-                    select: userSelectSafe,
-                    data: {
-                        isBanned: false,
-                        deletedAt: null,
-                        updatedBy: ctx.adminId,
-                    },
-                });
-
-                await this.auditWriter.write(
-                    {
-                        adminId: ctx.adminId,
-                        action: 'admin.user.unban',
-                        targetId: id,
-                        payload: {
-                            previousIsBanned: existing.isBanned,
-                            previousDeletedAt: existing.deletedAt,
-                        },
-                        ipAddress: ctx.ipAddress,
-                        userAgent: ctx.userAgent,
-                    },
-                    { tx }
-                );
-
-                return updated;
-            },
-            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-        );
-    }
-
-    /**
-     * Grant admin privileges through auth `SetSystemAdmin` (advisory lock,
-     * RoleChangeLog, authzVersion bump, outbox event), acting as the calling
-     * admin via their forwarded token. Refuses a banned target up front.
-     */
-    async grantAdmin(
-        id: string,
-        ctx: AuditContext,
-        metadata: Metadata
-    ): Promise<UserSafeRow> {
-        const existing = await this.findSafe(id);
-        if (existing.isBanned) {
-            throw new NotFoundException('Cannot grant admin to a banned user');
-        }
-        return this.changeAdmin(existing, true, 'admin.user.grant', ctx, metadata);
-    }
-
-    /**
-     * Revoke admin privileges through auth `SetSystemAdmin`. Auth refuses
-     * self-revocation (403 CANNOT_CHANGE_OWN_ROLE) and removing the last active
-     * admin (409 LAST_SYSTEM_ADMIN); those errors reach the client unchanged.
-     */
-    async revokeAdmin(
-        id: string,
-        ctx: AuditContext,
-        metadata: Metadata
-    ): Promise<UserSafeRow> {
-        const existing = await this.findSafe(id);
-        return this.changeAdmin(existing, false, 'admin.user.revoke', ctx, metadata);
+    /** Lift a ban through auth `SetUserStatus` (see `banUser`). */
+    unbanUser(id: string, ctx: AuditContext, metadata: Metadata): Promise<UserSafeRow> {
+        return this.setBanned(id, false, 'admin.user.unban', ctx, metadata);
     }
 
     private async findSafe(id: string): Promise<UserSafeRow> {
@@ -384,21 +271,24 @@ export class AdminUsersService {
         return user;
     }
 
-    private async changeAdmin(
-        existing: UserSafeRow,
-        isSystemAdmin: boolean,
-        action: 'admin.user.grant' | 'admin.user.revoke',
+    private async setBanned(
+        id: string,
+        isBanned: boolean,
+        action: 'admin.user.ban' | 'admin.user.unban',
         ctx: AuditContext,
         metadata: Metadata
     ): Promise<UserSafeRow> {
-        await this.authClient.setSystemAdmin(existing.id, isSystemAdmin, metadata);
-        // Auth committed; read the result back and record the admin-side audit row.
-        const updated = await this.findSafe(existing.id);
-        await this.auditWriter.write({
+        const existing = await this.findSafe(id);
+        await this.authClient.setUserStatus(id, isBanned, metadata);
+        // Auth committed (its errors, e.g. 409 LAST_SYSTEM_ADMIN, were thrown
+        // above): read the result back and record the admin-side audit row,
+        // best-effort (auth's RoleChangeLog is the durable record).
+        const updated = await this.findSafe(id);
+        await writeAuditBestEffort(this.auditWriter, this.logger, {
             adminId: ctx.adminId,
             action,
-            targetId: existing.id,
-            payload: { from: existing.isSystemAdmin, to: updated.isSystemAdmin },
+            targetId: id,
+            payload: { previousIsBanned: existing.isBanned },
             ipAddress: ctx.ipAddress,
             userAgent: ctx.userAgent,
         });

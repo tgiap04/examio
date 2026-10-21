@@ -1,8 +1,10 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { ClientGrpc } from '@nestjs/microservices';
 import { Metadata } from '@grpc/grpc-js';
+import type { Observable } from 'rxjs';
 import { PROTO_FILES, authV1 } from '@examio/contracts';
 import {
+    CallOptions,
     GrpcClientRegistration,
     grpcErrorToHttpException,
     invokeRpc,
@@ -36,21 +38,69 @@ export class AuthClient implements OnModuleInit {
         );
     }
 
-    /** Auth errors surface as the matching HttpException (LAST_SYSTEM_ADMIN -> 409, ...). */
-    async setSystemAdmin(
+    getUser(userId: string, metadata: Metadata): Promise<authV1.GetUserResponse> {
+        return this.call('GetUser', (o) => this.auth.getUser({ userId }, metadata, o));
+    }
+
+    listUsers(
+        request: authV1.ListUsersRequest,
+        metadata: Metadata
+    ): Promise<authV1.ListUsersResponse> {
+        return this.call('ListUsers', (o) => this.auth.listUsers(request, metadata, o));
+    }
+
+    setUserRole(
+        userId: string,
+        role: authV1.BaseRole,
+        reason: string,
+        metadata: Metadata
+    ): Promise<authV1.SetUserRoleResponse> {
+        return this.call('SetUserRole', (o) =>
+            this.auth.setUserRole({ userId, role, reason }, metadata, o)
+        );
+    }
+
+    setSystemAdmin(
         userId: string,
         isSystemAdmin: boolean,
-        metadata: Metadata
+        metadata: Metadata,
+        reason = ''
     ): Promise<authV1.SetSystemAdminResponse> {
+        return this.call('SetSystemAdmin', (o) =>
+            this.auth.setSystemAdmin({ userId, isSystemAdmin, reason }, metadata, o)
+        );
+    }
+
+    setUserStatus(
+        userId: string,
+        isBanned: boolean,
+        metadata: Metadata,
+        reason = ''
+    ): Promise<authV1.SetUserStatusResponse> {
+        return this.call('SetUserStatus', (o) =>
+            this.auth.setUserStatus({ userId, isBanned, reason }, metadata, o)
+        );
+    }
+
+    listRoleChanges(
+        request: authV1.ListRoleChangesRequest,
+        metadata: Metadata
+    ): Promise<authV1.ListRoleChangesResponse> {
+        return this.call('ListRoleChanges', (o) =>
+            this.auth.listRoleChanges(request, metadata, o)
+        );
+    }
+
+    /**
+     * Auth errors surface as the matching HttpException (LAST_SYSTEM_ADMIN -> 409, ...).
+     * Only the reads listed in IDEMPOTENT_RPCS are ever retried; writes never are.
+     */
+    private async call<T>(
+        method: string,
+        invoke: (options: CallOptions) => Observable<T>
+    ): Promise<T> {
         try {
-            // Not idempotent-listed: never retried.
-            return await invokeRpc(`${RPC}/SetSystemAdmin`, (options) =>
-                this.auth.setSystemAdmin(
-                    { userId, isSystemAdmin, reason: '' },
-                    metadata,
-                    options
-                )
-            );
+            return await invokeRpc(`${RPC}/${method}`, invoke);
         } catch (err) {
             throw grpcErrorToHttpException(err);
         }

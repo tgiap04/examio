@@ -18,6 +18,7 @@ export const userSelectSafe = {
     bio: true,
     avatar: true,
     banner: true,
+    role: true,
     isSystemAdmin: true,
     isVerified: true,
     isBanned: true,
