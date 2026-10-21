@@ -1,0 +1,29 @@
+PASS | login as sole admin | 201
+PASS | page title Phân quyền | http://localhost:5273/admin/roles?q=p08ui_tgt_umvgrwz4r%40p08.test
+PASS | target row rendered
+PASS | open role select + choose Giáo viên
+PASS | confirm dialog shows body + consequence + delay note
+PASS | cancel reverts the control (still Học sinh), no PUT sent
+PASS | reason counter shown
+PASS | success toast Đã cập nhật vai trò
+PASS | row now shows Giáo viên | Giáo viên
+PASS | admin confirm dialog (grant)
+PASS | switch is on after grant
+PASS | revoke confirm is a danger button
+PASS | own row: role Select and admin Switch disabled | {"sel":true,"sw":true}
+PASS | self tooltip text
+PASS | history tab: rows with 'Giáo viên', 'Cấp quản trị', 'Giao diện quản trị'
+PASS | matrix tab: groups, raw key, footnote
+PASS | URL filters applied (role=TEACHER&admin=yes lists the promoted user)
+PASS | empty state
+PASS | role badge column on /admin/users
+PASS | own row: Cấm disabled, Phân quyền link present | [{"t":"Phân quyền","d":false},{"t":"Cấm","d":true}]
+PASS | click Cấm on another user
+PASS | ban confirm mentions immediate sign-out
+PASS | ban toast + Bỏ cấm appears
+PASS | DB: isBanned true, deletedAt null, authzVersion 1 | {"isBanned":true,"deletedAt":null,"authzVersion":1}
+PASS | unban: DB isBanned false, authzVersion 2 | {"isBanned":false,"authzVersion":2}
+PASS | AdminAudit rows for role/admin/ban/unban | admin.role.set_base,admin.role.set_system_admin,admin.user.ban,admin.user.unban
+PASS | no request left localhost
+
+SUMMARY 27/27 passed

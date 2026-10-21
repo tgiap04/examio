@@ -1,0 +1,52 @@
+{
+  "score": 9,
+  "criticalCount": 0,
+  "decision": "SEALED",
+  "acceptanceCovered": [
+    "yarn typecheck, build:all and test exit 0; admin-roles and ban e2e pass",
+    "examio-fe build and lint exit 0",
+    "no grant-admin, revoke-admin or grantAdminApi left in backend or FE",
+    "no isAdmin left in admin FE files or admin-service; admin-service has no direct InvalidateUser/gateway-control usage; admin user writes for role/admin/ban go through auth RPCs",
+    "SYSTEM_ADMIN can assign STUDENT/TEACHER and toggle SYSTEM_ADMIN from /admin/roles; non-admins get 403",
+    "self role/admin/ban changes are refused and the last SYSTEM_ADMIN cannot be demoted or banned (409 LAST_SYSTEM_ADMIN)",
+    "every role or ban change writes RoleChangeLog and AdminAudit, bumps authzVersion and emits auth.user.authz_changed; ban also revokes sessions",
+    "a promoted user's next request gets TOKEN_STALE and refresh returns the new role",
+    "the roles matrix endpoint returns the role→permission catalog read-only",
+    "demotion dialog explains content is kept and management is locked"
+  ],
+  "regressionChecked": [
+    "PATCH /admin/users body is .strict(): role/isSystemAdmin/isBanned rejected with VALIDATION_ERROR",
+    "auth SetUserStatus: actor re-read from DB under shared advisory lock, self-ban 403, last-admin 409, ban+session deactivate+outbox+RoleChangeLog in one tx",
+    "admin-service ban/unban delegates to auth RPC with forwarded token; no direct User write",
+    "mail.config lazy JSON transport under NODE_ENV=test; production fails fast without creds; mailTransporter.sendMail facade preserves callers",
+    "authz matrix rows present for ban/unban routes",
+    "proto additive fields target_email/actor_email/source (wire compatible)"
+  ],
+  "contractStatus": "CHANGED",
+  "refuted": [],
+  "unproven": [],
+  "reachableRegressions": [],
+  "findings": [
+    {
+      "severity": "Medium",
+      "category": "Audit",
+      "location": "examio-be/apps/admin-service/src/modules/admin-users/admin-users.service.ts:1",
+      "summary": "AdminAudit row written after auth RPC commits (non-atomic, cross-service); a failure after commit yields 500 with ban applied and no AdminAudit row. RoleChangeLog still holds the record.",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Authorization",
+      "location": "examio-be/apps/auth-service/src/grpc/auth.grpc.controller.ts:85",
+      "summary": "SetUserStatus gated by user:manage while brief says role:assign; equivalent today (both only on SYSTEM_ADMIN, plus DB isSystemAdmin recheck) but could diverge if permissions are split.",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Craft",
+      "location": "examio-fe/src/components/admin/UserTable.tsx:1",
+      "summary": "UserTable is 286 lines, over the 200-line guideline (pre-existing, noted).",
+      "disposition": "Defer"
+    }
+  ]
+}

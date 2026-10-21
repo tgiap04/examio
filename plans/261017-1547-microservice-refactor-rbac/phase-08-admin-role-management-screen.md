@@ -8,7 +8,7 @@
 - Scout: [RBAC surface](./reports/scout-rbac-surface-report.md) §4 AdminUsersPage/UserTable, §5 bootstrap
 
 ## Overview
-- Priority: P1 · Status: Pending · Effort: 2.75d <!-- Red Team: RT-3, RT-15 (was 2d: +auth SetUserStatus server pulled forward from 10 + admin ban/unban on it, +isSystemAdmin rename across 4 admin FE files + list filter, +last-admin ban states; −admin gateway-control client) --> · Depends on: 04, 06
+- Priority: P1 · Status: Completed (2026-10-20) · Effort: 2.75d <!-- Red Team: RT-3, RT-15 (was 2d: +auth SetUserStatus server pulled forward from 10 + admin ban/unban on it, +isSystemAdmin rename across 4 admin FE files + list filter, +last-admin ban states; −admin gateway-control client) --> · Depends on: 04, 06
 - Backend: admin-service `admin-roles` module over auth gRPC (no DB writes to `User`). Endpoints: list users, set base role, toggle SYSTEM_ADMIN, read-only matrix, change history. AdminAudit is written for every change. Ban/unban also move onto auth (`SetUserStatus`), so every authz-relevant `User` write bumps `authzVersion` inside auth. <!-- Red Team: RT-3 -->
 - Frontend: `/admin/roles` page with user table, confirm dialog, matrix tab, history tab. `UserTable` loses grant/revoke-admin. The admin FE files switch from `isAdmin` to `isSystemAdmin`. <!-- Red Team: RT-15 -->
 
@@ -190,16 +190,16 @@ File ownership (globs): `examio-be/apps/admin-service/src/modules/admin-roles/**
 - Phase-06 declaration test passes with the new controller.
 
 ## Todo List
-- [ ] BE service specs (roles + ban) red <!-- Red Team: RT-3, RT-11 -->
-- [ ] admin-service auth gRPC client (explicit admin-token metadata) <!-- Red Team: RT-2 -->
-- [ ] admin-roles module (matrix, users, set role, set admin, changes) + audit
-- [ ] auth `SetUserStatus` (advisory lock, last-admin, av bump, sessions, outbox, InvalidateUser after commit) <!-- Red Team: RT-3, RT-15 -->
-- [ ] Remove grant/revoke-admin (BE + FE); ban/unban → auth `SetUserStatus` (no direct `User` write, no `InvalidateUser`) <!-- Red Team: RT-3 -->
-- [ ] `isSystemAdmin` rename: BE list filter/select + `adminApi.ts`, `UserTable.tsx`, `UserDetailDrawer.tsx`, `useAdminStore.ts` <!-- Red Team: RT-15 -->
-- [ ] FE api/store/rules + page with 3 tabs, dialog, states, guards
-- [ ] Admin nav + route; UserTable/Drawer role badge; last-admin + self ban states, 409 handling <!-- Red Team: RT-15 -->
-- [ ] vi/en admin.json keys
-- [ ] e2e + manual verification
+- [x] BE service specs (roles + ban) red <!-- Red Team: RT-3, RT-11 --> (evidence: phase-08-runs.md, RED seen first)
+- [x] admin-service auth gRPC client (explicit admin-token metadata) <!-- Red Team: RT-2 --> (evidence: phase-08-runs.md, auth.client spec; admin e2e)
+- [x] admin-roles module (matrix, users, set role, set admin, changes) + audit (evidence: admin-roles e2e, 36/36 admin trio)
+- [x] auth `SetUserStatus` (advisory lock, last-admin, av bump, sessions, outbox, InvalidateUser after commit) <!-- Red Team: RT-3, RT-15 --> (evidence: user-status specs, ban e2e, gateway-probe.json)
+- [x] Remove grant/revoke-admin (BE + FE); ban/unban → auth `SetUserStatus` (no direct `User` write, no `InvalidateUser`) <!-- Red Team: RT-3 --> (evidence: grep runs, phase-08-runs.md)
+- [x] `isSystemAdmin` rename: BE list filter/select + `adminApi.ts`, `UserTable.tsx`, `UserDetailDrawer.tsx`, `useAdminStore.ts` <!-- Red Team: RT-15 --> (evidence: grep isAdmin = none; admin trio)
+- [ ] FE api/store/rules + page with 3 tabs, dialog, states, guards — OPEN: tabs, dialog, guards and empty state verified (ui-browser-run 27/27); loading and error states and 409 toast mapping not in evidence
+- [ ] Admin nav + route; UserTable/Drawer role badge; last-admin + self ban states, 409 handling <!-- Red Team: RT-15 --> — OPEN: route, role badge and self-ban disabled verified; nav click, UserDetailDrawer, last-admin ban disabled state and 409 toasts not in evidence
+- [x] vi/en admin.json keys (evidence: 29 `roles.perm.*` keys in each locale; removed `users.*` grant/revoke keys absent)
+- [x] e2e + manual verification (evidence: admin trio 36/36, auth CI set 35/35, gateway-probe 16/16, ui-browser-run 27/27)
 
 ## Success Criteria
 - `cd examio-be && yarn typecheck && yarn build:all && yarn test`: exit 0. `cd examio-be/apps/admin-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin-roles.e2e-spec.ts test/ban.e2e-spec.ts` (create `test/jest-e2e.json` if missing): exit 0. <!-- Red Team: RT-3 -->
@@ -233,3 +233,15 @@ File ownership (globs): `examio-be/apps/admin-service/src/modules/admin-roles/**
 - [CROSS-PHASE] `examio-fe/src/routes/index.tsx` is shared with 07. Register `/admin/roles` only after 07 merges (lead to serialise if 07/08 run in parallel).
 - [CROSS-PHASE] `/admin/users` still reads `User` directly (DB). Phase 10 should converge it on auth `ListUsers` (same shape as `/admin/roles/users`) to remove the duplicate list path.
 - [CROSS-PHASE] Optional: add `public/locales/ja/admin.json` (all admin pages, not just roles) in a later i18n pass.
+
+### Deferred / carried (closed 2026-10-20)
+1. P09: `AdminRoute.tsx` and `SideBar.tsx` still read `user.isAdmin`, which login/me no longer return, so admins are redirected until P09 lands.
+2. P09: `AdminAuditPage` labels for `admin.role.set_base` and `admin.role.set_system_admin` are missing.
+3. P09: FE vitest for `src/lib/admin-roles/*` (pure rules).
+4. P09: apply [evidence/phase-08/response-shape-changes.md](./evidence/phase-08/response-shape-changes.md) to the FE.
+5. `UserTable.tsx` is 286 lines (over the 200-line guideline); split later.
+6. `AuditRow.actorId` and finance `userId` are typed `number` in FE; they are strings on the BE.
+7. Older role-change e2e suite in auth leaves active admins in the test DB; add cleanup (the phase-08 helper `test/helpers/real-auth-admin.ts` shows the pattern).
+8. SECURITY: a real Gmail credential was used once by an e2e run before the mail fix (`libs/common` mail transport is now test-safe). The user was advised to rotate the app password. Confirm rotation.
+9. Approved deviation: additive `RoleChange` proto fields `target_email`, `actor_email`, `source` (wire compatible; `buf breaking` clean).
+10. Open Todo items (not covered by the phase-08 evidence): FE loading/error states and 409 toast mapping on `/admin/roles`; nav click, `UserDetailDrawer`, and last-admin ban disabled state on `/admin/users`. Overview is Completed; these two Todo lines stay open until verified.

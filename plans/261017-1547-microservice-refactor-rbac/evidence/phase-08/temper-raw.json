@@ -1,0 +1,218 @@
+[
+  {
+    "command": "yarn install --immutable",
+    "exitCode": 0,
+    "summary": "\u27a4 YN0000: \u00b7 Done with warnings in 0s 828ms",
+    "ts": "2026-10-20T14:33:45Z"
+  },
+  {
+    "command": "yarn proto:lint",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-20T14:33:46Z"
+  },
+  {
+    "command": "yarn proto:gen",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-20T14:33:46Z"
+  },
+  {
+    "command": "yarn prisma:generate",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-20T14:33:48Z"
+  },
+  {
+    "command": "yarn typecheck",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-20T14:34:01Z"
+  },
+  {
+    "command": "yarn build:all",
+    "exitCode": 0,
+    "summary": "webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 2325 ms webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 1781 ms webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 2293 ms ",
+    "ts": "2026-10-20T14:34:26Z"
+  },
+  {
+    "command": "TZ=UTC yarn test",
+    "exitCode": 0,
+    "summary": "Tests:       1660 passed, 1660 total Snapshots:   0 total Time:        14.079 s, estimated 26 s ",
+    "ts": "2026-10-20T14:34:41Z"
+  },
+  {
+    "command": "./node_modules/.bin/prisma migrate deploy --schema=libs/database/src/schema.prisma",
+    "exitCode": 0,
+    "summary": "All migrations have been successfully applied.",
+    "ts": "2026-10-20T14:34:41Z"
+  },
+  {
+    "command": "./node_modules/.bin/prisma migrate diff --from-url \"$DATABASE_URL\" --to-schema-datamodel libs/database/src/schema.prisma --exit-code",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-20T14:34:41Z"
+  },
+  {
+    "command": "TZ=UTC yarn test test/authz",
+    "exitCode": 0,
+    "summary": "Tests:       280 passed, 280 total Snapshots:   0 total Time:        7.608 s, estimated 13 s ",
+    "ts": "2026-10-20T14:34:49Z"
+  },
+  {
+    "command": "RABBITMQ_URL=amqp://auth:ci-only-auth-pass@localhost:55672 SERVICE_NAME=auth-service ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec",
+    "exitCode": 0,
+    "summary": "Snapshots:   0 total Time:        4.66 s, estimated 5 s Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-20T14:36:16Z"
+  },
+  {
+    "command": "RABBITMQ_URL=amqp://finance:ci-only-finance-pass@localhost:55672 SERVICE_NAME=finance-service ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec",
+    "exitCode": 0,
+    "summary": "Snapshots:   0 total Time:        3.733 s, estimated 4 s Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-20T14:36:20Z"
+  },
+  {
+    "command": "RABBITMQ_URL=amqp://auth:ci-only-auth-pass@localhost:55672 SERVICE_NAME=admin-service ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec",
+    "exitCode": 0,
+    "summary": "Snapshots:   0 total Time:        4.066 s Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-20T14:36:24Z"
+  },
+  {
+    "command": "RABBITMQ_URL=amqp://auth:ci-only-auth-pass@localhost:55672 SERVICE_NAME=auth-service ../../node_modules/.bin/jest --config test/jest-e2e.json test/token.e2e-spec.ts test/service-token.e2e-spec.ts test/role-change.e2e-spec.ts test/public-profiles.e2e-spec.ts test/login-throttle.e2e-spec.ts",
+    "exitCode": 0,
+    "summary": "Snapshots:   0 total Time:        10.838 s Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-20T14:36:35Z"
+  },
+  {
+    "command": "RABBITMQ_URL=amqp://auth:ci-only-auth-pass@localhost:55672 SERVICE_NAME=auth-service ../../node_modules/.bin/jest --config test/jest-e2e.json test/ownership",
+    "exitCode": 0,
+    "summary": "Snapshots:   0 total Time:        4.088 s Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-20T14:36:40Z"
+  },
+  {
+    "command": "yarn build",
+    "exitCode": 0,
+    "summary": "\u2713 built in 10.33s",
+    "ts": "2026-10-20T14:36:43Z"
+  },
+  {
+    "command": "RABBITMQ_URL=amqp://auth:ci-only-auth-pass@localhost:55672 RABBITMQ_GATEWAY_URL=amqp://gateway:ci-only-gateway-pass@localhost:55672 SERVICE_NAME=auth-service ../../node_modules/.bin/jest --config test/jest-e2e.json test/gateway-integration.e2e-spec.ts",
+    "exitCode": 0,
+    "summary": "Snapshots:   0 total Time:        6.776 s Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-20T14:36:47Z"
+  },
+  {
+    "command": "yarn lint",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-20T14:36:49Z"
+  },
+  {
+    "command": "RABBITMQ_URL=amqp://finance:ci-only-finance-pass@localhost:55672 ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-authz-changed.e2e-spec.ts",
+    "exitCode": 0,
+    "summary": "Snapshots:   0 total Time:        7.62 s Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-20T14:36:54Z"
+  },
+  {
+    "command": "RABBITMQ_URL=amqp://auth:ci-only-auth-pass@localhost:55672 ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin.e2e-spec.ts test/admin-roles.e2e-spec.ts test/ban.e2e-spec.ts",
+    "exitCode": 0,
+    "summary": "Snapshots:   0 total Time:        15.139 s Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-20T14:37:10Z"
+  },
+  {
+    "command": "RABBITMQ_URL=amqp://gateway:ci-only-gateway-pass@localhost:55672 RABBITMQ_AUTH_URL=amqp://auth:ci-only-auth-pass@localhost:55672 NODE_OPTIONS='--require /private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/net-spy.js' ../../node_modules/.bin/jest --config test/jest-e2e.json test/gateway.e2e-spec.ts test/gateway-streaming.e2e-spec.ts test/gateway-expect.e2e-spec.ts test/gateway-authz.e2e-spec.ts test/gateway-control.e2e-spec.ts test/gateway-edge.e2e-spec.ts test/redis-scripts.e2e-spec.ts",
+    "exitCode": 0,
+    "summary": "Snapshots:   0 total Time:        23.341 s Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-20T14:37:33Z"
+  },
+  {
+    "command": "env -i PATH=\"$PATH\" HOME=\"$HOME\" bash -c 'set -a; . \"/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/temper.env\"; set +a; export BOOT_CWD=\"/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/bootcwd\" COMPOSE_DEFAULTS=1 PORT=3580 GRPC_PORT=50151 SERVICES=\"auth exam finance admin r2 gateway\"; exec scripts/boot-built-services.sh'",
+    "exitCode": 0,
+    "summary": "ok   gateway-service (http 3580, grpc up)",
+    "ts": "2026-10-20T14:38:45Z"
+  },
+  {
+    "command": "env -i PATH=\"$PATH\" HOME=\"$HOME\" bash -c 'set -a; . \"/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/temper.env\"; set +a; export BOOT_CWD=\"/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/bootcwd\" COMPOSE_DEFAULTS=0 PORT=3580 GRPC_PORT=50151 SERVICES=\"auth exam finance admin r2 gateway\"; exec scripts/boot-built-services.sh'",
+    "exitCode": 0,
+    "summary": "ok   gateway-service (http 3580, grpc up)",
+    "ts": "2026-10-20T14:38:51Z"
+  },
+  {
+    "command": "RABBITMQ_URL=amqp://auth:ci-only-auth-pass@localhost:55672 ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin-roles.e2e-spec.ts test/ban.e2e-spec.ts",
+    "exitCode": 0,
+    "summary": "Snapshots:   0 total Time:        14.263 s, estimated 15 s Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-20T15:15:09Z"
+  },
+  {
+    "command": "TZ=UTC node_modules/.bin/jest --coverage --coverageReporters=text --coverageReporters=json-summary --coverageDirectory=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/cov-phase08 --collectCoverageFrom='apps/admin-service/src/modules/admin-roles/**/*.ts' --collectCoverageFrom='apps/admin-service/src/modules/admin-users/**/*.ts' --collectCoverageFrom='apps/admin-service/src/clients/auth.client.ts' --collectCoverageFrom='apps/auth-service/src/user-status/**/*.ts' --collectCoverageFrom='!**/*.spec.ts' --testPathIgnorePatterns=e2e-spec",
+    "exitCode": 0,
+    "summary": "Tests:       1660 passed, 1660 total Snapshots:   0 total Time:        14.07 s ",
+    "ts": "2026-10-20T15:15:24Z"
+  },
+  {
+    "command": "scripts/make-env.sh (pinned local env, out of repo, NODE_ENV=test, MAIL_TRANSPORT=json, localhost-only hosts)",
+    "exitCode": 0,
+    "summary": "all 66 .env-file keys pinned; 0 non-local hosts",
+    "ts": "2026-10-20T15:17:13Z"
+  },
+  {
+    "command": "infra-up: docker run pgvector/pgvector:pg16 :55432, redis:7 :56379, rabbitmq:3.13 :55672 (definitions rendered to scratch)",
+    "exitCode": 0,
+    "summary": "pg_isready, redis PONG, rabbitmq ping all ok",
+    "ts": "2026-10-20T15:17:13Z"
+  },
+  {
+    "command": "! grep -rn \"grant-admin\\|revoke-admin\\|grantAdminApi\" examio-be/apps examio-fe/src",
+    "exitCode": 0,
+    "summary": "no matches (gate pass)",
+    "ts": "2026-10-20T15:17:13Z"
+  },
+  {
+    "command": "! grep -rn \"isAdmin\" examio-fe/src/apis/adminApi.ts examio-fe/src/components/admin examio-fe/src/stores/useAdminStore.ts examio-be/apps/admin-service/src",
+    "exitCode": 0,
+    "summary": "no matches (gate pass)",
+    "ts": "2026-10-20T15:17:13Z"
+  },
+  {
+    "command": "! grep -rn \"InvalidateUser|invalidateUser|gateway-control\" examio-be/apps/admin-service/src",
+    "exitCode": 0,
+    "summary": "no matches (gate pass)",
+    "ts": "2026-10-20T15:17:13Z"
+  },
+  {
+    "command": "grep -n \"prisma.user.update|tx.user.update\" examio-be/apps/admin-service/src/modules/admin-users/admin-users.service.ts",
+    "exitCode": 0,
+    "summary": "one match at :217 inside updateUser (fields isVerified/name/bio only; role/admin/ban rejected by strict DTO)",
+    "ts": "2026-10-20T15:17:13Z"
+  },
+  {
+    "command": "node live-probe.mjs (gateway :3580 -> auth/admin/finance/exam/r2 built dist, NODE_ENV=development, MAIL_TRANSPORT=json, net spy)",
+    "exitCode": 0,
+    "summary": "56 checks, 56 passed, 0 failed (5a matrix/403, 5b promote+TOKEN_STALE+wallet 20 once, 5c demote content kept, 5d toggle/self guards/3 race rounds, 5e ban/unban/PATCH 400)",
+    "ts": "2026-10-20T14:58:55Z"
+  },
+  {
+    "command": "node ui-smoke.cjs (headless Chrome, /admin/roles, vi locale, isAdmin alias shim on /auth/me)",
+    "exitCode": 0,
+    "summary": "26 UI checks, 26 passed, 0 failed (assign role, admin toggle confirm, demotion copy, self row disabled, history, matrix)",
+    "ts": "2026-10-20T15:12:52Z"
+  },
+  {
+    "command": "yarn typecheck (after follow-ups)",
+    "exitCode": 0,
+    "summary": "typecheck all services after last-admin unit tests, e2e hygiene, VALIDATION_ERROR, coverage specs, render-definitions default",
+    "ts": "2026-10-20T15:46:21.118733Z"
+  },
+  {
+    "command": "TZ=UTC yarn test (after follow-ups)",
+    "exitCode": 0,
+    "summary": "full unit suite \u2014 Tests:       1673 passed, 1673 total",
+    "ts": "2026-10-20T15:46:21.118733Z"
+  },
+  {
+    "command": "TZ=UTC yarn test (after review fixes: best-effort audit, SetUserStatus role:assign)",
+    "exitCode": 0,
+    "summary": "full unit suite \u2014 Tests:       1676 passed, 1676 total",
+    "ts": "2026-10-20T15:56:58.140477Z"
+  }
+]
