@@ -8,7 +8,7 @@
 - Red team (authoritative where it conflicts): [reports/red-team-changes.md](./reports/red-team-changes.md) RT-11, RT-15 (FE gates) <!-- Red Team: RT-11, RT-13, RT-15 -->. RT-13 compat fields are reversed by [validation-session-1](./reports/validation-session-1.md) Q6 (mobile unreleased). <!-- Updated: Validation Session 1 - no compat tolerance -->
 
 ## Overview
-- Priority: P1 · Status: Pending · Effort: 3.5d <!-- Red Team: RT-5, RT-11 (was 3d: +vitest setup and the first FE tests incl. 07/08 pure modules, +study-room socket re-auth) --> · Depends on: 04, 07, 08
+- Priority: P1 · Status: Completed (pending commit) · Effort: 3.5d <!-- Red Team: RT-5, RT-11 (was 3d: +vitest setup and the first FE tests incl. 07/08 pure modules, +study-room socket re-auth) --> · Depends on: 04, 07, 08
 - Drive the whole FE from server-provided `permissions`:
   - route guards and a 403 page;
   - a permission-filtered sidebar and admin nav;
@@ -195,19 +195,54 @@ File ownership (globs): `examio-fe/src/types/{user.ts,permissions.generated.ts}`
 - BE unchanged (no new BE tests). Phase 06 matrix remains the source of truth.
 
 ## Todo List
-- [ ] vitest installed + `vitest.config.ts` (`mergeConfig`) + `test` script + CI step <!-- Red Team: RT-11 -->
-- [ ] vitest specs (landing, nav, api error policy incl. socket, 07 progress, 08 role rules) red <!-- Red Team: RT-5, RT-11 -->
-- [ ] Permission type generator + committed output + CI drift check
-- [ ] User type (`id: string`, role, isSystemAdmin; no `isAdmin`) + store applySession/roles/permissions <!-- Updated: Validation Session 1 - no compat tolerance -->
-- [ ] useCan, RequirePermission, /403 page
-- [ ] Route table rewired (every route) + AdminRoute on admin:access + admin nav filter
-- [ ] Role-based /k landing
-- [ ] Permission-driven sidebar
-- [ ] TOKEN_STALE refresh → applySession → reset caches → retry once (`_retry`); 403 handling
-- [ ] Study-room socket re-auth (`auth:reauth`, `connect_error`) <!-- Red Team: RT-5 -->
-- [ ] Hide student-forbidden UI; HistoryPage split; TeacherRoute removed
-- [ ] i18n vi/en/ja common.json
-- [ ] Manual 3-account matrix
+- [x] vitest installed + `vitest.config.ts` (`mergeConfig`) + `test` script + CI step <!-- Red Team: RT-11 --> — `yarn test` = 9 files / 86 tests, green in temper 6; CI `fe` job runs `yarn test`.
+- [x] vitest specs (landing, nav, api error policy incl. socket, 07 progress, 08 role rules) red <!-- Red Team: RT-5, RT-11 --> — written and green (`src/lib/rbac/*.test.ts`, `quiz-practice/progress.test.ts`, `admin-roles/role-change-rules.test.ts`).
+- [ ] Permission type generator + committed output + CI drift check — generator and CI step exist, but **the output is not committed** (`permissions.generated.ts` is untracked), so the drift check is vacuous. Closes on commit.
+- [x] User type (`id: string`, role, isSystemAdmin; no `isAdmin`) + store applySession/roles/permissions <!-- Updated: Validation Session 1 - no compat tolerance --> — `id: string`, `isSystemAdmin`, no `isAdmin`; login, refresh and getUser call `applySession`.
+- [x] useCan, RequirePermission, /403 page — files present; 9/9 forbidden direct URLs reach `/403` (live).
+- [x] Route table rewired (every route) + AdminRoute on admin:access + admin nav filter — live items 3 and 8; `AdminRoute` gated on `admin:access`.
+- [x] Role-based /k landing — live item 1 (3/3); `landing-path.test.ts`.
+- [x] Permission-driven sidebar — live item 2 (exact set per role); `nav-items.test.ts`.
+- [x] TOKEN_STALE refresh → applySession → reset caches → retry once (`_retry`); 403 handling — live 5a/5b (exactly one refresh per flip) and item 10 (4 flips, one refresh each). The 403 toast and `EMAIL_NOT_VERIFIED` → `/k/verify` are unit-tested (`api-error-policy.test.ts`), not live-verified.
+- [x] Study-room socket re-auth (`auth:reauth`, `connect_error`) <!-- Red Team: RT-5 --> — live item 7 via the `authz_changed` path (one refresh, one reconnect, stays in room). `connect_error` TOKEN_* is unit-tested. The 15-min `exp` path is not live-verified (D12).
+- [x] Hide student-forbidden UI; HistoryPage split; TeacherRoute removed — live items 4 and 6; grep for `TeacherRoute` and `user?.isAdmin` is clean. The "Từ đã lưu" view does not exist in the FE (spec gap, D10).
+- [x] i18n vi/en/ja common.json — RBAC keys present in all three locales.
+- [x] Manual 3-account matrix — run as an automated headless browser (puppeteer-core 24.43.1, real Chrome), not by hand: final run 64 PASS / 0 FAIL / 1 NOTE (the NOTE is D10).
+
+## Delivered beyond plan (fixes found in tempering)
+Scope drift from the original plan. Cost: edits outside 09's file ownership (the BE items need review by the auth, exam and libs owners). The evidence records no effort figures, so none are given here.
+- **F1 refresh-cookie rotation.** `/auth/refresh` now rotates the `refreshToken` cookie. The defect is pre-existing on `main`, not a regression from this branch. Reason: browser sessions died about 60 s after the first refresh. Files: `examio-be/apps/auth-service/src/auth.controller.ts`, new `test/refresh-cookie.e2e-spec.ts`.
+- **F2 single-flight `getUser`.** The `getUser` fallback goes through `refreshAccessToken()`. Reason: a demotion produced two refreshes where the plan expects one.
+- **F3 transient errors keep the session.** A transient `/auth/me` error keeps the session, and a cold load shows a `SessionUnavailable` screen instead of `/login`. Reason: a 429 or 502 during a cold reload logged the user out.
+- **F5 teacher exam-session notice.** The stats call is skipped without `exam:take`, and the teacher sees the notice (`exam-stats-gate.test.ts`). Reason: teachers got a 403 and an endless spinner.
+- **Review M1/L1 socket recovery.** SERVICE_UNAVAILABLE retries use jittered backoff (1, 2, 4, 8, 16 s, max 5), one reconnect per re-auth cycle, a 5 s minimum interval, and a give-up toast `rbac.studyRoomUnavailable` (`hooks/study-room-socket-recovery.ts`, `lib/rbac/socket-reconnect.ts`).
+- **M2 interceptor.** A transient refresh failure keeps the session (logout only on 401/403), on the HTTP path and on the socket re-auth path.
+- **M3 CI drift check hardened.**
+- **F6 exam-service survives a Redis outage (BE).** `redis-io.adapter.ts` (`createAdapterClients`), `runSafely` and `StudyRoomWsExceptionFilter` (`study-room-redis-safety.ts`), `RedisUnavailableFilter` maps to 503, and `libs/redis` gets a subscriber error listener and a safe quit. Reason: the process exited, which blocked socket recovery. The user approved fixing it in P09. Files: exam-service and `libs/redis`.
+- **F7 capped socket.io reconnection.** `reconnectionAttempts 5`, `delayMax 30 s`, and a give-up toast. Reason: the reconnect loop was unbounded (127 ECONNREFUSED in about 10 min).
+- **Cleanup.** Dead `refreshSession` and `syncRefreshTokenApi` removed. Four spec files added beyond the plan's list (`session-probe`, `guard-decision`, `exam-stats-gate`, `socket-reconnect`), 9 in total.
+- **Matrix method.** Automated headless browser instead of a manual run. Screenshots are in `evidence/phase-09/ui-screens/`.
+
+## Deferred / carried
+Open items. Each has a target phase and an owner. None of them is a regression in the shipped behaviour.
+
+| # | Item | Lands in | Owner | Done when |
+|---|------|----------|-------|-----------|
+| D1 | socket.io transport attempts are not capped between namespace errors (F8: about 15 attempts in 5 min, bounded, not a crash) | 16 | lead | A socket test counts transport attempts: at most 6 before give-up while the namespace is down |
+| D2 | No `enableShutdownHooks` or graceful SIGTERM in exam-service | 12 (study-room-service `main.ts`), verified in 16 | lead | SIGTERM drains sockets and closes Redis clients, with no unhandled rejection on restart |
+| D3 | The first Redis-dependent call during an outage returns 504 (gateway timeout), later calls 503. Opt-in `REDIS_COMMAND_TIMEOUT_MS` | 16 (per-service env) | lead | Value set per env; outage probe gets 503 on the first call |
+| D4 | `libs/common/src/events/event-subscriber.service.ts:50` runs JSON.parse outside try (legacy consumer) | 14 (new consumers on `@examio/messaging`) | lead | Legacy file deleted; a malformed message is rejected, not thrown |
+| D5 | Deep import `ioredis/built/errors` (in the adapter) | 12 (adapter moves) | lead | No deep import in `apps/` or `libs/`; match `err.name` or pin `ioredis ~5.10` |
+| D6 | A late stale 401 can trigger a second refresh (harmless) | none, observe | lead | No action unless it recurs as a loop |
+| D7 | `/auth/refresh` still returns `refreshToken` in the body (web uses the cookie only) | 18 (mobile contract decision) | user | Decision recorded; body field kept with a reason or removed |
+| D8 | Public `ExamSessionPage` ignores `sessionUnavailable` | 14 (session pages move to assessment) | lead | Public page shows a retry state on a transient failure |
+| D9 | A possible double 403 toast on one action | 10 (FE pass, after 09 lands) | lead | A test shows one toast per denied action |
+| D10 | "Từ đã lưu" saved-words view does not exist in the FE (spec item) | none until decided | user (product) | Decide: build the view, or drop the spec line |
+| D11 | Word-family generate label: UI "Sinh từ con" / "Sinh lại từ con", spec "Sinh bằng AI" | 19 (docs), after the copy is chosen | user decides | Spec and UI copy agree |
+| D12 | 15-min token-expiry socket path (`exp` disconnect) not run live | 16 (cutover smoke, short-TTL run) | lead | One live run: `auth:reauth` or TOKEN_EXPIRED → reconnect → stays in room |
+| D13 | `/study-flashcard/:id` now needs login plus `flashcard:study` or `flashcardset:manage`; anonymous share links must log in first | 19 (business rules); product sign-off needed | user | Decision recorded; phase-07 sharing copy checked |
+| D14 | The e2e helper demotes pre-existing admins; the matrix DB was reused once | 16 (CI e2e on a dedicated DB) | lead | CI e2e job uses its own DB; no shared fixtures |
+| D15 | Auth global throttle 30 req/60 s per IP (F4): users behind shared NAT get 429 on each full load (now shows SessionUnavailable, not logout) | 16 decision before cutover | user decides | Throttle keyed per user or raised; decision recorded |
 
 ## Success Criteria
 - `cd examio-fe && yarn build && yarn lint && yarn test`: exit 0.
@@ -218,15 +253,26 @@ File ownership (globs): `examio-fe/src/types/{user.ts,permissions.generated.ts}`
 - After an admin promotes a logged-in STUDENT, the user's next click yields `401 TOKEN_STALE` → one refresh → teacher sidebar, with no full reload and no second refresh.
 - <!-- Red Team: RT-5 --> A student in a study room for > 15 min (token `exp`) stays in the room: one `auth:reauth` → refresh → reconnect → snapshot re-applied, no navigation away.
 
+**Status 2026-10-22 (after temper 6):**
+- Met: `yarn build && yarn lint && yarn test` (9 spec files, 5 required); grep for `isAdmin` and `TeacherRoute` is clean; STUDENT on `/k/ai-tool` → `/403`; zero-403 sweep; a promotion gives one refresh and the teacher sidebar with no reload.
+- Not met yet: the drift check (`git diff --exit-code`) is vacuous until `permissions.generated.ts` is committed.
+- Not run: the > 15 min study-room criterion (D12). The `authz_changed` path was used instead. The plan allows it, but the criterion as written is unverified.
+
 ## Risk Assessment
-- Missing a hidden-button spot → student sees a button and gets a 403 toast (safe, cosmetic). Mitigation: manual sweep + the zero-403 network check above.
-- Refresh storm across tabs → single-flight per tab plus retry-once cap. Cross-tab is acceptable (each tab refreshes once).
-- `User.id` type change ripples through many files → `tsc` lists every site. Mechanical fixes only.
-- Resetting stores while a page is mounted → reset happens before the retried request resolves. Pages re-fetch on the next render (stores refetch on empty state).
-- Mobile parity → phase 18.
-- <!-- Red Team: RT-11 --> vitest config drifts from the Vite config (aliases) → `mergeConfig(viteConfig, …)` reuses the alias; the step-0 smoke import proves it.
-- <!-- Red Team: RT-5 --> Socket reconnect loop if refresh keeps returning a stale token → retry-once flag per disconnect cycle, then logout.
-- Dropping `isAdmin` from the FE type surfaces any leftover read as a `tsc` error → intended; fix the site to use `permissions`. <!-- Updated: Validation Session 1 - no compat tolerance -->
+Register as of 2026-10-22. Closed items stay listed with their evidence so nothing stale sits open.
+- **[OPEN, low]** Missing a hidden-button spot → a student sees a button and gets a 403 toast (safe, cosmetic). The zero-403 sweep passed (matrix item 4). Re-check whenever a new button lands.
+- **[CLOSED]** Refresh storm across tabs. Single-flight per tab plus retry-once cap. Matrix 5b and 10: one refresh per flip.
+- **[CLOSED]** `User.id` type change ripples through many files. `tsc` is clean; no id-as-number sites remain outside the 08 admin files.
+- **[CLOSED]** Resetting stores while a page is mounted. Live flips show pages refetching; no stale teacher data after demotion (5b, 10).
+- **[OPEN, carried]** Mobile parity → phase 18 (see D7).
+- **[CLOSED]** vitest config drift from the Vite aliases. The step-0 smoke and the 9 spec files resolve `@`.
+- **[CLOSED]** Socket reconnect loop if refresh keeps returning a stale token. Retry once per cycle, capped reconnects. Rounds 5 and 6: 5 attempts, give-up at +30 s, 0 attempts for 60 s after.
+- **[CLOSED]** Dropping `isAdmin` leaves leftover reads. Any read surfaces as a `tsc` error; grep is clean.
+- **[CLOSED]** Redis outage kills exam-service and blocks socket recovery (F6). Rounds 5 and 6: a 358 s outage with the pid unchanged. Residual first-call 504 → D3.
+- **[OPEN]** The drift check is vacuous until `permissions.generated.ts` is committed. Closes on commit (Todo line 3).
+- **[CLOSED for cold load]** Transient auth error logs a user out (F3): `SessionUnavailable` screen. **[OPEN]** The throttle itself → D15.
+- **[OPEN]** Public share links now need login → D13.
+- **[CLOSED]** Auth refresh cookie not rotated (F1). Matrix item 10: 4 refreshes over 215 s, no logout.
 
 ## Rollback
 - Revert the FE commits (guards/sidebar/api policy are independent commits). The backend keeps enforcing (06), so a revert only degrades UX.
@@ -243,3 +289,9 @@ File ownership (globs): `examio-fe/src/types/{user.ts,permissions.generated.ts}`
 - Unblocks 18 (mobile mirrors the same route/sidebar tables via the `permissions` payload) and 19 (docs `docs/system/permissions.md` can embed these tables).
 - [CROSS-PHASE] No compat fields: `isAdmin` is never sent (04); phase 10 removes `user.wallet` from `/auth/me` and `types/user.ts` and moves the balance to `GET /wallet/info`. Phase 19 has no compat step. <!-- Updated: Validation Session 1 - no compat tolerance -->
 - [CROSS-PHASE] Sidebar/`/k` page labels remain hardcoded vi (existing style). Full i18n of `/k` pages is out of scope; only new RBAC strings are localized.
+
+### Next moves (owner · done mark)
+1. **Commit the Phase 09 work** · owner: user approves; lead commits per the CLAUDE.md commit rules (no push). Done when `examio-fe/src/types/permissions.generated.ts` is tracked, `git diff --exit-code` on it is meaningful, Todo line 3 is ticked, and this status reads "Completed".
+2. **Live 15-min socket check** · owner: lead, in the phase-16 cutover smoke (D12). Done when one run shows the TOKEN_EXPIRED reconnect and the student stays in the room.
+3. **Decide the product items** · owner: user. D7 (refresh body token), D10 ("Từ đã lưu"), D11 (word-family copy), D13 (public share login), D15 (throttle). Done when each has a recorded decision in `clarifications.md` or the relevant phase file.
+4. **Unblocks** phase 10 (FE step, now that 09 is in) and phase 18 (mirrors the route and sidebar tables).

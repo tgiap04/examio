@@ -116,4 +116,5 @@ Write first:
 
 ## Next Steps
 - No backend follow-up (no compat fields to remove; phase 19 has no compat step). <!-- Updated: Validation Session 1 - no compat fields -->
+- [CARRIED from 09] D7: decide whether `/auth/refresh` keeps returning `refreshToken` in the body (web uses the cookie only; mobile is the body consumer). Record the decision before step 3.
 - Follow-up (not in scope): student quiz practice + code remembering screens on mobile (backend from phase 07). Track it in the mobile plans.

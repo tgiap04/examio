@@ -1,0 +1,125 @@
+{
+  "score": 8,
+  "criticalCount": 0,
+  "decision": "SEALED",
+  "acceptanceCovered": [
+    "cd examio-fe && yarn build && yarn lint && yarn test exit 0; yarn test runs >= 5 spec files (rbac x3, quiz-practice progress, admin-roles rules) \u2014 final: fe build 0, lint 0, test 9 files/86 pass (rbac specs, socket-reconnect, quiz-practice progress, admin-roles rules)",
+    "cd examio-be && yarn gen:fe-permissions && git diff --exit-code ../examio-fe/src/types/permissions.generated.ts exit 0; CI runs drift check and FE yarn test \u2014 generator byte-identical (cmp); CI fe-permissions-drift job fails on missing/untracked/drifted file (test -f + ls-files --error-unmatch + git diff); fe job runs yarn test; generated file is committed with this phase",
+    "grep -rnE 'user\\??\\.isAdmin|TeacherRoute' examio-fe/src returns nothing; types/user.ts has no isAdmin and id is string \u2014 final grep 0 matches; types/user.ts id:string, isSystemAdmin, no isAdmin",
+    "every route in routes/index.tsx guarded per the phase-09 route table; forbidden direct URL -> /403 \u2014 routes/index.tsx guarded() matches the plan table row for row (reviewer); live matrix item 3: 9/9 forbidden URLs -> /403",
+    "/k landing: TEACHER -> /k/ai-tool, STUDENT -> /k/my-materials, STUDENT+ADMIN -> /admin, from param wins, disabled page flag -> first visible item \u2014 lib/rbac/landing-path.ts + tests; live matrix item 1 PASS for all 3 roles",
+    "sidebar shows exactly the per-role item sets in the plan; admin item only with admin:access \u2014 lib/rbac/nav-items.ts + tests; live matrix item 2 exact sets; admin item only with admin:access",
+    "401 TOKEN_STALE/TOKEN_EXPIRED -> single-flight refresh -> applySession -> reset role-scoped stores if roles changed -> retry once; second 401 -> logout; 403 PERMISSION_DENIED -> toast + debounced getUser; 403 EMAIL_NOT_VERIFIED -> /k/verify \u2014 api.ts + lib/rbac/api-error-policy.ts + session-probe single-flight; live 5a/5b exactly one refresh, long session one refresh per flip; transient refresh failures keep the session (M2 live)",
+    "study-room socket handles auth:reauth and connect_error TOKEN_* with one refresh+reconnect, PERMISSION_DENIED -> toast + onKicked \u2014 study-room-socket-recovery.ts: one refresh + one reconnect per cycle, PERMISSION_DENIED -> toast + onKicked; live item 7 and re-temper 9 (502 recovery, offline aging one refresh, capped give-up)",
+    "student UI hides creation/AI/wallet/subscription controls; teacher cannot start exam; HistoryPage calls only permitted APIs \u2014 live item 6: student hides create/AI/wallet/subscription, teacher exam notice without stats call (F5), HistoryPage gated by ai:generate / exam:take",
+    "permissions are not persisted to localStorage \u2014 roles/permissions only in non-persisted zustand state; live item 9: no permissions/roles in localStorage or sessionStorage",
+    "refresh endpoint sets refreshToken cookie via the same refreshTokenCookie() helper as login/register; no token logging (F1, e2e refresh-cookie + rcr2 65s x2 live)",
+    "exam-service survives Redis outage: HTTP 503 SERVICE_UNAVAILABLE, WS error SERVICE_UNAVAILABLE, no process exit (F6, re-temper 6 x3)"
+  ],
+  "regressionChecked": [
+    "route table vs HEAD: page keys preserved, per-route wrapper structure unchanged (no extra /auth/me on navigation)",
+    "getUser callers (AuthSyncBootstrap, SideBar, HeaderSection, auth-layout-shell, ProfilePage, AIGenerator) share singleFlight",
+    "ROLE_SCOPED_STORES covers every exported feature store except usePageConfigStore/useAuthStore; no timer handles stored in state",
+    "login/register/refresh BE responses carry user, roles, permissions consumed by applySession",
+    "SYSTEM_ADMIN appears in roles (rolesFor), so admin grant/revoke triggers the role-scoped reset",
+    "word-family generation-status endpoints require only word_family:read (no student 403)",
+    "PricingTier ctaHref null only produced by PricingBand; no other consumers",
+    "socket.io-client 4.8.3 CONNECT_ERROR -> destroy() (no auto-reconnect) verified in node_modules",
+    "study-room socket unmount: disposed guard blocks reconnect/re-JOIN from an in-flight refresh; disposer clears backoff/defer timers and reconnect_failed listener (ghost-join 6/6)",
+    "exam-service survives 4-6 min Redis outage with socket disconnects and WS messages (Re-temper 6, 3 runs); HTTP Redis paths 503, WS SERVICE_UNAVAILABLE error event"
+  ],
+  "contractStatus": "CHANGED",
+  "refuted": [],
+  "unproven": [],
+  "reachableRegressions": [],
+  "findings": [
+    {
+      "severity": "Medium",
+      "category": "Reliability",
+      "location": "examio-fe/src/hooks/useStudyRoomSocket.ts:95",
+      "summary": "addressed \u2014 SERVICE_UNAVAILABLE 'backoff' is a no-op; socket.io does not auto-reconnect after a middleware CONNECT_ERROR, so the room stays dead in 'connecting'",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Medium",
+      "category": "Logic",
+      "location": "examio-fe/src/apis/api.ts:184-191",
+      "summary": "addressed \u2014 interceptor logs out on any refresh failure incl. 429/5xx/network, inconsistent with the F3 refreshFailureAction policy used by session-probe",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Medium",
+      "category": "Build",
+      "location": ".github/workflows/ci.yml:370",
+      "summary": "addressed \u2014 drift check uses git diff on a file that is still untracked, so it always passes; commit the generated file and harden the check against an untracked or missing file",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "Logic",
+      "location": "examio-fe/src/hooks/useStudyRoomSocket.ts:79-82",
+      "summary": "addressed \u2014 the 'refreshed' flag is reset inside reconnect(), so the disconnect-handler reconnect branch is dead; reauthTried resets on each connect with no minimum interval",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "Scope",
+      "location": "examio-fe/src/pages/admin/AdminAuditPage.tsx:22-25",
+      "summary": "out-of-ownership phase-08 tweak bundled into phase 09; commit separately",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "Concurrency",
+      "location": "examio-fe/src/apis/api.ts:104-137",
+      "summary": "a stale-token 401 that arrives after the shared refresh settled starts a second refresh (harmless with the grace window)",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Security",
+      "location": "examio-be/apps/auth-service/src/auth.controller.ts:377",
+      "summary": "refresh response body still returns refreshToken to JS; predates this change, mobile may depend on it",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Logic",
+      "location": "examio-fe/src/pages/exam-session/ExamSessionPage.tsx:65-70",
+      "summary": "public exam-session page ignores sessionUnavailable; a cold-load transient failure still redirects to /login",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "UX",
+      "summary": "a 403 PERMISSION_DENIED toast may double with page-level toast.error(err.message)",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Medium",
+      "category": "Logic",
+      "location": "examio-fe/src/hooks/study-room-socket-recovery.ts:54",
+      "summary": "addressed \u2014 socket reauth refresh calls handleAuthFailure() on any refresh failure incl. 429/5xx/network; branch on refreshFailureAction(errorFailure(err)) and backoff/give-up on 'keep'",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "Reliability",
+      "location": "examio-fe/src/hooks/study-room-socket-recovery.ts:53",
+      "summary": "addressed \u2014 no disposed flag; in-flight refresh at unmount reconnects and re-JOINs (ghost presence)",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "Build",
+      "location": "examio-be/libs/redis/src/redis-unavailable.filter.ts:7",
+      "summary": "MaxRetriesPerRequestError deep-imported from ioredis/built/errors; match err.name or pin ioredis",
+      "disposition": "Defer"
+    }
+  ],
+  "riskGate": {
+    "touchesSensitiveArea": true,
+    "signoffRequired": true,
+    "humanSignedOff": true
+  }
+}

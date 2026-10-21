@@ -124,6 +124,7 @@ Write first:
 - [ ] vocabulary `r2_delete_tasks` + poller <!-- Red Team: RT-8 -->
 - [ ] Gateway YAML + route snapshot
 - [ ] Exam removal + drop migration + ownership map + seed move
+- [ ] [CARRIED from 09] D2 `enableShutdownHooks` + SIGTERM drain in study-room-service `main.ts`; D5 replace the `ioredis/built/errors` deep import (match `err.name` or pin `ioredis ~5.10`)
 
 ## Success Criteria
 - `grep -rn "StudyRoomModule\|WordFamilyModule" /Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src` → no output.

@@ -1,0 +1,78 @@
+{
+  "at": "2026-10-21T17:04:43.237Z",
+  "results": [
+    {
+      "name": "R6 setup: logins",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R6 setup: both clients in room (snapshot received)",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R6 setup: exam-service pid",
+      "ok": true,
+      "extra": "4779"
+    },
+    {
+      "name": "R6 outage: exam-service pid unchanged for >= 4 min with disconnects",
+      "ok": true,
+      "extra": "pid=4779 expected=4779 rounds=18 outage_s=276"
+    },
+    {
+      "name": "R6 outage: no uncaught/unhandled markers in exam.log",
+      "ok": true,
+      "extra": "markers=0"
+    },
+    {
+      "name": "R6 outage: WS messages during outage answered with error code SERVICE_UNAVAILABLE",
+      "ok": true,
+      "extra": "error codes=FORBIDDEN,SERVICE_UNAVAILABLE first frames=[{\"code\":\"FORBIDDEN\",\"message\":\"Bạn không có quyền điều khiển phòng\"}] | [{\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"Dịch vụ tạm thời không khả dụng, vui lòng thử lại\"}]"
+    },
+    {
+      "name": "R6 recovery: redis back up",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R6 recovery: clients reconnect on the same exam pid",
+      "ok": true,
+      "extra": "pid=4779"
+    },
+    {
+      "name": "R6 recovery: rejoin gives room snapshots to both",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R6 recovery: broadcast flows teacher -> student (presence:updated)",
+      "ok": true,
+      "extra": "student events after=presence:updated"
+    },
+    {
+      "name": "R6 recovery: leaderboard 200",
+      "ok": true,
+      "extra": "status=200"
+    }
+  ],
+  "phases": {
+    "outage": {
+      "rounds": 18,
+      "errorCodes": [
+        "FORBIDDEN",
+        "SERVICE_UNAVAILABLE"
+      ],
+      "errFrames": [
+        "[{\"code\":\"FORBIDDEN\",\"message\":\"Bạn không có quyền điều khiển phòng\"}]",
+        "[{\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"Dịch vụ tạm thời không khả dụng, vui lòng thử lại\"}]"
+      ],
+      "markers": 0
+    },
+    "recovery": {
+      "pid": "4779",
+      "bcast": true
+    }
+  }
+}

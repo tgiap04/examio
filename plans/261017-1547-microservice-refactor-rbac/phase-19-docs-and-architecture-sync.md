@@ -111,3 +111,4 @@ File ownership: the docs listed in Context Links + `/Users/tgiap.dev/devs/examio
 
 ## Next Steps
 - Keep the generator in CI. Future endpoint changes update the permission docs automatically. Deferred items (phase 17, user deletion) stay on the roadmap.
+- [CARRIED from 09] D11: word-family generate copy (UI "Sinh từ con" vs spec "Sinh bằng AI"), once the user picks one. D13: `/study-flashcard/:id` now requires login, so document it in business-rules and the changelog.

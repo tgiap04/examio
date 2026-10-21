@@ -158,3 +158,4 @@ Write first (failing → code):
 - Phase 11 uses the ownership map to split schemas and drop cross-service FKs. <!-- Red Team: RT-11 --> User deletion is deferred (roadmap item).
 - Phase 15 replaces the interim debit keys with `doc:`/`gen:` keys and the charge-first job flow (RT-1).
 - No `/auth/me` compat removal remains for phase 19 (RT-13 reversed by validation Q6). <!-- Updated: Validation Session 1 - no /auth/me compat fields -->
+- [CARRIED from 09] D9: a possible double 403 toast on one denied action. Fix in the FE step that lands after 09; a test shows one toast per denied action.

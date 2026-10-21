@@ -32,7 +32,7 @@ Decisions (authoritative): [reports/decisions.md](./reports/decisions.md). Input
 | 06 | [RBAC Enforcement & Security Fixes](./phase-06-rbac-enforcement-and-security-fixes.md) | Completed | 4.75d | 04 |
 | 07 | [Quiz Sharing & Student Practice](./phase-07-quiz-sharing-and-student-practice.md) | Completed | 2.75d | 06 |
 | 08 | [Admin Role-Management Screen](./phase-08-admin-role-management-screen.md) | Completed | 2.75d | 04, 06 |
-| 09 | [Frontend RBAC](./phase-09-frontend-rbac.md) | Pending | 3.5d | 04, 07, 08 |
+| 09 | [Frontend RBAC](./phase-09-frontend-rbac.md) | Completed (pending commit) | 3.5d | 04, 07, 08 |
 | 10 | [Cut Cross-DB Access](./phase-10-cut-cross-db-access.md) | Pending | 2.75d | 03, 04, 08, 09 |
 | 11 | [Database per Service](./phase-11-database-per-service.md) | Pending | 3d | 10 + P01 spike GO |
 | 12 | [Extract Study-Room & Vocabulary](./phase-12-extract-study-room-and-vocabulary.md) | Pending | 3d | 05, 11 |
@@ -46,7 +46,7 @@ Decisions (authoritative): [reports/decisions.md](./reports/decisions.md). Input
 
 ## Execution Strategy
 - **Branching/deploy (validated):** one long branch `refactor/microservice-rbac`. Sync `main` into it weekly; every phase ends green on the branch. Production deploys **once**, at the final merge, with a DB reset (cutover runbook in P16). Milestones are verified on local compose only.
-- Milestone A (01–09): RBAC usable end to end on the current topology, with the new auth and gateway. 04 + 05 + 08 are verified together (04 alone has no revoke list). **Status 2026-10-20: Milestone A backend (04 + 05 + 08) is verified locally** (admin trio 36/36, auth CI set 35/35, gateway probe 16/16, UI browser run 27/27; evidence: [phase-08-runs.md](./evidence/phase-08-runs.md)). **FE (09) pending.** Phase 08 has two open Todo lines (FE error/409 states, last-admin ban UI on `/admin/users`); see phase-08 Next Steps item 10.
+- Milestone A (01–09): RBAC usable end to end on the current topology, with the new auth and gateway. 04 + 05 + 08 are verified together (04 alone has no revoke list). **Status 2026-10-20: Milestone A backend (04 + 05 + 08) is verified locally** (admin trio 36/36, auth CI set 35/35, gateway probe 16/16, UI browser run 27/27; evidence: [phase-08-runs.md](./evidence/phase-08-runs.md)). **FE (09) completed 2026-10-22, pending commit** (live matrix 64 PASS / 0 FAIL / 1 NOTE; carried items D1–D15 in [phase 09](./phase-09-frontend-rbac.md#deferred--carried)). Phase 08 has two open Todo lines (FE error/409 states, last-admin ban UI on `/admin/users`); see phase-08 Next Steps item 10.
 - P04 admin grant/revoke already route via auth (`SetSystemAdmin`, with the admin's token forwarded). P08 builds the rest of the role screen on that path; admin-service never writes `isSystemAdmin` directly.
 - Milestone B (10–11): data ownership. Each service gets its own schema and role. `libs/database` is removed. 10's FE edits land after 09 (shared `useAuthStore.ts`, `types/user.ts`).
 - Milestone C (12–15): exam-service is split away. Order: **12 ∥ 15 → 13 → 14** (15 also needs 10's idempotent `Debit`/`Refund`). 13 needs 15 (document-service + gRPC `AiService`). 12/13/14 share `apps/exam-service/src/exam-service.module.ts` and `apps/gateway-service/config/routes.yaml` (single file, named entries per phase). Edits to shared files (`routes.yaml`, `nest-cli.json`, `package.json`, `jest.config.js`, compose includes) are append-only, and merges are serialized.

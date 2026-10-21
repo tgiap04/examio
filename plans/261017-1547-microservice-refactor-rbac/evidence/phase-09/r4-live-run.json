@@ -1,0 +1,65 @@
+{
+  "at": "2026-10-21T15:44:24.626Z",
+  "results": [
+    {
+      "name": "R4 setup: student login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R4 setup: in room, socket connected (namespace connect frame)",
+      "ok": true,
+      "extra": "ok frames=1"
+    },
+    {
+      "name": "R4-B: socket dropped (ping timeout while offline)",
+      "ok": true,
+      "extra": "closed=2"
+    },
+    {
+      "name": "R4-B: handshake fails with SERVICE_UNAVAILABLE while Redis is down",
+      "ok": true,
+      "extra": "SU at s=56.4,89 | WS attempts at s=47.7,57.3,78.6,91.1"
+    },
+    {
+      "name": "R4-B: redis back up",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R4-B: socket reconnects after Redis recovery",
+      "ok": true,
+      "extra": "ok after restore=1 attempts after restore=0"
+    },
+    {
+      "name": "R4-B: room snapshot restored on the same room URL",
+      "ok": true,
+      "extra": "/k/study-room/6ad8d1f35190bc5af95729c3"
+    },
+    {
+      "name": "R4-A: socket re-dropped (offline)",
+      "ok": true,
+      "extra": "closed=7"
+    },
+    {
+      "name": "R4-A: bounded: 6 handshakes = initial + 5 retries, then give up",
+      "ok": false,
+      "extra": "attempts=23 WS at s=140.4,151,172.1,184.6,205.5,229.1,250.5,274.7,295.9,326,347.2,352.5,377.3,398.1,423.1,440.1,465.1,482.2,507.2,524.3,549.3,566.3,591.3 SU at s=150.1,182.7,224.9,267,309.1"
+    },
+    {
+      "name": "R4-A: no tight loop: silent for >=30 s after the last attempt",
+      "ok": false,
+      "extra": "seconds since last=4"
+    },
+    {
+      "name": "R4-A: toast shown after giving up",
+      "ok": false,
+      "extra": "toast seen=false"
+    },
+    {
+      "name": "R4-A: redis restored",
+      "ok": true,
+      "extra": ""
+    }
+  ]
+}

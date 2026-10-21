@@ -144,6 +144,7 @@ Write first:
 - [ ] Compose gateway-a/b, env per service, drop 6369
 - [ ] nginx upstream + /ws/ + rollout rehearsal
 - [ ] Cutover runbook + smoke script + `CUTOVER_DONE` deploy gate + local rehearsal (incl. rollback) <!-- Updated: Validation Session 1 - one-time production cutover runbook -->
+- [ ] [CARRIED from 09] D1 socket transport-attempt cap test; D3 `REDIS_COMMAND_TIMEOUT_MS` per env (first call 504 → 503); D12 15-min socket expiry run in the cutover smoke; D14 CI e2e on a dedicated DB; D15 auth throttle decision before cutover
 
 ## Success Criteria
 - <!-- Updated: Validation Session 1 - one-time production cutover runbook --> Cutover: runbook steps 0–10 ticked, smoke script exit 0 against production, `CUTOVER_DONE=true`, the pre-cutover dump exists off-host. After that (steady state):
