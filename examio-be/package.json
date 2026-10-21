@@ -8,6 +8,7 @@
         "start": "nest start",
         "proto:lint": "buf lint proto",
         "proto:gen": "cd proto && buf generate",
+        "gen:fe-permissions": "ts-node scripts/gen-fe-permissions.ts",
         "typecheck:auth": "tsc --noEmit -p apps/auth-service/tsconfig.app.json",
         "typecheck:exam": "tsc --noEmit -p apps/exam-service/tsconfig.app.json",
         "typecheck:finance": "tsc --noEmit -p apps/finance-service/tsconfig.app.json",
