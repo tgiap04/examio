@@ -360,6 +360,16 @@ export class AuthController {
 
             // Set new access token
             response.cookie('accessToken', result.token, accessTokenCookie());
+            // The refresh token rotates on every call; the old one is only
+            // honored for a short grace window, so the browser must receive
+            // the new one or its next refresh fails and logs the user out.
+            if (result.refreshToken) {
+                response.cookie(
+                    'refreshToken',
+                    result.refreshToken,
+                    refreshTokenCookie()
+                );
+            }
 
             return {
                 success: true,
