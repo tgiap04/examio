@@ -10,9 +10,14 @@
  * missing or empty: the broker skips its default user when definitions are
  * imported, so a half-rendered file would lock operators out.
  * The output holds password hashes only and is gitignored.
+ *
+ * Output path: `--out <file>`. Without it the file goes to the OS temp dir
+ * (`<tmpdir>/definitions.json`), never into the repository tree; deploy and CI
+ * pass `--out` explicitly (compose: `/defs/definitions.json`).
  */
 const crypto = require('node:crypto');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 const PLACEHOLDER = /\{\{(ENV|HASH):([A-Z0-9_]+)\}\}/g;
@@ -46,7 +51,7 @@ function main(argv) {
     const out =
         outIdx >= 0 && argv[outIdx + 1]
             ? argv[outIdx + 1]
-            : path.join(__dirname, 'definitions.json');
+            : path.join(os.tmpdir(), 'definitions.json');
     const template = fs.readFileSync(
         path.join(__dirname, 'definitions.template.json'),
         'utf8'
@@ -57,7 +62,7 @@ function main(argv) {
             mode: 0o644,
         });
         fs.chmodSync(out, 0o644);
-        process.stdout.write(`rendered ${path.basename(out)} (${defs.users.length} users)\n`);
+        process.stdout.write(`rendered ${out} (${defs.users.length} users)\n`);
     } catch (err) {
         process.stderr.write(`render-definitions: ${err.message}\n`);
         process.exit(1);

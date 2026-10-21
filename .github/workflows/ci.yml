@@ -246,7 +246,7 @@ jobs:
           grep -v '^::' "$RUNNER_TEMP/auth-env.txt" >> "$GITHUB_ENV"
       - name: RabbitMQ with the rendered per-service users and topic permissions
         run: |
-          node deploy/rabbitmq/render-definitions.cjs
+          node deploy/rabbitmq/render-definitions.cjs --out "$PWD/deploy/rabbitmq/definitions.json"
           docker run -d --name rabbitmq -p 5672:5672 \
             -v "$PWD/deploy/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro" \
             -v "$PWD/deploy/rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/20-definitions.conf:ro" \
@@ -290,7 +290,7 @@ jobs:
           export SERVICE_NAME="auth-service"
           (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/token.e2e-spec.ts test/service-token.e2e-spec.ts test/role-change.e2e-spec.ts test/public-profiles.e2e-spec.ts test/login-throttle.e2e-spec.ts)
           (cd apps/finance-service && RABBITMQ_URL="amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-authz-changed.e2e-spec.ts)
-          (cd apps/admin-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin.e2e-spec.ts test/admin-roles.e2e-spec.ts)
+          (cd apps/admin-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin.e2e-spec.ts test/admin-roles.e2e-spec.ts test/ban.e2e-spec.ts)
       - name: RBAC enforcement e2e (whole exam folder in one process, plus auth device ownership)
         run: |
           export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"

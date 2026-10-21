@@ -421,7 +421,7 @@ services:
         container_name: examio-rabbitmq-defs
         working_dir: /defs
         network_mode: none
-        command: ['node', 'render-definitions.cjs']
+        command: ['node', 'render-definitions.cjs', '--out', '/defs/definitions.json']
         environment:
             - RABBITMQ_USER=${RABBITMQ_USER:?RABBITMQ_USER is required}
             - RABBITMQ_PASS=${RABBITMQ_PASS:?RABBITMQ_PASS is required}
