@@ -5,6 +5,7 @@
     "ts"
   ],
   "rootDir": ".",
+  "setupFiles": ["<rootDir>/../../../test/jest-env.setup.js"],
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
@@ -21,6 +22,7 @@
     "^@examio/auth-jwt(.*)$": "<rootDir>/../../../libs/auth-jwt/src/$1",
     "^@examio/messaging(.*)$": "<rootDir>/../../../libs/messaging/src/$1"
   },
+  "maxWorkers": 1,
   "testTimeout": 60000,
   "forceExit": true
 }

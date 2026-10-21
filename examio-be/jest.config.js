@@ -20,5 +20,6 @@ module.exports = {
         '^@examio/auth-jwt(.*)$': '<rootDir>/libs/auth-jwt/src/$1',
         '^@examio/messaging(.*)$': '<rootDir>/libs/messaging/src/$1',
     },
+    setupFiles: ['<rootDir>/test/jest-env.setup.js'],
     testTimeout: 30000,
 };
