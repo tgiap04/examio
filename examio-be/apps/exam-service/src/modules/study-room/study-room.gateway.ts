@@ -6,7 +6,7 @@ import {
     WebSocketGateway,
     WebSocketServer,
 } from '@nestjs/websockets';
-import { OnModuleDestroy } from '@nestjs/common';
+import { Logger, OnModuleDestroy, UseFilters } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { RedisService } from '@examio/redis';
 import { CONFIG_PAGES_KEY } from '@examio/common';
@@ -32,6 +32,10 @@ import {
     sanitizeChat,
 } from './study-room.util';
 import { StudyRoomPlaylistService } from './study-room-playlist.service';
+import {
+    StudyRoomWsExceptionFilter,
+    runSafely,
+} from './study-room-redis-safety';
 import {
     WS_STUDY_PATH,
     userRoom,
@@ -73,6 +77,7 @@ function wsAllowedOrigins(): string[] {
 // the real gate is the `server.use` middleware in `afterInit` (verify,
 // email_verified, study_room:join, av, exp). The declaration test requires it.
 @Authenticated()
+@UseFilters(new StudyRoomWsExceptionFilter())
 @WebSocketGateway({
     path: WS_STUDY_PATH,
     cors: { origin: wsAllowedOrigins(), credentials: true },
@@ -85,6 +90,7 @@ export class StudyRoomGateway
         OnModuleDestroy
 {
     @WebSocketServer() server: Server;
+    private readonly logger = new Logger(StudyRoomGateway.name);
     private focusSweep?: NodeJS.Timeout;
 
     constructor(
@@ -141,7 +147,10 @@ export class StudyRoomGateway
             }
         });
         // Flush focus tích luỹ về DB định kỳ (an toàn nếu client rớt mà không disconnect sạch).
-        this.focusSweep = setInterval(() => void this.flushAllFocus(), 5 * 60_000);
+        this.focusSweep = setInterval(() => {
+            // Redis/DB outage must not become an unhandled rejection (kills the process).
+            void runSafely(this.logger, 'focus sweep', () => this.flushAllFocus());
+        }, 5 * 60_000);
     }
 
     onModuleDestroy() {
@@ -159,7 +168,10 @@ export class StudyRoomGateway
             socket.disconnect(true);
             return;
         }
-        void socket.join(userRoom(user.id));
+        // socket.join may return a promise (cluster adapters); never leave it floating.
+        void runSafely(this.logger, `join user room user=${user.id}`, async () => {
+            await socket.join(userRoom(user.id));
+        });
         const remainingMs = Math.min(
             Math.max(socket.data.exp * 1000 - Date.now(), 0),
             MAX_TIMER_MS
@@ -171,12 +183,22 @@ export class StudyRoomGateway
         socket.data.expTimer.unref?.();
     }
 
+    /**
+     * socket.io / Nest do NOT catch the promise this returns, so it must never
+     * reject: during a Redis outage ioredis flushes its queued commands with
+     * MaxRetriesPerRequestError minutes later, which would crash the process.
+     * Each room is cleaned up independently; failures are logged only.
+     */
     async handleDisconnect(socket: Socket) {
         clearTimeout(socket.data.expTimer);
         const user = socket.data.user;
         const rooms: Set<string> = socket.data.rooms ?? new Set();
         for (const roomId of rooms) {
-            await this.onLeave(socket, roomId, user);
+            await runSafely(
+                this.logger,
+                `disconnect cleanup room=${roomId} user=${user?.id}`,
+                () => this.onLeave(socket, roomId, user)
+            );
         }
     }
 

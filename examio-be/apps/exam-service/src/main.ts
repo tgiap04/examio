@@ -10,6 +10,7 @@ import {
     HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
     Logger,
 } from '@examio/observability';
+import { RedisUnavailableFilter } from '@examio/redis';
 import { RedisIoAdapter } from './modules/study-room/redis-io.adapter';
 
 async function bootstrap() {
@@ -30,6 +31,9 @@ async function bootstrap() {
     app.setGlobalPrefix('api/v1', {
         exclude: HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
     });
+
+    // Redis outage on an HTTP request => 503 SERVICE_UNAVAILABLE, not 500.
+    app.useGlobalFilters(new RedisUnavailableFilter());
 
     // Enable CORS
     app.enableCors({
