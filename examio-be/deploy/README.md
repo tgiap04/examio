@@ -82,12 +82,14 @@ JWT_KID=<kid>
 JWT_ISSUER=examio-auth
 JWT_AUDIENCE=examio
 ACCESS_TOKEN_EXPIRATION=15m
-# Service tokens: `scripts/gen-service-secret.sh <exam|finance|admin>` prints the secret
+# Service tokens: `scripts/gen-service-secret.sh <exam|finance|admin|gateway>` prints the secret
 # (that service only) and the hash that goes into auth's SERVICE_CLIENTS.
-SERVICE_CLIENTS={"exam":"<sha256>","finance":"<sha256>","admin":"<sha256>"}
+SERVICE_CLIENTS={"exam":"<sha256>","finance":"<sha256>","admin":"<sha256>","gateway":"<sha256>"}
 EXAM_SERVICE_CLIENT_SECRET=<secret>
 FINANCE_SERVICE_CLIENT_SECRET=<secret>
 ADMIN_SERVICE_CLIENT_SECRET=<secret>
+# Gateway uses it to pull AdminService.GetPageFlags at boot (compose maps it to the gateway's SERVICE_CLIENT_SECRET; optional).
+GATEWAY_SERVICE_CLIENT_SECRET=<secret>
 # AUTH_JWKS_URL / AUTH_TOKEN_URL are plain http on the INTERNAL network (compose: http://auth:3000/...).
 # Never point them at a public http host: whoever controls the JWKS controls who is an admin.
 # A public JWKS must be https.

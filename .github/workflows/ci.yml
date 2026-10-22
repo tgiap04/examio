@@ -171,6 +171,12 @@ jobs:
       - run: yarn proto:gen
       - run: yarn prisma:generate
       - run: yarn test --ci
+      # Phase 10: every Prisma model is read/written by exactly one service in code
+      # (also through include/select relations), and services never import each other.
+      - name: Model ownership (strict)
+        run: npx ts-node scripts/check-model-ownership.ts --strict
+      - name: dependency-cruiser (enforced)
+        run: npx depcruise apps libs --config .dependency-cruiser.cjs
       - name: RabbitMQ definitions renderer
         run: node --test deploy/rabbitmq/render-definitions.spec.cjs
       - name: Compose topology (no data-store host ports, edge/internal/egress split)
@@ -288,9 +294,11 @@ jobs:
         run: |
           export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"
           export SERVICE_NAME="auth-service"
-          (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/token.e2e-spec.ts test/service-token.e2e-spec.ts test/role-change.e2e-spec.ts test/public-profiles.e2e-spec.ts test/login-throttle.e2e-spec.ts)
-          (cd apps/finance-service && RABBITMQ_URL="amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-authz-changed.e2e-spec.ts)
-          (cd apps/admin-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin.e2e-spec.ts test/admin-roles.e2e-spec.ts test/ban.e2e-spec.ts)
+          (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/token.e2e-spec.ts test/service-token.e2e-spec.ts test/role-change.e2e-spec.ts test/public-profiles.e2e-spec.ts test/login-throttle.e2e-spec.ts test/auth-users.e2e-spec.ts test/auth-me-shape.e2e-spec.ts)
+          (cd apps/finance-service && RABBITMQ_URL="amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-authz-changed.e2e-spec.ts test/wallet-money.e2e-spec.ts test/finance-admin.e2e-spec.ts test/wallet-cache.e2e-spec.ts)
+          (cd apps/admin-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin.e2e-spec.ts test/admin-finance.e2e-spec.ts)
+          # real auth (HTTP + gRPC) + real admin on one Postgres: roles, ban, users, stats, page flags
+          RABBITMQ_URL="$RABBITMQ_AUTH_URL" ./node_modules/.bin/jest --config test/cross-app/jest-e2e.json test/cross-app/admin-roles.e2e-spec.ts test/cross-app/ban.e2e-spec.ts test/cross-app/admin-users-real-auth.e2e-spec.ts
       - name: RBAC enforcement e2e (whole exam folder in one process, plus auth device ownership)
         run: |
           export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"
@@ -299,6 +307,12 @@ jobs:
           # RABBITMQ_AUTH_URL (exported above) is used by the ws spec to publish authz_changed.
           (cd apps/exam-service && RABBITMQ_URL="amqp://exam:$RABBITMQ_EXAM_PASS@localhost:5672" SERVICE_NAME=exam-service ../../node_modules/.bin/jest --config test/jest-e2e.json)
           (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" SERVICE_NAME=auth-service ../../node_modules/.bin/jest --config test/jest-e2e.json test/ownership)
+          # real exam app + auth RoleChangeService (cross-app, so it lives under test/cross-app)
+          RABBITMQ_URL="amqp://exam:$RABBITMQ_EXAM_PASS@localhost:5672" SERVICE_NAME=exam-service ./node_modules/.bin/jest --config test/cross-app/jest-e2e.json test/cross-app/demoted-owner.ownership.e2e-spec.ts
+      # The real-Redis adapter spec is a *.spec.ts that skips without REDIS_ADAPTER_TEST_PORT;
+      # be-unit has no Redis, so it runs here against this job's Redis service.
+      - name: Study-room Redis adapter (real Redis, cross-instance fan-out)
+        run: REDIS_ADAPTER_TEST_PORT=6379 ./node_modules/.bin/jest apps/exam-service/src/modules/study-room/redis-io.adapter.real-redis.spec.ts
       - name: Gateway e2e (streaming proxy, revoke/av incl. durable path, rate limits, CORS, WS upgrade, Lua scripts)
         run: |
           export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"
@@ -308,7 +322,11 @@ jobs:
           # Real auth + real gateway + outbox relay: cookies, logout revoke, role-change staleness (fast + durable)
           export RABBITMQ_URL="$RABBITMQ_AUTH_URL"
           export RABBITMQ_GATEWAY_URL="amqp://gateway:$RABBITMQ_GATEWAY_PASS@localhost:5672"
-          (cd apps/auth-service && SERVICE_NAME=auth-service ../../node_modules/.bin/jest --config test/jest-e2e.json test/gateway-integration.e2e-spec.ts)
+          SERVICE_NAME=auth-service ./node_modules/.bin/jest --config test/cross-app/jest-e2e.json test/cross-app/gateway-integration.e2e-spec.ts
+      # LAST e2e step: it TRUNCATEs User/UserSession/UserSubscription/Payment/Wallet to seed a fixed
+      # fixture (refuses any non-local DATABASE_URL), then compares admin stats with the golden JSON.
+      - name: Admin stats parity (auth + finance SQL vs golden JSON of the pre-phase-10 service)
+        run: ./node_modules/.bin/jest --config test/stats-parity/jest-e2e.json
 
   # Deploy configuration that only fails at `up` time: the compose file must
   # render, and nginx must accept the real-ip include. Dummy values only.

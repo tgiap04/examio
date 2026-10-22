@@ -56,6 +56,11 @@ services:
             - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
             - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
             - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
+            # Boot-time pull of the page flags (AdminService.GetPageFlags) when Redis is empty.
+            # Needs a `gateway` entry in SERVICE_CLIENTS; the pull stays off while the secret is unset.
+            - ADMIN_GRPC_URL=admin:50051
+            - AUTH_TOKEN_URL=http://auth:3000/internal/token
+            - SERVICE_CLIENT_SECRET=${GATEWAY_SERVICE_CLIENT_SECRET:-}
         env_file:
             - .env
         # The gateway is a router: no database, so no postgres/migration dependency.
@@ -169,6 +174,9 @@ services:
             - REDIS_PASSWORD=${REDIS_PASSWORD:-}
             - R2_GRPC_URL=r2:50051
             - FINANCE_GRPC_URL=finance:50051
+            # Profiles/search from auth; WordFamilyAdminService is served on GRPC_PORT
+            - AUTH_GRPC_URL=auth:50051
+            - GRPC_PORT=50051
             - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
             - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
             - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
@@ -278,6 +286,12 @@ services:
             - SERVICE_CLIENT_SECRET=${ADMIN_SERVICE_CLIENT_SECRET:?ADMIN_SERVICE_CLIENT_SECRET is required}
             # Admin privilege changes go through auth SetSystemAdmin (caller's token forwarded)
             - AUTH_GRPC_URL=auth:50051
+            # AdminService.GetPageFlags is served here for the gateway
+            - GRPC_PORT=50051
+            # Phase 10: finance admin/stats, gateway SetPageFlags, word-family admin (exam today)
+            - FINANCE_GRPC_URL=finance:50051
+            - GATEWAY_GRPC_URL=gateway:50051
+            - VOCABULARY_GRPC_URL=exam:50051
         env_file:
             - .env
         depends_on:
