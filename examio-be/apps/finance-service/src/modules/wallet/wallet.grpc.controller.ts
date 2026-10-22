@@ -1,18 +1,40 @@
 import { Controller } from '@nestjs/common';
-import { Metadata, status } from '@grpc/grpc-js';
-import { RpcException } from '@nestjs/microservices';
+import { Metadata } from '@grpc/grpc-js';
 import { PrismaService } from '@examio/database';
 import { GenerateIdService, invalidateWalletCachesBestEffort } from '@examio/common';
 import { RedisService } from '@examio/redis';
 import { walletV1 } from '@examio/contracts';
-import { RequirePermissionsOrService, ServiceOnly, assertSelfOrService } from '@examio/auth-jwt';
+import {
+    RequirePermissionsOrService,
+    ServiceOnly,
+    assertSelfOrService,
+    principalOfMetadata,
+} from '@examio/auth-jwt';
+import { MoneyResult, WalletMoneyService } from './wallet-money.service';
 
-const unimplemented = (rpc: string): never => {
-    throw new RpcException({
-        code: status.UNIMPLEMENTED,
-        message: `${rpc} is not implemented yet`,
-    });
-};
+/** Services allowed to move money on a user's behalf (content/document land in phases 14/15). */
+const MONEY_CALLERS = ['exam', 'content', 'document'];
+
+function toResponse(result: MoneyResult): {
+    transaction: walletV1.WalletTransaction;
+    alreadyApplied: boolean;
+} {
+    const t = result.transaction;
+    return {
+        alreadyApplied: result.alreadyApplied,
+        transaction: {
+            id: t.id,
+            walletId: t.walletId,
+            amount: t.amount,
+            direction: t.direction,
+            reason: t.description ?? '',
+            // callers know their own key; the ledger namespace (`debit:`/`credit:`) stays internal
+            idempotencyKey: (t.idempotencyKey ?? '').replace(/^(debit|credit):/, ''),
+            balanceAfter: t.balanceAfter ?? 0,
+            createdAt: String(t.createdAt.getTime()),
+        },
+    };
+}
 
 @Controller()
 @walletV1.WalletServiceControllerMethods()
@@ -20,7 +42,8 @@ export class WalletGrpcController implements walletV1.WalletServiceController {
     constructor(
         private readonly prisma: PrismaService,
         private readonly generateIdService: GenerateIdService,
-        private readonly redis: RedisService
+        private readonly redis: RedisService,
+        private readonly money: WalletMoneyService
     ) {}
 
     @ServiceOnly('auth')
@@ -88,126 +111,36 @@ export class WalletGrpcController implements walletV1.WalletServiceController {
         };
     }
 
-    @ServiceOnly('exam')
-    // Idempotent money RPCs: contract defined in phase 02, server in phase 10.
-    debit(_data: walletV1.DebitRequest): Promise<walletV1.DebitResponse> {
-        return unimplemented('Debit');
+    /**
+     * A user token needs `wallet:use` and may only debit itself; an allowlisted
+     * service names the user in the request. Idempotent on `idempotencyKey`.
+     * A missing wallet is only minted (welcome credits) for a TEACHER's own
+     * token; for an allowlisted service (no role known) it is WALLET_NOT_FOUND.
+     */
+    @RequirePermissionsOrService(['wallet:use'], { callers: MONEY_CALLERS })
+    async debit(
+        data: walletV1.DebitRequest,
+        metadata: Metadata
+    ): Promise<walletV1.DebitResponse> {
+        assertSelfOrService(metadata, data.userId);
+        const principal = principalOfMetadata(metadata);
+        const createWallet = principal?.kind === 'user' && principal.roles.includes('TEACHER');
+        return toResponse(await this.money.debit(data, { createWallet }));
     }
 
-    @ServiceOnly('exam')
-    credit(_data: walletV1.CreditRequest): Promise<walletV1.CreditResponse> {
-        return unimplemented('Credit');
+    @ServiceOnly(...MONEY_CALLERS)
+    async credit(data: walletV1.CreditRequest): Promise<walletV1.CreditResponse> {
+        return toResponse(await this.money.credit(data));
     }
 
-    @ServiceOnly('exam')
-    refund(_data: walletV1.RefundRequest): Promise<walletV1.RefundResponse> {
-        return unimplemented('Refund');
-    }
-
-    /** @deprecated Replaced by Debit/Credit in phase 10. */
-    @ServiceOnly('exam')
-    async updateBalance(
-        data: walletV1.UpdateBalanceRequest
-    ): Promise<walletV1.UpdateBalanceResponse> {
-        try {
-            if (!Number.isInteger(data.amount) || data.amount <= 0) {
-                return {
-                    success: false,
-                    newBalance: 0,
-                    message: 'Amount must be a positive integer',
-                };
-            }
-
-            const wallet = await this.prisma.wallet.findUnique({
-                where: { userId: data.userId },
-            });
-
-            if (!wallet) {
-                return {
-                    success: false,
-                    newBalance: 0,
-                    message: 'Wallet not found',
-                };
-            }
-
-            const isAdd = data.transactionType === 'ADD';
-
-            // Atomic increment/decrement + ledger record in a single transaction.
-            // For SUBTRACT, the `balance: { gte: data.amount }` guard in the
-            // conditional updateMany prevents overdraw/double-spend: the
-            // decrement only applies if the wallet still has enough balance at
-            // the moment the statement executes on the DB, closing the
-            // read-modify-write race that the old code had.
-            const result = await this.prisma.$transaction(async (tx) => {
-                if (isAdd) {
-                    const updated = await tx.wallet.update({
-                        where: { id: wallet.id },
-                        data: { balance: { increment: data.amount } },
-                    });
-
-                    await tx.walletTransaction.create({
-                        data: {
-                            id: this.generateIdService.generateId(),
-                            walletId: wallet.id,
-                            amount: data.amount,
-                            type: 0,
-                            direction: data.transactionType,
-                            description: data.description,
-                        },
-                    });
-
-                    return { ok: true, newBalance: updated.balance };
-                }
-
-                const decremented = await tx.wallet.updateMany({
-                    where: { id: wallet.id, balance: { gte: data.amount } },
-                    data: { balance: { decrement: data.amount } },
-                });
-
-                if (decremented.count === 0) {
-                    return { ok: false, newBalance: 0 };
-                }
-
-                await tx.walletTransaction.create({
-                    data: {
-                        id: this.generateIdService.generateId(),
-                        walletId: wallet.id,
-                        amount: data.amount,
-                        type: 4,
-                        direction: data.transactionType,
-                        description: data.description,
-                    },
-                });
-
-                const updated = await tx.wallet.findUniqueOrThrow({
-                    where: { id: wallet.id },
-                });
-
-                return { ok: true, newBalance: updated.balance };
-            });
-
-            if (!result.ok) {
-                return {
-                    success: false,
-                    newBalance: 0,
-                    message: 'Insufficient balance',
-                };
-            }
-
-            // After commit: the cached wallet, its transactions and statistics are stale.
-            await invalidateWalletCachesBestEffort(this.redis, data.userId, wallet.id);
-
-            return {
-                success: true,
-                newBalance: result.newBalance,
-                message: 'Balance updated successfully',
-            };
-        } catch (error) {
-            return {
-                success: false,
-                newBalance: 0,
-                message: `Failed to update balance: ${error.message}`,
-            };
-        }
+    @ServiceOnly(...MONEY_CALLERS)
+    async refund(data: walletV1.RefundRequest): Promise<walletV1.RefundResponse> {
+        return toResponse(
+            await this.money.refund({
+                userId: data.userId,
+                debitIdempotencyKey: data.debitIdempotencyKey,
+                reason: data.reason,
+            })
+        );
     }
 }

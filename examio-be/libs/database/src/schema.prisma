@@ -509,6 +509,9 @@ model Payment {
     updatedAt   DateTime  @updatedAt
     createdBy   String?
     updatedBy   String?
+    // Admin refund de-duplication key: a replay of the same key answers already_applied
+    // even when the refund moved no credits (subscription payment / no wallet).
+    refundIdempotencyKey String? @unique
 
     user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -539,8 +542,14 @@ model WalletTransaction {
     direction   String   @default("SUBTRACT") // ADD = cộng credits, SUBTRACT = trừ credits
     description String?
     createdAt   DateTime @default(now())
+    // Money RPC de-duplication key (per wallet). NULL for legacy / non-keyed rows.
+    idempotencyKey String?
+    // Wallet balance right after this transaction (set by Debit/Credit/Refund/admin).
+    balanceAfter   Int?
 
     wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+    @@unique([walletId, idempotencyKey])
 }
 
 

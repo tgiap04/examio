@@ -173,8 +173,8 @@ export class WalletService {
             throw new ForbiddenException('Số tiền nạp phải là số dương');
         }
 
-        // Use repository's updateBalance method
-        return this.walletRepository.updateBalance(user.id, amount, 'add');
+        // Use the repository balance delta
+        return this.walletRepository.applyBalanceDelta(user.id, amount, 'add');
     }
 
     async deduct(user: AuthUser, amount: number) {
@@ -188,7 +188,7 @@ export class WalletService {
             throw new ForbiddenException('Số dư trong ví không đủ');
         }
 
-        // Use repository's updateBalance method
-        return this.walletRepository.updateBalance(user.id, amount, 'subtract');
+        // Use the repository balance delta
+        return this.walletRepository.applyBalanceDelta(user.id, amount, 'subtract');
     }
 }

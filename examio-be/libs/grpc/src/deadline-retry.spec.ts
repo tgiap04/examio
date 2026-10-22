@@ -39,6 +39,19 @@ describe('invokeRpc', () => {
         expect(sleep.mock.calls[1][0]).toBeGreaterThan(sleep.mock.calls[0][0]);
     });
 
+    it.each([
+        'examio.finance.v1.WalletService/Debit',
+        'examio.finance.v1.WalletService/Credit',
+        'examio.finance.v1.WalletService/Refund',
+        'examio.finance.v1.FinanceAdminService/AdjustBalance',
+    ])('retries the key-guarded money RPC %s on UNAVAILABLE', async (rpc) => {
+        const invoke = jest.fn(failing(status.UNAVAILABLE));
+        await expect(invokeRpc(rpc, invoke, { sleep })).rejects.toMatchObject({
+            code: status.UNAVAILABLE,
+        });
+        expect(invoke).toHaveBeenCalledTimes(3);
+    });
+
     it('succeeds when a retry recovers', async () => {
         let n = 0;
         const invoke = jest.fn(
@@ -54,7 +67,8 @@ describe('invokeRpc', () => {
     });
 
     it.each([
-        'examio.finance.v1.WalletService/UpdateBalance',
+        'examio.finance.v1.WalletService/CreateWallet',
+        'examio.vocabulary.v1.WordFamilyAdminService/DeleteCategory',
         'examio.r2.v1.R2Service/UploadFile',
         'examio.auth.v1.AuthService/SetUserRole',
     ])('never retries %s', async (rpc) => {

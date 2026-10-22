@@ -2,20 +2,22 @@ import { EnsureWalletService } from './ensure-wallet.service';
 
 function setup(inserted: boolean) {
     const executed: string[] = [];
+    const bound: unknown[][] = [];
     const tx = {
         $queryRaw: jest.fn(async (strings: TemplateStringsArray) => {
             executed.push(strings.join('?'));
             return inserted ? [{ id: 'w1' }] : [];
         }),
-        $executeRaw: jest.fn(async (strings: TemplateStringsArray) => {
+        $executeRaw: jest.fn(async (strings: TemplateStringsArray, ...values: unknown[]) => {
             executed.push(strings.join('?'));
+            bound.push(values);
             return 1;
         }),
     };
     const prisma = { $transaction: jest.fn(async (fn: (t: unknown) => unknown) => fn(tx)) };
     let n = 0;
     const service = new EnsureWalletService(prisma as never, { generateId: () => `id-${++n}` } as never);
-    return { service, tx, prisma, executed };
+    return { service, tx, prisma, executed, bound };
 }
 
 describe('EnsureWalletService', () => {
@@ -26,6 +28,13 @@ describe('EnsureWalletService', () => {
         expect(executed[0]).toMatch(/INSERT INTO "Wallet"[\s\S]*ON CONFLICT \("userId"\) DO NOTHING[\s\S]*RETURNING id/);
         expect(executed[1]).toMatch(/INSERT INTO "WalletTransaction"/);
         expect(executed[2]).toMatch(/INSERT INTO "UserSubscription"[\s\S]*ON CONFLICT \("userId"\) DO NOTHING/);
+    });
+
+    it('keys the welcome transaction welcome:<userId> and records balanceAfter', async () => {
+        const { service, bound } = setup(true);
+        await service.ensure('u1');
+        expect(bound[0]).toContain('welcome:u1');
+        expect(bound[0].filter((v) => v === 20)).toHaveLength(2); // amount + balanceAfter
     });
 
     it('writes the welcome transaction ONLY when the wallet row was inserted (once ever)', async () => {

@@ -7,6 +7,7 @@ import { GenerateIdService } from '@examio/common';
 import { PROTO_FILES, subscriptionV1, walletV1 } from '@examio/contracts';
 import { createTestGrpcClient, startTestGrpcServer, TestGrpcServer } from '@examio/grpc/testing';
 import { WalletGrpcController } from '../src/modules/wallet/wallet.grpc.controller';
+import { WalletMoneyService } from '../src/modules/wallet/wallet-money.service';
 import { SubscriptionGrpcController } from '../src/modules/sepay/subscription.grpc.controller';
 import { SubscriptionService } from '../src/modules/sepay/subscription.service';
 import { AuthJwtModule, createTokenVerifier } from '@examio/auth-jwt';
@@ -29,6 +30,7 @@ describe('WalletService / SubscriptionService gRPC contract (behind the real gua
     const prisma = {
         wallet: { findUnique: jest.fn(), create: jest.fn() },
     };
+    const money = { debit: jest.fn(), credit: jest.fn(), refund: jest.fn() };
     const subscriptions = {
         getUserSubscriptionBenefits: jest.fn(),
     };
@@ -64,6 +66,7 @@ describe('WalletService / SubscriptionService gRPC contract (behind the real gua
                 { provide: RedisService, useValue: { del: jest.fn(), delPattern: jest.fn() } },
                 { provide: GenerateIdService, useValue: { generateId: () => 'id-1' } },
                 { provide: SubscriptionService, useValue: subscriptions },
+                { provide: WalletMoneyService, useValue: money },
             ],
         }).compile();
         server = await startTestGrpcServer(moduleRef, protos);
@@ -151,23 +154,63 @@ describe('WalletService / SubscriptionService gRPC contract (behind the real gua
         expect(res).toMatchObject({ success: true, walletId: 'w9' });
     });
 
-    it.each(['debit', 'credit'] as const)('%s is UNIMPLEMENTED until phase 10', async (m) => {
-        await expect(
-            lastValueFrom(
-                wallet[m](
-                    { userId: 'u1', amount: 5, reason: 'r', idempotencyKey: 'k1' },
-                    await svc('exam')
-                )
-            )
-        ).rejects.toMatchObject({ code: 12 });
-    });
+    describe('money RPCs (Debit / Credit / Refund) behind the real guards', () => {
+        const tx = (over = {}) => ({
+            transaction: { id: 't1', walletId: 'w1', amount: 5, direction: 'SUBTRACT', description: 'r', idempotencyKey: 'k1', balanceAfter: 15, createdAt: new Date(1_760_000_000_000), ...over },
+            alreadyApplied: false,
+        });
+        const req = (userId = 'u1') => ({ userId, amount: 5, reason: 'r', idempotencyKey: 'k1' });
 
-    it('refund is UNIMPLEMENTED until phase 10', async () => {
-        await expect(
-            lastValueFrom(
-                wallet.refund({ debitIdempotencyKey: 'k1', reason: 'r' }, await svc('exam'))
-            )
-        ).rejects.toMatchObject({ code: 12 });
+        it('Debit by svc:exam maps the transaction and already_applied', async () => {
+            money.debit.mockResolvedValue({ ...tx({ idempotencyKey: 'debit:k1' }), alreadyApplied: true });
+            const res = await lastValueFrom(wallet.debit(req(), await svc('exam')));
+            expect(res).toEqual({
+                alreadyApplied: true,
+                transaction: { id: 't1', walletId: 'w1', amount: 5, direction: 'SUBTRACT', reason: 'r', idempotencyKey: 'k1', balanceAfter: 15, createdAt: '1760000000000' },
+            });
+            expect(money.debit).toHaveBeenCalledWith(req(), { createWallet: false });
+        });
+
+        it('Debit by a TEACHER for ITSELF is allowed; for another user or as STUDENT it is PERMISSION_DENIED', async () => {
+            money.debit.mockResolvedValue(tx());
+            await expect(lastValueFrom(wallet.debit(req('t1'), await teacher('t1')))).resolves.toMatchObject({ alreadyApplied: false });
+            // only a TEACHER's own token may mint the welcome wallet
+            expect(money.debit).toHaveBeenLastCalledWith(req('t1'), { createWallet: true });
+            await expect(lastValueFrom(wallet.debit(req('victim'), await teacher('t1')))).rejects.toMatchObject({ code: 7 });
+            await expect(lastValueFrom(wallet.debit(req('s1'), await student('s1')))).rejects.toMatchObject({ code: 7 });
+            expect(money.debit).toHaveBeenCalledTimes(1);
+        });
+
+        it('Debit by svc:auth or without metadata never reaches the ledger', async () => {
+            await expect(lastValueFrom(wallet.debit(req(), await svc('auth')))).rejects.toMatchObject({ code: 7 });
+            await expect(lastValueFrom(wallet.debit(req(), new Metadata()))).rejects.toMatchObject({ code: 16 });
+            expect(money.debit).not.toHaveBeenCalled();
+        });
+
+        it('Credit and Refund are service-only (exam/content/document)', async () => {
+            money.credit.mockResolvedValue(tx({ direction: 'ADD' }));
+            money.refund.mockResolvedValue(tx({ direction: 'ADD' }));
+            await expect(lastValueFrom(wallet.credit(req(), await svc('exam')))).resolves.toMatchObject({ alreadyApplied: false });
+            await expect(
+                lastValueFrom(wallet.refund({ debitIdempotencyKey: 'k1', reason: 'r', userId: 'u1' }, await svc('exam')))
+            ).resolves.toMatchObject({ alreadyApplied: false });
+            expect(money.refund).toHaveBeenCalledWith({ userId: 'u1', debitIdempotencyKey: 'k1', reason: 'r' });
+            for (const caller of [await teacher('u1'), await svc('admin'), await svc('auth')]) {
+                await expect(lastValueFrom(wallet.credit(req(), caller))).rejects.toMatchObject({ code: 7 });
+                await expect(
+                    lastValueFrom(wallet.refund({ debitIdempotencyKey: 'k1', reason: 'r', userId: 'u1' }, caller))
+                ).rejects.toMatchObject({ code: 7 });
+            }
+        });
+
+        it('a service error keeps its gRPC status and detail code', async () => {
+            const { RpcException } = await import('@nestjs/microservices');
+            money.debit.mockRejectedValue(new RpcException({ code: 9, message: 'INSUFFICIENT_CREDITS' }));
+            await expect(lastValueFrom(wallet.debit(req(), await svc('exam')))).rejects.toMatchObject({
+                code: 9,
+                details: 'INSUFFICIENT_CREDITS',
+            });
+        });
     });
 
     it('GetUserBenefits maps benefits to camelCase fields', async () => {

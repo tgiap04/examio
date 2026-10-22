@@ -11,3 +11,12 @@ lint:
 breaking:
   use:
     - FILE
+  ignore_only:
+    # Phase 10 breaking-change override (RT-1): WalletService.UpdateBalance is
+    # deleted after its only caller (exam AI debits) moved to the idempotent
+    # Debit RPC in the same change set. Remove these entries once phase 10 is on
+    # main so any later deletion in wallet.proto is flagged again.
+    RPC_NO_DELETE:
+      - examio/finance/v1/wallet.proto
+    MESSAGE_NO_DELETE:
+      - examio/finance/v1/wallet.proto

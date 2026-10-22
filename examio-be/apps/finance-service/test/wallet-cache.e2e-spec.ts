@@ -4,7 +4,6 @@ import { AddressInfo } from 'net';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
-import { GenerateIdService } from '@examio/common';
 import { PrismaService } from '@examio/database';
 import { RedisService } from '@examio/redis';
 import { HEALTH_ROUTES_EXCLUDED_FROM_PREFIX } from '@examio/observability';
@@ -13,6 +12,8 @@ import {
     signTestToken,
     type TestKeyPair,
 } from '@examio/auth-jwt/testing';
+import { WalletMoneyService } from '../src/modules/wallet/wallet-money.service';
+import { FinanceAdminService } from '../src/modules/finance-admin/finance-admin.service';
 
 /**
  * Read-after-write on the wallet cache (real Redis): every balance change,
@@ -90,21 +91,18 @@ describe('wallet cache coherence (e2e)', () => {
             .get('/api/v1/wallet/details')
             .set('authorization', `Bearer ${token}`);
 
-    it('gRPC UpdateBalance SUBTRACT, then the very next wallet read shows the new balance', async () => {
+    it('Debit, then the very next wallet read shows the new balance', async () => {
         const u = await teacherWithWallet(20);
         expect((await info(u.token)).body.balance).toBe(20);
         expect((await details(u.token)).status).toBe(200); // primes the details caches
 
-        const { WalletGrpcController } =
-            await import('../src/modules/wallet/wallet.grpc.controller');
-        const grpc = app.get(WalletGrpcController);
-        const res = await grpc.updateBalance({
+        const res = await app.get(WalletMoneyService).debit({
             userId: u.id,
             amount: 7,
-            transactionType: 'SUBTRACT',
-            description: 'e2e debit',
+            reason: 'e2e debit',
+            idempotencyKey: `e2e:${u.id}:debit`,
         });
-        expect(res).toMatchObject({ success: true, newBalance: 13 });
+        expect(res.transaction.balanceAfter).toBe(13);
 
         expect((await info(u.token)).body.balance).toBe(13);
         const d = await details(u.token);
@@ -112,16 +110,14 @@ describe('wallet cache coherence (e2e)', () => {
         expect(JSON.stringify(d.body)).toContain('e2e debit');
     });
 
-    it('gRPC UpdateBalance ADD is visible at once too', async () => {
+    it('Credit is visible at once too', async () => {
         const u = await teacherWithWallet(20);
         expect((await info(u.token)).body.balance).toBe(20);
-        const { WalletGrpcController } =
-            await import('../src/modules/wallet/wallet.grpc.controller');
-        await app.get(WalletGrpcController).updateBalance({
+        await app.get(WalletMoneyService).credit({
             userId: u.id,
             amount: 5,
-            transactionType: 'ADD',
-            description: 'e2e add',
+            reason: 'e2e add',
+            idempotencyKey: `e2e:${u.id}:credit`,
         });
         expect((await info(u.token)).body.balance).toBe(25);
     });
@@ -131,22 +127,16 @@ describe('wallet cache coherence (e2e)', () => {
         expect((await info(u.token)).body.balance).toBe(20);
         expect((await details(u.token)).status).toBe(200);
 
-        const { AdminFinanceService } =
-            await import('../../admin-service/src/modules/admin-finance/admin-finance.service');
-        const admin = new AdminFinanceService(
-            prisma,
-            { write: async () => undefined } as never,
-            new GenerateIdService(),
-            app.get(RedisService)
-        );
-        const credited = await admin.credit(
+        const admin = app.get(FinanceAdminService);
+        const credited = await admin.adjustBalance(
             {
                 userId: u.id,
                 amount: 50,
                 direction: 'ADD',
                 reason: 'e2e',
-            } as never,
-            { adminId: 'admin-e2e', ipAddress: '127.0.0.1', userAgent: 'jest' }
+                idempotencyKey: `e2e:${u.id}:adj`,
+            },
+            'admin-e2e'
         );
         expect(credited.newBalance).toBe(70);
 
@@ -169,26 +159,18 @@ describe('wallet cache coherence (e2e)', () => {
                 paymentType: 'credits',
             },
         });
-        const { AdminFinanceService } =
-            await import('../../admin-service/src/modules/admin-finance/admin-finance.service');
-        const admin = new AdminFinanceService(
-            prisma,
-            { write: async () => undefined } as never,
-            new GenerateIdService(),
-            app.get(RedisService)
+        const admin = app.get(FinanceAdminService);
+        await admin.refundPayment(
+            { paymentId: `p_${u.id}`, reason: 'e2e', idempotencyKey: `e2e:${u.id}:ref` },
+            'admin-e2e'
         );
-        await admin.refund({ paymentId: `p_${u.id}`, reason: 'e2e' } as never, {
-            adminId: 'admin-e2e',
-            ipAddress: '127.0.0.1',
-            userAgent: 'jest',
-        });
         expect((await info(u.token)).body.balance).toBe(70);
     });
 
     describe('a Redis failure after commit never changes the outcome', () => {
         afterEach(() => jest.restoreAllMocks());
 
-        it('gRPC UpdateBalance still succeeds, the balance is committed once', async () => {
+        it('Debit still succeeds, the balance is committed once', async () => {
             const u = await teacherWithWallet(20);
             jest.spyOn(RedisService.prototype, 'del').mockRejectedValue(
                 new Error('redis down')
@@ -196,15 +178,13 @@ describe('wallet cache coherence (e2e)', () => {
             jest.spyOn(RedisService.prototype, 'delPattern').mockRejectedValue(
                 new Error('redis down')
             );
-            const { WalletGrpcController } =
-                await import('../src/modules/wallet/wallet.grpc.controller');
-            const res = await app.get(WalletGrpcController).updateBalance({
+            const res = await app.get(WalletMoneyService).debit({
                 userId: u.id,
                 amount: 6,
-                transactionType: 'SUBTRACT',
-                description: 'e2e redis down',
+                reason: 'e2e redis down',
+                idempotencyKey: `e2e:${u.id}:redis-down`,
             });
-            expect(res).toMatchObject({ success: true, newBalance: 14 });
+            expect(res.transaction.balanceAfter).toBe(14);
             expect(
                 (
                     await prisma.wallet.findUniqueOrThrow({
@@ -230,27 +210,16 @@ describe('wallet cache coherence (e2e)', () => {
             jest.spyOn(RedisService.prototype, 'delPattern').mockRejectedValue(
                 new Error('redis down')
             );
-            const { AdminFinanceService } =
-                await import('../../admin-service/src/modules/admin-finance/admin-finance.service');
-            const admin = new AdminFinanceService(
-                prisma,
-                { write: async () => undefined } as never,
-                new GenerateIdService(),
-                app.get(RedisService)
-            );
-            const ctx = {
-                adminId: 'admin-e2e',
-                ipAddress: '127.0.0.1',
-                userAgent: 'jest',
-            };
-            const credited = await admin.credit(
+            const admin = app.get(FinanceAdminService);
+            const credited = await admin.adjustBalance(
                 {
                     userId: u.id,
                     amount: 5,
                     direction: 'ADD',
                     reason: 'e2e',
-                } as never,
-                ctx
+                    idempotencyKey: `e2e:${u.id}:adj2`,
+                },
+                'admin-e2e'
             );
             expect(credited.newBalance).toBe(15);
             await prisma.payment.create({
@@ -263,9 +232,9 @@ describe('wallet cache coherence (e2e)', () => {
                     paymentType: 'credits',
                 },
             });
-            const refunded = await admin.refund(
-                { paymentId: `p_${u.id}`, reason: 'e2e' } as never,
-                ctx
+            const refunded = await admin.refundPayment(
+                { paymentId: `p_${u.id}`, reason: 'e2e', idempotencyKey: `e2e:${u.id}:ref2` },
+                'admin-e2e'
             );
             expect(refunded.walletAdjusted).toBe(true);
             expect(

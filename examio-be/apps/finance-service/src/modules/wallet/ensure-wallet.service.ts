@@ -43,8 +43,8 @@ export class EnsureWalletService {
         const created = inserted.length > 0;
         if (created) {
             await tx.$executeRaw`
-                INSERT INTO "WalletTransaction" (id, "walletId", amount, type, direction, description, "createdBy")
-                VALUES (${this.ids.generateId()}, ${inserted[0].id}, ${WELCOME_CREDITS}, ${INITIAL_CREDIT_TYPE}, 'ADD', 'Welcome bonus credits', 'ENSURE_WALLET')`;
+                INSERT INTO "WalletTransaction" (id, "walletId", amount, type, direction, description, "idempotencyKey", "balanceAfter", "createdBy")
+                VALUES (${this.ids.generateId()}, ${inserted[0].id}, ${WELCOME_CREDITS}, ${INITIAL_CREDIT_TYPE}, 'ADD', 'Welcome bonus credits', ${`welcome:${userId}`}, ${WELCOME_CREDITS}, 'ENSURE_WALLET')`;
         }
 
         await tx.$executeRaw`
