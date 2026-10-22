@@ -1,0 +1,3333 @@
+{
+  "at": "2026-10-22T20:30:33.384Z",
+  "accounts": {
+    "student": "p10stu6ae327@p10.test",
+    "teacher": "p10tch6ae327@p10.test",
+    "admin": "p10adm6ae327@p10.test"
+  },
+  "results": [
+    {
+      "name": "1 landing T -> /k/ai-tool",
+      "ok": true,
+      "extra": "/k/ai-tool"
+    },
+    {
+      "name": "1 landing S -> /k/my-materials",
+      "ok": true,
+      "extra": "/k/my-materials"
+    },
+    {
+      "name": "1 landing A -> /admin",
+      "ok": true,
+      "extra": "/admin"
+    },
+    {
+      "name": "2 sidebar S exact set",
+      "ok": true,
+      "extra": "got=[\"/k/word-family\",\"/k/my-materials\",\"/k/my-exams\",\"/k/study-room\",\"/k/history/exam\"]"
+    },
+    {
+      "name": "2 sidebar S has no admin item",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "2 sidebar T exact set",
+      "ok": true,
+      "extra": "got=[\"/k/ai-tool\",\"/k/word-family\",\"/k/manage-exam\",\"/k/flash-card\",\"/k/manage-exam-room\",\"/k/study-room\",\"/k/history\"]"
+    },
+    {
+      "name": "2 sidebar T has no admin item",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "2 sidebar A exact set",
+      "ok": true,
+      "extra": "got=[\"/k/word-family\",\"/k/my-materials\",\"/k/my-exams\",\"/k/study-room\",\"/k/history/exam\",\"/admin\"]"
+    },
+    {
+      "name": "3 forbidden STUDENT /k/ai-tool -> /403",
+      "ok": true,
+      "extra": "/403"
+    },
+    {
+      "name": "3 forbidden STUDENT /k/manage-exam -> /403",
+      "ok": true,
+      "extra": "/403"
+    },
+    {
+      "name": "3 forbidden STUDENT /k/manage-exam-room -> /403",
+      "ok": true,
+      "extra": "/403"
+    },
+    {
+      "name": "3 forbidden STUDENT /admin -> /403",
+      "ok": true,
+      "extra": "/403"
+    },
+    {
+      "name": "3 forbidden STUDENT /admin/roles -> /403",
+      "ok": true,
+      "extra": "/403"
+    },
+    {
+      "name": "3 forbidden TEACHER /k/my-exams -> /403",
+      "ok": true,
+      "extra": "/403"
+    },
+    {
+      "name": "3 forbidden TEACHER /k/history/exam -> /403",
+      "ok": true,
+      "extra": "/403"
+    },
+    {
+      "name": "3 forbidden TEACHER /admin -> /403",
+      "ok": true,
+      "extra": "/403"
+    },
+    {
+      "name": "3 forbidden ADMIN /k/ai-tool -> /403",
+      "ok": true,
+      "extra": "/403"
+    },
+    {
+      "name": "4 click-all S: zero 403 in network log",
+      "ok": true,
+      "extra": "clicked=/k/word-family:/k/word-family | /k/my-materials:/k/my-materials | /k/my-exams:/k/my-exams | /k/study-room:/k/study-room | /k/history/exam:/k/history/exam 403s=0"
+    },
+    {
+      "name": "4 STUDENT /k/history never calls PDF history (/ai/recent-uploads)",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "4 click-all T: zero 403 in network log",
+      "ok": true,
+      "extra": "clicked=/k/ai-tool:/k/ai-tool | /k/word-family:/k/word-family | /k/manage-exam:/k/manage-exam | /k/flash-card:/k/flash-card | /k/manage-exam-room:/k/manage-exam-room | /k/study-room:/k/study-room | /k/history:/k/history 403s=0"
+    },
+    {
+      "name": "4 click-all A: zero 403 in network log",
+      "ok": true,
+      "extra": "clicked=/k/word-family:/k/word-family | /k/my-materials:/k/my-materials | /k/my-exams:/k/my-exams | /k/study-room:/k/study-room | /k/history/exam:/k/history/exam | /admin:/admin 403s=0"
+    },
+    {
+      "name": "6 student: no 'Tạo phòng' on study-room",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "6 teacher: 'Tạo phòng' visible",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "6 student: no wallet balance on profile",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "6 student landing pricing CTA 'Gói dành cho giáo viên'",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "6 teacher landing pricing: no 'Gói dành cho giáo viên'",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "6 STUDENT word-family detail: no 'Sinh từ con' generate button",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "6 STUDENT word-family detail: 'Lưu' save button visible",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "6 TEACHER word-family detail: generate button visible",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "6 TEACHER word-family detail: 'Lưu' save button visible",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "6 'Từ đã lưu' saved-words view",
+      "ok": null,
+      "extra": "no 'Từ đã lưu' label or saved-words view exists in examio-fe src (0 hits): cannot be verified as written"
+    },
+    {
+      "name": "6 TEACHER exam session: notice 'Tài khoản giáo viên không thể làm bài thi'",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "6 TEACHER exam session: no 'Bắt đầu làm bài' start button",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "6 STUDENT (whitelisted) exam session: no teacher notice",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "6 STUDENT (whitelisted) exam session: start button visible",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "6 STUDENT start -> /exam-session/:id/quiz",
+      "ok": true,
+      "extra": "/exam-session/6ada6c57d6ed117f4b83e1dc/quiz"
+    },
+    {
+      "name": "5 admin promotes STUDENT via /admin/roles",
+      "ok": true,
+      "extra": "ok"
+    },
+    {
+      "name": "5 promoted STUDENT sidebar becomes teacher set",
+      "ok": true,
+      "extra": "[\"/k/ai-tool\",\"/k/word-family\",\"/k/manage-exam\",\"/k/flash-card\",\"/k/manage-exam-room\",\"/k/study-room\",\"/k/history\"]"
+    },
+    {
+      "name": "5 first stale call is 401 TOKEN_STALE",
+      "ok": true,
+      "extra": "GET /word-family/categories 401 TOKEN_STALE | POST /auth/refresh 201 | GET /word-family/categories 304"
+    },
+    {
+      "name": "5 exactly one /auth/refresh after promotion",
+      "ok": true,
+      "extra": "refresh=1"
+    },
+    {
+      "name": "5 no 401 after the refresh",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "5 no 403 during promotion flow",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "5 no full page reload (marker unchanged)",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "5 admin demotes back to STUDENT",
+      "ok": true,
+      "extra": "ok"
+    },
+    {
+      "name": "5 demoted sidebar back to STUDENT set (no teacher items)",
+      "ok": true,
+      "extra": "[\"/k/word-family\",\"/k/my-materials\",\"/k/my-exams\",\"/k/study-room\",\"/k/history/exam\"]"
+    },
+    {
+      "name": "5 demotion: exactly one refresh, TOKEN_STALE seen",
+      "ok": true,
+      "extra": "refresh=1"
+    },
+    {
+      "name": "7 student is in the study room page",
+      "ok": true,
+      "extra": "/k/study-room/6ada709581d39a9c79079fd5"
+    },
+    {
+      "name": "7 socket connected (WebSocket created)",
+      "ok": true,
+      "extra": "ws.created=19"
+    },
+    {
+      "name": "7 admin promotes the in-room student",
+      "ok": true,
+      "extra": "ok"
+    },
+    {
+      "name": "7 server emitted auth:reauth on the socket",
+      "ok": true,
+      "extra": "42[\"auth:reauth\",{\"reason\":\"AUTHZ_CHANGED\"}] | 41 | 0{\"sid\":\"LzhYjUBemYCo5Ma5AAAd\",\"upgrades\":[],\"pingInterval\":25000,\"pingTimeout\":20000,\"maxPayload\":1000000} | 40{\"sid\":\"VNFrCHIRn-cHS4TzAAAe\"} | 42["
+    },
+    {
+      "name": "7 exactly one refresh for the socket re-auth",
+      "ok": true,
+      "extra": "refresh=1 reconnects=1"
+    },
+    {
+      "name": "7 socket reconnected once",
+      "ok": true,
+      "extra": "new=1"
+    },
+    {
+      "name": "7 still in the room (no navigation away)",
+      "ok": true,
+      "extra": "/k/study-room/6ada709581d39a9c79079fd5"
+    },
+    {
+      "name": "7 restore student role after socket test",
+      "ok": true,
+      "extra": "ok"
+    },
+    {
+      "name": "7 demotion in room: student stays logged in (not /login, sidebar present)",
+      "ok": true,
+      "extra": "path=/k/my-materials sidebar=[\"/k/word-family\",\"/k/my-materials\",\"/k/my-exams\",\"/k/study-room\",\"/k/history/exam\"]"
+    },
+    {
+      "name": "8 admin opens /admin",
+      "ok": true,
+      "extra": "/admin"
+    },
+    {
+      "name": "8 admin opens /admin/roles (Phân quyền)",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "8 admin: zero 403 on admin screens",
+      "ok": true,
+      "extra": "403s=0"
+    },
+    {
+      "name": "9 STUDENT: no permissions/roles arrays in web storage",
+      "ok": true,
+      "extra": "keys=sidebar_collapsed,examio-i18next.locale,device_id hits="
+    },
+    {
+      "name": "9 TEACHER: no permissions/roles arrays in web storage",
+      "ok": true,
+      "extra": "keys=sidebar_collapsed,examio:tour:ai-tool:v1,examio-i18next.locale,device_id hits="
+    },
+    {
+      "name": "9 ADMIN: no permissions/roles arrays in web storage",
+      "ok": true,
+      "extra": "keys=sidebar_collapsed,examio-i18next.locale,device_id hits="
+    },
+    {
+      "name": "10 long session: all 4 flips keep the student logged in with the right sidebar",
+      "ok": true,
+      "extra": "[{\"flip\":1,\"role\":\"Giáo viên\",\"admin\":\"ok\",\"sidebarOk\":true,\"refresh\":1,\"path\":\"/k/study-room\",\"t\":6},{\"flip\":2,\"role\":\"Học sinh\",\"admin\":\"ok\",\"sidebarOk\":true,\"refresh\":1,\"path\":\"/k/word-family\",\"t\":76},{\"flip\":3,\"role\":\"Giáo viên\",\"admin\":\"ok\",\"sidebarOk\":true,\"refresh\":1,\"path\":\"/k/study-room\",\"t\":145},{\"flip\":4,\"role\":\"Học sinh\",\"admin\":\"ok\",\"sidebarOk\":true,\"refresh\":1,\"path\":\"/k/word-family\""
+    },
+    {
+      "name": "10 long session: exactly one refresh per flip",
+      "ok": true,
+      "extra": "1,1,1,1"
+    },
+    {
+      "name": "10 long session: spans >=2 refreshes over >120 s (F1 end-to-end)",
+      "ok": true,
+      "extra": "refresh=4 elapsed=215s"
+    },
+    {
+      "name": "no request left localhost (non-local attempts were CDP-failed, none sent)",
+      "ok": true,
+      "extra": "blocked_attempts=48 hosts=www.googletagmanager.com,challenges.cloudflare.com"
+    }
+  ],
+  "runLog": [
+    {
+      "step": "4-S",
+      "requests": [
+        "GET /word-family/categories 200",
+        "GET /student/recent-exams 200",
+        "GET /student/recent-exams 304",
+        "GET /studyrooms/mine 200",
+        "GET /studyrooms/mine 304",
+        "GET /examattempts/list 200"
+      ]
+    },
+    {
+      "step": "4-T",
+      "requests": [
+        "GET /word-family/categories 200",
+        "GET /quizsets/stats 200",
+        "GET /quizsets 200",
+        "GET /flashcardsets/stats 200",
+        "GET /flashcardsets/ 200",
+        "GET /quizsets/list/all 200",
+        "GET /examrooms/list-all 200",
+        "GET /examattempts/list-by-room/6ada6c57d9b98878c37de9a5 200",
+        "GET /studyrooms/mine 200",
+        "GET /studyrooms/mine 304",
+        "GET /ai/recent-uploads 304"
+      ]
+    },
+    {
+      "step": "4-A",
+      "requests": [
+        "GET /word-family/categories 200",
+        "GET /student/recent-exams 200",
+        "GET /student/recent-exams 304",
+        "GET /studyrooms/mine 200",
+        "GET /studyrooms/mine 304",
+        "GET /examattempts/list 200",
+        "GET /admin/series/signups 304",
+        "GET /admin/overview 304",
+        "GET /admin/series/traffic 304",
+        "GET /admin/series/revenue 304",
+        "GET /admin/sources 304"
+      ]
+    },
+    {
+      "step": "5-promote",
+      "requests": [
+        "GET /word-family/categories 401 TOKEN_STALE",
+        "POST /auth/refresh 201",
+        "GET /word-family/categories 304"
+      ]
+    },
+    {
+      "step": "5-demote",
+      "requests": [
+        "GET /config/pages 304",
+        "GET /config/pages 304",
+        "GET /auth/me 401 TOKEN_STALE",
+        "POST /auth/refresh 201",
+        "GET /auth/me 200",
+        "GET /config/stream 200",
+        "GET /student/recent-flashcards 304",
+        "GET /student/recent-flashcards 304",
+        "GET /quiz-practice/sets 304",
+        "GET /quiz-practice/sets 304"
+      ]
+    },
+    {
+      "step": "7-socket",
+      "requests": [
+        "POST /auth/refresh 201"
+      ],
+      "frames": [
+        "42[\"auth:reauth\",{\"reason\":\"AUTHZ_CHANGED\"}]",
+        "41",
+        "0{\"sid\":\"LzhYjUBemYCo5Ma5AAAd\",\"upgrades\":[],\"pingInterval\":25000,\"pingTimeout\":20000,\"maxPayload\":1000000}",
+        "40{\"sid\":\"VNFrCHIRn-cHS4TzAAAe\"}",
+        "42[\"room:snapshot\",{\"room\":{\"id\":\"6ada709581d39a9c79079fd5\",\"name\":\"P09 socket room\",\"description\":null,\"isActive\":true,\"maxParticipants\":10,\"hostId\":\"p10tch6ae327\",\"accessType\":0,\"playlistAddPermissi"
+      ]
+    },
+    {
+      "step": "10-long-session",
+      "requests": [
+        "GET /studyrooms/mine 401 TOKEN_STALE",
+        "GET /studyrooms/mine 401 TOKEN_STALE",
+        "POST /auth/refresh 201",
+        "GET /studyrooms/mine 502 UPSTREAM_UNAVAILABLE",
+        "GET /studyrooms/mine 502 UPSTREAM_UNAVAILABLE",
+        "GET /word-family/categories 401 TOKEN_STALE",
+        "POST /auth/refresh 201",
+        "GET /word-family/categories 502 UPSTREAM_UNAVAILABLE",
+        "GET /studyrooms/mine 401 TOKEN_STALE",
+        "GET /studyrooms/mine 401 TOKEN_STALE",
+        "POST /auth/refresh 201",
+        "GET /studyrooms/mine 502 UPSTREAM_UNAVAILABLE",
+        "GET /studyrooms/mine 502 UPSTREAM_UNAVAILABLE",
+        "GET /word-family/categories 401 TOKEN_STALE",
+        "POST /auth/refresh 201",
+        "GET /word-family/categories 502 UPSTREAM_UNAVAILABLE"
+      ]
+    }
+  ],
+  "diag": [
+    {
+      "ctx": "STUDENT",
+      "nav": [
+        [
+          1792700639404,
+          "/login"
+        ],
+        [
+          1792700639949,
+          "/login"
+        ],
+        [
+          1792700640069,
+          "/k"
+        ],
+        [
+          1792700640408,
+          "/k"
+        ],
+        [
+          1792700640552,
+          "/k/my-materials"
+        ],
+        [
+          1792700640553,
+          "/k/my-materials"
+        ],
+        [
+          1792700640576,
+          "/k/my-materials"
+        ],
+        [
+          1792700644316,
+          "/k/my-materials"
+        ],
+        [
+          1792700649128,
+          "/k/ai-tool"
+        ],
+        [
+          1792700649456,
+          "/k/ai-tool"
+        ],
+        [
+          1792700649513,
+          "/403"
+        ],
+        [
+          1792700649514,
+          "/403"
+        ],
+        [
+          1792700650927,
+          "/k/manage-exam"
+        ],
+        [
+          1792700651245,
+          "/k/manage-exam"
+        ],
+        [
+          1792700651314,
+          "/403"
+        ],
+        [
+          1792700651315,
+          "/403"
+        ],
+        [
+          1792700652665,
+          "/k/manage-exam-room"
+        ],
+        [
+          1792700652975,
+          "/k/manage-exam-room"
+        ],
+        [
+          1792700653031,
+          "/403"
+        ],
+        [
+          1792700653031,
+          "/403"
+        ],
+        [
+          1792700654398,
+          "/admin"
+        ],
+        [
+          1792700654724,
+          "/admin"
+        ],
+        [
+          1792700654795,
+          "/403"
+        ],
+        [
+          1792700654796,
+          "/403"
+        ],
+        [
+          1792700656147,
+          "/admin/roles"
+        ],
+        [
+          1792700656459,
+          "/admin/roles"
+        ],
+        [
+          1792700656512,
+          "/403"
+        ],
+        [
+          1792700656513,
+          "/403"
+        ],
+        [
+          1792700705009,
+          "/k/my-materials"
+        ],
+        [
+          1792700705351,
+          "/k/my-materials"
+        ],
+        [
+          1792700706567,
+          "/k/word-family"
+        ],
+        [
+          1792700708586,
+          "/k/my-materials"
+        ],
+        [
+          1792700710602,
+          "/k/my-exams"
+        ],
+        [
+          1792700712618,
+          "/k/study-room"
+        ],
+        [
+          1792700714635,
+          "/k/history/exam"
+        ],
+        [
+          1792700746052,
+          "/k/study-room"
+        ],
+        [
+          1792700746384,
+          "/k/study-room"
+        ],
+        [
+          1792700749173,
+          "/k/profile"
+        ],
+        [
+          1792700749490,
+          "/k/profile"
+        ],
+        [
+          1792700752259,
+          "/"
+        ],
+        [
+          1792700752575,
+          "/"
+        ],
+        [
+          1792700759686,
+          "/k/word-family/p10-notes/p09root"
+        ],
+        [
+          1792700760017,
+          "/k/word-family/p10-notes/p09root"
+        ],
+        [
+          1792700769947,
+          "/exam-session/6ada6c57d6ed117f4b83e1dc"
+        ],
+        [
+          1792700770266,
+          "/exam-session/6ada6c57d6ed117f4b83e1dc"
+        ],
+        [
+          1792700774804,
+          "/exam-session/6ada6c57d6ed117f4b83e1dc/quiz"
+        ],
+        [
+          1792700774929,
+          "/k/my-materials"
+        ],
+        [
+          1792700775242,
+          "/k/my-materials"
+        ],
+        [
+          1792700779826,
+          "/k/word-family"
+        ],
+        [
+          1792700784197,
+          "/k/my-materials"
+        ],
+        [
+          1792700784507,
+          "/k/my-materials"
+        ],
+        [
+          1792700787276,
+          "/k/study-room/6ada709581d39a9c79079fd5"
+        ],
+        [
+          1792700787590,
+          "/k/study-room/6ada709581d39a9c79079fd5"
+        ],
+        [
+          1792700808360,
+          "/k/my-materials"
+        ],
+        [
+          1792700808682,
+          "/k/my-materials"
+        ],
+        [
+          1792700817039,
+          "/k/word-family"
+        ],
+        [
+          1792700817357,
+          "/k/word-family"
+        ],
+        [
+          1792700823075,
+          "/k/study-room"
+        ],
+        [
+          1792700892635,
+          "/k/word-family"
+        ],
+        [
+          1792700961991,
+          "/k/study-room"
+        ],
+        [
+          1792701031569,
+          "/k/word-family"
+        ]
+      ],
+      "console": [
+        "Backend Error: Authentication token is required",
+        "Backend Error: Refresh token not found",
+        "Backend Error: Không tìm thấy word family \"p09root\" trong danh mục \"p10-notes\".",
+        "[auth-api] interceptor caught 401, attempting refresh",
+        "Backend Error: Your permissions changed; refresh your session",
+        "Backend Error: Service unavailable",
+        "Backend Error: Service unavailable",
+        "Backend Error: Service unavailable",
+        "Backend Error: Service unavailable",
+        "Backend Error: Service unavailable",
+        "[auth-api] interceptor caught 401, attempting refresh",
+        "[auth-api] interceptor caught 401, attempting refresh",
+        "Backend Error: Service unavailable",
+        "Backend Error: Service unavailable",
+        "[auth-api] interceptor caught 401, attempting refresh",
+        "Backend Error: Service unavailable",
+        "[auth-api] interceptor caught 401, attempting refresh",
+        "[auth-api] interceptor caught 401, attempting refresh",
+        "Backend Error: Service unavailable",
+        "Backend Error: Service unavailable",
+        "[auth-api] interceptor caught 401, attempting refresh",
+        "Backend Error: Service unavailable"
+      ],
+      "log": [
+        {
+          "t": 1792700640009,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700640011,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700640033,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 401,
+          "c": "TOKEN_MISSING",
+          "b": "{\"statusCode\":401,\"code\":\"TOKEN_MISSING\",\"message\":\"Authentication token is required\",\"requestId\":\"req_01M5JMHTQWRVQRFG2KNPPK021H\"}"
+        },
+        {
+          "t": 1792700640034,
+          "m": "POST",
+          "p": "/auth/login",
+          "s": 201,
+          "c": null
+        },
+        {
+          "t": 1792700640076,
+          "m": "POST",
+          "p": "/auth/refresh",
+          "s": 401,
+          "c": null
+        },
+        {
+          "t": 1792700640527,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700640551,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700640576,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700640586,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700640643,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700640655,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700640672,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700640678,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700644718,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700644751,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700644755,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700644764,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700644777,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700644817,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700644823,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700644828,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700649510,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700649513,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700649514,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700651309,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700651314,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700651315,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700653027,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700653030,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700653032,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700654787,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700654788,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700654807,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700656496,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700656512,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700656513,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700705390,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700705437,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700705442,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700705467,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700705484,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700705499,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700705502,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700705507,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700706613,
+          "m": "GET",
+          "p": "/word-family/categories",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700710648,
+          "m": "GET",
+          "p": "/student/recent-exams",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700710655,
+          "m": "GET",
+          "p": "/student/recent-exams",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700712667,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700712670,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700714663,
+          "m": "GET",
+          "p": "/examattempts/list",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700746425,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700746476,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700746481,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700746490,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700746504,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700746511,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700749542,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700749570,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700749574,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700749583,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700749593,
+          "m": "GET",
+          "p": "/profile",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700749621,
+          "m": "GET",
+          "p": "/profile",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700752789,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700752798,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700752799,
+          "m": "GET",
+          "p": "/payment/subscription/plans",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700752799,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700752799,
+          "m": "GET",
+          "p": "/payment/subscription/plans",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700760061,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700760114,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700760122,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700760133,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700760149,
+          "m": "GET",
+          "p": "/word-family/saved",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700760153,
+          "m": "GET",
+          "p": "/word-family/generation-status/p10-notes/p09root",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700760156,
+          "m": "GET",
+          "p": "/word-family/saved",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700760157,
+          "m": "GET",
+          "p": "/word-family/category/p10-notes/p09root",
+          "s": 404,
+          "c": null,
+          "b": "{\"message\":\"Không tìm thấy word family \\\"p09root\\\" trong danh mục \\\"p10-notes\\\".\",\"error\":\"Not Found\",\"statusCode\":404}"
+        },
+        {
+          "t": 1792700760161,
+          "m": "GET",
+          "p": "/word-family/generation-status/p10-notes/p09root",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700770353,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700770359,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700770362,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700770368,
+          "m": "GET",
+          "p": "/examsessions/study/6ada6c57d6ed117f4b83e1dc/access",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700770412,
+          "m": "GET",
+          "p": "/examsessions/study/6ada6c57d6ed117f4b83e1dc/stats",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700770441,
+          "m": "GET",
+          "p": "/examattempts/list",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700774855,
+          "m": "POST",
+          "p": "/examattempts/start",
+          "s": 201,
+          "c": null
+        },
+        {
+          "t": 1792700774855,
+          "m": "POST",
+          "p": "/examattempts/start",
+          "s": 201,
+          "c": null
+        },
+        {
+          "t": 1792700774894,
+          "m": "GET",
+          "p": "/examattempts/6ada7166a03bd865cc5c2e6a/secure-quiz",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700774894,
+          "m": "GET",
+          "p": "/examattempts/6ada7166b958fd619bd5418a/secure-quiz",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700775295,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700775335,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700775357,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700775361,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700775423,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700775432,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700775443,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700775444,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700779864,
+          "m": "GET",
+          "p": "/word-family/categories",
+          "s": 401,
+          "c": "TOKEN_STALE",
+          "b": "{\"statusCode\":401,\"code\":\"TOKEN_STALE\",\"message\":\"Your permissions changed; refresh your session\",\"requestId\":\"req_01M5JMP3AG2EP0P7GK3BK29BG"
+        },
+        {
+          "t": 1792700779899,
+          "m": "POST",
+          "p": "/auth/refresh",
+          "s": 201,
+          "c": null
+        },
+        {
+          "t": 1792700779907,
+          "m": "GET",
+          "p": "/word-family/categories",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700784548,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700784552,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700784565,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 401,
+          "c": "TOKEN_STALE",
+          "b": "{\"statusCode\":401,\"code\":\"TOKEN_STALE\",\"message\":\"Your permissions changed; refresh your session\",\"requestId\":\"req_01M5JMP7WQJJE3QGXPPZ3J7JN"
+        },
+        {
+          "t": 1792700784568,
+          "m": "POST",
+          "p": "/auth/refresh",
+          "s": 201,
+          "c": null
+        },
+        {
+          "t": 1792700784630,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700784639,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700784662,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700784670,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700784679,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700784685,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700787268,
+          "m": "POST",
+          "p": "/studyrooms/6ada709581d39a9c79079fd5/join",
+          "s": 201,
+          "c": null
+        },
+        {
+          "t": 1792700787646,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700787698,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700787709,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700787719,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700787727,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700787732,
+          "m": "GET",
+          "p": "/studyrooms/6ada709581d39a9c79079fd5/leaderboard",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700787756,
+          "m": "GET",
+          "p": "/studyrooms/6ada709581d39a9c79079fd5/leaderboard",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700792756,
+          "m": "POST",
+          "p": "/auth/refresh",
+          "s": 201,
+          "c": null
+        },
+        {
+          "t": 1792700798303,
+          "m": "POST",
+          "p": "/auth/refresh",
+          "s": 201,
+          "c": null
+        },
+        {
+          "t": 1792700808734,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700808767,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700808772,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700808814,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700808823,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 502,
+          "c": "UPSTREAM_UNAVAILABLE",
+          "b": "{\"statusCode\":502,\"code\":\"UPSTREAM_UNAVAILABLE\",\"message\":\"Service unavailable\",\"requestId\":\"req_01M5JMPZJ1NGT1T9Z4XWMAY8P3\"}"
+        },
+        {
+          "t": 1792700808837,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 502,
+          "c": "UPSTREAM_UNAVAILABLE",
+          "b": "{\"statusCode\":502,\"code\":\"UPSTREAM_UNAVAILABLE\",\"message\":\"Service unavailable\",\"requestId\":\"req_01M5JMPZJ51JTV9D2Y7PJYKRYC\"}"
+        },
+        {
+          "t": 1792700808842,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 502,
+          "c": "UPSTREAM_UNAVAILABLE",
+          "b": "{\"statusCode\":502,\"code\":\"UPSTREAM_UNAVAILABLE\",\"message\":\"Service unavailable\",\"requestId\":\"req_01M5JMPZKS8J7GQZM62HXDCVBN\"}"
+        },
+        {
+          "t": 1792700808844,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 502,
+          "c": "UPSTREAM_UNAVAILABLE",
+          "b": "{\"statusCode\":502,\"code\":\"UPSTREAM_UNAVAILABLE\",\"message\":\"Service unavailable\",\"requestId\":\"req_01M5JMPZKX54YJGG29DFT68SXR\"}"
+        },
+        {
+          "t": 1792700817397,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700817443,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700817447,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700817456,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700817473,
+          "m": "GET",
+          "p": "/word-family/categories",
+          "s": 502,
+          "c": "UPSTREAM_UNAVAILABLE",
+          "b": "{\"statusCode\":502,\"code\":\"UPSTREAM_UNAVAILABLE\",\"message\":\"Service unavailable\",\"requestId\":\"req_01M5JMQ81H3D3256Y7GF3XX63H\"}"
+        },
+        {
+          "t": 1792700823109,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 401,
+          "c": "TOKEN_STALE",
+          "b": "{\"statusCode\":401,\"code\":\"TOKEN_STALE\",\"message\":\"Your permissions changed; refresh your session\",\"requestId\":\"req_01M5JMQDHNZ3770TVYCV8XMDG"
+        },
+        {
+          "t": 1792700823112,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 401,
+          "c": "TOKEN_STALE",
+          "b": "{\"statusCode\":401,\"code\":\"TOKEN_STALE\",\"message\":\"Your permissions changed; refresh your session\",\"requestId\":\"req_01M5JMQDHS6B9532BPBH7R1ND"
+        },
+        {
+          "t": 1792700823138,
+          "m": "POST",
+          "p": "/auth/refresh",
+          "s": 201,
+          "c": null
+        },
+        {
+          "t": 1792700823148,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 502,
+          "c": "UPSTREAM_UNAVAILABLE",
+          "b": "{\"statusCode\":502,\"code\":\"UPSTREAM_UNAVAILABLE\",\"message\":\"Service unavailable\",\"requestId\":\"req_01M5JMQDK4EGHXS0KNER0Z2EN3\"}"
+        },
+        {
+          "t": 1792700823151,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 502,
+          "c": "UPSTREAM_UNAVAILABLE",
+          "b": "{\"statusCode\":502,\"code\":\"UPSTREAM_UNAVAILABLE\",\"message\":\"Service unavailable\",\"requestId\":\"req_01M5JMQDKB8JDMVJW07HGBPQGP\"}"
+        },
+        {
+          "t": 1792700892678,
+          "m": "GET",
+          "p": "/word-family/categories",
+          "s": 401,
+          "c": "TOKEN_STALE",
+          "b": "{\"statusCode\":401,\"code\":\"TOKEN_STALE\",\"message\":\"Your permissions changed; refresh your session\",\"requestId\":\"req_01M5JMSHFZKHHP688F5D0A3W1"
+        },
+        {
+          "t": 1792700892700,
+          "m": "POST",
+          "p": "/auth/refresh",
+          "s": 201,
+          "c": null
+        },
+        {
+          "t": 1792700892708,
+          "m": "GET",
+          "p": "/word-family/categories",
+          "s": 502,
+          "c": "UPSTREAM_UNAVAILABLE",
+          "b": "{\"statusCode\":502,\"code\":\"UPSTREAM_UNAVAILABLE\",\"message\":\"Service unavailable\",\"requestId\":\"req_01M5JMSHGY4CJPV0TZ3P4VRCAV\"}"
+        },
+        {
+          "t": 1792700962031,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 401,
+          "c": "TOKEN_STALE",
+          "b": "{\"statusCode\":401,\"code\":\"TOKEN_STALE\",\"message\":\"Your permissions changed; refresh your session\",\"requestId\":\"req_01M5JMVN7BB5JEPMHX6WNWZEC"
+        },
+        {
+          "t": 1792700962035,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 401,
+          "c": "TOKEN_STALE",
+          "b": "{\"statusCode\":401,\"code\":\"TOKEN_STALE\",\"message\":\"Your permissions changed; refresh your session\",\"requestId\":\"req_01M5JMVN7EFBP8K7F9QKD7A07"
+        },
+        {
+          "t": 1792700962062,
+          "m": "POST",
+          "p": "/auth/refresh",
+          "s": 201,
+          "c": null
+        },
+        {
+          "t": 1792700962074,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 502,
+          "c": "UPSTREAM_UNAVAILABLE",
+          "b": "{\"statusCode\":502,\"code\":\"UPSTREAM_UNAVAILABLE\",\"message\":\"Service unavailable\",\"requestId\":\"req_01M5JMVN8GDTBVQ1R0YJT6AJA6\"}"
+        },
+        {
+          "t": 1792700962077,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 502,
+          "c": "UPSTREAM_UNAVAILABLE",
+          "b": "{\"statusCode\":502,\"code\":\"UPSTREAM_UNAVAILABLE\",\"message\":\"Service unavailable\",\"requestId\":\"req_01M5JMVN8SXJGFC8ZKS32TNWT8\"}"
+        },
+        {
+          "t": 1792701031602,
+          "m": "GET",
+          "p": "/word-family/categories",
+          "s": 401,
+          "c": "TOKEN_STALE",
+          "b": "{\"statusCode\":401,\"code\":\"TOKEN_STALE\",\"message\":\"Your permissions changed; refresh your session\",\"requestId\":\"req_01M5JMXS4ZHHFZRWM6NP7R35V"
+        },
+        {
+          "t": 1792701031622,
+          "m": "POST",
+          "p": "/auth/refresh",
+          "s": 201,
+          "c": null
+        },
+        {
+          "t": 1792701031629,
+          "m": "GET",
+          "p": "/word-family/categories",
+          "s": 502,
+          "c": "UPSTREAM_UNAVAILABLE",
+          "b": "{\"statusCode\":502,\"code\":\"UPSTREAM_UNAVAILABLE\",\"message\":\"Service unavailable\",\"requestId\":\"req_01M5JMXS68SYFV1PFQ5JMZBDKV\"}"
+        }
+      ]
+    },
+    {
+      "ctx": "TEACHER",
+      "nav": [
+        [
+          1792700636854,
+          "/login"
+        ],
+        [
+          1792700637401,
+          "/login"
+        ],
+        [
+          1792700637519,
+          "/k"
+        ],
+        [
+          1792700637861,
+          "/k"
+        ],
+        [
+          1792700637991,
+          "/k/ai-tool"
+        ],
+        [
+          1792700637992,
+          "/k/ai-tool"
+        ],
+        [
+          1792700638029,
+          "/k/ai-tool"
+        ],
+        [
+          1792700645914,
+          "/k/ai-tool"
+        ],
+        [
+          1792700697957,
+          "/k/my-exams"
+        ],
+        [
+          1792700698330,
+          "/k/my-exams"
+        ],
+        [
+          1792700698393,
+          "/403"
+        ],
+        [
+          1792700698393,
+          "/403"
+        ],
+        [
+          1792700699752,
+          "/k/history/exam"
+        ],
+        [
+          1792700700070,
+          "/k/history/exam"
+        ],
+        [
+          1792700700138,
+          "/403"
+        ],
+        [
+          1792700700138,
+          "/403"
+        ],
+        [
+          1792700701493,
+          "/admin"
+        ],
+        [
+          1792700701810,
+          "/admin"
+        ],
+        [
+          1792700701880,
+          "/403"
+        ],
+        [
+          1792700701881,
+          "/403"
+        ],
+        [
+          1792700716660,
+          "/k/ai-tool"
+        ],
+        [
+          1792700717005,
+          "/k/ai-tool"
+        ],
+        [
+          1792700718222,
+          "/k/ai-tool"
+        ],
+        [
+          1792700720250,
+          "/k/word-family"
+        ],
+        [
+          1792700722268,
+          "/k/manage-exam"
+        ],
+        [
+          1792700724283,
+          "/k/flash-card"
+        ],
+        [
+          1792700726300,
+          "/k/manage-exam-room"
+        ],
+        [
+          1792700728319,
+          "/k/study-room"
+        ],
+        [
+          1792700730337,
+          "/k/history"
+        ],
+        [
+          1792700747609,
+          "/k/study-room"
+        ],
+        [
+          1792700747950,
+          "/k/study-room"
+        ],
+        [
+          1792700756113,
+          "/"
+        ],
+        [
+          1792700756458,
+          "/"
+        ],
+        [
+          1792700762768,
+          "/k/word-family/p10-notes/p09root"
+        ],
+        [
+          1792700763105,
+          "/k/word-family/p10-notes/p09root"
+        ],
+        [
+          1792700765874,
+          "/exam-session/6ada6c57d6ed117f4b83e1dc"
+        ],
+        [
+          1792700766192,
+          "/exam-session/6ada6c57d6ed117f4b83e1dc"
+        ]
+      ],
+      "console": [
+        "Backend Error: Authentication token is required",
+        "Backend Error: Refresh token not found",
+        "Backend Error: Không tìm thấy word family \"p09root\" trong danh mục \"p10-notes\"."
+      ],
+      "log": [
+        {
+          "t": 1792700637461,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700637465,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700637486,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 401,
+          "c": "TOKEN_MISSING",
+          "b": "{\"statusCode\":401,\"code\":\"TOKEN_MISSING\",\"message\":\"Authentication token is required\",\"requestId\":\"req_01M5JMHR8AVH7PQA3YVQVGX3TA\"}"
+        },
+        {
+          "t": 1792700637501,
+          "m": "POST",
+          "p": "/auth/login",
+          "s": 201,
+          "c": null
+        },
+        {
+          "t": 1792700637511,
+          "m": "POST",
+          "p": "/auth/refresh",
+          "s": 401,
+          "c": "UNAUTHORIZED",
+          "b": "{\"statusCode\":401,\"code\":\"UNAUTHORIZED\",\"message\":\"Refresh token not found\",\"requestId\":\"req_01M5JMHR8NYXHSNR0W3RCJBA6R\"}"
+        },
+        {
+          "t": 1792700637964,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700637991,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700638029,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700638039,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700638165,
+          "m": "GET",
+          "p": "/ai/recent-uploads",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700638189,
+          "m": "GET",
+          "p": "/ai/recent-uploads",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700646309,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700646389,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700646401,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700646419,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700646429,
+          "m": "GET",
+          "p": "/ai/recent-uploads",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700646446,
+          "m": "GET",
+          "p": "/ai/recent-uploads",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700698390,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700698393,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700698394,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700700121,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700700137,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700700139,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700701877,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700701880,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700701881,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700717043,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700717123,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700717128,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700717155,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700717168,
+          "m": "GET",
+          "p": "/ai/recent-uploads",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700717179,
+          "m": "GET",
+          "p": "/ai/recent-uploads",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700720284,
+          "m": "GET",
+          "p": "/word-family/categories",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700722387,
+          "m": "GET",
+          "p": "/quizsets/stats",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700722422,
+          "m": "GET",
+          "p": "/quizsets",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700724349,
+          "m": "GET",
+          "p": "/flashcardsets/stats",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700724376,
+          "m": "GET",
+          "p": "/flashcardsets/",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700726346,
+          "m": "GET",
+          "p": "/quizsets/list/all",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700726358,
+          "m": "GET",
+          "p": "/examrooms/list-all",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700726388,
+          "m": "GET",
+          "p": "/examattempts/list-by-room/6ada6c57d9b98878c37de9a5",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700728406,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700728413,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700730374,
+          "m": "GET",
+          "p": "/ai/recent-uploads",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700747990,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700748047,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700748054,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700748064,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700748079,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700748090,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700756663,
+          "m": "GET",
+          "p": "/payment/subscription/plans",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700756663,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700756674,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700756674,
+          "m": "GET",
+          "p": "/payment/subscription/plans",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700756675,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700763144,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700763204,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700763210,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700763221,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700763233,
+          "m": "GET",
+          "p": "/word-family/saved",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700763237,
+          "m": "GET",
+          "p": "/word-family/generation-status/p10-notes/p09root",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700763242,
+          "m": "GET",
+          "p": "/word-family/saved",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700763251,
+          "m": "GET",
+          "p": "/word-family/generation-status/p10-notes/p09root",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700763251,
+          "m": "GET",
+          "p": "/word-family/category/p10-notes/p09root",
+          "s": 404,
+          "c": null,
+          "b": "{\"message\":\"Không tìm thấy word family \\\"p09root\\\" trong danh mục \\\"p10-notes\\\".\",\"error\":\"Not Found\",\"statusCode\":404}"
+        },
+        {
+          "t": 1792700766294,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700766301,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700766302,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700766363,
+          "m": "GET",
+          "p": "/examsessions/study/6ada6c57d6ed117f4b83e1dc/access",
+          "s": 200,
+          "c": null
+        }
+      ]
+    },
+    {
+      "ctx": "ADMIN",
+      "nav": [
+        [
+          1792700641864,
+          "/login"
+        ],
+        [
+          1792700642377,
+          "/login"
+        ],
+        [
+          1792700642492,
+          "/k"
+        ],
+        [
+          1792700642822,
+          "/k"
+        ],
+        [
+          1792700642964,
+          "/admin"
+        ],
+        [
+          1792700642965,
+          "/admin"
+        ],
+        [
+          1792700642989,
+          "/admin"
+        ],
+        [
+          1792700647561,
+          "/k/my-materials"
+        ],
+        [
+          1792700647880,
+          "/k/my-materials"
+        ],
+        [
+          1792700703236,
+          "/k/ai-tool"
+        ],
+        [
+          1792700703582,
+          "/k/ai-tool"
+        ],
+        [
+          1792700703646,
+          "/403"
+        ],
+        [
+          1792700703647,
+          "/403"
+        ],
+        [
+          1792700732360,
+          "/k/my-materials"
+        ],
+        [
+          1792700732722,
+          "/k/my-materials"
+        ],
+        [
+          1792700733939,
+          "/k/word-family"
+        ],
+        [
+          1792700735959,
+          "/k/my-materials"
+        ],
+        [
+          1792700737977,
+          "/k/my-exams"
+        ],
+        [
+          1792700739994,
+          "/k/study-room"
+        ],
+        [
+          1792700742011,
+          "/k/history/exam"
+        ],
+        [
+          1792700744030,
+          "/admin"
+        ],
+        [
+          1792700777266,
+          "/admin/roles"
+        ],
+        [
+          1792700777581,
+          "/admin/roles"
+        ],
+        [
+          1792700781674,
+          "/admin/roles"
+        ],
+        [
+          1792700789438,
+          "/admin/roles"
+        ],
+        [
+          1792700795854,
+          "/admin/roles"
+        ],
+        [
+          1792700809902,
+          "/admin"
+        ],
+        [
+          1792700810245,
+          "/admin"
+        ],
+        [
+          1792700813467,
+          "/admin/roles"
+        ],
+        [
+          1792700813769,
+          "/admin/roles"
+        ],
+        [
+          1792700820585,
+          "/admin/roles"
+        ],
+        [
+          1792700820903,
+          "/admin/roles"
+        ],
+        [
+          1792700889901,
+          "/admin/roles"
+        ],
+        [
+          1792700959459,
+          "/admin/roles"
+        ],
+        [
+          1792701028812,
+          "/admin/roles"
+        ]
+      ],
+      "console": [
+        "Backend Error: Authentication token is required",
+        "Backend Error: Refresh token not found"
+      ],
+      "log": [
+        {
+          "t": 1792700642436,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700642438,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700642459,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 401,
+          "c": "TOKEN_MISSING",
+          "b": "{\"statusCode\":401,\"code\":\"TOKEN_MISSING\",\"message\":\"Authentication token is required\",\"requestId\":\"req_01M5JMHX3SNA3X53VPJAK6S9M5\"}"
+        },
+        {
+          "t": 1792700642475,
+          "m": "POST",
+          "p": "/auth/login",
+          "s": 201,
+          "c": null
+        },
+        {
+          "t": 1792700642485,
+          "m": "POST",
+          "p": "/auth/refresh",
+          "s": 401,
+          "c": "UNAUTHORIZED",
+          "b": "{\"statusCode\":401,\"code\":\"UNAUTHORIZED\",\"message\":\"Refresh token not found\",\"requestId\":\"req_01M5JMHX44T9JN75SS4BTTBEGS\"}"
+        },
+        {
+          "t": 1792700642940,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700642964,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700642989,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700642999,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700643104,
+          "m": "GET",
+          "p": "/admin/series/revenue",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700643110,
+          "m": "GET",
+          "p": "/admin/series/traffic",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700643201,
+          "m": "GET",
+          "p": "/admin/sources",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700643271,
+          "m": "GET",
+          "p": "/admin/overview",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700643273,
+          "m": "GET",
+          "p": "/admin/series/signups",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700647945,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700647978,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700647983,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700647992,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700648019,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700648029,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700648035,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700648039,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700703642,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700703646,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700703647,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700732772,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700732774,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700732803,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700732812,
+          "m": "GET",
+          "p": "/config/stream",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700732818,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700732824,
+          "m": "GET",
+          "p": "/student/recent-flashcards",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700732831,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700732836,
+          "m": "GET",
+          "p": "/quiz-practice/sets",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700733970,
+          "m": "GET",
+          "p": "/word-family/categories",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700738013,
+          "m": "GET",
+          "p": "/student/recent-exams",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700738019,
+          "m": "GET",
+          "p": "/student/recent-exams",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700740036,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700740041,
+          "m": "GET",
+          "p": "/studyrooms/mine",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700742055,
+          "m": "GET",
+          "p": "/examattempts/list",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700744071,
+          "m": "GET",
+          "p": "/admin/series/signups",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700744108,
+          "m": "GET",
+          "p": "/admin/overview",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700744115,
+          "m": "GET",
+          "p": "/admin/series/traffic",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700744155,
+          "m": "GET",
+          "p": "/admin/series/revenue",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700744202,
+          "m": "GET",
+          "p": "/admin/sources",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700777657,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700777748,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700777752,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700777805,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700777822,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700778576,
+          "m": "PUT",
+          "p": "/admin/roles/users/p10stu6ae327/role",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700778627,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700782049,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700782124,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700782125,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700782173,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700782190,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700782925,
+          "m": "PUT",
+          "p": "/admin/roles/users/p10stu6ae327/role",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700782977,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700789805,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700789885,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700789892,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700789970,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700789989,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700790936,
+          "m": "PUT",
+          "p": "/admin/roles/users/p10stu6ae327/role",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700790990,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700796222,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700796297,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700796299,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700796346,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700796366,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700797066,
+          "m": "PUT",
+          "p": "/admin/roles/users/p10stu6ae327/role",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700797118,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700810313,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700810327,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700810328,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700810339,
+          "m": "GET",
+          "p": "/admin/overview",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700810342,
+          "m": "GET",
+          "p": "/admin/series/signups",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700810348,
+          "m": "GET",
+          "p": "/admin/series/traffic",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700810418,
+          "m": "GET",
+          "p": "/admin/series/revenue",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700810467,
+          "m": "GET",
+          "p": "/admin/sources",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700813807,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700813897,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700813898,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700814027,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700814074,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700820959,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700821036,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700821039,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700821108,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700821133,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700821806,
+          "m": "PUT",
+          "p": "/admin/roles/users/p10stu6ae327/role",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700821856,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700890275,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700890350,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700890354,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700890445,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700890474,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700891365,
+          "m": "PUT",
+          "p": "/admin/roles/users/p10stu6ae327/role",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700891419,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700959843,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700959922,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700959940,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700960036,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700960055,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792700960727,
+          "m": "PUT",
+          "p": "/admin/roles/users/p10stu6ae327/role",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792700960779,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792701029199,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792701029274,
+          "m": "GET",
+          "p": "/auth/me",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792701029276,
+          "m": "GET",
+          "p": "/config/pages",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792701029373,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792701029391,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 304,
+          "c": null
+        },
+        {
+          "t": 1792701030308,
+          "m": "PUT",
+          "p": "/admin/roles/users/p10stu6ae327/role",
+          "s": 200,
+          "c": null
+        },
+        {
+          "t": 1792701030359,
+          "m": "GET",
+          "p": "/admin/roles/users",
+          "s": 200,
+          "c": null
+        }
+      ]
+    }
+  ]
+}

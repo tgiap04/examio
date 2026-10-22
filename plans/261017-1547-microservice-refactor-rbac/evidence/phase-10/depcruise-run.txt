@@ -1,0 +1,19 @@
+
+  warn no-cross-app-import-in-tests: apps/exam-service/test/ownership/demoted-owner.ownership.e2e-spec.ts → apps/auth-service/src/roles/role-change.service.ts
+  warn no-cross-app-import-in-tests: apps/exam-service/test/ownership/demoted-owner.ownership.e2e-spec.ts → apps/auth-service/src/roles/role-change.repository.ts
+  warn no-cross-app-import-in-tests: apps/exam-service/test/finance-debit.grpc.spec.ts → apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts
+  warn no-cross-app-import-in-tests: apps/exam-service/test/finance-debit.grpc.spec.ts → apps/finance-service/src/modules/wallet/wallet-money.service.ts
+  warn no-cross-app-import-in-tests: apps/exam-service/test/finance-debit.grpc.spec.ts → apps/finance-service/src/modules/sepay/subscription.service.ts
+  warn no-cross-app-import-in-tests: apps/exam-service/test/finance-debit.grpc.spec.ts → apps/finance-service/src/modules/sepay/subscription.grpc.controller.ts
+  warn no-cross-app-import-in-tests: apps/auth-service/test/rpc-guard-table.spec.ts → apps/r2-service/src/r2-service.controller.ts
+  warn no-cross-app-import-in-tests: apps/auth-service/test/rpc-guard-table.spec.ts → apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts
+  warn no-cross-app-import-in-tests: apps/auth-service/test/rpc-guard-table.spec.ts → apps/finance-service/src/modules/sepay/subscription.grpc.controller.ts
+  warn no-cross-app-import-in-tests: apps/auth-service/test/rpc-guard-table.spec.ts → apps/finance-service/src/modules/finance-admin/finance-admin.grpc.controller.ts
+  warn no-cross-app-import-in-tests: apps/auth-service/test/gateway-integration.e2e-spec.ts → apps/gateway-service/test/support/ports.ts
+  warn no-cross-app-import-in-tests: apps/auth-service/test/gateway-integration.e2e-spec.ts → apps/gateway-service/test/support/boot-gateway.ts
+  warn no-cross-app-import-in-tests: apps/admin-service/test/helpers/real-auth-admin.ts → apps/auth-service/test/helpers/auth-app.ts
+  warn libs-no-prisma: libs/common/src/utils/sanitize-user.ts → node_modules/@prisma/client/default.js
+  warn libs-no-prisma: libs/common/src/dto/authenticated-request.dto.ts → node_modules/@prisma/client/default.js
+
+x 15 dependency violations (0 errors, 15 warnings). 720 modules, 2661 dependencies cruised.
+

@@ -1,0 +1,55 @@
+{
+  "ts": "2026-10-22T21:15:24.540Z",
+  "fails": [],
+  "steps": {
+    "fe.login.admin": {
+      "ok": true,
+      "d": "status 201"
+    },
+    "fe.credit-add.single-click.one-request-with-key": {
+      "ok": true,
+      "d": "requests=1 key=present"
+    },
+    "fe.credit-add.single-click.one-tx-+4": {
+      "ok": true,
+      "d": "tx 0->1; balance 20->24; response 200"
+    },
+    "fe.credit-subtract.single-click.one-tx--2": {
+      "ok": true,
+      "d": "requests=1; tx 1->2; balance 24->22; response 200"
+    },
+    "fe.credit-add.double-click.one-tx": {
+      "ok": true,
+      "d": "confirm dialogs=1; credit requests=1; distinct keys=1; tx 2->3; balance 22->25"
+    },
+    "fe.set-tier.cycle.subscription-updated": {
+      "ok": true,
+      "d": "before undefined after {\"tier\":1,\"c\":\"yearly\"}; response 200; audit 3->4"
+    },
+    "fe.set-tier.identical-resubmit.alreadyApplied-no-new-audit": {
+      "ok": true,
+      "d": "response 200 alreadyApplied=true; audit 4->4; sub unchanged=true"
+    },
+    "fe.refund.once.paid-to-refunded": {
+      "ok": true,
+      "d": "payment status=4; response 200"
+    },
+    "fe.refund.twice.no-double-effect": {
+      "ok": true,
+      "d": "refund responses=200,409 ({\"success\":true,\"data\":{\"paymentId\":\"p10t4fe17927036492951\", | {\"statusCode\":409,\"code\":\"PAYMENT_ALREADY_REFUNDED\",\"message); payment status=4; audit rows for payment=1"
+    }
+  },
+  "blockedOutside": 3,
+  "bodies": [
+    {
+      "path": "/api/v1/admin/finance/refund",
+      "status": 200,
+      "body": "{\"success\":true,\"data\":{\"paymentId\":\"p10t4fe17927036492951\",\"userId\":\"p10tchabf830\",\"amount\":100,\"previousStatus\":1,\"newStatus\":4,\"walletAdjusted\":false,\"alread"
+    },
+    {
+      "path": "/api/v1/admin/finance/refund",
+      "status": 409,
+      "body": "{\"statusCode\":409,\"code\":\"PAYMENT_ALREADY_REFUNDED\",\"message\":\"Payment already refunded\",\"requestId\":\"req_01M5JQFWDEYGH7QK66SAHEH984\"}"
+    }
+  ]
+}

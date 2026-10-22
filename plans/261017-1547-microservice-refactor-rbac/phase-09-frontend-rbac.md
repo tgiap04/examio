@@ -8,7 +8,7 @@
 - Red team (authoritative where it conflicts): [reports/red-team-changes.md](./reports/red-team-changes.md) RT-11, RT-15 (FE gates) <!-- Red Team: RT-11, RT-13, RT-15 -->. RT-13 compat fields are reversed by [validation-session-1](./reports/validation-session-1.md) Q6 (mobile unreleased). <!-- Updated: Validation Session 1 - no compat tolerance -->
 
 ## Overview
-- Priority: P1 · Status: Completed (pending commit) · Effort: 3.5d <!-- Red Team: RT-5, RT-11 (was 3d: +vitest setup and the first FE tests incl. 07/08 pure modules, +study-room socket re-auth) --> · Depends on: 04, 07, 08
+- Priority: P1 · Status: Completed (committed f2a122b..9fb5bc7) · Effort: 3.5d <!-- Red Team: RT-5, RT-11 (was 3d: +vitest setup and the first FE tests incl. 07/08 pure modules, +study-room socket re-auth) --> · Depends on: 04, 07, 08
 - Drive the whole FE from server-provided `permissions`:
   - route guards and a 403 page;
   - a permission-filtered sidebar and admin nav;
@@ -197,7 +197,7 @@ File ownership (globs): `examio-fe/src/types/{user.ts,permissions.generated.ts}`
 ## Todo List
 - [x] vitest installed + `vitest.config.ts` (`mergeConfig`) + `test` script + CI step <!-- Red Team: RT-11 --> — `yarn test` = 9 files / 86 tests, green in temper 6; CI `fe` job runs `yarn test`.
 - [x] vitest specs (landing, nav, api error policy incl. socket, 07 progress, 08 role rules) red <!-- Red Team: RT-5, RT-11 --> — written and green (`src/lib/rbac/*.test.ts`, `quiz-practice/progress.test.ts`, `admin-roles/role-change-rules.test.ts`).
-- [ ] Permission type generator + committed output + CI drift check — generator and CI step exist, but **the output is not committed** (`permissions.generated.ts` is untracked), so the drift check is vacuous. Closes on commit.
+- [x] Permission type generator + committed output + CI drift check — committed in 6d03b6f; CI `fe-permissions-drift` (1fe6585) fails on a missing, untracked or drifted file.
 - [x] User type (`id: string`, role, isSystemAdmin; no `isAdmin`) + store applySession/roles/permissions <!-- Updated: Validation Session 1 - no compat tolerance --> — `id: string`, `isSystemAdmin`, no `isAdmin`; login, refresh and getUser call `applySession`.
 - [x] useCan, RequirePermission, /403 page — files present; 9/9 forbidden direct URLs reach `/403` (live).
 - [x] Route table rewired (every route) + AdminRoute on admin:access + admin nav filter — live items 3 and 8; `AdminRoute` gated on `admin:access`.

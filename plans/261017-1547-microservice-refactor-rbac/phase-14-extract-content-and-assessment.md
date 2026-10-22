@@ -157,6 +157,7 @@ Write first:
 - [ ] Gateway YAML (no `exam` upstream)
 - [ ] Delete exam-service + init/compose/env/scripts cleanup
 - [ ] [CARRIED from 09] D4 retire the legacy `libs/common` event consumer (`event-subscriber.service.ts:50` JSON.parse outside try) with consumers on `@examio/messaging`; D8 public `ExamSessionPage` renders `sessionUnavailable`
+- [ ] [CARRIED from 10] N3: session `whitelist` accepts any string; validate ids before storage (`create-examsession.dto.ts:30`, `sharing.dto.ts:10`).
 
 ## Success Criteria
 - `test ! -d /Users/tgiap.dev/devs/examio/examio-be/apps/exam-service && echo ok` → `ok`. `grep -rn "exam-service\|EXAM_SERVICE_URL" /Users/tgiap.dev/devs/examio/examio-be --include='*.ts' --include='*.yaml' --include='*.yml' --include='*.json' --include='*.example'` → no output.

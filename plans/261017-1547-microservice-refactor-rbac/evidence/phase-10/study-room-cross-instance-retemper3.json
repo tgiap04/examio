@@ -1,0 +1,32 @@
+{
+  "before-restart": {
+    "ts": "2026-10-22T20:07:28.877Z",
+    "fails": [],
+    "counts": {
+      "presence": 1,
+      "chat": 1,
+      "media": 1
+    },
+    "teacherErrors": []
+  },
+  "control-same": {
+    "ts": "2026-10-22T20:07:35.248Z",
+    "fails": [],
+    "counts": {
+      "presence": 1,
+      "chat": 1,
+      "media": 1
+    },
+    "teacherErrors": []
+  },
+  "after-restart": {
+    "ts": "2026-10-22T20:09:08.512Z",
+    "fails": [],
+    "counts": {
+      "presence": 1,
+      "chat": 1,
+      "media": 1
+    },
+    "teacherErrors": []
+  }
+}

@@ -32,8 +32,8 @@ Decisions (authoritative): [reports/decisions.md](./reports/decisions.md). Input
 | 06 | [RBAC Enforcement & Security Fixes](./phase-06-rbac-enforcement-and-security-fixes.md) | Completed | 4.75d | 04 |
 | 07 | [Quiz Sharing & Student Practice](./phase-07-quiz-sharing-and-student-practice.md) | Completed | 2.75d | 06 |
 | 08 | [Admin Role-Management Screen](./phase-08-admin-role-management-screen.md) | Completed | 2.75d | 04, 06 |
-| 09 | [Frontend RBAC](./phase-09-frontend-rbac.md) | Completed (pending commit) | 3.5d | 04, 07, 08 |
-| 10 | [Cut Cross-DB Access](./phase-10-cut-cross-db-access.md) | Pending | 2.75d | 03, 04, 08, 09 |
+| 09 | [Frontend RBAC](./phase-09-frontend-rbac.md) | Completed | 3.5d | 04, 07, 08 |
+| 10 | [Cut Cross-DB Access](./phase-10-cut-cross-db-access.md) | Completed (pending commit) | 2.75d | 03, 04, 08, 09 |
 | 11 | [Database per Service](./phase-11-database-per-service.md) | Pending | 3d | 10 + P01 spike GO |
 | 12 | [Extract Study-Room & Vocabulary](./phase-12-extract-study-room-and-vocabulary.md) | Pending | 3d | 05, 11 |
 | 13 | [Extract AI-Chat](./phase-13-extract-ai-chat.md) | Pending | 2d | 11, 12, 15 |

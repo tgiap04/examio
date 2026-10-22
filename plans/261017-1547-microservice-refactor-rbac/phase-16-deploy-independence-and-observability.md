@@ -145,6 +145,7 @@ Write first:
 - [ ] nginx upstream + /ws/ + rollout rehearsal
 - [ ] Cutover runbook + smoke script + `CUTOVER_DONE` deploy gate + local rehearsal (incl. rollback) <!-- Updated: Validation Session 1 - one-time production cutover runbook -->
 - [ ] [CARRIED from 09] D1 socket transport-attempt cap test; D3 `REDIS_COMMAND_TIMEOUT_MS` per env (first call 504 → 503); D12 15-min socket expiry run in the cutover smoke; D14 CI e2e on a dedicated DB; D15 auth throttle decision before cutover
+- [ ] [CARRIED from 10] remove the `UpdateBalance` breaking override from `buf.yaml` after merge to main; L4 page-flag push serialization per admin instance (gateway version for multi-replica); exam e2e parallel-worker segfault (keep CI `maxWorkers 1` until fixed); N1 Redis-down degraded boot run live; U1 `dist/apps/exam-service` vanished once (fail the build when any service output is missing); W6 empty page-flag default checked on the FE.
 
 ## Success Criteria
 - <!-- Updated: Validation Session 1 - one-time production cutover runbook --> Cutover: runbook steps 0–10 ticked, smoke script exit 0 against production, `CUTOVER_DONE=true`, the pre-cutover dump exists off-host. After that (steady state):

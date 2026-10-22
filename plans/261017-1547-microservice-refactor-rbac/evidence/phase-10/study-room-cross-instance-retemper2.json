@@ -1,0 +1,75 @@
+{
+  "before-restart": {
+    "ts": "2026-10-22T19:02:45.945Z",
+    "fails": [
+      "xi.join.teacher-gets-presence-of-student-on-other-instance",
+      "xi.chat.student@exam2-reaches-teacher@exam1",
+      "xi.media.teacher@exam1-reaches-student@exam2"
+    ],
+    "counts": {
+      "presence": 0,
+      "chat": 0,
+      "media": 0
+    },
+    "teacherErrors": []
+  },
+  "control-same-instance": {
+    "ts": "2026-10-22T19:00:45.735Z",
+    "fails": [
+      "xi.media.teacher@exam1-reaches-student@exam2"
+    ],
+    "counts": {
+      "presence": 1,
+      "chat": 1,
+      "media": 0
+    }
+  },
+  "control-same-instance-2": {
+    "ts": "2026-10-22T19:02:07.570Z",
+    "fails": [
+      "xi.media.teacher@exam1-reaches-student@exam2"
+    ],
+    "counts": {
+      "presence": 1,
+      "chat": 1,
+      "media": 0
+    },
+    "teacherErrors": [
+      "{\"code\":\"VALIDATION\",\"message\":\"Link YouTube không hợp lệ\"}"
+    ]
+  },
+  "control-same-instance-3": {
+    "ts": "2026-10-22T19:02:17.300Z",
+    "fails": [],
+    "counts": {
+      "presence": 1,
+      "chat": 1,
+      "media": 1
+    },
+    "teacherErrors": []
+  },
+  "after-restart": {
+    "ts": "2026-10-22T19:05:19.531Z",
+    "fails": [
+      "xi.join.teacher-gets-presence-of-student-on-other-instance",
+      "xi.chat.student@exam2-reaches-teacher@exam1",
+      "xi.media.teacher@exam1-reaches-student@exam2"
+    ],
+    "counts": {
+      "presence": 0,
+      "chat": 0,
+      "media": 0
+    },
+    "teacherErrors": []
+  },
+  "control-same-after-restart": {
+    "ts": "2026-10-22T19:05:22.577Z",
+    "fails": [],
+    "counts": {
+      "presence": 1,
+      "chat": 1,
+      "media": 1
+    },
+    "teacherErrors": []
+  }
+}

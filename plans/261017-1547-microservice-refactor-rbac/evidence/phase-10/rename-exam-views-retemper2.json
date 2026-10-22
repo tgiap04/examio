@@ -1,0 +1,44 @@
+{
+  "ts": "2026-10-22T18:35:42.415Z",
+  "newNameUsed": "P10 Renamed T2 1792694139342",
+  "fails": [
+    "b.roomDetail.no-email"
+  ],
+  "views": {
+    "roomDetail": {
+      "before": 200,
+      "after": 200,
+      "newNameShown": true,
+      "staleOldNameShown": false,
+      "emailsInResponse": 1
+    },
+    "roomSessions": {
+      "before": 200,
+      "after": 200,
+      "newNameShown": false,
+      "staleOldNameShown": false,
+      "emailsInResponse": 0
+    },
+    "sessionGet": {
+      "before": 200,
+      "after": 200,
+      "newNameShown": true,
+      "staleOldNameShown": false,
+      "emailsInResponse": 0
+    },
+    "sessionSharing": {
+      "before": 200,
+      "after": 200,
+      "newNameShown": false,
+      "staleOldNameShown": false,
+      "emailsInResponse": 0
+    },
+    "flashcardSharing": {
+      "before": 200,
+      "after": 200,
+      "newNameShown": false,
+      "staleOldNameShown": false,
+      "emailsInResponse": 0
+    }
+  }
+}

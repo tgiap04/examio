@@ -113,6 +113,7 @@ Write first:
 - vocabulary `GenerateWordFamily` contract test (Nest client ↔ Python server in compose CI job), incl. a call without a service token → `UNAUTHENTICATED`. <!-- Red Team: RT-2 -->
 
 ## Todo List
+- [ ] [CARRIED from 10] `finance.subscription.changed` carries the STORED tier and only fires when the tier number changes (`apps/finance-service/src/modules/sepay/subscription-changed.publisher.ts`): expiry (lazy `isActive=false` in `subscription.service.ts` ~:238) publishes nothing, and an admin reactivating an expired same-tier subscription publishes nothing. Before ai-chat consumes the event, make it carry the effective tier (inactive → 0) and publish on expiry and reactivation; e2e for both.
 - [ ] Scaffold ai-chat-service (§13), incl. RabbitMQ user `aichat` <!-- Red Team: RT-2 -->
 - [ ] Move ai-chat + subject modules
 - [ ] gRPC Query/StreamChat (service token) + manual SSE <!-- Red Team: RT-2 -->

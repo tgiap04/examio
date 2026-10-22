@@ -7,7 +7,7 @@
 - Prior phases: [03 messaging](./phase-03-messaging-foundation.md), [04 identity](./phase-04-identity-and-rbac-core.md) (service tokens, `authzVersion`), [08 admin roles](./phase-08-admin-role-management-screen.md)
 
 ## Overview
-- Priority: P1 · Status: Pending · Effort: 2.75d <!-- Red Team: RT-1, RT-11 --> <!-- Updated: Validation Session 1 - −0.25d: no GetWallet compat path in /auth/me --> · Depends on: 03, 04, 08, 09
+- Priority: P1 · Status: Completed (pending commit) · Effort: 2.75d <!-- Red Team: RT-1, RT-11 --> <!-- Updated: Validation Session 1 - −0.25d: no GetWallet compat path in /auth/me --> · Depends on: 03, 04, 08, 09
 - Goal: each Prisma model is read/written by exactly ONE service in code. The DB is still shared. Cross-service access becomes gRPC calls (sync) or events (async). Money RPCs become idempotent. dependency-cruiser is enforced. This gates phase 11, which physically separates the schemas.
 
 ## Key Insights
@@ -112,20 +112,20 @@ Write first (failing → code):
 - `check-model-ownership.ts` self-test: a fixture violation → exit 1. depcruise fixture: `apps/a` importing `apps/b` → error.
 
 ## Todo List
-- [ ] Ownership script (report mode) + depcruise config <!-- Red Team: RT-11 -->
-- [ ] Protos + events schemas (with `version`)
-- [ ] `idempotencyKey` + Debit/Credit/Refund + retry allowlist <!-- Red Team: RT-1 -->
-- [ ] Shared finance client wrapper (AI_FREE_MODE); exam callers → Debit; delete UpdateBalance <!-- Red Team: RT-1 -->
-- [ ] FinanceAdminService (actor from token) + admin-finance → FinanceClient <!-- Red Team: RT-2 -->
-- [ ] Provisioning: `welcome:<userId>` key + `ensureWallet` inside `Debit` <!-- Red Team: RT-9 --> <!-- Reconcile: X3 -->
-- [ ] auth UpdateUserAdmin/SearchUsers/GetUserStats; callers on GetPublicProfilesByIds <!-- Reconcile: X1 -->
-- [ ] `/auth/me` without finance reads; no `wallet`/`subscription`/`isAdmin` keys <!-- Updated: Validation Session 1 - no /auth/me compat fields -->
-- [ ] GetUserStats/GetRevenueStats + admin-stats switch <!-- Red Team: RT-11 -->
-- [ ] Page flags via SetPageFlags/GetPageFlags
-- [ ] exam user enrichment via GetPublicProfilesByIds + cache + invalidation; no `email`
-- [ ] WordFamilyAdminService in exam; admin uses it; delete dup routes
-- [ ] FE wallet loading via `GET /wallet/info`; `User.wallet` removed (after phase 09) <!-- Updated: Validation Session 1 - no /auth/me compat fields -->
-- [ ] Ownership script strict + depcruise enforced in CI
+- [x] Ownership script (report mode) + depcruise config <!-- Red Team: RT-11 --> — `check:ownership` 0 violations; `check:deps` 0 errors (round 4).
+- [ ] Protos + events schemas (with `version`) — proto gen/lint/breaking pass (documented override). `auth.user.updated` proven live (C4). `finance.subscription.changed` emission NOT evidenced (consumer lands in 13); open.
+- [x] `idempotencyKey` + Debit/Credit/Refund + retry allowlist <!-- Red Team: RT-1 --> — finance e2e 52/52; deadline-retry + idempotent-rpcs specs 18/18. Key-stability gap is B2, carried to 15.
+- [x] Shared finance client wrapper (AI_FREE_MODE); exam callers → Debit; delete UpdateBalance <!-- Red Team: RT-1 --> — grep clean. Interim keys differ from spec (see deviations).
+- [x] FinanceAdminService (actor from token) + admin-finance → FinanceClient <!-- Red Team: RT-2 --> — finance e2e, admin 27/27, live C1 money and F1 credit/tier/refund (round 4).
+- [x] Provisioning: `welcome:<userId>` key + `ensureWallet` inside `Debit` <!-- Red Team: RT-9 --> <!-- Reconcile: X3 --> — welcome-key test in finance e2e; live M6 teacher without wallet minted +20, then debited.
+- [x] auth UpdateUserAdmin/SearchUsers/GetUserStats; callers on GetPublicProfilesByIds <!-- Reconcile: X1 --> — auth 61/61 (round 1); live rename → cache DEL (C4).
+- [x] `/auth/me` without finance reads; no `wallet`/`subscription`/`isAdmin` keys <!-- Updated: Validation Session 1 - no /auth/me compat fields --> — C2 shape; 200 with finance stopped.
+- [x] GetUserStats/GetRevenueStats + admin-stats switch <!-- Red Team: RT-11 --> — stats parity e2e; live `/admin/stats` 14/14 vs legacy SQL on the same DB.
+- [x] Page flags via SetPageFlags/GetPageFlags — live C5 PASS, boot pull, admin down then up, L2 re-pull ≤60s. Key-name drift W4 (see carried).
+- [x] exam user enrichment via GetPublicProfilesByIds + cache + invalidation; no `email` — C4, H1 (520/520 names), H2; `email: true` grep clean; W2 DTO field removed. F2 carried.
+- [x] WordFamilyAdminService in exam; admin uses it; delete dup routes — C6 routes 404; image create/replace/delete 13/13; N6 PASS. W1 duplicate-name 500 fixed in code (`word-family-admin.service.ts:18-29`), not re-run live.
+- [x] FE wallet loading via `GET /wallet/info`; `User.wallet` removed (after phase 09) <!-- Updated: Validation Session 1 - no /auth/me compat fields --> — ProfilePage probe 6/6; grep clean.
+- [x] Ownership script strict + depcruise enforced in CI — `ci.yml:176-179`, no `continue-on-error`.
 
 ## Success Criteria
 - `cd /Users/tgiap.dev/devs/examio/examio-be && npx ts-node scripts/check-model-ownership.ts --strict` → exit 0. `npx depcruise apps libs --config .dependency-cruiser.cjs` → 0 errors.
@@ -158,4 +158,70 @@ Write first (failing → code):
 - Phase 11 uses the ownership map to split schemas and drop cross-service FKs. <!-- Red Team: RT-11 --> User deletion is deferred (roadmap item).
 - Phase 15 replaces the interim debit keys with `doc:`/`gen:` keys and the charge-first job flow (RT-1).
 - No `/auth/me` compat removal remains for phase 19 (RT-13 reversed by validation Q6). <!-- Updated: Validation Session 1 - no /auth/me compat fields -->
-- [CARRIED from 09] D9: a possible double 403 toast on one denied action. Fix in the FE step that lands after 09; a test shows one toast per denied action.
+- [CARRIED from 09] D9: a possible double 403 toast on one denied action. Fix in the FE step that lands after 09; a test shows one toast per denied action. **Closed live 2026-10-23** (round 4: one denied call → one toast node).
+
+## Close-out (sync 2026-10-23)
+
+Evidence: [phase-10-runs.md](../evidence/phase-10-runs.md) (rounds 1–4; round 4 is the final verdict: C1 and F1 pass live). Verdict on the targeted scope: closes once W1 is re-run live and the open items below have owners.
+
+### Delivered beyond plan / deviations
+Each line: what changed → why → cost. "Why" marked *not recorded* where the brief gave none; lead to fill.
+- auth: separate `AuthUserService` gRPC service (UpdateUserAdmin, SearchUsers, GetUserStats, GetUserAdminDetail), not on `AuthService`. Why: *not recorded*. Cost: one more gRPC service to register and own.
+- finance: `FinanceAdminService.RefundPayment` (plan said `Refund`); `AdjustBalance` takes `direction` ADD|SUBTRACT, not a signed amount; `GetUserFinance` added; revenue stats on `FinanceStatsService.GetRevenueStats`. Why: *not recorded*. Cost: names differ from the plan's Requirements.
+- `WalletTransaction.balanceAfter` added. Why: *not recorded*. Cost: one more column.
+- Ledger keys namespaced (`debit:` / `credit:` / `refund:` / `adjust:` / `refund-payment:` / `welcome:`) with a replay fingerprint check → `IDEMPOTENCY_KEY_REUSED`. Why: keys from different operations must not collide, and a reused key with a different amount must not fabricate a balance (live M3 PASS). Cost: the fingerprint column/logic.
+- Migrations: `20261022090000_wallet_idempotency` plus new `20261023090000_payment_refund_key` (`Payment.refundIdempotencyKey`). Why: refund replay needs its own key. Cost: a second migration; DB reset at cutover, so no data work.
+- Proto renames: `revenue_last30d`, `active_last30d`. Why: *not recorded*. Cost: contract change, FE/admin updated in step.
+- `Debit` mints the welcome wallet only for a caller-self TEACHER user token; exam forwards the user's access token on every `Debit`. A service token gets `WALLET_NOT_FOUND`. Why: narrower than the plan's "ensureWallet inside Debit"; a service must not create wallets. Cost: `WALLET_NOT_FOUND` is detected by message text (carried to 15).
+- `UserMonthlyFileUpload` owner = document; unused finance methods deleted. Why: one owner per model. Cost: none known.
+- Admin `Idempotency-Key` header (FE sends one per action); post-commit `AdminAudit` is best-effort; `alreadyApplied` in admin finance responses. Why: retry-safe admin money. Cost: an audit row can be lost if the admin process dies between commit and audit write.
+- Gateway page-flag pull with retry, plus a 60 s watcher. Why: the boot pull alone missed a flush at runtime (L2). Cost: a periodic pull per gateway instance.
+- exam profile cache: chunked batch RPC (≤500 ids) + tombstone Lua guard on SET. Why: 500-id whitelists (H1). Cost: a Lua script in the cache path.
+- `nest-cli.json` proto assets for all services + a guard test. Why: B1, dist could not boot. Cost: build config must list each service's protos.
+- Legacy `EventSubscriberService` requires `SERVICE_NAME`. Why: default queue `common-queue` has no broker grant (W3). Cost: an env var that must be set per service.
+- depcruise: cross-app test imports moved to `test/cross-app`; rule set to error. Why: CI enforcement. Cost: none known.
+- CI: ownership strict, depcruise, money e2e, stats parity, real-Redis study-room adapter step. Why: gates. Cost: longer CI.
+
+### Fixed while tempering (pre-existing bugs)
+- N1 study-room Redis adapter never subscribed (cross-instance fan-out dead). Fixed; live 3/3 before and after Redis restart, NUMPAT 1, NUMSUB 2.
+- C1 cross-instance `fetchSockets` crashed the process (`Timeout` in `socket.data`). Fixed; repro 10/10 and standalone control.
+- N2 room detail cache stale after session writes. Fixed; PUT whitelist → detail 2/2.
+- B3 audit `actorId` NaN, plus FE actor filter param. Fixed; live label and filter PASS.
+- F1 admin credit modal always 400. Fixed; live ADD/SUBTRACT/double-click PASS (round 4).
+- M1 (exam) AI reuse path ran for free on a refused debit. Fixed per brief. Not the same M1 as the evidence file's refund-replay note (below).
+- W2 email in exam OpenAPI DTO. Fixed.
+- W1 duplicate category name → 500. Fixed in code (`word-family-admin.service.ts:18-29`, P2002 → `ALREADY_EXISTS`). Not re-run live. Owner: *not named in the brief*.
+- ChangeTier `isActive` no-op; `kickUser` local fallback; reason trim validation. Fixed.
+- B1 dist could not boot exam/admin. Fixed (see nest-cli.json deviation); live boot with no `PROTO_ROOT` PASS.
+- Evidence M1 (refund replay returns no `alreadyApplied`). Code and e2e now return `alreadyApplied: true` on replay (`finance-admin.e2e-spec.ts:139-162`, `admin-finance.e2e-spec.ts:155`). Live replay not re-run in round 4 (round 4 second refund click got 409 `PAYMENT_ALREADY_REFUNDED`).
+- B4 auth e2e not repeatable. Code now uses a unique `utmSource` per run (`auth-users.e2e-spec.ts:150`). Round 1 run 2 (same DB, no reset) was the only failure.
+- B5 study-room spec ignored `REDIS_PASSWORD`. Code now passes it (`study-room-ws.e2e-spec.ts:112`).
+
+### Deferred / carried (target phase)
+- B2 interim AI debit keys until 15: `doc:` / `gen:` keys and the charge-first job flow replace them. Upload double-submit = two storages = two charges. → **15**.
+- Live AI-generation debit retry proof (needs ai-service + R2). → **15**.
+- B2-upload: the keys follow Requirements (`upload:<storageId>` / `quick-upload:<storageId>`, the id of the `UserStorage` row created by that call; `libs/grpc` retries reuse it). A client re-submitting the same file creates a new storage row and is charged again; request-level dedupe (client key or content hash) belongs to the phase-15 charge-first flow. → **15**.
+- `buf.yaml` `UpdateBalance` breaking override must be removed after merge to main. → **16**.
+- N3 whitelist accepts arbitrary strings. → **14**.
+- F2 exam profile cache keeps a deleted user's name up to 600 s. No product path sets `deletedAt` yet. → **no phase in this plan** (user deletion is a roadmap item). Owner needed.
+- L4 page-flag push serialization is per admin instance; multi-replica needs a gateway version. → **16**.
+- `WALLET_NOT_FOUND` detected by gRPC message text; add a structured detail. → **15**.
+- exam e2e parallel jest worker segfault (serial OK; CI `maxWorkers 1`). → **16**.
+- N1 Redis-down degraded boot not run live. → **16**.
+- admin user detail `deletedAt` always null (auth User proto has no field). → **19**.
+- Docs: plan line says `gw:config:pages`; code key is `config:pages:flags` (`libs/common/src/constants/cache-keys.ts:158`). Target not given in brief; proposed **19**.
+
+### Open at close (surfaced by the sync, not in the brief)
+- W1 live re-run (see Fixed). Owner needed.
+- U1: `dist/apps/exam-service` vanished once mid-run, cause unknown. Watch in CI. → **16**.
+- W6: empty page-flag default (`{"pages":[]}`) vs plan "all enabled". FE treatment unchecked. → **16**.
+- N4: audit label shows `username`; admin dropdown shows display name. Design call, open. Owner needed.
+- W3: `SERVICE_NAME` unset path not re-tested after the fix. Owner needed.
+- `finance.subscription.changed` emission not evidenced (see Todo).
+- C14b in the live harness still expects a numeric `actorId`. Harness-only; the contract is the string id.
+
+### Success criteria status
+- Met: depcruise and ownership gates; grep gates; `/auth/me` shape; no `UpdateBalance`; Debit same-key, insufficient, refund twice, unknown key (finance e2e 52/52); admin shapes and 503 on finance down (L8); stats 14/14 live; page flags; exam no-email; `yarn build && yarn test` and FE build/lint/test green.
+- Not met, deferred to 15: "AI generate retried by the client lib → one debit" (manual criterion).
+- Not met, deferred to 15: upload retry → one debit (B2-upload).
+- Not re-run live: W1 (fixed in code).

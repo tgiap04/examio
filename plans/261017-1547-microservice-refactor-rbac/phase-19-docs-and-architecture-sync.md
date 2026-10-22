@@ -112,3 +112,4 @@ File ownership: the docs listed in Context Links + `/Users/tgiap.dev/devs/examio
 ## Next Steps
 - Keep the generator in CI. Future endpoint changes update the permission docs automatically. Deferred items (phase 17, user deletion) stay on the roadmap.
 - [CARRIED from 09] D11: word-family generate copy (UI "Sinh từ con" vs spec "Sinh bằng AI"), once the user picks one. D13: `/study-flashcard/:id` now requires login, so document it in business-rules and the changelog.
+- [CARRIED from 10] admin user detail `deletedAt` is always null (auth User proto has no field): document or add the field. Docs plan line `gw:config:pages` vs code key `config:pages:flags` (`libs/common/src/constants/cache-keys.ts:158`): fix the docs. Audit actor label: state the username-vs-display-name rule (N4).

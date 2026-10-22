@@ -1,0 +1,89 @@
+{
+  "score": 8.5,
+  "criticalCount": 0,
+  "decision": "SEALED",
+  "acceptanceCovered": [
+    "npx ts-node scripts/check-model-ownership.ts --strict exit 0; npx depcruise apps libs --config .dependency-cruiser.cjs 0 errors; both enforced in CI \u2014 final run on the final code: check:ownership 'Violations: 0', check:deps 0 errors (2 libs-no-prisma warnings until phase 11); ci.yml be-unit steps 'Model ownership (strict)' + 'dependency-cruiser (enforced)'",
+    "no prisma/tx access to wallet|walletTransaction|payment|userSubscription|user|userSession in admin-service; no prisma/tx user|userSession in exam-service or gateway-service; no `email: true` in exam-service \u2014 enforced by the strict, relation-aware ownership scan (include/select, where/orderBy, nested writes, const/spread fragments); success-criteria greps empty; exam enrichment via auth GetPublicProfilesByIds (no email)",
+    "auth user.repository has no wallet/subscription; /auth/me, login, refresh return { user, roles, permissions } with no user.wallet, user.subscription, user.isAdmin; /auth/me works with finance stopped \u2014 auth-me-shape.e2e-spec.ts in CI; live C2/C15 (/auth/me 200 with finance stopped) in rounds 2-4",
+    "no UpdateBalance/updateBalance in apps, proto, libs; exam AI debits go through Debit with an idempotency key via the shared libs/grpc finance client (AI_FREE_MODE moved there, forced off in production) \u2014 grep only hits the buf.yaml override comment; ai.service.ts keys upload:/quick-upload:<UserStorage id created by the call> and <op>:<uuidv7> per request (plan line 27 interim); exam forwards the caller's access token on Debit; libs/grpc/src/clients/finance.client.ts forces AI_FREE_MODE off in production (spec green)",
+    "Debit same key twice (incl. concurrent) -> one tx, second already_applied; insufficient -> FAILED_PRECONDITION and no tx row; Refund twice -> one credit; unknown key -> NOT_FOUND; libs/grpc retries only allowlisted idempotent RPCs \u2014 wallet-money.service.ts INSERT ON CONFLICT + guarded UPDATE in one tx, namespaced keys, replay fingerprint check -> IDEMPOTENCY_KEY_REUSED; wallet-money.e2e-spec.ts (incl. concurrent same key) in CI; live money-r3 + round-4 C-set",
+    "FinanceAdminService writes with idempotency key apply once; actor = forwarded token sub; without finance:admin -> PERMISSION_DENIED; admin-finance HTTP shapes unchanged; finance UNAVAILABLE -> 503 \u2014 FE sends one Idempotency-Key per action (submittingRef guard); RefundPayment stores refundIdempotencyKey (migration 20261023090000); ChangeTier no-op requires same tier+cycle+isActive; responses additive alreadyApplied; finance-admin + admin-finance e2e in CI; live fe-finance-r4 ADD/SUBTRACT/double-click/set-tier/refund PASS",
+    "welcome wallet tx has idempotencyKey welcome:<userId>; Debit by TEACHER without wallet creates wallet then debits \u2014 ensure-wallet.service.ts writes welcome:<id>; createWallet only for a caller-self TEACHER user token; cross-app finance-debit.grpc.spec covers TEACHER mint, service-token WALLET_NOT_FOUND, other-user and STUDENT denied; live round 3: teacher without wallet -> +20 welcome then one debit",
+    "auth UpdateUserAdmin writes outbox auth.user.updated in the same tx; GetUsersByIds requires service token + user:manage; exam enrichment N ids -> 1 RPC, cached -> 0 RPC, order kept, unknown -> null; exam worker DELs cache on auth.user.updated; no email key in exam responses \u2014 auth.client.ts chunks misses <=500 (<=4 in flight), Lua tombstone-guarded cache fill; auth-users.e2e in CI; live: rename -> cache DEL, 520-id whitelist resolved in 500+20 chunks, deleted user shown as 'Ng\u01b0\u1eddi d\u00f9ng \u0111\u00e3 x\u00f3a'",
+    "admin overview/series numbers equal pre-change output (golden JSON) via GetUserStats + GetRevenueStats; 5-min Redis cache kept \u2014 stats-parity golden e2e is a CI step; live stats-live-parity 14/14",
+    "page flags: admin PATCH -> gateway SetPageFlags; gateway boot pulls GetPageFlags when empty; study-room no longer reads the shared key \u2014 page-flags-bootstrap retries on Redis error + 60s watcher; admin pushes serialized with a DB re-read; live: boot pull, admin-down boot, re-pull after flush",
+    "WordFamilyAdminService served by exam; admin-word-family calls it; exam category CUD routes deleted; DeleteCategory deletes R2 image \u2014 prefix-gated delete (word-family/), P2002 -> ALREADY_EXISTS -> 409; live n6-wordfamily-r4: replace deletes old word-family/ object, delete removes current, non-prefixed object kept",
+    "FE: User type has no wallet; balance loaded from GET /wallet/info with wallet:use, cached per session; grep user?.wallet in examio-fe/src none; single toast per denied action (D9) \u2014 useWalletStore gated by wallet:use with generation guard and queued forced refresh; live browser-wallet-probe + d9-toast PASS; FE test 125 pass",
+    "yarn build/test green in examio-be; examio-fe build/lint/test green \u2014 final run on the final code: proto:gen 0, typecheck 0, build:all 0, TZ=UTC yarn test 1869 passed (5 skipped), FE build 0, lint 0 errors, test 125 passed"
+  ],
+  "regressionChecked": [
+    "finance ChangeTier: same tier+cycle+isActive still a no-op with no publish; reactivation path writes and publishes",
+    "study-room kick: cluster path unchanged when fetchSockets succeeds; failure falls back to local sockets and never throws",
+    "study-room expiry timers kept in a per-instance map (socket.data JSON-safe), cleared on disconnect and module destroy; live C1 reauth loop 10/10 with no crash, harness control crashes on the old shape",
+    "study-room cross-instance fan-out: presence/chat/media 3/3 before and after a Redis restart, NUMPAT 1 / NUMSUB 2",
+    "FE finance modal: single in-flight submit guard, trimmed bodies, string userId, explicit direction",
+    "word-family create/update: non-P2002 errors rethrown unchanged",
+    "phase-09 browser matrix 64/64 on the round-4 build"
+  ],
+  "contractStatus": "CHANGED",
+  "refuted": [],
+  "unproven": [],
+  "reachableRegressions": [],
+  "findings": [
+    {
+      "severity": "Medium",
+      "category": "Correctness",
+      "location": "examio-be/apps/finance-service/src/modules/finance-admin/finance-admin.service.ts:225",
+      "summary": "addressed \u2014 ChangeTier no-op ignored isActive (expired same-tier re-save returned alreadyApplied, row stayed inactive); no-op now requires existing.isActive === isActive, e2e finance-admin.e2e-spec.ts:237-243",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "Error boundaries",
+      "location": "examio-be/apps/exam-service/src/modules/study-room/study-room.gateway.ts:681",
+      "summary": "addressed \u2014 kickUser swallowed a fetchSockets failure so local sockets were not kicked; fetchRoomSockets falls back to server.local (gateway.ts:695-706), kick.spec.ts:18",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "Input validation",
+      "location": "examio-fe/src/components/admin/FinanceActionModal.tsx:247",
+      "summary": "addressed \u2014 reason min-10 checked untrimmed; whitespace:true + isReasonLongEnough trimmed check (FinanceActionModal.tsx:249-256, finance-action-body.ts:12-14)",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "Error boundaries",
+      "location": "examio-be/apps/exam-service/src/modules/word-family/word-family-admin.service.ts:18",
+      "summary": "addressed \u2014 duplicate category name returned 500; mapUniqueViolation maps P2002 to ALREADY_EXISTS on create (:136) and update (:169); admin maps to 409 (libs/grpc/src/grpc-error-map.ts:10)",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Medium",
+      "category": "API contracts",
+      "location": "examio-be/apps/exam-service/src/modules/ai/ai.service.ts:383",
+      "summary": "B2/M1 AI debit idempotency keys are the plan line 27 interim: upload:/quick-upload:<UserStorage id created by that call> (:493,:1037), per-request <op>:<uuidv7> for reuse/regenerate (:383,:1165), reuse fail-closed (:388-394). Request-level dedupe deferred to phase 15 pending human sign-off of the interim",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Maintainability",
+      "location": "examio-be/proto/buf.yaml:14",
+      "summary": "UpdateBalance breaking-change override must be removed after merge to main (carried to phase 16)",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "API contracts",
+      "location": "examio-be/apps/finance-service/src/modules/sepay/subscription-changed.publisher.ts:17",
+      "summary": "finance.subscription.changed carries the stored tier and does not fire on expiry or same-tier reactivation; no consumer yet, carried to phase 13 (ai-chat) to publish the effective tier",
+      "disposition": "Defer"
+    }
+  ],
+  "riskGate": {
+    "touchesSensitiveArea": true,
+    "signoffRequired": true,
+    "humanSignedOff": true
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "ts": "2026-10-22T18:40:39.008Z",
+  "fails": [],
+  "rowsBefore": 10,
+  "rowsAfterFilter": 2,
+  "sampleAfterFilter": [
+    "23/10/2026 01:40:11 <admin2> #p10admf39779 admin.page-config.toggle page-config#ai-tool —",
+    "23/10/2026 01:39:59 <admin2> #p10admf39779 admin.page-config.toggle page-config#ai-tool —"
+  ],
+  "blockedOutside": 3
+}

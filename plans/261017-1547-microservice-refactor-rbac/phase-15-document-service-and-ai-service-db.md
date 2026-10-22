@@ -197,3 +197,4 @@ Write first:
 
 ## Next Steps
 - 13 uses `AiService` + `DocumentService` (incl. `DeleteDocuments`), removes the compat HTTP and the last `INTERNAL_SERVICE_TOKEN` users. 14 moves `modules/ai` + `GenerationJob` (states, reaper) into content-service. <!-- Red Team: RT-1, RT-8, RT-15 -->
+- [CARRIED from 10] B2 / B2-upload (money): replace the interim `debit:` / `upload:` / `quick-upload:` keys (fresh UUID per call) with `doc:<storageId>` / `gen:<jobId>` keys that a client retry cannot change. Acceptance: same `POST /ai/upload` twice → one debit. Also prove the live AI-generation retry (needs ai-service + R2). Also: structured `WALLET_NOT_FOUND` detail instead of message-text match.
