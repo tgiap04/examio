@@ -61,7 +61,7 @@ import {
     AssignFlashcardsToLabelDto,
 } from './dto/flashcard-label.dto';
 import { createSetFormSchema, parseSetForm, updateSetFormSchema } from '../common/multipart-body';
-import { Public, RequireOwnerOrPermission, RequirePermissions } from '@examio/auth-jwt';
+import { Public, RequireOwnerOrPermission, RequirePermissions, forwardUser } from '@examio/auth-jwt';
 import { FlashcardSetOwnerResolver } from './flashcardset-owner.resolver';
 import { SearchQueryPipe, UserSearchService } from '../common/user-search.service';
 
@@ -676,6 +676,6 @@ export class FlashcardsetController {
         @Query('q', SearchQueryPipe) query: string,
         @Req() req: AuthenticatedRequest
     ) {
-        return this.userSearch.search(query, req.user.id);
+        return this.userSearch.search(query, req.user.id, forwardUser(req));
     }
 }

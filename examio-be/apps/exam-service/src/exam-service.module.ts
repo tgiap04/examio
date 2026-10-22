@@ -34,8 +34,13 @@ import { StudentModule } from './modules/student/student.module';
 import { FlashcardStudyModule } from './modules/flashcard-study/flashcard-study.module';
 import { WordFamilyModule } from './modules/word-family/word-family.module';
 import { StudyRoomModule } from './modules/study-room/study-room.module';
+import { UserProfileModule } from './modules/user-profile/user-profile.module';
 import { HealthModule, LoggerModule } from '@examio/observability';
 import { AuthJwtModule } from '@examio/auth-jwt';
+
+// The legacy event subscriber consumes from a queue named after the service,
+// the only queue name RabbitMQ grants the `exam` broker user.
+process.env.SERVICE_NAME ??= 'exam-service';
 
 @Module({
     imports: [
@@ -48,6 +53,7 @@ import { AuthJwtModule } from '@examio/auth-jwt';
         AuthJwtModule.forRoot({ serviceName: 'exam', serviceClient: true }),
         EventsModule,
         FinanceClientModule,
+        UserProfileModule,
         QuizsetModule,
         QuizPracticeModule,
         ExamRoomModule,

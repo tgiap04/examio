@@ -4,40 +4,41 @@ import {
     HttpException,
     Logger,
 } from '@nestjs/common';
-import { buildMetadata } from '@examio/grpc';
+import { status } from '@grpc/grpc-js';
+import { buildMetadata, FinanceClient } from '@examio/grpc';
 import { subscriptionV1 } from '@examio/contracts';
-import { FinanceClient } from '../../clients/finance.client';
 
 type UserBenefits = subscriptionV1.GetUserBenefitsResponse;
 
-/**
- * AI_FREE_MODE: Khi bật, bypass tất cả deduction credits.
- * Chỉ dùng cho dev local hoặc khi tắt tính năng tính tiền tạm thời.
- * Mặc định TẮT (charging enabled) và KHÔNG BAO GIỜ được bật ở production —
- * xem guard trong constructor bên dưới.
- */
-function resolveFreeMode(): boolean {
-    return process.env.AI_FREE_MODE === 'true';
+export interface DeductionResult {
+    success: true;
+    newBalance?: number;
+    message: string;
 }
 
+export interface DeductOptions {
+    /**
+     * Raw access token of the HTTP caller. Forwarded as the gRPC `authorization`
+     * so finance sees the user (a TEACHER without a wallet gets one minted on
+     * the first debit). Omit for background work: the service token is used and
+     * a missing wallet is an error. Never logged.
+     */
+    userToken?: string;
+}
+
+const walletMissing = (error: { details?: string; message?: string }): boolean =>
+    `${error?.details ?? ''} ${error?.message ?? ''}`.includes('WALLET_NOT_FOUND');
+
+/**
+ * Exam-side policy over the shared finance client: fail-safe benefits and
+ * fail-closed charging. The AI_FREE_MODE bypass and its production force-off
+ * live in the shared client (`@examio/grpc`).
+ */
 @Injectable()
 export class FinanceClientService {
     private readonly logger = new Logger(FinanceClientService.name);
-    private readonly freeMode: boolean;
 
-    constructor(private readonly finance: FinanceClient) {
-        let freeMode = resolveFreeMode();
-
-        // Production must never run with credit charging disabled.
-        if (freeMode && process.env.NODE_ENV === 'production') {
-            this.logger.error(
-                'AI_FREE_MODE=true detected in production environment. Forcing free mode OFF to prevent revenue bypass.'
-            );
-            freeMode = false;
-        }
-
-        this.freeMode = freeMode;
-    }
+    constructor(private readonly finance: FinanceClient) {}
 
     private getFreeTierDefaults(): UserBenefits {
         return {
@@ -65,92 +66,60 @@ export class FinanceClientService {
         }
     }
 
-    async deductCredits(userId: string, amount: number, description: string) {
-        // AI_FREE_MODE: Bypass credit deduction, always return success
-        if (this.freeMode) {
-            this.logger.log(
-                `[FREE_MODE] Skipped deducting ${amount} credits from user ${userId}: ${description}`
-            );
-            return {
-                success: true,
-                newBalance: undefined,
-                message: 'Free mode - no charge',
-            };
+    /**
+     * Charges `amount` credits once per `idempotencyKey` (a replay is a no-op
+     * returning the original balance). Fails closed: any error blocks the
+     * operation.
+     */
+    async deductCredits(
+        userId: string,
+        amount: number,
+        description: string,
+        idempotencyKey: string,
+        options: DeductOptions = {}
+    ): Promise<DeductionResult> {
+        if (amount <= 0) {
+            return { success: true, newBalance: undefined, message: 'No charge' };
         }
 
-        if (amount <= 0)
+        try {
+            const result = await this.finance.debit(
+                { userId, amount, reason: description, idempotencyKey },
+                buildMetadata(
+                    options.userToken
+                        ? { authorization: `Bearer ${options.userToken}` }
+                        : {}
+                )
+            );
+            if (result.skipped) {
+                return { success: true, newBalance: undefined, message: 'Free mode - no charge' };
+            }
+            this.logger.log(
+                `Deducted ${amount} credits from user ${userId}: ${description}${result.alreadyApplied ? ' (already applied)' : ''}`
+            );
             return {
                 success: true,
-                newBalance: undefined,
-                message: 'No charge',
-            }; // No charge
-
-        try {
-            const result = await this.finance.updateBalance(
-                {
-                    userId: userId,
-                    amount: amount,
-                    transactionType: 'SUBTRACT',
-                    description: description,
-                },
-                buildMetadata()
-            );
-
-            if (!result.success) {
-                // If failed (e.g. not enough balance), throw error to block operation
-                throw new ForbiddenException(
-                    `Không đủ tín dụng: ${result.message}. Vui lòng nạp thêm.`
-                );
-            }
-
-            this.logger.log(
-                `Deducted ${amount} credits from user ${userId}: ${description}`
-            );
-            return result;
+                newBalance: result.newBalance,
+                message: 'Balance updated successfully',
+            };
         } catch (error) {
             this.logger.error(`Failed to deduct credits: ${error.message}`);
-            if (error instanceof ForbiddenException) throw error;
-            // Invalid amount (400 INVALID_AMOUNT from the client guard) keeps its reason
+            // Invalid amount / key (400 from the client guard) keeps its reason.
             if (error instanceof HttpException && error.getStatus() === 400) throw error;
-            // For connection errors, do we fail open or closed?
-            // "tuân thủ đúng". STRICT. Fail closed.
+            if (error?.code === status.FAILED_PRECONDITION && walletMissing(error)) {
+                throw new ForbiddenException(
+                    'Ví chưa được khởi tạo, vui lòng thử lại sau hoặc liên hệ hỗ trợ.'
+                );
+            }
+            if (error?.code === status.FAILED_PRECONDITION) {
+                throw new ForbiddenException(
+                    'Không đủ tín dụng: Insufficient balance. Vui lòng nạp thêm.'
+                );
+            }
+            // Connection errors fail closed ("tuân thủ đúng").
             throw new ForbiddenException(
                 'Không thể thực hiện giao dịch tín dụng lúc này.'
             );
-        }
-    }
-
-    async addCredits(userId: string, amount: number, description: string) {
-        if (amount <= 0)
-            return {
-                success: true,
-                newBalance: undefined,
-                message: 'No refund needed',
-            };
-
-        try {
-            const result = await this.finance.updateBalance(
-                {
-                    userId: userId,
-                    amount: amount,
-                    transactionType: 'ADD',
-                    description: description,
-                },
-                buildMetadata()
-            );
-
-            this.logger.log(
-                `Added ${amount} credits to user ${userId}: ${description}`
-            );
-            return result;
-        } catch (error) {
-            this.logger.error(`Failed to add credits: ${error.message}`);
-            // For refunds, we don't block the operation if it fails
-            return {
-                success: false,
-                newBalance: undefined,
-                message: error.message,
-            };
         }
     }
 }

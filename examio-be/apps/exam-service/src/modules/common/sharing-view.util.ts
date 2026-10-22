@@ -1,11 +1,16 @@
-import type { PrismaService } from '@examio/database';
+import type { Metadata } from '@grpc/grpc-js';
+import type { ProfileLookupOptions, PublicUser } from '../../clients/auth.client';
 import type { SharingDelta, SharingRow, SharingUpdateInput } from './sharing-list.util';
 
-export interface SharingPerson {
-    id: string;
-    username: string;
-    name: string | null;
-    avatar: string | null;
+export type SharingPerson = PublicUser;
+
+/** The slice of `UserEnricher` the sharing helpers need (auth owns user data). */
+export interface ProfileLookup {
+    profileMap(
+        ids: string[],
+        metadata?: Metadata,
+        options?: ProfileLookupOptions
+    ): Promise<Map<string, PublicUser>>;
 }
 
 export interface SharingView {
@@ -17,21 +22,19 @@ export interface SharingView {
 
 /** Owner-facing view: ONE batch lookup for both lists, people without email. */
 export async function toSharingView(
-    prisma: PrismaService,
+    users: ProfileLookup,
     row: SharingRow
 ): Promise<SharingView> {
     const wanted = [...new Set([...row.whitelist, ...row.codeGrantedIds])];
-    const people = wanted.length
-        ? await prisma.user.findMany({
-              where: { id: { in: wanted } },
-              select: { id: true, username: true, name: true, avatar: true },
-          })
-        : [];
-    const byId = new Map(people.map((p) => [p.id, p]));
+    const byId = wanted.length
+        ? await users.profileMap(wanted)
+        : new Map<string, PublicUser>();
     const pick = (list: string[]): SharingPerson[] =>
         list.flatMap((id) => {
             const p = byId.get(id);
-            return p ? [p] : [];
+            return p
+                ? [{ id: p.id, username: p.username, name: p.name, avatar: p.avatar }]
+                : [];
         });
     return {
         isPublic: row.isPublic,
@@ -41,17 +44,17 @@ export async function toSharingView(
     };
 }
 
-/** Ids from `ids` that belong to a live account (keeps junk ids out of the capped list). */
+/**
+ * Ids from `ids` that belong to a live account (keeps junk ids out of the
+ * capped list). Strict: an unreachable auth is a 503, never "no such users".
+ */
 export async function existingUserIds(
-    prisma: PrismaService,
+    users: ProfileLookup,
     ids: string[]
 ): Promise<string[]> {
     if (ids.length === 0) return [];
-    const rows = await prisma.user.findMany({
-        where: { id: { in: ids }, deletedAt: null },
-        select: { id: true },
-    });
-    return rows.map((r) => r.id);
+    const known = await users.profileMap(ids, undefined, { strict: true });
+    return ids.filter((id) => known.has(id));
 }
 
 /**
@@ -59,13 +62,13 @@ export async function existingUserIds(
  * ids would only eat the capped list) and never include the owner.
  */
 export async function prepareSharingUpdate(
-    prisma: PrismaService,
+    users: ProfileLookup,
     id: string,
     ownerId: string,
     dto: SharingDelta,
     newCode: string
 ): Promise<SharingUpdateInput> {
-    const add = (await existingUserIds(prisma, dto.addUserIds ?? [])).filter(
+    const add = (await existingUserIds(users, dto.addUserIds ?? [])).filter(
         (uid) => uid !== ownerId
     );
     return {

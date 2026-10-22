@@ -107,6 +107,6 @@ describe('exam session mappers', () => {
             'answer',
         ])
             expect(keys).not.toContain(banned);
-        expect(view.examRoom.host.name).toBe('Host');
+        expect(view.examRoom.host?.name).toBe('Host');
     });
 });

@@ -1,8 +1,11 @@
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
+import type { Metadata } from '@grpc/grpc-js';
+import { AuthClient } from '../../clients/auth.client';
 
 export const USER_SEARCH_MIN_LENGTH = 3;
 export const USER_SEARCH_LIMIT = 10;
+/** Auth caps a search at 20; one extra slot absorbs dropping the caller. */
+const AUTH_SEARCH_LIMIT = 20;
 
 export interface UserSearchResult {
     id: string;
@@ -29,32 +32,25 @@ export class SearchQueryPipe implements PipeTransform<unknown, string> {
 
 /**
  * Whitelist picker for a teacher sharing content (flashcard sets and exam
- * sessions). Matches `username` / `name` by PREFIX, or `email` by EXACT value,
- * and never returns the email, so it can not be used to enumerate accounts.
+ * sessions). The matching rules (prefix on username/name, EXACT email, never
+ * the email back) live in auth's `SearchUsers`; this only forwards the
+ * caller's own token, drops the caller and caps the list.
  */
 @Injectable()
 export class UserSearchService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(private readonly auth: AuthClient) {}
 
     async search(
         query: string,
-        currentUserId: string
+        currentUserId: string,
+        metadata: Metadata
     ): Promise<UserSearchResult[]> {
         const q = query.trim();
         if (q.length < USER_SEARCH_MIN_LENGTH) return [];
-        return this.prisma.user.findMany({
-            where: {
-                id: { not: currentUserId },
-                deletedAt: null,
-                OR: [
-                    { username: { startsWith: q, mode: 'insensitive' } },
-                    { name: { startsWith: q, mode: 'insensitive' } },
-                    { email: { equals: q, mode: 'insensitive' } },
-                ],
-            },
-            select: { id: true, username: true, name: true, avatar: true },
-            orderBy: { username: 'asc' },
-            take: USER_SEARCH_LIMIT,
-        });
+        const found = await this.auth.searchUsers(q, AUTH_SEARCH_LIMIT, metadata);
+        return found
+            .filter((p) => p.id !== currentUserId)
+            .slice(0, USER_SEARCH_LIMIT)
+            .map(({ id, username, name, avatar }) => ({ id, username, name, avatar }));
     }
 }

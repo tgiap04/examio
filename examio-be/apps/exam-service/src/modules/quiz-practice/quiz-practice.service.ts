@@ -12,6 +12,7 @@ import {
 import type { ListSetsQueryDto } from './dto/quiz-practice.dto';
 import { toAttemptView, toPracticeQuestions } from './quiz-practice.mapper';
 import { ATTEMPT_SELECT, QuizPracticeRepository } from './quiz-practice.repository';
+import { UserEnricher } from '../user-profile/user-enricher.service';
 
 const SET_NOT_FOUND = 'Bộ câu hỏi không tồn tại';
 
@@ -20,7 +21,8 @@ export class QuizPracticeService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly redis: RedisService,
-        private readonly repo: QuizPracticeRepository
+        private readonly repo: QuizPracticeRepository,
+        private readonly users: UserEnricher
     ) {}
 
     /** Sets I am granted (whitelist / code), plus public sets I already practised. One query + count. */
@@ -43,7 +45,7 @@ export class QuizPracticeService {
                     title: true,
                     description: true,
                     thumbnail: true,
-                    user: { select: { name: true } },
+                    userId: true,
                     _count: { select: { detailsQuizQuestions: true } },
                     practiceAttempts: {
                         where: { userId: user.id },
@@ -55,6 +57,7 @@ export class QuizPracticeService {
             }),
             this.prisma.quizSet.count({ where }),
         ]);
+        const owners = await this.users.profileMap(rows.map((s) => s.userId));
         return {
             sets: rows.map((s) => {
                 const last = s.practiceAttempts[0];
@@ -64,7 +67,7 @@ export class QuizPracticeService {
                     description: s.description,
                     thumbnail: s.thumbnail,
                     questionCount: s._count.detailsQuizQuestions,
-                    owner: { name: s.user.name },
+                    owner: { name: owners.get(s.userId)?.name ?? null },
                     lastAttempt: last
                         ? {
                               id: last.id,

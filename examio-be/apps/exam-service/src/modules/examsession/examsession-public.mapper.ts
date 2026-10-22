@@ -47,12 +47,14 @@ interface QuestionRow {
     options: string[];
 }
 
-const pickUser = (u: UserBrief): UserBrief => ({
-    id: u.id,
-    username: u.username,
-    name: u.name,
-    avatar: u.avatar,
-});
+/** A host auth could not resolve (unknown id, auth down) stays `null`. */
+const pickUser = (u: UserBrief | null): UserBrief | null =>
+    u && {
+        id: u.id,
+        username: u.username,
+        name: u.name,
+        avatar: u.avatar,
+    };
 
 const pickQuizSet = (q: QuizSetBrief): QuizSetBrief => ({
     id: q.id,
@@ -87,7 +89,7 @@ interface RoomRow {
     title: string;
     description: string | null;
     quizSet: QuizSetBrief;
-    host: UserBrief;
+    host: UserBrief | null;
 }
 
 const pickRoom = (r: RoomRow) => ({

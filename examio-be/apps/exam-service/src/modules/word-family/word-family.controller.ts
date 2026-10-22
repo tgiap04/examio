@@ -3,7 +3,6 @@ import {
     Controller,
     Get,
     Post,
-    Put,
     Delete,
     Param,
     Body,
@@ -26,8 +25,6 @@ import {
     GenerateRootWordFamilyDto,
     SaveWordFamilyDto,
     ToFlashcardDto,
-    CreateCategoryDto,
-    UpdateCategoryDto,
 } from './dto/word-family.dto';
 import { RequirePermissions } from '@examio/auth-jwt';
 
@@ -48,37 +45,6 @@ export class WordFamilyController {
     @ApiOperation({ summary: 'Lấy danh sách danh mục word family' })
     async getCategories() {
         return this.service.getCategories();
-    }
-
-    @Post('categories')
-    @RequirePermissions('word_family:admin')
-    @ApiCookieAuth('cookie-auth')
-    @HttpCode(HttpStatus.CREATED)
-    @ApiOperation({ summary: 'Tạo danh mục word family (admin)' })
-    async createCategory(@Body() body: CreateCategoryDto) {
-        return this.service.createCategory(body);
-    }
-
-    @Put('categories/:id')
-    @RequirePermissions('word_family:admin')
-    @ApiCookieAuth('cookie-auth')
-    @ApiOperation({ summary: 'Cập nhật danh mục word family (admin)' })
-    @ApiParam({ name: 'id', description: 'Category ID' })
-    async updateCategory(
-        @Param('id') id: string,
-        @Body() body: UpdateCategoryDto,
-    ) {
-        return this.service.updateCategory(id, body);
-    }
-
-    @Delete('categories/:id')
-    @RequirePermissions('word_family:admin')
-    @ApiCookieAuth('cookie-auth')
-    @HttpCode(HttpStatus.OK)
-    @ApiOperation({ summary: 'Xóa danh mục word family (admin, soft-delete)' })
-    @ApiParam({ name: 'id', description: 'Category ID' })
-    async deleteCategory(@Param('id') id: string) {
-        return this.service.deleteCategory(id);
     }
 
     // ==================== Root Words & Detail ====================

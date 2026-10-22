@@ -19,15 +19,16 @@ function build(set: Record<string, unknown> | null = null) {
             findFirst: jest.fn().mockResolvedValue(set),
             updateMany: jest.fn().mockResolvedValue({ count: set ? 1 : 0 }),
         },
-        user: {
-            findMany: jest.fn(async ({ where }: { where: { id: { in: string[] } } }) =>
-                people.filter((p) => where.id.in.includes(p.id))
-            ),
-        },
+    };
+    const users = {
+        profileMap: jest.fn(
+            async (ids: string[]) =>
+                new Map(people.filter((p) => ids.includes(p.id)).map((p) => [p.id, p] as const))
+        ),
     };
     const repo = { invalidateItemCache: jest.fn().mockResolvedValue(undefined) };
-    const service = new QuizsetSharingService(prisma as never, repo as never);
-    return { service, prisma, repo };
+    const service = new QuizsetSharingService(prisma as never, repo as never, users as never);
+    return { service, prisma, repo, users };
 }
 
 const set = {
@@ -41,22 +42,19 @@ describe('QuizsetSharingService', () => {
     beforeEach(() => jest.clearAllMocks());
 
     it('GET: non-owner (or missing) is a 404 and nothing else is queried', async () => {
-        const { service, prisma } = build(null);
+        const { service, prisma, users } = build(null);
         await expect(service.getSharing('s', user)).rejects.toBeInstanceOf(NotFoundException);
         expect(prisma.quizSet.findFirst).toHaveBeenCalledWith(
             expect.objectContaining({ where: { id: 's', userId: 'owner' } })
         );
-        expect(prisma.user.findMany).not.toHaveBeenCalled();
+        expect(users.profileMap).not.toHaveBeenCalled();
     });
 
     it('GET: one batch lookup for both lists, people without email', async () => {
-        const { service, prisma } = build(set);
+        const { service, users } = build(set);
         const view = await service.getSharing('s', user);
-        expect(prisma.user.findMany).toHaveBeenCalledTimes(1);
-        expect(prisma.user.findMany).toHaveBeenCalledWith({
-            where: { id: { in: ['u1', 'u2'] } },
-            select: { id: true, username: true, name: true, avatar: true },
-        });
+        expect(users.profileMap).toHaveBeenCalledTimes(1);
+        expect(users.profileMap.mock.calls[0][0]).toEqual(['u1', 'u2']);
         expect(view).toEqual({
             isPublic: false,
             accessCode: '123456',

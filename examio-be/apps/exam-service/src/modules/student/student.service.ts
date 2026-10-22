@@ -2,10 +2,14 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@examio/database';
 import { canAccessFlashcardSet } from '../flashcardset/flashcardset-access';
 import { canAccessExamRoom } from './student-access';
+import { UserEnricher } from '../user-profile/user-enricher.service';
 
 @Injectable()
 export class StudentService {
-    constructor(private readonly prisma: PrismaService) {}
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly users: UserEnricher
+    ) {}
 
     async getRecentFlashcards(userId: string, limit: number, page: number) {
         const skip = (page - 1) * limit;
@@ -35,14 +39,6 @@ export class StudentService {
             this.prisma.flashCardSet.findMany({
                 where,
                 include: {
-                    user: {
-                        select: {
-                            id: true,
-                            username: true,
-                            name: true,
-                            avatar: true,
-                        },
-                    },
                     _count: {
                         select: { detailsFlashCard: true },
                     },
@@ -81,6 +77,11 @@ export class StudentService {
             progressMap.set(record.flashCardSetId, percentage);
         }
 
+        // Creator display data lives in auth: one batched lookup for the page.
+        const creators = await this.users.profileMap(
+            flashcardSets.map((set) => set.userId)
+        );
+
         const formattedSets = flashcardSets.map((set) => ({
             id: set.id,
             title: set.title,
@@ -90,12 +91,7 @@ export class StudentService {
             flashcardCount: set._count.detailsFlashCard,
             lastViewedAt: set.updatedAt.toISOString(),
             createdAt: set.createdAt.toISOString(),
-            creator: {
-                id: set.user.id,
-                username: set.user.username,
-                name: set.user.name,
-                avatar: set.user.avatar,
-            },
+            creator: creators.get(set.userId) ?? null,
             isPublic: set.isPublic,
             isPinned: set.userPins.length > 0,
             progress: progressMap.get(set.id) ?? undefined,

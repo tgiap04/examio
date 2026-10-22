@@ -35,6 +35,7 @@ import { hasPermission, type AuthUser } from '@examio/auth-jwt';
 import { verifyAccessCodeOrThrow } from '../common/access-code-guard';
 import { appendCodeGranted } from '../common/sharing-list.util';
 import { canSeeAnswers, toAttemptView } from './examattempt-view.mapper';
+import { UserEnricher } from '../user-profile/user-enricher.service';
 import {
     attemptRelation,
     type AttemptRelation,
@@ -49,7 +50,8 @@ export class ExamAttemptService {
         private readonly generateIdService: GenerateIdService,
         private readonly redisService: RedisService,
         private readonly cryptoService: CryptoService,
-        private readonly turnstileService: TurnstileService
+        private readonly turnstileService: TurnstileService,
+        private readonly users: UserEnricher
     ) {}
 
     /**
@@ -568,14 +570,6 @@ export class ExamAttemptService {
                                         },
                                     },
                                 },
-                                host: {
-                                    select: {
-                                        id: true,
-                                        username: true,
-                                        name: true,
-                                        avatar: true,
-                                    },
-                                },
                             },
                         },
                     },
@@ -587,7 +581,7 @@ export class ExamAttemptService {
             throw new NotFoundException('Bài làm không tồn tại');
         }
 
-        const isOwner = attempt.examSession.examRoom.host.id === user.id;
+        const isOwner = attempt.examSession.examRoom.hostId === user.id;
         const showAnswers =
             attempt.status === EXAM_ATTEMPT_STATUS.COMPLETED &&
             attempt.examSession.showAnswersAfterSubmit;
@@ -641,11 +635,15 @@ export class ExamAttemptService {
             timeLimitMinutes = Math.floor(diffMs / 60000);
         }
 
+        // The host's display data lives in auth: one batched lookup.
+        const examRoom = await this.users.withHost(attempt.examSession.examRoom);
+
         return {
             ...attempt,
+            examSession: { ...attempt.examSession, examRoom },
             questions,
             timeLimitMinutes,
-            creator: attempt.examSession.examRoom.host,
+            creator: examRoom.host,
             isOwner,
         };
     }
@@ -689,20 +687,11 @@ export class ExamAttemptService {
             // Let the DB pick the latest attempt per user (distinct + orderBy)
             // and page directly over the distinct groups, instead of loading
             // every attempt in the room into memory to dedup/slice in JS.
-            const [paginatedAttempts, distinctUserGroups] = await Promise.all([
+            const [pagedRows, distinctUserGroups] = await Promise.all([
                 this.prisma.examAttempt.findMany({
                     where: distinctWhere,
                     distinct: ['userId'],
                     include: {
-                        user: {
-                            select: {
-                                id: true,
-                                username: true,
-                                name: true,
-                                email: true,
-                                avatar: true,
-                            },
-                        },
                         examSession: {
                             select: {
                                 id: true,
@@ -723,6 +712,8 @@ export class ExamAttemptService {
                 }),
             ]);
 
+            // Examinee display data lives in auth: one batched lookup per page.
+            const paginatedAttempts = await this.users.withUsers(pagedRows);
             const total = distinctUserGroups.length;
 
             // Transform data
@@ -770,7 +761,7 @@ export class ExamAttemptService {
         }
 
         // Get attempts with user and session info in single query
-        const [attempts, total] = await Promise.all([
+        const [attemptRows, total] = await Promise.all([
             this.prisma.examAttempt.findMany({
                 where: {
                     examSession: {
@@ -778,15 +769,6 @@ export class ExamAttemptService {
                     },
                 },
                 include: {
-                    user: {
-                        select: {
-                            id: true,
-                            username: true,
-                            name: true,
-                            email: true,
-                            avatar: true,
-                        },
-                    },
                     examSession: {
                         select: {
                             id: true,
@@ -807,6 +789,8 @@ export class ExamAttemptService {
                 },
             }),
         ]);
+
+        const attempts = await this.users.withUsers(attemptRows);
 
         // Transform data for frontend - O(n) single pass
         const transformedAttempts = attempts.map((attempt) => {
@@ -861,15 +845,6 @@ export class ExamAttemptService {
         const attempt = await this.prisma.examAttempt.findUnique({
             where: { id: attemptId },
             include: {
-                user: {
-                    select: {
-                        id: true,
-                        username: true,
-                        name: true,
-                        email: true,
-                        avatar: true,
-                    },
-                },
                 examSession: {
                     include: {
                         examRoom: {
@@ -894,6 +869,7 @@ export class ExamAttemptService {
 
         // Only the examinee or the room host can see attempt details (404 otherwise)
         const relation = this.relationOrNotFound(attempt, user, 'read');
+        const examinee = (await this.users.withUser(attempt)).user;
 
         // Calculate time spent
         let timeSpentSeconds = 0;
@@ -941,7 +917,7 @@ export class ExamAttemptService {
             currentIndex: attempt.currentIndex,
             markedQuestions: attempt.markedQuestions,
             violationCount: attempt.violationCount,
-            user: attempt.user,
+            user: examinee,
             passingScore: attempt.examSession.passingScore ?? 0,
             questions,
             examAttempt: {
@@ -1027,22 +1003,13 @@ export class ExamAttemptService {
 
             // Fetch the representative (best score) attempt per paged user in
             // a single bounded query instead of loading the whole session.
-            const candidateAttempts = pagedUserIds.length
+            const candidateRows = pagedUserIds.length
                 ? await this.prisma.examAttempt.findMany({
                       where: {
                           examSessionId: sessionId,
                           userId: { in: pagedUserIds },
                       },
                       include: {
-                          user: {
-                              select: {
-                                  id: true,
-                                  username: true,
-                                  name: true,
-                                  email: true,
-                                  avatar: true,
-                              },
-                          },
                           examSession: {
                               select: {
                                   id: true,
@@ -1054,6 +1021,7 @@ export class ExamAttemptService {
                       orderBy: { score: 'desc' },
                   })
                 : [];
+            const candidateAttempts = await this.users.withUsers(candidateRows);
 
             // First occurrence per userId in a score-desc list is the best
             // attempt for that user - same tie-breaking semantics as before.
@@ -1126,19 +1094,10 @@ export class ExamAttemptService {
         }
 
         // Get attempts with user info and violation count
-        const [attempts, total] = await Promise.all([
+        const [attemptRows, total] = await Promise.all([
             this.prisma.examAttempt.findMany({
                 where: { examSessionId: sessionId },
                 include: {
-                    user: {
-                        select: {
-                            id: true,
-                            username: true,
-                            name: true,
-                            email: true,
-                            avatar: true,
-                        },
-                    },
                     examSession: {
                         select: {
                             id: true,
@@ -1155,6 +1114,8 @@ export class ExamAttemptService {
                 where: { examSessionId: sessionId },
             }),
         ]);
+
+        const attempts = await this.users.withUsers(attemptRows);
 
         // Transform - O(n)
         const transformedAttempts = attempts.map((attempt) => {
@@ -1271,13 +1232,6 @@ export class ExamAttemptService {
                                 },
                             },
                         },
-                        user: {
-                            select: {
-                                id: true,
-                                email: true,
-                                name: true,
-                            },
-                        },
                     },
                     cache: false,
                 });
@@ -1285,7 +1239,9 @@ export class ExamAttemptService {
             return {
                 message: 'Bắt đầu làm bài thành công',
                 examAttempt: toAttemptView(
-                    examAttemptWithRelations as any,
+                    (await this.users.withUser(
+                        examAttemptWithRelations as any
+                    )) as any,
                     'examinee'
                 ),
             };
@@ -1316,13 +1272,6 @@ export class ExamAttemptService {
                         },
                     },
                 },
-                user: {
-                    select: {
-                        id: true,
-                        email: true,
-                        name: true,
-                    },
-                },
             },
             cache: true,
         });
@@ -1335,7 +1284,10 @@ export class ExamAttemptService {
         const relation = this.relationOrNotFound(examAttempt as any, user, 'read');
 
         // Picked by name: no sharing secrets, answers only when allowed (see the mapper)
-        return toAttemptView(examAttempt as any, relation);
+        return toAttemptView(
+            (await this.users.withUser(examAttempt as any)) as any,
+            relation
+        );
     }
 
     async deleteExamAttempt(id: string, user: AuthUser) {
@@ -1438,13 +1390,6 @@ export class ExamAttemptService {
                             },
                         },
                     },
-                    user: {
-                        select: {
-                            id: true,
-                            email: true,
-                            name: true,
-                        },
-                    },
                 },
                 sortBy: 'startedAt',
                 sortType: 'desc',
@@ -1454,7 +1399,7 @@ export class ExamAttemptService {
         );
 
         return {
-            examAttempts: result.data,
+            examAttempts: await this.users.withUsers(result.data as Array<{ userId: string }>),
             total: result.total,
             page: result.page,
             limit: result.size,
@@ -1536,13 +1481,6 @@ export class ExamAttemptService {
                                 },
                             },
                         },
-                        user: {
-                            select: {
-                                id: true,
-                                email: true,
-                                name: true,
-                            },
-                        },
                     },
                     cache: false,
                 }
@@ -1551,7 +1489,7 @@ export class ExamAttemptService {
             return {
                 message: 'Cập nhật bài làm thành công',
                 examAttempt: toAttemptView(
-                    updatedExamAttempt as any,
+                    (await this.users.withUser(updatedExamAttempt as any)) as any,
                     isHost ? 'host' : 'examinee'
                 ),
             };

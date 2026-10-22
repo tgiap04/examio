@@ -15,9 +15,6 @@ class HostSummaryDto {
     @ApiProperty({ description: 'ID người tạo' })
     id: string;
 
-    @ApiProperty({ description: 'Email', required: false })
-    email?: string;
-
     @ApiProperty({ description: 'Tên', required: false })
     name?: string;
 }

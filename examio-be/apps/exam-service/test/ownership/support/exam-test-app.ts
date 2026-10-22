@@ -3,7 +3,11 @@ import { join } from 'path';
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import type { Server } from 'http';
-import { createTokenVerifier, TOKEN_VERIFIER } from '@examio/auth-jwt';
+import {
+    createTokenVerifier,
+    ServiceTokenClient,
+    TOKEN_VERIFIER,
+} from '@examio/auth-jwt';
 import {
     TEST_AUDIENCE,
     TEST_ISSUER,
@@ -13,6 +17,7 @@ import {
 } from '@examio/auth-jwt/testing';
 import { PrismaService } from '@examio/database';
 import { HEALTH_ROUTES_EXCLUDED_FROM_PREFIX } from '@examio/observability';
+import { startFakeAuth, type FakeAuth } from './fake-auth';
 
 export type TestRole = 'STUDENT' | 'TEACHER' | 'SYSTEM_ADMIN';
 
@@ -27,6 +32,8 @@ export interface ExamTestApp {
     server: Server;
     prisma: PrismaService;
     keys: TestKeyPair;
+    /** The fake auth directory exam talks to over real gRPC (call log included). */
+    auth: FakeAuth;
     /** Creates a verified user row and returns it with its token roles. */
     createUser(
         roles: TestRole[],
@@ -49,6 +56,10 @@ export async function bootExamApp(
     const originalCwd = process.cwd();
     // Proto/template paths resolve against the repo root (examio-be/).
     process.chdir(join(__dirname, '..', '..', '..', '..', '..'));
+    // exam resolves names/avatars through auth over gRPC: point it at a fake
+    // directory BEFORE the module is evaluated (the gRPC client reads the URL then).
+    const auth = await startFakeAuth();
+    process.env.AUTH_GRPC_URL = auth.server.url;
     const { ExamServiceModule } =
         await import('../../../src/exam-service.module');
     const keys = await createTestKeyPair('own-kid');
@@ -62,6 +73,8 @@ export async function bootExamApp(
     })
         .overrideProvider(TOKEN_VERIFIER)
         .useValue(verifier)
+        .overrideProvider(ServiceTokenClient)
+        .useValue({ getToken: async () => 'e2e-service-token' })
         .compile();
     const app = moduleRef.createNestApplication();
     app.setGlobalPrefix('api/v1', {
@@ -79,12 +92,14 @@ export async function bootExamApp(
     await app.init();
     if (options.listen) await app.listen(0);
     const prisma = app.get(PrismaService);
+    auth.bind(prisma);
 
     return {
         app,
         server: app.getHttpServer() as Server,
         prisma,
         keys,
+        auth,
         async createUser(roles, overrides = {}) {
             const id = `u_${rid()}`;
             const base = roles.includes('TEACHER') ? 'TEACHER' : 'STUDENT';
@@ -120,6 +135,7 @@ export async function bootExamApp(
                 new Promise((resolve) => setTimeout(resolve, 5000)),
             ]);
             await adapter?.dispose();
+            await auth.server.close();
             process.chdir(originalCwd);
         },
     };

@@ -40,6 +40,7 @@ import {
     verifyAccessCodeOrThrow,
 } from '../common/access-code-guard';
 import { accessKindOf } from './flashcardset-access';
+import { UserEnricher } from '../user-profile/user-enricher.service';
 import {
     toFlashcardSetPublicView,
     toFlashcardSetStudyView,
@@ -52,7 +53,8 @@ export class FlashcardsetService {
         private readonly flashcardSetRepository: FlashCardSetRepository,
         private readonly generateIdService: GenerateIdService,
         private readonly r2Service: R2Client,
-        private readonly redis: RedisService
+        private readonly redis: RedisService,
+        private readonly users: UserEnricher
     ) {}
 
     async createFlashcardSet(
@@ -1177,14 +1179,6 @@ export class FlashcardsetService {
             where: { id },
             data: { viewCount: { increment: 1 } },
             include: {
-                user: {
-                    select: {
-                        id: true,
-                        username: true,
-                        name: true,
-                        avatar: true,
-                    },
-                },
                 detailsFlashCard: {
                     include: {
                         flashCard: true,
@@ -1214,7 +1208,7 @@ export class FlashcardsetService {
         return toFlashcardSetStudyView(
             flashcardSet,
             flashcardSet.detailsFlashCard.map((detail) => detail.flashCard),
-            flashcardSet.user
+            (await this.users.withUser(flashcardSet)).user
         );
     }
 
@@ -1233,14 +1227,7 @@ export class FlashcardsetService {
                 isPublic: true,
                 accessCode: true,
                 createdAt: true,
-                user: {
-                    select: {
-                        id: true,
-                        username: true,
-                        name: true,
-                        avatar: true,
-                    },
-                },
+                userId: true,
                 _count: {
                     select: { detailsFlashCard: true },
                 },
@@ -1258,7 +1245,7 @@ export class FlashcardsetService {
             thumbnail: flashcardSet.thumbnail,
             viewCount: flashcardSet.viewCount,
             cardCount: flashcardSet._count.detailsFlashCard,
-            creator: flashcardSet.user,
+            creator: (await this.users.withUser(flashcardSet)).user,
             createdAt: flashcardSet.createdAt.toISOString(),
             isPublic: flashcardSet.isPublic,
             requiresCode: !flashcardSet.isPublic && !!flashcardSet.accessCode,
@@ -1275,7 +1262,7 @@ export class FlashcardsetService {
         dto: FlashcardSetUpdateSharingSettingsDto
     ) {
         const input = await prepareSharingUpdate(
-            this.prisma,
+            this.users,
             id,
             user.id,
             dto,
@@ -1283,7 +1270,7 @@ export class FlashcardsetService {
         );
         const row = await applySharingUpdate(this.prisma, 'FlashCardSet', input);
         await this.flashcardSetRepository.invalidateItemCache(user.id, id);
-        return toSharingView(this.prisma, row);
+        return toSharingView(this.users, row);
     }
 
     /**
@@ -1318,7 +1305,7 @@ export class FlashcardsetService {
         if (!flashcardSet) {
             throw new NotFoundException('Bộ thẻ ghi nhớ không tồn tại');
         }
-        return toSharingView(this.prisma, flashcardSet);
+        return toSharingView(this.users, flashcardSet);
     }
 
     /**

@@ -1,10 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
+import { buildMetadata } from '@examio/grpc';
 import {
     SearchQueryPipe,
     USER_SEARCH_LIMIT,
     UserSearchService,
 } from './user-search.service';
+
+const person = (id: string) => ({ id, username: `u${id}`, name: null, avatar: null });
 
 describe('user search (gap 5)', () => {
     describe('SearchQueryPipe', () => {
@@ -20,41 +22,36 @@ describe('user search (gap 5)', () => {
         });
     });
 
-    describe('UserSearchService', () => {
-        const findMany = jest.fn().mockResolvedValue([]);
-        const service = new UserSearchService({
-            user: { findMany },
-        } as unknown as PrismaService);
-        beforeEach(() => findMany.mockClear());
+    describe('UserSearchService (auth owns the matching rules)', () => {
+        const searchUsers = jest.fn();
+        const service = new UserSearchService({ searchUsers } as never);
+        const md = buildMetadata({ authorization: 'Bearer user-token' });
+        beforeEach(() => searchUsers.mockReset().mockResolvedValue([]));
 
-        it('matches username/name by prefix and email EXACTLY, never "contains"', async () => {
-            await service.search('Bob', 'me');
-            const args = findMany.mock.calls[0][0];
-            expect(args.where.OR).toEqual([
-                { username: { startsWith: 'Bob', mode: 'insensitive' } },
-                { name: { startsWith: 'Bob', mode: 'insensitive' } },
-                { email: { equals: 'Bob', mode: 'insensitive' } },
+        it('delegates to auth SearchUsers with the trimmed query and the caller token', async () => {
+            await service.search(' Bob ', 'me', md);
+            expect(searchUsers).toHaveBeenCalledWith('Bob', 20, md);
+        });
+
+        it('drops the caller and caps the picker at 10', async () => {
+            searchUsers.mockResolvedValue([
+                person('me'),
+                ...Array.from({ length: 15 }, (_, i) => person(`p${i}`)),
             ]);
-            expect(JSON.stringify(args)).not.toContain('contains');
+            const out = await service.search('abc', 'me', md);
+            expect(out).toHaveLength(USER_SEARCH_LIMIT);
+            expect(out.map((p) => p.id)).not.toContain('me');
         });
 
-        it('excludes the caller and deleted users, selects no email, caps at 10', async () => {
-            await service.search('abc', 'me');
-            const args = findMany.mock.calls[0][0];
-            expect(args.where.id).toEqual({ not: 'me' });
-            expect(args.where.deletedAt).toBeNull();
-            expect(args.select).toEqual({
-                id: true,
-                username: true,
-                name: true,
-                avatar: true,
-            });
-            expect(args.take).toBe(USER_SEARCH_LIMIT);
+        it('never returns more than the four public fields', async () => {
+            searchUsers.mockResolvedValue([{ ...person('a'), email: 'a@b.test' }]);
+            const [p] = await service.search('abc', 'me', md);
+            expect(Object.keys(p).sort()).toEqual(['avatar', 'id', 'name', 'username']);
         });
 
-        it('does not even query for a short term', async () => {
-            expect(await service.search('ab', 'me')).toEqual([]);
-            expect(findMany).not.toHaveBeenCalled();
+        it('does not even call auth for a short term', async () => {
+            expect(await service.search('ab', 'me', md)).toEqual([]);
+            expect(searchUsers).not.toHaveBeenCalled();
         });
     });
 });

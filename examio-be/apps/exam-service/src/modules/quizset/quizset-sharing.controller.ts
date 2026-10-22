@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from 'nestjs-zod';
-import { RequirePermissions } from '@examio/auth-jwt';
+import { RequirePermissions, forwardUser } from '@examio/auth-jwt';
 import { AuthenticatedRequest } from '@examio/common';
 import { SearchQueryPipe, UserSearchService } from '../common/user-search.service';
 import { QuizSetSharingDeltaDto } from './dto/quizset-sharing.dto';
@@ -36,7 +36,7 @@ export class QuizsetSharingController {
         @Query('q', SearchQueryPipe) query: string,
         @Req() req: AuthenticatedRequest
     ) {
-        return this.userSearch.search(query, req.user.id);
+        return this.userSearch.search(query, req.user.id, forwardUser(req));
     }
 
     @Get(':id/sharing')

@@ -27,7 +27,7 @@ import {
 } from './dto/ai.dto';
 import { firstValueFrom } from 'rxjs';
 import { FinanceClientService } from '../finance-client/finance-client.service';
-import { buildMetadata } from '@examio/grpc';
+import { buildMetadata, newIdempotencyKey } from '@examio/grpc';
 import type { AuthUser } from '@examio/auth-jwt';
 
 @Injectable()
@@ -324,7 +324,8 @@ export class AIService {
     async generateFromFile(
         user: AuthUser,
         file: Express.Multer.File,
-        dto: GenerateFromFileDto
+        dto: GenerateFromFileDto,
+        userToken?: string
     ): Promise<{
         jobId: string;
         status: string;
@@ -378,7 +379,9 @@ export class AIService {
                                 await this.financeClient.deductCredits(
                                     user.id,
                                     generateCredits,
-                                    `Generate from EXISTING file: ${file.originalname}`
+                                    `Generate from EXISTING file: ${file.originalname}`,
+                                    newIdempotencyKey('quick-upload-reuse'),
+                                    { userToken }
                                 );
                             if (deductionResult?.success)
                                 newBalance = deductionResult.newBalance;
@@ -386,6 +389,8 @@ export class AIService {
                             this.logger.warn(
                                 `Credit deduction failed: ${err.message}`
                             );
+                            // Fail closed, same as the new-file path: no charge, no generation.
+                            throw err;
                         }
                     }
 
@@ -476,13 +481,17 @@ export class AIService {
 
             let newBalance: number | undefined;
             const creditStart = Date.now();
+            // Once-per-file charge: the key is bound to the storage id.
+            const id = this.generateIdService.generateId();
             if (totalCredits > 0) {
                 try {
                     const deductionResult =
                         await this.financeClient.deductCredits(
                             user.id,
                             totalCredits,
-                            `Generate from file: ${file.originalname}`
+                            `Generate from file: ${file.originalname}`,
+                            `quick-upload:${id}`,
+                            { userToken }
                         );
                     if (deductionResult?.success) {
                         newBalance = deductionResult.newBalance;
@@ -500,7 +509,6 @@ export class AIService {
 
             // 4. Create UserStorage with PENDING status
             const dbStart = Date.now();
-            const id = this.generateIdService.generateId();
             const userStorage = await this.aiRepository.createUserStorage({
                 id,
                 userId: user.id,
@@ -1008,7 +1016,7 @@ export class AIService {
     /**
      * Create a new upload and trigger OCR processing
      */
-    async createUpload(user: AuthUser, dto: UploadFileDto) {
+    async createUpload(user: AuthUser, dto: UploadFileDto, userToken?: string) {
         // Enforce monthly file upload quota before doing any expensive work
         await this.enforceFileUploadQuota(user.id);
 
@@ -1018,20 +1026,22 @@ export class AIService {
 
         let creditCharged = false;
         let newBalance: number | undefined;
+        // Once-per-file charge: the key is bound to the storage id.
+        const id = this.generateIdService.generateId();
 
         if (credits > 0) {
             const deductionResult = await this.financeClient.deductCredits(
                 user.id,
                 credits,
-                `Upload file: ${dto.filename} (${sizeMB.toFixed(2)} MB)`
+                `Upload file: ${dto.filename} (${sizeMB.toFixed(2)} MB)`,
+                `upload:${id}`,
+                { userToken }
             );
             creditCharged = true;
             if (deductionResult?.success) {
                 newBalance = deductionResult.newBalance;
             }
         }
-
-        const id = this.generateIdService.generateId();
 
         // Create UserStorage with PENDING status
         const userStorage = await this.aiRepository.createUserStorage({
@@ -1076,7 +1086,12 @@ export class AIService {
      * Regenerate quiz/flashcard from an existing upload
      * Calls AI service to actually generate content
      */
-    async regenerate(uploadId: string, user: AuthUser, dto: RegenerateDto) {
+    async regenerate(
+        uploadId: string,
+        user: AuthUser,
+        dto: RegenerateDto,
+        userToken?: string
+    ) {
         const upload = await this.getUploadDetail(uploadId, user);
 
         // Guard: prevent duplicate generation of same type for this user
@@ -1145,7 +1160,10 @@ export class AIService {
                 const deductionResult = await this.financeClient.deductCredits(
                     user.id,
                     credits,
-                    `Generate ${count} ${outputType}s from file ${upload.filename}`
+                    `Generate ${count} ${outputType}s from file ${upload.filename}`,
+                    // One key per HTTP request: client-lib retries reuse it.
+                    newIdempotencyKey('regenerate'),
+                    { userToken }
                 );
                 if (deductionResult?.success) {
                     newBalance = deductionResult.newBalance;

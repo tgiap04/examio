@@ -35,7 +35,7 @@ import {
     UploadImageDto,
     GenerateFromFileDto,
 } from './dto/ai.dto';
-import { RequirePermissions } from '@examio/auth-jwt';
+import { extractHttpToken, RequirePermissions } from '@examio/auth-jwt';
 
 @UsePipes(ZodValidationPipe)
 @ApiTags('AI')
@@ -119,7 +119,12 @@ export class AIController {
         }
 
         try {
-            return await this.aiService.generateFromFile(req.user, file, dto);
+            return await this.aiService.generateFromFile(
+                req.user,
+                file,
+                dto,
+                extractHttpToken(req)
+            );
         } catch (error) {
             this.logger.error(`Generate error: ${error.message}`, error.stack);
             throw error;
@@ -189,7 +194,7 @@ export class AIController {
         @Req() req: AuthenticatedRequest,
         @Body() dto: UploadFileDto
     ) {
-        return this.aiService.createUpload(req.user, dto);
+        return this.aiService.createUpload(req.user, dto, extractHttpToken(req));
     }
 
     @Post('upload-image')
@@ -219,7 +224,12 @@ export class AIController {
         @Param('uploadId') uploadId: string,
         @Body() dto: RegenerateDto
     ) {
-        return this.aiService.regenerate(uploadId, req.user, dto);
+        return this.aiService.regenerate(
+            uploadId,
+            req.user,
+            dto,
+            extractHttpToken(req)
+        );
     }
 
     @Get('job/:jobId')

@@ -32,7 +32,7 @@ import {
     ExamSessionSharingSettingsResponseDto,
     ExamSessionPublicInfoDto,
 } from './dto/sharing.dto';
-import { Public, RequirePermissions } from '@examio/auth-jwt';
+import { Public, RequirePermissions, forwardUser } from '@examio/auth-jwt';
 import { SearchQueryPipe, UserSearchService } from '../common/user-search.service';
 
 @UsePipes(ZodValidationPipe)
@@ -303,7 +303,7 @@ export class ExamSessionController {
         @Query('q', SearchQueryPipe) query: string,
         @Req() req: AuthenticatedRequest
     ) {
-        return this.userSearch.search(query, req.user.id);
+        return this.userSearch.search(query, req.user.id, forwardUser(req));
     }
 
     @Get('study/:id/stats')

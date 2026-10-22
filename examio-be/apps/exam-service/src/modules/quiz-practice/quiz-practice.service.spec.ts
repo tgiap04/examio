@@ -67,7 +67,12 @@ function build(found: unknown = set()) {
         findOpen: jest.fn().mockResolvedValue(null),
         findQuestions: jest.fn().mockResolvedValue(questions),
     };
-    const service = new QuizPracticeService(prisma as never, redis as never, repo as never);
+    const users = {
+        profileMap: jest.fn(async (ids: string[]) =>
+            new Map(ids.filter((i) => i === 'teacher').map((i) => [i, { id: i, username: 't', name: 'Teach', avatar: null }] as const))
+        ),
+    };
+    const service = new QuizPracticeService(prisma as never, redis as never, repo as never, users as never);
     return { service, prisma, tx, redis, repo };
 }
 
@@ -202,12 +207,12 @@ describe('QuizPracticeService', () => {
             prisma.quizSet.findMany.mockResolvedValue([
                 {
                     id: 's1', title: 'T', description: null, thumbnail: null,
-                    user: { name: 'Teach' }, _count: { detailsQuizQuestions: 3 },
+                    userId: 'teacher', _count: { detailsQuizQuestions: 3 },
                     practiceAttempts: [{ id: 'a', isSubmitted: false, score: 9, updatedAt: new Date(0) }],
                 },
                 {
                     id: 's2', title: 'U', description: 'd', thumbnail: null,
-                    user: { name: null }, _count: { detailsQuizQuestions: 0 }, practiceAttempts: [],
+                    userId: 'gone', _count: { detailsQuizQuestions: 0 }, practiceAttempts: [],
                 },
             ]);
             prisma.quizSet.count.mockResolvedValue(13);
@@ -225,6 +230,7 @@ describe('QuizPracticeService', () => {
             // an unsubmitted attempt never exposes a score
             expect(res.sets[0].lastAttempt).toMatchObject({ isSubmitted: false, score: null });
             expect(res.sets[1].lastAttempt).toBeNull();
+            expect(res.sets[1].owner).toEqual({ name: null });
         });
     });
 });

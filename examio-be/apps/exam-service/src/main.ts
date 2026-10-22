@@ -5,12 +5,15 @@ import { join } from 'path';
 config({ path: join(process.cwd(), 'apps', 'exam-service', '.env') });
 
 import { NestFactory } from '@nestjs/core';
+import { MicroserviceOptions } from '@nestjs/microservices';
 import { ExamServiceModule } from './exam-service.module';
 import {
     HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
     Logger,
 } from '@examio/observability';
 import { RedisUnavailableFilter } from '@examio/redis';
+import { PROTO_FILES } from '@examio/contracts';
+import { grpcServerOptions } from '@examio/grpc';
 import { RedisIoAdapter } from './modules/study-room/redis-io.adapter';
 
 async function bootstrap() {
@@ -50,8 +53,17 @@ async function bootstrap() {
     await redisIoAdapter.connectToRedis();
     app.useWebSocketAdapter(redisIoAdapter);
 
+    // gRPC server: WordFamilyAdminService (admin-service forwards the admin token).
+    app.connectMicroservice<MicroserviceOptions>(
+        grpcServerOptions([PROTO_FILES.wordFamilyAdmin]),
+        { inheritAppConfig: true }
+    );
+    await app.startAllMicroservices();
+
     const port = process.env.PORT ?? 3000;
+    const grpcPort = process.env.GRPC_PORT || 50051;
     await app.listen(port);
     console.log(`🚀 Exam Service is running on port ${port}`);
+    console.log(`📡 gRPC server is running on port ${grpcPort}`);
 }
 bootstrap();

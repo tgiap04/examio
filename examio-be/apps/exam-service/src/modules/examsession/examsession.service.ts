@@ -31,6 +31,7 @@ import {
     toExamSessionPublicView,
     toExamSessionStudyView,
 } from './examsession-public.mapper';
+import { UserEnricher } from '../user-profile/user-enricher.service';
 
 @Injectable()
 export class ExamSessionService {
@@ -39,8 +40,34 @@ export class ExamSessionService {
         private readonly examSessionRepository: ExamSessionRepository,
         private readonly examRoomRepository: ExamRoomRepository,
         private readonly generateIdService: GenerateIdService,
-        private readonly redis: RedisService
+        private readonly redis: RedisService,
+        private readonly users: UserEnricher
     ) {}
+
+    /** `examRoom.host` comes from auth (one batched lookup), never from a relation include. */
+    private async withHost<T>(session: T | null): Promise<T | null> {
+        if (!session) return null;
+        return (await this.users.withRoomHost(
+            session as T & { examRoom: { hostId: string } }
+        )) as T;
+    }
+
+    /**
+     * The host's room detail embeds `examSessions` and the room list embeds the
+     * session count, both cached for minutes: any session write must drop them.
+     * Best-effort like the other invalidations: the write already succeeded.
+     */
+    private async invalidateRoomCache(hostId: string, roomId: string) {
+        try {
+            await this.examRoomRepository.invalidateItemCache(hostId, roomId);
+            await this.examRoomRepository.invalidateUserListCache(hostId);
+        } catch (error) {
+            console.warn(
+                `[examSession] room cache invalidation failed for room ${roomId}:`,
+                (error as Error).message
+            );
+        }
+    }
 
     async createExamSession(user: AuthUser, dto: CreateExamSessionDto) {
         // Verify exam room exists and belongs to user
@@ -98,6 +125,7 @@ export class ExamSessionService {
                 },
                 user.id
             );
+            await this.invalidateRoomCache(user.id, dto.examRoomId);
 
             // Load relations for response
             const examSessionWithRelations =
@@ -107,13 +135,6 @@ export class ExamSessionService {
                         examRoom: {
                             include: {
                                 quizSet: true,
-                                host: {
-                                    select: {
-                                        id: true,
-                                        email: true,
-                                        name: true,
-                                    },
-                                },
                             },
                         },
                     },
@@ -122,7 +143,7 @@ export class ExamSessionService {
 
             return {
                 message: 'Tạo phiên thi thành công',
-                examSession: examSessionWithRelations,
+                examSession: await this.withHost(examSessionWithRelations),
             };
         } catch (error) {
             rethrowKnown(error);
@@ -137,13 +158,6 @@ export class ExamSessionService {
                 examRoom: {
                     include: {
                         quizSet: true,
-                        host: {
-                            select: {
-                                id: true,
-                                email: true,
-                                name: true,
-                            },
-                        },
                     },
                 },
                 _count: {
@@ -163,7 +177,7 @@ export class ExamSessionService {
             throw new NotFoundException('Phiên thi không tồn tại');
         }
 
-        return examSession;
+        return this.withHost(examSession);
     }
 
     async deleteExamSession(id: string, user: AuthUser) {
@@ -183,6 +197,7 @@ export class ExamSessionService {
 
         // Hard delete - pass userId for proper cache invalidation
         await this.examSessionRepository.delete(id, user.id);
+        await this.invalidateRoomCache(user.id, examSession.examRoomId);
         return { message: 'Xóa phiên thi thành công' };
     }
 
@@ -198,14 +213,6 @@ export class ExamSessionService {
                                 title: true,
                                 description: true,
                                 thumbnail: true,
-                            },
-                        },
-                        host: {
-                            select: {
-                                id: true,
-                                username: true,
-                                name: true,
-                                avatar: true,
                             },
                         },
                     },
@@ -224,7 +231,9 @@ export class ExamSessionService {
             );
         }
 
-        return toExamSessionPublicView(examSession);
+        return toExamSessionPublicView(
+            await this.users.withRoomHost(examSession)
+        );
     }
 
     async getExamSessions(user: AuthUser, dto: GetExamSessionsDto) {
@@ -391,6 +400,7 @@ export class ExamSessionService {
 
         try {
             await this.examSessionRepository.update(id, updateData, user.id);
+            await this.invalidateRoomCache(user.id, examSession.examRoomId);
 
             // Load with relations for response
             const updatedExamSession = await this.examSessionRepository.findOne(
@@ -400,13 +410,6 @@ export class ExamSessionService {
                         examRoom: {
                             include: {
                                 quizSet: true,
-                                host: {
-                                    select: {
-                                        id: true,
-                                        email: true,
-                                        name: true,
-                                    },
-                                },
                             },
                         },
                     },
@@ -416,7 +419,7 @@ export class ExamSessionService {
 
             return {
                 message: 'Cập nhật phiên thi thành công',
-                examSession: updatedExamSession,
+                examSession: await this.withHost(updatedExamSession),
             };
         } catch (error) {
             rethrowKnown(error);
@@ -576,14 +579,6 @@ export class ExamSessionService {
                                 },
                             },
                         },
-                        host: {
-                            select: {
-                                id: true,
-                                username: true,
-                                name: true,
-                                avatar: true,
-                            },
-                        },
                     },
                 },
             },
@@ -594,7 +589,7 @@ export class ExamSessionService {
         }
 
         return toExamSessionStudyView(
-            examSession,
+            await this.users.withRoomHost(examSession),
             examSession.examRoom.quizSet.detailsQuizQuestions.map(
                 (d) => d.quizQuestion
             ),
@@ -620,14 +615,7 @@ export class ExamSessionService {
                         id: true,
                         title: true,
                         description: true,
-                        host: {
-                            select: {
-                                id: true,
-                                username: true,
-                                name: true,
-                                avatar: true,
-                            },
-                        },
+                        hostId: true,
                     },
                 },
             },
@@ -648,7 +636,7 @@ export class ExamSessionService {
             requiresCode:
                 examSession.assessType !== ASSESS_TYPE.PUBLIC &&
                 !!examSession.accessCode,
-            creator: examSession.examRoom.host,
+            creator: (await this.users.withHost(examSession.examRoom)).host,
             examRoom: {
                 id: examSession.examRoom.id,
                 title: examSession.examRoom.title,
@@ -705,6 +693,7 @@ export class ExamSessionService {
 
         await this.examSessionRepository.invalidateItemCache(user.id, id);
         await this.examSessionRepository.invalidateUserListCache(user.id);
+        await this.invalidateRoomCache(user.id, examSession.examRoomId);
 
         return {
             message: 'Cập nhật cài đặt chia sẻ thành công',
@@ -729,7 +718,7 @@ export class ExamSessionService {
     async regenerateAccessCode(id: string, user: AuthUser) {
         const examSession = await this.prisma.examSession.findUnique({
             where: { id },
-            select: { id: true, examRoom: { select: { hostId: true } } },
+            select: { id: true, examRoomId: true, examRoom: { select: { hostId: true } } },
         });
         if (!examSession) {
             throw new NotFoundException('Phiên thi không tồn tại');
@@ -745,6 +734,7 @@ export class ExamSessionService {
         });
         await this.examSessionRepository.invalidateItemCache(user.id, id);
         await this.examSessionRepository.invalidateUserListCache(user.id);
+        await this.invalidateRoomCache(user.id, examSession.examRoomId);
 
         return { accessCode };
     }
@@ -776,18 +766,11 @@ export class ExamSessionService {
             throw new NotFoundException('Phiên thi không tồn tại');
         }
 
-        const users = await this.prisma.user.findMany({
-            where: {
-                id: {
-                    in: examSession.whitelist,
-                },
-            },
-            select: {
-                id: true,
-                username: true,
-                name: true,
-                avatar: true,
-            },
+        // Whitelist display data lives in auth: one batched lookup, list order kept.
+        const profiles = await this.users.profileMap(examSession.whitelist);
+        const users = examSession.whitelist.flatMap((uid) => {
+            const p = profiles.get(uid);
+            return p ? [p] : [];
         });
 
         return {

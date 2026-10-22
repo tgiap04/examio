@@ -46,46 +46,6 @@ export class ExamRoomRepository extends BaseRepository<ExamRoom> {
     }
 
     /**
-     * Tìm exam room với sessions
-     */
-    async findByIdWithSessions(
-        id: string,
-        cache = true,
-        cacheTTL = this.defaultCacheTTL
-    ): Promise<any> {
-        if (cache) {
-            const cacheKey = this.getCacheKey(`id:${id}:sessions`);
-            const cached = await this.redis.get<any>(cacheKey);
-            if (cached) return cached;
-        }
-
-        const examRoom = await this.model.findUnique({
-            where: { id },
-            include: {
-                examSessions: {
-                    orderBy: { startTime: 'desc' },
-                },
-                quizSet: true,
-                host: {
-                    select: {
-                        id: true,
-                        username: true,
-                        email: true,
-                        avatar: true,
-                    },
-                },
-            },
-        });
-
-        if (examRoom && cache) {
-            const cacheKey = this.getCacheKey(`id:${id}:sessions`);
-            await this.redis.set(cacheKey, examRoom, cacheTTL);
-        }
-
-        return examRoom;
-    }
-
-    /**
      * Search exam rooms
      */
     async search(

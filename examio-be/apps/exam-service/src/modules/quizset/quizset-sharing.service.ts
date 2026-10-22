@@ -9,6 +9,7 @@ import {
     type SharingView,
 } from '../common/sharing-view.util';
 import { QuizSetRepository } from './quizset.repository';
+import { UserEnricher } from '../user-profile/user-enricher.service';
 
 const NOT_FOUND = 'Bộ câu hỏi không tồn tại';
 
@@ -17,7 +18,8 @@ const NOT_FOUND = 'Bộ câu hỏi không tồn tại';
 export class QuizsetSharingService {
     constructor(
         private readonly prisma: PrismaService,
-        private readonly quizSetRepository: QuizSetRepository
+        private readonly quizSetRepository: QuizSetRepository,
+        private readonly users: UserEnricher
     ) {}
 
     async getSharing(id: string, user: AuthUser): Promise<SharingView> {
@@ -31,7 +33,7 @@ export class QuizsetSharingService {
             },
         });
         if (!row) throw new NotFoundException(NOT_FOUND);
-        return toSharingView(this.prisma, row);
+        return toSharingView(this.users, row);
     }
 
     async updateSharing(
@@ -40,7 +42,7 @@ export class QuizsetSharingService {
         dto: SharingDelta
     ): Promise<SharingView> {
         const input = await prepareSharingUpdate(
-            this.prisma,
+            this.users,
             id,
             user.id,
             dto,
@@ -48,7 +50,7 @@ export class QuizsetSharingService {
         );
         const row = await applySharingUpdate(this.prisma, 'QuizSet', input);
         await this.quizSetRepository.invalidateItemCache(user.id, id);
-        return toSharingView(this.prisma, row);
+        return toSharingView(this.users, row);
     }
 
     /** Rotation: a new code, and everyone who unlocked with the old one loses access. The whitelist is untouched. */

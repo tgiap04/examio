@@ -72,7 +72,7 @@ export interface AttemptRow {
     createdAt: Instant;
     updatedAt: Instant;
     examSession?: SessionRow | null;
-    user?: { id: string; email?: string; name: string | null } | null;
+    user?: { id: string; name: string | null } | null;
 }
 
 const COMPLETED = 1;
@@ -180,7 +180,7 @@ export function toAttemptView(a: AttemptRow, relation: 'examinee' | 'host') {
             ),
         }),
         ...(a.user && {
-            user: { id: a.user.id, email: a.user.email, name: a.user.name },
+            user: { id: a.user.id, name: a.user.name },
         }),
     };
 }

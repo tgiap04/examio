@@ -15,6 +15,7 @@ import { ExamRoomRepository } from './examroom.repository';
 import { QuizSetRepository } from '../quizset/quizset.repository';
 import type { AuthUser } from '@examio/auth-jwt';
 import { ASSESS_TYPE } from '../../types';
+import { UserEnricher } from '../user-profile/user-enricher.service';
 
 @Injectable()
 export class ExamRoomService {
@@ -22,8 +23,17 @@ export class ExamRoomService {
         private readonly prisma: PrismaService,
         private readonly examRoomRepository: ExamRoomRepository,
         private readonly quizSetRepository: QuizSetRepository,
-        private readonly generateIdService: GenerateIdService
+        private readonly generateIdService: GenerateIdService,
+        private readonly users: UserEnricher
     ) {}
+
+    /** `host` comes from auth (one batched lookup), never from a relation include. */
+    private async withHost<T>(room: T | null): Promise<T | null> {
+        if (!room) return null;
+        return (await this.users.withHost(
+            room as T & { hostId: string }
+        )) as T;
+    }
 
     async createExamRoom(user: AuthUser, dto: CreateExamRoomDto) {
         if (!dto.title || dto.title.trim() === '') {
@@ -60,13 +70,6 @@ export class ExamRoomService {
                     where: { id: newExamRoom.id },
                     include: {
                         quizSet: true,
-                        host: {
-                            select: {
-                                id: true,
-                                email: true,
-                                name: true,
-                            },
-                        },
                     },
                     cache: false,
                 }
@@ -74,7 +77,7 @@ export class ExamRoomService {
 
             return {
                 message: 'Tạo phòng thi thành công',
-                examRoom: examRoomWithRelations,
+                examRoom: await this.withHost(examRoomWithRelations),
             };
         } catch (error) {
             rethrowKnown(error);
@@ -87,14 +90,6 @@ export class ExamRoomService {
             where: { id, hostId: user.id },
             include: {
                 quizSet: true,
-                host: {
-                    select: {
-                        id: true,
-                        email: true,
-                        name: true,
-                        username: true,
-                    },
-                },
                 examSessions: {
                     orderBy: { startTime: 'desc' },
                 },
@@ -106,7 +101,7 @@ export class ExamRoomService {
             throw new NotFoundException('Phòng thi không tồn tại');
         }
 
-        return examRoom;
+        return this.withHost(examRoom);
     }
 
     async deleteExamRoom(id: string, user: AuthUser) {
@@ -138,13 +133,18 @@ export class ExamRoomService {
                 id: true,
                 title: true,
                 description: true,
-                host: { select: { name: true, avatar: true } },
+                hostId: true,
             },
         });
         if (!examRoom) {
             throw new NotFoundException('Phòng thi không tồn tại');
         }
-        return examRoom;
+        const { hostId, ...teaser } = examRoom;
+        const host = (await this.users.profileMap([hostId])).get(hostId);
+        return {
+            ...teaser,
+            host: { name: host?.name ?? null, avatar: host?.avatar ?? null },
+        };
     }
 
     async getExamRooms(user: AuthUser, dto: GetExamRoomsDto) {
@@ -283,20 +283,13 @@ export class ExamRoomService {
                 where: { id },
                 include: {
                     quizSet: true,
-                    host: {
-                        select: {
-                            id: true,
-                            email: true,
-                            name: true,
-                        },
-                    },
                 },
                 cache: false,
             });
 
             return {
                 message: 'Cập nhật phòng thi thành công',
-                examRoom: updatedExamRoom,
+                examRoom: await this.withHost(updatedExamRoom),
             };
         } catch (error) {
             rethrowKnown(error);

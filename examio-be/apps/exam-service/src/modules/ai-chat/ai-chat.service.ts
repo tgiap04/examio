@@ -6,9 +6,8 @@ import {
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, Observable, Subject } from 'rxjs';
-import { buildMetadata } from '@examio/grpc';
+import { buildMetadata, FinanceClient } from '@examio/grpc';
 import { subscriptionV1 } from '@examio/contracts';
-import { FinanceClient } from '../../clients/finance.client';
 import { AIChatRepository } from './ai-chat.repository';
 import { R2UploadService } from '../r2/r2-upload.service';
 import { User } from '@prisma/client';

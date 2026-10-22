@@ -46,66 +46,12 @@ export class ExamSessionRepository extends BaseRepository<ExamSession> {
     }
 
     /**
-     * Tìm exam session với participants và attempts
-     */
-    async findByIdWithDetails(
-        id: string,
-        cache = true,
-        cacheTTL = this.defaultCacheTTL
-    ): Promise<any> {
-        if (cache) {
-            const cacheKey = this.getCacheKey(`id:${id}:details`);
-            const cached = await this.redis.get<any>(cacheKey);
-            if (cached) return cached;
-        }
-
-        const examSession = await this.model.findUnique({
-            where: { id },
-            include: {
-                examRoom: {
-                    include: {
-                        quizSet: true,
-                        host: {
-                            select: {
-                                id: true,
-                                username: true,
-                                email: true,
-                                avatar: true,
-                            },
-                        },
-                    },
-                },
-                examAttempts: {
-                    include: {
-                        user: {
-                            select: {
-                                id: true,
-                                username: true,
-                                email: true,
-                                avatar: true,
-                            },
-                        },
-                    },
-                },
-            },
-        });
-
-        if (examSession && cache) {
-            const cacheKey = this.getCacheKey(`id:${id}:details`);
-            await this.redis.set(cacheKey, examSession, cacheTTL);
-        }
-
-        return examSession;
-    }
-
-    /**
      * Update status và invalidate cache
      */
     async updateStatus(id: string, status: number): Promise<ExamSession> {
         const updated = await this.update(id, { status });
 
         // Invalidate specific caches
-        await this.redis.del(this.getCacheKey(`id:${id}:details`));
         // Only invalidate ongoing cache pattern, not all cache
         if (status === 1) {
             // If status is ONGOING, others might need updated list

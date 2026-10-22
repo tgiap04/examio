@@ -44,41 +44,6 @@ export class WordFamilyService {
         return this.repository.findCategories();
     }
 
-    async createCategory(data: {
-        name: string;
-        slug: string;
-        description?: string;
-        imageUrl?: string;
-        order?: number;
-    }) {
-        const existing = await this.repository.findCategoryBySlug(data.slug);
-        if (existing) {
-            throw new ConflictException(
-                `Danh mục với slug "${data.slug}" đã tồn tại.`,
-            );
-        }
-        return this.repository.createCategory(data);
-    }
-
-    async updateCategory(
-        id: string,
-        data: Partial<{ name: string; description: string; imageUrl: string; order: number }>,
-    ) {
-        const category = await this.repository.findCategoryById(id);
-        if (!category) {
-            throw new NotFoundException('Không tìm thấy danh mục.');
-        }
-        return this.repository.updateCategory(id, data);
-    }
-
-    async deleteCategory(id: string) {
-        const category = await this.repository.findCategoryById(id);
-        if (!category) {
-            throw new NotFoundException('Không tìm thấy danh mục.');
-        }
-        return this.repository.deleteCategory(id);
-    }
-
     // ==================== Root Words ====================
 
     async getRootWords(categorySlug: string) {

@@ -1,6 +1,6 @@
 import { Metadata } from '@grpc/grpc-js';
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { of, throwError } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { AIService } from './ai.service';
@@ -22,6 +22,7 @@ describe('AIService', () => {
         deleteUploadAggregate: jest.Mock;
         countUserStorageThisMonth: jest.Mock;
     };
+    let finance: { deductCredits: jest.Mock };
     let r2ClientService: {
         uploadFile: jest.Mock;
         getPublicUrl: jest.Mock;
@@ -91,6 +92,7 @@ describe('AIService', () => {
         }).compile();
 
         service = module.get(AIService);
+        finance = module.get(FinanceClientService);
     });
 
     it('forwards narrow search params when generating from duplicate completed upload', async () => {
@@ -250,5 +252,108 @@ describe('AIService', () => {
             warning: 'Cloudflare unavailable',
         });
     });
-});
 
+    describe('caller token is forwarded to the finance debit (TEACHER lazy wallet)', () => {
+        const file = { originalname: 'f.pdf', size: 10, buffer: Buffer.from('x'), mimetype: 'application/pdf' } as Express.Multer.File;
+
+        it('createUpload passes the raw user token', async () => {
+            aiRepository.createUserStorage.mockResolvedValue({ id: 'generated-id' });
+            aiRepository.updateUserStorageStatus.mockResolvedValue({});
+            httpService.post.mockReturnValue(of({ data: { success: true } }));
+
+            await service.createUpload(
+                { id: 'user-1' } as any,
+                { filename: 'a.pdf', url: 'https://x/a.pdf', mimetype: 'application/pdf', size: 4 * 1024 * 1024, keyR2: 'k' } as any,
+                'tok-1'
+            );
+
+            expect(finance.deductCredits).toHaveBeenCalledWith(
+                'user-1', 2, expect.any(String), 'upload:generated-id', { userToken: 'tok-1' }
+            );
+        });
+
+        it('generateFromFile (reused COMPLETED file) passes the raw user token', async () => {
+            aiRepository.findDuplicateUserStorage.mockResolvedValue({ id: 'upload-1', processingStatus: 'COMPLETED' });
+            aiRepository.updateUserStorageStatus.mockResolvedValue({});
+            httpService.post.mockReturnValue(of({ data: { success: true } }));
+
+            await service.generateFromFile({ id: 'user-1' } as any, file, { typeResult: '1', quantityQuizz: '5' } as any, 'tok-2');
+
+            expect(finance.deductCredits).toHaveBeenCalledWith(
+                'user-1', 5, expect.any(String), expect.stringMatching(/^quick-upload-reuse:/), { userToken: 'tok-2' }
+            );
+        });
+    });
+
+    it('regenerate passes the raw user token to the debit', async () => {
+        const upload = { id: 'upload-9', userId: 'user-1', filename: 'f.pdf', processingStatus: 'COMPLETED' };
+        jest.spyOn(service, 'getUploadDetail').mockResolvedValue(upload as any);
+        aiRepository.updateUserStorageStatus.mockResolvedValue({});
+        aiRepository.findUserStorageById.mockResolvedValue(upload);
+        aiRepository.countDocumentsByUserStorageId.mockResolvedValue(5);
+        httpService.post.mockReturnValue(of({ data: { success: true } }));
+
+        await service.regenerate('upload-9', { id: 'user-1' } as any, { typeResult: 1, quantityQuizz: 10 } as any, 'tok-3');
+
+        expect(finance.deductCredits).toHaveBeenCalledWith(
+            'user-1', 1, expect.any(String), expect.stringMatching(/^regenerate:/), { userToken: 'tok-3' }
+        );
+    });
+
+    describe('debit idempotency keys (no double charge on retry)', () => {
+        it('createUpload charges once per file: key is upload:<storageId>', async () => {
+            aiRepository.createUserStorage.mockResolvedValue({ id: 'generated-id' });
+            aiRepository.updateUserStorageStatus.mockResolvedValue({});
+            httpService.post.mockReturnValue(of({ data: { success: true } }));
+
+            await service.createUpload({ id: 'user-1' } as any, {
+                filename: 'a.pdf',
+                url: 'https://x/a.pdf',
+                mimetype: 'application/pdf',
+                size: 4 * 1024 * 1024,
+                keyR2: 'k',
+            } as any);
+
+            expect(finance.deductCredits).toHaveBeenCalledWith(
+                'user-1',
+                2,
+                expect.stringContaining('Upload file'),
+                'upload:generated-id',
+                { userToken: undefined }
+            );
+            expect(aiRepository.createUserStorage).toHaveBeenCalledWith(
+                expect.objectContaining({ id: 'generated-id' })
+            );
+        });
+
+        it('a reused COMPLETED file gets a fresh per-request key each time', async () => {
+            aiRepository.findDuplicateUserStorage.mockResolvedValue({ id: 'upload-1', processingStatus: 'COMPLETED' });
+            aiRepository.updateUserStorageStatus.mockResolvedValue({});
+            httpService.post.mockReturnValue(of({ data: { success: true } }));
+            const file = { originalname: 'f.pdf', size: 10, buffer: Buffer.from('x'), mimetype: 'application/pdf' } as Express.Multer.File;
+
+            await service.generateFromFile({ id: 'user-1' } as any, file, { typeResult: '1', quantityQuizz: '5' } as any);
+            await service.generateFromFile({ id: 'user-1' } as any, file, { typeResult: '1', quantityQuizz: '5' } as any);
+
+            const keys = finance.deductCredits.mock.calls.map((c) => c[3] as string);
+            expect(keys).toHaveLength(2);
+            for (const k of keys) expect(k).toMatch(/^quick-upload-reuse:[0-9a-f-]{36}$/);
+            expect(new Set(keys).size).toBe(2);
+        });
+
+        it('a reused COMPLETED file fails closed when the debit is refused: no generation runs for free', async () => {
+            aiRepository.findDuplicateUserStorage.mockResolvedValue({ id: 'upload-1', processingStatus: 'COMPLETED' });
+            aiRepository.updateUserStorageStatus.mockResolvedValue({});
+            const refused = new ForbiddenException('Không đủ tín dụng: Insufficient balance. Vui lòng nạp thêm.');
+            finance.deductCredits.mockRejectedValue(refused);
+            const file = { originalname: 'f.pdf', size: 10, buffer: Buffer.from('x'), mimetype: 'application/pdf' } as Express.Multer.File;
+
+            await expect(
+                service.generateFromFile({ id: 'user-1' } as any, file, { typeResult: '1', quantityQuizz: '5' } as any)
+            ).rejects.toBe(refused);
+
+            expect(aiRepository.updateUserStorageStatus).not.toHaveBeenCalled();
+            expect(httpService.post).not.toHaveBeenCalled();
+        });
+    });
+});

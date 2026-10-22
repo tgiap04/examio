@@ -29,6 +29,14 @@ export class WordFamilyRepository {
         return categories;
     }
 
+    /** Admin view: every category (inactive ones only on request), stable order. */
+    async listCategories(includeInactive: boolean): Promise<WordFamilyCategory[]> {
+        return this.prisma.wordFamilyCategory.findMany({
+            where: includeInactive ? undefined : { isActive: true },
+            orderBy: [{ order: 'asc' }, { name: 'asc' }],
+        });
+    }
+
     async findCategoryById(id: string): Promise<WordFamilyCategory | null> {
         return this.prisma.wordFamilyCategory.findUnique({ where: { id } });
     }
@@ -51,7 +59,7 @@ export class WordFamilyRepository {
 
     async updateCategory(
         id: string,
-        data: Partial<{ name: string; description: string; imageUrl: string; order: number; isActive: boolean }>,
+        data: Partial<{ name: string; description: string; imageUrl: string | null; order: number; isActive: boolean }>,
     ): Promise<WordFamilyCategory> {
         const category = await this.prisma.wordFamilyCategory.update({
             where: { id },
@@ -59,14 +67,6 @@ export class WordFamilyRepository {
         });
         await this.invalidateCategoriesCache();
         return category;
-    }
-
-    async deleteCategory(id: string): Promise<void> {
-        await this.prisma.wordFamilyCategory.update({
-            where: { id },
-            data: { isActive: false },
-        });
-        await this.invalidateCategoriesCache();
     }
 
     // ==================== WordFamily ====================
