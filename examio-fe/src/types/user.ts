@@ -17,8 +17,4 @@ export interface User {
   password?: string;
   createdAt: Date;
   updatedAt: Date;
-  /** Removed by phase 10 (balance moves to GET /wallet/info). */
-  wallet?: {
-    balance: number;
-  } | null;
 }

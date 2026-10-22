@@ -48,7 +48,6 @@ interface AuthState {
   sendVerificationEmail: () => Promise<void>;
   verifyAccount: (code: string) => Promise<void>;
   loginWithGoogle?: () => Promise<void>;
-  updateWalletBalance: (newBalance: number) => void;
 }
 
 // Cleared on a role change and on logout so a demoted (or different) user
@@ -256,23 +255,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } finally {
       set({ loading: false });
     }
-  },
-
-  updateWalletBalance: (newBalance: number) => {
-    set((state) => {
-      if (state.user && state.user.wallet) {
-        return {
-          user: {
-            ...state.user,
-            wallet: {
-              ...state.user.wallet,
-              balance: newBalance,
-            },
-          },
-        };
-      }
-      return state;
-    });
   },
 
   verifyAccount: async (code: string) => {
