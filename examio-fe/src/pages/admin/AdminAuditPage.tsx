@@ -27,7 +27,7 @@ const ACTION_OPTIONS = Object.keys(ACTION_LABELS).filter((a) => !LEGACY_ACTIONS.
 export default function AdminAuditPage() {
   const { t } = useTranslation("admin");
   const [adminOptions, setAdminOptions] = useState<UserRow[]>([]);
-  const [adminId, setAdminId] = useState<number | undefined>(undefined);
+  const [adminId, setAdminId] = useState<string | undefined>(undefined);
   const [action, setAction] = useState<string | undefined>(undefined);
   const [dateRange, setDateRange] = useState<[string, string] | null>(null);
   const [filterToken, setFilterToken] = useState(0);
