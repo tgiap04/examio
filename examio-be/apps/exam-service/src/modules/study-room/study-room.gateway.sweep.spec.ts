@@ -21,7 +21,6 @@ describe('StudyRoomGateway focus sweep', () => {
             {} as never,
             state as never,
             broadcaster as never,
-            {} as never,
             {} as never
         );
         gateway.afterInit({ use: jest.fn() } as never);

@@ -109,6 +109,7 @@ describe('study-room websocket authz (e2e)', () => {
         redis = new Redis({
             host: process.env.REDIS_HOST,
             port: Number(process.env.REDIS_PORT),
+            password: process.env.REDIS_PASSWORD,
         });
         teacher = await t.createUser(['TEACHER']);
         const created = await call(

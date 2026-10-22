@@ -4,17 +4,10 @@ import { PrismaService } from '@examio/database';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
 import { StudyRoom, StudyRoomMember } from '@prisma/client';
 import { StudyRoomKeys } from './study-room.constants';
+import { UserEnricher } from '../user-profile/user-enricher.service';
 
 // Giá trị đánh dấu "không phải member" trong cache (negative caching).
 const MEMBER_NONE = 'none';
-
-// Select gọn cho thông tin user hiển thị trong roster/leaderboard.
-const MEMBER_USER_SELECT = {
-    id: true,
-    name: true,
-    username: true,
-    avatar: true,
-} as const;
 
 @Injectable()
 export class StudyRoomRepository extends BaseRepository<StudyRoom> {
@@ -22,8 +15,23 @@ export class StudyRoomRepository extends BaseRepository<StudyRoom> {
     protected cachePrefix = 'study_room';
     protected defaultCacheTTL = EXPIRED_TIME.FIVE_MINUTES;
 
-    constructor(prisma: PrismaService, redis: RedisService) {
+    constructor(
+        prisma: PrismaService,
+        redis: RedisService,
+        private readonly users: UserEnricher
+    ) {
         super(prisma, redis);
+    }
+
+    // Roster/leaderboard display data lives in auth: members get `user` from ONE
+    // batched profile lookup (never a relation include).
+    private async withMemberUsers<T extends { members: Array<{ userId: string }> }>(
+        room: T
+    ) {
+        return {
+            ...room,
+            members: await this.users.withUsers(room.members),
+        };
     }
 
     private get memberModel() {
@@ -95,29 +103,27 @@ export class StudyRoomRepository extends BaseRepository<StudyRoom> {
 
     // Chi tiết phòng kèm members (đã join user) — không cache để roster luôn tươi.
     async findByIdWithMembers(id: string): Promise<any> {
-        return this.model.findUnique({
+        const room = await this.model.findUnique({
             where: { id },
             include: {
-                members: {
-                    orderBy: { joinedAt: 'asc' },
-                    include: { user: { select: MEMBER_USER_SELECT } },
-                },
+                members: { orderBy: { joinedAt: 'asc' } },
             },
         });
+        return room && this.withMemberUsers(room);
     }
 
     // Phòng tôi host hoặc tôi là member — một query, tránh N+1.
     async findMine(userId: string): Promise<any[]> {
-        return this.model.findMany({
+        const rooms = await this.model.findMany({
             where: {
                 OR: [{ hostId: userId }, { members: { some: { userId } } }],
             },
             orderBy: { updatedAt: 'desc' },
             include: {
-                host: { select: MEMBER_USER_SELECT },
                 _count: { select: { members: true } },
             },
         });
+        return this.users.withHosts(rooms);
     }
 
     async createWithHost(
@@ -133,7 +139,7 @@ export class StudyRoomRepository extends BaseRepository<StudyRoom> {
         >,
         hostUserId: string
     ): Promise<any> {
-        return this.model.create({
+        const room = await this.model.create({
             data: {
                 ...data,
                 createdBy: hostUserId,
@@ -141,10 +147,9 @@ export class StudyRoomRepository extends BaseRepository<StudyRoom> {
                     create: { userId: hostUserId, role: 2 }, // HOST
                 },
             },
-            include: {
-                members: { include: { user: { select: MEMBER_USER_SELECT } } },
-            },
+            include: { members: true },
         });
+        return this.withMemberUsers(room);
     }
 
     // Member helpers ----------------------------------------------------------
@@ -223,11 +228,11 @@ export class StudyRoomRepository extends BaseRepository<StudyRoom> {
     }
 
     async leaderboard(studyRoomId: string): Promise<any[]> {
-        return this.memberModel.findMany({
+        const members = await this.memberModel.findMany({
             where: { studyRoomId },
             orderBy: { totalFocusSeconds: 'desc' },
-            include: { user: { select: MEMBER_USER_SELECT } },
         });
+        return this.users.withUsers(members);
     }
 
     async setBanned(

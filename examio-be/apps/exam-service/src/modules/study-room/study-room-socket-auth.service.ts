@@ -1,5 +1,4 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
 import { RedisService } from '@examio/redis';
 import {
     TOKEN_VERIFIER,
@@ -10,6 +9,7 @@ import {
 } from '@examio/auth-jwt';
 import { decodeJwt } from 'jose';
 import { Socket } from 'socket.io';
+import { AuthClient } from '../../clients/auth.client';
 
 export interface SocketUser {
     id: string;
@@ -57,7 +57,8 @@ export const authzVersionKey = (userId: string): string => `gw:user:${userId}:av
  * middleware is the only gate). Order: token present, signature / issuer /
  * audience / expiry (`@examio/auth-jwt`), verified email, `study_room:join`,
  * then the token's `av` against the gateway's Redis mirror (stale token =>
- * refresh and reconnect), then the account (banned / deleted). Every
+ * refresh and reconnect; a ban bumps `av`, so a banned account never gets past
+ * this), then the account's display profile from auth. Every
  * infrastructure failure fails closed with SERVICE_UNAVAILABLE.
  * The token comes from `handshake.auth.token` first, then the same
  * Bearer/cookie order as HTTP.
@@ -68,7 +69,7 @@ export class StudyRoomSocketAuth {
 
     constructor(
         @Inject(TOKEN_VERIFIER) private readonly verifyToken: TokenVerifier,
-        private readonly prisma: PrismaService,
+        private readonly auth: AuthClient,
         private readonly redis: RedisService
     ) {}
 
@@ -127,18 +128,17 @@ export class StudyRoomSocketAuth {
         }
     }
 
+    /**
+     * Display name/avatar from auth (strict: an unreachable auth is
+     * SERVICE_UNAVAILABLE, not an anonymous user). An id auth no longer knows
+     * (deleted account) is UNAUTHORIZED. Ban state needs no read here: the
+     * `av` check above already refused every pre-ban token.
+     */
     private async loadUser(userId: string): Promise<SocketUser> {
-        let user;
+        let profile;
         try {
-            user = await this.prisma.user.findUnique({
-                where: { id: userId },
-                select: {
-                    id: true,
-                    name: true,
-                    avatar: true,
-                    isBanned: true,
-                    deletedAt: true,
-                },
+            [profile] = await this.auth.getPublicProfiles([userId], undefined, {
+                strict: true,
             });
         } catch (err) {
             this.logger.warn(
@@ -146,9 +146,7 @@ export class StudyRoomSocketAuth {
             );
             throw new SocketAuthError('SERVICE_UNAVAILABLE');
         }
-        if (!user || user.isBanned || user.deletedAt) {
-            throw new SocketAuthError('UNAUTHORIZED');
-        }
-        return { id: user.id, name: user.name, avatar: user.avatar };
+        if (!profile) throw new SocketAuthError('UNAUTHORIZED');
+        return { id: profile.id, name: profile.name, avatar: profile.avatar };
     }
 }

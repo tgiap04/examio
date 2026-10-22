@@ -8,8 +8,6 @@ import {
 } from '@nestjs/websockets';
 import { Logger, OnModuleDestroy, UseFilters } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
-import { RedisService } from '@examio/redis';
-import { CONFIG_PAGES_KEY } from '@examio/common';
 import { Authenticated } from '@examio/auth-jwt';
 import {
     SocketAuthError,
@@ -92,6 +90,8 @@ export class StudyRoomGateway
     @WebSocketServer() server: Server;
     private readonly logger = new Logger(StudyRoomGateway.name);
     private focusSweep?: NodeJS.Timeout;
+    /** Per-instance token-expiry timers keyed by socket id (never in socket.data). */
+    private readonly expTimers = new Map<string, NodeJS.Timeout>();
 
     constructor(
         private readonly auth: StudyRoomSocketAuth,
@@ -99,28 +99,12 @@ export class StudyRoomGateway
         private readonly repo: StudyRoomRepository,
         private readonly state: StudyRoomStateService,
         private readonly broadcaster: StudyRoomBroadcaster,
-        private readonly redis: RedisService,
         private readonly playlist: StudyRoomPlaylistService
     ) {}
 
-    // Phòng thủ lớp 2: gateway (phía trước) đã chặn upgrade khi trang bị tắt,
-    // nhưng nếu exam-service từng bị lộ thẳng (bỏ qua gateway) thì đây là chốt
-    // cuối. Cùng key Redis mà admin-service publish/gateway ConfigService đọc.
-    // Default-on — chỉ chặn khi === false; lỗi đọc Redis thì fail-open.
-    private async isStudyRoomPageEnabled(): Promise<boolean> {
-        try {
-            const pages = await this.redis.get<Record<string, boolean>>(
-                CONFIG_PAGES_KEY
-            );
-            return pages?.['study-room'] !== false;
-        } catch {
-            return true;
-        }
-    }
-
     afterInit(server: Server) {
         this.broadcaster.setServer(server);
-        // Auth + page-gate CHẠY TRONG handshake (socket.io middleware), không phải
+        // Auth CHẠY TRONG handshake (socket.io middleware; page flag do gateway kiểm tra lúc WS upgrade), không phải
         // handleConnection. Lý do: handleConnection là async nhưng socket.io KHÔNG
         // await nó — client nhận 'connect' và emit room:join ngay, nên nếu set
         // socket.data.user trong handleConnection thì onJoin có thể chạy trước khi
@@ -129,9 +113,6 @@ export class StudyRoomGateway
         server.use(async (socket: Socket, next: (err?: Error) => void) => {
             try {
                 const session = await this.auth.authenticate(socket);
-                if (!(await this.isStudyRoomPageEnabled())) {
-                    return next(new Error('PAGE_DISABLED'));
-                }
                 socket.data.user = session.user;
                 socket.data.av = session.av;
                 socket.data.exp = session.exp;
@@ -155,6 +136,8 @@ export class StudyRoomGateway
 
     onModuleDestroy() {
         if (this.focusSweep) clearInterval(this.focusSweep);
+        for (const timer of this.expTimers.values()) clearTimeout(timer);
+        this.expTimers.clear();
     }
 
     /**
@@ -176,11 +159,16 @@ export class StudyRoomGateway
             Math.max(socket.data.exp * 1000 - Date.now(), 0),
             MAX_TIMER_MS
         );
-        socket.data.expTimer = setTimeout(() => {
+        // Timer lives in a per-instance map, NOT socket.data: the redis adapter
+        // JSON-serialises socket.data on fetchSockets() and a Timeout is circular.
+        clearTimeout(this.expTimers.get(socket.id));
+        const timer = setTimeout(() => {
+            this.expTimers.delete(socket.id);
             socket.emit(ServerEvents.AUTH_REAUTH, { reason: 'TOKEN_EXPIRED' });
             socket.disconnect(true);
         }, remainingMs);
-        socket.data.expTimer.unref?.();
+        timer.unref?.();
+        this.expTimers.set(socket.id, timer);
     }
 
     /**
@@ -190,7 +178,8 @@ export class StudyRoomGateway
      * Each room is cleaned up independently; failures are logged only.
      */
     async handleDisconnect(socket: Socket) {
-        clearTimeout(socket.data.expTimer);
+        clearTimeout(this.expTimers.get(socket.id));
+        this.expTimers.delete(socket.id);
         const user = socket.data.user;
         const rooms: Set<string> = socket.data.rooms ?? new Set();
         for (const roomId of rooms) {
@@ -688,13 +677,31 @@ export class StudyRoomGateway
     }
 
     // Đá mọi socket của user khỏi phòng (mọi instance qua redis-adapter).
+    // A remote instance failing to answer fetchSockets must not crash or fail the kick.
     private async kickUser(roomId: string, userId: string) {
-        const sockets = await this.server.in(roomId).fetchSockets();
-        for (const s of sockets) {
-            if ((s.data as any)?.user?.id === userId) {
-                s.emit(ServerEvents.ROOM_KICKED, { roomId });
-                s.disconnect(true);
+        await runSafely(this.logger, `kick fan-out room=${roomId} user=${userId}`, async () => {
+            const sockets = await this.fetchRoomSockets(roomId, userId);
+            for (const s of sockets) {
+                if ((s.data as any)?.user?.id === userId) {
+                    s.emit(ServerEvents.ROOM_KICKED, { roomId });
+                    s.disconnect(true);
+                }
             }
+        });
+    }
+
+    // Cluster-wide fetch; if any instance does not answer it rejects, so fall back
+    // to the sockets held by THIS instance rather than kicking nobody.
+    private async fetchRoomSockets(roomId: string, userId: string) {
+        try {
+            return await this.server.in(roomId).fetchSockets();
+        } catch (err) {
+            this.logger.warn(
+                `kick cluster fetch failed room=${roomId} user=${userId}, kicking local sockets only: ${
+                    err instanceof Error ? err.message : String(err)
+                }`
+            );
+            return this.server.local.in(roomId).fetchSockets();
         }
     }
 

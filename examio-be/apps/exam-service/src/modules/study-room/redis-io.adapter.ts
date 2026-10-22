@@ -13,6 +13,8 @@ interface AdapterClientOptions {
     retryDelayMs?: number;
 }
 
+const READY_TIMEOUT_MS = 10_000;
+
 /**
  * Pub/sub clients for @socket.io/redis-adapter. The adapter fires subscribe and
  * publish commands without awaiting or catching them, so a command that
@@ -20,6 +22,10 @@ interface AdapterClientOptions {
  * rejection and kills the process. Hence:
  *  - `sub` retries forever (`maxRetriesPerRequest: null`): the subscribe is
  *    queued and ioredis re-subscribes after reconnect;
+ *  - `sub` skips the ready-check (`INFO`) and `CLIENT SETINFO`: ioredis writes
+ *    (p)subscribe while still connecting, and any command it issues after that
+ *    is rejected with "Connection in subscriber mode", which closes the
+ *    connection and loses the adapter's subscriptions;
  *  - `pub.publish` swallows (and logs) a failed publish: the broadcast is lost
  *    while Redis is down, which is the best an outage allows.
  */
@@ -38,6 +44,8 @@ export function createAdapterClients(
         ...conn,
         retryStrategy,
         maxRetriesPerRequest: null,
+        enableReadyCheck: false,
+        disableClientInfo: true,
     });
     pub.on('error', (e) =>
         console.error('[StudyRoom Redis pub] error:', e.message)
@@ -57,6 +65,24 @@ export function createAdapterClients(
     return { pub, sub };
 }
 
+/**
+ * Resolves once the client is `ready`, or after `timeoutMs` (Redis down at
+ * boot must not block startup: the adapter then degrades until Redis is back).
+ */
+function whenReady(client: Redis, timeoutMs: number): Promise<boolean> {
+    if (client.status === 'ready') return Promise.resolve(true);
+    return new Promise((resolve) => {
+        const done = (ok: boolean) => {
+            clearTimeout(timer);
+            client.off('ready', onReady);
+            resolve(ok);
+        };
+        const onReady = () => done(true);
+        const timer = setTimeout(() => done(false), timeoutMs);
+        client.once('ready', onReady);
+    });
+}
+
 // Socket.io adapter dùng Redis pub/sub để fan-out broadcast qua nhiều instance exam-service.
 // Không có adapter này thì client ở instance khác sẽ không nhận được event.
 export class RedisIoAdapter extends IoAdapter {
@@ -72,6 +98,18 @@ export class RedisIoAdapter extends IoAdapter {
             password: process.env.REDIS_PASSWORD,
         });
         this.clients = [pub, sub];
+        // The adapter subscribes as soon as a namespace exists; do that only
+        // once `sub` can actually take the subscription.
+        const ready = await Promise.all([
+            whenReady(pub, READY_TIMEOUT_MS),
+            whenReady(sub, READY_TIMEOUT_MS),
+        ]);
+        if (ready.includes(false)) {
+            console.error(
+                '[StudyRoom Redis] not ready after %dms; cross-instance fan-out starts degraded',
+                READY_TIMEOUT_MS
+            );
+        }
         this.adapterConstructor = createAdapter(pub, sub);
     }
 

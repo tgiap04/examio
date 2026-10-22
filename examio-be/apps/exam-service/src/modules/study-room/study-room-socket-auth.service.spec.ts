@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '@examio/database';
 import { RedisService } from '@examio/redis';
 import { TOKEN_VERIFIER, TokenVerificationError } from '@examio/auth-jwt';
 import { SignJWT } from 'jose';
 import { Socket } from 'socket.io';
+import { AuthClient } from '../../clients/auth.client';
 import {
     SocketAuthError,
     StudyRoomSocketAuth,
@@ -13,7 +13,7 @@ import {
 describe('StudyRoomSocketAuth', () => {
     let service: StudyRoomSocketAuth;
     let verify: jest.Mock;
-    let prisma: { user: { findUnique: jest.Mock } };
+    let profiles: jest.Mock;
     let redisGet: jest.Mock;
     const EXP = Math.floor(Date.now() / 1000) + 600;
 
@@ -33,22 +33,21 @@ describe('StudyRoomSocketAuth', () => {
     });
     const row = (over: Record<string, unknown> = {}) => ({
         id: 'user1',
+        username: 'alice',
         name: 'Alice',
         avatar: 'https://example.com/avatar.png',
-        isBanned: false,
-        deletedAt: null,
         ...over,
     });
 
     beforeEach(async () => {
         verify = jest.fn();
         redisGet = jest.fn().mockResolvedValue(null);
-        prisma = { user: { findUnique: jest.fn().mockResolvedValue(row()) } };
+        profiles = jest.fn().mockResolvedValue([row()]);
         const module: TestingModule = await Test.createTestingModule({
             providers: [
                 StudyRoomSocketAuth,
                 { provide: TOKEN_VERIFIER, useValue: verify },
-                { provide: PrismaService, useValue: prisma },
+                { provide: AuthClient, useValue: { getPublicProfiles: profiles } },
                 { provide: RedisService, useValue: { getClient: () => ({ get: redisGet }) } },
             ],
         }).compile();
@@ -89,7 +88,7 @@ describe('StudyRoomSocketAuth', () => {
 
     it('falls back to the accessToken cookie and ignores the retired token cookie', async () => {
         verify.mockResolvedValue(user({ id: 'user2' }));
-        prisma.user.findUnique.mockResolvedValue(row({ id: 'user2', name: 'Bob', avatar: null }));
+        profiles.mockResolvedValue([row({ id: 'user2', name: 'Bob', avatar: null })]);
         const token = await jwt();
         await service.authenticate(mockSocket(undefined, { cookie: `accessToken=${token}; Path=/` }));
         expect(verify).toHaveBeenLastCalledWith(token);
@@ -121,7 +120,7 @@ describe('StudyRoomSocketAuth', () => {
         expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('EMAIL_NOT_VERIFIED');
         verify.mockResolvedValueOnce({ kind: 'service', name: 'exam' });
         expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('PERMISSION_DENIED');
-        expect(prisma.user.findUnique).not.toHaveBeenCalled();
+        expect(profiles).not.toHaveBeenCalled();
     });
 
     it('requires study_room:join (SYSTEM_ADMIN-only is refused, STUDENT and TEACHER pass)', async () => {
@@ -163,20 +162,21 @@ describe('StudyRoomSocketAuth', () => {
         });
     });
 
-    it('rejects banned, deleted and missing accounts', async () => {
+    it('rejects an account auth no longer knows (deleted / missing)', async () => {
         verify.mockResolvedValue(user());
-        const t = await jwt();
-        prisma.user.findUnique.mockResolvedValueOnce(row({ isBanned: true }));
-        expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('UNAUTHORIZED');
-        prisma.user.findUnique.mockResolvedValueOnce(row({ deletedAt: new Date() }));
-        expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('UNAUTHORIZED');
-        prisma.user.findUnique.mockResolvedValueOnce(null);
-        expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('UNAUTHORIZED');
+        profiles.mockResolvedValueOnce([null]);
+        expect(await codeOf(service.authenticate(mockSocket(await jwt())))).toBe('UNAUTHORIZED');
     });
 
-    it('fails closed with SERVICE_UNAVAILABLE on an unexpected database error', async () => {
+    it('asks auth STRICTLY for just this user (a ban is enforced by the av check, not a DB read)', async () => {
         verify.mockResolvedValue(user());
-        prisma.user.findUnique.mockRejectedValue(new Error('Database error'));
+        await service.authenticate(mockSocket(await jwt()));
+        expect(profiles).toHaveBeenCalledWith(['user1'], undefined, { strict: true });
+    });
+
+    it('fails closed with SERVICE_UNAVAILABLE when auth is unreachable', async () => {
+        verify.mockResolvedValue(user());
+        profiles.mockRejectedValue(new Error('auth down'));
         expect(await codeOf(service.authenticate(mockSocket(await jwt())))).toBe('SERVICE_UNAVAILABLE');
     });
 });

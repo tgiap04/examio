@@ -29,7 +29,6 @@ function buildGateway(state: Record<string, unknown>) {
         {} as never,
         state as never,
         { setServer: jest.fn() } as never,
-        {} as never,
         {} as never
     );
 }

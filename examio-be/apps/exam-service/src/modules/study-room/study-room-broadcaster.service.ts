@@ -24,7 +24,8 @@ export class StudyRoomBroadcaster {
      * Sockets of `userId` whose token `av` is below `authzVersion` are told to
      * re-authenticate and then disconnected (every instance, via the adapter).
      * Idempotent: a re-delivered event finds no stale sockets. Returns the
-     * number of sockets disconnected.
+     * number of sockets disconnected. A fan-out failure rejects on purpose: the
+     * event consumer retries / dead-letters, so a revocation is never lost.
      */
     async reauthStaleSockets(userId: string, authzVersion: number): Promise<number> {
         if (!this.server) return 0;
