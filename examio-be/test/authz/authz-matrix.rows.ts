@@ -330,18 +330,6 @@ export const rows: Record<'exam' | 'finance' | 'admin', Row[]> = {
             },
         },
         {
-            name: 'POST /word-family/categories (admin)',
-            method: 'post',
-            path: '/word-family/categories',
-            body: {},
-            expect: {
-                STUDENT: 403,
-                TEACHER: 403,
-                ADMIN_ONLY: 'gate',
-                TEACHER_ADMIN: 'gate',
-            },
-        },
-        {
             name: 'GET /student/recent-exams',
             method: 'get',
             path: '/student/recent-exams',

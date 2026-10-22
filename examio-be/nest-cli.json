@@ -98,12 +98,24 @@
                         "watchAssets": true
                     },
                     {
+                        "include": "../../../proto/examio/auth/**/*.proto",
+                        "outDir": "dist/apps/exam-service/proto/examio/auth"
+                    },
+                    {
+                        "include": "../../../proto/examio/common/**/*.proto",
+                        "outDir": "dist/apps/exam-service/proto/examio/common"
+                    },
+                    {
                         "include": "../../../proto/examio/finance/**/*.proto",
                         "outDir": "dist/apps/exam-service/proto/examio/finance"
                     },
                     {
                         "include": "../../../proto/examio/r2/**/*.proto",
                         "outDir": "dist/apps/exam-service/proto/examio/r2"
+                    },
+                    {
+                        "include": "../../../proto/examio/vocabulary/**/*.proto",
+                        "outDir": "dist/apps/exam-service/proto/examio/vocabulary"
                     }
                 ]
             }
@@ -116,6 +128,14 @@
             "compilerOptions": {
                 "tsConfigPath": "apps/finance-service/tsconfig.app.json",
                 "assets": [
+                    {
+                        "include": "../../../proto/examio/auth/**/*.proto",
+                        "outDir": "dist/apps/finance-service/proto/examio/auth"
+                    },
+                    {
+                        "include": "../../../proto/examio/common/**/*.proto",
+                        "outDir": "dist/apps/finance-service/proto/examio/common"
+                    },
                     {
                         "include": "../../../proto/examio/finance/**/*.proto",
                         "outDir": "dist/apps/finance-service/proto/examio/finance"
@@ -132,12 +152,28 @@
                 "tsConfigPath": "apps/admin-service/tsconfig.app.json",
                 "assets": [
                     {
+                        "include": "../../../proto/examio/admin/**/*.proto",
+                        "outDir": "dist/apps/admin-service/proto/examio/admin"
+                    },
+                    {
                         "include": "../../../proto/examio/auth/**/*.proto",
                         "outDir": "dist/apps/admin-service/proto/examio/auth"
                     },
                     {
                         "include": "../../../proto/examio/common/**/*.proto",
                         "outDir": "dist/apps/admin-service/proto/examio/common"
+                    },
+                    {
+                        "include": "../../../proto/examio/finance/**/*.proto",
+                        "outDir": "dist/apps/admin-service/proto/examio/finance"
+                    },
+                    {
+                        "include": "../../../proto/examio/gateway/**/*.proto",
+                        "outDir": "dist/apps/admin-service/proto/examio/gateway"
+                    },
+                    {
+                        "include": "../../../proto/examio/vocabulary/**/*.proto",
+                        "outDir": "dist/apps/admin-service/proto/examio/vocabulary"
                     }
                 ]
             }
@@ -172,6 +208,10 @@
                     {
                         "include": "pipeline/*.lua",
                         "outDir": "dist/apps/gateway-service"
+                    },
+                    {
+                        "include": "../../../proto/examio/admin/**/*.proto",
+                        "outDir": "dist/apps/gateway-service/proto/examio/admin"
                     },
                     {
                         "include": "../../../proto/examio/gateway/**/*.proto",

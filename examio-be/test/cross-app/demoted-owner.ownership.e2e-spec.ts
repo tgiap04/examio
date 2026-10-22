@@ -1,14 +1,14 @@
 import { GenerateIdService } from '@examio/common';
-import { RoleChangeRepository } from '../../../auth-service/src/roles/role-change.repository';
-import { RoleChangeService } from '../../../auth-service/src/roles/role-change.service';
+import { RoleChangeRepository } from '../../apps/auth-service/src/roles/role-change.repository';
+import { RoleChangeService } from '../../apps/auth-service/src/roles/role-change.service';
 import {
     bootExamApp,
     rid,
     type ExamTestApp,
     type TestUser,
-} from './support/exam-test-app';
-import { call } from './support/http';
-import { seedExamRoom, seedExamSession, seedQuizSet } from './support/seed';
+} from '../../apps/exam-service/test/ownership/support/exam-test-app';
+import { call } from '../../apps/exam-service/test/ownership/support/http';
+import { seedExamRoom, seedExamSession, seedQuizSet } from '../../apps/exam-service/test/ownership/support/seed';
 
 /**
  * Owner-role independence (decision 2026-10-18): access to shared content is

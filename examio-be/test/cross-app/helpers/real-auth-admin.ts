@@ -6,7 +6,7 @@ import {
     bootAuthApp,
     loginVerified,
     registerUser,
-} from '../../../auth-service/test/helpers/auth-app';
+} from '../../../apps/auth-service/test/helpers/auth-app';
 
 /**
  * Real auth-service (HTTP + gRPC) and real admin-service on one Postgres:
@@ -22,16 +22,25 @@ export interface Harness {
 
 const created: string[] = [];
 
-export async function bootHarness(): Promise<Harness> {
+/** Providers replaced by fakes (the services admin talks to that this harness does not boot). */
+export interface HarnessOverrides {
+    providers?: Array<[token: unknown, value: unknown]>;
+}
+
+export async function bootHarness(overrides: HarnessOverrides = {}): Promise<Harness> {
     const auth = await bootAuthApp({ grpc: true });
     // Start from a known state: no admin left over from an earlier suite or run
     // (last-admin outcomes must not depend on leftovers).
     await auth.prisma.user.updateMany({ where: { isSystemAdmin: true }, data: { isSystemAdmin: false } });
     process.env.AUTH_JWKS_URL = `${auth.url}/.well-known/jwks.json`;
     process.env.AUTH_GRPC_URL = auth.grpcUrl as string;
-    const { AdminServiceModule } = await import('../../src/admin-service.module');
+    const { AdminServiceModule } = await import('../../../apps/admin-service/src/admin-service.module');
     const { HttpErrorEnvelopeFilter } = await import('@examio/http');
-    const moduleRef = await Test.createTestingModule({ imports: [AdminServiceModule] }).compile();
+    let builder = Test.createTestingModule({ imports: [AdminServiceModule] });
+    for (const [token, value] of overrides.providers ?? []) {
+        builder = builder.overrideProvider(token as never).useValue(value);
+    }
+    const moduleRef = await builder.compile();
     const admin = moduleRef.createNestApplication();
     admin.useGlobalFilters(new HttpErrorEnvelopeFilter());
     await admin.init();

@@ -1,13 +1,13 @@
 import { INestApplicationContext } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { GatewayControlClient } from '../src/clients/gateway-control.client';
-import { RoleChangeService } from '../src/roles/role-change.service';
-import { reservePort } from '../../gateway-service/test/support/ports';
+import { GatewayControlClient } from '../../apps/auth-service/src/clients/gateway-control.client';
+import { RoleChangeService } from '../../apps/auth-service/src/roles/role-change.service';
+import { reservePort } from '../../apps/gateway-service/test/support/ports';
 import {
     bootGateway,
     type Harness,
-} from '../../gateway-service/test/support/boot-gateway';
-import { AuthApp, PASSWORD, bootAuthApp, decodeClaims, uniq } from './helpers/auth-app';
+} from '../../apps/gateway-service/test/support/boot-gateway';
+import { AuthApp, PASSWORD, bootAuthApp, decodeClaims, uniq } from '../../apps/auth-service/test/helpers/auth-app';
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 /**
@@ -40,7 +40,7 @@ describe('auth <-> gateway (e2e)', () => {
 
         // The relay publishes auth's outbox (auth broker user); started before the
         // gateway harness switches RABBITMQ_URL to the gateway's own user.
-        const { WorkerModule } = await import('../src/worker.module');
+        const { WorkerModule } = await import('../../apps/auth-service/src/worker.module');
         worker = await NestFactory.createApplicationContext(WorkerModule, { logger: ['error'] });
 
         gw = await bootGateway({

@@ -26,10 +26,15 @@ export class EventSubscriberService implements OnModuleInit, OnModuleDestroy {
         private readonly rabbitMQService: RabbitMQService,
         private readonly configService: ConfigService
     ) {
-        this.queueName = this.configService.get<string>(
-            'SERVICE_NAME',
-            'common-queue'
-        );
+        // RabbitMQ users are only granted queues named after their own service
+        // (e.g. `exam-service`); a shared default would be refused with a 403.
+        const queueName = this.configService.get<string>('SERVICE_NAME');
+        if (!queueName) {
+            throw new Error(
+                'SERVICE_NAME is required: the legacy event subscriber consumes from a per-service queue'
+            );
+        }
+        this.queueName = queueName;
     }
 
     async onModuleInit() {

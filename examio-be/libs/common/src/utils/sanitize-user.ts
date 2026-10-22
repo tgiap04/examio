@@ -1,37 +1,7 @@
 import { User } from '@prisma/client';
 
-export function sanitizeUser(
-    user: User & {
-        wallet?: {
-            id?: string;
-            userId?: string;
-            balance: number;
-            createdAt?: Date;
-            updatedAt?: Date;
-        } | null;
-        subscription?: {
-            id: string;
-            userId: string;
-            tier: number;
-            billingCycle: string;
-            lastPaymentDate?: Date | null;
-            nextPaymentDate?: Date | null;
-            isActive: boolean;
-            createdAt: Date;
-            updatedAt: Date;
-        } | null;
-    }
-): Omit<User, 'password'> & {
-    wallet?: { balance: number } | null;
-    subscription?: {
-        id: string;
-        tier: number;
-        billingCycle: string;
-        isActive: boolean;
-        lastPaymentDate?: Date | null;
-        nextPaymentDate?: Date | null;
-    } | null;
-} {
+/** The user row without its password hash (auth owns no wallet/subscription data any more). */
+export function sanitizeUser(user: User): Omit<User, 'password'> {
     const { password, ...rest } = user;
     return rest;
 }
