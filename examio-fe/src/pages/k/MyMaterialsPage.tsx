@@ -1,3 +1,4 @@
+import { displayUserName } from "@/lib/user/display-user-name";
 import { useCallback, useEffect, useState } from "react"
 import { useNavigate, useSearchParams } from "react-router-dom"
 import {
@@ -101,7 +102,7 @@ function MaterialCard({
             <div className="flex h-5 w-5 items-center justify-center rounded-full bg-surface-card">
               <User className="h-3 w-3" />
             </div>
-            <span>{material.creator?.name || material.creator?.username || "Ẩn danh"}</span>
+            <span>{displayUserName(material.creator, "Ẩn danh")}</span>
           </div>
 
           <div className="flex items-center gap-1.5">

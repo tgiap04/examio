@@ -66,8 +66,7 @@ export interface ExamRoomBasic {
     username: string;
     name?: string;
     avatar?: string;
-    email?: string;
-  };
+  } | null;
 }
 
 export interface AccessCheckResult {
@@ -90,7 +89,7 @@ export interface ExamSessionPublicInfo {
     username: string;
     name: string | null;
     avatar: string | null;
-  };
+  } | null;
   examRoom: {
     id: string;
     title: string;
@@ -110,7 +109,7 @@ export interface ExamSessionForStudy extends ExamSession {
     username: string;
     name: string | null;
     avatar: string | null;
-  };
+  } | null;
   isOwner?: boolean;
 }
 
@@ -123,6 +122,5 @@ export interface SharingSettings {
     username: string;
     name: string | null;
     avatar: string | null;
-    email: string;
   }[];
 }

@@ -16,7 +16,7 @@ export interface RecentFlashcardSet {
     username: string;
     name: string | null;
     avatar: string | null;
-  };
+  } | null;
   isPublic: boolean;
   isPinned: boolean;
   progress?: number;

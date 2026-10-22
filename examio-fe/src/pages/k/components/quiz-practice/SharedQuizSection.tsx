@@ -1,3 +1,4 @@
+import { displayUserName } from "@/lib/user/display-user-name";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ClipboardList, User } from "lucide-react";
@@ -77,7 +78,7 @@ export function SharedQuizSection() {
                 <div className="mt-4 flex items-center justify-between border-t border-hairline-soft pt-3">
                   <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <User className="h-3 w-3" />
-                    {set.owner.name || "Ẩn danh"}
+                    {displayUserName(set.owner, "Ẩn danh")}
                     {lastAttemptLabel(set) && <span className="ml-2">· {lastAttemptLabel(set)}</span>}
                   </span>
                   <Button size="sm" className="h-8 px-3 text-xs" onClick={() => navigate(`/k/practice-quiz/${set.id}`)}>

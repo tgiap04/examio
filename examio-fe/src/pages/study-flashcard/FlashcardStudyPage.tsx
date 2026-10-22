@@ -1,4 +1,5 @@
  
+import { displayUserName } from "@/lib/user/display-user-name";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { Button } from "@/components/antd/button";
@@ -69,7 +70,7 @@ export default function FlashcardStudyPage() {
   const [flashcardSetDescription, setFlashcardSetDescription] = useState("");
   const [viewCount, setViewCount] = useState(0);
   const [creator, setCreator] = useState<{
-    name: string;
+    name: string | null;
     avatar: string | null;
     username: string;
   } | null>(null);
@@ -254,7 +255,7 @@ export default function FlashcardStudyPage() {
             <div className="mt-4 rounded-lg border border-hairline bg-surface-card p-4">
               <p className="font-medium text-ink">{publicInfo.title}</p>
               <p className="mt-1 text-xs text-muted-foreground">
-                Tạo bởi {publicInfo.creator.name || publicInfo.creator.username}
+                Tạo bởi {displayUserName(publicInfo.creator)}
               </p>
             </div>
           )}
@@ -286,7 +287,7 @@ export default function FlashcardStudyPage() {
               <div className="rounded-lg border border-hairline bg-surface-card p-4 text-center">
                 <p className="font-medium text-ink">{publicInfo.title}</p>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Tạo bởi {publicInfo.creator.name || publicInfo.creator.username}
+                  Tạo bởi {displayUserName(publicInfo.creator)}
                 </p>
               </div>
             )}
@@ -380,7 +381,7 @@ export default function FlashcardStudyPage() {
                   <AvatarImage src={creator.avatar || "/avt-default.webp"} />
                 </Avatar>
                 <span className="text-xs text-muted-foreground">
-                  {creator.name || creator.username}
+                  {displayUserName(creator)}
                 </span>
               </div>
             )}

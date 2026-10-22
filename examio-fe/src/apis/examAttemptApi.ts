@@ -36,7 +36,7 @@ export interface ExamAttemptWithQuestions extends ExamAttempt {
     username: string;
     name: string | null;
     avatar: string | null;
-  };
+  } | null;
   isOwner: boolean;
   examSession: {
     id: string;
@@ -133,12 +133,12 @@ export interface ExamAttemptUser {
   id: string;
   username: string;
   name: string | null;
-  email: string;
   avatar: string | null;
 }
 
 export interface ExamAttemptListItem {
   id: string;
+  userId: string;
   status: number;
   score: number;
   totalQuestions: number;
@@ -147,7 +147,8 @@ export interface ExamAttemptListItem {
   finishedAt: string | null;
   timeSpentSeconds: number;
   answers: Record<string, string>;
-  user: ExamAttemptUser;
+  /** null when auth is unreachable or the account was deleted. */
+  user: ExamAttemptUser | null;
   session: {
     id: string;
     startTime: string;

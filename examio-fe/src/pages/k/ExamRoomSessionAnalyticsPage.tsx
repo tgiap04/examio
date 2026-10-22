@@ -1,3 +1,4 @@
+import { displayUserInitial, displayUserName } from "@/lib/user/display-user-name";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { format } from "date-fns";
@@ -233,14 +234,14 @@ export default function ExamRoomSessionAnalyticsPage() {
                   const passed = attempt.score >= (sessionInfo?.passingScore || 0);
                   const rank = index + 1;
                   return (
-                    <TableRow key={attempt.user.id}>
+                    <TableRow key={attempt.userId}>
                       <TableCell><span className={`font-bold ${rank === 1 ? "text-yellow-500" : rank === 2 ? "text-gray-400" : rank === 3 ? "text-yellow-600" : ""}`}>#{rank}</span></TableCell>
-                      <TableCell><div><p className="font-medium">{attempt.user.name || attempt.user.username}</p><p className="text-xs text-muted-foreground">{attempt.user.email}</p></div></TableCell>
+                      <TableCell><div><p className="font-medium">{displayUserName(attempt.user)}</p></div></TableCell>
                       <TableCell><span className="font-bold">{attempt.score.toFixed(1)}%</span><span className="text-xs text-muted-foreground ml-1">({attempt.correctAnswers}/{attempt.totalQuestions})</span></TableCell>
                       <TableCell className="flex items-center gap-x-2">{passed ? <Badge variant="default" className="bg-green-500">Đạt</Badge> : <Badge variant="destructive">Chưa đạt</Badge>}</TableCell>
                       <TableCell><div className="flex items-center gap-1"><Clock className="h-3 w-3" />{formatDuration(attempt.timeSpentSeconds)}</div></TableCell>
                       <TableCell>{(attempt.violationCount || 0) > 0 ? <Badge variant="outline" className="text-red-500 border-red-500">{attempt.violationCount}</Badge> : <span className="text-muted-foreground">0</span>}</TableCell>
-                      <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => handleViewDetail(attempt.user.id)}>Xem</Button></TableCell>
+                      <TableCell className="text-right"><Button variant="ghost" size="sm" onClick={() => handleViewDetail(attempt.userId)}>Xem</Button></TableCell>
                     </TableRow>
                   );
                 })}
@@ -259,8 +260,8 @@ export default function ExamRoomSessionAnalyticsPage() {
             <div className="space-y-6 mt-6">
               <div className="p-4 bg-muted rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center"><span className="text-lg font-bold">{(selectedAttempt.user.name || selectedAttempt.user.username).charAt(0).toUpperCase()}</span></div>
-                  <div><p className="font-semibold">{selectedAttempt.user.name || selectedAttempt.user.username}</p><p className="text-sm text-muted-foreground">{selectedAttempt.user.email}</p></div>
+                  <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center"><span className="text-lg font-bold">{displayUserInitial(selectedAttempt.user)}</span></div>
+                  <div><p className="font-semibold">{displayUserName(selectedAttempt.user)}</p></div>
                 </div>
               </div>
 

@@ -203,9 +203,12 @@ api.interceptors.response.use(
     }
 
     if (action === "toast-refetch") {
-      toast.error(i18n.t("rbac.permissionDenied", { ns: "common" }));
+      // Same text on the toast and on the rejected error: a caller that toasts
+      // `error.message` again is collapsed into this one by the toast deduper.
+      const denied = i18n.t("rbac.permissionDenied", { ns: "common" });
+      toast.error(denied);
       refetchUserDebounced();
-      return Promise.reject(toApiError(i18n.t("rbac.permissionDenied", { ns: "common" }), error));
+      return Promise.reject(toApiError(denied, error));
     }
 
     if (action === "verify-redirect") {

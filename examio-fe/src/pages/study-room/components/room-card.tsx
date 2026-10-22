@@ -1,3 +1,4 @@
+import { DELETED_USER_LABEL, displayUserInitial, displayUserName } from "@/lib/user/display-user-name";
 import { memo } from "react";
 import {
   ChevronRight,
@@ -99,11 +100,11 @@ function RoomCardBase({ room, isHost, onEnter, onConfig }: Props) {
               alt={room.host?.name ?? ""}
             />
             <AvatarFallback>
-              {(room.host?.name ?? "?").charAt(0).toUpperCase()}
+              {displayUserInitial(room.host, "?")}
             </AvatarFallback>
           </Avatar>
           <span className="truncate text-sm text-muted-foreground">
-            {room.host?.name ?? "Chủ phòng"}
+            {room.host ? displayUserName(room.host, "Chủ phòng") : DELETED_USER_LABEL}
           </span>
         </div>
         <div className="flex items-center gap-3">

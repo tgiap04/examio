@@ -20,8 +20,7 @@ export interface ExamRoom {
     id: string;
     username: string;
     name?: string;
-    email?: string;
-  };
+  } | null;
   _count?: {
     examSessions?: number;
   };

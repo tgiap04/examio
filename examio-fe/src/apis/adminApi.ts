@@ -1,3 +1,4 @@
+import { idempotencyConfig } from "@/lib/idempotency-key";
 import { api } from "@/apis/api";
 
 import { env } from "@/lib/env";
@@ -23,7 +24,7 @@ export interface UserRow {
 
 export interface AuditRow {
   id: string;
-  actorId: number;
+  actorId: string;
   actorName: string;
   action: string;
   targetType: string;
@@ -73,7 +74,7 @@ export interface ListUsersQuery {
 }
 
 export interface ListAuditQuery {
-  actorId?: number;
+  adminId?: string;
   action?: string;
   from?: string;
   to?: string;
@@ -93,14 +94,17 @@ export interface RefundBody {
 }
 
 export interface CreditBody {
-  userId: number;
+  userId: string;
+  /** Always positive; the sign is carried by `direction`. */
   amount: number;
+  direction: "ADD" | "SUBTRACT";
   reason: string;
 }
 
 export interface SetTierBody {
-  userId: number;
+  userId: string;
   tier: number;
+  billingCycle?: "monthly" | "yearly";
   reason: string;
 }
 
@@ -172,18 +176,18 @@ export async function getSourcesApi(range?: "7d" | "30d" | "90d") {
   return response.data as SourceBreakdownResponse;
 }
 
-export async function refundApi(body: RefundBody) {
-  const response = await api.post("/admin/finance/refund", body);
+export async function refundApi(body: RefundBody, idempotencyKey: string) {
+  const response = await api.post("/admin/finance/refund", body, idempotencyConfig(idempotencyKey));
   return response.data;
 }
 
-export async function creditApi(body: CreditBody) {
-  const response = await api.post("/admin/finance/credit", body);
+export async function creditApi(body: CreditBody, idempotencyKey: string) {
+  const response = await api.post("/admin/finance/credit", body, idempotencyConfig(idempotencyKey));
   return response.data;
 }
 
-export async function setTierApi(body: SetTierBody) {
-  const response = await api.post("/admin/finance/tier", body);
+export async function setTierApi(body: SetTierBody, idempotencyKey: string) {
+  const response = await api.post("/admin/finance/tier", body, idempotencyConfig(idempotencyKey));
   return response.data;
 }
 

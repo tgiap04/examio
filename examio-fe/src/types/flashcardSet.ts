@@ -43,7 +43,7 @@ export interface FlashcardSet {
   updatedAt: string;
   flashCards?: Flashcard[];
   cardCount?: number;
-  creator?: FlashcardSetCreator;
+  creator?: FlashcardSetCreator | null;
   _count?: {
     detailsFlashCard: number;
   };
@@ -56,7 +56,7 @@ export interface FlashcardSetPublicInfo {
   thumbnail?: string;
   viewCount: number;
   cardCount: number;
-  creator: FlashcardSetCreator;
+  creator: FlashcardSetCreator | null;
   createdAt: string;
   isPublic: boolean;
   requiresCode: boolean;

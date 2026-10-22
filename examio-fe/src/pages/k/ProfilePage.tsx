@@ -25,11 +25,14 @@ import {
 import { useToast } from "@/components/antd/toast";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCan } from "@/hooks/useCan";
+import { useWalletStore } from "@/stores/useWalletStore";
 import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
-  const { user, getUser } = useAuthStore();
+  const { getUser } = useAuthStore();
   const canUseWallet = useCan("wallet:use");
+  const walletBalance = useWalletStore((s) => s.balance);
+  const loadWalletBalance = useWalletStore((s) => s.loadBalance);
   const { toast } = useToast();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -64,6 +67,11 @@ export default function ProfilePage() {
     fetchProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Balance comes from GET /wallet/info (wallet:use only), cached per session.
+  useEffect(() => {
+    if (canUseWallet) void loadWalletBalance();
+  }, [canUseWallet, loadWalletBalance]);
 
   const refreshUserData = useCallback(async () => {
     try {
@@ -294,7 +302,7 @@ export default function ProfilePage() {
                           {new Intl.NumberFormat("vi-VN", {
                             style: "currency",
                             currency: "VND",
-                          }).format(user?.wallet?.balance ?? 0)}
+                          }).format(walletBalance ?? 0)}
                         </p>
                       </div>
                     </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Modal,
   Form,
@@ -13,10 +13,14 @@ import {
   refundApi,
   creditApi,
   setTierApi,
-  RefundBody,
-  CreditBody,
-  SetTierBody,
 } from "@/apis/adminApi";
+import {
+  buildCreditBody,
+  buildRefundBody,
+  buildSetTierBody,
+  isReasonLongEnough,
+} from "@/lib/finance-action-body";
+import { newIdempotencyKey } from "@/lib/idempotency-key";
 import { useAdminStore } from "@/stores/useAdminStore";
 import { toast } from "@/components/antd/toast";
 
@@ -34,15 +38,18 @@ interface CommonFields {
 
 type RefundForm = CommonFields & { paymentId: string };
 type CreditForm = CommonFields & {
-  userId: number;
+  userId: string;
   amount: number;
   direction: "ADD" | "SUBTRACT";
 };
 type TierForm = CommonFields & {
-  userId: number;
+  userId: string;
   tier: number;
   billingCycle: "monthly" | "yearly";
 };
+
+// The modal renders one form per type; validateFields returns the union of what was shown.
+type AllFields = RefundForm & CreditForm & TierForm;
 
 const TIER_OPTIONS = [
   { label: "Tier 0 - Free", value: 0 },
@@ -61,37 +68,27 @@ export function FinanceActionModal({
   const [loading, setLoading] = useState(false);
   const [direction, setDirection] = useState<"ADD" | "SUBTRACT">("ADD");
 
+  const submittingRef = useRef(false);
+
   const handleCancel = () => {
     form.resetFields();
     onClose();
   };
 
-  const submit = async (values: Record<string, unknown>) => {
+  const submit = async (values: AllFields, idempotencyKey: string) => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setLoading(true);
     try {
       if (type === "refund") {
-        const body: RefundBody = {
-          paymentId: values.paymentId as string,
-          reason: values.reason as string,
-        };
-        await refundApi(body);
+        const body = buildRefundBody(values);
+        await refundApi(body, idempotencyKey);
       } else if (type === "credit") {
-        const body: CreditBody = {
-          userId: values.userId as number,
-          amount: Math.abs(values.amount as number),
-          reason: values.reason as string,
-        };
-        if (direction === "SUBTRACT") {
-          body.amount = -body.amount;
-        }
-        await creditApi(body);
+        const body = buildCreditBody(values, direction);
+        await creditApi(body, idempotencyKey);
       } else {
-        const body: SetTierBody = {
-          userId: values.userId as number,
-          tier: values.tier as number,
-          reason: values.reason as string,
-        };
-        await setTierApi(body);
+        const body = buildSetTierBody(values);
+        await setTierApi(body, idempotencyKey);
       }
 
       const store = useAdminStore.getState();
@@ -107,6 +104,7 @@ export function FinanceActionModal({
         t("finance.actions.error", { message: (err as Error).message }),
       );
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -114,6 +112,8 @@ export function FinanceActionModal({
   const handleFinish = async () => {
     try {
       const values = await form.validateFields();
+      // One key per click: a new confirm click is a new action.
+      const idempotencyKey = newIdempotencyKey();
       const danger = type === "refund" || direction === "SUBTRACT";
 
       Modal.confirm({
@@ -122,7 +122,7 @@ export function FinanceActionModal({
         okText: t("finance.confirm.ok"),
         cancelText: t("finance.confirm.cancel"),
         okButtonProps: { danger, loading },
-        onOk: () => submit(values),
+        onOk: () => submit(values, idempotencyKey),
       });
     } catch {
       // form validation already shows errors
@@ -148,14 +148,10 @@ export function FinanceActionModal({
             name="userId"
             label={t("finance.fields.userId")}
             rules={[
-              { required: true, message: t("finance.validation.required") },
+              { required: true, whitespace: true, message: t("finance.validation.required") },
             ]}
           >
-            <InputNumber
-              style={{ width: "100%" }}
-              placeholder="123"
-              min={1}
-            />
+            <Input placeholder="user id" />
           </Form.Item>
           <Form.Item
             name="amount"
@@ -198,7 +194,7 @@ export function FinanceActionModal({
             { required: true, message: t("finance.validation.required") },
           ]}
         >
-          <InputNumber style={{ width: "100%" }} min={1} />
+          <Input placeholder="user id" />
         </Form.Item>
         <Form.Item
           name="tier"
@@ -248,8 +244,17 @@ export function FinanceActionModal({
           name="reason"
           label={t("finance.fields.reason")}
           rules={[
-            { required: true, message: t("finance.validation.reasonRequired") },
-            { min: 10, message: t("finance.validation.reasonMin") },
+            {
+              required: true,
+              whitespace: true,
+              message: t("finance.validation.reasonRequired"),
+            },
+            {
+              validator: (_, value?: string) =>
+                !value || isReasonLongEnough(value)
+                  ? Promise.resolve()
+                  : Promise.reject(new Error(t("finance.validation.reasonMin"))),
+            },
             { max: 500, message: t("finance.validation.reasonMax") },
           ]}
         >

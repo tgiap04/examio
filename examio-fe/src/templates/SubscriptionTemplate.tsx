@@ -27,6 +27,7 @@ import {
 } from "@/apis/subscriptionApi";
 import { toast } from "@/components/antd/toast";
 import { Crown } from "lucide-react";
+import { useWalletStore } from "@/stores/useWalletStore";
 
 interface SubscriptionTemplateProps {
   walletDetails: WalletDetails;
@@ -102,7 +103,8 @@ export function SubscriptionTemplate({
     const status = await getPaymentStatusApi(paymentId);
     if (status.status === 1) {
       toast.success("Thanh toán thành công!");
-      // Reload page to refresh wallet
+      // Refresh the cached balance now; the reload below re-reads everything else
+      void useWalletStore.getState().loadBalance({ force: true });
       setTimeout(() => window.location.reload(), 2000);
     }
     return status;

@@ -1,3 +1,4 @@
+import { displayUserName } from "@/lib/user/display-user-name";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { format } from "date-fns";
@@ -313,7 +314,7 @@ export default function ManageExamRoomDetailPage() {
           <div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <div className="flex items-start gap-3"><div className="rounded-lg bg-coral/10 p-2"><Calendar className="h-5 w-5 text-coral" /></div><div><p className="text-sm font-medium text-ink">Bộ đề</p><p className="text-sm text-muted-foreground">{currentExamRoom.quizSet?.title || "Chưa có bộ đề"}</p></div></div>
-              <div className="flex items-start gap-3"><div className="rounded-lg bg-accent-teal/10 p-2"><Users className="h-5 w-5 text-accent-teal" /></div><div><p className="text-sm font-medium text-ink">Người tổ chức</p><p className="text-sm text-muted-foreground">{currentExamRoom.host?.name || currentExamRoom.host?.username}</p></div></div>
+              <div className="flex items-start gap-3"><div className="rounded-lg bg-accent-teal/10 p-2"><Users className="h-5 w-5 text-accent-teal" /></div><div><p className="text-sm font-medium text-ink">Người tổ chức</p><p className="text-sm text-muted-foreground">{displayUserName(currentExamRoom.host)}</p></div></div>
               <div className="flex items-start gap-3"><div className="rounded-lg bg-accent-amber/10 p-2"><Clock className="h-5 w-5 text-accent-amber" /></div><div><p className="text-sm font-medium text-ink">Ngày tạo</p><p className="text-sm text-muted-foreground">{format(new Date(currentExamRoom.createdAt), "dd/MM/yyyy")}</p></div></div>
             </div>
           </div>

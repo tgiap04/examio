@@ -198,7 +198,6 @@ export async function searchUsersForWhitelistApi(query: string): Promise<
     username: string;
     name: string | null;
     avatar: string | null;
-    email: string;
   }[]
 > {
   const response = await api.get("/examsessions/users/search", {

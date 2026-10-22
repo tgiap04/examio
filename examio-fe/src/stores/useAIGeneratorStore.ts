@@ -7,6 +7,7 @@ import { toast } from "@/components/antd/toast";
 import { aiApi, RecentUpload } from "@/apis/aiApi";
 import { storeCache } from "@/lib/storeCache";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useWalletStore } from "@/stores/useWalletStore";
 import { MODEL_UNAVAILABLE_MESSAGE } from "@/types/ai";
 
 interface FileInfo {
@@ -450,7 +451,7 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
 
     // [TEMP DISABLED] Check balance before proceeding
     // const user = useAuthStore.getState().user;
-    // const balance = user?.wallet?.balance || 0;
+    // const balance = useWalletStore.getState().balance ?? 0;
 
     // [TEMP DISABLED] Calculate cost
     // const { calculateTotalCost, calculateRegenerateCost, checkBalance } =
@@ -488,7 +489,7 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
           keyword: isNarrow ? keyword : undefined,
         });
         // [TEMP DISABLED] if (jobResponse.newBalance !== undefined) {
-        // [TEMP DISABLED]   useAuthStore.getState().updateWalletBalance(jobResponse.newBalance);
+        // [TEMP DISABLED]   useWalletStore.getState().setBalance(jobResponse.newBalance);
         // [TEMP DISABLED] }
         jobId = jobResponse.jobId;
       } else {
@@ -501,7 +502,7 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
           keyword: isNarrow ? keyword : undefined,
         });
         // [TEMP DISABLED] if (jobResponse.newBalance !== undefined) {
-        // [TEMP DISABLED]   useAuthStore.getState().updateWalletBalance(jobResponse.newBalance);
+        // [TEMP DISABLED]   useWalletStore.getState().setBalance(jobResponse.newBalance);
         // [TEMP DISABLED] }
         jobId = jobResponse.jobId;
       }
@@ -528,8 +529,8 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
           });
           // Refresh recent uploads list after successful generation
           useRecentUploadsStore.getState().fetchRecentUploads(true);
-          // [TEMP DISABLED] Refresh user data to update wallet balance
-          // [TEMP DISABLED] useAuthStore.getState().getUser();
+          // The debit happened server-side: refresh the cached wallet balance
+          void useWalletStore.getState().loadBalance({ force: true });
         },
         // onError
         (error) => {
@@ -636,7 +637,7 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
 
       // [TEMP DISABLED] Check balance before proceeding
       // const user = useAuthStore.getState().user;
-      // const balance = user?.wallet?.balance || 0;
+      // const balance = useWalletStore.getState().balance ?? 0;
 
       // [TEMP DISABLED] Calculate cost
       // const { calculateTotalCost, calculateRegenerateCost, checkBalance } =
@@ -674,7 +675,7 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
             keyword: isNarrow ? keyword : undefined,
           });
           // [TEMP DISABLED] if (jobResponse.newBalance !== undefined) {
-          // [TEMP DISABLED]   useAuthStore.getState().updateWalletBalance(jobResponse.newBalance);
+          // [TEMP DISABLED]   useWalletStore.getState().setBalance(jobResponse.newBalance);
           // [TEMP DISABLED] }
           jobId = jobResponse.jobId;
         } else {
@@ -687,7 +688,7 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
             keyword: isNarrow ? keyword : undefined,
           });
           // [TEMP DISABLED] if (jobResponse.newBalance !== undefined) {
-          // [TEMP DISABLED]   useAuthStore.getState().updateWalletBalance(jobResponse.newBalance);
+          // [TEMP DISABLED]   useWalletStore.getState().setBalance(jobResponse.newBalance);
           // [TEMP DISABLED] }
           jobId = jobResponse.jobId;
         }
@@ -717,8 +718,8 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
             });
             // Refresh recent uploads list after successful generation
             useRecentUploadsStore.getState().fetchRecentUploads(true);
-            // [TEMP DISABLED] Refresh user data to update wallet balance
-            // [TEMP DISABLED] useAuthStore.getState().getUser();
+            // The debit happened server-side: refresh the cached wallet balance
+            void useWalletStore.getState().loadBalance({ force: true });
           },
           // onError
           (error) => {

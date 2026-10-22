@@ -1,3 +1,4 @@
+import { displayUserName } from "@/lib/user/display-user-name";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Plus } from "lucide-react";
@@ -73,10 +74,10 @@ export default function ManageExamRoomPage() {
           .slice(0, 5)
           .map((attempt) => ({
             id: attempt.id,
-            name: attempt.user.name || attempt.user.username,
+            name: displayUserName(attempt.user),
             examName: (attempt as ExamAttemptListItem & { examRoomTitle?: string }).examRoomTitle || "Phòng thi",
             status: "offline",
-            avatar: attempt.user.avatar || "",
+            avatar: attempt.user?.avatar || "",
           }));
 
         setRecentParticipants(participants);
