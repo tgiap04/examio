@@ -31,7 +31,7 @@ Gateway proxies all requests to downstream services. **Routing source of truth (
 | GET | /api/v1/auth/google/callback | Google OAuth callback | public |
 | POST | /api/v1/auth/google/one-tap | Google One Tap login | public |
 | POST | /api/v1/auth/sync-refresh-token | Sync refresh token from current session | Bearer |
-| GET | /api/v1/auth/me | Get current user profile | Bearer |
+| GET | /api/v1/auth/me | Current user: `{ user, roles, permissions }` (no wallet/subscription; balance via `GET /wallet/info`) | Bearer |
 | POST | /api/v1/auth/sendVerificationEmail | Send account verification email | Bearer |
 | POST | /api/v1/auth/verifyAccount | Verify account with code | Bearer |
 | POST | /api/v1/auth/send-code-change-password | Send code to change password | Bearer |
@@ -634,10 +634,10 @@ All admin routes are proxied from gateway via `/api/v1/admin/*` to `admin-servic
 | GET | /api/v1/admin/roles/changes | Role change history (`userId`, `page`, `limit`), newest first | Admin (`role:assign`) |
 | PUT | /api/v1/admin/roles/users/:id/role | Set base role `STUDENT` / `TEACHER` (`reason` optional); 403 `CANNOT_CHANGE_OWN_ROLE`, 404 `USER_NOT_FOUND`, 409 `ROLE_CHANGE_CONFLICT` | Admin (`role:assign`) |
 | PUT | /api/v1/admin/roles/users/:id/system-admin | Grant / revoke SYSTEM_ADMIN (`{ isSystemAdmin, reason? }`); also 409 `LAST_SYSTEM_ADMIN` | Admin (`role:assign`) |
-| GET | /api/v1/admin/finance/refunds | List refund history | Admin |
-| POST | /api/v1/admin/finance/refund | Issue wallet refund | Admin |
-| POST | /api/v1/admin/finance/adjust-credit | Manual credit adjustment | Admin |
-| PUT | /api/v1/admin/finance/subscription-tier | Change user subscription tier | Admin |
+| POST | /api/v1/admin/finance/refund | Refund a payment (finance `RefundPayment`); optional `Idempotency-Key` header (1-200 chars, else a fresh key per request), response carries `alreadyApplied` | Admin (`finance:admin`) |
+| POST | /api/v1/admin/finance/credit | Manual credit adjustment (finance `AdjustBalance`); `Idempotency-Key`, `alreadyApplied` | Admin (`finance:admin`) |
+| POST | /api/v1/admin/finance/set-tier | Change user subscription tier (finance `ChangeTier`); `Idempotency-Key`, `alreadyApplied` | Admin (`finance:admin`) |
+| POST | /api/v1/admin/finance/tier | Alias of `set-tier` (used by the FE) | Admin (`finance:admin`) |
 | GET | /api/v1/admin/audit | Query audit log (paginated, date-filtered) | Admin |
 | GET | /api/v1/admin/logs | Fetch server-side logs (polling fallback) | Admin |
 | GET | /api/v1/admin/logs/stream | SSE stream for real-time logs (ticket exchange) | Admin |

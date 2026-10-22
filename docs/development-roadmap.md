@@ -84,11 +84,15 @@ Phase 08 (admin role management) is implemented but uncommitted on `refactor/mic
 
 Phase 09 (frontend RBAC) is implemented but uncommitted on `refactor/microservice-rbac`: permission-driven routing and nav, `/403`, generated permission types with a CI drift check, `ApiRequestError` plus the 401/403 policy, single-flight refresh, session-probe, role-scoped store reset, study-room socket recovery, Vitest for the FE, and backend fixes (refresh cookie rotation, exam-service Redis-outage 503). Follow-ups: `/study-flashcard/:id` now needs login; mobile (`examio-app`) still not adapted. See [changelog](project-changelog.md) and [permissions](system/permissions.md) § Frontend route guards.
 
+## Progress Note (2026-10-23) — microservice-refactor plan, phase 10
+
+Phase 10 (cut cross-DB access) is implemented but uncommitted on `refactor/microservice-rbac`: one owning service per Prisma model (`yarn check:ownership`, `yarn check:deps` in CI), idempotent money RPCs (`WalletService.Debit`/`Credit`/`Refund`, `UpdateBalance` removed), finance admin/stats RPCs, auth user admin RPCs and `auth.user.updated`, `/auth/me` without wallet/subscription, admin stats from `GetUserStats` plus `GetRevenueStats`, page flags pushed admin to gateway by gRPC, exam user enrichment through auth public profiles, word-family category admin through exam gRPC. Migrations `20261022090000_wallet_idempotency` and `20261023090000_payment_refund_key`. Follow-ups: the database is still shared (schema split is phase 11); `examio-app` was not checked against the new `/auth/me` shape. See [changelog](project-changelog.md) and [architecture](system/architecture.md) § gRPC.
+
 ## Phase 0 — System Correctness (P0, blocking)
 
 | # | Item | Source | Owner | Deps |
 |---|------|--------|-------|------|
-| 0.1 | **Remove `FREE_MODE = true` from `FinanceClientService.deductCredits`** — credit bypass shipped in production code path | W7a + scout | backend | — |
+| 0.1 | ~~Remove `FREE_MODE = true` from `FinanceClientService.deductCredits`~~ — resolved 2026-10-23 (microservice-refactor phase 10): charging goes through the shared `FinanceClient` (`libs/grpc`); `AI_FREE_MODE` is dev/local only and forced off when `NODE_ENV=production` | W7a + scout | backend | — |
 | 0.2 | ~~Fix `ocr-service` gRPC port collision~~ — resolved 2026-10-18: `ocr-service` deleted (microservice-refactor phase 01) | W7a + scout | platform | — |
 | 0.3 | ~~Remove duplicate finance routes in gateway~~ — resolved 2026-10-20: proxy controllers removed, `routes.yaml` has one `wallet` / `payment` entry (microservice-refactor phase 05) | W7a | backend | — |
 | 0.4 | **Decide `AuthService.ValidateToken` gRPC** — wired but unused; either remove or have downstream services use it instead of Prisma-direct lookup | W7a | backend | — |

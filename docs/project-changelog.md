@@ -1,13 +1,25 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-10-22
+last_updated: 2026-10-23
 ---
 
 # Examio Project Changelog
 
-## [Unreleased] — 2026-10-22
+## [Unreleased] — 2026-10-23
 
 ### Changed
+
+#### Cut cross-DB access, phase 10 (uncommitted on `refactor/microservice-rbac`)
+
+- **Ownership**: each Prisma model is read and written by one service (`examio-be/scripts/check-model-ownership.ts`). New commands in `examio-be`: `yarn check:ownership` and `yarn check:deps` (`.dependency-cruiser.cjs`), both in CI. The database is still shared.
+- **Money RPCs**: `WalletService.Debit`, `Credit`, `Refund` take an `idempotency_key` and return `already_applied`; `UpdateBalance` is gone. `WalletTransaction` gains `idempotencyKey` and `balanceAfter` (unique `(walletId, idempotencyKey)`), `Payment` gains `refundIdempotencyKey` (migrations `20261022090000_wallet_idempotency`, `20261023090000_payment_refund_key`). A reused key with a different request fails `IDEMPOTENCY_KEY_REUSED`. `Debit` creates the welcome wallet only for a TEACHER user token; exam forwards the caller's token. The shared client lives in `libs/grpc`; `AI_FREE_MODE` is forced off in production.
+- **Finance admin**: `FinanceAdminService` (`finance:admin`) and `FinanceStatsService.GetRevenueStats` (`stats:read`). `POST /admin/finance/{refund,credit,set-tier,tier}` accept an `Idempotency-Key` header (the FE sends one per action) and return `alreadyApplied`.
+- **Auth**: `AuthUserService` (`UpdateUserAdmin`, `SearchUsers`, `GetUserStats`, `GetUserAdminDetail`), event `auth.user.updated`, `GetUsersByIds` limited to `user:manage` or service `admin`. `GET /auth/me`, login and refresh return `{ user, roles, permissions }` only (no wallet, subscription, `isAdmin`); auth no longer depends on finance. **Client impact**: the FE reads the balance from `GET /wallet/info` (`useWalletStore`); `examio-app` was not checked against it.
+- **Admin service**: calls auth, finance, gateway and exam (vocabulary) over gRPC with the forwarded admin token; stats come from `GetUserStats` plus `GetRevenueStats` (5-minute cache). Page flags: admin pushes them to the gateway (`SetPageFlags`), the gateway pulls `AdminService.GetPageFlags` at boot (retry, 60 s watcher).
+- **Exam**: user and host names come from auth `GetPublicProfilesByIds` (Redis `exam:cache:user:<id>`, TTL 600, invalidated by `auth.user.updated`); no email in any exam response; `user`/`host` may be `null`, the FE shows "Người dùng đã xóa". Word-family category create/update/delete were removed from exam HTTP and are served only through admin plus gRPC `WordFamilyAdminService` (`word_family:admin`; R2 deletes limited to the `word-family/` prefix). Study-room Redis adapter fixed for multi-instance fan-out. The legacy `EventSubscriberService` requires `SERVICE_NAME`. `nest-cli.json` copies proto assets per service (`test/build/proto-assets.spec.ts`).
+- **Config**: new env names: exam `AUTH_GRPC_URL`, `GRPC_PORT`, `R2_PUBLIC_URL`; admin `FINANCE_GRPC_URL`, `GATEWAY_GRPC_URL`, `VOCABULARY_GRPC_URL`, `GRPC_PORT`, `AUTH_TOKEN_URL`, `SERVICE_CLIENT_SECRET`; gateway `ADMIN_GRPC_URL`, `AUTH_TOKEN_URL`, `GATEWAY_SERVICE_CLIENT_SECRET` (auth `SERVICE_CLIENTS` needs a `gateway` hash). `deploy/docker-compose.yml` updated.
+- **Docs**: `CLAUDE.md`, `AGENTS.md`, `system/{architecture,permissions,business-rules,overview}.md`, `generated/{route-list,entities,behavior-logic}.md`, `features/{F005,F014,F015}`, `deploy/README.md`, roadmap.
+
 
 #### Frontend RBAC, phase 09 (uncommitted on `refactor/microservice-rbac`)
 

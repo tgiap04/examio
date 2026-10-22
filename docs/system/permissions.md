@@ -6,7 +6,7 @@
 
 ---
 
-## Current RBAC Catalog (microservice refactor phases 04 and 06, 2026-10-19 / 2026-10-20)
+## Current RBAC Catalog (microservice refactor phases 04, 06 and 10, 2026-10-19 / 2026-10-23)
 
 > Authoritative for the code on `refactor/microservice-rbac`. Source: `examio-be/libs/auth-jwt/src/permissions.ts` (`ROLE_PERMISSIONS`). The legacy `PERM###` sections below pre-date it and still describe `AuthGuard` / `AdminGuard` / `User.isAdmin`, which no longer exist; where they conflict, this section wins (full rewrite is phase 19 of the plan). The frontend route and nav tables are in § Frontend route guards.
 
@@ -72,7 +72,25 @@ A SYSTEM_ADMIN who is also a STUDENT/TEACHER holds the union of both columns. A 
 - IDOR rule for gRPC RPCs that take a `user_id`: `assertSelfOrService(metadata, userId)`; a user token may only name its own `sub`, an allowlisted service may name anyone.
 - Role changes (`SetUserRole`, `SetSystemAdmin` on auth) require `role:assign`; only a SYSTEM_ADMIN can grant TEACHER or admin. A user cannot change their own role (403 `CANNOT_CHANGE_OWN_ROLE`); the last active SYSTEM_ADMIN cannot be demoted (409 `LAST_SYSTEM_ADMIN`). Every change writes `RoleChangeLog`, bumps `User.authzVersion` and emits `auth.user.authz_changed` in the same transaction.
 - Stale tokens: a role change takes effect when the access token is refreshed (15 min max); the refresh reloads the role in a transaction and refuses banned/deleted accounts (401 `ACCOUNT_DISABLED`).
-- `GET /auth/me` returns `{ user, roles, permissions }`; `user.isSystemAdmin` replaces `isAdmin`.
+- `GET /auth/me`, login and refresh return `{ user, roles, permissions }`; `user.isSystemAdmin` replaces `isAdmin`. No wallet or subscription in these responses and auth does not call finance (balance: `GET /wallet/info`, `wallet:use`).
+
+#### gRPC guards added in phase 10 (2026-10-23)
+
+Admin and exam call other services with the acting user's forwarded token (`AUTH_TOKEN_URL` service tokens identify the calling service). Source: the `*.grpc.controller.ts` files of auth, finance, exam, admin.
+
+| RPC | Declaration |
+|---|---|
+| finance `WalletService.Debit` | `@RequirePermissionsOrService(['wallet:use'], { callers: ['exam','content','document'] })`; only a TEACHER user token may mint the welcome wallet |
+| finance `WalletService.Credit`, `Refund` | `@ServiceOnly('exam','content','document')` |
+| finance `WalletService.CreateWallet` | `@ServiceOnly('auth')` |
+| finance `FinanceAdminService.*` (`AdjustBalance`, `RefundPayment`, `ChangeTier`, `ListPayments`, `ListSubscriptions`, `GetUserFinance`) | `@RequirePermissions('finance:admin')`; no service caller, actor = token subject |
+| finance `FinanceStatsService.GetRevenueStats` | `@RequirePermissions('stats:read')` |
+| auth `AuthUserService.UpdateUserAdmin`, `GetUserAdminDetail` | `@RequirePermissions('user:manage')` |
+| auth `AuthUserService.SearchUsers` / `GetUserStats` | `@RequirePermissions('user:search')` / `('stats:read')` |
+| auth `GetPublicProfilesByIds` | `@RequirePermissionsOrService([])` (exam caller; no email in the payload) |
+| auth `GetUsersByIds` | `@RequirePermissionsOrService(['user:manage'], { callers: ['admin'] })` (was open to more callers) |
+| gateway `SetPageFlags` / admin `GetPageFlags` | `@ServiceOnly('admin')` / `@ServiceOnly('gateway')` |
+| exam `WordFamilyAdminService.*` | `@RequirePermissions('word_family:admin')` |
 
 ### Per-endpoint enforcement (phase 06, 2026-10-20)
 
@@ -112,7 +130,8 @@ A SYSTEM_ADMIN who is also a STUDENT/TEACHER holds the union of both columns. A 
 | word-family | `categories`, `roots`, `category/...`, `generation-status/*` | `word_family:read` |
 | | `save`, `saved`, `DELETE saved/:id` | `word_family:save` |
 | | `generate`, `generate-root` | `word_family:generate` (TEACHER only; free; 20/day per user, 429 `WORD_FAMILY_DAILY_LIMIT`; 503 `GENERATION_LIMIT_UNAVAILABLE` if Redis is down) |
-| | `:id/to-flashcard` / categories POST/PUT/DELETE | `flashcardset:manage` / `word_family:admin` |
+| | `:id/to-flashcard` | `flashcardset:manage` |
+| | categories POST/PUT/DELETE | removed from exam HTTP (phase 10); category writes only through admin `admin/word-family/*` to exam gRPC `WordFamilyAdminService` (`word_family:admin`) |
 | ai | `quick-upload`, `upload`, `upload-image`, `recent-uploads`, `GET/DELETE upload/:id` | `document:upload` (own) |
 | | `generate-from-file`, `regenerate/:id`, `job/:id`, `upload/:id/history`, `models` | `ai:generate` (own) |
 | ai-chat | all handlers (class-level) | `ai_chat:use` (own); `:chatId/exists` is `true` only for the caller's own chat |
@@ -122,7 +141,7 @@ A SYSTEM_ADMIN who is also a STUDENT/TEACHER holds the union of both columns. A 
 | | `payment/subscription` / `subscription/plans` / `POST /webhook` | `subscription:manage` / `@Public()` / `@Public()` (SePay key) |
 | admin | users (list, `:id`, PATCH, ban, unban) | `user:manage`; PATCH rejects `isAdmin`, `isSystemAdmin`, `role`, `isBanned` (400 `VALIDATION_ERROR`) |
 | | `admin/roles` (matrix, `users`, `changes`), `PUT roles/users/:id/role`, `PUT roles/users/:id/system-admin` | `role:assign` (phase 08; `grant-admin` / `revoke-admin` removed) |
-| | finance / logs / page-config / stats (`admin/stats/*`, `admin/overview`, `admin/series/:name`, `admin/sources`) / audit / word-family | `finance:admin` / `logs:read` / `page_config:manage` / `stats:read` / `audit:read` / `word_family:admin` (replaces the class-level `admin:access`) |
+| | finance actions accept an `Idempotency-Key` header and answer `alreadyApplied`; finance / logs / page-config / stats (`admin/stats/*`, `admin/overview`, `admin/series/:name`, `admin/sources`) / audit / word-family | `finance:admin` / `logs:read` / `page_config:manage` / `stats:read` / `audit:read` / `word_family:admin` (replaces the class-level `admin:access`) |
 
 Plain `@Authenticated()` handlers (allowlist, each with a two-user negative spec or `selfScoped: true`): examattempt `detail` / `get-by-id` / `update`; auth `logout`, `me`-style and profile handlers (self-scoped); `DevicesController` list/logout (two-user spec).
 
@@ -1940,11 +1959,11 @@ All user-facing word-family routes (browse categories, view root words/detail, g
 ## PERM057: AdminWordFamilyManagement
 
 **Type**: action-permission
-**Enforced At**: `admin-word-family.controller.ts` (`@RequirePermissions('admin:access')`, class-level) + duplicate category CRUD in `word-family.controller.ts` (method-level `word_family:admin`)
+**Enforced At**: `admin-word-family.controller.ts` (`@RequirePermissions('word_family:admin')`, class-level) + exam `word-family-admin.grpc.controller.ts` (`word_family:admin` per RPC)
 
 ### Description
 
-Admin-only CRUD on `WordFamilyCategory` (create, update, soft-delete via `isActive = false`). Two parallel implementations exist: the primary admin-service surface (`/api/v1/admin/word-family/*`, used by the FE admin page, wraps writes in `Prisma.TransactionIsolationLevel.Serializable` + `AdminAudit` before/after diff) and a secondary exam-service surface (`/api/v1/word-family/categories*`) kept for backward compatibility. Category deletion is soft-delete only at the API layer — the Prisma `onDelete: Cascade` relation to `WordFamily`/`UserSavedWordFamily` is defined but not reachable via any exposed hard-delete route.
+Admin-only CRUD on `WordFamilyCategory` (create, update, soft-delete via `isActive = false`). Category writes go only through admin-service (`/api/v1/admin/word-family/*`, class-level `word_family:admin`, `AdminAudit` row per mutation), which calls exam's gRPC `WordFamilyAdminService` with the admin's forwarded token; the exam HTTP `categories` POST/PUT/DELETE routes were removed in phase 10. Replacing or deleting a category image deletes the old R2 object (only under the `word-family/` prefix). Category deletion is soft-delete only at the API layer — the Prisma `onDelete: Cascade` relation to `WordFamily`/`UserSavedWordFamily` is defined but not reachable via any exposed hard-delete route.
 
 ### Related Routes
 

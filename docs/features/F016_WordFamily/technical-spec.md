@@ -24,7 +24,7 @@ N/A — no discriminator fields in Key Entities. (The AI-returned `data` JSON bl
 | FR-004 | Student can generate new root words via AI, excluding existing ones | `WordFamilyService.generateWordFamily` | yes |
 | FR-005 | Student can save/remove a word family to/from a personal collection | `WordFamilyService.saveToCollection` / `removeFromCollection` | yes |
 | FR-006 | Student can convert selected words into a new flashcard deck | `WordFamilyBridgeService.createFlashcardDeck` | yes |
-| FR-007 | Admin can CRUD categories (create, update, soft-delete) | `AdminWordFamilyController` / `WordFamilyController` category methods | yes |
+| FR-007 | Admin can CRUD categories (create, update, soft-delete) | `AdminWordFamilyController` (admin-service) to exam gRPC `WordFamilyAdminService` | yes |
 | FR-008 | On page load/reload, student sees whether an AI generation job is already running for the category and gets a "generating" state until it finishes | `WordFamilyController` `GET /generation-status/:slug` | yes |
 | FR-009 | A specific root word's family can be (re-)generated on-demand as a background job — the endpoint acquires a root-specific lock and returns immediately (no gateway timeout), and the client polls a root-scoped status endpoint until the AI call completes and the record is overwritten | `WordFamilyController` `POST /word-family/generate-root` → `WordFamilyService.generateWordFamilyForRoot`; status via `GET /word-family/generation-status/:slug/:rootWord` → `getRootGenerationStatus` | yes |
 
@@ -35,7 +35,7 @@ N/A — no discriminator fields in Key Entities. (The AI-returned `data` JSON bl
 - **BR-001**: Dedup is enforced at two layers — app-level (existing root words for the category are merged into the AI request's exclude-list) and DB-level (`@@unique([rootWord, categorySlug])` with `upsert` on write). If the AI still returns a duplicate, the existing row's `data` is silently updated rather than erroring. Source: `word-family.service.ts:114-116`, `word-family.repository.ts:117-131`.
 - **BR-002**: Only one generation job per `userId:categorySlug` may run at a time — enforced by a Redis `SET NX EX` lock with a 30-minute TTL; a concurrent second request gets `ConflictException`; the lock is always released in `finally` even on failure. Source: `word-family.service.ts:119-126,196`.
 - **BR-003**: No credit/quota check exists before AI generation — unlike other AI flows in the codebase (e.g. AI chat, which checks wallet/subscription via gRPC), word-family generation has no wallet gate.
-- **BR-004**: Category deletion is soft-delete only (`isActive: false`) at both admin API surfaces; the Prisma `onDelete: Cascade` relation to `WordFamily`/`UserSavedWordFamily` exists but is unreachable via any exposed hard-delete route. Source: `word-family.prisma:28`, `admin-word-family.service.ts`.
+- **BR-004**: Category deletion is soft-delete only (`isActive: false`) through the admin API (admin-service to exam gRPC `WordFamilyAdminService`; the exam HTTP category write routes were removed in phase 10); the Prisma `onDelete: Cascade` relation to `WordFamily`/`UserSavedWordFamily` exists but is unreachable via any exposed hard-delete route. Source: `word-family.prisma:28`, `admin-word-family.service.ts`.
 - **BR-005**: Saving a word family is idempotent — `@@unique([userId, wordFamilyId])` on `UserSavedWordFamily` makes repeated saves a no-op rather than an error. Source: `word-family.prisma:47`.
 - **BR-006**: Flashcard bridge content is HTML-escaped before being written to `FlashCard.question`/`answer` to prevent XSS from AI-generated text. Source: `word-family-bridge.service.ts:65-69,122-130`.
 - **BR-007**: The flashcard bridge operation is atomic — `FlashCardSet` creation, batch `FlashCard` creation, and batch `DetailsFlashCard` join creation all run inside one `prisma.$transaction`. Source: `word-family-bridge.service.ts:72`.
@@ -108,7 +108,7 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 ## Assumptions
 
-- Category CRUD exists as two parallel API surfaces (admin-service + exam-service); the exam-service surface is assumed legacy/backward-compat since the FE admin page calls admin-service exclusively.
+- Category writes have a single path since phase 10: admin-service HTTP (`/admin/word-family/categories*`, `word_family:admin`) calling exam's gRPC `WordFamilyAdminService`. Category images are pasted URLs; replacing or deleting one deletes the old R2 object, limited to the `word-family/` prefix.
 - No credit/quota enforcement on AI generation is assumed intentional (feature launched without a wallet gate), not an oversight — flagged in Unresolved Questions for confirmation.
 
 ## Source Code References
@@ -116,11 +116,11 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 | Symbol | Path | Purpose |
 |--------|------|---------|
 | WordFamilyCategory/WordFamily/UserSavedWordFamily (models) | `examio-be/libs/database/src/models/word-family.prisma:2-50` | Data models |
-| WordFamilyController | `examio-be/apps/exam-service/src/modules/word-family/word-family.controller.ts:33-208` | User + legacy admin routes, incl. `GET /generation-status/:slug`, `POST /generate-root`, `GET /generation-status/:slug/:rootWord` |
+| WordFamilyController | `examio-be/apps/exam-service/src/modules/word-family/word-family.controller.ts:33-208` | User routes (category writes removed), incl. `GET /generation-status/:slug`, `POST /generate-root`, `GET /generation-status/:slug/:rootWord` |
 | WordFamilyService | `examio-be/apps/exam-service/src/modules/word-family/word-family.service.ts:17-396` | Category CRUD, generation orchestration, collection CRUD, `getGenerationStatus`, `generateWordFamilyForRoot` (fires unawaited background job), `runRootGeneration` worker, `getRootGenerationStatus`, flattened `getWordFamily` response |
 | WordFamilyBridgeService | `examio-be/apps/exam-service/src/modules/word-family/word-family-bridge.service.ts:24-130` | Transactional flashcard conversion |
 | WordFamilyRepository | `examio-be/apps/exam-service/src/modules/word-family/word-family.repository.ts:18-196` | Redis-cached Prisma access, upsert dedup |
-| AdminWordFamilyController | `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts:32-69` | Primary admin category CRUD |
+| AdminWordFamilyController | `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts:32-69` | Admin category CRUD (HTTP edge; forwards to exam gRPC `word-family-admin.grpc.controller.ts`) |
 | AdminWordFamilyService | `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.service.ts:41-179` | Transactional CRUD + audit diff |
 | WordFamilyProxyController | `examio-be/apps/gateway-service/src/controllers/word-family-proxy.controller.ts:24-31,159-172,189-207` | Gateway proxy, `PageEnabledGuard`, incl. `POST generate-root`, `GET generation-status/:slug/:rootWord` |
 | generation.py (AI endpoint) | `examio-be/apps/ai-service/src/backend/api/generation.py:69,235,263` | FastAPI word-family generation endpoint; `rootWord` request field |

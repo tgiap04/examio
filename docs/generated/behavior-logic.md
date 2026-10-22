@@ -133,7 +133,7 @@ Core authentication service. Handles email/password login, Google OAuth flow (in
 
 ### Description
 
-Finance service client used by exam-service to check user wallet balance and deduct credits before allowing AI generation or document processing. Queries wallet info and emits debit transactions. Note: `FREE_MODE = true` shipped in production code path — credit gating is bypassed.
+Finance service client used by exam-service to check user wallet balance and deduct credits before allowing AI generation or document processing. Charges through the shared `FinanceClient` (`libs/grpc`) with finance `WalletService.Debit` (idempotency key, caller's access token forwarded); benefits fall back to Free-tier defaults when finance is unreachable. `AI_FREE_MODE=true` skips the charge only outside production (forced off when `NODE_ENV=production`).
 
 ### Related Modules
 

@@ -1,7 +1,7 @@
 ---
 title: System Architecture
-last_updated: 2026-10-20
-source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/); manually patched 2026-07-19 for Study-Together Room (first WebSocket transport); patched 2026-07-21 for Study Room playlist/access/moderation extension; patched 2026-10-20 for gateway rewrite (microservice-refactor phase 05)
+last_updated: 2026-10-23
+source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/); manually patched 2026-07-19 for Study-Together Room (first WebSocket transport); patched 2026-07-21 for Study Room playlist/access/moderation extension; patched 2026-10-20 for gateway rewrite (microservice-refactor phase 05); patched 2026-10-23 for phase 10 (cross-DB access cut)
 status: ACTIVE
 ---
 
@@ -45,10 +45,15 @@ graph TB
     GW -->|HTTP proxy| FIN
     GW -->|HTTP proxy| ADMIN
     AUTH -->|gRPC GatewayControl: RevokeSession, InvalidateUser| GW
-    ADMIN -->|writes page-flag cache| REDIS
+    ADMIN -->|gRPC SetPageFlags, forwarded admin token| GW
+    GW -->|boot pull: gRPC AdminService.GetPageFlags| ADMIN
+    ADMIN -->|gRPC AuthUserService + auth RPCs| AUTH
+    ADMIN -->|gRPC FinanceAdminService, FinanceStatsService| FIN
+    ADMIN -->|gRPC WordFamilyAdminService| EXAM
+    EXAM -->|gRPC GetPublicProfilesByIds| AUTH
     RMQ -->|gateway.events: authz_changed, session.revoked| GW
     GW -->|revoke / av / rate limit / page flags| REDIS
-    EXAM -->|gRPC wallet check| FIN
+    EXAM -->|gRPC Debit / Credit / Refund / GetWallet| FIN
     EXAM -->|gRPC R2 upload| R2
     EXAM -->|HTTP multipart| AISVC
     AUTH -->|outbox: auth.user.registered, auth.user.authz_changed| RMQ
@@ -73,10 +78,10 @@ Compose publishes only the gateway on the host, bound to loopback (`127.0.0.1:63
 |---------|----------:|----------:|---------|------|
 | `gateway-service` | 3000 | 50051 (GatewayControl, internal only) | Node 22 | Public HTTP entry: YAML-routed streaming proxy, JWT verify, revoke/stale checks, rate limit, WS upgrade proxy (`/ws/study`). No database |
 | `auth-service` | 3000 | 50051 | Node 22 | RS256 JWT issuer + JWKS, service tokens, OAuth, sessions, devices, roles (RBAC) |
-| `exam-service` | 3000 | — | Node 22 | Quiz/flashcard authoring, exam sessions, AI orchestration, Study-Together Room (Socket.io gateway) |
+| `exam-service` | 3000 | 50051 (`WordFamilyAdminService`, internal only) | Node 22 | Quiz/flashcard authoring, exam sessions, AI orchestration, Study-Together Room (Socket.io gateway) |
 | `finance-service` | 3000 | 50051 | Node 22 | Wallet, SePay QR payments, subscriptions |
 | `r2-service` | 3000 | 50051 | Node 22 | Cloudflare R2 object storage (proxy) |
-| `admin-service` | 3000 | — | Node 22 | Admin dashboard: users, stats, finance, logs, audit |
+| `admin-service` | 3000 | 50051 (`AdminService.GetPageFlags`, internal only) | Node 22 | Admin dashboard: users, stats, finance, logs, audit. Owns `AdminAudit` and `PageFeatureFlag` only |
 | `ai-service` | 3000 (compose) | — | Python 3.12+ | RAG, document processing, AI chat (LangChain + LangGraph) |
 
 ## Cross-Service Communication
@@ -122,7 +127,7 @@ sequenceDiagram
 | everything else | 100 / 60 s |
 
 - **Redis-down policy** (`pipeline/auth-state.service.ts`): the revoke/`av` read has a 500 ms timeout. On failure, admin routes and every state-changing method (anything but GET/HEAD/UPGRADE) fail closed with 503 `AUTH_STATE_UNAVAILABLE`; non-admin GET/HEAD/WS pass (logged, counted). The rate limiter and page-flag read fail open.
-- **Config surface**: `GET /api/v1/config/pages` (optional auth) and SSE `GET /api/v1/config/stream` (any authenticated user, no timeout) are served by the gateway from Redis (`config:pages:flags`, channel `config:pages`); the gateway has no DB (admin-service writes the cache itself on toggle and rebuilds it at boot; the gateway's `SetPageFlags` RPC is an allowlisted alternative writer). Cache miss means every page is enabled; only an explicit `false` blocks (`pageFlag` routes: `ai-tool`, `manage-exam`, `flash-card`, `manage-exam-room`, `word-family`, `study-room`).
+- **Config surface**: `GET /api/v1/config/pages` (optional auth) and SSE `GET /api/v1/config/stream` (any authenticated user, no timeout) are served by the gateway from Redis (`config:pages:flags`, channel `config:pages`); the gateway has no DB (admin-service pushes the full flag map through the gateway's `SetPageFlags` RPC and never writes Redis itself; when Redis has no flags the gateway pulls them at boot from admin's `AdminService.GetPageFlags`, retrying, and a 60 s watcher keeps re-checking). Cache miss means every page is enabled; only an explicit `false` blocks (`pageFlag` routes: `ai-tool`, `manage-exam`, `flash-card`, `manage-exam-room`, `word-family`, `study-room`).
 - **Edge hardening**: helmet, CORS allowlist from `CORS_ORIGINS` or `FRONTEND_URL` (production boot fails with neither; `credentials: true`; allowed headers `Content-Type`, `Authorization`, `Cookie`, `X-Requested-With`, `X-Device-ID`), `trust proxy` = 1 hop (nginx).
 
 #### Gateway control plane (auth/admin -> gateway)
@@ -131,7 +136,7 @@ sequenceDiagram
 |---|---|---|
 | gRPC `GatewayControl.RevokeSession(sid, exp)` (caller `auth`) | deny a session's access token until it would expire | `gw:revoked:sid:<sid>` with TTL `exp - now` |
 | gRPC `GatewayControl.InvalidateUser(user_id, authz_version)` (caller `auth`) | refuse tokens with `av` below the stored version (401 `TOKEN_STALE`) | `gw:user:<id>:av` via Lua SETMAX (idempotent, order-safe) |
-| gRPC `GatewayControl.SetPageFlags(flags)` (allowlisted caller `admin`; no caller in admin-service yet) | write page-flag cache, publish to SSE clients | `config:pages:flags` + channel `config:pages` |
+| gRPC `GatewayControl.SetPageFlags(flags)` (allowlisted caller `admin`; called by admin-service `AdminPageConfigService` on every toggle, full map, serialized) | write page-flag cache, publish to SSE clients | `config:pages:flags` + channel `config:pages` |
 | durable event `auth.user.authz_changed` (queue `gateway.events`) | twin of `InvalidateUser`; covers a lost gRPC call | same SETMAX |
 | durable event `auth.session.revoked` | twin of `RevokeSession` | same revoked key; ignored if `exp` already passed |
 
@@ -143,14 +148,33 @@ The gRPC server listens on `GRPC_PORT` (50051) inside the internal network only 
 sequenceDiagram
     participant EX as exam-service
     participant FIN as finance-service:50051
-    EX->>FIN: gRPC WalletService.GetWallet(userId)
-    FIN-->>EX: { balance: 100 }
-    Note over EX,FIN: Used for credit gating before AI generation
+    EX->>FIN: gRPC WalletService.Debit(userId, amount, idempotencyKey) + caller's access token
+    FIN-->>EX: { transaction, alreadyApplied }
+    Note over EX,FIN: Charge before AI generation; a retry with the same key never double-charges
 ```
 
-**Proto definitions**: `examio-be/proto/examio/<svc>/v1/` (packages `auth`, `common`, `finance`, `gateway`, `r2`), linted and generated with buf. `yarn proto:lint` runs `buf lint proto`; `yarn proto:gen` runs `buf generate` (ts-proto, output `libs/contracts/src/generated/`, gitignored) and is exposed as `@examio/contracts`. The Python ai-service generates its stubs with `apps/ai-service/scripts/gen_grpc.sh`. Client helpers live in `@examio/grpc`, HTTP helpers in `@examio/http`.
+**Proto definitions**: `examio-be/proto/examio/<svc>/v1/` (packages `admin`, `auth`, `common`, `events`, `finance`, `gateway`, `r2`, `vocabulary`), linted and generated with buf. `yarn proto:lint` runs `buf lint proto`; `yarn proto:gen` runs `buf generate` (ts-proto, output `libs/contracts/src/generated/`, gitignored) and is exposed as `@examio/contracts`. The Python ai-service generates its stubs with `apps/ai-service/scripts/gen_grpc.sh`. Client helpers live in `@examio/grpc`, HTTP helpers in `@examio/http`.
 
-Finance `WalletService` money fields are `int32` (credits are whole numbers). The `Debit`, `Credit` and `Refund` RPCs are declared in the contract but the server answers `UNIMPLEMENTED` until a later phase; `R2Service` gained `DeleteObjects`. gRPC env: `AUTH_GRPC_URL`, `R2_GRPC_URL`, `FINANCE_GRPC_URL` (replaces `FINANCE_SERVICE_GRPC_URL` / `WALLET_GRPC_URL`).
+Finance `WalletService` money fields are `int32` (credits are whole numbers). `R2Service` has `DeleteObjects`. gRPC env: `AUTH_GRPC_URL`, `R2_GRPC_URL`, `FINANCE_GRPC_URL`, `GATEWAY_GRPC_URL`, `VOCABULARY_GRPC_URL` (admin to exam), `ADMIN_GRPC_URL` (gateway to admin), `GRPC_PORT` on each serving service.
+
+**Data ownership (phase 10).** Each Prisma model is read and written by exactly one service, even though the database is still shared: auth (`User`, `UserSession`, `VerifyAccountCode`, `ResetPasswordCode`, `RoleChangeLog`), finance (`Wallet`, `WalletTransaction`, `Payment`, `UserSubscription`), admin (`AdminAudit`, `PageFeatureFlag`), exam (everything else, until later phases extract more services). `OutboxEvent` and `ProcessedEvent` are per-service. The map is `examio-be/scripts/check-model-ownership.ts` (`yarn check:ownership`, strict in CI, also catches relation access through `include`/`select`/nested writes); `yarn check:deps` runs dependency-cruiser with `.dependency-cruiser.cjs`. A service needing foreign data calls the owner over gRPC.
+
+| Service (proto) | RPC | Guard |
+|---|---|---|
+| finance `WalletService` | `Debit`, `Credit`, `Refund` | `Debit`: user with `wallet:use` or service `exam`/`content`/`document`; `Credit`, `Refund`: those services only |
+| | `CreateWallet` | service `auth` only |
+| | `GetWallet` | user or service (self-or-service check) |
+| finance `FinanceAdminService` | `AdjustBalance`, `RefundPayment`, `ChangeTier`, `ListPayments`, `ListSubscriptions`, `GetUserFinance` | `finance:admin` (user token only; actor is the token subject) |
+| finance `FinanceStatsService` | `GetRevenueStats` | `stats:read` |
+| auth `AuthUserService` | `UpdateUserAdmin`, `GetUserAdminDetail` | `user:manage` |
+| | `SearchUsers` / `GetUserStats` | `user:search` / `stats:read` |
+| auth `AuthService` | `GetPublicProfilesByIds` | any verified user or service |
+| | `GetUsersByIds` | `user:manage` or service `admin` |
+| gateway `GatewayControl` | `SetPageFlags` | service `admin` |
+| admin `AdminService` | `GetPageFlags` | service `gateway` |
+| exam `WordFamilyAdminService` | `ListCategories`, `UpsertCategory`, `DeleteCategory` | `word_family:admin` |
+
+**Money idempotency.** `WalletTransaction` has `idempotencyKey` and `balanceAfter`, unique on `(walletId, idempotencyKey)`; `Payment.refundIdempotencyKey` is unique. Stored keys are namespaced: `debit:`, `credit:`, `refund:<debit key>` (a debit refunds at most once), `adjust:`, `refund-payment:`, `welcome:`. Replaying a key returns the original transaction with `alreadyApplied = true`; the same key with a different request fails `FAILED_PRECONDITION` `IDEMPOTENCY_KEY_REUSED`. `UpdateBalance` no longer exists. `Debit` creates the welcome wallet only when the forwarded token belongs to a TEACHER; otherwise a missing wallet is `WALLET_NOT_FOUND`. Admin HTTP finance actions accept an `Idempotency-Key` header (1-200 chars) and answer with `alreadyApplied`. Exam charges through the shared client in `libs/grpc` (`FinanceClient`), where `AI_FREE_MODE=true` skips charging but is forced off when `NODE_ENV=production`.
 
 ### 3. RabbitMQ Topic Exchange (async events)
 
@@ -184,24 +208,27 @@ graph LR
 - `auth.user.registered` (auth-service): `{ userId, email, username, utmSource|null }`, written to the outbox in the register tx (email and Google OAuth paths). No consumer since phase 04 (finance's `UserRegisteredHandler` was removed; STUDENTs have no wallet). Replaces `auth.user.created`.
 - `auth.user.authz_changed` (auth-service -> finance-service): `{ userId, authzVersion, role, isSystemAdmin, isBanned, reason, version }` (proto `UserAuthzChanged`, `reason` is one of role, admin, password, ban, unban, reapply). Written to the outbox in the same tx as the change. Finance (`UserAuthzChangedHandler`) provisions wallet (20 credits, once) + Free subscription row only when `role = TEACHER`; everything else is a no-op. exam-service (`study-room-authz.handler.ts`) also consumes it to close stale study-room sockets (`auth:reauth` then disconnect).
 
+- `auth.user.updated` (auth-service): state event written to the outbox in the tx that changes a profile field (`changed` is a subset of `name`, `bio`, `avatar`, `banner`, `is_verified`; `version` is `updatedAt` in epoch ms); exam-service invalidates `exam:cache:user:<id>` on it.
+
 **Defined but unused**: the remaining `EventType` enum values in `libs/common/src/events` (`USER_CREATED` was removed).
 
 ### 4. Admin Service
 
 **Location**: `apps/admin-service/`
 **HTTP Port**: 3000 (container)
-**gRPC Port**: none in the current compose/`main.ts`
+**gRPC Port**: 50051 (`GRPC_PORT`; serves `AdminService.GetPageFlags` to the gateway, `@ServiceOnly('gateway')`)
 
 **Auth**: per-controller `@RequirePermissions(...)` from `@examio/auth-jwt` (stateless JWT; `user:manage` for users, `role:assign` for `/admin/roles*`, others per phase 06). Role, admin-flag and ban changes are RPCs to auth (`AUTH_GRPC_URL`: `SetUserRole`, `SetSystemAdmin`, `SetUserStatus`, `ListUsers`, `ListRoleChanges`) that forward the calling admin's own token (`forwardUser(req)`), so auth decides from the token `sub` and permissions; admin-service writes `AdminAudit` only after the RPC succeeds and answers with the `HttpErrorEnvelopeFilter` envelope. It no longer owns the bootstrap (see § 7).
 
 **Proxy**: `routes.yaml` routes `/api/v1/admin/*` to `admin-service` (`auth: required`, `permissions: [admin:access]`); the SSE `GET /admin/logs/stream` is `auth: none` at the edge because EventSource cannot send headers, and admin-service checks the single-use ticket from `POST /admin/logs/ticket`.
 
 **Modules**:
-- `AdminStatsModule` — KPI overview + time-series charts
-- `AdminFinanceModule` — wallet refunds, credit adjustments, subscription tier changes
+- `AdminStatsModule` — KPI overview + time-series charts, built from auth `GetUserStats` in parallel with finance `GetRevenueStats` (5-minute cache; parity golden test)
+- `AdminFinanceModule` — payment refunds, credit adjustments, tier changes, payment/subscription lists via finance `FinanceAdminService` (`Idempotency-Key` header, `alreadyApplied` in responses); no direct DB access to finance models
 - `AdminLogsModule` — server-side log retrieval
 - `AdminUsersModule` — list/detail/patch, ban/unban (auth `SetUserStatus`)
 - `AdminRolesModule` — role matrix, user role list, role change history, set base role / SYSTEM_ADMIN (auth RPCs, `role:assign`)
+- `AdminWordFamilyModule` — category list/create/update/delete via exam `WordFamilyAdminService` (`VOCABULARY_GRPC_URL`); the image is a pasted URL, and R2 deletes are limited to the `word-family/` prefix
 - `AdminAuditModule` — audit log query (one row per changed field per mutation)
 
 **Audit**: every admin mutation writes an `AdminAudit` row via `AuditWriterService` (shared, `@examio/common`). Fields captured: `adminId`, `targetId`, `action`, `payload` (JSON diff of changed fields), `ipAddress`, `userAgent`.
@@ -226,7 +253,7 @@ sequenceDiagram
         AI-->>EX: { status: "PENDING" | "COMPLETED" | "FAILED" }
     end
     AI-->>EX: COMPLETED + result
-    EX->>FIN: gRPC WalletService.UpdateBalance (deduct credits)
+    EX->>FIN: gRPC WalletService.Debit (idempotent charge)
     EX-->>FE: COMPLETED
 ```
 
@@ -381,7 +408,7 @@ sequenceDiagram
 ## Key Architectural Patterns
 
 1. **Gateway as single public entry** — every request hits the gateway first; routing is data (`routes.yaml`), not controllers
-2. **Shared Prisma schema** — all backend services consume the same `libs/database/schema.prisma`
+2. **Shared Prisma schema, single-owner models** — one `libs/database/schema.prisma`, but each model is owned by one service (`yarn check:ownership`); cross-service data goes over gRPC
 3. **Shared infra libs** — `@examio/common`, `@examio/database`, `@examio/redis`, `@examio/messaging`, `@examio/auth-jwt`
 4. **Repository pattern with cache** — `BaseRepository<T>` wraps Prisma + Redis invalidation
 5. **Composite screen detection** — single page with independent regions (REG###)

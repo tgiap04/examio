@@ -873,6 +873,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | updatedAt | DateTime | NOT NULL | Last update |
 | createdBy | String | NULL | Creator ID |
 | updatedBy | String | NULL | Updater ID |
+| refundIdempotencyKey | String | NULL, UNIQUE | Admin refund de-duplication key (finance `RefundPayment`); a replay answers `alreadyApplied` |
 
 **Relationships**:
 - Many-to-One with User via `userId` (Cascade delete)
@@ -926,11 +927,13 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | updatedAt | DateTime | NOT NULL | Last update |
 | createdBy | String | NULL | Creator ID |
 | updatedBy | String | NULL | Updater ID |
-| amount | Float | NOT NULL | Transaction amount (absolute value) |
+| amount | Int | NOT NULL | Transaction amount (absolute value, whole credits) |
 | type | Int | NOT NULL | Transaction category |
 | direction | String | NOT NULL, DEFAULT "SUBTRACT" | ADD \| SUBTRACT |
 | description | String | NULL | Human-readable transaction description |
 | createdAt | DateTime | NOT NULL | Transaction time |
+| idempotencyKey | String | NULL | Money RPC de-duplication key, namespaced `debit:` `credit:` `refund:` `adjust:` `refund-payment:` `welcome:`; NULL on legacy rows |
+| balanceAfter | Int | NULL | Wallet balance right after this transaction |
 
 **Relationships**:
 - Many-to-One with Wallet via `walletId` (Cascade delete)
@@ -944,6 +947,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 
 **Unique Codes**:
 - `MODEL-028-UK-01`: `id` (primary key, explicit unique)
+- Composite unique on `(walletId, idempotencyKey)` (Prisma `@@unique`)
 
 ---
 

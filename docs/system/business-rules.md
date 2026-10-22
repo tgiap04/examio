@@ -85,15 +85,15 @@ A user can view all active sessions across devices and browsers. They can termin
 Before generating quizzes or flashcards from a document, the system checks the user's wallet balance. If sufficient credits exist, the cost is deducted immediately. Processing then proceeds. If credits are insufficient, the request is rejected.
 
 **Applies when:** A user initiates quiz or flashcard generation from the AI tool.
-**Says:** Credits are deducted atomically. The generation job is queued. If FREE_MODE is enabled, this credit check is bypassed.
+**Says:** Credits are deducted atomically through finance's `Debit` with an idempotency key, so a retry of the same charge never deducts twice. The generation job is queued. If free mode is enabled outside production, this credit check is bypassed.
 
 ---
 
 ### Credits are bypassed in free mode
 
-When the `FREE_MODE` environment flag is set to `true`, AI generation and document processing proceed without checking or deducting credits. This is a production deployment flag that overrides the credit economy entirely.
+When the `AI_FREE_MODE` environment flag is `true`, the shared finance client (`libs/grpc`) skips the charge. It is for dev/local only: with `NODE_ENV=production` the flag is ignored (forced off, error logged) so it cannot bypass revenue.
 
-**Applies when:** FREE_MODE is true in the deployment environment.
+**Applies when:** `AI_FREE_MODE` is true and the environment is not production.
 **Says:** No credit check or deduction occurs. All users can generate content freely.
 
 ---
@@ -104,6 +104,33 @@ When a user initiates a subscription purchase, the system creates a payment reco
 
 **Applies when:** A bank transfer is made to the virtual account and SePay delivers a signed webhook.
 **Says:** Wallet is credited or subscription is activated. The payment record is updated from `unpaid` to `paid`. Duplicate webhook deliveries are handled idempotently.
+
+---
+
+### Money movements are idempotent
+
+Every credit movement carries an idempotency key, unique per wallet. Repeating a request with the same key returns the original transaction marked `alreadyApplied` and changes nothing; the same key with a different amount or reason is rejected (`IDEMPOTENCY_KEY_REUSED`). A debit can be refunded at most once. Admin finance actions (credit adjustment, payment refund, tier change) follow the same rule via the `Idempotency-Key` header, so a double-click or retry does not apply twice or add a second audit row.
+
+**Applies when:** exam charges credits, or an admin adjusts credits, refunds a payment or changes a tier.
+**Says:** At most one effect per key; replays are safe.
+
+---
+
+### Only TEACHER accounts get a wallet, created on first charge or by event
+
+Finance creates the welcome wallet when the `auth.user.authz_changed` event for a TEACHER arrives, or when a TEACHER's own token is used for a first `Debit`. A debit with a STUDENT's token never creates a wallet.
+
+**Applies when:** a TEACHER has no wallet yet.
+**Says:** The wallet exists with the welcome credits once.
+
+---
+
+### Services read only the data they own
+
+Each database model belongs to one service. Other services reach it through that service's RPCs, never by querying its tables. Exam shows another user's name and avatar from auth's public profile (never the email); a deleted user appears as "Người dùng đã xóa" in the UI.
+
+**Applies when:** a service needs data owned by another service.
+**Says:** The owner decides what is returned; CI (`yarn check:ownership`) rejects direct access.
 
 ---
 

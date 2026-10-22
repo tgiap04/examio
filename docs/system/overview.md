@@ -40,6 +40,8 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 **Rationale**: gRPC provides typed contracts, bidirectional streaming support, and lower latency than HTTP proxy chains for internal calls. Avoids circular gateway routing.
 
+**Update (phase 10, 2026-10-23)**: gRPC is also how a service reads or writes data owned by another service. Each Prisma model has exactly one owning service (`examio-be/scripts/check-model-ownership.ts`, enforced in CI by `yarn check:ownership` and `yarn check:deps`); exam, admin and the gateway now call auth, finance, exam (word-family admin), admin (page flags) and gateway (`SetPageFlags`) RPCs, and money RPCs (`Debit`/`Credit`/`Refund`) are idempotent. The database itself is still shared. Details: [architecture](architecture.md) § gRPC.
+
 ### Decision 4: RabbitMQ Topic Exchange for Async Event-Driven Workflows
 
 **Context**: Wallet creation must happen automatically when an account becomes a TEACHER, without coupling auth-service to finance-service at the HTTP level.
@@ -127,7 +129,7 @@ exam-service calls `aiApi.generateExamApi` (multipart) → returns `jobId` → f
 
 1. User submits credentials → `POST /auth/login` → auth-service → returns `accessToken` (RS256 JWT, 15 min; claims `sub`, `sid`, `roles`, `email_verified`, `av`) + `refreshToken` (cookie) + `sessionId`; roles are `STUDENT` (default) or `TEACHER`, plus `SYSTEM_ADMIN` for flagged admins
 2. Axios interceptor in `apis/api.ts` attaches `Authorization: Bearer {token}` + `X-Device-ID` header on every request
-3. Each service's `JwtAuthGuard` verifies the token against auth's JWKS (stateless) and `PermissionsGuard` checks the declared permission (deny by default). `POST /auth/refresh` reloads the role, so a role change reaches the token within 15 min; `GET /auth/me` returns `roles`, `permissions` and `user.isSystemAdmin`
+3. Each service's `JwtAuthGuard` verifies the token against auth's JWKS (stateless) and `PermissionsGuard` checks the declared permission (deny by default). `POST /auth/refresh` reloads the role, so a role change reaches the token within 15 min; `GET /auth/me` (and login/refresh) returns `{ user, roles, permissions }` with `user.isSystemAdmin`, no wallet/subscription
 4. OAuth (Google): redirect → backend `/auth/google` → Google One Tap → callback URL with `?token=&refreshToken=&sessionId=` → `AuthSyncBootstrap` stores in localStorage + cookie → `syncRefreshTokenApi`
 5. Device tracking: `X-Device-ID` header from `getOrCreateDeviceId()`; sessions tracked per device in `UserSession` table
 6. Session cleanup: `session-cleanup.cron.ts` (scheduled job) invalidates expired sessions
