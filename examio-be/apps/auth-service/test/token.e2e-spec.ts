@@ -44,8 +44,8 @@ describe('auth tokens (e2e, real Postgres)', () => {
         expect(me.body.user).toMatchObject({ id, role: 'STUDENT', isSystemAdmin: false });
         expect(me.body.user).not.toHaveProperty('isAdmin');
         expect(me.body.user).not.toHaveProperty('password');
-        expect(me.body.user.wallet ?? null).toBeNull();
-        expect(me.body.user.subscription ?? null).toBeNull();
+        expect(me.body.user).not.toHaveProperty('wallet');
+        expect(me.body.user).not.toHaveProperty('subscription');
 
         expect(await ctx.prisma.userSubscription.count({ where: { userId: id } })).toBe(0);
         expect(await ctx.prisma.wallet.count({ where: { userId: id } })).toBe(0);

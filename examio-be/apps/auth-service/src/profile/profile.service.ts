@@ -9,6 +9,7 @@ import { buildMetadata } from '@examio/grpc';
 import { r2V1 } from '@examio/contracts';
 import { R2Client } from '../clients/r2.client';
 import { UserRepository } from '../repositories/user.repository';
+import { UserProfilePatch, UserUpdateWriter } from '../users-admin/user-update.writer';
 import { UpdateProfileDto, ProfileResponseDto } from './dto/profile.dto';
 
 @Injectable()
@@ -16,7 +17,8 @@ export class ProfileService {
     constructor(
         private readonly userRepository: UserRepository,
         private readonly generateIdService: GenerateIdService,
-        private readonly r2Client: R2Client
+        private readonly r2Client: R2Client,
+        private readonly userUpdates: UserUpdateWriter
     ) {}
 
     /**
@@ -43,7 +45,7 @@ export class ProfileService {
         user: { id: string },
         dto: UpdateProfileDto
     ): Promise<ProfileResponseDto> {
-        const updateData: Partial<User> = {};
+        const updateData: UserProfilePatch = {};
 
         if (dto.name !== undefined) {
             updateData.name = dto.name;
@@ -58,13 +60,14 @@ export class ProfileService {
             updateData.banner = dto.banner;
         }
 
-        const updatedUser = await this.userRepository.update(
+        const result = await this.userUpdates.update(
             user.id,
             updateData,
             user.id
         );
+        if (!result) throw new NotFoundException('Không tìm thấy người dùng');
 
-        return this.sanitizeProfile(updatedUser);
+        return this.sanitizeProfile(result.user);
     }
 
     /**
@@ -155,10 +158,10 @@ export class ProfileService {
         const url = uploadResult.url;
 
         // Update user profile with new URL
-        const updateData: Partial<User> =
+        const updateData: UserProfilePatch =
             type === 'avatar' ? { avatar: url } : { banner: url };
 
-        await this.userRepository.update(user.id, updateData, user.id);
+        await this.userUpdates.update(user.id, updateData, user.id);
 
         // Delete old image from R2 if it exists
         if (oldImageUrl) {

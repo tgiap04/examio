@@ -45,3 +45,14 @@ message SessionRevoked {
   // Epoch seconds at which the revocation was committed.
   int64 version = 4;
 }
+
+// Payload (`data`) of `auth.user.updated`: profile or admin edit of a user
+// (name, bio, avatar, verification). A state event: `version` is the user's
+// `updatedAt` in epoch milliseconds; consumers apply it only if newer.
+message UserUpdated {
+  string user_id = 1;
+  // Names of the changed fields, e.g. "name", "bio", "is_verified".
+  repeated string changed = 2;
+  // `double` keeps it a JSON number (the envelope requires a numeric `version`).
+  double version = 3;
+}

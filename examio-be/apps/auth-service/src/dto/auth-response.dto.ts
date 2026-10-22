@@ -30,15 +30,6 @@ export class UserDto {
 
     @ApiProperty({ description: 'Thời gian cập nhật' })
     updatedAt: Date;
-
-    @ApiProperty({ description: 'Thông tin ví', required: false })
-    wallet?: {
-        id: string;
-        userId: string;
-        balance: number;
-        createdAt: Date;
-        updatedAt: Date;
-    };
 }
 
 export class LoginResponseDto {

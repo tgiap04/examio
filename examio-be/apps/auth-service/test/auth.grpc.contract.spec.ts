@@ -33,6 +33,12 @@ const row = (id: string, extra: Record<string, unknown> = {}) => ({
     isBanned: false,
     deletedAt: null,
     createdAt: new Date(1_700_000_000_000),
+    updatedAt: new Date(1_700_000_001_000),
+    utmSource: null,
+    bio: null,
+    banner: null,
+    createdBy: null,
+    updatedBy: null,
     ...extra,
 });
 

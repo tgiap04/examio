@@ -643,10 +643,7 @@ export class AuthService {
      */
     private async startSession(userId: string, deviceInfo: DeviceInfo) {
         const session = await this.createSession(userId, deviceInfo);
-        const issued = await this.issueAccess(userId, session.sessionId, {
-            wallet: { select: { balance: true } },
-            subscription: true,
-        });
+        const issued = await this.issueAccess(userId, session.sessionId);
         return {
             token: issued.token,
             user: sanitizeUser(issued.user),
@@ -704,10 +701,12 @@ export class AuthService {
 
     /** `roles`/`permissions` mirror the verified token, i.e. what the APIs will enforce. */
     async getUser(userId: string, roles: Role[]) {
+        // Fresh read: the account only. Wallet and subscription are finance's
+        // data (GET /wallet/info); /auth/me never depends on finance.
         const foundUser = await this.userRepository.findByIdWithRelations(
             userId,
-            ['wallet', 'subscription'],
-            false // Always get fresh data - wallet balance may change from other services
+            [],
+            false
         );
         if (!foundUser) {
             throw new NotFoundException('Người dùng không tồn tại');

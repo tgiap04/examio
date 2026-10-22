@@ -93,14 +93,6 @@ export class UserRepository {
                     { username: credential.toLowerCase() },
                 ],
             },
-            include: {
-                wallet: {
-                    select: {
-                        balance: true,
-                    },
-                },
-                subscription: true,
-            },
         });
     }
 
@@ -115,11 +107,7 @@ export class UserRepository {
     ): Promise<User | null> {
         const include: any = {};
         relations.forEach((rel) => {
-            if (rel === 'wallet') {
-                include.wallet = { select: { balance: true } };
-            } else {
-                include[rel] = true;
-            }
+            include[rel] = true;
         });
 
         const relationKey =

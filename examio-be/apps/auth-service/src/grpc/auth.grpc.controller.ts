@@ -40,7 +40,8 @@ export class AuthGrpcController implements authV1.AuthServiceController {
         return { user: await this.users.getUser(data.userId) };
     }
 
-    @RequirePermissionsOrService(['user:manage'], { callers: ['admin', 'finance'] })
+    // Returns emails: admin only (service token + user:manage), never exam/finance.
+    @RequirePermissionsOrService(['user:manage'], { callers: ['admin'] })
     async getUsersByIds(
         data: authV1.GetUsersByIdsRequest
     ): Promise<authV1.GetUsersByIdsResponse> {

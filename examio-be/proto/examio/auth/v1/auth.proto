@@ -41,6 +41,15 @@ message User {
   bool is_banned = 9;
   // Unix epoch milliseconds.
   int64 created_at = 10;
+  // First-touch attribution; empty when the signup had none.
+  optional string utm_source = 11;
+  // Admin-facing profile fields (the admin users table/detail keep their shape).
+  optional string bio = 12;
+  optional string banner = 13;
+  // Unix epoch milliseconds.
+  int64 updated_at = 14;
+  optional string created_by = 15;
+  optional string updated_by = 16;
 }
 
 message PublicProfile {
@@ -108,11 +117,19 @@ message ListUsersRequest {
   optional bool is_banned = 4;
   int32 page = 5;
   int32 limit = 6;
+  // Keyset pagination (created_at, id). When set, `page` is ignored.
+  optional string cursor = 7;
+  optional bool is_verified = 8;
+  // Unix epoch milliseconds, inclusive bounds on created_at.
+  optional int64 created_from = 9;
+  optional int64 created_to = 10;
 }
 
 message ListUsersResponse {
   repeated User users = 1;
   examio.common.v1.PageMeta page = 2;
+  // Empty when there is no further page.
+  optional string next_cursor = 3;
 }
 
 message SetUserRoleRequest {

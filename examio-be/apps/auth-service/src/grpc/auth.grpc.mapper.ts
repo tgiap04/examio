@@ -12,6 +12,12 @@ export const USER_SELECT = {
     isVerified: true,
     isBanned: true,
     createdAt: true,
+    updatedAt: true,
+    utmSource: true,
+    bio: true,
+    banner: true,
+    createdBy: true,
+    updatedBy: true,
 } satisfies Prisma.UserSelect;
 
 export const PUBLIC_PROFILE_SELECT = {
@@ -51,6 +57,12 @@ export function toUser(row: UserRow): authV1.User {
         isVerified: row.isVerified,
         isBanned: row.isBanned,
         createdAt: String(row.createdAt.getTime()),
+        updatedAt: String(row.updatedAt.getTime()),
+        utmSource: row.utmSource ?? undefined,
+        bio: row.bio ?? undefined,
+        banner: row.banner ?? undefined,
+        createdBy: row.createdBy ?? undefined,
+        updatedBy: row.updatedBy ?? undefined,
     };
 }
 

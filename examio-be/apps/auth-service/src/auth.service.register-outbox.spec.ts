@@ -108,7 +108,7 @@ describe('AuthService registration outbox', () => {
         expect(accessTokens.issue).toHaveBeenCalledWith(
             'user-1',
             expect.any(String),
-            expect.anything()
+            undefined
         );
         expect(result).toMatchObject({
             token: 'jwt',

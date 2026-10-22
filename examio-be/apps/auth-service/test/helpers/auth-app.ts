@@ -79,7 +79,7 @@ export async function bootAuthApp(options: { grpc?: boolean; realThrottle?: bool
     if (options.grpc) {
         const port = 50000 + Math.floor(Math.random() * 10000);
         process.env.GRPC_PORT = String(port);
-        app.connectMicroservice(grpcServerOptions([PROTO_FILES.auth]), { inheritAppConfig: true });
+        app.connectMicroservice(grpcServerOptions([PROTO_FILES.auth, PROTO_FILES.authUsers]), { inheritAppConfig: true });
         await app.startAllMicroservices();
         grpcUrl = `127.0.0.1:${port}`;
     }

@@ -86,7 +86,7 @@ async function startApi() {
     // Connect gRPC microservice
     const grpcPort = process.env.GRPC_PORT || '50051';
     app.connectMicroservice<MicroserviceOptions>(
-        grpcServerOptions([PROTO_FILES.auth]),
+        grpcServerOptions([PROTO_FILES.auth, PROTO_FILES.authUsers]),
         { inheritAppConfig: true }
     );
 
