@@ -4,13 +4,15 @@ import {
     Get,
     Param,
     Query,
+    Req,
     UsePipes,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ZodValidationPipe } from 'nestjs-zod';
 
 import { AdminStatsService } from './admin-stats.service';
-import { RequirePermissions } from '@examio/auth-jwt';
+import { RequirePermissions, forwardUser } from '@examio/auth-jwt';
+import type { AuthedAdminRequest } from '../admin-roles/audit-context';
 
 const ALLOWED_SERIES = ['signups', 'traffic', 'revenue'] as const;
 type AllowedSeries = (typeof ALLOWED_SERIES)[number];
@@ -35,13 +37,14 @@ export class AdminStatsFeRoutesController {
     constructor(private readonly adminStatsService: AdminStatsService) {}
 
     @Get('overview')
-    async getOverview() {
-        return this.adminStatsService.getOverview();
+    async getOverview(@Req() req: AuthedAdminRequest) {
+        return this.adminStatsService.getOverview(forwardUser(req));
     }
 
     @Get('series/:name')
     async getSeries(
         @Param('name') name: string,
+        @Req() req: AuthedAdminRequest,
         @Query('range') range?: '7d' | '30d' | '90d'
     ) {
         if (!ALLOWED_SERIES.includes(name as AllowedSeries)) {
@@ -51,13 +54,18 @@ export class AdminStatsFeRoutesController {
         }
         return this.adminStatsService.getSeries(
             name as AllowedSeries,
-            range ?? '30d'
+            range ?? '30d',
+            forwardUser(req)
         );
     }
 
     @Get('sources')
-    async getSources(@Query('range') range?: '7d' | '30d' | '90d') {
+    async getSources(
+        @Req() req: AuthedAdminRequest,
+        @Query('range') range?: '7d' | '30d' | '90d'
+    ) {
         return this.adminStatsService.getSourceBreakdown(
+            forwardUser(req),
             range && ['7d', '30d', '90d'].includes(range) ? range : undefined
         );
     }

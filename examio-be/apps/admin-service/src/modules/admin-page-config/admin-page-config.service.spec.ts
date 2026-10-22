@@ -9,33 +9,40 @@ function make() {
         },
         adminAudit: { create: jest.fn().mockResolvedValue({}) },
     };
-    const redis: any = {
-        publish: jest.fn().mockResolvedValue(1),
-        set: jest.fn().mockResolvedValue(undefined),
-    };
-    return { service: new AdminPageConfigService(prisma, redis), prisma, redis };
+    const gateway = { setPageFlags: jest.fn().mockResolvedValue(undefined) };
+    return { service: new AdminPageConfigService(prisma, gateway as never), prisma, gateway };
 }
 
 describe('AdminPageConfigService', () => {
-    describe('onModuleInit (warms the gateway page-flag cache)', () => {
-        it('writes the full DB map to Redis at boot, without publishing', async () => {
-            const { service, prisma, redis } = make();
+    describe('onModuleInit (warms the gateway page-flag state)', () => {
+        it('pushes the full DB map to the gateway through SetPageFlags at boot', async () => {
+            const { service, prisma, gateway } = make();
             prisma.pageFeatureFlag.findMany.mockResolvedValue([
                 { key: 'study-room', enabled: false },
                 { key: 'flash-card', enabled: true },
             ]);
             await service.onModuleInit();
-            expect(redis.set).toHaveBeenCalledWith('config:pages:flags', {
-                'study-room': false,
-                'flash-card': true,
-            });
-            expect(redis.publish).not.toHaveBeenCalled();
+            expect(gateway.setPageFlags).toHaveBeenCalledWith({ 'study-room': false, 'flash-card': true });
         });
 
-        it('a Redis or DB failure never blocks the admin service from booting', async () => {
-            const { service, prisma } = make();
+        it('a gateway or DB failure never blocks the admin service from booting', async () => {
+            const { service, prisma, gateway } = make();
             prisma.pageFeatureFlag.findMany.mockRejectedValue(new Error('db down'));
             await expect(service.onModuleInit()).resolves.toBeUndefined();
+            prisma.pageFeatureFlag.findMany.mockResolvedValue([]);
+            gateway.setPageFlags.mockRejectedValue(new Error('gateway down'));
+            await expect(service.onModuleInit()).resolves.toBeUndefined();
+        });
+    });
+
+    describe('getFlags (served to the gateway by AdminService.GetPageFlags)', () => {
+        it('returns key -> enabled from the database', async () => {
+            const { service, prisma } = make();
+            prisma.pageFeatureFlag.findMany.mockResolvedValue([
+                { key: 'study-room', enabled: false },
+                { key: 'flash-card', enabled: true },
+            ]);
+            expect(await service.getFlags()).toEqual({ 'study-room': false, 'flash-card': true });
         });
     });
 
@@ -81,28 +88,65 @@ describe('AdminPageConfigService', () => {
             ).rejects.toBeInstanceOf(BadRequestException);
         });
 
-        it('upsert thành công cho key chưa từng seed (không throw NotFound)', async () => {
-            const { service, prisma, redis } = make();
+        it('upsert thành công cho key chưa từng seed (không throw NotFound) và đẩy full map qua gateway', async () => {
+            const { service, prisma, gateway } = make();
             prisma.pageFeatureFlag.upsert.mockResolvedValue({
                 key: 'study-room',
                 label: 'Phòng học chung',
                 enabled: false,
                 updatedAt: new Date('2026-01-01'),
             });
-            const row = await service.toggle('study-room', false, {
-                adminId: 'a1',
-            });
+            prisma.pageFeatureFlag.findMany.mockResolvedValue([{ key: 'study-room', enabled: false }]);
+            const row = await service.toggle('study-room', false, { adminId: 'a1' });
             expect(prisma.pageFeatureFlag.upsert).toHaveBeenCalledWith({
                 where: { key: 'study-room' },
                 update: { enabled: false },
-                create: {
-                    key: 'study-room',
-                    label: 'Phòng học chung',
-                    enabled: false,
-                },
+                create: { key: 'study-room', label: 'Phòng học chung', enabled: false },
             });
             expect(row.enabled).toBe(false);
-            expect(redis.publish).toHaveBeenCalled();
+            expect(gateway.setPageFlags).toHaveBeenCalledWith({ 'study-room': false });
+            expect(prisma.adminAudit.create).toHaveBeenCalledTimes(1);
+        });
+
+        it('concurrent toggles: the LAST push to the gateway is the final DB state, never an older map', async () => {
+            const { service, prisma, gateway } = make();
+            const state: Record<string, boolean> = {};
+            prisma.pageFeatureFlag.upsert.mockImplementation(async ({ where, update }: any) => {
+                // the second admin's write lands while the first one's (slow) read is in flight
+                if (where.key === 'flash-card') await new Promise((r) => setTimeout(r, 10));
+                state[where.key] = update.enabled;
+                return { key: where.key, label: 'x', enabled: update.enabled, updatedAt: new Date() };
+            });
+            let reads = 0;
+            prisma.pageFeatureFlag.findMany.mockImplementation(async () => {
+                const snapshot = Object.entries(state).map(([key, enabled]) => ({ key, enabled }));
+                // the first read is slow: its (older) snapshot would land after the second push
+                if (++reads === 1) await new Promise((r) => setTimeout(r, 30));
+                return snapshot;
+            });
+            await Promise.all([
+                service.toggle('study-room', false, { adminId: 'a1' }),
+                service.toggle('flash-card', false, { adminId: 'a2' }),
+            ]);
+            const calls = gateway.setPageFlags.mock.calls;
+            expect(calls[calls.length - 1][0]).toEqual({ 'study-room': false, 'flash-card': false });
+        });
+
+        it('a failed push does not poison the next one', async () => {
+            const { service, prisma, gateway } = make();
+            prisma.pageFeatureFlag.upsert.mockResolvedValue({ key: 'study-room', label: 'x', enabled: false, updatedAt: new Date() });
+            gateway.setPageFlags.mockRejectedValueOnce(new Error('gateway unavailable'));
+            await expect(service.toggle('study-room', false, { adminId: 'a1' })).rejects.toThrow('gateway unavailable');
+            await expect(service.toggle('study-room', false, { adminId: 'a1' })).resolves.toBeDefined();
+        });
+
+        it('gateway down: the DB write and the audit row stay, the error reaches the admin so they can retry', async () => {
+            const { service, prisma, gateway } = make();
+            prisma.pageFeatureFlag.upsert.mockResolvedValue({ key: 'study-room', label: 'x', enabled: false, updatedAt: new Date() });
+            gateway.setPageFlags.mockRejectedValue(new Error('gateway unavailable'));
+            await expect(service.toggle('study-room', false, { adminId: 'a1' })).rejects.toThrow('gateway unavailable');
+            expect(prisma.pageFeatureFlag.upsert).toHaveBeenCalledTimes(1);
+            expect(prisma.adminAudit.create).toHaveBeenCalledTimes(1);
         });
     });
 });

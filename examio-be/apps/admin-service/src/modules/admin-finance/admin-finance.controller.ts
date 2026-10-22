@@ -1,4 +1,5 @@
 import {
+    BadRequestException,
     Body,
     Controller,
     HttpCode,
@@ -15,10 +16,30 @@ import { AdminFinanceService, AuditContext } from './admin-finance.service';
 import { CreditBody, CreditBodyDto } from './dto/credit.body';
 import { RefundBody, RefundBodyDto } from './dto/refund.body';
 import { SetTierBody, SetTierBodyDto } from './dto/set-tier.body';
-import { RequirePermissions } from '@examio/auth-jwt';
+import { RequirePermissions, forwardUser } from '@examio/auth-jwt';
+import { uuidv7 } from '@examio/grpc';
 
 interface AuthedAdminRequest extends Request {
     user?: { id: string };
+}
+
+/**
+ * Optional `Idempotency-Key` header (1-200 chars): a repeated key applies the
+ * write once. Without it each request gets a fresh key, so a client-library
+ * retry of ONE request (same key) still cannot double-apply.
+ */
+function idempotencyKeyOf(req: Request): string {
+    const header = req.headers?.['idempotency-key'];
+    const value = (Array.isArray(header) ? header[0] : header)?.trim();
+    if (value && value.length <= 200) return value;
+    if (value) {
+        throw new BadRequestException({
+            statusCode: 400,
+            code: 'INVALID_IDEMPOTENCY_KEY',
+            message: 'Idempotency-Key must be at most 200 characters',
+        });
+    }
+    return `admin:${uuidv7()}`;
 }
 
 /**
@@ -46,7 +67,9 @@ export class AdminFinanceController {
         const ctx = this.buildAuditContext(req);
         const result = await this.adminFinance.refund(
             body as unknown as RefundBody,
-            ctx
+            ctx,
+            forwardUser(req),
+            idempotencyKeyOf(req)
         );
         return { success: true, data: result };
     }
@@ -60,7 +83,9 @@ export class AdminFinanceController {
         const ctx = this.buildAuditContext(req);
         const result = await this.adminFinance.credit(
             body as unknown as CreditBody,
-            ctx
+            ctx,
+            forwardUser(req),
+            idempotencyKeyOf(req)
         );
         return { success: true, data: result };
     }
@@ -74,7 +99,9 @@ export class AdminFinanceController {
         const ctx = this.buildAuditContext(req);
         const result = await this.adminFinance.setTier(
             body as unknown as SetTierBody,
-            ctx
+            ctx,
+            forwardUser(req),
+            idempotencyKeyOf(req)
         );
         return { success: true, data: result };
     }

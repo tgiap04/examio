@@ -1,9 +1,7 @@
 import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { GatewayClient } from '../../clients/gateway.client';
 import { PrismaService } from '@examio/database';
-import { RedisService } from '@examio/redis';
 import {
-    CONFIG_PAGES_CHANNEL,
-    CONFIG_PAGES_KEY,
     isToggleablePageKey,
     PAGE_LABELS,
     TOGGLEABLE_PAGE_KEYS,
@@ -24,11 +22,13 @@ export interface PageConfigRow {
 /**
  * Quản lý trạng thái bật/tắt trang (page-toggle) cho admin.
  *
- * Thứ tự ghi khi toggle (cứng, tránh race giữa cache và nguồn sự thật):
+ * `PageFeatureFlag` là dữ liệu của admin; cờ runtime thuộc về gateway. Admin
+ * KHÔNG ghi Redis nữa: mọi thay đổi đẩy qua gRPC `GatewayControl.SetPageFlags`
+ * (gateway ghi key của nó và phát SSE). Thứ tự khi toggle:
  *   1. DB (PageFeatureFlag) — nguồn sự thật
- *   2. Redis CONFIG_PAGES_KEY — rebuild full map từ DB
- *   3. Publish CONFIG_PAGES_CHANNEL — gateway fan-out qua SSE
- *   4. Ghi audit (bọc try/catch — không để audit lỗi làm hỏng toggle)
+ *   2. Ghi audit (bọc try/catch — không để audit lỗi làm hỏng toggle)
+ *   3. Đẩy full map sang gateway; lỗi thì ném lại để admin thử lại (set-style, an toàn)
+ * Gateway khởi động mà Redis trống thì tự kéo `AdminService.GetPageFlags` (getFlags).
  */
 @Injectable()
 export class AdminPageConfigService implements OnModuleInit {
@@ -36,20 +36,41 @@ export class AdminPageConfigService implements OnModuleInit {
 
     constructor(
         private readonly prisma: PrismaService,
-        private readonly redis: RedisService
+        private readonly gateway: GatewayClient
     ) {}
 
     /**
-     * Gateway không còn đọc DB: cache miss = mọi trang bật. Nên admin dựng cache
-     * lúc boot để cờ đã tắt vẫn có hiệu lực sau khi Redis bị xóa/khởi động lại.
-     * Không bao giờ chặn admin-service khởi động.
+     * Gateway không còn đọc DB: cache miss = mọi trang bật. Nên admin đẩy full
+     * map sang gateway lúc boot để cờ đã tắt vẫn có hiệu lực sau khi Redis bị
+     * xóa/khởi động lại. Không bao giờ chặn admin-service khởi động.
      */
     async onModuleInit(): Promise<void> {
         try {
-            await this.rebuildCache();
+            await this.pushFlags();
         } catch (err) {
-            this.logger.warn(`page-flag cache warm-up failed: ${String(err)}`);
+            this.logger.warn(`page-flag warm-up failed: ${String(err)}`);
         }
+    }
+
+    private pushChain: Promise<unknown> = Promise.resolve();
+
+    /**
+     * Đẩy full map sang gateway, tuần tự: mỗi lần đẩy ĐỌC LẠI map từ DB ngay
+     * trước khi gửi, nên lần đẩy cuối luôn là trạng thái DB mới nhất (hai toggle
+     * song song không thể để map cũ ghi đè map mới).
+     */
+    private pushFlags(): Promise<void> {
+        const run = this.pushChain.then(async () => this.gateway.setPageFlags(await this.getFlags()));
+        this.pushChain = run.catch(() => undefined);
+        return run;
+    }
+
+    /** `{ key: enabled }` từ DB: nguồn của `AdminService.GetPageFlags`. */
+    async getFlags(): Promise<Record<string, boolean>> {
+        const rows = await this.prisma.pageFeatureFlag.findMany();
+        const map: Record<string, boolean> = {};
+        for (const r of rows) map[r.key] = r.enabled;
+        return map;
     }
 
     /**
@@ -102,18 +123,7 @@ export class AdminPageConfigService implements OnModuleInit {
             create: { key, label: PAGE_LABELS[key], enabled },
         });
 
-        // 2. Rebuild cache + 3. publish
-        const map = await this.rebuildCache();
-        try {
-            await this.redis.publish(
-                CONFIG_PAGES_CHANNEL,
-                JSON.stringify(map)
-            );
-        } catch (err) {
-            this.logger.warn(`publish ${CONFIG_PAGES_CHANNEL} failed: ${String(err)}`);
-        }
-
-        // 4. Audit (không chặn luồng chính nếu lỗi)
+        // 2. Audit (không chặn luồng chính nếu lỗi)
         try {
             await this.prisma.adminAudit.create({
                 data: {
@@ -128,22 +138,14 @@ export class AdminPageConfigService implements OnModuleInit {
             this.logger.warn(`audit write failed: ${String(err)}`);
         }
 
+        // 3. Gateway (SetPageFlags) — lỗi thì admin thấy và thử lại.
+        await this.pushFlags();
+
         return {
             key: row.key,
             label: row.label,
             enabled: row.enabled,
             updatedAt: row.updatedAt.toISOString(),
         };
-    }
-
-    /** Dựng lại full map từ DB và ghi vào Redis. */
-    private async rebuildCache(): Promise<Record<string, boolean>> {
-        const rows = await this.prisma.pageFeatureFlag.findMany();
-        const map: Record<string, boolean> = {};
-        for (const r of rows) {
-            map[r.key] = r.enabled;
-        }
-        await this.redis.set(CONFIG_PAGES_KEY, map);
-        return map;
     }
 }

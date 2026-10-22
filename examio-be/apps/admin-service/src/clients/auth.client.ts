@@ -42,6 +42,11 @@ export class AuthClient implements OnModuleInit {
         return this.call('GetUser', (o) => this.auth.getUser({ userId }, metadata, o));
     }
 
+    /** One batched read for the distinct ids of a page (`user:manage` on the forwarded token). */
+    getUsersByIds(userIds: string[], metadata: Metadata): Promise<authV1.GetUsersByIdsResponse> {
+        return this.call('GetUsersByIds', (o) => this.auth.getUsersByIds({ userIds }, metadata, o));
+    }
+
     listUsers(
         request: authV1.ListUsersRequest,
         metadata: Metadata

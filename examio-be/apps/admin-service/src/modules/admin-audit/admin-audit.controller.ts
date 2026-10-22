@@ -1,11 +1,12 @@
-import { Controller, Get, Query, UsePipes } from '@nestjs/common';
+import { Controller, Get, Query, Req, UsePipes } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { AdminAuditService } from './admin-audit.service';
 import { ListAuditQueryDto } from './dto/list-audit.query';
-import { RequirePermissions } from '@examio/auth-jwt';
+import { RequirePermissions, forwardUser } from '@examio/auth-jwt';
+import type { AuthedAdminRequest } from '../admin-roles/audit-context';
 
 @ApiTags('Admin / Audit')
 @ApiBearerAuth()
@@ -21,7 +22,7 @@ export class AdminAuditController {
         summary:
             'Paginated audit log. Filter by adminId, targetId, action prefix, or date range.',
     })
-    async list(@Query() query: ListAuditQueryDto) {
-        return this.audit.listAudit(query);
+    async list(@Query() query: ListAuditQueryDto, @Req() req: AuthedAdminRequest) {
+        return this.audit.listAudit(query, forwardUser(req));
     }
 }

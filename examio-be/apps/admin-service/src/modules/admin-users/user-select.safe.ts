@@ -1,14 +1,10 @@
-import { Prisma } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 /**
- * Safe Prisma select for `User` — explicit allowlist that NEVER
- * includes the `password` field. Every admin endpoint that returns a
- * user must spread this select (or build on top of it) to guarantee
- * no password hash ever leaks to the response.
- *
- * Keep this in sync with the `User` model in
- * `libs/database/src/schema.prisma`. If a new column is added and
- * is not sensitive, prefer extending the allowlist explicitly.
+ * Type-only description of the admin user row: an explicit allowlist that
+ * NEVER includes `password`. Rows are built by `toUserSafeRow` from auth's
+ * `User` message (admin no longer reads the `User` table), so this select is
+ * only used to derive `UserSafeRow`.
  */
 export const userSelectSafe = {
     id: true,

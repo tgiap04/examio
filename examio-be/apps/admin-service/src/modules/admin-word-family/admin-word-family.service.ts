@@ -1,8 +1,10 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '@examio/database';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Metadata } from '@grpc/grpc-js';
+import type { wordFamilyAdminV1 } from '@examio/contracts';
 
+import { VocabularyClient } from '../../clients/vocabulary.client';
 import { AuditWriterService } from '../../common/audit-writer.service';
+import { writeAuditBestEffort } from '../admin-roles/best-effort-audit';
 import { CreateCategoryBody } from './dto/create-category.body';
 import { UpdateCategoryBody } from './dto/update-category.body';
 
@@ -12,169 +14,136 @@ export interface AuditContext {
     userAgent?: string | null;
 }
 
+export interface CategoryRow {
+    id: string;
+    name: string;
+    slug: string;
+    description: string | null;
+    imageUrl: string | null;
+    order: number;
+    isActive: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+}
+
+const UPDATABLE = ['name', 'description', 'imageUrl', 'order', 'isActive'] as const;
+
+/** Wire message -> the row shape the admin API has always returned. */
+function toRow(c: wordFamilyAdminV1.WordFamilyCategory): CategoryRow {
+    return {
+        id: c.id,
+        name: c.name,
+        slug: c.slug,
+        description: c.description || null,
+        imageUrl: c.imageUrl || null,
+        order: c.order,
+        isActive: c.isActive,
+        createdAt: new Date(Number(c.createdAt)),
+        updatedAt: new Date(Number(c.updatedAt)),
+    };
+}
+
+/**
+ * Word-family category administration through `WordFamilyAdminService` (served
+ * by exam today, vocabulary-service from phase 12) with the calling admin's
+ * token. The owner writes the data (and deletes the R2 image); admin records
+ * AdminAudit rows once the RPC committed (best effort, like the other admin
+ * modules).
+ */
 @Injectable()
 export class AdminWordFamilyService {
+    private readonly logger = new Logger(AdminWordFamilyService.name);
+
     constructor(
-        private readonly prisma: PrismaService,
         private readonly auditWriter: AuditWriterService,
+        private readonly vocabulary: VocabularyClient
     ) {}
 
     /** List all categories (admin view includes inactive). */
-    async listCategories() {
-        return this.prisma.wordFamilyCategory.findMany({
-            orderBy: [{ order: 'asc' }, { name: 'asc' }],
-        });
+    async listCategories(metadata: Metadata): Promise<CategoryRow[]> {
+        const { categories } = await this.vocabulary.listCategories({ includeInactive: true }, metadata);
+        return categories.map(toRow);
     }
 
-    /** Create a new word family category. */
-    async createCategory(body: CreateCategoryBody, ctx: AuditContext) {
-        // Check slug uniqueness
-        const existing = await this.prisma.wordFamilyCategory.findUnique({
-            where: { slug: body.slug },
+    /** Create a category; a duplicate slug is the owner's 409. */
+    async createCategory(body: CreateCategoryBody, ctx: AuditContext, metadata: Metadata) {
+        const { category } = await this.vocabulary.upsertCategory(
+            {
+                id: '',
+                name: body.name,
+                slug: body.slug,
+                description: body.description,
+                imageUrl: body.imageUrl,
+                order: body.order,
+            },
+            metadata
+        );
+        const created = toRow(category!);
+        await this.audit(ctx, 'admin.wordFamily.category.create', created.id, {
+            name: created.name,
+            slug: created.slug,
         });
-        if (existing) {
-            throw new ConflictException(
-                `Category with slug "${body.slug}" already exists.`,
-            );
+        return created;
+    }
+
+    /** Update the changed fields of a category (slug never changes). */
+    async updateCategory(
+        id: string,
+        body: UpdateCategoryBody,
+        ctx: AuditContext,
+        metadata: Metadata
+    ): Promise<CategoryRow> {
+        const existing = (await this.listCategories(metadata)).find((c) => c.id === id);
+        if (!existing) throw new NotFoundException('Category not found');
+
+        const changed = UPDATABLE.filter(
+            (field) => body[field] !== undefined && body[field] !== existing[field]
+        );
+        if (changed.length === 0) return existing;
+
+        const { category } = await this.vocabulary.upsertCategory(
+            {
+                id,
+                name: body.name ?? existing.name,
+                slug: existing.slug,
+                description: body.description,
+                imageUrl: body.imageUrl,
+                order: body.order,
+                isActive: body.isActive,
+            },
+            metadata
+        );
+        const updated = toRow(category!);
+        for (const field of changed) {
+            await this.audit(ctx, 'admin.wordFamily.category.update', id, {
+                field,
+                from: existing[field],
+                to: updated[field],
+            });
         }
-
-        return this.prisma.$transaction(
-            async (tx) => {
-                const category = await tx.wordFamilyCategory.create({
-                    data: {
-                        name: body.name,
-                        slug: body.slug,
-                        description: body.description ?? null,
-                        imageUrl: body.imageUrl ?? null,
-                        order: body.order ?? 0,
-                    },
-                });
-
-                await this.auditWriter.write(
-                    {
-                        adminId: ctx.adminId,
-                        action: 'admin.wordFamily.category.create',
-                        targetId: category.id,
-                        payload: {
-                            name: category.name,
-                            slug: category.slug,
-                        },
-                        ipAddress: ctx.ipAddress,
-                        userAgent: ctx.userAgent,
-                    },
-                    { tx },
-                );
-
-                return category;
-            },
-            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-        );
+        return updated;
     }
 
-    /** Update an existing word family category. */
-    async updateCategory(id: string, body: UpdateCategoryBody, ctx: AuditContext) {
-        return this.prisma.$transaction(
-            async (tx) => {
-                const existing = await tx.wordFamilyCategory.findUnique({
-                    where: { id },
-                });
-                if (!existing) {
-                    throw new NotFoundException('Category not found');
-                }
-
-                const data: Prisma.WordFamilyCategoryUpdateInput = {};
-                const changedFields: string[] = [];
-
-                if (body.name !== undefined && body.name !== existing.name) {
-                    data.name = body.name;
-                    changedFields.push('name');
-                }
-                if (body.description !== undefined && body.description !== existing.description) {
-                    data.description = body.description;
-                    changedFields.push('description');
-                }
-                if (body.imageUrl !== undefined && body.imageUrl !== existing.imageUrl) {
-                    data.imageUrl = body.imageUrl;
-                    changedFields.push('imageUrl');
-                }
-                if (body.order !== undefined && body.order !== existing.order) {
-                    data.order = body.order;
-                    changedFields.push('order');
-                }
-                if (body.isActive !== undefined && body.isActive !== existing.isActive) {
-                    data.isActive = body.isActive;
-                    changedFields.push('isActive');
-                }
-
-                if (changedFields.length === 0) {
-                    return existing;
-                }
-
-                const updated = await tx.wordFamilyCategory.update({
-                    where: { id },
-                    data,
-                });
-
-                // Batch audit writes — one DB round-trip for all changed fields
-                if (changedFields.length > 0) {
-                    const auditRows = changedFields.map((field) => ({
-                        adminId: ctx.adminId,
-                        action: 'admin.wordFamily.category.update',
-                        targetId: id,
-                        payload: JSON.stringify({
-                            field,
-                            from: (existing as Record<string, unknown>)[field],
-                            to: (updated as Record<string, unknown>)[field],
-                        }),
-                        ipAddress: ctx.ipAddress,
-                        userAgent: ctx.userAgent,
-                    }));
-
-                    const client: any = tx;
-                    await client.adminAudit.createMany({ data: auditRows });
-                }
-
-                return updated;
-            },
-            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-        );
+    /** Deactivate a category; the owner also deletes its image object from R2. */
+    async deleteCategory(id: string, ctx: AuditContext, metadata: Metadata) {
+        const existing = (await this.listCategories(metadata)).find((c) => c.id === id);
+        const { category } = await this.vocabulary.deleteCategory({ id }, metadata);
+        await this.audit(ctx, 'admin.wordFamily.category.delete', id, {
+            name: existing?.name,
+            slug: existing?.slug,
+            previousIsActive: existing?.isActive,
+        });
+        return { message: 'Category deleted', category: toRow(category!) };
     }
 
-    /** Soft-delete a category by setting isActive = false. */
-    async deleteCategory(id: string, ctx: AuditContext) {
-        return this.prisma.$transaction(
-            async (tx) => {
-                const existing = await tx.wordFamilyCategory.findUnique({
-                    where: { id },
-                });
-                if (!existing) {
-                    throw new NotFoundException('Category not found');
-                }
-
-                const updated = await tx.wordFamilyCategory.update({
-                    where: { id },
-                    data: { isActive: false },
-                });
-
-                await this.auditWriter.write(
-                    {
-                        adminId: ctx.adminId,
-                        action: 'admin.wordFamily.category.delete',
-                        targetId: id,
-                        payload: {
-                            name: existing.name,
-                            slug: existing.slug,
-                            previousIsActive: existing.isActive,
-                        },
-                        ipAddress: ctx.ipAddress,
-                        userAgent: ctx.userAgent,
-                    },
-                    { tx },
-                );
-
-                return { message: 'Category deleted', category: updated };
-            },
-            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
-        );
+    private audit(ctx: AuditContext, action: string, targetId: string, payload: Record<string, unknown>) {
+        return writeAuditBestEffort(this.auditWriter, this.logger, {
+            adminId: ctx.adminId,
+            action,
+            targetId,
+            payload,
+            ipAddress: ctx.ipAddress,
+            userAgent: ctx.userAgent,
+        });
     }
 }

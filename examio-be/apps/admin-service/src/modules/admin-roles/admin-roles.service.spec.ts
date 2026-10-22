@@ -6,7 +6,7 @@ import { AdminRolesService } from './admin-roles.service';
 const user = (over: Partial<authV1.User> = {}): authV1.User => ({
     id: 'u1', email: 'u1@x.io', username: 'u1', name: 'U', avatar: '',
     role: authV1.BaseRole.BASE_ROLE_STUDENT, isSystemAdmin: false, isVerified: true, isBanned: false,
-    createdAt: String(Date.UTC(2026, 9, 17, 8)), ...over,
+    createdAt: String(Date.UTC(2026, 9, 17, 8)), updatedAt: String(Date.UTC(2026, 9, 17, 9)), ...over,
 });
 const TEACHER = authV1.BaseRole.BASE_ROLE_TEACHER;
 const ctx = { adminId: 'admin1', ipAddress: '1.2.3.4', userAgent: 'jest' };

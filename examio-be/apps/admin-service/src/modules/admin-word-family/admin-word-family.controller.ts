@@ -19,7 +19,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger'
 import { AdminWordFamilyService, AuditContext } from './admin-word-family.service';
 import { CreateCategoryBodyDto } from './dto/create-category.body';
 import { UpdateCategoryBodyDto } from './dto/update-category.body';
-import { RequirePermissions } from '@examio/auth-jwt';
+import { RequirePermissions, forwardUser } from '@examio/auth-jwt';
 
 interface AuthedAdminRequest extends Request {
     user?: { id: string };
@@ -36,8 +36,8 @@ export class AdminWordFamilyController {
 
     @Get('categories')
     @ApiOperation({ summary: 'List all word family categories (admin view)' })
-    async listCategories() {
-        return this.wfService.listCategories();
+    async listCategories(@Req() req: AuthedAdminRequest) {
+        return this.wfService.listCategories(forwardUser(req));
     }
 
     @Post('categories')
@@ -47,7 +47,7 @@ export class AdminWordFamilyController {
         @Body() body: CreateCategoryBodyDto,
         @Req() req: AuthedAdminRequest,
     ) {
-        return this.wfService.createCategory(body, this.buildAuditContext(req));
+        return this.wfService.createCategory(body, this.buildAuditContext(req), forwardUser(req));
     }
 
     @Put('categories/:id')
@@ -62,6 +62,7 @@ export class AdminWordFamilyController {
             id,
             body,
             this.buildAuditContext(req),
+            forwardUser(req),
         );
     }
 
@@ -73,7 +74,7 @@ export class AdminWordFamilyController {
         @Param('id') id: string,
         @Req() req: AuthedAdminRequest,
     ) {
-        return this.wfService.deleteCategory(id, this.buildAuditContext(req));
+        return this.wfService.deleteCategory(id, this.buildAuditContext(req), forwardUser(req));
     }
 
     private buildAuditContext(req: AuthedAdminRequest): AuditContext {

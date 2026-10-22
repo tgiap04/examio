@@ -39,8 +39,8 @@ export class AdminUsersController {
     @ApiOperation({
         summary: 'Paginated list of users with filters (no password).',
     })
-    async list(@Query() query: ListUsersQueryDto) {
-        return this.adminUsers.listUsers(query);
+    async list(@Query() query: ListUsersQueryDto, @Req() req: AuthedAdminRequest) {
+        return this.adminUsers.listUsers(query, forwardUser(req));
     }
 
     @Get(':id')
@@ -48,8 +48,8 @@ export class AdminUsersController {
         summary:
             'User detail (profile + wallet + subscription + last session).',
     })
-    async detail(@Param('id') id: string) {
-        return this.adminUsers.getUserDetail(id);
+    async detail(@Param('id') id: string, @Req() req: AuthedAdminRequest) {
+        return this.adminUsers.getUserDetail(id, forwardUser(req));
     }
 
     @Patch(':id')
@@ -66,7 +66,7 @@ export class AdminUsersController {
             throw new BadRequestException('No fields to update');
         }
         const ctx = auditContextOf(req);
-        const result = await this.adminUsers.updateUser(id, body, ctx);
+        const result = await this.adminUsers.updateUser(id, body, ctx, forwardUser(req));
         return { user: result.user, changedFields: result.changedFields };
     }
 

@@ -20,6 +20,14 @@ import { AdminPageConfigModule } from './modules/admin-page-config/admin-page-co
 import { HealthModule, LoggerModule } from '@examio/observability';
 import { AuthJwtModule } from '@examio/auth-jwt';
 
+/** AUTH_TOKEN_URL + SERVICE_CLIENT_SECRET are mandatory in production; locally only when set. */
+function serviceClientEnabled(): boolean {
+    return (
+        process.env.NODE_ENV === 'production' ||
+        Boolean(process.env.SERVICE_CLIENT_SECRET && process.env.AUTH_TOKEN_URL)
+    );
+}
+
 @Module({
     imports: [
         LoggerModule.forRoot('admin-service'),
@@ -28,7 +36,9 @@ import { AuthJwtModule } from '@examio/auth-jwt';
         }),
         DatabaseModule,
         RedisModule,
-        AuthJwtModule.forRoot({ serviceName: 'admin' }),
+        // Service token (aud = gateway) for GatewayControl.SetPageFlags; required in
+        // production, optional locally (the push then fails loudly with a 503).
+        AuthJwtModule.forRoot({ serviceName: 'admin', serviceClient: serviceClientEnabled() }),
         ThrottlerModule.forRoot([
             {
                 name: 'admin',

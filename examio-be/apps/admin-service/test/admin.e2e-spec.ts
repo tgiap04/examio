@@ -13,6 +13,10 @@ import {
 } from '@examio/auth-jwt/testing';
 import { join } from 'path';
 import { AuthClient } from '../src/clients/auth.client';
+import { AuthUsersClient } from '../src/clients/auth-users.client';
+import { FinanceClient } from '../src/clients/finance.client';
+import { GatewayClient } from '../src/clients/gateway.client';
+import { VocabularyClient } from '../src/clients/vocabulary.client';
 
 /**
  * Admin surface behind the REAL stateless guards: requests carry test-signed
@@ -21,15 +25,10 @@ import { AuthClient } from '../src/clients/auth.client';
 const ADMIN_ID = 'admin-1';
 
 function fakePrisma() {
-    const user = { id: 'user-1', email: 'u@e.com', isSystemAdmin: false, isBanned: false };
     const prisma: Record<string, unknown> = {
-        user: {
-            findUnique: jest.fn().mockResolvedValue(user),
-            findMany: jest.fn().mockResolvedValue([user]),
-            count: jest.fn().mockResolvedValue(1),
-            update: jest.fn().mockResolvedValue({ ...user, isSystemAdmin: true }),
-        },
-        wallet: { findUnique: jest.fn().mockResolvedValue({ id: 'w1', balance: 100 }) },
+        // admin owns no `User`/wallet table: any access here would be a regression.
+        user: { findUnique: jest.fn(), findMany: jest.fn(), count: jest.fn(), update: jest.fn() },
+        pageFeatureFlag: { findMany: jest.fn().mockResolvedValue([]), upsert: jest.fn() },
         adminAudit: {
             create: jest.fn().mockResolvedValue({ id: 'audit-1' }),
             findMany: jest.fn().mockResolvedValue([
@@ -53,7 +52,15 @@ describe('AdminService (e2e, real guards)', () => {
         getUser: jest.fn(async () => ({ user: authUser })),
         setSystemAdmin: jest.fn(async () => ({ user: { ...authUser, isSystemAdmin: true } })),
         setUserStatus: jest.fn(async () => ({ user: authUser })),
+        getUsersByIds: jest.fn(async () => ({ users: [] })),
+        listUsers: jest.fn(async (..._a: unknown[]) => ({ users: [authUser], page: { total: 1, page: 1, limit: 20 } })),
     };
+    const authUsers = {
+        getUserStats: jest.fn(async () => ({ totalUsers: '1', activeToday: '1', activeLast30d: '1', signupsSeries: [], trafficSeries: [], utmSources: [] })),
+        updateUserAdmin: jest.fn(),
+    };
+    const financeClient = { getRevenueStats: jest.fn(async () => ({ proUsers: 0, vipUsers: 0, revenueLast30d: '0', revenueSeries: [] })) };
+    const gatewayClient = { setPageFlags: jest.fn(async () => undefined) };
 
     beforeAll(async () => {
         // Proto paths resolve against examio-be/; import lazily so the chdir applies.
@@ -66,6 +73,14 @@ describe('AdminService (e2e, real guards)', () => {
             .useValue(prisma)
             .overrideProvider(AuthClient)
             .useValue(authClient)
+            .overrideProvider(AuthUsersClient)
+            .useValue(authUsers)
+            .overrideProvider(FinanceClient)
+            .useValue(financeClient)
+            .overrideProvider(GatewayClient)
+            .useValue(gatewayClient)
+            .overrideProvider(VocabularyClient)
+            .useValue({})
             .overrideProvider(TOKEN_VERIFIER)
             .useValue(
                 createTokenVerifier({
@@ -95,13 +110,24 @@ describe('AdminService (e2e, real guards)', () => {
                 .set(await admin());
             expect(res.status).toBe(200);
             expect(Array.isArray(res.body.rows)).toBe(true);
+            expect(res.body.rows[0]).toMatchObject({ id: 'user-1', role: 'STUDENT' });
+            expect(res.body).toMatchObject({ total: 1, page: 1, pageSize: 20 });
+            expect(res.body.rows[0]).not.toHaveProperty('password');
+        });
+
+        it('forwards the caller token to auth and never queries the User table', async () => {
+            const headers = await admin();
+            await request(app.getHttpServer()).get('/admin/users').set(headers).expect(200);
+            const md = authClient.listUsers.mock.calls.at(-1)?.[1] as unknown as { get(k: string): string[] };
+            expect(md.get('authorization')).toEqual([headers.authorization]);
+            expect((prisma.user as { findMany: jest.Mock }).findMany).not.toHaveBeenCalled();
         });
 
         it('filters by isSystemAdmin (renamed from isAdmin)', async () => {
             await request(app.getHttpServer()).get('/admin/users?isSystemAdmin=true').set(await admin()).expect(200);
-            const where = (prisma.user as { findMany: jest.Mock }).findMany.mock.calls.at(-1)?.[0].where;
-            expect(where).toMatchObject({ isSystemAdmin: true });
-            expect(where).not.toHaveProperty('isAdmin');
+            const req = authClient.listUsers.mock.calls.at(-1)?.[0] as unknown as Record<string, unknown>;
+            expect(req).toMatchObject({ isSystemAdmin: true });
+            expect(req).not.toHaveProperty('isAdmin');
         });
 
         it('a combined TEACHER + SYSTEM_ADMIN token passes (permissions are the union)', async () => {

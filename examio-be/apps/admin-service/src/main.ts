@@ -5,8 +5,11 @@ import { join } from 'path';
 config({ path: join(process.cwd(), 'apps', 'admin-service', '.env') });
 
 import { NestFactory } from '@nestjs/core';
+import { MicroserviceOptions } from '@nestjs/microservices';
 import * as cookieParser from 'cookie-parser';
 
+import { PROTO_FILES } from '@examio/contracts';
+import { grpcServerOptions } from '@examio/grpc';
 import { HttpErrorEnvelopeFilter } from '@examio/http';
 import { AdminServiceModule } from './admin-service.module';
 import {
@@ -38,9 +41,17 @@ async function bootstrap() {
         credentials: true,
     });
 
+    // AdminService.GetPageFlags (the gateway pulls it at boot); inherits the global guards.
+    app.connectMicroservice<MicroserviceOptions>(
+        grpcServerOptions([PROTO_FILES.admin]),
+        { inheritAppConfig: true }
+    );
+    await app.startAllMicroservices();
+
     const httpPort = process.env.PORT || 3000;
     await app.listen(httpPort);
 
     console.log(`🚀 Admin Service HTTP running on port ${httpPort}`);
+    console.log(`🔌 Admin Service gRPC running on port ${process.env.GRPC_PORT || '50051'}`);
 }
 bootstrap();

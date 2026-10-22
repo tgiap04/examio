@@ -1,7 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
+import { Injectable } from '@nestjs/common';
+import { Metadata } from '@grpc/grpc-js';
 import { RedisService } from '@examio/redis';
 
+import { AuthUsersClient } from '../../clients/auth-users.client';
+import { FinanceClient } from '../../clients/finance.client';
 import {
     OverviewResponse,
     SeriesName,
@@ -18,168 +20,97 @@ import {
 const OVERVIEW_CACHE_KEY = 'admin:stats:overview';
 const SERIES_CACHE_TTL_SECONDS = 5 * 60; // 5 minutes
 
+/** `YYYY-MM-DD` (UTC) from an owner service -> UTC midnight. */
+const utcMidnight = (day: string): Date => new Date(`${day}T00:00:00.000Z`);
+
+/**
+ * Admin dashboard numbers. The aggregates are computed by their owners (auth:
+ * users/sessions/utm, finance: subscriptions/payments) and fetched with the
+ * calling admin's token (`stats:read`); this service only combines them, fills
+ * date gaps and keeps the 5-minute Redis cache. Response shapes are unchanged.
+ */
 @Injectable()
 export class AdminStatsService {
-    private readonly logger = new Logger(AdminStatsService.name);
-
     constructor(
-        private readonly prisma: PrismaService,
-        private readonly redis: RedisService
+        private readonly redis: RedisService,
+        private readonly authUsers: AuthUsersClient,
+        private readonly finance: FinanceClient
     ) {}
 
     /**
      * Aggregated top-level KPIs for the admin overview page.
      * Cached for 5 minutes under `admin:stats:overview`.
      */
-    async getOverview(): Promise<OverviewResponse> {
-        const cached = await this.redis.get<OverviewResponse>(
-            OVERVIEW_CACHE_KEY
-        );
-        if (cached) {
-            return cached;
-        }
+    async getOverview(metadata: Metadata): Promise<OverviewResponse> {
+        const cached = await this.redis.get<OverviewResponse>(OVERVIEW_CACHE_KEY);
+        if (cached) return cached;
 
-        const todayStart = startOfToday();
-        const thirtyDaysAgo = startOfNDaysAgo(30);
-
-        // Run the four independent aggregate queries in parallel to minimize
-        // wall-clock latency on a cold cache.
-        const [
-            totalUsers,
-            activeToday,
-            active30d,
-            proCount,
-            vipCount,
-            revenueAgg,
-        ] = await Promise.all([
-            this.prisma.user.count(),
-            this.prisma.userSession.count({
-                where: { createdAt: { gte: todayStart } },
-            }),
-            this.prisma.userSession.count({
-                where: { lastActivity: { gte: thirtyDaysAgo } },
-            }),
-            this.prisma.userSubscription.count({
-                where: { tier: { in: [1, 2] }, isActive: true },
-            }),
-            this.prisma.userSubscription.count({
-                where: { tier: 3, isActive: true },
-            }),
-            this.prisma.payment.aggregate({
-                where: {
-                    status: 1,
-                    createdAt: { gte: thirtyDaysAgo },
-                },
-                _sum: { amount: true },
-            }),
+        const [users, revenue] = await Promise.all([
+            this.authUsers.getUserStats({ days: 1, includeUtmSources: false }, metadata),
+            this.finance.getRevenueStats({ days: 1 }, metadata),
         ]);
-
         const overview: OverviewResponse = {
-            totalUsers,
-            activeToday,
-            active30d,
-            proCount,
-            vipCount,
-            revenue30d: Number(revenueAgg._sum.amount ?? 0),
+            totalUsers: Number(users.totalUsers),
+            activeToday: Number(users.activeToday),
+            active30d: Number(users.activeLast30d),
+            proCount: revenue.proUsers,
+            vipCount: revenue.vipUsers,
+            revenue30d: Number(revenue.revenueLast30d),
         };
-
-        await this.redis.set(
-            OVERVIEW_CACHE_KEY,
-            overview,
-            SERIES_CACHE_TTL_SECONDS
-        );
+        await this.redis.set(OVERVIEW_CACHE_KEY, overview, SERIES_CACHE_TTL_SECONDS);
         return overview;
     }
 
     /**
      * Time series for one of {signups, traffic, revenue} across {7d, 30d, 90d}.
-     * Bucketing is done in SQL via `date_trunc('day', ...)` and gaps are then
-     * filled in TypeScript so the chart always receives N continuous points.
+     * Owners bucket by day in SQL; gaps are filled here so the chart always
+     * receives N continuous points.
      */
     async getSeries(
         name: SeriesName,
-        range: SeriesRange
+        range: SeriesRange,
+        metadata: Metadata
     ): Promise<SeriesResponse> {
         const cacheKey = `admin:stats:series:${name}:${range}`;
         const cached = await this.redis.get<SeriesResponse>(cacheKey);
-        if (cached) {
-            return cached;
-        }
+        if (cached) return cached;
 
-        const start = startOfNDaysAgo(rangeToDays(range));
-        const end = startOfToday();
-
-        const points: SeriesPoint[] = (await this.fetchSeriesRaw(
-            name,
-            start
-        )).map((row) => ({
-            date: row.date.toISOString(),
-            value: row.value,
-        }));
-
-        const filled = fillDateGaps(
-            points.map((p) => ({ date: new Date(p.date), value: p.value })),
-            start,
-            end
-        );
-
+        const days = rangeToDays(range);
+        const rows = await this.fetchSeries(name, days, metadata);
         const response: SeriesResponse = {
             name,
             range,
             bucket: 'day',
-            points: filled,
+            points: fillDateGaps(rows, startOfNDaysAgo(days), startOfToday()),
         };
-
         await this.redis.set(cacheKey, response, SERIES_CACHE_TTL_SECONDS);
         return response;
     }
 
     /**
-     * Quy kết nguồn đăng ký: đếm User theo utm_source (null/'' → 'direct'),
-     * giảm dần, top 20. range không truyền → toàn thời gian; có range → lọc theo
-     * createdAt. Cache 5' theo mẫu series.
+     * Signup attribution: user counts grouped by utm_source (null/'' -> 'direct'),
+     * descending, top 20. No range = all time. Cached 5 minutes like the series.
      */
     async getSourceBreakdown(
+        metadata: Metadata,
         range?: SeriesRange
     ): Promise<SourceBreakdownResponse> {
         const cacheKey = `admin:stats:sources:${range ?? 'all'}`;
-        const cached =
-            await this.redis.get<SourceBreakdownResponse>(cacheKey);
-        if (cached) {
-            return cached;
-        }
+        const cached = await this.redis.get<SourceBreakdownResponse>(cacheKey);
+        if (cached) return cached;
 
-        const rows = range
-            ? await this.prisma.$queryRaw<
-                  { source: string; count: bigint }[]
-              >`
-                    SELECT COALESCE(NULLIF("utmSource", ''), 'direct') AS source,
-                           COUNT(*) AS count
-                    FROM "User"
-                    WHERE "createdAt" >= ${startOfNDaysAgo(rangeToDays(range))}
-                    GROUP BY 1
-                    ORDER BY count DESC
-                    LIMIT 20
-                `
-            : await this.prisma.$queryRaw<
-                  { source: string; count: bigint }[]
-              >`
-                    SELECT COALESCE(NULLIF("utmSource", ''), 'direct') AS source,
-                           COUNT(*) AS count
-                    FROM "User"
-                    GROUP BY 1
-                    ORDER BY count DESC
-                    LIMIT 20
-                `;
-
+        const users = await this.authUsers.getUserStats(
+            {
+                days: 1,
+                includeUtmSources: true,
+                utmDays: range ? rangeToDays(range) : undefined,
+            },
+            metadata
+        );
         const response: SourceBreakdownResponse = {
             range: range ?? 'all',
-            rows: rows.map((r) => ({
-                source: r.source,
-                count: Number(r.count),
-            })),
+            rows: users.utmSources.map((r) => ({ source: r.source, count: Number(r.count) })),
         };
-
         await this.redis.set(cacheKey, response, SERIES_CACHE_TTL_SECONDS);
         return response;
     }
@@ -193,61 +124,21 @@ export class AdminStatsService {
         await this.redis.delPattern('admin:stats:series:*');
     }
 
-    // ====================== private helpers ======================
-
-    /**
-     * Executes a single grouped aggregate query for the requested metric.
-     * Uses `$queryRaw` with parameterized inputs so we can use `date_trunc`,
-     * which Prisma's `groupBy` API does not support on standard fields.
-     */
-    private async fetchSeriesRaw(
+    private async fetchSeries(
         name: SeriesName,
-        start: Date
+        days: number,
+        metadata: Metadata
     ): Promise<{ date: Date; value: number }[]> {
-        switch (name) {
-            case 'signups': {
-                const rows = await this.prisma.$queryRaw<
-                    { date: Date; value: bigint }[]
-                >`
-                    SELECT date_trunc('day', "createdAt") AS date,
-                           COUNT(*) AS value
-                    FROM "User"
-                    WHERE "createdAt" >= ${start}
-                    GROUP BY date
-                    ORDER BY date ASC
-                `;
-                return rows.map((r) => ({ date: r.date, value: Number(r.value) }));
-            }
-            case 'traffic': {
-                const rows = await this.prisma.$queryRaw<
-                    { date: Date; value: bigint }[]
-                >`
-                    SELECT date_trunc('day', "lastActivity") AS date,
-                           COUNT(*) AS value
-                    FROM "UserSession"
-                    WHERE "lastActivity" >= ${start}
-                    GROUP BY date
-                    ORDER BY date ASC
-                `;
-                return rows.map((r) => ({ date: r.date, value: Number(r.value) }));
-            }
-            case 'revenue': {
-                const rows = await this.prisma.$queryRaw<
-                    { date: Date; value: number | null }[]
-                >`
-                    SELECT date_trunc('day', "createdAt") AS date,
-                           SUM("amount") AS value
-                    FROM "Payment"
-                    WHERE "status" = 1
-                      AND "createdAt" >= ${start}
-                    GROUP BY date
-                    ORDER BY date ASC
-                `;
-                return rows.map((r) => ({
-                    date: r.date,
-                    value: Number(r.value ?? 0),
-                }));
-            }
+        if (name === 'revenue') {
+            const { revenueSeries } = await this.finance.getRevenueStats({ days }, metadata);
+            return revenueSeries.map((p) => ({ date: utcMidnight(p.date), value: Number(p.revenue) }));
         }
+        const users = await this.authUsers.getUserStats(
+            { days, includeUtmSources: false },
+            metadata
+        );
+        const points: { date: string; value: string }[] =
+            name === 'signups' ? users.signupsSeries : users.trafficSeries;
+        return points.map((p) => ({ date: utcMidnight(p.date), value: Number(p.value) }));
     }
 }

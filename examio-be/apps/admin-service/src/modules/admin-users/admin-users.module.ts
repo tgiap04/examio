@@ -3,13 +3,22 @@ import { GrpcClientModule } from '@examio/grpc';
 
 import { AdminCommonModule } from '../../common/admin-common.module';
 import { AUTH_GRPC_REGISTRATION, AuthClient } from '../../clients/auth.client';
+import { AUTH_USERS_GRPC_REGISTRATION, AuthUsersClient } from '../../clients/auth-users.client';
+import { FINANCE_ADMIN_GRPC_REGISTRATION, FinanceClient } from '../../clients/finance.client';
 import { AdminUsersController } from './admin-users.controller';
 import { AdminUsersService } from './admin-users.service';
 
 @Module({
-    imports: [AdminCommonModule, GrpcClientModule.register(AUTH_GRPC_REGISTRATION)],
+    imports: [
+        AdminCommonModule,
+        GrpcClientModule.register(
+            AUTH_GRPC_REGISTRATION,
+            AUTH_USERS_GRPC_REGISTRATION,
+            FINANCE_ADMIN_GRPC_REGISTRATION
+        ),
+    ],
     controllers: [AdminUsersController],
-    providers: [AdminUsersService, AuthClient],
+    providers: [AdminUsersService, AuthClient, AuthUsersClient, FinanceClient],
     exports: [AdminUsersService],
 })
 export class AdminUsersModule {}
