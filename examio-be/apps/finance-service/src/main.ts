@@ -48,9 +48,13 @@ async function startApi() {
         credentials: true,
     });
 
-    // gRPC microservice (WalletService + SubscriptionService)
+    // gRPC microservice (WalletService + SubscriptionService + FinanceAdminService + FinanceStatsService)
     app.connectMicroservice<MicroserviceOptions>(
-        grpcServerOptions([PROTO_FILES.wallet, PROTO_FILES.subscription]),
+        grpcServerOptions([
+            PROTO_FILES.wallet,
+            PROTO_FILES.subscription,
+            PROTO_FILES.financeAdmin,
+        ]),
         { inheritAppConfig: true }
     );
 

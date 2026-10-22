@@ -11,9 +11,11 @@ import { SubscriptionService } from './subscription.service';
 import { SubscriptionGrpcController } from './subscription.grpc.controller';
 import { PaymentRepository } from './payment.repository';
 import { WalletModule } from '../wallet/wallet.module';
+import { FINANCE_MESSAGING } from '../../finance-messaging';
+import { SubscriptionChangedPublisher } from './subscription-changed.publisher';
 
 @Module({
-    imports: [WalletModule],
+    imports: [WalletModule, FINANCE_MESSAGING],
     providers: [
         PrismaService,
         RedisService,
@@ -21,6 +23,7 @@ import { WalletModule } from '../wallet/wallet.module';
         WebhookService,
         PaymentService,
         SubscriptionService,
+        SubscriptionChangedPublisher,
         PaymentRepository,
         GenerateIdService,
     ],
@@ -34,6 +37,7 @@ import { WalletModule } from '../wallet/wallet.module';
         WebhookService,
         PaymentService,
         SubscriptionService,
+        SubscriptionChangedPublisher,
         PaymentRepository,
     ],
 })

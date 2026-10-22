@@ -152,7 +152,7 @@ describe('WebhookService - SePay Idempotency Security', () => {
       // - Logic: if (count === 1) { wallet.update(increment) } // credit once
     });
 
-    it('SECURITY: updateBalance rejects amount <= 0', () => {
+    it('SECURITY: applyBalanceDelta rejects amount <= 0', () => {
       // Input validation prevents invalid operations
       // Amounts must be positive (> 0)
       // This guards against manipulation attempts

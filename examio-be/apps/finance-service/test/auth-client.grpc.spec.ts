@@ -25,7 +25,7 @@ class FakeAuthServer {
         return {
             users: slice.map((id) => ({
                 id, email: `${id}@x`, username: id, name: '', avatar: '', role: authV1.BaseRole.BASE_ROLE_TEACHER,
-                isSystemAdmin: false, isVerified: true, isBanned: false, createdAt: '0',
+                isSystemAdmin: false, isVerified: true, isBanned: false, createdAt: '0', updatedAt: '0',
             })),
             page: { total: TEACHERS.length, page, limit },
         };

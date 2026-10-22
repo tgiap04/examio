@@ -1,0 +1,169 @@
+syntax = "proto3";
+
+package examio.finance.v1;
+
+// Privileged finance writes for the admin UI. The actor is ALWAYS the subject
+// of the forwarded admin token (permission `finance:admin`); no request carries
+// an actor id. Every write is idempotent on `idempotency_key`.
+service FinanceAdminService {
+  // Adds or subtracts credits (type = admin adjustment). One WalletTransaction
+  // keyed `adjust:<idempotency_key>` per wallet.
+  rpc AdjustBalance(AdjustBalanceRequest) returns (AdjustBalanceResponse);
+  // Marks a paid payment refunded and, for credit purchases, reverses the credits.
+  rpc RefundPayment(RefundPaymentRequest) returns (RefundPaymentResponse);
+  // Force-sets the subscription tier; publishes finance.subscription.changed.
+  rpc ChangeTier(ChangeTierRequest) returns (ChangeTierResponse);
+  rpc ListPayments(ListPaymentsRequest) returns (ListPaymentsResponse);
+  rpc ListSubscriptions(ListSubscriptionsRequest) returns (ListSubscriptionsResponse);
+  // One user's wallet and subscription for the admin user detail.
+  rpc GetUserFinance(GetUserFinanceRequest) returns (GetUserFinanceResponse);
+}
+
+message GetUserFinanceRequest {
+  string user_id = 1;
+}
+
+message UserWallet {
+  string id = 1;
+  int32 balance = 2;
+}
+
+message UserSubscriptionSummary {
+  string id = 1;
+  int32 tier = 2;
+  string billing_cycle = 3;
+  bool is_active = 4;
+}
+
+message GetUserFinanceResponse {
+  optional UserWallet wallet = 1;
+  optional UserSubscriptionSummary subscription = 2;
+}
+
+// Revenue/subscription aggregates for the admin overview (permission `stats:read`).
+service FinanceStatsService {
+  rpc GetRevenueStats(GetRevenueStatsRequest) returns (GetRevenueStatsResponse);
+}
+
+message AdjustBalanceRequest {
+  string user_id = 1;
+  // Positive whole credits.
+  int32 amount = 2;
+  // ADD | SUBTRACT
+  string direction = 3;
+  string reason = 4;
+  string idempotency_key = 5;
+}
+
+message AdjustBalanceResponse {
+  string user_id = 1;
+  string wallet_id = 2;
+  int32 previous_balance = 3;
+  int32 new_balance = 4;
+  int32 amount = 5;
+  string direction = 6;
+  bool already_applied = 7;
+}
+
+message RefundPaymentRequest {
+  string payment_id = 1;
+  string reason = 2;
+  string idempotency_key = 3;
+}
+
+message RefundPaymentResponse {
+  string payment_id = 1;
+  string user_id = 2;
+  int32 amount = 3;
+  int32 previous_status = 4;
+  int32 new_status = 5;
+  bool wallet_adjusted = 6;
+  bool already_applied = 7;
+}
+
+message ChangeTierRequest {
+  string user_id = 1;
+  // 0 none, 1 basic, 2 advanced, 3 vip.
+  int32 tier = 2;
+  // monthly | yearly; empty keeps the current cycle (default monthly).
+  string billing_cycle = 3;
+  string reason = 4;
+  string idempotency_key = 5;
+}
+
+message ChangeTierResponse {
+  string user_id = 1;
+  int32 previous_tier = 2;
+  int32 new_tier = 3;
+  // Empty when the user had no subscription row.
+  string previous_billing_cycle = 4;
+  string new_billing_cycle = 5;
+  bool is_active = 6;
+  bool already_applied = 7;
+}
+
+message Payment {
+  string id = 1;
+  string user_id = 2;
+  int32 amount = 3;
+  string currency = 4;
+  // 0 unpaid, 1 paid, 2 overdue, 3 cancelled, 4 refunded.
+  int32 status = 5;
+  // credits | subscription
+  string payment_type = 6;
+  // Unix epoch milliseconds.
+  int64 created_at = 7;
+}
+
+message ListPaymentsRequest {
+  // Optional filters; 0 / empty = no filter on that field.
+  string user_id = 1;
+  optional int32 status = 2;
+  // Opaque cursor from the previous page; empty for the first page.
+  string cursor = 3;
+  // 1..100, default 20.
+  int32 limit = 4;
+}
+
+message ListPaymentsResponse {
+  repeated Payment payments = 1;
+  // Empty when there is no further page.
+  string next_cursor = 2;
+}
+
+message Subscription {
+  string id = 1;
+  string user_id = 2;
+  int32 tier = 3;
+  string billing_cycle = 4;
+  bool is_active = 5;
+  int64 updated_at = 6;
+}
+
+message ListSubscriptionsRequest {
+  string cursor = 1;
+  int32 limit = 2;
+}
+
+message ListSubscriptionsResponse {
+  repeated Subscription subscriptions = 1;
+  string next_cursor = 2;
+}
+
+message GetRevenueStatsRequest {
+  // Series window in days (1..365); 0 = 30.
+  int32 days = 1;
+}
+
+message RevenuePoint {
+  // YYYY-MM-DD (UTC).
+  string date = 1;
+  int64 revenue = 2;
+}
+
+message GetRevenueStatsResponse {
+  int32 pro_users = 1;
+  int32 vip_users = 2;
+  int64 revenue_last30d = 3;
+  repeated RevenuePoint revenue_series = 4;
+}

@@ -7,7 +7,7 @@ import { UserAuthzChangedHandler } from './events/handlers/user-authz-changed.ha
 import { EnsureWalletService } from './modules/wallet/ensure-wallet.service';
 
 /**
- * Worker-role module (`ROLE=worker`): consumes `finance.events`. Handlers run
+ * Worker-role module (`ROLE=worker`): consumes `finance.events` and relays the finance outbox. Handlers run
  * in the consumer's idempotency transaction on the shared Prisma client.
  */
 @Module({
@@ -16,6 +16,7 @@ import { EnsureWalletService } from './modules/wallet/ensure-wallet.service';
         DatabaseModule,
         MessagingModule.forRoot({
             service: 'finance',
+            relay: true,
             consume: { db: PrismaService },
         }),
     ],
