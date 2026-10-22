@@ -62,6 +62,11 @@ export class ConfigService implements OnModuleInit, OnModuleDestroy {
         return cached && typeof cached === 'object' ? cached : {};
     }
 
+    /** True once any flag map is stored (an empty `{}` map counts: it is a deliberate state). */
+    async hasPages(): Promise<boolean> {
+        return (await this.redis.get<PageFlagMap>(CONFIG_PAGES_KEY)) != null;
+    }
+
     /** `GatewayControl.SetPageFlags`: ghi cache rồi phát cho mọi SSE client. */
     async setPages(flags: PageFlagMap): Promise<void> {
         await this.redis.set(CONFIG_PAGES_KEY, flags);

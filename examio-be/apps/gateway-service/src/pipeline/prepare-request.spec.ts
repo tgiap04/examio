@@ -31,6 +31,7 @@ describe.each([
         'x-forwarded-host': 'evil.example',
         forwarded: 'for=6.6.6.6',
         'x-request-id': 'req_client',
+        'idempotency-key': 'admin-action-1',
         ...extra,
     };
 
@@ -46,6 +47,8 @@ describe.each([
         expect(h['x-forwarded-proto']).toBe('https');
         expect(h['x-forwarded-host']).toBe('examio.top');
         expect(h['x-request-id']).toBe('req_prep');
+        // admin-finance replays on the client key: the gateway must not eat it
+        expect(h['idempotency-key']).toBe('admin-action-1');
     });
 
     it('injects the verified token as Authorization, replacing whatever the client sent', () => {

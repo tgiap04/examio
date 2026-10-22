@@ -21,6 +21,6 @@ export function buildCorsOptions(env: NodeJS.ProcessEnv = process.env): CorsOpti
     return {
         origin,
         credentials: true,
-        allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'X-Device-ID'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Cookie', 'X-Requested-With', 'X-Device-ID', 'Idempotency-Key'],
     };
 }

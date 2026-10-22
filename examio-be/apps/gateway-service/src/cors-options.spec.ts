@@ -27,7 +27,7 @@ describe('buildCorsOptions', () => {
 
     it('allows the headers the FE sends', () => {
         expect(buildCorsOptions({}).allowedHeaders).toEqual(
-            expect.arrayContaining(['Authorization', 'X-Device-ID'])
+            expect.arrayContaining(['Authorization', 'X-Device-ID', 'Idempotency-Key'])
         );
     });
 });

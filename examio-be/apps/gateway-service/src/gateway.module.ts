@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthJwtModule, type TokenVerifier } from '@examio/auth-jwt';
+import { GrpcClientModule } from '@examio/grpc';
 import { MessagingModule } from '@examio/messaging';
 import { RedisModule, RedisReadinessCheck } from '@examio/redis';
 import { HealthModule, LoggerModule } from '@examio/observability';
@@ -20,6 +21,13 @@ import { RateLimiterService } from './pipeline/rate-limiter.service';
 import { RequestLog } from './pipeline/request-log';
 import { RouteTable, loadRouteTable } from './routing/route-table';
 import { ConfigService } from './services/config.service';
+import {
+    ADMIN_GRPC_REGISTRATION,
+    DEFAULT_PAGE_FLAGS_BACKOFF,
+    PAGE_FLAGS_BACKOFF,
+    PageFlagsBootstrap,
+    pageFlagsPullEnabled,
+} from './services/page-flags-bootstrap.service';
 
 /**
  * The gateway is a router, not a service: no Prisma, no outbound HTTP client.
@@ -31,7 +39,9 @@ import { ConfigService } from './services/config.service';
     imports: [
         LoggerModule.forRoot('gateway-service'),
         HealthModule.forRoot({ checks: [RedisReadinessCheck] }),
-        AuthJwtModule.forRoot({ serviceName: 'gateway' }),
+        // Service token (aud = admin) for the boot-time GetPageFlags pull.
+        AuthJwtModule.forRoot({ serviceName: 'gateway', serviceClient: pageFlagsPullEnabled() }),
+        ...(pageFlagsPullEnabled() ? [GrpcClientModule.register(ADMIN_GRPC_REGISTRATION)] : []),
         RedisModule,
         GatewayNoDbModule,
         MessagingModule.forRoot({ service: 'gateway', consume: { db: GATEWAY_NO_DB } }),
@@ -39,6 +49,8 @@ import { ConfigService } from './services/config.service';
     controllers: [GatewayController, ConfigController, GatewayControlGrpcController],
     providers: [
         ConfigService,
+        { provide: PAGE_FLAGS_BACKOFF, useValue: DEFAULT_PAGE_FLAGS_BACKOFF },
+        PageFlagsBootstrap,
         LogPublisherService,
         RequestLog,
         GatewayRedis,
