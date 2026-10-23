@@ -2,7 +2,7 @@
 
 **Entity:** `ExamSession` (MODEL-018)
 **State Field:** `status` (DISC-001) + `assessType` (DISC-002) + `questionSelectionMode` (DISC-007)
-**Source:** `examio-be/libs/database/src/schema.prisma` (ExamSession)
+**Source:** `examio-be/apps/exam-service/prisma/schema/assessment.prisma` (ExamSession)
 **Last Updated:** 2026-06-05
 
 ## State Diagram

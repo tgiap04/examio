@@ -115,7 +115,7 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| WordFamilyCategory/WordFamily/UserSavedWordFamily (models) | `examio-be/libs/database/src/models/word-family.prisma:2-50` | Data models |
+| WordFamilyCategory/WordFamily/UserSavedWordFamily (models) | `examio-be/apps/exam-service/prisma/schema/vocabulary.prisma` | Data models |
 | WordFamilyController | `examio-be/apps/exam-service/src/modules/word-family/word-family.controller.ts:33-208` | User routes (category writes removed), incl. `GET /generation-status/:slug`, `POST /generate-root`, `GET /generation-status/:slug/:rootWord` |
 | WordFamilyService | `examio-be/apps/exam-service/src/modules/word-family/word-family.service.ts:17-396` | Category CRUD, generation orchestration, collection CRUD, `getGenerationStatus`, `generateWordFamilyForRoot` (fires unawaited background job), `runRootGeneration` worker, `getRootGenerationStatus`, flattened `getWordFamily` response |
 | WordFamilyBridgeService | `examio-be/apps/exam-service/src/modules/word-family/word-family-bridge.service.ts:24-130` | Transactional flashcard conversion |

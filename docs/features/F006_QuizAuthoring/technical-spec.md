@@ -365,7 +365,7 @@ None.
 
 ## Assumptions
 
-- Cascade delete behavior on QuizSet deletion (questions and labels) is enforced at the Prisma schema level — confirm via `schema.prisma` `onDelete: Cascade`.
+- Cascade delete behavior on QuizSet deletion (questions and labels) is enforced at the Prisma schema level — confirm via `apps/exam-service/prisma/schema/content.prisma` `onDelete: Cascade`.
 - AI job polling interval is 10 seconds up to 360 attempts (60 minutes) per `useGenerationGuard` hook.
 - `isPublic` flag defaults to `false` on quiz set creation.
 - Ownership check for quiz set edit/delete is enforced at the repository layer (service throws `ForbiddenException` on mismatch).

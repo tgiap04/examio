@@ -2,7 +2,7 @@
 
 **Entity:** `UserSubscription` (MODEL-004)
 **State Field:** `tier` (DISC-004)
-**Source:** `examio-be/libs/database/src/schema.prisma` (UserSubscription)
+**Source:** `examio-be/apps/finance-service/prisma/schema.prisma` (UserSubscription)
 **Last Updated:** 2026-06-05
 
 ## State Diagram

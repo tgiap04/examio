@@ -159,7 +159,7 @@ User files (profile avatars, banners, PDF documents, knowledge base files) are u
 When a user deletes a PDF, a knowledge file, or a profile asset, the system removes the record from the database and also deletes the file from R2. The file URL becomes invalid immediately after deletion.
 
 **Applies when:** A delete operation targets a UserStorage record.
-**Says:** The database record is removed and the R2 object is deleted. The operation is atomic — if R2 deletion fails, the DB deletion may still proceed, creating orphaned files that are cleaned up asynchronously.
+**Says:** Since phase 11 the R2 keys are queued in an `r2_delete_tasks` row (schema `auth` or `exam`) inside the same transaction as the row delete or image replace: the tasks exist if and only if that transaction commits. A background worker (`R2DeleteWorker`, `libs/messaging/src/r2-delete`) then calls r2-service `DeleteObjects` and removes the tasks; on failure it retries with exponential backoff (capped at 1 hour) and stops after 10 attempts, leaving the task row and logging a stuck metric. The object may therefore outlive the record for a short while, but a crash after commit no longer orphans it. A URL not on the configured `R2_PUBLIC_URL` host is never deleted (`r2KeyFromUrl` returns `null`). Not covered: deleting a `User` account (see roadmap, deferred) — no code path deletes `User` rows today.
 
 ---
 
@@ -290,7 +290,7 @@ When a user successfully changes their password via the profile page, a confirma
 
 ### User data is retained while account is active
 
-User data (quiz sets, flashcard sets, exam rooms, history, wallet) is retained indefinitely as long as the account exists. Deleted content is removed immediately from the database and R2. There is no automatic purge of inactive accounts in the current implementation.
+User data (quiz sets, flashcard sets, exam rooms, history, wallet) is retained indefinitely as long as the account exists. Deleted content is removed immediately from the database; its R2 objects are queued in the same transaction and deleted by a worker shortly after. There is no automatic purge of inactive accounts in the current implementation.
 
 **Applies when:** A user deletes content or an account.
 **Says:** The relevant records and files are permanently removed. This cannot be undone.

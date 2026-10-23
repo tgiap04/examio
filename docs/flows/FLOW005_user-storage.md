@@ -2,7 +2,7 @@
 
 **Entity:** `UserStorage` (MODEL-027)
 **State Field:** `processingStatus` (DISC-013)
-**Source:** `examio-be/libs/database/src/schema.prisma` (UserStorage)
+**Source:** `examio-be/apps/exam-service/prisma/schema/document.prisma` (UserStorage)
 **Last Updated:** 2026-06-05
 
 ## State Diagram

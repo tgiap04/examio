@@ -101,7 +101,7 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| PageFeatureFlag (model) | `examio-be/libs/database/src/models/page-feature-flag.prisma:3-8` | Data model |
+| PageFeatureFlag (model) | `examio-be/apps/admin-service/prisma/schema.prisma` | Data model |
 | AdminPageConfigController | `examio-be/apps/admin-service/src/modules/admin-page-config/admin-page-config.controller.ts:27-49` | Admin list + toggle endpoints |
 | AdminPageConfigService | `examio-be/apps/admin-service/src/modules/admin-page-config/admin-page-config.service.ts:46-124` | Toggle write-order logic, cache rebuild |
 | ConfigController (gateway) | `examio-be/apps/gateway-service/src/controllers/config.controller.ts:16-54` | Public flag fetch + SSE stream |

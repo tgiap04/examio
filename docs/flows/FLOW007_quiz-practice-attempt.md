@@ -2,7 +2,7 @@
 
 **Entity:** `QuizPracticeAttempt` (MODEL-022)
 **State Field:** `type` (DISC-009) + `isSubmitted` (derived boolean)
-**Source:** `examio-be/libs/database/src/schema.prisma` (QuizPracticeAttempt)
+**Source:** `examio-be/apps/exam-service/prisma/schema/assessment.prisma` (QuizPracticeAttempt)
 **Last Updated:** 2026-06-05
 
 ## State Diagram

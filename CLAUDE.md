@@ -41,12 +41,13 @@ yarn dev:ai
 yarn dev:all
 yarn proto:lint
 yarn proto:gen
-yarn prisma:merge
-yarn prisma:generate
-yarn prisma:migrate
-yarn prisma:studio
-yarn prisma:deploy
-yarn prisma:seed
+yarn prisma:generate               # sinh client cho mọi apps/*/prisma (scripts/prisma-generate.sh) vào apps/<svc>-service/src/generated/prisma (gitignore)
+PRISMA_ADMIN_URL=... scripts/prisma-migrate-dev.sh <auth|finance|admin|exam> <name>   # tạo migration (chỉ local; = yarn prisma:migrate)
+yarn prisma:deploy <svc>           # prisma migrate deploy cho schema của service
+yarn prisma:status <svc>
+scripts/prisma-schema-path.sh <svc>   # in đường dẫn schema của service
+yarn seed:dev                      # seed:dev:auth → finance → admin → exam (mỗi seed đọc DATABASE_URL / <SVC>_DATABASE_URL)
+yarn prisma:seed                   # seed:admin + seed:exam
 yarn bootstrap:admin               # đồng bộ ADMIN_EMAILS (auth-service CLI)
 yarn bootstrap:admin:list
 yarn bootstrap:admin:grant <email> [--teacher]
@@ -119,9 +120,9 @@ cd examio-be/apps/ai-service
 ## Hạ tầng local
 
 - File docker compose dùng cho production/deploy của backend là `examio-be/deploy/docker-compose.yml`.
-- Cấu hình compose đó bao gồm PostgreSQL, Redis, RabbitMQ, gateway, auth, exam, finance, r2, ai và một migration container.
+- Cấu hình compose đó bao gồm PostgreSQL, Redis, RabbitMQ, gateway, auth, exam, finance, r2, ai và các container migration one-shot `<svc>-migrate` (auth, finance, admin, exam). Compose chia theo service trong `deploy/compose/*.yml`, ghép bằng `include:` trong `docker-compose.yml`.
 - Backend hiện được thiết kế xoay quanh PostgreSQL + Redis + RabbitMQ cho persistence và messaging.
-- Compose dùng 3 network: `edge` (gateway + nginx FE), `internal` (không ra ngoài; mọi service + postgres/redis/rabbitmq) và `egress`. Postgres/Redis/RabbitMQ không publish port ra host; gateway chỉ publish `127.0.0.1:6369` (dev local chạy `yarn dev:gateway` vẫn dùng port `PORT` trong `.env`). Truy cập DB: `docker compose exec postgres psql ...`. Chi tiết: `examio-be/deploy/README.md`.
+- Compose dùng 3 network: `edge` (gateway + nginx FE), `internal` (không ra ngoài; mọi service + postgres/redis/rabbitmq) và `egress`. Postgres/Redis/RabbitMQ không publish port ra host; gateway chỉ publish `127.0.0.1:6369` (dev local chạy `yarn dev:gateway` vẫn dùng port `PORT` trong `.env`). Truy cập DB: `docker compose exec postgres psql ...` (hoặc `psql postgresql://<svc>_svc:…@…/examio` bằng role của service). Chi tiết: `examio-be/deploy/README.md`.
 - Cookie auth chỉ do auth-service set: `accessToken` và `refreshToken` (HttpOnly, SameSite=Lax, Secure ở production); cookie cũ `token`/`session_id` chỉ bị xóa khi logout. `POST /auth/refresh` xoay refresh token mỗi lần gọi và set lại cả hai cookie (token cũ chỉ còn hiệu lực trong khoảng grace ngắn). Route credential (login, register, ...) giới hạn 5 req/phút.
 - `examio-be/docker-compose.example.yml` có tồn tại nhưng chỉ mô tả một service tối giản kiểu frontend và không phản ánh đầy đủ stack backend.
 
@@ -143,7 +144,7 @@ Backend là một root package dùng Yarn, tổ chức theo kiểu Nest monorepo
 Mã hạ tầng dùng chung nằm trong `examio-be/libs/`:
 
 - `@examio/common`: export các Nest module dùng chung, mail/password/id services, event helpers, utils (gRPC client helpers và file protobuf đã chuyển sang `@examio/grpc`, `@examio/contracts` và thư mục `examio-be/proto/`).
-- `@examio/database`: Prisma schema/client và database module.
+- Không còn `@examio/database`: mỗi service sở hữu DB schema riêng (xem "Hình dạng dữ liệu"); Prisma module nằm trong `apps/<svc>-service/src/prisma` (adapter `PrismaPg`, pool 5, có `ReadinessCheck` cho DB).
 - `@examio/redis`: Redis module/service dùng chung; `RedisUnavailableFilter` (exam-service đăng ký global) đổi lỗi mất kết nối Redis trên HTTP thành 503 `SERVICE_UNAVAILABLE`, và client subscriber có listener `error`.
 - `@examio/contracts`: type/decorator gRPC sinh bằng ts-proto từ `examio-be/proto/examio/<svc>/v1` (buf). Thư mục `libs/contracts/src/generated/` bị gitignore; chạy `yarn proto:gen` sau khi clone hoặc sửa `.proto` (`yarn proto:lint` để lint). Python ai-service sinh stub bằng `apps/ai-service/scripts/gen_grpc.sh`.
 - `@examio/grpc`: gRPC client module, deadline/retry, ánh xạ lỗi gRPC, metadata helper.
@@ -192,19 +193,22 @@ Khi làm backend, hãy nghĩ theo feature module cộng với shared infra modul
 
 ### Hình dạng dữ liệu
 
-Prisma schema trong `examio-be/libs/database/src/schema.prisma` là nguồn sự thật dùng chung cho nhiều service.
+Database per service (phase 11): không còn schema Prisma dùng chung (`libs/database` và `@examio/database` đã bị xóa). Mỗi service sở hữu một schema riêng trong cùng một database Postgres, kết nối bằng role riêng `<svc>_svc` (role chỉ có quyền trên schema của mình; chọn bảng của service khác → `permission denied`). Dữ liệu của service khác chỉ lấy qua RPC/event.
 
-Các domain quan trọng hiện đang được mô hình hóa ở đó gồm:
+| Service | Schema Prisma | Schema Postgres |
+|---|---|---|
+| auth | `apps/auth-service/prisma/schema.prisma` | `auth` |
+| finance | `apps/finance-service/prisma/schema.prisma` | `finance` |
+| admin | `apps/admin-service/prisma/schema.prisma` | `admin` |
+| exam | `apps/exam-service/prisma/schema/*.prisma` (multi-file; migrations nằm trong `prisma/schema/migrations`) | `exam` (các role `content`, `assessment`, `studyroom`, `vocabulary`, `aichat`, `document` đã tạo sẵn nhưng chưa có service; `ai` dùng tạm schema `exam` đến phase 15) |
 
-- User, verify/reset code, session, monthly upload quota, subscription.
-- Wallet, wallet transaction và payment.
-- Lưu trữ tệp người dùng (`UserStorage`), document chunk/OCR (`Document`) và các artifact phục vụ graph/RAG (`UserStorageGraph`, `UserStorageGraphGroup`).
-- Nội dung học tập: quiz set, question, label, flashcard set, flashcard.
-- Luồng đánh giá: exam room, exam session, exam attempt, cheating log, quiz practice attempt.
-- AI chat: chat, message và liên kết chat-document.
-- AI teacher taxonomy: subject category và subject với `systemPrompt` được lưu trong DB.
-
-Vì Prisma được dùng chung, thay đổi schema thường kéo theo thay đổi ở nhiều service backend và cả type/API consumer phía frontend.
+- Mỗi service có migration riêng trong `apps/<svc>-service/prisma/migrations`; deploy chạy bằng container one-shot `<svc>-migrate` (`prisma migrate deploy`).
+- Không có FK tới `User` nữa: bảng service khác giữ `userId String` + `@@index`. Join sang User thực hiện ở tầng ứng dụng qua auth.
+- Ví dụ domain: auth (User, verify/reset code, session, RoleChangeLog, R2DeleteTask), finance (UserSubscription, Payment, Wallet, WalletTransaction), admin (AdminAudit, PageFeatureFlag), exam (quiz/flashcard, assessment, study room, vocabulary, AI chat + subject, document/UserStorage/graph). Mỗi service cũng có `OutboxEvent`/`ProcessedEvent`.
+- `DATABASE_URL` của từng service: `postgresql://<svc>_svc:…@postgres:5432/examio?schema=<svc>`. ai-service (Python) dùng `ai_svc` **không** có `?schema=`, `DB_SEARCH_PATH=exam,extensions`, `AI_RUNTIME_DDL=false`; tạm có quyền đọc/ghi các bảng `exam` đến phase 15. pgvector nằm trong schema `extensions`.
+- Role/schema do `deploy/postgres/init/01-service-schemas.sh` tạo, chỉ chạy trên volume rỗng và cần `<SVC>_DB_PASSWORD` cho cả 11 role; stack dev cũ phải `docker compose down -v` một lần.
+- Xóa file R2 bền vững: bảng `r2_delete_tasks` (schema `auth` và `exam`) được ghi trong cùng transaction với việc xóa/thay ảnh, worker (`libs/messaging/src/r2-delete`) rút bảng và gọi r2-service. exam chạy `ROLE=api,worker`. auth và exam cần `R2_PUBLIC_URL` để suy key từ URL (`libs/common/src/utils/r2-key-from-url.ts`).
+- Đổi schema của một service chỉ ảnh hưởng service đó và contract (gRPC/event/HTTP) của nó; vẫn cập nhật API client/store/component FE nếu response đổi. Test cô lập DB: `test/db-isolation` (CI chạy); `test/r2-delete` kiểm tra tĩnh.
 
 ## Kiến trúc phần AI
 
@@ -276,7 +280,7 @@ Khi backend thay đổi response shape, hãy cập nhật đồng thời API cli
   - dấu chấm phẩy
   - nháy đơn
   - thụt lề 4 spaces
-- Ưu tiên import shared lib như `@examio/common`, `@examio/database` và `@examio/redis`.
+- Ưu tiên import shared lib như `@examio/common` và `@examio/redis`.
 - Các pattern backend hiện có gồm repository cho Prisma access và pattern DTO với `nestjs-zod`/Zod ở một số module.
 - Controller exam-service nhận input phải gắn `@UsePipes(ZodValidationPipe)` ở cấp class (`nestjs-zod`; không có global pipe trong `main.ts`) và dùng DTO Zod; form multipart của quiz/flashcard set dùng `parseSetForm` (400 `VALIDATION_FAILED`).
 

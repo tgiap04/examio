@@ -168,7 +168,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Permission** — A string such as `quizset:manage` from the catalog in `libs/auth-jwt/src/permissions.ts`. Roles hold fixed permission sets; permissions are derived from the token `roles`, never carried in the token. See [permissions](permissions.md).
 
-**Prisma** — ORM used across all NestJS services to interact with the shared PostgreSQL database. Schema lives in `@examio/database`.
+**Prisma** — ORM used by the DB-owning NestJS services (auth, finance, admin, exam). Each has its own schema under `apps/<svc>-service/prisma` and its own generated client; there is no shared schema package (`@examio/database` was removed in phase 11).
 
 **Processing Status** — A discriminator on UserStorage tracking where a document is in the pipeline: `PENDING` → `PROCESSING` → `COMPLETED` or `FAILED`. Controls whether the document is available for AI chat and generation.
 

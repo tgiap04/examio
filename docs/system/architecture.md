@@ -1,7 +1,7 @@
 ---
 title: System Architecture
 last_updated: 2026-10-23
-source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/); manually patched 2026-07-19 for Study-Together Room (first WebSocket transport); patched 2026-07-21 for Study Room playlist/access/moderation extension; patched 2026-10-20 for gateway rewrite (microservice-refactor phase 05); patched 2026-10-23 for phase 10 (cross-DB access cut)
+source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/); manually patched 2026-07-19 for Study-Together Room (first WebSocket transport); patched 2026-07-21 for Study Room playlist/access/moderation extension; patched 2026-10-20 for gateway rewrite (microservice-refactor phase 05); patched 2026-10-23 for phase 10 (cross-DB access cut) and phase 11 (database per service)
 status: ACTIVE
 ---
 
@@ -31,7 +31,7 @@ graph TB
     end
 
     subgraph Infra[Infrastructure]
-        PG[(PostgreSQL<br/>Prisma shared)]
+        PG[(PostgreSQL<br/>one schema + role per service)]
         REDIS[(Redis<br/>Cache)]
         RMQ[RabbitMQ<br/>Topic exchange<br/>examio.events]
         R2STORE[(Cloudflare R2<br/>Object storage)]
@@ -157,7 +157,7 @@ sequenceDiagram
 
 Finance `WalletService` money fields are `int32` (credits are whole numbers). `R2Service` has `DeleteObjects`. gRPC env: `AUTH_GRPC_URL`, `R2_GRPC_URL`, `FINANCE_GRPC_URL`, `GATEWAY_GRPC_URL`, `VOCABULARY_GRPC_URL` (admin to exam), `ADMIN_GRPC_URL` (gateway to admin), `GRPC_PORT` on each serving service.
 
-**Data ownership (phase 10).** Each Prisma model is read and written by exactly one service, even though the database is still shared: auth (`User`, `UserSession`, `VerifyAccountCode`, `ResetPasswordCode`, `RoleChangeLog`), finance (`Wallet`, `WalletTransaction`, `Payment`, `UserSubscription`), admin (`AdminAudit`, `PageFeatureFlag`), exam (everything else, until later phases extract more services). `OutboxEvent` and `ProcessedEvent` are per-service. The map is `examio-be/scripts/check-model-ownership.ts` (`yarn check:ownership`, strict in CI, also catches relation access through `include`/`select`/nested writes); `yarn check:deps` runs dependency-cruiser with `.dependency-cruiser.cjs`. A service needing foreign data calls the owner over gRPC.
+**Data ownership (phase 10, enforced by the database since phase 11).** Each Prisma model is read and written by exactly one service; the services share one Postgres database but each has its own schema and role (see Database per service below): auth (`User`, `UserSession`, `VerifyAccountCode`, `ResetPasswordCode`, `RoleChangeLog`), finance (`Wallet`, `WalletTransaction`, `Payment`, `UserSubscription`), admin (`AdminAudit`, `PageFeatureFlag`), exam (everything else, until later phases extract more services). `OutboxEvent` and `ProcessedEvent` are per-service. The map is `examio-be/scripts/check-model-ownership.ts` (`yarn check:ownership`, strict in CI, also catches relation access through `include`/`select`/nested writes); `yarn check:deps` runs dependency-cruiser with `.dependency-cruiser.cjs`. A service needing foreign data calls the owner over gRPC.
 
 | Service (proto) | RPC | Guard |
 |---|---|---|
@@ -193,7 +193,7 @@ graph LR
 
 **Envelope v1**: `{ id: "evt_<ulid>", type, version: 1, occurredAt, source, correlationId, data }`. AMQP props: `messageId=id`, persistent, `application/json`. `parseEnvelope` rejects `version !== 1` as permanent. State events (`*.updated`, `*.changed`, `*_changed`) must carry a numeric version (`data.version`, or `data.authzVersion` for `auth.user.authz_changed`); `createEnvelope` throws otherwise.
 
-**Producer (transactional outbox)**: `OutboxService.add(tx, type, data)` inserts into `outbox_events` inside the caller's Prisma transaction (shared schema; each row has a `source`). The relay (worker role) polls every 500 ms: (1) short claim tx sets `locked_until = now()+30s` on up to 100 unpublished rows of its own `source` (`FOR UPDATE SKIP LOCKED`); (2) publishes with broker confirms outside any tx; (3) marks `published_at`, or on failure `attempts+1`, `next_attempt_at` with backoff `min(2^attempts, 300)s`, `last_error`. A crash between publish and mark re-publishes after the lock expires; consumers absorb duplicates. The relay uses its own `pg.Pool({ max: 2 })`. A daily purge (03:00, `node-cron`) deletes `outbox_events` published more than 7 days ago and `processed_events` older than 14 days, in batches of 5 000.
+**Producer (transactional outbox)**: `OutboxService.add(tx, type, data)` inserts into `outbox_events` inside the caller's Prisma transaction (the service's own schema; each row has a `source`). The relay (worker role) polls every 500 ms: (1) short claim tx sets `locked_until = now()+30s` on up to 100 unpublished rows of its own `source` (`FOR UPDATE SKIP LOCKED`); (2) publishes with broker confirms outside any tx; (3) marks `published_at`, or on failure `attempts+1`, `next_attempt_at` with backoff `min(2^attempts, 300)s`, `last_error`. A crash between publish and mark re-publishes after the lock expires; consumers absorb duplicates. The relay uses its own `pg.Pool({ max: 2 })`. A daily purge (03:00, `node-cron`) deletes `outbox_events` published more than 7 days ago and `processed_events` older than 14 days, in batches of 5 000.
 
 **Consumer**: `@EventHandler('<type>', { dedupe?: boolean })` methods are discovered and bound to `<svc>.events` (prefetch 10).
 - Source validation: `envelope.type` must equal the routing key and `envelope.source` its first segment, else `PermanentEventError('SOURCE_MISMATCH')` goes to the DLQ.
@@ -399,17 +399,37 @@ sequenceDiagram
 
 | Component | Purpose |
 |-----------|---------|
-| PostgreSQL 15+ | System of record (Prisma) |
+| PostgreSQL 15+ | System of record (Prisma, one schema + role per service; pgvector in `extensions`) |
 | Redis 7+ | Cache + pub/sub for events |
 | RabbitMQ 3.13 | Async event bus |
 | Cloudflare R2 | User file storage |
-| Docker Compose | Deploy stack (gateway + 5 services + 3 infra + migration), networks edge / internal / egress |
+| Docker Compose | Deploy stack (gateway + 5 services + 3 infra + one `<svc>-migrate` one-shot per DB-owning service; split into `deploy/compose/*.yml`), networks edge / internal / egress |
+
+## Database per service (phase 11)
+
+One Postgres database, one schema and one login role per service. `libs/database` and `@examio/database` are gone.
+
+| Service | Prisma schema | Migrations | Postgres schema / role |
+|---|---|---|---|
+| auth | `apps/auth-service/prisma/schema.prisma` | `apps/auth-service/prisma/migrations` | `auth` / `auth_svc` |
+| finance | `apps/finance-service/prisma/schema.prisma` | `apps/finance-service/prisma/migrations` | `finance` / `finance_svc` |
+| admin | `apps/admin-service/prisma/schema.prisma` | `apps/admin-service/prisma/migrations` | `admin` / `admin_svc` |
+| exam | `apps/exam-service/prisma/schema/*.prisma` (multi-file) | `apps/exam-service/prisma/schema/migrations` | `exam` / `exam_svc` |
+| ai (Python) | none (no Prisma) | none | role `ai_svc`; `DB_SEARCH_PATH=exam,extensions`, `AI_RUNTIME_DDL=false`; temporary read/write grants on exam tables until phase 15 |
+
+- Roles `content`, `assessment`, `studyroom`, `vocabulary`, `aichat`, `document` are also created (with `<SVC>_DB_PASSWORD`) but no service uses them yet. All 11 roles and the `extensions` schema (pgvector) come from `deploy/postgres/init/01-service-schemas.sh`, which runs only on an empty data volume; existing dev stacks need `docker compose down -v` once. `PUBLIC` has no privileges, so a role selecting another service's table gets `permission denied` (checked by `test/db-isolation`, a CI step).
+- `DATABASE_URL` per service: `postgresql://<svc>_svc:...@postgres:5432/examio?schema=<svc>`. There is no shared URL.
+- Each service has a local Prisma module `apps/<svc>-service/src/prisma` (`PrismaPg` adapter, pool of 5, a database `ReadinessCheck` feeding `/health/ready`) and a generated client in `apps/<svc>-service/src/generated/prisma` (gitignored; `yarn prisma:generate` loops over `apps/*/prisma`).
+- No foreign key points at `User` any more: other services keep `userId` (usually indexed), and read profile data from auth over gRPC.
+- Migrations: `PRISMA_ADMIN_URL=... scripts/prisma-migrate-dev.sh <svc> <name>` (local only, diffs against a throwaway shadow DB); deploy applies them as the service role through the `<svc>-migrate` one-shot containers.
+- Durable R2 deletion: `r2_delete_tasks` exists in the `auth` and `exam` schemas. `R2DeleteTaskWriter.enqueue(tx, keys)` inserts rows in the caller's own transaction; `R2DeleteWorker` (`libs/messaging/src/r2-delete`) claims batches with `FOR UPDATE SKIP LOCKED`, retries with exponential backoff (cap 1 h) and stops retrying after 10 attempts (default `maxAttempts`), logging a stuck metric. exam therefore runs `ROLE=api,worker`. auth and exam need `R2_PUBLIC_URL` so `r2KeyFromUrl` can map a stored URL to a key; URLs outside that host are never deleted.
+- Admin `set-tier` first checks the user with auth (404 `USER_NOT_FOUND`) since it can no longer join to `User`.
 
 ## Key Architectural Patterns
 
 1. **Gateway as single public entry** — every request hits the gateway first; routing is data (`routes.yaml`), not controllers
-2. **Shared Prisma schema, single-owner models** — one `libs/database/schema.prisma`, but each model is owned by one service (`yarn check:ownership`); cross-service data goes over gRPC
-3. **Shared infra libs** — `@examio/common`, `@examio/database`, `@examio/redis`, `@examio/messaging`, `@examio/auth-jwt`
+2. **Database per service** — each of auth, finance, admin, exam has its own Prisma schema, migrations and generated client; no FK crosses services (`userId` + index instead); `yarn check:ownership` still guards model access; cross-service data goes over gRPC
+3. **Shared infra libs** — `@examio/common`, `@examio/redis`, `@examio/messaging`, `@examio/auth-jwt`
 4. **Repository pattern with cache** — `BaseRepository<T>` wraps Prisma + Redis invalidation
 5. **Composite screen detection** — single page with independent regions (REG###)
 6. **Backend-for-frontend (BFF) pattern** — exam-service orchestrates AI calls rather than frontend calling ai-service directly
@@ -513,7 +533,7 @@ graph LR
 
 - Health probes: `GET /health/live` and `GET /health/ready` (`libs/observability`), replacing `/api/v1/health`.
 - Logs: pino JSON with `X-Request-Id` correlation.
-- Schema: single baseline migration (`libs/database/src/migrations/20261017194544_baseline`) applied with `prisma migrate deploy`; `db push` is no longer used.
+- Schema: per-service migrations (see Database per service) applied with `prisma migrate deploy`; `db push` is no longer used. The phase-01 shared baseline (`libs/database`) no longer exists.
 - Postgres, Redis and RabbitMQ are not published on host ports; reach them through the containers or an SSH tunnel (`examio-be/deploy/README.md`).
 - Unverified users may only reach logout, sendVerificationEmail, verifyAccount, me (`@AllowUnverified`); other guarded routes return 403.
 - CI: `.github/workflows/ci.yml` runs as a quality gate that `deploy.yml` requires before deploying.

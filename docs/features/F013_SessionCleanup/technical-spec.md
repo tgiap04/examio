@@ -100,7 +100,7 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 |--------|------|---------|
 | SessionCleanupCron | `examio-be/apps/auth-service/src/devices/session-cleanup.cron.ts:6-52` | Cron job class with three-step cleanup |
 | UserSessionRepository | `examio-be/apps/auth-service/src/devices/repositories/user-session.repository.ts` | Repository with Prisma batch delete/deactivate queries |
-| UserSession (model) | `examio-be/libs/database/src/schema.prisma` | Session entity definition |
+| UserSession (model) | `examio-be/apps/auth-service/prisma/schema.prisma` | Session entity definition |
 
 ## Unresolved Questions
 

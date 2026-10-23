@@ -1,6 +1,6 @@
 ---
 title: Examio Development Roadmap
-last_updated: 2026-10-22
+last_updated: 2026-10-23
 source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/) + phase completions
 status: ACTIVE
 ---
@@ -270,6 +270,10 @@ Key decisions made during implementation:
 | 5.6 | Implement native feature flag bridge for iosApp + androidApp | Phase 4 follow-up | mobile |
 
 ---
+
+## Deferred: user account deletion (phase 11, 2026-10-23)
+
+Database per service dropped every FK to `User`, so deleting a user no longer cascades across services. No code path deletes `User` rows today (no admin DELETE, no auth `DeleteUser`, no purge worker, no per-service purgers, no `auth.user.deleted` event), so behaviour is unchanged. Account deletion needs its own design (event fan-out to finance/exam/admin purgers, plus R2 cleanup through `r2_delete_tasks`) before it ships. Source: `plans/261017-1547-microservice-refactor-rbac/phase-11-database-per-service.md` (RT-11).
 
 ## Roadmap Stats
 

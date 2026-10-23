@@ -2,7 +2,7 @@
 
 **Entity:** `Payment` (MODEL-038)
 **State Field:** `status` (DISC-003) + `paymentType` (DISC-012)
-**Source:** `examio-be/libs/database/src/schema.prisma` (Payment)
+**Source:** `examio-be/apps/finance-service/prisma/schema.prisma` (Payment)
 **Last Updated:** 2026-06-05
 
 ## State Diagram

@@ -40,7 +40,7 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 **Rationale**: gRPC provides typed contracts, bidirectional streaming support, and lower latency than HTTP proxy chains for internal calls. Avoids circular gateway routing.
 
-**Update (phase 10, 2026-10-23)**: gRPC is also how a service reads or writes data owned by another service. Each Prisma model has exactly one owning service (`examio-be/scripts/check-model-ownership.ts`, enforced in CI by `yarn check:ownership` and `yarn check:deps`); exam, admin and the gateway now call auth, finance, exam (word-family admin), admin (page flags) and gateway (`SetPageFlags`) RPCs, and money RPCs (`Debit`/`Credit`/`Refund`) are idempotent. The database itself is still shared. Details: [architecture](architecture.md) § gRPC.
+**Update (phase 10, 2026-10-23)**: gRPC is also how a service reads or writes data owned by another service. Each Prisma model has exactly one owning service (`examio-be/scripts/check-model-ownership.ts`, enforced in CI by `yarn check:ownership` and `yarn check:deps`); exam, admin and the gateway now call auth, finance, exam (word-family admin), admin (page flags) and gateway (`SetPageFlags`) RPCs, and money RPCs (`Debit`/`Credit`/`Refund`) are idempotent. Update (phase 11): the database is no longer shared at the access level; each service has its own schema and role. Details: [architecture](architecture.md) § gRPC.
 
 ### Decision 4: RabbitMQ Topic Exchange for Async Event-Driven Workflows
 
@@ -83,7 +83,7 @@ gRPC:50051      gRPC:50051 gRPC:50051   (containers)
            ai-service :3000 in compose (Python FastAPI)
            RAG · embedding · AI chat · ReAct agent
 
-Infrastructure: PostgreSQL (Prisma shared) · Redis (cache) · RabbitMQ (topic exchange examio.events)
+Infrastructure: PostgreSQL (one schema + role per service, Prisma per service) · Redis (cache) · RabbitMQ (topic exchange examio.events)
 ```
 
 ### Service Summary
@@ -189,7 +189,7 @@ exam-service calls `aiApi.generateExamApi` (multipart) → returns `jobId` → f
 
 ## Scalability
 
-- **Current Capacity**: Single-instance per service; PostgreSQL shared across all NestJS services via Prisma; Redis for session/cache; RabbitMQ for async decoupling
+- **Current Capacity**: Single-instance per service; one PostgreSQL database with a schema and login role per service (Prisma schema per service); Redis for session/cache; RabbitMQ for async decoupling
 - **Scaling Strategy**: Service-level horizontal scaling behind gateway proxy; Redis cluster for session scale-out; RabbitMQ consumer groups for event processing parallelism; ai-service scales independently for GPU workloads
 - **Performance Targets**: Gateway rate limit 100 req/min per client by default (per-route buckets in `routes.yaml`); AI generation polling up to 360 attempts (60min timeout); Redis cache TTL 5 minutes default; cursor-based pagination for large datasets
 
@@ -203,4 +203,4 @@ exam-service calls `aiApi.generateExamApi` (multipart) → returns `jobId` → f
 6. `PendingJobDialog` rendered unconditionally in `KLayout` — check if it should be scoped to AI tool pages only.
 7. `ProfilePage` reads both `getProfileApi` and `useAuthStore.user` — possible state drift; designate single source of truth.
 8. `SubscriptionPage` vs `SubscriptionTemplate` — two subscription UIs; designate canonical screen.
-9. `libs/database/src/schema.prisma` (27KB, canonical) vs `prisma/schema.prisma` (17KB, stale) — confirm single source of truth; deprecate stale copy.
+9. ~~`libs/database` schema vs stale `prisma/schema.prisma`~~ — resolved (phase 11): `libs/database` removed; one Prisma schema per service.

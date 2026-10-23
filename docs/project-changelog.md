@@ -9,6 +9,18 @@ last_updated: 2026-10-23
 
 ### Changed
 
+#### Database per service, phase 11 (uncommitted on `refactor/microservice-rbac`)
+
+- **Schemas**: `libs/database` and `@examio/database` are deleted. auth, finance and admin each have `apps/<svc>-service/prisma/schema.prisma`; exam has the multi-file `apps/exam-service/prisma/schema/*.prisma` with migrations in `prisma/schema/migrations`. Generated clients live in `apps/<svc>-service/src/generated/prisma` (gitignored) and each service has a local `src/prisma` module (`PrismaPg` adapter, pool 5, database readiness check). No foreign key points at `User` any more (`userId` + index).
+- **Postgres roles**: `deploy/postgres/init/01-service-schemas.sh` creates 11 roles `<svc>_svc` (auth, finance, admin, exam, content, assessment, studyroom, vocabulary, aichat, document, ai), one schema each, plus an `extensions` schema (pgvector). Each service gets `DATABASE_URL=postgresql://<svc>_svc:...@postgres:5432/examio?schema=<svc>`; ai-service uses `ai_svc` without `?schema=`, `DB_SEARCH_PATH=exam,extensions`, `AI_RUNTIME_DDL=false` and a temporary read/write grant on exam tables (until phase 15). **Breaking for dev**: the script runs only on an empty volume, so existing stacks need `docker compose down -v` once, and `deploy/.env` needs `<SVC>_DB_PASSWORD` for all 11 roles.
+- **Commands**: removed `prisma:merge`, `prisma:push`, `prisma:studio` and the `examio-migration` container. `yarn prisma:generate` now loops over `apps/*/prisma`; `scripts/prisma-migrate-dev.sh <svc> <name>` (needs `PRISMA_ADMIN_URL`, local only); `scripts/prisma-schema-path.sh <svc>`; `yarn prisma:deploy|status <svc>`; `yarn seed:dev` runs auth, finance, admin, exam seeds in order (each reads `DATABASE_URL` or `<SVC>_DATABASE_URL`).
+- **Deploy**: `deploy/docker-compose.yml` now `include`s `deploy/compose/{infra,auth,finance,admin,exam,gateway,r2,ai,seed}.yml`, with one `<svc>-migrate` one-shot per DB-owning service; per-service variable lists in `deploy/env/<svc>.env.example`; `.dockerignore` excludes nested `**/.env`.
+- **Durable R2 deletion**: `r2_delete_tasks` (auth and exam schemas) is written in the same transaction as the row delete or image replace; `R2DeleteWorker` (`libs/messaging/src/r2-delete`) drains it with backoff and a 10-attempt limit. exam now runs `ROLE=api,worker`. `R2_PUBLIC_URL` is required for auth and exam (`libs/common/src/utils/r2-key-from-url.ts`).
+- **Admin**: `set-tier` first looks the user up in auth and answers 404 `USER_NOT_FOUND` for an unknown id.
+- **Tests/CI**: `test/db-isolation` e2e (CI step) and `test/r2-delete` static check.
+- **Deferred**: user deletion (no `DeleteUser`, purge worker or `auth.user.deleted` event); no code path deletes `User` rows today.
+- **Docs**: `CLAUDE.md`, `AGENTS.md`, `system/{architecture,business-rules,glossary,overview}.md`, `generated/entities.md`, flow/feature source paths, `deploy/README.md`, roadmap.
+
 #### Cut cross-DB access, phase 10 (uncommitted on `refactor/microservice-rbac`)
 
 - **Ownership**: each Prisma model is read and written by one service (`examio-be/scripts/check-model-ownership.ts`). New commands in `examio-be`: `yarn check:ownership` and `yarn check:deps` (`.dependency-cruiser.cjs`), both in CI. The database is still shared.

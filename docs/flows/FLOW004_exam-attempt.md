@@ -2,7 +2,7 @@
 
 **Entity:** `ExamAttempt` (MODEL-019)
 **State Field:** `status` (DISC-008)
-**Source:** `examio-be/libs/database/src/schema.prisma` (ExamAttempt)
+**Source:** `examio-be/apps/exam-service/prisma/schema/assessment.prisma` (ExamAttempt)
 **Last Updated:** 2026-06-05
 
 ## State Diagram

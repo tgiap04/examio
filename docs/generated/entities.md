@@ -2,7 +2,18 @@
 
 **Project**: examio
 **Generated**: 2026-06-05
-**Source**: `examio-be/libs/database/src/schema.prisma` (38 models, ~735 lines)
+**Source**: per-service Prisma schemas since phase 11 (`libs/database` was removed): `examio-be/apps/auth-service/prisma/schema.prisma`, `apps/finance-service/prisma/schema.prisma`, `apps/admin-service/prisma/schema.prisma`, `apps/exam-service/prisma/schema/*.prisma`
+
+> **Per-service placement (phase 11).** Each service owns one Postgres schema; no foreign key crosses a service boundary. `userId`/`adminId`/`hostId` columns outside auth are plain strings (usually with an `@@index`) and no `@relation` to `User`; the ERD edges from `User` below are logical (resolved in the application via auth), not database FKs. Field tables below were generated before the split; where a row says "FK ... User" outside auth it is superseded by this note (rows marked "no FK since phase 11" are already patched). Not re-derived: nullability/index details of individual columns, check the owning schema file.
+>
+> | Service (PG schema) | Models |
+> |---|---|
+> | auth (`auth`) | User, UserSession, VerifyAccountCode, ResetPasswordCode, RoleChangeLog, OutboxEvent, ProcessedEvent, R2DeleteTask (`r2_delete_tasks`) |
+> | finance (`finance`) | UserSubscription, Payment, Wallet, WalletTransaction, OutboxEvent, ProcessedEvent |
+> | admin (`admin`) | AdminAudit, PageFeatureFlag, OutboxEvent, ProcessedEvent |
+> | exam (`exam`) | quiz/flashcard content, assessment (ExamRoom, ExamSession, ExamAttempt, CheatingLog, QuizPracticeAttempt, UserPinnedExamRoom), StudyRoom*, WordFamily*, AIChat*, SubjectCategory/Subject, Document*/UserStorage*/UserMonthlyFileUpload, OutboxEvent, ProcessedEvent, R2DeleteTask |
+>
+> Only auth's own child tables (UserSession, VerifyAccountCode, ResetPasswordCode) still have a real FK to `User`. `UserSubscription` and `Payment` moved to finance, `UserMonthlyFileUpload` to exam.
 
 ---
 
@@ -68,20 +79,20 @@ erDiagram
     AIChat }o--|| Subject : "teaches"
     Subject ||--o| SubjectCategory : "belongs to"
 
-    User ||--o{ AIChat : "owns"
-    User ||--o{ UserStorage : "owns"
-    User ||--o{ QuizSet : "authored"
-    User ||--o{ FlashCardSet : "authored"
-    User ||--o{ ExamRoom : "hosts"
-    User ||--o{ ExamAttempt : "takes"
-    User ||--o{ HistoryGeneratedQuizz : "generates"
-    User ||--o{ HistoryGeneratedFlashcard : "generates"
-    User ||--o{ QuizPracticeAttempt : "practices"
-    User ||--o{ Payment : "pays"
-    User ||--o{ FlashCardViewHistory : "views"
-    User ||--o{ UserPinnedFlashcard : "pins"
-    User ||--o{ UserPinnedExamRoom : "pins"
-    User ||--o{ FlashcardStudyProgress : "tracks"
+    User ||..o{ AIChat : "owns"
+    User ||..o{ UserStorage : "owns"
+    User ||..o{ QuizSet : "authored"
+    User ||..o{ FlashCardSet : "authored"
+    User ||..o{ ExamRoom : "hosts"
+    User ||..o{ ExamAttempt : "takes"
+    User ||..o{ HistoryGeneratedQuizz : "generates"
+    User ||..o{ HistoryGeneratedFlashcard : "generates"
+    User ||..o{ QuizPracticeAttempt : "practices"
+    User ||..o{ Payment : "pays"
+    User ||..o{ FlashCardViewHistory : "views"
+    User ||..o{ UserPinnedFlashcard : "pins"
+    User ||..o{ UserPinnedExamRoom : "pins"
+    User ||..o{ FlashcardStudyProgress : "tracks"
     AdminAudit ||--o| User : "performed by"
 ```
 
@@ -152,7 +163,7 @@ erDiagram
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Audit record ID |
-| adminId | String | FK, NOT NULL, INDEX | References User.id (the admin who performed the action) |
+| adminId | String | NOT NULL, INDEX | Auth-owned user id (no FK since phase 11) (the admin who performed the action) |
 | targetId | String | NOT NULL, INDEX | ID of the entity being acted on (user ID, wallet ID, etc.) |
 | action | String | NOT NULL | Action name (e.g. `user.ban`, `finance.refund`, `user.grant_admin`) |
 | payload | JSON | NULL | JSON diff of changed fields (before/after) |
@@ -260,7 +271,7 @@ erDiagram
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, UNIQUE, NOT NULL | Subscription ID |
-| userId | String | FK, UNIQUE, NOT NULL | References User.id |
+| userId | String | UNIQUE, NOT NULL | Auth-owned user id (no FK since phase 11) |
 | tier | Int | NOT NULL, DEFAULT 0 | Subscription level |
 | billingCycle | String | NOT NULL, DEFAULT "monthly" | monthly \| yearly |
 | lastPaymentDate | DateTime | NULL | Last successful payment |
@@ -294,7 +305,7 @@ erDiagram
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Record ID |
-| userId | String | FK, NOT NULL | References User.id |
+| userId | String | NOT NULL, INDEX | Auth-owned user id (no FK since phase 11) |
 | yearMonth | String | NOT NULL | "YYYY-MM" grouping key |
 | count | Int | NOT NULL, DEFAULT 0 | Upload count this month |
 | createdAt | DateTime | NOT NULL | Creation |
@@ -312,7 +323,7 @@ erDiagram
 
 ### RoleChangeLog (phase 04)
 
-Audit trail of every role / admin-flag change. No foreign keys (rows outlive accounts; emails are snapshotted). Source: `libs/database/src/models/role-change-log.prisma`.
+Audit trail of every role / admin-flag change. No foreign keys (rows outlive accounts; emails are snapshotted). Source: `apps/auth-service/prisma/schema.prisma`.
 
 | Field | Type | Constraints | Description |
 |---|---|---|---|
@@ -339,7 +350,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | id | String | PK, NOT NULL | QuizSet ID (cuid) |
 | title | String | NOT NULL | Quiz title |
 | description | String | NULL | Optional description |
-| userId | String | FK, NOT NULL | Author user ID |
+| userId | String | NOT NULL, INDEX | Author user ID |
 | thumbnail | String | NULL | Cover image URL |
 | isPublic | Boolean | NOT NULL, DEFAULT false | Public visibility flag |
 | isPinned | Boolean | NOT NULL, DEFAULT false | Pinned in author UI |
@@ -441,7 +452,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Batch ID |
-| userId | String | FK, NOT NULL | User who triggered generation |
+| userId | String | NOT NULL, INDEX | User who triggered generation |
 | userStorageId | String | FK, NULL | Source document (UserStorage) |
 | quizzes | Json | NOT NULL | Serialized quiz data (question objects) |
 | createdAt | DateTime | NOT NULL | Generation time |
@@ -464,7 +475,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | FlashCardSet ID |
 | title | String | NOT NULL | Deck title |
-| userId | String | FK, NOT NULL | Author user ID |
+| userId | String | NOT NULL, INDEX | Author user ID |
 | thumbnail | String | NULL | Cover image URL |
 | description | String | NULL | Optional description |
 | tag | String[] | NOT NULL, DEFAULT [] | Tag list |
@@ -568,7 +579,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Batch ID |
-| userId | String | FK, NOT NULL | User who triggered generation |
+| userId | String | NOT NULL, INDEX | User who triggered generation |
 | userStorageId | String | FK, NULL | Source document (UserStorage) |
 | flashcards | Json | NOT NULL | Serialized flashcard data |
 | createdAt | DateTime | NOT NULL | Generation time |
@@ -595,7 +606,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | title | String | NOT NULL | Room title |
 | description | String | NULL | Room description |
 | quizSetId | String | FK, NOT NULL | Source QuizSet ID |
-| hostId | String | FK, NOT NULL | Host User ID |
+| hostId | String | NOT NULL, INDEX | Host User ID |
 | createdAt | DateTime | NOT NULL | Creation |
 | updatedAt | DateTime | NOT NULL | Last update |
 | createdBy | String | NULL | Creator ID |
@@ -665,7 +676,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Attempt ID |
 | examSessionId | String | FK, NOT NULL | Session being attempted |
-| userId | String | FK, NOT NULL | Student User ID |
+| userId | String | NOT NULL, INDEX | Student User ID |
 | score | Float | NOT NULL | Calculated score |
 | violationCount | Int | NOT NULL, DEFAULT 0 | Total cheating violations |
 | startedAt | DateTime | NOT NULL | Attempt start time |
@@ -728,7 +739,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Attempt ID |
 | quizSetId | String | FK, NOT NULL | Target QuizSet ID |
-| userId | String | FK, NOT NULL | Student User ID |
+| userId | String | NOT NULL, INDEX | Student User ID |
 | type | Int | NOT NULL, DEFAULT 0 | Attempt type |
 | answers | Json | NOT NULL, DEFAULT "{}" | Map of questionId -> selectedAnswer |
 | currentIndex | Int | NOT NULL, DEFAULT 0 | Current question navigator index |
@@ -769,7 +780,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Record ID |
-| userId | String | FK, NOT NULL | Viewer User ID |
+| userId | String | NOT NULL, INDEX | Viewer User ID |
 | flashCardSetId | String | FK, NOT NULL | Viewed FlashCardSet ID |
 | viewedAt | DateTime | NOT NULL | View timestamp |
 | createdAt | DateTime | NOT NULL | Creation |
@@ -790,7 +801,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Progress ID |
-| userId | String | FK, NOT NULL | Student User ID |
+| userId | String | NOT NULL, INDEX | Student User ID |
 | flashCardSetId | String | FK, NOT NULL | Target deck ID |
 | studiedCardIds | String[] | NOT NULL, DEFAULT [] | IDs of cards the user has studied |
 | totalCards | Int | NOT NULL, DEFAULT 0 | Total cards in the deck |
@@ -815,7 +826,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Pin record ID |
-| userId | String | FK, NOT NULL | User ID |
+| userId | String | NOT NULL, INDEX | User ID |
 | flashcardSetId | String | FK, NOT NULL | Pinned FlashCardSet ID |
 | pinnedAt | DateTime | NOT NULL | Pin timestamp |
 
@@ -837,7 +848,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Pin record ID |
-| userId | String | FK, NOT NULL | User ID |
+| userId | String | NOT NULL, INDEX | User ID |
 | examRoomId | String | FK, NOT NULL | Pinned ExamRoom ID |
 | pinnedAt | DateTime | NOT NULL | Pin timestamp |
 
@@ -861,7 +872,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, UNIQUE, NOT NULL | Payment ID |
-| userId | String | FK, NOT NULL | Payer User ID |
+| userId | String | NOT NULL, INDEX | Payer User ID |
 | amount | Float | NOT NULL | Payment amount |
 | currency | String | NOT NULL | Currency code (e.g., "VND") |
 | status | Int | NOT NULL | Payment lifecycle state |
@@ -897,7 +908,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, UNIQUE, NOT NULL | Wallet ID |
-| userId | String | FK, UNIQUE, NOT NULL | Owner User ID |
+| userId | String | UNIQUE, NOT NULL | Owner User ID |
 | balance | Float | NOT NULL, DEFAULT 0 | Current credit balance |
 | createdBy | String | NULL | Creator ID |
 | updatedBy | String | NULL | Updater ID |
@@ -960,7 +971,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, UNIQUE, NOT NULL | Storage record ID |
-| userId | String | FK, NOT NULL | Owner User ID |
+| userId | String | NOT NULL, INDEX | Owner User ID |
 | filename | String | NOT NULL | Original filename |
 | url | String | NOT NULL | CDN/R2 public URL |
 | mimetype | String | NOT NULL | MIME type |
@@ -1111,7 +1122,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Chat ID |
-| userId | String | FK, NOT NULL | Owner User ID |
+| userId | String | NOT NULL, INDEX | Owner User ID |
 | subjectId | String | FK, NULL | AI teacher Subject ID |
 | title | String | NOT NULL, DEFAULT "" | Chat title |
 | createdAt | DateTime | NOT NULL | Creation |
@@ -1233,7 +1244,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 
 ## Validation Rules
 
-> Derived from NOT NULL, UNIQUE, and CHECK constraints in schema.prisma. Cross-field business rules (e.g., score bounds, expiry validation) must be confirmed against implementation.
+> Derived from NOT NULL, UNIQUE, and CHECK constraints in the per-service Prisma schemas. Cross-field business rules (e.g., score bounds, expiry validation) must be confirmed against implementation.
 
 ### MODEL-001 User
 

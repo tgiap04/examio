@@ -2,7 +2,7 @@
 
 **Entity:** `WalletTransaction` (MODEL-039)
 **State Field:** `type` (DISC-010) + `direction` (DISC-011)
-**Source:** `examio-be/libs/database/src/schema.prisma` (WalletTransaction)
+**Source:** `examio-be/apps/finance-service/prisma/schema.prisma` (WalletTransaction)
 **Last Updated:** 2026-06-05
 
 ## State Diagram
