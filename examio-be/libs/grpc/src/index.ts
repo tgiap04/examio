@@ -6,3 +6,5 @@ export * from './metadata';
 export { PROTO_LOADER_OPTIONS, resolveProtoRoot } from './proto-paths';
 export * from './clients/finance.client';
 export * from './clients/idempotency-key';
+export * from './clients/public-profile.client';
+export * from './clients/user-enricher';
