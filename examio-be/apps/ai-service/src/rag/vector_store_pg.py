@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import asyncpg
 from dotenv import load_dotenv
+from src.db_settings import pg_server_settings, pool_max_size
 
 load_dotenv()
 
@@ -60,7 +61,8 @@ class PgVectorStore:
             self._pool = await asyncpg.create_pool(
                 self.connection_string,
                 min_size=2,
-                max_size=10
+                max_size=pool_max_size("VECTOR"),
+                server_settings=pg_server_settings(),
             )
         return self._pool
 

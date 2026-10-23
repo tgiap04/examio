@@ -24,6 +24,7 @@ from src.backend.services.hybrid_retrieval_service import (
     GenerationGroup,
 )
 from src.llm.model_manager import ModelUnavailableError, model_manager
+from src.db_settings import pg_server_settings, pool_max_size
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -318,8 +319,9 @@ class ContentGenerationService:
             self._pool = await asyncpg.create_pool(
                 postgres_uri,
                 min_size=2,
-                max_size=10,
-                command_timeout=60
+                max_size=pool_max_size("GENERATION"),
+                command_timeout=60,
+                server_settings=pg_server_settings(),
             )
             logger.info("PostgreSQL connection pool created for ContentGenerationService")
 

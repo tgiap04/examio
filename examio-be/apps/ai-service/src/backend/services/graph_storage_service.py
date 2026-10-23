@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 import asyncpg
+from src.db_settings import pg_server_settings, pool_max_size, runtime_ddl_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +44,9 @@ class GraphStorageService:
             self._pool = await asyncpg.create_pool(
                 postgres_uri,
                 min_size=2,
-                max_size=10,
+                max_size=pool_max_size("GRAPH"),
                 command_timeout=60,
+                server_settings=pg_server_settings(),
             )
             logger.info('PostgreSQL connection pool created for GraphStorageService')
 
@@ -214,6 +216,13 @@ class GraphStorageService:
             )
 
     async def ensure_graph_schema(self) -> None:
+        if not runtime_ddl_enabled():
+            logger.info(
+                'Skipping runtime DDL for graph tables (AI_RUNTIME_DDL is not enabled); '
+                'schema is owned by the exam-service Prisma migrations'
+            )
+            return
+
         pool = await self._get_pool()
         statements = [
             """

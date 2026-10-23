@@ -17,6 +17,7 @@ from typing import Any, Dict, List, Optional
 import asyncpg
 
 from src.backend.services.ocr_service import DocumentChunk, ocr_service
+from src.db_settings import pg_server_settings, pool_max_size
 from src.llm.model_manager import model_manager
 
 logger = logging.getLogger(__name__)
@@ -68,7 +69,11 @@ class EntityExtractionService:
             if not postgres_uri:
                 raise ValueError("DATABASE_URL environment variable not set")
             self._pool = await asyncpg.create_pool(
-                postgres_uri, min_size=2, max_size=5, command_timeout=60
+                postgres_uri,
+                min_size=2,
+                max_size=pool_max_size("ENTITY"),
+                command_timeout=60,
+                server_settings=pg_server_settings(),
             )
         return self._pool
 

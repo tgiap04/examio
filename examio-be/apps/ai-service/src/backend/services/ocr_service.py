@@ -28,6 +28,7 @@ import asyncpg
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from src.llm.gemini_embeddings import get_embedding_text_limit
+from src.db_settings import pg_server_settings, pool_max_size
 
 logger = logging.getLogger(__name__)
 
@@ -232,8 +233,9 @@ class OCRProcessingService:
             self._pool = await asyncpg.create_pool(
                 postgres_uri,
                 min_size=2,
-                max_size=10,
-                command_timeout=60
+                max_size=pool_max_size("OCR"),
+                command_timeout=60,
+                server_settings=pg_server_settings(),
             )
             logger.info("PostgreSQL connection pool created for OCRProcessingService")
 
