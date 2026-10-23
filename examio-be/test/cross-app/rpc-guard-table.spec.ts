@@ -8,6 +8,8 @@ import { FinanceAdminGrpcController } from '../../apps/finance-service/src/modul
 import { SubscriptionGrpcController } from '../../apps/finance-service/src/modules/sepay/subscription.grpc.controller';
 import { FinanceStatsGrpcController } from '../../apps/finance-service/src/modules/stats/finance-stats.grpc.controller';
 import { R2ServiceController } from '../../apps/r2-service/src/r2-service.controller';
+import { WordFamilyAdminGrpcController } from '../../apps/vocabulary-service/src/modules/word-family/word-family-admin.grpc.controller';
+import { WordFamilyGrpcController } from '../../apps/vocabulary-service/src/modules/word-family/word-family.grpc.controller';
 
 type Ctor = { prototype: object; name: string };
 
@@ -50,7 +52,12 @@ const TABLE: Array<[Ctor, string, Declaration]> = [
     [R2ServiceController, 'listUserFiles', anyUserOrService],
     [R2ServiceController, 'uploadFile', { kind: 'service-only', callers: ['exam', 'auth'] }],
     [R2ServiceController, 'deleteFile', { kind: 'service-only', callers: ['exam', 'auth'] }],
-    [R2ServiceController, 'deleteObjects', { kind: 'service-only', callers: ['exam', 'auth'] }],
+    [R2ServiceController, 'deleteObjects', { kind: 'service-only', callers: ['exam', 'auth', 'vocabulary'] }],
+    // vocabulary: admin RPCs need the forwarded admin token; GetWordFamily is shared catalog data
+    [WordFamilyAdminGrpcController, 'listCategories', { kind: 'permissions', permissions: ['word_family:admin'] }],
+    [WordFamilyAdminGrpcController, 'upsertCategory', { kind: 'permissions', permissions: ['word_family:admin'] }],
+    [WordFamilyAdminGrpcController, 'deleteCategory', { kind: 'permissions', permissions: ['word_family:admin'] }],
+    [WordFamilyGrpcController, 'getWordFamily', anyUserOrService],
 ];
 
 describe('gRPC guard declarations', () => {
@@ -59,9 +66,9 @@ describe('gRPC guard declarations', () => {
     });
 
     it('every @GrpcMethod handler of every gRPC controller carries SOME declaration', () => {
-        const controllers = [AuthGrpcController, AuthUsersGrpcController, FinanceStatsGrpcController, WalletGrpcController, SubscriptionGrpcController, FinanceAdminGrpcController, R2ServiceController];
+        const controllers = [AuthGrpcController, AuthUsersGrpcController, FinanceStatsGrpcController, WalletGrpcController, SubscriptionGrpcController, FinanceAdminGrpcController, R2ServiceController, WordFamilyAdminGrpcController, WordFamilyGrpcController];
         const rpcHandlers = controllers.flatMap((c) => routeHandlers(c as never).filter((h) => h.kind === 'rpc'));
-        expect(rpcHandlers.length).toBeGreaterThanOrEqual(23);
+        expect(rpcHandlers.length).toBeGreaterThanOrEqual(27);
         expect(undeclaredHandlers(controllers as never)).toEqual([]);
     });
 
@@ -82,6 +89,8 @@ describe('gRPC guard declarations', () => {
             [R2ServiceController, 'deleteFile'],
             [R2ServiceController, 'deleteObjects'],
             [R2ServiceController, 'getFileUrl'],
+            [WordFamilyAdminGrpcController, 'upsertCategory'],
+            [WordFamilyAdminGrpcController, 'deleteCategory'],
         ];
         for (const [controller, handler] of writes) {
             const d = declared(controller, handler);
@@ -102,10 +111,11 @@ describe('gRPC guard declarations', () => {
         [SubscriptionGrpcController, 'getUserBenefits', 'self-check', 'GetUserBenefitsRequest.user_id'],
         [R2ServiceController, 'listUserFiles', 'self-check', 'ListUserFilesRequest.user_id'],
         [AuthGrpcController, 'getPublicProfilesByIds', 'no-user-id-in-body', 'public projection (no email), batch lookup by design'],
+        [WordFamilyGrpcController, 'getWordFamily', 'no-user-id-in-body', 'shared catalog row (no owner), looked up by word-family id'],
     ];
 
     it('the open-to-any-user list is exactly the set of "any user or service" declarations', () => {
-        const controllers = [AuthGrpcController, AuthUsersGrpcController, FinanceStatsGrpcController, WalletGrpcController, SubscriptionGrpcController, FinanceAdminGrpcController, R2ServiceController];
+        const controllers = [AuthGrpcController, AuthUsersGrpcController, FinanceStatsGrpcController, WalletGrpcController, SubscriptionGrpcController, FinanceAdminGrpcController, R2ServiceController, WordFamilyAdminGrpcController, WordFamilyGrpcController];
         const open = controllers.flatMap((c) =>
             routeHandlers(c as never)
                 .filter((h) => h.kind === 'rpc')

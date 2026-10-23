@@ -5,6 +5,8 @@ const REPO = join(__dirname, '../..');
 const APPS = [
     'auth-service',
     'exam-service',
+    'study-room-service',
+    'vocabulary-service',
     'finance-service',
     'admin-service',
     'gateway-service',

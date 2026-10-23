@@ -10,7 +10,7 @@ import { SERVICES, Service, assertLocal, describeWhenEnabled, urlOf, withDatabas
  */
 const adminUrl = process.env.PRISMA_ADMIN_URL;
 const enabled = Boolean(adminUrl) && SERVICES.every((s) => urlOf(s));
-const describeDb = describeWhenEnabled(enabled, 'PRISMA_ADMIN_URL and the four service DATABASE_URLs');
+const describeDb = describeWhenEnabled(enabled, 'PRISMA_ADMIN_URL and the five service DATABASE_URLs');
 
 const ROOT = join(__dirname, '..', '..');
 const PRISMA = join(ROOT, 'node_modules', '.bin', 'prisma');
@@ -95,7 +95,7 @@ describeDb('migrations and seeds on a fresh database (e2e)', () => {
         expect(diff.status).toBe(0);
     });
 
-    it('seed:dev (auth -> finance -> admin -> exam) exits 0 and the counts match the pre-split seed', async () => {
+    it('seed:dev (auth -> finance -> admin -> exam -> vocabulary) exits 0 and the counts match the pre-split seed', async () => {
         for (const svc of SERVICES) {
             const r = seed(svc, '--dev');
             expect([svc, r.status, r.stderr]).toEqual([svc, 0, '']);
@@ -103,7 +103,7 @@ describeDb('migrations and seeds on a fresh database (e2e)', () => {
         expect(await count('admin', 'PageFeatureFlag')).toBe(9);
         expect(await count('exam', 'SubjectCategory')).toBe(4);
         expect(await count('exam', 'Subject')).toBe(15);
-        expect(await count('exam', 'WordFamilyCategory')).toBe(10);
+        expect(await count('vocabulary', 'WordFamilyCategory')).toBe(10);
         expect(await count('auth', 'User')).toBe(8); // admin + 7 dev accounts
         expect(await count('finance', 'Wallet')).toBe(7); // teacher-only: the admin has none
         expect(await count('admin', 'AdminAudit')).toBe(20);
@@ -116,7 +116,7 @@ describeDb('migrations and seeds on a fresh database (e2e)', () => {
         for (const svc of SERVICES) expect(seed(svc, '--dev').status).toBe(0);
         expect(await count('admin', 'PageFeatureFlag')).toBe(9);
         expect(await count('exam', 'Subject')).toBe(15);
-        expect(await count('exam', 'WordFamilyCategory')).toBe(10);
+        expect(await count('vocabulary', 'WordFamilyCategory')).toBe(10);
         expect(await count('auth', 'User')).toBe(8);
         expect(await count('finance', 'Wallet')).toBe(7);
     });

@@ -15,7 +15,7 @@ export type Row = {
 };
 
 const SID = 'ses_1';
-export const rows: Record<'exam' | 'finance' | 'admin', Row[]> = {
+export const rows: Record<'exam' | 'studyroom' | 'vocabulary' | 'finance' | 'admin', Row[]> = {
     exam: [
         {
             name: 'POST /quizsets',
@@ -135,44 +135,9 @@ export const rows: Record<'exam' | 'finance' | 'admin', Row[]> = {
             },
         },
         {
-            name: 'POST /studyrooms',
+            name: 'POST /word-family/:id/to-flashcard',
             method: 'post',
-            path: '/studyrooms',
-            body: { name: 'r' },
-            expect: {
-                STUDENT: 403,
-                TEACHER: '2xx',
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: '2xx',
-            },
-        },
-        {
-            name: 'POST /studyrooms/join',
-            method: 'post',
-            path: '/studyrooms/join',
-            body: { inviteCode: '123456' },
-            expect: {
-                STUDENT: '2xx',
-                TEACHER: '2xx',
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: '2xx',
-            },
-        },
-        {
-            name: 'GET /word-family/saved',
-            method: 'get',
-            path: '/word-family/saved',
-            expect: {
-                STUDENT: 200,
-                TEACHER: 200,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 200,
-            },
-        },
-        {
-            name: 'POST /word-family/generate',
-            method: 'post',
-            path: '/word-family/generate',
+            path: '/word-family/wf1/to-flashcard',
             body: {},
             expect: {
                 STUDENT: 403,
@@ -344,6 +309,57 @@ export const rows: Record<'exam' | 'finance' | 'admin', Row[]> = {
             name: 'POST /r2/image',
             method: 'post',
             path: '/r2/image',
+            expect: {
+                STUDENT: 403,
+                TEACHER: 'gate',
+                ADMIN_ONLY: 403,
+                TEACHER_ADMIN: 'gate',
+            },
+        },
+    ],
+    studyroom: [
+        {
+            name: 'POST /studyrooms',
+            method: 'post',
+            path: '/studyrooms',
+            body: { name: 'r' },
+            expect: {
+                STUDENT: 403,
+                TEACHER: '2xx',
+                ADMIN_ONLY: 403,
+                TEACHER_ADMIN: '2xx',
+            },
+        },
+        {
+            name: 'POST /studyrooms/join',
+            method: 'post',
+            path: '/studyrooms/join',
+            body: { inviteCode: '123456' },
+            expect: {
+                STUDENT: '2xx',
+                TEACHER: '2xx',
+                ADMIN_ONLY: 403,
+                TEACHER_ADMIN: '2xx',
+            },
+        },
+    ],
+    vocabulary: [
+        {
+            name: 'GET /word-family/saved',
+            method: 'get',
+            path: '/word-family/saved',
+            expect: {
+                STUDENT: 200,
+                TEACHER: 200,
+                ADMIN_ONLY: 403,
+                TEACHER_ADMIN: 200,
+            },
+        },
+        {
+            name: 'POST /word-family/generate',
+            method: 'post',
+            path: '/word-family/generate',
+            body: {},
             expect: {
                 STUDENT: 403,
                 TEACHER: 'gate',

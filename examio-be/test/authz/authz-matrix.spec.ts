@@ -6,6 +6,8 @@ import { AuthJwtModule } from '@examio/auth-jwt';
 import { FlashcardSetOwnerResolver } from '../../apps/exam-service/src/modules/flashcardset/flashcardset-owner.resolver';
 import { QuizSetOwnerResolver } from '../../apps/exam-service/src/modules/quizset/quizset-owner.resolver';
 import { ExamServiceModule } from '../../apps/exam-service/src/exam-service.module';
+import { StudyRoomServiceModule } from '../../apps/study-room-service/src/study-room-service.module';
+import { VocabularyServiceModule } from '../../apps/vocabulary-service/src/vocabulary-service.module';
 import { FinanceServiceModule } from '../../apps/finance-service/src/finance-service.module';
 import { AdminServiceModule } from '../../apps/admin-service/src/admin-service.module';
 import { rows, type Row } from './authz-matrix.rows';
@@ -109,6 +111,16 @@ describe('authz matrix (real guards, stubbed services)', () => {
     beforeAll(async () => {
         auth = await createTestAuth();
         apps.exam = await boot(auth, ExamServiceModule, 'exam');
+        apps.studyroom = await boot(
+            auth,
+            StudyRoomServiceModule,
+            'studyroom'
+        );
+        apps.vocabulary = await boot(
+            auth,
+            VocabularyServiceModule,
+            'vocabulary'
+        );
         apps.finance = await boot(auth, FinanceServiceModule, 'finance');
         apps.admin = await boot(auth, AdminServiceModule, 'admin');
         for (const actor of Object.keys(ACTOR_ROLES) as Actor[])

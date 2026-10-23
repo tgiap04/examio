@@ -1,7 +1,7 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import { authzVersionKey as gatewayKey } from '../../apps/gateway-service/src/pipeline/auth-state.service';
-import { authzVersionKey as examKey } from '../../apps/exam-service/src/modules/study-room/study-room-socket-auth.service';
+import { authzVersionKey as studyRoomKey } from '../../apps/study-room-service/src/modules/study-room/study-room-socket-auth.service';
 
 const ROOT = join(__dirname, '..', '..');
 
@@ -101,7 +101,7 @@ describe('static security rules (phase 06)', () => {
     });
 
     it('the WS gate reads the very Redis key the gateway writes (gw:user:<id>:av)', () => {
-        expect(examKey('u1')).toBe(gatewayKey('u1'));
-        expect(examKey('u1')).toBe('gw:user:u1:av');
+        expect(studyRoomKey('u1')).toBe(gatewayKey('u1'));
+        expect(studyRoomKey('u1')).toBe('gw:user:u1:av');
     });
 });
