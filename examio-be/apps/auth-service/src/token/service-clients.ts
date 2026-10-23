@@ -11,6 +11,7 @@ export const SERVICE_AUDIENCES: ReadonlySet<string> = new Set([
     'admin',
     'r2',
     'gateway',
+    'vocabulary',
 ]);
 
 const sha256 = (value: string): Buffer =>
