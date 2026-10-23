@@ -7,7 +7,7 @@
 - Prior: [phase-10](./phase-10-cut-cross-db-access.md) (ownership map), [phase-01](./phase-01-guardrails-and-cleanup.md) (single baseline + `migrate deploy`, **Prisma spike go/no-go**)
 
 ## Overview
-- Priority: P1 · Status: Pending · Effort: 3d · Depends on: 10, and a GO result of the P01 Prisma/bundling spike recorded in plan.md <!-- Red Team: RT-14 -->
+- Priority: P1 · Status: Completed (pending commit; evidence gate SEALED pending sign-off) · Effort: 3d · Depends on: 10, and a GO result of the P01 Prisma/bundling spike recorded in plan.md <!-- Red Team: RT-14 -->
 - Goal: each service connects with its own role that sees only its own schema. Per-service Prisma schema, client and migrations. Cross-service FKs dropped (keep `userId` + `@@index`). Rows owning R2 objects are deleted with a durable `r2_delete_tasks` outbox. `libs/database` (incl. the stale `libs/database/prisma/` tree) and `prisma:merge` deleted. **DB reset, no data copy.**
 - <!-- Red Team: RT-11 --> **[DEFERRED] user deletion**: no admin DELETE, no auth `DeleteUser`, no purge worker, no per-service purgers, no `auth.user.deleted` event in this plan. Phase 19 records it in `docs/development-roadmap.md`. Dropping the FKs does not change today's behaviour because no code path deletes `User` rows.
 
@@ -117,15 +117,15 @@ Write first:
 - `BaseRepository` structural type: the 9 repositories compile against the local clients (`yarn build`).
 
 ## Todo List
-- [ ] Spike gate check (P01 result) <!-- Red Team: RT-14 -->
-- [ ] Init SQL + env examples + compose split
-- [ ] Per-service schemas (auth, finance, admin, exam multi-file) from `src/models` only
-- [ ] Local Prisma modules + ReadinessCheck; swap 76 imports; retype BaseRepository
-- [ ] Baseline migrations + `<svc>-migrate` containers
-- [ ] ai-service search_path + DDL guard + temporary grants
-- [ ] `r2_delete_tasks` + shared writer/worker + call-site conversion <!-- Red Team: RT-8 -->
-- [ ] Seed inventory → per-service seeds; delete the stale `libs/database/prisma/` tree <!-- Red Team: RT-14 -->
-- [ ] Delete `libs/database` + scripts
+- [x] Spike gate check (P01 result) <!-- Red Team: RT-14 --> — GO 2026-10-18 (plan.md "Prisma Spike Verdict").
+- [x] Init SQL + env examples + compose split — empty-volume bring-up, 12/12 images built, `<svc>-migrate` 4/4 exit 0 (Re-temper 2, evidence/phase-11-runs.md).
+- [x] Per-service schemas (auth, finance, admin, exam multi-file) from `src/models` only — `migrate diff` "No difference" 4/4; `migrate status` up to date; 6/6 expected permission denials.
+- [x] Local Prisma modules + ReadinessCheck; swap 76 imports; retype BaseRepository — build/typecheck PASS, zero `@examio/database` refs. ReadinessCheck not evidenced on its own; APIs report healthy.
+- [x] Baseline migrations + `<svc>-migrate` containers — 4/4 exit 0 from empty volume.
+- [x] ai-service search_path + DDL guard + temporary grants — `/health` healthy, `DB_SEARCH_PATH=exam,extensions`, `AI_RUNTIME_DDL=false`, zero DDL lines in logs. "Skipping runtime DDL" line not observed.
+- [x] `r2_delete_tasks` + shared writer/worker + call-site conversion <!-- Red Team: RT-8 --> — live 23/23 (thumbnail, avatar, r2 outage backoff, drain). Poison key and concurrent no-double-send: unit/DB e2e only.
+- [x] Seed inventory → per-service seeds; delete the stale `libs/database/prisma/` tree <!-- Red Team: RT-14 --> — counts matched pre-split seed (page flags 9, subject categories 4, subjects 15, word-family categories 10, users 8, wallets 7, admin audit 20). Post-fix seed (upserts, opt-in profile) not re-counted live.
+- [x] Delete `libs/database` + scripts — grep clean; build PASS in Re-temper 2.
 
 ## Success Criteria
 - `cd /Users/tgiap.dev/devs/examio/examio-be && ls libs/database 2>/dev/null` → empty. `grep -rn "@examio/database\|libs/database" apps libs package.json deploy` → no output.
@@ -142,7 +142,8 @@ Write first:
 | Prisma multi-file schema unsupported in pinned version | L | M | Spike first. Fallback: single exam file with marked regions + an ownership comment |
 | A seed is lost when the stale tree is deleted | M | M | Inventory above; seed count test before `git rm` <!-- Red Team: RT-14 --> |
 | ai-service breaks on the role change | M | H | DDL guard; temporary grants; smoke with upload → process → generate |
-| R2 orphans | L | M | Task row in the same tx; worker backoff; stuck-task metric <!-- Red Team: RT-8 --> |
+| R2 orphans | L | M | Task row in the same tx; worker backoff; stuck-task metric <!-- Red Team: RT-8 -->. Legacy owner-less keys stay orphaned (carried to 16). |
+| Coordinator fixes after Re-temper 2 (key parser, seed opt-in, audit upsert, F9/F14) change behaviour with no live re-run | M | H | Live re-run before commit (see "Open before commit" item 2) |
 | Prod data present (decision says reset) | L | H | Prod reset happens once, at the final-merge cutover (phase 16 runbook: dump kept, volumes dropped). If not, `ALTER TABLE … SET SCHEMA` (ARCH P4) instead of drop/create <!-- Updated: Validation Session 1 - single production deploy --> |
 
 ## Rollback
@@ -156,3 +157,48 @@ Write first:
 ## Next Steps
 - 12–14 move model files from exam legacy into new services, each with its own `r2_delete_tasks` where it owns R2 objects. 15 moves `document`/`ai` files and drops the temporary grant.
 - <!-- Red Team: RT-11 --> [DEFERRED] user deletion (admin DELETE → auth `DeleteUser` → `auth.user.deleted` fan-out + purgers) — roadmap item, recorded by phase 19.
+
+## Delivered beyond plan / deviations
+Each entry: what, why, cost.
+- **Webpack externals**: kept Nest default externals. Why: the spike's `externals: []` failed on auth. Cost: the generated Prisma client is still bundled; amd64 unverified (carried to 16).
+- **exam multi-file schema**: `apps/exam-service/prisma/schema/*.prisma`, migrations inside `prisma/schema/migrations`. Why: the plan's multi-file fallback path was taken. Cost: none seen; multi-file works on the pinned Prisma 6.19.
+- **Migration dev script**: `scripts/prisma-migrate-dev.sh` replays migrations and runs `migrate diff` with `PRISMA_ADMIN_URL` (superuser, local only). Why: `migrate dev` needs a superuser shadow DB. Cost: a second, local-only superuser URL; prod uses `migrate deploy` only.
+- **outbox/processed in all four schemas**: auth, finance, admin and exam each carry both tables. Why: each service's relay and consumer need them locally. Cost: two empty tables per schema.
+- **Seed naming**: env names `AUTH/FINANCE/ADMIN/EXAM_DATABASE_URL` and `seed:dev:<svc>` scripts. Why: per-service seeds run in order auth → finance → admin → exam. Cost: more scripts to keep in sync.
+- **Seed is opt-in**: compose profile `seed`, run with `docker compose --profile seed run --rm seed`. AdminAudit dev rows use deterministic ids + upsert. Why: F9 (`up --wait` exit 1 on a fresh stack) and F10 (every `up` re-ran the seed and grew AdminAudit by 20). Cost: `up` no longer seeds dev data; devs run one extra command. Post-fix, not re-run live.
+- **ai-service DB config**: `DATABASE_URL` without `?schema`, `DB_SEARCH_PATH`, `AI_RUNTIME_DDL`, and pool sizes `AI_DB_POOL_MAX_*` (default sum 28, under the role limit of 40). Why: asyncpg uses the role search_path, not `?schema`. Cost: an unbounded override is possible (F15, carried to 16).
+- **R2 durable delete worker**: lease-token worker (lease 120 s, floor 60 s, worker deadline 10 s); per-key `failed_keys` in r2 `DeleteObjects`. Why: at-least-once delete with no double-claim. Cost: a delete may run twice (idempotent on S3).
+- **Repo hygiene**: `.dockerignore` excludes `**/.env`; `.gitignore` tightened for `deploy/env/*` (only `*.env.example` tracked).
+
+## Security fixes (user-approved, pre-existing holes)
+- R2 keys are server-issued and owner-scoped: `<area>/<ownerId>/<random>-<name>` (avatars, banners, flashcardset/quizset thumbnails, ai-uploads, ai-teacher).
+- Delete gate: owner prefix plus no other reference to the key. Legacy owner-less keys are never deleted.
+- Foreign and non-canonical R2 URLs/keys rejected with 400 (avatar/banner, thumbnails, AI `keyR2`), including percent-encoded traversal (F11/F12). Coded after Re-temper 2; **live probe not re-run** (see Open before commit).
+- `createUserStorage` cannot overwrite another user's row (409).
+- `clearChat` filters by owner.
+- Admin set-tier checks the user exists (404 `USER_NOT_FOUND`).
+
+## Fixed while tempering
+- F1: seed image did not copy `scripts/` (exit 127). Fixed; rebuild OK.
+- F4: corepack cache wiped, so the seed's yarn download failed with no egress. Fixed with `COREPACK_HOME=/opt/corepack`; seed exit 0 in-stack (Re-temper 2).
+- `.dockerignore` did not exclude nested `apps/*/.env`. Fixed.
+- Dead `R2Client.deleteFile` and throwing `deleteObjects` wrappers removed (F8).
+- F9 (`up --wait` exit 1) and F10 (AdminAudit growth): fixed by seed opt-in and upsert. Post-fix, not re-run live.
+- F14: README `--scale exam=2` note (`container_name` pins `examio-exam`). Docs only.
+
+## Open before commit
+Done-criteria still unmet. These block the "Completed" label.
+1. **F5 (test gap)**: `jest.config.js` `testRegex` is `.*\.spec\.ts$`, so `test/db-isolation/*.e2e-spec.ts` and `test/r2-delete/*` never run under `yarn test`. Success criterion "yarn test green incl. db-isolation e2e" is not met. Last live run: db-isolation 36/36 with live workers paused (CI-equivalent). Owner: lead/backend. Done when: a jest config that CI or `yarn test` runs includes these specs, and it is green.
+2. **Re-run after the post-Re-temper-2 coordinator fixes**: `yarn build && yarn test` and `check:deps`; `docker compose up -d --wait` from an empty volume exits 0 (F9); seed via profile exits 0 with counts unchanged and AdminAudit stable on a second run (F10); F11/F12 probe returns 400 for `%2e%2e` URLs and keys. Owner: lead. Done when: a dated row is appended to `evidence/phase-11-runs.md`.
+
+## Deferred / carried
+Each item has a target phase. The target file carries a `[CARRIED from 11]` line.
+- F13: AI credit charged at upload with no refund on OCR failure (pre-existing). → 15 (charge-first job flow).
+- `ai.service` charges before `createUserStorage` on retry/409. → 15.
+- Temporary `ai_svc` default privileges on exam tables. → 15 (grant removed, test asserts).
+- F15: `AI_DB_POOL_MAX_*` has no upper bound. → 16.
+- Legacy owner-less R2 keys never deleted (accepted orphans). → 16 or roadmap (cleanup job).
+- Worker contention and poison key proven by unit/DB e2e only (no live fault-injecting R2). → 16.
+- amd64 image verification. → 16.
+- `docs/generated/entities.md` field tables and entity count stale. → 19.
+- Docker VM ≥ 8 GB and sequential build: documented in `deploy/README.md`; no carry.

@@ -8,6 +8,7 @@
 - No code step: `/auth/me` never ships compat fields (validation Q6; phases 04/10). <!-- Updated: Validation Session 1 - no compat removal (RT-13 reversed) -->
 
 ## Overview
+- [CARRIED from 11] `docs/generated/entities.md` field tables and entity count are stale after the per-service schema split (phase 11). Regenerate or fix them here.
 - Priority: P2 · Status: Pending · Effort: 1.25d <!-- Red Team: RT-2, RT-3, RT-11, RT-12 (was 1d: +0.25d extra ARCH corrections) --> <!-- Updated: Validation Session 1 - −0.25d: step 0 compat removal deleted --> · Depends on: 16 (docs describe the cutover + steady-state deploy). Phase 18 status is recorded as-is; it does not gate this phase.
 - Goal: docs describe the system as built. ARCHITECTURE.md has the known errors fixed and records the decisions this plan made, including the red-team changes. The permission docs are generated from `libs/auth-jwt` so they cannot drift. Docs only, no application code. <!-- Updated: Validation Session 1 - no compat removal (RT-13 reversed) -->
 - Executed by the `doc-writer` agent: read code first, edit surgically, split files that grow too big.

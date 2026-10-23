@@ -7,7 +7,7 @@
 - Prior phases: [03 messaging](./phase-03-messaging-foundation.md), [04 identity](./phase-04-identity-and-rbac-core.md) (service tokens, `authzVersion`), [08 admin roles](./phase-08-admin-role-management-screen.md)
 
 ## Overview
-- Priority: P1 · Status: Completed (pending commit) · Effort: 2.75d <!-- Red Team: RT-1, RT-11 --> <!-- Updated: Validation Session 1 - −0.25d: no GetWallet compat path in /auth/me --> · Depends on: 03, 04, 08, 09
+- Priority: P1 · Status: Completed (committed 2c76da1..a97adb4) · Effort: 2.75d <!-- Red Team: RT-1, RT-11 --> <!-- Updated: Validation Session 1 - −0.25d: no GetWallet compat path in /auth/me --> · Depends on: 03, 04, 08, 09
 - Goal: each Prisma model is read/written by exactly ONE service in code. The DB is still shared. Cross-service access becomes gRPC calls (sync) or events (async). Money RPCs become idempotent. dependency-cruiser is enforced. This gates phase 11, which physically separates the schemas.
 
 ## Key Insights
