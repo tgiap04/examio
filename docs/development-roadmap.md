@@ -1,6 +1,6 @@
 ---
 title: Examio Development Roadmap
-last_updated: 2026-10-23
+last_updated: 2026-10-24
 source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/) + phase completions
 status: ACTIVE
 ---
@@ -87,6 +87,10 @@ Phase 09 (frontend RBAC) is implemented but uncommitted on `refactor/microservic
 ## Progress Note (2026-10-23) — microservice-refactor plan, phase 10
 
 Phase 10 (cut cross-DB access) is implemented but uncommitted on `refactor/microservice-rbac`: one owning service per Prisma model (`yarn check:ownership`, `yarn check:deps` in CI), idempotent money RPCs (`WalletService.Debit`/`Credit`/`Refund`, `UpdateBalance` removed), finance admin/stats RPCs, auth user admin RPCs and `auth.user.updated`, `/auth/me` without wallet/subscription, admin stats from `GetUserStats` plus `GetRevenueStats`, page flags pushed admin to gateway by gRPC, exam user enrichment through auth public profiles, word-family category admin through exam gRPC. Migrations `20261022090000_wallet_idempotency` and `20261023090000_payment_refund_key`. Follow-ups: the database is still shared (schema split is phase 11); `examio-app` was not checked against the new `/auth/me` shape. See [changelog](project-changelog.md) and [architecture](system/architecture.md) § gRPC.
+
+## Progress Note (2026-10-24) — microservice-refactor plan, phase 12
+
+Phase 12 (extract study-room and vocabulary) is implemented but uncommitted on `refactor/microservice-rbac`: `study-room-service` (HTTP `/api/v1/studyrooms/*`, Socket.io `/ws/study`, `studyroom.events` consumer) and `vocabulary-service` (HTTP `/api/v1/word-family/*`, gRPC `WordFamilyAdminService` and `WordFamilyService.GetWordFamily`, R2 delete worker) own their schemas, roles, migrations and compose services; exam lost both modules and its gRPC server and keeps only `word-family/:id/to-flashcard`. Live temper found and fixed one bug (auth `SERVICE_AUDIENCES` missing `vocabulary`). Follow-ups: AI generation still HTTP to ai-service until phase 13; non-host study-room `PUT` stays 403 (404 mapping deferred); stale `authz_changed` binding on `exam.events` for pre-existing brokers (phase 16 runbook); `libs/grpc` public-profile client over the size guideline. See [changelog](project-changelog.md) and [architecture](system/architecture.md).
 
 ## Phase 0 — System Correctness (P0, blocking)
 

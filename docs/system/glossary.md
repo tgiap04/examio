@@ -90,7 +90,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Exam Session** — A specific scheduled instance of an ExamRoom. Holds the time window, time limit, access control settings, and question selection strategy. Students join via ExamAttempt.
 
-**Exam Service** — NestJS service responsible for quiz/flashcard/exam authoring, exam session management, attempt tracking, AI generation orchestration, and RAG document management.
+**Exam Service** — NestJS service responsible for quiz/flashcard/exam authoring, exam session management, attempt tracking, AI generation orchestration, and RAG document management. Study rooms and word families live in the Study Room Service and Vocabulary Service since phase 12; exam keeps only the `word-family/:id/to-flashcard` bridge.
 
 ---
 

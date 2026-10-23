@@ -90,7 +90,8 @@ Admin and exam call other services with the acting user's forwarded token (`AUTH
 | auth `GetPublicProfilesByIds` | `@RequirePermissionsOrService([])` (exam caller; no email in the payload) |
 | auth `GetUsersByIds` | `@RequirePermissionsOrService(['user:manage'], { callers: ['admin'] })` (was open to more callers) |
 | gateway `SetPageFlags` / admin `GetPageFlags` | `@ServiceOnly('admin')` / `@ServiceOnly('gateway')` |
-| exam `WordFamilyAdminService.*` | `@RequirePermissions('word_family:admin')` |
+| vocabulary `WordFamilyAdminService.*` (moved from exam, phase 12) | `@RequirePermissions('word_family:admin')` |
+| vocabulary `WordFamilyService.GetWordFamily` | `@RequirePermissionsOrService([])` (exam calls it with a service token, audience `vocabulary`) |
 
 ### Per-endpoint enforcement (phase 06, 2026-10-20)
 
@@ -125,13 +126,13 @@ Admin and exam call other services with the acting user's forwarded token (`AUTH
 | | `DELETE :id` | `exam_session:manage` (host) |
 | | `:id/detail`, `get-by-id/:id`, `PUT :id` | `@Authenticated()` (allowlist); `examattempt-access.ts`: examinee with `exam:take`, or host with `exam_result:view` (read) / `exam_session:manage` (write); else 404 |
 | cheatinglog | `POST /` | `exam:take`; `attempt/:id`, `session/:id/stats`, `session/:sid/user/:uid`: `exam_result:view` (host, else 404) |
-| study-room | `POST /`, `PUT/DELETE :id`, `:id/regenerate-code` | `study_room:create` |
+| study-room (study-room-service since phase 12; non-host `PUT :id` and an unknown room both answer 403) | `POST /`, `PUT/DELETE :id`, `:id/regenerate-code` | `study_room:create` |
 | | `mine`, `join`, `:id/join`, `:id`, `:id/leave`, `:id/leaderboard` | `study_room:join` |
-| word-family | `categories`, `roots`, `category/...`, `generation-status/*` | `word_family:read` |
+| word-family (vocabulary-service since phase 12) | `categories`, `roots`, `category/...`, `generation-status/*` | `word_family:read` |
 | | `save`, `saved`, `DELETE saved/:id` | `word_family:save` |
 | | `generate`, `generate-root` | `word_family:generate` (TEACHER only; free; 20/day per user, 429 `WORD_FAMILY_DAILY_LIMIT`; 503 `GENERATION_LIMIT_UNAVAILABLE` if Redis is down) |
-| | `:id/to-flashcard` | `flashcardset:manage` |
-| | categories POST/PUT/DELETE | removed from exam HTTP (phase 10); category writes only through admin `admin/word-family/*` to exam gRPC `WordFamilyAdminService` (`word_family:admin`) |
+| | `:id/to-flashcard` (stays in exam: `modules/flashcardset/word-family-to-flashcard.controller.ts`; gateway route `wf-to-flashcard`, POST only) | `flashcardset:manage` |
+| | categories POST/PUT/DELETE | removed from exam HTTP (phase 10); category writes only through admin `admin/word-family/*` to vocabulary gRPC `WordFamilyAdminService` (`word_family:admin`) |
 | ai | `quick-upload`, `upload`, `upload-image`, `recent-uploads`, `GET/DELETE upload/:id` | `document:upload` (own) |
 | | `generate-from-file`, `regenerate/:id`, `job/:id`, `upload/:id/history`, `models` | `ai:generate` (own) |
 | ai-chat | all handlers (class-level) | `ai_chat:use` (own); `:chatId/exists` is `true` only for the caller's own chat |
@@ -178,7 +179,7 @@ Plain `@Authenticated()` handlers (allowlist, each with a two-user negative spec
 
 exam-service has no `ThrottlerModule`; per-IP rate limits for `verify-code` / `with-code` (5 / 60 s) and `users/search` (30 / 60 s) live in gateway `routes.yaml`.
 
-**WebSocket `/ws/study`** (`StudyRoomSocketAuth`, `server.use` in `StudyRoomGateway.afterInit`; the gateway class carries a declarative `@Authenticated()` because HTTP guards skip `ws`): checks run in order: token present (`handshake.auth.token`, then Bearer/cookie), signature / `iss` / `aud` / `exp`, `email_verified`, `study_room:join`, token `av` vs Redis `gw:user:<sub>:av` (lower = stale; key missing = pass), then account not banned/deleted, then the `study-room` page flag. A failure is a `connect_error` whose message is the code: `TOKEN_MISSING`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `EMAIL_NOT_VERIFIED`, `PERMISSION_DENIED`, `TOKEN_STALE`, `SERVICE_UNAVAILABLE` (Redis or DB error, fail-closed), `UNAUTHORIZED`, `PAGE_DISABLED`. `socket.data` holds `{ user, av, exp }`. `handleConnection` (sync) joins room `user:<id>` and schedules a disconnect at token `exp`; `handleDisconnect` clears the timer. Before the server disconnects it emits `auth:reauth { reason: 'TOKEN_EXPIRED' | 'AUTHZ_CHANGED' }` (client: refresh the token, reconnect). On `auth.user.authz_changed` (`study-room-authz.handler.ts`) sockets of that user whose `av` is below the event's `authzVersion` get `auth:reauth` then `disconnect(true)`. `room:kicked` remains for the in-room ban only.
+**WebSocket `/ws/study`** (`StudyRoomSocketAuth`, `server.use` in `StudyRoomGateway.afterInit`, both in study-room-service since phase 12; the gateway class carries a declarative `@Authenticated()` because HTTP guards skip `ws`): checks run in order: token present (`handshake.auth.token`, then Bearer/cookie), signature / `iss` / `aud` / `exp`, `email_verified`, `study_room:join`, token `av` vs Redis `gw:user:<sub>:av` (lower = stale; key missing = pass), then account not banned/deleted, then the `study-room` page flag. A failure is a `connect_error` whose message is the code: `TOKEN_MISSING`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `EMAIL_NOT_VERIFIED`, `PERMISSION_DENIED`, `TOKEN_STALE`, `SERVICE_UNAVAILABLE` (Redis or DB error, fail-closed), `UNAUTHORIZED`, `PAGE_DISABLED`. `socket.data` holds `{ user, av, exp }`. `handleConnection` (sync) joins room `user:<id>` and schedules a disconnect at token `exp`; `handleDisconnect` clears the timer. Before the server disconnects it emits `auth:reauth { reason: 'TOKEN_EXPIRED' | 'AUTHZ_CHANGED' }` (client: refresh the token, reconnect). On `auth.user.authz_changed` (`study-room-authz.handler.ts`) sockets of that user whose `av` is below the event's `authzVersion` get `auth:reauth` then `disconnect(true)`. `room:kicked` remains for the in-room ban only.
 
 ### Frontend route guards (phase 09, 2026-10-22)
 
@@ -1924,7 +1925,7 @@ Gateway-level feature-flag gate applied to proxy controllers annotated with `@To
 ## PERM056: WordFamilyAccess
 
 **Type**: route-guard
-**Enforced At**: `word-family.controller.ts` (`AuthGuard`) + `word-family-proxy.controller.ts` (`AuthGuard` + `PageEnabledGuard` + `@TogglePage('word-family')`)
+**Enforced At**: gateway `routes.yaml` (`word-family` and `wf-to-flashcard` routes: `pageFlag: word-family`) + vocabulary-service `word-family.controller.ts` (`@RequirePermissions`); the proxy controllers were removed in phase 05
 
 ### Description
 
@@ -1959,11 +1960,11 @@ All user-facing word-family routes (browse categories, view root words/detail, g
 ## PERM057: AdminWordFamilyManagement
 
 **Type**: action-permission
-**Enforced At**: `admin-word-family.controller.ts` (`@RequirePermissions('word_family:admin')`, class-level) + exam `word-family-admin.grpc.controller.ts` (`word_family:admin` per RPC)
+**Enforced At**: `admin-word-family.controller.ts` (`@RequirePermissions('word_family:admin')`, class-level) + vocabulary-service `word-family-admin.grpc.controller.ts` (`word_family:admin` per RPC)
 
 ### Description
 
-Admin-only CRUD on `WordFamilyCategory` (create, update, soft-delete via `isActive = false`). Category writes go only through admin-service (`/api/v1/admin/word-family/*`, class-level `word_family:admin`, `AdminAudit` row per mutation), which calls exam's gRPC `WordFamilyAdminService` with the admin's forwarded token; the exam HTTP `categories` POST/PUT/DELETE routes were removed in phase 10. Replacing or deleting a category image deletes the old R2 object (only under the `word-family/` prefix). Category deletion is soft-delete only at the API layer — the Prisma `onDelete: Cascade` relation to `WordFamily`/`UserSavedWordFamily` is defined but not reachable via any exposed hard-delete route.
+Admin-only CRUD on `WordFamilyCategory` (create, update, soft-delete via `isActive = false`). Category writes go only through admin-service (`/api/v1/admin/word-family/*`, class-level `word_family:admin`, `AdminAudit` row per mutation), which calls vocabulary's gRPC `WordFamilyAdminService` with the admin's forwarded token; the exam HTTP `categories` POST/PUT/DELETE routes were removed in phase 10. Replacing or deleting a category image deletes the old R2 object (only under the `word-family/` prefix). Category deletion is soft-delete only at the API layer — the Prisma `onDelete: Cascade` relation to `WordFamily`/`UserSavedWordFamily` is defined but not reachable via any exposed hard-delete route.
 
 ### Related Routes
 

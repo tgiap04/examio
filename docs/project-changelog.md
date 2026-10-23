@@ -1,6 +1,6 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-10-23
+last_updated: 2026-10-24
 ---
 
 # Examio Project Changelog
@@ -8,6 +8,20 @@ last_updated: 2026-10-23
 ## [Unreleased] — 2026-10-23
 
 ### Changed
+
+#### Extract study-room and vocabulary services, phase 12 (uncommitted on `refactor/microservice-rbac`)
+
+- **study-room-service** (`apps/study-room-service`): HTTP `/api/v1/studyrooms/*` and Socket.io `/ws/study` moved out of exam. Redis adapter `key: 'studyroom'`, Redis prefix `studyroom:`. It consumes `auth.user.authz_changed` (`auth:reauth`, then disconnect) and `auth.user.updated` (profile cache DEL) on queue `studyroom.events` inside the API process: one container, no gRPC server, no `ROLE` env. SIGTERM drain (`enableShutdownHooks`, `StudyRoomShutdown` flushes buffered focus time). `FRONTEND_URL` is required in production (WS CORS; the service refuses to start without it). A non-host `PUT /studyrooms/:id` still answers 403 (moved behaviour; the 404 mapping is deferred).
+- **vocabulary-service** (`apps/vocabulary-service`): HTTP `/api/v1/word-family/*` except `POST /api/v1/word-family/:id/to-flashcard`, which stays in exam. gRPC `examio.vocabulary.v1` (`proto/examio/vocabulary/v1/word_family.proto`): `WordFamilyAdminService` moved from exam (admin calls it through `VOCABULARY_GRPC_URL`, forwarded admin token) and the new `WordFamilyService.GetWordFamily`. `ROLE=api,worker` in one process; the worker is the `r2_delete_tasks` poller (own table, calls r2 `DeleteObjects` as `vocabulary`). Category images are deleted only for keys under `word-family/`; other R2 URLs are never deleted. AI generation calls ai-service over HTTP with `INTERNAL_SERVICE_TOKEN` (temporary until phase 13), free, TEACHER only, 20/day under Redis prefix `vocab:`. No RabbitMQ.
+- **Data**: Postgres roles `studyroom_svc` and `vocabulary_svc`, schemas `studyroom` and `vocabulary`, own migrations, `<svc>-migrate` one-shots (`study-room-migrate`, `vocabulary-migrate`). exam has drop migrations `20261023063057_drop_studyroom` and `20261023090000_drop_vocabulary` (DB reset policy, no data copy) and no longer has a study-room or word-family module. The 10 word-family categories seed moved to `apps/vocabulary-service/prisma/seed/`.
+- **exam**: no gRPC server any more (`main.ts` and `GRPC_PORT` wiring removed). `POST word-family/:id/to-flashcard` lives in `modules/flashcardset/word-family-to-flashcard.*`, reads the family through `GetWordFamily` and pre-assigns card ids (a card of another user with the same `question` is no longer linked). The `auth.user.updated` consumer is registered in `modules/user-profile/user-profile.module.ts`; `exam.events` binds only `auth.user.updated`, `studyroom.events` binds `auth.user.authz_changed` and `auth.user.updated` (a pre-existing broker keeps the stale `authz_changed` binding on `exam.events` until reset; note for the phase 16 runbook).
+- **Shared client**: the public-profile client (cache and tombstone) moved to `libs/grpc/src/clients/{public-profile.client,public-profile-cache,public-user,user-enricher}.ts`; the cache prefix is injected per service (`exam:cache:user:`, `studyroom:cache:user:`).
+- **Gateway**: `routes.yaml` has named upstreams `studyroom` (`STUDYROOM_SERVICE_URL`) and `vocabulary` (`VOCABULARY_SERVICE_URL`); route ids `studyrooms` and `study-ws` point at `studyroom`, `word-family` at `vocabulary`. `wf-to-flashcard` (POST, path regex) goes to exam and wins over the `word-family` prefix.
+- **Config**: new env names `STUDYROOM_DB_PASSWORD` and `VOCABULARY_DB_PASSWORD` (now used), `RABBITMQ_STUDYROOM_PASS` (broker user `studyroom`), `STUDYROOM_SERVICE_CLIENT_SECRET`, `VOCABULARY_SERVICE_CLIENT_SECRET` (plus `studyroom` and `vocabulary` entries in auth `SERVICE_CLIENTS`), `STUDYROOM_SERVICE_URL`, `VOCABULARY_SERVICE_URL`, exam `VOCABULARY_GRPC_URL`. Compose services `study-room`, `study-room-migrate`, `vocabulary`, `vocabulary-migrate` (`deploy/compose/{study-room,vocabulary}.yml`).
+- **Commands**: `yarn dev:study-room`, `yarn dev:vocabulary` (both in `dev:all`), `yarn typecheck:study-room`, `yarn typecheck:vocabulary`, `yarn seed:vocabulary` (in `prisma:seed`), `yarn seed:dev:vocabulary` (in `seed:dev`); `scripts/prisma-migrate-dev.sh` accepts `studyroom` and `vocabulary`.
+- **Fixes found while tempering**: auth `SERVICE_AUDIENCES` lacked `vocabulary`, so exam's `to-flashcard` got 500 on the live stack (only a live run caught it; `test/cross-app/service-audiences.spec.ts` now checks every `attach(metadata, '<audience>')`). CI RabbitMQ wait now runs `docker exec -u rabbitmq` (a root `rabbitmq-diagnostics` before the server wrote `.erlang.cookie` killed the broker with `eacces`).
+- **Open**: the shared public-profile client file is 288 lines (over the ~200 guideline); `ioredis/built/errors` deep import remains in `libs/redis/src/redis-unavailable.filter.ts`; AI generation still goes over HTTP until phase 13.
+- **Docs**: `CLAUDE.md`, `AGENTS.md`, `system/{architecture,overview,permissions,glossary,business-rules}.md`, `generated/entities.md`, `features/{F014,F016}`, `deploy/.env.example` comment, roadmap.
 
 #### Database per service, phase 11 (uncommitted on `refactor/microservice-rbac`)
 

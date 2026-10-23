@@ -290,7 +290,7 @@ When a user successfully changes their password via the profile page, a confirma
 
 ### User data is retained while account is active
 
-User data (quiz sets, flashcard sets, exam rooms, history, wallet) is retained indefinitely as long as the account exists. Deleted content is removed immediately from the database; its R2 objects are queued in the same transaction and deleted by a worker shortly after. There is no automatic purge of inactive accounts in the current implementation.
+User data (quiz sets, flashcard sets, exam rooms, history, wallet) is retained indefinitely as long as the account exists. Deleted content is removed immediately from the database; its R2 objects are queued in the same transaction and deleted by a worker shortly after (auth, exam and vocabulary each have their own `r2_delete_tasks`). There is no automatic purge of inactive accounts in the current implementation.
 
 **Applies when:** A user deletes content or an account.
 **Says:** The relevant records and files are permanently removed. This cannot be undone.

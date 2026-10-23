@@ -40,7 +40,7 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 **Rationale**: gRPC provides typed contracts, bidirectional streaming support, and lower latency than HTTP proxy chains for internal calls. Avoids circular gateway routing.
 
-**Update (phase 10, 2026-10-23)**: gRPC is also how a service reads or writes data owned by another service. Each Prisma model has exactly one owning service (`examio-be/scripts/check-model-ownership.ts`, enforced in CI by `yarn check:ownership` and `yarn check:deps`); exam, admin and the gateway now call auth, finance, exam (word-family admin), admin (page flags) and gateway (`SetPageFlags`) RPCs, and money RPCs (`Debit`/`Credit`/`Refund`) are idempotent. Update (phase 11): the database is no longer shared at the access level; each service has its own schema and role. Details: [architecture](architecture.md) § gRPC.
+**Update (phase 10, 2026-10-23)**: gRPC is also how a service reads or writes data owned by another service. Each Prisma model has exactly one owning service (`examio-be/scripts/check-model-ownership.ts`, enforced in CI by `yarn check:ownership` and `yarn check:deps`); exam, admin and the gateway now call auth, finance, vocabulary (word-family admin and `GetWordFamily`), admin (page flags) and gateway (`SetPageFlags`) RPCs, and money RPCs (`Debit`/`Credit`/`Refund`) are idempotent. Update (phase 11): the database is no longer shared at the access level; each service has its own schema and role. Update (phase 12, 2026-10-24): `WordFamilyAdminService` moved from exam to the new vocabulary-service, which also serves `WordFamilyService.GetWordFamily` to exam; exam no longer runs a gRPC server. Details: [architecture](architecture.md) § gRPC.
 
 ### Decision 4: RabbitMQ Topic Exchange for Async Event-Driven Workflows
 
@@ -92,7 +92,9 @@ Infrastructure: PostgreSQL (one schema + role per service, Prisma per service) �
 |---|---|---|---|
 | gateway-service | 3000 HTTP / 50051 gRPC (GatewayControl, internal) | HTTP + gRPC | Public entry: YAML-routed streaming proxy, JWT verify, revoke/stale check, rate limit, WS upgrade (`/ws/study`); no database |
 | auth-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | RS256 JWT + JWKS, service tokens, roles (RBAC), Google OAuth, session/device management |
-| exam-service | 3000 | HTTP | Quiz/flashcard/exam authoring, attempts, AI orchestration |
+| exam-service | 3000 | HTTP | Quiz/flashcard/exam authoring, attempts, AI orchestration, `word-family/:id/to-flashcard` |
+| study-room-service | 3000 | HTTP + Socket.io (`/ws/study`) | Study-Together Room (phase 12; extracted from exam) |
+| vocabulary-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | Word families and categories (phase 12; extracted from exam) |
 | finance-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | Wallet, SePay QR payments, subscriptions |
 | r2-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | Cloudflare R2 storage |
 | admin-service | 3000 HTTP | HTTP | Admin dashboard: users, stats, finance, logs, audit |

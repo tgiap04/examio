@@ -2,7 +2,7 @@
 
 **Project**: examio
 **Generated**: 2026-06-05
-**Source**: per-service Prisma schemas since phase 11 (`libs/database` was removed): `examio-be/apps/auth-service/prisma/schema.prisma`, `apps/finance-service/prisma/schema.prisma`, `apps/admin-service/prisma/schema.prisma`, `apps/exam-service/prisma/schema/*.prisma`
+**Source**: per-service Prisma schemas since phase 11 (`libs/database` was removed): `examio-be/apps/auth-service/prisma/schema.prisma`, `apps/finance-service/prisma/schema.prisma`, `apps/admin-service/prisma/schema.prisma`, `apps/exam-service/prisma/schema/*.prisma`, `apps/study-room-service/prisma/schema.prisma`, `apps/vocabulary-service/prisma/schema.prisma`
 
 > **Per-service placement (phase 11).** Each service owns one Postgres schema; no foreign key crosses a service boundary. `userId`/`adminId`/`hostId` columns outside auth are plain strings (usually with an `@@index`) and no `@relation` to `User`; the ERD edges from `User` below are logical (resolved in the application via auth), not database FKs. Field tables below were generated before the split; where a row says "FK ... User" outside auth it is superseded by this note (rows marked "no FK since phase 11" are already patched). Not re-derived: nullability/index details of individual columns, check the owning schema file.
 >
@@ -11,7 +11,9 @@
 > | auth (`auth`) | User, UserSession, VerifyAccountCode, ResetPasswordCode, RoleChangeLog, OutboxEvent, ProcessedEvent, R2DeleteTask (`r2_delete_tasks`) |
 > | finance (`finance`) | UserSubscription, Payment, Wallet, WalletTransaction, OutboxEvent, ProcessedEvent |
 > | admin (`admin`) | AdminAudit, PageFeatureFlag, OutboxEvent, ProcessedEvent |
-> | exam (`exam`) | quiz/flashcard content, assessment (ExamRoom, ExamSession, ExamAttempt, CheatingLog, QuizPracticeAttempt, UserPinnedExamRoom), StudyRoom*, WordFamily*, AIChat*, SubjectCategory/Subject, Document*/UserStorage*/UserMonthlyFileUpload, OutboxEvent, ProcessedEvent, R2DeleteTask |
+> | exam (`exam`) | quiz/flashcard content, assessment (ExamRoom, ExamSession, ExamAttempt, CheatingLog, QuizPracticeAttempt, UserPinnedExamRoom), AIChat*, SubjectCategory/Subject, Document*/UserStorage*/UserMonthlyFileUpload, OutboxEvent, ProcessedEvent, R2DeleteTask |
+> | study-room (`studyroom`, phase 12) | StudyRoom, StudyRoomMember, StudyRoomPlaylistItem, StudyRoomChatBlock, ProcessedEvent (no outbox) |
+> | vocabulary (`vocabulary`, phase 12) | WordFamilyCategory, WordFamily, UserSavedWordFamily, R2DeleteTask (`r2_delete_tasks`); no OutboxEvent/ProcessedEvent (no RabbitMQ) |
 >
 > Only auth's own child tables (UserSession, VerifyAccountCode, ResetPasswordCode) still have a real FK to `User`. `UserSubscription` and `Payment` moved to finance, `UserMonthlyFileUpload` to exam.
 

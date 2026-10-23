@@ -60,7 +60,7 @@ None.
 
 ### External Integrations
 
-Internal gRPC only (forwarded admin token): auth (`AuthUserService`, `ListUsers`, role/status RPCs), finance (`FinanceAdminService`, `FinanceStatsService`), gateway (`SetPageFlags`), exam (`WordFamilyAdminService`). Env: `AUTH_GRPC_URL`, `FINANCE_GRPC_URL`, `GATEWAY_GRPC_URL`, `VOCABULARY_GRPC_URL`, `GRPC_PORT`, `AUTH_TOKEN_URL`, `SERVICE_CLIENT_SECRET`. admin-service owns only `AdminAudit` and `PageFeatureFlag`.
+Internal gRPC only (forwarded admin token): auth (`AuthUserService`, `ListUsers`, role/status RPCs), finance (`FinanceAdminService`, `FinanceStatsService`), gateway (`SetPageFlags`), vocabulary (`WordFamilyAdminService`). Env: `AUTH_GRPC_URL`, `FINANCE_GRPC_URL`, `GATEWAY_GRPC_URL`, `VOCABULARY_GRPC_URL`, `GRPC_PORT`, `AUTH_TOKEN_URL`, `SERVICE_CLIENT_SECRET`. admin-service owns only `AdminAudit` and `PageFeatureFlag`.
 
 ### Verification
 
