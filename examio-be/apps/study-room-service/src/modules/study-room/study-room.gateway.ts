@@ -134,6 +134,11 @@ export class StudyRoomGateway
         }, 5 * 60_000);
     }
 
+    /** Persists the focus time still buffered in Redis (shutdown drain, see StudyRoomShutdown). */
+    async drainFocus(): Promise<void> {
+        await runSafely(this.logger, 'shutdown focus flush', () => this.flushAllFocus());
+    }
+
     onModuleDestroy() {
         if (this.focusSweep) clearInterval(this.focusSweep);
         for (const timer of this.expTimers.values()) clearTimeout(timer);

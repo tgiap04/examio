@@ -111,6 +111,25 @@ describeReal('RedisIoAdapter against a real Redis', () => {
         expect(Number(await control.call('PUBSUB', 'NUMPAT'))).toBeGreaterThanOrEqual(1);
     });
 
+    it('publishes only on channels under the study-room namespace (`studyroom#`)', async () => {
+        const a = await startInstance();
+        const b = await startInstance();
+        a.server.sockets.sockets.forEach((s) => s.join('room'));
+        await until(async () => (await subscribed()) >= 2);
+        const watcher = control.duplicate();
+        const seen: string[] = [];
+        watcher.on('pmessage', (_pattern: string, channel: string) => seen.push(channel));
+        try {
+            await watcher.psubscribe('*');
+            b.server.to('room').emit('x', 'probe');
+            await until(async () => seen.length > 0);
+        } finally {
+            watcher.disconnect();
+        }
+        expect(seen.length).toBeGreaterThan(0);
+        expect(seen.filter((c) => !c.startsWith('studyroom#'))).toEqual([]);
+    });
+
     it('fans a broadcast from one instance out to a socket on another', async () => {
         const a = await startInstance();
         const b = await startInstance();

@@ -1,5 +1,30 @@
-// exam-service legacy schema: STUDY-ROOM domain (extracted in phase 14).
-// No relation to User: userId is a plain column with an index.
+// study-room-service schema (database-per-service, phase 12). Postgres schema `studyroom`,
+// role `studyroom_svc`. No relation or FK may point at a model owned by another service:
+// `userId String` + `@@index` instead.
+generator client {
+    provider     = "prisma-client"
+    output       = "../src/generated/prisma"
+    engineType   = "client"
+    moduleFormat = "cjs"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// Idempotent-consumer ledger (libs/messaging). Both study-room handlers run with
+// `dedupe: false` (DEL / disconnect are idempotent), so the table stays empty, but
+// the consumer's db contract (`processedEvent`) requires it.
+model ProcessedEvent {
+    consumer    String
+    eventId     String   @map("event_id")
+    processedAt DateTime @default(now()) @map("processed_at")
+
+    @@id([consumer, eventId])
+    @@index([processedAt])
+    @@map("processed_events")
+}
 
 // Study-Together Room: nhiều người học chung, Pomodoro + YouTube đồng bộ, roster + chat + leaderboard.
 // Live state (timer/media/chat/presence) sống ở Redis; DB chỉ giữ cấu hình phòng + membership + focus tích luỹ.

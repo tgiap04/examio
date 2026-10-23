@@ -3,7 +3,7 @@ import { RedisService } from '@examio/redis';
 import { TOKEN_VERIFIER, TokenVerificationError } from '@examio/auth-jwt';
 import { SignJWT } from 'jose';
 import { Socket } from 'socket.io';
-import { AuthClient } from '../../clients/auth.client';
+import { PublicProfileClient } from '@examio/grpc';
 import {
     SocketAuthError,
     StudyRoomSocketAuth,
@@ -47,7 +47,7 @@ describe('StudyRoomSocketAuth', () => {
             providers: [
                 StudyRoomSocketAuth,
                 { provide: TOKEN_VERIFIER, useValue: verify },
-                { provide: AuthClient, useValue: { getPublicProfiles: profiles } },
+                { provide: PublicProfileClient, useValue: { getPublicProfiles: profiles } },
                 { provide: RedisService, useValue: { getClient: () => ({ get: redisGet }) } },
             ],
         }).compile();

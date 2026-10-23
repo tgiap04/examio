@@ -4,20 +4,21 @@ import Redis from 'ioredis';
 import { io, type Socket } from 'socket.io-client';
 import { createEnvelope } from '@examio/messaging';
 import {
-    bootExamApp,
+    bootStudyRoomApp,
     rid,
-    type ExamTestApp,
+    type StudyRoomTestApp,
     type TestUser,
-} from './ownership/support/exam-test-app';
-import { call } from './ownership/support/http';
+} from './support/study-room-test-app';
+import { call } from './support/http';
 
 /**
  * Message-level e2e for /ws/study (real socket.io over HTTP, real Postgres,
- * Redis adapter, RabbitMQ consumer). RABBITMQ_URL = exam (service under
- * test), RABBITMQ_AUTH_URL = auth (publishes authz_changed).
+ * Redis adapter, RabbitMQ consumer). RABBITMQ_URL = studyroom (service under
+ * test), RABBITMQ_AUTH_URL = auth (publishes authz_changed / user.updated).
+ * The gateway's own upgrade checks are covered in apps/gateway-service/test.
  */
 describe('study-room websocket authz (e2e)', () => {
-    let t: ExamTestApp;
+    let t: StudyRoomTestApp;
     let url: string;
     let redis: Redis;
     let teacher: TestUser;
@@ -104,7 +105,7 @@ describe('study-room websocket authz (e2e)', () => {
     }
 
     beforeAll(async () => {
-        t = await bootExamApp({ listen: true, redisAdapter: true });
+        t = await bootStudyRoomApp({ listen: true });
         url = `http://127.0.0.1:${(t.server.address() as AddressInfo).port}`;
         redis = new Redis({
             host: process.env.REDIS_HOST,
@@ -159,6 +160,30 @@ describe('study-room websocket authz (e2e)', () => {
         expect(message.userId).toBe(a.user.id);
     });
 
+    it('TEACHER connects, joins the room and a chat reaches a second member', async () => {
+        const a = await member(['TEACHER']);
+        const b = await member(['STUDENT']);
+        const sa = connect(a.token);
+        const sb = connect(b.token);
+        await Promise.all([connected(sa), connected(sb)]);
+
+        const snapA = once(sa, 'room:snapshot');
+        sa.emit('room:join', { roomId });
+        await snapA;
+        const snapB = once(sb, 'room:snapshot');
+        sb.emit('room:join', { roomId });
+        await snapB;
+
+        const received = once<{ message: { content: string; userId: string } }>(
+            sb,
+            'chat:message'
+        );
+        sa.emit('chat:send', { roomId, content: 'hello from a teacher' });
+        const { message } = await received;
+        expect(message.content).toBe('hello from a teacher');
+        expect(message.userId).toBe(a.user.id);
+    });
+
     it('a SYSTEM_ADMIN-only token is refused with PERMISSION_DENIED', async () => {
         const admin = await t.createUser(['SYSTEM_ADMIN']);
         const s = connect(await t.tokenFor(admin));
@@ -195,6 +220,11 @@ describe('study-room websocket authz (e2e)', () => {
         expect(await reauth).toEqual({ reason: 'AUTHZ_CHANGED' });
         await closed;
         expect(s.connected).toBe(false);
+
+        // The gateway mirrors the new version into Redis on the same event; the
+        // old token must then be refused at reconnect.
+        await redis.set(`gw:user:${m.user.id}:av`, '1');
+        expect(await rejection(connect(m.token))).toBe('TOKEN_STALE');
     });
 
     it('authz_changed leaves a socket with an equal or newer token alone (idempotent)', async () => {

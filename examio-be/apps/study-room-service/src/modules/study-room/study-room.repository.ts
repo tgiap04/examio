@@ -4,7 +4,7 @@ import { PrismaService } from '../../prisma';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
 import { StudyRoom, StudyRoomMember } from '../../prisma';
 import { StudyRoomKeys } from './study-room.constants';
-import { UserEnricher } from '../user-profile/user-enricher.service';
+import { UserEnricher } from '@examio/grpc';
 
 // Giá trị đánh dấu "không phải member" trong cache (negative caching).
 const MEMBER_NONE = 'none';

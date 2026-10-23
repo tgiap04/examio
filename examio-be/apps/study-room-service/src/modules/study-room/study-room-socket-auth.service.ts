@@ -9,7 +9,7 @@ import {
 } from '@examio/auth-jwt';
 import { decodeJwt } from 'jose';
 import { Socket } from 'socket.io';
-import { AuthClient } from '../../clients/auth.client';
+import { PublicProfileClient } from '@examio/grpc';
 
 export interface SocketUser {
     id: string;
@@ -69,7 +69,7 @@ export class StudyRoomSocketAuth {
 
     constructor(
         @Inject(TOKEN_VERIFIER) private readonly verifyToken: TokenVerifier,
-        private readonly auth: AuthClient,
+        private readonly auth: PublicProfileClient,
         private readonly redis: RedisService
     ) {}
 

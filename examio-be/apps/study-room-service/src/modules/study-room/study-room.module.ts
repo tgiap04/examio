@@ -1,8 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '../../prisma';
-import { RedisService } from '@examio/redis';
 import { GenerateIdService } from '@examio/common';
-import { MessagingModule } from '@examio/messaging';
 import { StudyRoomController } from './study-room.controller';
 import { StudyRoomService } from './study-room.service';
 import { StudyRoomRepository } from './study-room.repository';
@@ -12,15 +9,13 @@ import { StudyRoomSocketAuth } from './study-room-socket-auth.service';
 import { StudyRoomBroadcaster } from './study-room-broadcaster.service';
 import { StudyRoomPlaylistService } from './study-room-playlist.service';
 import { StudyRoomAuthzHandler } from './study-room-authz.handler';
+import { StudyRoomShutdown } from './study-room-shutdown.service';
 
 @Module({
-    imports: [
-        // Consumes exam.events (auth.user.authz_changed => disconnect that user's sockets).
-        MessagingModule.forRoot({ service: 'exam', consume: { db: PrismaService } }),
-    ],
+    // PrismaService / RedisService come from the global PrismaModule / RedisModule;
+    // `auth.user.authz_changed` (StudyRoomAuthzHandler) is consumed by the root
+    // module's MessagingModule, in this API process (it owns the Socket.io server).
     providers: [
-        PrismaService,
-        RedisService,
         GenerateIdService,
         StudyRoomService,
         StudyRoomRepository,
@@ -30,6 +25,7 @@ import { StudyRoomAuthzHandler } from './study-room-authz.handler';
         StudyRoomBroadcaster,
         StudyRoomPlaylistService,
         StudyRoomAuthzHandler,
+        StudyRoomShutdown,
     ],
     controllers: [StudyRoomController],
     exports: [StudyRoomService, StudyRoomRepository],

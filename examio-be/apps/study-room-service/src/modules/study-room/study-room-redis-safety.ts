@@ -1,17 +1,19 @@
 import { ArgumentsHost, Logger } from '@nestjs/common';
 import { BaseWsExceptionFilter } from '@nestjs/websockets';
-import { MaxRetriesPerRequestError } from 'ioredis/built/errors';
 import { ServerEvents } from './study-room.events';
 
 /**
  * ioredis gives up on a queued command with `MaxRetriesPerRequestError` once
  * it has retried the connection too often, or with `Connection is closed.`
  * after the client was closed. Both mean "Redis is unreachable", not a bug.
+ * Matched by `err.name` (a public, stable property) rather than by importing
+ * ioredis' internal `built/errors` module, whose path can move between releases.
  */
 export function isRedisUnavailable(err: unknown): boolean {
     return (
-        err instanceof MaxRetriesPerRequestError ||
-        (err instanceof Error && err.message === 'Connection is closed.')
+        err instanceof Error &&
+        (err.name === 'MaxRetriesPerRequestError' ||
+            err.message === 'Connection is closed.')
     );
 }
 

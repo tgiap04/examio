@@ -83,7 +83,7 @@ function whenReady(client: Redis, timeoutMs: number): Promise<boolean> {
     });
 }
 
-// Socket.io adapter dùng Redis pub/sub để fan-out broadcast qua nhiều instance exam-service.
+// Socket.io adapter dùng Redis pub/sub để fan-out broadcast qua nhiều instance study-room-service.
 // Không có adapter này thì client ở instance khác sẽ không nhận được event.
 export class RedisIoAdapter extends IoAdapter {
     private adapterConstructor: ReturnType<typeof createAdapter> | null = null;
@@ -110,7 +110,8 @@ export class RedisIoAdapter extends IoAdapter {
                 READY_TIMEOUT_MS
             );
         }
-        this.adapterConstructor = createAdapter(pub, sub);
+        // Own pub/sub channel namespace (`studyroom#…`) so phase 17's Redis ACL can scope it to this service.
+        this.adapterConstructor = createAdapter(pub, sub, { key: 'studyroom' });
     }
 
     /** Closes the pub/sub connections (graceful shutdown and tests). */

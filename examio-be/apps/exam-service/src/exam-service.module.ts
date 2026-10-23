@@ -32,8 +32,6 @@ import { FinanceClientModule } from './modules/finance-client/finance-client.mod
 import { R2Module } from './modules/r2/r2.module';
 import { StudentModule } from './modules/student/student.module';
 import { FlashcardStudyModule } from './modules/flashcard-study/flashcard-study.module';
-import { WordFamilyModule } from './modules/word-family/word-family.module';
-import { StudyRoomModule } from './modules/study-room/study-room.module';
 import { UserProfileModule } from './modules/user-profile/user-profile.module';
 import { HealthModule, LoggerModule } from '@examio/observability';
 import { AuthJwtModule } from '@examio/auth-jwt';
@@ -67,8 +65,6 @@ process.env.SERVICE_NAME ??= 'exam-service';
         R2Module,
         StudentModule,
         FlashcardStudyModule,
-        WordFamilyModule,
-        StudyRoomModule,
     ],
     controllers: [ExamServiceController],
     providers: [
