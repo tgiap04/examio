@@ -16,7 +16,7 @@ describe('gateway proxy (e2e)', () => {
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.exam, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.exam, h.vocabulary, h.auth, h.finance, h.admin]) u.reset();
     });
 
     it('passes status, headers and BOTH Set-Cookie headers through verbatim', async () => {
@@ -95,6 +95,15 @@ describe('gateway proxy (e2e)', () => {
         expect(seen['x-forwarded-for']).toBe(ip(5));
         expect(seen['x-request-id']).toBe('req_e2e-hdr');
         expect(seen['x-forwarded-host']).not.toBe('evil.example');
+    });
+
+    it('word-family goes to vocabulary, but POST :id/to-flashcard goes to exam (path beats prefix)', async () => {
+        const token = await h.issuer.user('wf', ['TEACHER']);
+        const headers = { authorization: `Bearer ${token}`, 'content-type': 'application/json', ...via(6) };
+        await fetch(`${h.baseUrl}/api/v1/word-family/categories`, { headers });
+        await fetch(`${h.baseUrl}/api/v1/word-family/wf_1/to-flashcard`, { method: 'POST', headers, body: '{}' });
+        expect(h.vocabulary.seen.map((r) => r.url)).toEqual(['/api/v1/word-family/categories']);
+        expect(h.exam.seen.map((r) => r.url)).toEqual(['/api/v1/word-family/wf_1/to-flashcard']);
     });
 
     it('moves a cookie token into an Authorization header for the upstream', async () => {

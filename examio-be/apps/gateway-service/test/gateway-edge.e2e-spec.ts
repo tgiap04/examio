@@ -14,7 +14,7 @@ describe('gateway edge (e2e)', () => {
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.exam, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.exam, h.studyroom, h.vocabulary, h.auth, h.finance, h.admin]) u.reset();
     });
 
     describe('CORS', () => {
@@ -107,7 +107,7 @@ describe('gateway edge (e2e)', () => {
 
         it('refuses an upgrade with no credentials: 401 and the socket is closed', async () => {
             expect(await open({ ...via(3) })).toEqual({ opened: false, status: 401 });
-            expect(h.exam.upgrades).toHaveLength(0);
+            expect(h.studyroom.upgrades).toHaveLength(0);
         });
 
         it('refuses a revoked/garbage token and a query-string token', async () => {
@@ -125,7 +125,7 @@ describe('gateway edge (e2e)', () => {
             const token = await h.issuer.user('wsok', ['STUDENT']);
             const result = await open({ cookie: `accessToken=${token}`, 'x-user-roles': 'SYSTEM_ADMIN', ...via(5) });
             expect(result).toEqual({ opened: true, message: 'hello-from-upstream' });
-            const seen = h.exam.upgrades[0].headers;
+            const seen = h.studyroom.upgrades[0].headers;
             expect(seen.authorization).toBe(`Bearer ${token}`);
             expect(seen['x-forwarded-for']).toBe(ip(5));
             expect(seen['x-user-roles']).toBeUndefined();

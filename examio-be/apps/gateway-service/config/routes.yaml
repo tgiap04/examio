@@ -8,6 +8,8 @@
 upstreams:
   auth: ${AUTH_SERVICE_URL:-http://localhost:3001}
   exam: ${EXAM_SERVICE_URL:-http://localhost:3002}
+  studyroom: ${STUDYROOM_SERVICE_URL:-http://localhost:3009}
+  vocabulary: ${VOCABULARY_SERVICE_URL:-http://localhost:3010}
   finance: ${FINANCE_SERVICE_URL:-http://localhost:3003}
   admin: ${ADMIN_SERVICE_URL:-http://localhost:7006}
 
@@ -168,13 +170,21 @@ routes:
     upstream: exam
     match: { prefix: /api/v1/subjects }
     auth: optional
-  - id: word-family
+  # The bridge writes a FlashCardSet (content domain), so exam keeps this one path; the
+  # `match.path` regex wins over the `word-family` prefix below (see the header).
+  - id: wf-to-flashcard
     upstream: exam
+    match: { path: '/api/v1/word-family/[^/]+/to-flashcard' }
+    methods: [POST]
+    auth: required
+    pageFlag: word-family
+  - id: word-family
+    upstream: vocabulary
     match: { prefix: /api/v1/word-family }
     auth: required
     pageFlag: word-family
   - id: studyrooms
-    upstream: exam
+    upstream: studyroom
     match: { prefix: /api/v1/studyrooms }
     auth: required
     pageFlag: study-room
@@ -185,11 +195,11 @@ routes:
     auth: required
     maxBodySize: 3mb
 
-  # ---- WebSocket (study room, served by exam-service socket.io) --------------
-  # The upgrade is authenticated here; study-room re-verifies in its own
+  # ---- WebSocket (study room, served by study-room-service socket.io) --------------
+  # The upgrade is authenticated here; study-room-service re-verifies in its own
   # socket middleware. HTTP long-polling on the same path uses the same checks.
   - id: study-ws
-    upstream: exam
+    upstream: studyroom
     match: { prefix: /ws/study }
     auth: required
     pageFlag: study-room

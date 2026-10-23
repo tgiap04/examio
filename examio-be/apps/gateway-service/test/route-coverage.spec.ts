@@ -20,6 +20,9 @@ function expectedUpstream(path: string): string {
     if (['auth', 'profile', 'devices'].includes(resource)) return 'auth';
     if (['wallet', 'payment', 'webhook'].includes(resource)) return 'finance';
     if (resource === 'admin') return 'admin';
+    if (resource === 'studyrooms') return 'studyroom';
+    // The to-flashcard bridge writes a FlashCardSet, so exam keeps that one path.
+    if (resource === 'word-family') return /^\/api\/v1\/word-family\/:[A-Za-z]+\/to-flashcard$/.test(path) ? 'exam' : 'vocabulary';
     return 'exam';
 }
 
@@ -43,8 +46,21 @@ describe('routes.yaml covers the phase-01 route inventory', () => {
         expect(target('/api/v1/quizsets')).toBe('http://localhost:3002');
         expect(target('/api/v1/wallet/details')).toBe('http://localhost:3003');
         expect(target('/api/v1/admin/users')).toBe('http://localhost:7006');
-        const custom = loadRouteTable({ env: { EXAM_SERVICE_URL: 'http://exam:3000' } });
+        expect(target('/api/v1/studyrooms/mine')).toBe('http://localhost:3009');
+        expect(target('/api/v1/word-family/categories')).toBe('http://localhost:3010');
+        expect(table.match('GET', '/ws/study')?.target).toBe('http://localhost:3009');
+        const custom = loadRouteTable({
+            env: {
+                EXAM_SERVICE_URL: 'http://exam:3000',
+                STUDYROOM_SERVICE_URL: 'http://study-room:3000',
+                VOCABULARY_SERVICE_URL: 'http://vocabulary:3000',
+            },
+        });
         expect(custom.match('GET', '/api/v1/quizsets')?.target).toBe('http://exam:3000');
+        expect(custom.match('GET', '/api/v1/studyrooms/mine')?.target).toBe('http://study-room:3000');
+        expect(custom.match('GET', '/api/v1/word-family/saved')?.target).toBe('http://vocabulary:3000');
+        expect(custom.match('POST', '/api/v1/word-family/wf1/to-flashcard')?.target).toBe('http://exam:3000');
+        expect(custom.match('GET', '/ws/study')?.target).toBe('http://study-room:3000');
     });
 
     it.each([
@@ -57,6 +73,38 @@ describe('routes.yaml covers the phase-01 route inventory', () => {
     ])('internal or unsafe path %s is not routed', (path) => {
         expect(table.match('GET', path)).toBeUndefined();
         expect(table.match('POST', path)).toBeUndefined();
+    });
+});
+
+describe('word-family routing: the to-flashcard path beats the word-family prefix', () => {
+    const at = (method: string, path: string) => table.match(method, path);
+
+    it('POST /word-family/:id/to-flashcard goes to exam (content domain), keeping auth and page flag', () => {
+        const route = at('POST', '/api/v1/word-family/wf_123/to-flashcard');
+        expect(route).toMatchObject({ id: 'wf-to-flashcard', upstream: 'exam', pageFlag: 'word-family' });
+    });
+
+    it('every other word-family path goes to vocabulary', () => {
+        for (const [method, path] of [
+            ['GET', '/api/v1/word-family/categories'],
+            ['GET', '/api/v1/word-family/saved'],
+            ['POST', '/api/v1/word-family/generate'],
+            ['POST', '/api/v1/word-family/save'],
+            ['GET', '/api/v1/word-family/category/shopping/order'],
+        ]) {
+            expect(at(method, path)).toMatchObject({ id: 'word-family', upstream: 'vocabulary' });
+        }
+    });
+
+    it('lookalikes of the bridge path stay on vocabulary (full match, POST only, one segment id)', () => {
+        for (const [method, path] of [
+            ['GET', '/api/v1/word-family/wf_1/to-flashcard'],
+            ['POST', '/api/v1/word-family/a/b/to-flashcard'],
+            ['POST', '/api/v1/word-family/wf_1/to-flashcard/extra'],
+            ['POST', '/api/v1/word-family//to-flashcard'],
+        ]) {
+            expect(at(method, path)?.upstream).toBe('vocabulary');
+        }
     });
 });
 
