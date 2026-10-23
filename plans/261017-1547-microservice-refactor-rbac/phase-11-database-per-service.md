@@ -7,7 +7,7 @@
 - Prior: [phase-10](./phase-10-cut-cross-db-access.md) (ownership map), [phase-01](./phase-01-guardrails-and-cleanup.md) (single baseline + `migrate deploy`, **Prisma spike go/no-go**)
 
 ## Overview
-- Priority: P1 · Status: Completed (pending commit; evidence gate SEALED pending sign-off) · Effort: 3d · Depends on: 10, and a GO result of the P01 Prisma/bundling spike recorded in plan.md <!-- Red Team: RT-14 -->
+- Priority: P1 · Status: Completed (committed dc7c95b..6a7248e) · Effort: 3d · Depends on: 10, and a GO result of the P01 Prisma/bundling spike recorded in plan.md <!-- Red Team: RT-14 -->
 - Goal: each service connects with its own role that sees only its own schema. Per-service Prisma schema, client and migrations. Cross-service FKs dropped (keep `userId` + `@@index`). Rows owning R2 objects are deleted with a durable `r2_delete_tasks` outbox. `libs/database` (incl. the stale `libs/database/prisma/` tree) and `prisma:merge` deleted. **DB reset, no data copy.**
 - <!-- Red Team: RT-11 --> **[DEFERRED] user deletion**: no admin DELETE, no auth `DeleteUser`, no purge worker, no per-service purgers, no `auth.user.deleted` event in this plan. Phase 19 records it in `docs/development-roadmap.md`. Dropping the FKs does not change today's behaviour because no code path deletes `User` rows.
 
@@ -143,7 +143,7 @@ Write first:
 | A seed is lost when the stale tree is deleted | M | M | Inventory above; seed count test before `git rm` <!-- Red Team: RT-14 --> |
 | ai-service breaks on the role change | M | H | DDL guard; temporary grants; smoke with upload → process → generate |
 | R2 orphans | L | M | Task row in the same tx; worker backoff; stuck-task metric <!-- Red Team: RT-8 -->. Legacy owner-less keys stay orphaned (carried to 16). |
-| Coordinator fixes after Re-temper 2 (key parser, seed opt-in, audit upsert, F9/F14) change behaviour with no live re-run | M | H | Live re-run before commit (see "Open before commit" item 2) |
+| Coordinator fixes after Re-temper 2 (key parser, seed opt-in, audit upsert, F9/F14) change behaviour with no live re-run | M | H | Live re-run done before commit (Re-temper 4; see "Closed before commit") |
 | Prod data present (decision says reset) | L | H | Prod reset happens once, at the final-merge cutover (phase 16 runbook: dump kept, volumes dropped). If not, `ALTER TABLE … SET SCHEMA` (ARCH P4) instead of drop/create <!-- Updated: Validation Session 1 - single production deploy --> |
 
 ## Rollback
@@ -173,7 +173,7 @@ Each entry: what, why, cost.
 ## Security fixes (user-approved, pre-existing holes)
 - R2 keys are server-issued and owner-scoped: `<area>/<ownerId>/<random>-<name>` (avatars, banners, flashcardset/quizset thumbnails, ai-uploads, ai-teacher).
 - Delete gate: owner prefix plus no other reference to the key. Legacy owner-less keys are never deleted.
-- Foreign and non-canonical R2 URLs/keys rejected with 400 (avatar/banner, thumbnails, AI `keyR2`), including percent-encoded traversal (F11/F12). Coded after Re-temper 2; **live probe not re-run** (see Open before commit).
+- Foreign and non-canonical R2 URLs/keys rejected with 400 (avatar/banner, thumbnails, AI `keyR2`), including percent-encoded traversal (F11/F12). Coded after Re-temper 2; live probe re-run in Re-temper 4 (400 for `%2e%2e` and upper-case host).
 - `createUserStorage` cannot overwrite another user's row (409).
 - `clearChat` filters by owner.
 - Admin set-tier checks the user exists (404 `USER_NOT_FOUND`).
@@ -186,10 +186,10 @@ Each entry: what, why, cost.
 - F9 (`up --wait` exit 1) and F10 (AdminAudit growth): fixed by seed opt-in and upsert. Post-fix, not re-run live.
 - F14: README `--scale exam=2` note (`container_name` pins `examio-exam`). Docs only.
 
-## Open before commit
-Done-criteria still unmet. These block the "Completed" label.
-1. **F5 (test gap)**: `jest.config.js` `testRegex` is `.*\.spec\.ts$`, so `test/db-isolation/*.e2e-spec.ts` and `test/r2-delete/*` never run under `yarn test`. Success criterion "yarn test green incl. db-isolation e2e" is not met. Last live run: db-isolation 36/36 with live workers paused (CI-equivalent). Owner: lead/backend. Done when: a jest config that CI or `yarn test` runs includes these specs, and it is green.
-2. **Re-run after the post-Re-temper-2 coordinator fixes**: `yarn build && yarn test` and `check:deps`; `docker compose up -d --wait` from an empty volume exits 0 (F9); seed via profile exits 0 with counts unchanged and AdminAudit stable on a second run (F10); F11/F12 probe returns 400 for `%2e%2e` URLs and keys. Owner: lead. Done when: a dated row is appended to `evidence/phase-11-runs.md`.
+## Closed before commit
+Both items that blocked the "Completed" label were closed before the commit (sign-off 2026-10-23).
+1. **F5 (test gap)**: closed. CI runs `test/db-isolation/jest-e2e.json` with `CI=true` (`.github/workflows/ci.yml:344`; a skipped suite fails under CI). CI-equivalent run 36/36 (Re-temper 2). `test/r2-delete/no-direct-r2-delete.spec.ts` runs under `yarn test`.
+2. **Re-run after the coordinator fixes**: closed. Re-temper 4 (`evidence/phase-11-runs.md`): `up -d --wait` from an empty volume exit 0 (F9), seed via profile twice with identical counts (F10), `%2e%2e` and upper-case host probes 400 (F11/F12). Final static run on the final code: typecheck, build:all, `yarn test` 1964 passed, check:ownership, check:deps. F16 (same host, other port) is proven by unit spec only; the live probe was not re-run.
 
 ## Deferred / carried
 Each item has a target phase. The target file carries a `[CARRIED from 11]` line.

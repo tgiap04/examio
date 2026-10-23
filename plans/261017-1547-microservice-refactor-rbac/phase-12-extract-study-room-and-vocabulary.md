@@ -7,7 +7,7 @@
 - Prior: [phase-05 gateway/WS](./phase-05-gateway-rewrite.md), [phase-06](./phase-06-rbac-enforcement-and-security-fixes.md) (WS middleware authz, RT-5), [phase-10](./phase-10-cut-cross-db-access.md), [phase-11](./phase-11-database-per-service.md) (`r2_delete_tasks`)
 
 ## Overview
-- Priority: P1 · Status: Pending · Effort: 3d · Depends on: 05, 11
+- Priority: P1 · Status: Completed (pending commit; evidence gate SEALED pending sign-off) · Effort: 3d · Depends on: 05, 11
 - Goal: the first two strangler cuts out of exam-service. `study-room-service` (HTTP + Socket.io `/ws/study`) and `vocabulary-service` (word family + categories). Both have the fewest dependencies (ARCH §12 P5 order).
 - **Sequential with 13 → 14**: all three edit `apps/exam-service/src/exam-service.module.ts`, `apps/exam-service/src/main.ts`, `apps/exam-service/prisma/schema/**` and `apps/gateway-service/config/routes.yaml`. Can run in parallel with 15 only (line-level YAML ownership, see Related Code Files).
 
@@ -114,17 +114,17 @@ Write first:
 - CI "every handler declared" test runs in both new apps and includes `@SubscribeMessage` handlers.
 
 ## Todo List
-- [ ] Scaffold study-room-service (§13 steps 1–10)
-- [ ] Scaffold vocabulary-service (§13 steps 1–10)
-- [ ] Move study-room module + WS adapter + P06 middleware; message-level WS e2e <!-- Red Team: RT-5 -->
-- [ ] Move word-family module; relocate the bridge to exam flashcardset; fix the cross-user card lookup <!-- Red Team: RT-15 -->
-- [ ] `GetWordFamily` RPC + exam client
-- [ ] Move the WordFamilyAdminService server; admin URL switch
-- [ ] `authz_changed` disconnect + `updated` cache handlers (study-room) <!-- Red Team: RT-5, RT-10 -->
-- [ ] vocabulary `r2_delete_tasks` + poller <!-- Red Team: RT-8 -->
-- [ ] Gateway YAML + route snapshot
-- [ ] Exam removal + drop migration + ownership map + seed move
-- [ ] [CARRIED from 09] D2 `enableShutdownHooks` + SIGTERM drain in study-room-service `main.ts`; D5 replace the `ioredis/built/errors` deep import (match `err.name` or pin `ioredis ~5.10`)
+- [x] Scaffold study-room-service (§13 steps 1–10)
+- [x] Scaffold vocabulary-service (§13 steps 1–10)
+- [x] Move study-room module + WS adapter + P06 middleware; message-level WS e2e <!-- Red Team: RT-5 -->
+- [x] Move word-family module; relocate the bridge to exam flashcardset; fix the cross-user card lookup <!-- Red Team: RT-15 -->
+- [x] `GetWordFamily` RPC + exam client
+- [x] Move the WordFamilyAdminService server; admin URL switch
+- [x] `authz_changed` disconnect + `updated` cache handlers (study-room) <!-- Red Team: RT-5, RT-10 -->
+- [x] vocabulary `r2_delete_tasks` + poller <!-- Red Team: RT-8 -->
+- [x] Gateway YAML + route snapshot
+- [x] Exam removal + drop migration + ownership map + seed move
+- [x] [CARRIED from 09] D2 `enableShutdownHooks` + SIGTERM drain in study-room-service `main.ts`; D5 replace the `ioredis/built/errors` deep import (match `err.name` or pin `ioredis ~5.10`) — done in study-room; the `libs/redis` remainder is carried to phase 16
 
 ## Success Criteria
 - `grep -rn "StudyRoomModule\|WordFamilyModule" /Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src` → no output.
@@ -152,3 +152,33 @@ Write first:
 
 ## Next Steps
 - Phase 13: ai-chat extraction + switch vocabulary `ai.client.ts` to gRPC.
+
+## Delivered beyond plan / deviations
+Part A (study-room-service, 2026-10-23):
+- Shared public-profile client moved to `libs/grpc/src/clients/{public-profile.client,user-enricher}.ts` (cache prefix, redis token and metadata attacher injected; libs/grpc stays free of redis/auth-jwt). exam keeps `exam:cache:user:`; study-room uses `studyroom:cache:user:`. exam `AuthClient` keeps only `searchUsers` on top. The client file is 288 lines (over the ~200 guideline): simplify before review.
+- exam's `auth.user.updated` consumer now registers in `modules/user-profile/user-profile.module.ts` (it used to ride on `StudyRoomModule`). `exam.events` binds only `auth.user.updated`; `studyroom.events` binds `auth.user.authz_changed` + `auth.user.updated`. On a pre-existing broker the stale `authz_changed` binding on `exam.events` stays until reset (production cutover resets; note for the phase 16 runbook).
+- One container: the `studyroom.events` consumer runs in the API process (it needs the Socket.io server + Redis adapter `key: 'studyroom'`); no `study-room-worker`, no ROLE env, no gRPC server. Both handlers are `dedupe:false`; `processed_events` exists for the consumer contract.
+- Non-host `PUT /studyrooms/:id` keeps the moved behaviour: 403 (`assertRole`), same 403 for an unknown room (no existence oracle). The plan's 404 is not applied in this move-only phase.
+- Names: gateway route ids `studyrooms` and `study-ws` (existing ids) point at the named upstream `studyroom` (`STUDYROOM_SERVICE_URL`); compose services `study-room` / `study-room-migrate`; DB role/schema, queue and Redis prefix `studyroom`.
+- D2: `enableShutdownHooks()` + `StudyRoomShutdown` flushes buffered focus time on SIGTERM. D5: the `ioredis/built/errors` deep import is gone from study-room; it remains in `libs/redis/src/redis-unavailable.filter.ts` (out of scope, carried).
+
+Part B (vocabulary-service, 2026-10-23):
+- vocabulary-service: HTTP + gRPC (`WordFamilyAdminService` moved, new `WordFamilyService.GetWordFamily` in `proto/examio/vocabulary/v1/word_family.proto`), `ROLE=api,worker` in one process (R2 delete poller as `svc:vocabulary`), own `R2DeleteTask`; no RabbitMQ / MessagingModule. `GetWordFamily` is `@RequirePermissionsOrService([])` and returns typed fields (`root_word`, `category_name`, `words[]`); NOT_FOUND / FAILED_PRECONDITION / INVALID_ARGUMENT map to 404 / 400 / 503 in exam. It is on the idempotent retry list (`libs/grpc/src/idempotent-rpcs.ts`).
+- exam now has no gRPC server (word-family admin was its only one); `main.ts` and `GRPC_PORT` wiring removed.
+- RT-15: card ids are pre-assigned with `crypto.randomUUID()`; the e2e fails against the old `question: { in }` lookup (mutation check: 6 links instead of 2).
+- Gateway: `wf-to-flashcard` is POST-only, path regex wins over the `word-family` prefix (matcher: path first, then longest prefix); route test covers look-alikes staying on vocabulary.
+- Seed: categories seed moved to `apps/vocabulary-service/prisma/seed/`; it reads `VOCABULARY_DATABASE_URL ?? DATABASE_URL` (the shared `seedDatabaseUrl` helper type was not widened).
+- Guard tests touched outside the brief: `libs/grpc/src/idempotent-rpcs.ts`, `test/cross-app/rpc-guard-table.spec.ts`, `test/build/proto-assets.spec.ts`.
+
+Fixed while tempering:
+- CI RabbitMQ start race (pre-existing since phase 03, `.github/workflows/ci.yml` "RabbitMQ with the rendered per-service users"): a root `docker exec rabbitmq-diagnostics` issued before the server writes `/var/lib/rabbitmq/.erlang.cookie` creates the cookie as root, and the broker dies with `Error when reading /var/lib/rabbitmq/.erlang.cookie: eacces` (reproduced 6/6 on Docker 29.7.2). The wait loop now runs `docker exec -u rabbitmq` (3/3 OK). The compose healthcheck (interval 15 s, after the server has written the cookie) is not affected. This race also hung the first temper run.
+- F1 (High, live temper stage 4): exam `POST word-family/:id/to-flashcard` returned 500. exam asks auth for a service token with audience `vocabulary`, and auth's `SERVICE_AUDIENCES` (`apps/auth-service/src/token/service-clients.ts`) did not list it, so auth answered 401. Unit and e2e harnesses fake the token client, so only the live stack caught it. Fixed by adding `'vocabulary'`. Regression: `test/cross-app/service-audiences.spec.ts` statically collects every `attach(metadata, '<audience>')` in `apps/*/src` and `libs/*/src` and asserts auth signs for each one (RED before the fix, naming exam `vocabulary.client.ts`).
+- F2 (observation, by design pending review): a category image URL that points at a generic `/r2/image` upload (`images/…`, owned by the uploader, may be referenced by other records) is not deleted when the category is replaced or deleted. vocabulary only deletes `word-family/` keys (phase 11 cross-feature/cross-user deletion guard). The admin page only takes an image URL; no category-owned upload path exists yet.
+- Review L1–L3 (2026-10-24): exam no longer `depends_on: vocabulary` (only to-flashcard calls it; lazy gRPC client, 503 while down; topology spec asserts it); gateway `/status` lists `vocabulary`; stale ownership-map comment fixed.
+
+## Deferred / carried
+- M1: map non-member / unknown room `PUT /studyrooms/:id` (and the other HOST-only routes) to 404, keep 403 for a member without the HOST role; update `apps/study-room-service/test/permissions.e2e-spec.ts` and the FE together. → follow-up (phase 19 cleanup or a dedicated small phase).
+- M2 / F2: admin category-image upload that writes under `word-family/` so vocabulary owns (and can delete) the key; today URLs outside `word-family/` are never reclaimed. User decision 2026-10-24: keep as is, follow-up on the roadmap.
+- F4: no SYSTEM_ADMIN-only account exists in the role model (admin = base role + flag), so the "SYSTEM_ADMIN-only token → connect_error" case is proven only at service level (`ws-auth.e2e-spec.ts`).
+- D5 remainder: `libs/redis/src/redis-unavailable.filter.ts` still deep-imports `ioredis/built/errors`. → phase 16.
+- Stale `authz_changed` binding on `exam.events` on a pre-existing broker. → phase 16 cutover runbook (broker reset).
