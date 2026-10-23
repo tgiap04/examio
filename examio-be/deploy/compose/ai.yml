@@ -1,0 +1,71 @@
+# AI service (Python): ai_svc role, temporary access to exam tables
+# Included from deploy/docker-compose.yml; paths are relative to deploy/ (project_directory).
+# =============================================================================
+# Shared fragments (YAML anchors are per file, so each file carries its own copy)
+x-logging: &default-logging
+    driver: 'json-file'
+    options:
+        max-size: '10m'
+        max-file: '3'
+
+x-nestjs-healthcheck: &nestjs-healthcheck
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    start_period: 60s
+
+services:
+    ai:
+        build:
+            context: ../apps/ai-service
+            dockerfile: Dockerfile
+        container_name: examio-ai
+        environment:
+            - PYTHONUNBUFFERED=1
+            - PORT=3000
+            - RABBITMQ_URL=amqp://ai:${RABBITMQ_AI_PASS:?RABBITMQ_AI_PASS is required}@rabbitmq:5672
+            # ai_svc; no ?schema= (asyncpg would send it as a server setting). Tables still live in
+            # the exam schema until phase 15, hence DB_SEARCH_PATH and the temporary grants.
+            - DATABASE_URL=postgresql://ai_svc:${AI_DB_PASSWORD:?AI_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+            - DB_SEARCH_PATH=exam,extensions
+            # Schema is owned by the exam-service migrations; the service must not run DDL.
+            - AI_RUNTIME_DDL=false
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+            - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+            - GEMINI_API_KEYS=${GEMINI_API_KEYS}
+            - GEMINI_MODEL_NAMES=${GEMINI_MODEL_NAMES}
+            - AI2_BASE_URL=${AI2_BASE_URL:-https://ai2.devt.vn/v1}
+            - AI2_API_KEY=${AI2_API_KEY:-}
+            - AI2_GENERATION_MODEL_NAMES=${AI2_GENERATION_MODEL_NAMES:-minimax-m2.5-free,nemotron-3-super-free,trinity-large-preview-free}
+            - AI2_DEFAULT_MODEL=${AI2_DEFAULT_MODEL:-minimax-m2.5-free}
+            - AI2_TIMEOUT_SECONDS=${AI2_TIMEOUT_SECONDS:-3600}
+            - AI2_MAX_TOKENS=${AI2_MAX_TOKENS:-4096}
+            - DEFAULT_MAX_TOKENS_CAP=${DEFAULT_MAX_TOKENS_CAP:-4096}
+            - TUTOR_FAST_RETRIEVAL_TIMEOUT_SECONDS=${TUTOR_FAST_RETRIEVAL_TIMEOUT_SECONDS:-0.5}
+            - CHAT_HISTORY_MAX_MESSAGES=${CHAT_HISTORY_MAX_MESSAGES:-4}
+            - CHAT_HISTORY_MAX_CHARS=${CHAT_HISTORY_MAX_CHARS:-1200}
+            - GEMINI_EMBEDDING_MODEL=${GEMINI_EMBEDDING_MODEL:-models/text-embedding-004}
+            - OCR_SERVICE_URL= # Using internal Tesseract/PyPDF logic
+        env_file:
+            - .env
+        depends_on:
+            exam-migrate:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+        networks:
+            - internal
+            - egress
+        healthcheck:
+            test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 60s
+        restart: unless-stopped
+        logging: *default-logging

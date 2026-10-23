@@ -21,7 +21,6 @@ WORKDIR /app
 # ─────────────────────────────────────────────────────────────────────────────
 FROM base AS deps
 COPY package.json yarn.lock .yarnrc.yml ./
-COPY libs/database/prisma ./libs/database/prisma/
 RUN yarn install --immutable
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -31,8 +30,9 @@ FROM deps AS builder
 ARG SERVICE_NAME
 COPY libs ./libs
 COPY apps ./apps
+COPY scripts ./scripts
 COPY tsconfig*.json nest-cli.json ./
-RUN yarn prisma:merge && yarn prisma:generate && yarn build ${SERVICE_NAME}
+RUN yarn prisma:generate && yarn build ${SERVICE_NAME}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 4: Production deps - Minimal node_modules
@@ -41,7 +41,6 @@ FROM base AS prod-deps
 COPY package.json yarn.lock .yarnrc.yml ./
 COPY --from=builder /app/libs ./libs
 RUN yarn install --immutable --mode=skip-build && \
-    yarn prisma:generate && \
     rm -rf /root/.local /root/.cache /tmp/* node_modules/.cache && \
     find node_modules -name "*.md" -delete 2>/dev/null || true && \
     find node_modules -name "*.map" -delete 2>/dev/null || true && \
@@ -81,4 +80,4 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=30s \
     CMD wget -q --spider http://localhost:${PORT:-3000}/health/ready || exit 1
 
-CMD ["sh", "-c", "if [ \"$SERVICE_NAME\" = \"exam-service\" ]; then node_modules/.bin/ts-node libs/database/prisma/seed.ts; fi && node dist/apps/${SERVICE_NAME}/main"]
+CMD ["sh", "-c", "node dist/apps/${SERVICE_NAME}/main"]

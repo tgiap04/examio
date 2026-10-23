@@ -58,10 +58,6 @@ jobs:
           cache-dependency-path: examio-be/yarn.lock
       - run: corepack enable
       - run: yarn install --immutable
-      - name: Prisma schema is in sync with models
-        run: |
-          yarn prisma:merge
-          git diff --exit-code -- libs/database/src/schema.prisma
       - run: yarn proto:gen
       - run: yarn prisma:generate
       - run: yarn typecheck:${{ matrix.svc }}
@@ -108,7 +104,15 @@ jobs:
           --health-retries 10
     env:
       NODE_ENV: test
-      DATABASE_URL: postgresql://examio:examio@localhost:5432/examio_ci
+      # Database per service: every service connects as its own role to its own schema.
+      # The roles/schemas come from deploy/postgres/init/01-service-schemas.sh (same as production).
+      DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/examio_ci?schema=auth
+      AUTH_DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/examio_ci?schema=auth
+      FINANCE_DATABASE_URL: postgresql://finance_svc:ci-finance@localhost:5432/examio_ci?schema=finance
+      ADMIN_DATABASE_URL: postgresql://admin_svc:ci-admin@localhost:5432/examio_ci?schema=admin
+      EXAM_DATABASE_URL: postgresql://exam_svc:ci-exam@localhost:5432/examio_ci?schema=exam
+      CONTENT_DATABASE_URL: postgresql://content_svc:ci-content@localhost:5432/examio_ci?schema=content
+      PRISMA_ADMIN_URL: postgresql://examio:examio@localhost:5432/examio_ci
       REDIS_HOST: localhost
       REDIS_PORT: '6379'
       RABBITMQ_URL: amqp://guest:guest@localhost:5672
@@ -145,8 +149,31 @@ jobs:
           ./scripts/ci-ephemeral-auth-env.sh > "$RUNNER_TEMP/auth-env.txt"
           grep '^::add-mask::' "$RUNNER_TEMP/auth-env.txt"
           grep -v '^::' "$RUNNER_TEMP/auth-env.txt" >> "$GITHUB_ENV"
-      - name: Apply migrations to an empty database
-        run: npx prisma migrate deploy --schema=libs/database/src/schema.prisma
+      - name: Per-service roles and schemas (production init script)
+        env:
+          PGHOST: localhost
+          PGPORT: '5432'
+          PGPASSWORD: examio
+          POSTGRES_USER: examio
+          POSTGRES_DB: examio_ci
+          AUTH_DB_PASSWORD: ci-auth
+          FINANCE_DB_PASSWORD: ci-finance
+          ADMIN_DB_PASSWORD: ci-admin
+          EXAM_DB_PASSWORD: ci-exam
+          CONTENT_DB_PASSWORD: ci-content
+          ASSESSMENT_DB_PASSWORD: ci-assessment
+          STUDYROOM_DB_PASSWORD: ci-studyroom
+          VOCABULARY_DB_PASSWORD: ci-vocabulary
+          AICHAT_DB_PASSWORD: ci-aichat
+          DOCUMENT_DB_PASSWORD: ci-document
+          AI_DB_PASSWORD: ci-ai
+        run: bash deploy/postgres/init/01-service-schemas.sh
+      - name: Apply every service's migrations as its own role (empty database)
+        run: |
+          for svc in auth finance admin exam; do
+            url_var="$(echo "$svc" | tr a-z A-Z)_DATABASE_URL"
+            DATABASE_URL="${!url_var}" npx prisma migrate deploy --schema "$(scripts/prisma-schema-path.sh "$svc")"
+          done
       - name: Boot each built service from dist and probe /health/live
         run: ./scripts/boot-built-services.sh
       # The compose file turns on GATEWAY_CONTROL_ENABLED and the api+worker roles;
@@ -215,7 +242,15 @@ jobs:
           --health-retries 10
     env:
       NODE_ENV: test
-      DATABASE_URL: postgresql://examio:examio@localhost:5432/examio_ci
+      # Database per service: every service connects as its own role to its own schema.
+      # The roles/schemas come from deploy/postgres/init/01-service-schemas.sh (same as production).
+      DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/examio_ci?schema=auth
+      AUTH_DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/examio_ci?schema=auth
+      FINANCE_DATABASE_URL: postgresql://finance_svc:ci-finance@localhost:5432/examio_ci?schema=finance
+      ADMIN_DATABASE_URL: postgresql://admin_svc:ci-admin@localhost:5432/examio_ci?schema=admin
+      EXAM_DATABASE_URL: postgresql://exam_svc:ci-exam@localhost:5432/examio_ci?schema=exam
+      CONTENT_DATABASE_URL: postgresql://content_svc:ci-content@localhost:5432/examio_ci?schema=content
+      PRISMA_ADMIN_URL: postgresql://examio:examio@localhost:5432/examio_ci
       REDIS_HOST: localhost
       REDIS_PORT: '6379'
       # CI-only broker credentials (the broker runs from the rendered
@@ -234,6 +269,9 @@ jobs:
       AUTH_JWKS_URL: http://localhost:3000/.well-known/jwks.json
       AUTH_TOKEN_URL: http://localhost:3000/internal/token
       AUTH_GRPC_URL: localhost:50051
+      # Boot-time required config of the auth module; inert placeholders.
+      GOOGLE_CLIENT_ID: ci-dummy
+      GOOGLE_CLIENT_SECRET: ci-dummy
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -262,14 +300,48 @@ jobs:
             sleep 2
           done
           docker exec rabbitmq rabbitmq-diagnostics -q ping
-      - name: Apply migrations to an empty database
-        run: npx prisma migrate deploy --schema=libs/database/src/schema.prisma
-      - name: Migrations cover the whole schema (no drift)
-        run: >-
-          npx prisma migrate diff
-          --from-url "$DATABASE_URL"
-          --to-schema-datamodel libs/database/src/schema.prisma
-          --exit-code
+      - name: Per-service roles and schemas (production init script)
+        env:
+          PGHOST: localhost
+          PGPORT: '5432'
+          PGPASSWORD: examio
+          POSTGRES_USER: examio
+          POSTGRES_DB: examio_ci
+          AUTH_DB_PASSWORD: ci-auth
+          FINANCE_DB_PASSWORD: ci-finance
+          ADMIN_DB_PASSWORD: ci-admin
+          EXAM_DB_PASSWORD: ci-exam
+          CONTENT_DB_PASSWORD: ci-content
+          ASSESSMENT_DB_PASSWORD: ci-assessment
+          STUDYROOM_DB_PASSWORD: ci-studyroom
+          VOCABULARY_DB_PASSWORD: ci-vocabulary
+          AICHAT_DB_PASSWORD: ci-aichat
+          DOCUMENT_DB_PASSWORD: ci-document
+          AI_DB_PASSWORD: ci-ai
+        run: bash deploy/postgres/init/01-service-schemas.sh
+      - name: Apply every service's migrations as its own role (empty database)
+        run: |
+          for svc in auth finance admin exam; do
+            url_var="$(echo "$svc" | tr a-z A-Z)_DATABASE_URL"
+            DATABASE_URL="${!url_var}" npx prisma migrate deploy --schema "$(scripts/prisma-schema-path.sh "$svc")"
+          done
+      - name: Migrations cover every service schema (no drift)
+        run: |
+          for svc in auth finance admin exam; do
+            url_var="$(echo "$svc" | tr a-z A-Z)_DATABASE_URL"
+            DATABASE_URL="${!url_var}" npx prisma migrate diff \
+              --from-url "${!url_var}" \
+              --to-schema-datamodel "$(scripts/prisma-schema-path.sh "$svc")" \
+              --exit-code
+          done
+      - name: Database isolation, fresh-database migrations and seed counts
+        # CI=true makes these env-gated specs fail instead of skip when their env is missing.
+        # RABBITMQ_URL: the auth worker module of r2-delete-worker also runs the outbox relay.
+        env:
+          CI: 'true'
+        run: |
+          RABBITMQ_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672" \
+            ./node_modules/.bin/jest --config test/db-isolation/jest-e2e.json
       - name: Service health e2e
         run: |
           # exam's health e2e runs with the whole exam e2e folder in the RBAC step below
@@ -282,7 +354,9 @@ jobs:
             # exam's legacy event subscriber declares a queue named SERVICE_NAME,
             # which is the only non-prefixed queue the exam broker user may touch.
             export SERVICE_NAME="$svc-service"
-            (cd apps/$svc-service && ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec)
+            # Each service connects with its own role/schema (r2 and gateway have no database).
+            url_var="$(echo "$svc" | tr a-z A-Z)_DATABASE_URL"
+            (cd apps/$svc-service && DATABASE_URL="${!url_var:-$DATABASE_URL}" ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec)
             echo "::endgroup::"
           done
       - name: Messaging e2e (outbox relay, idempotent consumer, broker permissions, purge)
@@ -295,9 +369,9 @@ jobs:
           export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"
           export SERVICE_NAME="auth-service"
           (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/token.e2e-spec.ts test/service-token.e2e-spec.ts test/role-change.e2e-spec.ts test/public-profiles.e2e-spec.ts test/login-throttle.e2e-spec.ts test/auth-users.e2e-spec.ts test/auth-me-shape.e2e-spec.ts)
-          (cd apps/finance-service && RABBITMQ_URL="amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-authz-changed.e2e-spec.ts test/wallet-money.e2e-spec.ts test/finance-admin.e2e-spec.ts test/wallet-cache.e2e-spec.ts)
-          (cd apps/admin-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin.e2e-spec.ts test/admin-finance.e2e-spec.ts)
-          # real auth (HTTP + gRPC) + real admin on one Postgres: roles, ban, users, stats, page flags
+          (cd apps/finance-service && DATABASE_URL="$FINANCE_DATABASE_URL" RABBITMQ_URL="amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-authz-changed.e2e-spec.ts test/wallet-money.e2e-spec.ts test/finance-admin.e2e-spec.ts test/wallet-cache.e2e-spec.ts)
+          (cd apps/admin-service && DATABASE_URL="$ADMIN_DATABASE_URL" RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin.e2e-spec.ts test/admin-finance.e2e-spec.ts)
+          # real auth (HTTP + gRPC) + real admin, each on its own schema (AUTH_/ADMIN_DATABASE_URL): roles, ban, users, stats, page flags
           RABBITMQ_URL="$RABBITMQ_AUTH_URL" ./node_modules/.bin/jest --config test/cross-app/jest-e2e.json test/cross-app/admin-roles.e2e-spec.ts test/cross-app/ban.e2e-spec.ts test/cross-app/admin-users-real-auth.e2e-spec.ts
       - name: RBAC enforcement e2e (whole exam folder in one process, plus auth device ownership)
         run: |
@@ -305,7 +379,7 @@ jobs:
           # The WHOLE exam e2e folder (health, ownership, validation, ws) in ONE jest process;
           # jest-e2e.json maxWorkers 1 because the WebSocket spec consumes exam.events.
           # RABBITMQ_AUTH_URL (exported above) is used by the ws spec to publish authz_changed.
-          (cd apps/exam-service && RABBITMQ_URL="amqp://exam:$RABBITMQ_EXAM_PASS@localhost:5672" SERVICE_NAME=exam-service ../../node_modules/.bin/jest --config test/jest-e2e.json)
+          (cd apps/exam-service && DATABASE_URL="$EXAM_DATABASE_URL" RABBITMQ_URL="amqp://exam:$RABBITMQ_EXAM_PASS@localhost:5672" SERVICE_NAME=exam-service ../../node_modules/.bin/jest --config test/jest-e2e.json)
           (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" SERVICE_NAME=auth-service ../../node_modules/.bin/jest --config test/jest-e2e.json test/ownership)
           # real exam app + auth RoleChangeService (cross-app, so it lives under test/cross-app)
           RABBITMQ_URL="amqp://exam:$RABBITMQ_EXAM_PASS@localhost:5672" SERVICE_NAME=exam-service ./node_modules/.bin/jest --config test/cross-app/jest-e2e.json test/cross-app/demoted-owner.ownership.e2e-spec.ts
@@ -323,8 +397,8 @@ jobs:
           export RABBITMQ_URL="$RABBITMQ_AUTH_URL"
           export RABBITMQ_GATEWAY_URL="amqp://gateway:$RABBITMQ_GATEWAY_PASS@localhost:5672"
           SERVICE_NAME=auth-service ./node_modules/.bin/jest --config test/cross-app/jest-e2e.json test/cross-app/gateway-integration.e2e-spec.ts
-      # LAST e2e step: it TRUNCATEs User/UserSession/UserSubscription/Payment/Wallet to seed a fixed
-      # fixture (refuses any non-local DATABASE_URL), then compares admin stats with the golden JSON.
+      # LAST e2e step: it TRUNCATEs auth's User/UserSession and finance's Payment/UserSubscription/Wallet to seed a
+      # fixed fixture (refuses any non-local AUTH_/FINANCE_DATABASE_URL), then compares admin stats with the golden JSON.
       - name: Admin stats parity (auth + finance SQL vs golden JSON of the pre-phase-10 service)
         run: ./node_modules/.bin/jest --config test/stats-parity/jest-e2e.json
 
@@ -341,7 +415,10 @@ jobs:
             RABBITMQ_USER RABBITMQ_PASS RABBITMQ_AUTH_PASS RABBITMQ_FINANCE_PASS RABBITMQ_EXAM_PASS \
             RABBITMQ_AI_PASS RABBITMQ_GATEWAY_PASS EXAM_SERVICE_CLIENT_SECRET FINANCE_SERVICE_CLIENT_SECRET \
             ADMIN_SERVICE_CLIENT_SECRET POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB ADMIN_EMAILS \
-            ADMIN_DEFAULT_PASSWORD GEMINI_API_KEYS GEMINI_MODEL_NAMES; do echo "$v=ci-dummy"; done > .env
+            ADMIN_DEFAULT_PASSWORD GEMINI_API_KEYS GEMINI_MODEL_NAMES \
+            AUTH_DB_PASSWORD FINANCE_DB_PASSWORD ADMIN_DB_PASSWORD EXAM_DB_PASSWORD CONTENT_DB_PASSWORD \
+            ASSESSMENT_DB_PASSWORD STUDYROOM_DB_PASSWORD VOCABULARY_DB_PASSWORD AICHAT_DB_PASSWORD \
+            DOCUMENT_DB_PASSWORD AI_DB_PASSWORD; do echo "$v=ci-dummy"; done > .env
           docker compose config --quiet
           rm -f .env
       - name: nginx accepts the Cloudflare real-ip include

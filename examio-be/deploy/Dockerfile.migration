@@ -1,18 +1,20 @@
-# Prisma Migration Runner - Minimal image
-# Strategy: `prisma migrate deploy` applies the committed migration files (baseline first).
+# Prisma Migration Runner - one image per service (build arg SERVICE)
+# Strategy: `prisma migrate deploy` applies the service's committed migration files
+# (baseline first) against its own schema, as its own Postgres role (DATABASE_URL
+# is set per `<svc>-migrate` in deploy/compose/<svc>.yml).
+#   SERVICE=auth|finance|admin -> apps/$SERVICE-service/prisma/schema.prisma
+#   SERVICE=exam               -> apps/exam-service/prisma/schema/   (multi-file)
 FROM node:22-alpine AS base
+ARG SERVICE
+RUN test -n "${SERVICE}" || (echo "build arg SERVICE is required (auth|finance|admin|exam)" >&2; exit 1)
 RUN corepack enable && corepack prepare yarn@4.9.2 --activate
 WORKDIR /app
 
 COPY package.json yarn.lock .yarnrc.yml ./
-COPY libs ./libs
-
 RUN yarn install --immutable && \
-    yarn prisma:merge && \
-    yarn prisma:generate && \
     rm -rf /root/.cache /tmp/*
 
-COPY deploy/entrypoint-migration.sh ./entrypoint-migration.sh
-RUN chmod +x ./entrypoint-migration.sh
+COPY apps/${SERVICE}-service/prisma ./apps/${SERVICE}-service/prisma
+ENV SERVICE=${SERVICE}
 
-CMD ["./entrypoint-migration.sh"]
+CMD ["sh", "-c", "d=apps/${SERVICE}-service/prisma; if [ -d \"$d/schema\" ]; then s=\"$d/schema\"; else s=\"$d/schema.prisma\"; fi; echo \"==> Applying ${SERVICE} migrations...\"; ./node_modules/.bin/prisma migrate deploy --schema \"$s\" && echo \"==> ${SERVICE} migration complete.\""]

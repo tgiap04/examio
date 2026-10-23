@@ -11,6 +11,8 @@ node_modules/
 
 
 /generated/prisma
+# Per-service Prisma clients (yarn prisma:generate)
+apps/*/src/generated/
 .env
 
 # docker compose file
@@ -23,6 +25,11 @@ python-venv/
 **/venv/
 **/.venv/
 **/env/
+# Python venv rule above must not swallow the committed deploy env templates; real *.env stay ignored.
+!deploy/env/
+deploy/env/*
+!deploy/env/*.env.example
+!deploy/env/README.md
 **/python-venv/
 __pycache__/
 **/__pycache__/

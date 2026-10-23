@@ -14,12 +14,14 @@ The deployment consists of the following containers:
 - **Finance Service** (Payment & Wallet)
 - **R2 Service** (File Storage)
 - **AI Service** (AI Features)
-- **Migration** (Database migrations - runs once)
+- **`<svc>-migrate`** (`auth-migrate`, `finance-migrate`, `admin-migrate`, `exam-migrate`: one `prisma migrate deploy` per service schema, each runs once and exits)
+
+The stack is split by service in `compose/*.yml` (`infra`, `auth`, `finance`, `admin`, `exam`, `gateway`, `r2`, `ai`, `seed`) and assembled by the `include:` list in `docker-compose.yml` (needs Docker Compose 2.20+). Run every command from `deploy/`; paths stay relative to it.
 
 ## Prerequisites
 
 - Docker Engine 20.10+
-- Docker Compose 2.0+
+- Docker Compose 2.20+ (`include:`)
 - At least 4GB RAM available
 - 20GB disk space
 
@@ -63,9 +65,13 @@ POSTGRES_USER=examio
 POSTGRES_PASSWORD=your_strong_password_here
 POSTGRES_DB=examio
 
-# Database URL uses container hostname 'postgres'
-DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+# One password per service role (all 11 required; URL-safe, e.g. `openssl rand -hex 24`)
+AUTH_DB_PASSWORD=...  FINANCE_DB_PASSWORD=...  ADMIN_DB_PASSWORD=...  EXAM_DB_PASSWORD=...
+CONTENT_DB_PASSWORD=...  ASSESSMENT_DB_PASSWORD=...  STUDYROOM_DB_PASSWORD=...
+VOCABULARY_DB_PASSWORD=...  AICHAT_DB_PASSWORD=...  DOCUMENT_DB_PASSWORD=...  AI_DB_PASSWORD=...
 ```
+
+There is no shared `DATABASE_URL`. `postgres/init/01-service-schemas.sh` runs once on an **empty** data volume and creates, for each of `auth finance admin exam content assessment studyroom vocabulary aichat document ai`, the role `<svc>_svc` (own password, `CONNECTION LIMIT 40`), the schema `<svc>` it owns, and a role-level `search_path = <svc>, extensions` (pgvector lives in `extensions`). `PUBLIC` has no privileges on the database or on `public`, so one role cannot read another's schema (`content_svc` selecting from `auth."User"` gets `permission denied`). Compose gives each service `postgresql://<svc>_svc:...@postgres:5432/$POSTGRES_DB?schema=<svc>`; the Python ai-service connects as `ai_svc` (no `?schema=`, it pins `DB_SEARCH_PATH=exam,extensions`, and has a temporary DML grant on `exam` until phase 15). Changing a password or adding a role later needs a volume reset (`down -v`) or a manual `ALTER ROLE`. Per-service variable lists: `env/<svc>.env.example`.
 
 #### Redis Configuration (Redis Container)
 ```bash
@@ -148,6 +154,9 @@ R2_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
 R2_PUBLIC_URL=https://pub-....r2.dev
 ```
 
+`R2_PUBLIC_URL` is required by auth and exam (they map a stored URL back to an R2 key; a URL on another host is never deleted). Deleting a record queues its R2 keys in `r2_delete_tasks` in the same transaction, and a worker (`libs/messaging/src/r2-delete`) removes them through r2-service with retries; exam therefore runs `ROLE=api,worker` in `compose/exam.yml`.
+Use a hostname dedicated to the bucket for `R2_PUBLIC_URL` (e.g. the `r2.dev` host or a custom domain that serves nothing else): any client-supplied image URL on that hostname, on any port or path, must be a key the caller owns, so a shared hostname would also reject unrelated images on it. User-owned objects are stored under `<area>/<ownerUserId>/…`; only those keys are ever deleted on a user's behalf.
+
 #### Payment (SePay)
 ```bash
 PAYMENT_SERVICE_SEPAY_KEY=your_sepay_key
@@ -163,16 +172,19 @@ PAYMENT_WEBHOOK_SECRET_KEY=your_webhook_secret
 # and by `yarn bootstrap:admin`; moved from admin-service in phase 04)
 ADMIN_EMAILS=admin@examio.vn
 # Default password for newly created admin accounts. ALSO consumed by
-# `yarn run seed:dev` (libs/database/prisma/seed-dev.ts) so seeded users
+# the dev seeds (`yarn run seed:dev:<svc>`) so seeded users
 # share the same password as bootstrap-created admins. Override per-run
 # with SEED_PASSWORD=<value> yarn run seed:dev.
 ADMIN_DEFAULT_PASSWORD=ChangeMe123!
 ```
 
-> When deploying to a fresh database, the **seed** service runs
-> automatically as part of `docker compose up -d` — it depends on the
-> **migration** service (waits for it to finish), executes
-> `yarn run seed:dev` against the production `DATABASE_URL`, then exits.
+> The **seed** service is opt-in (compose profile `seed`): a plain
+> `docker compose up -d` never runs it, so a production deploy never gets the dev
+> users and passwords. Run it on a dev/staging stack with
+> `docker compose --profile seed run --rm seed`. It waits for the four
+> `*-migrate` services, runs the per-service dev seeds in
+> order auth -> finance -> admin -> exam (each with its own role/schema URL, `<SVC>_DATABASE_URL`),
+> then exits.
 > The script picks up `ADMIN_DEFAULT_PASSWORD` from `deploy/.env`, so
 > seeded users share the same password as admins created by the
 > auth-service bootstrap. Idempotent — safe to re-run.
@@ -180,9 +192,9 @@ ADMIN_DEFAULT_PASSWORD=ChangeMe123!
 > Roles: new accounts are STUDENT; promote with `yarn bootstrap:admin:grant <email> [--teacher]`
 > (auth-service CLI) and run `yarn finance:reconcile-teachers` if a TEACHER wallet is missing.
 >
-> To re-seed manually (e.g. after editing `seed-dev.ts`):
+> To re-seed (e.g. after editing a seed file):
 > ```bash
-> docker compose run --rm seed
+> docker compose --profile seed run --rm seed
 > ```
 
 #### OAuth Providers (Optional)
@@ -222,18 +234,18 @@ curl http://localhost:6369/health/ready
 
 ### 5. Database Migration
 
-The migration container runs automatically on startup. Check its logs:
+Each database-owning service has its own one-shot migration container that runs automatically on startup. Check its logs:
 
 ```bash
-docker compose logs migration
+docker compose logs auth-migrate     # or finance-migrate | admin-migrate | exam-migrate
 ```
 
 Lưu ý quan trọng:
-- các service ứng dụng (`gateway`, `auth`, `exam`, `finance`, `r2`, `ai`) hiện phụ thuộc vào container `migration` với điều kiện `service_completed_successfully`;
-- nghĩa là khi bạn `docker compose build && docker compose up -d`, migration sẽ chạy trước, sau đó các service mới khởi động;
-- migration hiện dùng `prisma migrate deploy`, đây là cơ chế áp dụng migration an toàn theo migration files đã commit, không đẩy schema trực tiếp vào DB, nên không chủ động làm mất dữ liệu cũ;
-- migration đầu tiên là `baseline` (tạo extension `vector`, `uuid-ossp` và toàn bộ bảng); DB mới (volume rỗng) chỉ cần chạy `migrate deploy`;
-- tuy vậy, nếu bạn thay đổi schema mới, hãy tạo migration chuẩn trước khi deploy để tránh lệch schema giữa code và DB.
+- `auth`, `finance`, `admin`, `exam` phụ thuộc vào `<svc>-migrate` tương ứng với điều kiện `service_completed_successfully`; `ai` chờ `exam-migrate` (bảng vẫn thuộc schema `exam` đến phase 15); `gateway` và `r2` không có database nên không chờ migration nào;
+- mỗi `<svc>-migrate` build từ `Dockerfile.migration` (`ARG SERVICE`), chạy `prisma migrate deploy --schema apps/<svc>-service/prisma[...]` bằng chính role `<svc>_svc` của service đó (exam dùng thư mục multi-file `apps/exam-service/prisma/schema`);
+- `prisma migrate deploy` áp dụng migration đã commit, không đẩy schema trực tiếp vào DB, nên không chủ động làm mất dữ liệu cũ;
+- DB mới (volume rỗng): init script tạo schema/role trước, sau đó từng `<svc>-migrate` tạo bảng; thêm một service DB mới = thêm file `compose/<svc>.yml` + một dòng `include`;
+- nếu bạn thay đổi schema, hãy tạo migration chuẩn trước khi deploy để tránh lệch giữa code và DB.
 
 ## Container Ports and Networks
 
@@ -246,7 +258,8 @@ PostgreSQL, Redis and RabbitMQ publish **no** host port (a static check,
 host through the containers:
 
 ```bash
-docker compose exec postgres psql -U "$POSTGRES_USER" "$POSTGRES_DB"
+# DB access is per role now (the superuser $POSTGRES_USER is break-glass only):
+docker compose exec postgres psql -U auth_svc -d "$POSTGRES_DB"     # any <svc>_svc
 docker compose exec redis redis-cli -a "$REDIS_PASSWORD"
 docker compose exec rabbitmq rabbitmqctl list_queues
 ```
@@ -256,11 +269,23 @@ Networks (`docker-compose.yml`):
 | Network | Name | Members | Why |
 |---|---|---|---|
 | `edge` | `examio-edge` | gateway, FE nginx (joins from `examio-fe/docker-compose.yml`) | the only way in |
-| `internal` (`internal: true`, no route out) | `examio-internal` | every service, Postgres, Redis, RabbitMQ, migration, seed | service-to-service traffic |
+| `internal` (`internal: true`, no route out) | `examio-internal` | every service, Postgres, Redis, RabbitMQ, `*-migrate`, seed | service-to-service traffic |
 | `egress` | `examio-egress` | auth (Google OAuth, SMTP), exam (Turnstile), finance (SePay), r2 (Cloudflare R2), ai (Gemini) | the only services with a real internet dependency |
 
 `admin` is on `internal` only. If a service gains an internet dependency, add it
 to `egress` and to the list in `compose-topology.spec.cjs`.
+
+With `NODE_ENV=production`, auth also verifies Cloudflare Turnstile on login and
+register (`apps/auth-service/src/auth.controller.ts`): requests without a
+`turnstileToken` are rejected and each token is checked against
+`challenges.cloudflare.com`. An offline production-mode stack therefore cannot
+log in unless Turnstile is reachable.
+
+Building images: on a Docker VM with 8 GB or less, build the images one service
+at a time (`docker compose build <svc>`). Building them all in parallel runs
+several `yarn install`s at once and can fail with `cannot allocate memory`.
+`.dockerignore` excludes every nested `.env`/`.env.*` (`**/.env`), so local
+per-service `.env` files never reach an image.
 
 Bring-up order: this stack first (it creates `examio-edge`), then the FE stack.
 Verify the split:
@@ -294,10 +319,10 @@ To backup volumes:
 
 ```bash
 # Backup PostgreSQL
-docker compose exec postgres pg_dump -U examio examio > backup.sql
+docker compose exec postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > backup.sql
 
 # Restore PostgreSQL
-docker compose exec -T postgres psql -U examio examio < backup.sql
+docker compose exec -T postgres psql -U "$POSTGRES_USER" "$POSTGRES_DB" < backup.sql
 ```
 
 ## Useful Commands
@@ -312,15 +337,16 @@ docker compose down -v
 # Restart a specific service
 docker compose restart gateway
 
-# Scale a service (if needed)
-docker compose up -d --scale exam=2
+# Scaling: every service pins `container_name`, so `--scale` does not work with
+# this file. Run extra replicas from a separate project/override without
+# container_name (study-room fan-out across exam instances needs the Redis adapter, already wired).
 
 # View resource usage
 docker compose stats
 
 # Execute command in container
 docker compose exec gateway sh
-docker compose exec postgres psql -U examio
+docker compose exec postgres psql -U auth_svc -d "$POSTGRES_DB"
 docker compose exec redis redis-cli
 ```
 
@@ -333,10 +359,10 @@ PostgreSQL is **not published** on a host port. To connect with a local client, 
 ssh -N -L 5432:$(ssh user@your-server "docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' examio-postgres"):5432 user@your-server
 
 # In another terminal
-psql "postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@localhost:5432/$POSTGRES_DB"
+psql "postgresql://auth_svc:$AUTH_DB_PASSWORD@localhost:5432/$POSTGRES_DB"   # own role, own schema
 ```
 
-For one-off queries on the server itself, use `docker compose exec postgres psql -U examio`.
+For one-off queries on the server itself, use `docker compose exec postgres psql -U <svc>_svc -d examio` (e.g. `-U auth_svc`; prove isolation with `-U content_svc` then `select 1 from auth."User"` -> `permission denied`).
 
 ## Troubleshooting
 
@@ -348,7 +374,7 @@ For one-off queries on the server itself, use `docker compose exec postgres psql
 
 ### Database connection issues
 
-1. Verify DATABASE_URL uses `postgres` as hostname (not `localhost`)
+1. Verify the service's `<SVC>_DB_PASSWORD` is set and URL-safe (compose builds its `DATABASE_URL` with `postgres` as hostname, not `localhost`)
 2. Check PostgreSQL is healthy: `docker compose ps postgres`
 3. Test connection: `docker compose exec postgres pg_isready`
 
@@ -360,9 +386,9 @@ For one-off queries on the server itself, use `docker compose exec postgres psql
 
 ### Migration failures
 
-1. Check migration logs: `docker compose logs migration`
+1. Check migration logs: `docker compose logs <svc>-migrate`
 2. Ensure PostgreSQL is running before migration
-3. Manually run migration: `docker compose run --rm migration`
+3. Manually run migration: `docker compose run --rm <svc>-migrate`
 
 ### Container keeps restarting
 

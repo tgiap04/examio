@@ -21,7 +21,6 @@ WORKDIR /app
 # ─────────────────────────────────────────────────────────────────────────────
 FROM base AS deps
 COPY package.json yarn.lock .yarnrc.yml ./
-COPY libs/database/prisma ./libs/database/prisma/
 RUN yarn install --immutable
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -32,19 +31,21 @@ ARG SERVICE_NAME
 COPY libs ./libs
 COPY apps ./apps
 COPY proto ./proto
+COPY scripts ./scripts
 COPY tsconfig*.json nest-cli.json ./
 # proto:gen emits libs/contracts/src/generated (gitignored); the .proto files
 # themselves are copied into dist/apps/<svc>/proto by the nest-cli assets.
-RUN yarn proto:gen && yarn prisma:merge && yarn prisma:generate && yarn build ${SERVICE_NAME}
+# prisma:generate writes every service's client to apps/<svc>-service/src/generated/prisma
+# (gitignored); webpack bundles the one the built service imports into dist, so the
+# runtime image needs no `prisma generate` and no schema files.
+RUN yarn proto:gen && yarn prisma:generate && yarn build ${SERVICE_NAME}
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Stage 4: Production deps - Minimal node_modules
 # ─────────────────────────────────────────────────────────────────────────────
 FROM base AS prod-deps
 COPY package.json yarn.lock .yarnrc.yml ./
-COPY --from=builder /app/libs ./libs
 RUN yarn install --immutable --mode=skip-build && \
-    yarn prisma:generate && \
     rm -rf /root/.local /root/.cache /tmp/* node_modules/.cache && \
     find node_modules -name "*.md" -delete 2>/dev/null || true && \
     find node_modules -name "*.map" -delete 2>/dev/null || true && \
@@ -76,7 +77,6 @@ RUN apk add --no-cache wget && \
 WORKDIR /app
 COPY --from=prod-deps /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
-COPY --from=prod-deps /app/libs ./libs
 
 # HTTP 3000, gRPC 50051 (never published to the host)
 EXPOSE 3000 50051

@@ -1,0 +1,95 @@
+# Exam service (legacy multi-file schema): API + its schema migration
+# Included from deploy/docker-compose.yml; paths are relative to deploy/ (project_directory).
+# =============================================================================
+# Shared fragments (YAML anchors are per file, so each file carries its own copy)
+x-logging: &default-logging
+    driver: 'json-file'
+    options:
+        max-size: '10m'
+        max-file: '3'
+
+x-nestjs-healthcheck: &nestjs-healthcheck
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    start_period: 60s
+
+services:
+    exam:
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile
+            args:
+                SERVICE_NAME: exam-service
+                ENABLE_OCR: 'false'
+        container_name: examio-exam
+        environment:
+            - NODE_ENV=production
+            - PORT=3000
+            - AI_SERVICE_URL=http://ai:3000/api
+            - R2_SERVICE_URL=r2:3000
+            - RABBITMQ_URL=amqp://exam:${RABBITMQ_EXAM_PASS:?RABBITMQ_EXAM_PASS is required}@rabbitmq:5672
+            - DATABASE_URL=postgresql://exam_svc:${EXAM_DB_PASSWORD:?EXAM_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=exam
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+            - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+            - R2_GRPC_URL=r2:50051
+            # api + the r2_delete_tasks worker (no listener of its own) in this container
+            - ROLE=api,worker
+            - FINANCE_GRPC_URL=finance:50051
+            # Profiles/search from auth; WordFamilyAdminService is served on GRPC_PORT
+            - AUTH_GRPC_URL=auth:50051
+            - GRPC_PORT=50051
+            - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
+            - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
+            - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
+            - AUTH_TOKEN_URL=http://auth:3000/internal/token
+            - SERVICE_CLIENT_SECRET=${EXAM_SERVICE_CLIENT_SECRET:?EXAM_SERVICE_CLIENT_SECRET is required}
+        env_file:
+            - .env
+        depends_on:
+            exam-migrate:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            r2:
+                condition: service_healthy
+            finance:
+                condition: service_healthy
+        networks:
+            - internal
+            - egress
+        healthcheck:
+            <<: *nestjs-healthcheck
+            test:
+                [
+                    'CMD',
+                    'wget',
+                    '-q',
+                    '--spider',
+                    'http://localhost:3000/health/ready',
+                ]
+        restart: unless-stopped
+        logging: *default-logging
+
+    # One-shot: `prisma migrate deploy` for the exam schema as exam_svc, then exits.
+    exam-migrate:
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile.migration
+            args:
+                SERVICE: exam
+        container_name: examio-exam-migrate
+        environment:
+            - DATABASE_URL=postgresql://exam_svc:${EXAM_DB_PASSWORD:?EXAM_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=exam
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - internal
+        restart: 'no'
+        logging: *default-logging

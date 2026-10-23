@@ -27,7 +27,10 @@ failed=0
 
 for svc in ${SERVICES}; do
     log="$(mktemp)"
-    (cd "${BOOT_CWD}" && exec node "${ROOT}/dist/apps/${svc}-service/main.js") >"${log}" 2>&1 &
+    # Database per service: <SVC>_DATABASE_URL (when set) is that service's own URL.
+    url_var="$(echo "${svc}" | tr 'a-z' 'A-Z')_DATABASE_URL"
+    svc_db_url="${!url_var:-${DATABASE_URL:-}}"
+    (cd "${BOOT_CWD}" && DATABASE_URL="${svc_db_url}" exec node "${ROOT}/dist/apps/${svc}-service/main.js") >"${log}" 2>&1 &
     pid=$!
     http=0
     for _ in $(seq 1 60); do

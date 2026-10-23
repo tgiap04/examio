@@ -1,0 +1,56 @@
+# Dev seed one-shot (needs every database service migrated first).
+# Included from deploy/docker-compose.yml; paths are relative to deploy/ (project_directory).
+# =============================================================================
+# Shared fragments (YAML anchors are per file, so each file carries its own copy)
+x-logging: &default-logging
+    driver: 'json-file'
+    options:
+        max-size: '10m'
+        max-file: '3'
+
+x-nestjs-healthcheck: &nestjs-healthcheck
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    start_period: 60s
+
+services:
+    # ==================== SEED ====================
+    # Runs the per-service dev seeds once (auth -> finance -> admin -> exam), each as its own
+    # role/schema, and exits. Idempotent — safe to re-run.
+    # Opt-in (profile `seed`): a plain `docker compose up` never runs it, so production never
+    # gets dev users/passwords and `up --wait` does not trip over a one-shot that exits.
+    # Run it with: docker compose --profile seed run --rm seed
+    # Picks up ADMIN_DEFAULT_PASSWORD / ADMIN_EMAILS from `deploy/.env`
+    # via env_file so seeded users share the same password as admins
+    # created by the auth-service bootstrap.
+    seed:
+        profiles: ['seed']
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile.seed
+        container_name: examio-seed
+        environment:
+            - AUTH_DATABASE_URL=postgresql://auth_svc:${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=auth
+            - FINANCE_DATABASE_URL=postgresql://finance_svc:${FINANCE_DB_PASSWORD:?FINANCE_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=finance
+            - ADMIN_DATABASE_URL=postgresql://admin_svc:${ADMIN_DB_PASSWORD:?ADMIN_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=admin
+            - EXAM_DATABASE_URL=postgresql://exam_svc:${EXAM_DB_PASSWORD:?EXAM_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=exam
+            - ADMIN_EMAILS=${ADMIN_EMAILS}
+            - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD}
+        env_file:
+            - .env
+        depends_on:
+            auth-migrate:
+                condition: service_completed_successfully
+            finance-migrate:
+                condition: service_completed_successfully
+            admin-migrate:
+                condition: service_completed_successfully
+            exam-migrate:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+        networks:
+            - internal
+        restart: 'no'
+        logging: *default-logging
