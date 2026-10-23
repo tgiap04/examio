@@ -18,7 +18,7 @@ export class WordFamilyRepository {
     // ==================== Category ====================
 
     async findCategories(): Promise<WordFamilyCategory[]> {
-        const cacheKey = 'wf:categories:all';
+        const cacheKey = 'vocab:categories:all';
         const cached = await this.redis.get<WordFamilyCategory[]>(cacheKey);
         if (cached) return cached;
 
@@ -77,7 +77,7 @@ export class WordFamilyRepository {
     // ==================== WordFamily ====================
 
     async findWordFamiliesByCategory(categorySlug: string) {
-        const cacheKey = `wf:category:${categorySlug}:roots`;
+        const cacheKey = `vocab:category:${categorySlug}:roots`;
         const cached = await this.redis.get(cacheKey);
         if (cached) return cached;
 
@@ -95,7 +95,7 @@ export class WordFamilyRepository {
         rootWord: string,
         categorySlug: string,
     ): Promise<WordFamily | null> {
-        const cacheKey = `wf:detail:${rootWord}:${categorySlug}`;
+        const cacheKey = `vocab:detail:${rootWord}:${categorySlug}`;
         const cached = await this.redis.get<WordFamily>(cacheKey);
         if (cached) return cached;
 
@@ -136,7 +136,7 @@ export class WordFamilyRepository {
         });
 
         await this.invalidateCategoryCache(data.categorySlug);
-        await this.redis.del(`wf:detail:${data.rootWord}:${data.categorySlug}`);
+        await this.redis.del(`vocab:detail:${data.rootWord}:${data.categorySlug}`);
         return family;
     }
 
@@ -173,7 +173,7 @@ export class WordFamilyRepository {
     }
 
     async findSavedWordFamilies(userId: string) {
-        const cacheKey = `wf:saved:${userId}`;
+        const cacheKey = `vocab:saved:${userId}`;
         const cached = await this.redis.get(cacheKey);
         if (cached) return cached;
 
@@ -192,11 +192,11 @@ export class WordFamilyRepository {
     // ==================== Cache Invalidation ====================
 
     private async invalidateCategoriesCache(): Promise<void> {
-        await this.redis.del('wf:categories:all');
+        await this.redis.del('vocab:categories:all');
     }
 
     private async invalidateCategoryCache(categorySlug: string): Promise<void> {
-        await this.redis.del(`wf:category:${categorySlug}:roots`);
-        await this.redis.del('wf:categories:all');
+        await this.redis.del(`vocab:category:${categorySlug}:roots`);
+        await this.redis.del('vocab:categories:all');
     }
 }

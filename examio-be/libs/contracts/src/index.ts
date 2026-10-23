@@ -8,6 +8,7 @@ export * as subscriptionV1 from './generated/examio/finance/v1/subscription';
 export * as financeAdminV1 from './generated/examio/finance/v1/finance_admin';
 export * as adminV1 from './generated/examio/admin/v1/admin';
 export * as wordFamilyAdminV1 from './generated/examio/vocabulary/v1/word_family_admin';
+export * as wordFamilyV1 from './generated/examio/vocabulary/v1/word_family';
 export * as r2V1 from './generated/examio/r2/v1/r2';
 export * as gatewayControlV1 from './generated/examio/gateway/v1/gateway_control';
 
@@ -32,6 +33,10 @@ export const PROTO_FILES = {
     wordFamilyAdmin: {
         pkg: 'examio.vocabulary.v1',
         file: 'examio/vocabulary/v1/word_family_admin.proto',
+    },
+    wordFamily: {
+        pkg: 'examio.vocabulary.v1',
+        file: 'examio/vocabulary/v1/word_family.proto',
     },
     r2: { pkg: 'examio.r2.v1', file: 'examio/r2/v1/r2.proto' },
     gatewayControl: {

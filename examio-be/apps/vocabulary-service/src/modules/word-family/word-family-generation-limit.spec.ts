@@ -68,7 +68,7 @@ describe('consumeDailyGeneration', () => {
             run('u1', new Date('2026-10-21T00:00:01Z'))
         ).resolves.toBeUndefined();
         expect(dailyGenerationKey('u1', day)).toBe(
-            'wf:gen:daily:u1:2026-10-20'
+            'vocab:gen:daily:u1:2026-10-20'
         );
     });
 

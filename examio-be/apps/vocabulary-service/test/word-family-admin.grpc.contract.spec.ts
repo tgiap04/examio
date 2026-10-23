@@ -31,7 +31,7 @@ describe('WordFamilyAdminService gRPC contract', () => {
     };
     const md = async (claims: Record<string, unknown>) => {
         const m = new Metadata();
-        m.set('authorization', `Bearer ${await signTestToken(keys, { claims, audience: 'exam' })}`);
+        m.set('authorization', `Bearer ${await signTestToken(keys, { claims, audience: 'vocabulary' })}`);
         return m;
     };
 
@@ -40,12 +40,12 @@ describe('WordFamilyAdminService gRPC contract', () => {
         const moduleRef = await Test.createTestingModule({
             imports: [
                 AuthJwtModule.forRoot({
-                    serviceName: 'exam',
+                    serviceName: 'vocabulary',
                     verifier: {
                         useFactory: () =>
                             createTokenVerifier({
                                 issuer: TEST_ISSUER,
-                                audiences: [TEST_AUDIENCE, 'exam'],
+                                audiences: [TEST_AUDIENCE, 'vocabulary'],
                                 localJwks: { keys: [keys.publicJwk] },
                             }),
                     },

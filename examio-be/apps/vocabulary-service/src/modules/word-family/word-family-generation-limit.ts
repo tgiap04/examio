@@ -8,7 +8,7 @@ const COUNTER_TTL_SECONDS = 90_000;
 const logger = new Logger('WordFamilyGenerationLimit');
 
 export const dailyGenerationKey = (userId: string, at: Date): string =>
-    `wf:gen:daily:${userId}:${at.toISOString().slice(0, 10)}`;
+    `vocab:gen:daily:${userId}:${at.toISOString().slice(0, 10)}`;
 
 /**
  * Per-user cap on AI word-family generations (free for TEACHERs, so the cap

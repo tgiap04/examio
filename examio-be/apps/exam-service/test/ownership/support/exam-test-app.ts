@@ -18,6 +18,7 @@ import {
 import { PrismaService } from '../../../src/prisma';
 import { HEALTH_ROUTES_EXCLUDED_FROM_PREFIX } from '@examio/observability';
 import { startFakeAuth, type FakeAuth } from './fake-auth';
+import { startFakeVocabulary, type FakeVocabulary } from './fake-vocabulary';
 
 export type TestRole = 'STUDENT' | 'TEACHER' | 'SYSTEM_ADMIN';
 
@@ -34,6 +35,8 @@ export interface ExamTestApp {
     keys: TestKeyPair;
     /** The fake auth directory exam talks to over real gRPC (call log included). */
     auth: FakeAuth;
+    /** The fake vocabulary-service (`GetWordFamily` over real gRPC). */
+    vocabulary: FakeVocabulary;
     /** Registers a verified account in the fake auth directory and returns it with its token roles. */
     createUser(
         roles: TestRole[],
@@ -51,7 +54,7 @@ export const rid = (): string => randomBytes(6).toString('hex');
 
 /** Throwaway ids: every spec run owns its own rows (no per-test reset needed). */
 export async function bootExamApp(
-    options: { listen?: boolean; redisAdapter?: boolean } = {}
+    options: { listen?: boolean } = {}
 ): Promise<ExamTestApp> {
     const originalCwd = process.cwd();
     // Proto/template paths resolve against the repo root (examio-be/).
@@ -60,6 +63,9 @@ export async function bootExamApp(
     // directory BEFORE the module is evaluated (the gRPC client reads the URL then).
     const auth = await startFakeAuth();
     process.env.AUTH_GRPC_URL = auth.server.url;
+    // Word families come from vocabulary-service over gRPC (the to-flashcard bridge).
+    const vocabulary = await startFakeVocabulary();
+    process.env.VOCABULARY_GRPC_URL = vocabulary.server.url;
     const { ExamServiceModule } =
         await import('../../../src/exam-service.module');
     const keys = await createTestKeyPair('own-kid');
@@ -80,15 +86,6 @@ export async function bootExamApp(
     app.setGlobalPrefix('api/v1', {
         exclude: HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
     });
-    let adapter: { dispose(): Promise<void> } | undefined;
-    if (options.redisAdapter) {
-        const { RedisIoAdapter } =
-            await import('../../../src/modules/study-room/redis-io.adapter');
-        const redisAdapter = new RedisIoAdapter(app);
-        adapter = redisAdapter;
-        await redisAdapter.connectToRedis();
-        app.useWebSocketAdapter(redisAdapter);
-    }
     await app.init();
     if (options.listen) await app.listen(0);
     const prisma = app.get(PrismaService);
@@ -99,6 +96,7 @@ export async function bootExamApp(
         prisma,
         keys,
         auth,
+        vocabulary,
         async createUser(roles, overrides = {}) {
             const id = `u_${rid()}`;
             // exam has no `User` table: the account exists in the fake auth directory only.
@@ -129,8 +127,8 @@ export async function bootExamApp(
                 app.close(),
                 new Promise((resolve) => setTimeout(resolve, 5000)),
             ]);
-            await adapter?.dispose();
             await auth.server.close();
+            await vocabulary.server.close();
             process.chdir(originalCwd);
         },
     };

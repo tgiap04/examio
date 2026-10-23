@@ -64,35 +64,6 @@ describe('request validation (e2e)', () => {
             {},
         ],
         ['POST /cheatinglogs {}', 'post', () => '/cheatinglogs', 'student', {}],
-        [
-            'POST /word-family/generate {}',
-            'post',
-            () => '/word-family/generate',
-            'teacher',
-            {},
-        ],
-        [
-            'POST /word-family/generate-root {}',
-            'post',
-            () => '/word-family/generate-root',
-            'teacher',
-            {},
-        ],
-        [
-            'POST /word-family/save {}',
-            'post',
-            () => '/word-family/save',
-            'student',
-            {},
-        ],
-        ['POST /studyrooms {}', 'post', () => '/studyrooms', 'teacher', {}],
-        [
-            'POST /studyrooms/join {}',
-            'post',
-            () => '/studyrooms/join',
-            'student',
-            {},
-        ],
         ['POST /examrooms {}', 'post', () => '/examrooms', 'teacher', {}],
         ['POST /examsessions {}', 'post', () => '/examsessions', 'teacher', {}],
         [
@@ -251,18 +222,6 @@ describe('request validation (e2e)', () => {
             { question: 'q', answer: 'a' }
         );
         expect(card.status).toBe(201);
-        const room = await call(t.server, 'post', '/studyrooms', tok.teacher, {
-            name: 'valid room',
-        });
-        expect(room.status).toBe(201);
-        const join = await call(
-            t.server,
-            'post',
-            `/studyrooms/${room.body.id}/join`,
-            tok.student,
-            {}
-        );
-        expect(join.status).toBe(201);
     });
 
     describe('multipart create/update (FE builders: fields as text, optional file)', () => {

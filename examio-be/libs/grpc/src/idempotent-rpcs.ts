@@ -32,6 +32,7 @@ export const IDEMPOTENT_RPCS: ReadonlySet<string> = new Set([
     // admin + vocabulary reads
     'examio.admin.v1.AdminService/GetPageFlags',
     'examio.vocabulary.v1.WordFamilyAdminService/ListCategories',
+    'examio.vocabulary.v1.WordFamilyService/GetWordFamily',
     // r2 reads + idempotent batch delete
     'examio.r2.v1.R2Service/GetFileUrl',
     'examio.r2.v1.R2Service/ListUserFiles',

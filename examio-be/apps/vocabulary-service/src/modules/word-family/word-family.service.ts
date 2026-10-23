@@ -5,14 +5,12 @@ import {
     BadRequestException,
     ConflictException,
 } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
+import { AiClient } from '../../clients/ai.client';
 import { WordFamilyRepository } from './word-family.repository';
 import {
     WordFamilyData,
     AiWordFamilyRequest,
-    AiWordFamilyResponse,
 } from './interfaces/word-family.interface';
 import {
     GenerateWordFamilyDto,
@@ -25,17 +23,13 @@ import { consumeDailyGeneration } from './word-family-generation-limit';
 @Injectable()
 export class WordFamilyService {
     private readonly logger = new Logger(WordFamilyService.name);
-    private readonly aiServiceUrl: string;
     private readonly GENERATION_LOCK_TTL = EXPIRED_TIME.THIRTY_MINUTES;
 
     constructor(
         private readonly repository: WordFamilyRepository,
-        private readonly httpService: HttpService,
+        private readonly ai: AiClient,
         private readonly redis: RedisService,
-    ) {
-        this.aiServiceUrl =
-            process.env.AI_SERVICE_URL || 'http://localhost:8000/api';
-    }
+    ) {}
 
     // ==================== Categories ====================
 
@@ -89,7 +83,7 @@ export class WordFamilyService {
     // ==================== AI Generation ====================
 
     private generationLockKey(userId: string, categorySlug: string) {
-        return `wf:gen:lock:${userId}:${categorySlug}`;
+        return `vocab:gen:lock:${userId}:${categorySlug}`;
     }
 
     // Root-specific lock: keeps single-root regeneration independent from the
@@ -173,27 +167,15 @@ export class WordFamilyService {
                 `Generating word family: category=${categorySlug}, numRoots=${numRootWords}, excludes=${allExcludes.length}`,
             );
 
-            const response = await firstValueFrom(
-                this.httpService.post<AiWordFamilyResponse>(
-                    `${this.aiServiceUrl}/generate/word-family`,
-                    payload,
-                    {
-                        timeout: 600000,
-                        headers: {
-                            'x-internal-service-token':
-                                process.env.INTERNAL_SERVICE_TOKEN || '',
-                        },
-                    },
-                ),
-            );
+            const response = await this.ai.generateWordFamily(payload);
 
-            if (!response.data?.success || !response.data.data) {
+            if (!response?.success || !response.data) {
                 throw new BadRequestException(
-                    response.data?.error || 'Sinh word family thất bại.',
+                    response?.error || 'Sinh word family thất bại.',
                 );
             }
 
-            const wordFamilyData = response.data.data;
+            const wordFamilyData = response.data;
 
             // Verify categorySlug matches
             if (wordFamilyData.categorySlug !== categorySlug) {
@@ -292,28 +274,16 @@ export class WordFamilyService {
                 `Generating word family for root: category=${categorySlug}, rootWord=${rootWord}`,
             );
 
-            const response = await firstValueFrom(
-                this.httpService.post<AiWordFamilyResponse>(
-                    `${this.aiServiceUrl}/generate/word-family`,
-                    payload,
-                    {
-                        timeout: 600000,
-                        headers: {
-                            'x-internal-service-token':
-                                process.env.INTERNAL_SERVICE_TOKEN || '',
-                        },
-                    },
-                ),
-            );
+            const response = await this.ai.generateWordFamily(payload);
 
-            if (!response.data?.success || !response.data.data) {
+            if (!response?.success || !response.data) {
                 this.logger.error(
-                    `AI word family generation failed for root=${rootWord}: ${response.data?.error || 'unknown error'}`,
+                    `AI word family generation failed for root=${rootWord}: ${response?.error || 'unknown error'}`,
                 );
                 return;
             }
 
-            const wordFamilyData = response.data.data;
+            const wordFamilyData = response.data;
 
             // Force the requested root word so the upsert overwrites the exact
             // record the detail page is displaying.
@@ -350,7 +320,7 @@ export class WordFamilyService {
         }
 
         const saved = await this.repository.saveWordFamily(user.id, dto.wordFamilyId);
-        await this.redis.del(`wf:saved:${user.id}`);
+        await this.redis.del(`vocab:saved:${user.id}`);
         return saved;
     }
 
@@ -360,7 +330,7 @@ export class WordFamilyService {
 
     async removeFromCollection(user: AuthUser, wordFamilyId: string) {
         await this.repository.removeSavedWordFamily(user.id, wordFamilyId);
-        await this.redis.del(`wf:saved:${user.id}`);
+        await this.redis.del(`vocab:saved:${user.id}`);
         return { message: 'Đã xóa khỏi bộ sưu tập.' };
     }
 }

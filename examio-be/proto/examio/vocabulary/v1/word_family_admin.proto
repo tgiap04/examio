@@ -2,9 +2,8 @@ syntax = "proto3";
 
 package examio.vocabulary.v1;
 
-// Word-family category administration. Served by exam-service until phase 12
-// moves it to vocabulary-service. Requires a forwarded token with
-// `word_family:admin`.
+// Word-family category administration. Served by vocabulary-service. Requires a
+// forwarded token with `word_family:admin`.
 service WordFamilyAdminService {
   rpc ListCategories(ListCategoriesRequest) returns (ListCategoriesResponse);
   rpc UpsertCategory(UpsertCategoryRequest) returns (UpsertCategoryResponse);

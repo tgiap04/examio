@@ -19,10 +19,6 @@ export const SaveWordFamilySchema = z.object({
     wordFamilyId: z.string().min(1, 'wordFamilyId không được để trống'),
 });
 
-export const ToFlashcardSchema = z.object({
-    selectedIndices: z.array(z.number().int().min(0)).optional(),
-});
-
 // ==================== DTOs (Zod + Swagger) ====================
 
 export class GenerateWordFamilyDto extends createZodDto(GenerateWordFamilySchema) {
@@ -47,9 +43,4 @@ export class GenerateRootWordFamilyDto extends createZodDto(GenerateRootWordFami
 export class SaveWordFamilyDto extends createZodDto(SaveWordFamilySchema) {
     @ApiProperty({ description: 'Word family DB id' })
     wordFamilyId: string;
-}
-
-export class ToFlashcardDto extends createZodDto(ToFlashcardSchema) {
-    @ApiPropertyOptional({ description: 'Selected word indices to convert (empty = all)' })
-    selectedIndices?: number[];
 }

@@ -1,5 +1,32 @@
-// exam-service legacy schema: VOCABULARY domain (extracted in phase 12).
-// No relation to User: userId is a plain column with an index.
+// vocabulary-service schema (database-per-service, phase 12). Postgres schema `vocabulary`,
+// role `vocabulary_svc`. No relation or FK may point at a model owned by another service:
+// `userId String` + `@@index` instead.
+generator client {
+    provider     = "prisma-client"
+    output       = "../src/generated/prisma"
+    engineType   = "client"
+    moduleFormat = "cjs"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// R2 objects (category images) queued for deletion in the same tx as the row change;
+// the worker role (libs/messaging r2-delete) drains it. Raw SQL: `r2_delete_tasks`.
+model R2DeleteTask {
+    id            String   @id @default(uuid()) @db.Uuid
+    key           String
+    attempts      Int      @default(0)
+    nextAttemptAt DateTime @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+    lastError     String?  @map("last_error")
+    createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+    @@index([nextAttemptAt])
+    @@map("r2_delete_tasks")
+}
+
 
 // Word Family Category — seeded by admin, used to organize root words
 model WordFamilyCategory {

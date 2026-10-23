@@ -12,10 +12,7 @@ import {
 
 export const VOCABULARY_GRPC = 'VOCABULARY_GRPC';
 
-/**
- * Served by exam-service now; moves to vocabulary-service in phase 12 (the
- * contract and this client stay, only the URL env changes).
- */
+/** Served by vocabulary-service (`VOCABULARY_GRPC_URL`). */
 export const VOCABULARY_GRPC_REGISTRATION: GrpcClientRegistration = {
     name: VOCABULARY_GRPC,
     pkg: PROTO_FILES.wordFamilyAdmin.pkg,

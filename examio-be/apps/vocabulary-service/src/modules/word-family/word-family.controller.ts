@@ -19,12 +19,10 @@ import {
 } from '@nestjs/swagger';
 import { AuthenticatedRequest } from '@examio/common';
 import { WordFamilyService } from './word-family.service';
-import { WordFamilyBridgeService } from './word-family-bridge.service';
 import {
     GenerateWordFamilyDto,
     GenerateRootWordFamilyDto,
     SaveWordFamilyDto,
-    ToFlashcardDto,
 } from './dto/word-family.dto';
 import { RequirePermissions } from '@examio/auth-jwt';
 
@@ -34,7 +32,6 @@ import { RequirePermissions } from '@examio/auth-jwt';
 export class WordFamilyController {
     constructor(
         private readonly service: WordFamilyService,
-        private readonly bridgeService: WordFamilyBridgeService,
     ) {}
 
     // ==================== Category Endpoints ====================
@@ -154,24 +151,5 @@ export class WordFamilyController {
         @Param('wordFamilyId') wordFamilyId: string,
     ) {
         return this.service.removeFromCollection(req.user, wordFamilyId);
-    }
-
-    // ==================== FlashCard Bridge ====================
-
-    @Post(':id/to-flashcard')
-    @RequirePermissions('flashcardset:manage')
-    @ApiCookieAuth('cookie-auth')
-    @ApiOperation({ summary: 'Chuyển word family thành bộ flashcard' })
-    @ApiParam({ name: 'id', description: 'Word Family ID' })
-    async toFlashcard(
-        @Req() req: AuthenticatedRequest,
-        @Param('id') id: string,
-        @Body() dto: ToFlashcardDto,
-    ) {
-        return this.bridgeService.createFlashcardDeck(
-            req.user,
-            id,
-            dto.selectedIndices,
-        );
     }
 }
