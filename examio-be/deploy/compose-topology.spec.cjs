@@ -167,6 +167,76 @@ test('postgres mounts the init dir, raises max_connections and takes all 11 role
     for (const role of ROLES) assert.ok(init.includes(role), `init script does not know ${role}`);
 });
 
+test('study-room (studyroom role + schema) has its own migrate one-shot and no seed, no gRPC, no egress', () => {
+    const svc = services['study-room'];
+    const migrate = services['study-room-migrate'];
+    assert.ok(svc && migrate, 'study-room / study-room-migrate are missing');
+    assert.strictEqual(migrate.restart, 'no');
+    assert.strictEqual(migrate.build.args.SERVICE, 'study-room');
+    assert.strictEqual(svc.build.args.SERVICE_NAME, 'study-room-service');
+    assert.strictEqual(
+        svc.depends_on['study-room-migrate'].condition,
+        'service_completed_successfully',
+    );
+    for (const name of ['study-room', 'study-room-migrate']) {
+        const url = envValue(name, 'DATABASE_URL');
+        assert.ok(url.startsWith('postgresql://studyroom_svc:'), `${name} must connect as studyroom_svc`);
+        assert.ok(url.includes('${STUDYROOM_DB_PASSWORD:?'), `${name} must use its own password`);
+        assert.ok(url.endsWith('?schema=studyroom'), `${name} must target schema studyroom`);
+    }
+    assert.deepStrictEqual(networksOf('study-room'), ['internal']);
+    assert.ok(envValue('study-room', 'RABBITMQ_URL').startsWith('amqp://studyroom:'));
+    assert.strictEqual(envValue('study-room', 'GRPC_PORT'), undefined, 'study-room serves no gRPC');
+    assert.strictEqual(envValue('study-room', 'ROLE'), undefined, 'the consumer runs in the API process');
+    assert.strictEqual(services.seed.depends_on['study-room-migrate'], undefined);
+});
+
+test('vocabulary (vocabulary role + schema) has its own migrate one-shot, a gRPC server and an r2 worker, no egress', () => {
+    const svc = services.vocabulary;
+    const migrate = services['vocabulary-migrate'];
+    assert.ok(svc && migrate, 'vocabulary / vocabulary-migrate are missing');
+    assert.strictEqual(migrate.restart, 'no');
+    assert.strictEqual(migrate.build.args.SERVICE, 'vocabulary');
+    assert.strictEqual(svc.build.args.SERVICE_NAME, 'vocabulary-service');
+    assert.strictEqual(
+        svc.depends_on['vocabulary-migrate'].condition,
+        'service_completed_successfully',
+    );
+    for (const name of ['vocabulary', 'vocabulary-migrate']) {
+        const url = envValue(name, 'DATABASE_URL');
+        assert.ok(url.startsWith('postgresql://vocabulary_svc:'), `${name} must connect as vocabulary_svc`);
+        assert.ok(url.includes('${VOCABULARY_DB_PASSWORD:?'), `${name} must use its own password`);
+        assert.ok(url.endsWith('?schema=vocabulary'), `${name} must target schema vocabulary`);
+    }
+    assert.deepStrictEqual(networksOf('vocabulary'), ['internal']);
+    assert.deepStrictEqual(networksOf('vocabulary-migrate'), ['internal']);
+    assert.strictEqual(envValue('vocabulary', 'ROLE'), 'api,worker');
+    assert.strictEqual(envValue('vocabulary', 'GRPC_PORT'), '50051');
+    assert.strictEqual(envValue('vocabulary', 'R2_GRPC_URL'), 'r2:50051');
+    assert.strictEqual(envValue('vocabulary', 'AI_SERVICE_URL'), 'http://ai:3000/api');
+    assert.ok(envValue('vocabulary', 'R2_PUBLIC_URL') !== undefined, 'R2_PUBLIC_URL is needed to tell R2 images from external URLs');
+    assert.ok(envValue('vocabulary', 'SERVICE_CLIENT_SECRET').includes('${VOCABULARY_SERVICE_CLIENT_SECRET:?'));
+    assert.strictEqual(envValue('vocabulary', 'RABBITMQ_URL'), undefined, 'vocabulary has no broker user');
+    // no finance wiring: generation is free and TEACHER-only
+    assert.strictEqual(envValue('vocabulary', 'FINANCE_GRPC_URL'), undefined);
+    assert.ok(services.seed.depends_on['vocabulary-migrate'], 'the seed seeds the word-family categories');
+    assert.ok(envList('seed').some((e) => e.startsWith('VOCABULARY_DATABASE_URL=postgresql://vocabulary_svc:')));
+});
+
+test('exam no longer serves gRPC and reaches vocabulary; admin and gateway point at vocabulary', () => {
+    assert.strictEqual(envValue('exam', 'GRPC_PORT'), undefined, 'exam serves no gRPC any more');
+    assert.strictEqual(envValue('exam', 'VOCABULARY_GRPC_URL'), 'vocabulary:50051');
+    assert.strictEqual(services.exam.depends_on.vocabulary, undefined, 'exam boots without vocabulary');
+    assert.strictEqual(envValue('admin', 'VOCABULARY_GRPC_URL'), 'vocabulary:50051');
+    assert.strictEqual(envValue('gateway', 'VOCABULARY_SERVICE_URL'), 'http://vocabulary:3000');
+    assert.strictEqual(services.gateway.depends_on.vocabulary.condition, 'service_healthy');
+});
+
+test('the gateway routes studyrooms and /ws/study to study-room, and waits for it', () => {
+    assert.strictEqual(envValue('gateway', 'STUDYROOM_SERVICE_URL'), 'http://study-room:3000');
+    assert.strictEqual(services.gateway.depends_on['study-room'].condition, 'service_healthy');
+});
+
 test('seed runs after every migration, one URL per service', () => {
     for (const svc of DB_SERVICES) {
         assert.strictEqual(

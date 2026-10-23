@@ -11,12 +11,14 @@ The deployment consists of the following containers:
 - **Gateway Service** (YAML-routed streaming proxy; JWT verify, revoke/stale checks, rate limits; no database)
 - **Auth Service** (Authentication)
 - **Exam Service** (Exam Management)
+- **Study-room Service** (study rooms: HTTP + Socket.io `/ws/study`; consumes `auth.user.authz_changed` and `auth.user.updated` inside the API process)
+- **Vocabulary Service** (word families + categories: HTTP + gRPC `WordFamilyAdminService`/`WordFamilyService`, plus an R2 delete worker for category images in the same container; calls ai-service for generation)
 - **Finance Service** (Payment & Wallet)
 - **R2 Service** (File Storage)
 - **AI Service** (AI Features)
-- **`<svc>-migrate`** (`auth-migrate`, `finance-migrate`, `admin-migrate`, `exam-migrate`: one `prisma migrate deploy` per service schema, each runs once and exits)
+- **`<svc>-migrate`** (`auth-migrate`, `finance-migrate`, `admin-migrate`, `exam-migrate`, `study-room-migrate`, `vocabulary-migrate`: one `prisma migrate deploy` per service schema, each runs once and exits)
 
-The stack is split by service in `compose/*.yml` (`infra`, `auth`, `finance`, `admin`, `exam`, `gateway`, `r2`, `ai`, `seed`) and assembled by the `include:` list in `docker-compose.yml` (needs Docker Compose 2.20+). Run every command from `deploy/`; paths stay relative to it.
+The stack is split by service in `compose/*.yml` (`infra`, `auth`, `finance`, `admin`, `exam`, `study-room`, `vocabulary`, `gateway`, `r2`, `ai`, `seed`) and assembled by the `include:` list in `docker-compose.yml` (needs Docker Compose 2.20+). Run every command from `deploy/`; paths stay relative to it.
 
 ## Prerequisites
 
@@ -67,8 +69,8 @@ POSTGRES_DB=examio
 
 # One password per service role (all 11 required; URL-safe, e.g. `openssl rand -hex 24`)
 AUTH_DB_PASSWORD=...  FINANCE_DB_PASSWORD=...  ADMIN_DB_PASSWORD=...  EXAM_DB_PASSWORD=...
-CONTENT_DB_PASSWORD=...  ASSESSMENT_DB_PASSWORD=...  STUDYROOM_DB_PASSWORD=...
-VOCABULARY_DB_PASSWORD=...  AICHAT_DB_PASSWORD=...  DOCUMENT_DB_PASSWORD=...  AI_DB_PASSWORD=...
+CONTENT_DB_PASSWORD=...  ASSESSMENT_DB_PASSWORD=...  STUDYROOM_DB_PASSWORD=... (used by study-room)
+VOCABULARY_DB_PASSWORD=... (used by vocabulary)  AICHAT_DB_PASSWORD=...  DOCUMENT_DB_PASSWORD=...  AI_DB_PASSWORD=...
 ```
 
 There is no shared `DATABASE_URL`. `postgres/init/01-service-schemas.sh` runs once on an **empty** data volume and creates, for each of `auth finance admin exam content assessment studyroom vocabulary aichat document ai`, the role `<svc>_svc` (own password, `CONNECTION LIMIT 40`), the schema `<svc>` it owns, and a role-level `search_path = <svc>, extensions` (pgvector lives in `extensions`). `PUBLIC` has no privileges on the database or on `public`, so one role cannot read another's schema (`content_svc` selecting from `auth."User"` gets `permission denied`). Compose gives each service `postgresql://<svc>_svc:...@postgres:5432/$POSTGRES_DB?schema=<svc>`; the Python ai-service connects as `ai_svc` (no `?schema=`, it pins `DB_SEARCH_PATH=exam,extensions`, and has a temporary DML grant on `exam` until phase 15). Changing a password or adding a role later needs a volume reset (`down -v`) or a manual `ALTER ROLE`. Per-service variable lists: `env/<svc>.env.example`.
@@ -88,10 +90,12 @@ JWT_KID=<kid>
 JWT_ISSUER=examio-auth
 JWT_AUDIENCE=examio
 ACCESS_TOKEN_EXPIRATION=15m
-# Service tokens: `scripts/gen-service-secret.sh <exam|finance|admin|gateway>` prints the secret
+# Service tokens: `scripts/gen-service-secret.sh <exam|studyroom|vocabulary|finance|admin|gateway>` prints the secret
 # (that service only) and the hash that goes into auth's SERVICE_CLIENTS.
-SERVICE_CLIENTS={"exam":"<sha256>","finance":"<sha256>","admin":"<sha256>","gateway":"<sha256>"}
+SERVICE_CLIENTS={"exam":"<sha256>","studyroom":"<sha256>","vocabulary":"<sha256>","finance":"<sha256>","admin":"<sha256>","gateway":"<sha256>"}
 EXAM_SERVICE_CLIENT_SECRET=<secret>
+STUDYROOM_SERVICE_CLIENT_SECRET=<secret>
+VOCABULARY_SERVICE_CLIENT_SECRET=<secret>
 FINANCE_SERVICE_CLIENT_SECRET=<secret>
 ADMIN_SERVICE_CLIENT_SECRET=<secret>
 # Gateway uses it to pull AdminService.GetPageFlags at boot (compose maps it to the gateway's SERVICE_CLIENT_SECRET; optional).
@@ -115,6 +119,7 @@ RABBITMQ_PASS=secure_password_here
 RABBITMQ_AUTH_PASS=...
 RABBITMQ_FINANCE_PASS=...
 RABBITMQ_EXAM_PASS=...
+RABBITMQ_STUDYROOM_PASS=...
 RABBITMQ_AI_PASS=...
 RABBITMQ_GATEWAY_PASS=...
 ```
@@ -154,7 +159,7 @@ R2_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
 R2_PUBLIC_URL=https://pub-....r2.dev
 ```
 
-`R2_PUBLIC_URL` is required by auth and exam (they map a stored URL back to an R2 key; a URL on another host is never deleted). Deleting a record queues its R2 keys in `r2_delete_tasks` in the same transaction, and a worker (`libs/messaging/src/r2-delete`) removes them through r2-service with retries; exam therefore runs `ROLE=api,worker` in `compose/exam.yml`.
+`R2_PUBLIC_URL` is required by auth, exam and vocabulary (they map a stored URL back to an R2 key; a URL on another host is never deleted). Deleting a record queues its R2 keys in `r2_delete_tasks` in the same transaction, and a worker (`libs/messaging/src/r2-delete`) removes them through r2-service with retries; exam and vocabulary therefore run `ROLE=api,worker` in `compose/exam.yml` and `compose/vocabulary.yml`.
 Use a hostname dedicated to the bucket for `R2_PUBLIC_URL` (e.g. the `r2.dev` host or a custom domain that serves nothing else): any client-supplied image URL on that hostname, on any port or path, must be a key the caller owns, so a shared hostname would also reject unrelated images on it. User-owned objects are stored under `<area>/<ownerUserId>/…`; only those keys are ever deleted on a user's behalf.
 
 #### Payment (SePay)
@@ -181,9 +186,9 @@ ADMIN_DEFAULT_PASSWORD=ChangeMe123!
 > The **seed** service is opt-in (compose profile `seed`): a plain
 > `docker compose up -d` never runs it, so a production deploy never gets the dev
 > users and passwords. Run it on a dev/staging stack with
-> `docker compose --profile seed run --rm seed`. It waits for the four
+> `docker compose --profile seed run --rm seed`. It waits for the
 > `*-migrate` services, runs the per-service dev seeds in
-> order auth -> finance -> admin -> exam (each with its own role/schema URL, `<SVC>_DATABASE_URL`),
+> order auth -> finance -> admin -> exam -> vocabulary (each with its own role/schema URL, `<SVC>_DATABASE_URL`),
 > then exits.
 > The script picks up `ADMIN_DEFAULT_PASSWORD` from `deploy/.env`, so
 > seeded users share the same password as admins created by the
@@ -237,12 +242,12 @@ curl http://localhost:6369/health/ready
 Each database-owning service has its own one-shot migration container that runs automatically on startup. Check its logs:
 
 ```bash
-docker compose logs auth-migrate     # or finance-migrate | admin-migrate | exam-migrate
+docker compose logs auth-migrate     # or finance-migrate | admin-migrate | exam-migrate | study-room-migrate | vocabulary-migrate
 ```
 
 Lưu ý quan trọng:
-- `auth`, `finance`, `admin`, `exam` phụ thuộc vào `<svc>-migrate` tương ứng với điều kiện `service_completed_successfully`; `ai` chờ `exam-migrate` (bảng vẫn thuộc schema `exam` đến phase 15); `gateway` và `r2` không có database nên không chờ migration nào;
-- mỗi `<svc>-migrate` build từ `Dockerfile.migration` (`ARG SERVICE`), chạy `prisma migrate deploy --schema apps/<svc>-service/prisma[...]` bằng chính role `<svc>_svc` của service đó (exam dùng thư mục multi-file `apps/exam-service/prisma/schema`);
+- `auth`, `finance`, `admin`, `exam`, `study-room`, `vocabulary` phụ thuộc vào `<svc>-migrate` tương ứng với điều kiện `service_completed_successfully`; `ai` chờ `exam-migrate` (bảng vẫn thuộc schema `exam` đến phase 15); `gateway` và `r2` không có database nên không chờ migration nào;
+- mỗi `<svc>-migrate` build từ `Dockerfile.migration` (`ARG SERVICE`), chạy `prisma migrate deploy --schema apps/<svc>-service/prisma[...]` bằng chính role `<svc>_svc` của service đó (exam dùng thư mục multi-file `apps/exam-service/prisma/schema`; `study-room` dùng role/schema `studyroom`; `vocabulary` dùng role/schema `vocabulary`);
 - `prisma migrate deploy` áp dụng migration đã commit, không đẩy schema trực tiếp vào DB, nên không chủ động làm mất dữ liệu cũ;
 - DB mới (volume rỗng): init script tạo schema/role trước, sau đó từng `<svc>-migrate` tạo bảng; thêm một service DB mới = thêm file `compose/<svc>.yml` + một dòng `include`;
 - nếu bạn thay đổi schema, hãy tạo migration chuẩn trước khi deploy để tránh lệch giữa code và DB.
@@ -339,7 +344,7 @@ docker compose restart gateway
 
 # Scaling: every service pins `container_name`, so `--scale` does not work with
 # this file. Run extra replicas from a separate project/override without
-# container_name (study-room fan-out across exam instances needs the Redis adapter, already wired).
+# container_name (study-room fan-out across study-room instances needs the Redis adapter, already wired: channel key `studyroom`).
 
 # View resource usage
 docker compose stats

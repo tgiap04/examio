@@ -30,6 +30,8 @@ services:
             - FRONTEND_URL=${FRONTEND_URL}
             - AUTH_SERVICE_URL=http://auth:3000
             - EXAM_SERVICE_URL=http://exam:3000
+            - STUDYROOM_SERVICE_URL=http://study-room:3000
+            - VOCABULARY_SERVICE_URL=http://vocabulary:3000
             - FINANCE_SERVICE_URL=http://finance:3000
             - ADMIN_SERVICE_URL=http://admin:3000
             - REDIS_HOST=redis
@@ -58,6 +60,10 @@ services:
             auth:
                 condition: service_healthy
             exam:
+                condition: service_healthy
+            study-room:
+                condition: service_healthy
+            vocabulary:
                 condition: service_healthy
             finance:
                 condition: service_healthy

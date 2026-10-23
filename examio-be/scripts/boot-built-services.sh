@@ -19,8 +19,8 @@ fi
 # BOOT_CWD: run from a directory without service .env files (default: the repo root).
 BOOT_CWD="${BOOT_CWD:-$ROOT}"
 
-SERVICES="${SERVICES:-auth exam finance admin r2 gateway}"
-GRPC_SERVICES="${GRPC_SERVICES:-auth finance r2 gateway}"
+SERVICES="${SERVICES:-auth exam study-room vocabulary finance admin r2 gateway}"
+GRPC_SERVICES="${GRPC_SERVICES:-auth vocabulary finance r2 gateway}"
 export PORT="${PORT:-3000}"
 export GRPC_PORT="${GRPC_PORT:-50051}"
 failed=0
@@ -28,7 +28,7 @@ failed=0
 for svc in ${SERVICES}; do
     log="$(mktemp)"
     # Database per service: <SVC>_DATABASE_URL (when set) is that service's own URL.
-    url_var="$(echo "${svc}" | tr 'a-z' 'A-Z')_DATABASE_URL"
+    url_var="$(echo "${svc}" | tr -d '-' | tr 'a-z' 'A-Z')_DATABASE_URL"
     svc_db_url="${!url_var:-${DATABASE_URL:-}}"
     (cd "${BOOT_CWD}" && DATABASE_URL="${svc_db_url}" exec node "${ROOT}/dist/apps/${svc}-service/main.js") >"${log}" 2>&1 &
     pid=$!

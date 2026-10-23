@@ -111,6 +111,48 @@
                 ]
             }
         },
+        "study-room-service": {
+            "type": "application",
+            "root": "apps/study-room-service",
+            "entryFile": "main",
+            "sourceRoot": "apps/study-room-service/src",
+            "compilerOptions": {
+                "tsConfigPath": "apps/study-room-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../../../proto/examio/auth/**/*.proto",
+                        "outDir": "dist/apps/study-room-service/proto/examio/auth"
+                    },
+                    {
+                        "include": "../../../proto/examio/common/**/*.proto",
+                        "outDir": "dist/apps/study-room-service/proto/examio/common"
+                    }
+                ]
+            }
+        },
+        "vocabulary-service": {
+            "type": "application",
+            "root": "apps/vocabulary-service",
+            "entryFile": "main",
+            "sourceRoot": "apps/vocabulary-service/src",
+            "compilerOptions": {
+                "tsConfigPath": "apps/vocabulary-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../../../proto/examio/common/**/*.proto",
+                        "outDir": "dist/apps/vocabulary-service/proto/examio/common"
+                    },
+                    {
+                        "include": "../../../proto/examio/r2/**/*.proto",
+                        "outDir": "dist/apps/vocabulary-service/proto/examio/r2"
+                    },
+                    {
+                        "include": "../../../proto/examio/vocabulary/**/*.proto",
+                        "outDir": "dist/apps/vocabulary-service/proto/examio/vocabulary"
+                    }
+                ]
+            }
+        },
         "finance-service": {
             "type": "application",
             "root": "apps/finance-service",

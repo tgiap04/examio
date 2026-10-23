@@ -40,10 +40,10 @@ services:
             - AUTH_GRPC_URL=auth:50051
             # AdminService.GetPageFlags is served here for the gateway
             - GRPC_PORT=50051
-            # Phase 10: finance admin/stats, gateway SetPageFlags, word-family admin (exam today)
+            # Phase 10: finance admin/stats, gateway SetPageFlags, word-family admin (vocabulary)
             - FINANCE_GRPC_URL=finance:50051
             - GATEWAY_GRPC_URL=gateway:50051
-            - VOCABULARY_GRPC_URL=exam:50051
+            - VOCABULARY_GRPC_URL=vocabulary:50051
         env_file:
             - .env
         depends_on:

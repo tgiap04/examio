@@ -18,13 +18,15 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { join, relative, sep } from 'path';
 
-export type Service = 'auth' | 'finance' | 'exam' | 'admin' | 'r2' | 'gateway';
+export type Service = 'auth' | 'finance' | 'exam' | 'studyroom' | 'vocabulary' | 'admin' | 'r2' | 'gateway';
 
 /** Owner app directory -> service name. ai-service (python) is out of scope here. */
 export const APP_SERVICE: Readonly<Record<string, Service>> = {
     'auth-service': 'auth',
     'finance-service': 'finance',
     'exam-service': 'exam',
+    'study-room-service': 'studyroom',
+    'vocabulary-service': 'vocabulary',
     'admin-service': 'admin',
     'r2-service': 'r2',
     'gateway-service': 'gateway',
@@ -46,7 +48,7 @@ export const OWNERSHIP: Readonly<Record<string, Service>> = {
     Wallet: 'finance', WalletTransaction: 'finance', Payment: 'finance', UserSubscription: 'finance',
     // admin
     AdminAudit: 'admin', PageFeatureFlag: 'admin',
-    // exam (document, ai-service tables, content, assessment, study-room, vocabulary, ai-chat)
+    // exam (document, ai-service tables, content, assessment, ai-chat)
     UserStorage: 'exam', UserMonthlyFileUpload: 'exam', Document: 'exam', DocumentEntity: 'exam',
     UserStorageGraph: 'exam', UserStorageGraphGroup: 'exam',
     QuizSet: 'exam', QuizSetLabel: 'exam', QuizQuestion: 'exam', DetailsQuizQuestion: 'exam',
@@ -55,8 +57,10 @@ export const OWNERSHIP: Readonly<Record<string, Service>> = {
     FlashCardViewHistory: 'exam', UserPinnedFlashcard: 'exam', FlashcardStudyProgress: 'exam',
     ExamRoom: 'exam', ExamSession: 'exam', ExamAttempt: 'exam', CheatingLog: 'exam',
     UserPinnedExamRoom: 'exam',
-    StudyRoom: 'exam', StudyRoomMember: 'exam', StudyRoomPlaylistItem: 'exam', StudyRoomChatBlock: 'exam',
-    WordFamilyCategory: 'exam', WordFamily: 'exam', UserSavedWordFamily: 'exam',
+    // study-room (phase 12)
+    StudyRoom: 'studyroom', StudyRoomMember: 'studyroom', StudyRoomPlaylistItem: 'studyroom', StudyRoomChatBlock: 'studyroom',
+    // vocabulary (phase 12)
+    WordFamilyCategory: 'vocabulary', WordFamily: 'vocabulary', UserSavedWordFamily: 'vocabulary',
     AIChat: 'exam', AIChatMessage: 'exam', AIChatDocument: 'exam', SubjectCategory: 'exam', Subject: 'exam',
 };
 

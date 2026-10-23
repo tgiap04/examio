@@ -18,10 +18,10 @@ echo "    ADMIN_DEFAULT_PASSWORD=$(describe_secret "${ADMIN_DEFAULT_PASSWORD:-}"
 cd /app
 
 # Order matters: auth users first, then finance wallets/payments, admin audit
-# and flags, and finally the exam (legacy) reference data.
+# and flags, then the exam (legacy) reference data, and finally the vocabulary categories.
 # Each seed gets only its own service's URL, as that service's role.
 # Contract with the seed scripts: `yarn run seed:dev:<svc>` reads DATABASE_URL.
-for svc in auth finance admin exam; do
+for svc in auth finance admin exam vocabulary; do
     var="$(printf '%s' "$svc" | tr '[:lower:]' '[:upper:]')_DATABASE_URL"
     url="$(printenv "$var" || true)"
     if [ -z "$url" ]; then

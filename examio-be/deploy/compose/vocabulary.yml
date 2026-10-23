@@ -1,0 +1,93 @@
+# Vocabulary service: word families + categories (HTTP + gRPC, plus the R2 delete worker),
+# and its schema migration.
+# Included from deploy/docker-compose.yml; paths are relative to deploy/ (project_directory).
+# =============================================================================
+# Shared fragments (YAML anchors are per file, so each file carries its own copy)
+x-logging: &default-logging
+    driver: 'json-file'
+    options:
+        max-size: '10m'
+        max-file: '3'
+
+x-nestjs-healthcheck: &nestjs-healthcheck
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    start_period: 60s
+
+services:
+    vocabulary:
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile
+            args:
+                SERVICE_NAME: vocabulary-service
+        container_name: examio-vocabulary
+        environment:
+            - NODE_ENV=production
+            - PORT=3000
+            - FRONTEND_URL=${FRONTEND_URL:?FRONTEND_URL is required}
+            - DATABASE_URL=postgresql://vocabulary_svc:${VOCABULARY_DB_PASSWORD:?VOCABULARY_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=vocabulary
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+            - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+            # api + the r2_delete_tasks worker (no listener of its own) in this container
+            - ROLE=api,worker
+            # WordFamilyAdminService (admin-service) and WordFamilyService (exam-service)
+            - GRPC_PORT=50051
+            - R2_GRPC_URL=r2:50051
+            # Public base of R2 objects: tells an R2-hosted category image from an external URL
+            - R2_PUBLIC_URL=${R2_PUBLIC_URL:-}
+            # Temporary HTTP call to ai-service for generation (gRPC in phase 13); the
+            # INTERNAL_SERVICE_TOKEN itself comes from .env
+            - AI_SERVICE_URL=http://ai:3000/api
+            - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
+            - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
+            - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
+            - AUTH_TOKEN_URL=http://auth:3000/internal/token
+            - SERVICE_CLIENT_SECRET=${VOCABULARY_SERVICE_CLIENT_SECRET:?VOCABULARY_SERVICE_CLIENT_SECRET is required}
+        env_file:
+            - .env
+        depends_on:
+            vocabulary-migrate:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            r2:
+                condition: service_healthy
+            auth:
+                condition: service_healthy
+        networks:
+            - internal
+        healthcheck:
+            <<: *nestjs-healthcheck
+            test:
+                [
+                    'CMD',
+                    'wget',
+                    '-q',
+                    '--spider',
+                    'http://localhost:3000/health/ready',
+                ]
+        restart: unless-stopped
+        logging: *default-logging
+
+    # One-shot: `prisma migrate deploy` for the vocabulary schema as vocabulary_svc, then exits.
+    vocabulary-migrate:
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile.migration
+            args:
+                SERVICE: vocabulary
+        container_name: examio-vocabulary-migrate
+        environment:
+            - DATABASE_URL=postgresql://vocabulary_svc:${VOCABULARY_DB_PASSWORD:?VOCABULARY_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=vocabulary
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - internal
+        restart: 'no'
+        logging: *default-logging

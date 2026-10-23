@@ -37,9 +37,9 @@ services:
             # api + the r2_delete_tasks worker (no listener of its own) in this container
             - ROLE=api,worker
             - FINANCE_GRPC_URL=finance:50051
-            # Profiles/search from auth; WordFamilyAdminService is served on GRPC_PORT
+            # Profiles/search from auth; word families (to-flashcard bridge) from vocabulary
             - AUTH_GRPC_URL=auth:50051
-            - GRPC_PORT=50051
+            - VOCABULARY_GRPC_URL=vocabulary:50051
             - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
             - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
             - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
@@ -60,6 +60,8 @@ services:
                 condition: service_healthy
             finance:
                 condition: service_healthy
+            # No dependency on vocabulary: only POST word-family/:id/to-flashcard
+            # calls it (lazy gRPC client, 503 while it is down).
         networks:
             - internal
             - egress
