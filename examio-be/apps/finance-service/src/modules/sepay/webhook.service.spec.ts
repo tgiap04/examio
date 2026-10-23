@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { RedisService } from '@examio/redis';
 import { GenerateIdService } from '@examio/common';
 import { WebhookService } from './webhook.service';

@@ -1,6 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
+import type { PrismaService as AdminPrisma } from '../../../apps/admin-service/src/prisma';
 import {
     AuthApp,
     bootAuthApp,
@@ -9,13 +10,16 @@ import {
 } from '../../../apps/auth-service/test/helpers/auth-app';
 
 /**
- * Real auth-service (HTTP + gRPC) and real admin-service on one Postgres:
+ * Real auth-service (HTTP + gRPC) and real admin-service, each on its OWN schema/role
+ * (AUTH_DATABASE_URL / ADMIN_DATABASE_URL):
  * admin calls auth over gRPC with the caller's own access token. Nothing in
  * the guard / client path is mocked. Mirrors admin `main.ts` (error envelope).
  */
 export interface Harness {
     auth: AuthApp;
     admin: INestApplication;
+    /** admin-service's own database (audit rows): auth's `prisma` cannot see it. */
+    adminDb: AdminPrisma;
     http(): ReturnType<typeof request>;
     close(): Promise<void>;
 }
@@ -28,12 +32,15 @@ export interface HarnessOverrides {
 }
 
 export async function bootHarness(overrides: HarnessOverrides = {}): Promise<Harness> {
+    // Each service builds its Prisma client from DATABASE_URL while it is composed.
+    process.env.DATABASE_URL = serviceDatabaseUrl('AUTH');
     const auth = await bootAuthApp({ grpc: true });
     // Start from a known state: no admin left over from an earlier suite or run
     // (last-admin outcomes must not depend on leftovers).
     await auth.prisma.user.updateMany({ where: { isSystemAdmin: true }, data: { isSystemAdmin: false } });
     process.env.AUTH_JWKS_URL = `${auth.url}/.well-known/jwks.json`;
     process.env.AUTH_GRPC_URL = auth.grpcUrl as string;
+    process.env.DATABASE_URL = serviceDatabaseUrl('ADMIN');
     const { AdminServiceModule } = await import('../../../apps/admin-service/src/admin-service.module');
     const { HttpErrorEnvelopeFilter } = await import('@examio/http');
     let builder = Test.createTestingModule({ imports: [AdminServiceModule] });
@@ -44,9 +51,11 @@ export async function bootHarness(overrides: HarnessOverrides = {}): Promise<Har
     const admin = moduleRef.createNestApplication();
     admin.useGlobalFilters(new HttpErrorEnvelopeFilter());
     await admin.init();
+    const { PrismaService } = await import('../../../apps/admin-service/src/prisma');
     return {
         auth,
         admin,
+        adminDb: admin.get(PrismaService),
         http: () => request(admin.getHttpServer()),
         close: async () => {
             await deactivateCreated(auth);
@@ -56,12 +65,11 @@ export async function bootHarness(overrides: HarnessOverrides = {}): Promise<Har
     };
 }
 
-/** Teardown: users this suite created stop being admins/sessions/accounts and lose their content. */
+/** Teardown: users this suite created stop being admins/sessions/accounts. */
 async function deactivateCreated(auth: AuthApp): Promise<void> {
     if (created.length === 0) return;
     const ids = created.splice(0);
     await auth.prisma.userSession.updateMany({ where: { userId: { in: ids } }, data: { isActive: false } });
-    await auth.prisma.quizSet.deleteMany({ where: { userId: { in: ids } } });
     await auth.prisma.user.updateMany({
         where: { id: { in: ids } },
         data: { isSystemAdmin: false, deletedAt: new Date() },
@@ -98,3 +106,10 @@ export const authzEvents = (auth: AuthApp, userId: string) =>
         where: { type: 'auth.user.authz_changed', envelope: { path: ['data', 'userId'], equals: userId } },
         orderBy: { seq: 'asc' },
     });
+
+/** `<SVC>_DATABASE_URL`: the service-role URL of one service's schema (local throwaway DB only). */
+export function serviceDatabaseUrl(service: 'AUTH' | 'FINANCE' | 'ADMIN' | 'EXAM'): string {
+    const url = process.env[`${service}_DATABASE_URL`];
+    if (!url) throw new Error(`${service}_DATABASE_URL is required for the cross-app e2e`);
+    return url;
+}

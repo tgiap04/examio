@@ -39,7 +39,7 @@ describe('admin role management (e2e, real auth + admin)', () => {
         const events = await authzEvents(h.auth, b.id);
         expect(events).toHaveLength(1);
         expect((events[0].envelope as { data: Record<string, unknown> }).data).toMatchObject({ role: 'TEACHER', reason: 'role' });
-        const audit = await h.auth.prisma.adminAudit.findMany({ where: { targetId: b.id, action: 'admin.role.set_base' } });
+        const audit = await h.adminDb.adminAudit.findMany({ where: { targetId: b.id, action: 'admin.role.set_base' } });
         expect(audit).toHaveLength(1);
         expect(audit[0]).toMatchObject({ adminId: a.id });
         expect(audit[0].payload).toEqual({ from: 'STUDENT', to: 'TEACHER', reason: 'Giáo viên khối 10' });
@@ -59,17 +59,14 @@ describe('admin role management (e2e, real auth + admin)', () => {
         }
         const row = await h.auth.prisma.user.findUniqueOrThrow({ where: { id: a.id } });
         expect([row.role, row.isSystemAdmin]).toEqual(['STUDENT', true]);
-        expect(await h.auth.prisma.adminAudit.count({ where: { targetId: a.id, action: { startsWith: 'admin.role.' } } })).toBe(0);
+        expect(await h.adminDb.adminAudit.count({ where: { targetId: a.id, action: { startsWith: 'admin.role.' } } })).toBe(0);
     });
 
-    it('demoting a TEACHER keeps their content and ownership; only role + authzVersion change', async () => {
+    it('demoting a TEACHER changes only role + authzVersion (content lives in other services and is untouched by construction)', async () => {
         const a = await makeAdmin();
         const t = await makeUser(h.auth, { role: 'TEACHER' });
-        const quiz = await h.auth.prisma.quizSet.create({ data: { title: 'Q', userId: t.id } });
         const res = await put(roleUrl(t.id), a.token, { role: 'STUDENT' });
         expect(res.status).toBe(200);
-        const set = await h.auth.prisma.quizSet.findUniqueOrThrow({ where: { id: quiz.id } });
-        expect([set.userId, set.title]).toEqual([t.id, 'Q']);
         // Their next token has no teacher permissions (the manage endpoints answer 403 on that).
         const refreshed = await request(h.auth.url).post('/api/v1/auth/refresh').send({ refreshToken: t.refreshToken });
         expect(refreshed.body.roles).toEqual(['STUDENT']);
@@ -83,7 +80,7 @@ describe('admin role management (e2e, real auth + admin)', () => {
         const ok = await put(adminUrl(b.id), a.token, { isSystemAdmin: false, reason: 'left' });
         expect(ok.status).toBe(200);
         expect(ok.body.user.isSystemAdmin).toBe(false);
-        expect(await h.auth.prisma.adminAudit.count({ where: { targetId: b.id, action: 'admin.role.set_system_admin' } })).toBe(1);
+        expect(await h.adminDb.adminAudit.count({ where: { targetId: b.id, action: 'admin.role.set_system_admin' } })).toBe(1);
         const self = await put(adminUrl(a.id), a.token, { isSystemAdmin: false });
         expect([self.status, self.body.code]).toEqual([403, 'CANNOT_CHANGE_OWN_ROLE']);
         expect(await h.auth.prisma.user.count({ where: { isSystemAdmin: true, isBanned: false, deletedAt: null } })).toBe(1);
@@ -111,7 +108,7 @@ describe('admin role management (e2e, real auth + admin)', () => {
         expect(res.status).toBe(200);
         expect(res.body.user.role).toBe('STUDENT');
         expect((await put(adminUrl(b.id), a.token, { isSystemAdmin: false })).status).toBe(200);
-        expect(await h.auth.prisma.adminAudit.count({ where: { targetId: b.id } })).toBe(0);
+        expect(await h.adminDb.adminAudit.count({ where: { targetId: b.id } })).toBe(0);
     });
 
     it('STUDENT and TEACHER tokens are 403 on every route (admin-service guard)', async () => {
@@ -141,7 +138,7 @@ describe('admin role management (e2e, real auth + admin)', () => {
         const res = await put(roleUrl(b.id), a.token, { role: 'TEACHER' });
         expect([res.status, res.body.code]).toEqual([403, 'PERMISSION_DENIED']);
         expect((await h.auth.prisma.user.findUniqueOrThrow({ where: { id: b.id } })).role).toBe('STUDENT');
-        expect(await h.auth.prisma.adminAudit.count({ where: { targetId: b.id } })).toBe(0);
+        expect(await h.adminDb.adminAudit.count({ where: { targetId: b.id } })).toBe(0);
     });
 
     it('404 USER_NOT_FOUND, 400 VALIDATION_ERROR (role SYSTEM_ADMIN, unknown key, long reason)', async () => {

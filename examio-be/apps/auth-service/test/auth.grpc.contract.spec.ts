@@ -2,7 +2,7 @@ import { Metadata } from '@grpc/grpc-js';
 import { HttpException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { lastValueFrom } from 'rxjs';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../src/prisma';
 import { authV1, PROTO_FILES } from '@examio/contracts';
 import { createTestGrpcClient, startTestGrpcServer, TestGrpcServer } from '@examio/grpc/testing';
 import { AuthJwtModule, createTokenVerifier } from '@examio/auth-jwt';

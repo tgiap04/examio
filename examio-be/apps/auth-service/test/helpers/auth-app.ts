@@ -2,7 +2,7 @@ import { createHash, generateKeyPairSync, randomBytes } from 'crypto';
 import { join } from 'path';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from '../../src/prisma';
 import * as cookieParser from 'cookie-parser';
 import { ThrottlerStorage } from '@nestjs/throttler';
 import * as request from 'supertest';
@@ -18,7 +18,7 @@ export const SERVICE_SECRETS = {
 
 export interface AuthApp {
     app: INestApplication;
-    prisma: PrismaClient;
+    prisma: PrismaService;
     /** http://127.0.0.1:<port> */
     url: string;
     grpcUrl?: string;
@@ -85,7 +85,7 @@ export async function bootAuthApp(options: { grpc?: boolean; realThrottle?: bool
     }
     await app.listen(0, '127.0.0.1');
     const url = (await app.getUrl()).replace('[::1]', '127.0.0.1');
-    const prisma = new PrismaClient();
+    const prisma = new PrismaService();
 
     return {
         app,

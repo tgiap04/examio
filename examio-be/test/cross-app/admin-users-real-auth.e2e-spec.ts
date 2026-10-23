@@ -58,7 +58,7 @@ describe('admin over real auth gRPC (phase 10 e2e)', () => {
         });
         expect(events).toHaveLength(1);
         expect((events[0].envelope as { data: { version: number } }).data.version).toBe(row.updatedAt.getTime());
-        const audit = await h.auth.prisma.adminAudit.findMany({ where: { targetId: target.id, action: 'admin.user.update' } });
+        const audit = await h.adminDb.adminAudit.findMany({ where: { targetId: target.id, action: 'admin.user.update' } });
         expect(audit).toHaveLength(2);
         expect(audit.every((r) => r.adminId === a.id)).toBe(true);
 
@@ -81,7 +81,7 @@ describe('admin over real auth gRPC (phase 10 e2e)', () => {
         const target = await makeUser(h.auth);
         const res = await get(`/admin/users/${target.id}`, a.token);
         expect(res.status).toBe(200);
-        expect(Object.keys(res.body).sort()).toEqual(['lastSession', 'subscription', 'user', 'wallet']);
+        expect(Object.keys(res.body).sort()).toEqual(['financeUnavailable', 'lastSession', 'subscription', 'user', 'wallet']);
         expect(res.body.wallet).toEqual({ id: 'w1', balance: 12 });
         expect(res.body.subscription).toMatchObject({ tier: 1 });
         expect(res.body.lastSession).toMatchObject({ isActive: true });

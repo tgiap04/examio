@@ -7,6 +7,7 @@ import { AIService } from './ai.service';
 import { AIRepository } from './ai.repository';
 import { GenerateIdService } from '@examio/common';
 import { R2Client } from '../../clients/r2.client';
+import { R2DeleteTaskWriter } from '@examio/messaging';
 import { RedisService } from '@examio/redis';
 import { FinanceClientService } from '../finance-client/finance-client.service';
 
@@ -23,6 +24,7 @@ describe('AIService', () => {
         countUserStorageThisMonth: jest.Mock;
     };
     let finance: { deductCredits: jest.Mock };
+    const r2Deletes = { enqueue: jest.fn() };
     let r2ClientService: {
         uploadFile: jest.Mock;
         getPublicUrl: jest.Mock;
@@ -79,6 +81,10 @@ describe('AIService', () => {
                 {
                     provide: R2Client,
                     useValue: r2ClientService,
+                },
+                {
+                    provide: R2DeleteTaskWriter,
+                    useValue: r2Deletes,
                 },
                 {
                     provide: RedisService,
@@ -187,11 +193,11 @@ describe('AIService', () => {
         );
     });
 
-    it('deletes R2 file, upload aggregate data, and AI cache when deleting upload', async () => {
+    it('deletes the upload aggregate (queueing its R2 key in the same tx) and the AI cache', async () => {
         jest.spyOn(service, 'getUploadDetail').mockResolvedValue({
             id: 'upload-delete-1',
             userId: 'user-1',
-            keyR2: 'ai-uploads/file.pdf',
+            keyR2: 'ai-uploads/user-1/file.pdf',
         } as any);
         aiRepository.deleteUploadAggregate.mockResolvedValue({
             documents: 5,
@@ -206,51 +212,20 @@ describe('AIService', () => {
             { id: 'user-1' } as any
         );
 
-        expect(r2ClientService.deleteFile).toHaveBeenCalledWith(
-            'ai-uploads/file.pdf',
-            expect.any(Metadata)
-        );
+        expect(r2ClientService.deleteFile).not.toHaveBeenCalled();
         expect(aiRepository.deleteUploadAggregate).toHaveBeenCalledWith(
-            'upload-delete-1'
+            'upload-delete-1',
+            expect.any(Function)
         );
+        const inTx = aiRepository.deleteUploadAggregate.mock.calls[0][1];
+        const tx = { marker: 'tx' };
+        await inTx(tx);
+        expect(r2Deletes.enqueue).toHaveBeenCalledWith(tx, ['ai-uploads/user-1/file.pdf']);
         expect(httpService.delete).toHaveBeenCalledWith(
             expect.stringContaining('/ai/clear-cache/upload-delete-1'),
             expect.any(Object)
         );
         expect(result).toEqual({ success: true, message: 'Xóa thành công' });
-    });
-
-    it('still deletes database records when R2 deletion fails', async () => {
-        jest.spyOn(service, 'getUploadDetail').mockResolvedValue({
-            id: 'upload-delete-2',
-            userId: 'user-1',
-            keyR2: 'ai-uploads/file.pdf',
-        } as any);
-        r2ClientService.deleteFile.mockRejectedValueOnce(
-            new Error('Cloudflare unavailable')
-        );
-        aiRepository.deleteUploadAggregate.mockResolvedValue({
-            documents: 3,
-            quizHistories: 0,
-            flashcardHistories: 0,
-            aiChatDocuments: 0,
-            userStorage: { id: 'upload-delete-2' },
-        });
-
-        const result = await service.deleteUpload(
-            'upload-delete-2',
-            { id: 'user-1' } as any
-        );
-
-        expect(aiRepository.deleteUploadAggregate).toHaveBeenCalledWith(
-            'upload-delete-2'
-        );
-        expect(result).toEqual({
-            success: true,
-            message:
-                'Đã xóa dữ liệu trong hệ thống nhưng không thể xóa file trên Cloudflare R2',
-            warning: 'Cloudflare unavailable',
-        });
     });
 
     describe('caller token is forwarded to the finance debit (TEACHER lazy wallet)', () => {
@@ -263,7 +238,7 @@ describe('AIService', () => {
 
             await service.createUpload(
                 { id: 'user-1' } as any,
-                { filename: 'a.pdf', url: 'https://x/a.pdf', mimetype: 'application/pdf', size: 4 * 1024 * 1024, keyR2: 'k' } as any,
+                { filename: 'a.pdf', url: 'https://x/a.pdf', mimetype: 'application/pdf', size: 4 * 1024 * 1024, keyR2: 'ai-uploads/user-1/k.pdf' } as any,
                 'tok-1'
             );
 
@@ -311,7 +286,7 @@ describe('AIService', () => {
                 url: 'https://x/a.pdf',
                 mimetype: 'application/pdf',
                 size: 4 * 1024 * 1024,
-                keyR2: 'k',
+                keyR2: 'ai-uploads/user-1/k.pdf',
             } as any);
 
             expect(finance.deductCredits).toHaveBeenCalledWith(

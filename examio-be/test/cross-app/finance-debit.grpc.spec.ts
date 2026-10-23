@@ -1,7 +1,7 @@
 import { ForbiddenException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { RpcException } from '@nestjs/microservices';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../apps/finance-service/src/prisma';
 import { RedisService } from '@examio/redis';
 import { GenerateIdService } from '@examio/common';
 import { PROTO_FILES } from '@examio/contracts';

@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { status } from '@grpc/grpc-js';
 import { Test } from '@nestjs/testing';
 import { GenerateIdService } from '@examio/common';
-import { DatabaseModule, PrismaService } from '@examio/database';
+import { PrismaModule, PrismaService } from '../src/prisma';
 import { RedisModule } from '@examio/redis';
 import { EnsureWalletService } from '../src/modules/wallet/ensure-wallet.service';
 import { WalletMoneyService } from '../src/modules/wallet/wallet-money.service';
@@ -18,7 +18,7 @@ describe('WalletMoneyService (e2e, real Postgres)', () => {
 
     beforeAll(async () => {
         const moduleRef = await Test.createTestingModule({
-            imports: [DatabaseModule, RedisModule],
+            imports: [PrismaModule, RedisModule],
             providers: [GenerateIdService, EnsureWalletService, WalletMoneyService],
         }).compile();
         await moduleRef.init();
@@ -30,16 +30,12 @@ describe('WalletMoneyService (e2e, real Postgres)', () => {
         await prisma.walletTransaction.deleteMany({ where: { wallet: { userId: { in: users } } } });
         await prisma.userSubscription.deleteMany({ where: { userId: { in: users } } });
         await prisma.wallet.deleteMany({ where: { userId: { in: users } } });
-        await prisma.user.deleteMany({ where: { id: { in: users } } });
         await prisma.$disconnect();
     });
 
     async function user(balance: number | null, role: 'TEACHER' | 'STUDENT' = 'TEACHER') {
         const id = `mn_${randomUUID().replace(/-/g, '').slice(0, 18)}`;
         users.push(id);
-        await prisma.user.create({
-            data: { id, email: `${id}@e2e.test`, username: id, role },
-        });
         if (balance !== null) {
             await prisma.wallet.create({ data: { id: `w_${id}`, userId: id, balance } });
         }

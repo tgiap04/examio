@@ -4,7 +4,7 @@ import { AddressInfo } from 'net';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../src/prisma';
 import { RedisService } from '@examio/redis';
 import { HEALTH_ROUTES_EXCLUDED_FROM_PREFIX } from '@examio/observability';
 import {
@@ -58,20 +58,11 @@ describe('wallet cache coherence (e2e)', () => {
         });
         await prisma.payment.deleteMany({ where: { userId: { in: ids } } });
         await prisma.wallet.deleteMany({ where: { userId: { in: ids } } });
-        await prisma.user.deleteMany({ where: { id: { in: ids } } });
     });
 
     async function teacherWithWallet(balance = 20) {
         const id = `wc_${randomUUID().replace(/-/g, '').slice(0, 18)}`;
         ids.push(id);
-        await prisma.user.create({
-            data: {
-                id,
-                email: `${id}@e2e.test`,
-                username: id,
-                role: 'TEACHER',
-            },
-        });
         const wallet = await prisma.wallet.create({
             data: { id: `w_${id}`, userId: id, balance },
         });

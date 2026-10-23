@@ -5,7 +5,16 @@
  * from it.
  */
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
+import type { PrismaService as AuthPrisma } from '../../apps/auth-service/src/prisma';
+import type { PrismaService as FinancePrisma } from '../../apps/finance-service/src/prisma';
+
+/**
+ * The pre-phase-10 service read one shared database. The frozen copy keeps its
+ * queries; the test hands it delegates of both owners (each raw query touches
+ * a single table, so `$queryRaw` is routed by the table it names).
+ */
+export type LegacyStatsDb = Pick<AuthPrisma, 'user' | 'userSession'> &
+    Pick<FinancePrisma, 'userSubscription' | 'payment'> & { $queryRaw: AuthPrisma['$queryRaw'] };
 import { RedisService } from '@examio/redis';
 
 import {
@@ -29,7 +38,7 @@ export class LegacyAdminStatsService {
     private readonly logger = new Logger(LegacyAdminStatsService.name);
 
     constructor(
-        private readonly prisma: PrismaService,
+        private readonly prisma: LegacyStatsDb,
         private readonly redis: RedisService
     ) {}
 

@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../src/prisma';
 import { TOKEN_VERIFIER, createTokenVerifier } from '@examio/auth-jwt';
 import {
     TEST_AUDIENCE,

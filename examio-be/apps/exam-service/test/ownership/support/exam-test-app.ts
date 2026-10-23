@@ -15,7 +15,7 @@ import {
     signTestToken,
     type TestKeyPair,
 } from '@examio/auth-jwt/testing';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../../src/prisma';
 import { HEALTH_ROUTES_EXCLUDED_FROM_PREFIX } from '@examio/observability';
 import { startFakeAuth, type FakeAuth } from './fake-auth';
 
@@ -34,7 +34,7 @@ export interface ExamTestApp {
     keys: TestKeyPair;
     /** The fake auth directory exam talks to over real gRPC (call log included). */
     auth: FakeAuth;
-    /** Creates a verified user row and returns it with its token roles. */
+    /** Registers a verified account in the fake auth directory and returns it with its token roles. */
     createUser(
         roles: TestRole[],
         overrides?: { isVerified?: boolean }
@@ -92,7 +92,6 @@ export async function bootExamApp(
     await app.init();
     if (options.listen) await app.listen(0);
     const prisma = app.get(PrismaService);
-    auth.bind(prisma);
 
     return {
         app,
@@ -102,17 +101,13 @@ export async function bootExamApp(
         auth,
         async createUser(roles, overrides = {}) {
             const id = `u_${rid()}`;
-            const base = roles.includes('TEACHER') ? 'TEACHER' : 'STUDENT';
-            await prisma.user.create({
-                data: {
-                    id,
-                    email: `${id}@own.test`,
-                    username: id,
-                    name: `Name ${id}`,
-                    role: base,
-                    isSystemAdmin: roles.includes('SYSTEM_ADMIN'),
-                    isVerified: overrides.isVerified ?? true,
-                },
+            // exam has no `User` table: the account exists in the fake auth directory only.
+            auth.addUser({
+                id,
+                username: id,
+                email: `${id}@own.test`,
+                name: `Name ${id}`,
+                avatar: '',
             });
             return { id, roles, av: 0 };
         },

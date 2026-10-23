@@ -1,4 +1,8 @@
 import { GenerateIdService } from '@examio/common';
+import { createPrismaAdapter as createAuthAdapter } from '../../apps/auth-service/src/prisma/create-prisma-adapter';
+import { PrismaClient as AuthPrismaClient } from '../../apps/auth-service/src/generated/prisma/client';
+import type { PrismaService as AuthPrismaService } from '../../apps/auth-service/src/prisma';
+import { serviceDatabaseUrl } from './helpers/real-auth-admin';
 import { RoleChangeRepository } from '../../apps/auth-service/src/roles/role-change.repository';
 import { RoleChangeService } from '../../apps/auth-service/src/roles/role-change.service';
 import {
@@ -17,6 +21,8 @@ import { seedExamRoom, seedExamSession, seedQuizSet } from '../../apps/exam-serv
  */
 describe('demoted owner (e2e)', () => {
     let t: ExamTestApp;
+    /** auth's own database: the account row and the role change live there, exam only has the id. */
+    let authDb: AuthPrismaClient;
     let teacher: TestUser;
     let student: TestUser;
     let privateSet: string;
@@ -43,8 +49,13 @@ describe('demoted owner (e2e)', () => {
     }
 
     beforeAll(async () => {
+        process.env.DATABASE_URL = serviceDatabaseUrl('EXAM');
         t = await bootExamApp();
+        authDb = new AuthPrismaClient({ adapter: createAuthAdapter(serviceDatabaseUrl('AUTH')) });
         teacher = await t.createUser(['TEACHER']);
+        await authDb.user.create({
+            data: { id: teacher.id, email: `${teacher.id}@own.test`, username: teacher.id, role: 'TEACHER', isVerified: true },
+        });
         student = await t.createUser(['STUDENT']);
         privateSet = await seedSet({
             isPublic: false,
@@ -65,7 +76,7 @@ describe('demoted owner (e2e)', () => {
         tok.student = await t.tokenFor(student);
 
         const roleChange = new RoleChangeService(
-            new RoleChangeRepository(t.prisma),
+            new RoleChangeRepository(authDb as unknown as AuthPrismaService),
             { publish: async () => undefined } as never,
             { invalidateUser: async () => undefined } as never,
             new GenerateIdService()
@@ -86,7 +97,10 @@ describe('demoted owner (e2e)', () => {
             av: result.user.authzVersion,
         });
     });
-    afterAll(() => t.close());
+    afterAll(async () => {
+        await t.close();
+        await authDb.$disconnect();
+    });
 
     it("demoted teacher's shared set still studyable by whitelisted student; demoted user gets 403 on manage", async () => {
         // students keep access to everything the teacher shared
@@ -187,7 +201,7 @@ describe('demoted owner (e2e)', () => {
     });
 
     it('the demotion persisted STUDENT and bumped the authz version (so old tokens go stale)', async () => {
-        const row = await t.prisma.user.findUniqueOrThrow({
+        const row = await authDb.user.findUniqueOrThrow({
             where: { id: teacher.id },
         });
         expect(row.role).toBe('STUDENT');

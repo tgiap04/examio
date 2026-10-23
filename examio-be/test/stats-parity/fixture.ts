@@ -1,4 +1,11 @@
-import { PrismaClient } from '@prisma/client';
+import type { PrismaClient as AuthClient } from '../../apps/auth-service/src/generated/prisma/client';
+import type { PrismaClient as FinanceClient } from '../../apps/finance-service/src/generated/prisma/client';
+
+/** auth owns users/sessions, finance owns subscriptions/payments/wallets: two databases. */
+export interface StatsDbs {
+    auth: AuthClient;
+    finance: FinanceClient;
+}
 
 /** The frozen "now" of the parity run (a Sunday, mid-day UTC). */
 export const FIXTURE_NOW = new Date('2026-03-15T10:30:00.000Z');
@@ -9,9 +16,11 @@ const at = (daysAgo: number, hour = 9) =>
 
 /** Refuses to run against anything but a throwaway local database. */
 export function assertLocalDatabase(): void {
-    const url = process.env.DATABASE_URL ?? '';
-    if (!/@(127\.0\.0\.1|localhost)[:/]/.test(url)) {
-        throw new Error('stats parity resets tables: DATABASE_URL must be a local throwaway database');
+    for (const name of ['AUTH_DATABASE_URL', 'FINANCE_DATABASE_URL']) {
+        const url = process.env[name] ?? '';
+        if (!/@(127\.0\.0\.1|localhost)[:/]/.test(url)) {
+            throw new Error(`stats parity resets tables: ${name} must be a local throwaway database`);
+        }
     }
 }
 
@@ -20,11 +29,10 @@ export function assertLocalDatabase(): void {
  * days (one pre-window), sessions created/active on different days, active +
  * inactive subscriptions in tiers 1..3, payments in every status.
  */
-export async function seedStatsFixture(prisma: PrismaClient): Promise<void> {
+export async function seedStatsFixture({ auth: prisma, finance }: StatsDbs): Promise<void> {
     assertLocalDatabase();
-    await prisma.$executeRawUnsafe(
-        'TRUNCATE "Payment","UserSubscription","UserSession","Wallet","User" CASCADE'
-    );
+    await prisma.$executeRawUnsafe('TRUNCATE "UserSession","User" CASCADE');
+    await finance.$executeRawUnsafe('TRUNCATE "Payment","UserSubscription","Wallet" CASCADE');
 
     const users: Array<{ id: string; createdDaysAgo: number; utm: string | null }> = [
         { id: 'u1', createdDaysAgo: 0, utm: null },
@@ -84,7 +92,7 @@ export async function seedStatsFixture(prisma: PrismaClient): Promise<void> {
         { id: 'sub5', userId: 'u5', tier: 0, isActive: true },
         { id: 'sub6', userId: 'u6', tier: 3, isActive: true },
     ];
-    for (const s of subs) await prisma.userSubscription.create({ data: s });
+    for (const s of subs) await finance.userSubscription.create({ data: s });
 
     const payments: Array<{ id: string; userId: string; amount: number; status: number; daysAgo: number }> = [
         { id: 'p1', userId: 'u1', amount: 100000, status: 1, daysAgo: 0 },
@@ -97,7 +105,7 @@ export async function seedStatsFixture(prisma: PrismaClient): Promise<void> {
         { id: 'p8', userId: 'u8', amount: 60000, status: 1, daysAgo: 85 },
     ];
     for (const p of payments) {
-        await prisma.payment.create({
+        await finance.payment.create({
             data: {
                 id: p.id,
                 userId: p.userId,

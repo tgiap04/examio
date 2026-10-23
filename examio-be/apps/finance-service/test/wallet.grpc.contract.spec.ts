@@ -1,7 +1,7 @@
 import { Metadata } from '@grpc/grpc-js';
 import { Test } from '@nestjs/testing';
 import { lastValueFrom } from 'rxjs';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../src/prisma';
 import { RedisService } from '@examio/redis';
 import { GenerateIdService } from '@examio/common';
 import { PROTO_FILES, subscriptionV1, walletV1 } from '@examio/contracts';

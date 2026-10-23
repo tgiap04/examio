@@ -25,6 +25,7 @@ describe('AIService.enforceFileUploadQuota', () => {
             {} as never,
             financeClient as never,
             {} as never,
+            {} as never,
             {} as never
         ) as unknown as QuotaEnforcer;
     });

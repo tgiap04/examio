@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto';
 import { status } from '@grpc/grpc-js';
 import { Test } from '@nestjs/testing';
 import { GenerateIdService } from '@examio/common';
-import { DatabaseModule, PrismaService } from '@examio/database';
+import { PrismaModule, PrismaService } from '../src/prisma';
 import { RedisModule } from '@examio/redis';
 import { MessagingModule } from '@examio/messaging';
 import { EnsureWalletService } from '../src/modules/wallet/ensure-wallet.service';
@@ -19,7 +19,7 @@ describe('FinanceAdminService (e2e, real Postgres)', () => {
 
     beforeAll(async () => {
         const moduleRef = await Test.createTestingModule({
-            imports: [DatabaseModule, RedisModule, MessagingModule.forRoot({ service: 'finance' })],
+            imports: [PrismaModule, RedisModule, MessagingModule.forRoot({ service: 'finance' })],
             providers: [
                 GenerateIdService,
                 EnsureWalletService,
@@ -41,14 +41,12 @@ describe('FinanceAdminService (e2e, real Postgres)', () => {
         await prisma.walletTransaction.deleteMany({ where: { wallet: { userId: { in: users } } } });
         await prisma.userSubscription.deleteMany({ where: { userId: { in: users } } });
         await prisma.wallet.deleteMany({ where: { userId: { in: users } } });
-        await prisma.user.deleteMany({ where: { id: { in: users } } });
         await prisma.$disconnect();
     });
 
     async function user(balance: number | null = 50) {
         const id = `fa_${randomUUID().replace(/-/g, '').slice(0, 18)}`;
         users.push(id);
-        await prisma.user.create({ data: { id, email: `${id}@e2e.test`, username: id, role: 'TEACHER' } });
         if (balance !== null) await prisma.wallet.create({ data: { id: `w_${id}`, userId: id, balance } });
         return id;
     }
@@ -256,14 +254,11 @@ describe('FinanceAdminService (e2e, real Postgres)', () => {
             expect(await prisma.userSubscription.count({ where: { userId: u } })).toBe(1);
         });
 
-        it('tier 0 deactivates; an unknown user is NOT_FOUND; an invalid tier is INVALID_ARGUMENT', async () => {
+        it('tier 0 deactivates; an invalid tier is INVALID_ARGUMENT', async () => {
             const u = await user(null);
             await admin.changeTier({ userId: u, tier: 1, billingCycle: '', reason: 'start basic', idempotencyKey: 't3' }, ACTOR);
             const down = await admin.changeTier({ userId: u, tier: 0, billingCycle: '', reason: 'cancel basic', idempotencyKey: 't4' }, ACTOR);
             expect(down).toMatchObject({ previousTier: 1, newTier: 0, isActive: false });
-            expect(code(await fail(admin.changeTier({ userId: 'ghost-user', tier: 1, billingCycle: '', reason: 'not a user', idempotencyKey: 't5' }, ACTOR))).code).toBe(
-                status.NOT_FOUND
-            );
             expect(code(await fail(admin.changeTier({ userId: u, tier: 9, billingCycle: '', reason: 'bad tier', idempotencyKey: 't6' }, ACTOR))).code).toBe(
                 status.INVALID_ARGUMENT
             );

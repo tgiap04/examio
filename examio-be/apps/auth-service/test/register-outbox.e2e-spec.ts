@@ -3,7 +3,7 @@ import { join } from 'path';
 import { INestApplication, INestApplicationContext } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from '../src/prisma';
 import * as amqp from 'amqplib';
 import * as request from 'supertest';
 import { createEnvelope } from '@examio/messaging';
@@ -14,7 +14,7 @@ import { HEALTH_ROUTES_EXCLUDED_FROM_PREFIX } from '@examio/observability';
  * the `auth` broker user.
  */
 const KEY = 'auth.user.registered';
-const prisma = new PrismaClient();
+const prisma = new PrismaService();
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function waitFor<T>(fn: () => Promise<T | null | false>, ms: number): Promise<T> {
@@ -49,7 +49,6 @@ describe('auth register -> outbox -> relay (e2e)', () => {
         await worker?.close();
         await Promise.race([api?.close(), sleep(5000)]);
         await prisma.outboxEvent.deleteMany({ where: { id: { in: eventIds } } });
-        await prisma.userSubscription.deleteMany({ where: { user: { email: { in: emails } } } });
         await prisma.userSession.deleteMany({ where: { user: { email: { in: emails } } } });
         await prisma.user.deleteMany({ where: { email: { in: emails } } });
         await prisma.$disconnect();

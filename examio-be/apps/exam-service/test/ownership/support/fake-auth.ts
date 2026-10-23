@@ -3,7 +3,16 @@ import { GrpcMethod } from '@nestjs/microservices';
 import { Test } from '@nestjs/testing';
 import { PROTO_FILES } from '@examio/contracts';
 import { startTestGrpcServer, type TestGrpcServer } from '@examio/grpc/testing';
-import type { PrismaService } from '@examio/database';
+
+/** An account of the fake auth directory (the only fields exam ever sees). */
+export interface FakeAuthUser {
+    id: string;
+    username: string;
+    email?: string;
+    name?: string | null;
+    avatar?: string | null;
+    deletedAt?: Date | null;
+}
 
 /** What the fake auth directory was asked, so specs can assert "one RPC per request". */
 export interface FakeAuthCalls {
@@ -14,17 +23,14 @@ export interface FakeAuthCalls {
 export interface FakeAuth {
     server: TestGrpcServer;
     calls: FakeAuthCalls;
-    /** The exam e2e harness seeds `user` rows; the fake directory reads them. */
-    bind(prisma: PrismaService): void;
+    /** Registers an account in the fake directory (exam has no `User` table: auth owns it). */
+    addUser(user: FakeAuthUser): void;
+    /** Marks an account deleted: auth then answers as if it did not exist. */
+    removeUser(id: string): void;
     reset(): void;
 }
 
-const projection = (u: {
-    id: string;
-    username: string;
-    name: string | null;
-    avatar: string | null;
-}) => ({
+const projection = (u: FakeAuthUser) => ({
     id: u.id,
     username: u.username,
     name: u.name ?? '',
@@ -38,18 +44,19 @@ const projection = (u: {
  */
 export async function startFakeAuth(): Promise<FakeAuth> {
     const calls: FakeAuthCalls = { profileBatches: [], searches: [] };
-    const holder: { prisma?: PrismaService } = {};
+    const directory = new Map<string, FakeAuthUser>();
 
     @Controller()
     class FakeAuthController {
         @GrpcMethod('AuthService', 'GetPublicProfilesByIds')
         async getPublicProfilesByIds(req: { userIds: string[] }) {
             calls.profileBatches.push([...req.userIds]);
-            const rows = await holder.prisma!.user.findMany({
-                where: { id: { in: req.userIds }, deletedAt: null },
-                select: { id: true, username: true, name: true, avatar: true },
-            });
-            const byId = new Map(rows.map((r) => [r.id, r]));
+            const byId = new Map(
+                req.userIds.flatMap((id) => {
+                    const u = directory.get(id);
+                    return u && !u.deletedAt ? [[id, u] as const] : [];
+                })
+            );
             return {
                 profiles: req.userIds.flatMap((id) =>
                     byId.has(id) ? [projection(byId.get(id)!)] : []
@@ -66,19 +73,17 @@ export async function startFakeAuth(): Promise<FakeAuth> {
                 ...req,
                 authorization: String(md.get('authorization')[0] ?? ''),
             });
-            const rows = await holder.prisma!.user.findMany({
-                where: {
-                    deletedAt: null,
-                    // prefix on username/name, EXACT email (never returned)
-                    OR: [
-                        { username: { startsWith: req.query, mode: 'insensitive' } },
-                        { name: { startsWith: req.query, mode: 'insensitive' } },
-                        { email: { equals: req.query, mode: 'insensitive' } },
-                    ],
-                },
-                select: { id: true, username: true, name: true, avatar: true },
-                take: req.limit || 20,
-            });
+            const q = req.query.toLowerCase();
+            const rows = [...directory.values()]
+                .filter((u) => !u.deletedAt)
+                // prefix on username/name, EXACT email (never returned)
+                .filter(
+                    (u) =>
+                        u.username.toLowerCase().startsWith(q) ||
+                        (u.name ?? '').toLowerCase().startsWith(q) ||
+                        (u.email ?? '').toLowerCase() === q
+                )
+                .slice(0, req.limit || 20);
             return { profiles: rows.map(projection) };
         }
     }
@@ -93,8 +98,12 @@ export async function startFakeAuth(): Promise<FakeAuth> {
     return {
         server,
         calls,
-        bind: (prisma) => {
-            holder.prisma = prisma;
+        addUser: (user) => {
+            directory.set(user.id, user);
+        },
+        removeUser: (id) => {
+            const u = directory.get(id);
+            if (u) directory.set(id, { ...u, deletedAt: new Date() });
         },
         reset: () => {
             calls.profileBatches.length = 0;

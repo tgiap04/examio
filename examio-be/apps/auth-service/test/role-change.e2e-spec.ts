@@ -43,23 +43,21 @@ describe('role change (e2e, real Postgres)', () => {
             orderBy: { seq: 'asc' },
         });
 
-    it('demoting a TEACHER touches only role/authzVersion: content, ownership and open sessions are untouched', async () => {
+    it('demoting a TEACHER touches only role/authzVersion: the row and open sessions are untouched', async () => {
+        // Content/finance rows live in other services' databases: auth cannot touch them by construction.
         const teacher = await newUser({ role: 'TEACHER' });
         const admin = await newUser({ isSystemAdmin: true });
-        const quiz = await ctx.prisma.quizSet.create({ data: { title: 'Q', userId: teacher.id } });
-        const flash = await ctx.prisma.flashCardSet.create({ data: { title: 'F', userId: teacher.id } });
-        const room = await ctx.prisma.examRoom.create({ data: { title: 'R', quizSetId: quiz.id, hostId: teacher.id } });
-        const session = await ctx.prisma.examSession.create({
-            data: { examRoomId: room.id, status: 1, startTime: new Date(Date.now() - 60_000) },
+        const session = await ctx.prisma.userSession.create({
+            data: {
+                id: uniq('s'), userId: teacher.id, sessionId: uniq('sid'), refreshToken: uniq('rt'),
+                deviceId: uniq('dev'), expiresAt: new Date(Date.now() + 3_600_000),
+            },
         });
-        const wallet = await ctx.prisma.wallet.create({ data: { id: uniq('w'), userId: teacher.id, balance: 20 } });
 
         const snapshot = async () => ({
-            quiz: await ctx.prisma.quizSet.findMany({ where: { userId: teacher.id }, select: { id: true, userId: true, title: true } }),
-            flash: await ctx.prisma.flashCardSet.findMany({ where: { userId: teacher.id }, select: { id: true, userId: true, title: true } }),
-            rooms: await ctx.prisma.examRoom.findMany({ where: { hostId: teacher.id }, select: { id: true, hostId: true } }),
-            sessions: await ctx.prisma.examSession.findMany({ where: { examRoomId: room.id }, select: { id: true, status: true, endTime: true } }),
-            wallet: await ctx.prisma.wallet.findUnique({ where: { id: wallet.id }, select: { id: true, userId: true, balance: true } }),
+            sessions: await ctx.prisma.userSession.findMany({
+                where: { userId: teacher.id }, select: { id: true, isActive: true, refreshToken: true },
+            }),
         });
         const before = await snapshot();
         const userBefore = await ctx.prisma.user.findUniqueOrThrow({ where: { id: teacher.id } });
@@ -78,7 +76,6 @@ describe('role change (e2e, real Postgres)', () => {
         const { role: _r, authzVersion: _a, updatedAt: _u, ...restAfter } = userAfter;
         const { role: _r0, authzVersion: _a0, updatedAt: _u0, ...restBefore } = userBefore;
         expect(restAfter).toEqual(restBefore);
-        expect(flash.id).toBeDefined();
     });
 
     it('success writes one RoleChangeLog row and exactly one authz_changed event (role, flags, version = av)', async () => {

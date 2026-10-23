@@ -1,12 +1,16 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
-import { PrismaClient } from '@prisma/client';
-import type { PrismaService } from '@examio/database';
+import { createPrismaAdapter as authAdapter } from '../../apps/auth-service/src/prisma/create-prisma-adapter';
+import { createPrismaAdapter as financeAdapter } from '../../apps/finance-service/src/prisma/create-prisma-adapter';
+import { PrismaClient as AuthClient } from '../../apps/auth-service/src/generated/prisma/client';
+import { PrismaClient as FinanceClient } from '../../apps/finance-service/src/generated/prisma/client';
+import type { PrismaService as AuthPrisma } from '../../apps/auth-service/src/prisma';
+import type { PrismaService as FinancePrisma } from '../../apps/finance-service/src/prisma';
 import type { RedisService } from '@examio/redis';
 import { AdminStatsService } from '../../apps/admin-service/src/modules/admin-stats/admin-stats.service';
 import { UserStatsService } from '../../apps/auth-service/src/users-admin/user-stats.service';
 import { FinanceStatsService } from '../../apps/finance-service/src/modules/stats/finance-stats.service';
-import { LegacyAdminStatsService } from './legacy-admin-stats.service';
+import { LegacyAdminStatsService, type LegacyStatsDb } from './legacy-admin-stats.service';
 import { FIXTURE_NOW, seedStatsFixture } from './fixture';
 
 const GOLDEN = join(__dirname, 'golden.json');
@@ -38,36 +42,52 @@ async function snapshot(stats: StatsLike) {
 }
 
 describe('admin stats parity (golden JSON from the pre-phase-10 service)', () => {
-    let prisma: PrismaClient;
+    let auth: AuthClient;
+    let finance: FinanceClient;
     beforeAll(async () => {
-        prisma = new PrismaClient();
+        const url = (name: string) => {
+            const v = process.env[name];
+            if (!v) throw new Error(`${name} is required (local throwaway database)`);
+            return v;
+        };
+        auth = new AuthClient({ adapter: authAdapter(url('AUTH_DATABASE_URL')) });
+        finance = new FinanceClient({ adapter: financeAdapter(url('FINANCE_DATABASE_URL')) });
         // Only Date is faked: timers/IO must keep running for Prisma.
         jest.useFakeTimers({
             now: FIXTURE_NOW,
             doNotFake: ['nextTick', 'setImmediate', 'clearImmediate', 'setInterval', 'clearInterval', 'setTimeout', 'clearTimeout', 'hrtime', 'performance', 'queueMicrotask'],
         });
-        await seedStatsFixture(prisma);
+        await seedStatsFixture({ auth, finance });
     });
     afterAll(async () => {
         jest.useRealTimers();
-        await prisma.$disconnect();
+        await auth.$disconnect();
+        await finance.$disconnect();
     });
 
     it('the frozen legacy service reproduces golden.json', async () => {
-        const legacy = new LegacyAdminStatsService(prisma as unknown as PrismaService, noCache);
+        const legacyDb = {
+            user: auth.user,
+            userSession: auth.userSession,
+            userSubscription: finance.userSubscription,
+            payment: finance.payment,
+            // Every legacy raw query reads exactly one table: route by the table it names.
+            $queryRaw: ((strings: TemplateStringsArray, ...values: unknown[]) =>
+                (strings.join('?').includes('"Payment"') ? finance : auth).$queryRaw(strings, ...values)) as AuthClient['$queryRaw'],
+        } as unknown as LegacyStatsDb;
+        const legacy = new LegacyAdminStatsService(legacyDb, noCache);
         const actual = await snapshot(legacy);
         if (process.env.UPDATE_GOLDEN === '1') writeFileSync(GOLDEN, `${JSON.stringify(actual, null, 2)}\n`);
         expect(actual).toEqual(JSON.parse(readFileSync(GOLDEN, 'utf8')));
     });
 
     it('admin stats over the real auth + finance SQL equals golden.json (overview, 9 series, 4 utm breakdowns)', async () => {
-        const db = prisma as unknown as PrismaService;
-        const users = new UserStatsService(db);
-        const revenue = new FinanceStatsService(db);
+        const users = new UserStatsService(auth as unknown as AuthPrisma);
+        const revenue = new FinanceStatsService(finance as unknown as FinancePrisma);
         // The gRPC hop is covered by the contract specs; here the owners' SQL runs for real.
         const authUsers = { getUserStats: (req: never) => users.getStats(req) };
-        const finance = { getRevenueStats: (req: never) => revenue.getRevenueStats(req) };
-        const admin = new AdminStatsService(noCache, authUsers as never, finance as never);
+        const financeRpc = { getRevenueStats: (req: never) => revenue.getRevenueStats(req) };
+        const admin = new AdminStatsService(noCache, authUsers as never, financeRpc as never);
         const md = {} as never;
         const adapter: StatsLike = {
             getOverview: () => admin.getOverview(md),

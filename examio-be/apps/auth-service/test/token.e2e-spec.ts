@@ -46,9 +46,6 @@ describe('auth tokens (e2e, real Postgres)', () => {
         expect(me.body.user).not.toHaveProperty('password');
         expect(me.body.user).not.toHaveProperty('wallet');
         expect(me.body.user).not.toHaveProperty('subscription');
-
-        expect(await ctx.prisma.userSubscription.count({ where: { userId: id } })).toBe(0);
-        expect(await ctx.prisma.wallet.count({ where: { userId: id } })).toBe(0);
     });
 
     it('the issued token verifies against /.well-known/jwks.json with kid, typ and every claim', async () => {

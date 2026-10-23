@@ -34,7 +34,7 @@ describe('admin ban / unban through auth SetUserStatus (e2e)', () => {
         });
         expect(await h.auth.prisma.outboxEvent.count({ where: { type: 'auth.session.revoked', envelope: { path: ['data', 'userId'], equals: b.id } } })).toBeGreaterThan(0);
         expect(await h.auth.prisma.roleChangeLog.count({ where: { targetUserId: b.id, reason: 'ban' } })).toBe(1);
-        const audit = await h.auth.prisma.adminAudit.findMany({ where: { targetId: b.id, action: 'admin.user.ban' } });
+        const audit = await h.adminDb.adminAudit.findMany({ where: { targetId: b.id, action: 'admin.user.ban' } });
         expect(audit).toHaveLength(1);
         expect(audit[0]).toMatchObject({ adminId: a.id });
 
@@ -53,7 +53,7 @@ describe('admin ban / unban through auth SetUserStatus (e2e)', () => {
         expect((await row(b.id)).authzVersion).toBe(banned.authzVersion + 1);
         const reasons = (await authzEvents(h.auth, b.id)).map((e) => (e.envelope as { data: { reason: string } }).data.reason);
         expect(reasons).toEqual(['ban', 'unban']);
-        expect(await h.auth.prisma.adminAudit.count({ where: { targetId: b.id, action: 'admin.user.unban' } })).toBe(1);
+        expect(await h.adminDb.adminAudit.count({ where: { targetId: b.id, action: 'admin.user.unban' } })).toBe(1);
     });
 
     it('banning twice is a no-op: no second event, no second av bump', async () => {
@@ -71,7 +71,7 @@ describe('admin ban / unban through auth SetUserStatus (e2e)', () => {
         const res = await post(`/admin/users/${a.id}/ban`, a.token);
         expect([res.status, res.body.code]).toEqual([403, 'CANNOT_CHANGE_OWN_STATUS']);
         expect((await row(a.id)).isBanned).toBe(false);
-        expect(await h.auth.prisma.adminAudit.count({ where: { targetId: a.id, action: 'admin.user.ban' } })).toBe(0);
+        expect(await h.adminDb.adminAudit.count({ where: { targetId: a.id, action: 'admin.user.ban' } })).toBe(0);
     });
 
     it('a non-admin caller is 403 at the admin guard; a stale admin token is 403 at auth (DB actor re-check)', async () => {

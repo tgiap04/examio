@@ -133,11 +133,9 @@ describe('exam user enrichment and email-leak contract (e2e)', () => {
 
     it('a user auth does not know shows as null, the request still succeeds', async () => {
         const ghost = `u_${rid()}`;
-        await t.prisma.user.create({
-            data: { id: ghost, email: `${ghost}@own.test`, username: ghost, isVerified: true },
-        });
+        t.auth.addUser({ id: ghost, username: ghost, email: `${ghost}@own.test` });
         const ghostRoom = await seedExamRoom(t, ghost);
-        await t.prisma.user.update({ where: { id: ghost }, data: { deletedAt: new Date() } });
+        t.auth.removeUser(ghost);
         const ghostToken = await t.tokenFor({ id: ghost, roles: ['TEACHER'], av: 0 });
         const res = await call(t.server, 'get', `/examrooms/detail/${ghostRoom.id}`, ghostToken);
         expect(res.status).toBe(200);

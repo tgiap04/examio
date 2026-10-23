@@ -23,14 +23,11 @@ describe('/auth/me, login, refresh response shape (e2e, finance unreachable)', (
     const bearer = (t: string) => ({ authorization: `Bearer ${t}` });
 
     it.each(['STUDENT', 'TEACHER'] as const)(
-        '%s: register, login, refresh and /auth/me return { user, roles, permissions } with no wallet/subscription/isAdmin even when finance rows exist',
+        '%s: register, login, refresh and /auth/me return { user, roles, permissions } with no wallet/subscription/isAdmin',
         async (role) => {
             const { res: registered, id, email } = await registerUser(ctx);
             expectShape(registered.body);
             await ctx.prisma.user.update({ where: { id }, data: { role } });
-            // Finance-owned rows exist for this user: they must still never reach the response.
-            await ctx.prisma.wallet.create({ data: { id: `w-${id}`, userId: id, balance: 20 } });
-            await ctx.prisma.userSubscription.create({ data: { id: `s-${id}`, userId: id, tier: 1, isActive: true } });
 
             const login = await loginVerified(ctx, email);
             expect(login.status).toBe(201);

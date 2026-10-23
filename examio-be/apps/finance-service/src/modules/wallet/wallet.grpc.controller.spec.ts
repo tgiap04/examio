@@ -1,6 +1,6 @@
 import { Metadata, status } from '@grpc/grpc-js';
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { RedisService } from '@examio/redis';
 import { GenerateIdService } from '@examio/common';
 import { WalletGrpcController } from './wallet.grpc.controller';

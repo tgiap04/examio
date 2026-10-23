@@ -1,7 +1,5 @@
 import { status } from '@grpc/grpc-js';
-import { buildMetadata } from '@examio/grpc';
 import { WordFamilyAdminService } from './word-family-admin.service';
-import { r2KeyFromUrl } from './r2-key-from-url';
 
 const BASE = 'https://cdn.example.test';
 const row = (over: Record<string, unknown> = {}) => ({
@@ -23,25 +21,13 @@ function setup() {
         findCategoryById: jest.fn(async (_id: string): Promise<ReturnType<typeof row> | null> => row()),
         findCategoryBySlug: jest.fn(async (_s: string): Promise<ReturnType<typeof row> | null> => null),
         createCategory: jest.fn(async (d: Record<string, unknown>) => row(d)),
-        updateCategory: jest.fn(async (_id: string, d: Record<string, unknown>) => row(d)),
+        updateCategory: jest.fn(async (_id: string, d: Record<string, unknown>, _r2Keys?: string[]) => row(d)),
     };
-    const r2 = { deleteFile: jest.fn(async (..._a: unknown[]) => undefined) };
-    const service = new WordFamilyAdminService(repo as never, r2 as never, BASE);
-    return { service, repo, r2 };
+    const service = new WordFamilyAdminService(repo as never, BASE);
+    return { service, repo };
 }
 const codeOf = async (p: Promise<unknown>) =>
     (await p.then(() => null, (e) => e))?.getError?.().code;
-
-describe('r2KeyFromUrl', () => {
-    it('returns the key only for URLs on the R2 public host', () => {
-        expect(r2KeyFromUrl(`${BASE}/word-family/a b.png`, BASE)).toBe('word-family/a b.png');
-        expect(r2KeyFromUrl('https://other.test/word-family/a.png', BASE)).toBeNull();
-        expect(r2KeyFromUrl(`${BASE}.evil.test/x.png`, BASE)).toBeNull();
-        expect(r2KeyFromUrl(null, BASE)).toBeNull();
-        expect(r2KeyFromUrl('', BASE)).toBeNull();
-        expect(r2KeyFromUrl(`${BASE}/`, BASE)).toBeNull();
-    });
-});
 
 describe('WordFamilyAdminService', () => {
     it('lists with timestamps as epoch-ms strings and nulls as empty strings', async () => {
@@ -87,7 +73,7 @@ describe('WordFamilyAdminService', () => {
         it('only the provided fields change; the slug is immutable', async () => {
             const { service, repo } = setup();
             await service.upsertCategory({ id: 'c1', name: 'New', slug: '', order: 4, isActive: false });
-            expect(repo.updateCategory).toHaveBeenCalledWith('c1', { name: 'New', order: 4, isActive: false });
+            expect(repo.updateCategory).toHaveBeenCalledWith('c1', { name: 'New', order: 4, isActive: false }, []);
             expect(await codeOf(service.upsertCategory({ id: 'c1', name: 'x', slug: 'other' }))).toBe(status.INVALID_ARGUMENT);
         });
 
@@ -97,77 +83,63 @@ describe('WordFamilyAdminService', () => {
             expect(await codeOf(service.upsertCategory({ id: 'zz', name: 'x', slug: '' }))).toBe(status.NOT_FOUND);
         });
 
-        it('replacing the image deletes the OLD R2 object after the row is updated', async () => {
-            const { service, repo, r2 } = setup();
+        it('replacing the image queues the OLD R2 key in the same update (no direct R2 call)', async () => {
+            const { service, repo } = setup();
             await service.upsertCategory({ id: 'c1', name: 'Shopping', slug: '', imageUrl: `${BASE}/word-family/new.png` });
-            expect(r2.deleteFile).toHaveBeenCalledTimes(1);
-            expect(r2.deleteFile.mock.calls[0][0]).toBe('word-family/shop.png');
-            expect(repo.updateCategory.mock.invocationCallOrder[0]).toBeLessThan(r2.deleteFile.mock.invocationCallOrder[0]);
+            expect(repo.updateCategory).toHaveBeenCalledTimes(1);
+            expect(repo.updateCategory.mock.calls[0][2]).toEqual(['word-family/shop.png']);
         });
 
-        it('the same image URL deletes nothing', async () => {
-            const { service, r2 } = setup();
+        it('the same image URL queues nothing', async () => {
+            const { service, repo } = setup();
             await service.upsertCategory({ id: 'c1', name: 'Shopping', slug: '', imageUrl: `${BASE}/word-family/shop.png` });
-            expect(r2.deleteFile).not.toHaveBeenCalled();
-        });
-
-        it('a failing R2 cleanup of the old image does not fail the saved update (logged)', async () => {
-            const { service, r2 } = setup();
-            r2.deleteFile.mockRejectedValue(new Error('r2 down'));
-            await expect(
-                service.upsertCategory({ id: 'c1', name: 'Shopping', slug: '', imageUrl: `${BASE}/word-family/new.png` })
-            ).resolves.toBeDefined();
+            expect(repo.updateCategory.mock.calls[0][2] ?? []).toEqual([]);
         });
     });
 
     describe('delete', () => {
-        it('deletes the R2 image FIRST (idempotent, so a retry is safe), then soft-deactivates and clears the URL', async () => {
-            const { service, repo, r2 } = setup();
+        it('soft-deactivates, clears the URL and queues the R2 image in the same update', async () => {
+            const { service, repo } = setup();
             const res = await service.deleteCategory({ id: 'c1' });
-            expect(r2.deleteFile.mock.calls[0][0]).toBe('word-family/shop.png');
-            expect(repo.updateCategory).toHaveBeenCalledWith('c1', { isActive: false, imageUrl: null });
-            expect(r2.deleteFile.mock.invocationCallOrder[0]).toBeLessThan(repo.updateCategory.mock.invocationCallOrder[0]);
+            expect(repo.updateCategory).toHaveBeenCalledWith('c1', { isActive: false, imageUrl: null }, ['word-family/shop.png']);
             expect(res.category?.id).toBe('c1');
         });
 
-        it('an R2 failure aborts the delete and leaves the row untouched', async () => {
-            const { service, repo, r2 } = setup();
-            r2.deleteFile.mockRejectedValue(new Error('r2 down'));
-            await expect(service.deleteCategory({ id: 'c1' })).rejects.toThrow('r2 down');
+        it('an R2-hosted image with R2_PUBLIC_URL unset is FAILED_PRECONDITION and touches nothing', async () => {
+            const repo = setup().repo;
+            const service = new WordFamilyAdminService(repo as never, '');
+            expect(await codeOf(service.deleteCategory({ id: 'c1' }))).toBe(status.FAILED_PRECONDITION);
             expect(repo.updateCategory).not.toHaveBeenCalled();
         });
 
-        it('a category without an R2-hosted image makes no R2 call', async () => {
-            const { service, repo, r2 } = setup();
+        it('a category without an R2-hosted image queues nothing', async () => {
+            const { service, repo } = setup();
             repo.findCategoryById.mockResolvedValue(row({ imageUrl: 'https://elsewhere.test/a.png' }));
             await service.deleteCategory({ id: 'c1' });
-            expect(r2.deleteFile).not.toHaveBeenCalled();
-            expect(repo.updateCategory).toHaveBeenCalledWith('c1', { isActive: false, imageUrl: null });
+            expect(repo.updateCategory).toHaveBeenCalledWith('c1', { isActive: false, imageUrl: null }, []);
         });
 
         it.each(['documents/u1/secret.pdf', 'images/u1/avatar.png', 'word-family/../documents/u1/a.pdf'])(
-            'an admin-set URL pointing at another R2 area (%s) is never deleted, but the category still deactivates',
+            'an admin-set URL pointing at another R2 area (%s) is never queued, but the category still deactivates',
             async (key) => {
-                const { service, repo, r2 } = setup();
+                const { service, repo } = setup();
                 repo.findCategoryById.mockResolvedValue(row({ imageUrl: `${BASE}/${key}` }));
                 await service.deleteCategory({ id: 'c1' });
-                expect(r2.deleteFile).not.toHaveBeenCalled();
-                expect(repo.updateCategory).toHaveBeenCalledWith('c1', { isActive: false, imageUrl: null });
+                expect(repo.updateCategory).toHaveBeenCalledWith('c1', { isActive: false, imageUrl: null }, []);
             }
         );
 
-        it('replacing an image that points outside the word-family prefix deletes nothing', async () => {
-            const { service, repo, r2 } = setup();
+        it('replacing an image that points outside the word-family prefix queues nothing', async () => {
+            const { service, repo } = setup();
             repo.findCategoryById.mockResolvedValue(row({ imageUrl: `${BASE}/documents/u1/secret.pdf` }));
             await service.upsertCategory({ id: 'c1', name: 'Shopping', slug: '', imageUrl: `${BASE}/word-family/new.png` });
-            expect(r2.deleteFile).not.toHaveBeenCalled();
+            expect(repo.updateCategory.mock.calls[0][2] ?? []).toEqual([]);
         });
 
         it('unknown id is NOT_FOUND and touches nothing', async () => {
-            const { service, repo, r2 } = setup();
+            const { service, repo } = setup();
             repo.findCategoryById.mockResolvedValue(null);
             expect(await codeOf(service.deleteCategory({ id: 'zz' }))).toBe(status.NOT_FOUND);
-            expect(r2.deleteFile).not.toHaveBeenCalled();
             expect(repo.updateCategory).not.toHaveBeenCalled();
         });
     });
@@ -175,7 +147,7 @@ describe('WordFamilyAdminService', () => {
 
 describe('WordFamilyAdminService duplicate name', () => {
     const p2002 = () => {
-        const { Prisma } = require('@prisma/client');
+        const { Prisma } = require('../../prisma');
         return new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
             code: 'P2002',
             clientVersion: 'test',

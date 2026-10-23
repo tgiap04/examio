@@ -1,10 +1,11 @@
-import { Controller, INestApplication } from '@nestjs/common';
+import { Controller, HttpException, INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { Metadata, status } from '@grpc/grpc-js';
 import { RpcException } from '@nestjs/microservices';
 import * as request from 'supertest';
 import { join } from 'path';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../src/prisma';
+import { AuthUsersClient } from '../src/clients/auth-users.client';
 import { PROTO_FILES, financeAdminV1 } from '@examio/contracts';
 import { startTestGrpcServer, TestGrpcServer } from '@examio/grpc/testing';
 import {
@@ -78,6 +79,7 @@ describe('admin-finance (e2e, fake finance gRPC server)', () => {
     let finance: TestGrpcServer;
     let keys: TestKeyPair;
     const audits: Array<{ action: string; adminId: string }> = [];
+    const authLookups: string[] = [];
 
     const verifier = () =>
         createTokenVerifier({
@@ -116,6 +118,14 @@ describe('admin-finance (e2e, fake finance gRPC server)', () => {
             .useValue(prisma)
             .overrideProvider(TOKEN_VERIFIER)
             .useValue(verifier())
+            .overrideProvider(AuthUsersClient)
+            .useValue({
+                getUserAdminDetail: async (userId: string) => {
+                    authLookups.push(userId);
+                    if (userId === 'ghost') throw new HttpException({ statusCode: 404, code: 'NOT_FOUND' }, 404);
+                    return { user: { id: userId } };
+                },
+            })
             .compile();
         app = moduleRef.createNestApplication();
         const { HttpErrorEnvelopeFilter } = await import('@examio/http');
@@ -130,6 +140,7 @@ describe('admin-finance (e2e, fake finance gRPC server)', () => {
     beforeEach(() => {
         calls.length = 0;
         audits.length = 0;
+        authLookups.length = 0;
         seen.clear();
         mode = 'ok';
     });
@@ -175,6 +186,15 @@ describe('admin-finance (e2e, fake finance gRPC server)', () => {
             success: true,
             data: { userId: 'user-1', previousTier: 0, newTier: 2, previousBillingCycle: null, newBillingCycle: 'monthly', isActive: true, alreadyApplied: false },
         });
+    });
+
+    it('POST /admin/finance/tier for an unknown user is the historical 404 and never reaches finance', async () => {
+        const res = await request(app.getHttpServer()).post('/admin/finance/tier').set(await admin()).send({ userId: 'ghost', tier: 2, reason: 'promo upgrade' });
+        expect(res.status).toBe(404);
+        expect(res.body).toMatchObject({ statusCode: 404, code: 'USER_NOT_FOUND', message: 'User not found' });
+        expect(authLookups).toEqual(['ghost']);
+        expect(calls).toHaveLength(0);
+        expect(audits).toHaveLength(0);
     });
 
     it('historical error statuses survive the RPC hop (409 already refunded, 400 insufficient)', async () => {

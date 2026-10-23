@@ -4,7 +4,7 @@ import { AddressInfo } from 'net';
 import { INestApplication, INestApplicationContext } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
-import { PrismaClient } from '@prisma/client';
+import { PrismaService } from '../src/prisma';
 import * as amqp from 'amqplib';
 import * as request from 'supertest';
 import { createEnvelope } from '@examio/messaging';
@@ -19,7 +19,7 @@ const FINANCE_URL = process.env.RABBITMQ_URL as string;
 const AUTH_URL = process.env.RABBITMQ_AUTH_URL as string;
 const KEY = 'auth.user.authz_changed';
 
-const prisma = new PrismaClient();
+const prisma = new PrismaService();
 let worker: INestApplicationContext | null = null;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -87,8 +87,8 @@ const uid = () => {
     uidList.push(id);
     return id;
 };
-const newUser = (id: string, role: 'STUDENT' | 'TEACHER' = 'TEACHER') =>
-    prisma.user.create({ data: { id, email: `${id}@e2e.test`, username: id, password: null, role } });
+// The account lives in auth's database: finance only ever sees its id in the event.
+const newUser = async (_id: string, _role: 'STUDENT' | 'TEACHER' = 'TEACHER'): Promise<void> => undefined;
 const authzEvent = (userId: string, role: 'STUDENT' | 'TEACHER', reason: string, av = 1) =>
     createEnvelope(
         KEY,
@@ -109,7 +109,6 @@ describe('finance teacher provisioning on auth.user.authz_changed (e2e)', () => 
         await prisma.walletTransaction.deleteMany({ where: { wallet: { userId: { in: uidList } } } });
         await prisma.wallet.deleteMany({ where: { userId: { in: uidList } } });
         await prisma.userSubscription.deleteMany({ where: { userId: { in: uidList } } });
-        await prisma.user.deleteMany({ where: { id: { in: uidList } } });
         await prisma.$disconnect();
     });
 
@@ -215,7 +214,6 @@ describe('ensureWallet paths (e2e)', () => {
         await prisma.walletTransaction.deleteMany({ where: { wallet: { userId: { in: uidList } } } });
         await prisma.wallet.deleteMany({ where: { userId: { in: uidList } } });
         await prisma.userSubscription.deleteMany({ where: { userId: { in: uidList } } });
-        await prisma.user.deleteMany({ where: { id: { in: uidList } } });
     });
 
     const tokenFor = (userId: string, roles: string[]) =>

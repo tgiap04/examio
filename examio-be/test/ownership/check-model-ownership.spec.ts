@@ -7,6 +7,7 @@ import {
     relationMap,
     scanSource,
     schemaModels,
+    serviceSchemaText,
     unmappedModels,
 } from '../../scripts/check-model-ownership';
 
@@ -30,7 +31,7 @@ const run = (root: string, ...args: string[]) =>
 
 describe('check-model-ownership (self-test)', () => {
     it('every model in the real schema is mapped to an owner', () => {
-        const schema = readFileSync(join(__dirname, '../../libs/database/src/schema.prisma'), 'utf8');
+        const schema = serviceSchemaText(join(__dirname, '../..'));
         expect(schemaModels(schema).length).toBeGreaterThan(40);
         expect(unmappedModels(schemaModels(schema))).toEqual([]);
     });
@@ -204,7 +205,7 @@ describe('check-model-ownership (self-test)', () => {
 
         it('a fixture with a relation include exits 1 in strict mode', () => {
             const root = fixture({
-                'libs/database/src/schema.prisma': schema + '\n',
+                'apps/auth-service/prisma/schema.prisma': schema + '\n',
                 'apps/auth-service/src/bad.ts': "export const f = (prisma: any) => prisma.user.findMany({ include: { wallet: true } });\n",
             });
             try {
