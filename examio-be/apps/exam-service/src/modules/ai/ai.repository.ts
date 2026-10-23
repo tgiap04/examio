@@ -1,6 +1,6 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
-import { UserStorage } from '@prisma/client';
+import { ConflictException, Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../../prisma';
+import { Prisma, UserStorage } from '../../prisma';
 
 @Injectable()
 export class AIRepository {
@@ -19,26 +19,38 @@ export class AIRepository {
         processingStatus?: string;
         creditCharged?: boolean;
     }): Promise<UserStorage> {
-        // Use upsert to handle case where keyR2 already exists (e.g., from failed upload)
-        return this.prisma.userStorage.upsert({
+        const status = data.processingStatus || 'PENDING';
+        const creditCharged = data.creditCharged ?? false;
+        try {
+            return await this.prisma.userStorage.create({
+                data: {
+                    id: data.id,
+                    userId: data.userId,
+                    filename: data.filename,
+                    url: data.url,
+                    mimetype: data.mimetype,
+                    size: data.size,
+                    keyR2: data.keyR2,
+                    processingStatus: status,
+                    creditCharged,
+                },
+            });
+        } catch (error) {
+            if ((error as { code?: string } | null)?.code !== 'P2002') throw error;
+        }
+
+        // keyR2 is unique. A retry of the caller's OWN failed upload resets that row;
+        // a key that belongs to anyone else is never touched (409), so one user can
+        // not overwrite another user's row by supplying their key.
+        const reset = await this.prisma.userStorage.updateMany({
+            where: { keyR2: data.keyR2, userId: data.userId },
+            data: { processingStatus: status, creditCharged, updatedAt: new Date() },
+        });
+        if (reset.count === 0) {
+            throw new ConflictException('Khóa lưu trữ đã tồn tại');
+        }
+        return this.prisma.userStorage.findUniqueOrThrow({
             where: { keyR2: data.keyR2 },
-            create: {
-                id: data.id,
-                userId: data.userId,
-                filename: data.filename,
-                url: data.url,
-                mimetype: data.mimetype,
-                size: data.size,
-                keyR2: data.keyR2,
-                processingStatus: data.processingStatus || 'PENDING',
-                creditCharged: data.creditCharged ?? false,
-            },
-            update: {
-                // Reset status for retry
-                processingStatus: data.processingStatus || 'PENDING',
-                creditCharged: data.creditCharged ?? false,
-                updatedAt: new Date(),
-            },
         });
     }
 
@@ -188,7 +200,11 @@ export class AIRepository {
         });
     }
 
-    async deleteUploadAggregate(userStorageId: string) {
+    /** `inTx` runs in the same transaction (e.g. queues the R2 object for deletion). */
+    async deleteUploadAggregate(
+        userStorageId: string,
+        inTx?: (tx: Prisma.TransactionClient) => Promise<unknown>
+    ) {
         return this.prisma.$transaction(async (tx) => {
             const aiChatDocuments = await tx.aIChatDocument.deleteMany({
                 where: { documentId: userStorageId },
@@ -202,6 +218,7 @@ export class AIRepository {
             const userStorage = await tx.userStorage.delete({
                 where: { id: userStorageId },
             });
+            await inTx?.(tx);
 
             return {
                 aiChatDocuments: aiChatDocuments.count,

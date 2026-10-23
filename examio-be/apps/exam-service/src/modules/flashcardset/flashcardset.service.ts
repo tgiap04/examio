@@ -1,4 +1,4 @@
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { rethrowKnown } from '../common/rethrow-known';
 import {
     Injectable,
@@ -9,7 +9,9 @@ import {
     BadRequestException,
     ForbiddenException,
 } from '@nestjs/common';
-import { GenerateIdService, sanitizeFilename } from '@examio/common';
+import { GenerateIdService, ownerKeyFolder, sanitizeFilename } from '@examio/common';
+import { assertThumbnailAllowed, thumbnailKeyToDelete } from '../common/owned-thumbnail';
+import { R2DeleteTaskWriter } from '@examio/messaging';
 import { RedisService } from '@examio/redis';
 
 import { CreateFlashcardsetDto } from './dto/create-flashcardset.dto';
@@ -46,6 +48,8 @@ import {
     toFlashcardSetStudyView,
 } from './flashcardset-public.mapper';
 
+const THUMBNAIL_AREA = 'flashcardset-thumbnails';
+
 @Injectable()
 export class FlashcardsetService {
     constructor(
@@ -54,7 +58,8 @@ export class FlashcardsetService {
         private readonly generateIdService: GenerateIdService,
         private readonly r2Service: R2Client,
         private readonly redis: RedisService,
-        private readonly users: UserEnricher
+        private readonly users: UserEnricher,
+        private readonly r2Deletes: R2DeleteTaskWriter
     ) {}
 
     async createFlashcardSet(
@@ -66,16 +71,18 @@ export class FlashcardsetService {
             throw new ConflictException('Tiêu đề không được để trống');
         }
 
+        assertThumbnailAllowed(dto.thumbnail, THUMBNAIL_AREA, user.id);
+
         try {
             // Handle thumbnail upload if file is provided
             let thumbnailUrl = dto.thumbnail || null;
             if (thumbnailFile) {
-                const fileName = `${Date.now()}-${sanitizeFilename(thumbnailFile.originalname)}`;
+                const fileName = `${this.generateIdService.generateId()}-${sanitizeFilename(thumbnailFile.originalname)}`;
                 const r2Key = await this.r2Service.uploadFile(
                     fileName,
                     thumbnailFile.buffer,
                     thumbnailFile.mimetype,
-                    'flashcardset-thumbnails',
+                    ownerKeyFolder(THUMBNAIL_AREA, user.id),
                     buildMetadata()
                 );
                 thumbnailUrl = this.r2Service.getPublicUrl(r2Key);
@@ -273,12 +280,24 @@ export class FlashcardsetService {
             throw new NotFoundException('Bộ thẻ ghi nhớ không tồn tại');
         }
 
-        // Hard delete - pass userId for proper cache invalidation
-        await this.flashcardSetRepository.delete(id, user.id);
-        const key = flashcardSet.thumbnail?.replace(/^https?:\/\/[^/]+\//, '');
-        if (key) {
-            await this.r2Service.deleteFile(key, buildMetadata());
-        }
+        // Hard delete + R2 cleanup task in ONE tx: the thumbnail is queued if and
+        // only if the row is gone (the worker deletes it, with retry).
+        await this.prisma.$transaction(async (tx) => {
+            // The key comes from the row deleted inside this tx, and is queued only
+            // when it is the owner's own object that no other row still uses.
+            const deleted = await this.flashcardSetRepository.delete(id, user.id, tx);
+            const key = await thumbnailKeyToDelete(
+                deleted.thumbnail,
+                THUMBNAIL_AREA,
+                user.id,
+                (url) =>
+                    tx.flashCardSet.count({
+                        where: { userId: user.id, thumbnail: url },
+                    })
+            );
+            await this.r2Deletes.enqueue(tx, [key]);
+        });
+        await this.flashcardSetRepository.invalidateWrite('DELETE', id, user.id);
 
         return { message: 'Xóa bộ thẻ ghi nhớ thành công' };
     }
@@ -392,40 +411,33 @@ export class FlashcardsetService {
                 throw new NotFoundException('Bộ thẻ ghi nhớ không tồn tại');
             }
 
+            assertThumbnailAllowed(
+                dto.thumbnail,
+                THUMBNAIL_AREA,
+                user.id,
+                flashcardSet.thumbnail
+            );
+
             // Handle thumbnail upload if file is provided
             let thumbnailUrl = dto.thumbnail;
+            let thumbnailReplaced = false;
             if (
                 thumbnailFile &&
                 thumbnailFile.buffer &&
                 thumbnailFile.buffer.length > 0
             ) {
-                const oldThumbnailUrl = flashcardSet.thumbnail;
-
-                const fileName = `${Date.now()}-${sanitizeFilename(thumbnailFile.originalname)}`;
+                const fileName = `${this.generateIdService.generateId()}-${sanitizeFilename(thumbnailFile.originalname)}`;
                 const r2Key = await this.r2Service.uploadFile(
                     fileName,
                     thumbnailFile.buffer,
                     thumbnailFile.mimetype,
-                    'flashcardset-thumbnails',
+                    ownerKeyFolder(THUMBNAIL_AREA, user.id),
                     buildMetadata()
                 );
                 thumbnailUrl = this.r2Service.getPublicUrl(r2Key);
 
-                // Delete old thumbnail from R2 if it exists
-                if (oldThumbnailUrl) {
-                    const oldKey = oldThumbnailUrl.replace(
-                        /^https?:\/\/[^/]+\//,
-                        ''
-                    );
-                    if (oldKey) {
-                        await this.r2Service.deleteFile(oldKey, buildMetadata()).catch((err) => {
-                            console.warn(
-                                'Failed to delete old flashcardset thumbnail from R2:',
-                                err
-                            );
-                        });
-                    }
-                }
+                // The old object is queued with the row update below (same tx).
+                thumbnailReplaced = true;
             } else if (thumbnailFile) {
                 // File was sent but is empty - keep existing thumbnail
                 console.warn(
@@ -436,27 +448,48 @@ export class FlashcardsetService {
 
             // Update using repository
             // Note: DTO is already parsed in controller
-            await this.flashcardSetRepository.update(
-                id,
-                {
-                    ...(dto.title && { title: dto.title }),
-                    ...(dto.description !== undefined && {
-                        description: dto.description,
-                    }),
-                    ...(dto.isPublic !== undefined && {
-                        isPublic: dto.isPublic,
-                    }),
-                    ...(dto.isPinned !== undefined && {
-                        isPinned: dto.isPinned,
-                    }),
-                    ...(dto.tags !== undefined && { tag: dto.tags }),
-                    ...(thumbnailUrl !== undefined &&
-                        thumbnailUrl !== '' && {
-                            thumbnail: thumbnailUrl,
+            await this.prisma.$transaction(async (tx) => {
+                // The replaced object is read inside the tx, not from the pre-tx fetch.
+                const before = thumbnailReplaced
+                    ? await tx.flashCardSet.findUnique({
+                          where: { id },
+                          select: { thumbnail: true },
+                      })
+                    : null;
+                await this.flashcardSetRepository.update(
+                    id,
+                    {
+                        ...(dto.title && { title: dto.title }),
+                        ...(dto.description !== undefined && {
+                            description: dto.description,
                         }),
-                },
-                user.id
-            );
+                        ...(dto.isPublic !== undefined && {
+                            isPublic: dto.isPublic,
+                        }),
+                        ...(dto.isPinned !== undefined && {
+                            isPinned: dto.isPinned,
+                        }),
+                        ...(dto.tags !== undefined && { tag: dto.tags }),
+                        ...(thumbnailUrl !== undefined &&
+                            thumbnailUrl !== '' && {
+                                thumbnail: thumbnailUrl,
+                            }),
+                    },
+                    user.id,
+                    tx
+                );
+                const oldThumbnailKey = await thumbnailKeyToDelete(
+                    before?.thumbnail,
+                    THUMBNAIL_AREA,
+                    user.id,
+                    (url) =>
+                        tx.flashCardSet.count({
+                            where: { userId: user.id, thumbnail: url },
+                        })
+                );
+                await this.r2Deletes.enqueue(tx, [oldThumbnailKey]);
+            });
+            await this.flashcardSetRepository.invalidateWrite('UPDATE', id, user.id);
 
             // Fetch updated flashcardset with _count for consistent response with list endpoint
             const updatedFlashcardSet =

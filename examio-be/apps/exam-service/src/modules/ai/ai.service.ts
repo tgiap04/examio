@@ -11,13 +11,16 @@ import {
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { AxiosError } from 'axios';
-import { User } from '@prisma/client';
 import {
     GenerateIdService,
+    ownedR2Key,
+    ownerKeyFolder,
     sanitizeFilename,
 } from '@examio/common';
+import { AI_UPLOAD_AREAS } from './ai-upload-areas';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
 import { R2Client } from '../../clients/r2.client';
+import { R2DeleteTaskWriter } from '@examio/messaging';
 import { AIRepository } from './ai.repository';
 import {
     UploadFileDto,
@@ -42,7 +45,8 @@ export class AIService {
         private readonly httpService: HttpService,
         private readonly financeClient: FinanceClientService,
         private readonly r2ClientService: R2Client,
-        private readonly redisService: RedisService
+        private readonly redisService: RedisService,
+        private readonly r2Deletes: R2DeleteTaskWriter
     ) {
         this.aiServiceUrl =
             process.env.AI_SERVICE_URL || 'http://localhost:8000/api';
@@ -258,7 +262,7 @@ export class AIService {
                     sanitizedName,
                     file.buffer,
                     file.mimetype,
-                    'ai-teacher',
+                    ownerKeyFolder('ai-teacher', user.id),
                     buildMetadata()
                 );
             } catch (grpcError) {
@@ -463,7 +467,7 @@ export class AIService {
                 sanitizedName,
                 file.buffer,
                 file.mimetype,
-                'ai-uploads',
+                ownerKeyFolder('ai-uploads', user.id),
                 buildMetadata()
             );
             this.logger.log(
@@ -912,24 +916,18 @@ export class AIService {
      */
     async deleteUpload(uploadId: string, user: AuthUser) {
         const upload = await this.getUploadDetail(uploadId, user);
-        let r2DeleteError: Error | null = null;
-
-        // Delete file from R2 if keyR2 exists
-        if (upload.keyR2) {
-            try {
-                await this.r2ClientService.deleteFile(upload.keyR2, buildMetadata());
-                this.logger.log(`Deleted file from R2: ${upload.keyR2}`);
-            } catch (error) {
-                r2DeleteError = error;
-                this.logger.warn(
-                    `Failed to delete file from R2: ${upload.keyR2} - ${error.message}`
-                );
-            }
-        }
 
         try {
+            // The R2 object is queued in the same tx as the row delete; the worker
+            // deletes it (with retry), so a failure can no longer leave an orphan.
             const deletionResult = await this.aiRepository.deleteUploadAggregate(
-                upload.id
+                upload.id,
+                (tx) =>
+                    this.r2Deletes.enqueue(tx, [
+                        // Only an object issued to this row's owner is ever deleted;
+                        // legacy owner-less keys stay in R2 (accepted orphan).
+                        ownedR2Key(upload.keyR2, AI_UPLOAD_AREAS, upload.userId),
+                    ])
             );
             this.logger.log(
                 `Deleted upload aggregate for UserStorage: ${upload.id} (documents=${deletionResult.documents}, documentEntities=${deletionResult.documentEntities}, aiChatDocuments=${deletionResult.aiChatDocuments})`
@@ -945,15 +943,6 @@ export class AIService {
         }
 
         await this.clearAiServiceCache(upload.id);
-
-        if (r2DeleteError) {
-            return {
-                success: true,
-                message:
-                    'Đã xóa dữ liệu trong hệ thống nhưng không thể xóa file trên Cloudflare R2',
-                warning: r2DeleteError.message,
-            };
-        }
 
         return { success: true, message: 'Xóa thành công' };
     }
@@ -1017,6 +1006,14 @@ export class AIService {
      * Create a new upload and trigger OCR processing
      */
     async createUpload(user: AuthUser, dto: UploadFileDto, userToken?: string) {
+        // The key must be one this user was issued; it is later deleted from R2.
+        if (!ownedR2Key(dto.keyR2, AI_UPLOAD_AREAS, user.id)) {
+            throw new BadRequestException({
+                code: 'VALIDATION_FAILED',
+                message: 'keyR2 không hợp lệ',
+            });
+        }
+
         // Enforce monthly file upload quota before doing any expensive work
         await this.enforceFileUploadQuota(user.id);
 

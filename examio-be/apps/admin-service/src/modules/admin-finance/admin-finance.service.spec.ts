@@ -12,8 +12,9 @@ function setup() {
         changeTier: jest.fn(),
     };
     const audit = { write: jest.fn().mockResolvedValue(undefined) };
-    const service = new AdminFinanceService(finance as never, audit as never);
-    return { service, finance, audit };
+    const authUsers = { getUserAdminDetail: jest.fn().mockResolvedValue({ user: { id: 'u' } }) };
+    const service = new AdminFinanceService(finance as never, audit as never, authUsers as never);
+    return { service, finance, audit, authUsers };
 }
 const legacy = (code: string, statusCode: number) =>
     new HttpException({ statusCode, code, message: code }, statusCode);
@@ -143,6 +144,37 @@ describe('AdminFinanceService.setTier', () => {
         const out = await service.setTier({ userId: 'u', tier: 2, reason: 'promo upgrade' }, ctx, md, 'k');
         expect(out.alreadyApplied).toBe(true);
         expect(audit.write).not.toHaveBeenCalled();
+    });
+});
+
+describe('AdminFinanceService.setTier user check', () => {
+    const body = { userId: 'ghost', tier: 2 as const, reason: 'promo upgrade' };
+
+    it('verifies the user in auth with the forwarded admin metadata BEFORE finance is called', async () => {
+        const { service, finance, authUsers } = setup();
+        finance.changeTier.mockResolvedValue({
+            userId: 'u', previousTier: 0, newTier: 2, previousBillingCycle: '', newBillingCycle: 'monthly', isActive: true, alreadyApplied: false,
+        });
+        await service.setTier({ ...body, userId: 'u' }, ctx, md, 'k');
+        expect(authUsers.getUserAdminDetail).toHaveBeenCalledWith('u', md);
+        expect(authUsers.getUserAdminDetail.mock.invocationCallOrder[0]).toBeLessThan(finance.changeTier.mock.invocationCallOrder[0]);
+    });
+
+    it('an unknown user is the historical 404 USER_NOT_FOUND and never reaches finance or the audit log', async () => {
+        const { service, finance, audit, authUsers } = setup();
+        authUsers.getUserAdminDetail.mockRejectedValue(legacy('NOT_FOUND', 404));
+        const err = await service.setTier(body, ctx, md, 'k').catch((e) => e);
+        expect(err.getStatus()).toBe(404);
+        expect(err.getResponse()).toEqual({ statusCode: 404, code: 'USER_NOT_FOUND', message: 'User not found' });
+        expect(finance.changeTier).not.toHaveBeenCalled();
+        expect(audit.write).not.toHaveBeenCalled();
+    });
+
+    it('other auth failures (e.g. 503) propagate unchanged and finance is not called', async () => {
+        const { service, finance, authUsers } = setup();
+        authUsers.getUserAdminDetail.mockRejectedValue(legacy('UNAVAILABLE', 503));
+        await expect(service.setTier(body, ctx, md, 'k')).rejects.toMatchObject({ status: 503 });
+        expect(finance.changeTier).not.toHaveBeenCalled();
     });
 });
 

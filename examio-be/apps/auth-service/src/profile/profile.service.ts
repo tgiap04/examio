@@ -3,8 +3,8 @@ import {
     NotFoundException,
     BadRequestException,
 } from '@nestjs/common';
-import { User } from '@prisma/client';
-import { GenerateIdService, sanitizeFilename } from '@examio/common';
+import { User } from '../prisma';
+import { GenerateIdService, ownerKeyFolder, sanitizeFilename } from '@examio/common';
 import { buildMetadata } from '@examio/grpc';
 import { r2V1 } from '@examio/contracts';
 import { R2Client } from '../clients/r2.client';
@@ -99,19 +99,15 @@ export class ProfileService {
             );
         }
 
-        // Get current user to find old image URL
-        const currentUser = await this.userRepository.findByIdWithRelations(
-            user.id,
-            [],
-            false
-        );
-        const oldImageUrl =
-            type === 'avatar' ? currentUser?.avatar : currentUser?.banner;
-
         // Generate unique filename
         const sanitizedName = sanitizeFilename(file.originalname);
         const filename = `${this.generateIdService.generateId()}-${sanitizedName}`;
-        const directory = type === 'avatar' ? 'avatars' : 'banners';
+        // Owner-scoped key `<area>/<userId>/<id>-<name>`: only the key's owner may ever
+        // have it deleted when the image is replaced.
+        const directory = ownerKeyFolder(
+            type === 'avatar' ? 'avatars' : 'banners',
+            user.id
+        );
 
         // Upload via gRPC to R2 Service
         let uploadResult: r2V1.UploadFileResponse | undefined;
@@ -163,29 +159,10 @@ export class ProfileService {
 
         await this.userUpdates.update(user.id, updateData, user.id);
 
-        // Delete old image from R2 if it exists
-        if (oldImageUrl) {
-            const oldKey = this.extractR2Key(oldImageUrl);
-            if (oldKey) {
-                await this.r2Client
-                    .deleteFile(oldKey, buildMetadata())
-                    .catch((err) => {
-                        console.warn(
-                            `Failed to delete old ${type} from R2:`,
-                            err
-                        );
-                    });
-            }
-        }
+        // The replaced avatar/banner object was queued for deletion by the
+        // update above, in the same transaction.
 
         return { url };
-    }
-
-    /**
-     * Extract R2 key from public URL
-     */
-    private extractR2Key(url: string): string | null {
-        return url?.replace(/^https?:\/\/[^/]+\//, '') || null;
     }
 
     /**

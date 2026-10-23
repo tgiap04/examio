@@ -4,6 +4,7 @@ import { assertWholeCredits } from '@examio/grpc';
 
 import { AuditWriterService } from '../../common/audit-writer.service';
 import { writeAuditBestEffort } from '../admin-roles/best-effort-audit';
+import { AuthUsersClient } from '../../clients/auth-users.client';
 import { FinanceClient } from '../../clients/finance.client';
 import { CreditBody } from './dto/credit.body';
 import { RefundBody } from './dto/refund.body';
@@ -73,7 +74,8 @@ export class AdminFinanceService {
 
     constructor(
         private readonly finance: FinanceClient,
-        private readonly auditWriter: AuditWriterService
+        private readonly auditWriter: AuditWriterService,
+        private readonly authUsers: AuthUsersClient
     ) {}
 
     async refund(
@@ -157,6 +159,9 @@ export class AdminFinanceService {
         metadata: Metadata,
         idempotencyKey: string
     ): Promise<SetTierResult> {
+        // Finance keeps no FK to the user (database per service), so it cannot tell
+        // an unknown id from a real one: ask auth first, with the admin's own token.
+        await this.assertUserExists(body.userId, metadata);
         const res = await this.run(() =>
             this.finance.changeTier(
                 {
@@ -188,6 +193,18 @@ export class AdminFinanceService {
             });
         }
         return result;
+    }
+
+    private async assertUserExists(userId: string, metadata: Metadata): Promise<void> {
+        try {
+            await this.authUsers.getUserAdminDetail(userId, metadata);
+        } catch (err) {
+            if (err instanceof HttpException && err.getStatus() === 404) {
+                const { status, message } = LEGACY_ERRORS.USER_NOT_FOUND;
+                throw new HttpException({ statusCode: status, code: 'USER_NOT_FOUND', message }, status);
+            }
+            throw err;
+        }
     }
 
     private async run<T>(call: () => Promise<T>): Promise<T> {

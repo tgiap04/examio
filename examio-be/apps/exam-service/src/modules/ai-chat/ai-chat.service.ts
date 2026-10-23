@@ -9,9 +9,10 @@ import { firstValueFrom, Observable, Subject } from 'rxjs';
 import { buildMetadata, FinanceClient } from '@examio/grpc';
 import { subscriptionV1 } from '@examio/contracts';
 import { AIChatRepository } from './ai-chat.repository';
-import { R2UploadService } from '../r2/r2-upload.service';
-import { User } from '@prisma/client';
-import { PrismaService } from '@examio/database';
+import { R2DeleteTaskWriter } from '@examio/messaging';
+import { ownedR2Key } from '@examio/common';
+import { AI_UPLOAD_AREAS } from '../ai/ai-upload-areas';
+import { PrismaService } from '../../prisma';
 import type { AuthUser } from '@examio/auth-jwt';
 
 
@@ -30,7 +31,7 @@ export class AIChatService {
     constructor(
         private readonly chatRepository: AIChatRepository,
         private readonly httpService: HttpService,
-        private readonly r2UploadService: R2UploadService,
+        private readonly r2Deletes: R2DeleteTaskWriter,
         private readonly finance: FinanceClient,
         private readonly prisma: PrismaService
     ) {}
@@ -728,7 +729,8 @@ export class AIChatService {
             // Preload all file info in a single query to avoid an N+1
             // findUnique call per document
             const userStorages = await this.prisma.userStorage.findMany({
-                where: { id: { in: documentIds } },
+                // Only the caller's own files: a chat link must not reach another user's row.
+                where: { id: { in: documentIds }, userId: user.id },
                 select: { id: true, filename: true, keyR2: true },
             });
             const userStorageById = new Map(
@@ -742,14 +744,19 @@ export class AIChatService {
                     const userStorage = userStorageById.get(docId);
 
                     if (userStorage) {
-                        // Delete from R2
-                        await this.r2UploadService.deleteImage(
-                            userStorage.keyR2
-                        );
-
-                        // Delete from database (cascade will handle related records)
-                        await this.prisma.userStorage.delete({
-                            where: { id: docId },
+                        // Row delete (cascades related records) and the R2 cleanup
+                        // task commit together; the worker deletes the object.
+                        await this.prisma.$transaction(async (tx) => {
+                            await tx.userStorage.delete({
+                                where: { id: docId },
+                            });
+                            await this.r2Deletes.enqueue(tx, [
+                                ownedR2Key(
+                                    userStorage.keyR2,
+                                    AI_UPLOAD_AREAS,
+                                    user.id
+                                ),
+                            ]);
                         });
 
                         deletedFiles.push(userStorage.filename);
