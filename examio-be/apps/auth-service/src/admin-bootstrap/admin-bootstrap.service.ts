@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../prisma';
 import { GenerateIdService, PasswordService } from '@examio/common';
 import {
     RoleChangeService,

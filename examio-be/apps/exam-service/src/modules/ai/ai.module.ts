@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
+import { R2DeleteTaskWriter } from '@examio/messaging';
 import { HttpModule } from '@nestjs/axios';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { GenerateIdService, EventsModule } from '@examio/common';
 import { GrpcClientModule } from '@examio/grpc';
 import { RedisModule } from '@examio/redis';
@@ -23,6 +24,7 @@ import { AIRepository } from './ai.repository';
         PrismaService,
         GenerateIdService,
         R2Client,
+        R2DeleteTaskWriter,
     ],
     exports: [AIService, AIRepository],
 })

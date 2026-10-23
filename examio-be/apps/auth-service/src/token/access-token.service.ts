@@ -3,8 +3,8 @@ import {
     NotFoundException,
     UnauthorizedException,
 } from '@nestjs/common';
-import type { Prisma, User } from '@prisma/client';
-import { PrismaService } from '@examio/database';
+import type { Prisma, User } from '../prisma';
+import { PrismaService } from '../prisma';
 import { permissionsOf, rolesFor, type Permission, type Role } from '@examio/auth-jwt';
 import { TokenService } from './token.service';
 

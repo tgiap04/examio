@@ -1,6 +1,6 @@
 import { Controller } from '@nestjs/common';
 import { Metadata } from '@grpc/grpc-js';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { GenerateIdService, invalidateWalletCachesBestEffort } from '@examio/common';
 import { RedisService } from '@examio/redis';
 import { walletV1 } from '@examio/contracts';

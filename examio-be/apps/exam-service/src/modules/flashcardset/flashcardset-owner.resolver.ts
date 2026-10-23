@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { OwnerResolver, OwnerResolverRequest } from '@examio/auth-jwt';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 
 /** Owner of the flashcard set named by `:id` or `:flashCardSetId` (single narrow `findUnique`). */
 @Injectable()

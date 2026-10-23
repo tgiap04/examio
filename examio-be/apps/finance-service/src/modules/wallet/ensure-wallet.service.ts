@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '../../prisma';
 import { GenerateIdService } from '@examio/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 
 export const WELCOME_CREDITS = 20;
 const INITIAL_CREDIT_TYPE = 1;

@@ -1,5 +1,5 @@
 import { DynamicModule, Injectable, Logger, Module, OnModuleInit } from '@nestjs/common';
-import { DatabaseModule } from '@examio/database';
+import { PrismaModule } from '../prisma';
 import { GenerateIdService, PasswordService } from '@examio/common';
 import { RolesModule } from '../roles/roles.module';
 import { AdminBootstrapService } from './admin-bootstrap.service';
@@ -29,7 +29,7 @@ export class AdminBootstrapModule {
     static forRoot(options: { syncOnBoot: boolean }): DynamicModule {
         return {
             module: AdminBootstrapModule,
-            imports: [DatabaseModule, RolesModule],
+            imports: [PrismaModule, RolesModule],
             providers: [
                 AdminBootstrapService,
                 PasswordService,

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 
 @Injectable()
 export class AIChatRepository {

@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
 import {
     PaginationParams,
@@ -17,6 +16,17 @@ import {
     getPublicCachePattern,
 } from '../constants/cache-keys';
 
+/**
+ * Structural slice of a service's own Prisma client. Each service generates its
+ * client from its own schema, so this lib cannot import one: it only needs
+ * `$transaction` here, and reaches model delegates by name (see `model`).
+ */
+export interface PrismaLike {
+    // `tx` is the service-specific transaction client, unknowable in this lib.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    $transaction<R>(fn: (tx: any) => Promise<R>): Promise<R>;
+}
+
 @Injectable()
 export abstract class BaseRepository<T> {
     protected abstract modelName: string;
@@ -24,12 +34,17 @@ export abstract class BaseRepository<T> {
     protected defaultCacheTTL: EXPIRED_TIME = EXPIRED_TIME.FIVE_MINUTES;
 
     constructor(
-        protected readonly prisma: PrismaService,
+        protected readonly prisma: PrismaLike,
         protected readonly redis: RedisService
     ) {}
 
     protected get model() {
         return (this.prisma as any)[this.modelName];
+    }
+
+    /** The model delegate of `tx` (a transaction client) when given, else of the service client. */
+    protected modelOf(tx?: any) {
+        return tx ? tx[this.modelName] : this.model;
     }
 
     /**
@@ -374,8 +389,13 @@ export abstract class BaseRepository<T> {
      * @param data - Dữ liệu cập nhật
      * @param userId - ID của user sở hữu (để invalidate đúng cache)
      */
-    async update(id: string | number, data: any, userId?: string): Promise<T> {
-        const result = await this.model.update({
+    async update(
+        id: string | number,
+        data: any,
+        userId?: string,
+        tx?: any
+    ): Promise<T> {
+        const result = await this.modelOf(tx).update({
             where: { id },
             data: {
                 ...data,
@@ -383,24 +403,8 @@ export abstract class BaseRepository<T> {
             },
         });
 
-        // Invalidate user-scoped caches if userId provided
-        if (userId) {
-            console.log(
-                `[${this.modelName}] 🗑️ UPDATE id:${id} -> invalidating item & list cache for user: ${userId}`
-            );
-            await this.invalidateItemCache(userId, String(id));
-            await this.invalidateUserListCache(userId);
-            await this.invalidateOneCache(userId, id);
-        } else {
-            // Fallback to legacy cache invalidation
-            const legacyKey = this.getCacheKey(`id:${id}`);
-            console.log(
-                `[${this.modelName}] 🗑️ UPDATE id:${id} -> deleting legacy cache: ${legacyKey}`
-            );
-            await this.redis.del(legacyKey);
-            await this.invalidateOneCache(undefined, id);
-        }
-
+        // Inside a caller tx the caches are cleared by `invalidateWrite` after commit.
+        if (!tx) await this.invalidateWrite('UPDATE', id, userId);
         return result;
     }
 
@@ -484,15 +488,34 @@ export abstract class BaseRepository<T> {
      * @param id - ID của bản ghi
      * @param userId - ID của user sở hữu (để invalidate đúng cache)
      */
-    async delete(id: string | number, userId?: string): Promise<T> {
-        const result = await this.model.delete({
+    async delete(
+        id: string | number,
+        userId?: string,
+        tx?: any
+    ): Promise<T> {
+        const result = await this.modelOf(tx).delete({
             where: { id },
         });
 
+        // Inside a caller tx the caches are cleared by `invalidateWrite` after commit.
+        if (!tx) await this.invalidateWrite('DELETE', id, userId);
+        return result;
+    }
+
+    /**
+     * Cache invalidation of a single-row write. `update`/`delete` call it
+     * themselves; callers that pass their own `tx` must call it AFTER the tx
+     * commits (invalidating earlier lets a concurrent read re-cache the old row).
+     */
+    public async invalidateWrite(
+        op: 'UPDATE' | 'DELETE',
+        id: string | number,
+        userId?: string
+    ): Promise<void> {
         // Invalidate user-scoped caches if userId provided
         if (userId) {
             console.log(
-                `[${this.modelName}] 🗑️ DELETE id:${id} -> invalidating item & list cache for user: ${userId}`
+                `[${this.modelName}] 🗑️ ${op} id:${id} -> invalidating item & list cache for user: ${userId}`
             );
             await this.invalidateItemCache(userId, String(id));
             await this.invalidateUserListCache(userId);
@@ -501,13 +524,11 @@ export abstract class BaseRepository<T> {
             // Fallback to legacy cache invalidation
             const legacyKey = this.getCacheKey(`id:${id}`);
             console.log(
-                `[${this.modelName}] 🗑️ DELETE id:${id} -> deleting legacy cache: ${legacyKey}`
+                `[${this.modelName}] 🗑️ ${op} id:${id} -> deleting legacy cache: ${legacyKey}`
             );
             await this.redis.del(legacyKey);
             await this.invalidateOneCache(undefined, id);
         }
-
-        return result;
     }
 
     /**

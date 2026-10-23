@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import type { AuthUser } from '@examio/auth-jwt';
 import { generateAccessCode } from '../common/access-code-guard';
 import { applySharingUpdate, type SharingDelta } from '../common/sharing-list.util';

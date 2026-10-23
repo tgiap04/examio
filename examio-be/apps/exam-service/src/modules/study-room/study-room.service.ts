@@ -6,7 +6,7 @@ import {
     BadRequestException,
 } from '@nestjs/common';
 import { GenerateIdService } from '@examio/common';
-import { StudyRoomMember } from '@prisma/client';
+import { StudyRoomMember } from '../../prisma';
 import { randomInt } from 'crypto';
 import { StudyRoomRepository } from './study-room.repository';
 import { StudyRoomRole, AccessType } from './study-room.constants';

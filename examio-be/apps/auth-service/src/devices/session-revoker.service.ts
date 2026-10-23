@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
-import { PrismaService } from '@examio/database';
+import type { Prisma } from '../prisma';
+import { PrismaService } from '../prisma';
 import { GatewayControlClient, sessionRevokeExp } from '../clients/gateway-control.client';
 import { SessionRevokedPublisher } from './session-revoked.publisher';
 

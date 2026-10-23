@@ -10,7 +10,6 @@ module.exports = {
     testEnvironment: 'node',
     roots: ['<rootDir>/apps/', '<rootDir>/libs/', '<rootDir>/test/'],
     moduleNameMapper: {
-        '^@examio/database(.*)$': '<rootDir>/libs/database/src/$1',
         '^@examio/common(.*)$': '<rootDir>/libs/common/src/$1',
         '^@examio/redis(.*)$': '<rootDir>/libs/redis/src/$1',
         '^@examio/observability(.*)$': '<rootDir>/libs/observability/src/$1',

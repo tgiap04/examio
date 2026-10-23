@@ -11,7 +11,7 @@ import { fail, toRpcError } from './auth.grpc.errors';
 import { USER_SELECT, fromProtoRole, toUser } from './auth.grpc.mapper';
 import { UsersQueryService } from './users-query.service';
 import { UserStatusService } from '../user-status/user-status.service';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../prisma';
 
 /**
  * Auth gRPC surface. Every handler carries a guard declaration (a unit test

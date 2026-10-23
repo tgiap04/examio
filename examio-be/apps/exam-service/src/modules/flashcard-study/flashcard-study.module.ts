@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { FlashcardStudyController } from './flashcard-study.controller';
 import { FlashcardStudyService } from './flashcard-study.service';
-import { DatabaseModule } from '@examio/database';
+import { PrismaModule } from '../../prisma';
 import { FlashcardSetOwnerResolver } from '../flashcardset/flashcardset-owner.resolver';
 
 @Module({
-    imports: [DatabaseModule],
+    imports: [PrismaModule],
     controllers: [FlashcardStudyController],
     providers: [FlashcardStudyService, FlashcardSetOwnerResolver],
     exports: [FlashcardStudyService],

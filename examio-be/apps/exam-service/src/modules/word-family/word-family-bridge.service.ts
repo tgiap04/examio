@@ -4,7 +4,7 @@ import {
     NotFoundException,
     BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 
 import { WordFamilyRepository } from './word-family.repository';
 import type { AuthUser } from '@examio/auth-jwt';

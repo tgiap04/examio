@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { status } from '@grpc/grpc-js';
 import { RpcException } from '@nestjs/microservices';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { financeAdminV1 } from '@examio/contracts';
 import { dayKey, resolveDays, startOfNDaysAgo } from './stats-window';
 

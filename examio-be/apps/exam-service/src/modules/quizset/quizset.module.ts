@@ -1,7 +1,8 @@
 import { Module, forwardRef } from '@nestjs/common';
+import { R2DeleteTaskWriter } from '@examio/messaging';
 import { QuizsetService } from './quizset.service';
 import { QuizsetController } from './quizset.controller';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { GenerateIdService } from '@examio/common';
 import { GrpcClientModule } from '@examio/grpc';
 import { RedisService } from '@examio/redis';
@@ -20,6 +21,7 @@ import { UserSearchService } from '../common/user-search.service';
         QuizsetService,
         GenerateIdService,
         R2Client,
+        R2DeleteTaskWriter,
         QuizSetRepository,
         QuizsetSharingService,
         QuizSetOwnerResolver,

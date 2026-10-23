@@ -15,23 +15,11 @@
     "rootDir": "./",
     "baseUrl": "./",
     "paths": {
-      ".prisma/client": [
-        "node_modules/.prisma/client"
-      ],
-      ".prisma/client/*": [
-        "node_modules/.prisma/client/*"
-      ],
       "@examio/common": [
         "libs/common/src"
       ],
       "@examio/common/*": [
         "libs/common/src/*"
-      ],
-      "@examio/database": [
-        "libs/database/src"
-      ],
-      "@examio/database/*": [
-        "libs/database/src/*"
       ],
       "@examio/redis": [
         "libs/redis/src"

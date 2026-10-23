@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { DatabaseModule, PrismaService } from '@examio/database';
+import { PrismaModule, PrismaService } from './prisma';
 import { GenerateIdService } from '@examio/common';
 import { MessagingModule } from '@examio/messaging';
 import { LoggerModule } from '@examio/observability';
@@ -13,7 +13,7 @@ import { EnsureWalletService } from './modules/wallet/ensure-wallet.service';
 @Module({
     imports: [
         LoggerModule.forRoot('finance-service'),
-        DatabaseModule,
+        PrismaModule,
         MessagingModule.forRoot({
             service: 'finance',
             relay: true,

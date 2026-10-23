@@ -10,7 +10,7 @@ import { Logger, Module } from '@nestjs/common';
 import { Command } from 'commander';
 import { AuthJwtModule } from '@examio/auth-jwt';
 import { GenerateIdService } from '@examio/common';
-import { DatabaseModule } from '@examio/database';
+import { PrismaModule } from '../prisma';
 import { GrpcClientModule } from '@examio/grpc';
 import { AUTH_GRPC_REGISTRATION, AuthClient } from '../clients/auth.client';
 import { EnsureWalletService } from '../modules/wallet/ensure-wallet.service';
@@ -18,7 +18,7 @@ import { ReconcileTeachers } from './reconcile-teachers';
 
 @Module({
     imports: [
-        DatabaseModule,
+        PrismaModule,
         AuthJwtModule.forRoot({
             serviceName: 'finance',
             serviceClient: true,

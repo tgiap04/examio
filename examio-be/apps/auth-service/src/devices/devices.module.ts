@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../prisma';
 import { RefreshTokenCipherService } from '@examio/common';
 import { MessagingModule } from '@examio/messaging';
 import { RolesModule } from '../roles/roles.module';

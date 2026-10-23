@@ -8,20 +8,20 @@ import {
     Inject,
     OnModuleInit,
 } from '@nestjs/common';
-import { Prisma, User } from '@prisma/client';
+import { Prisma, User } from './prisma';
 import * as crypto from 'crypto';
 
 // Shared libs imports
-import { PrismaService } from '@examio/database';
+import { PrismaService } from './prisma';
 import {
     MailService,
     PasswordService,
     GenerateIdService,
-    sanitizeUser,
     generateCode,
     RefreshTokenCipherService,
 } from '@examio/common';
 import { OutboxService } from '@examio/messaging';
+import { sanitizeUser } from './utils/sanitize-user';
 import { permissionsOf, type Permission, type Role } from '@examio/auth-jwt';
 import type { UserRegistered } from '@examio/contracts/generated/examio/events/v1/auth_events';
 

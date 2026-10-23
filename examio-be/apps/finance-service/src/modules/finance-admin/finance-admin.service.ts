@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { status } from '@grpc/grpc-js';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../../prisma';
 import { GenerateIdService, invalidateWalletCachesBestEffort } from '@examio/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { RedisService } from '@examio/redis';
 import { financeAdminV1 } from '@examio/contracts';
 import {
@@ -176,15 +176,9 @@ export class FinanceAdminService {
         }
         const isActive = req.tier > 0;
 
-        try {
-            return await this.applyTier(req, actor, isActive);
-        } catch (err) {
-            // Creating the row for an unknown user violates the User FK (until phase 11 drops it).
-            if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003') {
-                throw rpcError(status.NOT_FOUND, 'USER_NOT_FOUND');
-            }
-            throw err;
-        }
+        // finance cannot tell an unknown user from a known one (no `User` table, no FK):
+        // the admin-only caller is audited and `userId` comes from auth's own user list.
+        return this.applyTier(req, actor, isActive);
     }
 
     /**

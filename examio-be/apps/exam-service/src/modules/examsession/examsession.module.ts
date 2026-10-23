@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ExamSessionService } from './examsession.service';
 import { ExamSessionController } from './examsession.controller';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { GenerateIdService } from '@examio/common';
 import { RedisService } from '@examio/redis';
 import { ExamSessionRepository } from './examsession.repository';

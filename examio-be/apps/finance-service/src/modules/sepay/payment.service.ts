@@ -5,7 +5,7 @@ import {
     Logger,
     ForbiddenException,
 } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { RedisService } from '@examio/redis';
 
 import { GenerateIdService, invalidateWalletCachesBestEffort } from '@examio/common';

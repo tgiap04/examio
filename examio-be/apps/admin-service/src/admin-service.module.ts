@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { ThrottlerModule } from '@nestjs/throttler';
 import {
-    DatabaseModule,
-    DatabaseReadinessCheck,
+    PrismaModule,
+    PrismaReadinessCheck,
     PrismaService,
-} from '@examio/database';
+} from './prisma';
 import { RedisModule, RedisReadinessCheck } from '@examio/redis';
 
 import { AdminServiceController } from './admin-service.controller';
@@ -32,9 +32,9 @@ function serviceClientEnabled(): boolean {
     imports: [
         LoggerModule.forRoot('admin-service'),
         HealthModule.forRoot({
-            checks: [DatabaseReadinessCheck, RedisReadinessCheck],
+            checks: [PrismaReadinessCheck, RedisReadinessCheck],
         }),
-        DatabaseModule,
+        PrismaModule,
         RedisModule,
         // Service token (aud = gateway) for GatewayControl.SetPageFlags; required in
         // production, optional locally (the push then fails loudly with a 503).

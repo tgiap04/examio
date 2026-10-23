@@ -1,13 +1,11 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { RpcException } from '@nestjs/microservices';
 import { status } from '@grpc/grpc-js';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../../prisma';
 import { z } from 'zod';
-import { buildMetadata } from '@examio/grpc';
 import { wordFamilyAdminV1 } from '@examio/contracts';
-import { R2Client } from '../../clients/r2.client';
 import { WordFamilyRepository } from './word-family.repository';
-import { r2KeyFromUrl } from './r2-key-from-url';
+import { r2KeyFromUrl } from '@examio/common';
 
 export const R2_PUBLIC_BASE_URL = 'R2_PUBLIC_BASE_URL';
 
@@ -80,7 +78,8 @@ function toProto(c: NonNullable<Category>): wordFamilyAdminV1.WordFamilyCategory
 /**
  * The single writer of `WordFamilyCategory` (admin-service used to write it
  * directly). Image objects live in R2: replacing or deleting a category image
- * deletes the old object (CLAUDE.md: a record's R2 file never outlives it).
+ * queues the old object for deletion in the same transaction as the row change
+ * (CLAUDE.md: a record's R2 file never outlives it; the worker does the delete).
  */
 @Injectable()
 export class WordFamilyAdminService {
@@ -88,7 +87,6 @@ export class WordFamilyAdminService {
 
     constructor(
         private readonly repo: WordFamilyRepository,
-        private readonly r2: R2Client,
         @Inject(R2_PUBLIC_BASE_URL) private readonly r2PublicBase: string
     ) {}
 
@@ -112,13 +110,11 @@ export class WordFamilyAdminService {
         const existing = await this.repo.findCategoryById(req.id);
         if (!existing) return fail(status.NOT_FOUND, 'Category not found');
 
-        // R2 first: DeleteObjects is idempotent, so a failure here aborts with
-        // the row untouched and the admin can simply retry.
-        await this.deleteImage(existing.imageUrl, { strict: true });
-        const updated = await this.repo.updateCategory(req.id, {
-            isActive: false,
-            imageUrl: null,
-        });
+        const updated = await this.repo.updateCategory(
+            req.id,
+            { isActive: false, imageUrl: null },
+            this.imageKeysToDelete(existing.imageUrl, { strict: true })
+        );
         return { category: toProto(updated) };
     }
 
@@ -166,21 +162,20 @@ export class WordFamilyAdminService {
             ...(input.order !== undefined && { order: input.order }),
             ...(input.isActive !== undefined && { isActive: input.isActive }),
         };
-        const updated = await mapUniqueViolation(() => this.repo.updateCategory(req.id, data));
-
-        if (input.imageUrl !== undefined && input.imageUrl !== existing.imageUrl) {
-            // The row already points at the new image; a failed cleanup only
-            // leaves an orphan object, so it is logged, not surfaced.
-            await this.deleteImage(existing.imageUrl, { strict: false });
-        }
+        // The old image is queued in the same tx as the row update.
+        const oldImageKeys =
+            input.imageUrl !== undefined && input.imageUrl !== existing.imageUrl
+                ? this.imageKeysToDelete(existing.imageUrl, { strict: false })
+                : [];
+        const updated = await mapUniqueViolation(() =>
+            this.repo.updateCategory(req.id, data, oldImageKeys)
+        );
         return updated;
     }
 
-    private async deleteImage(
-        imageUrl: string | null,
-        opts: { strict: boolean }
-    ): Promise<void> {
-        if (!imageUrl) return;
+    /** The R2 keys to queue for `imageUrl`: only word-family objects on our public host. */
+    private imageKeysToDelete(imageUrl: string | null, opts: { strict: boolean }): string[] {
+        if (!imageUrl) return [];
         if (!this.r2PublicBase) {
             if (opts.strict) {
                 fail(
@@ -189,22 +184,15 @@ export class WordFamilyAdminService {
                 );
             }
             this.logger.error('R2_PUBLIC_URL is not configured; old category image not deleted');
-            return;
+            return [];
         }
         const key = r2KeyFromUrl(imageUrl, this.r2PublicBase);
-        if (!key) return; // external image: not ours to delete
+        if (!key) return []; // external image: not ours to delete
         if (!key.startsWith(WORD_FAMILY_IMAGE_PREFIX) || key.split('/').includes('..')) {
             // An R2 object of another feature (documents, avatars, ...): never ours to delete.
             this.logger.warn(`category image ${key} is outside ${WORD_FAMILY_IMAGE_PREFIX}; not deleted`);
-            return;
+            return [];
         }
-        try {
-            await this.r2.deleteFile(key, buildMetadata());
-        } catch (err) {
-            if (opts.strict) throw err;
-            this.logger.error(
-                `Failed to delete old category image ${key}: ${(err as Error).message}`
-            );
-        }
+        return [key];
     }
 }

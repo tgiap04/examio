@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { RedisService } from '@examio/redis';
 import { QuizsetModule } from '../quizset/quizset.module';
 import { QuizPracticeAttemptService } from './quiz-practice-attempt.service';

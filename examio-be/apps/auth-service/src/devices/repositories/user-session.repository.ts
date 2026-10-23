@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
-import { UserSession } from '@prisma/client';
+import { PrismaService } from '../../prisma';
+import { UserSession } from '../../prisma';
 import { RefreshTokenCipherService } from '@examio/common';
 
 @Injectable()

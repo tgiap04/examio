@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { BaseRepository, PaginationResult } from '@examio/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
-import { WalletTransaction } from '@prisma/client';
+import { WalletTransaction } from '../../prisma';
 
 @Injectable()
 export class WalletTransactionRepository extends BaseRepository<WalletTransaction> {

@@ -1,4 +1,4 @@
-import type { BaseRole, Prisma } from '@prisma/client';
+import type { BaseRole, Prisma } from '../prisma';
 import { authV1 } from '@examio/contracts';
 
 export const USER_SELECT = {

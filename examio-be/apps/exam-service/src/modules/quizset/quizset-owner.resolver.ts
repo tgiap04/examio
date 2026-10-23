@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { OwnerResolver, OwnerResolverRequest } from '@examio/auth-jwt';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 
 /**
  * Owner of the quiz set a request names: `:id`, `:quizSetId` or `body.quizSetId`

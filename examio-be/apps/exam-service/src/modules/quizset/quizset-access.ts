@@ -1,4 +1,4 @@
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 
 /**
  * Access to a quiz set from the set's own sharing fields ONLY: owner, public,

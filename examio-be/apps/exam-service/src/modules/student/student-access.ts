@@ -1,4 +1,4 @@
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 
 /** Exam sessions with this `assessType` are open to every student. */
 const ASSESS_PUBLIC = 0;

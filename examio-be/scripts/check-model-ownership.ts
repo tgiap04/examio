@@ -30,8 +30,8 @@ export const APP_SERVICE: Readonly<Record<string, Service>> = {
     'gateway-service': 'gateway',
 };
 
-/** Every service keeps its own outbox / idempotency tables (libs/messaging). */
-export const SHARED_MODELS: ReadonlySet<string> = new Set(['OutboxEvent', 'ProcessedEvent']);
+/** Every service keeps its own outbox / idempotency tables (libs/messaging) and, when it owns R2 objects, its own R2 delete queue. */
+export const SHARED_MODELS: ReadonlySet<string> = new Set(['OutboxEvent', 'ProcessedEvent', 'R2DeleteTask']);
 
 /**
  * Model -> owning service (ARCH Appendix A). Until phases 12-15 extract the
@@ -375,15 +375,33 @@ export function formatReport(violations: readonly Violation[]): string {
     ].join('\n');
 }
 
+/**
+ * Text of every per-service Prisma schema (`apps/<svc>/prisma/schema.prisma` or
+ * the multi-file `apps/<svc>/prisma/schema/*.prisma`), concatenated; '' when none exist.
+ */
+export function serviceSchemaText(root: string): string {
+    const apps = join(root, 'apps');
+    if (!existsSync(apps)) return '';
+    const files: string[] = [];
+    for (const app of readdirSync(apps).sort()) {
+        const single = join(apps, app, 'prisma', 'schema.prisma');
+        const folder = join(apps, app, 'prisma', 'schema');
+        if (existsSync(single)) files.push(single);
+        else if (existsSync(folder) && statSync(folder).isDirectory()) {
+            for (const f of readdirSync(folder).sort()) if (f.endsWith('.prisma')) files.push(join(folder, f));
+        }
+    }
+    return files.map((f) => readFileSync(f, 'utf8')).join('\n');
+}
+
 function main(argv: string[]): number {
     const strict = argv.includes('--strict');
     const rootIdx = argv.indexOf('--root');
     const root = rootIdx >= 0 ? argv[rootIdx + 1] : join(__dirname, '..');
 
-    const schema = join(root, 'libs/database/src/schema.prisma');
+    const schemaText = serviceSchemaText(root);
     let relations: RelationMap | undefined;
-    if (existsSync(schema)) {
-        const schemaText = readFileSync(schema, 'utf8');
+    if (schemaText) {
         const missing = unmappedModels(schemaModels(schemaText));
         if (missing.length) {
             console.error(`Unmapped Prisma models (add them to OWNERSHIP): ${missing.join(', ')}`);

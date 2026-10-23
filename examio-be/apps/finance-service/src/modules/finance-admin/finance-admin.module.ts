@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { GenerateIdService } from '@examio/common';
 import { RedisService } from '@examio/redis';
 import { WalletModule } from '../wallet/wallet.module';

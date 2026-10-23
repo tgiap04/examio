@@ -1,4 +1,4 @@
-import { User } from '@prisma/client';
+import { User } from '../prisma';
 import type { AuthUser } from '@examio/auth-jwt';
 
 /** `req.user` is the verified token principal; load other fields from the DB by id. */

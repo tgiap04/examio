@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { GatewayClient } from '../../clients/gateway.client';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import {
     isToggleablePageKey,
     PAGE_LABELS,

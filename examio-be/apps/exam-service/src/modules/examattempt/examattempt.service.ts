@@ -1,4 +1,4 @@
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { rethrowKnown } from '../common/rethrow-known';
 import {
     Injectable,
@@ -12,7 +12,6 @@ import {
     CryptoService,
     TurnstileService,
 } from '@examio/common';
-import { User } from '@prisma/client';
 import {
     EXAM_SESSION_STATUS,
     EXAM_ATTEMPT_STATUS,

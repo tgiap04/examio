@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
-import { Prisma } from '@prisma/client';
+import { PrismaService } from '../../prisma';
+import { Prisma } from '../../prisma';
 import { GenerateIdService } from '@examio/common';
 import {
     SUBSCRIPTION_TIER,

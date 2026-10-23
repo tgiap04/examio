@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
+import { R2DeleteTaskWriter } from '@examio/messaging';
 import { FlashcardsetService } from './flashcardset.service';
 import { FlashcardsetController } from './flashcardset.controller';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { GenerateIdService, TurnstileService } from '@examio/common';
 import { GrpcClientModule } from '@examio/grpc';
 import { RedisService } from '@examio/redis';
@@ -18,6 +19,7 @@ import { UserSearchService } from '../common/user-search.service';
         FlashcardsetService,
         GenerateIdService,
         R2Client,
+        R2DeleteTaskWriter,
         FlashCardSetRepository,
         TurnstileService,
         FlashcardSetOwnerResolver,

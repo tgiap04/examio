@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ProfileController } from './profile.controller';
 import { ProfileService } from './profile.service';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../prisma';
 import { GenerateIdService } from '@examio/common';
 import { UserRepository } from '../repositories/user.repository';
 import { GrpcClientModule } from '@examio/grpc';

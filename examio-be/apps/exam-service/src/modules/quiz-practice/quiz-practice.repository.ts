@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '@examio/database';
+import { Prisma } from '../../prisma';
+import { PrismaService } from '../../prisma';
 import type { AttemptRow } from './quiz-practice.mapper';
 
 export interface QuestionRow {

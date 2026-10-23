@@ -1,7 +1,7 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../../prisma';
 import { z } from 'zod';
-import type { PrismaService } from '@examio/database';
+import type { PrismaService } from '../../prisma';
 
 /** One cap for each list (`whitelist`, `codeGrantedIds`) on every shareable resource. */
 export const SHARE_LIST_CAP = 2000;

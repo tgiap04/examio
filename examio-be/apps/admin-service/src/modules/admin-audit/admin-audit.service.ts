@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Metadata } from '@grpc/grpc-js';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 
 import { AuthClient } from '../../clients/auth.client';
 

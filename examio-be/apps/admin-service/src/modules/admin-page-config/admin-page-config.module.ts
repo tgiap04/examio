@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { DatabaseModule, PrismaService } from '@examio/database';
+import { PrismaModule, PrismaService } from '../../prisma';
 import { GrpcClientModule } from '@examio/grpc';
 
 import { GATEWAY_GRPC_REGISTRATION, GatewayClient } from '../../clients/gateway.client';
@@ -8,7 +8,7 @@ import { AdminPageConfigService } from './admin-page-config.service';
 import { AdminPageFlagsGrpcController } from './admin-page-flags.grpc.controller';
 
 @Module({
-    imports: [DatabaseModule, GrpcClientModule.register(GATEWAY_GRPC_REGISTRATION)],
+    imports: [PrismaModule, GrpcClientModule.register(GATEWAY_GRPC_REGISTRATION)],
     controllers: [AdminPageConfigController, AdminPageFlagsGrpcController],
     providers: [AdminPageConfigService, PrismaService, GatewayClient],
     exports: [AdminPageConfigService],

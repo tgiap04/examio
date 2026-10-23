@@ -15,8 +15,20 @@ import { RedisUnavailableFilter } from '@examio/redis';
 import { PROTO_FILES } from '@examio/contracts';
 import { grpcServerOptions } from '@examio/grpc';
 import { RedisIoAdapter } from './modules/study-room/redis-io.adapter';
+import { parseRoles } from '@examio/messaging';
+import { WorkerModule } from './worker.module';
 
-async function bootstrap() {
+async function startWorker() {
+    // R2 delete-task worker. No HTTP/gRPC listener.
+    const worker = await NestFactory.createApplicationContext(WorkerModule, {
+        bufferLogs: true,
+    });
+    worker.useLogger(worker.get(Logger));
+    worker.enableShutdownHooks();
+    console.log('📮 Exam Service worker running (R2 delete tasks)');
+}
+
+async function startApi() {
     // WS gateway (study-room) dùng cookie auth sameSite=none ở prod — origin
     // allowlist bắt buộc, không được fail-open. Xem wsAllowedOrigins().
     if (process.env.NODE_ENV === 'production' && !process.env.FRONTEND_URL) {
@@ -66,4 +78,13 @@ async function bootstrap() {
     console.log(`🚀 Exam Service is running on port ${port}`);
     console.log(`📡 gRPC server is running on port ${grpcPort}`);
 }
-bootstrap();
+async function bootstrap() {
+    // ROLE=api | worker | api,worker (default api,worker).
+    const roles = parseRoles();
+    if (roles.has('api')) await startApi();
+    if (roles.has('worker')) await startWorker();
+}
+bootstrap().catch((err) => {
+    console.error(err);
+    process.exit(1);
+});

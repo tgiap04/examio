@@ -7,7 +7,7 @@ import {
     Logger,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { SepayWebhook } from '../../types/webhook';
 import { getPaymentIdFromWebhook } from '../../utils/handleWebhook';
 import { PAYMENT_STATUS } from '../../types/payment';

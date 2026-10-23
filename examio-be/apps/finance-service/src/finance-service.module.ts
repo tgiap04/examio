@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import {
-    DatabaseModule,
-    DatabaseReadinessCheck,
+    PrismaModule,
+    PrismaReadinessCheck,
     PrismaService,
-} from '@examio/database';
+} from './prisma';
 import { GenerateIdService } from '@examio/common';
 import { RedisModule, RedisReadinessCheck } from '@examio/redis';
 import { FinanceServiceController } from './finance-service.controller';
@@ -21,9 +21,9 @@ import { AuthJwtModule } from '@examio/auth-jwt';
     imports: [
         LoggerModule.forRoot('finance-service'),
         HealthModule.forRoot({
-            checks: [DatabaseReadinessCheck, RedisReadinessCheck],
+            checks: [PrismaReadinessCheck, RedisReadinessCheck],
         }),
-        DatabaseModule,
+        PrismaModule,
         RedisModule,
         AuthJwtModule.forRoot({ serviceName: 'finance', serviceClient: true }),
         FINANCE_MESSAGING,

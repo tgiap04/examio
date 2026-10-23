@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from '@prisma/client';
+import { User } from '../prisma';
 
 export const LoginSchema = z
     .object({

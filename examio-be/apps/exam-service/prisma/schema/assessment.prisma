@@ -1,0 +1,154 @@
+// exam-service legacy schema: ASSESSMENT domain (extracted in phase 12/13).
+// No relation to User: userId is a plain column with an index.
+
+model ExamRoom {
+    id          String   @id @default(cuid())
+    title       String
+    description String?
+    quizSetId   String
+    hostId      String
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @default(now()) @updatedAt
+    createdBy   String?
+    updatedBy   String?
+
+    quizSet QuizSet @relation(fields: [quizSetId], references: [id], onDelete: Cascade)
+
+    examSessions ExamSession[]
+    userPins     UserPinnedExamRoom[]
+
+    @@index([hostId])
+}
+
+model ExamSession {
+    id                     String    @id @default(cuid())
+    examRoomId             String
+    status                 Int       @default(0) // 0: UPCOMING, 1: ONGOING, 2: ENDED
+    startTime              DateTime
+    endTime                DateTime?
+    timeLimitMinutes       Int? // Giới hạn thời gian (phút), null = không giới hạn
+    autoJoinByLink         Boolean   @default(false)
+    // Security and access control fields (moved from ExamRoom)
+    assessType             Int       @default(0) // 0: PUBLIC, 1: PRIVATE
+    allowRetake            Boolean   @default(false)
+    maxAttempts            Int       @default(1)
+    accessCode             String? // 6-digit code for private access
+    whitelist              String[]  @default([]) // List of user IDs who can access
+    codeGrantedIds         String[]  @default([]) // user ids that unlocked with the current code (cleared when the code changes)
+    showAnswersAfterSubmit Boolean   @default(true) // Show detailed answers after submission
+    passingScore           Float     @default(0) // Minimum score percentage to pass (0 = no minimum)
+
+    // Question selection configuration
+    questionCount          Int?      // Total number of questions for this session (null = all questions)
+    questionSelectionMode  Int       @default(0) // 0: ALL, 1: RANDOM_TOTAL, 2: RANDOM_BY_LABEL
+    labelQuestionConfig    Json?     // Array of { labelId: string, count: number } for RANDOM_BY_LABEL mode
+    shuffleQuestions       Boolean   @default(false) // Shuffle question order for each attempt
+
+    createdAt              DateTime  @default(now())
+    updatedAt              DateTime  @default(now()) @updatedAt
+    createdBy              String?
+    updatedBy              String?
+
+    examRoom     ExamRoom      @relation(fields: [examRoomId], references: [id], onDelete: Cascade)
+    examAttempts ExamAttempt[]
+
+    @@index([accessCode])
+}
+
+model ExamAttempt {
+    id             String    @id @default(cuid())
+    examSessionId  String
+    userId         String
+    score          Float
+    violationCount Int       @default(0)
+    startedAt      DateTime
+    finishedAt     DateTime?
+    status         Int       @default(0) // 0: IN_PROGRESS, 1: COMPLETED, 2: CANCELLED
+
+    // Answer tracking fields (similar to QuizPracticeAttempt)
+    answers         Json     @default("{}") // { questionId: selectedAnswer }
+    currentIndex    Int      @default(0) // Current question index
+    markedQuestions String[] @default([]) // Marked question IDs
+    totalQuestions  Int      @default(0)
+    correctAnswers  Int      @default(0)
+
+    // Selected questions for this attempt (stored to maintain consistency across attempts)
+    selectedQuestionIds String[] @default([]) // Question IDs selected for this specific attempt
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now()) @updatedAt
+    createdBy String?
+    updatedBy String?
+
+    examSession  ExamSession   @relation(fields: [examSessionId], references: [id], onDelete: Cascade)
+    cheatingLogs CheatingLog[]
+
+    @@index([userId])
+}
+
+// Cheating log for exam attempts - tracks violations per type
+model CheatingLog {
+    id             String   @id @default(cuid())
+    examAttemptId  String
+    type           String // TAB_SWITCH, WINDOW_BLUR, DEVTOOLS_OPEN, COPY_PASTE, RIGHT_CLICK, FULLSCREEN_EXIT, PRINT_SCREEN
+    count          Int      @default(1)
+    description    String? // Human-readable description
+    lastOccurredAt DateTime @default(now())
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @default(now()) @updatedAt
+
+    examAttempt ExamAttempt @relation(fields: [examAttemptId], references: [id], onDelete: Cascade)
+
+    @@unique([examAttemptId, type]) // Upsert by type - O(1) lookup
+    @@index([examAttemptId])
+}
+
+model QuizPracticeAttempt {
+    id              String   @id @default(cuid())
+    quizSetId       String
+    userId          String
+    type            Int      @default(0) // 0: PRACTICE (thi thử), 1: REAL (thi thật)
+    answers         Json     @default("{}") // { questionId: selectedAnswer }
+    currentIndex    Int      @default(0) // Câu hỏi hiện tại
+    markedQuestions String[] @default([]) // Danh sách câu hỏi đánh dấu
+
+    // Thời gian làm bài
+    timeSpentSeconds Int  @default(0) // Thời gian đã làm (giây)
+    timeLimitMinutes Int? // Giới hạn thời gian (phút), null = không giới hạn
+
+    // Trạng thái
+    isSubmitted    Boolean @default(false)
+    score          Float? // Điểm sau khi nộp bài
+    totalQuestions Int     @default(0)
+    correctAnswers Int     @default(0)
+    // Frozen at submit: per-question result (question text, options, pick, key, verdict) so later edits to the set never change a past result
+    resultSnapshot Json?
+
+    // Timestamps
+    startedAt   DateTime  @default(now())
+    submittedAt DateTime?
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @default(now()) @updatedAt
+    createdBy   String?
+    updatedBy   String?
+
+    quizSet QuizSet @relation(fields: [quizSetId], references: [id], onDelete: Cascade)
+
+    // History: many attempts per user and set (the old unique allowed one row only)
+    @@index([quizSetId, userId, isSubmitted])
+    @@index([userId])
+    @@index([quizSetId])
+    @@index([userId, updatedAt(sort: Desc)])
+}
+
+model UserPinnedExamRoom {
+    id         String   @id @default(cuid())
+    userId     String
+    examRoomId String
+    pinnedAt   DateTime @default(now())
+
+    examRoom ExamRoom @relation(fields: [examRoomId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, examRoomId])
+    @@index([userId, pinnedAt])
+}

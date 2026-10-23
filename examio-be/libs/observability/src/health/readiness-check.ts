@@ -2,7 +2,7 @@
  * A dependency probe used by `GET /health/ready`.
  * `check()` resolves when the dependency is usable and rejects otherwise.
  *
- * Implementations live next to the dependency they probe (libs/database,
+ * Implementations live next to the dependency they probe (each service's src/prisma,
  * libs/redis, ...). This library deliberately imports none of them.
  */
 export interface ReadinessCheck {

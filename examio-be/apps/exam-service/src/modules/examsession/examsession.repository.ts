@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { BaseRepository } from '@examio/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
-import { ExamSession } from '@prisma/client';
+import { ExamSession } from '../../prisma';
 
 @Injectable()
 export class ExamSessionRepository extends BaseRepository<ExamSession> {

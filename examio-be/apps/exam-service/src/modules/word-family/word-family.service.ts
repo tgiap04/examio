@@ -8,7 +8,6 @@ import {
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
-import { User } from '@prisma/client';
 import { WordFamilyRepository } from './word-family.repository';
 import {
     WordFamilyData,

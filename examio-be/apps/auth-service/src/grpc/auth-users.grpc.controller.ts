@@ -2,7 +2,7 @@ import { Controller } from '@nestjs/common';
 import { Metadata, status } from '@grpc/grpc-js';
 import { authUsersV1 } from '@examio/contracts';
 import { RequirePermissions, principalOfMetadata } from '@examio/auth-jwt';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../prisma';
 import { UserUpdateWriter } from '../users-admin/user-update.writer';
 import { UserStatsService } from '../users-admin/user-stats.service';
 import { fail } from './auth.grpc.errors';

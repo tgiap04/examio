@@ -36,11 +36,11 @@ module.exports = {
         },
         {
             name: 'libs-no-prisma',
-            severity: 'warn',
+            severity: 'error',
             comment:
-                'Only libs/database may use the Prisma client; other libs must stay database-free. Warn now, error once phase 11 splits the schemas.',
-            from: { path: '^libs/(?!database/)', pathNot: '\\.(spec|e2e-spec)\\.ts$' },
-            to: { path: '(^|/)node_modules/(@prisma/client|\\.prisma)(/|$)' },
+                'Each service owns its generated Prisma client (apps/<svc>/src/generated/prisma); shared libs must stay database-free and use structural types.',
+            from: { path: '^libs/', pathNot: '\\.(spec|e2e-spec)\\.ts$' },
+            to: { path: '(^|/)node_modules/(@prisma/|\\.prisma)(/|$)' },
         },
     ],
     options: {

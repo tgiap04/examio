@@ -4,7 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 // Shared libs
-import { DatabaseModule, PrismaService } from '@examio/database';
+import { PrismaModule, PrismaService } from './prisma';
 import {
     MailService,
     PasswordService,
@@ -30,7 +30,7 @@ import { HttpThrottlerGuard } from './auth/guards/http-throttler.guard';
 
 @Module({
     imports: [
-        DatabaseModule,
+        PrismaModule,
         RedisModule,
         MessagingModule.forRoot({ service: 'auth' }),
         TokenModule,

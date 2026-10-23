@@ -1,5 +1,4 @@
 import { Request } from 'express';
-import { User } from '@prisma/client';
 import type { AuthUser } from '@examio/auth-jwt';
 
 /**
@@ -10,14 +9,4 @@ import type { AuthUser } from '@examio/auth-jwt';
  */
 export interface AuthenticatedRequest extends Request {
     user: AuthUser;
-}
-
-/**
- * Request object for OAuth callbacks
- */
-export interface AuthenticatedOauthRequest extends Request {
-    user: {
-        token: string;
-        user: User;
-    };
 }

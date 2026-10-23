@@ -1,7 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
-import { WordFamilyCategory, WordFamily, UserSavedWordFamily } from '@prisma/client';
+import { R2DeleteTaskWriter } from '@examio/messaging';
+import { WordFamilyCategory, WordFamily, UserSavedWordFamily } from '../../prisma';
 
 @Injectable()
 export class WordFamilyRepository {
@@ -11,6 +12,7 @@ export class WordFamilyRepository {
     constructor(
         private readonly prisma: PrismaService,
         private readonly redis: RedisService,
+        private readonly r2Deletes: R2DeleteTaskWriter,
     ) {}
 
     // ==================== Category ====================
@@ -60,10 +62,13 @@ export class WordFamilyRepository {
     async updateCategory(
         id: string,
         data: Partial<{ name: string; description: string; imageUrl: string | null; order: number; isActive: boolean }>,
+        r2KeysToDelete: string[] = [],
     ): Promise<WordFamilyCategory> {
-        const category = await this.prisma.wordFamilyCategory.update({
-            where: { id },
-            data,
+        // The R2 cleanup tasks commit with the row change or not at all.
+        const category = await this.prisma.$transaction(async (tx) => {
+            const row = await tx.wordFamilyCategory.update({ where: { id }, data });
+            await this.r2Deletes.enqueue(tx, r2KeysToDelete);
+            return row;
         });
         await this.invalidateCategoriesCache();
         return category;

@@ -1,0 +1,91 @@
+// exam-service legacy schema: AI-CHAT domain incl. Subject* (extracted in phase 13).
+// No relation to User: userId is a plain column with an index.
+
+model AIChat {
+    id        String   @id
+    userId    String
+    subjectId String? // Giáo viên AI (môn học) - nullable để backward compatible
+    title     String   @default("")
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now()) @updatedAt
+
+    subject   Subject?         @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+    messages  AIChatMessage[]
+    documents AIChatDocument[] // Multi-file support
+
+    @@index([userId, updatedAt(sort: Desc)])
+    @@index([subjectId])
+}
+
+model AIChatMessage {
+    id           String   @id
+    chatId       String
+    role         String // "user" | "assistant"
+    content      String
+    imageUrl     String? // URL ảnh nếu có upload
+    documentId   String? // ID của UserStorage nếu dùng PDF context
+    documentName String? // Tên file để hiển thị
+    createdAt    DateTime @default(now())
+
+    chat AIChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+    @@index([chatId, createdAt])
+}
+
+// Junction table for multi-document support
+// Allows O(1) lookup of all documents for a chat via chatId index
+model AIChatDocument {
+    id           String   @id @default(cuid())
+    chatId       String
+    documentId   String // UserStorage ID (file gốc)
+    documentName String // File name for display
+    createdAt    DateTime @default(now())
+
+    chat        AIChat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+    userStorage UserStorage @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+    // Composite unique constraint prevents duplicate document per chat
+    @@unique([chatId, documentId])
+    // Index for O(1) lookup of documents by chatId
+    @@index([chatId])
+}
+
+// Subject Category - Nhóm môn học (VD: Toán học, Khoa học Tự nhiên, ...)
+model SubjectCategory {
+    id          String   @id @default(cuid())
+    name        String   @unique // Tên nhóm (VD: "Toán học", "Khoa học Tự nhiên")
+    slug        String   @unique // URL-friendly slug
+    description String?
+    icon        String? // Icon/emoji cho nhóm
+    color       String? // Màu sắc đại diện (hex)
+    order       Int      @default(0) // Thứ tự hiển thị
+    isActive    Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @default(now()) @updatedAt
+
+    subjects Subject[]
+
+    @@index([isActive, order])
+}
+
+// Subject - Giáo viên AI (mỗi môn học = 1 giáo viên)
+model Subject {
+    id           String   @id @default(cuid())
+    categoryId   String
+    name         String   @unique // Tên môn (VD: "Toán Tiểu học", "Vật lý")
+    slug         String   @unique // URL-friendly slug
+    description  String? // Mô tả ngắn về môn học
+    icon         String? // Icon/emoji đại diện
+    color        String? // Màu sắc đại diện (hex)
+    systemPrompt String   @db.Text // System prompt cho LLM (bắt buộc)
+    order        Int      @default(0) // Thứ tự hiển thị trong category
+    isActive     Boolean  @default(true) // Trạng thái hoạt động
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @default(now()) @updatedAt
+
+    category SubjectCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+    aiChats  AIChat[]
+
+    @@index([categoryId, isActive, order])
+    @@index([isActive, order])
+}

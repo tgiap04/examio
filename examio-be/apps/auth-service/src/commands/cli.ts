@@ -8,13 +8,13 @@ config({ path: join(process.cwd(), 'apps', 'auth-service', '.env') });
 import { NestFactory } from '@nestjs/core';
 import { Logger, Module } from '@nestjs/common';
 import { Command } from 'commander';
-import { DatabaseModule } from '@examio/database';
+import { PrismaModule } from '../prisma';
 import { AdminBootstrapModule } from '../admin-bootstrap/admin-bootstrap.module';
 import { AdminBootstrapService } from '../admin-bootstrap/admin-bootstrap.service';
 
 /** Standalone context: DB + RoleChangeService only (no HTTP, no broker, no sync on start). */
 @Module({
-    imports: [DatabaseModule, AdminBootstrapModule.forRoot({ syncOnBoot: false })],
+    imports: [PrismaModule, AdminBootstrapModule.forRoot({ syncOnBoot: false })],
 })
 class CliModule {}
 

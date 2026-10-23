@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { status } from '@grpc/grpc-js';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../prisma';
 import { authUsersV1 } from '@examio/contracts';
 import { fail } from '../grpc/auth.grpc.errors';
 import { dayKey, resolveDays, startOfNDaysAgo, startOfToday } from './stats-window';

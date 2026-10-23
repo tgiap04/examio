@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import {
     CHEATING_TYPE,
     CHEATING_TYPE_DESCRIPTIONS,

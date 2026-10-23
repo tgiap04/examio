@@ -6,7 +6,7 @@ import { AuthUsersGrpcController } from './grpc/auth-users.grpc.controller';
 import { UsersQueryService } from './grpc/users-query.service';
 import { UserStatsService } from './users-admin/user-stats.service';
 import { UserUpdateModule } from './users-admin/user-update.module';
-import { DatabaseModule, DatabaseReadinessCheck } from '@examio/database';
+import { PrismaModule, PrismaReadinessCheck } from './prisma';
 import { RedisReadinessCheck } from '@examio/redis';
 import { HealthModule, LoggerModule } from '@examio/observability';
 import { AuthJwtModule } from '@examio/auth-jwt';
@@ -21,9 +21,9 @@ import { LocalServiceTokenSource } from './token/local-service-token.source';
     imports: [
         LoggerModule.forRoot('auth-service'),
         HealthModule.forRoot({
-            checks: [DatabaseReadinessCheck, RedisReadinessCheck],
+            checks: [PrismaReadinessCheck, RedisReadinessCheck],
         }),
-        DatabaseModule,
+        PrismaModule,
         AuthModule,
         RolesModule,
         UserUpdateModule,

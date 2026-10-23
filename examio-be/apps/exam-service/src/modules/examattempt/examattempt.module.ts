@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ExamAttemptService } from './examattempt.service';
 import { ExamAttemptController } from './examattempt.controller';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { GenerateIdService, CryptoService, TurnstileService } from '@examio/common';
 import { RedisModule, RedisService } from '@examio/redis';
 import { ExamAttemptRepository } from './examattempt.repository';

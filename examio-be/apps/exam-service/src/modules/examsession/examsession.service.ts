@@ -1,4 +1,4 @@
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { rethrowKnown } from '../common/rethrow-known';
 import {
     Injectable,

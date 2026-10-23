@@ -45,12 +45,4 @@ export class R2UploadService {
 
         return { url, keyR2 };
     }
-
-    /**
-     * Delete image from R2 storage
-     */
-    async deleteImage(keyR2: string): Promise<void> {
-        await this.r2Client.deleteFile(keyR2, buildMetadata());
-        this.logger.log(`Image deleted: ${keyR2}`);
-    }
 }

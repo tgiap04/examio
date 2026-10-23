@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { status } from '@grpc/grpc-js';
-import type { Prisma } from '@prisma/client';
-import { PrismaService } from '@examio/database';
+import type { Prisma } from '../prisma';
+import { PrismaService } from '../prisma';
 import { authUsersV1, authV1 } from '@examio/contracts';
 import { fail } from './auth.grpc.errors';
 import {

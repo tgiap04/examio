@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { BaseRepository } from '@examio/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
-import { StudyRoom, StudyRoomMember } from '@prisma/client';
+import { StudyRoom, StudyRoomMember } from '../../prisma';
 import { StudyRoomKeys } from './study-room.constants';
 import { UserEnricher } from '../user-profile/user-enricher.service';
 
@@ -16,11 +16,11 @@ export class StudyRoomRepository extends BaseRepository<StudyRoom> {
     protected defaultCacheTTL = EXPIRED_TIME.FIVE_MINUTES;
 
     constructor(
-        prisma: PrismaService,
+        private readonly db: PrismaService,
         redis: RedisService,
         private readonly users: UserEnricher
     ) {
-        super(prisma, redis);
+        super(db, redis);
     }
 
     // Roster/leaderboard display data lives in auth: members get `user` from ONE
@@ -35,15 +35,15 @@ export class StudyRoomRepository extends BaseRepository<StudyRoom> {
     }
 
     private get memberModel() {
-        return this.prisma.studyRoomMember;
+        return this.db.studyRoomMember;
     }
 
     private get playlistModel() {
-        return this.prisma.studyRoomPlaylistItem;
+        return this.db.studyRoomPlaylistItem;
     }
 
     private get blockModel() {
-        return this.prisma.studyRoomChatBlock;
+        return this.db.studyRoomChatBlock;
     }
 
     async findByInviteCode(inviteCode: string): Promise<StudyRoom | null> {
@@ -299,7 +299,7 @@ export class StudyRoomRepository extends BaseRepository<StudyRoom> {
         studyRoomId: string,
         itemIds: string[]
     ): Promise<void> {
-        await this.prisma.$transaction(
+        await this.db.$transaction(
             itemIds.map((id, index) =>
                 this.playlistModel.updateMany({
                     where: { id, studyRoomId },

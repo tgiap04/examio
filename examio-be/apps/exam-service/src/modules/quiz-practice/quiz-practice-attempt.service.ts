@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '@examio/database';
+import { Prisma } from '../../prisma';
+import { PrismaService } from '../../prisma';
 import type { AuthUser } from '@examio/auth-jwt';
 import type { ListAttemptsQueryDto, SaveAttemptDto } from './dto/quiz-practice.dto';
 import {

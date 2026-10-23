@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '@examio/database';
+import { Prisma } from '../../prisma';
+import { PrismaService } from '../../prisma';
 import { RedisService } from '@examio/redis';
 import type { AuthUser } from '@examio/auth-jwt';
 import { verifyAccessCodeOrThrow } from '../common/access-code-guard';

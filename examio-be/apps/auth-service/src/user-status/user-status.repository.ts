@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '../prisma';
 import type { AccountRow } from '../roles/role-change.repository';
 
 /** Statements specific to ban/unban (lock/lookup statements live in RoleChangeRepository). */

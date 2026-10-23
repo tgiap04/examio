@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { status } from '@grpc/grpc-js';
 import { RpcException } from '@nestjs/microservices';
-import type { Prisma, WalletTransaction } from '@prisma/client';
+import type { Prisma, WalletTransaction } from '../../prisma';
 import { GenerateIdService, invalidateWalletCachesBestEffort } from '@examio/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { RedisService } from '@examio/redis';
 import { EnsureWalletService } from './ensure-wallet.service';
 

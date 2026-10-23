@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma } from '../../prisma';
 import { z } from 'zod';
 import { Envelope, EventHandler, PermanentEventError } from '@examio/messaging';
 import { EnsureWalletService } from '../../modules/wallet/ensure-wallet.service';

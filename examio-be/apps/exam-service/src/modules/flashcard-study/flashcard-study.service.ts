@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { canAccessFlashcardSet } from '../flashcardset/flashcardset-access';
 
 @Injectable()

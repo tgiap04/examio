@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { DatabaseModule, PrismaService } from '@examio/database';
+import { PrismaModule, PrismaService } from '../prisma';
 
 import { AuditWriterService } from './audit-writer.service';
 
@@ -9,7 +9,7 @@ import { AuditWriterService } from './audit-writer.service';
  * feature module (admin-finance, admin-users, ...) can inject it.
  */
 @Module({
-    imports: [DatabaseModule],
+    imports: [PrismaModule],
     providers: [AuditWriterService, PrismaService],
     exports: [AuditWriterService, PrismaService],
 })

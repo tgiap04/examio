@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import type { Prisma } from '../prisma';
 import { OutboxService } from '@examio/messaging';
 import type { SessionRevoked } from '@examio/contracts/generated/examio/events/v1/auth_events';
 

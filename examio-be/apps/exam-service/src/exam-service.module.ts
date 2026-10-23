@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 import {
-    DatabaseModule,
-    DatabaseReadinessCheck,
+    PrismaModule,
+    PrismaReadinessCheck,
     PrismaService,
-} from '@examio/database';
+} from './prisma';
 import {
     RedisModule,
     RedisReadinessCheck,
@@ -46,9 +46,9 @@ process.env.SERVICE_NAME ??= 'exam-service';
     imports: [
         LoggerModule.forRoot('exam-service'),
         HealthModule.forRoot({
-            checks: [DatabaseReadinessCheck, RedisReadinessCheck],
+            checks: [PrismaReadinessCheck, RedisReadinessCheck],
         }),
-        DatabaseModule,
+        PrismaModule,
         RedisModule,
         AuthJwtModule.forRoot({ serviceName: 'exam', serviceClient: true }),
         EventsModule,

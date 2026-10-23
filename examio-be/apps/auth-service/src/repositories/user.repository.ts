@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { User } from '@prisma/client';
-import { PrismaService } from '@examio/database';
+import { User } from '../prisma';
+import { PrismaService } from '../prisma';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
 
 @Injectable()
