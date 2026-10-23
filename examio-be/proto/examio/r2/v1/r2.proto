@@ -77,4 +77,7 @@ message DeleteObjectsRequest {
 
 message DeleteObjectsResponse {
   int32 deleted_count = 1;
+  // Keys R2 refused to delete (e.g. AccessDenied); retry only these. Keys that
+  // no longer exist are NOT listed: they count as deleted.
+  repeated string failed_keys = 2;
 }

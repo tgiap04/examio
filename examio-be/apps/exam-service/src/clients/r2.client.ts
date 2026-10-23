@@ -10,6 +10,7 @@ import {
     redactMetadata,
 } from '@examio/grpc';
 import { ServiceMetadata } from '@examio/auth-jwt';
+import { canonicalR2PublicBase } from '@examio/common';
 import { Observable } from 'rxjs';
 
 export const R2_GRPC = 'R2_GRPC';
@@ -22,6 +23,13 @@ export const R2_GRPC_REGISTRATION: GrpcClientRegistration = {
     urlEnv: 'R2_GRPC_URL',
     maxMessageBytes: 500 * 1024 * 1024,
 };
+
+const DELETE_DEADLINE_MS = 30_000;
+
+export interface R2DeletePartial {
+    deletedCount: number;
+    failedKeys: string[];
+}
 
 const RPC = `${PROTO_FILES.r2.pkg}.${r2V1.R2_SERVICE_NAME}`;
 
@@ -106,34 +114,23 @@ export class R2Client implements OnModuleInit {
         return key;
     }
 
-    async deleteFile(
-        keyR2: string,
-        metadata: Metadata
-    ): Promise<void> {
-        const response = await this.call('DeleteFile', metadata, (options, md) =>
-            this.r2.deleteFile({ keyR2 }, md, options)
-        );
-        if (!response.success) {
-            this.logger.warn(`Failed to delete file: ${response.message}`);
-        }
-    }
-
-    /** Idempotent batch delete; resolves with the number of keys removed. */
-    async deleteObjects(
+    /** Idempotent batch delete reporting per-key failures; missing keys count as deleted. */
+    async deleteObjectsPartial(
         keys: string[],
-        metadata: Metadata
-    ): Promise<number> {
+        metadata: Metadata,
+        deadlineMs = DELETE_DEADLINE_MS
+    ): Promise<R2DeletePartial> {
         const response = await this.call(
             'DeleteObjects',
             metadata,
             (options, md) => this.r2.deleteObjects({ keys }, md, options),
-            { deadlineMs: 30_000 }
+            { deadlineMs }
         );
-        return response.deletedCount;
+        return { deletedCount: response.deletedCount, failedKeys: response.failedKeys ?? [] };
     }
 
     getPublicUrl(key: string): string {
-        const base = process.env.R2_PUBLIC_URL || 'https://r2.examio.com';
+        const base = canonicalR2PublicBase(process.env.R2_PUBLIC_URL || 'https://r2.examio.com');
         return `${base}/${key}`;
     }
 }

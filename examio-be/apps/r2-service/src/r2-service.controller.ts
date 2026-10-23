@@ -184,7 +184,7 @@ export class R2ServiceController implements r2V1.R2ServiceController {
             });
         }
         try {
-            return { deletedCount: await this.r2Service.deleteObjects(keys) };
+            return await this.r2Service.deleteObjects(keys);
         } catch (error) {
             this.logger.error(`DeleteObjects failed: ${error.message}`);
             throw new RpcException({

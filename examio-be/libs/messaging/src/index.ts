@@ -8,3 +8,4 @@ export * from './outbox.service';
 export * from './event-consumer.service';
 export * from './messaging.module';
 export * from './role';
+export * from './r2-delete';

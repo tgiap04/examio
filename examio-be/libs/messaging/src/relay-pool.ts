@@ -21,7 +21,8 @@ export function toPgConnectionString(databaseUrl: string): string {
 
 /**
  * The relay's own small pool: relay load must never starve the API's Prisma
- * pool. After phase 11 pass `options=-c search_path=<schema>`.
+ * pool. The schema comes from the service role's role-level `search_path`
+ * (deploy/postgres/init/01-service-schemas.sh); no `options=-c search_path` is passed.
  */
 export function createRelayPool(databaseUrl = process.env.DATABASE_URL): Pool {
     if (!databaseUrl) {

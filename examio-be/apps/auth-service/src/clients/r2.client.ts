@@ -15,6 +15,13 @@ export const R2_GRPC_REGISTRATION: GrpcClientRegistration = {
     maxMessageBytes: 500 * 1024 * 1024,
 };
 
+const DELETE_DEADLINE_MS = 30_000;
+
+export interface R2DeletePartial {
+    deletedCount: number;
+    failedKeys: string[];
+}
+
 const RPC = `${PROTO_FILES.r2.pkg}.${r2V1.R2_SERVICE_NAME}`;
 
 /** Typed gateway to r2-service for profile images. Every call takes explicit metadata. */
@@ -46,13 +53,18 @@ export class R2Client implements OnModuleInit {
         );
     }
 
-    async deleteFile(
-        keyR2: string,
-        metadata: Metadata
-    ): Promise<r2V1.DeleteFileResponse> {
+    /** Idempotent batch delete reporting per-key failures; missing keys count as deleted. */
+    async deleteObjectsPartial(
+        keys: string[],
+        metadata: Metadata,
+        deadlineMs = DELETE_DEADLINE_MS
+    ): Promise<R2DeletePartial> {
         const md = await this.serviceMetadata.attach(metadata, 'r2');
-        return invokeRpc(`${RPC}/DeleteFile`, (options) =>
-            this.r2.deleteFile({ keyR2 }, md, options)
+        const response = await invokeRpc(
+            `${RPC}/DeleteObjects`,
+            (options) => this.r2.deleteObjects({ keys }, md, options),
+            { deadlineMs }
         );
+        return { deletedCount: response.deletedCount, failedKeys: response.failedKeys ?? [] };
     }
 }

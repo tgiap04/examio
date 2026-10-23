@@ -7,11 +7,12 @@ import {
     ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { r2Config } from './config/r2.config';
 
 @Injectable()
 export class R2ServiceService {
+    private readonly logger = new Logger(R2ServiceService.name);
     private s3: S3Client;
 
     constructor() {
@@ -206,18 +207,24 @@ export class R2ServiceService {
      */
     async deleteDirectory(directory: string): Promise<number> {
         const files = await this.listFiles(directory);
-        return this.deleteObjects(files.map((file) => file.key));
+        const { deletedCount, failedKeys } = await this.deleteObjects(files.map((file) => file.key));
+        if (failedKeys.length > 0) {
+            throw new Error(`DeleteObjects failed for ${failedKeys.length} key(s)`);
+        }
+        return deletedCount;
     }
 
     /**
      * Batch-delete theo key (tối đa 1000 key/lần). Idempotent: R2/S3 coi key
-     * không tồn tại là đã xóa nên gọi lại với cùng danh sách vẫn thành công.
-     * Lỗi theo từng key (AccessDenied, ...) được ném ra để caller retry —
-     * không bao giờ báo thành công giả.
+     * không tồn tại là đã xóa (kể cả khi báo NoSuchKey) nên gọi lại vẫn thành công.
+     * Lỗi theo từng key (AccessDenied, ...) KHÔNG làm hỏng cả batch: các key đó
+     * được trả về trong `failedKeys` để caller chỉ retry chúng — không bao giờ
+     * báo thành công giả. Lỗi tầng transport vẫn được ném ra.
      */
-    async deleteObjects(keys: string[]): Promise<number> {
+    async deleteObjects(keys: string[]): Promise<{ deletedCount: number; failedKeys: string[] }> {
         const chunkSize = 1000;
-        let deleted = 0;
+        let deletedCount = 0;
+        const failedKeys: string[] = [];
         for (let i = 0; i < keys.length; i += chunkSize) {
             const chunk = keys.slice(i, i + chunkSize);
             const result = await this.s3.send(
@@ -228,15 +235,22 @@ export class R2ServiceService {
                     },
                 })
             );
-            if (result?.Errors?.length) {
-                const first = result.Errors[0];
-                throw new Error(
-                    `DeleteObjects failed for ${result.Errors.length} key(s): ${first.Code ?? 'Unknown'}`
+            const failed = (result?.Errors ?? []).filter((e) => e.Code !== 'NoSuchKey');
+            if (failed.some((e) => !e.Key)) {
+                // An error we cannot attribute to a key: report the whole chunk as
+                // failed rather than let the caller mark unknown keys as deleted.
+                failedKeys.push(...chunk);
+            } else {
+                for (const e of failed) failedKeys.push(e.Key as string);
+            }
+            if (failed.length > 0) {
+                this.logger.warn(
+                    `DeleteObjects: ${failed.length}/${chunk.length} key(s) failed (${failed[0].Code ?? 'Unknown'})`
                 );
             }
             // S3/R2 report already-missing keys as Deleted, so repeats still count.
-            deleted += result?.Deleted?.length ?? chunk.length;
+            deletedCount += result?.Deleted?.length ?? chunk.length - failed.length;
         }
-        return deleted;
+        return { deletedCount, failedKeys };
     }
 }

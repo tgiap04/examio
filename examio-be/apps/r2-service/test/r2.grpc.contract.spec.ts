@@ -93,14 +93,43 @@ describe('R2Service gRPC contract', () => {
         expect(send).not.toHaveBeenCalled();
     });
 
-    it('surfaces partial S3 Errors as INTERNAL instead of reporting success', async () => {
+    it('reports per-key S3 Errors in failedKeys instead of failing the whole batch', async () => {
         send.mockResolvedValueOnce({
             Deleted: [{ Key: 'docs/f-1.pdf' }],
             Errors: [{ Key: 'docs/f-0.pdf', Code: 'AccessDenied' }],
         } as never);
+        const res = await lastValueFrom(client.deleteObjects({ keys: keys(2) }, new Metadata()));
+        expect(res.deletedCount).toBe(1);
+        expect(res.failedKeys).toEqual(['docs/f-0.pdf']);
+    });
+
+    it('reports the whole chunk as failed when an S3 error carries no Key', async () => {
+        send.mockResolvedValueOnce({ Errors: [{ Code: 'InternalError' }] } as never);
+        const res = await lastValueFrom(client.deleteObjects({ keys: keys(2) }, new Metadata()));
+        expect(res.failedKeys).toEqual(['docs/f-0.pdf', 'docs/f-1.pdf']);
+    });
+
+    it('treats a missing key (NoSuchKey) as deleted, not failed', async () => {
+        send.mockResolvedValueOnce({
+            Errors: [{ Key: 'docs/f-0.pdf', Code: 'NoSuchKey' }],
+        } as never);
+        const res = await lastValueFrom(client.deleteObjects({ keys: keys(1) }, new Metadata()));
+        expect(res.failedKeys).toEqual([]);
+        expect(res.deletedCount).toBe(1);
+    });
+
+    it('still surfaces a transport-level S3 failure as INTERNAL', async () => {
+        send.mockRejectedValueOnce(new Error('socket hang up'));
         await expect(
             lastValueFrom(client.deleteObjects({ keys: keys(2) }, new Metadata()))
         ).rejects.toMatchObject({ code: 13 });
+    });
+
+    it('collects failures across chunks', async () => {
+        send.mockResolvedValueOnce({ Errors: [{ Key: 'docs/f-5.pdf', Code: 'AccessDenied' }] } as never);
+        const res = await lastValueFrom(client.deleteObjects({ keys: keys(1500) }, new Metadata()));
+        expect(res.failedKeys).toEqual(['docs/f-5.pdf']);
+        expect(send).toHaveBeenCalledTimes(2);
     });
 
     it('GetFileUrl round-trips camelCase fields', async () => {
