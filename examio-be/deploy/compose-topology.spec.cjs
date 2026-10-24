@@ -21,7 +21,11 @@ const compose = {
 const services = compose.services;
 const DB_SERVICES = ['auth', 'finance', 'admin', 'exam'];
 const ROLES = 'auth finance admin exam content assessment studyroom vocabulary aichat document ai'.split(' ');
-const envList = (name) => services[name].environment ?? [];
+// Compose accepts `environment` as a list (`K=V`) or a map (`K: V`); the ai services use the map form.
+const envList = (name) => {
+    const env = services[name].environment ?? [];
+    return Array.isArray(env) ? env : Object.entries(env).map(([key, value]) => `${key}=${value ?? ''}`);
+};
 const envValue = (name, key) => {
     const hit = envList(name).find((e) => e.startsWith(`${key}=`));
     return hit === undefined ? undefined : hit.slice(key.length + 1);
@@ -63,7 +67,7 @@ test('edge carries the gateway alone (the FE nginx joins it from its own compose
 });
 
 test('egress is exactly the services with a real internet dependency', () => {
-    assert.deepStrictEqual(members('egress'), ['ai', 'auth', 'exam', 'finance', 'r2']);
+    assert.deepStrictEqual(members('egress'), ['ai', 'ai-worker', 'auth', 'exam', 'finance', 'r2']);
 });
 
 test('every networked service is on internal, and admin has no way out', () => {
@@ -141,13 +145,27 @@ test('each service connects as its own role and schema; nobody uses the superuse
     }
 });
 
-test('ai-service uses ai_svc with a pinned search_path and no runtime DDL', () => {
-    const url = envValue('ai', 'DATABASE_URL');
-    assert.ok(url.startsWith('postgresql://ai_svc:'));
-    assert.ok(!url.includes('?schema='), 'asyncpg would forward ?schema= as a server setting');
-    assert.strictEqual(envValue('ai', 'DB_SEARCH_PATH'), 'exam,extensions');
-    assert.strictEqual(envValue('ai', 'AI_RUNTIME_DDL'), 'false');
-    assert.strictEqual(services.ai.depends_on['exam-migrate'].condition, 'service_completed_successfully');
+test('ai-service uses ai_svc on its own schema `ai` (pinned search_path, no runtime DDL) behind its own migrate one-shot', () => {
+    for (const name of ['ai', 'ai-worker', 'ai-migrate']) {
+        const url = envValue(name, 'DATABASE_URL');
+        assert.ok(url.startsWith('postgresql://ai_svc:'), `${name} must connect as ai_svc`);
+        assert.ok(url.includes('${AI_DB_PASSWORD:?'), `${name} must use its own password`);
+        assert.ok(!url.includes('?schema='), 'asyncpg would forward ?schema= as a server setting');
+        assert.strictEqual(envValue(name, 'DB_SEARCH_PATH'), 'ai,extensions', name);
+        assert.strictEqual(envValue(name, 'AI_RUNTIME_DDL'), undefined, `${name}: the runtime DDL flag is gone`);
+    }
+    assert.strictEqual(envValue('ai-migrate', 'ROLE'), 'migrate');
+    assert.strictEqual(services['ai-migrate'].restart, 'no');
+    for (const name of ['ai', 'ai-worker']) {
+        assert.strictEqual(services[name].depends_on['ai-migrate'].condition, 'service_completed_successfully', name);
+        assert.strictEqual(services[name].depends_on['exam-migrate'], undefined, `${name} no longer waits for exam tables`);
+    }
+    assert.strictEqual(envValue('ai', 'ROLE'), 'api');
+    assert.strictEqual(envValue('ai-worker', 'ROLE'), 'worker');
+    assert.strictEqual(envValue('ai', 'GRPC_PORT'), '50051');
+    // the broker user `ai` belongs to the worker (consumer + outbox relay); the gRPC role has no broker URL
+    assert.ok(envValue('ai-worker', 'RABBITMQ_URL').startsWith('amqp://ai:${RABBITMQ_AI_PASS:?'));
+    assert.strictEqual(envValue('ai', 'RABBITMQ_URL'), undefined);
 });
 
 test('r2 has no database and no migrate dependency', () => {
@@ -165,6 +183,19 @@ test('postgres mounts the init dir, raises max_connections and takes all 11 role
     }
     const init = fs.readFileSync(path.join(__dirname, 'postgres/init/01-service-schemas.sh'), 'utf8');
     for (const role of ROLES) assert.ok(init.includes(role), `init script does not know ${role}`);
+});
+
+test('the temporary ai_svc grant on the exam schema is gone from the init script (phase 15)', () => {
+    const init = fs.readFileSync(path.join(__dirname, 'postgres/init/01-service-schemas.sh'), 'utf8');
+    assert.ok(!/GRANT[^;]*\bai_svc\b/i.test(init), 'no GRANT to ai_svc');
+    assert.ok(!/ALTER DEFAULT PRIVILEGES/i.test(init), 'no default privileges on exam tables');
+    assert.ok(!/GRANT[^;]*SCHEMA exam\b/i.test(init), 'no grant on the exam schema');
+});
+
+test('exam runs the worker role: it relays the outbox (content.generation.requested) and settles generation jobs', () => {
+    assert.ok(/(^|,)worker(,|$)/.test(envValue('exam', 'ROLE')), 'exam needs ROLE to include worker');
+    assert.ok(envValue('exam', 'RABBITMQ_URL').startsWith('amqp://exam:${RABBITMQ_EXAM_PASS:?'), 'the relay publishes as the broker user exam');
+    assert.ok(envValue('exam', 'FINANCE_GRPC_URL').startsWith('finance:'), 'refunds go to finance');
 });
 
 test('study-room (studyroom role + schema) has its own migrate one-shot and no seed, no gRPC, no egress', () => {
@@ -221,6 +252,45 @@ test('vocabulary (vocabulary role + schema) has its own migrate one-shot, a gRPC
     assert.strictEqual(envValue('vocabulary', 'FINANCE_GRPC_URL'), undefined);
     assert.ok(services.seed.depends_on['vocabulary-migrate'], 'the seed seeds the word-family categories');
     assert.ok(envList('seed').some((e) => e.startsWith('VOCABULARY_DATABASE_URL=postgresql://vocabulary_svc:')));
+});
+
+test('document (document role + schema) has its own migrate one-shot, a gRPC server, api+worker roles and the broker user `document`, no egress', () => {
+    const svc = services.document;
+    const migrate = services['document-migrate'];
+    assert.ok(svc && migrate, 'document / document-migrate are missing');
+    assert.strictEqual(migrate.restart, 'no');
+    assert.strictEqual(migrate.build.args.SERVICE, 'document');
+    assert.strictEqual(svc.build.args.SERVICE_NAME, 'document-service');
+    assert.strictEqual(svc.depends_on['document-migrate'].condition, 'service_completed_successfully');
+    for (const name of ['document', 'document-migrate']) {
+        const url = envValue(name, 'DATABASE_URL');
+        assert.ok(url.startsWith('postgresql://document_svc:'), `${name} must connect as document_svc`);
+        assert.ok(url.includes('${DOCUMENT_DB_PASSWORD:?'), `${name} must use its own password`);
+        assert.ok(url.endsWith('?schema=document'), `${name} must target schema document`);
+    }
+    assert.deepStrictEqual(networksOf('document'), ['internal']);
+    assert.deepStrictEqual(networksOf('document-migrate'), ['internal']);
+    assert.strictEqual(envValue('document', 'ROLE'), 'api,worker');
+    assert.strictEqual(envValue('document', 'GRPC_PORT'), '50051');
+    assert.strictEqual(envValue('document', 'R2_GRPC_URL'), 'r2:50051');
+    assert.strictEqual(envValue('document', 'FINANCE_GRPC_URL'), 'finance:50051');
+    assert.ok(envValue('document', 'R2_PUBLIC_URL') !== undefined, 'R2_PUBLIC_URL is the base of the stored url');
+    assert.ok(envValue('document', 'SERVICE_CLIENT_SECRET').includes('${DOCUMENT_SERVICE_CLIENT_SECRET:?'));
+    assert.ok(envValue('document', 'RABBITMQ_URL').startsWith('amqp://document:${RABBITMQ_DOCUMENT_PASS:?'));
+    assert.strictEqual(envValue('document', 'INTERNAL_SERVICE_TOKEN'), undefined, 'document never used the shared internal token');
+    for (const dep of ['r2', 'finance', 'rabbitmq', 'postgres', 'auth']) {
+        assert.strictEqual(services.document.depends_on[dep].condition, 'service_healthy', dep);
+    }
+    assert.ok(envList('rabbitmq-defs').some((e) => e.startsWith('RABBITMQ_DOCUMENT_PASS=')), 'the broker definitions need the document password');
+    assert.strictEqual(services.seed.depends_on['document-migrate'], undefined, 'document has nothing to seed');
+});
+
+test('uploads go to document: the gateway routes there and waits for it; exam reaches document and ai over gRPC', () => {
+    assert.strictEqual(envValue('gateway', 'DOCUMENT_SERVICE_URL'), 'http://document:3000');
+    assert.strictEqual(services.gateway.depends_on.document.condition, 'service_healthy');
+    assert.strictEqual(envValue('exam', 'DOCUMENT_GRPC_URL'), 'document:50051');
+    assert.strictEqual(envValue('exam', 'AI_GRPC_URL'), 'ai:50051');
+    assert.strictEqual(services.exam.depends_on.document, undefined, 'exam boots without document (lazy gRPC client)');
 });
 
 test('exam no longer serves gRPC and reaches vocabulary; admin and gateway point at vocabulary', () => {

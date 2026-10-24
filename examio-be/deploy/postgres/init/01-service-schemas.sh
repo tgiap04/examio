@@ -48,14 +48,4 @@ ALTER ROLE :"role" SET search_path = :"schema", extensions;
 SQL
 done
 
-# TEMPORARY until phase 15: ai-service still reads/writes exam-owned tables
-# (Document, UserStorage, graph, HistoryGenerated*). Tables are created later by
-# exam_svc's migrations, hence DEFAULT PRIVILEGES. Phase 15 removes this block and
-# a test asserts it is gone.
-"${PSQL[@]}" <<'SQL'
-GRANT USAGE ON SCHEMA exam TO ai_svc;
-ALTER DEFAULT PRIVILEGES FOR ROLE exam_svc IN SCHEMA exam
-    GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO ai_svc;
-SQL
-
 echo "postgres init: created schemas and roles for: $SVCS"

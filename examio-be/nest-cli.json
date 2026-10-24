@@ -89,6 +89,14 @@
                         "watchAssets": true
                     },
                     {
+                        "include": "../../../proto/examio/ai/**/*.proto",
+                        "outDir": "dist/apps/exam-service/proto/examio/ai"
+                    },
+                    {
+                        "include": "../../../proto/examio/document/**/*.proto",
+                        "outDir": "dist/apps/exam-service/proto/examio/document"
+                    },
+                    {
                         "include": "../../../proto/examio/auth/**/*.proto",
                         "outDir": "dist/apps/exam-service/proto/examio/auth"
                     },
@@ -149,6 +157,29 @@
                     {
                         "include": "../../../proto/examio/vocabulary/**/*.proto",
                         "outDir": "dist/apps/vocabulary-service/proto/examio/vocabulary"
+                    }
+                ]
+            }
+        },
+        "document-service": {
+            "type": "application",
+            "root": "apps/document-service",
+            "entryFile": "main",
+            "sourceRoot": "apps/document-service/src",
+            "compilerOptions": {
+                "tsConfigPath": "apps/document-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../../../proto/examio/document/**/*.proto",
+                        "outDir": "dist/apps/document-service/proto/examio/document"
+                    },
+                    {
+                        "include": "../../../proto/examio/finance/**/*.proto",
+                        "outDir": "dist/apps/document-service/proto/examio/finance"
+                    },
+                    {
+                        "include": "../../../proto/examio/r2/**/*.proto",
+                        "outDir": "dist/apps/document-service/proto/examio/r2"
                     }
                 ]
             }

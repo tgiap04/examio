@@ -18,7 +18,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { join, relative, sep } from 'path';
 
-export type Service = 'auth' | 'finance' | 'exam' | 'studyroom' | 'vocabulary' | 'admin' | 'r2' | 'gateway';
+export type Service = 'auth' | 'finance' | 'exam' | 'studyroom' | 'vocabulary' | 'document' | 'admin' | 'r2' | 'gateway';
 
 /** Owner app directory -> service name. ai-service (python) is out of scope here. */
 export const APP_SERVICE: Readonly<Record<string, Service>> = {
@@ -27,6 +27,7 @@ export const APP_SERVICE: Readonly<Record<string, Service>> = {
     'exam-service': 'exam',
     'study-room-service': 'studyroom',
     'vocabulary-service': 'vocabulary',
+    'document-service': 'document',
     'admin-service': 'admin',
     'r2-service': 'r2',
     'gateway-service': 'gateway',
@@ -36,9 +37,8 @@ export const APP_SERVICE: Readonly<Record<string, Service>> = {
 export const SHARED_MODELS: ReadonlySet<string> = new Set(['OutboxEvent', 'ProcessedEvent', 'R2DeleteTask']);
 
 /**
- * Model -> owning service (ARCH Appendix A). Until phases 12-15 extract the
- * content/assessment/study-room/vocabulary/ai-chat/document services, `exam`
- * owns all of those, and the ai-service tables are listed as `exam` too.
+ * Model -> owning service (ARCH Appendix A). Until phases 13-14 extract the
+ * content/assessment/ai-chat services, `exam` owns all of those.
  */
 export const OWNERSHIP: Readonly<Record<string, Service>> = {
     // auth
@@ -48,9 +48,11 @@ export const OWNERSHIP: Readonly<Record<string, Service>> = {
     Wallet: 'finance', WalletTransaction: 'finance', Payment: 'finance', UserSubscription: 'finance',
     // admin
     AdminAudit: 'admin', PageFeatureFlag: 'admin',
-    // exam (document, ai-service tables, content, assessment, ai-chat)
-    UserStorage: 'exam', UserMonthlyFileUpload: 'exam', Document: 'exam', DocumentEntity: 'exam',
-    UserStorageGraph: 'exam', UserStorageGraphGroup: 'exam',
+    // document (phase 15)
+    UserStorage: 'document', UserMonthlyFileUpload: 'document',
+    // exam (content, assessment, ai-chat, generation). The vector / entity / graph tables are ai-service's
+    // (Python, schema `ai`), no longer part of any Prisma schema.
+    GenerationJob: 'exam',
     QuizSet: 'exam', QuizSetLabel: 'exam', QuizQuestion: 'exam', DetailsQuizQuestion: 'exam',
     FlashCardSet: 'exam', FlashCardSetLabel: 'exam', FlashCard: 'exam', DetailsFlashCard: 'exam',
     HistoryGeneratedQuizz: 'exam', HistoryGeneratedFlashcard: 'exam', QuizPracticeAttempt: 'exam',

@@ -40,6 +40,9 @@ services:
             # Profiles/search from auth; word families (to-flashcard bridge) from vocabulary
             - AUTH_GRPC_URL=auth:50051
             - VOCABULARY_GRPC_URL=vocabulary:50051
+            # DocumentService (uploads, quota, ownership) and AiService (synchronous AI) over gRPC
+            - DOCUMENT_GRPC_URL=document:50051
+            - AI_GRPC_URL=ai:50051
             - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
             - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
             - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json

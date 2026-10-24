@@ -33,6 +33,12 @@
       "tags": []
     },
     {
+      "name": "document",
+      "password_hash": "{{HASH:RABBITMQ_DOCUMENT_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
+    },
+    {
       "name": "ai",
       "password_hash": "{{HASH:RABBITMQ_AI_PASS}}",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
@@ -87,11 +93,18 @@
       "read": "^(examio\\.events|studyroom\\..*)$"
     },
     {
+      "user": "document",
+      "vhost": "/",
+      "configure": "^(examio\\.events|document\\..*)$",
+      "write": "^(examio\\.events|document\\..*)$",
+      "read": "^(examio\\.events|document\\..*)$"
+    },
+    {
       "user": "ai",
       "vhost": "/",
-      "configure": "^(examio\\.events|ai\\..*|ai-service-queue)$",
-      "write": "^(examio\\.events|ai\\..*|ai-service-queue)$",
-      "read": "^(examio\\.events|ai\\..*|ai-service-queue)$"
+      "configure": "^(examio\\.events|ai\\..*)$",
+      "write": "^(examio\\.events|ai\\..*)$",
+      "read": "^(examio\\.events|ai\\..*)$"
     },
     {
       "user": "gateway",
@@ -120,7 +133,7 @@
       "user": "exam",
       "vhost": "/",
       "exchange": "examio.events",
-      "write": "^exam\\.",
+      "write": "^(exam|content)\\.",
       "read": ".*"
     },
     {
@@ -128,6 +141,13 @@
       "vhost": "/",
       "exchange": "examio.events",
       "write": "^studyroom\\.",
+      "read": ".*"
+    },
+    {
+      "user": "document",
+      "vhost": "/",
+      "exchange": "examio.events",
+      "write": "^document\\.",
       "read": ".*"
     },
     {

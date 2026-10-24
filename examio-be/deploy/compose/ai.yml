@@ -1,5 +1,7 @@
-# AI service (Python): ai_svc role, temporary access to exam tables
+# AI service (Python): schema `ai` (ai_svc), Alembic migrations, gRPC AiService + event worker
 # Included from deploy/docker-compose.yml; paths are relative to deploy/ (project_directory).
+# One image, three roles (ROLE): ai-migrate (alembic upgrade head, one-shot), ai (gRPC :50051 +
+# /health), ai-worker (document/generation events + outbox relay).
 # =============================================================================
 # Shared fragments (YAML anchors are per file, so each file carries its own copy)
 x-logging: &default-logging
@@ -8,55 +10,77 @@ x-logging: &default-logging
         max-size: '10m'
         max-file: '3'
 
-x-nestjs-healthcheck: &nestjs-healthcheck
-    interval: 30s
-    timeout: 10s
-    retries: 5
-    start_period: 60s
+x-ai-image: &ai-image
+    build:
+        context: ../apps/ai-service
+        dockerfile: Dockerfile
+
+# ai_svc; no ?schema= (asyncpg would send it as a server setting): the search_path is pinned
+# per connection from DB_SEARCH_PATH.
+x-ai-database: &ai-database
+    DATABASE_URL: postgresql://ai_svc:${AI_DB_PASSWORD:?AI_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
+    DB_SEARCH_PATH: ai,extensions
+
+x-ai-models: &ai-models
+    PYTHONUNBUFFERED: '1'
+    GEMINI_API_KEYS: '${GEMINI_API_KEYS}'
+    GEMINI_MODEL_NAMES: '${GEMINI_MODEL_NAMES}'
+    AI2_BASE_URL: '${AI2_BASE_URL:-https://ai2.devt.vn/v1}'
+    AI2_API_KEY: '${AI2_API_KEY:-}'
+    AI2_GENERATION_MODEL_NAMES: '${AI2_GENERATION_MODEL_NAMES:-minimax-m2.5-free,nemotron-3-super-free,trinity-large-preview-free}'
+    AI2_DEFAULT_MODEL: '${AI2_DEFAULT_MODEL:-minimax-m2.5-free}'
+    AI2_TIMEOUT_SECONDS: '${AI2_TIMEOUT_SECONDS:-3600}'
+    AI2_MAX_TOKENS: '${AI2_MAX_TOKENS:-4096}'
+    DEFAULT_MAX_TOKENS_CAP: '${DEFAULT_MAX_TOKENS_CAP:-4096}'
+    TUTOR_FAST_RETRIEVAL_TIMEOUT_SECONDS: '${TUTOR_FAST_RETRIEVAL_TIMEOUT_SECONDS:-0.5}'
+    CHAT_HISTORY_MAX_MESSAGES: '${CHAT_HISTORY_MAX_MESSAGES:-4}'
+    CHAT_HISTORY_MAX_CHARS: '${CHAT_HISTORY_MAX_CHARS:-1200}'
+    GEMINI_EMBEDDING_MODEL: '${GEMINI_EMBEDDING_MODEL:-models/text-embedding-004}'
+    OCR_SERVICE_URL: ''  # Using internal Tesseract/PyPDF logic
 
 services:
+    # One-shot: `alembic upgrade head` for schema `ai` as ai_svc, then exits.
+    ai-migrate:
+        <<: *ai-image
+        container_name: examio-ai-migrate
+        environment:
+            <<: *ai-database
+            ROLE: migrate
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - internal
+        healthcheck:
+            disable: true
+        restart: 'no'
+        logging: *default-logging
+
+    # gRPC AiService (service tokens, caller allow-list) + /health. No host port.
     ai:
-        build:
-            context: ../apps/ai-service
-            dockerfile: Dockerfile
+        <<: *ai-image
         container_name: examio-ai
         environment:
-            - PYTHONUNBUFFERED=1
-            - PORT=3000
-            - RABBITMQ_URL=amqp://ai:${RABBITMQ_AI_PASS:?RABBITMQ_AI_PASS is required}@rabbitmq:5672
-            # ai_svc; no ?schema= (asyncpg would send it as a server setting). Tables still live in
-            # the exam schema until phase 15, hence DB_SEARCH_PATH and the temporary grants.
-            - DATABASE_URL=postgresql://ai_svc:${AI_DB_PASSWORD:?AI_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
-            - DB_SEARCH_PATH=exam,extensions
-            # Schema is owned by the exam-service migrations; the service must not run DDL.
-            - AI_RUNTIME_DDL=false
-            - REDIS_HOST=redis
-            - REDIS_PORT=6379
-            - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-            - GEMINI_API_KEYS=${GEMINI_API_KEYS}
-            - GEMINI_MODEL_NAMES=${GEMINI_MODEL_NAMES}
-            - AI2_BASE_URL=${AI2_BASE_URL:-https://ai2.devt.vn/v1}
-            - AI2_API_KEY=${AI2_API_KEY:-}
-            - AI2_GENERATION_MODEL_NAMES=${AI2_GENERATION_MODEL_NAMES:-minimax-m2.5-free,nemotron-3-super-free,trinity-large-preview-free}
-            - AI2_DEFAULT_MODEL=${AI2_DEFAULT_MODEL:-minimax-m2.5-free}
-            - AI2_TIMEOUT_SECONDS=${AI2_TIMEOUT_SECONDS:-3600}
-            - AI2_MAX_TOKENS=${AI2_MAX_TOKENS:-4096}
-            - DEFAULT_MAX_TOKENS_CAP=${DEFAULT_MAX_TOKENS_CAP:-4096}
-            - TUTOR_FAST_RETRIEVAL_TIMEOUT_SECONDS=${TUTOR_FAST_RETRIEVAL_TIMEOUT_SECONDS:-0.5}
-            - CHAT_HISTORY_MAX_MESSAGES=${CHAT_HISTORY_MAX_MESSAGES:-4}
-            - CHAT_HISTORY_MAX_CHARS=${CHAT_HISTORY_MAX_CHARS:-1200}
-            - GEMINI_EMBEDDING_MODEL=${GEMINI_EMBEDDING_MODEL:-models/text-embedding-004}
-            - OCR_SERVICE_URL= # Using internal Tesseract/PyPDF logic
+            <<: [*ai-database, *ai-models]
+            ROLE: api
+            PORT: '3000'
+            GRPC_PORT: '50051'
+            # Service-token verification (RS256, aud=ai) against the auth JWKS.
+            JWT_ISSUER: ${JWT_ISSUER:-examio-auth}
+            AUTH_JWKS_URL: http://auth:3000/.well-known/jwks.json
+            # Legacy HTTP routes (/api/chat/*, /api/generate/word-family) for callers that move to
+            # gRPC in phase 13; they still check INTERNAL_SERVICE_TOKEN (from .env).
+            AI_HTTP_COMPAT: ${AI_HTTP_COMPAT:-true}
         env_file:
             - .env
         depends_on:
-            exam-migrate:
+            ai-migrate:
                 condition: service_completed_successfully
             postgres:
                 condition: service_healthy
             redis:
                 condition: service_healthy
-            rabbitmq:
+            auth:
                 condition: service_healthy
         networks:
             - internal
@@ -67,5 +91,36 @@ services:
             timeout: 10s
             retries: 3
             start_period: 60s
+        stop_grace_period: 30s
+        restart: unless-stopped
+        logging: *default-logging
+
+    # document.uploaded / document.deleted / content.generation.requested consumer, outbox
+    # relay and daily purge. Downloads presigned R2 URLs, so it needs egress.
+    ai-worker:
+        <<: *ai-image
+        container_name: examio-ai-worker
+        environment:
+            <<: [*ai-database, *ai-models]
+            ROLE: worker
+            RABBITMQ_URL: amqp://ai:${RABBITMQ_AI_PASS:?RABBITMQ_AI_PASS is required}@rabbitmq:5672
+            # Presigned GET URLs point at the R2 S3 endpoint: it must be allow-listed (SSRF guard).
+            R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+            R2_ALLOWED_HOSTS: ${R2_ALLOWED_HOSTS:-}
+        env_file:
+            - .env
+        depends_on:
+            ai-migrate:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+        networks:
+            - internal
+            - egress
+        healthcheck:
+            disable: true # no HTTP port; liveness is the consumer's broker connection
+        stop_grace_period: 30s
         restart: unless-stopped
         logging: *default-logging

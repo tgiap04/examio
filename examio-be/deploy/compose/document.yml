@@ -1,0 +1,94 @@
+# Document service: uploaded-file metadata, monthly upload quota and OCR status (HTTP + gRPC, plus the
+# outbox relay, the document.events consumer, the PENDING_CHARGE reaper and the R2 delete worker),
+# and its schema migration.
+# Included from deploy/docker-compose.yml; paths are relative to deploy/ (project_directory).
+# =============================================================================
+# Shared fragments (YAML anchors are per file, so each file carries its own copy)
+x-logging: &default-logging
+    driver: 'json-file'
+    options:
+        max-size: '10m'
+        max-file: '3'
+
+x-nestjs-healthcheck: &nestjs-healthcheck
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    start_period: 60s
+
+services:
+    document:
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile
+            args:
+                SERVICE_NAME: document-service
+        container_name: examio-document
+        environment:
+            - NODE_ENV=production
+            - PORT=3000
+            - FRONTEND_URL=${FRONTEND_URL:?FRONTEND_URL is required}
+            - DATABASE_URL=postgresql://document_svc:${DOCUMENT_DB_PASSWORD:?DOCUMENT_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=document
+            - RABBITMQ_URL=amqp://document:${RABBITMQ_DOCUMENT_PASS:?RABBITMQ_DOCUMENT_PASS is required}@rabbitmq:5672
+            # api + worker (outbox relay, document.events consumer, reaper, r2_delete_tasks) in this container
+            - ROLE=api,worker
+            # DocumentService (exam / ai-chat forward the user token)
+            - GRPC_PORT=50051
+            # r2: UploadFile, CreatePresignedDownload, DeleteObjects as svc:document. finance: GetUserBenefits,
+            # Debit (forwarded user token) and Refund (svc:document).
+            - R2_GRPC_URL=r2:50051
+            - FINANCE_GRPC_URL=finance:50051
+            # Public base of R2 objects (the `url` stored with each upload)
+            - R2_PUBLIC_URL=${R2_PUBLIC_URL:-}
+            - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
+            - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
+            - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
+            - AUTH_TOKEN_URL=http://auth:3000/internal/token
+            - SERVICE_CLIENT_SECRET=${DOCUMENT_SERVICE_CLIENT_SECRET:?DOCUMENT_SERVICE_CLIENT_SECRET is required}
+        env_file:
+            - .env
+        depends_on:
+            document-migrate:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            r2:
+                condition: service_healthy
+            finance:
+                condition: service_healthy
+            auth:
+                condition: service_healthy
+        networks:
+            - internal
+        healthcheck:
+            <<: *nestjs-healthcheck
+            test:
+                [
+                    'CMD',
+                    'wget',
+                    '-q',
+                    '--spider',
+                    'http://localhost:3000/health/ready',
+                ]
+        restart: unless-stopped
+        logging: *default-logging
+
+    # One-shot: `prisma migrate deploy` for the document schema as document_svc, then exits.
+    document-migrate:
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile.migration
+            args:
+                SERVICE: document
+        container_name: examio-document-migrate
+        environment:
+            - DATABASE_URL=postgresql://document_svc:${DOCUMENT_DB_PASSWORD:?DOCUMENT_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=document
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - internal
+        restart: 'no'
+        logging: *default-logging
