@@ -108,7 +108,25 @@ class DeleteObjectsRequest(_message.Message):
     def __init__(self, keys: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class DeleteObjectsResponse(_message.Message):
-    __slots__ = ("deleted_count",)
+    __slots__ = ("deleted_count", "failed_keys")
     DELETED_COUNT_FIELD_NUMBER: _ClassVar[int]
+    FAILED_KEYS_FIELD_NUMBER: _ClassVar[int]
     deleted_count: int
-    def __init__(self, deleted_count: _Optional[int] = ...) -> None: ...
+    failed_keys: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, deleted_count: _Optional[int] = ..., failed_keys: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class CreatePresignedDownloadRequest(_message.Message):
+    __slots__ = ("key", "expires_in_seconds")
+    KEY_FIELD_NUMBER: _ClassVar[int]
+    EXPIRES_IN_SECONDS_FIELD_NUMBER: _ClassVar[int]
+    key: str
+    expires_in_seconds: int
+    def __init__(self, key: _Optional[str] = ..., expires_in_seconds: _Optional[int] = ...) -> None: ...
+
+class CreatePresignedDownloadResponse(_message.Message):
+    __slots__ = ("url", "expires_at")
+    URL_FIELD_NUMBER: _ClassVar[int]
+    EXPIRES_AT_FIELD_NUMBER: _ClassVar[int]
+    url: str
+    expires_at: int
+    def __init__(self, url: _Optional[str] = ..., expires_at: _Optional[int] = ...) -> None: ...

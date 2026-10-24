@@ -60,6 +60,11 @@ class R2ServiceStub(object):
                 request_serializer=examio_dot_r2_dot_v1_dot_r2__pb2.DeleteObjectsRequest.SerializeToString,
                 response_deserializer=examio_dot_r2_dot_v1_dot_r2__pb2.DeleteObjectsResponse.FromString,
                 _registered_method=True)
+        self.CreatePresignedDownload = channel.unary_unary(
+                '/examio.r2.v1.R2Service/CreatePresignedDownload',
+                request_serializer=examio_dot_r2_dot_v1_dot_r2__pb2.CreatePresignedDownloadRequest.SerializeToString,
+                response_deserializer=examio_dot_r2_dot_v1_dot_r2__pb2.CreatePresignedDownloadResponse.FromString,
+                _registered_method=True)
 
 
 class R2ServiceServicer(object):
@@ -98,6 +103,14 @@ class R2ServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def CreatePresignedDownload(self, request, context):
+        """Presigned GET URL for a key, valid for expires_in_seconds (service callers;
+        used by document-service to hand ai-service a download URL).
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_R2ServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -125,6 +138,11 @@ def add_R2ServiceServicer_to_server(servicer, server):
                     servicer.DeleteObjects,
                     request_deserializer=examio_dot_r2_dot_v1_dot_r2__pb2.DeleteObjectsRequest.FromString,
                     response_serializer=examio_dot_r2_dot_v1_dot_r2__pb2.DeleteObjectsResponse.SerializeToString,
+            ),
+            'CreatePresignedDownload': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreatePresignedDownload,
+                    request_deserializer=examio_dot_r2_dot_v1_dot_r2__pb2.CreatePresignedDownloadRequest.FromString,
+                    response_serializer=examio_dot_r2_dot_v1_dot_r2__pb2.CreatePresignedDownloadResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -263,6 +281,33 @@ class R2Service(object):
             '/examio.r2.v1.R2Service/DeleteObjects',
             examio_dot_r2_dot_v1_dot_r2__pb2.DeleteObjectsRequest.SerializeToString,
             examio_dot_r2_dot_v1_dot_r2__pb2.DeleteObjectsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CreatePresignedDownload(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/examio.r2.v1.R2Service/CreatePresignedDownload',
+            examio_dot_r2_dot_v1_dot_r2__pb2.CreatePresignedDownloadRequest.SerializeToString,
+            examio_dot_r2_dot_v1_dot_r2__pb2.CreatePresignedDownloadResponse.FromString,
             options,
             channel_credentials,
             insecure,

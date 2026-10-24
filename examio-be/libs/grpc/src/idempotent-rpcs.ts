@@ -37,6 +37,15 @@ export const IDEMPOTENT_RPCS: ReadonlySet<string> = new Set([
     'examio.r2.v1.R2Service/GetFileUrl',
     'examio.r2.v1.R2Service/ListUserFiles',
     'examio.r2.v1.R2Service/DeleteObjects',
+    'examio.r2.v1.R2Service/CreatePresignedDownload',
+    // document reads (AssertOwnership is a pure check)
+    'examio.document.v1.DocumentService/GetDocumentsByIds',
+    'examio.document.v1.DocumentService/AssertOwnership',
+    'examio.document.v1.DocumentService/GetQuota',
+    'examio.document.v1.DocumentService/ListDocuments',
+    'examio.document.v1.DocumentService/GetDownloadUrl',
+    // ai reads
+    'examio.ai.v1.AiService/ListModels',
     // gateway control plane (set-style, last write wins)
     'examio.gateway.v1.GatewayControl/RevokeSession',
     'examio.gateway.v1.GatewayControl/InvalidateUser',

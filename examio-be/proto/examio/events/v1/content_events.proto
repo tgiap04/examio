@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package examio.events.v1;
+
+// Options of a generation request (today's generate-from-file / regenerate
+// parameters).
+message GenerationOptions {
+  // Number of quiz questions or flashcards to produce (1..50).
+  int32 num_items = 1;
+  // Restrict retrieval to passages matching `keyword`.
+  bool is_narrow_search = 2;
+  // Only meaningful with is_narrow_search.
+  optional string keyword = 3;
+}
+
+// Payload (`data`) of `content.generation.requested`: a generation job was
+// charged and queued. Published through the outbox by the generation owner
+// (exam `modules/ai` until phase 14, then content) in the transaction that moves
+// the job PENDING_CHARGE -> QUEUED. Consumed by ai-service, which processes the
+// document inline (from `download_url`) when it has no chunks yet and answers with
+// `ai.generation.completed|failed`.
+message ContentGenerationRequested {
+  string job_id = 1;
+  string user_id = 2;
+  // The document to generate from (`UserStorage.id`).
+  string storage_id = 3;
+  // "quiz" or "flashcard".
+  string type = 4;
+  GenerationOptions options = 5;
+  // Model id from the registry; empty = default generation model.
+  string model = 6;
+  // Presigned GET of the document (1 h), set when the owner could sign one.
+  // ai-service uses it to process a document that has no chunks yet instead of
+  // waiting for the OCR pipeline. Absent = wait/retry as before.
+  optional string download_url = 7;
+  // Mimetype of the document; only meaningful with download_url.
+  optional string mimetype = 8;
+}

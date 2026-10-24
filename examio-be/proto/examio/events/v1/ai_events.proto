@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package examio.events.v1;
+
+// Payload (`data`) of `ai.document.processed`: OCR + embedding finished.
+// Published by ai-service; consumed by document-service (row -> COMPLETED).
+message AiDocumentProcessed {
+  string storage_id = 1;
+  int32 page_count = 2;
+}
+
+// Payload (`data`) of `ai.document.failed`: processing gave up. Consumed by
+// document-service (row -> FAILED, and a `Refund(doc:<storageId>)` when the
+// upload credit was charged).
+message AiDocumentFailed {
+  string storage_id = 1;
+  string reason = 2;
+}
+
+// Multiple-choice question as stored in `HistoryGeneratedQuizz.quizzes`.
+message GeneratedQuizItem {
+  string question = 1;
+  // Four possible answers.
+  repeated string options = 2;
+  // The correct answer; equals one of `options` exactly.
+  string answer = 3;
+  // Source page range, e.g. "3-4"; empty when unknown.
+  string source_page_range = 4;
+}
+
+// Card as stored in `HistoryGeneratedFlashcard.flashcards`.
+message GeneratedFlashcardItem {
+  // Front: concept or question.
+  string question = 1;
+  // Back: definition or answer.
+  string answer = 2;
+  string source_page_range = 3;
+}
+
+// Exactly the list matching the job `type` is populated.
+message GeneratedItems {
+  repeated GeneratedQuizItem quizzes = 1;
+  repeated GeneratedFlashcardItem flashcards = 2;
+}
+
+// Payload (`data`) of `ai.generation.completed`. Published by ai-service;
+// consumed by exam (content from phase 14) which writes `HistoryGenerated*`.
+// The whole serialized payload stays under 512 KB (the generator caps items so
+// it does; larger results fail the job instead of being truncated).
+message AiGenerationCompleted {
+  string job_id = 1;
+  // "quiz" or "flashcard" (echoes `content.generation.requested`).
+  string type = 2;
+  GeneratedItems items = 3;
+}
+
+// Payload (`data`) of `ai.generation.failed`. Consumed by exam/content (job
+// FAILED + `Refund(gen:<jobId>)`).
+message AiGenerationFailed {
+  string job_id = 1;
+  string reason = 2;
+}

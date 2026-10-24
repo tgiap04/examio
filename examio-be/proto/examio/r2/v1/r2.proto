@@ -11,6 +11,9 @@ service R2Service {
   rpc ListUserFiles(ListUserFilesRequest) returns (ListUserFilesResponse);
   // Idempotent batch delete: keys that no longer exist count as success.
   rpc DeleteObjects(DeleteObjectsRequest) returns (DeleteObjectsResponse);
+  // Presigned GET URL for a key, valid for expires_in_seconds (service callers;
+  // used by document-service to hand ai-service a download URL).
+  rpc CreatePresignedDownload(CreatePresignedDownloadRequest) returns (CreatePresignedDownloadResponse);
 }
 
 message UploadFileRequest {
@@ -80,4 +83,16 @@ message DeleteObjectsResponse {
   // Keys R2 refused to delete (e.g. AccessDenied); retry only these. Keys that
   // no longer exist are NOT listed: they count as deleted.
   repeated string failed_keys = 2;
+}
+
+message CreatePresignedDownloadRequest {
+  string key = 1;
+  // Validity of the URL; the server clamps it to its configured maximum.
+  int32 expires_in_seconds = 2;
+}
+
+message CreatePresignedDownloadResponse {
+  string url = 1;
+  // Unix epoch milliseconds when the URL stops working.
+  int64 expires_at = 2;
 }
