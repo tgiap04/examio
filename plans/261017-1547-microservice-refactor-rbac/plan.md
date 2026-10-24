@@ -35,10 +35,10 @@ Decisions (authoritative): [reports/decisions.md](./reports/decisions.md). Input
 | 09 | [Frontend RBAC](./phase-09-frontend-rbac.md) | Completed | 3.5d | 04, 07, 08 |
 | 10 | [Cut Cross-DB Access](./phase-10-cut-cross-db-access.md) | Completed | 2.75d | 03, 04, 08, 09 |
 | 11 | [Database per Service](./phase-11-database-per-service.md) | Completed | 3d | 10 + P01 spike GO |
-| 12 | [Extract Study-Room & Vocabulary](./phase-12-extract-study-room-and-vocabulary.md) | Completed (pending commit) | 3d | 05, 11 |
+| 12 | [Extract Study-Room & Vocabulary](./phase-12-extract-study-room-and-vocabulary.md) | Completed | 3d | 05, 11 |
 | 13 | [Extract AI-Chat](./phase-13-extract-ai-chat.md) | Pending | 2d | 11, 12, 15 |
 | 14 | [Extract Content & Assessment](./phase-14-extract-content-and-assessment.md) | Pending | 4.5d | 07, 11, 13, 15 |
-| 15 | [Document Service & AI-Service DB](./phase-15-document-service-and-ai-service-db.md) | Pending | 5d | 03, 10, 11 |
+| 15 | [Document Service & AI-Service DB](./phase-15-document-service-and-ai-service-db.md) | Completed (pending commit) | 5d | 03, 10, 11 |
 | 16 | [Deploy Independence](./phase-16-deploy-independence-and-observability.md) | Pending | 2.5d | 12–15 |
 | 17 | [Deferred: K8s + Observability + Redis ACL](./phase-17-k8s-readiness.md) | Deferred | ~3.5d (excluded) | 16 |
 | 18 | [Mobile RBAC Parity (examio-app, cross-repo)](./phase-18-mobile-rbac-parity.md) | Pending | 2.75d (provisional) | 09 · before first store release |

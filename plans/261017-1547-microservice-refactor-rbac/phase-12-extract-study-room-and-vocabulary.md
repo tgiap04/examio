@@ -7,7 +7,7 @@
 - Prior: [phase-05 gateway/WS](./phase-05-gateway-rewrite.md), [phase-06](./phase-06-rbac-enforcement-and-security-fixes.md) (WS middleware authz, RT-5), [phase-10](./phase-10-cut-cross-db-access.md), [phase-11](./phase-11-database-per-service.md) (`r2_delete_tasks`)
 
 ## Overview
-- Priority: P1 · Status: Completed (pending commit; evidence gate SEALED pending sign-off) · Effort: 3d · Depends on: 05, 11
+- Priority: P1 · Status: Completed (committed b6b2c79..8c645bd) · Effort: 3d · Depends on: 05, 11
 - Goal: the first two strangler cuts out of exam-service. `study-room-service` (HTTP + Socket.io `/ws/study`) and `vocabulary-service` (word family + categories). Both have the fewest dependencies (ARCH §12 P5 order).
 - **Sequential with 13 → 14**: all three edit `apps/exam-service/src/exam-service.module.ts`, `apps/exam-service/src/main.ts`, `apps/exam-service/prisma/schema/**` and `apps/gateway-service/config/routes.yaml`. Can run in parallel with 15 only (line-level YAML ownership, see Related Code Files).
 

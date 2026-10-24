@@ -8,7 +8,7 @@
 
 ## Overview
 - [CARRIED from 11] F13: AI credit charged at upload with no refund when OCR fails (pre-existing; `apps/exam-service/src/modules/ai/ai.service.ts:1030`). `ai.service` also charges before `createUserStorage` on retry/409 (`:1030-1054`). Fix both in the charge-first job flow. Drop the temporary `ai_svc` default-privilege grant on exam tables (test asserts removal).
-- Priority: P1 · Status: Pending · Effort: 5d (+1d: RT-1 charge states + reapers, Python service-token verifier, Python envelope/retry/DLQ moved from P03, `DeleteDocuments`, r2 gRPC upload; minus the dropped user purgers) <!-- Red Team: RT-1, RT-2, RT-8, RT-10, RT-11 --> · Depends on: 03, 10 (finance `Debit`/`Refund` + idempotency keys, shared finance client), 11 <!-- Red Team: RT-1 -->
+- Priority: P1 · Status: Completed (pending commit; evidence gate SEALED pending sign-off) · Effort: 5d (+1d: RT-1 charge states + reapers, Python service-token verifier, Python envelope/retry/DLQ moved from P03, `DeleteDocuments`, r2 gRPC upload; minus the dropped user purgers) <!-- Red Team: RT-1, RT-2, RT-8, RT-10, RT-11 --> · Depends on: 03, 10 (finance `Debit`/`Refund` + idempotency keys, shared finance client), 11 <!-- Red Team: RT-1 -->
 - Goal: (a) new `document-service` owns uploaded-file metadata, monthly quota and processing status. (b) ai-service owns DB schema `ai` (pgvector, Alembic), stops writing other services' tables and drops runtime DDL. (c) gRPC `AiService` for synchronous AI, guarded by service tokens. (d) Long-running work (OCR, generation) moves to events; generation stays async (the red-team proposal to make it a synchronous gRPC call was rejected: it runs for minutes). (e) exam `modules/ai` generation is rewired to document gRPC + events with an idempotent, crash-safe charge. (f) r2's HTTP `internal/upload` and its `INTERNAL_SERVICE_TOKEN` are deleted. <!-- Red Team: RT-1, RT-2, RT-15 -->
 - Parallelism [CROSS-PHASE]: runs in parallel with **12 only**. 13 must wait for this phase (it needs `AiService` + document-service). 14 follows 13. The lead must update plan.md: 13 depends on 15, and 15 no longer runs alongside 13–14.
 
@@ -152,19 +152,19 @@ Write first:
 - ai-chat carve-out regression: attach doc + list docs + clear chat with files still pass (exam tests). <!-- Red Team: RT-8 -->
 
 ## Todo List
-- [ ] Protos (document incl. `DeleteDocuments`/`reuse_duplicate`, ai, r2 additions, events) + Python codegen <!-- Red Team: RT-1, RT-8 -->
-- [ ] document-service scaffold + moved upload code + gRPC + 3-step upload charge + reaper <!-- Red Team: RT-1 -->
-- [ ] `DeleteDocuments` + `document.deleted` + `r2_delete_tasks` worker <!-- Red Team: RT-8 -->
-- [ ] r2: delete `internal/upload` + `INTERNAL_SERVICE_TOKEN`; document on `r2.v1` gRPC with service token <!-- Red Team: RT-15 -->
-- [ ] ai-service Alembic `ai` schema, single pool, no runtime DDL, no foreign SQL
-- [ ] ai-service gRPC AiService + service-token interceptor + roles api/worker/migrate <!-- Red Team: RT-2 -->
-- [ ] ai-service messaging (envelope, consumer 1 tier + DLQ, relay, purge) <!-- Red Team: RT-10 -->
-- [ ] RabbitMQ users `ai`, `document` + permission tests <!-- Red Team: RT-2 -->
-- [ ] exam modules/ai → GenerationJob (PENDING_CHARGE → Debit → QUEUED), cancel guard, reaper, events + document gRPC <!-- Red Team: RT-1 -->
-- [ ] Carve-outs (ai-chat incl. clearChat, examattempt, schema relations) <!-- Red Team: RT-8 -->
-- [ ] Revoke temporary ai_svc grants
-- [ ] Delete old routers, old consumer, old stubs <!-- Updated: Validation Session 1 - BenchmarkItem/score deleted in P01 -->
-- [ ] Gateway YAML entries + route snapshot
+- [x] Protos (document incl. `DeleteDocuments`/`reuse_duplicate`, ai, r2 additions, events) + Python codegen <!-- Red Team: RT-1, RT-8 -->
+- [x] document-service scaffold + moved upload code + gRPC + 3-step upload charge + reaper <!-- Red Team: RT-1 -->
+- [x] `DeleteDocuments` + `document.deleted` + `r2_delete_tasks` worker <!-- Red Team: RT-8 -->
+- [x] r2: delete `internal/upload` + `INTERNAL_SERVICE_TOKEN`; document on `r2.v1` gRPC with service token <!-- Red Team: RT-15 -->
+- [x] ai-service Alembic `ai` schema, single pool, no runtime DDL, no foreign SQL
+- [x] ai-service gRPC AiService + service-token interceptor + roles api/worker/migrate <!-- Red Team: RT-2 -->
+- [x] ai-service messaging (envelope, consumer 1 tier + DLQ, relay, purge) <!-- Red Team: RT-10 -->
+- [x] RabbitMQ users `ai`, `document` + permission tests <!-- Red Team: RT-2 -->
+- [x] exam modules/ai → GenerationJob (PENDING_CHARGE → Debit → QUEUED), cancel guard, reaper, events + document gRPC <!-- Red Team: RT-1 -->
+- [x] Carve-outs (ai-chat incl. clearChat, examattempt, schema relations) <!-- Red Team: RT-8 -->
+- [x] Revoke temporary ai_svc grants
+- [x] Delete old routers, old consumer, old stubs <!-- Updated: Validation Session 1 - BenchmarkItem/score deleted in P01 -->
+- [x] Gateway YAML entries + route snapshot
 
 ## Success Criteria
 - `grep -rnE '"(UserStorage|HistoryGenerated[A-Za-z]*)"|CREATE TABLE|CREATE INDEX' /Users/tgiap.dev/devs/examio/examio-be/apps/ai-service/src` → no output.
@@ -199,3 +199,27 @@ Write first:
 ## Next Steps
 - 13 uses `AiService` + `DocumentService` (incl. `DeleteDocuments`), removes the compat HTTP and the last `INTERNAL_SERVICE_TOKEN` users. 14 moves `modules/ai` + `GenerationJob` (states, reaper) into content-service. <!-- Red Team: RT-1, RT-8, RT-15 -->
 - [CARRIED from 10] B2 / B2-upload (money): replace the interim `debit:` / `upload:` / `quick-upload:` keys (fresh UUID per call) with `doc:<storageId>` / `gen:<jobId>` keys that a client retry cannot change. Acceptance: same `POST /ai/upload` twice → one debit. Also prove the live AI-generation retry (needs ai-service + R2). Also: structured `WALLET_NOT_FOUND` detail instead of message-text match.
+
+## Delivered beyond plan / deviations
+Coordinator decisions (2026-10-24):
+- Order: 15 runs before 13 (13 depends on 15; plan.md table agrees). Sequence left: 15 → 13 → 14 → 16.
+- r2 `internal/upload` removal is gated on a repo-wide grep (no caller found); the "1 day of r2 access logs" step does not apply (no production traffic before the single cutover deploy).
+- `content.generation.requested` is published by exam with envelope `source=content` (the content domain is hosted in exam until phase 14); broker user `exam` topic write widened to `^(exam|content)\.` (render-definitions spec asserts it); phase 14 narrows it again when content-service publishes.
+- `recent-uploads` parity: an additive `ListDocuments` RPC on document-service; the route is served by exam (documents via gRPC + one batched history-summary query) so the FE badges (`quizHistory`/`flashcardHistory`) keep working unchanged.
+- ai-service deps: missing declared packages installed into the project venv; `alembic`, `sqlalchemy[asyncio]`, `aio-pika`, `httpx`, `pytest`, `pytest-asyncio` declared. The Docker image installs from `requirements.txt`; `poetry.lock` is NOT regenerated (poetry is not installed locally) — carried.
+- CI: new `ai-service` job (pytest with `REQUIRE_INTEGRATION=1` against pgvector + rendered broker, `ROLE=migrate` Alembic on an empty `ai` schema as `ai_svc`, ruff 0.15.22 on the phase-15+ modules only; the legacy tree still has ~1197 ruff findings, down from 1327).
+Part B (ai-service): libs/messaging wins over the plan text where they differ (dead-letter at `x-retry-count >= 5`); compat HTTP keeps the `/api` prefix (`/api/chat/*`, `/api/generate/word-family`); no gRPC reflection (grpcurl needs `-proto`); generation no longer writes history or checks ownership (exam/content does); document failures always publish `ai.document.failed` (reason codes) so document-service can refund.
+Part C (document-service): `POST /ai/upload` is JSON (client already stored the object) so step 1 is the PENDING_CHARGE insert; extra columns `chargeFailedAt` (refused/reaped charges are hidden from quota/list/ownership) and `queuedAt` (no duplicate `EnsureProcessed` re-emits); an ambiguous Debit outcome triggers an immediate `Refund` attempt and 403 `CHARGE_UNAVAILABLE`; multer memory storage (bytes go over gRPC); no Redis; `GetUserBenefits` as `svc:document`.
+Part D (exam generation): `GenerationJob.refundedAt` plus a refund sweeper in the exam worker reaper (a FAILED/CANCELLED charged job whose Refund did not complete is retried every 60 s; a Refund NOT_FOUND settles only after a 2 min grace, because a Debit may still be in flight at cancel time), and a watchdog in the same loop: QUEUED/PROCESSING jobs with no status change for `GENERATION_JOB_TIMEOUT_MINUTES` (default 60, clamped to >= 10 with a warning) are failed with `GENERATION_TIMEOUT` and refunded; a late `ai.generation.*` event is ignored by the conditional consumers. Also: `ai.generation.failed` is a `dedupe:false` handler (refund is a network call, kept out of the consumer tx); the generation lock is released with `releaseAfterTerminal` (skipped when the user has a newer open job of that type); libs/messaging gained `alsoPublishes` for `content.*` outbox rows.
+- Coordinator decision (review round 1, M1): "reused FAILED/PENDING document -> free retry" is REPLACED. Failed or cancelled charged jobs are always refunded, so a free retry on top would let a successful generation cost nothing: reusing a FAILED or PENDING document (incl. quick-upload then generate-from-file) now always charges GENERATE_CREDITS (5) and still calls `EnsureProcessed`; PROCESSING returns the running job; COMPLETED pays 5; a new file pays upload + 5. `chargedAmount` is still zeroed for jobs where no money moved.
+
+Fixed while tempering:
+- F1 (temper stage 1): `src/backend/tests/test_hybrid_retrieval_service.py::test_graph_builder_uses_bruteforce_when_faiss_disabled` called the real Gemini embedding API (fails with `No Gemini API key configured for embeddings` without a key, so the new CI `ai-service` job would go red), and `src/llm/{config,model_manager}.py` call `load_dotenv()` at import, so a developer's real `.env` (real API keys, a remote `DATABASE_URL`) could leak into pytest. Fixed: `conftest.py` makes `dotenv.load_dotenv` a no-op for the test session; the test patches `get_pg_vector_store` with precomputed vectors (no key, network or DB).
+- AiService with a USER access token (`aud=examio`) answers UNAUTHENTICATED, not PERMISSION_DENIED: the `aud=ai` check runs first. Still refused; accepted (live temper stage 3). PERMISSION_DENIED is for a valid `aud=ai` token from a non-allowlisted caller (e.g. `svc:document`).
+- Review round 1 H1 (+L1, L7 document side): document-service charge compensation is claim-then-refund with bookkeeping. `UserStorage.refundSettledAt` (migration `20261024100000_refund_settled_at`); only a definitive refusal (INSUFFICIENT_CREDITS, WALLET_NOT_FOUND, PERMISSION_DENIED, INVALID_ARGUMENT) settles at once; an ambiguous Debit first claims PENDING_CHARGE -> FAILED (+ R2 key queued, one tx), then refunds, and the reaper retries every open refund, a Refund NOT_FOUND settling only after the 2 min grace (`REFUND_SWEEP_GRACE_MS`). A refund can no longer hit a row a concurrent request confirmed. Still answers 403 CHARGE_UNAVAILABLE. e2e: late-committing debit refunded once via the sweeper (time injected), NOT_FOUND grace, L1 concurrent confirm, L7.
+- Review round 1 L2: `ai.document.failed` refund clears `creditCharged` in the same tx; a FAILED -> COMPLETED document after a refund no longer reads as charged, and a second failure refunds nothing (worker-pipeline e2e).
+- Review round 1 M1: reuse of a FAILED/PENDING document is free only when an earlier job of that user on that storage was really charged then FAILED/CANCELLED (`hasChargedFailedJob`); quick-upload then generate pays 5. Refused jobs and Refund-NOT_FOUND-settled jobs get `chargedAmount` 0 so they never count as a charged failure. An `unknown` debit on a NEW upload now discards it (`ChargeUnknownException`). Concern: refund + free retry means a failed charged job that is retried and succeeds costs the user nothing (coordinator rule, as specified).
+- Review round 1 L6: `ai.generation.completed` is a `dedupe:false` handler with its own transaction; the generation lock is released after it commits (e2e: rolled-back completion keeps the lock, redelivery commits then frees it).
+- Review round 1 L7 (exam): finance PERMISSION_DENIED / INVALID_ARGUMENT on Debit are definitive refusals (job FAILED at once, no 10-minute park).
+- Review round 1 M2: `DocumentService.GetDownloadUrl {id}` (owner-scoped, read-only, 1 h via r2 CreatePresignedDownload, idempotent list, guard table, contract tests); `ContentGenerationRequested` gains optional `download_url` / `mimetype` (additive); exam fetches the URL best effort before queueing; ai-service `generation_handler` processes a chunk-less document inline from it (same pipeline as `document.uploaded`, reports `ai.document.processed|failed`, permanent failure fails the job at once, transient retries); without a URL the old retry/fail path is unchanged. Topology and retry constants untouched.
+- Review round 1 M3: ai-chat waits again for OCR: after `EnsureProcessed` it polls `GetDocumentsByIds` (2 s, x1.5 back-off, cap 8 s) until every attached document is COMPLETED or FAILED, at most `AI_CHAT_DOCUMENT_WAIT_MS` (default 120000, documented in `deploy/env/exam.env.example`); on timeout it continues without that context and logs.

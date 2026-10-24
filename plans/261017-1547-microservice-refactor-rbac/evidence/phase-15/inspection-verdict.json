@@ -1,0 +1,136 @@
+{
+  "score": 8,
+  "criticalCount": 0,
+  "decision": "SEALED",
+  "acceptanceCovered": [
+    "grep -rnE '\"(UserStorage|HistoryGenerated[A-Za-z]*)\"|CREATE TABLE|CREATE INDEX' examio-be/apps/ai-service/src -> no output; ai_svc reading exam.\"UserStorage\" -> permission denied or relation missing; temporary ai_svc exam grants revoked — reviewer grep returns nothing; exam migration 20261023203052 has a guarded REVOKE; the init-script grant lines are removed; temper-3 shows ai_svc denied on exam.\"UserStorage\" and zero exam grants",
+    "grep -rn \"INTERNAL_SERVICE_TOKEN\\|x-internal-service-token\\|internal/upload\" in r2-service, exam modules/ai and document-service -> no output; grep UpdateBalance|deductCredits in document-service and exam modules/ai -> no output — reviewer greps return nothing; r2 internal/upload and assertInternalToken are deleted",
+    "ai-service pytest green and alembic upgrade head green on an empty ai schema; yarn build && yarn test && check:deps && check:ownership green — temper-1 static checks green (ownership 0 violations, deps 929 modules); Alembic on an empty schema exits 0; fix round reports REQUIRE_INTEGRATION=1 pytest 139 passed, unit 2179, typecheck, deps and ownership 0 (coordinator-reported, not yet in temper-raw.json); reviewer re-ran 89 targeted unit tests, all pass",
+    "AiService gRPC on :50051 lists examio.ai.v1.AiService; a call without a token -> UNAUTHENTICATED; user token -> PERMISSION_DENIED; aud mismatch, HS256/none -> UNAUTHENTICATED; unknown caller -> PERMISSION_DENIED; unknown kid -> one JWKS refetch — temper-3 rows: no token, alg=none and aud mismatch return UNAUTHENTICATED; svc:document returns PERMISSION_DENIED; svc:exam ListModels succeeds; the user-token case returns UNAUTHENTICATED (accepted deviation, recorded as a Defer finding); kid refetch covered by pytest; no reflection, so grpcurl needs -proto",
+    "document money: POST /ai/upload -> exactly one Debit(doc:<id>) even when retried; fault after the debit -> reaper -> one Refund(doc:<id>), row FAILED, R2 key enqueued; ai.document.failed for a charged doc -> one Refund (replay -> still one); quick-upload -> no Debit; quota and owner checks unchanged (others -> 404) — claim-then-refund with refundSettledAt and a grace-gated sweeper (document-charge.service.ts:119-174, document-reaper.service.ts:44-55); document e2e reported 71/71 including late-commit, grace, failed-compensation and concurrent-confirm cases; live stages 4a, 4b, 4g and 4k",
+    "generation money: new file -> one Debit(gen:<jobId>) for upload + generation with CreateUpload(charge_credits=false); reused COMPLETED -> Debit 5; reused FAILED -> no Debit; insufficient -> FAILED, no outbox, same HTTP status; crash between debit and QUEUED -> reaper -> CANCELLED + one Refund; failed -> one Refund; cancel QUEUED -> one Refund; cancel COMPLETED -> 409; cancel twice -> 200 one Refund; AI_FREE_MODE -> no finance call — all clauses hold except 'reused FAILED -> no Debit', which the coordinator's M1 decision changes to a Debit of 5 because failures are now refunded (generation-request-rules.ts:45-48); generation e2e reported 63; live stages 4c-4f; AI_FREE_MODE short-circuits in FinanceClient.debit and in refund()",
+    "DeleteDocuments and HTTP DELETE /ai/upload/:id: owned ids -> rows gone + r2_delete_tasks + one document.deleted outbox row in the same tx; foreign ids -> not_found_ids untouched; second call -> no new outbox row; document worker -> DeleteObjects with svc:document; ai-service deletes vectors on document.deleted — document-delete.service.ts runs one tx (DELETE RETURNING + r2_delete_tasks + outbox); delete-documents e2e; live stage 4h shows 0 vectors and the object returning 404 within 1 minute",
+    "Python messaging: envelope shape/version, idempotent consumer, retry 30s then DLQ after 5, source mismatch -> DLQ, relay publishes after the claim tx, purge; queue topology identical to libs/messaging (no PRECONDITION_FAILED); RabbitMQ users ai/document limited to their prefixes (ACCESS_REFUSED otherwise) — consumer.py, topology.py and outbox_relay.py reviewed; processed_events written in the same tx as the effect; integration pytest (139 reported); temper-3 ACCESS_REFUSED rows",
+    "live compose from an empty volume: document-service + ai-service (api/worker/migrate) healthy; upload a PDF -> PENDING -> COMPLETED, balance debited once; generate-from-file -> quiz history, debited once; cancel a queued job -> balance restored; delete upload -> vectors gone and R2 object gone within 1 min; ai-chat carve-out (attach doc, list, clear chat with files) and FE upload/generation pages work — stage 3b healthy from an empty volume; stages 4 and 5 show money and data flows with a fake ai publishing real envelopes and the real worker running its download/refuse path; real OCR and real generation success are an environmental gap (Gemini key and public R2 host; F3 carried to phase 16), recorded as a Defer finding"
+  ],
+  "regressionChecked": [
+    "document claim-then-refund cannot refund a row a concurrent request confirmed (failAfterRefusedCharge re-reads the row)",
+    "refundSettledAt migration backfills rows that failed before it as settled, so the sweeper does not re-refund history",
+    "markFailed clears creditCharged in the consumer tx, so a later re-fail does not refund again",
+    "ai.generation.completed has its own tx and the conditional transition is the idempotency; the lock is released after commit",
+    "GetDownloadUrl is owner-scoped (actorOf user token, @RequirePermissions document:upload); a foreign id returns NOT_FOUND",
+    "inline processing failure publishes ai.document.failed and ai.generation.failed in the same tx; the generation is refunded through the exam consumer",
+    "ai-chat document wait is bounded by the deadline and never throws",
+    "reviewer ran targeted unit specs: 11 suites, 89 tests, all passing",
+    "fix-round runs and final static rows appended to temper-raw.json (coordinator)"
+  ],
+  "contractStatus": "CHANGED",
+  "refuted": [],
+  "unproven": [],
+  "reachableRegressions": [],
+  "findings": [
+    {
+      "severity": "High",
+      "category": "money/concurrency",
+      "location": "examio-be/apps/document-service/src/modules/upload/document-charge.service.ts:119-174",
+      "summary": "H1 fixed: claim-then-refund with refundSettledAt and a grace-gated NOT_FOUND sweeper; late-commit e2e added",
+      "disposition": "Reject"
+    },
+    {
+      "severity": "Medium",
+      "category": "money",
+      "location": "examio-be/apps/exam-service/src/modules/ai/generation-request-rules.ts:45-48",
+      "summary": "M1 fixed: free retry removed (reuse charges 5); an unknown debit on a new file discards the upload",
+      "disposition": "Reject"
+    },
+    {
+      "severity": "Medium",
+      "category": "reliability/spec",
+      "location": "examio-be/apps/ai-service/src/backend/messaging/generation_handler.py:77-112",
+      "summary": "M2 fixed: inline processing from the presigned URL carried in content.generation.requested",
+      "disposition": "Reject"
+    },
+    {
+      "severity": "Medium",
+      "category": "backwards-compat",
+      "location": "examio-be/apps/exam-service/src/modules/ai-chat/ai-chat-document-wait.ts:45-63",
+      "summary": "M3 fixed: bounded OCR wait (AI_CHAT_DOCUMENT_WAIT_MS, default 120 s) wired at ai-chat.service.ts:675",
+      "disposition": "Reject"
+    },
+    {
+      "severity": "Medium",
+      "category": "evidence",
+      "location": "plans/261017-1547-microservice-refactor-rbac/evidence/phase-15/temper-raw.json:1",
+      "summary": "Live real OCR -> COMPLETED and real ai-service generation not exercised end to end. Environmental, not a code defect: needs a Gemini key and a public R2 host; the private-host SSRF switch is F3, carried to phase 16. Money and data paths around it were proven live with real envelopes, and the real worker's download/refuse path ran live",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "spec",
+      "location": "examio-be/apps/ai-service/src/backend/auth/service_token.py:126-129",
+      "summary": "A user token returns UNAUTHENTICATED (aud check runs first) instead of PERMISSION_DENIED. Still refused, no security impact; accepted deviation recorded in the plan",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "money/concurrency",
+      "location": "examio-be/apps/document-service/src/config/document.constants.ts:32",
+      "summary": "A debit committing more than REFUND_SWEEP_GRACE_MS (2 min) after its compensating refund would still be missed. Same bound exam accepts; consider a finance-side refund tombstone later",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "reliability",
+      "location": "examio-be/apps/exam-service/src/modules/ai/ai.service.ts:179-188",
+      "summary": "The 1 h presigned URL in content.generation.requested can expire under a long backlog; the job then fails and is refunded",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "input-validation",
+      "location": "examio-be/apps/document-service/src/modules/upload/document-register.service.ts:40",
+      "summary": "Upload charge uses the client-supplied size (pre-existing)",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "auth/availability",
+      "location": "examio-be/apps/ai-service/src/backend/auth/jwks.py:71-82",
+      "summary": "JWKS refresh has no single-flight guard; a stale cache during an auth outage rejects all calls",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "authz-convention",
+      "location": "examio-be/apps/exam-service/src/modules/ai-chat/ai-chat.service.ts:612",
+      "summary": "A document the caller does not own returns 403, not the repo rule's 404 (same as HEAD)",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "error-boundaries",
+      "location": "examio-be/apps/document-service/src/clients/document-finance.service.ts:93-108",
+      "summary": "L7 fixed: PERMISSION_DENIED and INVALID_ARGUMENT are definitive refusals (document and exam)",
+      "disposition": "Reject"
+    },
+    {
+      "severity": "Low",
+      "category": "money",
+      "location": "examio-be/apps/document-service/src/modules/upload/document-processing.service.ts:75-91",
+      "summary": "L2 fixed: creditCharged cleared in the same tx as the failure refund",
+      "disposition": "Reject"
+    },
+    {
+      "severity": "Low",
+      "category": "concurrency",
+      "location": "examio-be/apps/exam-service/src/modules/ai/generation-events.handler.ts:76-80",
+      "summary": "L6 fixed: completed handler uses its own tx and releases the lock after commit",
+      "disposition": "Reject"
+    }
+  ],
+  "riskGate": {
+    "touchesSensitiveArea": true,
+    "signoffRequired": true,
+    "humanSignedOff": true
+  }
+}
