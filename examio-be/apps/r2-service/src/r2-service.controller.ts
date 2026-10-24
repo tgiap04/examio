@@ -1,23 +1,13 @@
-import {
-    BadRequestException,
-    Body,
-    Controller,
-    Headers,
-    Logger,
-    Post,
-    UploadedFile,
-    UnauthorizedException,
-    UseInterceptors,
-} from '@nestjs/common';
+import { Controller, Logger } from '@nestjs/common';
 import { Metadata, status } from '@grpc/grpc-js';
 import { RpcException } from '@nestjs/microservices';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { timingSafeEqual } from 'crypto';
 import { r2V1 } from '@examio/contracts';
 import { R2ServiceService } from './r2-service.service';
-import { Public, RequirePermissionsOrService, ServiceOnly, assertSelfOrService } from '@examio/auth-jwt';
+import { RequirePermissionsOrService, ServiceOnly, assertSelfOrService } from '@examio/auth-jwt';
 
 const MAX_DELETE_KEYS = 10_000;
+const DEFAULT_PRESIGN_SECONDS = 3600;
+const MAX_PRESIGN_SECONDS = 24 * 3600;
 
 @Controller()
 @r2V1.R2ServiceControllerMethods()
@@ -26,65 +16,7 @@ export class R2ServiceController implements r2V1.R2ServiceController {
 
     constructor(private readonly r2Service: R2ServiceService) {}
 
-    @Post('internal/upload')
-    @UseInterceptors(FileInterceptor('file'))
-    @Public()
-    async uploadFileHttp(
-        @Headers('x-internal-service-token') internalToken: string | undefined,
-        @UploadedFile() file: Express.Multer.File,
-        @Body('folder') folder?: string
-    ) {
-        this.assertInternalToken(internalToken);
-        this.validateUploadedFile(file);
-
-        const key = await this.r2Service.uploadFile(
-            file.originalname,
-            file.buffer,
-            file.mimetype,
-            folder
-        );
-
-        return {
-            success: true,
-            file_id: key,
-            url: await this.r2Service.resolveUrl(key),
-            key_r2: key,
-            message: 'File uploaded successfully',
-        };
-    }
-
-    private assertInternalToken(token?: string): void {
-        const expected = process.env.INTERNAL_SERVICE_TOKEN;
-        if (!expected || !token) {
-            throw new UnauthorizedException('Invalid internal service token');
-        }
-        // Constant-time comparison to avoid leaking the token via timing.
-        const expectedBuf = Buffer.from(expected);
-        const tokenBuf = Buffer.from(token);
-        if (
-            expectedBuf.length !== tokenBuf.length ||
-            !timingSafeEqual(expectedBuf, tokenBuf)
-        ) {
-            throw new UnauthorizedException('Invalid internal service token');
-        }
-    }
-
-    private validateUploadedFile(file?: Express.Multer.File): asserts file is Express.Multer.File {
-        if (!file) {
-            throw new BadRequestException('File is required');
-        }
-
-        const maxFileSizeBytes = Number(process.env.R2_MAX_UPLOAD_BYTES || 10 * 1024 * 1024);
-        if (!Number.isFinite(maxFileSizeBytes) || file.size > maxFileSizeBytes) {
-            throw new BadRequestException('File is too large');
-        }
-
-        if (!file.mimetype || /[<>\"'\\n]/.test(file.mimetype)) {
-            throw new BadRequestException('Invalid file type');
-        }
-    }
-
-    @ServiceOnly('exam', 'auth')
+    @ServiceOnly('exam', 'auth', 'document')
     async uploadFile(
         data: r2V1.UploadFileRequest
     ): Promise<r2V1.UploadFileResponse> {
@@ -166,7 +98,7 @@ export class R2ServiceController implements r2V1.R2ServiceController {
         });
     }
 
-    @ServiceOnly('exam', 'auth', 'vocabulary')
+    @ServiceOnly('exam', 'auth', 'vocabulary', 'document')
     async deleteObjects(
         data: r2V1.DeleteObjectsRequest
     ): Promise<r2V1.DeleteObjectsResponse> {
@@ -190,6 +122,32 @@ export class R2ServiceController implements r2V1.R2ServiceController {
             throw new RpcException({
                 code: status.INTERNAL,
                 message: 'DeleteObjects failed',
+            });
+        }
+    }
+
+    // Always a signed GET (never the public URL), so the caller can hand a
+    // private object to ai-service without exposing the key permanently.
+    @ServiceOnly('document')
+    async createPresignedDownload(
+        data: r2V1.CreatePresignedDownloadRequest
+    ): Promise<r2V1.CreatePresignedDownloadResponse> {
+        if (!data.key?.trim()) {
+            throw new RpcException({
+                code: status.INVALID_ARGUMENT,
+                message: 'key must be non-empty',
+            });
+        }
+        const requested = data.expiresInSeconds > 0 ? data.expiresInSeconds : DEFAULT_PRESIGN_SECONDS;
+        const expiresIn = Math.min(requested, MAX_PRESIGN_SECONDS);
+        try {
+            const url = await this.r2Service.getSignedUrl(data.key, expiresIn);
+            return { url, expiresAt: String(Date.now() + expiresIn * 1000) };
+        } catch (error) {
+            this.logger.error(`CreatePresignedDownload failed: ${error.message}`);
+            throw new RpcException({
+                code: status.INTERNAL,
+                message: 'CreatePresignedDownload failed',
             });
         }
     }

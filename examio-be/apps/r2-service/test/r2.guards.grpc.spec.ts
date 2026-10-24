@@ -43,7 +43,7 @@ describe('R2Service gRPC behind the real guards', () => {
                 }),
             ],
             controllers: [R2ServiceController],
-            providers: [{ provide: R2ServiceService, useValue: { resolveUrl: jest.fn(async (k: string) => `https://cdn/${k}`) } }],
+            providers: [{ provide: R2ServiceService, useValue: { resolveUrl: jest.fn(async (k: string) => `https://cdn/${k}`), getSignedUrl: jest.fn(async (k: string, ttl: number) => `https://signed/${k}?ttl=${ttl}`) } }],
         }).compile();
         server = await startTestGrpcServer(moduleRef, [PROTO_FILES.r2]);
         client = createTestGrpcClient(server.url, [PROTO_FILES.r2]).getService<r2V1.R2ServiceClient>(
@@ -83,5 +83,34 @@ describe('R2Service gRPC behind the real guards', () => {
         await expect(lastValueFrom(client.deleteObjects(req, new Metadata()))).rejects.toMatchObject({ code: 16 });
         await expect(lastValueFrom(client.deleteObjects(req, await md({ sub: 'u', roles: ['SYSTEM_ADMIN'] })))).rejects.toMatchObject({ code: 7 });
         await expect(lastValueFrom(client.deleteObjects(req, await md(serviceClaims('finance'))))).rejects.toMatchObject({ code: 7 });
+    });
+
+    it('CreatePresignedDownload is document-only; UploadFile and DeleteObjects accept document', async () => {
+        const req = { key: 'documents/a.pdf', expiresInSeconds: 60 };
+        await expect(lastValueFrom(client.createPresignedDownload(req, new Metadata()))).rejects.toMatchObject({ code: 16 });
+        await expect(
+            lastValueFrom(client.createPresignedDownload(req, await md({ sub: 'u', roles: ['TEACHER'] })))
+        ).rejects.toMatchObject({ code: 7 });
+        for (const caller of ['exam', 'auth', 'vocabulary', 'finance']) {
+            await expect(
+                lastValueFrom(client.createPresignedDownload(req, await md(serviceClaims(caller))))
+            ).rejects.toMatchObject({ code: 7 });
+        }
+        const res = await lastValueFrom(client.createPresignedDownload(req, await md(serviceClaims('document'))));
+        expect(res.url).toBe('https://signed/documents/a.pdf?ttl=60');
+        // document passes the guard on DeleteObjects (blank key then reaches the handler: INVALID_ARGUMENT)
+        await expect(
+            lastValueFrom(client.deleteObjects({ keys: [' '] }, await md(serviceClaims('document'))))
+        ).rejects.toMatchObject({ code: 3 });
+        await expect(
+            lastValueFrom(client.uploadFile({ userId: 'u', filename: 'a', content: Buffer.from('x'), mimetype: 'text/plain', folder: 'f' }, await md(serviceClaims('finance'))))
+        ).rejects.toMatchObject({ code: 7 });
+    });
+
+    it('CreatePresignedDownload defaults to 1h, caps at 24h and rejects a blank key', async () => {
+        const m = await md(serviceClaims('document'));
+        expect((await lastValueFrom(client.createPresignedDownload({ key: 'k', expiresInSeconds: 0 }, m))).url).toContain('ttl=3600');
+        expect((await lastValueFrom(client.createPresignedDownload({ key: 'k', expiresInSeconds: 99999999 }, m))).url).toContain('ttl=86400');
+        await expect(lastValueFrom(client.createPresignedDownload({ key: ' ', expiresInSeconds: 5 }, m))).rejects.toMatchObject({ code: 3 });
     });
 });
