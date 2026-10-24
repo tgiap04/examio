@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { createEnvelope, Envelope } from './envelope';
-import { MESSAGING_OPTIONS, MessagingServiceOptions } from './messaging.constants';
+import { createEnvelope, domainOf, Envelope } from './envelope';
+import { MESSAGING_OPTIONS, MessagingServiceOptions, publishedSources } from './messaging.constants';
 
 /** Structural slice of a Prisma tx client: keeps this lib Prisma-free. */
 export interface OutboxTx {
@@ -27,10 +27,14 @@ export class OutboxService {
         data: T,
         correlationId?: string
     ): Promise<Envelope<T>> {
-        const envelope = createEnvelope(type, data, {
-            source: this.options.service,
-            correlationId,
-        });
+        // The source is the event's own domain when this service is declared to publish it
+        // (`alsoPublishes`); anything else keeps the service as source and fails the envelope
+        // domain check, so no other domain can be forged.
+        const domain = domainOf(type);
+        const source = publishedSources(this.options).includes(domain)
+            ? domain
+            : this.options.service;
+        const envelope = createEnvelope(type, data, { source, correlationId });
         await tx.outboxEvent.create({
             data: {
                 id: envelope.id,

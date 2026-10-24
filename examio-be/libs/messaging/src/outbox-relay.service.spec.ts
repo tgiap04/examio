@@ -52,7 +52,7 @@ describe('OutboxRelayService.tick', () => {
         );
         expect(calls[calls.length - 1]).toBe('mark');
         const claim = sqls[0];
-        expect(claim.params).toEqual(['auth']);
+        expect(claim.params).toEqual([['auth']]);
         expect(claim.sql).toMatch(/FOR UPDATE SKIP LOCKED/);
         const mark = sqls.find((s) => /published_at = \(now\(\) AT TIME ZONE 'UTC'\)/.test(s.sql))!;
         expect(mark.sql).toMatch(/locked_until = NULL/);
@@ -126,7 +126,7 @@ describe('OutboxRelayService stale alert and loop', () => {
         await (svc as any).checkStale();
 
         expect(pool.query.mock.calls[0][0]).toMatch(/interval '5 minutes'/);
-        expect(pool.query.mock.calls[0][1]).toEqual(['auth']);
+        expect(pool.query.mock.calls[0][1]).toEqual([['auth']]);
         expect(err).toHaveBeenCalledWith(expect.stringContaining('3 event(s) unpublished'));
         err.mockRestore();
     });
@@ -172,5 +172,21 @@ describe('OutboxRelayService stale alert and loop', () => {
         } finally {
             jest.useRealTimers();
         }
+    });
+});
+
+describe('OutboxRelayService sources', () => {
+    it('claims the rows of the service and of every domain it also publishes', async () => {
+        const pool = { query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 }) };
+        const svc = new OutboxRelayService(
+            { service: 'exam', alsoPublishes: ['content'] },
+            pool as never,
+            { isConnected: () => true, publisher: { publish: jest.fn() } } as never
+        );
+
+        await svc.tick();
+
+        expect(pool.query.mock.calls[0][0]).toMatch(/source = ANY\(\$1::text\[\]\)/);
+        expect(pool.query.mock.calls[0][1]).toEqual([['exam', 'content']]);
     });
 });

@@ -6,7 +6,12 @@ import {
     BeforeApplicationShutdown,
 } from '@nestjs/common';
 import { AmqpConnection } from './amqp-connection';
-import { MESSAGING_OPTIONS, MessagingServiceOptions, RELAY_POOL } from './messaging.constants';
+import {
+    MESSAGING_OPTIONS,
+    MessagingServiceOptions,
+    publishedSources,
+    RELAY_POOL,
+} from './messaging.constants';
 import { RelayDb } from './relay-pool';
 import { EVENTS_EXCHANGE } from './topology';
 
@@ -24,7 +29,7 @@ const CLAIM_SQL = `
 UPDATE outbox_events SET locked_until = ${NOW} + interval '${LOCK_SECONDS} seconds'
 WHERE seq IN (
     SELECT seq FROM outbox_events
-    WHERE source = $1 AND published_at IS NULL AND next_attempt_at <= ${NOW}
+    WHERE source = ANY($1::text[]) AND published_at IS NULL AND next_attempt_at <= ${NOW}
       AND (locked_until IS NULL OR locked_until < ${NOW})
     ORDER BY seq LIMIT ${BATCH} FOR UPDATE SKIP LOCKED)
 RETURNING seq::text AS seq, envelope, attempts`;
@@ -44,7 +49,7 @@ WHERE o.seq = f.seq`;
 
 const STALE_SQL = `
 SELECT count(*)::int AS n FROM outbox_events
-WHERE source = $1 AND published_at IS NULL
+WHERE source = ANY($1::text[]) AND published_at IS NULL
   AND created_at < ${NOW} - interval '${STALE_AFTER_MINUTES} minutes'`;
 
 interface ClaimedRow {
@@ -102,7 +107,7 @@ export class OutboxRelayService implements OnApplicationBootstrap, BeforeApplica
         // burnt and the backlog flushes the moment the connection returns.
         if (!this.amqp.isConnected()) return 0;
 
-        const claimed = await this.pool.query(CLAIM_SQL, [this.options.service]);
+        const claimed = await this.pool.query(CLAIM_SQL, [publishedSources(this.options)]);
         const rows = (claimed.rows as ClaimedRow[]).sort((a, b) =>
             BigInt(a.seq) < BigInt(b.seq) ? -1 : 1
         );
@@ -161,7 +166,7 @@ export class OutboxRelayService implements OnApplicationBootstrap, BeforeApplica
         const now = Date.now();
         if (now - this.lastStaleCheck < STALE_CHECK_MS) return;
         this.lastStaleCheck = now;
-        const res = await this.pool.query(STALE_SQL, [this.options.service]);
+        const res = await this.pool.query(STALE_SQL, [publishedSources(this.options)]);
         const n = res.rows[0]?.n ?? 0;
         if (n > 0) {
             this.logger.error(
