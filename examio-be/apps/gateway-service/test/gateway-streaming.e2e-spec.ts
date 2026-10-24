@@ -19,7 +19,7 @@ describe('gateway streaming (e2e)', () => {
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.exam, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.exam, h.document, h.auth, h.finance, h.admin]) u.reset();
     });
 
     it('SSE chunks reach the client before the upstream finishes', async () => {
@@ -57,7 +57,7 @@ describe('gateway streaming (e2e)', () => {
         const chunk = Buffer.alloc(1024 * 1024, 7);
         const token = await h.issuer.user('uploader', ['TEACHER']);
         // Answer only once the whole body has been consumed (like a real upload handler).
-        h.exam.handler = (req, res) => {
+        h.document.handler = (req, res) => {
             req.on('end', () => void res.writeHead(200).end('{"uploaded":true}'));
         };
         // Live Buffer memory (after a forced GC, so freed chunks do not count) while
@@ -95,10 +95,10 @@ describe('gateway streaming (e2e)', () => {
                     if (sent === half && upstreamBytesAtHalf < 0) {
                         // Proof of streaming: the gateway cannot have the first half at the
                         // upstream unless it forwards chunks as they arrive.
-                        for (let i = 0; i < 100 && (h.exam.seen[0]?.bytes ?? 0) < half * 0.6; i++) {
+                        for (let i = 0; i < 100 && (h.document.seen[0]?.bytes ?? 0) < half * 0.6; i++) {
                             await new Promise((r) => setTimeout(r, 20));
                         }
-                        upstreamBytesAtHalf = h.exam.seen[0]?.bytes ?? 0;
+                        upstreamBytesAtHalf = h.document.seen[0]?.bytes ?? 0;
                     }
                     sent += chunk.length;
                     if (!req.write(chunk)) await new Promise((r) => req.once('drain', r));
@@ -111,7 +111,7 @@ describe('gateway streaming (e2e)', () => {
         clearInterval(sampler);
         const peakMb = peak / 1024 / 1024;
         expect(status).toBe(200);
-        expect(h.exam.seen[0].bytes).toBe(total);
+        expect(h.document.seen[0].bytes).toBe(total);
         expect(upstreamBytesAtHalf).toBeGreaterThanOrEqual(half * 0.6);
         expect(peakMb).toBeLessThan(12);
     }, 60_000);
@@ -140,7 +140,7 @@ describe('gateway streaming (e2e)', () => {
             setTimeout(() => reject(new Error('no response')), 5000).unref();
         });
         expect(status).toBe(413);
-        expect(h.exam.seen).toHaveLength(0);
+        expect(h.document.seen).toHaveLength(0);
     });
 
     it('a CHUNKED body over maxBodySize (no Content-Length) is cut: 413, upstream gets at most the cap; under the cap passes', async () => {
@@ -171,7 +171,7 @@ describe('gateway streaming (e2e)', () => {
                 pump();
             });
 
-        h.exam.handler = (req, res) => {
+        h.document.handler = (req, res) => {
             req.on('end', () => void res.writeHead(200).end('{"stored":true}'));
             req.on('error', () => undefined);
         };
@@ -179,15 +179,15 @@ describe('gateway streaming (e2e)', () => {
         expect(over.status).toBe(413);
         expect(JSON.parse(over.body)).toMatchObject({ statusCode: 413, code: 'PAYLOAD_TOO_LARGE' });
         await new Promise((r) => setTimeout(r, 200));
-        expect(h.exam.seen[0].bytes).toBeLessThanOrEqual(cap);
+        expect(h.document.seen[0].bytes).toBeLessThanOrEqual(cap);
 
-        h.exam.reset();
-        h.exam.handler = (req, res) => {
+        h.document.reset();
+        h.document.handler = (req, res) => {
             req.on('end', () => void res.writeHead(200).end('{"stored":true}'));
         };
         const under = await send(8); // 2MB
         expect(under.status).toBe(200);
-        expect(h.exam.seen[0].bytes).toBe(8 * 256 * 1024);
+        expect(h.document.seen[0].bytes).toBe(8 * 256 * 1024);
     });
 
     it('does not accept a token from the query string or the retired token cookie', async () => {

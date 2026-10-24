@@ -10,6 +10,7 @@ upstreams:
   exam: ${EXAM_SERVICE_URL:-http://localhost:3002}
   studyroom: ${STUDYROOM_SERVICE_URL:-http://localhost:3009}
   vocabulary: ${VOCABULARY_SERVICE_URL:-http://localhost:3010}
+  document: ${DOCUMENT_SERVICE_URL:-http://localhost:3011}
   finance: ${FINANCE_SERVICE_URL:-http://localhost:3003}
   admin: ${ADMIN_SERVICE_URL:-http://localhost:7006}
 
@@ -83,14 +84,31 @@ routes:
     auth: required
     permissions: [admin:access]
 
-  # ---- exam-service: AI ------------------------------------------------------
-  - id: ai-upload
+  # ---- AI: uploads live in document-service, generation still in exam-service ----
+  # `ai-upload-history` and `ai-recent-uploads` are listed first and exam keeps them: they join the
+  # documents with generated history (exam data); exam lists the documents over gRPC.
+  # Patterns are full-match, so `ai-upload` cannot swallow `upload/<id>/history`.
+  - id: ai-upload-history
     upstream: exam
-    match: { path: '/api/v1/ai/(upload.*|quick-upload|recent-uploads)' }
+    match: { path: '/api/v1/ai/upload/[^/]+/history' }
+    auth: required
+    permissions: [ai:generate]
+    pageFlag: ai-tool
+    timeout: 120s
+  - id: ai-recent-uploads
+    upstream: exam
+    match: { path: '/api/v1/ai/recent-uploads' }
     auth: required
     permissions: [document:upload]
     pageFlag: ai-tool
-    maxBodySize: 100mb
+    timeout: 120s
+  - id: ai-upload
+    upstream: document
+    match: { path: '/api/v1/ai/(upload(/[^/]+)?|quick-upload|upload-image)' }
+    auth: required
+    permissions: [document:upload]
+    pageFlag: ai-tool
+    maxBodySize: 50mb
     timeout: 120s
   - id: ai
     upstream: exam
@@ -189,10 +207,11 @@ routes:
     auth: required
     pageFlag: study-room
   - id: r2-image
-    upstream: exam
+    upstream: document
     match: { path: '/api/v1/r2/image' }
     methods: [POST]
     auth: required
+    permissions: [document:upload]
     maxBodySize: 3mb
 
   # ---- WebSocket (study room, served by study-room-service socket.io) --------------

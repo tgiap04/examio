@@ -21,7 +21,7 @@ describe.each([
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.exam, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.exam, h.document, h.auth, h.finance, h.admin]) u.reset();
     });
 
     interface Sent {
@@ -122,26 +122,26 @@ describe.each([
         };
 
         it('over the cap: 413 envelope and the upstream receives at most the cap', async () => {
-            h.exam.handler = echoOnEnd;
+            h.document.handler = echoOnEnd;
             const token = await h.issuer.user(`cap${withExpect}`, ['TEACHER']);
             const res = await send('/api/v1/r2/image', { method: 'POST', headers: { authorization: `Bearer ${token}` }, chunks: 80 }); // 5MB
             expect(res.reset).toBe(false);
             expect(res.status).toBe(413);
             expect(JSON.parse(res.body)).toMatchObject({ statusCode: 413, code: 'PAYLOAD_TOO_LARGE' });
             await new Promise((r) => setTimeout(r, 200));
-            expect(h.exam.seen[0].bytes).toBeLessThanOrEqual(cap);
+            expect(h.document.seen[0].bytes).toBeLessThanOrEqual(cap);
         });
 
         it('under the cap: passes, byte count intact', async () => {
-            h.exam.handler = echoOnEnd;
+            h.document.handler = echoOnEnd;
             const token = await h.issuer.user(`under${withExpect}`, ['TEACHER']);
             const res = await send('/api/v1/r2/image', { method: 'POST', headers: { authorization: `Bearer ${token}` }, chunks: 32 }); // 2MB
             expect(res.status).toBe(200);
-            expect(h.exam.seen[0].bytes).toBe(32 * 64 * 1024);
+            expect(h.document.seen[0].bytes).toBe(32 * 64 * 1024);
         });
 
         it('the 413 is delivered deterministically: 20 consecutive over-cap uploads, zero resets', async () => {
-            h.exam.handler = echoOnEnd;
+            h.document.handler = echoOnEnd;
             const token = await h.issuer.user(`twenty${withExpect}`, ['TEACHER', 'SYSTEM_ADMIN']);
             const results: Sent[] = [];
             for (let i = 0; i < 20; i++) {

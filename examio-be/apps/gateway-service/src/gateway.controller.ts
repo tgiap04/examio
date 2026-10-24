@@ -19,6 +19,8 @@ export class GatewayController {
                     process.env.STUDYROOM_SERVICE_URL || 'http://localhost:3009',
                 vocabulary:
                     process.env.VOCABULARY_SERVICE_URL || 'http://localhost:3010',
+                document:
+                    process.env.DOCUMENT_SERVICE_URL || 'http://localhost:3011',
                 finance:
                     process.env.FINANCE_SERVICE_URL || 'http://localhost:3003',
             },

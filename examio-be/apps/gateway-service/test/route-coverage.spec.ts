@@ -21,6 +21,11 @@ function expectedUpstream(path: string): string {
     if (['wallet', 'payment', 'webhook'].includes(resource)) return 'finance';
     if (resource === 'admin') return 'admin';
     if (resource === 'studyrooms') return 'studyroom';
+    // Uploads and the image endpoint live in document-service; generation and history stay in exam.
+    if (resource === 'r2') return 'document';
+    if (resource === 'ai' && /^\/api\/v1\/ai\/(upload(\/:[A-Za-z]+)?|quick-upload|upload-image)$/.test(path)) {
+        return 'document';
+    }
     // The to-flashcard bridge writes a FlashCardSet, so exam keeps that one path.
     if (resource === 'word-family') return /^\/api\/v1\/word-family\/:[A-Za-z]+\/to-flashcard$/.test(path) ? 'exam' : 'vocabulary';
     return 'exam';
@@ -48,12 +53,16 @@ describe('routes.yaml covers the phase-01 route inventory', () => {
         expect(target('/api/v1/admin/users')).toBe('http://localhost:7006');
         expect(target('/api/v1/studyrooms/mine')).toBe('http://localhost:3009');
         expect(target('/api/v1/word-family/categories')).toBe('http://localhost:3010');
+        expect(target('/api/v1/ai/quick-upload')).toBe('http://localhost:3011');
+        expect(table.match('POST', '/api/v1/r2/image')?.target).toBe('http://localhost:3011');
+        expect(target('/api/v1/ai/upload/u1/history')).toBe('http://localhost:3002');
         expect(table.match('GET', '/ws/study')?.target).toBe('http://localhost:3009');
         const custom = loadRouteTable({
             env: {
                 EXAM_SERVICE_URL: 'http://exam:3000',
                 STUDYROOM_SERVICE_URL: 'http://study-room:3000',
                 VOCABULARY_SERVICE_URL: 'http://vocabulary:3000',
+                DOCUMENT_SERVICE_URL: 'http://document:3000',
             },
         });
         expect(custom.match('GET', '/api/v1/quizsets')?.target).toBe('http://exam:3000');
@@ -61,6 +70,8 @@ describe('routes.yaml covers the phase-01 route inventory', () => {
         expect(custom.match('GET', '/api/v1/word-family/saved')?.target).toBe('http://vocabulary:3000');
         expect(custom.match('POST', '/api/v1/word-family/wf1/to-flashcard')?.target).toBe('http://exam:3000');
         expect(custom.match('GET', '/ws/study')?.target).toBe('http://study-room:3000');
+        expect(custom.match('POST', '/api/v1/ai/quick-upload')?.target).toBe('http://document:3000');
+        expect(custom.match('GET', '/api/v1/ai/upload/u1/history')?.target).toBe('http://exam:3000');
     });
 
     it.each([
@@ -180,7 +191,11 @@ describe('coarse permission table', () => {
         ['POST', '/api/v1/ai/quick-upload', ['document:upload']],
         ['GET', '/api/v1/ai/recent-uploads', ['document:upload']],
         ['POST', '/api/v1/ai/upload-image', ['document:upload']],
-        ['GET', '/api/v1/ai/upload/u1/history', ['document:upload']],
+        ['GET', '/api/v1/ai/upload/u1/history', ['ai:generate']],
+        ['GET', '/api/v1/ai/upload/u1', ['document:upload']],
+        ['DELETE', '/api/v1/ai/upload/u1', ['document:upload']],
+        ['POST', '/api/v1/ai/upload', ['document:upload']],
+        ['POST', '/api/v1/r2/image', ['document:upload']],
         ['POST', '/api/v1/ai-chat/c1/message', ['ai_chat:use']],
         ['GET', '/api/v1/wallet/details', ['wallet:use']],
         ['POST', '/api/v1/payment/create', ['wallet:use']],
@@ -188,10 +203,42 @@ describe('coarse permission table', () => {
         expect(route(method, path).permissions).toEqual(permissions);
     });
 
-    it('the upload routes carry the 100mb / 120s override', () => {
+    it('the upload routes carry the 50mb / 120s override', () => {
         const upload = route('POST', '/api/v1/ai/quick-upload');
-        expect(upload.maxBodyBytes).toBe(100 * 1024 * 1024);
+        expect(upload.maxBodyBytes).toBe(50 * 1024 * 1024);
         expect(upload.timeoutMs).toBe(120_000);
+    });
+
+    it('ai-upload-history is listed before ai-upload and the anchored pattern never captures it', () => {
+        expect(route('GET', '/api/v1/ai/upload/u1/history')).toMatchObject({ id: 'ai-upload-history', upstream: 'exam' });
+        for (const [method, path] of [
+            ['GET', '/api/v1/ai/upload/u1'],
+            ['DELETE', '/api/v1/ai/upload/u1'],
+            ['POST', '/api/v1/ai/upload'],
+            ['POST', '/api/v1/ai/upload-image'],
+        ]) {
+            expect(route(method, path)).toMatchObject({ id: 'ai-upload', upstream: 'document' });
+        }
+        // lookalikes fall through to the exam `ai` prefix (generation), never to document
+        for (const path of ['/api/v1/ai/upload/u1/history/x', '/api/v1/ai/upload/a/b', '/api/v1/ai/uploads', '/api/v1/ai/generate-from-file']) {
+            expect(route('GET', path).upstream).toBe('exam');
+        }
+    });
+
+    it('recent-uploads is served by exam (documents over gRPC + generated history) and is listed before ai-upload', () => {
+        expect(route('GET', '/api/v1/ai/recent-uploads')).toMatchObject({
+            id: 'ai-recent-uploads',
+            upstream: 'exam',
+            permissions: ['document:upload'],
+            timeoutMs: 120_000,
+        });
+        expect(table.routes.findIndex((r) => r.id === 'ai-recent-uploads')).toBeLessThan(
+            table.routes.findIndex((r) => r.id === 'ai-upload')
+        );
+    });
+
+    it('r2-image goes to document with the 3mb cap', () => {
+        expect(route('POST', '/api/v1/r2/image')).toMatchObject({ id: 'r2-image', upstream: 'document', maxBodyBytes: 3 * 1024 * 1024 });
     });
 
     it('subscription plans are the one public payment route', () => {

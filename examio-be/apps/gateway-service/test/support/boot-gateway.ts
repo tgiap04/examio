@@ -17,6 +17,7 @@ export interface Harness {
     exam: FakeUpstream;
     studyroom: FakeUpstream;
     vocabulary: FakeUpstream;
+    document: FakeUpstream;
     auth: FakeUpstream;
     finance: FakeUpstream;
     admin: FakeUpstream;
@@ -30,8 +31,8 @@ export interface Harness {
  */
 export async function bootGateway(extraEnv: Record<string, string> = {}): Promise<Harness> {
     const issuer = await new TokenIssuer().start();
-    const [exam, auth, finance, admin, studyroom, vocabulary] = await Promise.all(
-        [1, 2, 3, 4, 5, 6].map(() => new FakeUpstream().start())
+    const [exam, auth, finance, admin, studyroom, vocabulary, document] = await Promise.all(
+        [1, 2, 3, 4, 5, 6, 7].map(() => new FakeUpstream().start())
     );
     // A caller that already told another service where the gateway listens (GRPC_PORT) gets one attempt.
     const pinnedPort = extraEnv.GRPC_PORT ? Number(extraEnv.GRPC_PORT) : undefined;
@@ -42,6 +43,7 @@ export async function bootGateway(extraEnv: Record<string, string> = {}): Promis
         EXAM_SERVICE_URL: exam.url,
         STUDYROOM_SERVICE_URL: studyroom.url,
         VOCABULARY_SERVICE_URL: vocabulary.url,
+        DOCUMENT_SERVICE_URL: document.url,
         FINANCE_SERVICE_URL: finance.url,
         ADMIN_SERVICE_URL: admin.url,
         AUTH_JWKS_URL: issuer.jwksUrl,
@@ -97,13 +99,14 @@ export async function bootGateway(extraEnv: Record<string, string> = {}): Promis
         exam,
         studyroom,
         vocabulary,
+        document,
         auth,
         finance,
         admin,
         async close() {
             // Closing right after boot can hang on the AMQP channel teardown; bound it.
             await Promise.race([app.close(), new Promise((r) => setTimeout(r, 5000))]);
-            await Promise.all([exam, studyroom, vocabulary, auth, finance, admin].map((u) => u.stop()));
+            await Promise.all([exam, studyroom, vocabulary, document, auth, finance, admin].map((u) => u.stop()));
             await issuer.stop();
         },
     };
