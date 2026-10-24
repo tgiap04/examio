@@ -143,11 +143,6 @@ def print_summary(rows: List[RetrievalBenchmarkRow]) -> None:
 async def main() -> int:
     args = parse_args()
 
-    file_info = await ocr_service.get_file_info(args.user_storage_id)
-    if not file_info:
-        print(f"UserStorage không tồn tại: {args.user_storage_id}")
-        return 1
-
     chunks = await ocr_service.get_document_chunks(args.user_storage_id)
     if not chunks:
         print(
@@ -179,7 +174,7 @@ async def main() -> int:
 
     result_payload = {
         'user_storage_id': args.user_storage_id,
-        'filename': file_info.filename,
+        'filename': args.user_storage_id,
         'model_type': args.model_type,
         'top_k': args.top_k,
         'max_content_length': args.max_content_length,

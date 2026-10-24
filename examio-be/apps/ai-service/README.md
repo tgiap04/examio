@@ -77,48 +77,27 @@ python src/rag/indexing.py
 
 ### Architecture
 
-The backend provides a RESTful API for:
+The service has no public HTTP API. Callers are other services:
 
-1. User authentication
-2. Conversation management
-3. Message processing through the RAG pipeline
-4. Data persistence in MongoDB
+1. **gRPC** `examio.ai.v1.AiService` (`StreamChat`, `Query`, `GenerateWordFamily`, `ListModels`) on `GRPC_PORT` (50051), accepted only with a service token (RS256, `aud=ai`, allowed callers `svc:exam`, `svc:ai-chat`, `svc:vocabulary`, `svc:content`).
+2. **RabbitMQ events** on queue `ai.events`: `document.uploaded` (OCR, chunking, embedding, graph), `document.deleted` (drop vectors/entities/graph), `content.generation.requested` (quiz/flashcard generation). Answers: `ai.document.processed|failed`, `ai.generation.completed|failed`.
+3. **HTTP compat** (only with `AI_HTTP_COMPAT=true`, removed in phase 13): `POST /api/chat/query`, `POST /api/chat/stream`, `POST /api/generate/word-family`, guarded by `INTERNAL_SERVICE_TOKEN`. FastAPI also serves `/health`.
 
 ```
-Client Request → FastAPI Router → Business Logic → RAG Processing → Database → Response
+gRPC / event → Business Logic → RAG Processing → PostgreSQL schema `ai` (pgvector) → Response / event
 ```
 
 ### Tech Stack
 
-- **FastAPI**: High-performance web framework
-- **MongoDB**: Document database for storing conversations and messages
-- **Pydantic**: Data validation and settings management
-- **JWT**: Authentication mechanism
-- **Python 3.12**: Core programming language
+- **grpc.aio** + **FastAPI** (`/health`, compat routes)
+- **PostgreSQL + pgvector**: schema `ai`, one shared asyncpg pool, Alembic migrations (`alembic/versions`), no runtime DDL
+- **aio-pika**: `src/backend/messaging` (envelope, consumer, outbox relay, purge)
+- **python-jose**: service-token verification (`src/backend/auth/service_token.py`)
+- **Python 3.12**
 
-### Features
+### Running
 
-- RESTful API endpoints for conversation and message management
-- User authentication and authorization
-- Persistent storage of conversations and message history
-- Rate limiting and request validation
-- Conversation memory management
-
-### Installation and Setup
-
-```bash
-# Install MongoDB
-# Follow instructions at https://docs.mongodb.com/manual/installation/
-
-# Set up environment variables
-# Make sure MongoDB connection string is set in .env
-
-# Run the API server
-uvicorn src.backend.main:app --reload --port 8000
-
-# API will be available at http://localhost:8000
-# Swagger documentation at http://localhost:8000/docs
-```
+See [Running the Application](#running-the-application) for `ROLE`, migrations and tests. `yarn dev:ai` (in `examio-be`) starts `ROLE=api,worker`.
 
 ## Evaluation Module
 
@@ -150,7 +129,22 @@ Luu y: evaluation runtime tmp/report mac dinh duoc ghi vao `data-source/evaluati
 
 ## Running the Application
 
-Run the backend API with `yarn dev:ai` from `examio-be/` (or `uvicorn src.backend.main:app --port 8000` inside this directory).
+One entrypoint, `python -m src.main`, selects its work with `ROLE` (comma-separated):
+
+| ROLE | Runs |
+|---|---|
+| `api` (default) | gRPC `examio.ai.v1.AiService` on `GRPC_PORT` (50051, service-token guarded) + FastAPI `/health` on `PORT` |
+| `worker` | event consumer (`ai.events`), outbox relay, daily purge |
+| `migrate` | `alembic upgrade head`, then exit (exclusive) |
+
+```bash
+export DATABASE_URL=postgresql://ai_svc:...@localhost:5432/examio DB_SEARCH_PATH=ai,extensions
+ROLE=migrate ./venv/bin/python -m src.main
+ROLE=api,worker ./venv/bin/python -m src.main
+./venv/bin/pytest -q          # DB/broker tests need AI_TEST_DATABASE_URL / AI_TEST_RABBITMQ_URL (throwaway containers)
+```
+
+The service owns schema `ai` (Alembic, `alembic/versions`); it never reads or writes another service's tables. Processing status flows back through events (`ai.document.processed|failed`, `ai.generation.completed|failed`). The legacy HTTP routes (`/api/chat/query`, `/api/chat/stream`, `/api/generate/word-family`) exist only with `AI_HTTP_COMPAT=true` and are removed in phase 13.
 
 ## Benchmark Hybrid GraphRAG
 
@@ -196,66 +190,44 @@ Script này không gọi LLM generate toàn bộ nội dung, mà tập trung đo
 - phân phối số item trên các chunk (`distribution`) có hợp lý không;
 - narrow search có được graph mở rộng tốt hơn không.
 
-Nếu muốn xem graph stats của một file đã OCR:
-
-```bash
-curl http://localhost:8000/api/ai/graph-stats/<userStorageId>
-```
-
-Endpoint này trả về:
-- số chunks của file;
-- số nodes/edges trong graph;
-- số communities;
-- artifact path;
-- graph đang có trong RAM hay chỉ nằm ở persisted artifact.
-
 ## Getting Started
 
-To run the entire system:
+To run the AI service locally (from `examio-be`):
 
-1. Start MongoDB:
-
-```bash
-mongod --dbpath /path/to/data/directory
-```
-
-2. Start the AI backend:
-
-```bash
-yarn dev:ai
-```
-
-3. The API is served at http://localhost:8000
+1. Create the schema: `cd apps/ai-service && ROLE=migrate ./venv/bin/python -m src.main` (needs `DATABASE_URL` for role `ai_svc` and `DB_SEARCH_PATH=ai,extensions`; see `.env.example`).
+2. Start it: `yarn dev:ai` (gRPC on 50051, `/health` on `PORT`, event worker).
 
 ## Environment Variables
 
-Create a `.env` file with the following variables:
+Copy `.env.example` to `.env` and fill it. The groups that matter:
 
 ```
-# LLM API Keys
-GEMINI_API_KEY=your_gemini_api_key
-
-# MongoDB
-MONGODB_CONNECTION_STRING=mongodb://localhost:27017
-MONGODB_DATABASE_NAME=kma_chat_agent
-
-# JWT Authentication
-JWT_SECRET_KEY=your_jwt_secret
-JWT_ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=30
+DATABASE_URL=postgresql://ai_svc:...@localhost:5432/examio   # no ?schema=
+DB_SEARCH_PATH=ai,extensions
+ROLE=api            # api | worker | migrate (comma-separated, migrate is exclusive)
+GRPC_PORT=50051
+AUTH_JWKS_URL=...   # service-token verification (aud=ai)
+R2_ALLOWED_HOSTS=   # hosts document.uploaded may download from (fail-closed if empty and no R2_PUBLIC_URL)
+AI_HTTP_COMPAT=false
+GEMINI_API_KEYS=...
 ```
 
 ## Project Structure
 
 ```
-kma_chat_agent/
+ai-service/
+├── alembic/                  # Migrations for schema `ai`
 ├── mermaid/                  # Generated workflow diagrams
 ├── src/
-│   ├── backend/              # FastAPI backend
-│   │   ├── api/              # API routes
-│   │   ├── db/               # Database connections
-│   │   ├── models/           # Pydantic models
-│   │   └── main.py           # API entry point
+│   ├── main.py               # ROLE entrypoint (api | worker | migrate)
+│   ├── grpc_server.py        # AiService
+│   ├── db.py                 # shared asyncpg pool
+│   ├── backend/
+│   │   ├── api/              # HTTP compat routes (chat.py)
+│   │   ├── auth/             # service-token verifier
+│   │   ├── messaging/        # envelope, consumer, outbox relay, purge
+│   │   ├── services/         # OCR, generation, graph storage
+│   │   └── main.py           # FastAPI app (/health, compat)
 │   ├── llm/                  # LLM configuration
 │   └── rag/                  # RAG implementation
 └── requirements.txt          # Project dependencies

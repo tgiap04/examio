@@ -703,8 +703,8 @@ def load_documents_from_folder(data_folder: str, chunk_size: int = 800, chunk_ov
     if parent_dir not in sys.path:
         sys.path.insert(0, parent_dir)
     
-    from rag.metadata_config import get_metadata_config
-    from rag.retriever import extract_metadata_from_path
+    from src.rag.metadata_config import get_metadata_config
+    from src.rag.retriever import extract_metadata_from_path
     
     documents = []
     

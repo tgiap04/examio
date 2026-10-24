@@ -59,7 +59,11 @@ dependencies = [
     "networkx (>=3.0,<4.0)",
     "grpcio (==1.71.2)",
     "grpcio-tools (==1.71.2)",
-    "protobuf (==5.29.6)"
+    "protobuf (==5.29.6)",
+    "alembic (>=1.13,<2.0)",
+    "sqlalchemy[asyncio] (>=2.0,<3.0)",
+    "aio-pika (>=9.0.0,<10.0.0)",
+    "httpx (>=0.27.0,<1.0.0)"
 ]
 
 [tool.poetry]
@@ -78,7 +82,16 @@ build-backend = "poetry.core.masonry.api"
 "*" = ["py.typed"]
 
 
+[tool.pytest.ini_options]
+testpaths = ["src/backend/tests"]
+pythonpath = [".", "src"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
 [tool.ruff]
+# protoc output (regenerate with scripts/gen_grpc.sh), never hand-edited
+extend-exclude = ["src/backend/grpc_generated"]
+
 lint.select = [
     "E",    # pycodestyle
     "F",    # pyflakes
@@ -99,11 +112,14 @@ lint.ignore = [
 ]
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D", "UP"]
+"**/tests/**" = ["D", "UP"]
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
 [dependency-groups]
 dev = [
     "anyio>=4.7.0",
+    "pytest>=8,<10",
+    "pytest-asyncio>=0.24,<2",
     "langgraph-cli[inmem]>=0.2.8",
 ]

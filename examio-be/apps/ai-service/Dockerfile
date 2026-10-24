@@ -48,13 +48,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY --from=builder /root/.local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
 COPY --from=builder /root/.local/bin /usr/local/bin
 
-ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PORT=8000
+# ROLE picks what runs (python -m src.main): api = gRPC :50051 + /health on PORT,
+# worker = event consumer + outbox relay, migrate = `alembic upgrade head` then exit.
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PORT=3000 GRPC_PORT=50051 ROLE=api
 
-# Copy source code
+# Copy source code and schema migrations
 COPY src /app/src
+COPY alembic.ini /app/alembic.ini
+COPY alembic /app/alembic
 
-EXPOSE 8000
+# gRPC is internal-only (no host port); /health is for the container healthcheck.
+EXPOSE 3000 50051
+# Only meaningful for ROLE=api; compose disables it for worker and migrate.
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=30s \
     CMD curl -f http://localhost:${PORT}/health || exit 1
 
-CMD ["sh", "-c", "python -m uvicorn src.backend.main:app --host 0.0.0.0 --port ${PORT}"]
+CMD ["python", "-m", "src.main"]

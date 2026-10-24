@@ -9,22 +9,18 @@ import asyncio
 import logging
 import re
 import time
-import uuid
 from typing import List, Dict, Any, Optional
-from datetime import datetime
 from dataclasses import dataclass
 
-import asyncpg
 from pydantic import BaseModel, Field
 
 from src.backend.utils.prompt_utils import prompt_utils
-from src.backend.services.ocr_service import ocr_service, DocumentChunk
+from src.backend.services.ocr_service import DocumentChunk
 from src.backend.services.hybrid_retrieval_service import (
     hybrid_retrieval_service,
     GenerationGroup,
 )
 from src.llm.model_manager import ModelUnavailableError, model_manager
-from src.db_settings import pg_server_settings, pool_max_size
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -100,8 +96,7 @@ class FlashcardList(BaseModel):
 
 class GenerateQuizRequest(BaseModel):
     """Request to generate quiz from file"""
-    user_storage_id: str = Field(..., description="ID của UserStorage")
-    user_id: str = Field(..., description="ID của user")
+    user_storage_id: str = Field(..., description="ID tài liệu (document-service UserStorage.id); caller đã kiểm tra quyền")
     num_questions: int = Field(default=10, ge=1, le=50, description="Số câu hỏi cần tạo (max 50)")
     is_narrow_search: bool = Field(default=False, description="Chế độ tìm kiếm hẹp")
     keyword: Optional[str] = Field(None, description="Từ khóa cho tìm kiếm hẹp")
@@ -110,8 +105,7 @@ class GenerateQuizRequest(BaseModel):
 
 class GenerateFlashcardRequest(BaseModel):
     """Request to generate flashcards from file"""
-    user_storage_id: str = Field(..., description="ID của UserStorage")
-    user_id: str = Field(..., description="ID của user")
+    user_storage_id: str = Field(..., description="ID tài liệu (document-service UserStorage.id); caller đã kiểm tra quyền")
     num_flashcards: int = Field(default=10, ge=1, le=50, description="Số flashcard cần tạo (max 50)")
     is_narrow_search: bool = Field(default=False, description="Chế độ tìm kiếm hẹp")
     keyword: Optional[str] = Field(None, description="Từ khóa cho tìm kiếm hẹp")
@@ -139,7 +133,6 @@ class ContentGenerationService:
     """Service for generating quiz and flashcard content using LLM"""
 
     _instance = None
-    _pool: Optional[asyncpg.Pool] = None
     MAX_SOURCE_CHUNKS = 10
     MAX_ITEMS_PER_CALL = 12
     DEFAULT_GENERATION_MAX_CONCURRENCY = 6
@@ -308,24 +301,6 @@ class ContentGenerationService:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
-
-    async def _get_pool(self) -> asyncpg.Pool:
-        """Get or create connection pool"""
-        if self._pool is None or self._pool._closed:
-            postgres_uri = os.environ.get("DATABASE_URL")
-            if not postgres_uri:
-                raise ValueError("DATABASE_URL environment variable not set")
-
-            self._pool = await asyncpg.create_pool(
-                postgres_uri,
-                min_size=2,
-                max_size=pool_max_size("GENERATION"),
-                command_timeout=60,
-                server_settings=pg_server_settings(),
-            )
-            logger.info("PostgreSQL connection pool created for ContentGenerationService")
-
-        return self._pool
 
     def _get_generation_max_concurrency(self) -> int:
         raw = os.getenv("GENERATION_MAX_CONCURRENCY")
@@ -516,35 +491,10 @@ class ContentGenerationService:
 
         Returns dict with:
         - success: bool
-        - history_id: str (ID of HistoryGeneratedQuizz)
         - quizzes: list of generated questions
         - error: str (if failed)
         """
         try:
-            # Check if file is processed
-            file_info = await ocr_service.get_file_info(request.user_storage_id)
-            if not file_info:
-                return {"success": False, "error": "File not found"}
-
-            # IDOR guard: the file's real owner (from UserStorage) must match
-            # the requester. Never trust request.user_id alone.
-            if file_info.user_id != request.user_id:
-                logger.warning(
-                    "Forbidden quiz generation attempt: user_storage_id=%s owner=%s requester=%s",
-                    request.user_storage_id,
-                    file_info.user_id,
-                    request.user_id,
-                )
-                return {
-                    "success": False,
-                    "error": "Access denied: file does not belong to this user",
-                    "error_code": "FORBIDDEN",
-                    "status_code": 403,
-                }
-
-            if file_info.processing_status not in ["COMPLETED", "PROCESSING"]:
-                return {"success": False, "error": f"File not processed yet. Status: {file_info.processing_status}"}
-
             final_model = model_manager.resolve_model(request.model_type)
             logger.info(f"Using AI model for quiz: {final_model.id} (Request: {request.model_type})")
             model_type_str = final_model.id
@@ -677,25 +627,11 @@ class ContentGenerationService:
                 f"[AI_TIMING] stage=quiz_total user_storage_id={request.user_storage_id} total_ms={total_ms} generated={len(all_questions)} actual_batches={actual_batches} expected_batches={expected_batches} groups_used={selected_chunk_count}"
             )
 
-            # Save to HistoryGeneratedQuizz
-            try:
-                history_id = await self._save_quiz_history(
-                    user_id=request.user_id,
-                    user_storage_id=request.user_storage_id,
-                    quizzes=all_questions
-                )
-
-                return {
-                    "success": True,
-                    "history_id": history_id,
-                    "quizzes": all_questions,
-                    "count": len(all_questions)
-                }
-            except Exception as e:
-                logger.error(f"Failed to save quiz history: {e}")
-                if "violates foreign key constraint" in str(e):
-                    return {"success": False, "error": "Job cancelled or UserStorage not found"}
-                raise e
+            return {
+                "success": True,
+                "quizzes": all_questions,
+                "count": len(all_questions),
+            }
 
         except Exception as e:
             logger.exception(f"Error generating quiz: {e}")
@@ -710,35 +646,10 @@ class ContentGenerationService:
 
         Returns dict with:
         - success: bool
-        - history_id: str (ID of HistoryGeneratedFlashcard)
         - flashcards: list of generated flashcards
         - error: str (if failed)
         """
         try:
-            # Check if file is processed
-            file_info = await ocr_service.get_file_info(request.user_storage_id)
-            if not file_info:
-                return {"success": False, "error": "File not found"}
-
-            # IDOR guard: the file's real owner (from UserStorage) must match
-            # the requester. Never trust request.user_id alone.
-            if file_info.user_id != request.user_id:
-                logger.warning(
-                    "Forbidden flashcard generation attempt: user_storage_id=%s owner=%s requester=%s",
-                    request.user_storage_id,
-                    file_info.user_id,
-                    request.user_id,
-                )
-                return {
-                    "success": False,
-                    "error": "Access denied: file does not belong to this user",
-                    "error_code": "FORBIDDEN",
-                    "status_code": 403,
-                }
-
-            if file_info.processing_status not in ["COMPLETED", "PROCESSING"]:
-                return {"success": False, "error": f"File not processed yet. Status: {file_info.processing_status}"}
-
             final_model = model_manager.resolve_model(request.model_type)
             logger.info(f"Using AI model for flashcards: {final_model.id} (Request: {request.model_type})")
             model_type_str = final_model.id
@@ -871,25 +782,11 @@ class ContentGenerationService:
                 f"[AI_TIMING] stage=flashcard_total user_storage_id={request.user_storage_id} total_ms={total_ms} generated={len(all_flashcards)} actual_batches={actual_batches} expected_batches={expected_batches} groups_used={selected_chunk_count}"
             )
 
-            # Save to HistoryGeneratedFlashcard
-            try:
-                history_id = await self._save_flashcard_history(
-                    user_id=request.user_id,
-                    user_storage_id=request.user_storage_id,
-                    flashcards=all_flashcards
-                )
-
-                return {
-                    "success": True,
-                    "history_id": history_id,
-                    "flashcards": all_flashcards,
-                    "count": len(all_flashcards)
-                }
-            except Exception as e:
-                logger.error(f"Failed to save flashcard history: {e}")
-                if "violates foreign key constraint" in str(e):
-                    return {"success": False, "error": "Job cancelled or UserStorage not found"}
-                raise e
+            return {
+                "success": True,
+                "flashcards": all_flashcards,
+                "count": len(all_flashcards),
+            }
 
         except Exception as e:
             logger.exception(f"Error generating flashcards: {e}")
@@ -1399,113 +1296,6 @@ class ContentGenerationService:
             "sourcePageRange": item.sourcePageRange or page_range
         }
 
-    async def _save_quiz_history(
-        self,
-        user_id: str,
-        user_storage_id: str,
-        quizzes: List[Dict]
-    ) -> str:
-        """Save generated quizzes to HistoryGeneratedQuizz table"""
-        pool = await self._get_pool()
-        history_id = str(uuid.uuid4()).replace("-", "")[:25]  # cuid-like
-
-        query = """
-            INSERT INTO "HistoryGeneratedQuizz" (id, "userId", "userStorageId", quizzes, "createdAt", "updatedAt")
-            VALUES ($1, $2, $3, $4, NOW(), NOW())
-            RETURNING id
-        """
-
-        start_time = time.perf_counter()
-        async with pool.acquire() as conn:
-            await conn.execute(
-                query,
-                history_id,
-                user_id,
-                user_storage_id,
-                json.dumps(quizzes)
-            )
-
-        elapsed_ms = int((time.perf_counter() - start_time) * 1000)
-        logger.info(
-            f"[AI_TIMING] stage=quiz_history_save user_storage_id={user_storage_id} history_id={history_id} items={len(quizzes)} elapsed_ms={elapsed_ms}"
-        )
-        return history_id
-
-    async def _save_flashcard_history(
-        self,
-        user_id: str,
-        user_storage_id: str,
-        flashcards: List[Dict]
-    ) -> str:
-        """Save generated flashcards to HistoryGeneratedFlashcard table"""
-        pool = await self._get_pool()
-        history_id = str(uuid.uuid4()).replace("-", "")[:25]  # cuid-like
-
-        query = """
-            INSERT INTO "HistoryGeneratedFlashcard" (id, "userId", "userStorageId", flashcards, "createdAt", "updatedAt")
-            VALUES ($1, $2, $3, $4, NOW(), NOW())
-            RETURNING id
-        """
-
-        start_time = time.perf_counter()
-        async with pool.acquire() as conn:
-            await conn.execute(
-                query,
-                history_id,
-                user_id,
-                user_storage_id,
-                json.dumps(flashcards)
-            )
-
-        elapsed_ms = int((time.perf_counter() - start_time) * 1000)
-        logger.info(
-            f"[AI_TIMING] stage=flashcard_history_save user_storage_id={user_storage_id} history_id={history_id} items={len(flashcards)} elapsed_ms={elapsed_ms}"
-        )
-        return history_id
-
-    async def get_quiz_history(self, history_id: str) -> Optional[Dict]:
-        """Get quiz history by ID"""
-        pool = await self._get_pool()
-
-        query = """
-            SELECT id, "userId", "userStorageId", quizzes, "createdAt"
-            FROM "HistoryGeneratedQuizz"
-            WHERE id = $1
-        """
-
-        async with pool.acquire() as conn:
-            row = await conn.fetchrow(query, history_id)
-            if row:
-                return {
-                    "id": row["id"],
-                    "userId": row["userId"],
-                    "userStorageId": row["userStorageId"],
-                    "quizzes": json.loads(row["quizzes"]) if isinstance(row["quizzes"], str) else row["quizzes"],
-                    "createdAt": row["createdAt"].isoformat()
-                }
-        return None
-
-    async def get_flashcard_history(self, history_id: str) -> Optional[Dict]:
-        """Get flashcard history by ID"""
-        pool = await self._get_pool()
-
-        query = """
-            SELECT id, "userId", "userStorageId", flashcards, "createdAt"
-            FROM "HistoryGeneratedFlashcard"
-            WHERE id = $1
-        """
-
-        async with pool.acquire() as conn:
-            row = await conn.fetchrow(query, history_id)
-            if row:
-                return {
-                    "id": row["id"],
-                    "userId": row["userId"],
-                    "userStorageId": row["userStorageId"],
-                    "flashcards": json.loads(row["flashcards"]) if isinstance(row["flashcards"], str) else row["flashcards"],
-                    "createdAt": row["createdAt"].isoformat()
-                }
-        return None
 
 
 # Singleton instance

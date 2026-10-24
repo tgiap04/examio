@@ -1,260 +1,167 @@
+"""HTTP compat routes (``AI_HTTP_COMPAT=true``) for callers not yet on gRPC.
+
+Same behaviour as the gRPC ``Query`` / ``StreamChat`` / ``GenerateWordFamily``
+calls, protected by the legacy ``INTERNAL_SERVICE_TOKEN`` middleware until phase
+13 moves ai-chat and vocabulary to gRPC. Delete this module then.
+"""
+
+from __future__ import annotations
+
+import json
 import logging
-import os
-import sys
-import uuid
-from datetime import datetime
-from typing import List, Dict, Optional, Any
+from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-# Add the parent directory to sys.path
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
-from src.rag.simple_chat_agent import SimpleChatAgent
-from src.rag.retriever import create_in_memory_retriever
-from src.backend.services.hybrid_retrieval_service import hybrid_retrieval_service
-from src.llm.model_manager import ModelUnavailableError, model_manager
+from src.backend.ai_grpc_mapping import MODEL_ERROR_CODES
+from src.backend.services.chat_service import (
+    HISTORY_ITEM_MAX_LENGTH,
+    HISTORY_MAX_ITEMS,
+    QUERY_MAX_LENGTH,
+    SYSTEM_PROMPT_MAX_LENGTH,
+    ChatInputError,
+    ChatParams,
+    answer_query,
+    new_error_ref,
+    resolve_model_id,
+    stream_chat,
+)
+from src.backend.services.generation_service import (
+    WordFamilyRequest,
+    generation_service,
+)
+from src.llm.model_manager import ModelUnavailableError
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter()
-
-# ==================== Request Models ====================
-
-# Caps below bound the cost/memory of a single request (no hard limit on
-# untrusted client text would let a caller force arbitrarily large
-# prompts/history onto the LLM pipeline -- see security audit H9).
-_QUERY_MAX_LENGTH = 8000
-_SYSTEM_PROMPT_MAX_LENGTH = 4000
-_HISTORY_ITEM_CONTENT_MAX_LENGTH = 8000
-_HISTORY_MAX_ITEMS = 200
 
 
 class Message(BaseModel):
-    role: str = Field(..., description="user or assistant")
-    content: str = Field(..., max_length=_HISTORY_ITEM_CONTENT_MAX_LENGTH, description="Message content")
+    """One conversation turn."""
+
+    role: str
+    content: str = Field(..., max_length=HISTORY_ITEM_MAX_LENGTH)
+
 
 class ChatRequest(BaseModel):
-    query: str = Field(..., max_length=_QUERY_MAX_LENGTH, description="Current user question")
-    history: List[Message] = Field(default=[], max_length=_HISTORY_MAX_ITEMS, description="Previous conversation history")
-    user_storage_id: Optional[str] = Field(None, description="ID for RAG context from a specific file")
-    department: Optional[str] = Field(None, description="Department context for general RAG")
-    model_type: Optional[str] = Field(
-        default=None,
-        alias="modelType",
-        description='Model id tu registry'
-    )
-    system_prompt: Optional[str] = Field(
-        default=None,
-        alias="systemPrompt",
-        max_length=_SYSTEM_PROMPT_MAX_LENGTH,
-        description="Custom system prompt for the AI model"
-    )
+    """Body of ``/chat/query`` and ``/chat/stream``."""
 
     model_config = ConfigDict(populate_by_name=True)
 
-class ChatResponse(BaseModel):
-    answer: str
-    sources: List[Dict[str, Any]] = []
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    query: str = Field(..., max_length=QUERY_MAX_LENGTH)
+    history: list[Message] = Field(default=[], max_length=HISTORY_MAX_ITEMS)
+    user_storage_id: str | None = None
+    department: str | None = None
+    model_type: str | None = Field(default=None, alias="modelType")
+    system_prompt: str | None = Field(default=None, alias="systemPrompt", max_length=SYSTEM_PROMPT_MAX_LENGTH)
+
+    def to_params(self) -> ChatParams:
+        """Convert to the transport-neutral parameters."""
+        return ChatParams(
+            query=self.query,
+            history=[{"role": m.role, "content": m.content} for m in self.history],
+            user_storage_id=self.user_storage_id,
+            model_type=self.model_type,
+            system_prompt=self.system_prompt,
+        )
 
 
-def _ensure_text(value: Any) -> str:
-    return str(value)
+class GenerateWordFamilyBody(BaseModel):
+    """Body of ``/generate/word-family``."""
 
-# ==================== Helper Functions ====================
+    categorySlug: str  # noqa: N815 - wire name
+    categoryName: str  # noqa: N815 - wire name
+    numRootWords: int = Field(default=10, ge=1, le=20)  # noqa: N815
+    excludeRootWords: list[str] = Field(default_factory=list, max_length=50)  # noqa: N815
+    rootWord: str | None = None  # noqa: N815
+    modelType: str | None = None  # noqa: N815
 
-def format_history_for_langchain(history: List[Message]):
-    """Convert simple message list to LangChain format if needed"""
-    from langchain_core.messages import HumanMessage, AIMessage
-    lc_history = []
-    for msg in history:
-        if msg.role.lower() == "user":
-            lc_history.append(HumanMessage(content=msg.content))
-        else:
-            lc_history.append(AIMessage(content=msg.content))
-    return lc_history
 
-# ==================== API Endpoints ====================
+def _model_error(exc: ModelUnavailableError) -> HTTPException:
+    return HTTPException(status_code=503, detail={"code": exc.code, "message": str(exc)})
 
-@router.post("/query", response_model=ChatResponse)
-async def query_ai(request: ChatRequest):
-    """
-    Stateless AI Query Endpoint
 
-    Flow:
-    1. If user_storage_id is provided, use it for RAG context from PostgreSQL.
-    2. Otherwise, use general RAG or just LLM.
-    3. Generate response using SimpleChatAgent.
-    """
+@router.post("/chat/query")
+async def query_ai(request: ChatRequest) -> dict[str, Any]:
+    """Answer a question, optionally grounded in one document."""
     try:
-        query = request.query
-        user_storage_id = request.user_storage_id
-        model_type = model_manager.resolve_model(request.model_type).id
+        answer, sources = await answer_query(request.to_params())
+    except ModelUnavailableError as exc:
+        raise _model_error(exc) from exc
+    except ChatInputError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        ref = new_error_ref()
+        logger.error("Error in query [%s]: %s", ref, exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Internal error while processing query (ref: {ref})") from exc
+    return {"answer": answer, "sources": sources, "timestamp": datetime.now(UTC).isoformat()}
 
-        logger.info(f"Query AI: {query[:50]}... (RAG ID: {user_storage_id}, Model: {model_type})")
 
-        retriever = None
-        sources = []
-        pre_context = None
-
-        # 1. Setup RAG if ID provided
-        if user_storage_id:
-            retrieval_result = await hybrid_retrieval_service.retrieve_for_chat(
-                user_storage_id=user_storage_id,
-                query=query,
-                model_type=model_type,
-            )
-            logger.info(
-                "[AI_RETRIEVAL] mode=%s user_storage_id=%s selected=%s total=%s chat=query",
-                retrieval_result.retrieval_mode,
-                user_storage_id,
-                retrieval_result.metadata.get("selected_chunks"),
-                retrieval_result.metadata.get("total_chunks"),
-            )
-            pre_context = retrieval_result.combined_context
-            sources = retrieval_result.sources
-
-            if pre_context:
-                retriever, _ = create_in_memory_retriever(pre_context)
-
-        # 2. Use Agent to answer with specified model type
-        # Note: In a stateless model, we pass history to the agent if supported,
-        # or we prefix the query with context.
-        agent = SimpleChatAgent(
-            custom_retriever=retriever,
-            model_type=model_type,
-            pre_context=pre_context,
-            system_prompt=None,
-        )
-
-        # If we have history, we should ideally use it.
-        # For SimpleChatAgent, we might need to modify it to accept history or just use a generic LangChain chain.
-        # For now, we'll prefix the query if history exists for simplicity,
-        # but a "senior" way is to use a ChatBuffer.
-
-        # Simple implementation of history inclusion
-        full_query = query
-        if request.history:
-            history_text = "\n".join([f"{m.role}: {m.content}" for m in request.history[-5:]]) # Last 5 turns
-            full_query = f"Conversation history:\n{history_text}\n\nUser: {query}"
-
-        answer = agent.chat(full_query)
-
-        return ChatResponse(
-            answer=answer,
-            sources=sources
-        )
-
-    except ModelUnavailableError as e:
-        raise HTTPException(status_code=503, detail={'code': e.code, 'message': str(e)})
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        error_id = uuid.uuid4().hex
-        logger.error(f"Error in stateless query [{error_id}]: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal error while processing query (ref: {error_id})",
-        )
-
-@router.post("/stream")
-async def stream_ai(request: ChatRequest):
-    """
-    Streaming AI Query Endpoint
-    """
+@router.post("/chat/stream")
+async def stream_ai(request: ChatRequest) -> StreamingResponse:
+    """Server-sent events with the same frames as the gRPC ``StreamChat``."""
+    frames = stream_chat(request.to_params())
     try:
-        query = request.query
-        user_storage_id = request.user_storage_id
-        model_type = model_manager.resolve_model(request.model_type).id
+        first = await frames.__anext__()  # pre-stream failures are HTTP statuses
+    except ModelUnavailableError as exc:
+        raise _model_error(exc) from exc
+    except ChatInputError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-        # Log mode: with document or general chat
-        if user_storage_id:
-            logger.info(f"Stream AI [RAG mode]: query='{query[:50]}...', doc_id={user_storage_id}, model={model_type}")
+    def encode(frame: dict[str, Any]) -> str:
+        if frame["type"] == "done":
+            body = {
+                "type": "done",
+                "data": {
+                    "assistantMessage": {
+                        "role": "assistant",
+                        "content": frame["answer"],
+                        "createdAt": datetime.now(UTC).isoformat(),
+                    },
+                    "sources": frame["sources"],
+                },
+            }
+        elif frame["type"] == "error":
+            body = {"type": "error", "data": frame["message"], "code": frame.get("code")}
         else:
-            logger.info(f"Stream AI [General chat]: query='{query[:50]}...', model={model_type}")
+            body = {key: value for key, value in frame.items()}
+        return f"data: {json.dumps(body)}\n\n"
 
-        async def iter_response():
-            import json
-            full_answer: str = ""
-            sources: List[Dict[str, Any]] = []
-            yield f"data: {json.dumps({'type': 'started'})}\n\n"
-            try:
-                pre_context = None
-                if user_storage_id:
-                    retrieval_result = await hybrid_retrieval_service.retrieve_for_chat(
-                        user_storage_id=user_storage_id,
-                        query=query,
-                        model_type=model_type,
-                        top_k=8,
-                        max_content_length=8000,
-                    )
-                    pre_context = retrieval_result.combined_context
-                    sources = retrieval_result.sources
-                    logger.info(
-                        "[AI_RETRIEVAL] mode=%s user_storage_id=%s selected=%s total=%s chat=stream",
-                        retrieval_result.retrieval_mode,
-                        user_storage_id,
-                        retrieval_result.metadata.get("selected_chunks"),
-                        retrieval_result.metadata.get("total_chunks"),
-                    )
-                    logger.info(f"Retrieved {len(pre_context) if pre_context else 0} chars context from PostgreSQL")
+    async def sse():
+        yield encode(first)
+        async for frame in frames:
+            yield encode(frame)
 
-                agent = SimpleChatAgent(pre_context=pre_context, model_type=model_type, system_prompt=request.system_prompt)
-                history_dicts: List[Dict[str, str]] = []
-                if request.history:
-                    history_dicts = [
-                        {"role": m.role, "content": str(m.content)} for m in request.history
-                    ]
+    return StreamingResponse(sse(), media_type="text/event-stream")
 
-                for chunk in agent.chat_stream(query, history=history_dicts):
-                    chunk_text = _ensure_text(chunk)
-                    full_answer += chunk_text
-                    data = json.dumps({"type": "chunk", "data": chunk_text})
-                    yield f"data: {data}\n\n"
 
-                done_data = json.dumps({
-                    "type": "done",
-                    "data": {
-                        "assistantMessage": {
-                            "role": "assistant",
-                            "content": full_answer,
-                            "createdAt": datetime.now().isoformat()
-                        },
-                        "sources": sources,
-                    }
-                })
-                yield f"data: {done_data}\n\n"
-
-            except Exception as e:
-                error_id = uuid.uuid4().hex
-                error_code = getattr(e, 'code', None)
-                logger.error(f"Error in stream chunk [{error_id}]: {str(e)}", exc_info=True)
-                # Do not leak internal error text into the SSE payload; only a
-                # generic message plus a correlation id for log lookup.
-                err_data = json.dumps({
-                    "type": "error",
-                    "data": f"Internal error while streaming response (ref: {error_id})",
-                    "code": error_code,
-                })
-                yield f"data: {err_data}\n\n"
-
-        return StreamingResponse(iter_response(), media_type="text/event-stream")
-
-    except ModelUnavailableError as e:
-        raise HTTPException(status_code=503, detail={'code': e.code, 'message': str(e)})
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        error_id = uuid.uuid4().hex
-        logger.error(f"Error in streaming query [{error_id}]: {str(e)}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal error while starting stream (ref: {error_id})",
+@router.post("/generate/word-family")
+async def generate_word_family(body: GenerateWordFamilyBody) -> dict[str, Any]:
+    """Generate a word family for a category or a given root word."""
+    try:
+        resolve_model_id(body.modelType)
+        result = await generation_service.generate_word_family(
+            WordFamilyRequest(
+                category_slug=body.categorySlug,
+                category_name=body.categoryName,
+                num_root_words=body.numRootWords,
+                exclude_root_words=body.excludeRootWords,
+                root_word=body.rootWord,
+                model_type=body.modelType,
+            )
         )
-
-@router.get("/health")
-async def health_check():
-    return {"status": "ok", "service": "ai-service-chat"}
+    except ChatInputError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except ModelUnavailableError as exc:
+        raise _model_error(exc) from exc
+    if not result.get("success"):
+        if result.get("error_code") in MODEL_ERROR_CODES:
+            raise HTTPException(
+                status_code=result.get("status_code", 503),
+                detail={"code": result["error_code"], "message": result.get("error", "Model unavailable")},
+            )
+        raise HTTPException(status_code=400, detail=result.get("error", "Failed to generate word family"))
+    return result
