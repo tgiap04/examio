@@ -15,7 +15,7 @@ export type Row = {
 };
 
 const SID = 'ses_1';
-export const rows: Record<'exam' | 'studyroom' | 'vocabulary' | 'finance' | 'admin', Row[]> = {
+export const rows: Record<'exam' | 'studyroom' | 'vocabulary' | 'document' | 'finance' | 'admin', Row[]> = {
     exam: [
         {
             name: 'POST /quizsets',
@@ -121,6 +121,44 @@ export const rows: Record<'exam' | 'studyroom' | 'vocabulary' | 'finance' | 'adm
                 ADMIN_ONLY: 403,
                 TEACHER_ADMIN: 'gate',
             },
+        },
+        // generation stays in exam; the upload routes are document-service's (see `document` below)
+        {
+            name: 'GET /ai/recent-uploads (documents over gRPC + generated history)',
+            method: 'get',
+            path: '/ai/recent-uploads',
+            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 },
+        },
+        {
+            name: 'GET /ai/models',
+            method: 'get',
+            path: '/ai/models',
+            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 },
+        },
+        {
+            name: 'POST /ai/regenerate/:id',
+            method: 'post',
+            path: '/ai/regenerate/u1',
+            body: {},
+            expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: 403, TEACHER_ADMIN: '2xx' },
+        },
+        {
+            name: 'GET /ai/job/:id',
+            method: 'get',
+            path: '/ai/job/j1',
+            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 },
+        },
+        {
+            name: 'DELETE /ai/job/:id',
+            method: 'delete',
+            path: '/ai/job/j1',
+            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 },
+        },
+        {
+            name: 'GET /ai/upload/:id/history',
+            method: 'get',
+            path: '/ai/upload/u1/history',
+            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 },
         },
         {
             name: 'POST /ai-chat',
@@ -305,17 +343,6 @@ export const rows: Record<'exam' | 'studyroom' | 'vocabulary' | 'finance' | 'adm
                 TEACHER_ADMIN: 403,
             },
         },
-        {
-            name: 'POST /r2/image',
-            method: 'post',
-            path: '/r2/image',
-            expect: {
-                STUDENT: 403,
-                TEACHER: 'gate',
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 'gate',
-            },
-        },
     ],
     studyroom: [
         {
@@ -366,6 +393,41 @@ export const rows: Record<'exam' | 'studyroom' | 'vocabulary' | 'finance' | 'adm
                 ADMIN_ONLY: 403,
                 TEACHER_ADMIN: 'gate',
             },
+        },
+    ],
+    // document-service: every upload route needs `document:upload` (TEACHER only today)
+    document: [
+        {
+            name: 'GET /ai/upload/:id',
+            method: 'get',
+            path: '/ai/upload/u1',
+            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 },
+        },
+        {
+            name: 'POST /ai/upload',
+            method: 'post',
+            path: '/ai/upload',
+            body: { filename: 'a.pdf', url: 'https://r2/x', mimetype: 'application/pdf', size: 1024, keyR2: 'ai-uploads/u1/a.pdf' },
+            expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: 403, TEACHER_ADMIN: '2xx' },
+        },
+        {
+            name: 'POST /ai/upload-image',
+            method: 'post',
+            path: '/ai/upload-image',
+            body: { image: 'data' },
+            expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: 403, TEACHER_ADMIN: '2xx' },
+        },
+        {
+            name: 'POST /ai/quick-upload',
+            method: 'post',
+            path: '/ai/quick-upload',
+            expect: { STUDENT: 403, TEACHER: 'gate', ADMIN_ONLY: 403, TEACHER_ADMIN: 'gate' },
+        },
+        {
+            name: 'POST /r2/image',
+            method: 'post',
+            path: '/r2/image',
+            expect: { STUDENT: 403, TEACHER: 'gate', ADMIN_ONLY: 403, TEACHER_ADMIN: 'gate' },
         },
     ],
     finance: [

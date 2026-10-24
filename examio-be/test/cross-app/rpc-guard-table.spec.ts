@@ -7,6 +7,7 @@ import { WalletGrpcController } from '../../apps/finance-service/src/modules/wal
 import { FinanceAdminGrpcController } from '../../apps/finance-service/src/modules/finance-admin/finance-admin.grpc.controller';
 import { SubscriptionGrpcController } from '../../apps/finance-service/src/modules/sepay/subscription.grpc.controller';
 import { FinanceStatsGrpcController } from '../../apps/finance-service/src/modules/stats/finance-stats.grpc.controller';
+import { DocumentGrpcController } from '../../apps/document-service/src/modules/upload/document.grpc.controller';
 import { R2ServiceController } from '../../apps/r2-service/src/r2-service.controller';
 import { WordFamilyAdminGrpcController } from '../../apps/vocabulary-service/src/modules/word-family/word-family-admin.grpc.controller';
 import { WordFamilyGrpcController } from '../../apps/vocabulary-service/src/modules/word-family/word-family.grpc.controller';
@@ -50,9 +51,19 @@ const TABLE: Array<[Ctor, string, Declaration]> = [
     [FinanceStatsGrpcController, 'getRevenueStats', { kind: 'permissions', permissions: ['stats:read'] }],
     [R2ServiceController, 'getFileUrl', { kind: 'service-only', callers: ['exam', 'auth'] }],
     [R2ServiceController, 'listUserFiles', anyUserOrService],
-    [R2ServiceController, 'uploadFile', { kind: 'service-only', callers: ['exam', 'auth'] }],
+    [R2ServiceController, 'uploadFile', { kind: 'service-only', callers: ['exam', 'auth', 'document'] }],
     [R2ServiceController, 'deleteFile', { kind: 'service-only', callers: ['exam', 'auth'] }],
-    [R2ServiceController, 'deleteObjects', { kind: 'service-only', callers: ['exam', 'auth', 'vocabulary'] }],
+    [R2ServiceController, 'deleteObjects', { kind: 'service-only', callers: ['exam', 'auth', 'vocabulary', 'document'] }],
+    [R2ServiceController, 'createPresignedDownload', { kind: 'service-only', callers: ['document'] }],
+    // document: user-scoped by the forwarded token; no service caller is allowlisted on any RPC
+    [DocumentGrpcController, 'createUpload', { kind: 'permissions', permissions: ['document:upload'] }],
+    [DocumentGrpcController, 'getDocumentsByIds', { kind: 'permissions', permissions: ['document:upload'] }],
+    [DocumentGrpcController, 'assertOwnership', { kind: 'permissions', permissions: ['document:upload'] }],
+    [DocumentGrpcController, 'ensureProcessed', { kind: 'permissions', permissions: ['document:upload'] }],
+    [DocumentGrpcController, 'deleteDocuments', { kind: 'permissions-or-service', permissions: ['document:upload'], callers: [] }],
+    [DocumentGrpcController, 'listDocuments', { kind: 'permissions', permissions: ['document:upload'] }],
+    [DocumentGrpcController, 'getDownloadUrl', { kind: 'permissions', permissions: ['document:upload'] }],
+    [DocumentGrpcController, 'getQuota', { kind: 'permissions-or-service', permissions: [], callers: [] }],
     // vocabulary: admin RPCs need the forwarded admin token; GetWordFamily is shared catalog data
     [WordFamilyAdminGrpcController, 'listCategories', { kind: 'permissions', permissions: ['word_family:admin'] }],
     [WordFamilyAdminGrpcController, 'upsertCategory', { kind: 'permissions', permissions: ['word_family:admin'] }],
@@ -66,9 +77,9 @@ describe('gRPC guard declarations', () => {
     });
 
     it('every @GrpcMethod handler of every gRPC controller carries SOME declaration', () => {
-        const controllers = [AuthGrpcController, AuthUsersGrpcController, FinanceStatsGrpcController, WalletGrpcController, SubscriptionGrpcController, FinanceAdminGrpcController, R2ServiceController, WordFamilyAdminGrpcController, WordFamilyGrpcController];
+        const controllers = [AuthGrpcController, AuthUsersGrpcController, FinanceStatsGrpcController, WalletGrpcController, SubscriptionGrpcController, FinanceAdminGrpcController, R2ServiceController, WordFamilyAdminGrpcController, WordFamilyGrpcController, DocumentGrpcController];
         const rpcHandlers = controllers.flatMap((c) => routeHandlers(c as never).filter((h) => h.kind === 'rpc'));
-        expect(rpcHandlers.length).toBeGreaterThanOrEqual(27);
+        expect(rpcHandlers.length).toBeGreaterThanOrEqual(34);
         expect(undeclaredHandlers(controllers as never)).toEqual([]);
     });
 
@@ -89,6 +100,9 @@ describe('gRPC guard declarations', () => {
             [R2ServiceController, 'deleteFile'],
             [R2ServiceController, 'deleteObjects'],
             [R2ServiceController, 'getFileUrl'],
+            [R2ServiceController, 'createPresignedDownload'],
+            [DocumentGrpcController, 'createUpload'],
+            [DocumentGrpcController, 'deleteDocuments'],
             [WordFamilyAdminGrpcController, 'upsertCategory'],
             [WordFamilyAdminGrpcController, 'deleteCategory'],
         ];
@@ -112,10 +126,11 @@ describe('gRPC guard declarations', () => {
         [R2ServiceController, 'listUserFiles', 'self-check', 'ListUserFilesRequest.user_id'],
         [AuthGrpcController, 'getPublicProfilesByIds', 'no-user-id-in-body', 'public projection (no email), batch lookup by design'],
         [WordFamilyGrpcController, 'getWordFamily', 'no-user-id-in-body', 'shared catalog row (no owner), looked up by word-family id'],
+        [DocumentGrpcController, 'getQuota', 'no-user-id-in-body', 'the token sub is the only subject; no service caller (callers: [])'],
     ];
 
     it('the open-to-any-user list is exactly the set of "any user or service" declarations', () => {
-        const controllers = [AuthGrpcController, AuthUsersGrpcController, FinanceStatsGrpcController, WalletGrpcController, SubscriptionGrpcController, FinanceAdminGrpcController, R2ServiceController, WordFamilyAdminGrpcController, WordFamilyGrpcController];
+        const controllers = [AuthGrpcController, AuthUsersGrpcController, FinanceStatsGrpcController, WalletGrpcController, SubscriptionGrpcController, FinanceAdminGrpcController, R2ServiceController, WordFamilyAdminGrpcController, WordFamilyGrpcController, DocumentGrpcController];
         const open = controllers.flatMap((c) =>
             routeHandlers(c as never)
                 .filter((h) => h.kind === 'rpc')

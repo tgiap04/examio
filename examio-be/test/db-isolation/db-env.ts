@@ -1,7 +1,7 @@
 /**
  * Env contract of the database e2e specs (all point at a LOCAL throwaway Postgres
  * initialised like deploy/postgres/init/01-service-schemas.sh):
- *   <SVC>_DATABASE_URL   service-role URL of auth|finance|admin|exam|vocabulary (+ CONTENT for the isolation probe)
+ *   <SVC>_DATABASE_URL   service-role URL of auth|finance|admin|exam|vocabulary (+ CONTENT and DOCUMENT for the isolation probes)
  *   PRISMA_ADMIN_URL     superuser URL (only the migration/seed spec: it creates a throwaway database)
  * A spec skips itself when its env is missing, so the plain unit run never needs a database,
  * but under `CI=true` a missing env FAILS it (see `describeWhenEnabled`), so a CI wiring slip cannot go green.

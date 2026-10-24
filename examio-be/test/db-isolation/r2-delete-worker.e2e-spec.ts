@@ -18,13 +18,37 @@ import { toPgConnectionString } from '../../libs/messaging/src/relay-pool';
 import { assertLocal, describeWhenEnabled, urlOf } from './db-env';
 
 /**
- * The real WorkerModule of auth, exam and vocabulary (DI, pg pool, R2 gRPC client) drains a
- * queued key through the REAL r2 controller behind its `@ServiceOnly('exam','auth','vocabulary')`
- * guard. Needs the three service DB URLs, RABBITMQ_URL (auth worker also runs the outbox
- * relay) and the auth signing key env (JWT_PRIVATE_KEY/JWT_KID/SERVICE_CLIENTS).
+ * The real WorkerModule of auth, exam, vocabulary and document (DI, pg pool, R2 gRPC client) drains a
+ * queued key through the REAL r2 controller behind its `@ServiceOnly('exam','auth','vocabulary','document')`
+ * guard. Needs the four service DB URLs, RABBITMQ_URL (auth worker also runs the outbox
+ * relay), RABBITMQ_DOCUMENT_PASS (the document worker consumes `document.events` as its own broker
+ * user) and the auth signing key env (JWT_PRIVATE_KEY/JWT_KID/SERVICE_CLIENTS).
  */
-const enabled = Boolean(urlOf('auth') && urlOf('exam') && urlOf('vocabulary') && process.env.RABBITMQ_URL && process.env.JWT_PRIVATE_KEY);
-const describeWorker = describeWhenEnabled(enabled, 'AUTH_DATABASE_URL, EXAM_DATABASE_URL, VOCABULARY_DATABASE_URL, RABBITMQ_URL and JWT_PRIVATE_KEY');
+const enabled = Boolean(
+    urlOf('auth') &&
+        urlOf('exam') &&
+        urlOf('vocabulary') &&
+        urlOf('document') &&
+        process.env.RABBITMQ_URL &&
+        process.env.RABBITMQ_DOCUMENT_PASS &&
+        process.env.JWT_PRIVATE_KEY
+);
+const describeWorker = describeWhenEnabled(
+    enabled,
+    'AUTH/EXAM/VOCABULARY/DOCUMENT_DATABASE_URL, RABBITMQ_URL, RABBITMQ_DOCUMENT_PASS and JWT_PRIVATE_KEY'
+);
+
+/** The broker URL the job was given (auth's user); read once because each worker run overrides RABBITMQ_URL. */
+const SHARED_BROKER_URL = process.env.RABBITMQ_URL as string;
+
+/** Every worker uses the shared broker URL, except document: it consumes as its own broker user. */
+function brokerUrlFor(svc: string): string {
+    if (svc !== 'document') return SHARED_BROKER_URL;
+    const url = new URL(SHARED_BROKER_URL);
+    url.username = 'document';
+    url.password = process.env.RABBITMQ_DOCUMENT_PASS as string;
+    return url.toString();
+}
 
 describeWorker('R2 delete worker modules -> r2 DeleteObjects (e2e)', () => {
     const tag = `w${Date.now().toString(36)}`;
@@ -37,6 +61,7 @@ describeWorker('R2 delete worker modules -> r2 DeleteObjects (e2e)', () => {
         assertLocal(urlOf('auth') as string);
         assertLocal(urlOf('exam') as string);
         assertLocal(urlOf('vocabulary') as string);
+        assertLocal(urlOf('document') as string);
         process.chdir(join(__dirname, '..', '..'));
         keys = await createTestKeyPair('r2w-k');
         const moduleRef = await Test.createTestingModule({
@@ -83,9 +108,10 @@ describeWorker('R2 delete worker modules -> r2 DeleteObjects (e2e)', () => {
         throw new Error('timed out waiting for the worker');
     };
 
-    it.each(['auth', 'exam', 'vocabulary'] as const)('%s WorkerModule sends the queued key as a service token and removes the row', async (svc) => {
+    it.each(['auth', 'exam', 'vocabulary', 'document'] as const)('%s WorkerModule sends the queued key as a service token and removes the row', async (svc) => {
         const dbUrl = urlOf(svc) as string;
         process.env.DATABASE_URL = dbUrl;
+        process.env.RABBITMQ_URL = brokerUrlFor(svc);
         const key = `${tag}/${svc}.png`;
         const pool = new Pool({ connectionString: toPgConnectionString(dbUrl), max: 2 });
         await pool.query('INSERT INTO r2_delete_tasks (id, key) VALUES (gen_random_uuid(), $1)', [key]);

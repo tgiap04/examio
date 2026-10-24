@@ -1,4 +1,3 @@
-import { ForbiddenException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { RpcException } from '@nestjs/microservices';
 import { PrismaService } from '../../apps/finance-service/src/prisma';
@@ -28,16 +27,18 @@ import { WalletGrpcController } from '../../apps/finance-service/src/modules/wal
 import { SubscriptionGrpcController } from '../../apps/finance-service/src/modules/sepay/subscription.grpc.controller';
 import { SubscriptionService } from '../../apps/finance-service/src/modules/sepay/subscription.service';
 import { WalletMoneyService } from '../../apps/finance-service/src/modules/wallet/wallet-money.service';
-import { FinanceClientService } from '../../apps/exam-service/src/modules/finance-client/finance-client.service';
+import { GenerationChargeService } from '../../apps/exam-service/src/modules/ai/generation-charge.service';
+import { buildMetadata } from '@examio/grpc';
 
 /**
- * Real gRPC round trip exam -> finance over the generated contracts: the AI
- * generation debit path (FinanceClientService.deductCredits -> WalletService/Debit)
- * debits once per idempotency key and still fails closed.
+ * Real gRPC round trip exam -> finance over the generated contracts, through real finance guards: the AI
+ * generation charge (GenerationChargeService.debit -> WalletService/Debit as the user, .refund ->
+ * WalletService/Refund as svc:exam) moves money once per idempotency key and still fails closed.
  */
 describe('exam -> finance debit over gRPC', () => {
     let server: TestGrpcServer;
-    let service: FinanceClientService;
+    let service: GenerationChargeService;
+    let finance: FinanceClient;
     let consumer: { close(): Promise<void> };
     let keys: TestKeyPair;
     let rawWallet: walletV1.WalletServiceClient;
@@ -85,7 +86,6 @@ describe('exam -> finance debit over gRPC', () => {
             imports: [GrpcClientModule.register(FINANCE_GRPC_REGISTRATION)],
             providers: [
                 FinanceClient,
-                FinanceClientService,
                 { provide: GRPC_METADATA_ATTACHER, useExisting: ServiceMetadata },
                 {
                     provide: ServiceMetadata,
@@ -108,7 +108,9 @@ describe('exam -> finance debit over gRPC', () => {
         rawWallet = createTestGrpcClient(server.url, [PF.wallet, PF.subscription]).getService<walletV1.WalletServiceClient>(
             walletV1.WALLET_SERVICE_NAME
         );
-        service = examModule.get(FinanceClientService);
+        finance = examModule.get(FinanceClient);
+        // Only the money side is under test: the job row bookkeeping is a stub.
+        service = new GenerationChargeService(finance, { markRefunded: jest.fn() } as never, {} as never);
         consumer = examModule;
     });
 
@@ -120,58 +122,130 @@ describe('exam -> finance debit over gRPC', () => {
 
     beforeEach(() => jest.clearAllMocks());
 
-    it('debits 5 credits and reports the new balance, keyed by the idempotency key', async () => {
-        money.debit.mockResolvedValue(debited());
-
-        const result = await service.deductCredits('u1', 5, 'quick upload', 'quick-upload:s1');
-
-        expect(result).toMatchObject({ success: true, newBalance: 15 });
-        expect(money.debit).toHaveBeenCalledWith(
-            expect.objectContaining({ userId: 'u1', amount: 5, reason: 'quick upload', idempotencyKey: 'quick-upload:s1' }),
-            // exam calls with a service token: it never mints the welcome wallet (L1)
-            { createWallet: false }
-        );
+    const job = (over = {}) => ({
+        id: 'j1',
+        userId: 'u1',
+        chargeKey: 'gen:j1',
+        chargedAmount: 5,
+        updatedAt: new Date(),
+        ...over,
     });
+    const userToken = (sub: string, roles: string[]) => signTestToken(keys, { claims: { sub, roles } });
 
-    it('a replay of the same key is reported as applied without a second charge', async () => {
-        money.debit.mockResolvedValue({ ...debited(), alreadyApplied: true });
-        await expect(service.deductCredits('u1', 5, 'quick upload', 'quick-upload:s1')).resolves.toMatchObject({
-            newBalance: 15,
+    describe('Debit as the caller (TEACHER lazy wallet)', () => {
+        it('a TEACHER token for self reaches finance with createWallet, keyed by gen:<jobId>, and reports the new balance', async () => {
+            money.debit.mockResolvedValue(debited());
+
+            const outcome = await service.debit(job(), 'Generate', await userToken('u1', ['TEACHER']));
+
+            expect(outcome).toEqual({ kind: 'charged', newBalance: 15 });
+            expect(money.debit).toHaveBeenCalledWith(
+                expect.objectContaining({ userId: 'u1', amount: 5, reason: 'Generate', idempotencyKey: 'gen:j1' }),
+                { createWallet: true }
+            );
+        });
+
+        it('a replay of the same key is reported as charged without a second debit', async () => {
+            money.debit.mockResolvedValue({ ...debited(), alreadyApplied: true });
+            await expect(service.debit(job(), 'x', await userToken('u1', ['TEACHER']))).resolves.toEqual({ kind: 'charged', newBalance: 15 });
+        });
+
+        it('insufficient credits is a definitive refusal with its own message', async () => {
+            money.debit.mockRejectedValue(new RpcException({ code: 9, message: 'INSUFFICIENT_CREDITS' }));
+
+            const outcome = await service.debit(job(), 'x', await userToken('u1', ['TEACHER']));
+
+            expect(outcome).toMatchObject({ kind: 'refused', error: { status: 403 } });
+            expect(JSON.stringify((outcome as { error: { getResponse(): unknown } }).error.getResponse())).toContain('Không đủ tín dụng');
+        });
+
+        it('a missing wallet is a refusal with a clear message, distinct from insufficient credits', async () => {
+            money.debit.mockRejectedValue(new RpcException({ code: 9, message: 'WALLET_NOT_FOUND' }));
+
+            const outcome = await service.debit(job(), 'x', await userToken('u1', ['TEACHER']));
+
+            expect(outcome).toMatchObject({ kind: 'refused' });
+            expect(JSON.stringify((outcome as { error: { getResponse(): unknown } }).error.getResponse())).toContain('Ví chưa được khởi tạo');
+        });
+
+        it('a token of another user is PERMISSION_DENIED: a definitive refusal (403), nothing is debited, never a charge', async () => {
+            const outcome = await service.debit(job(), 'x', await userToken('someone-else', ['TEACHER']));
+
+            expect(outcome.kind).toBe('refused');
+            expect((outcome as { error: { getStatus(): number } }).error.getStatus()).toBe(403);
+            expect(JSON.stringify((outcome as { error: { getResponse(): unknown } }).error.getResponse())).toContain('PERMISSION_DENIED');
+            expect(money.debit).not.toHaveBeenCalled();
+        });
+
+        it('a STUDENT token has no wallet:use: a definitive refusal, nothing debited', async () => {
+            const outcome = await service.debit(job(), 'x', await userToken('u1', ['STUDENT']));
+
+            expect(outcome.kind).toBe('refused');
+            expect(money.debit).not.toHaveBeenCalled();
+        });
+
+        it('a fractional amount never reaches finance (no truncated debit)', async () => {
+            const outcome = await service.debit(job({ chargedAmount: 5.5 }), 'x', await userToken('u1', ['TEACHER']));
+
+            expect(outcome.kind).toBe('unknown');
+            expect(money.debit).not.toHaveBeenCalled();
+        });
+
+        it('an unreachable finance-service is an unknown outcome (the reaper settles the job), not a refusal', async () => {
+            // register() reads the env eagerly, so set it first.
+            process.env.DEAD_FINANCE_URL = '127.0.0.1:1';
+            const mod = await Test.createTestingModule({
+                imports: [GrpcClientModule.register({ ...FINANCE_GRPC_REGISTRATION, urlEnv: 'DEAD_FINANCE_URL' })],
+                providers: [FinanceClient, { provide: GRPC_METADATA_ATTACHER, useValue: { attach: async (m: Metadata) => m } }],
+            }).compile();
+            await mod.init();
+            try {
+                const dead = new GenerationChargeService(mod.get(FinanceClient), {} as never, {} as never);
+                await expect(dead.debit(job(), 'x', 'token')).resolves.toMatchObject({ kind: 'unknown' });
+            } finally {
+                await mod.close();
+                delete process.env.DEAD_FINANCE_URL;
+            }
         });
     });
 
-    it('blocks the operation when the balance is insufficient', async () => {
-        money.debit.mockRejectedValue(new RpcException({ code: 9, message: 'INSUFFICIENT_CREDITS' }));
-        await expect(service.deductCredits('u1', 5, 'quick upload', 'k')).rejects.toBeInstanceOf(
-            ForbiddenException
-        );
-    });
+    describe('Refund as svc:exam', () => {
+        it('reverses the debit by its key through the real service-only guard and settles the job', async () => {
+            money.refund.mockResolvedValue({ alreadyApplied: false, transaction: debited({ direction: 'ADD' }).transaction });
+            const markRefunded = jest.fn();
+            const charge = new GenerationChargeService(finance, { markRefunded } as never, {} as never);
 
-    it('rejects a fractional amount before it reaches finance (no truncated debit)', async () => {
-        await expect(service.deductCredits('u1', 5.5, 'x', 'k')).rejects.toMatchObject({ status: 400 });
-        expect(money.debit).not.toHaveBeenCalled();
-    });
+            await expect(charge.refund(job())).resolves.toBe(true);
 
-    it('fails closed when finance-service is unreachable', async () => {
-        // register() reads the env eagerly, so set it first.
-        process.env.DEAD_FINANCE_URL = '127.0.0.1:1';
-        const mod = await Test.createTestingModule({
-            imports: [GrpcClientModule.register({ ...FINANCE_GRPC_REGISTRATION, urlEnv: 'DEAD_FINANCE_URL' })],
-            providers: [
-                FinanceClient,
-                FinanceClientService,
-                { provide: GRPC_METADATA_ATTACHER, useValue: { attach: async (m: Metadata) => m } },
-            ],
-        }).compile();
-        await mod.init();
-        try {
-            await expect(mod.get(FinanceClientService).deductCredits('u1', 5, 'x', 'k')).rejects.toBeInstanceOf(
-                ForbiddenException
-            );
-        } finally {
-            await mod.close();
-            delete process.env.DEAD_FINANCE_URL;
-        }
+            expect(money.refund).toHaveBeenCalledWith(expect.objectContaining({ userId: 'u1', debitIdempotencyKey: 'gen:j1' }));
+            expect(markRefunded).toHaveBeenCalledWith(expect.anything(), 'j1');
+        });
+
+        it('NOT_FOUND (no debit under the key) stays open until the debit window passed, then settles', async () => {
+            money.refund.mockRejectedValue(new RpcException({ code: 5, message: 'DEBIT_NOT_FOUND' }));
+            const markRefunded = jest.fn();
+            const charge = new GenerationChargeService(finance, { markRefunded } as never, {} as never);
+
+            await expect(charge.refund(job())).resolves.toBe(false);
+            expect(markRefunded).not.toHaveBeenCalled();
+            await expect(charge.refund(job(), undefined, true)).resolves.toBe(true);
+            expect(markRefunded).toHaveBeenCalledTimes(1);
+        });
+
+        it('a finance outage leaves the refund open for the sweeper instead of failing the caller', async () => {
+            money.refund.mockRejectedValue(new RpcException({ code: 13, message: 'boom' }));
+            const markRefunded = jest.fn();
+            const charge = new GenerationChargeService(finance, { markRefunded } as never, {} as never);
+
+            await expect(charge.refund(job())).resolves.toBe(false);
+            expect(markRefunded).not.toHaveBeenCalled();
+        });
+
+        it('a free job (amount 0) needs no finance call', async () => {
+            const charge = new GenerationChargeService(finance, { markRefunded: jest.fn() } as never, {} as never);
+            await expect(charge.refund(job({ chargedAmount: 0 }))).resolves.toBe(true);
+            expect(money.refund).not.toHaveBeenCalled();
+        });
     });
 
     describe('Debit guard on the real gRPC server', () => {
@@ -196,60 +270,6 @@ describe('exam -> finance debit over gRPC', () => {
         });
     });
 
-    describe('caller user token (TEACHER lazy wallet)', () => {
-        const userToken = (sub: string, roles: string[]) =>
-            signTestToken(keys, { claims: { sub, roles } });
-
-        it('a TEACHER token for self reaches finance with createWallet (welcome wallet minted there)', async () => {
-            money.debit.mockResolvedValue(debited());
-            const token = await userToken('u1', ['TEACHER']);
-
-            const result = await service.deductCredits('u1', 5, 'quick upload', 'k-t', { userToken: token });
-
-            expect(result).toMatchObject({ success: true, newBalance: 15 });
-            expect(money.debit).toHaveBeenCalledWith(
-                expect.objectContaining({ userId: 'u1', idempotencyKey: 'k-t' }),
-                { createWallet: true }
-            );
-        });
-
-        it('the service token alone never creates a wallet and a missing one gets a clear message', async () => {
-            money.debit.mockRejectedValue(new RpcException({ code: 9, message: 'WALLET_NOT_FOUND' }));
-
-            await expect(service.deductCredits('u1', 5, 'x', 'k-s')).rejects.toMatchObject({
-                message: expect.stringContaining('Ví chưa được khởi tạo'),
-            });
-            expect(money.debit).toHaveBeenCalledWith(expect.anything(), { createWallet: false });
-        });
-
-        it('a token of another user is PERMISSION_DENIED and nothing is debited', async () => {
-            const token = await userToken('someone-else', ['TEACHER']);
-
-            await expect(
-                service.deductCredits('u1', 5, 'x', 'k-o', { userToken: token })
-            ).rejects.toBeInstanceOf(ForbiddenException);
-            expect(money.debit).not.toHaveBeenCalled();
-        });
-
-        it('a STUDENT token has no wallet:use and is denied', async () => {
-            const token = await userToken('u1', ['STUDENT']);
-
-            await expect(
-                service.deductCredits('u1', 5, 'x', 'k-st', { userToken: token })
-            ).rejects.toBeInstanceOf(ForbiddenException);
-            expect(money.debit).not.toHaveBeenCalled();
-        });
-
-        it('insufficient credits keeps its own message, distinct from a missing wallet', async () => {
-            money.debit.mockRejectedValue(new RpcException({ code: 9, message: 'INSUFFICIENT_CREDITS' }));
-            const token = await userToken('u1', ['TEACHER']);
-
-            await expect(
-                service.deductCredits('u1', 5, 'x', 'k-i', { userToken: token })
-            ).rejects.toMatchObject({ message: expect.stringContaining('Không đủ tín dụng') });
-        });
-    });
-
     it('reads subscription benefits as camelCase fields', async () => {
         subscriptions.getUserSubscriptionBenefits.mockResolvedValue({
             name: 'VIP',
@@ -258,7 +278,7 @@ describe('exam -> finance debit over gRPC', () => {
             messagesPerMinute: -1,
             chatMessagesLimit: -1,
         });
-        await expect(service.getUserBenefits('u1')).resolves.toEqual({
+        await expect(finance.getUserBenefits('u1', buildMetadata())).resolves.toEqual({
             tier: 3,
             tierName: 'VIP',
             filesPerMonth: -1,

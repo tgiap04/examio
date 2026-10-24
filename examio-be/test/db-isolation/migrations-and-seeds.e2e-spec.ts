@@ -1,4 +1,5 @@
 import { spawnSync } from 'child_process';
+import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { Client } from 'pg';
 import { SERVICES, Service, assertLocal, describeWhenEnabled, urlOf, withDatabase } from './db-env';
@@ -93,6 +94,52 @@ describeDb('migrations and seeds on a fresh database (e2e)', () => {
             { cwd: ROOT, encoding: 'utf8', env: { PATH: process.env.PATH, HOME: process.env.HOME, DATABASE_URL: smokeUrl(svc) } }
         );
         expect(diff.status).toBe(0);
+    });
+
+    it('the exam migration of phase 15 revokes a legacy ai_svc grant (tables, default privileges, schema usage)', async () => {
+        const dir = join(ROOT, 'apps', 'exam-service', 'prisma', 'schema', 'migrations');
+        const name = readdirSync(dir).find((d) => d.endsWith('_extract_document_add_generation_job')) as string;
+        const sql = readFileSync(join(dir, name, 'migration.sql'), 'utf8');
+        const revoke = sql.slice(sql.indexOf('DO $$'));
+        expect(revoke).toContain('REVOKE USAGE ON SCHEMA exam FROM ai_svc');
+
+        const db = new Client({ connectionString: withDatabase(adminUrl as string, dbName) });
+        await db.connect();
+        const readsAs = async (role: string, table: string) => {
+            await db.query(`SET ROLE ${role}`);
+            try {
+                await db.query(`SELECT 1 FROM exam.${table}`);
+                return 'ok';
+            } catch (error) {
+                return (error as { code?: string }).code;
+            } finally {
+                await db.query('RESET ROLE');
+            }
+        };
+        try {
+            // what 01-service-schemas.sh used to set up for the Python service
+            await db.query(`GRANT CONNECT ON DATABASE ${dbName} TO ai_svc`);
+            await db.query('GRANT USAGE ON SCHEMA exam TO ai_svc');
+            await db.query('GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA exam TO ai_svc');
+            await db.query('ALTER DEFAULT PRIVILEGES FOR ROLE exam_svc IN SCHEMA exam GRANT SELECT ON TABLES TO ai_svc');
+            expect(await readsAs('ai_svc', '"QuizSet"')).toBe('ok');
+
+            // the migration runs as the service role (the owner), exactly like `prisma migrate deploy`
+            await db.query('SET ROLE exam_svc');
+            await db.query(revoke);
+            await db.query('RESET ROLE');
+
+            expect(await readsAs('ai_svc', '"QuizSet"')).toBe('42501');
+            // a table created later no longer inherits the default privilege either
+            await db.query('SET ROLE exam_svc');
+            await db.query('CREATE TABLE exam.later_table (id int)');
+            await db.query('RESET ROLE');
+            expect(await readsAs('ai_svc', 'later_table')).toBe('42501');
+            expect(await readsAs('exam_svc', 'later_table')).toBe('ok');
+        } finally {
+            await db.query('RESET ROLE').catch(() => undefined);
+            await db.end();
+        }
     });
 
     it('seed:dev (auth -> finance -> admin -> exam -> vocabulary) exits 0 and the counts match the pre-split seed', async () => {

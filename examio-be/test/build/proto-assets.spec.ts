@@ -7,6 +7,7 @@ const APPS = [
     'exam-service',
     'study-room-service',
     'vocabulary-service',
+    'document-service',
     'finance-service',
     'admin-service',
     'gateway-service',
@@ -90,5 +91,57 @@ describe('nest-cli.json proto assets', () => {
             (file) => !dirs.has(file.split('/').slice(0, 2).join('/'))
         );
         expect(missing).toEqual([]);
+    });
+});
+
+describe('phase 15 contracts', () => {
+    const read = (file: string) => readFileSync(join(REPO, 'proto', file), 'utf8');
+
+    it('registers the document and ai service protos in PROTO_FILES', () => {
+        expect(PROTO_BY_KEY.document).toBe('examio/document/v1/document.proto');
+        expect(PROTO_BY_KEY.ai).toBe('examio/ai/v1/ai.proto');
+    });
+
+    it('declares the required DocumentService and AiService RPCs', () => {
+        const document = read('examio/document/v1/document.proto');
+        for (const rpc of [
+            'CreateUpload',
+            'GetDocumentsByIds',
+            'AssertOwnership',
+            'GetQuota',
+            'EnsureProcessed',
+            'DeleteDocuments',
+        ]) {
+            expect(document).toMatch(new RegExp(`rpc ${rpc}\\(`));
+        }
+        const ai = read('examio/ai/v1/ai.proto');
+        expect(ai).toMatch(/rpc StreamChat\(\w+\) returns \(stream StreamChatResponse\)/);
+        for (const rpc of ['Query', 'GenerateWordFamily', 'ListModels']) {
+            expect(ai).toMatch(new RegExp(`rpc ${rpc}\\(`));
+        }
+    });
+
+    it('keeps r2 additive: existing RPCs stay and CreatePresignedDownload is added', () => {
+        const r2 = read('examio/r2/v1/r2.proto');
+        for (const rpc of ['UploadFile', 'DeleteObjects', 'CreatePresignedDownload']) {
+            expect(r2).toMatch(new RegExp(`rpc ${rpc}\\(`));
+        }
+    });
+
+    it('defines every phase 15 event payload message', () => {
+        const events = ['document_events', 'ai_events', 'content_events']
+            .map((name) => read(`examio/events/v1/${name}.proto`))
+            .join('\n');
+        for (const message of [
+            'DocumentUploaded',
+            'DocumentDeleted',
+            'AiDocumentProcessed',
+            'AiDocumentFailed',
+            'AiGenerationCompleted',
+            'AiGenerationFailed',
+            'ContentGenerationRequested',
+        ]) {
+            expect(events).toMatch(new RegExp(`^message ${message} \\{`, 'm'));
+        }
     });
 });
