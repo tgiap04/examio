@@ -3,6 +3,7 @@ import { GrpcClientModule, publicProfileConfigProviders } from '@examio/grpc';
 import { ServiceMetadata } from '@examio/auth-jwt';
 import { RedisService } from '@examio/redis';
 import { MessagingModule } from '@examio/messaging';
+import { EXAM_MESSAGING } from '../../messaging/exam-messaging';
 import { PrismaService } from '../../prisma';
 import {
     AUTH_GRPC_REGISTRATION,
@@ -23,7 +24,7 @@ import { UserUpdatedHandler } from './user-updated.handler';
     imports: [
         GrpcClientModule.register(AUTH_GRPC_REGISTRATION),
         // Consumes exam.events: the binding set is whatever @EventHandler exists (auth.user.updated).
-        MessagingModule.forRoot({ service: 'exam', consume: { db: PrismaService } }),
+        MessagingModule.forRoot({ ...EXAM_MESSAGING, consume: { db: PrismaService } }),
     ],
     providers: [
         ...publicProfileConfigProviders({

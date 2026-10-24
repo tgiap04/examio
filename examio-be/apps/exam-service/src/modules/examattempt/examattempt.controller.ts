@@ -26,7 +26,7 @@ import { ExamAttemptService } from './examattempt.service';
 import { CreateExamAttemptDto } from './dto/create-examattempt.dto';
 import { UpdateExamAttemptDto } from './dto/update-examattempt.dto';
 import { GetExamAttemptsDto } from './dto/get-examattempt.dto';
-import { Authenticated, RequirePermissions } from '@examio/auth-jwt';
+import { Authenticated, extractHttpToken, RequirePermissions } from '@examio/auth-jwt';
 
 @UsePipes(ZodValidationPipe)
 @ApiTags('ExamAttempts')
@@ -47,7 +47,7 @@ export class ExamAttemptController {
         type: Object,
     })
     async getHistoryStats(@Req() req: AuthenticatedRequest) {
-        return this.examAttemptService.getHistoryStats(req.user);
+        return this.examAttemptService.getHistoryStats(req.user, extractHttpToken(req));
     }
 
     // ==================== NEW QUIZ ENDPOINTS ====================

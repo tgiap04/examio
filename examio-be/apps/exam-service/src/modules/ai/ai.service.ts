@@ -1,1374 +1,203 @@
-import {
-    Injectable,
-    Logger,
-    NotFoundException,
-    BadRequestException,
-    HttpException,
-    InternalServerErrorException,
-    ServiceUnavailableException,
-    ConflictException,
-    ForbiddenException,
-} from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
-import { AxiosError } from 'axios';
-import {
-    GenerateIdService,
-    ownedR2Key,
-    ownerKeyFolder,
-    sanitizeFilename,
-} from '@examio/common';
-import { AI_UPLOAD_AREAS } from './ai-upload-areas';
-import { RedisService, EXPIRED_TIME } from '@examio/redis';
-import { R2Client } from '../../clients/r2.client';
-import { R2DeleteTaskWriter } from '@examio/messaging';
-import { AIRepository } from './ai.repository';
-import {
-    UploadFileDto,
-    RegenerateDto,
-    GenerateFromFileDto,
-    MAX_GENERATE_ITEMS,
-} from './dto/ai.dto';
-import { firstValueFrom } from 'rxjs';
-import { FinanceClientService } from '../finance-client/finance-client.service';
-import { buildMetadata, newIdempotencyKey } from '@examio/grpc';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Metadata } from '@grpc/grpc-js';
 import type { AuthUser } from '@examio/auth-jwt';
+import { DocumentClient, requireUserToken, userMetadata } from '../../clients/document.client';
+import { rethrowAsDocumentHttp } from '../../clients/document-errors';
+import { processingStatusName } from './document-mapper';
+import { ChargeRefusedException, ChargeUnknownException, GenerationJobService, GenerationOptions } from './generation-job.service';
+import { GenerationJobRepository } from './generation-job.repository';
+import { GenerationLockService } from './generation-lock.service';
+import {
+    DEFAULT_GENERATE_ITEMS,
+    chargePlan,
+    generationTypeOf,
+    needsReprocessing,
+    parseGenerateQuantity,
+    regenerateCredits,
+} from './generation-request-rules';
+import { GenerationType, MAX_GENERATE_FILE_BYTES } from './generation.constants';
+import { GenerateFromFileDto, RegenerateDto } from './dto/ai.dto';
 
+export interface GenerationStarted {
+    jobId: string;
+    status: string;
+    message: string;
+    newBalance?: number;
+}
+
+/** What `generate-from-file` tells the user it started. */
+function generateFromFileMessage(reused: boolean, reprocessing: boolean): string {
+    if (!reused) return 'File đã được upload, đang xử lý OCR và tạo nội dung';
+    return reprocessing ? 'Đang xử lý lại file cũ...' : 'File đã tồn tại, đang tạo nội dung mới...';
+}
+
+/** HTTP-facing generation flows. Money and queueing live in `GenerationJobService`. */
 @Injectable()
 export class AIService {
     private readonly logger = new Logger(AIService.name);
-    private readonly aiServiceUrl: string;
-    private readonly GENERATION_LOCK_TTL = EXPIRED_TIME.THIRTY_MINUTES;
 
     constructor(
-        private readonly aiRepository: AIRepository,
-        private readonly generateIdService: GenerateIdService,
-        private readonly httpService: HttpService,
-        private readonly financeClient: FinanceClientService,
-        private readonly r2ClientService: R2Client,
-        private readonly redisService: RedisService,
-        private readonly r2Deletes: R2DeleteTaskWriter
-    ) {
-        this.aiServiceUrl =
-            process.env.AI_SERVICE_URL || 'http://localhost:8000/api';
-    }
+        private readonly documents: DocumentClient,
+        private readonly generation: GenerationJobService,
+        private readonly jobs: GenerationJobRepository,
+        private readonly locks: GenerationLockService
+    ) {}
 
-    /**
-     * Headers required by the Python AI service internal-token middleware.
-     * Every call to the AI service MUST carry this header or it returns 401.
-     */
-    private get internalHeaders() {
-        return {
-            'x-internal-service-token':
-                process.env.INTERNAL_SERVICE_TOKEN || '',
-        };
-    }
-
-    /**
-     * Acquire a lock to prevent duplicate generation jobs of same type per user.
-     * Throws ConflictException if user already has an active job of this type.
-     * Type 1 = quiz, Type 2 = flashcard. User can run 1 quiz + 1 flashcard concurrently.
-     */
-    private async acquireGenerationLock(
-        userId: string,
-        typeResult: number
-    ): Promise<string> {
-        const typeKey = typeResult === 2 ? 'flashcard' : 'quiz';
-        const lockKey = `ai:generation:lock:${userId}:${typeKey}`;
-        const existing = await this.redisService.get<string>(lockKey);
-        if (existing) {
-            const label = typeKey === 'quiz' ? 'sinh quiz' : 'sinh flashcard';
-            throw new ConflictException(
-                `Bạn đang có job ${label} chưa hoàn tất. Vui lòng đợi job hiện tại kết thúc.`
-            );
-        }
-        await this.redisService.set(
-            lockKey,
-            new Date().toISOString(),
-            this.GENERATION_LOCK_TTL
-        );
-        return lockKey;
-    }
-
-    private async releaseGenerationLock(
-        userId: string,
-        typeResult: number
-    ): Promise<void> {
-        const typeKey = typeResult === 2 ? 'flashcard' : 'quiz';
-        await this.redisService.del(
-            `ai:generation:lock:${userId}:${typeKey}`
-        );
-    }
-
-    private getDefaultModelId(): string {
-        const defaultModel = process.env.AI2_DEFAULT_MODEL?.trim();
-        if (defaultModel) return defaultModel;
-        const models = (process.env.AI2_GENERATION_MODEL_NAMES || '')
-            .split(',')
-            .map((m) => m.trim())
-            .filter(Boolean);
-        return models[0] || '';
-    }
-
-    private getFallbackAi2ModelIds(): string[] {
-        const configuredModels = (process.env.AI2_GENERATION_MODEL_NAMES || '')
-            .split(',')
-            .map((model) => model.trim())
-            .filter(Boolean);
-        const defaultModel = this.getDefaultModelId();
-        return Array.from(new Set([defaultModel, ...configuredModels].filter(Boolean)));
-    }
-
-    private formatAi2ModelName(modelId: string): string {
-        return modelId.replace(/[-.]/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
-    }
-
-    private normalizeModelUnavailableMessage(errorData: unknown): string | null {
-        const payload = errorData as
-            | { detail?: { code?: string; message?: string } | string; message?: string; error?: string }
-            | undefined;
-
-        const detail = payload?.detail;
-        if (detail && typeof detail === 'object' && 'code' in detail) {
-            const code = detail.code;
-            if (
-                code === 'MODEL_UNAVAILABLE' ||
-                code === 'MODEL_INSUFFICIENT_VRAM' ||
-                code === 'MODEL_RUNTIME_ERROR'
-            ) {
-                return 'Model hiện tại không khả dụng, thử model khác.';
-            }
-        }
-
-        return null;
-    }
-
-    private rethrowAiHttpError(error: unknown): never {
-        const axiosError = error as AxiosError<{
-            detail?: string;
-            error?: string;
-            message?: string;
-            status_code?: number;
-        }>;
-
-        if (axiosError.code === 'ERR_CANCELED' && axiosError.response) {
-            const canceledStatus = axiosError.response.status;
-            const canceledData = axiosError.response.data;
-            const canceledMessage =
-                canceledData?.detail ||
-                canceledData?.error ||
-                canceledData?.message ||
-                'Request was canceled';
-
-            if (canceledStatus === 400) {
-                throw new BadRequestException(canceledMessage);
-            }
-
-            if (canceledStatus === 404) {
-                throw new NotFoundException(canceledMessage);
-            }
-
-            throw new HttpException(canceledMessage, canceledStatus);
-        }
-
-        const status = axiosError.response?.status;
-        const data = axiosError.response?.data;
-        const message =
-            data?.detail || data?.error || data?.message || axiosError.message;
-
-        if (status === 400) {
-            throw new BadRequestException(message);
-        }
-
-        if (status === 404) {
-            throw new NotFoundException(message);
-        }
-
-        throw new InternalServerErrorException(message);
-    }
-
-    /**
-     * Enforce the subscription's `filesPerMonth` quota before accepting a
-     * new file upload. `-1` means unlimited. Fails safe: if the benefits
-     * lookup itself fails, FinanceClientService.getUserBenefits already
-     * falls back to conservative Free-tier defaults, so the quota is still
-     * applied rather than skipped.
-     */
-    private async enforceFileUploadQuota(userId: string): Promise<void> {
-        const benefits = await this.financeClient.getUserBenefits(userId);
-        if (benefits.filesPerMonth === -1) return;
-
-        const uploadedThisMonth =
-            await this.aiRepository.countUserStorageThisMonth(userId);
-
-        if (uploadedThisMonth >= benefits.filesPerMonth) {
-            throw new ForbiddenException(
-                `Bạn đã đạt giới hạn ${benefits.filesPerMonth} file/tháng. Vui lòng nâng cấp gói hoặc thử lại vào tháng sau.`
-            );
-        }
-    }
-
-    private async clearAiServiceCache(userStorageId: string) {
-        try {
-            await firstValueFrom(
-                this.httpService.delete(
-                    `${this.aiServiceUrl}/ai/clear-cache/${userStorageId}`,
-                    { timeout: 15000, headers: this.internalHeaders }
-                )
-            );
-            this.logger.log(
-                `Cleared AI service retrieval cache for UserStorage: ${userStorageId}`
-            );
-        } catch (error) {
-            this.logger.warn(
-                `Failed to clear AI service retrieval cache for UserStorage: ${userStorageId} - ${error.message}`
-            );
-        }
-    }
-
-    /**
-     * Quick upload - uploads file to R2 immediately without OCR processing.
-     * OCR happens on-demand when first message is sent.
-     */
-    async quickUpload(
-        user: AuthUser,
-        file: Express.Multer.File
-    ): Promise<{
-        success: boolean;
-        userStorageId: string;
-        filename: string;
-        url: string;
-    }> {
-        // Validate file
-        if (!file || !file.buffer) {
-            this.logger.error('Quick upload: No file provided');
-            throw new BadRequestException('No file provided for upload');
-        }
-
-        this.logger.log(
-            `Quick upload file: ${file.originalname} (${file.size} bytes, ${file.mimetype})`
-        );
-
-        // Enforce monthly file upload quota before doing any expensive work
-        await this.enforceFileUploadQuota(user.id);
-
-        try {
-            // 1. Upload to R2 via gRPC - returns key (string)
-            // Sanitize filename to handle Vietnamese characters
-            const sanitizedName = `${Date.now()}-${sanitizeFilename(file.originalname)}`;
-            this.logger.log('Uploading to R2 via gRPC...');
-            let keyR2: string;
-            try {
-                keyR2 = await this.r2ClientService.uploadFile(
-                    sanitizedName,
-                    file.buffer,
-                    file.mimetype,
-                    ownerKeyFolder('ai-teacher', user.id),
-                    buildMetadata()
-                );
-            } catch (grpcError) {
-                this.logger.error(
-                    `gRPC R2 upload failed: ${grpcError.message}`,
-                    grpcError.stack
-                );
-                throw new InternalServerErrorException(
-                    `R2 Service error: ${grpcError.message}. Is R2 service running?`
-                );
-            }
-            this.logger.log(`R2 upload success, key: ${keyR2}`);
-
-            // Validate keyR2 is not undefined/empty
-            if (!keyR2) {
-                this.logger.error('R2 upload returned empty key');
-                throw new InternalServerErrorException(
-                    'R2 upload failed: No key returned from R2 service'
-                );
-            }
-
-            // 2. Get public URL from key
-            const url = this.r2ClientService.getPublicUrl(keyR2);
-
-            // 3. Create UserStorage with PENDING status (no OCR yet)
-            const id = this.generateIdService.generateId();
-            const userStorage = await this.aiRepository.createUserStorage({
-                id,
-                userId: user.id,
-                filename: file.originalname,
-                url,
-                mimetype: file.mimetype,
-                size: file.size,
-                keyR2,
-                processingStatus: 'PENDING',
-                creditCharged: false,
-            });
-
-            this.logger.log(
-                `Quick upload created: ${userStorage.id} - ${file.originalname}`
-            );
-
-            return {
-                success: true,
-                userStorageId: userStorage.id,
-                filename: file.originalname,
-                url,
-            };
-        } catch (error) {
-            this.logger.error(
-                `Quick upload failed: ${error.message}`,
-                error.stack
-            );
-            throw error;
-        }
-    }
-
-    /**
-     * Generate quiz/flashcard from uploaded file
-     * Combines upload + regenerate into one step
-     * Returns immediately after creating job - processing happens async via RabbitMQ
-     */
+    /** Upload (or reuse) the file in document-service, charge once, queue the generation. Returns at once. */
     async generateFromFile(
         user: AuthUser,
         file: Express.Multer.File,
         dto: GenerateFromFileDto,
         userToken?: string
-    ): Promise<{
-        jobId: string;
-        status: string;
-        message: string;
-        newBalance?: number;
-    }> {
-        const startTime = Date.now();
-        this.logger.log(`Generate from file: ${file.originalname}`);
-        this.logger.log(`Received DTO: ${JSON.stringify(dto)}`);
-
-        // Validate file
-        if (!file || !file.buffer) {
-            throw new BadRequestException('No file provided');
+    ): Promise<GenerationStarted> {
+        if (!file || !file.buffer) throw new BadRequestException('No file provided');
+        if (file.size > MAX_GENERATE_FILE_BYTES) {
+            throw new BadRequestException(
+                `File quá lớn. Tối đa 5MB, file của bạn: ${(file.size / (1024 * 1024)).toFixed(2)}MB`
+            );
         }
+        const token = requireUserToken(userToken);
+        const metadata = userMetadata(token);
+        const type = generationTypeOf(dto.typeResult);
+        const quizItems = parseGenerateQuantity(dto.quantityQuizz, 'câu hỏi quiz');
+        const flashcardItems = parseGenerateQuantity(dto.quantityFlashcard, 'flashcard');
+        const options: GenerationOptions = {
+            numItems: type === 'flashcard' ? flashcardItems : quizItems,
+            isNarrowSearch: dto.isNarrowSearch === 'true',
+            keyword: dto.keyword?.trim() || undefined,
+        };
 
-        // Guard: prevent duplicate generation job of same type for this user
-        const typeResultForLock = this.normalizeTypeResult(dto.typeResult);
-        await this.acquireGenerationLock(user.id, typeResultForLock);
-
+        await this.locks.acquire(user.id, type);
+        let createdDocumentId: string | undefined;
         try {
-            // 1. Check for duplicate upload first
-            const existingStorage =
-                await this.aiRepository.findDuplicateUserStorage(
-                    user.id,
-                    file.originalname,
-                    file.size
-                );
+            const upload = await this.documents
+                .createUpload(
+                    {
+                        filename: file.originalname,
+                        mimetype: file.mimetype,
+                        data: file.buffer,
+                        chargeCredits: false,
+                        reuseDuplicate: true,
+                    },
+                    metadata
+                )
+                .catch(rethrowAsDocumentHttp);
+            const doc = upload.document;
+            if (!doc) throw new NotFoundException('Upload không tồn tại');
+            if (!upload.reused) createdDocumentId = doc.id;
 
-            if (existingStorage) {
-                this.logger.log(
-                    `Duplicate found (${existingStorage.processingStatus}), reusing: ${existingStorage.id}`
-                );
-
-                if (existingStorage.processingStatus === 'PROCESSING') {
-                    return {
-                        jobId: existingStorage.id,
-                        status: 'processing',
-                        message: 'File này đang được xử lý, vui lòng chờ hoàn tất.',
-                    };
-                }
-
-                // Common reuse logic
-                const generateCredits = 5;
-                let newBalance: number | undefined;
-
-                if (existingStorage.processingStatus === 'COMPLETED') {
-                    // COMPLETED case: Charge only for generation
-                    if (generateCredits > 0) {
-                        try {
-                            const deductionResult =
-                                await this.financeClient.deductCredits(
-                                    user.id,
-                                    generateCredits,
-                                    `Generate from EXISTING file: ${file.originalname}`,
-                                    newIdempotencyKey('quick-upload-reuse'),
-                                    { userToken }
-                                );
-                            if (deductionResult?.success)
-                                newBalance = deductionResult.newBalance;
-                        } catch (err) {
-                            this.logger.warn(
-                                `Credit deduction failed: ${err.message}`
-                            );
-                            // Fail closed, same as the new-file path: no charge, no generation.
-                            throw err;
-                        }
-                    }
-
-                    // Mark PROCESSING immediately so polling does not read stale history
-                    await this.aiRepository.updateUserStorageStatus(
-                        existingStorage.id,
-                        'PROCESSING'
-                    );
-                } else {
-                    // FAILED/PENDING case: Treat as retry.
-                    await this.aiRepository.updateUserStorageStatus(
-                        existingStorage.id,
-                        'PENDING'
-                    );
-                }
-
-                // Process async (Generate content + OCR if needed)
-                const typeResult = this.normalizeTypeResult(dto.typeResult);
-                const quantityQuizz = this.parseGenerateQuantity(
-                    dto.quantityQuizz,
-                    'câu hỏi quiz'
-                );
-                const quantityFlashcard = this.parseGenerateQuantity(
-                    dto.quantityFlashcard,
-                    'flashcard'
-                );
-
-                this.logger.log(
-                    `Parsed DTO - typeResult: ${dto.typeResult}, modelType: ${dto.modelType}`
-                );
-
-                this.processFileAsync(
-                    existingStorage.id,
-                    user.id,
-                    typeResult,
-                    quantityQuizz,
-                    quantityFlashcard,
-                    dto.modelType,
-                    dto.isNarrowSearch === 'true',
-                    dto.keyword?.trim() || undefined,
-                    existingStorage.processingStatus === 'COMPLETED'
-                ).catch((err) =>
-                    this.logger.error(
-                        `Reused background processing failed: ${err.message}`
-                    )
-                );
-
-                return {
-                    jobId: existingStorage.id,
-                    status: 'processing',
-                    message:
-                        existingStorage.processingStatus === 'COMPLETED'
-                            ? 'File đã tồn tại, đang tạo nội dung mới...'
-                            : 'Đang xử lý lại file cũ...',
-                    newBalance,
-                };
-            }
-
-            // Enforce monthly file upload quota before doing any expensive
-            // work. Only applies to genuinely new files - the duplicate-file
-            // reuse path above does not consume a new upload slot.
-            await this.enforceFileUploadQuota(user.id);
-
-            // 1b. Upload to R2 via gRPC
-            // Sanitize filename to handle Vietnamese characters
-            const sanitizedName = `${Date.now()}-${sanitizeFilename(file.originalname)}`;
-            const uploadStart = Date.now();
-            this.logger.log('Uploading to R2 via gRPC...');
-            const keyR2 = await this.r2ClientService.uploadFile(
-                sanitizedName,
-                file.buffer,
-                file.mimetype,
-                ownerKeyFolder('ai-uploads', user.id),
-                buildMetadata()
-            );
-            this.logger.log(
-                `R2 upload success in ${Date.now() - uploadStart}ms, key: ${keyR2}`
-            );
-
-            // 2. Get public URL
-            const url = this.r2ClientService.getPublicUrl(keyR2);
-
-            // 3. Calculate credits and deduct (skip if fails to let job run)
-            const sizeMB = file.size / (1024 * 1024);
-            const uploadCredits = Math.ceil(sizeMB / 2);
-            const generateCredits = 5;
-            const totalCredits = uploadCredits + generateCredits;
-
-            let newBalance: number | undefined;
-            const creditStart = Date.now();
-            // Once-per-file charge: the key is bound to the storage id.
-            const id = this.generateIdService.generateId();
-            if (totalCredits > 0) {
-                try {
-                    const deductionResult =
-                        await this.financeClient.deductCredits(
-                            user.id,
-                            totalCredits,
-                            `Generate from file: ${file.originalname}`,
-                            `quick-upload:${id}`,
-                            { userToken }
-                        );
-                    if (deductionResult?.success) {
-                        newBalance = deductionResult.newBalance;
-                    }
-                    this.logger.log(
-                        `Credit deduction done in ${Date.now() - creditStart}ms`
-                    );
-                } catch (creditError) {
-                    this.logger.warn(
-                        `Credit deduction failed: ${creditError.message}`
-                    );
-                    throw creditError; // Re-throw to stop if not enough credits
+            if (upload.reused && processingStatusName(doc) === 'PROCESSING') {
+                const running = await this.jobs.activeByStorage(doc.id, user.id, type);
+                if (running) {
+                    await this.locks.release(user.id, type);
+                    return { jobId: running.id, status: 'processing', message: 'File này đang được xử lý, vui lòng chờ hoàn tất.' };
                 }
             }
 
-            // 4. Create UserStorage with PENDING status
-            const dbStart = Date.now();
-            const userStorage = await this.aiRepository.createUserStorage({
-                id,
+            const plan = chargePlan(doc, upload.reused);
+            if (plan.ensureProcessed) await this.ensureProcessed(doc.id, metadata);
+            const download = await this.signedDownload(doc, metadata);
+
+            const submitted = await this.generation.submit({
                 userId: user.id,
-                filename: file.originalname,
-                url,
-                mimetype: file.mimetype,
-                size: file.size,
-                keyR2,
-                processingStatus: 'PENDING',
-                creditCharged: true,
+                userToken: token,
+                storageId: doc.id,
+                filename: doc.filename,
+                type,
+                options,
+                model: dto.modelType,
+                amount: plan.amount,
+                reason: `Generate from ${upload.reused ? 'EXISTING ' : ''}file: ${doc.filename}`,
+                download,
             });
-            this.logger.log(`DB record created in ${Date.now() - dbStart}ms`);
-
-            // 5. Call AI service directly via HTTP to process OCR + generate content
-            // This is more reliable than RabbitMQ events for this use case
-            const typeResult = this.normalizeTypeResult(dto.typeResult);
-            const quantityQuizz = this.parseGenerateQuantity(
-                dto.quantityQuizz,
-                'câu hỏi quiz'
-            );
-            const quantityFlashcard = this.parseGenerateQuantity(
-                dto.quantityFlashcard,
-                'flashcard'
-            );
-
-            // Fire and forget - call AI service async without waiting
-            this.processFileAsync(
-                userStorage.id,
-                user.id,
-                typeResult,
-                quantityQuizz,
-                quantityFlashcard,
-                dto.modelType,
-                dto.isNarrowSearch === 'true',
-                dto.keyword?.trim() || undefined
-            ).catch((err) => {
-                this.logger.error(
-                    `Background processing failed for ${userStorage.id}: ${err.message}`
-                );
-            });
-
-            this.logger.log(
-                `Total generateFromFile time: ${Date.now() - startTime}ms`
-            );
-
             return {
-                jobId: userStorage.id,
-                status: 'PENDING',
-                message: 'File đã được upload, đang xử lý OCR và tạo nội dung',
-                newBalance,
+                jobId: submitted.jobId,
+                status: upload.reused ? 'processing' : 'PENDING',
+                message: generateFromFileMessage(upload.reused, plan.ensureProcessed),
+                newBalance: submitted.newBalance,
             };
         } catch (error) {
-            this.logger.error(
-                `Generate from file failed: ${error.message}`,
-                error.stack
-            );
-            // Release lock on synchronous failure (e.g., balance check, validation)
-            // Lock is released by processFileAsync.finally for async failures.
-            try {
-                await this.releaseGenerationLock(user.id, typeResultForLock);
-            } catch {
-                /* ignore */
+            await this.locks.release(user.id, type);
+            // The file was stored for this request only and the charge was refused (or its outcome is unknown, the
+            // reaper settles the job): do not keep an upload the user did not pay for.
+            if ((error instanceof ChargeRefusedException || error instanceof ChargeUnknownException) && createdDocumentId) {
+                await this.discardDocument(createdDocumentId, metadata);
             }
             throw error;
         }
     }
 
-    /**
-     * Process file asynchronously - call AI service to OCR + generate content
-     * This runs in background after returning jobId to client
-     */
-    private normalizeTypeResult(typeResult?: number | string): number {
-        const parsed = Number(typeResult);
-        return parsed === 2 ? 2 : 1;
-    }
+    /** New generation (and a new charge) from a document the caller already uploaded. */
+    async regenerate(uploadId: string, user: AuthUser, dto: RegenerateDto, userToken?: string): Promise<GenerationStarted> {
+        const token = requireUserToken(userToken);
+        const metadata = userMetadata(token);
+        const [doc] = await this.documents.getDocumentsByIds([uploadId], metadata).catch(rethrowAsDocumentHttp);
+        if (!doc) throw new NotFoundException('Upload không tồn tại');
 
-    /**
-     * Parse số lượng quiz/flashcard từ form-data string.
-     * Mặc định 10, tối đa MAX_GENERATE_ITEMS (reject nếu vượt).
-     */
-    private parseGenerateQuantity(raw: string | undefined, label: string): number {
-        if (!raw) {
-            return 10;
-        }
-        const parsed = parseInt(raw, 10);
-        if (Number.isNaN(parsed) || parsed < 1) {
-            return 10;
-        }
-        if (parsed > MAX_GENERATE_ITEMS) {
-            throw new BadRequestException(
-                `Số ${label} tối đa là ${MAX_GENERATE_ITEMS}, bạn đã yêu cầu ${parsed}`
-            );
-        }
-        return parsed;
-    }
-
-    private async processFileAsync(
-        userStorageId: string,
-        userId: string,
-        typeResult: number,
-        quantityQuizz: number,
-        quantityFlashcard: number,
-        modelType?: string,
-        isNarrowSearch: boolean = false,
-        keyword?: string,
-        ignoreProcessingStatusGuard: boolean = false
-    ): Promise<void> {
-        const startTime = Date.now();
-
-        try {
-            this.logger.log(
-                `Starting async processing for ${userStorageId}...`
-            );
-
-            // Fetch current status to check if we can skip OCR
-            const currentStorage =
-                await this.aiRepository.findUserStorageById(userStorageId);
-
-            if (!currentStorage) {
-                throw new Error(`UserStorage not found: ${userStorageId}`);
-            }
-
-            if (
-                !ignoreProcessingStatusGuard &&
-                currentStorage.processingStatus === 'PROCESSING'
-            ) {
-                this.logger.warn(
-                    `Skip starting duplicate processing job for ${userStorageId} because another job is already PROCESSING`
-                );
-                return;
-            }
-
-            const documentCount =
-                await this.aiRepository.countDocumentsByUserStorageId(userStorageId);
-            const skipOcr = documentCount > 0;
-
-            this.logger.log(
-                `[AI_TIMING] job=${userStorageId} stage=prepare skipOcr=${skipOcr} documentCount=${documentCount} typeResult=${typeResult} qQuiz=${quantityQuizz} qFlash=${quantityFlashcard}`
-            );
-
-            // Always mark PROCESSING while this generation job is running
-            await this.aiRepository.updateUserStorageStatus(
-                userStorageId,
-                'PROCESSING'
-            );
-
-            if (!skipOcr) {
-                // Step 1: Call AI service to process OCR + embeddings
-                this.logger.log(
-                    `Calling AI service to process file ${userStorageId}...`
-                );
-                const processFilePayload = modelType
-                    ? { user_storage_id: userStorageId, modelType }
-                    : { user_storage_id: userStorageId };
-
-                const ocrStart = Date.now();
-                const ocrResponse = await firstValueFrom(
-                    this.httpService.post(
-                        `${this.aiServiceUrl}/ai/process-file`,
-                        processFilePayload,
-                        { timeout: 3600000, headers: this.internalHeaders } // 60 min timeout for OCR
-                    )
-                );
-
-                if (!ocrResponse.data?.success) {
-                    throw new Error(
-                        ocrResponse.data?.error || 'OCR processing failed'
-                    );
-                }
-
-                this.logger.log(
-                    `[AI_TIMING] job=${userStorageId} stage=ocr_ms value=${Date.now() - ocrStart} chunks=${ocrResponse.data.chunks_count}`
-                );
-                this.logger.log(
-                    `OCR completed for ${userStorageId}: ${ocrResponse.data.chunks_count} chunks`
-                );
-            } else {
-                this.logger.log(
-                    `Skipping OCR for file with existing embeddings: ${userStorageId} (${documentCount} chunks)`
-                );
-            }
-
-            // Always ensure PROCESSING before generation starts
-            // (OCR step in Python may have set COMPLETED prematurely)
-            await this.aiRepository.updateUserStorageStatus(
-                userStorageId,
-                'PROCESSING'
-            );
-
-            // Step 2: Generate quiz or flashcard
-            const isFlashcard = typeResult === 2;
-            const count = isFlashcard ? quantityFlashcard : quantityQuizz;
-            const endpoint = isFlashcard
-                ? `${this.aiServiceUrl}/generate/flashcards`
-                : `${this.aiServiceUrl}/generate/quiz`;
-
-            this.logger.log(
-                `Generating ${count} ${isFlashcard ? 'flashcards' : 'quiz questions'} for ${userStorageId} with model: ${modelType || this.getDefaultModelId()}...`
-            );
-
-            const generationStart = Date.now();
-            const generateResponse = await firstValueFrom(
-                this.httpService.post(
-                    endpoint,
-                    {
-                        userStorageId,
-                        userId,
-                        [isFlashcard ? 'numFlashcards' : 'numQuestions']: count,
-                        isNarrowSearch,
-                        keyword,
-                        modelType: modelType || this.getDefaultModelId(),
-                    },
-                    { timeout: 3600000, headers: this.internalHeaders } // 60 min timeout for generation
-                )
-            );
-
-            if (!generateResponse.data?.success) {
-                throw new Error(
-                    generateResponse.data?.error || 'Content generation failed'
-                );
-            }
-
-            // Mark completed only when generation actually succeeds
-            await this.aiRepository.updateUserStorageStatus(
-                userStorageId,
-                'COMPLETED'
-            );
-
-            this.logger.log(
-                `[AI_TIMING] job=${userStorageId} stage=generation_ms value=${Date.now() - generationStart} outputType=${isFlashcard ? 'flashcard' : 'quiz'} count=${count}`
-            );
-            this.logger.log(
-                `[AI_TIMING] job=${userStorageId} stage=total_ms value=${Date.now() - startTime} skipOcr=${skipOcr}`
-            );
-            this.logger.log(
-                `Generation completed for ${userStorageId}, historyId: ${generateResponse.data.history_id}`
-            );
-        } catch (error) {
-            const errorDetails = error.response?.data || error.message;
-            const normalizedModelError = this.normalizeModelUnavailableMessage(
-                error.response?.data
-            );
-            this.logger.error(
-                `Async processing failed for ${userStorageId}: ${JSON.stringify(errorDetails)}`,
-                error.stack
-            );
-            this.logger.log(
-                `[AI_TIMING] job=${userStorageId} stage=failed_total_ms value=${Date.now() - startTime}`
-            );
-
-            // Update status to FAILED
-            try {
-                await this.aiRepository.updateUserStorageStatus(
-                    userStorageId,
-                    'FAILED'
-                );
-            } catch (updateError) {
-                this.logger.error(
-                    `Failed to update status to FAILED: ${updateError.message}`
-                );
-            }
-
-            if (normalizedModelError) {
-                throw new ServiceUnavailableException(normalizedModelError);
-            }
-        } finally {
-            // Release the generation lock so the user can start a new job of this type
-            try {
-                await this.releaseGenerationLock(userId, typeResult);
-            } catch (lockErr) {
-                this.logger.error(
-                    `Failed to release generation lock: ${lockErr.message}`
-                );
-            }
-        }
-    }
-
-    private getFallbackModelCatalog() {
-        const unavailableReason = 'AI service chưa sẵn sàng. Vui lòng khởi động AI service rồi thử lại.';
-        const ai2ModelIds = this.getFallbackAi2ModelIds();
-        const defaultModelId = this.getDefaultModelId();
-        const generationModels = ai2ModelIds.map((modelId, index) => ({
-            id: modelId,
-            name: this.formatAi2ModelName(modelId),
-            description: 'AI2 OpenAI-compatible model dùng cho sinh quiz và flashcard.',
-            provider: 'ai2',
-            runtimeModelName: modelId,
-            badge: modelId === defaultModelId ? 'Mặc định' : 'AI2',
-            disabled: true,
-            available: false,
-            availabilityReason: unavailableReason,
-            isDefault: modelId === defaultModelId || (index === 0 && !ai2ModelIds.includes(defaultModelId)),
-            supportsStructuredOutput: false,
-            specs: [
-                { label: 'Trạng thái', value: 'AI service offline' },
-                { label: 'Provider', value: 'AI2' },
-                { label: 'Runtime', value: modelId },
-            ],
-        }));
-
-        return {
-            embeddingModel: {
-                id: 'gemini_embedding',
-                name: 'Gemini Embedding',
-                description: 'Embedding model dùng chung cho hệ thống.',
-                provider: 'gemini',
-                runtimeModelName: 'models/text-embedding-004',
-                badge: 'Offline',
-                disabled: true,
-                available: false,
-                availabilityReason: unavailableReason,
-                isDefault: true,
-                supportsStructuredOutput: false,
-                specs: [
-                    { label: 'Trạng thái', value: 'AI service offline' },
-                    { label: 'Provider', value: 'Google' },
-                ],
-            },
-            generationModels,
-            defaultGenerationModel: generationModels.find((model) => model.isDefault)?.id || defaultModelId,
+        const type: GenerationType =
+            generationTypeOf(dto.typeResult) === 'flashcard' || dto.outputType === 'flashcard' ? 'flashcard' : 'quiz';
+        const numItems =
+            (type === 'flashcard' ? dto.quantityFlashcard : dto.quantityQuizz) || dto.count || DEFAULT_GENERATE_ITEMS;
+        const options: GenerationOptions = {
+            numItems,
+            isNarrowSearch: dto.isNarrowSearch ?? false,
+            keyword: dto.keyword?.trim() || undefined,
         };
-    }
 
-    private isAiServiceUnavailable(error: unknown): boolean {
-        const axiosError = error as AxiosError;
-        const unavailableCodes = new Set([
-            'ECONNREFUSED',
-            'ECONNRESET',
-            'ECONNABORTED',
-            'ETIMEDOUT',
-            'ENOTFOUND',
-            'EAI_AGAIN',
-        ]);
-
-        if (axiosError.code && unavailableCodes.has(axiosError.code)) {
-            return true;
-        }
-
-        const status = axiosError.response?.status;
-        return status === 502 || status === 503 || status === 504;
-    }
-
-    async getModelCatalog() {
+        await this.locks.acquire(user.id, type);
         try {
-            const response = await firstValueFrom(
-                this.httpService.get(`${this.aiServiceUrl}/ai/models`, {
-                    timeout: 60000,
-                    headers: this.internalHeaders,
-                })
-            );
-            return response.data;
-        } catch (error) {
-            if (!this.isAiServiceUnavailable(error)) {
-                this.logger.error(
-                    `Failed to fetch model catalog: ${error.message}`,
-                    error.stack
-                );
-                this.rethrowAiHttpError(error);
-            }
-
-            this.logger.warn(
-                `AI service model catalog unavailable, using fallback catalog: ${error.message}`
-            );
-            return this.getFallbackModelCatalog();
-        }
-    }
-
-    /**
-     * Get recent uploads for a user
-     * Returns array directly for frontend compatibility
-     */
-    async getRecentUploads(user: AuthUser, page = 1, size = 10) {
-        const result = await this.aiRepository.findUserStoragesByUserId(
-            user.id,
-            { page, size }
-        );
-
-        // Return array directly for frontend compatibility
-        return result.data;
-    }
-
-    /**
-     * Get upload details by ID
-     */
-    async getUploadDetail(uploadId: string, user: AuthUser) {
-        const upload = await this.aiRepository.findUserStorageById(uploadId);
-
-        if (!upload) {
-            throw new NotFoundException('Upload không tồn tại');
-        }
-
-        if (upload.userId !== user.id) {
-            throw new NotFoundException('Upload không tồn tại');
-        }
-
-        return upload;
-    }
-
-    /**
-     * Delete an upload and its file from R2
-     */
-    async deleteUpload(uploadId: string, user: AuthUser) {
-        const upload = await this.getUploadDetail(uploadId, user);
-
-        try {
-            // The R2 object is queued in the same tx as the row delete; the worker
-            // deletes it (with retry), so a failure can no longer leave an orphan.
-            const deletionResult = await this.aiRepository.deleteUploadAggregate(
-                upload.id,
-                (tx) =>
-                    this.r2Deletes.enqueue(tx, [
-                        // Only an object issued to this row's owner is ever deleted;
-                        // legacy owner-less keys stay in R2 (accepted orphan).
-                        ownedR2Key(upload.keyR2, AI_UPLOAD_AREAS, upload.userId),
-                    ])
-            );
-            this.logger.log(
-                `Deleted upload aggregate for UserStorage: ${upload.id} (documents=${deletionResult.documents}, documentEntities=${deletionResult.documentEntities}, aiChatDocuments=${deletionResult.aiChatDocuments})`
-            );
-        } catch (error) {
-            this.logger.error(
-                `Failed to delete upload aggregate for UserStorage: ${upload.id} - ${error.message}`,
-                error.stack
-            );
-            throw new InternalServerErrorException(
-                'Không thể xóa dữ liệu upload khỏi hệ thống'
-            );
-        }
-
-        await this.clearAiServiceCache(upload.id);
-
-        return { success: true, message: 'Xóa thành công' };
-    }
-
-    /**
-     * Cancel a job that is in progress
-     * This will delete the UserStorage and refund credits if applicable
-     */
-    async cancelJob(jobId: string, user: AuthUser) {
-        const upload = await this.aiRepository.findUserStorageById(jobId);
-
-        if (!upload) {
-            return {
-                success: false,
-                message: 'Job không tồn tại',
-            };
-        }
-
-        // Verify ownership
-        if (upload.userId !== user.id) {
-            return {
-                success: false,
-                message: 'Không có quyền hủy job này',
-            };
-        }
-
-        // Only allow canceling pending or processing jobs
-        if (
-            upload.processingStatus !== 'PENDING' &&
-            upload.processingStatus !== 'PROCESSING'
-        ) {
-            return {
-                success: false,
-                message: 'Không thể hủy job đã hoàn thành hoặc thất bại',
-            };
-        }
-
-        // Delete related Documents (embeddings) but keep uploaded file
-        try {
-            await this.aiRepository.deleteDocumentsByUserStorageId(upload.id);
-            this.logger.log(
-                `Deleted documents for cancelled job: ${upload.id}`
-            );
-        } catch (error) {
-            this.logger.warn(
-                `Failed to delete documents for cancelled job: ${upload.id} - ${error.message}`
-            );
-        }
-
-        await this.clearAiServiceCache(upload.id);
-
-        await this.aiRepository.updateUserStorageStatus(upload.id, 'PENDING');
-
-        return {
-            success: true,
-            message: 'Đã hủy tác vụ và giữ lại file đã tải lên',
-        };
-    }
-
-    /**
-     * Create a new upload and trigger OCR processing
-     */
-    async createUpload(user: AuthUser, dto: UploadFileDto, userToken?: string) {
-        // The key must be one this user was issued; it is later deleted from R2.
-        if (!ownedR2Key(dto.keyR2, AI_UPLOAD_AREAS, user.id)) {
-            throw new BadRequestException({
-                code: 'VALIDATION_FAILED',
-                message: 'keyR2 không hợp lệ',
+            if (needsReprocessing(doc)) await this.ensureProcessed(doc.id, metadata);
+            const submitted = await this.generation.submit({
+                userId: user.id,
+                userToken: token,
+                storageId: doc.id,
+                filename: doc.filename,
+                type,
+                options,
+                model: dto.modelType,
+                amount: regenerateCredits(numItems),
+                reason: `Generate ${numItems} ${type}s from file ${doc.filename}`,
+                download: await this.signedDownload(doc, metadata),
             });
-        }
-
-        // Enforce monthly file upload quota before doing any expensive work
-        await this.enforceFileUploadQuota(user.id);
-
-        // Calculate credits: 1 credit per 2MB
-        const sizeMB = dto.size / (1024 * 1024);
-        const credits = Math.ceil(sizeMB / 2);
-
-        let creditCharged = false;
-        let newBalance: number | undefined;
-        // Once-per-file charge: the key is bound to the storage id.
-        const id = this.generateIdService.generateId();
-
-        if (credits > 0) {
-            const deductionResult = await this.financeClient.deductCredits(
-                user.id,
-                credits,
-                `Upload file: ${dto.filename} (${sizeMB.toFixed(2)} MB)`,
-                `upload:${id}`,
-                { userToken }
-            );
-            creditCharged = true;
-            if (deductionResult?.success) {
-                newBalance = deductionResult.newBalance;
-            }
-        }
-
-        // Create UserStorage with PENDING status
-        const userStorage = await this.aiRepository.createUserStorage({
-            id,
-            userId: user.id,
-            filename: dto.filename,
-            url: dto.url,
-            mimetype: dto.mimetype,
-            size: dto.size,
-            keyR2: dto.keyR2,
-            processingStatus: 'PENDING',
-            creditCharged,
-        });
-
-        // Trigger async OCR processing (generation is handled separately via regenerate endpoint)
-        this.processFileAsync(
-            userStorage.id,
-            user.id,
-            1,
-            10,
-            10,
-            undefined,
-            false,
-            undefined
-        ).catch((err) =>
-            this.logger.error(`Background processing failed: ${err.message}`)
-        );
-
-        this.logger.log(
-            `Started async processing for userStorageId: ${userStorage.id}`
-        );
-
-        return {
-            id: userStorage.id,
-            status: 'PENDING',
-            newBalance,
-            message: 'File đã được upload, đang xử lý OCR',
-        };
-    }
-
-    /**
-     * Regenerate quiz/flashcard from an existing upload
-     * Calls AI service to actually generate content
-     */
-    async regenerate(
-        uploadId: string,
-        user: AuthUser,
-        dto: RegenerateDto,
-        userToken?: string
-    ) {
-        const upload = await this.getUploadDetail(uploadId, user);
-
-        // Guard: prevent duplicate generation of same type for this user
-        const lockType = this.normalizeTypeResult(dto.typeResult);
-        await this.acquireGenerationLock(user.id, lockType);
-
-        try {
-
-        // If not yet processed or FAILED, trigger OCR first via HTTP
-        if (
-            upload.processingStatus === 'PENDING' ||
-            upload.processingStatus === 'FAILED'
-        ) {
-            // Reset status to PENDING for retry
-            if (upload.processingStatus === 'FAILED') {
-                await this.aiRepository.updateUserStorageStatus(
-                    uploadId,
-                    'PENDING'
-                );
-                this.logger.log(`Retrying failed upload ${uploadId}`);
-            }
-
-            // Start async processing
-            this.processFileAsync(
-                upload.id,
-                user.id,
-                this.normalizeTypeResult(dto.typeResult),
-                dto.quantityQuizz || dto.count || 10,
-                dto.quantityFlashcard || dto.count || 10,
-                dto.modelType,
-                dto.isNarrowSearch ?? false,
-                dto.keyword?.trim() || undefined
-            ).catch((err) =>
-                this.logger.error(
-                    `Background processing failed: ${err.message}`
-                )
-            );
-
             return {
-                jobId: upload.id,
+                jobId: submitted.jobId,
                 status: 'processing',
-                message:
-                    upload.processingStatus === 'FAILED'
-                        ? 'Đang thử lại xử lý file, vui lòng đợi...'
-                        : 'Đang xử lý OCR, vui lòng thử lại sau',
-            };
-        }
-
-        // OCR is complete, call AI service to generate content
-        try {
-            // Parse FE request format: typeResult (1=quiz, 2=flashcard)
-            const normalizedTypeResult = this.normalizeTypeResult(dto.typeResult);
-            const isFlashcard = normalizedTypeResult === 2;
-            const outputType = isFlashcard
-                ? 'flashcard'
-                : dto.outputType || 'quiz';
-            const count = isFlashcard
-                ? dto.quantityFlashcard || dto.count || 10
-                : dto.quantityQuizz || dto.count || 10;
-
-            // Deduct credits: 1 credit per 10 items
-            const credits = Math.ceil(count / 10);
-            let newBalance: number | undefined;
-
-            if (credits > 0) {
-                const deductionResult = await this.financeClient.deductCredits(
-                    user.id,
-                    credits,
-                    `Generate ${count} ${outputType}s from file ${upload.filename}`,
-                    // One key per HTTP request: client-lib retries reuse it.
-                    newIdempotencyKey('regenerate'),
-                    { userToken }
-                );
-                if (deductionResult?.success) {
-                    newBalance = deductionResult.newBalance;
-                }
-            }
-
-            // Update status to PROCESSING so polling knows a job is running
-            await this.aiRepository.updateUserStorageStatus(
-                upload.id,
-                'PROCESSING'
-            );
-
-            this.logger.log(
-                `Triggering async AI generation for ${count} ${outputType} for upload ${upload.id}`
-            );
-
-            // Calculate specific quantities based on type
-            const quantityQuizz = !isFlashcard ? count : 0;
-            const quantityFlashcard = isFlashcard ? count : 0;
-
-            // Fire and forget - reuse processFileAsync logic.
-            // Pass ignoreProcessingStatusGuard=true because regenerate already claimed this job.
-            this.processFileAsync(
-                upload.id,
-                user.id,
-                normalizedTypeResult,
-                quantityQuizz,
-                quantityFlashcard,
-                dto.modelType,
-                dto.isNarrowSearch ?? false,
-                dto.keyword?.trim() || undefined,
-                true
-            ).catch((err) =>
-                this.logger.error(
-                    `Background processing failed for regenerate ${upload.id}: ${err.message}`
-                )
-            );
-
-            return {
-                jobId: upload.id,
-                status: 'processing',
-                newBalance,
-                message: isFlashcard
-                    ? 'Đang tạo flashcard mới...'
-                    : 'Đang tạo câu hỏi trắc nghiệm mới...',
+                newBalance: submitted.newBalance,
+                message: type === 'flashcard' ? 'Đang tạo flashcard mới...' : 'Đang tạo câu hỏi trắc nghiệm mới...',
             };
         } catch (error) {
-            this.logger.error(`Error calling AI service: ${error.message}`);
-            // Release lock on synchronous failure
-            try {
-                await this.releaseGenerationLock(user.id, lockType);
-            } catch {
-                /* ignore */
-            }
-            throw new NotFoundException(
-                `Lỗi khi tạo nội dung: ${error.message}`
-            );
-        }
-
-        } catch (lockOrEarlyError) {
-            // Release lock on any error before processFileAsync gets a chance
-            try {
-                await this.releaseGenerationLock(user.id, lockType);
-            } catch {
-                /* ignore */
-            }
-            throw lockOrEarlyError;
+            await this.locks.release(user.id, type);
+            throw error;
         }
     }
 
     /**
-     * Get job status (check processing status and return result if available)
-     * Returns result for FE polling pattern
+     * A presigned GET handed to ai-service with the request, so it can process a document that has no chunks
+     * yet instead of waiting for the OCR pipeline. Best effort: without it ai-service falls back to waiting.
      */
-    async getJobStatus(jobId: string, user: AuthUser) {
-        const upload = await this.aiRepository.findUserStorageWithLatestHistories(jobId);
-
-        if (!upload) {
-            throw new NotFoundException('Upload không tồn tại');
+    private async signedDownload(
+        doc: { id: string; mimetype: string },
+        metadata: Metadata
+    ): Promise<{ url: string; mimetype: string } | undefined> {
+        try {
+            const { downloadUrl } = await this.documents.getDownloadUrl(doc.id, metadata);
+            return downloadUrl ? { url: downloadUrl, mimetype: doc.mimetype } : undefined;
+        } catch (error) {
+            this.logger.warn(`No download URL for document ${doc.id}, generation waits for the OCR: ${(error as Error).message}`);
+            return undefined;
         }
-
-        if (upload.userId !== user.id) {
-            throw new NotFoundException('Upload không tồn tại');
-        }
-
-        // If currently processing/pending, do not return old history data
-        const normalizedStatus =
-            upload.processingStatus?.toLowerCase() || 'pending';
-        if (normalizedStatus === 'processing' || normalizedStatus === 'pending') {
-            return {
-                jobId: upload.id,
-                status: normalizedStatus,
-                filename: upload.filename,
-                createdAt: upload.createdAt,
-            };
-        }
-
-        if (normalizedStatus === 'failed') {
-            return {
-                jobId: upload.id,
-                status: 'failed',
-                error: 'Model hiện tại không khả dụng, thử model khác.',
-                filename: upload.filename,
-                createdAt: upload.createdAt,
-            };
-        }
-
-        const quizHistory = upload.historyGeneratedQuizz[0];
-        const flashcardHistory = upload.historyGeneratedFlashcard[0];
-
-        // Determine which one is more recent
-        let returnType: 'quiz' | 'flashcard' | null = null;
-
-        if (quizHistory && flashcardHistory) {
-            // Both exist, return the most recent one
-            const quizDate = new Date(quizHistory.createdAt).getTime();
-            const flashcardDate = new Date(
-                flashcardHistory.createdAt
-            ).getTime();
-            returnType = flashcardDate > quizDate ? 'flashcard' : 'quiz';
-        } else if (quizHistory) {
-            returnType = 'quiz';
-        } else if (flashcardHistory) {
-            returnType = 'flashcard';
-        }
-
-        // Return quiz result
-        if (returnType === 'quiz' && quizHistory) {
-            return {
-                jobId: upload.id,
-                status: 'completed',
-                result: {
-                    type: 'quiz',
-                    quizzes: quizHistory.quizzes,
-                    historyId: quizHistory.id,
-                    fileInfo: {
-                        id: upload.id,
-                        filename: upload.filename,
-                    },
-                },
-            };
-        }
-
-        // Return flashcard result
-        if (returnType === 'flashcard' && flashcardHistory) {
-            return {
-                jobId: upload.id,
-                status: 'completed',
-                result: {
-                    type: 'flashcard',
-                    flashcards: flashcardHistory.flashcards,
-                    historyId: flashcardHistory.id,
-                    fileInfo: {
-                        id: upload.id,
-                        filename: upload.filename,
-                    },
-                },
-            };
-        }
-
-        // No result found
-        return {
-            jobId: upload.id,
-            status: normalizedStatus,
-            filename: upload.filename,
-            createdAt: upload.createdAt,
-            message:
-                normalizedStatus === 'completed'
-                    ? 'OCR và embedding đã hoàn tất nhưng chưa có kết quả quiz/flashcard.'
-                    : undefined,
-        };
     }
 
-    /**
-     * Get full history (quiz and flashcard) for an upload
-     * Used when selecting a recent file to load previous results
-     */
-    async getUploadHistory(uploadId: string, user: AuthUser) {
-        const upload = await this.aiRepository.findUserStorageWithLatestHistories(uploadId);
+    private async ensureProcessed(id: string, metadata: Metadata): Promise<void> {
+        await this.documents.ensureProcessed(id, metadata).catch(rethrowAsDocumentHttp);
+    }
 
-        if (!upload) {
-            throw new NotFoundException('Upload không tồn tại');
+    /** Best effort: a leftover free upload is harmless, a failed cleanup must not hide the refusal. */
+    private async discardDocument(id: string, metadata: Metadata): Promise<void> {
+        try {
+            await this.documents.deleteDocuments([id], metadata);
+        } catch (error) {
+            this.logger.error(`Could not delete the refused upload ${id}: ${(error as Error).message}`);
         }
-
-        if (upload.userId !== user.id) {
-            throw new NotFoundException('Upload không tồn tại');
-        }
-
-        const quizHistory = upload.historyGeneratedQuizz[0];
-        const flashcardHistory = upload.historyGeneratedFlashcard[0];
-
-        return {
-            uploadId: upload.id,
-            filename: upload.filename,
-            quizHistory: quizHistory
-                ? {
-                      id: quizHistory.id,
-                      quizzes: quizHistory.quizzes,
-                      createdAt: quizHistory.createdAt,
-                  }
-                : null,
-            flashcardHistory: flashcardHistory
-                ? {
-                      id: flashcardHistory.id,
-                      flashcards: flashcardHistory.flashcards,
-                      createdAt: flashcardHistory.createdAt,
-                  }
-                : null,
-        };
     }
 }

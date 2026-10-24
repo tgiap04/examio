@@ -36,8 +36,8 @@ describe('AIChatService.checkLimits', () => {
         service = new AIChatService(
             chatRepository as never,
             {} as never,
-            {} as never,
             finance as never,
+            {} as never,
             {} as never
         ) as unknown as LimitChecker;
     });

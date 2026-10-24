@@ -4,8 +4,6 @@ import {
     Controller,
     Get,
     Post,
-    Put,
-    Patch,
     Delete,
     Body,
     Param,
@@ -15,6 +13,7 @@ import {
     UploadedFile,
     Logger,
     BadRequestException,
+    NotFoundException,
     UsePipes,
 } from '@nestjs/common';
 import {
@@ -28,72 +27,40 @@ import {
 } from '@nestjs/swagger';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthenticatedRequest } from '@examio/common';
-import { AIService } from './ai.service';
-import {
-    UploadFileDto,
-    RegenerateDto,
-    UploadImageDto,
-    GenerateFromFileDto,
-} from './dto/ai.dto';
 import { extractHttpToken, RequirePermissions } from '@examio/auth-jwt';
+import { AIService } from './ai.service';
+import { GenerationJobService } from './generation-job.service';
+import { GenerationQueryService } from './generation-query.service';
+import { ModelCatalogService } from './model-catalog.service';
+import { MAX_MULTER_FILE_BYTES } from './generation.constants';
+import { RegenerateDto, GenerateFromFileDto } from './dto/ai.dto';
 
+const invalidJobId = (jobId: string) => !jobId || jobId === 'undefined' || jobId === 'null';
+const INVALID_JOB = { error: 'Invalid job ID', message: 'Job ID không hợp lệ', statusCode: 400 };
+
+/**
+ * Generation routes. Uploads (`upload`, `quick-upload`, `upload/:id`, `upload-image`, `r2/image`) are
+ * served by document-service now; `recent-uploads` stays here because it joins the documents (gRPC)
+ * with the generated history this service owns.
+ */
 @UsePipes(ZodValidationPipe)
 @ApiTags('AI')
 @Controller('ai')
 export class AIController {
     private readonly logger = new Logger(AIController.name);
 
-    constructor(private readonly aiService: AIService) {}
-
-    @Post('quick-upload')
-    @RequirePermissions('document:upload')
-    @UseInterceptors(FileInterceptor('file'))
-    @ApiCookieAuth('cookie-auth')
-    @ApiOperation({
-        summary: 'Quick upload file cho AI Teacher (Teacher & Student)',
-    })
-    @ApiConsumes('multipart/form-data')
-    @ApiResponse({ status: 201, description: 'File đã được upload' })
-    async quickUpload(
-        @Req() req: AuthenticatedRequest,
-        @UploadedFile() file: Express.Multer.File
-    ) {
-        this.logger.log('--- EXAM SERVICE: QUICK UPLOAD REQUEST RECEIVED ---');
-        this.logger.log(`User: ${req.user?.id}`);
-        this.logger.log(
-            `File: ${file ? `${file.originalname} (${file.size} bytes)` : 'MISSING'}`
-        );
-
-        if (!file || !file.buffer) {
-            this.logger.error('No file received in exam-service quick-upload');
-            throw new BadRequestException('No file uploaded');
-        }
-
-        const maxSize = 5 * 1024 * 1024;
-        if (file.size > maxSize) {
-            throw new BadRequestException(
-                `File quá lớn. Tối đa 5MB, file của bạn: ${(file.size / (1024 * 1024)).toFixed(2)}MB`
-            );
-        }
-
-        try {
-            return await this.aiService.quickUpload(req.user, file);
-        } catch (error) {
-            this.logger.error(
-                `--- EXAM SERVICE: QUICK UPLOAD ERROR --- ${error.message}`,
-                error.stack
-            );
-            throw error;
-        }
-    }
+    constructor(
+        private readonly aiService: AIService,
+        private readonly generation: GenerationJobService,
+        private readonly queries: GenerationQueryService,
+        private readonly models: ModelCatalogService
+    ) {}
 
     @Post('generate-from-file')
     @RequirePermissions('ai:generate')
-    @UseInterceptors(FileInterceptor('file'))
+    @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_MULTER_FILE_BYTES } }))
     @ApiCookieAuth('cookie-auth')
-    @ApiOperation({
-        summary: 'Upload file và tạo quiz/flashcard (Teacher only)',
-    })
+    @ApiOperation({ summary: 'Upload file và tạo quiz/flashcard (Teacher only)' })
     @ApiConsumes('multipart/form-data')
     @ApiResponse({ status: 201, description: 'Job đã được tạo' })
     async generateFromFile(
@@ -101,40 +68,17 @@ export class AIController {
         @UploadedFile() file: Express.Multer.File,
         @Body() dto: GenerateFromFileDto
     ) {
-        this.logger.log('--- EXAM SERVICE: GENERATE FROM FILE REQUEST RECEIVED ---');
-        this.logger.log(`User: ${req.user?.id}`);
         this.logger.log(
-            `File: ${file ? `${file.originalname} (${file.size} bytes)` : 'MISSING'}`
+            `generate-from-file user=${req.user?.id} file=${file ? `${file.originalname} (${file.size} bytes)` : 'MISSING'}`
         );
-
-        if (!file || !file.buffer) {
-            throw new BadRequestException('No file uploaded');
-        }
-
-        const maxSize = 5 * 1024 * 1024;
-        if (file.size > maxSize) {
-            throw new BadRequestException(
-                `File quá lớn. Tối đa 5MB, file của bạn: ${(file.size / (1024 * 1024)).toFixed(2)}MB`
-            );
-        }
-
-        try {
-            return await this.aiService.generateFromFile(
-                req.user,
-                file,
-                dto,
-                extractHttpToken(req)
-            );
-        } catch (error) {
-            this.logger.error(`Generate error: ${error.message}`, error.stack);
-            throw error;
-        }
+        if (!file || !file.buffer) throw new BadRequestException('No file uploaded');
+        return this.aiService.generateFromFile(req.user, file, dto, extractHttpToken(req));
     }
 
     @Get('recent-uploads')
     @RequirePermissions('document:upload')
     @ApiCookieAuth('cookie-auth')
-    @ApiOperation({ summary: 'Lấy danh sách file đã upload (Teacher & Student)' })
+    @ApiOperation({ summary: 'Lấy danh sách file đã upload kèm tóm tắt quiz/flashcard đã tạo' })
     @ApiQuery({ name: 'page', required: false, type: Number })
     @ApiQuery({ name: 'size', required: false, type: Number })
     @ApiResponse({ status: 200, description: 'Danh sách uploads' })
@@ -143,11 +87,7 @@ export class AIController {
         @Query('page', new QueryIntPipe()) page?: number,
         @Query('size', new QueryIntPipe({ max: 100 })) size?: number
     ) {
-        return this.aiService.getRecentUploads(
-            req.user,
-            page ? Number(page) : 1,
-            size ? Number(size) : 10
-        );
+        return this.queries.getRecentUploads(req.user, page ? Number(page) : 1, size ? Number(size) : 10, extractHttpToken(req));
     }
 
     @Get('models')
@@ -156,61 +96,7 @@ export class AIController {
     @ApiOperation({ summary: 'Lay catalog model AI cho frontend' })
     @ApiResponse({ status: 200, description: 'Danh sach model AI' })
     async getModels() {
-        return this.aiService.getModelCatalog();
-    }
-
-    @Get('upload/:uploadId')
-    @RequirePermissions('document:upload')
-    @ApiCookieAuth('cookie-auth')
-    @ApiOperation({ summary: 'Lấy chi tiết file đã upload (Teacher & Student)' })
-    @ApiParam({ name: 'uploadId', description: 'ID của upload' })
-    @ApiResponse({ status: 200, description: 'Chi tiết upload' })
-    async getUploadDetail(
-        @Req() req: AuthenticatedRequest,
-        @Param('uploadId') uploadId: string
-    ) {
-        return this.aiService.getUploadDetail(uploadId, req.user);
-    }
-
-    @Delete('upload/:uploadId')
-    @RequirePermissions('document:upload')
-    @ApiCookieAuth('cookie-auth')
-    @ApiOperation({ summary: 'Xóa file upload (Teacher & Student)' })
-    @ApiParam({ name: 'uploadId', description: 'ID của upload' })
-    @ApiResponse({ status: 200, description: 'Xóa thành công' })
-    async deleteUpload(
-        @Req() req: AuthenticatedRequest,
-        @Param('uploadId') uploadId: string
-    ) {
-        return this.aiService.deleteUpload(uploadId, req.user);
-    }
-
-    @Post('upload')
-    @RequirePermissions('document:upload')
-    @ApiCookieAuth('cookie-auth')
-    @ApiOperation({ summary: 'Tạo upload mới và trigger OCR (Teacher & Student)' })
-    @ApiResponse({ status: 201, description: 'Upload đã được tạo' })
-    async createUpload(
-        @Req() req: AuthenticatedRequest,
-        @Body() dto: UploadFileDto
-    ) {
-        return this.aiService.createUpload(req.user, dto, extractHttpToken(req));
-    }
-
-    @Post('upload-image')
-    @RequirePermissions('document:upload')
-    @ApiCookieAuth('cookie-auth')
-    @ApiOperation({ summary: 'Upload image cho AI chat (Teacher & Student)' })
-    @ApiResponse({ status: 201, description: 'Image đã được upload' })
-    async uploadImage(
-        @Req() req: AuthenticatedRequest,
-        @Body() dto: UploadImageDto
-    ) {
-        // For now, return a placeholder - actual implementation would handle base64/URL
-        return {
-            success: true,
-            message: 'Image upload endpoint - implementation pending',
-        };
+        return this.models.getCatalog();
     }
 
     @Post('regenerate/:uploadId')
@@ -224,68 +110,41 @@ export class AIController {
         @Param('uploadId') uploadId: string,
         @Body() dto: RegenerateDto
     ) {
-        return this.aiService.regenerate(
-            uploadId,
-            req.user,
-            dto,
-            extractHttpToken(req)
-        );
+        return this.aiService.regenerate(uploadId, req.user, dto, extractHttpToken(req));
     }
 
     @Get('job/:jobId')
     @RequirePermissions('ai:generate')
     @ApiCookieAuth('cookie-auth')
     @ApiOperation({ summary: 'Lấy trạng thái job (Teacher & Student)' })
-    @ApiParam({ name: 'jobId', description: 'ID của job (userStorageId)' })
+    @ApiParam({ name: 'jobId', description: 'ID của job' })
     @ApiResponse({ status: 200, description: 'Trạng thái job' })
-    async getJobStatus(
-        @Req() req: AuthenticatedRequest,
-        @Param('jobId') jobId: string
-    ) {
-        // Validate jobId
-        if (!jobId || jobId === 'undefined' || jobId === 'null') {
-            return {
-                error: 'Invalid job ID',
-                message: 'Job ID không hợp lệ',
-                statusCode: 400,
-            };
-        }
-        return this.aiService.getJobStatus(jobId, req.user);
+    async getJobStatus(@Req() req: AuthenticatedRequest, @Param('jobId') jobId: string) {
+        if (invalidJobId(jobId)) return INVALID_JOB;
+        return this.queries.getJobStatus(jobId, req.user, extractHttpToken(req));
     }
 
     @Delete('job/:jobId')
     @RequirePermissions('ai:generate')
     @ApiCookieAuth('cookie-auth')
-    @ApiOperation({ summary: 'Hủy job đang xử lý (Teacher & Student)' })
-    @ApiParam({ name: 'jobId', description: 'ID của job (userStorageId)' })
+    @ApiOperation({ summary: 'Hủy job đang xử lý và hoàn tín dụng (Teacher & Student)' })
+    @ApiParam({ name: 'jobId', description: 'ID của job' })
     @ApiResponse({ status: 200, description: 'Job đã được hủy' })
-    async cancelJob(
-        @Req() req: AuthenticatedRequest,
-        @Param('jobId') jobId: string
-    ) {
-        // Validate jobId
-        if (!jobId || jobId === 'undefined' || jobId === 'null') {
-            return {
-                error: 'Invalid job ID',
-                message: 'Job ID không hợp lệ',
-                statusCode: 400,
-            };
-        }
-        return this.aiService.cancelJob(jobId, req.user);
+    async cancelJob(@Req() req: AuthenticatedRequest, @Param('jobId') jobId: string) {
+        if (invalidJobId(jobId)) return INVALID_JOB;
+        const job = await this.queries.findJob(jobId, req.user);
+        if (!job) throw new NotFoundException('Job không tồn tại');
+        await this.generation.cancel(job);
+        return { success: true, message: 'Đã hủy tác vụ' };
     }
 
     @Get('upload/:uploadId/history')
     @RequirePermissions('ai:generate')
     @ApiCookieAuth('cookie-auth')
-    @ApiOperation({
-        summary: 'Lấy lịch sử quiz và flashcard đã tạo cho một file (Teacher & Student)',
-    })
+    @ApiOperation({ summary: 'Lấy lịch sử quiz và flashcard đã tạo cho một file (Teacher & Student)' })
     @ApiParam({ name: 'uploadId', description: 'ID của UserStorage' })
     @ApiResponse({ status: 200, description: 'Lịch sử quiz và flashcard' })
-    async getUploadHistory(
-        @Req() req: AuthenticatedRequest,
-        @Param('uploadId') uploadId: string
-    ) {
-        return this.aiService.getUploadHistory(uploadId, req.user);
+    async getUploadHistory(@Req() req: AuthenticatedRequest, @Param('uploadId') uploadId: string) {
+        return this.queries.getUploadHistory(uploadId, req.user, extractHttpToken(req));
     }
 }

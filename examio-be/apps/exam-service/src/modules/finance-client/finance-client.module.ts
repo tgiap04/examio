@@ -6,16 +6,11 @@ import {
     GrpcClientModule,
 } from '@examio/grpc';
 import { ServiceMetadata } from '@examio/auth-jwt';
-import { FinanceClientService } from './finance-client.service';
 
 @Global()
 @Module({
     imports: [GrpcClientModule.register(FINANCE_GRPC_REGISTRATION)],
-    providers: [
-        { provide: GRPC_METADATA_ATTACHER, useExisting: ServiceMetadata },
-        FinanceClient,
-        FinanceClientService,
-    ],
-    exports: [FinanceClient, FinanceClientService],
+    providers: [{ provide: GRPC_METADATA_ATTACHER, useExisting: ServiceMetadata }, FinanceClient],
+    exports: [FinanceClient],
 })
 export class FinanceClientModule {}

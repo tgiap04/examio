@@ -1,334 +1,176 @@
-import { Metadata } from '@grpc/grpc-js';
-import { Test, TestingModule } from '@nestjs/testing';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
-import { of, throwError } from 'rxjs';
-import { HttpService } from '@nestjs/axios';
+import { BadRequestException, ConflictException } from '@nestjs/common';
+import { documentV1 } from '@examio/contracts';
 import { AIService } from './ai.service';
-import { AIRepository } from './ai.repository';
-import { GenerateIdService } from '@examio/common';
-import { R2Client } from '../../clients/r2.client';
-import { R2DeleteTaskWriter } from '@examio/messaging';
-import { RedisService } from '@examio/redis';
-import { FinanceClientService } from '../finance-client/finance-client.service';
+import { ChargeRefusedException, ChargeUnknownException } from './generation-job.service';
+import { chargePlan, parseGenerateQuantity, uploadCredits } from './generation-request-rules';
 
-describe('AIService', () => {
-    let service: AIService;
-    let httpService: { post: jest.Mock; delete: jest.Mock; get: jest.Mock };
-    let aiRepository: {
-        findDuplicateUserStorage: jest.Mock;
-        updateUserStorageStatus: jest.Mock;
-        findUserStorageById: jest.Mock;
-        countDocumentsByUserStorageId: jest.Mock;
-        createUserStorage: jest.Mock;
-        deleteUploadAggregate: jest.Mock;
-        countUserStorageThisMonth: jest.Mock;
-    };
-    let finance: { deductCredits: jest.Mock };
-    const r2Deletes = { enqueue: jest.fn() };
-    let r2ClientService: {
-        uploadFile: jest.Mock;
-        getPublicUrl: jest.Mock;
-        deleteFile: jest.Mock;
-    };
+const Status = documentV1.DocumentProcessingStatus;
+const MB = 1024 * 1024;
+const info = (over: Partial<documentV1.DocumentInfo> = {}): documentV1.DocumentInfo => ({
+    id: 'd1',
+    userId: 'u1',
+    filename: 'a.pdf',
+    mimetype: 'application/pdf',
+    size: String(MB),
+    keyR2: 'k',
+    url: 'u',
+    processingStatus: Status.DOCUMENT_PROCESSING_STATUS_COMPLETED,
+    creditCharged: false,
+    pageCount: 0,
+    createdAt: '1',
+    updatedAt: '1',
+    ...over,
+});
 
-    beforeEach(async () => {
-        httpService = {
-            post: jest.fn(),
-            get: jest.fn(),
-            delete: jest.fn().mockReturnValue(of({ data: { success: true } })),
+describe('chargePlan', () => {
+    it('a new file pays upload + generation in one amount', () => {
+        expect(chargePlan(info({ size: String(MB) }), false)).toEqual({ amount: 1 + 5, ensureProcessed: false });
+        expect(chargePlan(info({ size: String(3 * MB) }), false)).toEqual({ amount: 2 + 5, ensureProcessed: false });
+        expect(chargePlan(info({ size: '1' }), false).amount).toBe(6);
+    });
+
+    it('a reused COMPLETED or PROCESSING document pays the generation only', () => {
+        for (const processingStatus of [Status.DOCUMENT_PROCESSING_STATUS_COMPLETED, Status.DOCUMENT_PROCESSING_STATUS_PROCESSING]) {
+            expect(chargePlan(info({ processingStatus }), true)).toEqual({ amount: 5, ensureProcessed: false });
+        }
+    });
+
+    it('a reused FAILED or PENDING document re-queues its OCR and always pays the generation (no free retry)', () => {
+        for (const processingStatus of [Status.DOCUMENT_PROCESSING_STATUS_FAILED, Status.DOCUMENT_PROCESSING_STATUS_PENDING]) {
+            expect(chargePlan(info({ processingStatus }), true)).toEqual({ amount: 5, ensureProcessed: true });
+        }
+    });
+
+    it('uploadCredits is 1 per started 2 MB', () => {
+        expect([0, 1, 2 * MB, 2 * MB + 1, 5 * MB].map(uploadCredits)).toEqual([0, 1, 1, 2, 3]);
+    });
+});
+
+describe('parseGenerateQuantity', () => {
+    it('defaults to 10, falls back on junk, accepts up to 50 and refuses more', () => {
+        expect(parseGenerateQuantity(undefined, 'x')).toBe(10);
+        expect(parseGenerateQuantity('abc', 'x')).toBe(10);
+        expect(parseGenerateQuantity('0', 'x')).toBe(10);
+        expect(parseGenerateQuantity('50', 'x')).toBe(50);
+        expect(() => parseGenerateQuantity('51', 'câu hỏi quiz')).toThrow(BadRequestException);
+    });
+});
+
+describe('AIService.generateFromFile orchestration', () => {
+    const user = { id: 'u1' } as never;
+    const file = { originalname: 'a.pdf', mimetype: 'application/pdf', size: MB, buffer: Buffer.alloc(10) } as Express.Multer.File;
+    const dto = { typeResult: '1' } as never;
+
+    function build(over: { upload?: Partial<documentV1.CreateUploadResponse>; submit?: jest.Mock; running?: unknown } = {}) {
+        const documents = {
+            createUpload: jest.fn().mockResolvedValue({ document: info(), reused: false, ...over.upload }),
+            ensureProcessed: jest.fn().mockResolvedValue(info()),
+            deleteDocuments: jest.fn().mockResolvedValue({ deleted: [], notFoundIds: [] }),
+            getDocumentsByIds: jest.fn(),
+            getDownloadUrl: jest.fn().mockResolvedValue({ downloadUrl: 'https://r2.test/signed/k', expiresAt: '1' }),
         };
+        const generation = { submit: over.submit ?? jest.fn().mockResolvedValue({ jobId: 'j1', newBalance: 9 }) };
+        const jobs = { activeByStorage: jest.fn().mockResolvedValue(over.running ?? null) };
+        const locks = { acquire: jest.fn().mockResolvedValue(undefined), release: jest.fn().mockResolvedValue(undefined) };
+        const service = new AIService(documents as never, generation as never, jobs as never, locks as never);
+        return { service, documents, generation, jobs, locks };
+    }
 
-        aiRepository = {
-            findDuplicateUserStorage: jest.fn(),
-            updateUserStorageStatus: jest.fn(),
-            findUserStorageById: jest.fn(),
-            countDocumentsByUserStorageId: jest.fn(),
-            createUserStorage: jest.fn(),
-            deleteUploadAggregate: jest.fn(),
-            countUserStorageThisMonth: jest.fn().mockResolvedValue(0),
-        };
-
-        r2ClientService = {
-            uploadFile: jest.fn(),
-            getPublicUrl: jest.fn(),
-            deleteFile: jest.fn(),
-        };
-
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                AIService,
-                {
-                    provide: AIRepository,
-                    useValue: aiRepository,
-                },
-                {
-                    provide: GenerateIdService,
-                    useValue: { generateId: jest.fn().mockReturnValue('generated-id') },
-                },
-                {
-                    provide: HttpService,
-                    useValue: httpService,
-                },
-                {
-                    provide: FinanceClientService,
-                    useValue: {
-                        deductCredits: jest.fn(),
-                        getUserBenefits: jest
-                            .fn()
-                            .mockResolvedValue({ filesPerMonth: -1 }),
-                    },
-                },
-                {
-                    provide: R2Client,
-                    useValue: r2ClientService,
-                },
-                {
-                    provide: R2DeleteTaskWriter,
-                    useValue: r2Deletes,
-                },
-                {
-                    provide: RedisService,
-                    useValue: {
-                        get: jest.fn(),
-                        set: jest.fn(),
-                        del: jest.fn(),
-                    },
-                },
-            ],
-        }).compile();
-
-        service = module.get(AIService);
-        finance = module.get(FinanceClientService);
+    it('rejects a request without a token before taking the lock', async () => {
+        const { service, locks } = build();
+        await expect(service.generateFromFile(user, file, dto, undefined)).rejects.toMatchObject({ status: 401 });
+        expect(locks.acquire).not.toHaveBeenCalled();
     });
 
-    it('forwards narrow search params when generating from duplicate completed upload', async () => {
-        aiRepository.findDuplicateUserStorage.mockResolvedValue({
-            id: 'upload-1',
-            processingStatus: 'COMPLETED',
-        });
-        aiRepository.updateUserStorageStatus.mockResolvedValue({});
-        aiRepository.findUserStorageById.mockResolvedValue({
-            id: 'upload-1',
-            processingStatus: 'COMPLETED',
-        });
-        aiRepository.countDocumentsByUserStorageId.mockResolvedValue(3);
+    it('creates the upload uncharged and reusable, then submits one job with the combined amount', async () => {
+        const { service, documents, generation, locks } = build();
 
-        httpService.post.mockReturnValue(
-            of({ data: { success: true, history_id: 'history-1' } })
-        );
+        const res = await service.generateFromFile(user, file, dto, 'tok');
 
-        const user = { id: 'user-1' } as any;
-        const file = {
-            originalname: 'file.pdf',
-            size: 1024,
-            buffer: Buffer.from('content'),
-            mimetype: 'application/pdf',
-        } as Express.Multer.File;
-
-        const result = await service.generateFromFile(user, file, {
-            typeResult: '1',
-            quantityQuizz: '5',
-            isNarrowSearch: 'true',
-            keyword: 'kiến trúc hệ thống',
-            modelType: 'gemini',
-        });
-
-        expect(result.jobId).toBe('upload-1');
-
-        await new Promise((resolve) => setImmediate(resolve));
-
-        expect(httpService.post).toHaveBeenCalledWith(
-            expect.stringContaining('/generate/quiz'),
-            expect.objectContaining({
-                userStorageId: 'upload-1',
-                userId: 'user-1',
-                numQuestions: 5,
-                isNarrowSearch: true,
-                keyword: 'kiến trúc hệ thống',
-                modelType: 'gemini',
-            }),
-            expect.any(Object)
-        );
+        expect(documents.createUpload).toHaveBeenCalledWith(expect.objectContaining({ chargeCredits: false, reuseDuplicate: true }), expect.anything());
+        expect(generation.submit).toHaveBeenCalledWith(expect.objectContaining({ storageId: 'd1', amount: 6, userId: 'u1', userToken: 'tok', type: 'quiz' }));
+        expect(res).toMatchObject({ jobId: 'j1', status: 'PENDING', newBalance: 9 });
+        expect(locks.release).not.toHaveBeenCalled(); // held until the job is terminal
     });
 
-    it('forwards narrow search params when regenerating content', async () => {
-        const upload = {
-            id: 'upload-2',
-            userId: 'user-1',
-            filename: 'file.pdf',
-            processingStatus: 'COMPLETED',
-        };
+    it('a refused charge deletes the NEW upload and releases the lock; a reused upload is left alone', async () => {
+        const refused = new ChargeRefusedException(new ConflictException('no credits'));
+        const created = build({ submit: jest.fn().mockRejectedValue(refused) });
+        await expect(created.service.generateFromFile(user, file, dto, 'tok')).rejects.toBe(refused);
+        expect(created.documents.deleteDocuments).toHaveBeenCalledWith(['d1'], expect.anything());
+        expect(created.locks.release).toHaveBeenCalledWith('u1', 'quiz');
 
-        jest.spyOn(service, 'getUploadDetail').mockResolvedValue(upload as any);
-        aiRepository.updateUserStorageStatus.mockResolvedValue({});
-        aiRepository.findUserStorageById.mockResolvedValue(upload);
-        aiRepository.countDocumentsByUserStorageId.mockResolvedValue(5);
-        httpService.post.mockReturnValue(
-            of({ data: { success: true, history_id: 'history-2' } })
-        );
-
-        const result = await service.regenerate('upload-2', { id: 'user-1' } as any, {
-            typeResult: 2,
-            quantityFlashcard: 7,
-            isNarrowSearch: true,
-            keyword: 'flashcard keyword',
-            modelType: 'gemini',
-        });
-
-        expect(result.jobId).toBe('upload-2');
-
-        await new Promise((resolve) => setImmediate(resolve));
-
-        expect(httpService.post).toHaveBeenCalledWith(
-            expect.stringContaining('/generate/flashcards'),
-            expect.objectContaining({
-                userStorageId: 'upload-2',
-                userId: 'user-1',
-                numFlashcards: 7,
-                isNarrowSearch: true,
-                keyword: 'flashcard keyword',
-                modelType: 'gemini',
-            }),
-            expect.any(Object)
-        );
+        const reused = build({ upload: { reused: true }, submit: jest.fn().mockRejectedValue(refused) });
+        await expect(reused.service.generateFromFile(user, file, dto, 'tok')).rejects.toBe(refused);
+        expect(reused.documents.deleteDocuments).not.toHaveBeenCalled();
+        expect(reused.locks.release).toHaveBeenCalledWith('u1', 'quiz');
     });
 
-    it('deletes the upload aggregate (queueing its R2 key in the same tx) and the AI cache', async () => {
-        jest.spyOn(service, 'getUploadDetail').mockResolvedValue({
-            id: 'upload-delete-1',
-            userId: 'user-1',
-            keyR2: 'ai-uploads/user-1/file.pdf',
-        } as any);
-        aiRepository.deleteUploadAggregate.mockResolvedValue({
-            documents: 5,
-            quizHistories: 2,
-            flashcardHistories: 1,
-            aiChatDocuments: 1,
-            userStorage: { id: 'upload-delete-1' },
-        });
+    it('an unknown debit outcome discards a NEW upload too (the reaper settles the job), but keeps a reused one', async () => {
+        const unknown = new ChargeUnknownException(new ConflictException('unavailable'));
+        const created = build({ submit: jest.fn().mockRejectedValue(unknown) });
+        await expect(created.service.generateFromFile(user, file, dto, 'tok')).rejects.toBe(unknown);
+        expect(created.documents.deleteDocuments).toHaveBeenCalledWith(['d1'], expect.anything());
+        expect(created.locks.release).toHaveBeenCalledWith('u1', 'quiz');
 
-        const result = await service.deleteUpload(
-            'upload-delete-1',
-            { id: 'user-1' } as any
-        );
-
-        expect(r2ClientService.deleteFile).not.toHaveBeenCalled();
-        expect(aiRepository.deleteUploadAggregate).toHaveBeenCalledWith(
-            'upload-delete-1',
-            expect.any(Function)
-        );
-        const inTx = aiRepository.deleteUploadAggregate.mock.calls[0][1];
-        const tx = { marker: 'tx' };
-        await inTx(tx);
-        expect(r2Deletes.enqueue).toHaveBeenCalledWith(tx, ['ai-uploads/user-1/file.pdf']);
-        expect(httpService.delete).toHaveBeenCalledWith(
-            expect.stringContaining('/ai/clear-cache/upload-delete-1'),
-            expect.any(Object)
-        );
-        expect(result).toEqual({ success: true, message: 'Xóa thành công' });
+        const reused = build({ upload: { reused: true }, submit: jest.fn().mockRejectedValue(unknown) });
+        await expect(reused.service.generateFromFile(user, file, dto, 'tok')).rejects.toBe(unknown);
+        expect(reused.documents.deleteDocuments).not.toHaveBeenCalled();
     });
 
-    describe('caller token is forwarded to the finance debit (TEACHER lazy wallet)', () => {
-        const file = { originalname: 'f.pdf', size: 10, buffer: Buffer.from('x'), mimetype: 'application/pdf' } as Express.Multer.File;
-
-        it('createUpload passes the raw user token', async () => {
-            aiRepository.createUserStorage.mockResolvedValue({ id: 'generated-id' });
-            aiRepository.updateUserStorageStatus.mockResolvedValue({});
-            httpService.post.mockReturnValue(of({ data: { success: true } }));
-
-            await service.createUpload(
-                { id: 'user-1' } as any,
-                { filename: 'a.pdf', url: 'https://x/a.pdf', mimetype: 'application/pdf', size: 4 * 1024 * 1024, keyR2: 'ai-uploads/user-1/k.pdf' } as any,
-                'tok-1'
-            );
-
-            expect(finance.deductCredits).toHaveBeenCalledWith(
-                'user-1', 2, expect.any(String), 'upload:generated-id', { userToken: 'tok-1' }
-            );
-        });
-
-        it('generateFromFile (reused COMPLETED file) passes the raw user token', async () => {
-            aiRepository.findDuplicateUserStorage.mockResolvedValue({ id: 'upload-1', processingStatus: 'COMPLETED' });
-            aiRepository.updateUserStorageStatus.mockResolvedValue({});
-            httpService.post.mockReturnValue(of({ data: { success: true } }));
-
-            await service.generateFromFile({ id: 'user-1' } as any, file, { typeResult: '1', quantityQuizz: '5' } as any, 'tok-2');
-
-            expect(finance.deductCredits).toHaveBeenCalledWith(
-                'user-1', 5, expect.any(String), expect.stringMatching(/^quick-upload-reuse:/), { userToken: 'tok-2' }
-            );
-        });
+    it('a failed cleanup does not hide the refusal', async () => {
+        const refused = new ChargeRefusedException(new ConflictException('no credits'));
+        const { service, documents } = build({ submit: jest.fn().mockRejectedValue(refused) });
+        documents.deleteDocuments.mockRejectedValue(new Error('document down'));
+        await expect(service.generateFromFile(user, file, dto, 'tok')).rejects.toBe(refused);
     });
 
-    it('regenerate passes the raw user token to the debit', async () => {
-        const upload = { id: 'upload-9', userId: 'user-1', filename: 'f.pdf', processingStatus: 'COMPLETED' };
-        jest.spyOn(service, 'getUploadDetail').mockResolvedValue(upload as any);
-        aiRepository.updateUserStorageStatus.mockResolvedValue({});
-        aiRepository.findUserStorageById.mockResolvedValue(upload);
-        aiRepository.countDocumentsByUserStorageId.mockResolvedValue(5);
-        httpService.post.mockReturnValue(of({ data: { success: true } }));
+    it('any other failure releases the lock and keeps the upload', async () => {
+        const boom = new Error('db down');
+        const { service, documents, locks } = build({ submit: jest.fn().mockRejectedValue(boom) });
+        await expect(service.generateFromFile(user, file, dto, 'tok')).rejects.toBe(boom);
+        expect(documents.deleteDocuments).not.toHaveBeenCalled();
+        expect(locks.release).toHaveBeenCalledWith('u1', 'quiz');
+    });
 
-        await service.regenerate('upload-9', { id: 'user-1' } as any, { typeResult: 1, quantityQuizz: 10 } as any, 'tok-3');
+    it.each([
+        ['FAILED', Status.DOCUMENT_PROCESSING_STATUS_FAILED],
+        ['PENDING (quick-upload)', Status.DOCUMENT_PROCESSING_STATUS_PENDING],
+    ])('a reused %s document re-queues its OCR before the job and submits the 5 credits', async (_label, processingStatus) => {
+        const { service, documents, generation } = build({ upload: { reused: true, document: info({ processingStatus }) } });
+        await service.generateFromFile(user, file, dto, 'tok');
+        expect(documents.ensureProcessed).toHaveBeenCalledWith('d1', expect.anything());
+        expect(generation.submit).toHaveBeenCalledWith(expect.objectContaining({ amount: 5 }));
+        expect(documents.ensureProcessed.mock.invocationCallOrder[0]).toBeLessThan(generation.submit.mock.invocationCallOrder[0]);
+    });
 
-        expect(finance.deductCredits).toHaveBeenCalledWith(
-            'user-1', 1, expect.any(String), expect.stringMatching(/^regenerate:/), { userToken: 'tok-3' }
+    it('M2: the job carries a presigned download URL and the mimetype of the document; no URL is not fatal', async () => {
+        const { service, generation, documents } = build();
+        await service.generateFromFile(user, file, dto, 'tok');
+        expect(generation.submit).toHaveBeenCalledWith(
+            expect.objectContaining({ download: { url: 'https://r2.test/signed/k', mimetype: 'application/pdf' } })
         );
+
+        documents.getDownloadUrl.mockRejectedValue(new Error('document down'));
+        await service.generateFromFile(user, file, dto, 'tok');
+        expect(generation.submit).toHaveBeenLastCalledWith(expect.objectContaining({ download: undefined }));
     });
 
-    describe('debit idempotency keys (no double charge on retry)', () => {
-        it('createUpload charges once per file: key is upload:<storageId>', async () => {
-            aiRepository.createUserStorage.mockResolvedValue({ id: 'generated-id' });
-            aiRepository.updateUserStorageStatus.mockResolvedValue({});
-            httpService.post.mockReturnValue(of({ data: { success: true } }));
-
-            await service.createUpload({ id: 'user-1' } as any, {
-                filename: 'a.pdf',
-                url: 'https://x/a.pdf',
-                mimetype: 'application/pdf',
-                size: 4 * 1024 * 1024,
-                keyR2: 'ai-uploads/user-1/k.pdf',
-            } as any);
-
-            expect(finance.deductCredits).toHaveBeenCalledWith(
-                'user-1',
-                2,
-                expect.stringContaining('Upload file'),
-                'upload:generated-id',
-                { userToken: undefined }
-            );
-            expect(aiRepository.createUserStorage).toHaveBeenCalledWith(
-                expect.objectContaining({ id: 'generated-id' })
-            );
+    it('a reused PROCESSING document with a running job returns that job and frees the lock', async () => {
+        const { service, generation, locks } = build({
+            upload: { reused: true, document: info({ processingStatus: Status.DOCUMENT_PROCESSING_STATUS_PROCESSING }) },
+            running: { id: 'running-job' },
         });
+        await expect(service.generateFromFile(user, file, dto, 'tok')).resolves.toMatchObject({ jobId: 'running-job', status: 'processing' });
+        expect(generation.submit).not.toHaveBeenCalled();
+        expect(locks.release).toHaveBeenCalledWith('u1', 'quiz');
+    });
 
-        it('a reused COMPLETED file gets a fresh per-request key each time', async () => {
-            aiRepository.findDuplicateUserStorage.mockResolvedValue({ id: 'upload-1', processingStatus: 'COMPLETED' });
-            aiRepository.updateUserStorageStatus.mockResolvedValue({});
-            httpService.post.mockReturnValue(of({ data: { success: true } }));
-            const file = { originalname: 'f.pdf', size: 10, buffer: Buffer.from('x'), mimetype: 'application/pdf' } as Express.Multer.File;
-
-            await service.generateFromFile({ id: 'user-1' } as any, file, { typeResult: '1', quantityQuizz: '5' } as any);
-            await service.generateFromFile({ id: 'user-1' } as any, file, { typeResult: '1', quantityQuizz: '5' } as any);
-
-            const keys = finance.deductCredits.mock.calls.map((c) => c[3] as string);
-            expect(keys).toHaveLength(2);
-            for (const k of keys) expect(k).toMatch(/^quick-upload-reuse:[0-9a-f-]{36}$/);
-            expect(new Set(keys).size).toBe(2);
-        });
-
-        it('a reused COMPLETED file fails closed when the debit is refused: no generation runs for free', async () => {
-            aiRepository.findDuplicateUserStorage.mockResolvedValue({ id: 'upload-1', processingStatus: 'COMPLETED' });
-            aiRepository.updateUserStorageStatus.mockResolvedValue({});
-            const refused = new ForbiddenException('Không đủ tín dụng: Insufficient balance. Vui lòng nạp thêm.');
-            finance.deductCredits.mockRejectedValue(refused);
-            const file = { originalname: 'f.pdf', size: 10, buffer: Buffer.from('x'), mimetype: 'application/pdf' } as Express.Multer.File;
-
-            await expect(
-                service.generateFromFile({ id: 'user-1' } as any, file, { typeResult: '1', quantityQuizz: '5' } as any)
-            ).rejects.toBe(refused);
-
-            expect(aiRepository.updateUserStorageStatus).not.toHaveBeenCalled();
-            expect(httpService.post).not.toHaveBeenCalled();
-        });
+    it('rejects a 6 MB file and a quantity over 50 before any upload', async () => {
+        const { service, documents, locks } = build();
+        await expect(service.generateFromFile(user, { ...file, size: 6 * MB } as Express.Multer.File, dto, 'tok')).rejects.toBeInstanceOf(BadRequestException);
+        await expect(service.generateFromFile(user, file, { typeResult: '1', quantityQuizz: '51' } as never, 'tok')).rejects.toBeInstanceOf(BadRequestException);
+        expect(documents.createUpload).not.toHaveBeenCalled();
+        expect(locks.acquire).not.toHaveBeenCalled();
     });
 });

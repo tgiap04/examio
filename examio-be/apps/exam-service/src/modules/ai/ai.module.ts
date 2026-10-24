@@ -1,31 +1,21 @@
 import { Module } from '@nestjs/common';
-import { R2DeleteTaskWriter } from '@examio/messaging';
-import { HttpModule } from '@nestjs/axios';
-import { PrismaService } from '../../prisma';
-import { GenerateIdService, EventsModule } from '@examio/common';
 import { GrpcClientModule } from '@examio/grpc';
-import { RedisModule } from '@examio/redis';
-import { R2_GRPC_REGISTRATION, R2Client } from '../../clients/r2.client';
+import { AI_GRPC_REGISTRATION, AiClient } from '../../clients/ai.client';
 import { AIController } from './ai.controller';
 import { AIService } from './ai.service';
-import { AIRepository } from './ai.repository';
+import { GenerationEventsHandler } from './generation-events.handler';
+import { GenerationQueryService } from './generation-query.service';
+import { GenerationModule } from './generation.module';
+import { ModelCatalogService } from './model-catalog.service';
 
+/**
+ * Generation (stays in exam until content-service, phase 14): uploads live in document-service
+ * (DocumentClient, global), the work runs in ai-service (events), money is the charge flow of
+ * GenerationModule.
+ */
 @Module({
-    imports: [
-        EventsModule,
-        HttpModule,
-        RedisModule,
-        GrpcClientModule.register(R2_GRPC_REGISTRATION),
-    ],
+    imports: [GenerationModule, GrpcClientModule.register(AI_GRPC_REGISTRATION)],
     controllers: [AIController],
-    providers: [
-        AIService,
-        AIRepository,
-        PrismaService,
-        GenerateIdService,
-        R2Client,
-        R2DeleteTaskWriter,
-    ],
-    exports: [AIService, AIRepository],
+    providers: [AIService, GenerationQueryService, ModelCatalogService, AiClient, GenerationEventsHandler],
 })
 export class AIModule {}

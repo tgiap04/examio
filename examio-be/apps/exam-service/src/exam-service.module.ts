@@ -29,7 +29,7 @@ import { SubjectModule } from './modules/subject/subject.module';
 import { AIModule } from './modules/ai/ai.module';
 import { AIChatModule } from './modules/ai-chat/ai-chat.module';
 import { FinanceClientModule } from './modules/finance-client/finance-client.module';
-import { R2Module } from './modules/r2/r2.module';
+import { DocumentClientModule } from './modules/document-client/document-client.module';
 import { StudentModule } from './modules/student/student.module';
 import { FlashcardStudyModule } from './modules/flashcard-study/flashcard-study.module';
 import { UserProfileModule } from './modules/user-profile/user-profile.module';
@@ -62,7 +62,7 @@ process.env.SERVICE_NAME ??= 'exam-service';
         SubjectModule,
         AIModule,
         AIChatModule,
-        R2Module,
+        DocumentClientModule,
         StudentModule,
         FlashcardStudyModule,
     ],

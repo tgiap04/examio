@@ -37,17 +37,18 @@ model AIChatMessage {
 model AIChatDocument {
     id           String   @id @default(cuid())
     chatId       String
-    documentId   String // UserStorage ID (file gốc)
+    documentId   String // UserStorage ID in document-service (file gốc); no FK, the link is removed by `document.deleted`
     documentName String // File name for display
     createdAt    DateTime @default(now())
 
-    chat        AIChat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
-    userStorage UserStorage @relation(fields: [documentId], references: [id], onDelete: Cascade)
+    chat AIChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
 
     // Composite unique constraint prevents duplicate document per chat
     @@unique([chatId, documentId])
     // Index for O(1) lookup of documents by chatId
     @@index([chatId])
+    // `document.deleted` removes the links of the deleted documents
+    @@index([documentId])
 }
 
 // Subject Category - Nhóm môn học (VD: Toán học, Khoa học Tự nhiên, ...)

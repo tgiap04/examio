@@ -23,7 +23,7 @@ import {
 import { AuthenticatedRequest } from '@examio/common';
 import { AIChatService } from './ai-chat.service';
 import { Observable } from 'rxjs';
-import { RequirePermissions } from '@examio/auth-jwt';
+import { extractHttpToken, RequirePermissions } from '@examio/auth-jwt';
 
 @UsePipes(ZodValidationPipe)
 @ApiTags('AI Chat')
@@ -78,7 +78,12 @@ export class AIChatController {
         @Param('chatId') chatId: string,
         @Body() body: ClearChatDto
     ) {
-        return this.chatService.clearChat(chatId, req.user, body.deleteFiles || false);
+        return this.chatService.clearChat(
+            chatId,
+            req.user,
+            body.deleteFiles || false,
+            extractHttpToken(req)
+        );
     }
 
     @Get(':chatId/exists')
@@ -108,7 +113,12 @@ export class AIChatController {
         @Param('chatId') chatId: string,
         @Body() body: SendMessageDto
     ) {
-        return this.chatService.sendMessage(chatId, req.user, body);
+        return this.chatService.sendMessage(
+            chatId,
+            req.user,
+            body,
+            extractHttpToken(req)
+        );
     }
 
     @Post(':chatId/stream')
@@ -127,7 +137,8 @@ export class AIChatController {
         const observable = await this.chatService.streamMessage(
             chatId,
             req.user,
-            body
+            body,
+            extractHttpToken(req)
         );
 
         const subscription = observable.subscribe({
@@ -179,7 +190,11 @@ export class AIChatController {
         @Req() req: AuthenticatedRequest,
         @Param('messageId') messageId: string
     ) {
-        return this.chatService.regenerateFromMessage(messageId, req.user);
+        return this.chatService.regenerateFromMessage(
+            messageId,
+            req.user,
+            extractHttpToken(req)
+        );
     }
 
     @Post('message/:messageId/regenerate-stream')
@@ -197,7 +212,8 @@ export class AIChatController {
 
         const observable = await this.chatService.regenerateFromMessageStream(
             messageId,
-            req.user
+            req.user,
+            extractHttpToken(req)
         );
 
         const subscription = observable.subscribe({
@@ -242,7 +258,8 @@ export class AIChatController {
             chatId,
             req.user,
             body.documentId,
-            body.documentName
+            body.documentName,
+            extractHttpToken(req)
         );
     }
 

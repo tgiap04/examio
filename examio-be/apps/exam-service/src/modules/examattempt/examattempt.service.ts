@@ -2,6 +2,7 @@ import { PrismaService } from '../../prisma';
 import { rethrowKnown } from '../common/rethrow-known';
 import {
     Injectable,
+    Logger,
     NotFoundException,
     InternalServerErrorException,
     ForbiddenException,
@@ -35,6 +36,7 @@ import { verifyAccessCodeOrThrow } from '../common/access-code-guard';
 import { appendCodeGranted } from '../common/sharing-list.util';
 import { canSeeAnswers, toAttemptView } from './examattempt-view.mapper';
 import { UserEnricher } from '../user-profile/user-enricher.service';
+import { DocumentClient, userMetadata } from '../../clients/document.client';
 import {
     attemptRelation,
     type AttemptRelation,
@@ -42,6 +44,8 @@ import {
 
 @Injectable()
 export class ExamAttemptService {
+    private readonly logger = new Logger(ExamAttemptService.name);
+
     constructor(
         private readonly prisma: PrismaService,
         private readonly examAttemptRepository: ExamAttemptRepository,
@@ -50,7 +54,8 @@ export class ExamAttemptService {
         private readonly redisService: RedisService,
         private readonly cryptoService: CryptoService,
         private readonly turnstileService: TurnstileService,
-        private readonly users: UserEnricher
+        private readonly users: UserEnricher,
+        private readonly documents: DocumentClient
     ) {}
 
     /**
@@ -1505,7 +1510,7 @@ export class ExamAttemptService {
      * Get aggregated history statistics for user
      * Optimized with COUNT queries (O(1) with indexed fields) and Redis caching
      */
-    async getHistoryStats(user: AuthUser) {
+    async getHistoryStats(user: AuthUser, userToken?: string) {
         const cacheKey = getUserCacheKey('QUIZ_STATS', user.id) + ':history';
 
         // Check cache first
@@ -1521,12 +1526,10 @@ export class ExamAttemptService {
         }
 
         // Execute all count queries in parallel for O(1) performance
-        const [totalPDFs, examsCreated, flashcardSets, durationResult] =
+        const [pdfCount, examsCreated, flashcardSets, durationResult] =
             await Promise.all([
-                // Count PDFs uploaded by user (indexed on userId)
-                this.prisma.userStorage.count({
-                    where: { userId: user.id },
-                }),
+                // PDFs uploaded by the user: document-service owns them (GetQuota, as the caller)
+                this.countUploadedFiles(userToken),
                 // Count quiz sets created by user (indexed on userId)
                 this.prisma.quizSet.count({
                     where: { userId: user.id },
@@ -1551,16 +1554,29 @@ export class ExamAttemptService {
         const totalStudyHours = Math.round(totalSeconds / 3600);
 
         const stats = {
-            totalPDFs,
+            totalPDFs: pdfCount ?? 0,
             examsCreated,
             flashcardSets,
             totalStudyHours,
         };
 
-        // Cache for 5 minutes
-        await this.redisService.set(cacheKey, stats, EXPIRED_TIME.FIVE_MINUTES);
+        // Cache for 5 minutes, except a result that lacks the upload count (document-service down)
+        if (pdfCount !== null) {
+            await this.redisService.set(cacheKey, stats, EXPIRED_TIME.FIVE_MINUTES);
+        }
 
         return stats;
+    }
+
+    /** `GetQuota().fileCount`; null when document-service cannot answer (the dashboard shows 0, uncached). */
+    private async countUploadedFiles(userToken?: string): Promise<number | null> {
+        try {
+            const quota = await this.documents.getQuota(userMetadata(userToken));
+            return quota.fileCount;
+        } catch (error) {
+            this.logger.warn(`History stats without the upload count: ${(error as Error).message}`);
+            return null;
+        }
     }
 
     // ==================== SECURE QUIZ METHODS ====================

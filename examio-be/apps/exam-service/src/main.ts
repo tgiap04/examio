@@ -15,13 +15,13 @@ import { parseRoles } from '@examio/messaging';
 import { WorkerModule } from './worker.module';
 
 async function startWorker() {
-    // R2 delete-task worker. No HTTP/gRPC listener.
+    // Outbox relay + generation reaper + R2 delete-task worker. No HTTP/gRPC listener.
     const worker = await NestFactory.createApplicationContext(WorkerModule, {
         bufferLogs: true,
     });
     worker.useLogger(worker.get(Logger));
     worker.enableShutdownHooks();
-    console.log('📮 Exam Service worker running (R2 delete tasks)');
+    console.log('📮 Exam Service worker running (outbox relay, generation reaper, R2 delete tasks)');
 }
 
 async function startApi() {

@@ -5,15 +5,14 @@ import {
     type TestUser,
 } from './support/exam-test-app';
 import * as request from 'supertest';
-import { FinanceClientService } from '../../src/modules/finance-client/finance-client.service';
 import { call } from './support/http';
 
 const BASE = 'https://cdn.examio.test';
 
 /**
  * Cross-user R2 deletion holes (real Postgres, real guards): a user can neither
- * point their rows at another user's R2 object nor get it queued for deletion,
- * and can never overwrite another user's UserStorage row.
+ * point their rows at another user's R2 object nor get it queued for deletion.
+ * (The upload routes and their key checks moved to document-service with UserStorage.)
  */
 describe('R2 cross-user deletion holes (e2e)', () => {
     let t: ExamTestApp;
@@ -85,66 +84,9 @@ describe('R2 cross-user deletion holes (e2e)', () => {
         }
     );
 
-    it('H3: POST /ai/upload with another user keyR2 is a 400 and the victim row is untouched', async () => {
-        const keyR2 = `ai-uploads/${victim.id}/v-${rid()}.pdf`;
-        const row = await t.prisma.userStorage.create({
-            data: {
-                id: `up_${rid()}`,
-                userId: victim.id,
-                filename: 'v.pdf',
-                url: `${BASE}/${keyR2}`,
-                mimetype: 'application/pdf',
-                size: 10,
-                keyR2,
-                processingStatus: 'COMPLETED',
-            },
-        });
-        const res = await call(t.server, 'post', '/ai/upload', tokAttacker, {
-            filename: 'x.pdf',
-            url: `${BASE}/${keyR2}`,
-            mimetype: 'application/pdf',
-            size: 10,
-            keyR2,
-        });
-        expect(res.status).toBe(400);
-        const after = await t.prisma.userStorage.findUnique({ where: { id: row.id } });
-        expect(after).toMatchObject({ userId: victim.id, filename: 'v.pdf', processingStatus: 'COMPLETED' });
-    });
-
-    it('H3: deleting an upload whose row holds a foreign key queues nothing', async () => {
-        const keyR2 = `ai-uploads/${victim.id}/w-${rid()}.pdf`;
-        const id = `up_${rid()}`;
-        await t.prisma.userStorage.create({
-            data: { id, userId: attacker.id, filename: 'a.pdf', url: `${BASE}/${keyR2}`, mimetype: 'application/pdf', size: 1, keyR2 },
-        });
-        await call(t.server, 'delete', `/ai/upload/${id}`, tokAttacker);
-        expect(await t.prisma.userStorage.findUnique({ where: { id } })).toBeNull();
-        expect(await tasksFor(keyR2)).toBe(0);
-    });
-
-    // F11/F12: `%2e%2e` (any case) passes a literal `..` check, then resolves to another
+    // F11: `%2e%2e` (any case) passes a literal `..` check, then resolves to another
     // owner's object once a browser or fetcher normalises it. Only canonical keys may pass.
     const TRAVERSALS = ['%2e%2e', '%2E%2E'] as const;
-
-    async function expectAiUploadRejected(keyR2: string) {
-        const filename = `trav-${rid()}.pdf`;
-        const debit = jest.spyOn(t.app.get(FinanceClientService), 'deductCredits');
-        try {
-            const res = await call(t.server, 'post', '/ai/upload', tokAttacker, {
-                filename,
-                url: `${BASE}/${keyR2}`,
-                mimetype: 'application/pdf',
-                size: 1024,
-                keyR2,
-            });
-            expect(res.status).toBe(400);
-            expect(JSON.stringify(res.body)).toContain('keyR2');
-            expect(await t.prisma.userStorage.count({ where: { userId: attacker.id, filename } })).toBe(0);
-            expect(debit).not.toHaveBeenCalled();
-        } finally {
-            debit.mockRestore();
-        }
-    }
 
     it.each(TRAVERSALS)(
         'F11 flashcard create with a thumbnail traversing %s into another owner prefix is 400 (JSON and multipart); no row',
@@ -187,17 +129,6 @@ describe('R2 cross-user deletion holes (e2e)', () => {
         }
     );
 
-    it.each(TRAVERSALS)(
-        'F12 POST /ai/upload keyR2 traversing %s into another owner prefix is 400: no UserStorage row, no credit debit',
-        async (enc) => {
-            await expectAiUploadRejected(`ai-teacher/${attacker.id}/${enc}/${victim.id}/x-${rid()}.pdf`);
-        }
-    );
-
-    it('F12 POST /ai/upload keyR2 with an empty segment under the own prefix is 400', async () => {
-        await expectAiUploadRejected(`ai-teacher/${attacker.id}//x-${rid()}.pdf`);
-    });
-
     // URL normalisation variants: WHATWG URL parsing strips tab/newline inside a segment
     // (`.\t.` becomes `..`), lower-cases scheme and host, and drops a default port. Each
     // resolves to user A's object, so each must be rejected for user B.
@@ -215,11 +146,6 @@ describe('R2 cross-user deletion holes (e2e)', () => {
             expect({ url, status: res.status }).toEqual({ url, status: 400 });
             expect(await t.prisma.flashCardSet.count({ where: { title } })).toBe(0);
         }
-    });
-
-    it('F12 keyR2 with a tab or newline inside a traversal segment is 400', async () => {
-        await expectAiUploadRejected(`ai-teacher/${attacker.id}/.\n./x-${rid()}.pdf`);
-        await expectAiUploadRejected(`ai-teacher/${attacker.id}/.\t./${victim.id}/x-${rid()}.pdf`);
     });
 
     it('F11 thumbnail with an empty segment (`//`) under the own prefix is 400 on create and update', async () => {

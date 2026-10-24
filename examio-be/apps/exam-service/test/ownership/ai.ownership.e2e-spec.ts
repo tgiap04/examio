@@ -28,26 +28,16 @@ describe('ai uploads ownership (e2e)', () => {
             adminOnly,
         }))
             tok[k] = await t.tokenFor(u);
-        uploadId = `up_${rid()}`;
-        await t.prisma.userStorage.create({
-            data: {
-                id: uploadId,
-                userId: owner.id,
-                filename: 'a.pdf',
-                url: 'https://files.test/a.pdf',
-                mimetype: 'application/pdf',
-                size: 10,
-                keyR2: `k_${uploadId}`,
-            },
-        });
+        // The upload lives in document-service now: owner-scoped, a foreign id is simply absent.
+        uploadId = t.document.add(owner.id, { filename: 'a.pdf' }).id;
     });
     afterAll(() => t.close());
 
     it.each([
-        ['GET', 'get', () => `/ai/upload/${uploadId}`],
         ['GET', 'get', () => `/ai/job/${uploadId}`],
+        ['GET', 'get', () => `/ai/upload/${uploadId}/history`],
     ] as const)(
-        '%s upload/job: owner 200, other TEACHER 404, STUDENT and ADMIN-only 403, anonymous 401 (%#)',
+        '%s upload job/history: owner 200, other TEACHER 404, STUDENT and ADMIN-only 403, anonymous 401 (%#)',
         async (_label, method, path) => {
             expect(
                 (await call(t.server, method, path(), tok.owner)).status
@@ -65,17 +55,19 @@ describe('ai uploads ownership (e2e)', () => {
         }
     );
 
-    it('DELETE /ai/upload/:id: other TEACHER 404 and STUDENT 403 leave the upload in place', async () => {
-        const p = `/ai/upload/${uploadId}`;
+    it('DELETE /ai/job/:id and POST /ai/regenerate/:id: other TEACHER 404 and STUDENT 403, nothing is charged', async () => {
+        const job = `nojob_${rid()}`;
         expect(
-            (await call(t.server, 'delete', p, tok.otherTeacher)).status
+            (await call(t.server, 'delete', `/ai/job/${job}`, tok.otherTeacher)).status
         ).toBe(404);
-        expect((await call(t.server, 'delete', p, tok.student)).status).toBe(
-            403
-        );
+        expect((await call(t.server, 'delete', `/ai/job/${job}`, tok.student)).status).toBe(403);
         expect(
-            await t.prisma.userStorage.findUnique({ where: { id: uploadId } })
-        ).not.toBeNull();
+            (await call(t.server, 'post', `/ai/regenerate/${uploadId}`, tok.otherTeacher, {})).status
+        ).toBe(404);
+        expect(
+            (await call(t.server, 'post', `/ai/regenerate/${uploadId}`, tok.student, {})).status
+        ).toBe(403);
+        expect(t.finance.calls.filter((c) => c.userId === otherTeacher.id)).toEqual([]);
     });
 
     it('AI tool routes are TEACHER-only: STUDENT gets 403 on generate/models/upload', async () => {

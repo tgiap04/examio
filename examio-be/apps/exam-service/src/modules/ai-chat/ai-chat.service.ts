@@ -3,17 +3,26 @@ import {
     Logger,
     NotFoundException,
     ForbiddenException,
+    ServiceUnavailableException,
 } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, Observable, Subject } from 'rxjs';
 import { buildMetadata, FinanceClient } from '@examio/grpc';
 import { subscriptionV1 } from '@examio/contracts';
 import { AIChatRepository } from './ai-chat.repository';
-import { R2DeleteTaskWriter } from '@examio/messaging';
-import { ownedR2Key } from '@examio/common';
-import { AI_UPLOAD_AREAS } from '../ai/ai-upload-areas';
+import { documentV1 } from '@examio/contracts';
 import { PrismaService } from '../../prisma';
 import type { AuthUser } from '@examio/auth-jwt';
+import { DocumentClient, userMetadata } from '../../clients/document.client';
+import {
+    isGrpcStatus,
+    isGrpcUnavailable,
+    toDocumentHttpException,
+} from '../../clients/document-errors';
+import { status as GrpcStatus } from '@grpc/grpc-js';
+import { resolveDocumentWaitMs, waitForDocuments } from './ai-chat-document-wait';
+
+const DocStatus = documentV1.DocumentProcessingStatus;
 
 
 @Injectable()
@@ -27,13 +36,15 @@ export class AIChatService {
      * which would otherwise grow unbounded with conversation length.
      */
     private readonly aiHistoryFetchLimit = 6;
+    /** `AI_CHAT_DOCUMENT_WAIT_MS`: how long one message waits for its documents' OCR. */
+    private readonly documentWaitMs = resolveDocumentWaitMs(process.env, this.logger);
 
     constructor(
         private readonly chatRepository: AIChatRepository,
         private readonly httpService: HttpService,
-        private readonly r2Deletes: R2DeleteTaskWriter,
         private readonly finance: FinanceClient,
-        private readonly prisma: PrismaService
+        private readonly prisma: PrismaService,
+        private readonly documents: DocumentClient
     ) {}
 
     /**
@@ -157,7 +168,8 @@ export class AIChatService {
             documentId?: string;
             documentIds?: string[];
             documentName?: string;
-        }
+        },
+        userToken?: string
     ) {
         const chat = await this.getChatByIdAndValidateOwner(chatId, user);
 
@@ -173,7 +185,7 @@ export class AIChatService {
             ...(data.documentId ? [data.documentId] : []),
         ];
         if (requestedDocumentIds.length > 0) {
-            await this.verifyDocumentOwnership(requestedDocumentIds, user.id);
+            await this.verifyDocumentOwnership(requestedDocumentIds, userToken);
         }
 
         // Create user message
@@ -205,7 +217,7 @@ export class AIChatService {
 
         // Process documents on-demand if they haven't been OCR'd yet
         if (effectiveDocumentIds.length > 0) {
-            await this.checkAndProcessDocuments(effectiveDocumentIds, user.id);
+            await this.checkAndProcessDocuments(effectiveDocumentIds, userToken);
         }
 
         const userStorageId =
@@ -264,7 +276,8 @@ export class AIChatService {
             documentIds?: string[];
             documentName?: string;
             modelType?: string;
-        }
+        },
+        userToken?: string
     ): Promise<Observable<any>> {
         const chat = await this.getChatByIdAndValidateOwner(chatId, user);
 
@@ -280,7 +293,7 @@ export class AIChatService {
             ...(data.documentId ? [data.documentId] : []),
         ];
         if (requestedDocumentIds.length > 0) {
-            await this.verifyDocumentOwnership(requestedDocumentIds, user.id);
+            await this.verifyDocumentOwnership(requestedDocumentIds, userToken);
         }
 
         // Get subject system prompt if chat has a subject
@@ -308,7 +321,7 @@ export class AIChatService {
             this.logger.log(
                 `[streamMessage] Processing ${effectiveDocumentIds.length} documents on-demand...`
             );
-            await this.checkAndProcessDocuments(effectiveDocumentIds, user.id);
+            await this.checkAndProcessDocuments(effectiveDocumentIds, userToken);
         }
 
         // 1. Save User Message
@@ -462,7 +475,11 @@ export class AIChatService {
         return { success: true, message: 'Message deleted' };
     }
 
-    async regenerateFromMessage(messageId: string, user: AuthUser) {
+    async regenerateFromMessage(
+        messageId: string,
+        user: AuthUser,
+        userToken?: string
+    ) {
         const message = await this.chatRepository.findMessageById(messageId);
         if (!message) throw new NotFoundException('Message not found');
         if (message.role !== 'user')
@@ -482,17 +499,23 @@ export class AIChatService {
         );
 
         // Re-send the message
-        return this.sendMessage(chat.id, user, {
-            message: message.content,
-            imageUrl: message.imageUrl || undefined,
-            documentId: message.documentId || undefined,
-            documentName: message.documentName || undefined,
-        });
+        return this.sendMessage(
+            chat.id,
+            user,
+            {
+                message: message.content,
+                imageUrl: message.imageUrl || undefined,
+                documentId: message.documentId || undefined,
+                documentName: message.documentName || undefined,
+            },
+            userToken
+        );
     }
 
     async regenerateFromMessageStream(
         messageId: string,
-        user: AuthUser
+        user: AuthUser,
+        userToken?: string
     ): Promise<Observable<any>> {
         const message = await this.chatRepository.findMessageById(messageId);
         if (!message) throw new NotFoundException('Message not found');
@@ -513,12 +536,17 @@ export class AIChatService {
         );
 
         // Re-send the message with streaming
-        return this.streamMessage(chat.id, user, {
-            message: message.content,
-            imageUrl: message.imageUrl || undefined,
-            documentId: message.documentId || undefined,
-            documentName: message.documentName || undefined,
-        });
+        return this.streamMessage(
+            chat.id,
+            user,
+            {
+                message: message.content,
+                imageUrl: message.imageUrl || undefined,
+                documentId: message.documentId || undefined,
+                documentName: message.documentName || undefined,
+            },
+            userToken
+        );
     }
 
     // ==================== DOCUMENTS ====================
@@ -532,10 +560,11 @@ export class AIChatService {
         chatId: string,
         user: AuthUser,
         documentId: string,
-        documentName: string
+        documentName: string,
+        userToken?: string
     ) {
         await this.getChatByIdAndValidateOwner(chatId, user);
-        await this.verifyDocumentOwnership([documentId], user.id);
+        await this.verifyDocumentOwnership([documentId], userToken);
         return this.chatRepository.addDocument({
             chatId,
             documentId,
@@ -566,91 +595,96 @@ export class AIChatService {
     }
 
     /**
-     * Verify that every given UserStorage id belongs to the requesting user.
-     * Throws ForbiddenException if any id does not exist or belongs to
-     * another user, preventing cross-user document disclosure (IDOR).
+     * Verify that every given document id belongs to the requesting user (document-service,
+     * `AssertOwnership` with the caller's own token). Throws ForbiddenException if any id does not
+     * exist or belongs to another user, preventing cross-user document disclosure (IDOR).
      */
     private async verifyDocumentOwnership(
         documentIds: string[],
-        userId: string
+        userToken?: string
     ): Promise<void> {
         if (!documentIds.length) return;
 
-        const uniqueIds = [...new Set(documentIds)];
-        const owned = await this.prisma.userStorage.findMany({
-            where: { id: { in: uniqueIds }, userId },
-            select: { id: true },
-        });
-
-        if (owned.length !== uniqueIds.length) {
-            throw new ForbiddenException(
-                'Bạn không có quyền truy cập một hoặc nhiều tài liệu được yêu cầu'
+        try {
+            await this.documents.assertOwnership(
+                [...new Set(documentIds)],
+                userMetadata(userToken)
             );
+        } catch (error) {
+            if (isGrpcStatus(error, GrpcStatus.NOT_FOUND)) {
+                throw new ForbiddenException(
+                    'Bạn không có quyền truy cập một hoặc nhiều tài liệu được yêu cầu'
+                );
+            }
+            throw toDocumentHttpException(error);
         }
     }
 
     /**
-     * Check and process documents on-demand
-     * If documents have PENDING/FAILED status, trigger OCR/vectorization via AI service
+     * Check and process documents on-demand: documents that are PENDING (never processed, e.g. a
+     * quick-upload) or FAILED are handed back to document-service (`EnsureProcessed` re-queues the
+     * OCR / vectorization in ai-service). Then the chat waits for every attached document to be
+     * COMPLETED or FAILED, polling `GetDocumentsByIds` for at most `AI_CHAT_DOCUMENT_WAIT_MS` (default
+     * 2 minutes; HEAD waited synchronously up to 5). On timeout the message goes on without that
+     * document's context, as it did when HEAD's OCR call failed. Never throws.
      */
     private async checkAndProcessDocuments(
         documentIds: string[],
-        userId: string
+        userToken?: string
     ): Promise<void> {
         if (!documentIds.length) return;
 
-        // Find documents that need processing. Also constrained by userId
-        // as defense-in-depth; callers must already verify ownership of any
-        // caller-supplied ids before reaching this point.
-        const pendingDocs = await this.prisma.userStorage.findMany({
-            where: {
-                id: { in: documentIds },
-                userId,
-                processingStatus: { in: ['PENDING', 'FAILED'] },
-            },
-        });
-
-        if (pendingDocs.length === 0) {
-            this.logger.log(
-                '[checkAndProcessDocuments] All documents already processed'
+        const metadata = userMetadata(userToken);
+        let docs: documentV1.DocumentInfo[];
+        try {
+            docs = await this.documents.getDocumentsByIds(documentIds, metadata);
+        } catch (error) {
+            this.logger.error(
+                `[checkAndProcessDocuments] Could not read the documents: ${(error as Error).message}`
             );
             return;
         }
 
-        this.logger.log(
-            `[checkAndProcessDocuments] Processing ${pendingDocs.length} pending documents`
+        const pendingDocs = docs.filter(
+            (doc) =>
+                doc.processingStatus === DocStatus.DOCUMENT_PROCESSING_STATUS_PENDING ||
+                doc.processingStatus === DocStatus.DOCUMENT_PROCESSING_STATUS_FAILED
         );
-
-        // Process each document sequentially
         for (const doc of pendingDocs) {
             try {
+                await this.documents.ensureProcessed(doc.id, metadata);
                 this.logger.log(
-                    `[checkAndProcessDocuments] Processing: ${doc.filename}`
+                    `[checkAndProcessDocuments] Queued processing: ${doc.filename}`
                 );
-
-                // Call AI service to OCR/vectorize
-                const response = await firstValueFrom(
-                    this.httpService.post(
-                        `${this.aiServiceUrl}/ai/process-file`,
-                        { user_storage_id: doc.id },
-                        { timeout: 300000, headers: this.internalHeaders } // 5 min timeout for OCR
-                    )
-                );
-
-                if (response.data?.success) {
-                    this.logger.log(
-                        `[checkAndProcessDocuments] Completed: ${doc.filename}`
-                    );
-                } else {
-                    this.logger.warn(
-                        `[checkAndProcessDocuments] Failed: ${doc.filename} - ${response.data?.error || 'Unknown error'}`
-                    );
-                }
             } catch (error) {
                 this.logger.error(
-                    `[checkAndProcessDocuments] Error processing ${doc.filename}: ${error.message}`
+                    `[checkAndProcessDocuments] Error processing ${doc.filename}: ${(error as Error).message}`
                 );
             }
+        }
+
+        // Everything not COMPLETED yet (a PROCESSING one may be seconds from done, a re-queued one is PENDING).
+        const toWaitFor = docs
+            .filter((doc) => doc.processingStatus !== DocStatus.DOCUMENT_PROCESSING_STATUS_COMPLETED)
+            .map((doc) => doc.id);
+        if (toWaitFor.length === 0) {
+            this.logger.log('[checkAndProcessDocuments] All documents already processed');
+            return;
+        }
+        const names = new Map(docs.map((doc) => [doc.id, doc.filename]));
+        const timedOut = await waitForDocuments(toWaitFor, this.documentWaitMs, {
+            fetchDocuments: (ids) => this.documents.getDocumentsByIds(ids, metadata),
+            sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+            now: () => Date.now(),
+            onPollError: (error) =>
+                this.logger.warn(`[checkAndProcessDocuments] Poll failed: ${(error as Error).message}`),
+        });
+        if (timedOut.length > 0) {
+            this.logger.warn(
+                `[checkAndProcessDocuments] Still processing after ${this.documentWaitMs} ms, continuing without context: ${timedOut
+                    .map((id) => names.get(id) ?? id)
+                    .join(', ')}`
+            );
         }
     }
 
@@ -715,61 +749,51 @@ export class AIChatService {
         }
     }
 
-    async clearChat(chatId: string, user: AuthUser, deleteFiles: boolean = false) {
+    /**
+     * Clears a chat. With `deleteFiles` the chat's documents are deleted in document-service in ONE call
+     * (as the caller; it removes the rows, queues the R2 objects and announces `document.deleted`), and
+     * the chat is deleted only after that succeeded: if document-service cannot answer the chat is kept
+     * and the call is a 503, so a retry deletes both.
+     */
+    async clearChat(
+        chatId: string,
+        user: AuthUser,
+        deleteFiles: boolean = false,
+        userToken?: string
+    ) {
         // Validate chat ownership
         await this.getChatByIdAndValidateOwner(chatId, user);
 
         const deletedFiles: string[] = [];
 
         if (deleteFiles) {
-            // Get all document IDs associated with this chat
             const documentIds =
                 await this.chatRepository.getDocumentIds(chatId);
-
-            // Preload all file info in a single query to avoid an N+1
-            // findUnique call per document
-            const userStorages = await this.prisma.userStorage.findMany({
-                // Only the caller's own files: a chat link must not reach another user's row.
-                where: { id: { in: documentIds }, userId: user.id },
-                select: { id: true, filename: true, keyR2: true },
-            });
-            const userStorageById = new Map(
-                userStorages.map((storage) => [storage.id, storage])
-            );
-
-            // Delete each file from R2 and database
-            for (const docId of documentIds) {
+            if (documentIds.length > 0) {
                 try {
-                    // Get file info
-                    const userStorage = userStorageById.get(docId);
-
-                    if (userStorage) {
-                        // Row delete (cascades related records) and the R2 cleanup
-                        // task commit together; the worker deletes the object.
-                        await this.prisma.$transaction(async (tx) => {
-                            await tx.userStorage.delete({
-                                where: { id: docId },
-                            });
-                            await this.r2Deletes.enqueue(tx, [
-                                ownedR2Key(
-                                    userStorage.keyR2,
-                                    AI_UPLOAD_AREAS,
-                                    user.id
-                                ),
-                            ]);
-                        });
-
-                        deletedFiles.push(userStorage.filename);
+                    const result = await this.documents.deleteDocuments(
+                        documentIds,
+                        userMetadata(userToken)
+                    );
+                    for (const file of result.deleted) {
+                        deletedFiles.push(file.filename);
                         this.logger.log(
-                            `[clearChat] Deleted file: ${userStorage.filename}`
+                            `[clearChat] Deleted file: ${file.filename}`
                         );
                     }
                 } catch (error) {
                     this.logger.error(
-                        `[clearChat] Error deleting file ${docId}:`,
-                        error
+                        `[clearChat] Could not delete the files of chat ${chatId}: ${(error as Error).message}`
                     );
-                    // Continue with other files even if one fails
+                    if (isGrpcUnavailable(error)) {
+                        throw new ServiceUnavailableException({
+                            statusCode: 503,
+                            code: 'SERVICE_UNAVAILABLE',
+                            message:
+                                'Không thể xóa file lúc này, chat được giữ lại. Vui lòng thử lại sau.',
+                        });
+                    }
+                    throw toDocumentHttpException(error);
                 }
             }
         }

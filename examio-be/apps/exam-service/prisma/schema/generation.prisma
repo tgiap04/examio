@@ -1,0 +1,43 @@
+// exam-service legacy schema: GENERATION domain (quiz / flashcard generation from an uploaded
+// document; moves to content-service in phase 14). No relation to User or to the document
+// service: `userId` and `storageId` are plain columns.
+
+// One AI generation request and the money behind it.
+//
+//   PENDING_CHARGE --debit ok--> QUEUED --ai.generation.completed--> COMPLETED
+//        |                         |  \--ai.generation.failed------> FAILED  (refund)
+//        |                         \--cancel----------------------> CANCELLED (refund)
+//        \--cancel / 10 min reaper--------------------------------> CANCELLED (refund)
+//
+// Every transition is a conditional update, so racing paths settle each job once. `chargeKey`
+// (`gen:<id>`) is the finance idempotency key of the single Debit; `refundedAt` is set once the
+// Refund for a FAILED / CANCELLED job is confirmed (or known to be unnecessary), which is what
+// lets a sweeper finish a refund that a crash or a finance outage interrupted.
+model GenerationJob {
+    id            String    @id
+    userId        String
+    // The document to generate from (`UserStorage.id` in document-service).
+    storageId     String
+    filename      String
+    // quiz | flashcard
+    type          String
+    // PENDING_CHARGE | QUEUED | PROCESSING | COMPLETED | FAILED | CANCELLED
+    status        String    @default("PENDING_CHARGE")
+    // `gen:<id>`
+    chargeKey     String    @unique
+    // Credits debited under `chargeKey` (0 = free retry: nothing to refund).
+    chargedAmount Int       @default(0)
+    refundedAt    DateTime?
+    // { numItems, isNarrowSearch, keyword? } of `content.generation.requested`
+    options       Json
+    model         String?
+    error         String?
+    // The HistoryGeneratedQuizz / HistoryGeneratedFlashcard row of a COMPLETED job.
+    historyId     String?
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @default(now()) @updatedAt
+
+    @@index([userId, storageId, createdAt(sort: Desc)])
+    @@index([status, createdAt])
+    @@index([status, refundedAt])
+}

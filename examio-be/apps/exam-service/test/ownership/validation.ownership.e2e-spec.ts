@@ -101,13 +101,12 @@ describe('request validation (e2e)', () => {
             'teacher',
             {},
         ],
-        ['POST /ai/upload {}', 'post', () => '/ai/upload', 'teacher', {}],
         [
-            'POST /ai/upload-image {}',
+            'POST /ai/regenerate/:id {quantityQuizz: 999}',
             'post',
-            () => '/ai/upload-image',
+            () => '/ai/regenerate/some-upload',
             'teacher',
-            {},
+            { quantityQuizz: 999 },
         ],
         [
             'POST /ai-chat/:id/message {}',

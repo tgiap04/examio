@@ -161,10 +161,11 @@ model HistoryGeneratedQuizz {
     createdAt     DateTime @default(now())
     updatedAt     DateTime @default(now()) @updatedAt
 
-    userStorage          UserStorage?          @relation(fields: [userStorageId], references: [id], onDelete: SetNull)
     detailsQuizQuestions DetailsQuizQuestion[]
 
     @@index([userId])
+    // Document in document-service (no FK): nulled by `document.deleted`, read by `recent-uploads`
+    @@index([userStorageId])
 }
 
 model HistoryGeneratedFlashcard {
@@ -175,10 +176,11 @@ model HistoryGeneratedFlashcard {
     createdAt     DateTime @default(now())
     updatedAt     DateTime @default(now()) @updatedAt
 
-    userStorage       UserStorage?       @relation(fields: [userStorageId], references: [id], onDelete: SetNull)
     detailsFlashCards DetailsFlashCard[]
 
     @@index([userId])
+    // Document in document-service (no FK): nulled by `document.deleted`, read by `recent-uploads`
+    @@index([userStorageId])
 }
 
 model FlashCardViewHistory {
