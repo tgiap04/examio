@@ -1,6 +1,6 @@
 ---
 title: System Architecture
-last_updated: 2026-10-23
+last_updated: 2026-10-24
 source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/); manually patched 2026-07-19 for Study-Together Room (first WebSocket transport); patched 2026-07-21 for Study Room playlist/access/moderation extension; patched 2026-10-20 for gateway rewrite (microservice-refactor phase 05); patched 2026-10-23 for phase 10 (cross-DB access cut) and phase 11 (database per service); patched 2026-10-24 for phase 12 (study-room-service and vocabulary-service extracted from exam)
 status: ACTIVE
 ---
@@ -21,15 +21,16 @@ graph TB
 
     subgraph Backend[Backend — NestJS Monorepo]
         AUTH[auth-service<br/>:3000 HTTP<br/>:50051 gRPC]
-        EXAM[exam-service<br/>:3000 HTTP, no gRPC server<br/>Quiz/Flashcard/Exam/AI/OCR]
+        EXAM[exam-service<br/>:3000 HTTP, no gRPC server<br/>Quiz/Flashcard/Exam<br/>AI chat + GenerationJob]
         STUDY[study-room-service<br/>:3000 HTTP + Socket.io /ws/study<br/>Study rooms]
         VOCAB[vocabulary-service<br/>:3000 HTTP + :50051 gRPC<br/>Word families]
         FIN[finance-service<br/>:3000 HTTP<br/>:50051 gRPC<br/>Wallet/Payment/Sub]
+        DOC[document-service<br/>:3000 HTTP + :50051 gRPC<br/>Uploads, quota, OCR status]
         R2[r2-service<br/>:3000 HTTP<br/>:50051 gRPC<br/>Cloudflare R2]
     end
 
-    subgraph AI[AI Layer — Python FastAPI]
-        AISVC[ai-service<br/>:3000 HTTP<br/>RAG · LangGraph · Gemini]
+    subgraph AI[AI Layer — Python]
+        AISVC[ai-service<br/>:50051 gRPC AiService + :3000 /health, compat HTTP<br/>ai-worker: events<br/>RAG · LangGraph · Gemini]
     end
 
     subgraph Infra[Infrastructure]
@@ -45,6 +46,7 @@ graph TB
     GW -->|HTTP proxy| EXAM
     GW -->|HTTP proxy /api/v1/studyrooms, WS upgrade proxy ws:true| STUDY
     GW -->|HTTP proxy /api/v1/word-family| VOCAB
+    GW -->|HTTP proxy /api/v1/ai/upload*, /r2/image| DOC
     GW -->|HTTP proxy| FIN
     GW -->|HTTP proxy| ADMIN
     AUTH -->|gRPC GatewayControl: RevokeSession, InvalidateUser| GW
@@ -61,8 +63,17 @@ graph TB
     RMQ -->|gateway.events: authz_changed, session.revoked| GW
     GW -->|revoke / av / rate limit / page flags| REDIS
     EXAM -->|gRPC Debit / Credit / Refund / GetWallet| FIN
-    EXAM -->|gRPC R2 upload| R2
-    EXAM -->|HTTP multipart| AISVC
+    EXAM -->|gRPC DocumentService: CreateUpload, GetDocumentsByIds, AssertOwnership, ListDocuments, GetQuota, EnsureProcessed, DeleteDocuments| DOC
+    EXAM -->|gRPC ListModels, svc:exam token| AISVC
+    EXAM -->|HTTP chat compat, temporary until phase 13| AISVC
+    DOC -->|gRPC GetUserBenefits / Debit, forwarded user token; Refund, svc:document| FIN
+    DOC -->|gRPC UploadFile, CreatePresignedDownload, DeleteObjects, svc:document| R2
+    DOC -->|outbox document.uploaded / document.deleted| RMQ
+    RMQ -->|ai.events: document.*, content.generation.requested| AISVC
+    AISVC -->|outbox ai.document.*, ai.generation.*| RMQ
+    RMQ -->|document.events: ai.document.processed / failed| DOC
+    RMQ -->|exam.events: ai.generation.*, document.deleted| EXAM
+    EXAM -->|outbox content.generation.requested, source=content| RMQ
     AUTH -->|outbox: auth.user.registered, auth.user.authz_changed| RMQ
     FIN -->|subscribe auth.user.authz_changed| RMQ
     RMQ -->|studyroom.events: authz_changed, user.updated| STUDY
@@ -73,6 +84,8 @@ graph TB
     ADMIN -->|Prisma| PG
     STUDY -->|Prisma| PG
     VOCAB -->|Prisma| PG
+    DOC -->|Prisma, schema document| PG
+    AISVC -->|asyncpg, schema ai| PG
     AUTH -->|cache| REDIS
     STUDY -->|studyroom: keys, socket.io adapter| REDIS
     VOCAB -->|vocab: keys| REDIS
@@ -80,24 +93,24 @@ graph TB
     FIN -->|cache| REDIS
     ADMIN -->|cache| REDIS
     R2 -->|upload| R2STORE
-    EXAM -->|embeddings (vector)| PG
 ```
 
 ## Service Topology
 
-Compose publishes only the gateway on the host, bound to loopback (`127.0.0.1:6369` -> 3000); see [Edge and network topology](#edge-and-network-topology). Ports are unified in containers (`deploy/docker-compose.yml`): every Nest service listens on HTTP `3000`; services with a gRPC server (auth, finance, r2, admin, vocabulary, and the gateway's control server) use `50051`; exam and study-room have no gRPC server. `ai-service` also gets `PORT=3000` in compose (local dev default `3434`, `yarn dev:ai` uses `8000`). Each container has its own network namespace, so there is no collision. Local `yarn dev:*` runs set `PORT`/`GRPC_PORT` per service in each `.env`.
+Compose publishes only the gateway on the host, bound to loopback (`127.0.0.1:6369` -> 3000); see [Edge and network topology](#edge-and-network-topology). Ports are unified in containers (`deploy/docker-compose.yml`): every Nest service listens on HTTP `3000`; services with a gRPC server (auth, finance, r2, admin, vocabulary, document, ai, and the gateway's control server) use `50051`; exam and study-room have no gRPC server. `ai-service` serves gRPC on `GRPC_PORT` (50051) and `/health` plus the compat routes on `PORT` (3000 in compose; the `.env.example` default is `3434`). Each container has its own network namespace, so there is no collision. Local `yarn dev:*` runs set `PORT`/`GRPC_PORT` per service in each `.env`.
 
 | Service | HTTP Port | gRPC Port | Runtime | Role |
 |---------|----------:|----------:|---------|------|
 | `gateway-service` | 3000 | 50051 (GatewayControl, internal only) | Node 22 | Public HTTP entry: YAML-routed streaming proxy, JWT verify, revoke/stale checks, rate limit, WS upgrade proxy (`/ws/study`). No database |
 | `auth-service` | 3000 | 50051 | Node 22 | RS256 JWT issuer + JWKS, service tokens, OAuth, sessions, devices, roles (RBAC) |
-| `exam-service` | 3000 | none | Node 22 | Quiz/flashcard authoring, exam sessions, AI orchestration, `word-family/:id/to-flashcard` bridge |
+| `exam-service` | 3000 | none | Node 22 | Quiz/flashcard authoring, exam sessions, AI chat, `GenerationJob` (quiz/flashcard generation, charge and refund), `recent-uploads`, `word-family/:id/to-flashcard` bridge; `ROLE=api,worker` (event relay, generation reaper) |
 | `study-room-service` | 3000 | none | Node 22 | Study-Together Room: HTTP `/api/v1/studyrooms/*` and Socket.io `/ws/study`; one container, consumes `studyroom.events` in the API process |
 | `vocabulary-service` | 3000 | 50051 (`WordFamilyAdminService`, `WordFamilyService`, internal only) | Node 22 | Word families and categories, AI generation (HTTP to ai-service), `r2_delete_tasks` worker (`ROLE=api,worker`) |
+| `document-service` | 3000 | 50051 (`DocumentService`, internal only) | Node 22 | Uploaded files, monthly upload quota, OCR status, upload charge/refund (`doc:<id>`), `r2_delete_tasks` worker; `ROLE=api,worker` |
 | `finance-service` | 3000 | 50051 | Node 22 | Wallet, SePay QR payments, subscriptions |
 | `r2-service` | 3000 | 50051 | Node 22 | Cloudflare R2 object storage (proxy) |
 | `admin-service` | 3000 | 50051 (`AdminService.GetPageFlags`, internal only) | Node 22 | Admin dashboard: users, stats, finance, logs, audit. Owns `AdminAudit` and `PageFeatureFlag` only |
-| `ai-service` | 3000 (compose) | — | Python 3.12+ | RAG, document processing, AI chat (LangChain + LangGraph) |
+| `ai-service` | 3000 (compose, `/health` + compat) | 50051 (`AiService`, service tokens only) | Python 3.12+ | RAG, OCR/embedding, AI chat, generation worker (LangChain + LangGraph). `ROLE` = `api` / `worker` / `migrate`; owns schema `ai` |
 
 ## Cross-Service Communication
 
@@ -168,9 +181,9 @@ sequenceDiagram
     Note over EX,FIN: Charge before AI generation; a retry with the same key never double-charges
 ```
 
-**Proto definitions**: `examio-be/proto/examio/<svc>/v1/` (packages `admin`, `auth`, `common`, `events`, `finance`, `gateway`, `r2`, `vocabulary`), linted and generated with buf. `yarn proto:lint` runs `buf lint proto`; `yarn proto:gen` runs `buf generate` (ts-proto, output `libs/contracts/src/generated/`, gitignored) and is exposed as `@examio/contracts`. The Python ai-service generates its stubs with `apps/ai-service/scripts/gen_grpc.sh`. Client helpers live in `@examio/grpc`, HTTP helpers in `@examio/http`.
+**Proto definitions**: `examio-be/proto/examio/<svc>/v1/` (packages `admin`, `ai`, `auth`, `common`, `document`, `events`, `finance`, `gateway`, `r2`, `vocabulary`), linted and generated with buf. `yarn proto:lint` runs `buf lint proto`; `yarn proto:gen` runs `buf generate` (ts-proto, output `libs/contracts/src/generated/`, gitignored) and is exposed as `@examio/contracts`. The Python ai-service generates its stubs with `apps/ai-service/scripts/gen_grpc.sh`. Client helpers live in `@examio/grpc`, HTTP helpers in `@examio/http`.
 
-Finance `WalletService` money fields are `int32` (credits are whole numbers). `R2Service` has `DeleteObjects`. gRPC env: `AUTH_GRPC_URL`, `R2_GRPC_URL`, `FINANCE_GRPC_URL`, `GATEWAY_GRPC_URL`, `VOCABULARY_GRPC_URL` (admin and exam to vocabulary), `ADMIN_GRPC_URL` (gateway to admin), `GRPC_PORT` on each serving service.
+Finance `WalletService` money fields are `int32` (credits are whole numbers). `R2Service` has `DeleteObjects` and `CreatePresignedDownload` (service `document` only); r2's HTTP `internal/upload` route and its `INTERNAL_SERVICE_TOKEN` are gone. gRPC env: `AUTH_GRPC_URL`, `R2_GRPC_URL`, `FINANCE_GRPC_URL`, `GATEWAY_GRPC_URL`, `VOCABULARY_GRPC_URL` (admin and exam to vocabulary), `DOCUMENT_GRPC_URL` (exam to document), `AI_GRPC_URL` (exam to ai), `ADMIN_GRPC_URL` (gateway to admin), `GRPC_PORT` on each serving service.
 
 **Data ownership (phase 10, enforced by the database since phase 11).** Each Prisma model is read and written by exactly one service; the services share one Postgres database but each has its own schema and role (see Database per service below): auth (`User`, `UserSession`, `VerifyAccountCode`, `ResetPasswordCode`, `RoleChangeLog`), finance (`Wallet`, `WalletTransaction`, `Payment`, `UserSubscription`), admin (`AdminAudit`, `PageFeatureFlag`), study-room (`StudyRoom`, `StudyRoomMember`, `StudyRoomPlaylistItem`, `StudyRoomChatBlock`), vocabulary (`WordFamilyCategory`, `WordFamily`, `UserSavedWordFamily`, `R2DeleteTask`), exam (everything else, until later phases extract more services). `OutboxEvent` and `ProcessedEvent` are per-service. The map is `examio-be/scripts/check-model-ownership.ts` (`yarn check:ownership`, strict in CI, also catches relation access through `include`/`select`/nested writes); `yarn check:deps` runs dependency-cruiser with `.dependency-cruiser.cjs`. A service needing foreign data calls the owner over gRPC.
 
@@ -205,7 +218,7 @@ graph LR
     FQ -.->|permanent / 5 retries| DLQ[finance.dlq]
 ```
 
-**Library**: `@examio/messaging` (`examio-be/libs/messaging`), used by auth, finance, the gateway, study-room-service (consumer only: `authz_changed` and `user.updated`) and exam-service (`user.updated` consumer only). vocabulary-service has no RabbitMQ. exam-service otherwise and ai-service still use the old `libs/common/src/events` module and the `ai.*` flows until a later refactor phase.
+**Library**: `@examio/messaging` (`examio-be/libs/messaging`), used by auth, finance, the gateway, study-room-service (consumer only: `authz_changed` and `user.updated`), document-service and exam-service (`user.updated`, `ai.generation.*` and `document.deleted` consumers; it writes `content.generation.requested` to its outbox). vocabulary-service has no RabbitMQ. ai-service uses a Python port of the same contract (`apps/ai-service/src/backend/messaging`: envelope, consumer, outbox relay, purge; queue `ai.events`, retry tier `ai.retry.30s`, `ai.dlq`, dead-letter at `x-retry-count >= 5`; a shared topology contract keeps the queue arguments identical). `MessagingModuleOptions.alsoPublishes` lets a service write outbox rows whose `source` is another domain: exam publishes `content.*` (`source=content`) until content-service exists (phase 14).
 
 **Envelope v1**: `{ id: "evt_<ulid>", type, version: 1, occurredAt, source, correlationId, data }`. AMQP props: `messageId=id`, persistent, `application/json`. `parseEnvelope` rejects `version !== 1` as permanent. State events (`*.updated`, `*.changed`, `*_changed`) must carry a numeric version (`data.version`, or `data.authzVersion` for `auth.user.authz_changed`); `createEnvelope` throws otherwise.
 
@@ -216,15 +229,19 @@ graph LR
 - Dedupe (default): in one tx, `INSERT processed_events(consumer, event_id) ON CONFLICT DO NOTHING`; zero rows means duplicate, ack. Otherwise the handler runs with `(envelope, tx)` and acks after commit. `dedupe: false` is for handlers idempotent by construction.
 - Transient error: republished to `<svc>.retry` (fanout) with `x-retry-count+1` and the original routing key, then acked. After `<svc>.retry.30s` (TTL 30 s) it dead-letters via `<svc>.requeue` back to `<svc>.events`. Count >= 5 or `PermanentEventError`: `nack(requeue=false)` to `<svc>.dead` then `<svc>.dlq`.
 
-**Process role**: env `ROLE` = `api` | `worker` | `api,worker` (default `api,worker`; compose sets `api,worker` for auth and finance). study-room-service has no `ROLE`: its consumer needs the Socket.io server, so it runs in the API process of a single container. `worker` runs the relay/purge (auth) or the consumer (finance) via `worker.module.ts`.
+**Process role**: env `ROLE` = `api` | `worker` | `api,worker` (default `api,worker`; compose sets `api,worker` for auth, finance, exam, vocabulary and document). study-room-service has no `ROLE`: its consumer needs the Socket.io server, so it runs in the API process of a single container. `worker` runs the relay/purge (auth) or the consumer (finance) via `worker.module.ts`.
 
-**Broker security**: one RabbitMQ user per service (`auth`, `finance`, `exam`, `studyroom`, `ai`) plus the ops user from `RABBITMQ_USER`/`RABBITMQ_PASS` (management UI only). Per user: configure/write/read limited to `examio.events` and `<svc>.*` (legacy: `exam-service` for exam, `ai-service-queue` for ai). Topic permissions on `examio.events`: write only `^<domain>\.`, read `.*`. So a validated `source` cannot be forged. Users come from `deploy/rabbitmq/definitions.template.json` (committed, no secrets), rendered by the one-shot `rabbitmq-defs` compose service (`render-definitions.cjs`) into the gitignored `definitions.json` (compose and CI pass `--out`; without `--out` the script writes `<os.tmpdir()>/definitions.json`, never into the repo tree) and loaded at broker boot (`rabbitmq.conf`). Each service gets its own `RABBITMQ_URL`; broker passwords must be URL-safe because they are embedded in `amqp://` URLs. Broker image: `rabbitmq:3.13-management-alpine`.
+**Broker security**: one RabbitMQ user per service (`auth`, `finance`, `exam`, `studyroom`, `document`, `ai`, `gateway`) plus the ops user from `RABBITMQ_USER`/`RABBITMQ_PASS` (management UI only). Per user: configure/write/read limited to `examio.events` and `<svc>.*` (legacy: `exam-service` for exam). Topic permissions on `examio.events`: write only `^<domain>\.`, read `.*`; user `exam` may write `^(exam|content)\.` until phase 14. So a validated `source` cannot be forged. Users come from `deploy/rabbitmq/definitions.template.json` (committed, no secrets), rendered by the one-shot `rabbitmq-defs` compose service (`render-definitions.cjs`) into the gitignored `definitions.json` (compose and CI pass `--out`; without `--out` the script writes `<os.tmpdir()>/definitions.json`, never into the repo tree) and loaded at broker boot (`rabbitmq.conf`). Each service gets its own `RABBITMQ_URL`; broker passwords must be URL-safe because they are embedded in `amqp://` URLs. Broker image: `rabbitmq:3.13-management-alpine`.
 
 **Currently wired events**:
 - `auth.user.registered` (auth-service): `{ userId, email, username, utmSource|null }`, written to the outbox in the register tx (email and Google OAuth paths). No consumer since phase 04 (finance's `UserRegisteredHandler` was removed; STUDENTs have no wallet). Replaces `auth.user.created`.
 - `auth.user.authz_changed` (auth-service -> finance-service): `{ userId, authzVersion, role, isSystemAdmin, isBanned, reason, version }` (proto `UserAuthzChanged`, `reason` is one of role, admin, password, ban, unban, reapply). Written to the outbox in the same tx as the change. Finance (`UserAuthzChangedHandler`) provisions wallet (20 credits, once) + Free subscription row only when `role = TEACHER`; everything else is a no-op. study-room-service (`study-room-authz.handler.ts`, queue `studyroom.events`) also consumes it to close stale study-room sockets (`auth:reauth` then disconnect). exam no longer binds this key (on a pre-existing broker the stale binding on `exam.events` stays until the broker is reset).
 
 - `auth.user.updated` (auth-service): state event written to the outbox in the tx that changes a profile field (`changed` is a subset of `name`, `bio`, `avatar`, `banner`, `is_verified`; `version` is `updatedAt` in epoch ms); exam-service (consumer registered in `modules/user-profile/user-profile.module.ts`) invalidates `exam:cache:user:<id>` and study-room-service invalidates `studyroom:cache:user:<id>` on it; both handlers are `dedupe: false`.
+
+- `document.uploaded` / `document.deleted` (document-service, outbox): `document.uploaded` carries `storageId`, `userId`, `filename`, `mimetype` and a presigned `downloadUrl` (1 h); consumed by ai-service (OCR, chunking, embedding, graph; prefetch 1). `document.deleted` (`storageIds[]`, `userId`) is consumed by ai-service (vectors, entities, graph) and exam (nulls `HistoryGenerated*.userStorageId`, detaches ai-chat links).
+- `ai.document.processed` / `ai.document.failed` (ai-service, outbox) -> document-service (`document.events`): `COMPLETED` / `FAILED`; on failure of a charged upload it issues `Refund(doc:<id>)` and clears `creditCharged` in the same tx. Failures always publish `ai.document.failed` so the refund cannot be skipped.
+- `content.generation.requested` (exam, `source=content`) -> ai-service: `jobId`, `userId`, `storageId`, `type`, `options`, `model`, plus optional `downloadUrl` / `mimetype` (so ai-service can process a chunk-less document inline). Answers: `ai.generation.completed` (items inline up to 512 KB) or `ai.generation.failed` -> exam (`GenerationJob`, conditional updates; a late event after a cancel or timeout is ignored).
 
 **Defined but unused**: the remaining `EventType` enum values in `libs/common/src/events` (`USER_CREATED` was removed).
 
@@ -251,27 +268,33 @@ graph LR
 
 **Rate limiting**: `ThrottlerModule` 30 req/min per admin (configured via `THROTTLE_ADMIN_LIMIT`).
 
-### 5. AI Orchestration (HTTP + SSE streaming)
+### 5. AI generation and document processing (gRPC + events)
+
+Generation is asynchronous and idempotent per job: one `Debit` with key `gen:<jobId>`, conditional status updates, and a refund path for every failure.
 
 ```mermaid
 sequenceDiagram
     participant FE as examio-fe
     participant EX as exam-service
-    participant AI as ai-service:3000
+    participant DOC as document-service
     participant FIN as finance-service
-    FE->>EX: POST /ai-study/generate (multipart)
-    EX->>AI: Forward multipart
-    AI-->>EX: { jobId }
-    EX-->>FE: { jobId }
-    loop poll every 10s, max 360 attempts
-        FE->>EX: GET /ai-study/generate/status/{jobId}
-        EX->>AI: GET status
-        AI-->>EX: { status: "PENDING" | "COMPLETED" | "FAILED" }
+    participant AI as ai-service (worker)
+    FE->>EX: POST /ai/generate-from-file (multipart, via gateway)
+    EX->>DOC: gRPC CreateUpload(charge_credits=false, reuse_duplicate=true)
+    DOC-->>EX: document (new or reused)
+    EX->>EX: tx insert GenerationJob PENDING_CHARGE
+    EX->>FIN: gRPC Debit(key gen:jobId, upload + generation credits)
+    EX->>EX: tx QUEUED + outbox content.generation.requested
+    EX-->>FE: { jobId, newBalance }
+    EX-)AI: event content.generation.requested (+ downloadUrl)
+    AI-)EX: event ai.generation.completed | failed
+    EX->>EX: COMPLETED + HistoryGenerated* | FAILED + Refund(gen:jobId)
+    loop poll
+        FE->>EX: GET /ai/job/{jobId}
     end
-    AI-->>EX: COMPLETED + result
-    EX->>FIN: gRPC WalletService.Debit (idempotent charge)
-    EX-->>FE: COMPLETED
 ```
+
+Upload path (`POST /ai/upload`, JSON): document-service inserts `UserStorage` as `PENDING_CHARGE`, calls `Debit(doc:<id>)` with the forwarded user token, then sets `PENDING` + `creditCharged` and writes `document.uploaded`; ai-service OCRs and answers `ai.document.processed|failed`. Refund rules are in [business-rules](business-rules.md#ai-credits-charge-and-refund-phase-15).
 
 ### 6. WebSocket / Socket.io (bidirectional realtime — Study-Together Room)
 
@@ -403,7 +426,7 @@ sequenceDiagram
 
 | Layer | Technology | Version |
 |-------|-----------|--------:|
-| Framework | FastAPI | latest |
+| Framework | gRPC (grpc.aio) + FastAPI (`/health`, compat routes) | latest |
 | Language | Python | 3.12+ |
 | RAG | LangChain + LangGraph | latest |
 | LLM | Gemini integration | latest |
@@ -433,14 +456,15 @@ One Postgres database, one schema and one login role per service. `libs/database
 | exam | `apps/exam-service/prisma/schema/*.prisma` (multi-file) | `apps/exam-service/prisma/schema/migrations` | `exam` / `exam_svc` |
 | study-room | `apps/study-room-service/prisma/schema.prisma` | `apps/study-room-service/prisma/migrations` | `studyroom` / `studyroom_svc` |
 | vocabulary | `apps/vocabulary-service/prisma/schema.prisma` | `apps/vocabulary-service/prisma/migrations` | `vocabulary` / `vocabulary_svc` |
-| ai (Python) | none (no Prisma) | none | role `ai_svc`; `DB_SEARCH_PATH=exam,extensions`, `AI_RUNTIME_DDL=false`; temporary read/write grants on exam tables until phase 15 |
+| document | `apps/document-service/prisma/schema.prisma` | `apps/document-service/prisma/migrations` | `document` / `document_svc` |
+| ai (Python) | none (no Prisma; Alembic) | `apps/ai-service/alembic/versions` (one-shot `ai-migrate`, `ROLE=migrate`) | `ai` / `ai_svc`; `DB_SEARCH_PATH=ai,extensions`; one shared asyncpg pool, no runtime DDL, no access to other schemas |
 
-- Roles `content`, `assessment`, `aichat`, `document` are also created (with `<SVC>_DB_PASSWORD`) but no service uses them yet; `studyroom` and `vocabulary` are used since phase 12. All 11 roles and the `extensions` schema (pgvector) come from `deploy/postgres/init/01-service-schemas.sh`, which runs only on an empty data volume; existing dev stacks need `docker compose down -v` once. `PUBLIC` has no privileges, so a role selecting another service's table gets `permission denied` (checked by `test/db-isolation`, a CI step).
+- Roles `content`, `assessment`, `aichat` are also created (with `<SVC>_DB_PASSWORD`) but no service uses them yet; `studyroom` and `vocabulary` are used since phase 12, `document` and `ai` since phase 15 (the temporary `ai_svc` grants on `exam` are revoked). All 11 roles and the `extensions` schema (pgvector) come from `deploy/postgres/init/01-service-schemas.sh`, which runs only on an empty data volume; existing dev stacks need `docker compose down -v` once. `PUBLIC` has no privileges, so a role selecting another service's table gets `permission denied` (checked by `test/db-isolation`, a CI step).
 - `DATABASE_URL` per service: `postgresql://<svc>_svc:...@postgres:5432/examio?schema=<svc>`. There is no shared URL.
 - Each service has a local Prisma module `apps/<svc>-service/src/prisma` (`PrismaPg` adapter, pool of 5, a database `ReadinessCheck` feeding `/health/ready`) and a generated client in `apps/<svc>-service/src/generated/prisma` (gitignored; `yarn prisma:generate` loops over `apps/*/prisma`).
 - No foreign key points at `User` any more: other services keep `userId` (usually indexed), and read profile data from auth over gRPC.
 - Migrations: `PRISMA_ADMIN_URL=... scripts/prisma-migrate-dev.sh <svc> <name>` (local only, diffs against a throwaway shadow DB); deploy applies them as the service role through the `<svc>-migrate` one-shot containers.
-- Durable R2 deletion: `r2_delete_tasks` exists in the `auth`, `exam` and `vocabulary` schemas. `R2DeleteTaskWriter.enqueue(tx, keys)` inserts rows in the caller's own transaction; `R2DeleteWorker` (`libs/messaging/src/r2-delete`) claims batches with `FOR UPDATE SKIP LOCKED`, retries with exponential backoff (cap 1 h) and stops retrying after 10 attempts (default `maxAttempts`), logging a stuck metric. exam and vocabulary therefore run `ROLE=api,worker` (vocabulary's worker calls r2 `DeleteObjects` as service `vocabulary`; it deletes only keys under `word-family/`, so a category image pointing at a generic `images/` upload is never deleted). auth, exam and vocabulary need `R2_PUBLIC_URL` so `r2KeyFromUrl` can map a stored URL to a key; URLs outside that host are never deleted.
+- Durable R2 deletion: `r2_delete_tasks` exists in the `auth`, `exam`, `vocabulary` and `document` schemas. `R2DeleteTaskWriter.enqueue(tx, keys)` inserts rows in the caller's own transaction; `R2DeleteWorker` (`libs/messaging/src/r2-delete`) claims batches with `FOR UPDATE SKIP LOCKED`, retries with exponential backoff (cap 1 h) and stops retrying after 10 attempts (default `maxAttempts`), logging a stuck metric. exam, vocabulary and document therefore run `ROLE=api,worker` (document's worker calls r2 `DeleteObjects` as service `document`; vocabulary's worker calls r2 `DeleteObjects` as service `vocabulary`; it deletes only keys under `word-family/`, so a category image pointing at a generic `images/` upload is never deleted). auth, exam, vocabulary and document need `R2_PUBLIC_URL` so `r2KeyFromUrl` can map a stored URL to a key; URLs outside that host are never deleted.
 - Admin `set-tier` first checks the user with auth (404 `USER_NOT_FOUND`) since it can no longer join to `User`.
 
 ## Key Architectural Patterns
@@ -450,7 +474,7 @@ One Postgres database, one schema and one login role per service. `libs/database
 3. **Shared infra libs** — `@examio/common`, `@examio/redis`, `@examio/messaging`, `@examio/auth-jwt`
 4. **Repository pattern with cache** — `BaseRepository<T>` wraps Prisma + Redis invalidation
 5. **Composite screen detection** — single page with independent regions (REG###)
-6. **Backend-for-frontend (BFF) pattern** — exam-service orchestrates AI calls rather than frontend calling ai-service directly
+6. **Backend-for-frontend (BFF) pattern** — the frontend never calls ai-service; exam-service (generation, chat) and document-service (uploads) front it, over gRPC and events (chat still uses the HTTP compat routes until phase 13)
 7. **Optimistic UI with sendBeacon** — quiz auto-save uses `navigator.sendBeacon` on unload
 8. **Event-driven wallet bootstrap** — `auth.user.authz_changed` (outbox) with `role=TEACHER` → finance creates wallet idempotently
 
@@ -521,7 +545,7 @@ Docker Compose file: `examio-be/deploy/docker-compose.yml` (production-grade)
 graph LR
     CF[Cloudflare] -->|CF-Connecting-IP| NGX[nginx examio-fe<br/>real_ip + /api/ + /ws/]
     NGX -->|examio-edge| GW[gateway 127.0.0.1:6369]
-    GW -->|examio-internal| SVC[auth / exam / study-room / vocabulary / finance / admin / r2 / ai]
+    GW -->|examio-internal| SVC[auth / exam / study-room / vocabulary / document / finance / admin / r2 / ai]
     SVC --- DATA[(postgres, redis, rabbitmq)]
     SVC -->|examio-egress| NET[internet: OAuth, SMTP, SePay, R2, Gemini]
 ```
@@ -543,7 +567,7 @@ graph LR
 | A.1 | ~~`ocr-service` gRPC port collision~~ — resolved 2026-10-18: service deleted | scout + W7a | platform | P0 |
 | A.2 | `FREE_MODE = true` shipped in `FinanceClientService.deductCredits` — credit gating bypassed | scout + W7a | backend | P0 |
 | A.4 | `EventType` enum defines legacy events (unused); `auth.user.authz_changed` is consumed by finance (wallet), the gateway and study-room-service's authz handler; `auth.user.registered` is published without a consumer | W7a | backend | P3 |
-| A.6 | `r2/image` (≤2MB cap) routed through `exam-service` rather than directly to `r2-service` | W7a | backend | P3 |
+| A.6 | `r2/image` (≤2MB cap) routed through `document-service` (was exam) rather than directly to `r2-service` | W7a | backend | P3 |
 | A.7 | 12 v3.x legacy feature spec dirs in `docs/features/f001-*` (kebab-case) — now archived to `_archive/legacy-v3x/` | rebuild-spec | devops | ✅ done |
 
 ## Cross-References

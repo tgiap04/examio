@@ -35,6 +35,7 @@ yarn dev:auth
 yarn dev:exam
 yarn dev:study-room
 yarn dev:vocabulary
+yarn dev:document
 yarn dev:finance
 yarn dev:gateway
 yarn dev:r2
@@ -44,7 +45,7 @@ yarn dev:all
 yarn proto:lint
 yarn proto:gen
 yarn prisma:generate               # sinh client cho mọi apps/*/prisma (scripts/prisma-generate.sh) vào apps/<svc>-service/src/generated/prisma (gitignore)
-PRISMA_ADMIN_URL=... scripts/prisma-migrate-dev.sh <auth|finance|admin|exam|studyroom|vocabulary> <name>   # tạo migration (chỉ local; = yarn prisma:migrate)
+PRISMA_ADMIN_URL=... scripts/prisma-migrate-dev.sh <auth|finance|admin|exam|studyroom|vocabulary|document> <name>   # tạo migration (chỉ local; = yarn prisma:migrate)
 yarn prisma:deploy <svc>           # prisma migrate deploy cho schema của service
 yarn prisma:status <svc>
 scripts/prisma-schema-path.sh <svc>   # in đường dẫn schema của service
@@ -58,7 +59,7 @@ yarn finance:reconcile-teachers    # đảm bảo mỗi TEACHER có ví (finance
 yarn check:ownership               # mỗi model Prisma chỉ một service đọc/ghi (scripts/check-model-ownership.ts --strict; CI chạy)
 yarn check:deps                    # dependency-cruiser (.dependency-cruiser.cjs) chặn import chéo giữa service; CI chạy
 scripts/gen-jwt-keypair.sh         # in JWT_KID + JWT_PRIVATE_KEY (không commit)
-scripts/gen-service-secret.sh <exam|studyroom|vocabulary|finance|admin>  # in secret + hash cho SERVICE_CLIENTS
+scripts/gen-service-secret.sh <exam|studyroom|vocabulary|document|finance|admin>  # in secret + hash cho SERVICE_CLIENTS
 ```
 
 ### Chạy một test backend cụ thể
@@ -102,11 +103,12 @@ Ghi chú:
 
 ### Python AI service (`examio-be/apps/ai-service`)
 
-Script backend `yarn dev:ai` giả định rằng virtualenv đã tồn tại tại `examio-be/apps/ai-service/venv`.
+Script backend `yarn dev:ai` giả định rằng virtualenv đã tồn tại tại `examio-be/apps/ai-service/venv`. Script chạy `python -m src.main` với `ROLE=api,worker` (gRPC `AiService` cổng 50051 + `/health` + consumer event/outbox). Lần đầu phải tạo schema `ai` bằng `ROLE=migrate` (Alembic, xem dưới).
 
 ```bash
 cd examio-be/apps/ai-service
-./venv/bin/uvicorn src.backend.main:app --reload --port 8000
+ROLE=migrate ./venv/bin/python -m src.main     # alembic upgrade head (schema ai), rồi thoát
+ROLE=api,worker ./venv/bin/python -m src.main  # tương đương yarn dev:ai (yarn dev:ai còn đặt thêm PYTHONPATH, SSL_CERT_FILE)
 ./venv/bin/ruff check src
 ./venv/bin/black src
 ./venv/bin/isort src
@@ -116,13 +118,13 @@ Nếu `pytest` đã được cài trong môi trường local, có thể chạy m
 
 ```bash
 cd examio-be/apps/ai-service
-./venv/bin/pytest src/score/test_score_tool.py
+./venv/bin/pytest src/backend/tests/test_no_foreign_tables.py
 ```
 
 ## Hạ tầng local
 
 - File docker compose dùng cho production/deploy của backend là `examio-be/deploy/docker-compose.yml`.
-- Cấu hình compose đó bao gồm PostgreSQL, Redis, RabbitMQ, gateway, auth, exam, study-room, vocabulary, finance, admin, r2, ai và các container migration one-shot `<svc>-migrate` (auth, finance, admin, exam, study-room, vocabulary). Compose chia theo service trong `deploy/compose/*.yml`, ghép bằng `include:` trong `docker-compose.yml`.
+- Cấu hình compose đó bao gồm PostgreSQL, Redis, RabbitMQ, gateway, auth, exam, study-room, vocabulary, document, finance, admin, r2, ai (kèm `ai-worker`) và các container migration one-shot `<svc>-migrate` (auth, finance, admin, exam, study-room, vocabulary, document) cùng `ai-migrate` (Alembic). Compose chia theo service trong `deploy/compose/*.yml`, ghép bằng `include:` trong `docker-compose.yml`.
 - Backend hiện được thiết kế xoay quanh PostgreSQL + Redis + RabbitMQ cho persistence và messaging.
 - Compose dùng 3 network: `edge` (gateway + nginx FE), `internal` (không ra ngoài; mọi service + postgres/redis/rabbitmq) và `egress`. Postgres/Redis/RabbitMQ không publish port ra host; gateway chỉ publish `127.0.0.1:6369` (dev local chạy `yarn dev:gateway` vẫn dùng port `PORT` trong `.env`). Truy cập DB: `docker compose exec postgres psql ...` (hoặc `psql postgresql://<svc>_svc:…@…/examio` bằng role của service). Chi tiết: `examio-be/deploy/README.md`.
 - Cookie auth chỉ do auth-service set: `accessToken` và `refreshToken` (HttpOnly, SameSite=Lax, Secure ở production); cookie cũ `token`/`session_id` chỉ bị xóa khi logout. `POST /auth/refresh` xoay refresh token mỗi lần gọi và set lại cả hai cookie (token cũ chỉ còn hiệu lực trong khoảng grace ngắn). Route credential (login, register, ...) giới hạn 5 req/phút.
@@ -136,12 +138,13 @@ Backend là một root package dùng Yarn, tổ chức theo kiểu Nest monorepo
 
 - `gateway-service`: điểm vào HTTP public; streaming proxy cấu hình bằng YAML (`apps/gateway-service/config/routes.yaml`), verify JWT, kiểm tra revoke/stale (Redis), rate limit, WS upgrade `/ws/study`. Không có DB và không còn proxy controller.
 - `auth-service`: xác thực, OAuth providers, quản lý profile/session/device và các gRPC endpoint liên quan auth.
-- `exam-service`: domain chính cho thi cử và học tập (quiz, flashcard, exam room/session, AI chat/generation, document). Không còn gRPC server; study room và word-family đã tách ra hai service dưới đây.
+- `exam-service`: domain chính cho thi cử và học tập (quiz, flashcard, exam room/session, AI chat, `GenerationJob` sinh quiz/flashcard từ file). Không còn gRPC server; upload file đã tách sang `document-service`; study room và word-family đã tách ra hai service dưới đây.
 - `study-room-service`: phòng học chung. HTTP `/api/v1/studyrooms/*` và Socket.io `/ws/study` (Redis adapter `key: 'studyroom'`). Consume `auth.user.authz_changed` (gửi `auth:reauth` rồi ngắt socket) và `auth.user.updated` (xóa cache profile) trên queue `studyroom.events` ngay trong process API. Một container, không có gRPC server, không có env `ROLE`; có SIGTERM drain.
 - `vocabulary-service`: word family. HTTP `/api/v1/word-family/*` (trừ `POST /api/v1/word-family/:id/to-flashcard`, vẫn ở exam) và gRPC `examio.vocabulary.v1` (`WordFamilyAdminService` cho admin, `WordFamilyService.GetWordFamily` cho exam; proto `proto/examio/vocabulary/v1/word_family.proto`). Chạy `ROLE=api,worker` trong một process (worker = poller `r2_delete_tasks`). Không dùng RabbitMQ.
+- `document-service`: file user tải lên, hạn mức upload theo tháng và trạng thái xử lý (OCR). HTTP `/api/v1/ai/upload` (JSON), `/ai/quick-upload`, `GET|DELETE /ai/upload/:id`, `/ai/upload-image`, `/api/v1/r2/image` (`recent-uploads` do exam phục vụ, lấy danh sách qua RPC `ListDocuments`); gRPC `examio.document.v1.DocumentService` (`CreateUpload`, `GetDocumentsByIds`, `AssertOwnership`, `GetQuota`, `EnsureProcessed`, `DeleteDocuments`, `ListDocuments`, `GetDownloadUrl`; chỉ nhận token user được chuyển tiếp, không service nào được gọi thay user). Schema `document`, role `document_svc`. Chạy `ROLE=api,worker`: worker = outbox relay, consumer `document.events`, reaper/sweeper hoàn tiền và poller `r2_delete_tasks` (gọi r2 với tư cách `document`). Publish `document.uploaded` / `document.deleted`, consume `ai.document.processed` / `ai.document.failed`.
 - `finance-service`: ví, thanh toán, subscription và luồng khởi tạo ví theo event.
 - `r2-service`: service lưu trữ tệp.
-- `ai-service`: FastAPI service viết bằng Python cho RAG, OCR/xử lý tài liệu và các luồng AI chat/generation.
+- `ai-service`: service Python cho RAG, OCR/xử lý tài liệu, AI chat và sinh nội dung. Sở hữu schema `ai` (Alembic, container one-shot `ai-migrate`; `DB_SEARCH_PATH=ai,extensions`): một pool asyncpg dùng chung, không DDL lúc chạy, không SQL lên bảng của service khác (cờ `AI_RUNTIME_DDL` đã bỏ). gRPC `examio.ai.v1.AiService` (`StreamChat`, `Query`, `GenerateWordFamily`, `ListModels`) cổng 50051, chỉ nhận service token (RS256, `aud=ai`, role đúng SERVICE, caller thuộc `svc:exam|ai-chat|vocabulary|content`). Event qua `src/backend/messaging` (bản Python của `libs/messaging`: queue `ai.events` + retry 30s + DLQ, outbox relay, purge). `ROLE` = `api` | `worker` | `migrate` (compose `ai`, `ai-worker`, `ai-migrate`). HTTP `/api/chat/*` và `/api/generate/word-family` chỉ còn khi `AI_HTTP_COMPAT=true` kèm `INTERNAL_SERVICE_TOKEN` (exam ai-chat và vocabulary còn dùng, bỏ ở phase 13).
 
 ### Shared backend libraries
 
@@ -155,7 +158,7 @@ Mã hạ tầng dùng chung nằm trong `examio-be/libs/`:
 - `@examio/http`: HTTP error envelope filter dùng chung.
 - `@examio/auth-jwt`: authn/authz stateless dùng chung (thay `AuthGuard`/`AdminGuard` cũ của `@examio/common`): verify JWT RS256 qua JWKS của auth (không query DB mỗi request), `JwtAuthGuard` → `PermissionsGuard` deny-by-default đăng ký global bởi `AuthJwtModule.forRoot({ serviceName })`, decorator `@Public`/`@Authenticated`/`@AllowUnverified`/`@RequirePermissions`/`@RequireOwnerOrPermission`/`@ServiceOnly`/`@RequirePermissionsOrService`, catalog permission + `ROLE_PERMISSIONS` trong `libs/auth-jwt/src/permissions.ts`, `ServiceTokenClient` (service token), `assertSelfOrService` (chống IDOR cho RPC có `user_id`). Route mới không khai báo decorator sẽ bị 403 `NO_AUTHZ_DECLARED`.
 - Endpoint mới trong exam/finance/admin/r2: khai báo đúng một decorator — `@RequirePermissions('<perm>')` (mặc định), `@RequireOwnerOrPermission(perm, OwnerResolver)` khi chủ sở hữu cũng được vào (ví dụ giáo viên xem trước bộ thẻ của mình), hoặc `@Public()`. `@Authenticated()` trơn chỉ dành cho handler nằm trong `examio-be/test/authz/authenticated-allowlist.ts` và phải có spec 2 user (hoặc `selfScoped`). `yarn test test/authz` sẽ fail nếu thiếu khai báo (cả HTTP lẫn WS gateway). Resource không thuộc người gọi trả 404 (không lộ tồn tại), thiếu quyền mới trả 403; check truy cập chỉ dựa vào `isPublic`/`whitelist`/code/`ownerId`, không đọc role của chủ sở hữu. Mã truy cập 6 số đi qua `modules/common/access-code-guard.ts` (khóa 5 lần sai/15 phút), tìm user qua `modules/common/user-search.service.ts`. Chi tiết: `docs/system/permissions.md` § Per-endpoint enforcement.
-- `@examio/messaging`: envelope v1, transactional outbox (`outbox_events`) + relay claim-then-publish, consumer idempotent (`processed_events`, `@EventHandler`), validate `source`, một tầng retry 30s + DLQ theo service (`<svc>.dlq`), purge hằng ngày, env `ROLE` (`api` | `worker` | `api,worker`). Auth và finance dùng lib này; exam/ai vẫn dùng module events cũ trong `@examio/common`.
+- `@examio/messaging`: envelope v1, transactional outbox (`outbox_events`) + relay claim-then-publish, consumer idempotent (`processed_events`, `@EventHandler`), validate `source`, một tầng retry 30s + DLQ theo service (`<svc>.dlq`), purge hằng ngày, env `ROLE` (`api` | `worker` | `api,worker`). Auth, finance, study-room, document và exam dùng lib này (`alsoPublishes` cho phép một service ghi outbox với `source` của domain khác: exam publish `content.generation.requested` với `source=content` cho đến phase 14); ai-service dùng bản Python tương đương.
 
 Ưu tiên dùng các shared library này thay vì lặp lại code hạ tầng trong từng service.
 
@@ -166,7 +169,7 @@ Backend không phải là một monolith duy nhất dù các service dùng chung
 - Gateway public các HTTP route và đẩy request xuống downstream service theo bảng route trong `examio-be/apps/gateway-service/config/routes.yaml` (một dispatcher duy nhất + `http-proxy-middleware`, stream body, không body parser). **Thêm route mới = sửa `routes.yaml`** (upstream, `auth`, `permissions`, `pageFlag`, `maxBodySize`, `timeout`, `rateLimits`), không tạo controller.
 - Auth, finance, vocabulary, admin và storage giao tiếp qua gRPC (exam chỉ là client, không còn gRPC server) client/proto từ `@examio/grpc` và `@examio/contracts` (URL qua env `AUTH_GRPC_URL`, `R2_GRPC_URL`, `FINANCE_GRPC_URL`, `GATEWAY_GRPC_URL`, `VOCABULARY_GRPC_URL`, `ADMIN_GRPC_URL`; container dùng HTTP `3000` / gRPC `50051`, `GRPC_PORT`).
 - **Mỗi model Prisma do đúng một service sở hữu** (map trong `examio-be/scripts/check-model-ownership.ts`; DB vẫn dùng chung). Service khác không đọc/ghi model đó (kể cả qua `include`/`select`/nested write): gọi RPC của owner. `yarn check:ownership` và `yarn check:deps` chạy trong CI; model mới phải thêm vào map.
-- Các workflow bất đồng bộ giữa service dùng RabbitMQ: auth/finance qua `@examio/messaging` (outbox, event `auth.user.registered` không còn consumer, `auth.user.authz_changed` do finance consume); study-room cũng dùng `@examio/messaging` (chỉ consume; vocabulary không có RabbitMQ); exam/ai còn dùng events module cũ. Mỗi service có RabbitMQ user riêng (`RABBITMQ_URL` riêng; mật khẩu `RABBITMQ_<SVC>_PASS` phải URL-safe) chỉ được publish routing key của domain mình; user/permission render từ `deploy/rabbitmq/definitions.template.json` bởi container one-shot `rabbitmq-defs` (`definitions.json` bị gitignore). RabbitMQ 3.13.
+- Các workflow bất đồng bộ giữa service dùng RabbitMQ: auth/finance qua `@examio/messaging` (outbox, event `auth.user.registered` không còn consumer, `auth.user.authz_changed` do finance consume); study-room cũng dùng `@examio/messaging` (chỉ consume; vocabulary không có RabbitMQ); document và exam dùng nó cho event tài liệu/sinh nội dung (queue `document.events`, `exam.events`); ai-service dùng bản Python (queue `ai.events`). Mỗi service có RabbitMQ user riêng (`RABBITMQ_URL` riêng; mật khẩu `RABBITMQ_<SVC>_PASS` phải URL-safe) chỉ được publish routing key của domain mình (user `exam` được publish `^(exam|content)\.` đến phase 14); user/permission render từ `deploy/rabbitmq/definitions.template.json` bởi container one-shot `rabbitmq-defs` (`definitions.json` bị gitignore). RabbitMQ 3.13.
 - Ví dụ từ wiring hiện tại:
   - gateway biết URL của downstream service qua env `AUTH_SERVICE_URL`, `EXAM_SERVICE_URL`, `FINANCE_SERVICE_URL`, `ADMIN_SERVICE_URL` (nội suy vào `routes.yaml`).
   - auth gọi gRPC `GatewayControl` của gateway (`RevokeSession`, `InvalidateUser`; `GATEWAY_GRPC_URL`, `GATEWAY_CONTROL_ENABLED`); gateway còn consume bền `auth.user.authz_changed` và `auth.session.revoked` (queue `gateway.events`, `RABBITMQ_GATEWAY_PASS`). Redis keys: `gw:revoked:sid:*`, `gw:user:*:av`, `gw:rl:*`.
@@ -175,9 +178,12 @@ Backend không phải là một monolith duy nhất dù các service dùng chung
   - finance tạo ví cho TEACHER qua handler `auth.user.authz_changed` (không còn dùng `auth.user.registered`).
   - admin-service không đụng DB của service khác: gọi auth (`AuthUserService`: `UpdateUserAdmin`, `SearchUsers`, `GetUserStats`, `GetUserAdminDetail`), finance (`FinanceAdminService` cần `finance:admin`, `FinanceStatsService.GetRevenueStats`), gateway (`SetPageFlags`) và vocabulary (`WordFamilyAdminService`, `VOCABULARY_GRPC_URL=vocabulary:50051`) bằng token admin được chuyển tiếp (`AUTH_TOKEN_URL`, `SERVICE_CLIENT_SECRET`); gateway lúc boot kéo `AdminService.GetPageFlags` từ admin (`ADMIN_GRPC_URL`, token service `gateway` qua `GATEWAY_SERVICE_CLIENT_SECRET`; hash `gateway` phải có trong auth `SERVICE_CLIENTS`).
   - AI chat trong exam cũng đăng ký finance subscription gRPC client.
+  - upload file (document-service): token user được chuyển tiếp để `GetUserBenefits`/`Debit` (finance), token `svc:document` để gọi r2 (`UploadFile`, `CreatePresignedDownload`, `DeleteObjects`) và `Refund`. Phí upload tính 3 bước với key `doc:<id>`: insert `UserStorage` ở `PENDING_CHARGE` → `Debit` → xác nhận `PENDING` + outbox `document.uploaded`. `Debit` không rõ kết quả thì giữ hàng ở `FAILED` (kèm xếp xóa key R2) rồi `Refund`; reaper 60 giây thử lại mọi khoản hoàn còn mở và chỉ coi `Refund NOT_FOUND` là "chưa từng trừ" sau 2 phút (`refundSettledAt`). `ai.document.failed` cho file đã trừ tiền → `Refund`. ai-service tải file qua `downloadUrl` (presigned GET 1 giờ), không có quyền ghi R2.
+  - sinh quiz/flashcard từ file (exam `modules/ai`): `GenerationJob` đi `PENDING_CHARGE` → `Debit` key `gen:<jobId>` → `QUEUED` + outbox `content.generation.requested` (mang `downloadUrl`) → ai-service trả `ai.generation.completed|failed` → `COMPLETED`/`FAILED`. Hủy (`DELETE /ai/job/:id`), sinh lỗi và job quá hạn đều `Refund`; reaper hủy job kẹt `PENDING_CHARGE` quá 10 phút, watchdog fail job `QUEUED`/`PROCESSING` không đổi trạng thái sau `GENERATION_JOB_TIMEOUT_MINUTES` (mặc định 60, tối thiểu 10), sweeper thử lại hoàn tiền chưa xong (`refundedAt`). Phí: file mới = upload + 5; dùng lại file `COMPLETED`/`FAILED`/`PENDING` = 5 (không còn thử lại miễn phí); `regenerate` = `ceil(số item/10)`. Exam gọi document qua gRPC (`CreateUpload`, `AssertOwnership`, `GetDocumentsByIds`, `EnsureProcessed`, `DeleteDocuments`, `ListDocuments`, `GetQuota`) và ai-service qua gRPC `ListModels` (token `svc:exam`, `aud=ai`); AI chat vẫn gọi ai-service qua HTTP compat đến phase 13.
+  - gateway: `ai-upload-history` và `ai-recent-uploads` → exam, khai báo trước `ai-upload` → document; `r2-image` → document (`DOCUMENT_SERVICE_URL`); env mới `DOCUMENT_GRPC_URL`, `AI_GRPC_URL`, `DOCUMENT_SERVICE_CLIENT_SECRET` (+ entry `document` trong auth `SERVICE_CLIENTS`; `SERVICE_AUDIENCES` có `document` và `ai`), `RABBITMQ_DOCUMENT_PASS`, `R2_ALLOWED_HOSTS` (ai-service, allowlist host tải file), `AI_HTTP_COMPAT`, `GENERATION_JOB_TIMEOUT_MINUTES`, `AI_CHAT_DOCUMENT_WAIT_MS`. r2 không còn `internal/upload` và `INTERNAL_SERVICE_TOKEN`; thêm `CreatePresignedDownload` (chỉ `document`).
   - exam → vocabulary: `POST /api/v1/word-family/:id/to-flashcard` nằm ở exam (`modules/flashcardset/word-family-to-flashcard.*`), đọc word family qua gRPC `WordFamilyService.GetWordFamily` (`VOCABULARY_GRPC_URL`, token service audience `vocabulary` nên auth `SERVICE_AUDIENCES` phải có `vocabulary`; `test/cross-app/service-audiences.spec.ts` canh điều này) và gán trước id cho card để không nối nhầm card của user khác. Gateway: route `wf-to-flashcard` (POST) khớp trước prefix `word-family`; upstream tên `studyroom` / `vocabulary` (`STUDYROOM_SERVICE_URL`, `VOCABULARY_SERVICE_URL`).
   - study-room-service: bắt buộc `FRONTEND_URL` ở production (CORS cho WS; thiếu thì service từ chối khởi động); user broker `studyroom` (`RABBITMQ_STUDYROOM_PASS`); secret `STUDYROOM_SERVICE_CLIENT_SECRET` và entry `studyroom` trong auth `SERVICE_CLIENTS`; Redis prefix `studyroom:`. PUT phòng bởi người không phải host trả 403 (hành vi giữ nguyên khi chuyển; ánh xạ 404 để sau).
-  - vocabulary-service: secret `VOCABULARY_SERVICE_CLIENT_SECRET` và entry `vocabulary` trong auth `SERVICE_CLIENTS`; Redis prefix `vocab:`. Sinh word family bằng AI gọi ai-service qua HTTP với `INTERNAL_SERVICE_TOKEN` (tạm đến phase 13), miễn phí, chỉ TEACHER, tối đa 20 lần/ngày.
+  - vocabulary-service: secret `VOCABULARY_SERVICE_CLIENT_SECRET` và entry `vocabulary` trong auth `SERVICE_CLIENTS`; Redis prefix `vocab:`. Sinh word family bằng AI gọi ai-service qua HTTP compat (`AI_HTTP_COMPAT`) với `INTERNAL_SERVICE_TOKEN` (tạm đến phase 13), miễn phí, chỉ TEACHER, tối đa 20 lần/ngày.
 
 Khi thay đổi ranh giới giữa các service, hãy kiểm tra đồng thời route trong `routes.yaml`, gRPC contract, event publisher/consumer và các service URL cấu hình qua env.
 
@@ -185,7 +191,7 @@ Khi thay đổi ranh giới giữa các service, hãy kiểm tra đồng thời 
 
 Các Nest service chủ yếu đi theo cấu trúc feature-module, không phải chỉ là một cặp controller/service phẳng.
 
-- `exam-service` là domain service lớn nhất. `ExamServiceModule` ghép nhiều module chức năng như quiz set, flashcard, exam room, exam session, exam attempt, cheating log, subject, AI generation, AI chat, statistics, student, finance client integration và R2 integration.
+- `exam-service` là domain service lớn nhất. `ExamServiceModule` ghép nhiều module chức năng như quiz set, flashcard, exam room, exam session, exam attempt, cheating log, subject, AI generation (`GenerationJob`), AI chat, statistics, student, finance client, document client (gRPC) và R2 client.
 - `auth-service` ghép `AuthModule`, device management, profile handling, OAuth strategy, repository, một gRPC controller, `token` (ký JWT RS256, `GET /.well-known/jwks.json`, `POST /internal/token`), `roles` (`RoleChangeService`, `RoleChangeLog`, outbox `auth.user.authz_changed`) và `admin-bootstrap` (CLI `bootstrap:admin*`).
 - `finance-service` ghép wallet module, SePay module và có handler `auth.user.authz_changed` để tạo ví (+20 credit) cho TEACHER (STUDENT không có ví).
 - `gateway-service` không còn proxy controller: `config/routes.yaml` + `src/routing` (matcher), `src/pipeline` (guard chain, header hygiene, body cap, rate limit), `src/ws` (upgrade), `src/control` (gRPC GatewayControl), `src/events` (consumer), cùng vài controller tự phục vụ (`status`, `config/pages`, `config/stream`). Lỗi trả dạng `{ statusCode, code, message, requestId }`; 401 có thể là `TOKEN_EXPIRED`, `SESSION_REVOKED`, `TOKEN_STALE`.
@@ -207,29 +213,32 @@ Database per service (phase 11): không còn schema Prisma dùng chung (`libs/da
 | auth | `apps/auth-service/prisma/schema.prisma` | `auth` |
 | finance | `apps/finance-service/prisma/schema.prisma` | `finance` |
 | admin | `apps/admin-service/prisma/schema.prisma` | `admin` |
-| exam | `apps/exam-service/prisma/schema/*.prisma` (multi-file; migrations nằm trong `prisma/schema/migrations`) | `exam` (các role `content`, `assessment`, `aichat`, `document` đã tạo sẵn nhưng chưa có service; `ai` dùng tạm schema `exam` đến phase 15) |
+| exam | `apps/exam-service/prisma/schema/*.prisma` (multi-file; migrations nằm trong `prisma/schema/migrations`) | `exam` (các role `content`, `assessment`, `aichat` đã tạo sẵn nhưng chưa có service) |
 | study-room | `apps/study-room-service/prisma/schema.prisma` | `studyroom` (role `studyroom_svc`) |
 | vocabulary | `apps/vocabulary-service/prisma/schema.prisma` | `vocabulary` (role `vocabulary_svc`) |
+| document | `apps/document-service/prisma/schema.prisma` | `document` (role `document_svc`) |
+| ai (Python) | `apps/ai-service/alembic/versions` (Alembic, không dùng Prisma) | `ai` (role `ai_svc`) |
 
 - Mỗi service có migration riêng trong `apps/<svc>-service/prisma/migrations`; deploy chạy bằng container one-shot `<svc>-migrate` (`prisma migrate deploy`).
 - Không có FK tới `User` nữa: bảng service khác giữ `userId String` + `@@index`. Join sang User thực hiện ở tầng ứng dụng qua auth.
-- Ví dụ domain: auth (User, verify/reset code, session, RoleChangeLog, R2DeleteTask), finance (UserSubscription, Payment, Wallet, WalletTransaction), admin (AdminAudit, PageFeatureFlag), study-room (StudyRoom, StudyRoomMember, StudyRoomPlaylistItem, StudyRoomChatBlock), vocabulary (WordFamilyCategory, WordFamily, UserSavedWordFamily), exam (quiz/flashcard, assessment, AI chat + subject, document/UserStorage/graph). Các service dùng `@examio/messaging` có `OutboxEvent`/`ProcessedEvent`; study-room chỉ có `ProcessedEvent`, vocabulary không có bảng nào trong hai bảng này.
-- `DATABASE_URL` của từng service: `postgresql://<svc>_svc:…@postgres:5432/examio?schema=<svc>`. ai-service (Python) dùng `ai_svc` **không** có `?schema=`, `DB_SEARCH_PATH=exam,extensions`, `AI_RUNTIME_DDL=false`; tạm có quyền đọc/ghi các bảng `exam` đến phase 15. pgvector nằm trong schema `extensions`.
+- Ví dụ domain: auth (User, verify/reset code, session, RoleChangeLog, R2DeleteTask), finance (UserSubscription, Payment, Wallet, WalletTransaction), admin (AdminAudit, PageFeatureFlag), study-room (StudyRoom, StudyRoomMember, StudyRoomPlaylistItem, StudyRoomChatBlock), vocabulary (WordFamilyCategory, WordFamily, UserSavedWordFamily), exam (quiz/flashcard, assessment, AI chat + subject, `GenerationJob` + `HistoryGenerated*`), document (UserStorage, UserMonthlyFileUpload), ai (Document, DocumentEntity, UserStorageGraph, UserStorageGraphGroup; vector/graph của file). Các service dùng `@examio/messaging` có `OutboxEvent`/`ProcessedEvent` (ai-service có `outbox_events`/`processed_events` trong schema `ai`); study-room chỉ có `ProcessedEvent`, vocabulary không có bảng nào trong hai bảng này.
+- `DATABASE_URL` của từng service: `postgresql://<svc>_svc:…@postgres:5432/examio?schema=<svc>`. ai-service (Python) dùng `ai_svc` **không** có `?schema=`, `DB_SEARCH_PATH=ai,extensions`; không còn quyền nào trên schema `exam` (grant tạm đã thu hồi). pgvector nằm trong schema `extensions`.
 - Role/schema do `deploy/postgres/init/01-service-schemas.sh` tạo, chỉ chạy trên volume rỗng và cần `<SVC>_DB_PASSWORD` cho cả 11 role; stack dev cũ phải `docker compose down -v` một lần.
-- Xóa file R2 bền vững: bảng `r2_delete_tasks` (schema `auth`, `exam` và `vocabulary`) được ghi trong cùng transaction với việc xóa/thay ảnh, worker (`libs/messaging/src/r2-delete`) rút bảng và gọi r2-service. exam và vocabulary chạy `ROLE=api,worker` (vocabulary có `r2_delete_tasks` riêng, gọi r2 `DeleteObjects` với tư cách `vocabulary`; ảnh category chỉ bị xóa khi key nằm dưới `word-family/`, URL R2 khác không bao giờ bị xóa). auth, exam và vocabulary cần `R2_PUBLIC_URL` để suy key từ URL (`libs/common/src/utils/r2-key-from-url.ts`).
+- Xóa file R2 bền vững: bảng `r2_delete_tasks` (schema `auth`, `exam`, `vocabulary` và `document`) được ghi trong cùng transaction với việc xóa/thay ảnh, worker (`libs/messaging/src/r2-delete`) rút bảng và gọi r2-service. exam, vocabulary và document chạy `ROLE=api,worker` (document xóa file/ảnh upload và gọi r2 `DeleteObjects` với tư cách `document`; vocabulary có `r2_delete_tasks` riêng, gọi r2 `DeleteObjects` với tư cách `vocabulary`; ảnh category chỉ bị xóa khi key nằm dưới `word-family/`, URL R2 khác không bao giờ bị xóa). auth, exam, vocabulary và document cần `R2_PUBLIC_URL` để suy key từ URL (`libs/common/src/utils/r2-key-from-url.ts`).
 - Đổi schema của một service chỉ ảnh hưởng service đó và contract (gRPC/event/HTTP) của nó; vẫn cập nhật API client/store/component FE nếu response đổi. Test cô lập DB: `test/db-isolation` (CI chạy); `test/r2-delete` kiểm tra tĩnh.
 
 ## Kiến trúc phần AI
 
-- Python AI service là một FastAPI app riêng nằm trong `examio-be/apps/ai-service`.
+- Python AI service nằm trong `examio-be/apps/ai-service`: gRPC `AiService` + worker event (FastAPI chỉ còn `/health` và các route compat).
 - README của service này mô tả hai vai trò lớn:
   - pipeline RAG/truy xuất tài liệu.
   - orchestration kiểu ReAct agent/tool.
 - Project Python phụ thuộc vào LangChain, LangGraph, Gemini integration, FAISS, Docling, OCR/document tooling và graph/community tooling.
-- `exam-service` phía Nest không tự xử lý toàn bộ hành vi AI; nó còn đóng vai trò điều phối các request AI thông qua các module như `modules/ai` và `modules/ai-chat`, rồi gọi sang Python AI service qua HTTP.
+- `exam-service` phía Nest không tự xử lý hành vi AI; nó điều phối. Sinh quiz/flashcard (`modules/ai`) không còn gọi ai-service qua HTTP: exam tạo `GenerationJob`, publish `content.generation.requested` và nhận `ai.generation.*`; OCR chạy bằng event `document.uploaded` giữa document-service và ai-service; danh sách model lấy qua gRPC `ListModels`. `modules/ai-chat` vẫn gọi ai-service qua HTTP compat (`/api/chat/*`, `INTERNAL_SERVICE_TOKEN`) đến phase 13.
 - AI chat trong `exam-service` có liên kết với tài liệu và subscription:
-  - chat record, message và document đính kèm được lưu trong Prisma.
-  - AI chat module import `R2Module` cùng với finance gRPC client để kiểm tra subscription/package.
+  - chat record, message và liên kết tới document được lưu trong Prisma của exam; metadata file nằm ở document-service, ai-chat đọc qua RPC (`GetDocumentsByIds`, `AssertOwnership`, `EnsureProcessed`, `DeleteDocuments`).
+  - mỗi tin nhắn có file đính kèm đợi OCR xong (poll `GetDocumentsByIds`, tối đa `AI_CHAT_DOCUMENT_WAIT_MS`, mặc định 120000 ms; hết giờ thì trả lời không có ngữ cảnh file).
+  - kiểm tra subscription/package qua finance gRPC client.
 - Frontend có các API client riêng cho AI chat và virtual teacher flow, bao gồm cả xử lý streaming kiểu SSE trong `src/apis/aiChatApi.ts`.
 
 Khi chỉnh sửa AI chat hoặc generation flow, hãy kiểm tra đủ ba lớp: frontend API/store/UI, `exam-service` điều phối, và Python AI service.
@@ -317,7 +326,7 @@ Khi backend thay đổi response shape, hãy cập nhật đồng thời API cli
 - Trước tiên hãy xác định task thuộc backend, frontend hay cả hai; nhiều tính năng user-facing đi xuyên qua cả hai repo.
 - Với thay đổi backend, hãy kiểm tra xem hành vi liên quan có chạm tới gateway proxy, gRPC contract, RabbitMQ event, Prisma schema hoặc Python AI service hay không.
 - Với thay đổi frontend, hãy tìm API wrapper và Zustand store tương ứng trước khi sửa UI component.
-- Với tính năng AI/tài liệu, cần dự đoán trước sự liên kết giữa Prisma model, `exam-service`, `ai-service` và các client AI chat/generation phía frontend.
+- Với tính năng AI/tài liệu, cần dự đoán trước sự liên kết giữa Prisma model, `exam-service`, `document-service`, `ai-service` và các client AI chat/generation phía frontend.
 - Tránh chạy lệnh ở thư mục gốc repository trừ khi lệnh đó thực sự dành cho root; đa số lệnh phải chạy trong `examio-be/` hoặc `examio-fe/`.
 - Giữ diff gọn và tập trung. Repo này có convention format/style khác nhau giữa backend và frontend, vì vậy hãy match theo file đang sửa.
 

@@ -2,7 +2,7 @@
 
 **Project**: examio
 **Generated**: 2026-06-05
-**Architecture Type**: Distributed multi-service (NestJS monorepo + Python FastAPI + React 19 SPA)
+**Architecture Type**: Distributed multi-service (NestJS monorepo + Python AI service + React 19 SPA)
 
 ---
 
@@ -54,9 +54,9 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 **Context**: AI workloads (embedding generation, vector search with FAISS, document OCR via Docling, ReAct agent orchestration) are I/O-heavy, stateful, and require different runtime characteristics (Python 3.12+, LangChain/LangGraph, Gemini). NestJS is not ideal for these workloads.
 
-**Decision**: AI capabilities are extracted into a standalone Python FastAPI service (`ai-service`) with its own process. exam-service orchestrates AI calls via HTTP, passing auth headers and multipart form data. Frontend streams AI chat responses via SSE.
+**Decision**: AI capabilities are extracted into a standalone Python service (`ai-service`) with its own process and its own database schema (`ai`). Synchronous AI calls go over gRPC (`examio.ai.v1.AiService`, service tokens only); long work (OCR, generation) runs through RabbitMQ events between document-service, exam-service and ai-service. AI chat still reaches ai-service over HTTP compat routes until phase 13. Frontend streams AI chat responses via SSE.
 
-**Rationale**: Allows independent scaling, different dependency management, and GPU resource isolation. The AI service can be updated/replaced without touching the NestJS monorepo. Exam-service acts as the coordinator, not the processor.
+**Rationale**: Allows independent scaling, different dependency management, and GPU resource isolation. The AI service can be updated/replaced without touching the NestJS monorepo. exam-service and document-service act as coordinators, not processors; ai-service never touches another service's tables.
 
 ---
 
@@ -78,10 +78,11 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 auth:3000 exam:3000 finance:3000 r2:3000 admin:3000
 gRPC:50051      gRPC:50051 gRPC:50051   (containers)
          exam-service ←──────────────────┐
-                  │ HTTP                │ gRPC (wallet check)
+                  │ gRPC + events       │ gRPC (Debit / Refund)
                   ▼                     │
-           ai-service :3000 in compose (Python FastAPI)
+           ai-service gRPC :50051 (+ :3000 /health, compat) · ai-worker
            RAG · embedding · AI chat · ReAct agent
+           (document-service sits beside exam: uploads, quota, OCR status)
 
 Infrastructure: PostgreSQL (one schema + role per service, Prisma per service) · Redis (cache) · RabbitMQ (topic exchange examio.events)
 ```
@@ -92,13 +93,14 @@ Infrastructure: PostgreSQL (one schema + role per service, Prisma per service) �
 |---|---|---|---|
 | gateway-service | 3000 HTTP / 50051 gRPC (GatewayControl, internal) | HTTP + gRPC | Public entry: YAML-routed streaming proxy, JWT verify, revoke/stale check, rate limit, WS upgrade (`/ws/study`); no database |
 | auth-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | RS256 JWT + JWKS, service tokens, roles (RBAC), Google OAuth, session/device management |
-| exam-service | 3000 | HTTP | Quiz/flashcard/exam authoring, attempts, AI orchestration, `word-family/:id/to-flashcard` |
+| exam-service | 3000 | HTTP | Quiz/flashcard/exam authoring, attempts, AI chat, `GenerationJob` (generation orchestration, charge/refund), `word-family/:id/to-flashcard` |
+| document-service | 3000 | HTTP + gRPC 50051 | Uploaded files, monthly upload quota, OCR status, upload charge/refund |
 | study-room-service | 3000 | HTTP + Socket.io (`/ws/study`) | Study-Together Room (phase 12; extracted from exam) |
 | vocabulary-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | Word families and categories (phase 12; extracted from exam) |
 | finance-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | Wallet, SePay QR payments, subscriptions |
 | r2-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | Cloudflare R2 storage |
 | admin-service | 3000 HTTP | HTTP | Admin dashboard: users, stats, finance, logs, audit |
-| ai-service | 3000 (compose) | HTTP | RAG, document processing, AI chat (Python FastAPI) |
+| ai-service | 3000 (compose) | gRPC 50051 + `/health`/compat HTTP | RAG, OCR/embedding, AI chat, generation worker (Python) |
 
 ---
 
@@ -121,9 +123,9 @@ Every container uses HTTP 3000 / gRPC 50051 (unified ports; separate network nam
 
 Exchange: `examio.events` (topic, durable). Only consumed event: `auth.user.authz_changed` (outbox) → `UserAuthzChangedHandler` in finance-service (wallet for TEACHER). `auth.user.registered` is published but has no consumer. See [architecture](architecture.md) § RabbitMQ.
 
-### AI Orchestration (HTTP, exam-service → ai-service)
+### AI Orchestration (gRPC + events, exam-service → ai-service)
 
-exam-service calls `aiApi.generateExamApi` (multipart) → returns `jobId` → frontend polls `getJobStatus` every 10s (up to 360 attempts / 60min). Completion stores result + refreshes wallet balance.
+`POST /ai/generate-from-file` (multipart) creates a `GenerationJob`, debits the wallet and queues `content.generation.requested`; ai-service answers `ai.generation.completed|failed`. The frontend polls `GET /ai/job/{jobId}` every 10s (up to 360 attempts / 60min). Completion stores the history and the frontend refreshes the wallet balance. Details: [architecture](architecture.md) § 5.
 
 ---
 
@@ -150,13 +152,13 @@ exam-service calls `aiApi.generateExamApi` (multipart) → returns `jobId` → f
 
 ## AI Generation Flow
 
-1. Teacher triggers generation on `AIToolPage` → frontend calls `POST /ai-study/generate` (multipart)
-2. exam-service proxies to ai-service → ai-service queues job → returns `jobId`
-3. Frontend polls `GET /ai-study/generate/status/{jobId}` every 10s (up to 360 attempts)
-4. On completion: exam-service stores generated questions in DB, calls `FinanceClientService.deductCredits`
+1. Teacher triggers generation on `AIToolPage` → frontend calls `POST /ai/generate-from-file` (multipart)
+2. exam-service stores the file through document-service (`CreateUpload`), creates a `GenerationJob` (`PENDING_CHARGE`), debits the wallet (`gen:<jobId>`), then marks it `QUEUED` and publishes `content.generation.requested` → returns `{ jobId, newBalance }`
+3. Frontend polls `GET /ai/job/{jobId}` every 10s (up to 360 attempts)
+4. ai-service publishes `ai.generation.completed|failed`: exam-service stores the generated history and marks the job `COMPLETED`, or marks it `FAILED` and refunds. Cancel, timeout and refund rules: [business-rules](business-rules.md#ai-credits-charge-and-refund-phase-15)
 5. `PendingJobDialog` shows progress; job state persisted in localStorage (`pending_generation_job`) for resume on reload
 
-> **Unresolved**: `FREE_MODE = true` shipped in `FinanceClientService.deductCredits` — production credit gating may be bypassed.
+> `AI_FREE_MODE` is honoured only outside production (the shared finance client forces it off in production).
 
 ---
 
@@ -165,17 +167,17 @@ exam-service calls `aiApi.generateExamApi` (multipart) → returns `jobId` → f
 1. A SYSTEM_ADMIN grants TEACHER → `auth.user.authz_changed` (outbox) → `UserAuthzChangedHandler` creates the wallet with a 20-credit welcome bonus (also lazily on first wallet read; `yarn finance:reconcile-teachers` repairs missed ones). New registrations are STUDENTs without a wallet
 2. Teacher purchases subscription → `POST /finance/payment/create-sepay-qr` → SePay QR returned → student scans and pays
 3. SePay webhook (`POST /webhook/sepay`) confirms payment → wallet credited
-4. AI generation deducts credits via `FinanceClientService.deductCredits` (gRPC call to finance-service)
-5. Subscription gates AI features: `FinanceClientService` checks active subscription before generation
+4. AI generation and uploads are charged through finance gRPC `Debit` (keys `gen:<jobId>` / `doc:<id>`) and refunded through `Refund` when they fail or are cancelled
+5. Subscription tier sets the monthly upload quota (document-service `GetQuota`, read from finance `GetUserBenefits`)
 
 ---
 
 ## Storage / RAG Pipeline
 
-1. Teacher uploads document → `POST /r2/upload` → r2-service returns signed Cloudflare R2 URL
-2. OCR triggered via `OcrService` (gRPC → Python FastAPI worker via Docling)
-3. Extracted text chunked and embedded via LangChain + FAISS
-4. AI chat attaches document context via `UserStorageGraph` + `UserStorageGraphGroup` (RAG retrieval)
+1. Teacher uploads a document → `POST /ai/upload` (JSON; the file is already in R2) → document-service records `UserStorage` (schema `document`), charges `doc:<id>` and publishes `document.uploaded` with a presigned download link
+2. ai-service worker downloads the file, runs OCR (Docling), and publishes `ai.document.processed|failed`; document-service updates the status (a failed charged upload is refunded)
+3. Extracted text is chunked and embedded via LangChain + pgvector into schema `ai` (`Document`, `DocumentEntity`)
+4. AI chat attaches document context via `UserStorageGraph` + `UserStorageGraphGroup` in schema `ai` (RAG retrieval); exam ai-chat reads document metadata through document gRPC
 5. Frontend streams AI chat via SSE (`aiChatApi.ts`)
 
 ---

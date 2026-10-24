@@ -72,7 +72,9 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Docling** — Document OCR and parsing library used in the Python AI service to extract text from PDFs and scanned documents before chunking.
 
-**Document** — A chunked and embedded representation of an uploaded UserStorage file. One Document per file; stores extracted text content alongside a vector embedding for semantic search.
+**Document** — A chunked and embedded representation of an uploaded UserStorage file. Stored by ai-service in its own schema `ai` (keeps `userStorageId` as a plain column, no foreign key); holds extracted text alongside a vector embedding for semantic search.
+
+**Document Service** — NestJS service (`apps/document-service`, schema `document`) that owns uploaded files (`UserStorage`), the monthly upload quota and the processing status. Charges and refunds uploads, exposes gRPC `DocumentService`, publishes `document.uploaded` / `document.deleted`.
 
 **Document Entity** — A named entity (person, concept, formula, etc.) extracted from a document during processing. Used for knowledge graph construction and entity-based retrieval in AI chat.
 
@@ -90,7 +92,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Exam Session** — A specific scheduled instance of an ExamRoom. Holds the time window, time limit, access control settings, and question selection strategy. Students join via ExamAttempt.
 
-**Exam Service** — NestJS service responsible for quiz/flashcard/exam authoring, exam session management, attempt tracking, AI generation orchestration, and RAG document management. Study rooms and word families live in the Study Room Service and Vocabulary Service since phase 12; exam keeps only the `word-family/:id/to-flashcard` bridge.
+**Exam Service** — NestJS service responsible for quiz/flashcard/exam authoring, exam session management, attempt tracking, AI chat and AI generation orchestration (`GenerationJob`). Uploaded-file management moved to the Document Service in phase 15. Study rooms and word families live in the Study Room Service and Vocabulary Service since phase 12; exam keeps only the `word-family/:id/to-flashcard` bridge.
 
 ---
 
@@ -117,6 +119,8 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 **Gateway Service** — The single public HTTP entry point for all backend traffic. A YAML-routed streaming proxy (`apps/gateway-service/config/routes.yaml`): verifies the JWT, checks revoked-session and stale-`av` state in Redis, applies permissions, page flags, body caps and rate limits (default 100 req/min), then proxies to the downstream service. Has no database. Also upgrades WebSockets for `/ws/study` and exposes the internal gRPC `GatewayControl` server.
 
 **GatewayControl** — Internal gRPC service on the gateway (`GRPC_PORT`, default 50051; service token with `aud = gateway` required). `RevokeSession` and `InvalidateUser` (called by auth) write `gw:revoked:sid:<sid>` / `gw:user:<id>:av` in Redis; `SetPageFlags` (admin allowlisted) writes the page-flag cache. Backed by durable events `auth.session.revoked` and `auth.user.authz_changed`.
+
+**GenerationJob** — One quiz/flashcard generation request in exam-service, with the money behind it. Status `PENDING_CHARGE` → `QUEUED` → `COMPLETED`, or `FAILED` / `CANCELLED` (both refunded when charged). The charge key is `gen:<jobId>`; `refundedAt` records that the refund is settled.
 
 **Gemini** — The LLM model used by the Python AI service for chat, generation, and reasoning tasks.
 
@@ -168,9 +172,11 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Permission** — A string such as `quizset:manage` from the catalog in `libs/auth-jwt/src/permissions.ts`. Roles hold fixed permission sets; permissions are derived from the token `roles`, never carried in the token. See [permissions](permissions.md).
 
-**Prisma** — ORM used by the DB-owning NestJS services (auth, finance, admin, exam). Each has its own schema under `apps/<svc>-service/prisma` and its own generated client; there is no shared schema package (`@examio/database` was removed in phase 11).
+**Prisma** — ORM used by the DB-owning NestJS services (auth, finance, admin, exam, study-room, vocabulary, document). Each has its own schema under `apps/<svc>-service/prisma` and its own generated client; there is no shared schema package (`@examio/database` was removed in phase 11).
 
-**Processing Status** — A discriminator on UserStorage tracking where a document is in the pipeline: `PENDING` → `PROCESSING` → `COMPLETED` or `FAILED`. Controls whether the document is available for AI chat and generation.
+**PENDING_CHARGE** — Initial state of a paid upload (`UserStorage`) or a `GenerationJob`: the row exists but the credit debit is not confirmed yet. A reaper settles rows stuck here for more than 10 minutes (refund attempt, then failed or cancelled).
+
+**Processing Status** — A discriminator on UserStorage tracking where a document is in the pipeline: `PENDING_CHARGE` (paid uploads only) → `PENDING` → `COMPLETED` or `FAILED` (`PROCESSING` is a valid value but document-service does not set it today). Controls whether the document is available for AI chat and generation.
 
 **Profile** — The user-editable identity section (name, username, bio, avatar, banner) displayed on the platform. Changes take effect immediately across the platform.
 
@@ -270,7 +276,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **UserSession** — An active login session tied to a specific device. Tracks device fingerprint, browser, OS, IP, and last activity timestamp. Invalidated on logout or remote device termination.
 
-**UserStorage** — A record of a user-uploaded file (PDF, DOC, TXT). Stores metadata, R2 URL, and processing status. Anchors the document processing pipeline (OCR, chunking, graph building).
+**UserStorage** — A record of a user-uploaded file (PDF, DOC, TXT), owned by document-service (schema `document`). Stores metadata, R2 URL, R2 key, processing status and whether the upload credit was charged. Anchors the document processing pipeline (OCR, chunking, graph building).
 
 **UserStorageGraph** — A community detection graph built from a UserStorage document. One graph per file. Stores chunk count, edge count, community statistics, and readiness status.
 

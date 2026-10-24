@@ -331,7 +331,7 @@ None.
 
 ## Unresolved Questions
 
-1. **Credit refund policy on failed jobs**: Are credits automatically restored if a flashcard generation job fails after deduction?
+1. ~~**Credit refund policy on failed jobs**~~ — resolved in phase 15: a failed, cancelled or timed-out charged job is refunded once (`Refund` key `gen:<jobId>`).
 2. **Access code enforcement**: Is the 6-digit access code validated server-side on every study session access, or only on initial entry?
 3. **Cascade delete scope**: Does deleting a FlashCardSet also delete the associated `FlashcardStudyProgress` records for students who studied the set?
 4. **DetailsFlashCard usage**: Is the join table populated for all cards, or only when a label is assigned? If label assignment is optional, how does the system handle cards without a DetailsFlashCard row?

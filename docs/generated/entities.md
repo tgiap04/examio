@@ -2,7 +2,7 @@
 
 **Project**: examio
 **Generated**: 2026-06-05
-**Source**: per-service Prisma schemas since phase 11 (`libs/database` was removed): `examio-be/apps/auth-service/prisma/schema.prisma`, `apps/finance-service/prisma/schema.prisma`, `apps/admin-service/prisma/schema.prisma`, `apps/exam-service/prisma/schema/*.prisma`, `apps/study-room-service/prisma/schema.prisma`, `apps/vocabulary-service/prisma/schema.prisma`
+**Source**: per-service Prisma schemas since phase 11 (`libs/database` was removed): `examio-be/apps/auth-service/prisma/schema.prisma`, `apps/finance-service/prisma/schema.prisma`, `apps/admin-service/prisma/schema.prisma`, `apps/exam-service/prisma/schema/*.prisma`, `apps/study-room-service/prisma/schema.prisma`, `apps/vocabulary-service/prisma/schema.prisma`, `apps/document-service/prisma/schema.prisma`, `apps/ai-service/alembic/versions/0001_init.py` (ai-service, SQL, no Prisma)
 
 > **Per-service placement (phase 11).** Each service owns one Postgres schema; no foreign key crosses a service boundary. `userId`/`adminId`/`hostId` columns outside auth are plain strings (usually with an `@@index`) and no `@relation` to `User`; the ERD edges from `User` below are logical (resolved in the application via auth), not database FKs. Field tables below were generated before the split; where a row says "FK ... User" outside auth it is superseded by this note (rows marked "no FK since phase 11" are already patched). Not re-derived: nullability/index details of individual columns, check the owning schema file.
 >
@@ -11,11 +11,13 @@
 > | auth (`auth`) | User, UserSession, VerifyAccountCode, ResetPasswordCode, RoleChangeLog, OutboxEvent, ProcessedEvent, R2DeleteTask (`r2_delete_tasks`) |
 > | finance (`finance`) | UserSubscription, Payment, Wallet, WalletTransaction, OutboxEvent, ProcessedEvent |
 > | admin (`admin`) | AdminAudit, PageFeatureFlag, OutboxEvent, ProcessedEvent |
-> | exam (`exam`) | quiz/flashcard content, assessment (ExamRoom, ExamSession, ExamAttempt, CheatingLog, QuizPracticeAttempt, UserPinnedExamRoom), AIChat*, SubjectCategory/Subject, Document*/UserStorage*/UserMonthlyFileUpload, OutboxEvent, ProcessedEvent, R2DeleteTask |
+> | exam (`exam`) | quiz/flashcard content, assessment (ExamRoom, ExamSession, ExamAttempt, CheatingLog, QuizPracticeAttempt, UserPinnedExamRoom), AIChat*, SubjectCategory/Subject, HistoryGenerated*, GenerationJob (phase 15), OutboxEvent, ProcessedEvent, R2DeleteTask |
 > | study-room (`studyroom`, phase 12) | StudyRoom, StudyRoomMember, StudyRoomPlaylistItem, StudyRoomChatBlock, ProcessedEvent (no outbox) |
 > | vocabulary (`vocabulary`, phase 12) | WordFamilyCategory, WordFamily, UserSavedWordFamily, R2DeleteTask (`r2_delete_tasks`); no OutboxEvent/ProcessedEvent (no RabbitMQ) |
+> | document (`document`, phase 15) | UserStorage, UserMonthlyFileUpload, OutboxEvent, ProcessedEvent, R2DeleteTask (`r2_delete_tasks`) |
+> | ai-service (`ai`, phase 15; Alembic) | Document, DocumentEntity, UserStorageGraph, UserStorageGraphGroup, `outbox_events`, `processed_events` |
 >
-> Only auth's own child tables (UserSession, VerifyAccountCode, ResetPasswordCode) still have a real FK to `User`. `UserSubscription` and `Payment` moved to finance, `UserMonthlyFileUpload` to exam.
+> Only auth's own child tables (UserSession, VerifyAccountCode, ResetPasswordCode) still have a real FK to `User`. `UserSubscription` and `Payment` moved to finance. Phase 15: `UserStorage` and `UserMonthlyFileUpload` moved to document-service; `Document`, `DocumentEntity`, `UserStorageGraph`, `UserStorageGraphGroup` moved to ai-service (schema `ai`). Every `userStorageId` / `documentId` outside document-service is now a plain column (no FK, no cascade): `HistoryGenerated*` and `AIChatDocument` in exam, and the four ai tables. Cleanup runs on the `document.deleted` event, not by cascade. Where a relationship line or the ERD below still shows a UserStorage edge, read it as logical.
 
 ---
 
@@ -302,7 +304,7 @@ erDiagram
 
 ### MODEL-006 UserMonthlyFileUpload
 
-**Description**: Per-user monthly file upload counter for enforcing subscription upload limits.
+**Description**: Per-user monthly file upload counter, now in document-service (schema `document`). Reserved: the monthly quota is currently the count of that month's `UserStorage` rows (charge-failed rows excluded), so nothing writes this table yet.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -462,7 +464,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 
 **Relationships**:
 - Many-to-One with User via `userId` (Cascade delete)
-- Many-to-One with UserStorage via `userStorageId` (SetNull on delete)
+- Logical link to UserStorage via `userStorageId` (plain column since phase 15; set to null on `document.deleted`)
 - One-to-Many with DetailsQuizQuestion via `historyGeneratedQuizzId`
 
 **Discriminator Fields**: None.
@@ -589,7 +591,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 
 **Relationships**:
 - Many-to-One with User via `userId` (Cascade delete)
-- Many-to-One with UserStorage via `userStorageId` (SetNull on delete)
+- Logical link to UserStorage via `userStorageId` (plain column since phase 15; set to null on `document.deleted`)
 - One-to-Many with DetailsFlashCard via `historyGeneratedFlashcardId`
 
 **Discriminator Fields**: None.
@@ -968,7 +970,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 
 ### MODEL-029 UserStorage
 
-**Description**: User-uploaded file record. Stores metadata and R2/CDN URL. Also the anchor for document processing pipeline (OCR, chunking, graph building).
+**Description**: User-uploaded file record, owned by document-service (schema `document`, phase 15). Stores metadata and R2/CDN URL. Also the anchor for document processing pipeline (OCR, chunking, graph building, done by ai-service).
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -981,24 +983,23 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | keyR2 | String | UNIQUE, NOT NULL | R2 storage key |
 | createdAt | DateTime | NOT NULL | Upload time |
 | updatedAt | DateTime | NOT NULL | Last update |
-| processingStatus | String | NOT NULL, DEFAULT "COMPLETED" | Processing pipeline state |
-| creditCharged | Boolean | NOT NULL, DEFAULT false | OCR credit deduction flag |
+| processingStatus | String | NOT NULL, DEFAULT "PENDING" | Processing pipeline state (`PENDING_CHARGE` only between insert and debit) |
+| creditCharged | Boolean | NOT NULL, DEFAULT false | True once `Debit(doc:<id>)` succeeded; drives the refund when processing fails (cleared by that refund) |
+| chargeFailedAt | DateTime | NULL | Set when the upload credit was refused or timed out: the row is hidden and not counted in the quota |
+| refundSettledAt | DateTime | NULL | When the compensation of a charge-failed row is done; null on such a row = a refund may still be owed |
+| queuedAt | DateTime | NULL | When `document.uploaded` was last written to the outbox; null = never queued (quick-upload) |
+| pageCount | Int | NOT NULL, DEFAULT 0 | Pages found by OCR (`ai.document.processed`) |
 
 **Relationships**:
-- Many-to-One with User via `userId` (Cascade delete)
-- One-to-Many with Document via `userStorageId`
-- One-to-Many with DocumentEntity via `userStorageId`
-- One-to-One with UserStorageGraph via `userStorageId`
-- One-to-Many with UserStorageGraphGroup via `userStorageId`
-- One-to-Many with HistoryGeneratedQuizz via `userStorageId`
-- One-to-Many with HistoryGeneratedFlashcard via `userStorageId`
-- One-to-Many with AIChatDocument via `documentId`
+- Logical link to User via `userId` (no FK since phase 11)
+- Logical links from ai-service `Document`, `DocumentEntity`, `UserStorageGraph`, `UserStorageGraphGroup` via `userStorageId` (no FK since phase 15)
+- Logical links from exam `HistoryGeneratedQuizz`, `HistoryGeneratedFlashcard` via `userStorageId`, `AIChatDocument` via `documentId`, and `GenerationJob` via `storageId` (no FK since phase 15)
 
 **Discriminator Fields**:
 
 | Field | DISC-### | Values | Description |
 |-------|----------|--------|-------------|
-| processingStatus | DISC-014 | PENDING, PROCESSING, COMPLETED, FAILED | Document processing pipeline state |
+| processingStatus | DISC-014 | PENDING_CHARGE, PENDING, PROCESSING, COMPLETED, FAILED | Document processing pipeline state |
 
 **Unique Codes**:
 - `MODEL-029-UK-01`: `id` (primary key, explicit unique)
@@ -1022,7 +1023,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | updatedAt | DateTime | NOT NULL | Last update |
 
 **Relationships**:
-- Many-to-One with UserStorage via `userStorageId` (Cascade delete)
+- Logical link to UserStorage via `userStorageId` (no FK since phase 15; ai-service deletes these rows on `document.deleted`)
 
 **Discriminator Fields**: None.
 
@@ -1047,7 +1048,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | createdAt | DateTime | NOT NULL | Creation |
 
 **Relationships**:
-- Many-to-One with UserStorage via `userStorageId` (Cascade delete)
+- Logical link to UserStorage via `userStorageId` (no FK since phase 15; ai-service deletes these rows on `document.deleted`)
 
 **Discriminator Fields**: None.
 
@@ -1073,7 +1074,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | updatedAt | DateTime | NOT NULL | Last update |
 
 **Relationships**:
-- Many-to-One with UserStorage via `userStorageId` (Cascade delete)
+- Logical link to UserStorage via `userStorageId` (no FK since phase 15; ai-service deletes these rows on `document.deleted`)
 - One-to-Many with UserStorageGraphGroup via `graphId`
 
 **Discriminator Fields**: None.
@@ -1108,7 +1109,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 
 **Relationships**:
 - Many-to-One with UserStorageGraph via `graphId` (Cascade delete)
-- Many-to-One with UserStorage via `userStorageId` (Cascade delete)
+- Logical link to UserStorage via `userStorageId` (no FK since phase 15; ai-service deletes these rows on `document.deleted`)
 
 **Discriminator Fields**: None.
 
@@ -1176,7 +1177,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 
 **Relationships**:
 - Many-to-One with AIChat via `chatId` (Cascade delete)
-- Many-to-One with UserStorage via `documentId` (Cascade delete)
+- Logical link to UserStorage via `documentId` (no FK since phase 15; the link is removed on `document.deleted`)
 
 **Discriminator Fields**: None.
 
@@ -1241,6 +1242,27 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 **Unique Codes**:
 - `MODEL-038-UK-01`: `name` (unique)
 - `MODEL-038-UK-02`: `slug` (unique)
+
+### GenerationJob (exam, phase 15; no MODEL code assigned yet, run `/tkm:rebuild-spec` to allocate one)
+
+**Description**: One quiz/flashcard generation request and the money behind it. Source: `apps/exam-service/prisma/schema/generation.prisma`.
+
+| Attribute | Type | Constraints | Description |
+|-----------|------|-------------|-------------|
+| id | String | PK | Job ID (also the `jobId` returned to the client) |
+| userId | String | NOT NULL | Owner (auth user id, no FK) |
+| storageId | String | NOT NULL | Source document (`UserStorage.id` in document-service, no FK) |
+| filename | String | NOT NULL | Source file name |
+| type | String | NOT NULL | `quiz` or `flashcard` |
+| status | String | NOT NULL, DEFAULT "PENDING_CHARGE" | `PENDING_CHARGE`, `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`, `CANCELLED` |
+| chargeKey | String | UNIQUE, NOT NULL | Finance idempotency key `gen:<id>` |
+| chargedAmount | Int | NOT NULL, DEFAULT 0 | Credits debited under `chargeKey` (0 = nothing to refund) |
+| refundedAt | DateTime | NULL | Set once the refund of a FAILED/CANCELLED job is settled |
+| options | Json | NOT NULL | `numItems`, `isNarrowSearch`, `keyword?` |
+| model | String | NULL | Model name |
+| error | String | NULL | Failure reason (e.g. `GENERATION_TIMEOUT`) |
+| historyId | String | NULL | `HistoryGeneratedQuizz` / `HistoryGeneratedFlashcard` row of a COMPLETED job |
+| createdAt, updatedAt | DateTime | NOT NULL | Timestamps |
 
 ---
 
@@ -1358,7 +1380,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 | DISC-010 | WalletTransaction | type | 0=buy credits, 1=buy subscription, 2=refund, 3=admin adjustment, 4=use services | Determines transaction description, ledger category, and side effects |
 | DISC-011 | WalletTransaction | direction | ADD, SUBTRACT | Determines whether amount is added to or subtracted from wallet balance |
 | DISC-012 | Payment | paymentType | credits, subscription | Determines whether payment activates wallet credits or extends subscription |
-| DISC-013 | UserStorage | processingStatus | PENDING, PROCESSING, COMPLETED, FAILED | Controls whether document is available for AI chat and generation |
+| DISC-013 | UserStorage | processingStatus | PENDING_CHARGE, PENDING, PROCESSING, COMPLETED, FAILED | Controls whether document is available for AI chat and generation |
 
 ---
 

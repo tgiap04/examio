@@ -93,6 +93,22 @@ Admin and exam call other services with the acting user's forwarded token (`AUTH
 | vocabulary `WordFamilyAdminService.*` (moved from exam, phase 12) | `@RequirePermissions('word_family:admin')` |
 | vocabulary `WordFamilyService.GetWordFamily` | `@RequirePermissionsOrService([])` (exam calls it with a service token, audience `vocabulary`) |
 
+#### gRPC guards added in phase 15 (2026-10-24)
+
+Source: `document.grpc.controller.ts`, `apps/r2-service/src/r2-service.controller.ts`, `apps/ai-service/src/backend/auth/service_token.py`.
+
+| RPC | Declaration |
+|---|---|
+| document `DocumentService.CreateUpload`, `GetDocumentsByIds`, `AssertOwnership`, `EnsureProcessed`, `ListDocuments`, `GetDownloadUrl` | `@RequirePermissions('document:upload')`; forwarded user token, actor = token `sub`, rows of other users are not found |
+| document `DocumentService.GetQuota` | `@RequirePermissionsOrService([], { callers: [] })`: any verified user, no service caller (exam forwards the user token) |
+| document `DocumentService.DeleteDocuments` | `@RequirePermissionsOrService(['document:upload'], { callers: [] })`: user token only until a service caller exists (user deletion is deferred) |
+| r2 `UploadFile` | `@ServiceOnly('exam','auth','document')` |
+| r2 `DeleteObjects` | `@ServiceOnly('exam','auth','vocabulary','document')` |
+| r2 `CreatePresignedDownload` (new) | `@ServiceOnly('document')` |
+| ai `AiService.StreamChat`, `Query`, `GenerateWordFamily`, `ListModels` | Python interceptor, not a Nest decorator: service token only. RS256, `iss`, `aud=ai`, `exp`, `roles` exactly SERVICE, `sub` in `svc:exam`, `svc:ai-chat`, `svc:vocabulary`, `svc:content` (constant `ALLOWED_CALLERS`, not env). A user token (`aud=examio`) answers `UNAUTHENTICATED` because the audience check runs first; a valid `aud=ai` token from another service (e.g. `svc:document`) answers `PERMISSION_DENIED` |
+
+Auth `SERVICE_AUDIENCES` includes `document` and `ai`; auth `SERVICE_CLIENTS` needs an entry for `document`. finance `Debit` / `Credit` / `Refund` callers already include `document`. The RabbitMQ users `document` and `ai` may publish only `^document\.` and `^ai\.`; user `exam` may publish `^(exam|content)\.`.
+
 ### Per-endpoint enforcement (phase 06, 2026-10-20)
 
 > Source: `@RequirePermissions` / `@RequireOwnerOrPermission` / `@Authenticated()` / `@Public()` on the exam, finance, admin and r2 controllers; `examio-be/test/authz/` (`handler-declarations.spec.ts` fails on an undeclared HTTP handler or WS gateway class, on an `@Authenticated()` handler missing from `authenticated-allowlist.ts`, or an entry without a two-user spec; `authz-matrix.spec.ts` proves STUDENT / TEACHER / admin-only per row).
@@ -133,11 +149,12 @@ Admin and exam call other services with the acting user's forwarded token (`AUTH
 | | `generate`, `generate-root` | `word_family:generate` (TEACHER only; free; 20/day per user, 429 `WORD_FAMILY_DAILY_LIMIT`; 503 `GENERATION_LIMIT_UNAVAILABLE` if Redis is down) |
 | | `:id/to-flashcard` (stays in exam: `modules/flashcardset/word-family-to-flashcard.controller.ts`; gateway route `wf-to-flashcard`, POST only) | `flashcardset:manage` |
 | | categories POST/PUT/DELETE | removed from exam HTTP (phase 10); category writes only through admin `admin/word-family/*` to vocabulary gRPC `WordFamilyAdminService` (`word_family:admin`) |
-| ai | `quick-upload`, `upload`, `upload-image`, `recent-uploads`, `GET/DELETE upload/:id` | `document:upload` (own) |
-| | `generate-from-file`, `regenerate/:id`, `job/:id`, `upload/:id/history`, `models` | `ai:generate` (own) |
+| document (document-service since phase 15; gateway route `ai-upload`) | `POST quick-upload`, `POST upload` (JSON), `POST upload-image`, `GET/DELETE upload/:id` | `document:upload` (own; other users' ids answer 404) |
+| ai (exam) | `recent-uploads` (gateway route `ai-recent-uploads`; documents come from document `ListDocuments`) | `document:upload` (own) |
+| | `generate-from-file`, `regenerate/:id`, `GET/DELETE job/:id`, `upload/:id/history`, `models` | `ai:generate` (own; `history` first checks `AssertOwnership`) |
 | ai-chat | all handlers (class-level) | `ai_chat:use` (own); `:chatId/exists` is `true` only for the caller's own chat |
 | subject | 4 GETs | `@Public()` |
-| r2 (exam) / r2-service | `POST /r2/image` / `internal/upload` | `document:upload` / `@Public()` (internal, not routed by the gateway) |
+| r2 (document-service since phase 15) | `POST /r2/image` (gateway route `r2-image`) | `document:upload`. r2-service's HTTP `internal/upload` and its `INTERNAL_SERVICE_TOKEN` were removed |
 | finance | `payment/create`, `status/:id`, `history`, `cancel/:id`; `wallet/info`, `wallet/details` | `wallet:use` |
 | | `payment/subscription` / `subscription/plans` / `POST /webhook` | `subscription:manage` / `@Public()` / `@Public()` (SePay key) |
 | admin | users (list, `:id`, PATCH, ban, unban) | `user:manage`; PATCH rejects `isAdmin`, `isSystemAdmin`, `role`, `isBanned` (400 `VALIDATION_ERROR`) |

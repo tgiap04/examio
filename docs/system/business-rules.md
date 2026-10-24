@@ -82,10 +82,35 @@ A user can view all active sessions across devices and browsers. They can termin
 
 ### AI generation deducts credits before processing
 
-Before generating quizzes or flashcards from a document, the system checks the user's wallet balance. If sufficient credits exist, the cost is deducted immediately. Processing then proceeds. If credits are insufficient, the request is rejected.
+Before generating quizzes or flashcards from a document, the system takes the cost from the user's wallet and only then queues the job. If credits are insufficient, the request is rejected and no job is queued.
 
 **Applies when:** A user initiates quiz or flashcard generation from the AI tool.
-**Says:** Credits are deducted atomically through finance's `Debit` with an idempotency key, so a retry of the same charge never deducts twice. The generation job is queued. If free mode is enabled outside production, this credit check is bypassed.
+**Says:** Credits are deducted atomically through finance's `Debit` with the key `gen:<jobId>`, so a retry of the same charge never deducts twice. The job (`GenerationJob`) is created first as `PENDING_CHARGE`, becomes `QUEUED` once the debit succeeds, and is cancelled and refunded if the debit never completes (see the next rule). If free mode is enabled outside production, this credit check is bypassed.
+
+---
+
+### AI credits: charge and refund (phase 15)
+
+| Action | Charge |
+|---|---|
+| Generate from a new file | upload credits (1 per started 2 MB) + 5 generation credits, in one debit |
+| Generate from a file already uploaded by the same user (same filename and size), whatever its state (completed, failed, pending, or a quick upload) | 5 |
+| Generate from a file whose processing is still running | nothing: the running job is returned |
+| Regenerate | 1 per started 10 items |
+| `POST /ai/upload` (standalone upload) | 1 per started 2 MB, debit key `doc:<id>` |
+| `POST /ai/quick-upload` | free |
+
+There is no free retry any more: a failed or cancelled job is refunded, so retrying a failed document costs 5 again.
+
+**Applies when:** a charged generation or upload does not end in a usable result.
+**Says:** The credits come back, exactly once, in each of these cases:
+- the user cancels a job that has not finished (`DELETE /ai/job/:id`); cancelling twice refunds once, cancelling a completed or failed job is refused (`JOB_NOT_CANCELLABLE`). Cancelling keeps the processed document, so it stays reusable;
+- generation fails (`ai.generation.failed`);
+- a job stays `PENDING_CHARGE` for more than 10 minutes (the service crashed between debit and queueing): it is cancelled and refunded;
+- a queued or running job shows no progress for `GENERATION_JOB_TIMEOUT_MINUTES` (default 60, never below 10): it fails with `GENERATION_TIMEOUT` and is refunded; a late result is ignored;
+- OCR of a charged upload fails (`ai.document.failed`): the document is marked failed and refunded once.
+
+If the answer to a debit is lost (timeout, network), the system cannot know whether money moved. For an upload, the file is dropped (hidden, not counted against the monthly quota), a refund is tried at once, the user sees `CHARGE_UNAVAILABLE` (403), and a sweeper retries every open refund each minute. "Never charged" is only accepted after a 2-minute grace, because a late debit may still commit. A refused debit (insufficient credits, no wallet, no permission) is final: nothing is taken and nothing is refunded.
 
 ---
 
@@ -159,16 +184,16 @@ User files (profile avatars, banners, PDF documents, knowledge base files) are u
 When a user deletes a PDF, a knowledge file, or a profile asset, the system removes the record from the database and also deletes the file from R2. The file URL becomes invalid immediately after deletion.
 
 **Applies when:** A delete operation targets a UserStorage record.
-**Says:** Since phase 11 the R2 keys are queued in an `r2_delete_tasks` row (schema `auth` or `exam`) inside the same transaction as the row delete or image replace: the tasks exist if and only if that transaction commits. A background worker (`R2DeleteWorker`, `libs/messaging/src/r2-delete`) then calls r2-service `DeleteObjects` and removes the tasks; on failure it retries with exponential backoff (capped at 1 hour) and stops after 10 attempts, leaving the task row and logging a stuck metric. The object may therefore outlive the record for a short while, but a crash after commit no longer orphans it. A URL not on the configured `R2_PUBLIC_URL` host is never deleted (`r2KeyFromUrl` returns `null`). Not covered: deleting a `User` account (see roadmap, deferred) — no code path deletes `User` rows today.
+**Says:** Since phase 11 the R2 keys are queued in an `r2_delete_tasks` row (schema `auth`, `exam`, `vocabulary` or `document`) inside the same transaction as the row delete or image replace: the tasks exist if and only if that transaction commits. A background worker (`R2DeleteWorker`, `libs/messaging/src/r2-delete`) then calls r2-service `DeleteObjects` and removes the tasks; on failure it retries with exponential backoff (capped at 1 hour) and stops after 10 attempts, leaving the task row and logging a stuck metric. Deleting an upload (`DELETE /ai/upload/:id` or the ai-chat "delete files" option) is one document-service transaction: rows removed, R2 keys queued, `document.deleted` written; ai-service then deletes the vectors, entities and graph, and exam drops the links from generation history and chats. The object may therefore outlive the record for a short while, but a crash after commit no longer orphans it. A URL not on the configured `R2_PUBLIC_URL` host is never deleted (`r2KeyFromUrl` returns `null`). Not covered: deleting a `User` account (see roadmap, deferred) — no code path deletes `User` rows today.
 
 ---
 
 ### AI document processing uses OCR to extract text
 
-When a PDF or image is uploaded for AI quiz or flashcard generation, the system first sends it through the OCR service to extract machine-readable text. This text is then passed to the AI generation pipeline. The processing is asynchronous and may take several minutes.
+When a PDF or image is uploaded for AI quiz or flashcard generation or for AI chat, document-service announces it (`document.uploaded`, with a one-hour download link) and ai-service extracts, chunks and embeds the text. The processing is asynchronous and may take several minutes; the document goes `PENDING` → `COMPLETED` or `FAILED`.
 
-**Applies when:** A file is uploaded for generation with a detected PDF or image type.
-**Says:** The file is queued for OCR. Once text is extracted, the generation pipeline proceeds automatically.
+**Applies when:** A file is uploaded through `POST /ai/upload`, or a quick-upload is first used.
+**Says:** The file is queued for OCR. A quick-upload is stored but not processed until it is first used (AI chat or generation call `EnsureProcessed`). A chat message with attachments waits for their OCR for at most `AI_CHAT_DOCUMENT_WAIT_MS` (default 2 minutes) and then answers without that context. Generation from a document that has no text yet processes it inline from the download link.
 
 ---
 
