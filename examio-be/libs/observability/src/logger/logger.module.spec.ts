@@ -53,7 +53,6 @@ describe('logger configuration', () => {
     const SECRETS = {
         authorization: 'Bearer SECRET-ACCESS-TOKEN',
         cookie: 'sid=SECRET-SESSION-COOKIE',
-        internal: 'SECRET-INTERNAL-TOKEN',
         setCookie: 'sid=SECRET-SET-COOKIE; HttpOnly',
     };
 
@@ -80,20 +79,16 @@ describe('logger configuration', () => {
         return { response, records, raw: lines.join('') };
     }
 
-    it('redacts authorization, cookie, internal token and set-cookie in emitted logs', async () => {
+    it('redacts authorization, cookie and set-cookie in emitted logs', async () => {
         const { records, raw } = await logRequest({
             Authorization: SECRETS.authorization,
             Cookie: SECRETS.cookie,
-            'X-Internal-Service-Token': SECRETS.internal,
         });
 
         expect(records).toHaveLength(1);
         expect(records[0].service).toBe('test-service');
         expect(records[0].req.headers.authorization).toBe('[Redacted]');
         expect(records[0].req.headers.cookie).toBe('[Redacted]');
-        expect(records[0].req.headers['x-internal-service-token']).toBe(
-            '[Redacted]'
-        );
         expect(records[0].res.headers['set-cookie']).toBe('[Redacted]');
         for (const secret of Object.values(SECRETS)) {
             expect(raw).not.toContain(secret.split(';')[0]);

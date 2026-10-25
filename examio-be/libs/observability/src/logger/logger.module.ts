@@ -12,7 +12,6 @@ const SAFE_REQUEST_ID = /^[A-Za-z0-9._:-]{1,128}$/;
 export const REDACTED_PATHS = [
     'req.headers.authorization',
     'req.headers.cookie',
-    'req.headers["x-internal-service-token"]',
     'res.headers["set-cookie"]',
 ];
 
