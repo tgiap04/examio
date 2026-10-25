@@ -46,12 +46,25 @@ function cutOnTruncation(proxyRes: IncomingMessage, res: { destroy(): unknown })
     proxyRes.once('error', cut);
 }
 
+/**
+ * A client that leaves before the response is complete (closing an SSE stream)
+ * must not leave the upstream request running: destroy it so the upstream sees
+ * its socket close and can cancel its own work (e.g. an LLM stream).
+ */
+function abortOnClientClose(proxyReq: { destroy(): unknown }, res: ServerResponse | Duplex): void {
+    res.once('close', () => {
+        if (!res.writableFinished) proxyReq.destroy();
+    });
+}
+
 /** Grace so the upstream timeout (a clean 504) fires before the inbound socket timeout (a reset). */
 const SOCKET_TIMEOUT_GRACE_MS = 5_000;
 const TIMEOUT_CODES = new Set(['ETIMEDOUT', 'ESOCKETTIMEDOUT', 'ECONNRESET']);
 
 function onProxyError(err: Error, req: IncomingMessage, res: ServerResponse | Duplex): void {
     if (isOverCap(req)) return;
+    // The client left and `abortOnClientClose` cut the upstream on purpose: nothing to report.
+    if (res.destroyed) return;
     const code = (err as NodeJS.ErrnoException).code ?? '';
     const timedOut = TIMEOUT_CODES.has(code);
     logger.warn(`Upstream error ${code || err.name} for ${req.method} ${(req.url ?? '').split('?')[0]}`);
@@ -88,6 +101,7 @@ export function createRouteProxy(route: CompiledRoute): RouteProxy {
         ejectPlugins: true,
         plugins: [proxyEventsPlugin],
         on: {
+            proxyReq: (proxyReq, _req, res) => abortOnClientClose(proxyReq, res),
             proxyRes: (proxyRes, _req, res) => {
                 stripForeignCookies(route.upstream, proxyRes, route.id);
                 cutOnTruncation(proxyRes, res);

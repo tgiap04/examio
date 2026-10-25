@@ -111,6 +111,35 @@ describe('createRouteProxy', () => {
         expect(() => createRouteProxy(table.routes[0])).toThrow(/no upstream target/);
     });
 
+    it('a client that disconnects mid-stream closes the upstream request (the upstream can cancel its work)', async () => {
+        let resolveClosed: (early: boolean) => void = () => undefined;
+        const upstreamClosed = new Promise<boolean>((resolve) => (resolveClosed = resolve));
+        const r = await make({
+            upstreamName: 'aichat',
+            handler: (_q, res) => {
+                res.writeHead(200, { 'content-type': 'text/event-stream' });
+                res.write('data: one\n\n');
+                const finish = setTimeout(() => res.end('data: two\n\n'), 5_000);
+                res.on('close', () => {
+                    clearTimeout(finish);
+                    resolveClosed(!res.writableEnded);
+                });
+            },
+        });
+        await new Promise<void>((resolve) => {
+            const req = request(`${r.gateway}/api/stream`, (res) => {
+                res.once('data', () => {
+                    req.destroy();
+                    resolve();
+                });
+            });
+            req.on('error', () => undefined);
+            req.end();
+        });
+        const early = await Promise.race([upstreamClosed, new Promise<boolean>((r2) => setTimeout(() => r2(false), 2_000))]);
+        expect(early).toBe(true);
+    });
+
     it('relays status, headers and body and applies the forward context to the upstream request', async () => {
         const r = await make({
             upstreamName: 'exam',
