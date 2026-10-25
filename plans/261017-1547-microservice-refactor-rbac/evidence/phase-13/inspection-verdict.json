@@ -1,0 +1,101 @@
+{
+  "score": 8,
+  "criticalCount": 0,
+  "decision": "SEALED",
+  "acceptanceCovered": [
+    "grep -rn \"AIChatModule\\|SubjectModule\" examio-be/apps/exam-service/src -> no output — evidence: reviewer re-ran grep (empty); exam module diffs remove both modules",
+    "grep -rn \"INTERNAL_SERVICE_TOKEN\\|x-internal-service-token\\|AI_SERVICE_URL\" over examio-be apps, libs, deploy (*.ts, *.py, *.example, *.yml; excluding node_modules, venv) -> no output; ai-service serves only /health over HTTP — evidence: git grep + untracked grep show only .md docs and negative assertions in compose-topology.spec.cjs; ai-service main.py drops compat router/middleware; live POST / and /health 405, removed routes 404",
+    "grep -rn \"deleteImage(\\|deleteFile(\" examio-be/apps/ai-chat-service/src -> no output; message image R2 keys deleted only via r2_delete_tasks + worker (svc:ai-chat) — evidence: grep empty; ai-chat-deletion.service.ts enqueues in the same tx; r2 DeleteObjects @ServiceOnly includes ai-chat",
+    "yarn build && yarn test && check:deps && check:ownership green; ai-service pytest green; ai-chat-service compose healthy — evidence: temper-final: typecheck 0, check:deps 0, check:ownership 0, build:all 0, yarn test 2314 passed, pytest 88 and 147 passed, compose up -d --wait 0 with ai-chat healthy",
+    "stream: POST /api/v1/ai-chat/:id/stream through the gateway prints incremental data: frames (not one burst); client abort cancels the gRPC call; upstream error -> event: error frame; regenerate-stream works — evidence: re-verification: 11 frames ~400 ms apart; abort through gateway CANCELLED after 3 chunks at +1.3 s with partial save; event: error frame; regenerate-stream 8 frames",
+    "permissions/ownership: STUDENT -> 403 on /ai-chat/*; another user's chatId on messages/stream/DELETE -> 404 and on exists -> 200 {exists:false} (same body as a missing chat, no existence leak; F3 accepted); anonymous GET /subjects -> 200; no email and no systemPrompt in responses — evidence: stage 4b: 403 x3, 404 x3, exists 200 {exists:false}, subjects 200 without systemPrompt/email; chat-access uniform 404; subject.repository explicit select",
+    "clear chat with files: exactly one DeleteDocuments with the user token, deletedFiles = filenames, chat/messages/links gone, only R2 image keys enqueued (external URLs skipped), worker DeleteObjects once as svc:ai-chat; document UNAVAILABLE -> 503 and chat kept; deleteChat without deleteFiles -> no DeleteDocuments, image keys still enqueued — evidence: stage 4c rows PASS; external URL via clear-chat e2e (exit 0); documents deleteAll 503 path",
+    "limits and events: GetUserBenefits cached aichat:benefits:<id> and the 6th free-tier message within a minute -> 429; finance.subscription.changed carries the effective tier (inactive -> 0) and fires on expiry and reactivation, ai-chat invalidates its cache; document.deleted removes links idempotently — evidence: 6th/7th 429 RATE_LIMITED; F2 re-verification read path and sweeper each publish one toTier 0 event, no duplicate, cache key deleted; finance e2e 73/73",
+    "vocabulary GenerateWordFamily over gRPC with svc:vocabulary works (TEACHER generate 2xx, no wallet tx), a call without a service token -> UNAUTHENTICATED; FE AI chat page: deferred, not mounted on any route at HEAD (F4, pre-existing); /k/ai-tool loads for TEACHER and redirects STUDENT to /403 — evidence: 4e TEACHER 201 sub=svc:vocabulary, wallet unchanged, no-token UNAUTHENTICATED; stage 5 TEACHER stays on /k/ai-tool, STUDENT redirected to /403"
+  ],
+  "regressionChecked": [
+    "gateway routes ai-chat/ai-chat-stream/subjects on aichat upstream; abortOnClientClose on all HTTP routes (gateway unit 202/202, e2e 61/61)",
+    "exam without ai-chat/subject modules and drop_ai_chat migration (exam e2e green, no drift)",
+    "finance activation / admin set-tier publish effective tiers (finance e2e 73/73)",
+    "vocabulary word-family generation over gRPC (vocabulary e2e green)",
+    "ai-service HTTP surface reduced to / and /health (pytest green)",
+    "r2 DeleteObjects caller allow-list adds ai-chat",
+    "logger redaction and forward-header lists",
+    "broker user aichat permissions and aichat.events bindings",
+    "CI be-e2e matrix, env and migration loops include aichat"
+  ],
+  "contractStatus": "CHANGED",
+  "refuted": [],
+  "unproven": [],
+  "reachableRegressions": [],
+  "riskGate": {
+    "touchesSensitiveArea": true,
+    "signoffRequired": true,
+    "humanSignedOff": true
+  },
+  "findings": [
+    {
+      "severity": "Medium",
+      "category": "Data integrity",
+      "location": "examio-be/apps/ai-chat-service/src/modules/ai-chat/ai-chat-stream.service.ts:42-46",
+      "summary": "Regenerate deletes the user message and later ones before admission/AI open; a refusal loses the message and orphans its owned image. Pre-existing ordering at HEAD; carried to a later phase.",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Security",
+      "location": "examio-be/apps/gateway-service/src/pipeline/forward-headers.ts:37-44",
+      "summary": "x-internal-service-token no longer stripped. Rejected: criterion 2 requires the name gone from every .ts file and no service reads it; any x-* header is inert upstream.",
+      "disposition": "Reject"
+    },
+    {
+      "severity": "Low",
+      "category": "Observability",
+      "location": "examio-be/apps/gateway-service/src/pipeline/proxy-factory.ts:64-80",
+      "summary": "Client abort logged as Upstream error ECONNRESET. Fixed: onProxyError returns early when res is destroyed.",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "Docs",
+      "location": "examio-be/apps/finance-service/src/modules/sepay/subscription-expiry.sweeper.ts:27",
+      "summary": "SUBSCRIPTION_EXPIRY_SWEEP_MS undocumented. Fixed: added to deploy/env/finance.env.example.",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "Error handling",
+      "location": "examio-be/apps/ai-chat-service/src/modules/ai-chat/chat-access.service.ts:30-32",
+      "summary": "ownedMessage mapped DB errors to 404. Fixed: only NotFoundException becomes Message not found; others rethrow.",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "Correctness",
+      "location": "examio-be/apps/ai-chat-service/src/modules/ai-chat/ai-chat-answer.service.ts:34",
+      "summary": "Non-stream Query omits systemPrompt/modelType (HEAD parity).",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Performance",
+      "location": "examio-be/apps/ai-chat-service/src/modules/ai-chat/ai-chat-documents.service.ts:104-109",
+      "summary": "OCR wait keeps polling after the SSE client aborts.",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Concurrency",
+      "location": "examio-be/apps/ai-chat-service/src/modules/ai-chat/ai-chat-limits.service.ts:69-79",
+      "summary": "In-flight benefits read can write stale value back after invalidation, up to 5 min TTL.",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Migration",
+      "location": "examio-be/apps/exam-service/prisma/schema/migrations/20261024142236_drop_ai_chat/migration.sql:17-30",
+      "summary": "Destructive drop without copy/rollback, per locked DB-reset policy.",
+      "disposition": "Defer"
+    }
+  ]
+}

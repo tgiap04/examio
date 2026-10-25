@@ -7,7 +7,7 @@
 - Prior: [phase-11](./phase-11-database-per-service.md) (`r2_delete_tasks`, `r2-key-from-url.ts`), [phase-12](./phase-12-extract-study-room-and-vocabulary.md), [phase-15](./phase-15-document-service-and-ai-service-db.md) (AiService gRPC + document-service + `DeleteDocuments`)
 
 ## Overview
-- Priority: P1 · Status: Pending · Effort: 2d (unchanged: the dropped user-purge work offsets the clear-chat/R2 additions) <!-- Red Team: RT-8, RT-11 --> · Depends on: 11, 12, 15 (ai-chat reads `UserStorage` and streams from ai-service, so it needs document-service + `AiService.StreamChat` from phase 15; plan.md agrees). <!-- Reconcile: deps -->
+- Priority: P1 · Status: Implemented, awaiting sign-off (not committed, 2026-10-25) · Effort: 2d (unchanged: the dropped user-purge work offsets the clear-chat/R2 additions) <!-- Red Team: RT-8, RT-11 --> · Depends on: 11, 12, 15 (ai-chat reads `UserStorage` and streams from ai-service, so it needs document-service + `AiService.StreamChat` from phase 15; plan.md agrees). <!-- Reconcile: deps -->
 - Goal: `ai-chat-service` owns AI conversations, AI-teacher subjects (`Subject.systemPrompt`) and chat↔document links. It talks to ai-service over gRPC only, with a service token. After this phase, no HTTP caller of ai-service remains, so the compat HTTP and the last `INTERNAL_SERVICE_TOKEN` users are removed. <!-- Red Team: RT-2 -->
 - Sequential: after 12, before 14 (shared `exam-service.module.ts`, `main.ts`, exam `prisma/schema/**`, routes YAML).
 
@@ -113,25 +113,30 @@ Write first:
 - vocabulary `GenerateWordFamily` contract test (Nest client ↔ Python server in compose CI job), incl. a call without a service token → `UNAUTHENTICATED`. <!-- Red Team: RT-2 -->
 
 ## Todo List
-- [ ] [CARRIED from 10] `finance.subscription.changed` carries the STORED tier and only fires when the tier number changes (`apps/finance-service/src/modules/sepay/subscription-changed.publisher.ts`): expiry (lazy `isActive=false` in `subscription.service.ts` ~:238) publishes nothing, and an admin reactivating an expired same-tier subscription publishes nothing. Before ai-chat consumes the event, make it carry the effective tier (inactive → 0) and publish on expiry and reactivation; e2e for both.
-- [ ] Scaffold ai-chat-service (§13), incl. RabbitMQ user `aichat` <!-- Red Team: RT-2 -->
-- [ ] Move ai-chat + subject modules
-- [ ] gRPC Query/StreamChat (service token) + manual SSE <!-- Red Team: RT-2 -->
-- [ ] document/finance/r2 clients replace Prisma + R2UploadService
-- [ ] clearChat/deleteChat: `DeleteDocuments` + image keys → `r2_delete_tasks` + worker; e2e clear chat with files <!-- Red Team: RT-8 -->
-- [ ] Event handlers (document.deleted, subscription.changed) <!-- Red Team: RT-11 -->
-- [ ] Gateway YAML (stream route timeout 0) + snapshot
-- [ ] Exam removal + drop migration
-- [ ] vocabulary → gRPC GenerateWordFamily (service token) <!-- Red Team: RT-2 -->
-- [ ] Remove ai-service HTTP compat + every remaining INTERNAL_SERVICE_TOKEN <!-- Red Team: RT-15 -->
+- [x] [CARRIED from 10] `finance.subscription.changed` effective tier, published on expiry and reactivation (Part A + F2 fix). Evidence: finance e2e 73/73 incl. `subscription-changed`; F2 re-verification (read path and sweeper each publish one `toTier 0` event, no duplicate).
+- [x] Scaffold ai-chat-service (§13), incl. RabbitMQ user `aichat` <!-- Red Team: RT-2 -->. Evidence: compose healthy from empty volume; `aichat` migrate exit 0; broker ACL probes as expected.
+- [x] Move ai-chat + subject modules. Evidence: exam greps empty; ai-chat-service e2e 83/83; `/subjects` anonymous 200.
+- [x] gRPC Query/StreamChat (service token) + manual SSE <!-- Red Team: RT-2 -->. Evidence: stage 4a PASS; F1 fixed (client abort cancels the upstream call).
+- [x] document/finance/r2 clients replace Prisma + R2UploadService. Evidence: no `R2UploadService` and no `deleteImage(`/`deleteFile(` in `apps/ai-chat-service`.
+- [x] clearChat/deleteChat: `DeleteDocuments` + image keys → `r2_delete_tasks` + worker; e2e clear chat with files <!-- Red Team: RT-8 -->. Evidence: stage 4c PASS, 503 path PASS, owned R2 object gone in 46 s.
+- [x] Event handlers (document.deleted, subscription.changed) <!-- Red Team: RT-11 -->. Evidence: stage 4d(i)/(ii) and 4f PASS.
+- [x] Gateway YAML (stream route timeout 0) + snapshot. YAML live PASS (stage 4; gateway e2e 61/61); the route snapshot is `apps/gateway-service/test/route-coverage.spec.ts` (every inventory line served; ai-chat, ai-chat-stream, regenerate-stream and subjects resolve to the `aichat` upstream).
+- [x] Exam removal + drop migration. Evidence: exam greps empty; `migrate deploy` x8 on empty DB; `migrate diff` no drift x8; exam e2e 256/256.
+- [x] vocabulary → gRPC GenerateWordFamily (service token) <!-- Red Team: RT-2 -->. Evidence: stage 4e PASS (201, `sub=svc:vocabulary`, no wallet transaction).
+- [x] Remove ai-service HTTP compat + every remaining INTERNAL_SERVICE_TOKEN <!-- Red Team: RT-15 -->. Evidence: grep gate empty; live `/` and `/health` only (POST 405, removed routes 404).
 
 ## Success Criteria
-- `grep -rn "AIChatModule\|SubjectModule" /Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src` → no output.
-- <!-- Red Team: RT-15 --> `grep -rn "INTERNAL_SERVICE_TOKEN\|x-internal-service-token\|AI_SERVICE_URL" /Users/tgiap.dev/devs/examio/examio-be/apps /Users/tgiap.dev/devs/examio/examio-be/libs /Users/tgiap.dev/devs/examio/examio-be/deploy --include='*.ts' --include='*.py' --include='*.example' --include='*.yml' --exclude-dir=node_modules --exclude-dir=venv` → no output. No r2 exclusion: phase 15 runs before 13 and already removed r2's `internal/upload` + token. <!-- Reconcile: X7 -->
-- `grep -rn "deleteImage(\|deleteFile(" /Users/tgiap.dev/devs/examio/examio-be/apps/ai-chat-service/src` → no output (R2 only via the worker). <!-- Red Team: RT-8 -->
-- `yarn build && yarn test` green. Compose: `ai-chat-service` healthy.
-- `curl -N -X POST .../api/v1/ai-chat/$CHAT/stream -H "Authorization: Bearer $TEACHER" -d '{"message":"hi"}'` prints incremental `data:` lines (not one burst).
-- FE AI chat page: send, stream, regenerate, attach doc, clear chat with files (document + R2 object gone within 1 min, i.e. 2 worker polls). <!-- Red Team: RT-8 -->
+Status 2026-10-25: 9/9 PASS (criteria 6 and 9 reworded, see notes). Evidence: [phase-13-runs.md](./evidence/phase-13-runs.md), [inspection-verdict.json](./evidence/phase-13/inspection-verdict.json). Not committed; awaiting human sign-off.
+- [x] 1. `grep -rn "AIChatModule\|SubjectModule" /Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src` → no output.
+- [x] 2. <!-- Red Team: RT-15 --> `grep -rn "INTERNAL_SERVICE_TOKEN\|x-internal-service-token\|AI_SERVICE_URL"` over `apps`, `libs`, `deploy` (`*.ts`, `*.py`, `*.example`, `*.yml`) → no output. ai-service serves only `/` and `/health` (live: POST 405, removed routes 404). <!-- Reconcile: X7 -->
+- [x] 3. `grep -rn "deleteImage(\|deleteFile(" /Users/tgiap.dev/devs/examio/examio-be/apps/ai-chat-service/src` → no output. Message image R2 keys are deleted only via `r2_delete_tasks` + worker (`svc:ai-chat`). <!-- Red Team: RT-8 -->
+- [x] 4. `yarn build && yarn test && check:deps && check:ownership` green (2314 tests pass); ai-service pytest green; `ai-chat-service` healthy after `up -d --wait` from an empty volume.
+- [x] 5. `POST /api/v1/ai-chat/:id/stream` through the gateway prints incremental `data:` frames (11 frames, ~400 ms apart, not one burst). Client abort cancels the gRPC call (F1 fixed). Upstream error → `event: error` frame. `regenerate-stream` works.
+- [x] 6. (reworded, F3 accepted) STUDENT → 403 on `/ai-chat/*`. Another user's chatId → 404 on messages, stream and DELETE. On `GET :chatId/exists` another user's chat returns 200 `{exists:false}`, the same body as a missing chat, so existence does not leak. Anonymous `GET /subjects` → 200 with no `systemPrompt` or `email`.
+- [x] 7. Clear chat with files: exactly one `DeleteDocuments` with the user token; `deletedFiles` = filenames; chat, messages and links gone; only R2 image keys enqueued (external URLs skipped); worker `DeleteObjects` once as `svc:ai-chat`; document `UNAVAILABLE` → 503 with the chat kept; `deleteChat` without `deleteFiles` → no `DeleteDocuments`, image key still enqueued. <!-- Red Team: RT-8 -->
+- [x] 8. Limits and events: 6th free-tier message within a minute → 429 `RATE_LIMITED`. `finance.subscription.changed` carries the effective tier and fires on expiry (read path and sweeper, F2 fixed), activation and reactivation; ai-chat deletes `aichat:benefits:<id>`. `document.deleted` removes links idempotently.
+- [x] 9. (reworded, F4 deferred) Vocabulary `GenerateWordFamily` over gRPC with `svc:vocabulary` → 201 with no wallet transaction; a call without a service token → `UNAUTHENTICATED`. `/k/ai-tool` loads for TEACHER; STUDENT is redirected to `/403`.
+- [ ] FE AI chat page actions (send, stream, regenerate, attach doc, clear chat with files, AI teacher subject list): NOT verified. No route mounts the page at HEAD (F4, Medium, deferred). Mounting it is FE work outside this phase. Not part of criterion 9.
 
 ## Risk Assessment
 | Risk | L | I | Mitigation |
@@ -154,4 +159,36 @@ Write first:
 - Removing `INTERNAL_SERVICE_TOKEN` drops a shared secret. ai-service has no host-exposed port (phase 05 networks). <!-- Red Team: RT-2 -->
 
 ## Next Steps
+- Sign-off: the user reviews and signs off (`humanSignedOff=false`; touches auth/permissions, finance events, config), then commit. Owner: user. Done when the commit lands on `refactor/microservice-rbac`.
 - Phase 14 extracts content + assessment and deletes exam-service.
+
+## Delivered beyond plan / deviations
+Part A (2026-10-24):
+- `finance.subscription.changed` now carries the EFFECTIVE tier (`effectiveTier(sub, now)`: inactive/expired → 0) and fires on lazy expiry (guarded `updateMany`, outbox in the same tx, published once under concurrent observers), on admin reactivation and on payment activation of an expired same-tier row; no event when the effective tier does not change. `finance_events.proto` comment-only. No consumer existed before ai-chat. `finance-admin.e2e-spec.ts` same-tier reactivation now expects 2 events (`0 → tier`).
+- Open product question (deferred): admin reactivation does not reset a past `nextPaymentDate`, so such a row stays effective tier 0 (no event), consistent with `getUserSubscriptionBenefits`.
+- vocabulary `ai.client.ts` → gRPC `AiService.GenerateWordFamily` (60 s, not retried, service token `svc:vocabulary`, aud `ai`); `{success, error}` mapping kept; HTTP/`AI_SERVICE_URL`/`INTERNAL_SERVICE_TOKEN` removed from vocabulary code, env and compose; `AI_GRPC_URL` added.
+- Incident: an implementer's plain `grep -r` over `deploy/` matched the real gitignored `examio-be/deploy/.env` and printed a live `INTERNAL_SERVICE_TOKEN` value into the session transcript (not into git). The token is removed from the code in this phase; rotate it wherever it is still configured. Repo-wide greps now use `git grep`.
+Coordinator decisions for part B: keep the phase-15 bounded OCR wait (no `409 DOCUMENT_PROCESSING`); stream cancel keeps the HEAD behaviour for partial text; `systemPrompt` never returned; exam keeps its `document.deleted` handler for `HistoryGenerated*` only.
+Part B (2026-10-24):
+- `ai-chat-service`: HTTP + `ROLE=api,worker` (r2 delete poller as `svc:ai-chat`; `aichat.events` consumer in the API process), schema `aichat`, seed (4 categories / 15 subjects) moved from exam; exam no longer seeds reference data.
+- Stream cancel: HEAD only unsubscribed locally and never cancelled the upstream HTTP call (the full answer was still saved after the client left). Now an abort cancels the gRPC call and keeps the partial text; an abort before any chunk stores only the user message. A failure before the first frame is an HTTP error (RESOURCE_EXHAUSTED 429, auth errors 502, UNAVAILABLE 503, DEADLINE 504); after it an `event: error` frame.
+- `systemPrompt` leak fixed: HEAD's `GET /subjects` returned every column incl. `systemPrompt`; explicit select + key-scan test.
+- `DELETE :chatId?deleteFiles=true` added next to HEAD's `POST :chatId/clear` (same path).
+- Status codes vs HEAD: foreign/missing document on attach/send 404 (was 403); 6th free message per minute 429 `RATE_LIMITED` (was 403); full chat stays 403 `CHAT_LIMIT_REACHED`. FE shows the body `message` for any status, so no FE change.
+- Message image R2 keys are enqueued only when under the chat owner's `images/<ownerId>/` folder (`ownedR2KeyFromUrl`), stricter than plain `r2KeyFromUrl`: `imageUrl` is client-supplied (phase-11 owner scoping).
+- Input bounds added (message ≤ 8000, ids ≤ 128, imageUrl ≤ 2048, title ≤ 255).
+- ai-service serves only `/` and `/health`; `INTERNAL_SERVICE_TOKEN`, `AI_SERVICE_URL`, `AI_HTTP_COMPAT` removed from all code/env/compose; gateway header hygiene and logger redaction no longer mention `x-internal-service-token`.
+- `@nestjs/axios` left in package.json (unused) to avoid lockfile churn.
+
+## Fixed while tempering
+
+- F2: an expired active tier never flipped or published `finance.subscription.changed` because the guarded flip lived only in the caller-less `hasActiveSubscription`; now `SubscriptionExpiryService.expireIfLapsed` (conditional `updateMany` on `isActive AND nextPaymentDate < now` + outbox tier -> 0 in one tx) is shared by `getUserSubscriptionBenefits`, `getSubscription` (GET /payment/subscription) and a worker-role `SubscriptionExpirySweeper` (`SUBSCRIPTION_EXPIRY_SWEEP_MS`, default 60000, batches of 200); `hasActiveSubscription` deleted; covered in `apps/finance-service/test/subscription-changed.e2e-spec.ts`.
+- F1: the gateway did not pass a client disconnect upstream on streamed routes, so closing the AI chat SSE left the LLM gRPC call running and the full answer was saved; `proxy-factory.ts` now destroys the upstream request on `res` close when the response has not finished (`abortOnClientClose` on `proxyReq`), so ai-chat sees its socket close and cancels the call. Covered in `proxy-factory.spec.ts` (fails without the fix) and `test/gateway-streaming.e2e-spec.ts`.
+- F7: the CI `be-e2e` job lacked `QUIZ_JWT_SECRET` / `QUIZ_AES_KEY` (exam boot env) and did not run `subscription-changed.e2e-spec.ts`; both added to `.github/workflows/ci.yml`.
+
+## Tempering dispositions (not fixed)
+
+- F3 (Low, accepted): a foreign `GET /ai-chat/:chatId/exists` returns 200 `{exists:false}`, same body as a missing chat, so existence does not leak; the "other user's chatId -> 404" criterion applies to the read/write routes, not to `exists`.
+- F4 (Medium, pre-existing, deferred): no FE route mounts the AI chat page or `SubjectSelector` at HEAD (`aiChatApi` is only used by the unmounted `ChatHistoryCard`), so the FE AI chat criterion cannot be exercised; mounting it is FE work outside this phase.
+- F6 (Low, noted): eight e2e configs set `forceExit: true`, which hides leaked handles.
+- Review (opus, 9/9 criteria, 0 Critical/High): fixed three Lows: gateway `onProxyError` stays quiet when the client already left (no ECONNRESET warn per abort), `ChatAccessService.ownedMessage` rethrows non-404 errors instead of masking a DB failure as 404, `SUBSCRIPTION_EXPIRY_SWEEP_MS` documented in `deploy/env/finance.env.example`. Rejected: keeping `x-internal-service-token` in the gateway strip list (criterion 2 requires the name gone; nothing reads it). Deferred to phase 16: regenerate-before-admission (Medium) and four Lows (non-stream Query systemPrompt/modelType parity, OCR wait after SSE abort, stale in-flight benefits write-back, destructive drop migration).
