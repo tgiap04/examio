@@ -54,7 +54,7 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 **Context**: AI workloads (embedding generation, vector search with FAISS, document OCR via Docling, ReAct agent orchestration) are I/O-heavy, stateful, and require different runtime characteristics (Python 3.12+, LangChain/LangGraph, Gemini). NestJS is not ideal for these workloads.
 
-**Decision**: AI capabilities are extracted into a standalone Python service (`ai-service`) with its own process and its own database schema (`ai`). Synchronous AI calls go over gRPC (`examio.ai.v1.AiService`, service tokens only); long work (OCR, generation) runs through RabbitMQ events between document-service, exam-service and ai-service. AI chat still reaches ai-service over HTTP compat routes until phase 13. Frontend streams AI chat responses via SSE.
+**Decision**: AI capabilities are extracted into a standalone Python service (`ai-service`) with its own process and its own database schema (`ai`). Synchronous AI calls go over gRPC (`examio.ai.v1.AiService`, service tokens only); long work (OCR, generation) runs through RabbitMQ events between document-service, exam-service and ai-service. AI chat (`ai-chat-service`) and word-family generation (`vocabulary-service`) also use gRPC since phase 13; ai-service HTTP serves only `/` and `/health`, and `AI_SERVICE_URL` and `INTERNAL_SERVICE_TOKEN` no longer exist. Frontend streams AI chat responses via SSE.
 
 **Rationale**: Allows independent scaling, different dependency management, and GPU resource isolation. The AI service can be updated/replaced without touching the NestJS monorepo. exam-service and document-service act as coordinators, not processors; ai-service never touches another service's tables.
 
@@ -93,14 +93,15 @@ Infrastructure: PostgreSQL (one schema + role per service, Prisma per service) �
 |---|---|---|---|
 | gateway-service | 3000 HTTP / 50051 gRPC (GatewayControl, internal) | HTTP + gRPC | Public entry: YAML-routed streaming proxy, JWT verify, revoke/stale check, rate limit, WS upgrade (`/ws/study`); no database |
 | auth-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | RS256 JWT + JWKS, service tokens, roles (RBAC), Google OAuth, session/device management |
-| exam-service | 3000 | HTTP | Quiz/flashcard/exam authoring, attempts, AI chat, `GenerationJob` (generation orchestration, charge/refund), `word-family/:id/to-flashcard` |
+| ai-chat-service | 3000 | HTTP | AI chat (SSE) and subjects; schema `aichat` |
+| exam-service | 3000 | HTTP | Quiz/flashcard/exam authoring, attempts, `GenerationJob` (generation orchestration, charge/refund), `word-family/:id/to-flashcard` |
 | document-service | 3000 | HTTP + gRPC 50051 | Uploaded files, monthly upload quota, OCR status, upload charge/refund |
 | study-room-service | 3000 | HTTP + Socket.io (`/ws/study`) | Study-Together Room (phase 12; extracted from exam) |
 | vocabulary-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | Word families and categories (phase 12; extracted from exam) |
 | finance-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | Wallet, SePay QR payments, subscriptions |
 | r2-service | 3000 HTTP / 50051 gRPC | HTTP + gRPC | Cloudflare R2 storage |
 | admin-service | 3000 HTTP | HTTP | Admin dashboard: users, stats, finance, logs, audit |
-| ai-service | 3000 (compose) | gRPC 50051 + `/health`/compat HTTP | RAG, OCR/embedding, AI chat, generation worker (Python) |
+| ai-service | 3000 (compose) | gRPC 50051 + `/health` | RAG, OCR/embedding, chat answering, generation worker (Python) |
 
 ---
 
@@ -177,7 +178,7 @@ Exchange: `examio.events` (topic, durable). Only consumed event: `auth.user.auth
 1. Teacher uploads a document → `POST /ai/upload` (JSON; the file is already in R2) → document-service records `UserStorage` (schema `document`), charges `doc:<id>` and publishes `document.uploaded` with a presigned download link
 2. ai-service worker downloads the file, runs OCR (Docling), and publishes `ai.document.processed|failed`; document-service updates the status (a failed charged upload is refunded)
 3. Extracted text is chunked and embedded via LangChain + pgvector into schema `ai` (`Document`, `DocumentEntity`)
-4. AI chat attaches document context via `UserStorageGraph` + `UserStorageGraphGroup` in schema `ai` (RAG retrieval); exam ai-chat reads document metadata through document gRPC
+4. AI chat attaches document context via `UserStorageGraph` + `UserStorageGraphGroup` in schema `ai` (RAG retrieval); ai-chat-service reads document metadata through document gRPC
 5. Frontend streams AI chat via SSE (`aiChatApi.ts`)
 
 ---

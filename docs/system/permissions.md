@@ -152,7 +152,7 @@ Auth `SERVICE_AUDIENCES` includes `document` and `ai`; auth `SERVICE_CLIENTS` ne
 | document (document-service since phase 15; gateway route `ai-upload`) | `POST quick-upload`, `POST upload` (JSON), `POST upload-image`, `GET/DELETE upload/:id` | `document:upload` (own; other users' ids answer 404) |
 | ai (exam) | `recent-uploads` (gateway route `ai-recent-uploads`; documents come from document `ListDocuments`) | `document:upload` (own) |
 | | `generate-from-file`, `regenerate/:id`, `GET/DELETE job/:id`, `upload/:id/history`, `models` | `ai:generate` (own; `history` first checks `AssertOwnership`) |
-| ai-chat | all handlers (class-level) | `ai_chat:use` (own); `:chatId/exists` is `true` only for the caller's own chat |
+| ai-chat-service (own service since phase 13; `subjects` controller is `@Public`) | all ai-chat handlers (class-level) | `ai_chat:use` (own); `:chatId/exists` is `true` only for the caller's own chat |
 | subject | 4 GETs | `@Public()` |
 | r2 (document-service since phase 15) | `POST /r2/image` (gateway route `r2-image`) | `document:upload`. r2-service's HTTP `internal/upload` and its `INTERNAL_SERVICE_TOKEN` were removed |
 | finance | `payment/create`, `status/:id`, `history`, `cancel/:id`; `wallet/info`, `wallet/details` | `wallet:use` |

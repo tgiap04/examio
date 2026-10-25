@@ -20,7 +20,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **AIChatMessage** — A single message in an AI chat session. Each message has a role (user or assistant), text content, and optionally an attached image or document reference.
 
-**AI Service** — Standalone Python FastAPI service responsible for RAG (document retrieval), embedding generation, AI chat orchestration, and AI-assisted quiz/flashcard generation. Exam-service calls it via HTTP.
+**AI Service** — Standalone Python FastAPI service responsible for RAG (document retrieval), embedding generation, AI chat orchestration, and AI-assisted quiz/flashcard generation. Callers (exam, ai-chat, vocabulary) reach it over gRPC with service tokens; its HTTP serves only `/` and `/health`.
 
 **Admin Service** — NestJS service providing the admin dashboard backend. Handles KPI/stats, user management (ban/unban/delete/grant admin), finance operations (refund/credit adjust/tier change), log streaming (SSE via ticket exchange), and audit log query. Exposed via gateway proxy at `/api/v1/admin/*` (HTTP port 3000 in containers; no gRPC server). Every controller requires `admin:access` (`@examio/auth-jwt`, `SYSTEM_ADMIN` role); grant/revoke admin go through auth `SetSystemAdmin`.
 
@@ -92,7 +92,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Exam Session** — A specific scheduled instance of an ExamRoom. Holds the time window, time limit, access control settings, and question selection strategy. Students join via ExamAttempt.
 
-**Exam Service** — NestJS service responsible for quiz/flashcard/exam authoring, exam session management, attempt tracking, AI chat and AI generation orchestration (`GenerationJob`). Uploaded-file management moved to the Document Service in phase 15. Study rooms and word families live in the Study Room Service and Vocabulary Service since phase 12; exam keeps only the `word-family/:id/to-flashcard` bridge.
+**Exam Service** — NestJS service responsible for quiz/flashcard/exam authoring, exam session management, attempt tracking and AI generation orchestration (`GenerationJob`). Uploaded-file management moved to the Document Service in phase 15. Study rooms and word families live in the Study Room Service and Vocabulary Service since phase 12; exam keeps only the `word-family/:id/to-flashcard` bridge. AI chat and subjects live in the AI Chat Service since phase 13.
 
 ---
 

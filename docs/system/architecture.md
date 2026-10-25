@@ -21,7 +21,8 @@ graph TB
 
     subgraph Backend[Backend — NestJS Monorepo]
         AUTH[auth-service<br/>:3000 HTTP<br/>:50051 gRPC]
-        EXAM[exam-service<br/>:3000 HTTP, no gRPC server<br/>Quiz/Flashcard/Exam<br/>AI chat + GenerationJob]
+        EXAM[exam-service<br/>:3000 HTTP, no gRPC server<br/>Quiz/Flashcard/Exam<br/>GenerationJob]
+        AICHAT[ai-chat-service<br/>:3000 HTTP, no gRPC server<br/>AI chat + subjects, SSE]
         STUDY[study-room-service<br/>:3000 HTTP + Socket.io /ws/study<br/>Study rooms]
         VOCAB[vocabulary-service<br/>:3000 HTTP + :50051 gRPC<br/>Word families]
         FIN[finance-service<br/>:3000 HTTP<br/>:50051 gRPC<br/>Wallet/Payment/Sub]
@@ -30,7 +31,7 @@ graph TB
     end
 
     subgraph AI[AI Layer — Python]
-        AISVC[ai-service<br/>:50051 gRPC AiService + :3000 /health, compat HTTP<br/>ai-worker: events<br/>RAG · LangGraph · Gemini]
+        AISVC[ai-service<br/>:50051 gRPC AiService + :3000 /health only<br/>ai-worker: events<br/>RAG · LangGraph · Gemini]
     end
 
     subgraph Infra[Infrastructure]
@@ -57,7 +58,7 @@ graph TB
     ADMIN -->|gRPC WordFamilyAdminService, forwarded admin token| VOCAB
     EXAM -->|gRPC WordFamilyService.GetWordFamily| VOCAB
     VOCAB -->|gRPC DeleteObjects as vocabulary| R2
-    VOCAB -->|HTTP generate, temporary until phase 13| AISVC
+    VOCAB -->|gRPC GenerateWordFamily, svc:vocabulary token| AISVC
     EXAM -->|gRPC GetPublicProfilesByIds| AUTH
     STUDY -->|gRPC GetPublicProfilesByIds| AUTH
     RMQ -->|gateway.events: authz_changed, session.revoked| GW
@@ -65,7 +66,8 @@ graph TB
     EXAM -->|gRPC Debit / Credit / Refund / GetWallet| FIN
     EXAM -->|gRPC DocumentService: CreateUpload, GetDocumentsByIds, AssertOwnership, ListDocuments, GetQuota, EnsureProcessed, DeleteDocuments| DOC
     EXAM -->|gRPC ListModels, svc:exam token| AISVC
-    EXAM -->|HTTP chat compat, temporary until phase 13| AISVC
+    AICHAT -->|gRPC Query / StreamChat, svc:ai-chat token| AISVC
+    AICHAT -->|gRPC DocumentService + GetUserBenefits, forwarded user token| DOC
     DOC -->|gRPC GetUserBenefits / Debit, forwarded user token; Refund, svc:document| FIN
     DOC -->|gRPC UploadFile, CreatePresignedDownload, DeleteObjects, svc:document| R2
     DOC -->|outbox document.uploaded / document.deleted| RMQ
@@ -103,14 +105,15 @@ Compose publishes only the gateway on the host, bound to loopback (`127.0.0.1:63
 |---------|----------:|----------:|---------|------|
 | `gateway-service` | 3000 | 50051 (GatewayControl, internal only) | Node 22 | Public HTTP entry: YAML-routed streaming proxy, JWT verify, revoke/stale checks, rate limit, WS upgrade proxy (`/ws/study`). No database |
 | `auth-service` | 3000 | 50051 | Node 22 | RS256 JWT issuer + JWKS, service tokens, OAuth, sessions, devices, roles (RBAC) |
-| `exam-service` | 3000 | none | Node 22 | Quiz/flashcard authoring, exam sessions, AI chat, `GenerationJob` (quiz/flashcard generation, charge and refund), `recent-uploads`, `word-family/:id/to-flashcard` bridge; `ROLE=api,worker` (event relay, generation reaper) |
+| `exam-service` | 3000 | none | Node 22 | Quiz/flashcard authoring, exam sessions, `GenerationJob` (quiz/flashcard generation, charge and refund), `recent-uploads`, `word-family/:id/to-flashcard` bridge; `ROLE=api,worker` (event relay, generation reaper) |
+| `ai-chat-service` | 3000 | none | Node 22 | AI chat (HTTP `/api/v1/ai-chat/*`, SSE stream and regenerate-stream) and public `/api/v1/subjects/*` (since phase 13); schema `aichat`; `ROLE=api,worker` (`r2_delete_tasks` worker for message images); consumes `aichat.events` in the API process |
 | `study-room-service` | 3000 | none | Node 22 | Study-Together Room: HTTP `/api/v1/studyrooms/*` and Socket.io `/ws/study`; one container, consumes `studyroom.events` in the API process |
-| `vocabulary-service` | 3000 | 50051 (`WordFamilyAdminService`, `WordFamilyService`, internal only) | Node 22 | Word families and categories, AI generation (HTTP to ai-service), `r2_delete_tasks` worker (`ROLE=api,worker`) |
+| `vocabulary-service` | 3000 | 50051 (`WordFamilyAdminService`, `WordFamilyService`, internal only) | Node 22 | Word families and categories, AI generation (gRPC `GenerateWordFamily` to ai-service), `r2_delete_tasks` worker (`ROLE=api,worker`) |
 | `document-service` | 3000 | 50051 (`DocumentService`, internal only) | Node 22 | Uploaded files, monthly upload quota, OCR status, upload charge/refund (`doc:<id>`), `r2_delete_tasks` worker; `ROLE=api,worker` |
 | `finance-service` | 3000 | 50051 | Node 22 | Wallet, SePay QR payments, subscriptions |
 | `r2-service` | 3000 | 50051 | Node 22 | Cloudflare R2 object storage (proxy) |
 | `admin-service` | 3000 | 50051 (`AdminService.GetPageFlags`, internal only) | Node 22 | Admin dashboard: users, stats, finance, logs, audit. Owns `AdminAudit` and `PageFeatureFlag` only |
-| `ai-service` | 3000 (compose, `/health` + compat) | 50051 (`AiService`, service tokens only) | Python 3.12+ | RAG, OCR/embedding, AI chat, generation worker (LangChain + LangGraph). `ROLE` = `api` / `worker` / `migrate`; owns schema `ai` |
+| `ai-service` | 3000 (compose, `/health` and `/` only) | 50051 (`AiService`, service tokens only) | Python 3.12+ | RAG, OCR/embedding, chat answering for ai-chat-service, generation worker (LangChain + LangGraph). `ROLE` = `api` / `worker` / `migrate`; owns schema `ai` |
 
 ## Cross-Service Communication
 
@@ -183,7 +186,7 @@ sequenceDiagram
 
 **Proto definitions**: `examio-be/proto/examio/<svc>/v1/` (packages `admin`, `ai`, `auth`, `common`, `document`, `events`, `finance`, `gateway`, `r2`, `vocabulary`), linted and generated with buf. `yarn proto:lint` runs `buf lint proto`; `yarn proto:gen` runs `buf generate` (ts-proto, output `libs/contracts/src/generated/`, gitignored) and is exposed as `@examio/contracts`. The Python ai-service generates its stubs with `apps/ai-service/scripts/gen_grpc.sh`. Client helpers live in `@examio/grpc`, HTTP helpers in `@examio/http`.
 
-Finance `WalletService` money fields are `int32` (credits are whole numbers). `R2Service` has `DeleteObjects` and `CreatePresignedDownload` (service `document` only); r2's HTTP `internal/upload` route and its `INTERNAL_SERVICE_TOKEN` are gone. gRPC env: `AUTH_GRPC_URL`, `R2_GRPC_URL`, `FINANCE_GRPC_URL`, `GATEWAY_GRPC_URL`, `VOCABULARY_GRPC_URL` (admin and exam to vocabulary), `DOCUMENT_GRPC_URL` (exam to document), `AI_GRPC_URL` (exam to ai), `ADMIN_GRPC_URL` (gateway to admin), `GRPC_PORT` on each serving service.
+Finance `WalletService` money fields are `int32` (credits are whole numbers). `R2Service` has `DeleteObjects` and `CreatePresignedDownload` (service `document` only); r2's HTTP `internal/upload` route and its `INTERNAL_SERVICE_TOKEN` are gone. gRPC env: `AUTH_GRPC_URL`, `R2_GRPC_URL`, `FINANCE_GRPC_URL`, `GATEWAY_GRPC_URL`, `VOCABULARY_GRPC_URL` (admin and exam to vocabulary), `DOCUMENT_GRPC_URL` (exam and ai-chat to document), `AI_GRPC_URL` (exam, ai-chat and vocabulary to ai), `ADMIN_GRPC_URL` (gateway to admin), `GRPC_PORT` on each serving service.
 
 **Data ownership (phase 10, enforced by the database since phase 11).** Each Prisma model is read and written by exactly one service; the services share one Postgres database but each has its own schema and role (see Database per service below): auth (`User`, `UserSession`, `VerifyAccountCode`, `ResetPasswordCode`, `RoleChangeLog`), finance (`Wallet`, `WalletTransaction`, `Payment`, `UserSubscription`), admin (`AdminAudit`, `PageFeatureFlag`), study-room (`StudyRoom`, `StudyRoomMember`, `StudyRoomPlaylistItem`, `StudyRoomChatBlock`), vocabulary (`WordFamilyCategory`, `WordFamily`, `UserSavedWordFamily`, `R2DeleteTask`), exam (everything else, until later phases extract more services). `OutboxEvent` and `ProcessedEvent` are per-service. The map is `examio-be/scripts/check-model-ownership.ts` (`yarn check:ownership`, strict in CI, also catches relation access through `include`/`select`/nested writes); `yarn check:deps` runs dependency-cruiser with `.dependency-cruiser.cjs`. A service needing foreign data calls the owner over gRPC.
 
@@ -293,6 +296,12 @@ sequenceDiagram
         FE->>EX: GET /ai/job/{jobId}
     end
 ```
+
+#### AI chat (phase 13)
+
+ai-chat-service answers `POST /ai-chat/:chatId/message` through gRPC `AiService.Query` (deadline 60 s) and `.../stream` and `message/:id/regenerate-stream` through `AiService.StreamChat` (server stream, no deadline, 60 s idle timeout), both with a `svc:ai-chat` service token. The SSE is written by hand (`text/event-stream`, `X-Accel-Buffering: no`, `: hb` every 15 s). Until the first frame arrives a failure is an HTTP status (`RESOURCE_EXHAUSTED` 429, `PERMISSION_DENIED`/`UNAUTHENTICATED` 502, `UNAVAILABLE` 503, deadline 504); afterwards it is an `event: error` frame. A client disconnect cancels the gRPC call and saves the text received so far; the gateway also destroys the upstream request when the client closes a streamed route (`abortOnClientClose` in `pipeline/proxy-factory.ts`), so the LLM call stops. Document RPCs (`GetDocumentsByIds`, `AssertOwnership`, `EnsureProcessed`, `DeleteDocuments`) and finance `GetUserBenefits` (cached `aichat:benefits:<id>`, 5 min) use the forwarded user token. Deleting a chat calls `DeleteDocuments` once (503 keeps the chat), then queues `r2_delete_tasks` for message images under `images/<ownerId>/` only. The free tier is limited to 6 messages a minute (429 `RATE_LIMITED`). Chats and documents of another user answer 404; `systemPrompt` is never in a response.
+
+`finance.subscription.changed` carries the effective tier (an inactive subscription is tier 0) and fires on admin set-tier, activation, reactivation and expiry; ai-chat drops `aichat:benefits:<id>` on it and unlinks documents on `document.deleted` (queue `aichat.events`). Expiry is flipped by `SubscriptionExpiryService.expireIfLapsed` on read paths and by a finance worker sweeper every `SUBSCRIPTION_EXPIRY_SWEEP_MS` (default 60000, batch 200).
 
 Upload path (`POST /ai/upload`, JSON): document-service inserts `UserStorage` as `PENDING_CHARGE`, calls `Debit(doc:<id>)` with the forwarded user token, then sets `PENDING` + `creditCharged` and writes `document.uploaded`; ai-service OCRs and answers `ai.document.processed|failed`. Refund rules are in [business-rules](business-rules.md#ai-credits-charge-and-refund-phase-15).
 
@@ -459,7 +468,7 @@ One Postgres database, one schema and one login role per service. `libs/database
 | document | `apps/document-service/prisma/schema.prisma` | `apps/document-service/prisma/migrations` | `document` / `document_svc` |
 | ai (Python) | none (no Prisma; Alembic) | `apps/ai-service/alembic/versions` (one-shot `ai-migrate`, `ROLE=migrate`) | `ai` / `ai_svc`; `DB_SEARCH_PATH=ai,extensions`; one shared asyncpg pool, no runtime DDL, no access to other schemas |
 
-- Roles `content`, `assessment`, `aichat` are also created (with `<SVC>_DB_PASSWORD`) but no service uses them yet; `studyroom` and `vocabulary` are used since phase 12, `document` and `ai` since phase 15 (the temporary `ai_svc` grants on `exam` are revoked). All 11 roles and the `extensions` schema (pgvector) come from `deploy/postgres/init/01-service-schemas.sh`, which runs only on an empty data volume; existing dev stacks need `docker compose down -v` once. `PUBLIC` has no privileges, so a role selecting another service's table gets `permission denied` (checked by `test/db-isolation`, a CI step).
+- Roles `content` and `assessment` are also created (with `<SVC>_DB_PASSWORD`) but no service uses them yet; `studyroom` and `vocabulary` are used since phase 12, `document` and `ai` since phase 15, `aichat` since phase 13 (the temporary `ai_svc` grants on `exam` are revoked). All 11 roles and the `extensions` schema (pgvector) come from `deploy/postgres/init/01-service-schemas.sh`, which runs only on an empty data volume; existing dev stacks need `docker compose down -v` once. `PUBLIC` has no privileges, so a role selecting another service's table gets `permission denied` (checked by `test/db-isolation`, a CI step).
 - `DATABASE_URL` per service: `postgresql://<svc>_svc:...@postgres:5432/examio?schema=<svc>`. There is no shared URL.
 - Each service has a local Prisma module `apps/<svc>-service/src/prisma` (`PrismaPg` adapter, pool of 5, a database `ReadinessCheck` feeding `/health/ready`) and a generated client in `apps/<svc>-service/src/generated/prisma` (gitignored; `yarn prisma:generate` loops over `apps/*/prisma`).
 - No foreign key points at `User` any more: other services keep `userId` (usually indexed), and read profile data from auth over gRPC.
@@ -474,7 +483,7 @@ One Postgres database, one schema and one login role per service. `libs/database
 3. **Shared infra libs** — `@examio/common`, `@examio/redis`, `@examio/messaging`, `@examio/auth-jwt`
 4. **Repository pattern with cache** — `BaseRepository<T>` wraps Prisma + Redis invalidation
 5. **Composite screen detection** — single page with independent regions (REG###)
-6. **Backend-for-frontend (BFF) pattern** — the frontend never calls ai-service; exam-service (generation, chat) and document-service (uploads) front it, over gRPC and events (chat still uses the HTTP compat routes until phase 13)
+6. **Backend-for-frontend (BFF) pattern** — the frontend never calls ai-service; exam-service (generation), ai-chat-service (chat), vocabulary-service (word-family generation) and document-service (uploads) front it, over gRPC and events
 7. **Optimistic UI with sendBeacon** — quiz auto-save uses `navigator.sendBeacon` on unload
 8. **Event-driven wallet bootstrap** — `auth.user.authz_changed` (outbox) with `role=TEACHER` → finance creates wallet idempotently
 

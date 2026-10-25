@@ -172,6 +172,8 @@ Gateway proxies all requests to downstream services. **Routing source of truth (
 
 #### Subjects
 
+> Owner: ai-chat-service since phase 13 (public routes, upstream `aichat`); previously exam-service.
+
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
 | GET | /api/v1/subjects/categories | Get subject categories with subjects | Bearer |
@@ -247,6 +249,8 @@ Gateway proxies all requests to downstream services. **Routing source of truth (
 | POST | /api/v1/ai/tutor/dataset-imports/:datasetKey/clear | Clear imported dataset | Bearer |
 
 #### AI Chat
+
+> Owner: ai-chat-service since phase 13 (gateway upstream `aichat`); previously exam-service.
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
@@ -483,6 +487,8 @@ Internal service routes — not directly exposed to clients (gateway proxies to 
 
 #### Subjects
 
+> Owner: ai-chat-service since phase 13 (public routes, upstream `aichat`); previously exam-service.
+
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|
 | GET | /api/v1/subjects/categories | Get subject categories | public |
@@ -535,6 +541,8 @@ Internal service routes — not directly exposed to clients (gateway proxies to 
 | POST | /api/v1/ai/tutor/dataset-imports/:datasetKey/clear | Clear imported dataset | Bearer |
 
 #### AI Chat
+
+> Owner: ai-chat-service since phase 13 (gateway upstream `aichat`); previously exam-service.
 
 | Method | Path | Description | Auth |
 |--------|------|-------------|------|

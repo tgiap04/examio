@@ -178,6 +178,8 @@ Groups backend routes by domain. Each route maps to a BL handler (from `behavior
 
 ## Subjects
 
+> Owner: ai-chat-service since phase 13 (public routes, upstream `aichat`); previously exam-service.
+
 | Method | Path | Handler BL### | Auth |
 |--------|------|---------------|------|
 | GET | /api/v1/subjects/categories | [UNMAPPED] | public |
@@ -263,6 +265,8 @@ Groups backend routes by domain. Each route maps to a BL handler (from `behavior
 ---
 
 ## AI Chat
+
+> Owner: ai-chat-service since phase 13 (gateway upstream `aichat`); previously exam-service.
 
 | Method | Path | Handler BL### | Auth |
 |--------|------|---------------|------|

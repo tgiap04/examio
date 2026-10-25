@@ -1,6 +1,6 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-10-24
+last_updated: 2026-10-25
 ---
 
 # Examio Project Changelog
@@ -8,6 +8,20 @@ last_updated: 2026-10-24
 ## [Unreleased] — 2026-10-23
 
 ### Changed
+
+#### Extract ai-chat service and move AI calls to gRPC, phase 13 (uncommitted on `refactor/microservice-rbac`)
+
+- **ai-chat-service** (`apps/ai-chat-service`, new): HTTP `/api/v1/ai-chat/*` (16 routes; SSE on `:chatId/stream` and `message/:id/regenerate-stream`, paths unchanged; `DELETE :chatId?deleteFiles=true` also deletes attached files) and public `/api/v1/subjects/*` (`systemPrompt` is never returned). Schema `aichat`, role `aichat_svc`; models `AIChat`, `AIChatMessage`, `AIChatDocument` (`documentId`, no FK), `SubjectCategory`, `Subject`. No gRPC server. `ROLE=api,worker`: the worker polls `r2_delete_tasks` (message images, only keys under `images/<ownerId>/`, r2 called as `ai-chat`). Consumer queue `aichat.events` runs in the API process: `document.deleted` (unlink) and `finance.subscription.changed` (drop `aichat:benefits:<id>`); broker user `aichat` cannot publish.
+- **AI calls**: chat goes to ai-service gRPC `Query` (60 s deadline) and `StreamChat` (no deadline, 60 s idle timeout) as `svc:ai-chat`. Failures before the first frame are HTTP statuses (429, 502, 503, 504); later ones are `event: error` frames. Free tier: 6 messages a minute, 429 `RATE_LIMITED`; full chat 403 `CHAT_LIMIT_REACHED`; another user's chat or document answers 404. Message files wait for OCR up to `AI_CHAT_DOCUMENT_WAIT_MS` (default 120000).
+- **vocabulary**: word-family generation calls `AiService.GenerateWordFamily` (60 s, no retry, `svc:vocabulary`, `AI_GRPC_URL`); still free, TEACHER only, 20 a day.
+- **ai-service**: HTTP serves only `/` and `/health`; the compat routes, `AI_HTTP_COMPAT`, `AI_SERVICE_URL` and `INTERNAL_SERVICE_TOKEN` are removed everywhere (gateway no longer handles `x-internal-service-token`).
+- **exam**: `ai-chat` and `subject` modules, `ai-chat.prisma` and the subject seed are gone; migration `20261024142236_drop_ai_chat` (DB reset policy, no data copy). The subjects seed now lives in `apps/ai-chat-service/prisma/seed/`.
+- **finance**: `finance.subscription.changed` now carries the effective tier (inactive is 0) and fires on admin set-tier, activation, reactivation and expiry. Expiry is flipped by `SubscriptionExpiryService.expireIfLapsed` on read paths and by a worker sweeper every `SUBSCRIPTION_EXPIRY_SWEEP_MS` (default 60000, batch 200).
+- **Gateway**: upstream `aichat` (`AICHAT_SERVICE_URL`) for routes `ai-chat-stream`, `ai-chat`, `subjects`. Fix (F1): a client disconnect on a streamed route now destroys the upstream request (`abortOnClientClose` in `pipeline/proxy-factory.ts`), so the LLM call is cancelled instead of running on.
+- **Fix (F2)**: an expired active tier never flipped or published `finance.subscription.changed`, because the guarded flip lived only in `hasActiveSubscription`. `SubscriptionExpiryService.expireIfLapsed` (conditional update plus outbox tier 0 in one transaction) is now shared by the benefits and subscription read paths and the sweeper; one event is published under concurrent observers.
+- **Deploy and config**: `deploy/compose/ai-chat.yml`, `deploy/env/aichat.env.example`; new env `AICHAT_DB_PASSWORD`, `AICHAT_SERVICE_CLIENT_SECRET` (plus `ai-chat` in auth `SERVICE_CLIENTS`), `RABBITMQ_AICHAT_PASS`, `AICHAT_SERVICE_URL`, `SUBSCRIPTION_EXPIRY_SWEEP_MS`; `AI_CHAT_DOCUMENT_WAIT_MS` now read by ai-chat. Compose services `ai-chat`, `ai-chat-migrate`.
+- **Open**: the frontend AI chat page is not mounted on any route (pre-existing, F4). Large legacy sections of generated docs still describe the old shape (phase 19).
+- **Docs**: `CLAUDE.md`, `AGENTS.md`, `system/{architecture,overview,glossary,permissions}.md`, `generated/{route-list,api-map}.md` owner notes, `features/F016`, `deploy/README.md`, `apps/ai-service/README.md`, roadmap.
 
 #### Document service and ai-service database, phase 15 (uncommitted on `refactor/microservice-rbac`)
 
