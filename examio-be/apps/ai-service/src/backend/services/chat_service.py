@@ -1,4 +1,4 @@
-"""Chat use-cases shared by the gRPC servicer and the HTTP compat routes.
+"""Chat use-cases of the gRPC servicer.
 
 Callers (exam / ai-chat) have already authorized the ``user_storage_id`` they
 pass; this module does retrieval + answering and never touches another

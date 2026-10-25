@@ -1,13 +1,11 @@
-"""FastAPI app of the ai-service: ``/health`` plus the optional HTTP compat routes.
+"""FastAPI app of the ai-service: liveness (``/``) and ``/health`` only.
 
-All real traffic is gRPC (``src/grpc_server.py``). ``AI_HTTP_COMPAT=true`` keeps
-``/api/chat/query``, ``/api/chat/stream`` and ``/api/generate/word-family`` alive,
-guarded by ``INTERNAL_SERVICE_TOKEN``, for callers that move to gRPC in phase 13.
+All real traffic is gRPC (``src/grpc_server.py``), guarded by service tokens.
+There is no business HTTP route and no shared secret on this listener.
 """
 
 from __future__ import annotations
 
-import hmac
 import logging
 import os
 import uuid
@@ -25,13 +23,6 @@ load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
-
-PUBLIC_PATHS = frozenset({"/", "/health"})
-
-
-def http_compat_enabled() -> bool:
-    """Whether the legacy HTTP routes are mounted (``AI_HTTP_COMPAT=true``)."""
-    return os.environ.get("AI_HTTP_COMPAT", "false").strip().lower() in {"1", "true", "yes"}
 
 
 @asynccontextmanager
@@ -54,34 +45,16 @@ app = FastAPI(
     description="gRPC + event-driven AI node (OCR, vector search, generation)",
     version="3.0.0",
     lifespan=lifespan,
+    # Nothing but liveness is served over HTTP: no schema or docs pages either.
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
 )
-
-
-@app.middleware("http")
-async def require_internal_service_token(request: Request, call_next):
-    """Fail closed on every compat route unless the legacy shared token matches."""
-    if request.url.path in PUBLIC_PATHS:
-        return await call_next(request)
-    expected = os.getenv("INTERNAL_SERVICE_TOKEN")
-    received = request.headers.get("x-internal-service-token")
-    # Constant-time compare; an unset token short-circuits to reject.
-    if not expected or not hmac.compare_digest(received or "", expected):
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"success": False, "error": "Invalid internal service token"},
-        )
-    return await call_next(request)
-
-
-if http_compat_enabled():
-    from .api import router as compat_router
-
-    app.include_router(compat_router, prefix="/api")
 
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exc: HTTPException):
-    """Keep the legacy ``{success, error, status_code}`` error body."""
+    """Keep the ``{success, error, status_code}`` error body (e.g. a 404 on an unknown path)."""
     return JSONResponse(
         status_code=exc.status_code,
         content={"success": False, "error": exc.detail, "status_code": exc.status_code},

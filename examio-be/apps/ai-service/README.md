@@ -81,7 +81,7 @@ The service has no public HTTP API. Callers are other services:
 
 1. **gRPC** `examio.ai.v1.AiService` (`StreamChat`, `Query`, `GenerateWordFamily`, `ListModels`) on `GRPC_PORT` (50051), accepted only with a service token (RS256, `aud=ai`, allowed callers `svc:exam`, `svc:ai-chat`, `svc:vocabulary`, `svc:content`).
 2. **RabbitMQ events** on queue `ai.events`: `document.uploaded` (OCR, chunking, embedding, graph), `document.deleted` (drop vectors/entities/graph), `content.generation.requested` (quiz/flashcard generation). Answers: `ai.document.processed|failed`, `ai.generation.completed|failed`.
-3. **HTTP compat** (only with `AI_HTTP_COMPAT=true`, removed in phase 13): `POST /api/chat/query`, `POST /api/chat/stream`, `POST /api/generate/word-family`, guarded by `INTERNAL_SERVICE_TOKEN`. FastAPI also serves `/health`.
+3. **HTTP**: only `/` and `/health` (liveness). The former compat routes and their shared HTTP secret are gone.
 
 ```
 gRPC / event → Business Logic → RAG Processing → PostgreSQL schema `ai` (pgvector) → Response / event
@@ -144,7 +144,7 @@ ROLE=api,worker ./venv/bin/python -m src.main
 ./venv/bin/pytest -q          # DB/broker tests need AI_TEST_DATABASE_URL / AI_TEST_RABBITMQ_URL (throwaway containers)
 ```
 
-The service owns schema `ai` (Alembic, `alembic/versions`); it never reads or writes another service's tables. Processing status flows back through events (`ai.document.processed|failed`, `ai.generation.completed|failed`). The legacy HTTP routes (`/api/chat/query`, `/api/chat/stream`, `/api/generate/word-family`) exist only with `AI_HTTP_COMPAT=true` and are removed in phase 13.
+The service owns schema `ai` (Alembic, `alembic/versions`); it never reads or writes another service's tables. Processing status flows back through events (`ai.document.processed|failed`, `ai.generation.completed|failed`).
 
 ## Benchmark Hybrid GraphRAG
 
@@ -208,7 +208,6 @@ ROLE=api            # api | worker | migrate (comma-separated, migrate is exclus
 GRPC_PORT=50051
 AUTH_JWKS_URL=...   # service-token verification (aud=ai)
 R2_ALLOWED_HOSTS=   # hosts document.uploaded may download from (fail-closed if empty and no R2_PUBLIC_URL)
-AI_HTTP_COMPAT=false
 GEMINI_API_KEYS=...
 ```
 
