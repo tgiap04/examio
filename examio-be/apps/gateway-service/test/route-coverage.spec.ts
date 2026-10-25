@@ -21,6 +21,8 @@ function expectedUpstream(path: string): string {
     if (['wallet', 'payment', 'webhook'].includes(resource)) return 'finance';
     if (resource === 'admin') return 'admin';
     if (resource === 'studyrooms') return 'studyroom';
+    // AI chat and the public AI-teacher subjects live in ai-chat-service.
+    if (resource === 'ai-chat' || resource === 'subjects') return 'aichat';
     // Uploads and the image endpoint live in document-service; generation and history stay in exam.
     if (resource === 'r2') return 'document';
     if (resource === 'ai' && /^\/api\/v1\/ai\/(upload(\/:[A-Za-z]+)?|quick-upload|upload-image)$/.test(path)) {
@@ -54,6 +56,8 @@ describe('routes.yaml covers the phase-01 route inventory', () => {
         expect(target('/api/v1/studyrooms/mine')).toBe('http://localhost:3009');
         expect(target('/api/v1/word-family/categories')).toBe('http://localhost:3010');
         expect(target('/api/v1/ai/quick-upload')).toBe('http://localhost:3011');
+        expect(target('/api/v1/ai-chat/c1/messages')).toBe('http://localhost:3012');
+        expect(target('/api/v1/subjects')).toBe('http://localhost:3012');
         expect(table.match('POST', '/api/v1/r2/image')?.target).toBe('http://localhost:3011');
         expect(target('/api/v1/ai/upload/u1/history')).toBe('http://localhost:3002');
         expect(table.match('GET', '/ws/study')?.target).toBe('http://localhost:3009');
@@ -63,6 +67,7 @@ describe('routes.yaml covers the phase-01 route inventory', () => {
                 STUDYROOM_SERVICE_URL: 'http://study-room:3000',
                 VOCABULARY_SERVICE_URL: 'http://vocabulary:3000',
                 DOCUMENT_SERVICE_URL: 'http://document:3000',
+                AICHAT_SERVICE_URL: 'http://ai-chat:3000',
             },
         });
         expect(custom.match('GET', '/api/v1/quizsets')?.target).toBe('http://exam:3000');
@@ -72,6 +77,9 @@ describe('routes.yaml covers the phase-01 route inventory', () => {
         expect(custom.match('GET', '/ws/study')?.target).toBe('http://study-room:3000');
         expect(custom.match('POST', '/api/v1/ai/quick-upload')?.target).toBe('http://document:3000');
         expect(custom.match('GET', '/api/v1/ai/upload/u1/history')?.target).toBe('http://exam:3000');
+        expect(custom.match('POST', '/api/v1/ai-chat/c1/stream')?.target).toBe('http://ai-chat:3000');
+        expect(custom.match('POST', '/api/v1/ai-chat/message/m1/regenerate-stream')?.target).toBe('http://ai-chat:3000');
+        expect(custom.match('GET', '/api/v1/subjects/categories')?.target).toBe('http://ai-chat:3000');
     });
 
     it.each([
@@ -270,6 +278,25 @@ describe('coarse permission table', () => {
         expect(eff('POST', '/api/v1/quiz-practice/sets/q1/unlock')).toBe('required');
         expect(eff('POST', '/api/v1/quiz-practice/attempts')).toBe('required');
         expect(eff('GET', '/api/v1/quiz-practice/attempts/a1')).toBe('required');
+    });
+
+    it('ai-chat routes go to the named aichat upstream, keep ai_chat:use and the rate limits; subjects stay public', () => {
+        for (const [method, path] of [
+            ['POST', '/api/v1/ai-chat/c1/stream'],
+            ['POST', '/api/v1/ai-chat/message/m1/regenerate-stream'],
+            ['GET', '/api/v1/ai-chat/c1/messages'],
+        ]) {
+            expect(route(method, path)).toMatchObject({ upstream: 'aichat', permissions: ['ai_chat:use'] });
+        }
+        const subjects = route('GET', '/api/v1/subjects/categories');
+        expect(subjects).toMatchObject({ id: 'subjects', upstream: 'aichat' });
+        expect(table.effectiveAuth(subjects, 'GET', '/api/v1/subjects/categories')).toBe('optional');
+        expect(table.rateLimitFor('POST', '/api/v1/ai-chat/c1/stream')).toMatchObject({ id: 'ai-chat-stream', windowMs: 60_000, max: 10 });
+        expect(table.rateLimitFor('POST', '/api/v1/ai-chat/message/m1/regenerate-stream')).toMatchObject({
+            id: 'ai-chat-regenerate-stream',
+            windowMs: 60_000,
+            max: 10,
+        });
     });
 
     it('SSE routes disable the upstream timeout', () => {

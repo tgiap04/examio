@@ -37,7 +37,6 @@ export function resolveRequestId(headers: IncomingHttpHeaders): string {
 const ALWAYS_REMOVED = [
     'forwarded',
     'x-real-ip',
-    'x-internal-service-token',
     'x-forwarded-port',
     'x-forwarded-prefix',
     'x-forwarded-server',

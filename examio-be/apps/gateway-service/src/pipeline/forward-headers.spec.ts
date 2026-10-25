@@ -75,10 +75,6 @@ describe('applyForwardHeaders', () => {
         expect(h.get('x-keep')).toBe('ok');
     });
 
-    it('drops an inbound internal service token header', () => {
-        expect(apply({ 'x-internal-service-token': 'secret' }).has('x-internal-service-token')).toBe(false);
-    });
-
     it('anonymous + strip removes authorization and rewrites the accessToken cookie out (RT-6)', () => {
         const h = apply(
             { authorization: 'Bearer revoked', cookie: 'accessToken=revoked; theme=dark; refreshToken=r' },

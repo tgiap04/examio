@@ -11,6 +11,7 @@ upstreams:
   studyroom: ${STUDYROOM_SERVICE_URL:-http://localhost:3009}
   vocabulary: ${VOCABULARY_SERVICE_URL:-http://localhost:3010}
   document: ${DOCUMENT_SERVICE_URL:-http://localhost:3011}
+  aichat: ${AICHAT_SERVICE_URL:-http://localhost:3012}
   finance: ${FINANCE_SERVICE_URL:-http://localhost:3003}
   admin: ${ADMIN_SERVICE_URL:-http://localhost:7006}
 
@@ -118,14 +119,14 @@ routes:
     pageFlag: ai-tool
     timeout: 10m
   - id: ai-chat-stream
-    upstream: exam
+    upstream: aichat
     match: { path: '/api/v1/ai-chat/[^/]+/stream|/api/v1/ai-chat/message/[^/]+/regenerate-stream' }
     methods: [POST]
     auth: required
     permissions: [ai_chat:use]
     timeout: 0
   - id: ai-chat
-    upstream: exam
+    upstream: aichat
     match: { prefix: /api/v1/ai-chat }
     auth: required
     permissions: [ai_chat:use]
@@ -185,7 +186,7 @@ routes:
     match: { prefix: /api/v1/student }
     auth: required
   - id: subjects
-    upstream: exam
+    upstream: aichat
     match: { prefix: /api/v1/subjects }
     auth: optional
   # The bridge writes a FlashCardSet (content domain), so exam keeps this one path; the

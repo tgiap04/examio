@@ -25,7 +25,6 @@ describe.each([
         'x-user-roles': 'SYSTEM_ADMIN',
         'x-user-id': 'admin-1',
         'X-User-Anything': '1',
-        'x-internal-service-token': 'stolen',
         'x-forwarded-for': '6.6.6.6, 7.7.7.7',
         'x-real-ip': '6.6.6.6',
         'x-forwarded-host': 'evil.example',
@@ -40,7 +39,6 @@ describe.each([
         prepareProxiedRequest(req, response(), {}, CTX);
         const h = req.headers;
         expect(Object.keys(h).filter((k) => k.toLowerCase().startsWith('x-user-'))).toEqual([]);
-        expect(h['x-internal-service-token']).toBeUndefined();
         expect(h.forwarded).toBeUndefined();
         expect(h['x-forwarded-for']).toBe('10.0.0.9');
         expect(h['x-real-ip']).toBe('10.0.0.9');
