@@ -18,11 +18,13 @@ echo "    ADMIN_DEFAULT_PASSWORD=$(describe_secret "${ADMIN_DEFAULT_PASSWORD:-}"
 cd /app
 
 # Order matters: auth users first, then finance wallets/payments, admin audit
-# and flags, then the exam (legacy) reference data, and finally the vocabulary categories.
+# and flags, then the ai-chat subjects (AI teachers), and finally the vocabulary categories.
 # Each seed gets only its own service's URL, as that service's role.
-# Contract with the seed scripts: `yarn run seed:dev:<svc>` reads DATABASE_URL.
-for svc in auth finance admin exam vocabulary; do
-    var="$(printf '%s' "$svc" | tr '[:lower:]' '[:upper:]')_DATABASE_URL"
+# Contract with the seed scripts: `yarn run seed:dev:<name>` reads DATABASE_URL. Entries are
+# `<script name>:<role/schema name>` (the ai-chat app's role and schema are called aichat).
+for entry in auth:auth finance:finance admin:admin ai-chat:aichat vocabulary:vocabulary; do
+    svc="${entry%%:*}"
+    var="$(printf '%s' "${entry##*:}" | tr '[:lower:]' '[:upper:]')_DATABASE_URL"
     url="$(printenv "$var" || true)"
     if [ -z "$url" ]; then
         echo "ERROR: $var is not set" >&2

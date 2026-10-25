@@ -38,9 +38,8 @@ services:
             - R2_GRPC_URL=r2:50051
             # Public base of R2 objects: tells an R2-hosted category image from an external URL
             - R2_PUBLIC_URL=${R2_PUBLIC_URL:-}
-            # Temporary HTTP call to ai-service for generation (gRPC in phase 13); the
-            # INTERNAL_SERVICE_TOKEN itself comes from .env
-            - AI_SERVICE_URL=http://ai:3000/api
+            # AiService.GenerateWordFamily, called under the svc:vocabulary service token
+            - AI_GRPC_URL=ai:50051
             - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
             - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
             - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json

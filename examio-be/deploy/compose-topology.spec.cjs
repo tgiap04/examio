@@ -244,7 +244,9 @@ test('vocabulary (vocabulary role + schema) has its own migrate one-shot, a gRPC
     assert.strictEqual(envValue('vocabulary', 'ROLE'), 'api,worker');
     assert.strictEqual(envValue('vocabulary', 'GRPC_PORT'), '50051');
     assert.strictEqual(envValue('vocabulary', 'R2_GRPC_URL'), 'r2:50051');
-    assert.strictEqual(envValue('vocabulary', 'AI_SERVICE_URL'), 'http://ai:3000/api');
+    assert.strictEqual(envValue('vocabulary', 'AI_GRPC_URL'), 'ai:50051');
+    assert.strictEqual(envValue('vocabulary', 'AI_SERVICE_URL'), undefined, 'generation is gRPC now');
+    assert.strictEqual(envValue('vocabulary', 'INTERNAL_SERVICE_TOKEN'), undefined, 'vocabulary uses a service token, not the shared internal token');
     assert.ok(envValue('vocabulary', 'R2_PUBLIC_URL') !== undefined, 'R2_PUBLIC_URL is needed to tell R2 images from external URLs');
     assert.ok(envValue('vocabulary', 'SERVICE_CLIENT_SECRET').includes('${VOCABULARY_SERVICE_CLIENT_SECRET:?'));
     assert.strictEqual(envValue('vocabulary', 'RABBITMQ_URL'), undefined, 'vocabulary has no broker user');
@@ -307,17 +309,68 @@ test('the gateway routes studyrooms and /ws/study to study-room, and waits for i
     assert.strictEqual(services.gateway.depends_on['study-room'].condition, 'service_healthy');
 });
 
-test('seed runs after every migration, one URL per service', () => {
-    for (const svc of DB_SERVICES) {
-        assert.strictEqual(
-            services.seed.depends_on[`${svc}-migrate`].condition,
-            'service_completed_successfully',
-        );
-        assert.ok(envValue('seed', `${svc.toUpperCase()}_DATABASE_URL`).startsWith(`postgresql://${svc}_svc:`));
+test('seed runs after every migration of a service that has reference data, one URL per service (exam has none left)', () => {
+    for (const svc of ['auth', 'finance', 'admin', 'aichat']) {
+        const migrate = svc === 'aichat' ? 'ai-chat-migrate' : `${svc}-migrate`;
+        assert.strictEqual(services.seed.depends_on[migrate].condition, 'service_completed_successfully', migrate);
+        assert.ok(envValue('seed', `${svc.toUpperCase()}_DATABASE_URL`).startsWith(`postgresql://${svc}_svc:`), svc);
     }
+    assert.strictEqual(services.seed.depends_on['exam-migrate'], undefined, 'the subjects seed moved to ai-chat');
+    assert.strictEqual(envValue('seed', 'EXAM_DATABASE_URL'), undefined);
     assert.strictEqual(envValue('seed', 'DATABASE_URL'), undefined);
 });
 
 test('the dev seed is opt-in: only the seed profile runs it, never a plain up', () => {
     assert.deepStrictEqual(services.seed.profiles, ['seed']);
+});
+
+test('ai-chat (aichat role + schema) has its own migrate one-shot, api+worker roles, the broker user `aichat`, no gRPC server, no egress', () => {
+    const svc = services['ai-chat'];
+    const migrate = services['ai-chat-migrate'];
+    assert.ok(svc && migrate, 'ai-chat / ai-chat-migrate are missing');
+    assert.strictEqual(migrate.restart, 'no');
+    assert.strictEqual(migrate.build.args.SERVICE, 'ai-chat');
+    assert.strictEqual(svc.build.args.SERVICE_NAME, 'ai-chat-service');
+    assert.strictEqual(svc.depends_on['ai-chat-migrate'].condition, 'service_completed_successfully');
+    for (const name of ['ai-chat', 'ai-chat-migrate']) {
+        const url = envValue(name, 'DATABASE_URL');
+        assert.ok(url.startsWith('postgresql://aichat_svc:'), `${name} must connect as aichat_svc`);
+        assert.ok(url.includes('${AICHAT_DB_PASSWORD:?'), `${name} must use its own password`);
+        assert.ok(url.endsWith('?schema=aichat'), `${name} must target schema aichat`);
+    }
+    assert.deepStrictEqual(networksOf('ai-chat'), ['internal']);
+    assert.deepStrictEqual(networksOf('ai-chat-migrate'), ['internal']);
+    assert.strictEqual(envValue('ai-chat', 'ROLE'), 'api,worker');
+    assert.strictEqual(envValue('ai-chat', 'GRPC_PORT'), undefined, 'ai-chat serves no gRPC');
+    // gRPC out: ai-service (service token), document + finance (forwarded user token), r2 (worker, service token)
+    assert.strictEqual(envValue('ai-chat', 'AI_GRPC_URL'), 'ai:50051');
+    assert.strictEqual(envValue('ai-chat', 'DOCUMENT_GRPC_URL'), 'document:50051');
+    assert.strictEqual(envValue('ai-chat', 'FINANCE_GRPC_URL'), 'finance:50051');
+    assert.strictEqual(envValue('ai-chat', 'R2_GRPC_URL'), 'r2:50051');
+    assert.ok(envValue('ai-chat', 'R2_PUBLIC_URL') !== undefined, 'R2_PUBLIC_URL tells an R2 message image from an external URL');
+    assert.ok(envValue('ai-chat', 'SERVICE_CLIENT_SECRET').includes('${AICHAT_SERVICE_CLIENT_SECRET:?'));
+    assert.ok(envValue('ai-chat', 'RABBITMQ_URL').startsWith('amqp://aichat:${RABBITMQ_AICHAT_PASS:?'));
+    assert.ok(envList('rabbitmq-defs').some((e) => e.startsWith('RABBITMQ_AICHAT_PASS=')), 'the broker definitions need the aichat password');
+    for (const dep of ['postgres', 'redis', 'rabbitmq', 'auth']) {
+        assert.strictEqual(svc.depends_on[dep].condition, 'service_healthy', dep);
+    }
+    assert.strictEqual(services.exam.depends_on['ai-chat'], undefined);
+});
+
+test('AI chat and subjects are served by ai-chat: the gateway routes there and waits for it; exam no longer knows ai-service over HTTP', () => {
+    assert.strictEqual(envValue('gateway', 'AICHAT_SERVICE_URL'), 'http://ai-chat:3000');
+    assert.strictEqual(services.gateway.depends_on['ai-chat'].condition, 'service_healthy');
+    assert.strictEqual(envValue('exam', 'AI_SERVICE_URL'), undefined);
+    assert.strictEqual(envValue('exam', 'AI_CHAT_DOCUMENT_WAIT_MS'), undefined, 'the OCR wait moved to ai-chat');
+});
+
+test('no shared HTTP secret or HTTP route into ai-service is left anywhere in the stack (phase 13)', () => {
+    for (const name of Object.keys(services)) {
+        for (const key of ['INTERNAL_SERVICE_TOKEN', 'AI_SERVICE_URL', 'AI_HTTP_COMPAT']) {
+            assert.strictEqual(envValue(name, key), undefined, `${name} still sets ${key}`);
+        }
+    }
+    // the stack still inlines no secret through the shared .env file either: its example no longer lists the token
+    const example = fs.readFileSync(path.join(__dirname, '.env.example'), 'utf8');
+    assert.ok(!/INTERNAL_SERVICE_TOKEN|AI_SERVICE_URL|AI_HTTP_COMPAT/.test(example));
 });

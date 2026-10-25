@@ -59,6 +59,7 @@ services:
             - RABBITMQ_DOCUMENT_PASS=${RABBITMQ_DOCUMENT_PASS:?RABBITMQ_DOCUMENT_PASS is required}
             - RABBITMQ_AI_PASS=${RABBITMQ_AI_PASS:?RABBITMQ_AI_PASS is required}
             - RABBITMQ_GATEWAY_PASS=${RABBITMQ_GATEWAY_PASS:?RABBITMQ_GATEWAY_PASS is required}
+            - RABBITMQ_AICHAT_PASS=${RABBITMQ_AICHAT_PASS:?RABBITMQ_AICHAT_PASS is required}
         volumes:
             - ./rabbitmq:/defs
         restart: 'no'

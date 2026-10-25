@@ -18,7 +18,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { join, relative, sep } from 'path';
 
-export type Service = 'auth' | 'finance' | 'exam' | 'studyroom' | 'vocabulary' | 'document' | 'admin' | 'r2' | 'gateway';
+export type Service = 'auth' | 'finance' | 'exam' | 'studyroom' | 'vocabulary' | 'document' | 'aichat' | 'admin' | 'r2' | 'gateway';
 
 /** Owner app directory -> service name. ai-service (python) is out of scope here. */
 export const APP_SERVICE: Readonly<Record<string, Service>> = {
@@ -28,6 +28,7 @@ export const APP_SERVICE: Readonly<Record<string, Service>> = {
     'study-room-service': 'studyroom',
     'vocabulary-service': 'vocabulary',
     'document-service': 'document',
+    'ai-chat-service': 'aichat',
     'admin-service': 'admin',
     'r2-service': 'r2',
     'gateway-service': 'gateway',
@@ -37,8 +38,8 @@ export const APP_SERVICE: Readonly<Record<string, Service>> = {
 export const SHARED_MODELS: ReadonlySet<string> = new Set(['OutboxEvent', 'ProcessedEvent', 'R2DeleteTask']);
 
 /**
- * Model -> owning service (ARCH Appendix A). Until phases 13-14 extract the
- * content/assessment/ai-chat services, `exam` owns all of those.
+ * Model -> owning service (ARCH Appendix A). Until phase 14 extracts the
+ * content/assessment services, `exam` owns all of those.
  */
 export const OWNERSHIP: Readonly<Record<string, Service>> = {
     // auth
@@ -50,7 +51,7 @@ export const OWNERSHIP: Readonly<Record<string, Service>> = {
     AdminAudit: 'admin', PageFeatureFlag: 'admin',
     // document (phase 15)
     UserStorage: 'document', UserMonthlyFileUpload: 'document',
-    // exam (content, assessment, ai-chat, generation). The vector / entity / graph tables are ai-service's
+    // exam (content, assessment, generation). The vector / entity / graph tables are ai-service's
     // (Python, schema `ai`), no longer part of any Prisma schema.
     GenerationJob: 'exam',
     QuizSet: 'exam', QuizSetLabel: 'exam', QuizQuestion: 'exam', DetailsQuizQuestion: 'exam',
@@ -63,7 +64,8 @@ export const OWNERSHIP: Readonly<Record<string, Service>> = {
     StudyRoom: 'studyroom', StudyRoomMember: 'studyroom', StudyRoomPlaylistItem: 'studyroom', StudyRoomChatBlock: 'studyroom',
     // vocabulary (phase 12)
     WordFamilyCategory: 'vocabulary', WordFamily: 'vocabulary', UserSavedWordFamily: 'vocabulary',
-    AIChat: 'exam', AIChatMessage: 'exam', AIChatDocument: 'exam', SubjectCategory: 'exam', Subject: 'exam',
+    // ai-chat (phase 13)
+    AIChat: 'aichat', AIChatMessage: 'aichat', AIChatDocument: 'aichat', SubjectCategory: 'aichat', Subject: 'aichat',
 };
 
 export interface Violation {

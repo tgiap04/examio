@@ -1,4 +1,4 @@
-# AI service (Python): schema `ai` (ai_svc), Alembic migrations, gRPC AiService + event worker
+# AI service (Python): schema `ai` (ai_svc), Alembic migrations, gRPC AiService (+ /health only over HTTP) + event worker
 # Included from deploy/docker-compose.yml; paths are relative to deploy/ (project_directory).
 # One image, three roles (ROLE): ai-migrate (alembic upgrade head, one-shot), ai (gRPC :50051 +
 # /health), ai-worker (document/generation events + outbox relay).
@@ -68,9 +68,6 @@ services:
             # Service-token verification (RS256, aud=ai) against the auth JWKS.
             JWT_ISSUER: ${JWT_ISSUER:-examio-auth}
             AUTH_JWKS_URL: http://auth:3000/.well-known/jwks.json
-            # Legacy HTTP routes (/api/chat/*, /api/generate/word-family) for callers that move to
-            # gRPC in phase 13; they still check INTERNAL_SERVICE_TOKEN (from .env).
-            AI_HTTP_COMPAT: ${AI_HTTP_COMPAT:-true}
         env_file:
             - .env
         depends_on:

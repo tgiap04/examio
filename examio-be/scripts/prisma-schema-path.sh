@@ -1,11 +1,12 @@
 #!/bin/sh
 # Prints the Prisma schema path of a service: a single file, or the multi-file
-# folder (exam). Usage: scripts/prisma-schema-path.sh <auth|finance|admin|exam|study-room|vocabulary|document>
-# `studyroom` (the DB schema / role / queue name) is accepted for `study-room`.
+# folder (exam). Usage: scripts/prisma-schema-path.sh <auth|finance|admin|exam|study-room|vocabulary|document|ai-chat>
+# `studyroom` / `aichat` (the DB schema / role / queue name) are accepted for `study-room` / `ai-chat`.
 # POSIX sh: it also runs in the node:alpine build images (no bash there).
 set -eu
-svc="${1:?service required (auth|finance|admin|exam|study-room|vocabulary|document)}"
+svc="${1:?service required (auth|finance|admin|exam|study-room|vocabulary|document|ai-chat)}"
 [ "$svc" = "studyroom" ] && svc="study-room"
+[ "$svc" = "aichat" ] && svc="ai-chat"
 root="$(cd "$(dirname "$0")/.." && pwd)"
 base="apps/${svc}-service/prisma"
 if [ -f "$root/$base/schema.prisma" ]; then

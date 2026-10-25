@@ -49,6 +49,12 @@
       "password_hash": "{{HASH:RABBITMQ_GATEWAY_PASS}}",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
       "tags": []
+    },
+    {
+      "name": "aichat",
+      "password_hash": "{{HASH:RABBITMQ_AICHAT_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
     }
   ],
   "vhosts": [
@@ -112,6 +118,13 @@
       "configure": "^(examio\\.events|gateway\\..*)$",
       "write": "^(examio\\.events|gateway\\..*)$",
       "read": "^(examio\\.events|gateway\\..*)$"
+    },
+    {
+      "user": "aichat",
+      "vhost": "/",
+      "configure": "^(examio\\.events|aichat\\..*)$",
+      "write": "^(examio\\.events|aichat\\..*)$",
+      "read": "^(examio\\.events|aichat\\..*)$"
     }
   ],
   "topic_permissions": [
@@ -162,6 +175,13 @@
       "vhost": "/",
       "exchange": "examio.events",
       "write": "^gateway\\.",
+      "read": ".*"
+    },
+    {
+      "user": "aichat",
+      "vhost": "/",
+      "exchange": "examio.events",
+      "write": "^aichat\\.",
       "read": ".*"
     }
   ],

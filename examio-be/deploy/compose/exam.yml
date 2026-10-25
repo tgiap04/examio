@@ -26,7 +26,6 @@ services:
         environment:
             - NODE_ENV=production
             - PORT=3000
-            - AI_SERVICE_URL=http://ai:3000/api
             - R2_SERVICE_URL=r2:3000
             - RABBITMQ_URL=amqp://exam:${RABBITMQ_EXAM_PASS:?RABBITMQ_EXAM_PASS is required}@rabbitmq:5672
             - DATABASE_URL=postgresql://exam_svc:${EXAM_DB_PASSWORD:?EXAM_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=exam

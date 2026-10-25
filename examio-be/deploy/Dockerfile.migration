@@ -2,7 +2,7 @@
 # Strategy: `prisma migrate deploy` applies the service's committed migration files
 # (baseline first) against its own schema, as its own Postgres role (DATABASE_URL
 # is set per `<svc>-migrate` in deploy/compose/<svc>.yml).
-#   SERVICE=auth|finance|admin|study-room|vocabulary|document -> apps/$SERVICE-service/prisma/schema.prisma
+#   SERVICE=auth|finance|admin|study-room|vocabulary|document|ai-chat -> apps/$SERVICE-service/prisma/schema.prisma
 #   SERVICE=exam               -> apps/exam-service/prisma/schema/   (multi-file)
 FROM node:22-alpine AS base
 ARG SERVICE

@@ -19,6 +19,7 @@ const ENV = {
     RABBITMQ_AI_PASS: 'i',
     RABBITMQ_DOCUMENT_PASS: 'd',
     RABBITMQ_GATEWAY_PASS: 'g',
+    RABBITMQ_AICHAT_PASS: 'c',
 };
 
 test('hashPassword matches the RabbitMQ documentation reference (salt 908DC60A, test12)', () => {
@@ -35,7 +36,7 @@ test('renderDefinitions substitutes users, hashes and the admin name', () => {
         ENV
     );
     const names = out.users.map((u) => u.name).sort();
-    assert.deepStrictEqual(names, ['ai', 'auth', 'document', 'exam', 'finance', 'gateway', 'ops', 'studyroom']);
+    assert.deepStrictEqual(names, ['ai', 'aichat', 'auth', 'document', 'exam', 'finance', 'gateway', 'ops', 'studyroom']);
     assert.ok(out.users.every((u) => u.hashing_algorithm === 'rabbit_password_hashing_sha256'));
     assert.ok(out.users.find((u) => u.name === 'ops').tags.includes('administrator'));
     assert.ok(!JSON.stringify(out).includes('{{'));
@@ -158,6 +159,37 @@ test('document events flow ai <-> document: each side may publish its own keys a
     }
 });
 
+test('aichat reads only its own queues and the events exchange, and may publish nothing it consumes', () => {
+    const out = render();
+    const topic = out.topic_permissions.find((p) => p.user === 'aichat');
+    assert.strictEqual(topic.exchange, 'examio.events');
+    assert.strictEqual(topic.write, '^aichat\\.');
+    assert.strictEqual(topic.read, '.*');
+    const perm = out.permissions.find((p) => p.user === 'aichat');
+    for (const field of ['configure', 'write', 'read']) {
+        const re = new RegExp(perm[field]);
+        for (const q of ['examio.events', 'aichat.events', 'aichat.retry.30s', 'aichat.dlq']) {
+            assert.ok(re.test(q), `${field}: ${q}`);
+        }
+        for (const q of ['ai.events', 'auth.events', 'exam.events', 'document.events', 'amq.default']) {
+            assert.ok(!re.test(q), `${field} must not match ${q}`);
+        }
+    }
+});
+
+test('aichat consumes document.deleted and finance.subscription.changed, and publishes neither', () => {
+    const out = render();
+    const topic = (user) => out.topic_permissions.find((p) => p.user === user);
+    for (const [key, publisher] of [
+        ['document.deleted', 'document'],
+        ['finance.subscription.changed', 'finance'],
+    ]) {
+        assert.ok(new RegExp(topic(publisher).write).test(key), `${publisher} publishes ${key}`);
+        assert.ok(new RegExp(topic('aichat').read).test(key), `aichat binds ${key}`);
+        assert.ok(!new RegExp(topic('aichat').write).test(key), `aichat must not publish ${key}`);
+    }
+});
+
 test('CLI exits 1 when a password is missing and writes nothing', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'defs-'));
     const out = path.join(dir, 'definitions.json');
@@ -180,7 +212,7 @@ test('CLI writes definitions.json (world-readable, the broker user must read the
         encoding: 'utf8',
     });
     assert.strictEqual(res.status, 0, res.stderr);
-    assert.strictEqual(JSON.parse(fs.readFileSync(out, 'utf8')).users.length, 8);
+    assert.strictEqual(JSON.parse(fs.readFileSync(out, 'utf8')).users.length, 9);
     assert.strictEqual(fs.statSync(out).mode & 0o777, 0o644);
 });
 

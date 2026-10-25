@@ -10,16 +10,17 @@ The deployment consists of the following containers:
 - **RabbitMQ** (Message Queue)
 - **Gateway Service** (YAML-routed streaming proxy; JWT verify, revoke/stale checks, rate limits; no database)
 - **Auth Service** (Authentication)
-- **Exam Service** (quizzes, flashcards, exams, AI chat, quiz/flashcard generation jobs with charge and refund; `ROLE=api,worker`)
+- **Exam Service** (quizzes, flashcards, exams, quiz/flashcard generation jobs with charge and refund; `ROLE=api,worker`)
 - **Study-room Service** (study rooms: HTTP + Socket.io `/ws/study`; consumes `auth.user.authz_changed` and `auth.user.updated` inside the API process)
 - **Vocabulary Service** (word families + categories: HTTP + gRPC `WordFamilyAdminService`/`WordFamilyService`, plus an R2 delete worker for category images in the same container; calls ai-service for generation)
 - **Document Service** (uploaded-file metadata, monthly upload quota and OCR status: HTTP `/ai/upload*`, `/ai/quick-upload`, `/ai/recent-uploads`, `/r2/image` + gRPC `DocumentService`; one container runs `api,worker`: outbox relay, `document.events` consumer, charge reaper and the R2 delete worker. Charges `Debit(doc:<id>)` through finance, refunds on failure)
+- **AI Chat Service** (AI conversations, messages, attached documents and the public AI-teacher subjects: HTTP `/ai-chat/*` (SSE streaming) and `/subjects/*`, no gRPC server; one container runs `api,worker`: the `aichat.events` consumer and the R2 delete worker for message images. Calls ai-service `Query`/`StreamChat` as `svc:ai-chat`, document-service and finance as the caller)
 - **Finance Service** (Payment & Wallet)
 - **R2 Service** (File Storage)
-- **AI Service** (Python, one image, three containers selected by `ROLE`: `ai` = gRPC `examio.ai.v1.AiService` on 50051 guarded by service tokens, plus `/health` and, with `AI_HTTP_COMPAT=true`, the legacy `/api/chat/*` and `/api/generate/word-family` routes; `ai-worker` = RabbitMQ consumer on `ai.events` (OCR/embedding for `document.uploaded`, generation for `content.generation.requested`), outbox relay and purge; `ai-migrate` = one-shot `alembic upgrade head`. Owns schema `ai`; no host port)
-- **`<svc>-migrate`** (`auth-migrate`, `finance-migrate`, `admin-migrate`, `exam-migrate`, `study-room-migrate`, `vocabulary-migrate`, `document-migrate`: one `prisma migrate deploy` per service schema, each runs once and exits; `ai-migrate` is the Alembic equivalent for schema `ai`)
+- **AI Service** (Python, one image, three containers selected by `ROLE`: `ai` = gRPC `examio.ai.v1.AiService` on 50051 guarded by service tokens, plus `/health` as its only HTTP route; `ai-worker` = RabbitMQ consumer on `ai.events` (OCR/embedding for `document.uploaded`, generation for `content.generation.requested`), outbox relay and purge; `ai-migrate` = one-shot `alembic upgrade head`. Owns schema `ai`; no host port)
+- **`<svc>-migrate`** (`auth-migrate`, `finance-migrate`, `admin-migrate`, `exam-migrate`, `study-room-migrate`, `vocabulary-migrate`, `document-migrate`, `ai-chat-migrate`: one `prisma migrate deploy` per service schema, each runs once and exits; `ai-migrate` is the Alembic equivalent for schema `ai`)
 
-The stack is split by service in `compose/*.yml` (`infra`, `auth`, `finance`, `admin`, `exam`, `study-room`, `vocabulary`, `document`, `gateway`, `r2`, `ai`, `seed`) and assembled by the `include:` list in `docker-compose.yml` (needs Docker Compose 2.20+). Run every command from `deploy/`; paths stay relative to it.
+The stack is split by service in `compose/*.yml` (`infra`, `auth`, `finance`, `admin`, `exam`, `study-room`, `vocabulary`, `document`, `ai-chat`, `gateway`, `r2`, `ai`, `seed`) and assembled by the `include:` list in `docker-compose.yml` (needs Docker Compose 2.20+). Run every command from `deploy/`; paths stay relative to it.
 
 ## Prerequisites
 
@@ -91,12 +92,13 @@ JWT_KID=<kid>
 JWT_ISSUER=examio-auth
 JWT_AUDIENCE=examio
 ACCESS_TOKEN_EXPIRATION=15m
-# Service tokens: `scripts/gen-service-secret.sh <exam|studyroom|vocabulary|document|finance|admin|gateway>` prints the secret
+# Service tokens: `scripts/gen-service-secret.sh <exam|studyroom|vocabulary|document|ai-chat|finance|admin|gateway>` prints the secret
 # (that service only) and the hash that goes into auth's SERVICE_CLIENTS.
-SERVICE_CLIENTS={"exam":"<sha256>","studyroom":"<sha256>","vocabulary":"<sha256>","document":"<sha256>","finance":"<sha256>","admin":"<sha256>","gateway":"<sha256>"}
+SERVICE_CLIENTS={"exam":"<sha256>","studyroom":"<sha256>","vocabulary":"<sha256>","document":"<sha256>","ai-chat":"<sha256>","finance":"<sha256>","admin":"<sha256>","gateway":"<sha256>"}
 EXAM_SERVICE_CLIENT_SECRET=<secret>
 STUDYROOM_SERVICE_CLIENT_SECRET=<secret>
 VOCABULARY_SERVICE_CLIENT_SECRET=<secret>
+AICHAT_SERVICE_CLIENT_SECRET=<secret>
 DOCUMENT_SERVICE_CLIENT_SECRET=<secret>
 FINANCE_SERVICE_CLIENT_SECRET=<secret>
 ADMIN_SERVICE_CLIENT_SECRET=<secret>
@@ -125,12 +127,15 @@ RABBITMQ_STUDYROOM_PASS=...
 RABBITMQ_DOCUMENT_PASS=...
 RABBITMQ_AI_PASS=...
 RABBITMQ_GATEWAY_PASS=...
+RABBITMQ_AICHAT_PASS=...
 ```
 
 Broker users and permissions are rendered from `rabbitmq/definitions.template.json` into the gitignored `rabbitmq/definitions.json` by the one-shot `rabbitmq-defs` service. `setup-env.sh` and the deploy workflow run `docker compose run --rm rabbitmq-defs` before `up`; it fails if any password above is missing.
 
 #### AI Service
-Phase 15 variables: `DOCUMENT_GRPC_URL` and `AI_GRPC_URL` (exam), `DOCUMENT_SERVICE_URL` (gateway), `DOCUMENT_SERVICE_CLIENT_SECRET` (+ the `document` entry in auth `SERVICE_CLIENTS`), `RABBITMQ_DOCUMENT_PASS` and `RABBITMQ_AI_PASS` (broker users `document`, `ai`), `DOCUMENT_DB_PASSWORD` and `AI_DB_PASSWORD`, `R2_ALLOWED_HOSTS`, `AI_HTTP_COMPAT`, `GENERATION_JOB_TIMEOUT_MINUTES` (exam, default 60, minimum 10) and `AI_CHAT_DOCUMENT_WAIT_MS` (exam, default 120000). `R2_ALLOWED_HOSTS` is a comma-separated allow-list of hostnames that `ai-worker` may download presigned URLs from (the host of `R2_ENDPOINT`, plus bucket virtual hosts); if it is empty the worker falls back to the host of `R2_PUBLIC_URL`, and with neither set it refuses every download. Downloads must be https and the host must not resolve to a private, loopback or link-local address, so an S3-compatible endpoint on a private network is refused. `AI_HTTP_COMPAT=true` keeps the legacy HTTP routes (and `INTERNAL_SERVICE_TOKEN`) alive for exam ai-chat and vocabulary until phase 13.
+Phase 15 variables: `DOCUMENT_GRPC_URL` and `AI_GRPC_URL` (exam), `DOCUMENT_SERVICE_URL` (gateway), `DOCUMENT_SERVICE_CLIENT_SECRET` (+ the `document` entry in auth `SERVICE_CLIENTS`), `RABBITMQ_DOCUMENT_PASS` and `RABBITMQ_AI_PASS` (broker users `document`, `ai`), `DOCUMENT_DB_PASSWORD` and `AI_DB_PASSWORD`, `R2_ALLOWED_HOSTS` and `GENERATION_JOB_TIMEOUT_MINUTES` (exam, default 60, minimum 10). `R2_ALLOWED_HOSTS` is a comma-separated allow-list of hostnames that `ai-worker` may download presigned URLs from (the host of `R2_ENDPOINT`, plus bucket virtual hosts); if it is empty the worker falls back to the host of `R2_PUBLIC_URL`, and with neither set it refuses every download. Downloads must be https and the host must not resolve to a private, loopback or link-local address, so an S3-compatible endpoint on a private network is refused.
+
+Phase 13 variables: `AICHAT_SERVICE_URL` (gateway), `AICHAT_SERVICE_CLIENT_SECRET` (+ the `ai-chat` entry in auth `SERVICE_CLIENTS`), `RABBITMQ_AICHAT_PASS` (broker user `aichat`), `AICHAT_DB_PASSWORD`, and for ai-chat `AI_GRPC_URL`, `DOCUMENT_GRPC_URL`, `FINANCE_GRPC_URL`, `R2_GRPC_URL`, `R2_PUBLIC_URL` and `AI_CHAT_DOCUMENT_WAIT_MS` (default 120000: how long one message waits for its documents' OCR). `AI_HTTP_COMPAT`, `AI_SERVICE_URL` and `INTERNAL_SERVICE_TOKEN` no longer exist: ai-service has no HTTP route but `/health`, and no service shares an HTTP secret. If an old `deploy/.env` still carries them, delete the lines and rotate the token.
 
 ```bash
 # AI2 is used only for quiz/flashcard/content generation.
@@ -164,7 +169,7 @@ R2_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
 R2_PUBLIC_URL=https://pub-....r2.dev
 ```
 
-`R2_PUBLIC_URL` is required by auth, exam, vocabulary and document (they map a stored URL back to an R2 key; a URL on another host is never deleted). Deleting a record queues its R2 keys in `r2_delete_tasks` in the same transaction, and a worker (`libs/messaging/src/r2-delete`) removes them through r2-service with retries; exam, vocabulary and document therefore run `ROLE=api,worker` in `compose/exam.yml`, `compose/vocabulary.yml` and `compose/document.yml`. document-service calls r2 as `svc:document` (`UploadFile`, `CreatePresignedDownload`, `DeleteObjects`); r2 has no HTTP upload route and no `INTERNAL_SERVICE_TOKEN` any more.
+`R2_PUBLIC_URL` is required by auth, exam, vocabulary, document and ai-chat (they map a stored URL back to an R2 key; a URL on another host is never deleted). Deleting a record queues its R2 keys in `r2_delete_tasks` in the same transaction, and a worker (`libs/messaging/src/r2-delete`) removes them through r2-service with retries; exam, vocabulary and document therefore run `ROLE=api,worker` in `compose/exam.yml`, `compose/vocabulary.yml` and `compose/document.yml`. document-service calls r2 as `svc:document` (`UploadFile`, `CreatePresignedDownload`, `DeleteObjects`); r2 has no HTTP upload route and no `INTERNAL_SERVICE_TOKEN` any more.
 Use a hostname dedicated to the bucket for `R2_PUBLIC_URL` (e.g. the `r2.dev` host or a custom domain that serves nothing else): any client-supplied image URL on that hostname, on any port or path, must be a key the caller owns, so a shared hostname would also reject unrelated images on it. User-owned objects are stored under `<area>/<ownerUserId>/…`; only those keys are ever deleted on a user's behalf.
 
 #### Payment (SePay)

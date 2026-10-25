@@ -48,7 +48,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        svc: [auth, exam, study-room, vocabulary, document, finance, admin, r2, gateway]
+        svc: [auth, exam, study-room, vocabulary, document, ai-chat, finance, admin, r2, gateway]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -114,6 +114,7 @@ jobs:
       STUDYROOM_DATABASE_URL: postgresql://studyroom_svc:ci-studyroom@localhost:5432/examio_ci?schema=studyroom
       VOCABULARY_DATABASE_URL: postgresql://vocabulary_svc:ci-vocabulary@localhost:5432/examio_ci?schema=vocabulary
       DOCUMENT_DATABASE_URL: postgresql://document_svc:ci-document@localhost:5432/examio_ci?schema=document
+      AICHAT_DATABASE_URL: postgresql://aichat_svc:ci-aichat@localhost:5432/examio_ci?schema=aichat
       CONTENT_DATABASE_URL: postgresql://content_svc:ci-content@localhost:5432/examio_ci?schema=content
       AI_DATABASE_URL: postgresql://ai_svc:ci-ai@localhost:5432/examio_ci
       PRISMA_ADMIN_URL: postgresql://examio:examio@localhost:5432/examio_ci
@@ -174,7 +175,7 @@ jobs:
         run: bash deploy/postgres/init/01-service-schemas.sh
       - name: Apply every service's migrations as its own role (empty database)
         run: |
-          for svc in auth finance admin exam studyroom vocabulary document; do
+          for svc in auth finance admin exam studyroom vocabulary document aichat; do
             url_var="$(echo "$svc" | tr a-z A-Z)_DATABASE_URL"
             DATABASE_URL="${!url_var}" npx prisma migrate deploy --schema "$(scripts/prisma-schema-path.sh "$svc")"
           done
@@ -256,6 +257,7 @@ jobs:
       STUDYROOM_DATABASE_URL: postgresql://studyroom_svc:ci-studyroom@localhost:5432/examio_ci?schema=studyroom
       VOCABULARY_DATABASE_URL: postgresql://vocabulary_svc:ci-vocabulary@localhost:5432/examio_ci?schema=vocabulary
       DOCUMENT_DATABASE_URL: postgresql://document_svc:ci-document@localhost:5432/examio_ci?schema=document
+      AICHAT_DATABASE_URL: postgresql://aichat_svc:ci-aichat@localhost:5432/examio_ci?schema=aichat
       CONTENT_DATABASE_URL: postgresql://content_svc:ci-content@localhost:5432/examio_ci?schema=content
       AI_DATABASE_URL: postgresql://ai_svc:ci-ai@localhost:5432/examio_ci
       PRISMA_ADMIN_URL: postgresql://examio:examio@localhost:5432/examio_ci
@@ -272,7 +274,10 @@ jobs:
       RABBITMQ_DOCUMENT_PASS: ci-only-document-pass
       RABBITMQ_AI_PASS: ci-only-ai-pass
       RABBITMQ_GATEWAY_PASS: ci-only-gateway-pass
+      RABBITMQ_AICHAT_PASS: ci-only-aichat-pass
       REFRESH_TOKEN_ENC_KEY: ci-only-refresh-key-0123456789abcdef0123456789
+      QUIZ_JWT_SECRET: ci-dummy-quiz-jwt-secret-0123456789abcdef
+      QUIZ_AES_KEY: ci-dummy-quiz-aes-key-0123456789
       FRONTEND_URL: http://localhost:5173
       JWT_ISSUER: examio-auth
       JWT_AUDIENCE: examio
@@ -334,13 +339,13 @@ jobs:
         run: bash deploy/postgres/init/01-service-schemas.sh
       - name: Apply every service's migrations as its own role (empty database)
         run: |
-          for svc in auth finance admin exam studyroom vocabulary document; do
+          for svc in auth finance admin exam studyroom vocabulary document aichat; do
             url_var="$(echo "$svc" | tr a-z A-Z)_DATABASE_URL"
             DATABASE_URL="${!url_var}" npx prisma migrate deploy --schema "$(scripts/prisma-schema-path.sh "$svc")"
           done
       - name: Migrations cover every service schema (no drift)
         run: |
-          for svc in auth finance admin exam studyroom vocabulary document; do
+          for svc in auth finance admin exam studyroom vocabulary document aichat; do
             url_var="$(echo "$svc" | tr a-z A-Z)_DATABASE_URL"
             DATABASE_URL="${!url_var}" npx prisma migrate diff \
               --from-url "${!url_var}" \
@@ -357,7 +362,7 @@ jobs:
             ./node_modules/.bin/jest --config test/db-isolation/jest-e2e.json
       - name: Service health e2e
         run: |
-          # exam's, study-room's, vocabulary's and document's health e2e run with their whole e2e folders in the RBAC step below
+          # exam's, study-room's, vocabulary's, document's and ai-chat's health e2e run with their whole e2e folders in the RBAC step below
           for svc in auth finance admin r2 gateway; do
             echo "::group::$svc-service e2e"
             # Services without a broker user of their own boot with auth's.
@@ -382,7 +387,7 @@ jobs:
           export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"
           export SERVICE_NAME="auth-service"
           (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/token.e2e-spec.ts test/service-token.e2e-spec.ts test/role-change.e2e-spec.ts test/public-profiles.e2e-spec.ts test/login-throttle.e2e-spec.ts test/auth-users.e2e-spec.ts test/auth-me-shape.e2e-spec.ts)
-          (cd apps/finance-service && DATABASE_URL="$FINANCE_DATABASE_URL" RABBITMQ_URL="amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-authz-changed.e2e-spec.ts test/wallet-money.e2e-spec.ts test/finance-admin.e2e-spec.ts test/wallet-cache.e2e-spec.ts)
+          (cd apps/finance-service && DATABASE_URL="$FINANCE_DATABASE_URL" RABBITMQ_URL="amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-authz-changed.e2e-spec.ts test/wallet-money.e2e-spec.ts test/finance-admin.e2e-spec.ts test/wallet-cache.e2e-spec.ts test/subscription-changed.e2e-spec.ts)
           (cd apps/admin-service && DATABASE_URL="$ADMIN_DATABASE_URL" RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin.e2e-spec.ts test/admin-finance.e2e-spec.ts)
           # real auth (HTTP + gRPC) + real admin, each on its own schema (AUTH_/ADMIN_DATABASE_URL): roles, ban, users, stats, page flags
           RABBITMQ_URL="$RABBITMQ_AUTH_URL" ./node_modules/.bin/jest --config test/cross-app/jest-e2e.json test/cross-app/admin-roles.e2e-spec.ts test/cross-app/ban.e2e-spec.ts test/cross-app/admin-users-real-auth.e2e-spec.ts
@@ -399,6 +404,10 @@ jobs:
           (cd apps/study-room-service && DATABASE_URL="$STUDYROOM_DATABASE_URL" RABBITMQ_URL="amqp://studyroom:$RABBITMQ_STUDYROOM_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json)
           # The WHOLE vocabulary e2e folder (health, HTTP permissions, gRPC contract, r2_delete_tasks) in ONE jest process; no broker user.
           (cd apps/vocabulary-service && DATABASE_URL="$VOCABULARY_DATABASE_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json)
+          # The WHOLE ai-chat e2e folder (health, stream/SSE over real gRPC, ownership, documents, limits, clear chat + R2
+          # worker, events, broker permissions) in ONE jest process. It consumes as `aichat` and publishes document.deleted
+          # as `document` (RABBITMQ_DOCUMENT_URL) and finance.subscription.changed as `finance` (RABBITMQ_FINANCE_URL).
+          (cd apps/ai-chat-service && DATABASE_URL="$AICHAT_DATABASE_URL" RABBITMQ_URL="amqp://aichat:$RABBITMQ_AICHAT_PASS@localhost:5672" RABBITMQ_DOCUMENT_URL="amqp://document:$RABBITMQ_DOCUMENT_PASS@localhost:5672" RABBITMQ_FINANCE_URL="amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json)
           # The WHOLE document e2e folder (health, money flow, DeleteDocuments, gRPC contract, broker permissions,
           # worker pipeline) in ONE jest process. It publishes as the `ai` broker user (RABBITMQ_AI_PASS) and consumes as `document`.
           (cd apps/document-service && DATABASE_URL="$DOCUMENT_DATABASE_URL" RABBITMQ_URL="amqp://document:$RABBITMQ_DOCUMENT_PASS@localhost:5672" RABBITMQ_AI_URL="amqp://ai:$RABBITMQ_AI_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json)
@@ -456,6 +465,7 @@ jobs:
       RABBITMQ_DOCUMENT_PASS: ci-only-document-pass
       RABBITMQ_AI_PASS: ci-only-ai-pass
       RABBITMQ_GATEWAY_PASS: ci-only-gateway-pass
+      RABBITMQ_AICHAT_PASS: ci-only-aichat-pass
       AI_TEST_DATABASE_URL: postgresql://ai_svc:ci-ai@localhost:5432/examio_ci
       AI_TEST_RABBITMQ_URL: amqp://ci_admin:ci-only-admin-pass@localhost:5672
       REQUIRE_INTEGRATION: '1'
@@ -523,7 +533,7 @@ jobs:
       - name: ruff (phase-15+ modules)
         working-directory: examio-be/apps/ai-service
         run: |
-          python -m ruff check src/db.py src/main.py src/grpc_server.py src/backend/messaging \
+          python -m ruff check src/db.py src/main.py src/backend/main.py src/grpc_server.py src/backend/messaging \
             src/backend/auth src/backend/ai_grpc_mapping.py src/backend/services/chat_service.py \
             src/backend/services/sync_stream.py src/backend/tests alembic \
             --extend-exclude src/backend/tests/test_hybrid_retrieval_service.py
@@ -539,7 +549,7 @@ jobs:
         run: |
           for v in FRONTEND_URL DATABASE_URL REDIS_PASSWORD JWT_PRIVATE_KEY JWT_KID SERVICE_CLIENTS \
             RABBITMQ_USER RABBITMQ_PASS RABBITMQ_AUTH_PASS RABBITMQ_FINANCE_PASS RABBITMQ_EXAM_PASS RABBITMQ_STUDYROOM_PASS RABBITMQ_DOCUMENT_PASS \
-            RABBITMQ_AI_PASS RABBITMQ_GATEWAY_PASS EXAM_SERVICE_CLIENT_SECRET STUDYROOM_SERVICE_CLIENT_SECRET VOCABULARY_SERVICE_CLIENT_SECRET DOCUMENT_SERVICE_CLIENT_SECRET FINANCE_SERVICE_CLIENT_SECRET \
+            RABBITMQ_AI_PASS RABBITMQ_GATEWAY_PASS RABBITMQ_AICHAT_PASS EXAM_SERVICE_CLIENT_SECRET STUDYROOM_SERVICE_CLIENT_SECRET VOCABULARY_SERVICE_CLIENT_SECRET DOCUMENT_SERVICE_CLIENT_SECRET AICHAT_SERVICE_CLIENT_SECRET FINANCE_SERVICE_CLIENT_SECRET \
             ADMIN_SERVICE_CLIENT_SECRET POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB ADMIN_EMAILS \
             ADMIN_DEFAULT_PASSWORD GEMINI_API_KEYS GEMINI_MODEL_NAMES \
             AUTH_DB_PASSWORD FINANCE_DB_PASSWORD ADMIN_DB_PASSWORD EXAM_DB_PASSWORD CONTENT_DB_PASSWORD \

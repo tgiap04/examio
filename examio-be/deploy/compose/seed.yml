@@ -16,7 +16,7 @@ x-nestjs-healthcheck: &nestjs-healthcheck
 
 services:
     # ==================== SEED ====================
-    # Runs the per-service dev seeds once (auth -> finance -> admin -> exam -> vocabulary), each as its own
+    # Runs the per-service dev seeds once (auth -> finance -> admin -> ai-chat -> vocabulary), each as its own
     # role/schema, and exits. Idempotent — safe to re-run.
     # Opt-in (profile `seed`): a plain `docker compose up` never runs it, so production never
     # gets dev users/passwords and `up --wait` does not trip over a one-shot that exits.
@@ -34,7 +34,7 @@ services:
             - AUTH_DATABASE_URL=postgresql://auth_svc:${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=auth
             - FINANCE_DATABASE_URL=postgresql://finance_svc:${FINANCE_DB_PASSWORD:?FINANCE_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=finance
             - ADMIN_DATABASE_URL=postgresql://admin_svc:${ADMIN_DB_PASSWORD:?ADMIN_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=admin
-            - EXAM_DATABASE_URL=postgresql://exam_svc:${EXAM_DB_PASSWORD:?EXAM_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=exam
+            - AICHAT_DATABASE_URL=postgresql://aichat_svc:${AICHAT_DB_PASSWORD:?AICHAT_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=aichat
             - VOCABULARY_DATABASE_URL=postgresql://vocabulary_svc:${VOCABULARY_DB_PASSWORD:?VOCABULARY_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=vocabulary
             - ADMIN_EMAILS=${ADMIN_EMAILS}
             - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD}
@@ -47,7 +47,7 @@ services:
                 condition: service_completed_successfully
             admin-migrate:
                 condition: service_completed_successfully
-            exam-migrate:
+            ai-chat-migrate:
                 condition: service_completed_successfully
             vocabulary-migrate:
                 condition: service_completed_successfully
