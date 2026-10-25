@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { R2DeleteTaskWriter } from '@examio/messaging';
-import { HttpModule } from '@nestjs/axios';
-import { AiClient } from '../../clients/ai.client';
+import { GrpcClientModule } from '@examio/grpc';
+import { AI_GRPC_REGISTRATION, AiClient } from '../../clients/ai.client';
 import { WordFamilyController } from './word-family.controller';
 import { WordFamilyService } from './word-family.service';
 import { WordFamilyRepository } from './word-family.repository';
@@ -11,7 +11,7 @@ import { WordFamilyLookupService } from './word-family-lookup.service';
 import { R2_PUBLIC_BASE_URL, WordFamilyAdminService } from './word-family-admin.service';
 
 @Module({
-    imports: [HttpModule],
+    imports: [GrpcClientModule.register(AI_GRPC_REGISTRATION)],
     controllers: [
         WordFamilyController,
         WordFamilyAdminGrpcController,
