@@ -14,7 +14,7 @@ describe('gateway edge (e2e)', () => {
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.exam, h.studyroom, h.vocabulary, h.document, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.exam, h.studyroom, h.vocabulary, h.document, h.aichat, h.auth, h.finance, h.admin]) u.reset();
     });
 
     describe('CORS', () => {

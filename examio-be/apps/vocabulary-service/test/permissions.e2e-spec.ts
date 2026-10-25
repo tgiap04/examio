@@ -75,7 +75,7 @@ describe('vocabulary permissions (e2e)', () => {
         expect((await call(t.server, 'get', '/word-family/categories')).status).toBe(401);
     });
 
-    it('TEACHER generate is 2xx, calls ai-service with the internal token, and touches no wallet', async () => {
+    it('TEACHER generate is 2xx, calls ai-service over gRPC with a service token, and touches no wallet', async () => {
         const res = await call(t.server, 'post', '/word-family/generate', tok.teacher, {
             categorySlug: slug,
             numRootWords: 1,
@@ -85,8 +85,8 @@ describe('vocabulary permissions (e2e)', () => {
         expect(res.body.rootWord).toBe('order');
         expect(t.ai.requests).toHaveLength(1);
         expect(t.ai.requests[0]).toMatchObject({
-            path: '/api/generate/word-family',
-            token: 'e2e-internal-token',
+            authorization: 'Bearer e2e-service-token',
+            body: { categorySlug: slug, numRootWords: 1 },
         });
         // vocabulary has no finance client at all: there is nothing that could debit a wallet
         expect(() => t.app.get(FinanceClient, { strict: false })).toThrow();

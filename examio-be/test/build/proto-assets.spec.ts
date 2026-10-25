@@ -8,6 +8,7 @@ const APPS = [
     'study-room-service',
     'vocabulary-service',
     'document-service',
+    'ai-chat-service',
     'finance-service',
     'admin-service',
     'gateway-service',

@@ -1,57 +1,98 @@
-import { createServer, type Server } from 'http';
-import type { AddressInfo } from 'net';
+import { Controller, Inject } from '@nestjs/common';
+import { GrpcMethod, RpcException } from '@nestjs/microservices';
+import { Metadata, status } from '@grpc/grpc-js';
+import { Test } from '@nestjs/testing';
+import { PROTO_FILES, aiV1 } from '@examio/contracts';
+import { startTestGrpcServer, type TestGrpcServer } from '@examio/grpc/testing';
+
+export interface FakeAiRequest {
+    /** Raw `authorization` metadata entry, undefined when the caller sent none. */
+    authorization: string | undefined;
+    body: aiV1.GenerateWordFamilyRequest;
+}
 
 export interface FakeAiService {
-    /** `http://127.0.0.1:<port>/api`: what `AI_SERVICE_URL` points at. */
+    /** `127.0.0.1:<port>`: what `AI_GRPC_URL` points at. */
     url: string;
-    /** Every request the fake received (path, internal-token header, parsed body). */
-    requests: Array<{ path: string; token: string | undefined; body: Record<string, unknown> }>;
+    requests: FakeAiRequest[];
+    /** Reject calls without `authorization: Bearer <token>` as ai-service does. Default true. */
+    enforceToken: { value: boolean };
+    /** When set, the next GenerateWordFamily fails with it (cleared after one use). */
+    failNext: { value: { code: number; message: string; errorCode?: string } | null };
     close(): Promise<void>;
 }
 
+const STATE = Symbol('FAKE_AI_STATE');
+
+interface State {
+    requests: FakeAiRequest[];
+    enforceToken: { value: boolean };
+    failNext: FakeAiService['failNext'];
+}
+
 /**
- * Stands in for ai-service `POST /api/generate/word-family` over real HTTP, so the
- * production `AiClient` (axios, `x-internal-service-token`) is what the specs exercise.
+ * A grpc-js `examio.ai.v1.AiService` server (only GenerateWordFamily), so the
+ * production `AiClient` is what the specs exercise over a real channel.
  */
 export async function startFakeAiService(): Promise<FakeAiService> {
-    const requests: FakeAiService['requests'] = [];
-    const server: Server = createServer((req, res) => {
-        const chunks: Buffer[] = [];
-        req.on('data', (c: Buffer) => chunks.push(c));
-        req.on('end', () => {
-            const body = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}') as Record<string, unknown>;
-            requests.push({
-                path: req.url ?? '',
-                token: req.headers['x-internal-service-token'] as string | undefined,
-                body,
-            });
-            res.setHeader('content-type', 'application/json');
-            res.end(
-                JSON.stringify({
-                    success: true,
-                    data: {
-                        rootWord: 'order',
-                        categorySlug: body.categorySlug,
-                        words: [
-                            {
-                                word: 'order',
-                                pos: 'verb',
-                                meaningEn: 'to request',
-                                meaningVi: 'đặt hàng',
-                                example: 'I order tea.',
-                                affix: { prefix: '', root: 'order', suffix: '' },
-                            },
-                        ],
-                    },
-                })
-            );
-        });
-    });
-    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-    const { port } = server.address() as AddressInfo;
+    const state: State = {
+        requests: [],
+        enforceToken: { value: true },
+        failNext: { value: null },
+    };
+
+    @Controller()
+    class FakeAiController {
+        constructor(@Inject(STATE) private readonly s: State) {}
+
+        @GrpcMethod('AiService', 'GenerateWordFamily')
+        generateWordFamily(
+            req: aiV1.GenerateWordFamilyRequest,
+            md: Metadata
+        ): aiV1.GenerateWordFamilyResponse {
+            const authorization = md.get('authorization')[0] as string | undefined;
+            this.s.requests.push({ authorization, body: req });
+            if (this.s.enforceToken.value && !/^Bearer .+/.test(authorization ?? '')) {
+                throw new RpcException({ code: status.UNAUTHENTICATED, message: 'UNAUTHENTICATED' });
+            }
+            const fail = this.s.failNext.value;
+            if (fail) {
+                this.s.failNext.value = null;
+                const trailers = new Metadata();
+                if (fail.errorCode) trailers.set('x-error-code', fail.errorCode);
+                throw Object.assign(new RpcException({ code: fail.code, message: fail.message }), {
+                    getError: () => ({ code: fail.code, message: fail.message, metadata: trailers }),
+                });
+            }
+            return {
+                data: {
+                    rootWord: req.rootWord ?? 'order',
+                    categorySlug: req.categorySlug,
+                    words: [
+                        {
+                            word: 'order',
+                            pos: 'verb',
+                            meaningEn: 'to request',
+                            meaningVi: 'đặt hàng',
+                            example: 'I order tea.',
+                            affix: { prefix: '', root: 'order', suffix: '' },
+                        },
+                    ],
+                },
+            };
+        }
+    }
+
+    const moduleRef = await Test.createTestingModule({
+        controllers: [FakeAiController],
+        providers: [{ provide: STATE, useValue: state }],
+    }).compile();
+    const server: TestGrpcServer = await startTestGrpcServer(moduleRef, [PROTO_FILES.ai]);
     return {
-        url: `http://127.0.0.1:${port}/api`,
-        requests,
-        close: () => new Promise<void>((resolve) => server.close(() => resolve())),
+        url: server.url,
+        requests: state.requests,
+        enforceToken: state.enforceToken,
+        failNext: state.failNext,
+        close: () => server.close(),
     };
 }

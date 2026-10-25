@@ -53,7 +53,7 @@ const TABLE: Array<[Ctor, string, Declaration]> = [
     [R2ServiceController, 'listUserFiles', anyUserOrService],
     [R2ServiceController, 'uploadFile', { kind: 'service-only', callers: ['exam', 'auth', 'document'] }],
     [R2ServiceController, 'deleteFile', { kind: 'service-only', callers: ['exam', 'auth'] }],
-    [R2ServiceController, 'deleteObjects', { kind: 'service-only', callers: ['exam', 'auth', 'vocabulary', 'document'] }],
+    [R2ServiceController, 'deleteObjects', { kind: 'service-only', callers: ['exam', 'auth', 'vocabulary', 'document', 'ai-chat'] }],
     [R2ServiceController, 'createPresignedDownload', { kind: 'service-only', callers: ['document'] }],
     // document: user-scoped by the forwarded token; no service caller is allowlisted on any RPC
     [DocumentGrpcController, 'createUpload', { kind: 'permissions', permissions: ['document:upload'] }],

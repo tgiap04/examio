@@ -15,7 +15,7 @@ export type Row = {
 };
 
 const SID = 'ses_1';
-export const rows: Record<'exam' | 'studyroom' | 'vocabulary' | 'document' | 'finance' | 'admin', Row[]> = {
+export const rows: Record<'exam' | 'studyroom' | 'vocabulary' | 'document' | 'aichat' | 'finance' | 'admin', Row[]> = {
     exam: [
         {
             name: 'POST /quizsets',
@@ -159,18 +159,6 @@ export const rows: Record<'exam' | 'studyroom' | 'vocabulary' | 'document' | 'fi
             method: 'get',
             path: '/ai/upload/u1/history',
             expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 },
-        },
-        {
-            name: 'POST /ai-chat',
-            method: 'post',
-            path: '/ai-chat',
-            body: {},
-            expect: {
-                STUDENT: 403,
-                TEACHER: '2xx',
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: '2xx',
-            },
         },
         {
             name: 'POST /word-family/:id/to-flashcard',
@@ -429,6 +417,23 @@ export const rows: Record<'exam' | 'studyroom' | 'vocabulary' | 'document' | 'fi
             path: '/r2/image',
             expect: { STUDENT: 403, TEACHER: 'gate', ADMIN_ONLY: 403, TEACHER_ADMIN: 'gate' },
         },
+    ],
+    // ai-chat-service: every chat route needs `ai_chat:use` (TEACHER only today); subjects are public.
+    // The stream routes are not listed: their stubbed service never writes to the response.
+    aichat: [
+        { name: 'POST /ai-chat', method: 'post', path: '/ai-chat', body: {}, expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: 403, TEACHER_ADMIN: '2xx' } },
+        { name: 'GET /ai-chat', method: 'get', path: '/ai-chat', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 } },
+        { name: 'GET /ai-chat/:chatId/exists', method: 'get', path: '/ai-chat/c1/exists', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 } },
+        { name: 'GET /ai-chat/:chatId/messages', method: 'get', path: '/ai-chat/c1/messages', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 } },
+        { name: 'POST /ai-chat/:chatId/message', method: 'post', path: '/ai-chat/c1/message', body: { message: 'hi' }, expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: 403, TEACHER_ADMIN: '2xx' } },
+        { name: 'DELETE /ai-chat/:chatId', method: 'delete', path: '/ai-chat/c1', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 } },
+        { name: 'DELETE /ai-chat/message/:messageId', method: 'delete', path: '/ai-chat/message/m1', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 } },
+        { name: 'GET /ai-chat/:chatId/documents', method: 'get', path: '/ai-chat/c1/documents', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 } },
+        { name: 'POST /ai-chat/:chatId/documents', method: 'post', path: '/ai-chat/c1/documents', body: { documentId: 'd1', documentName: 'a.pdf' }, expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: 403, TEACHER_ADMIN: '2xx' } },
+        { name: 'GET /subjects (public)', method: 'get', path: '/subjects', expect: { STUDENT: 200, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 } },
+        { name: 'GET /subjects/categories (public)', method: 'get', path: '/subjects/categories', expect: { STUDENT: 200, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 } },
+        { name: 'GET /subjects/slug/:slug (public)', method: 'get', path: '/subjects/slug/math', expect: { STUDENT: 200, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 } },
+        { name: 'GET /subjects/:id (public)', method: 'get', path: '/subjects/s1', expect: { STUDENT: 200, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 } },
     ],
     finance: [
         {

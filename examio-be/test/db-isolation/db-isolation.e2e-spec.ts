@@ -3,7 +3,7 @@ import { SERVICES, assertLocal, describeWhenEnabled, urlOf } from './db-env';
 
 /** A service role sees only its own schema (phase 11). Needs the migrations applied. */
 const enabled = SERVICES.every((s) => urlOf(s)) && urlOf('content');
-const describeDb = describeWhenEnabled(Boolean(enabled), 'AUTH/FINANCE/ADMIN/EXAM/CONTENT_DATABASE_URL');
+const describeDb = describeWhenEnabled(Boolean(enabled), 'AUTH/FINANCE/ADMIN/EXAM/VOCABULARY/AICHAT/CONTENT_DATABASE_URL');
 
 /** Plain connection string: node-postgres must not see Prisma's `?schema=`. */
 const pgUrl = (svc: string): string => {
@@ -42,7 +42,7 @@ describeDb('database-per-service isolation (e2e)', () => {
 
     const pairs = SERVICES.flatMap((from) => SERVICES.filter((to) => to !== from).map((to) => [from, to] as const));
     it.each(pairs)('%s_svc cannot read the %s schema', async (from, to) => {
-        const table = { auth: '"User"', finance: '"Wallet"', admin: '"AdminAudit"', exam: '"QuizSet"' }[to];
+        const table = { auth: '"User"', finance: '"Wallet"', admin: '"AdminAudit"', exam: '"QuizSet"', vocabulary: '"WordFamily"', aichat: '"AIChat"' }[to];
         await expect(as(from, (c) => c.query(`SELECT 1 FROM ${to}.${table}`))).rejects.toMatchObject({ code: '42501' });
     });
 
@@ -74,6 +74,24 @@ describeDb('database-per-service isolation (e2e)', () => {
                  AND table_name IN ('UserStorage','UserMonthlyFileUpload','Document','DocumentEntity','UserStorageGraph','UserStorageGraphGroup')`
             );
             expect(rows).toEqual([]);
+        });
+    });
+
+    it('the ai-chat tables moved out of exam into aichat', async () => {
+        await as('exam', async (c) => {
+            const { rows } = await c.query(
+                `SELECT table_name FROM information_schema.tables WHERE table_schema = 'exam'
+                 AND table_name IN ('AIChat','AIChatMessage','AIChatDocument','Subject','SubjectCategory')`
+            );
+            expect(rows).toEqual([]);
+        });
+        await as('aichat', async (c) => {
+            expect((await c.query('SHOW search_path')).rows[0].search_path).toBe('aichat, extensions');
+            for (const table of ['"AIChat"', '"AIChatMessage"', '"AIChatDocument"', '"Subject"', '"SubjectCategory"', 'r2_delete_tasks', 'processed_events']) {
+                const viaSearchPath = await c.query(`SELECT count(*)::int AS n FROM ${table}`);
+                const qualified = await c.query(`SELECT count(*)::int AS n FROM aichat.${table}`);
+                expect(viaSearchPath.rows[0].n).toBe(qualified.rows[0].n);
+            }
         });
     });
 

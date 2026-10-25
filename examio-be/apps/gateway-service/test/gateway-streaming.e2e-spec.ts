@@ -19,12 +19,13 @@ describe('gateway streaming (e2e)', () => {
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.exam, h.document, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.exam, h.document, h.aichat, h.auth, h.finance, h.admin]) u.reset();
     });
 
     it('SSE chunks reach the client before the upstream finishes', async () => {
         let upstreamEnded = false;
-        h.exam.handler = (_req, res) => {
+        // /ai-chat is served by ai-chat-service
+        h.aichat.handler = (_req, res) => {
             res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' });
             res.write('data: one\n\n');
             setTimeout(() => {
@@ -49,6 +50,42 @@ describe('gateway streaming (e2e)', () => {
         });
         expect(firstChunk.text).toContain('data: one');
         expect(firstChunk.upstreamEndedYet).toBe(false);
+    });
+
+    it('a client that leaves mid-stream closes the upstream request too (no orphaned LLM call)', async () => {
+        let upstreamClosedEarly: (() => void) | undefined;
+        const closed = new Promise<boolean>((resolve) => {
+            upstreamClosedEarly = () => resolve(true);
+            setTimeout(() => resolve(false), 3_000);
+        });
+        h.aichat.handler = (_req, res) => {
+            res.writeHead(200, { 'content-type': 'text/event-stream', 'cache-control': 'no-cache' });
+            res.write('data: one\n\n');
+            const finish = setTimeout(() => res.end('data: two\n\n'), 5_000);
+            res.on('close', () => {
+                clearTimeout(finish);
+                if (!res.writableEnded) upstreamClosedEarly?.();
+            });
+        };
+        const token = await h.issuer.user('chat', ['TEACHER']);
+        await new Promise<void>((resolve, reject) => {
+            const req = httpRequest(
+                `${h.baseUrl}/api/v1/ai-chat/c2/stream`,
+                { method: 'POST', headers: { authorization: `Bearer ${token}`, ...via(4) } },
+                (res) => {
+                    res.once('data', () => {
+                        req.destroy();
+                        resolve();
+                    });
+                }
+            );
+            req.on('error', () => undefined);
+            req.on('close', () => resolve());
+            req.on('timeout', () => reject(new Error('no first chunk')));
+            req.end();
+        });
+        // The upstream must see its response socket close long before its own 5 s end.
+        expect(await closed).toBe(true);
     });
 
     it('streams a 30MB upload: bytes reach the upstream mid-send and Buffer memory stays flat', async () => {

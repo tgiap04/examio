@@ -18,9 +18,9 @@ import { toPgConnectionString } from '../../libs/messaging/src/relay-pool';
 import { assertLocal, describeWhenEnabled, urlOf } from './db-env';
 
 /**
- * The real WorkerModule of auth, exam, vocabulary and document (DI, pg pool, R2 gRPC client) drains a
- * queued key through the REAL r2 controller behind its `@ServiceOnly('exam','auth','vocabulary','document')`
- * guard. Needs the four service DB URLs, RABBITMQ_URL (auth worker also runs the outbox
+ * The real WorkerModule of auth, exam, vocabulary, document and ai-chat (DI, pg pool, R2 gRPC client) drains a
+ * queued key through the REAL r2 controller behind its `@ServiceOnly('exam','auth','vocabulary','document','ai-chat')`
+ * guard. Needs the five service DB URLs, RABBITMQ_URL (auth worker also runs the outbox
  * relay), RABBITMQ_DOCUMENT_PASS (the document worker consumes `document.events` as its own broker
  * user) and the auth signing key env (JWT_PRIVATE_KEY/JWT_KID/SERVICE_CLIENTS).
  */
@@ -29,13 +29,14 @@ const enabled = Boolean(
         urlOf('exam') &&
         urlOf('vocabulary') &&
         urlOf('document') &&
+        urlOf('aichat') &&
         process.env.RABBITMQ_URL &&
         process.env.RABBITMQ_DOCUMENT_PASS &&
         process.env.JWT_PRIVATE_KEY
 );
 const describeWorker = describeWhenEnabled(
     enabled,
-    'AUTH/EXAM/VOCABULARY/DOCUMENT_DATABASE_URL, RABBITMQ_URL, RABBITMQ_DOCUMENT_PASS and JWT_PRIVATE_KEY'
+    'AUTH/EXAM/VOCABULARY/DOCUMENT/AICHAT_DATABASE_URL, RABBITMQ_URL, RABBITMQ_DOCUMENT_PASS and JWT_PRIVATE_KEY'
 );
 
 /** The broker URL the job was given (auth's user); read once because each worker run overrides RABBITMQ_URL. */
@@ -50,6 +51,15 @@ function brokerUrlFor(svc: string): string {
     return url.toString();
 }
 
+/** Services that run an R2 delete worker: the app directory and the identity (`svc:<name>`) of their service token. */
+const WORKERS = {
+    auth: { dir: 'auth', identity: 'auth' },
+    exam: { dir: 'exam', identity: 'exam' },
+    vocabulary: { dir: 'vocabulary', identity: 'vocabulary' },
+    document: { dir: 'document', identity: 'document' },
+    aichat: { dir: 'ai-chat', identity: 'ai-chat' },
+} as const;
+
 describeWorker('R2 delete worker modules -> r2 DeleteObjects (e2e)', () => {
     const tag = `w${Date.now().toString(36)}`;
     const deleted: string[] = [];
@@ -62,6 +72,7 @@ describeWorker('R2 delete worker modules -> r2 DeleteObjects (e2e)', () => {
         assertLocal(urlOf('exam') as string);
         assertLocal(urlOf('vocabulary') as string);
         assertLocal(urlOf('document') as string);
+        assertLocal(urlOf('aichat') as string);
         process.chdir(join(__dirname, '..', '..'));
         keys = await createTestKeyPair('r2w-k');
         const moduleRef = await Test.createTestingModule({
@@ -108,7 +119,7 @@ describeWorker('R2 delete worker modules -> r2 DeleteObjects (e2e)', () => {
         throw new Error('timed out waiting for the worker');
     };
 
-    it.each(['auth', 'exam', 'vocabulary', 'document'] as const)('%s WorkerModule sends the queued key as a service token and removes the row', async (svc) => {
+    it.each(Object.keys(WORKERS) as Array<keyof typeof WORKERS>)('%s WorkerModule sends the queued key as a service token and removes the row', async (svc) => {
         const dbUrl = urlOf(svc) as string;
         process.env.DATABASE_URL = dbUrl;
         process.env.RABBITMQ_URL = brokerUrlFor(svc);
@@ -116,8 +127,8 @@ describeWorker('R2 delete worker modules -> r2 DeleteObjects (e2e)', () => {
         const pool = new Pool({ connectionString: toPgConnectionString(dbUrl), max: 2 });
         await pool.query('INSERT INTO r2_delete_tasks (id, key) VALUES (gen_random_uuid(), $1)', [key]);
 
-        const { WorkerModule } = await import(`../../apps/${svc}-service/src/worker.module`);
-        const token = await signTestToken(keys, { claims: serviceClaims(svc), audience: 'r2' });
+        const { WorkerModule } = await import(`../../apps/${WORKERS[svc].dir}-service/src/worker.module`);
+        const token = await signTestToken(keys, { claims: serviceClaims(WORKERS[svc].identity), audience: 'r2' });
         const moduleRef = await Test.createTestingModule({ imports: [WorkerModule] })
             .overrideProvider(ServiceTokenClient)
             .useValue({ getToken: async () => token })

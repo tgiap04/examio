@@ -1,13 +1,24 @@
 /**
  * Env contract of the database e2e specs (all point at a LOCAL throwaway Postgres
  * initialised like deploy/postgres/init/01-service-schemas.sh):
- *   <SVC>_DATABASE_URL   service-role URL of auth|finance|admin|exam|vocabulary (+ CONTENT and DOCUMENT for the isolation probes)
+ *   <SVC>_DATABASE_URL   service-role URL of auth|finance|admin|exam|vocabulary|aichat (+ CONTENT and DOCUMENT for the isolation probes)
  *   PRISMA_ADMIN_URL     superuser URL (only the migration/seed spec: it creates a throwaway database)
  * A spec skips itself when its env is missing, so the plain unit run never needs a database,
  * but under `CI=true` a missing env FAILS it (see `describeWhenEnabled`), so a CI wiring slip cannot go green.
  */
-export const SERVICES = ['auth', 'finance', 'admin', 'exam', 'vocabulary'] as const;
+export const SERVICES = ['auth', 'finance', 'admin', 'exam', 'vocabulary', 'aichat'] as const;
 export type Service = (typeof SERVICES)[number];
+
+/** Services whose `apps/<dir>-service/prisma/seed.ts` exists (exam has no reference data left) and their app directory. */
+export const SEEDED = ['auth', 'finance', 'admin', 'vocabulary', 'aichat'] as const satisfies readonly Service[];
+export const APP_DIR: Readonly<Record<Service, string>> = {
+    auth: 'auth',
+    finance: 'finance',
+    admin: 'admin',
+    exam: 'exam',
+    vocabulary: 'vocabulary',
+    aichat: 'ai-chat',
+};
 
 export const urlOf = (svc: string): string | undefined => process.env[`${svc.toUpperCase()}_DATABASE_URL`];
 

@@ -16,7 +16,7 @@ describe('gateway proxy (e2e)', () => {
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.exam, h.vocabulary, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.exam, h.vocabulary, h.aichat, h.auth, h.finance, h.admin]) u.reset();
     });
 
     it('passes status, headers and BOTH Set-Cookie headers through verbatim', async () => {

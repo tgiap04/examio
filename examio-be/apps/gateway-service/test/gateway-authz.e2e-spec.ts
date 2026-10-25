@@ -23,7 +23,7 @@ describe('gateway authorization (e2e)', () => {
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.exam, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.exam, h.aichat, h.auth, h.finance, h.admin]) u.reset();
     });
 
     describe('token verification', () => {
@@ -44,7 +44,7 @@ describe('gateway authorization (e2e)', () => {
                     // `optional` routes strip it and answer anonymously; required ones reject.
                     if (path === '/api/v1/subjects') {
                         expect(res.status).toBe(200);
-                        expect(h.exam.seen.at(-1)!.headers.authorization).toBeUndefined();
+                        expect(h.aichat.seen.at(-1)!.headers.authorization).toBeUndefined();
                     } else {
                         expect([res.status, await codeOf(res)]).toEqual([401, 'TOKEN_INVALID']);
                     }
@@ -86,7 +86,7 @@ describe('gateway authorization (e2e)', () => {
                 headers: { authorization: `Bearer ${token}`, cookie: `accessToken=${token}; theme=dark`, ...via(5) },
             });
             expect(res.status).toBe(200);
-            const seen = h.exam.seen[0].headers;
+            const seen = h.aichat.seen[0].headers;
             expect(seen.authorization).toBeUndefined();
             expect(seen.cookie).toBe('theme=dark');
         });

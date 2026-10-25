@@ -21,7 +21,7 @@ describe.each([
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.exam, h.document, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.exam, h.document, h.aichat, h.auth, h.finance, h.admin]) u.reset();
     });
 
     interface Sent {
@@ -67,7 +67,6 @@ describe.each([
                 'x-user-roles': 'SYSTEM_ADMIN',
                 'x-user-id': 'admin-1',
                 'x-user-email': 'a@b.c',
-                'x-internal-service-token': 'stolen',
             },
         });
         expect(res.status).toBe(200);
@@ -75,7 +74,6 @@ describe.each([
         expect(seen['x-user-roles']).toBeUndefined();
         expect(seen['x-user-id']).toBeUndefined();
         expect(seen['x-user-email']).toBeUndefined();
-        expect(seen['x-internal-service-token']).toBeUndefined();
         expect(seen.expect).toBeUndefined();
     });
 
@@ -110,8 +108,9 @@ describe.each([
     it('(c2) a client-sent Authorization on an optional route with a revoked cookie is stripped', async () => {
         const res = await send('/api/v1/subjects', { headers: { authorization: 'Bearer garbage', cookie: 'accessToken=garbage; theme=dark' } });
         expect(res.status).toBe(200);
-        expect(upstreamHeaders().authorization).toBeUndefined();
-        expect(upstreamHeaders().cookie).toBe('theme=dark');
+        // /subjects is served by ai-chat-service
+        expect(h.aichat.seen[0].headers.authorization).toBeUndefined();
+        expect(h.aichat.seen[0].headers.cookie).toBe('theme=dark');
     });
 
     describe('(d) maxBodySize on a chunked body (r2-image caps at 3mb)', () => {

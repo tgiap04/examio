@@ -56,15 +56,14 @@ export const rid = (): string => randomBytes(6).toString('hex');
  * Boots the real VocabularyServiceModule (real Postgres + Redis) as main.ts wires
  * it: `/api/v1` prefix, plus its gRPC server on a free port. Only the JWKS fetch,
  * the service token and ai-service are replaced (local key pair, fake token, a
- * local HTTP fake behind the real `AiClient`).
+ * grpc-js fake AiService behind the real `AiClient`).
  */
 export async function bootVocabularyApp(): Promise<VocabularyTestApp> {
     const originalCwd = process.cwd();
     // Proto paths resolve against the repo root (examio-be/).
     process.chdir(join(__dirname, '..', '..', '..', '..'));
     const ai = await startFakeAiService();
-    process.env.AI_SERVICE_URL = ai.url;
-    process.env.INTERNAL_SERVICE_TOKEN = 'e2e-internal-token';
+    process.env.AI_GRPC_URL = ai.url;
     const { VocabularyServiceModule } = await import('../../src/vocabulary-service.module');
     const keys = await createTestKeyPair('voc-kid');
     const verifier = createTokenVerifier({

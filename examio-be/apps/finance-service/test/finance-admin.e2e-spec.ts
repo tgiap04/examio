@@ -239,8 +239,12 @@ describe('FinanceAdminService (e2e, real Postgres)', () => {
             const r = await admin.changeTier({ userId: u, tier: 2, billingCycle: 'monthly', reason: 'renew after expiry', idempotencyKey: 'x2' }, ACTOR);
             expect(r).toMatchObject({ alreadyApplied: false, isActive: true });
             expect((await prisma.userSubscription.findUniqueOrThrow({ where: { userId: u } })).isActive).toBe(true);
-            // The event carries tier transitions only (publisher no-ops on from === to).
-            expect(await outboxFor(u)).toHaveLength(1);
+            // Effective tier went 0 (expired) -> 2, so reactivation publishes it.
+            const events = await outboxFor(u);
+            expect(events).toHaveLength(2);
+            expect(events.map((e) => (e.envelope as { data: Record<string, unknown> }).data)).toEqual(
+                expect.arrayContaining([expect.objectContaining({ userId: u, fromTier: 0, toTier: 2 })])
+            );
         });
 
         it('two concurrent first-time tier changes for one user never surface INTERNAL (L6)', async () => {

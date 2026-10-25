@@ -5,6 +5,7 @@ import { ExamServiceModule } from '../../apps/exam-service/src/exam-service.modu
 import { StudyRoomServiceModule } from '../../apps/study-room-service/src/study-room-service.module';
 import { VocabularyServiceModule } from '../../apps/vocabulary-service/src/vocabulary-service.module';
 import { DocumentServiceModule } from '../../apps/document-service/src/document-service.module';
+import { AIChatServiceModule } from '../../apps/ai-chat-service/src/ai-chat-service.module';
 import { FinanceServiceModule } from '../../apps/finance-service/src/finance-service.module';
 import { AdminServiceModule } from '../../apps/admin-service/src/admin-service.module';
 import { R2ServiceModule } from '../../apps/r2-service/src/r2-service.module';
@@ -22,6 +23,7 @@ const services = {
     studyRoom: scanService(StudyRoomServiceModule),
     vocabulary: scanService(VocabularyServiceModule),
     document: scanService(DocumentServiceModule),
+    aiChat: scanService(AIChatServiceModule),
     finance: scanService(FinanceServiceModule),
     admin: scanService(AdminServiceModule),
     r2: scanService(R2ServiceModule),
@@ -31,10 +33,12 @@ const byKey = new Map(all.map((h) => [h.key, h]));
 
 describe('authz declarations (deny by default, RT-5 / RT-6 / RT-7)', () => {
     it('scans every service and finds their handlers', () => {
-        expect(services.exam.http.length).toBeGreaterThan(140);
+        expect(services.exam.http.length).toBeGreaterThan(110);
         expect(services.studyRoom.http.length).toBeGreaterThanOrEqual(10);
         expect(services.vocabulary.http.length).toBeGreaterThanOrEqual(10);
         expect(services.document.http.length).toBeGreaterThanOrEqual(7);
+        // 16 chat routes + 4 public subject routes
+        expect(services.aiChat.http.length).toBeGreaterThanOrEqual(20);
         expect(services.auth.http.length).toBeGreaterThan(20);
         expect(services.finance.http.length).toBeGreaterThan(5);
         expect(services.admin.http.length).toBeGreaterThan(20);

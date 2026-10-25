@@ -16,7 +16,6 @@ describe('request validation (e2e)', () => {
     let setId: string;
     let quizId: string;
     let roomId: string;
-    let chatId: string;
     const tok: Record<string, string> = {};
 
     beforeAll(async () => {
@@ -31,10 +30,6 @@ describe('request validation (e2e)', () => {
         });
         quizId = (await seedQuizSet(t, teacher.id)).id;
         roomId = (await seedExamRoom(t, teacher.id)).id;
-        chatId = `chat_${rid()}`;
-        await t.prisma.aIChat.create({
-            data: { id: chatId, userId: teacher.id, title: 't' },
-        });
     });
     afterAll(() => t.close());
 
@@ -107,20 +102,6 @@ describe('request validation (e2e)', () => {
             () => '/ai/regenerate/some-upload',
             'teacher',
             { quantityQuizz: 999 },
-        ],
-        [
-            'POST /ai-chat/:id/message {}',
-            'post',
-            () => `/ai-chat/${chatId}/message`,
-            'teacher',
-            {},
-        ],
-        [
-            'PATCH-like POST /ai-chat/:id/documents {}',
-            'post',
-            () => `/ai-chat/${chatId}/documents`,
-            'teacher',
-            {},
         ],
         [
             'POST /flashcard-study/progress/:id wrong type',

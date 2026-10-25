@@ -99,17 +99,10 @@ describe('generation events on the broker (e2e)', () => {
             const goneFlash = await t.prisma.historyGeneratedFlashcard.create({
                 data: { id: `f_${rid()}`, userId: user.id, userStorageId: storageId, flashcards: [] },
             });
-            const chat = await t.prisma.aIChat.create({ data: { id: `c_${rid()}`, userId: user.id, title: 't' } });
-            await t.prisma.aIChatDocument.createMany({
-                data: [
-                    { chatId: chat.id, documentId: storageId, documentName: 'gone.pdf' },
-                    { chatId: chat.id, documentId: other, documentName: 'kept.pdf' },
-                ],
-            });
-            return { user, storageId, other, gone, kept, goneFlash, chat };
+            return { user, storageId, other, gone, kept, goneFlash };
         }
 
-        it('detaches generated history (rows stay), removes ai-chat links, leaves other documents alone; replays change nothing', async () => {
+        it('detaches generated history (rows stay), leaves other documents alone; replays change nothing', async () => {
             const s = await seed();
             const publisher = await documentUser();
             try {
@@ -118,13 +111,10 @@ describe('generation events on the broker (e2e)', () => {
 
                 expect(await t.prisma.historyGeneratedFlashcard.findUnique({ where: { id: s.goneFlash.id } })).toMatchObject({ userStorageId: null });
                 expect(await t.prisma.historyGeneratedQuizz.findUnique({ where: { id: s.kept.id } })).toMatchObject({ userStorageId: s.other });
-                const links = await t.prisma.aIChatDocument.findMany({ where: { chatId: s.chat.id } });
-                expect(links.map((l) => l.documentId)).toEqual([s.other]);
 
                 // the same ids announced again (a second event, as after a redelivery of a different message)
                 await publisher.publish('document.deleted', { storageIds: [s.storageId], userId: s.user.id });
                 await new Promise((resolve) => setTimeout(resolve, 1200));
-                expect(await t.prisma.aIChatDocument.count({ where: { chatId: s.chat.id } })).toBe(1);
                 expect(await t.prisma.historyGeneratedQuizz.count({ where: { id: s.gone.id } })).toBe(1);
             } finally {
                 await publisher.close();
@@ -152,7 +142,6 @@ describe('generation events on the broker (e2e)', () => {
             const handler = t.app.get(GenerationEventsHandler);
             const envelope = { id: 'evt_x', type: 'document.deleted', version: 1, occurredAt: '', source: 'document', correlationId: 'c', data: { storageIds: [s.storageId], userId: s.user.id } } as const;
             for (let i = 0; i < 2; i++) await t.prisma.$transaction((tx) => handler.onDocumentDeleted(envelope, tx));
-            expect(await t.prisma.aIChatDocument.count({ where: { chatId: s.chat.id } })).toBe(1);
             expect(await t.prisma.historyGeneratedQuizz.findUnique({ where: { id: s.gone.id } })).toMatchObject({ userStorageId: null });
         });
 

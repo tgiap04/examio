@@ -22,7 +22,7 @@ describe('gateway control plane and outage policy (e2e)', () => {
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.exam, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.exam, h.aichat, h.auth, h.finance, h.admin]) u.reset();
     });
 
     describe('GatewayControl authorization', () => {
@@ -89,7 +89,7 @@ describe('gateway control plane and outage policy (e2e)', () => {
                     body: '{}',
                 });
                 expect(optionalWrite.status).toBe(200);
-                expect(h.exam.seen.at(-1)!.headers.authorization).toBeUndefined();
+                expect(h.aichat.seen.at(-1)!.headers.authorization).toBeUndefined();
             } finally {
                 client.connect();
                 for (let i = 0; i < 40 && client.status !== 'ready'; i++) await sleep(100);
