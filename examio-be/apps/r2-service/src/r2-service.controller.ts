@@ -98,7 +98,7 @@ export class R2ServiceController implements r2V1.R2ServiceController {
         });
     }
 
-    @ServiceOnly('exam', 'auth', 'vocabulary', 'document')
+    @ServiceOnly('exam', 'auth', 'vocabulary', 'document', 'ai-chat')
     async deleteObjects(
         data: r2V1.DeleteObjectsRequest
     ): Promise<r2V1.DeleteObjectsResponse> {
