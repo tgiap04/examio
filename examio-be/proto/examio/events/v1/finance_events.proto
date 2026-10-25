@@ -3,7 +3,10 @@ syntax = "proto3";
 package examio.events.v1;
 
 // Payload (`data`) of `finance.subscription.changed`, published through the
-// outbox in the transaction that changes the tier. A state event: `version` is
+// outbox in the transaction that changes the EFFECTIVE tier: `from_tier` and
+// `to_tier` are 0 while the subscription is inactive or expired, whatever tier is
+// stored. Published on activation, tier change, expiry and reactivation; never when
+// the effective tier is unchanged. A state event: `version` is
 // the subscription `updatedAt` in epoch milliseconds. Times are `double` so
 // they stay JSON numbers (the envelope requires a numeric `version`).
 message SubscriptionChanged {

@@ -9,7 +9,8 @@ import {
 } from '../../types/subscription';
 import { WalletRepository } from '../wallet/wallet.repository';
 import { WALLET_TRANSACTION_TYPE } from '../wallet/dto/wallet-details-response.dto';
-import { SubscriptionChangedPublisher } from './subscription-changed.publisher';
+import { SubscriptionChangedPublisher, effectiveTier } from './subscription-changed.publisher';
+import { SubscriptionExpiryService } from './subscription-expiry.service';
 
 @Injectable()
 export class SubscriptionService {
@@ -19,16 +20,34 @@ export class SubscriptionService {
         private readonly prisma: PrismaService,
         private readonly generateIdService: GenerateIdService,
         private readonly walletRepository: WalletRepository,
-        private readonly changed: SubscriptionChangedPublisher
+        private readonly changed: SubscriptionChangedPublisher,
+        private readonly expiry: SubscriptionExpiryService
     ) {}
+
+    /**
+     * Reads the row; when it is active but past `nextPaymentDate`, performs the guarded
+     * flip + `finance.subscription.changed` (tier -> 0) once, and returns the row as inactive.
+     */
+    private async loadObservingExpiry(userId: string) {
+        const subscription = await this.prisma.userSubscription.findUnique({
+            where: { userId },
+        });
+        if (
+            subscription?.isActive &&
+            subscription.nextPaymentDate &&
+            subscription.nextPaymentDate < new Date()
+        ) {
+            await this.expiry.expireIfLapsed(userId);
+            return { ...subscription, isActive: false };
+        }
+        return subscription;
+    }
 
     /**
      * Get user's current subscription
      */
     async getSubscription(userId: string) {
-        const subscription = await this.prisma.userSubscription.findUnique({
-            where: { userId },
-        });
+        const subscription = await this.loadObservingExpiry(userId);
 
         if (!subscription) {
             return {
@@ -101,7 +120,7 @@ export class SubscriptionService {
 
         const previous = await tx.userSubscription.findUnique({
             where: { userId },
-            select: { tier: true },
+            select: { tier: true, isActive: true, nextPaymentDate: true },
         });
 
         // Upsert subscription
@@ -129,8 +148,8 @@ export class SubscriptionService {
 
         await this.changed.publish(tx, {
             userId,
-            fromTier: previous?.tier ?? 0,
-            toTier: tier,
+            fromTier: effectiveTier(previous, now),
+            toTier: effectiveTier(subscription, now),
             updatedAt: subscription.updatedAt,
         });
 
@@ -218,34 +237,6 @@ export class SubscriptionService {
     }
 
     /**
-     * Check if user has active subscription
-     */
-    async hasActiveSubscription(userId: string): Promise<boolean> {
-        const subscription = await this.prisma.userSubscription.findUnique({
-            where: { userId },
-        });
-
-        if (!subscription) return false;
-
-        // Check if subscription is active and not expired
-        if (!subscription.isActive) return false;
-
-        if (
-            subscription.nextPaymentDate &&
-            subscription.nextPaymentDate < new Date()
-        ) {
-            // Subscription expired
-            await this.prisma.userSubscription.update({
-                where: { userId },
-                data: { isActive: false },
-            });
-            return false;
-        }
-
-        return true;
-    }
-
-    /**
      * Get subscription benefits for a tier
      */
     getSubscriptionBenefits(tier: SUBSCRIPTION_TIER) {
@@ -282,17 +273,9 @@ export class SubscriptionService {
      * Returns FREE tier benefits if no active subscription
      */
     async getUserSubscriptionBenefits(userId: string) {
-        const subscription = await this.prisma.userSubscription.findUnique({
-            where: { userId },
-        });
+        const subscription = await this.loadObservingExpiry(userId);
 
-        // Check if subscription is active
-        if (
-            !subscription ||
-            !subscription.isActive ||
-            (subscription.nextPaymentDate &&
-                subscription.nextPaymentDate < new Date())
-        ) {
+        if (!subscription || !subscription.isActive) {
             return SUBSCRIPTION_BENEFITS[SUBSCRIPTION_TIER.NONE];
         }
 

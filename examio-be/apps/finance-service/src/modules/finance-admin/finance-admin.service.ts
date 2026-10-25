@@ -10,7 +10,7 @@ import {
     rpcError,
     WalletMoneyService,
 } from '../wallet/wallet-money.service';
-import { SubscriptionChangedPublisher } from '../sepay/subscription-changed.publisher';
+import { SubscriptionChangedPublisher, effectiveTier } from '../sepay/subscription-changed.publisher';
 import { afterCursor, clampLimit, decodeCursor, encodeCursor } from './cursor';
 
 /** Payment.status values (see payment.prisma). */
@@ -246,8 +246,8 @@ export class FinanceAdminService {
                   });
             await this.changed.publish(tx, {
                 userId: req.userId,
-                fromTier: previousTier,
-                toTier: req.tier,
+                fromTier: effectiveTier(existing),
+                toTier: effectiveTier(saved),
                 updatedAt: saved.updatedAt,
             });
             return {

@@ -5,7 +5,23 @@ import type { SubscriptionChanged } from '@examio/contracts/generated/examio/eve
 
 export const SUBSCRIPTION_CHANGED = 'finance.subscription.changed';
 
-/** Writes `finance.subscription.changed` in the caller's tx; no-op when the tier is unchanged. */
+/**
+ * The tier a consumer should act on: an inactive or expired subscription is tier 0
+ * whatever tier is stored. `finance.subscription.changed` carries this, never the stored tier.
+ */
+export function effectiveTier(
+    sub: { tier: number; isActive: boolean; nextPaymentDate: Date | null } | null | undefined,
+    now: Date = new Date()
+): number {
+    if (!sub || !sub.isActive) return 0;
+    if (sub.nextPaymentDate && sub.nextPaymentDate < now) return 0;
+    return sub.tier;
+}
+
+/**
+ * Writes `finance.subscription.changed` in the caller's tx. `fromTier`/`toTier` are EFFECTIVE
+ * tiers (see `effectiveTier`); no-op when the effective tier does not change.
+ */
 @Injectable()
 export class SubscriptionChangedPublisher {
     constructor(private readonly outbox: OutboxService) {}

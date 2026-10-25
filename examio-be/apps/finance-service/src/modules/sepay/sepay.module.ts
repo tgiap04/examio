@@ -12,6 +12,7 @@ import { SubscriptionGrpcController } from './subscription.grpc.controller';
 import { PaymentRepository } from './payment.repository';
 import { WalletModule } from '../wallet/wallet.module';
 import { FINANCE_MESSAGING } from '../../finance-messaging';
+import { SubscriptionExpiryService } from './subscription-expiry.service';
 import { SubscriptionChangedPublisher } from './subscription-changed.publisher';
 
 @Module({
@@ -24,6 +25,7 @@ import { SubscriptionChangedPublisher } from './subscription-changed.publisher';
         PaymentService,
         SubscriptionService,
         SubscriptionChangedPublisher,
+        SubscriptionExpiryService,
         PaymentRepository,
         GenerateIdService,
     ],
