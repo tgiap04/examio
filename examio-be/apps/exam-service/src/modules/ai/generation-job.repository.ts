@@ -196,10 +196,4 @@ export class GenerationJobRepository {
         await db.historyGeneratedQuizz.updateMany({ where, data: { userStorageId: null } });
         await db.historyGeneratedFlashcard.updateMany({ where, data: { userStorageId: null } });
     }
-
-    /** `document.deleted`: the ai-chat links to the deleted documents (ai-chat is still in exam until phase 13). */
-    async deleteChatLinks(db: Db, storageIds: string[]): Promise<number> {
-        const { count } = await db.aIChatDocument.deleteMany({ where: { documentId: { in: storageIds } } });
-        return count;
-    }
 }

@@ -25,9 +25,7 @@ import { ExamSessionModule } from './modules/examsession/examsession.module';
 import { ExamAttemptModule } from './modules/examattempt/examattempt.module';
 import { CheatingLogModule } from './modules/cheatinglog/cheatinglog.module';
 import { FlashcardSetModule } from './modules/flashcardset/flashcardset.module';
-import { SubjectModule } from './modules/subject/subject.module';
 import { AIModule } from './modules/ai/ai.module';
-import { AIChatModule } from './modules/ai-chat/ai-chat.module';
 import { FinanceClientModule } from './modules/finance-client/finance-client.module';
 import { DocumentClientModule } from './modules/document-client/document-client.module';
 import { StudentModule } from './modules/student/student.module';
@@ -59,9 +57,7 @@ process.env.SERVICE_NAME ??= 'exam-service';
         ExamAttemptModule,
         CheatingLogModule,
         FlashcardSetModule,
-        SubjectModule,
         AIModule,
-        AIChatModule,
         DocumentClientModule,
         StudentModule,
         FlashcardStudyModule,

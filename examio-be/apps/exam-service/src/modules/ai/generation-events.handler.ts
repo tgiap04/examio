@@ -116,13 +116,12 @@ export class GenerationEventsHandler {
         await this.fail(data.jobId, data.reason);
     }
 
-    /** The documents are gone: generated history keeps its rows but loses the link, ai-chat links are removed. */
+    /** The documents are gone: generated history keeps its rows but loses the link (ai-chat removes its own links). */
     @EventHandler('document.deleted')
     async onDocumentDeleted(envelope: Envelope, tx: Prisma.TransactionClient): Promise<void> {
         const { storageIds, userId } = parse(deletedSchema, envelope);
         if (storageIds.length === 0) return;
         await this.jobs.detachHistory(tx, userId, storageIds);
-        await this.jobs.deleteChatLinks(tx, storageIds);
     }
 
     private async fail(jobId: string, reason: string): Promise<void> {
