@@ -155,6 +155,10 @@
                         "outDir": "dist/apps/vocabulary-service/proto/examio/r2"
                     },
                     {
+                        "include": "../../../proto/examio/ai/**/*.proto",
+                        "outDir": "dist/apps/vocabulary-service/proto/examio/ai"
+                    },
+                    {
                         "include": "../../../proto/examio/vocabulary/**/*.proto",
                         "outDir": "dist/apps/vocabulary-service/proto/examio/vocabulary"
                     }
@@ -180,6 +184,33 @@
                     {
                         "include": "../../../proto/examio/r2/**/*.proto",
                         "outDir": "dist/apps/document-service/proto/examio/r2"
+                    }
+                ]
+            }
+        },
+        "ai-chat-service": {
+            "type": "application",
+            "root": "apps/ai-chat-service",
+            "entryFile": "main",
+            "sourceRoot": "apps/ai-chat-service/src",
+            "compilerOptions": {
+                "tsConfigPath": "apps/ai-chat-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../../../proto/examio/ai/**/*.proto",
+                        "outDir": "dist/apps/ai-chat-service/proto/examio/ai"
+                    },
+                    {
+                        "include": "../../../proto/examio/document/**/*.proto",
+                        "outDir": "dist/apps/ai-chat-service/proto/examio/document"
+                    },
+                    {
+                        "include": "../../../proto/examio/finance/**/*.proto",
+                        "outDir": "dist/apps/ai-chat-service/proto/examio/finance"
+                    },
+                    {
+                        "include": "../../../proto/examio/r2/**/*.proto",
+                        "outDir": "dist/apps/ai-chat-service/proto/examio/r2"
                     }
                 ]
             }
