@@ -9,11 +9,13 @@ import {
   History,
   BookOpen,
   ToggleLeft,
-  LogOut,
   ArrowLeft,
+  ChevronRight,
   LayoutGrid,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
+import ProfileDropdown from "@/components/atoms/ProfileDropdown";
+import { HeaderWaves, NotificationBell, dashboardHeaderClass } from "@/components/organisms/nav/header-parts";
 import { cn } from "@/lib/utils";
 import {
   SIDEBAR_WIDTH,
@@ -47,7 +49,7 @@ const NAV_ITEMS: NavItem[] = [
 
 export function AdminLayout() {
   const { t } = useTranslation("admin");
-  const { user, logout } = useAuthStore();
+  const { user } = useAuthStore();
   const location = useLocation();
   const can = useCanFn();
   // Same permission table as the route guards: only links the user can open.
@@ -66,10 +68,6 @@ export function AdminLayout() {
     );
     return match ? t(match.labelKey) : t("nav.overview");
   })();
-
-  const handleLogout = async () => {
-    await logout();
-  };
 
   return (
     <div className="flex min-h-screen w-full bg-canvas text-ink">
@@ -114,32 +112,32 @@ export function AdminLayout() {
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 items-center justify-between border-b border-hairline bg-canvas px-4 md:px-8">
-          <h1 className="truncate font-display text-base font-normal tracking-tight md:text-lg">
-            {currentTitle}
-          </h1>
-          <div className="flex items-center gap-3">
-            <Link
-              to={workspaceHref}
-              className="inline-flex items-center gap-1.5 rounded-md border border-brand-border bg-brand-soft px-3 py-1.5 text-xs font-medium text-brand-strong transition-colors hover:bg-brand-soft-hover md:hidden"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              {t("nav.workspaceShort")}
-            </Link>
-            <span className="hidden text-sm text-ink/70 sm:inline">
-              {user?.name || user?.username || "Admin"}
-            </span>
-            <span className="rounded-pill bg-coral/10 px-2 py-0.5 text-xs font-medium text-brand-strong">
-              Admin
-            </span>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 rounded-md border border-hairline bg-canvas px-3 py-1.5 text-xs font-medium text-ink transition-colors hover:bg-surface-card"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              {t("actions.logout")}
-            </button>
+        <header className={cn("sticky top-0 z-40", dashboardHeaderClass)}>
+          <HeaderWaves />
+          <div className="relative flex h-[76px] items-center gap-4 px-4 md:px-8">
+            <nav aria-label="Breadcrumb" className="flex min-w-0 items-center gap-2 text-[14px]">
+              <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-hairline bg-canvas text-brand-strong shadow-[0_1px_3px_rgba(15,23,42,0.06)]">
+                <ShieldCheck className="h-5 w-5" />
+              </span>
+              <span className="hidden text-muted-foreground sm:inline">{t("nav.consoleCaption")}</span>
+              <ChevronRight aria-hidden className="hidden h-4 w-4 shrink-0 text-muted-soft sm:inline" />
+              <span className="truncate font-semibold text-ink" aria-current="page">{currentTitle}</span>
+            </nav>
+            <div className="ml-auto flex items-center gap-3">
+              <Link
+                to={workspaceHref}
+                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-brand-border bg-brand-soft px-3 text-xs font-medium text-brand-strong transition-colors hover:bg-brand-soft-hover md:hidden"
+              >
+                <ArrowLeft className="h-3.5 w-3.5" />
+                {t("nav.workspaceShort")}
+              </Link>
+              <NotificationBell />
+              <span aria-hidden className="h-8 w-px bg-hairline" />
+              <ProfileDropdown
+                variant="header"
+                data={{ name: user?.name || user?.username || "Admin", email: user?.email || "", avatar: user?.avatar || "" }}
+              />
+            </div>
           </div>
         </header>
 
