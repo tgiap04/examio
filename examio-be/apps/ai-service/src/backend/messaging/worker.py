@@ -11,6 +11,7 @@ from src import db
 from .consumer import EventConsumer, Handler
 from .document_handlers import on_document_deleted, on_document_uploaded
 from .generation_handler import on_generation_requested
+from .heartbeat import clear_heartbeat, run_heartbeat
 from .outbox_relay import OutboxRelay
 from .purge import OutboxPurge
 
@@ -44,6 +45,7 @@ async def run_worker(stop: asyncio.Event) -> None:
     url = os.environ.get("RABBITMQ_URL", "").strip()
     if not url:
         raise RuntimeError("RABBITMQ_URL is required for ROLE=worker")
+    clear_heartbeat()
     pool = await db.get_pool()
     relay_pool = await db.get_relay_pool()
     consumer = EventConsumer(pool, HANDLERS, publisher=None)
@@ -52,6 +54,12 @@ async def run_worker(stop: asyncio.Event) -> None:
     relay = OutboxRelay(relay_pool, consumer.publisher)
     purge = OutboxPurge(relay_pool)
     tasks = [asyncio.create_task(relay.run(), name="outbox-relay"), asyncio.create_task(purge.run(), name="outbox-purge")]
+
+    def is_healthy() -> bool:
+        """Broker connected and no worker task (relay, purge, heartbeat) has ended."""
+        return consumer.is_connected and not any(task.done() for task in tasks)
+
+    tasks.append(asyncio.create_task(run_heartbeat(stop, is_healthy), name="worker-heartbeat"))
     logger.info("ai worker running")
     await stop.wait()
     relay.stop()

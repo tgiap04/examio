@@ -52,6 +52,26 @@ def _get_max_download_bytes() -> int:
     return _get_int_env("MAX_DOWNLOAD_BYTES", DEFAULT_MAX_DOWNLOAD_BYTES)
 
 
+def _get_explicit_allowed_hosts() -> set[str]:
+    """Return the hostnames listed in ``R2_ALLOWED_HOSTS`` (no fallback)."""
+    raw = os.getenv("R2_ALLOWED_HOSTS", "")
+    return {host.strip().lower() for host in raw.split(",") if host.strip()}
+
+
+def _private_hosts_allowed(hostname: str) -> bool:
+    """Tell whether ``hostname`` may resolve to a private address.
+
+    Only when ``R2_ALLOW_PRIVATE_HOSTS`` is true (default false) AND the host
+    is listed in ``R2_ALLOWED_HOSTS`` itself; the ``R2_PUBLIC_URL`` fallback
+    never qualifies. Meant for private-network stacks (a local S3 stub, a
+    self-hosted object store).
+    """
+    flag = os.getenv("R2_ALLOW_PRIVATE_HOSTS", "").strip().lower()
+    if flag not in {"1", "true", "yes", "on"}:
+        return False
+    return hostname.lower() in _get_explicit_allowed_hosts()
+
+
 def _get_allowed_download_hosts() -> set[str]:
     """Resolve the allow-listed hostnames for outbound file downloads.
 
@@ -63,8 +83,7 @@ def _get_allowed_download_hosts() -> set[str]:
     that as fail-closed (reject the download) rather than "any public host
     is allowed" -- see ``_validate_download_url``.
     """
-    raw = os.getenv("R2_ALLOWED_HOSTS", "")
-    hosts = {host.strip().lower() for host in raw.split(",") if host.strip()}
+    hosts = _get_explicit_allowed_hosts()
     if hosts:
         return hosts
 
@@ -82,6 +101,9 @@ def _validate_download_url(url: str) -> str:
 
     Requires an https scheme, a configured and allow-listed host, and a
     resolved address that is not private/loopback/link-local/reserved.
+    ``R2_ALLOW_PRIVATE_HOSTS=true`` lifts the private/loopback refusal for
+    hosts listed in ``R2_ALLOWED_HOSTS`` only (link-local and reserved
+    addresses stay refused).
     Redirects are kept disabled by the caller (httpx follow_redirects=False).
 
     The allowlist is fail-closed: if neither ``R2_ALLOWED_HOSTS`` nor
@@ -124,15 +146,18 @@ def _validate_download_url(url: str) -> str:
         ) from exc
 
     link_local_v4 = ipaddress.ip_network("169.254.0.0/16")
+    private_ok = _private_hosts_allowed(hostname)
     validated_ip: Optional[str] = None
     for _family, _type, _proto, _canonname, sockaddr in addr_infos:
         ip = ipaddress.ip_address(sockaddr[0])
+        # Link-local (incl. the 169.254.169.254 metadata endpoint) is never allowed.
+        link_local = ip.is_link_local or (ip.version == 4 and ip in link_local_v4)
+        internal = ip.is_private or ip.is_loopback
+        # ::1 is also in the IPv6 reserved block: loopback is judged as internal, not reserved.
         if (
-            ip.is_private
-            or ip.is_loopback
-            or ip.is_link_local
-            or ip.is_reserved
-            or (ip.version == 4 and ip in link_local_v4)
+            link_local
+            or (ip.is_reserved and not ip.is_loopback)
+            or (internal and not private_ok)
         ):
             raise DownloadValidationError(
                 f"Refusing to download from {hostname!r}: resolves to disallowed address {ip}"

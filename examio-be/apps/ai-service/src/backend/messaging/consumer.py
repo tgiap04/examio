@@ -70,6 +70,16 @@ class EventConsumer:
 
     # ------------------------------------------------------------------ run
 
+    @property
+    def is_connected(self) -> bool:
+        """True while the broker link is up.
+
+        A robust connection is never ``is_closed`` while it retries in the background, so
+        the ``connected`` event (cleared on loss, set on reconnect) is the live signal.
+        """
+        connection = self._connection
+        return connection is not None and not connection.is_closed and connection.connected.is_set()
+
     async def start(self, url: str) -> None:
         """Connect, declare the topology, bind the handled keys and start consuming."""
         connection = await aio_pika.connect_robust(url)
