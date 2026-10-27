@@ -16,10 +16,77 @@
 - [CARRIED from 15] F5: CI `deploy-config` dummy env list omits the `PAYMENT_*` (SePay) and OAuth vars that finance/auth require at boot, so the stack can render in CI yet fail to start. Extend the list (or add a boot smoke).
 - [CARRIED from 13] ai-chat review defers: (M) regenerate deletes the user message and later ones before admission/AI open (`apps/ai-chat-service/src/modules/ai-chat/ai-chat-stream.service.ts:42-46`, `ai-chat-answer.service.ts:49-53`), so a 429/403/404/502 loses the message and orphans its owned image; admit before `deleteFrom` or queue the image on failure. (L) non-stream `Query` omits `systemPrompt`/`modelType`; the OCR wait ignores client abort; an in-flight benefits read can rewrite a stale cache after invalidation. Mount the FE AI chat page (F4, pre-existing: no route mounts it).
 - [CARRIED from 15] F10: the full ui9 browser matrix (64 checks) was not re-run in the phase-15 temper (its script was lost with the scratch dir); only the FE AI upload/generation flow + student 403 were. Re-run the full matrix in the cutover rehearsal.
-- Priority: P1 · Status: Pending · Effort: 2.5d <!-- Red Team: RT-11, RT-12 (was 3d: −obs stack −Redis ACL −Loki admin logs −proto client graph −networks; +deploy waves +migration lint +P3009 halt) --> <!-- Updated: Validation Session 1 - +0.5d cutover runbook + smoke script + local rehearsal --> · Depends on: 12, 13, 14, 15
+- Priority: P1 · Status: Signed off 2026-10-28, committing (not committed; F4 re-run pending) · Effort: 2.5d <!-- Red Team: RT-11, RT-12 (was 3d: −obs stack −Redis ACL −Loki admin logs −proto client graph −networks; +deploy waves +migration lint +P3009 halt) --> <!-- Updated: Validation Session 1 - +0.5d cutover runbook + smoke script + local rehearsal --> · Depends on: 12, 13, 14, 15
 - Goal: changing one service builds, pushes and restarts only that service, with no full `down`. Per-service images on GHCR tagged by sha. Per-service env. Zero-downtime gateway for non-streaming requests (a/b). Deploys run in waves (changed gRPC servers first) and refuse destructive migrations unless explicitly flagged.
 - <!-- Updated: Validation Session 1 - one-time production cutover runbook --> Production is deployed **once**, at the final merge of `refactor/microservice-rbac` (validation Q4/Q5). Until then production keeps running today's build and every milestone is verified on local compose only. The one-time cutover (DB reset) follows the runbook below; the per-service deploy waves are the steady state **after** cutover.
 - Out of scope <!-- Red Team: RT-11 -->: Prometheus/Loki/Tempo/Grafana, Redis ACL, admin logs on Loki → [phase 17](./phase-17-k8s-readiness.md) (deferred). Compose network segmentation is done in phase 05 (RT-2); this phase only adds `gateway-a/b` to the existing `edge` network.
+
+## Decisions (2026-10-27, user)
+- Images: keep production `node_modules` in one shared `deploy/Dockerfile.node` (researcher-02 option B); no webpack `externals: []` spike. Log image sizes; bundling is a later optimisation.
+- Cutover rehearsal: full, including rollback (old stack from `main` built one image at a time, dump, steps 0–10 on the new stack, smoke, then `pg_restore` into the old stack and log in).
+- Carried product items (ai-chat regenerate, FE AI chat mount, ai-service pool cap and OCR private-host switch, ioredis deep import, CI boot env) are done inside phase 16, in their own commits.
+- Execution split: A images + services.json + changed-services + lint-migrations; B ci.yml/deploy.yml/deploy-service.sh + per-service env; C gateway-a/b + nginx + mem_limit + worker healthchecks + runbook + smoke + rehearsal; D carried items.
+
+## Delivery Status (2026-10-27)
+
+**Signed off 2026-10-28 (user).**
+- Review: round 2 SEALED; evidence gate SEALED.
+- F11: host nginx/Caddy in front. FE bound to 127.0.0.1; real IP trusted from the Docker private ranges.
+- Turnstile smoke: option A, a temporary always-pass secret during the window.
+- P14 commit history: kept as is.
+- N1 (concurrent regenerate) deferred as a Low follow-up.
+Evidence: [phase-16-runs.md](../evidence/phase-16-runs.md) (stages 1–7, triage), [temper-final.json](../evidence/phase-16/temper-final.json), [study-context.json](../evidence/phase-16/study-context.json). Not committed.
+
+**Acceptance criteria (study-context, 9):** 7 pass, 1 not met, 1 partial.
+
+| # | Criterion | Result | Note |
+|---|-----------|--------|------|
+| 1 | static checks, shellcheck, actionlint, build/typecheck/test | Pass | `ci.yml` actionlint: 12 shellcheck infos, same as HEAD, none new |
+| 2 | changed-services selection | Pass | fixtures (Stage 1) |
+| 3 | migration lint, `migration:contract` bypass | Pass | fixtures (Stage 1) |
+| 4 | every image builds; empty-volume stack healthy; migrate exit 0; seed prod | Pass | 12 images (arm64 only, amd64 owed); 17 containers healthy (Stages 2–3) |
+| 5 | single-service redeploy; failing migrate keeps old container; no `migrate resolve` / `db push` / `down` | Pass | Stage 4 |
+| 6 | gateway rollout: 0 non-2xx from the rollout; socket reconnect ≤ 10 s; no backend host port | Not met | Run 2: 1 `socket hang up` on a GET (F4). Reconnect 0.66 s. **Pending re-run** on the current script |
+| 7 | env isolation; missing `env/<name>.env` fails compose | Pass | Stage 5 |
+| 8 | cutover rehearsal incl. rollback; smoke exit 0 | Pass, with deviations D7–D8 | smoke 18 PASS / 0 FAIL; rollback login OK |
+| 9 | carried fixes | Partial | regenerate 429 live + 403/404 unit; non-stream `systemPrompt` unit only; F3 fixed at consumer level, container healthcheck flip not re-observed |
+
+**Deviations from the plan text**
+- D1. Image size: each Node image is about 176 MB (docker-reported size, 176.3–176.6 MB; the evidence records no compressed size), under the 250 MB target. The target is met only because production `node_modules` stay in the image (user decision 2026-10-27), not by bundling. `ai` is 477 MB (no target in the plan).
+- D2. Load test used a node fixed-rate generator (`loadgen.cjs`), not k6 (k6 not installed).
+- D3. Gateway rollout no longer reloads nginx (review F4/M1). The plan required a reload after each half. `deploy-service.sh` now makes no nginx call; the FE resolver (`valid=5s`) re-resolves `gateway-a`/`gateway-b`. The rollout run 2 log still shows "nginx not reloaded", so it ran an older script version. **The F4 re-run must use the current script.**
+- D4. `deploy-service.sh` requires `jq` on the host (exits if missing, line 76).
+- D5. Docker Compose 2.24+ required (`include:`, `env_file` `required:`).
+- D6. In-wave order is auth first (F10), then alphabetical, gateway last; Requirements updated to match.
+- D7. Rehearsal: GHCR pull replaced by a shim; the stack ran from a copy with no `.env`; the FE port was pinned to 127.0.0.1 in the copy (F11 open); arm64 only.
+- D8. Runbook step 9: the rehearsal used the `ADMIN_EMAILS` sync. The CLI grant path was not exercised. Step 0 (GHCR manifest check) was not exercised either.
+- D9. Todo 1 (webpack spike) was not run. Decision 2026-10-27 chose option B (`node_modules` kept), so no spike.
+
+**Review fixes**
+- F1 mail templates missing from images: fixed. `COPY templates` in runtime-core; auth image lists 4 templates.
+- F2 unreadable 0600 build-context file: fixed. `chmod -R a+rX` in the stage steps; 0 unreadable files in the auth image. The laptop tree still holds the 0600 file.
+- F3 ai-worker healthy with the broker down: fixed at consumer level. `is_connected` also requires `connection.connected.is_set()`. Live probe on rabbitmq:3.13: stop gives False, restart gives True after 7 s. Container healthcheck flip not re-observed.
+- F6/F7 runbook: no shell sourcing of `.env`; volume names derived from the compose project. Verified by grep (no hits).
+- F10 wave order: auth first in each wave (see D6).
+- M2 regenerate on a rejected turn: fixed. Admission runs before `deleteFrom`. Live proof covers 429 only. 403 (chat limit) and 404 (document) are covered by `ai-chat-regenerate.spec.ts`, which asserts nothing is deleted.
+- M3 RabbitMQ definitions: `rabbitmq-defs` renders 10 users; a fresh broker has them and no `exam.*` queue.
+- M4 prerequisites: jq and Compose 2.24+ listed in `deploy/README.md`.
+- Stale heartbeat cleared at worker start: fixed (`worker.py` calls `clear_heartbeat()`).
+
+**Open or deferred**
+- F11 (user decision): the FE publishes `${FE_PORT:-6368}:80` on all interfaces (`examio-fe/docker-compose.yml:21`). How production traffic reaches 6368 decides the real client IP and the per-IP rate limits. Owner: user. Needed before cutover.
+- F4 (pending re-run): one client reset during a gateway rollout (run 2). Not reproduced in run 1. Owner: tester, in progress. Criterion 6 stays "not met" until the re-run passes on the current script.
+- F5: 429s at 100 requests/min per client IP (`routes.yaml:262`) under single-IP load. The source is not attributed, and the gateway does not log its 429s. Triage calls it a harness limit. Owner: user, to decide whether to log 429s or defer to P17.
+- F12 (carried U1): stale output in `examio-be/dist/apps` (`exam-service`, `codecraft-be`, `ocr-service`). Fix: clean dist, and fail the build when an output is missing. Owner: BE.
+- Low: seed one-shot loads all of `auth.env`; the FE deploy runs `down` before `up`; `ci.yml` base sha is inline in `run:`. Owner: BE/CI.
+- P17 (observability, Redis ACL, K8s): deferred.
+- Not in the list above, found while reconciling: F10 browser matrix (64 checks) not run; amd64 image verification owed; D12 (15-minute socket expiry) not run; non-stream `systemPrompt` not checked live; F3 container healthcheck flip not re-observed; no GitHub Actions or GHCR run (no access); F15 pool-cap and legacy R2 orphan items have no evidence row; F9 (CLAUDE.md says 6 messages/min, code says 5) for doc-writer.
+
+**User setup before cutover**
+- GitHub secret `GHCR_READ_TOKEN` (PAT, `read:packages`). Optional `GHCR_READ_USER` (defaults to the repo owner).
+- Repo variable `CUTOVER_DONE`. Leave unset or `false` until the cutover smoke passes (`deploy.yml:180`).
+- `deploy/env/<svc>.env` on the VPS for every service. Compose fails without them.
+- `jq` and Docker Compose 2.24+ on the VPS.
 
 ## Key Insights
 - Nest's default webpack externalizes node_modules, so today every image ships all root deps (incl. opencv/tesseract). This needs a custom `webpackConfigPath` bundling JS deps (spike) [researcher-02 §5]. The P01 Prisma/bundling spike (RT-14) already proved `nest build --webpack` with the Prisma wasm client; reuse its result.
@@ -49,7 +116,7 @@ Functional
   - `examio-be/apps/ai-service/**` → ai
   - `examio-be/deploy/compose/<svc>.yml`, `deploy/env/<svc>.env.example` → svc (redeploy)
   - Empty base / force / `workflow_dispatch services=all` → everything. Reuse the multi-commit `before..sha` logic (`deploy.yml:53-67`).
-  - Waves: wave 1 = changed services that are servers of a changed `proto/examio/<key>/` (new RPCs/fields exist before any caller uses them); wave 2 = every other changed service. Within a wave the order is alphabetical, with `gateway` last.
+  - Waves: wave 1 = changed services that are servers of a changed `proto/examio/<key>/` (new RPCs/fields exist before any caller uses them); wave 2 = every other changed service. Within a wave `auth` comes first (it serves the JWKS and service tokens), then alphabetical, with `gateway` last (F10).
 - Migration lint <!-- Red Team: RT-12 --> `examio-be/scripts/lint-migrations.sh <base> <head>` (PR workflow): scans migration files added in the diff (`apps/*/prisma/migrations/*/migration.sql`, ai `alembic/versions/*.py` per phase 15). Fails on `DROP TABLE|COLUMN|TYPE|SCHEMA`, `RENAME`, `ALTER COLUMN … [SET DATA] TYPE`, `ALTER TYPE`, `SET NOT NULL`, `ADD COLUMN … NOT NULL` without `DEFAULT` (alembic: `op.drop_*`, `op.rename_*`, `op.alter_column(… type_=|nullable=False)`). `DROP INDEX|DEFAULT|NOT NULL|CONSTRAINT` are allowed (expand-safe). The check passes when the PR carries the label `migration:contract`.
 - Two-PR contract flow <!-- Red Team: RT-12 --> (documented in `examio-be/deploy/README.md`): PR 1 (expand) adds the new column/table, code writes both or reads new with fallback, deploys normally. PR 2 (contract, label `migration:contract`) drops the old shape and is merged only after every service using the old shape is deployed with PR 1 (checked by the author: `git log` of the callers + GHCR tags in `deploy/.tags.env`). A contract migration's rollback = roll forward (the previous image is no longer compatible).
 - PR workflow (extends phase 01 `ci.yml`): `detect` job → matrix `service` → `tsc --noEmit -p apps/$DIR/tsconfig.app.json`, eslint, `jest apps/$DIR`, e2e with service containers (postgres/pgvector, redis, rabbitmq). Once (not per service): `depcruise` (phase 10), `buf lint` + `buf breaking`, the FE permission-type diff check (phase 09), `lint-migrations.sh`.
@@ -142,17 +209,17 @@ Write first:
 - `deploy-service.sh` with `DRY_RUN=1` and a fake `docker` shim: a failing `--wait` restores the previous tag; a migrate output containing `P3009` → exit 1, alert called with "manual", `up` never called, tag restored; no code path calls `migrate resolve` (`grep -c 'migrate resolve' deploy/deploy-service.sh` → 0). shellcheck clean. <!-- Red Team: RT-12 -->
 
 ## Todo List
-- [ ] webpack bundle spike + decision recorded
-- [ ] Dockerfile.node + ai Dockerfile, Node 22
-- [ ] services.json (no proto graph) + changed-services.sh (waves) + tests
-- [ ] lint-migrations.sh + tests + contract-flow README <!-- Red Team: RT-12 -->
-- [ ] ci.yml matrix, deploy.yml detect/build/deploy in waves + GHCR
-- [ ] deploy-service.sh with migrate gate + P3009 halt/alert + auto-rollback
-- [ ] Compose gateway-a/b, env per service, drop 6369
-- [ ] nginx upstream + /ws/ + rollout rehearsal
-- [ ] Cutover runbook + smoke script + `CUTOVER_DONE` deploy gate + local rehearsal (incl. rollback) <!-- Updated: Validation Session 1 - one-time production cutover runbook -->
-- [ ] [CARRIED from 09] D1 socket transport-attempt cap test; D3 `REDIS_COMMAND_TIMEOUT_MS` per env (first call 504 → 503); D12 15-min socket expiry run in the cutover smoke; D14 CI e2e on a dedicated DB; D15 auth throttle decision before cutover
-- [ ] [CARRIED from 10] remove the `UpdateBalance` breaking override from `buf.yaml` after merge to main; L4 page-flag push serialization per admin instance (gateway version for multi-replica); exam e2e parallel-worker segfault (keep CI `maxWorkers 1` until fixed); N1 Redis-down degraded boot run live; U1 `dist/apps/exam-service` vanished once (fail the build when any service output is missing); W6 empty page-flag default checked on the FE.
+- [ ] webpack bundle spike + decision recorded — spike not run; decision 2026-10-27 is option B (no spike), see D9
+- [x] Dockerfile.node + ai Dockerfile, Node 22 — 12 images built; ran healthy (Stages 2–3); amd64 owed
+- [x] services.json (no proto graph) + changed-services.sh (waves) + tests — fixtures pass (Stage 1)
+- [x] lint-migrations.sh + tests + contract-flow README <!-- Red Team: RT-12 --> — fixtures pass; README has the two-PR flow
+- [ ] ci.yml matrix, deploy.yml detect/build/deploy in waves + GHCR — static only: actionlint clean, waves and GHCR login present in `deploy.yml`. No Actions or GHCR run (no access). Pending first real run
+- [ ] deploy-service.sh with migrate gate + P3009 halt/alert + auto-rollback — migrate gate, P3009 halt and alert, no `migrate resolve` proven live (Stage 4). Auto-rollback after a failed `--wait` not exercised live. Pending
+- [x] Compose gateway-a/b, env per service, drop 6369 — Stages 3 and 5; only the FE publishes a port (F11 open)
+- [ ] nginx upstream + /ws/ + rollout rehearsal — upstream and `/ws/` present; rehearsal ran but criterion 6 is not met (F4). Pending re-run on the current script
+- [x] Cutover runbook + smoke script + `CUTOVER_DONE` deploy gate + local rehearsal (incl. rollback) <!-- Updated: Validation Session 1 - one-time production cutover runbook --> — rehearsed with deviations D7–D8 (step 0 and the step 9 CLI grant not run); smoke 18/18; rollback login OK
+- [ ] [CARRIED from 09] D1 socket transport-attempt cap test; D3 `REDIS_COMMAND_TIMEOUT_MS` per env (first call 504 → 503); D12 15-min socket expiry run in the cutover smoke; D14 CI e2e on a dedicated DB; D15 auth throttle decision before cutover — none run. D12 is explicitly not run (phase-16-runs.md "Not run")
+- [ ] [CARRIED from 10] remove the `UpdateBalance` breaking override from `buf.yaml` after merge to main; L4 page-flag push serialization per admin instance (gateway version for multi-replica); exam e2e parallel-worker segfault (keep CI `maxWorkers 1` until fixed); N1 Redis-down degraded boot run live; U1 `dist/apps/exam-service` vanished once (fail the build when any service output is missing); W6 empty page-flag default checked on the FE. — U1 still open (F12 stale dist). The rest have no evidence. The `buf.yaml` removal waits for merge to main.
 
 ## Success Criteria
 - <!-- Updated: Validation Session 1 - one-time production cutover runbook --> Cutover: runbook steps 0–10 ticked, smoke script exit 0 against production, `CUTOVER_DONE=true`, the pre-cutover dump exists off-host. After that (steady state):

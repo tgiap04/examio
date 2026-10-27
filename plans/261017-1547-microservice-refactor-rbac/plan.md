@@ -39,7 +39,7 @@ Decisions (authoritative): [reports/decisions.md](./reports/decisions.md). Input
 | 13 | [Extract AI-Chat](./phase-13-extract-ai-chat.md) | Done (8b4a881..ebae483, signed off 2026-10-25) | 2d | 11, 12, 15 |
 | 14 | [Extract Content & Assessment](./phase-14-extract-content-and-assessment.md) | Done — awaiting sign-off | 4.5d | 07, 11, 13, 15 |
 | 15 | [Document Service & AI-Service DB](./phase-15-document-service-and-ai-service-db.md) | Completed | 5d | 03, 10, 11 |
-| 16 | [Deploy Independence](./phase-16-deploy-independence-and-observability.md) | Pending | 2.5d | 12–15 |
+| 16 | [Deploy Independence](./phase-16-deploy-independence-and-observability.md) | Signed off 2026-10-28 (9/9 acceptance; review + gate SEALED) | 2.5d | 12–15 |
 | 17 | [Deferred: K8s + Observability + Redis ACL](./phase-17-k8s-readiness.md) | Deferred | ~3.5d (excluded) | 16 |
 | 18 | [Mobile RBAC Parity (examio-app, cross-repo)](./phase-18-mobile-rbac-parity.md) | Pending | 2.75d (provisional) | 09 · before first store release |
 | 19 | [Docs & Architecture Sync](./phase-19-docs-and-architecture-sync.md) | Pending | 1.25d | 16 |
