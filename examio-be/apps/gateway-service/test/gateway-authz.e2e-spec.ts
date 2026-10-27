@@ -23,7 +23,7 @@ describe('gateway authorization (e2e)', () => {
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.exam, h.aichat, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.content, h.assessment, h.aichat, h.auth, h.finance, h.admin]) u.reset();
     });
 
     describe('token verification', () => {
@@ -33,7 +33,7 @@ describe('gateway authorization (e2e)', () => {
             expect([r1.status, await codeOf(r1)]).toEqual([401, 'TOKEN_EXPIRED']);
             const r2 = await get('/api/v1/quizsets', 'not-a-jwt', via(1));
             expect([r2.status, await codeOf(r2)]).toEqual([401, 'TOKEN_INVALID']);
-            expect(h.exam.seen).toHaveLength(0);
+            expect(h.content.seen).toHaveLength(0);
         });
 
         it('a service token (aud=finance / aud=gateway) is TOKEN_INVALID on every route', async () => {
@@ -56,7 +56,7 @@ describe('gateway authorization (e2e)', () => {
             const student = await h.issuer.user('stu', ['STUDENT']);
             const res = await get('/api/v1/ai/models', student, via(3));
             expect([res.status, await codeOf(res)]).toEqual([403, 'PERMISSION_DENIED']);
-            expect(h.exam.seen).toHaveLength(0);
+            expect(h.content.seen).toHaveLength(0);
             const teacher = await h.issuer.user('tea', ['TEACHER']);
             expect((await get('/api/v1/ai/models', teacher, via(3))).status).toBe(200);
         });
@@ -71,7 +71,7 @@ describe('gateway authorization (e2e)', () => {
             const access = '/api/v1/quiz-practice/sets/q1/access';
             const bad = await get(access, 'not-a-jwt', via(6));
             expect(bad.status).toBe(200);
-            expect(h.exam.seen.at(-1)!.headers.authorization).toBeUndefined();
+            expect(h.content.seen.at(-1)!.headers.authorization).toBeUndefined();
             expect((await fetch(`${h.baseUrl}${access}`, { headers: via(6) })).status).toBe(200);
             for (const path of ['/api/v1/quiz-practice/sets', '/api/v1/quiz-practice/attempts/a1']) {
                 expect((await fetch(`${h.baseUrl}${path}`, { headers: via(6) })).status).toBe(401);

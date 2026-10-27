@@ -148,6 +148,7 @@
     "GET /api/v1/quizsets/stats",
     "POST /api/v1/r2/image",
     "GET /api/v1/status",
+    "POST /api/v1/student/pin-exam-room/:id",
     "POST /api/v1/student/pin-flashcard/:id",
     "GET /api/v1/student/recent-exams",
     "GET /api/v1/student/recent-flashcards",

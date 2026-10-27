@@ -14,7 +14,10 @@ export class GatewayController {
             gateway: 'running',
             services: {
                 auth: process.env.AUTH_SERVICE_URL || 'http://localhost:3001',
-                exam: process.env.EXAM_SERVICE_URL || 'http://localhost:3002',
+                content:
+                    process.env.CONTENT_SERVICE_URL || 'http://localhost:3013',
+                assessment:
+                    process.env.ASSESSMENT_SERVICE_URL || 'http://localhost:3014',
                 studyroom:
                     process.env.STUDYROOM_SERVICE_URL || 'http://localhost:3009',
                 vocabulary:

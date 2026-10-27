@@ -14,7 +14,7 @@ describe('gateway edge (e2e)', () => {
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.exam, h.studyroom, h.vocabulary, h.document, h.aichat, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.content, h.assessment, h.studyroom, h.vocabulary, h.document, h.aichat, h.auth, h.finance, h.admin]) u.reset();
     });
 
     describe('CORS', () => {
@@ -31,7 +31,7 @@ describe('gateway edge (e2e)', () => {
             expect(res.headers.get('access-control-allow-origin')).toBe('https://allowed.example');
             expect(res.headers.get('access-control-allow-credentials')).toBe('true');
             expect(res.headers.get('access-control-allow-headers')?.toLowerCase()).toContain('x-device-id');
-            expect(h.exam.seen).toHaveLength(0);
+            expect(h.content.seen).toHaveLength(0);
         });
 
         it('gives a disallowed origin no Access-Control-Allow-Origin', async () => {
@@ -40,7 +40,7 @@ describe('gateway edge (e2e)', () => {
                 headers: { origin: 'https://evil.example', 'access-control-request-method': 'GET' },
             });
             expect(res.headers.get('access-control-allow-origin')).toBeNull();
-            expect(h.exam.seen).toHaveLength(0);
+            expect(h.content.seen).toHaveLength(0);
         });
 
         it('sets security headers (helmet)', async () => {

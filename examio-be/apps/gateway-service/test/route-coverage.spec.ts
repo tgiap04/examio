@@ -23,14 +23,17 @@ function expectedUpstream(path: string): string {
     if (resource === 'studyrooms') return 'studyroom';
     // AI chat and the public AI-teacher subjects live in ai-chat-service.
     if (resource === 'ai-chat' || resource === 'subjects') return 'aichat';
-    // Uploads and the image endpoint live in document-service; generation and history stay in exam.
+    // Uploads and the image endpoint live in document-service; generation and history are content.
     if (resource === 'r2') return 'document';
     if (resource === 'ai' && /^\/api\/v1\/ai\/(upload(\/:[A-Za-z]+)?|quick-upload|upload-image)$/.test(path)) {
         return 'document';
     }
-    // The to-flashcard bridge writes a FlashCardSet, so exam keeps that one path.
-    if (resource === 'word-family') return /^\/api\/v1\/word-family\/:[A-Za-z]+\/to-flashcard$/.test(path) ? 'exam' : 'vocabulary';
-    return 'exam';
+    // The to-flashcard bridge writes a FlashCardSet, so content keeps that one path.
+    if (resource === 'word-family') return /^\/api\/v1\/word-family\/:[A-Za-z]+\/to-flashcard$/.test(path) ? 'content' : 'vocabulary';
+    // `/student/*` is split: the exam half is assessment, the flashcard half is content.
+    if (resource === 'student') return /\/(recent-exams|pin-exam-room)/.test(path) ? 'assessment' : 'content';
+    if (['examrooms', 'examsessions', 'examattempts', 'cheatinglogs'].includes(resource)) return 'assessment';
+    return 'content';
 }
 
 describe('routes.yaml covers the phase-01 route inventory', () => {
@@ -50,7 +53,8 @@ describe('routes.yaml covers the phase-01 route inventory', () => {
     it('upstream URLs come from the environment, defaulting to the dev ports', () => {
         const target = (path: string) => table.match('GET', path)?.target;
         expect(target('/api/v1/auth/me')).toBe('http://localhost:3001');
-        expect(target('/api/v1/quizsets')).toBe('http://localhost:3002');
+        expect(target('/api/v1/quizsets')).toBe('http://localhost:3013');
+        expect(target('/api/v1/examrooms')).toBe('http://localhost:3014');
         expect(target('/api/v1/wallet/details')).toBe('http://localhost:3003');
         expect(target('/api/v1/admin/users')).toBe('http://localhost:7006');
         expect(target('/api/v1/studyrooms/mine')).toBe('http://localhost:3009');
@@ -59,24 +63,26 @@ describe('routes.yaml covers the phase-01 route inventory', () => {
         expect(target('/api/v1/ai-chat/c1/messages')).toBe('http://localhost:3012');
         expect(target('/api/v1/subjects')).toBe('http://localhost:3012');
         expect(table.match('POST', '/api/v1/r2/image')?.target).toBe('http://localhost:3011');
-        expect(target('/api/v1/ai/upload/u1/history')).toBe('http://localhost:3002');
+        expect(target('/api/v1/ai/upload/u1/history')).toBe('http://localhost:3013');
         expect(table.match('GET', '/ws/study')?.target).toBe('http://localhost:3009');
         const custom = loadRouteTable({
             env: {
-                EXAM_SERVICE_URL: 'http://exam:3000',
+                CONTENT_SERVICE_URL: 'http://content:3000',
+                ASSESSMENT_SERVICE_URL: 'http://assessment:3000',
                 STUDYROOM_SERVICE_URL: 'http://study-room:3000',
                 VOCABULARY_SERVICE_URL: 'http://vocabulary:3000',
                 DOCUMENT_SERVICE_URL: 'http://document:3000',
                 AICHAT_SERVICE_URL: 'http://ai-chat:3000',
             },
         });
-        expect(custom.match('GET', '/api/v1/quizsets')?.target).toBe('http://exam:3000');
+        expect(custom.match('GET', '/api/v1/quizsets')?.target).toBe('http://content:3000');
+        expect(custom.match('GET', '/api/v1/examsessions/s1')?.target).toBe('http://assessment:3000');
         expect(custom.match('GET', '/api/v1/studyrooms/mine')?.target).toBe('http://study-room:3000');
         expect(custom.match('GET', '/api/v1/word-family/saved')?.target).toBe('http://vocabulary:3000');
-        expect(custom.match('POST', '/api/v1/word-family/wf1/to-flashcard')?.target).toBe('http://exam:3000');
+        expect(custom.match('POST', '/api/v1/word-family/wf1/to-flashcard')?.target).toBe('http://content:3000');
         expect(custom.match('GET', '/ws/study')?.target).toBe('http://study-room:3000');
         expect(custom.match('POST', '/api/v1/ai/quick-upload')?.target).toBe('http://document:3000');
-        expect(custom.match('GET', '/api/v1/ai/upload/u1/history')?.target).toBe('http://exam:3000');
+        expect(custom.match('GET', '/api/v1/ai/upload/u1/history')?.target).toBe('http://content:3000');
         expect(custom.match('POST', '/api/v1/ai-chat/c1/stream')?.target).toBe('http://ai-chat:3000');
         expect(custom.match('POST', '/api/v1/ai-chat/message/m1/regenerate-stream')?.target).toBe('http://ai-chat:3000');
         expect(custom.match('GET', '/api/v1/subjects/categories')?.target).toBe('http://ai-chat:3000');
@@ -98,9 +104,9 @@ describe('routes.yaml covers the phase-01 route inventory', () => {
 describe('word-family routing: the to-flashcard path beats the word-family prefix', () => {
     const at = (method: string, path: string) => table.match(method, path);
 
-    it('POST /word-family/:id/to-flashcard goes to exam (content domain), keeping auth and page flag', () => {
+    it('POST /word-family/:id/to-flashcard goes to content, keeping auth and page flag', () => {
         const route = at('POST', '/api/v1/word-family/wf_123/to-flashcard');
-        expect(route).toMatchObject({ id: 'wf-to-flashcard', upstream: 'exam', pageFlag: 'word-family' });
+        expect(route).toMatchObject({ id: 'wf-to-flashcard', upstream: 'content', pageFlag: 'word-family' });
     });
 
     it('every other word-family path goes to vocabulary', () => {
@@ -124,6 +130,22 @@ describe('word-family routing: the to-flashcard path beats the word-family prefi
         ]) {
             expect(at(method, path)?.upstream).toBe('vocabulary');
         }
+    });
+});
+
+describe('/student/* is split by path between content and assessment', () => {
+    it.each([
+        ['GET', '/api/v1/student/recent-flashcards', 'student-content', 'content'],
+        ['POST', '/api/v1/student/pin-flashcard/f1', 'student-content', 'content'],
+        ['GET', '/api/v1/student/recent-exams', 'student-exam', 'assessment'],
+        ['POST', '/api/v1/student/pin-exam-room/r1', 'student-exam', 'assessment'],
+    ])('%s %s -> %s', (method, path, id, upstream) => {
+        expect(table.match(method, path)).toMatchObject({ id, upstream, auth: 'required' });
+    });
+
+    it('no catch-all student prefix remains and no route uses the removed exam upstream', () => {
+        expect(table.match('GET', '/api/v1/student/unknown')).toBeUndefined();
+        expect(table.routes.filter((r) => r.upstream === 'exam')).toEqual([]);
     });
 });
 
@@ -218,7 +240,7 @@ describe('coarse permission table', () => {
     });
 
     it('ai-upload-history is listed before ai-upload and the anchored pattern never captures it', () => {
-        expect(route('GET', '/api/v1/ai/upload/u1/history')).toMatchObject({ id: 'ai-upload-history', upstream: 'exam' });
+        expect(route('GET', '/api/v1/ai/upload/u1/history')).toMatchObject({ id: 'ai-upload-history', upstream: 'content' });
         for (const [method, path] of [
             ['GET', '/api/v1/ai/upload/u1'],
             ['DELETE', '/api/v1/ai/upload/u1'],
@@ -227,16 +249,16 @@ describe('coarse permission table', () => {
         ]) {
             expect(route(method, path)).toMatchObject({ id: 'ai-upload', upstream: 'document' });
         }
-        // lookalikes fall through to the exam `ai` prefix (generation), never to document
+        // lookalikes fall through to the content `ai` prefix (generation), never to document
         for (const path of ['/api/v1/ai/upload/u1/history/x', '/api/v1/ai/upload/a/b', '/api/v1/ai/uploads', '/api/v1/ai/generate-from-file']) {
-            expect(route('GET', path).upstream).toBe('exam');
+            expect(route('GET', path).upstream).toBe('content');
         }
     });
 
-    it('recent-uploads is served by exam (documents over gRPC + generated history) and is listed before ai-upload', () => {
+    it('recent-uploads is served by content (documents over gRPC + generated history) and is listed before ai-upload', () => {
         expect(route('GET', '/api/v1/ai/recent-uploads')).toMatchObject({
             id: 'ai-recent-uploads',
-            upstream: 'exam',
+            upstream: 'content',
             permissions: ['document:upload'],
             timeoutMs: 120_000,
         });

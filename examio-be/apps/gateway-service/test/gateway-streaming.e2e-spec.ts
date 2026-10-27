@@ -19,7 +19,7 @@ describe('gateway streaming (e2e)', () => {
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.exam, h.document, h.aichat, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.content, h.assessment, h.document, h.aichat, h.auth, h.finance, h.admin]) u.reset();
     });
 
     it('SSE chunks reach the client before the upstream finishes', async () => {
@@ -235,6 +235,6 @@ describe('gateway streaming (e2e)', () => {
         });
         expect(viaQuery.status).toBe(401);
         expect(viaLegacy.status).toBe(401);
-        expect(h.exam.seen).toHaveLength(0);
+        expect(h.content.seen).toHaveLength(0);
     });
 });

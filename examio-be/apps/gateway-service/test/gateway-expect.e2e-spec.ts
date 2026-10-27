@@ -21,7 +21,7 @@ describe.each([
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.exam, h.document, h.aichat, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.content, h.assessment, h.document, h.aichat, h.auth, h.finance, h.admin]) u.reset();
     });
 
     interface Sent {
@@ -57,7 +57,7 @@ describe.each([
             else pump();
         });
 
-    const upstreamHeaders = (): IncomingHttpHeaders => h.exam.seen[0].headers;
+    const upstreamHeaders = (): IncomingHttpHeaders => h.content.seen[0].headers;
 
     it('(a) spoofed identity headers never reach the upstream', async () => {
         const token = await h.issuer.user(`spoof${withExpect}`, ['STUDENT']);

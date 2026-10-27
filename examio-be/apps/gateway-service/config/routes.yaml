@@ -7,7 +7,8 @@
 
 upstreams:
   auth: ${AUTH_SERVICE_URL:-http://localhost:3001}
-  exam: ${EXAM_SERVICE_URL:-http://localhost:3002}
+  content: ${CONTENT_SERVICE_URL:-http://localhost:3013}
+  assessment: ${ASSESSMENT_SERVICE_URL:-http://localhost:3014}
   studyroom: ${STUDYROOM_SERVICE_URL:-http://localhost:3009}
   vocabulary: ${VOCABULARY_SERVICE_URL:-http://localhost:3010}
   document: ${DOCUMENT_SERVICE_URL:-http://localhost:3011}
@@ -85,19 +86,19 @@ routes:
     auth: required
     permissions: [admin:access]
 
-  # ---- AI: uploads live in document-service, generation still in exam-service ----
-  # `ai-upload-history` and `ai-recent-uploads` are listed first and exam keeps them: they join the
-  # documents with generated history (exam data); exam lists the documents over gRPC.
+  # ---- AI: uploads live in document-service, generation in content-service ----
+  # `ai-upload-history` and `ai-recent-uploads` are listed first and content keeps them: they join the
+  # documents with generated history (content data); content lists the documents over gRPC.
   # Patterns are full-match, so `ai-upload` cannot swallow `upload/<id>/history`.
   - id: ai-upload-history
-    upstream: exam
+    upstream: content
     match: { path: '/api/v1/ai/upload/[^/]+/history' }
     auth: required
     permissions: [ai:generate]
     pageFlag: ai-tool
     timeout: 120s
   - id: ai-recent-uploads
-    upstream: exam
+    upstream: content
     match: { path: '/api/v1/ai/recent-uploads' }
     auth: required
     permissions: [document:upload]
@@ -112,7 +113,7 @@ routes:
     maxBodySize: 50mb
     timeout: 120s
   - id: ai
-    upstream: exam
+    upstream: content
     match: { prefix: /api/v1/ai }
     auth: required
     permissions: [ai:generate]
@@ -133,20 +134,20 @@ routes:
     maxBodySize: 100mb
     timeout: 5m
 
-  # ---- exam-service: content and exams ---------------------------------------
+  # ---- content-service (author and self-study) and assessment-service (proctored exams) ----
   - id: quizsets
-    upstream: exam
+    upstream: content
     match: { prefix: /api/v1/quizsets }
     auth: required
     pageFlag: manage-exam
   - id: quiz-practice
-    upstream: exam
+    upstream: content
     match: { prefix: /api/v1/quiz-practice }
     auth: required
     public:
       - { method: GET, path: '/api/v1/quiz-practice/sets/[^/]+/access' }
   - id: flashcardsets
-    upstream: exam
+    upstream: content
     match: { prefix: /api/v1/flashcardsets }
     auth: required
     pageFlag: flash-card
@@ -155,18 +156,18 @@ routes:
       - { method: GET, path: '/api/v1/flashcardsets/study/[^/]+(/access|/info)?' }
       - { method: POST, path: '/api/v1/flashcardsets/study/[^/]+/(verify-code|with-code)' }
   - id: flashcard-study
-    upstream: exam
+    upstream: content
     match: { prefix: /api/v1/flashcard-study }
     auth: required
   - id: examrooms
-    upstream: exam
+    upstream: assessment
     match: { prefix: /api/v1/examrooms }
     auth: required
     pageFlag: manage-exam-room
     public:
       - { method: GET, path: '/api/v1/examrooms/get-public/[^/]+' }
   - id: examsessions
-    upstream: exam
+    upstream: assessment
     match: { prefix: /api/v1/examsessions }
     auth: required
     public:
@@ -174,25 +175,30 @@ routes:
       - { method: GET, path: '/api/v1/examsessions/study/[^/]+(/access|/info)?' }
       - { method: POST, path: '/api/v1/examsessions/study/[^/]+/(verify-code|with-code)' }
   - id: examattempts
-    upstream: exam
+    upstream: assessment
     match: { prefix: /api/v1/examattempts }
     auth: required
   - id: cheatinglogs
-    upstream: exam
+    upstream: assessment
     match: { prefix: /api/v1/cheatinglogs }
     auth: required
-  - id: student
-    upstream: exam
-    match: { prefix: /api/v1/student }
+  # `/student/*` is split by path: the flashcard half is content, the exam half is assessment.
+  - id: student-content
+    upstream: content
+    match: { path: '/api/v1/student/(recent-flashcards|pin-flashcard/[^/]+)' }
+    auth: required
+  - id: student-exam
+    upstream: assessment
+    match: { path: '/api/v1/student/(recent-exams|pin-exam-room/[^/]+)' }
     auth: required
   - id: subjects
     upstream: aichat
     match: { prefix: /api/v1/subjects }
     auth: optional
-  # The bridge writes a FlashCardSet (content domain), so exam keeps this one path; the
+  # The bridge writes a FlashCardSet (content domain), so content keeps this one path; the
   # `match.path` regex wins over the `word-family` prefix below (see the header).
   - id: wf-to-flashcard
-    upstream: exam
+    upstream: content
     match: { path: '/api/v1/word-family/[^/]+/to-flashcard' }
     methods: [POST]
     auth: required

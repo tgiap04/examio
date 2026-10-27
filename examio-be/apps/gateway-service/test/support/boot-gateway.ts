@@ -14,7 +14,8 @@ export interface Harness {
     baseUrl: string;
     grpcUrl: string;
     issuer: TokenIssuer;
-    exam: FakeUpstream;
+    content: FakeUpstream;
+    assessment: FakeUpstream;
     studyroom: FakeUpstream;
     vocabulary: FakeUpstream;
     document: FakeUpstream;
@@ -32,8 +33,8 @@ export interface Harness {
  */
 export async function bootGateway(extraEnv: Record<string, string> = {}): Promise<Harness> {
     const issuer = await new TokenIssuer().start();
-    const [exam, auth, finance, admin, studyroom, vocabulary, document, aichat] = await Promise.all(
-        [1, 2, 3, 4, 5, 6, 7, 8].map(() => new FakeUpstream().start())
+    const [content, assessment, auth, finance, admin, studyroom, vocabulary, document, aichat] = await Promise.all(
+        [1, 2, 3, 4, 5, 6, 7, 8, 9].map(() => new FakeUpstream().start())
     );
     // A caller that already told another service where the gateway listens (GRPC_PORT) gets one attempt.
     const pinnedPort = extraEnv.GRPC_PORT ? Number(extraEnv.GRPC_PORT) : undefined;
@@ -41,7 +42,8 @@ export async function bootGateway(extraEnv: Record<string, string> = {}): Promis
     Object.assign(process.env, {
         NODE_ENV: 'test',
         AUTH_SERVICE_URL: auth.url,
-        EXAM_SERVICE_URL: exam.url,
+        CONTENT_SERVICE_URL: content.url,
+        ASSESSMENT_SERVICE_URL: assessment.url,
         STUDYROOM_SERVICE_URL: studyroom.url,
         VOCABULARY_SERVICE_URL: vocabulary.url,
         DOCUMENT_SERVICE_URL: document.url,
@@ -98,7 +100,8 @@ export async function bootGateway(extraEnv: Record<string, string> = {}): Promis
         baseUrl: `http://127.0.0.1:${port}`,
         grpcUrl: `127.0.0.1:${grpcPort}`,
         issuer,
-        exam,
+        content,
+        assessment,
         studyroom,
         vocabulary,
         document,
@@ -109,7 +112,7 @@ export async function bootGateway(extraEnv: Record<string, string> = {}): Promis
         async close() {
             // Closing right after boot can hang on the AMQP channel teardown; bound it.
             await Promise.race([app.close(), new Promise((r) => setTimeout(r, 5000))]);
-            await Promise.all([exam, studyroom, vocabulary, document, aichat, auth, finance, admin].map((u) => u.stop()));
+            await Promise.all([content, assessment, studyroom, vocabulary, document, aichat, auth, finance, admin].map((u) => u.stop()));
             await issuer.stop();
         },
     };

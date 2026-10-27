@@ -16,7 +16,7 @@ describe('gateway proxy (e2e)', () => {
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.exam, h.vocabulary, h.aichat, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.content, h.assessment, h.vocabulary, h.aichat, h.auth, h.finance, h.admin]) u.reset();
     });
 
     it('passes status, headers and BOTH Set-Cookie headers through verbatim', async () => {
@@ -50,7 +50,7 @@ describe('gateway proxy (e2e)', () => {
     it('a Set-Cookie from any non-auth upstream never reaches the client (auth is the only cookie issuer)', async () => {
         const plant = (_req: unknown, res: import('http').ServerResponse) =>
             void res.writeHead(200, { 'set-cookie': ['accessToken=evil; Path=/', 'x=1'] }).end('{}');
-        h.exam.handler = plant;
+        h.content.handler = plant;
         h.finance.handler = plant;
         h.admin.handler = plant;
         const teacher = await h.issuer.user('cookies', ['TEACHER', 'SYSTEM_ADMIN']);
@@ -66,7 +66,7 @@ describe('gateway proxy (e2e)', () => {
     });
 
     it('relays upstream 4xx/5xx bodies and statuses unchanged', async () => {
-        h.exam.handler = (_req, res) =>
+        h.content.handler = (_req, res) =>
             res.writeHead(422, { 'content-type': 'application/json' }).end('{"code":"X","message":"m"}');
         const token = await h.issuer.user('teach', ['TEACHER']);
         const res = await fetch(`${h.baseUrl}/api/v1/quizsets`, {
@@ -88,7 +88,7 @@ describe('gateway proxy (e2e)', () => {
                 ...via(5),
             },
         });
-        const seen = h.exam.seen[0].headers;
+        const seen = h.content.seen[0].headers;
         expect(seen['x-user-roles']).toBeUndefined();
         expect(seen['x-user-id']).toBeUndefined();
         expect(seen.authorization).toBe(`Bearer ${token}`);
@@ -97,13 +97,32 @@ describe('gateway proxy (e2e)', () => {
         expect(seen['x-forwarded-host']).not.toBe('evil.example');
     });
 
-    it('word-family goes to vocabulary, but POST :id/to-flashcard goes to exam (path beats prefix)', async () => {
+    it('word-family goes to vocabulary, but POST :id/to-flashcard goes to content (path beats prefix)', async () => {
         const token = await h.issuer.user('wf', ['TEACHER']);
         const headers = { authorization: `Bearer ${token}`, 'content-type': 'application/json', ...via(6) };
         await fetch(`${h.baseUrl}/api/v1/word-family/categories`, { headers });
         await fetch(`${h.baseUrl}/api/v1/word-family/wf_1/to-flashcard`, { method: 'POST', headers, body: '{}' });
         expect(h.vocabulary.seen.map((r) => r.url)).toEqual(['/api/v1/word-family/categories']);
-        expect(h.exam.seen.map((r) => r.url)).toEqual(['/api/v1/word-family/wf_1/to-flashcard']);
+        expect(h.content.seen.map((r) => r.url)).toEqual(['/api/v1/word-family/wf_1/to-flashcard']);
+    });
+
+    it('splits /student/*: flashcard paths reach content, exam paths reach assessment', async () => {
+        const token = await h.issuer.user('student-split', ['STUDENT']);
+        const headers = { authorization: `Bearer ${token}`, ...via(7) };
+        await fetch(`${h.baseUrl}/api/v1/student/recent-flashcards`, { headers });
+        await fetch(`${h.baseUrl}/api/v1/student/pin-flashcard/f1`, { method: 'POST', headers });
+        await fetch(`${h.baseUrl}/api/v1/student/recent-exams`, { headers });
+        await fetch(`${h.baseUrl}/api/v1/student/pin-exam-room/r1`, { method: 'POST', headers });
+        expect(h.content.seen.map((r) => r.url)).toEqual([
+            '/api/v1/student/recent-flashcards',
+            '/api/v1/student/pin-flashcard/f1',
+        ]);
+        expect(h.assessment.seen.map((r) => r.url)).toEqual([
+            '/api/v1/student/recent-exams',
+            '/api/v1/student/pin-exam-room/r1',
+        ]);
+        const unknown = await fetch(`${h.baseUrl}/api/v1/student/other`, { headers });
+        expect(unknown.status).toBe(404);
     });
 
     it('moves a cookie token into an Authorization header for the upstream', async () => {
@@ -111,7 +130,7 @@ describe('gateway proxy (e2e)', () => {
         await fetch(`${h.baseUrl}/api/v1/quizsets`, {
             headers: { cookie: `accessToken=${token}; theme=dark` },
         });
-        expect(h.exam.seen[0].headers.authorization).toBe(`Bearer ${token}`);
+        expect(h.content.seen[0].headers.authorization).toBe(`Bearer ${token}`);
     });
 
     it('answers with the error envelope and the same request id in the header', async () => {
