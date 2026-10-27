@@ -18,13 +18,14 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { join, relative, sep } from 'path';
 
-export type Service = 'auth' | 'finance' | 'exam' | 'studyroom' | 'vocabulary' | 'document' | 'aichat' | 'admin' | 'r2' | 'gateway';
+export type Service = 'auth' | 'finance' | 'content' | 'assessment' | 'studyroom' | 'vocabulary' | 'document' | 'aichat' | 'admin' | 'r2' | 'gateway';
 
 /** Owner app directory -> service name. ai-service (python) is out of scope here. */
 export const APP_SERVICE: Readonly<Record<string, Service>> = {
     'auth-service': 'auth',
     'finance-service': 'finance',
-    'exam-service': 'exam',
+    'content-service': 'content',
+    'assessment-service': 'assessment',
     'study-room-service': 'studyroom',
     'vocabulary-service': 'vocabulary',
     'document-service': 'document',
@@ -38,8 +39,7 @@ export const APP_SERVICE: Readonly<Record<string, Service>> = {
 export const SHARED_MODELS: ReadonlySet<string> = new Set(['OutboxEvent', 'ProcessedEvent', 'R2DeleteTask']);
 
 /**
- * Model -> owning service (ARCH Appendix A). Until phase 14 extracts the
- * content/assessment services, `exam` owns all of those.
+ * Model -> owning service (ARCH Appendix A).
  */
 export const OWNERSHIP: Readonly<Record<string, Service>> = {
     // auth
@@ -51,15 +51,16 @@ export const OWNERSHIP: Readonly<Record<string, Service>> = {
     AdminAudit: 'admin', PageFeatureFlag: 'admin',
     // document (phase 15)
     UserStorage: 'document', UserMonthlyFileUpload: 'document',
-    // exam (content, assessment, generation). The vector / entity / graph tables are ai-service's
-    // (Python, schema `ai`), no longer part of any Prisma schema.
-    GenerationJob: 'exam',
-    QuizSet: 'exam', QuizSetLabel: 'exam', QuizQuestion: 'exam', DetailsQuizQuestion: 'exam',
-    FlashCardSet: 'exam', FlashCardSetLabel: 'exam', FlashCard: 'exam', DetailsFlashCard: 'exam',
-    HistoryGeneratedQuizz: 'exam', HistoryGeneratedFlashcard: 'exam', QuizPracticeAttempt: 'exam',
-    FlashCardViewHistory: 'exam', UserPinnedFlashcard: 'exam', FlashcardStudyProgress: 'exam',
-    ExamRoom: 'exam', ExamSession: 'exam', ExamAttempt: 'exam', CheatingLog: 'exam',
-    UserPinnedExamRoom: 'exam',
+    // content (phase 14): quiz sets, flashcard sets, practice, study progress and generation jobs. The
+    // vector / entity / graph tables are ai-service's (Python, schema `ai`), not part of any Prisma schema.
+    GenerationJob: 'content',
+    QuizSet: 'content', QuizSetLabel: 'content', QuizQuestion: 'content', DetailsQuizQuestion: 'content',
+    FlashCardSet: 'content', FlashCardSetLabel: 'content', FlashCard: 'content', DetailsFlashCard: 'content',
+    HistoryGeneratedQuizz: 'content', HistoryGeneratedFlashcard: 'content', QuizPracticeAttempt: 'content',
+    FlashCardViewHistory: 'content', UserPinnedFlashcard: 'content', FlashcardStudyProgress: 'content',
+    // assessment (phase 14): rooms, sessions (with their quiz snapshot), attempts, cheating logs, pins
+    ExamRoom: 'assessment', ExamSession: 'assessment', ExamAttempt: 'assessment', CheatingLog: 'assessment',
+    UserPinnedExamRoom: 'assessment',
     // study-room (phase 12)
     StudyRoom: 'studyroom', StudyRoomMember: 'studyroom', StudyRoomPlaylistItem: 'studyroom', StudyRoomChatBlock: 'studyroom',
     // vocabulary (phase 12)

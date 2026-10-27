@@ -32,6 +32,8 @@ export abstract class BaseRepository<T> {
     protected abstract modelName: string;
     protected abstract cachePrefix: string; // Prefix cho Redis keys (should match CACHE_MODULES key)
     protected defaultCacheTTL: EXPIRED_TIME = EXPIRED_TIME.FIVE_MINUTES;
+    /** Prepended to EVERY Redis key and pattern this repository builds (`'content:'`); empty = no namespace. */
+    protected readonly keyNamespace: string = '';
 
     constructor(
         protected readonly prisma: PrismaLike,
@@ -59,12 +61,16 @@ export abstract class BaseRepository<T> {
         return (moduleKey as CacheModule) || 'USER';
     }
 
+    private ns(key: string): string {
+        return this.keyNamespace + key;
+    }
+
     /**
      * Generate cache key (legacy - for backward compatibility)
      * @deprecated Use getUserScopedCacheKey or getItemScopedCacheKey instead
      */
     protected getCacheKey(suffix: string): string {
-        return `${this.cachePrefix}:${suffix}`;
+        return this.ns(`${this.cachePrefix}:${suffix}`);
     }
 
     /**
@@ -72,7 +78,7 @@ export abstract class BaseRepository<T> {
      * Pattern: {module}:user:{userId}
      */
     protected getUserScopedCacheKey(userId: string): string {
-        return getUserCacheKey(this.cacheModule, userId);
+        return this.ns(getUserCacheKey(this.cacheModule, userId));
     }
 
     /**
@@ -84,7 +90,7 @@ export abstract class BaseRepository<T> {
         itemId: string,
         suffix?: string
     ): string {
-        return getItemCacheKey(this.cacheModule, userId, itemId, suffix);
+        return this.ns(getItemCacheKey(this.cacheModule, userId, itemId, suffix));
     }
 
     /**
@@ -92,7 +98,7 @@ export abstract class BaseRepository<T> {
      * Pattern: {module}:public:{itemId}:{suffix?}
      */
     protected getPublicScopedCacheKey(itemId: string, suffix?: string): string {
-        return getPublicCacheKey(this.cacheModule, itemId, suffix);
+        return this.ns(getPublicCacheKey(this.cacheModule, itemId, suffix));
     }
 
     /**
@@ -102,7 +108,7 @@ export abstract class BaseRepository<T> {
     public async invalidateCache(pattern?: string): Promise<void> {
         const key = pattern
             ? this.getCacheKey(pattern)
-            : `${this.cachePrefix}:*`;
+            : this.ns(`${this.cachePrefix}:*`);
 
         console.log(`[BaseRepository] Invalidating cache with key: ${key}`);
 
@@ -119,7 +125,7 @@ export abstract class BaseRepository<T> {
      * Pattern: {module}:user:{userId}:*
      */
     public async invalidateUserCache(userId: string): Promise<void> {
-        const pattern = getUserCachePattern(this.cacheModule, userId);
+        const pattern = this.ns(getUserCachePattern(this.cacheModule, userId));
         console.log(
             `[BaseRepository] Invalidating user cache with pattern: ${pattern}`
         );
@@ -134,13 +140,15 @@ export abstract class BaseRepository<T> {
         userId: string,
         itemId: string
     ): Promise<void> {
-        const pattern = getItemCachePattern(this.cacheModule, userId, itemId);
+        const pattern = this.ns(
+            getItemCachePattern(this.cacheModule, userId, itemId)
+        );
         console.log(
             `[BaseRepository] Invalidating item cache with pattern: ${pattern}`
         );
         await this.redis.delPattern(pattern);
         // Also delete the direct item key
-        await this.redis.del(getItemCacheKey(this.cacheModule, userId, itemId));
+        await this.redis.del(this.getItemScopedCacheKey(userId, itemId));
         // `{id}`-only lookups are cached in the public item scope
         await this.invalidateOneCache(undefined, itemId);
     }
@@ -150,7 +158,7 @@ export abstract class BaseRepository<T> {
      * Pattern: {module}:user:{userId}:list:*
      */
     public async invalidateUserListCache(userId: string): Promise<void> {
-        const pattern = getListCachePattern(this.cacheModule, userId);
+        const pattern = this.ns(getListCachePattern(this.cacheModule, userId));
         console.log(
             `[BaseRepository] Invalidating user list cache with pattern: ${pattern}`
         );
@@ -162,7 +170,7 @@ export abstract class BaseRepository<T> {
      * Pattern: {module}:public:*
      */
     public async invalidatePublicCache(): Promise<void> {
-        const pattern = getPublicCachePattern(this.cacheModule);
+        const pattern = this.ns(getPublicCachePattern(this.cacheModule));
         console.log(
             `[BaseRepository] Invalidating public cache with pattern: ${pattern}`
         );
@@ -225,13 +233,13 @@ export abstract class BaseRepository<T> {
                   ? where.hostId
                   : undefined;
         if (id && owner) {
-            return getItemCacheKey(this.cacheModule, owner, id, `one:${hash}`);
+            return this.getItemScopedCacheKey(owner, id, `one:${hash}`);
         }
         if (id) {
-            return getPublicCacheKey(this.cacheModule, id, `one:${hash}`);
+            return this.getPublicScopedCacheKey(id, `one:${hash}`);
         }
         if (owner) {
-            return `${getUserCacheKey(this.cacheModule, owner)}:one:${hash}`;
+            return `${this.getUserScopedCacheKey(owner)}:one:${hash}`;
         }
         return this.getCacheKey(`one:${hash}`);
     }
@@ -243,12 +251,12 @@ export abstract class BaseRepository<T> {
     ): Promise<void> {
         if (userId) {
             await this.redis.delPattern(
-                `${getUserCacheKey(this.cacheModule, userId)}:one:*`
+                `${this.getUserScopedCacheKey(userId)}:one:*`
             );
         }
         if (id !== undefined) {
             await this.redis.delPattern(
-                `${getPublicCacheKey(this.cacheModule, String(id))}:*`
+                `${this.getPublicScopedCacheKey(String(id))}:*`
             );
         }
     }
@@ -662,9 +670,11 @@ export abstract class BaseRepository<T> {
         // Generate cache key - use user-scoped if userId provided
         const cacheKeySuffix = `paginate:${pageNum}:${sizeNum}:${JSON.stringify(where)}`;
         const cacheKey = userId
-            ? getListCachePattern(this.cacheModule, userId).replace(
-                  '*',
-                  cacheKeySuffix
+            ? this.ns(
+                  getListCachePattern(this.cacheModule, userId).replace(
+                      '*',
+                      cacheKeySuffix
+                  )
               )
             : this.getCacheKey(cacheKeySuffix);
 

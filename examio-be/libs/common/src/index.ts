@@ -15,9 +15,6 @@ export * from './services/refresh-token-cipher.service';
 // Guards (authn/authz guards live in @examio/auth-jwt)
 export * from './guard/google-auth.guard';
 
-// Events (Pub/Sub)
-export * from './events';
-
 // Utils
 export * from './utils/access-ttl';
 export * from './utils/cookie-config';

@@ -34,7 +34,7 @@ export function devSeedAdminEmail(adminEmails: string | undefined = process.env.
 }
 
 /** Per-service seed database URL: `<SVC>_DATABASE_URL`, falling back to `DATABASE_URL`. */
-export function seedDatabaseUrl(service: 'AUTH' | 'FINANCE' | 'ADMIN' | 'EXAM', env: NodeJS.ProcessEnv = process.env): string {
+export function seedDatabaseUrl(service: 'AUTH' | 'FINANCE' | 'ADMIN', env: NodeJS.ProcessEnv = process.env): string {
     const url = env[`${service}_DATABASE_URL`] ?? env.DATABASE_URL;
     if (!url) {
         throw new Error(`${service}_DATABASE_URL (or DATABASE_URL) is required to seed ${service.toLowerCase()}-service`);
