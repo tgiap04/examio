@@ -18,11 +18,12 @@ x-nestjs-healthcheck: &nestjs-healthcheck
 
 services:
     document:
+        image: ghcr.io/cychipo/examio-document:${DOCUMENT_TAG:-main}
         build:
             context: ..
-            dockerfile: deploy/Dockerfile
+            dockerfile: deploy/Dockerfile.node
             args:
-                SERVICE_NAME: document-service
+                SERVICE: document-service
         container_name: examio-document
         environment:
             - NODE_ENV=production
@@ -46,7 +47,8 @@ services:
             - AUTH_TOKEN_URL=http://auth:3000/internal/token
             - SERVICE_CLIENT_SECRET=${DOCUMENT_SERVICE_CLIENT_SECRET:?DOCUMENT_SERVICE_CLIENT_SECRET is required}
         env_file:
-            - .env
+            - path: env/document.env
+              required: true
         depends_on:
             document-migrate:
                 condition: service_completed_successfully
@@ -72,23 +74,29 @@ services:
                     '--spider',
                     'http://localhost:3000/health/ready',
                 ]
+        mem_limit: 512m
         restart: unless-stopped
         logging: *default-logging
 
     # One-shot: `prisma migrate deploy` for the document schema as document_svc, then exits.
     document-migrate:
+        image: ghcr.io/cychipo/examio-document:${DOCUMENT_TAG:-main}
         build:
             context: ..
-            dockerfile: deploy/Dockerfile.migration
+            dockerfile: deploy/Dockerfile.node
             args:
-                SERVICE: document
+                SERVICE: document-service
         container_name: examio-document-migrate
         environment:
+            - ROLE=migrate
             - DATABASE_URL=postgresql://document_svc:${DOCUMENT_DB_PASSWORD:?DOCUMENT_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=document
         depends_on:
             postgres:
                 condition: service_healthy
         networks:
             - internal
+        healthcheck:
+            disable: true
+        mem_limit: 512m
         restart: 'no'
         logging: *default-logging

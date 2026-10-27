@@ -60,7 +60,8 @@
         "bootstrap:admin:list": "ts-node -r tsconfig-paths/register apps/auth-service/src/commands/cli.ts list",
         "bootstrap:admin:grant": "ts-node -r tsconfig-paths/register apps/auth-service/src/commands/cli.ts grant",
         "bootstrap:admin:revoke": "ts-node -r tsconfig-paths/register apps/auth-service/src/commands/cli.ts revoke",
-        "finance:reconcile-teachers": "ts-node -r tsconfig-paths/register apps/finance-service/src/commands/cli.ts reconcile-teachers"
+        "finance:reconcile-teachers": "ts-node -r tsconfig-paths/register apps/finance-service/src/commands/cli.ts reconcile-teachers",
+        "smoke:cutover": "ts-node scripts/cutover-smoke.ts"
     },
     "keywords": [],
     "author": "",

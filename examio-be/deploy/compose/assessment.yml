@@ -17,12 +17,12 @@ x-nestjs-healthcheck: &nestjs-healthcheck
 
 services:
     assessment:
+        image: ghcr.io/cychipo/examio-assessment:${ASSESSMENT_TAG:-main}
         build:
             context: ..
-            dockerfile: deploy/Dockerfile
+            dockerfile: deploy/Dockerfile.node
             args:
-                SERVICE_NAME: assessment-service
-                ENABLE_OCR: 'false'
+                SERVICE: assessment-service
         container_name: examio-assessment
         environment:
             - NODE_ENV=production
@@ -47,7 +47,8 @@ services:
             - AUTH_TOKEN_URL=http://auth:3000/internal/token
             - SERVICE_CLIENT_SECRET=${ASSESSMENT_SERVICE_CLIENT_SECRET:?ASSESSMENT_SERVICE_CLIENT_SECRET is required}
         env_file:
-            - .env
+            - path: env/assessment.env
+              required: true
         depends_on:
             assessment-migrate:
                 condition: service_completed_successfully
@@ -74,23 +75,29 @@ services:
                     '--spider',
                     'http://localhost:3000/health/ready',
                 ]
+        mem_limit: 512m
         restart: unless-stopped
         logging: *default-logging
 
     # One-shot: `prisma migrate deploy` for the assessment schema as assessment_svc, then exits.
     assessment-migrate:
+        image: ghcr.io/cychipo/examio-assessment:${ASSESSMENT_TAG:-main}
         build:
             context: ..
-            dockerfile: deploy/Dockerfile.migration
+            dockerfile: deploy/Dockerfile.node
             args:
-                SERVICE: assessment
+                SERVICE: assessment-service
         container_name: examio-assessment-migrate
         environment:
+            - ROLE=migrate
             - DATABASE_URL=postgresql://assessment_svc:${ASSESSMENT_DB_PASSWORD:?ASSESSMENT_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=assessment
         depends_on:
             postgres:
                 condition: service_healthy
         networks:
             - internal
+        healthcheck:
+            disable: true
+        mem_limit: 512m
         restart: 'no'
         logging: *default-logging

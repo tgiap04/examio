@@ -10,10 +10,12 @@ x-logging: &default-logging
         max-size: '10m'
         max-file: '3'
 
+# The context is examio-be/ (not apps/ai-service): the build regenerates the gRPC stubs from proto/.
 x-ai-image: &ai-image
+    image: ghcr.io/cychipo/examio-ai:${AI_TAG:-main}
     build:
-        context: ../apps/ai-service
-        dockerfile: Dockerfile
+        context: ..
+        dockerfile: apps/ai-service/Dockerfile
 
 # ai_svc; no ?schema= (asyncpg would send it as a server setting): the search_path is pinned
 # per connection from DB_SEARCH_PATH.
@@ -21,12 +23,11 @@ x-ai-database: &ai-database
     DATABASE_URL: postgresql://ai_svc:${AI_DB_PASSWORD:?AI_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}
     DB_SEARCH_PATH: ai,extensions
 
+# Secrets and key lists (GEMINI_API_KEYS, GEMINI_MODEL_NAMES, AI2_API_KEY) come from env/ai.env, not from
+# compose interpolation; only tunables with defaults are set inline.
 x-ai-models: &ai-models
     PYTHONUNBUFFERED: '1'
-    GEMINI_API_KEYS: '${GEMINI_API_KEYS}'
-    GEMINI_MODEL_NAMES: '${GEMINI_MODEL_NAMES}'
     AI2_BASE_URL: '${AI2_BASE_URL:-https://ai2.devt.vn/v1}'
-    AI2_API_KEY: '${AI2_API_KEY:-}'
     AI2_GENERATION_MODEL_NAMES: '${AI2_GENERATION_MODEL_NAMES:-minimax-m2.5-free,nemotron-3-super-free,trinity-large-preview-free}'
     AI2_DEFAULT_MODEL: '${AI2_DEFAULT_MODEL:-minimax-m2.5-free}'
     AI2_TIMEOUT_SECONDS: '${AI2_TIMEOUT_SECONDS:-3600}'
@@ -53,6 +54,7 @@ services:
             - internal
         healthcheck:
             disable: true
+        mem_limit: 512m
         restart: 'no'
         logging: *default-logging
 
@@ -69,7 +71,8 @@ services:
             JWT_ISSUER: ${JWT_ISSUER:-examio-auth}
             AUTH_JWKS_URL: http://auth:3000/.well-known/jwks.json
         env_file:
-            - .env
+            - path: env/ai.env
+              required: true
         depends_on:
             ai-migrate:
                 condition: service_completed_successfully
@@ -89,6 +92,7 @@ services:
             retries: 3
             start_period: 60s
         stop_grace_period: 30s
+        mem_limit: 1536m
         restart: unless-stopped
         logging: *default-logging
 
@@ -105,7 +109,8 @@ services:
             R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
             R2_ALLOWED_HOSTS: ${R2_ALLOWED_HOSTS:-}
         env_file:
-            - .env
+            - path: env/ai.env
+              required: true
         depends_on:
             ai-migrate:
                 condition: service_completed_successfully
@@ -116,8 +121,15 @@ services:
         networks:
             - internal
             - egress
+        # No HTTP port: the worker touches /tmp/worker-heartbeat every 30 s while its broker connection,
+        # outbox relay and purge are alive (src/backend/messaging/heartbeat.py); stale for 2 min = unhealthy.
         healthcheck:
-            disable: true # no HTTP port; liveness is the consumer's broker connection
+            test: ['CMD-SHELL', 'find /tmp/worker-heartbeat -mmin -2 2>/dev/null | grep -q .']
+            interval: 30s
+            timeout: 5s
+            retries: 3
+            start_period: 60s
         stop_grace_period: 30s
+        mem_limit: 2g
         restart: unless-stopped
         logging: *default-logging

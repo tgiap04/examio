@@ -17,11 +17,12 @@ x-nestjs-healthcheck: &nestjs-healthcheck
 
 services:
     ai-chat:
+        image: ghcr.io/cychipo/examio-ai-chat:${AI_CHAT_TAG:-main}
         build:
             context: ..
-            dockerfile: deploy/Dockerfile
+            dockerfile: deploy/Dockerfile.node
             args:
-                SERVICE_NAME: ai-chat-service
+                SERVICE: ai-chat-service
         container_name: examio-ai-chat
         environment:
             - NODE_ENV=production
@@ -51,7 +52,8 @@ services:
             - AUTH_TOKEN_URL=http://auth:3000/internal/token
             - SERVICE_CLIENT_SECRET=${AICHAT_SERVICE_CLIENT_SECRET:?AICHAT_SERVICE_CLIENT_SECRET is required}
         env_file:
-            - .env
+            - path: env/aichat.env
+              required: true
         # ai, document, finance and r2 are reached through lazy gRPC clients: a chat boots (and lists
         # its history) while one of them is down.
         depends_on:
@@ -77,23 +79,29 @@ services:
                     '--spider',
                     'http://localhost:3000/health/ready',
                 ]
+        mem_limit: 512m
         restart: unless-stopped
         logging: *default-logging
 
     # One-shot: `prisma migrate deploy` for the aichat schema as aichat_svc, then exits.
     ai-chat-migrate:
+        image: ghcr.io/cychipo/examio-ai-chat:${AI_CHAT_TAG:-main}
         build:
             context: ..
-            dockerfile: deploy/Dockerfile.migration
+            dockerfile: deploy/Dockerfile.node
             args:
-                SERVICE: ai-chat
+                SERVICE: ai-chat-service
         container_name: examio-ai-chat-migrate
         environment:
+            - ROLE=migrate
             - DATABASE_URL=postgresql://aichat_svc:${AICHAT_DB_PASSWORD:?AICHAT_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=aichat
         depends_on:
             postgres:
                 condition: service_healthy
         networks:
             - internal
+        healthcheck:
+            disable: true
+        mem_limit: 512m
         restart: 'no'
         logging: *default-logging

@@ -30,7 +30,11 @@ const envValue = (name, key) => {
     const hit = envList(name).find((e) => e.startsWith(`${key}=`));
     return hit === undefined ? undefined : hit.slice(key.length + 1);
 };
-const networksOf = (name) => services[name].networks ?? [];
+// `networks` is a list, or a map when a service sets aliases on one of them.
+const networksOf = (name) => {
+    const nets = services[name].networks ?? [];
+    return Array.isArray(nets) ? nets : Object.keys(nets);
+};
 const members = (network) =>
     Object.keys(services)
         .filter((n) => networksOf(n).includes(network))
@@ -42,9 +46,9 @@ test('postgres, redis and rabbitmq publish no host port', () => {
     }
 });
 
-test('only the gateway publishes a host port (until the phase-16 cutover)', () => {
+test('no service publishes a host port: the only way in is the FE nginx on edge (phase 16)', () => {
     const published = Object.keys(services).filter((n) => services[n].ports);
-    assert.deepStrictEqual(published, ['gateway']);
+    assert.deepStrictEqual(published, []);
 });
 
 test('no service publishes on 0.0.0.0: every published port is bound to loopback', () => {
@@ -62,8 +66,8 @@ test('postgres, redis and rabbitmq are on the internal network only', () => {
     }
 });
 
-test('edge carries the gateway alone (the FE nginx joins it from its own compose)', () => {
-    assert.deepStrictEqual(members('edge'), ['gateway']);
+test('edge carries the two gateway instances (the FE nginx joins it from its own compose)', () => {
+    assert.deepStrictEqual(members('edge'), ['gateway-a', 'gateway-b']);
 });
 
 test('egress is exactly the services with a real internet dependency', () => {
@@ -87,10 +91,10 @@ test('the internal network has no route out; names are stable for the FE compose
 });
 
 test('the gateway has no database: no DATABASE_URL, no postgres/migrate dependency', () => {
-    const env = services.gateway.environment.map((e) => e.split('=')[0]);
+    const env = services['gateway-a'].environment.map((e) => e.split('=')[0]);
     assert.ok(!env.includes('DATABASE_URL'));
-    assert.ok(!('postgres' in services.gateway.depends_on));
-    assert.ok(!Object.keys(services.gateway.depends_on).some((d) => d.endsWith('-migrate')));
+    assert.ok(!('postgres' in services['gateway-a'].depends_on));
+    assert.ok(!Object.keys(services['gateway-a'].depends_on).some((d) => d.endsWith('-migrate')));
     assert.ok(env.includes('RABBITMQ_URL') && env.includes('GRPC_PORT'));
 });
 
@@ -118,7 +122,7 @@ test('each database service has a <svc>-migrate one-shot its API waits for', () 
         const migrate = services[`${svc}-migrate`];
         assert.ok(migrate, `${svc}-migrate is missing`);
         assert.strictEqual(migrate.restart, 'no');
-        assert.strictEqual(migrate.build.args.SERVICE, svc);
+        assert.strictEqual(migrate.build.args.SERVICE, `${svc}-service`);
         assert.strictEqual(
             services[svc].depends_on[`${svc}-migrate`].condition,
             'service_completed_successfully',
@@ -210,7 +214,7 @@ test('the exam service is gone from the stack: no service, no migrate, no broker
 
 test('content runs api+worker: it relays the outbox (content.*), settles generation jobs, serves ContentService on gRPC, egress for Turnstile', () => {
     const svc = services.content;
-    assert.strictEqual(svc.build.args.SERVICE_NAME, 'content-service');
+    assert.strictEqual(svc.build.args.SERVICE, 'content-service');
     assert.strictEqual(envValue('content', 'ROLE'), 'api,worker');
     assert.strictEqual(envValue('content', 'GRPC_PORT'), '50051');
     assert.ok(envValue('content', 'RABBITMQ_URL').startsWith('amqp://content:${RABBITMQ_CONTENT_PASS:?'), 'the relay publishes as the broker user content');
@@ -234,7 +238,7 @@ test('content runs api+worker: it relays the outbox (content.*), settles generat
 
 test('assessment runs api+worker with no gRPC server; it reaches content, document and auth lazily; egress for Turnstile', () => {
     const svc = services.assessment;
-    assert.strictEqual(svc.build.args.SERVICE_NAME, 'assessment-service');
+    assert.strictEqual(svc.build.args.SERVICE, 'assessment-service');
     assert.strictEqual(envValue('assessment', 'ROLE'), 'api,worker');
     assert.strictEqual(envValue('assessment', 'GRPC_PORT'), undefined, 'assessment serves no gRPC');
     assert.strictEqual(envValue('assessment', 'CONTENT_GRPC_URL'), 'content:50051');
@@ -254,8 +258,8 @@ test('study-room (studyroom role + schema) has its own migrate one-shot and no s
     const migrate = services['study-room-migrate'];
     assert.ok(svc && migrate, 'study-room / study-room-migrate are missing');
     assert.strictEqual(migrate.restart, 'no');
-    assert.strictEqual(migrate.build.args.SERVICE, 'study-room');
-    assert.strictEqual(svc.build.args.SERVICE_NAME, 'study-room-service');
+    assert.strictEqual(migrate.build.args.SERVICE, 'study-room-service');
+    assert.strictEqual(svc.build.args.SERVICE, 'study-room-service');
     assert.strictEqual(
         svc.depends_on['study-room-migrate'].condition,
         'service_completed_successfully',
@@ -278,8 +282,8 @@ test('vocabulary (vocabulary role + schema) has its own migrate one-shot, a gRPC
     const migrate = services['vocabulary-migrate'];
     assert.ok(svc && migrate, 'vocabulary / vocabulary-migrate are missing');
     assert.strictEqual(migrate.restart, 'no');
-    assert.strictEqual(migrate.build.args.SERVICE, 'vocabulary');
-    assert.strictEqual(svc.build.args.SERVICE_NAME, 'vocabulary-service');
+    assert.strictEqual(migrate.build.args.SERVICE, 'vocabulary-service');
+    assert.strictEqual(svc.build.args.SERVICE, 'vocabulary-service');
     assert.strictEqual(
         svc.depends_on['vocabulary-migrate'].condition,
         'service_completed_successfully',
@@ -312,8 +316,8 @@ test('document (document role + schema) has its own migrate one-shot, a gRPC ser
     const migrate = services['document-migrate'];
     assert.ok(svc && migrate, 'document / document-migrate are missing');
     assert.strictEqual(migrate.restart, 'no');
-    assert.strictEqual(migrate.build.args.SERVICE, 'document');
-    assert.strictEqual(svc.build.args.SERVICE_NAME, 'document-service');
+    assert.strictEqual(migrate.build.args.SERVICE, 'document-service');
+    assert.strictEqual(svc.build.args.SERVICE, 'document-service');
     assert.strictEqual(svc.depends_on['document-migrate'].condition, 'service_completed_successfully');
     for (const name of ['document', 'document-migrate']) {
         const url = envValue(name, 'DATABASE_URL');
@@ -339,32 +343,32 @@ test('document (document role + schema) has its own migrate one-shot, a gRPC ser
 });
 
 test('uploads go to document: the gateway routes there and waits for it; content reaches document and ai over gRPC', () => {
-    assert.strictEqual(envValue('gateway', 'DOCUMENT_SERVICE_URL'), 'http://document:3000');
-    assert.strictEqual(services.gateway.depends_on.document.condition, 'service_healthy');
+    assert.strictEqual(envValue('gateway-a', 'DOCUMENT_SERVICE_URL'), 'http://document:3000');
+    assert.strictEqual(services['gateway-a'].depends_on.document.condition, 'service_healthy');
     assert.strictEqual(envValue('content', 'DOCUMENT_GRPC_URL'), 'document:50051');
     assert.strictEqual(envValue('content', 'AI_GRPC_URL'), 'ai:50051');
     assert.strictEqual(services.content.depends_on.document, undefined, 'content boots without document (lazy gRPC client)');
 });
 
 test('the gateway routes quiz/flashcard paths to content and exam paths to assessment, and waits for both', () => {
-    assert.strictEqual(envValue('gateway', 'CONTENT_SERVICE_URL'), 'http://content:3000');
-    assert.strictEqual(envValue('gateway', 'ASSESSMENT_SERVICE_URL'), 'http://assessment:3000');
-    assert.strictEqual(envValue('gateway', 'EXAM_SERVICE_URL'), undefined);
-    assert.strictEqual(services.gateway.depends_on.content.condition, 'service_healthy');
-    assert.strictEqual(services.gateway.depends_on.assessment.condition, 'service_healthy');
+    assert.strictEqual(envValue('gateway-a', 'CONTENT_SERVICE_URL'), 'http://content:3000');
+    assert.strictEqual(envValue('gateway-a', 'ASSESSMENT_SERVICE_URL'), 'http://assessment:3000');
+    assert.strictEqual(envValue('gateway-a', 'EXAM_SERVICE_URL'), undefined);
+    assert.strictEqual(services['gateway-a'].depends_on.content.condition, 'service_healthy');
+    assert.strictEqual(services['gateway-a'].depends_on.assessment.condition, 'service_healthy');
 });
 
 test('content serves gRPC and reaches vocabulary; admin and gateway point at vocabulary', () => {
     assert.strictEqual(envValue('content', 'VOCABULARY_GRPC_URL'), 'vocabulary:50051');
     assert.strictEqual(services.content.depends_on.vocabulary, undefined, 'content boots without vocabulary');
     assert.strictEqual(envValue('admin', 'VOCABULARY_GRPC_URL'), 'vocabulary:50051');
-    assert.strictEqual(envValue('gateway', 'VOCABULARY_SERVICE_URL'), 'http://vocabulary:3000');
-    assert.strictEqual(services.gateway.depends_on.vocabulary.condition, 'service_healthy');
+    assert.strictEqual(envValue('gateway-a', 'VOCABULARY_SERVICE_URL'), 'http://vocabulary:3000');
+    assert.strictEqual(services['gateway-a'].depends_on.vocabulary.condition, 'service_healthy');
 });
 
 test('the gateway routes studyrooms and /ws/study to study-room, and waits for it', () => {
-    assert.strictEqual(envValue('gateway', 'STUDYROOM_SERVICE_URL'), 'http://study-room:3000');
-    assert.strictEqual(services.gateway.depends_on['study-room'].condition, 'service_healthy');
+    assert.strictEqual(envValue('gateway-a', 'STUDYROOM_SERVICE_URL'), 'http://study-room:3000');
+    assert.strictEqual(services['gateway-a'].depends_on['study-room'].condition, 'service_healthy');
 });
 
 test('seed runs after every migration of a service that has reference data, one URL per service (content and assessment have none)', () => {
@@ -391,8 +395,8 @@ test('ai-chat (aichat role + schema) has its own migrate one-shot, api+worker ro
     const migrate = services['ai-chat-migrate'];
     assert.ok(svc && migrate, 'ai-chat / ai-chat-migrate are missing');
     assert.strictEqual(migrate.restart, 'no');
-    assert.strictEqual(migrate.build.args.SERVICE, 'ai-chat');
-    assert.strictEqual(svc.build.args.SERVICE_NAME, 'ai-chat-service');
+    assert.strictEqual(migrate.build.args.SERVICE, 'ai-chat-service');
+    assert.strictEqual(svc.build.args.SERVICE, 'ai-chat-service');
     assert.strictEqual(svc.depends_on['ai-chat-migrate'].condition, 'service_completed_successfully');
     for (const name of ['ai-chat', 'ai-chat-migrate']) {
         const url = envValue(name, 'DATABASE_URL');
@@ -420,8 +424,8 @@ test('ai-chat (aichat role + schema) has its own migrate one-shot, api+worker ro
 });
 
 test('AI chat and subjects are served by ai-chat: the gateway routes there and waits for it; content no longer knows ai-service over HTTP', () => {
-    assert.strictEqual(envValue('gateway', 'AICHAT_SERVICE_URL'), 'http://ai-chat:3000');
-    assert.strictEqual(services.gateway.depends_on['ai-chat'].condition, 'service_healthy');
+    assert.strictEqual(envValue('gateway-a', 'AICHAT_SERVICE_URL'), 'http://ai-chat:3000');
+    assert.strictEqual(services['gateway-a'].depends_on['ai-chat'].condition, 'service_healthy');
     assert.strictEqual(envValue('content', 'AI_SERVICE_URL'), undefined);
     assert.strictEqual(envValue('content', 'AI_CHAT_DOCUMENT_WAIT_MS'), undefined, 'the OCR wait moved to ai-chat');
 });
@@ -435,4 +439,158 @@ test('no shared HTTP secret or HTTP route into ai-service is left anywhere in th
     // the stack still inlines no secret through the shared .env file either: its example no longer lists the token
     const example = fs.readFileSync(path.join(__dirname, '.env.example'), 'utf8');
     assert.ok(!/INTERNAL_SERVICE_TOKEN|AI_SERVICE_URL|AI_HTTP_COMPAT/.test(example));
+});
+
+// ---- phase 16: per-service env files ----------------------------------------------------------
+const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'services.json'), 'utf8'));
+const envFiles = (name) =>
+    (services[name].env_file ?? []).map((e) => (typeof e === 'string' ? { path: e } : e));
+const templateKeys = (file) =>
+    fs
+        .readFileSync(file, 'utf8')
+        .split('\n')
+        .map((l) => /^([A-Z][A-Z0-9_]*)=/.exec(l)?.[1])
+        .filter(Boolean);
+
+test('every service container reads only its own env/<name>.env, required; none reads the shared deploy/.env', () => {
+    for (const group of Object.values(manifest)) {
+        for (const [key, meta] of Object.entries(group)) {
+            const want = `env/${meta.env ?? key}.env`;
+            // a manifest key with `instances` (the gateway) is several compose services sharing one env file
+            for (const name of meta.instances ?? [key]) {
+                const files = envFiles(name);
+                assert.deepStrictEqual(files.map((f) => f.path), [want], `${name} env_file`);
+                assert.strictEqual(files[0].required, true, `${name}: env_file must be required (fail fast)`);
+            }
+            assert.ok(fs.existsSync(path.join(__dirname, `${want}.example`)), `${want}.example is missing`);
+        }
+    }
+    assert.deepStrictEqual(envFiles('ai-worker').map((f) => f.path), ['env/ai.env']);
+    for (const [name] of Object.entries(services)) {
+        for (const file of envFiles(name)) {
+            assert.notStrictEqual(file.path, '.env', `${name} still receives the shared .env`);
+        }
+    }
+    // infra and the one-shot migrations take no env file (inline variables only)
+    for (const name of Object.keys(services).filter((n) => n.endsWith('-migrate') || ['postgres', 'redis', 'rabbitmq', 'rabbitmq-defs'].includes(n))) {
+        assert.strictEqual(services[name].env_file, undefined, `${name} must not have an env_file`);
+    }
+});
+
+test('the dev seed reads auth.env (ADMIN_*) and nothing else', () => {
+    assert.deepStrictEqual(envFiles('seed').map((f) => f.path), ['env/auth.env']);
+    assert.strictEqual(envValue('seed', 'ADMIN_DEFAULT_PASSWORD'), undefined);
+});
+
+test('a variable lives either inline in compose or in the service env file, never both', () => {
+    for (const group of Object.values(manifest)) {
+        for (const [key, meta] of Object.entries(group)) {
+            const keys = templateKeys(path.join(__dirname, `env/${meta.env ?? key}.env.example`));
+            const names = [...(meta.instances ?? [key]), ...(meta.workerService ? [meta.workerService] : [])];
+            for (const name of names) {
+                const inline = new Set(envList(name).map((e) => e.split('=')[0]));
+                for (const k of keys) assert.ok(!inline.has(k), `${name}: ${k} is set inline and listed in its env file`);
+            }
+        }
+    }
+});
+
+test('secrets of one service are in its env file only (PAYMENT, GOOGLE, EMAIL, R2 keys, GEMINI, QUIZ)', () => {
+    const owner = { PAYMENT_: ['finance'], GOOGLE_: ['auth'], EMAIL_: ['auth'], R2_ACCESS_KEY_ID: ['r2'], R2_SECRET_ACCESS_KEY: ['r2'], GEMINI_API_KEYS: ['ai'], QUIZ_: ['assessment'] };
+    for (const [prefix, owners] of Object.entries(owner)) {
+        for (const group of Object.values(manifest)) {
+            for (const [key, meta] of Object.entries(group)) {
+                const has = templateKeys(path.join(__dirname, `env/${meta.env ?? key}.env.example`)).some((k) => k.startsWith(prefix));
+                assert.strictEqual(has, owners.includes(key), `${prefix}* in env/${meta.env ?? key}.env.example`);
+            }
+        }
+    }
+});
+
+test('deploy/.env.example declares every compose-required variable (ci-dummy.env.sh renders from it)', () => {
+    const example = new Set(templateKeys(path.join(__dirname, '.env.example')));
+    const required = new Set();
+    for (const rel of includedPaths) {
+        for (const m of fs.readFileSync(path.join(__dirname, rel), 'utf8').matchAll(/\$\{([A-Z][A-Z0-9_]*):\?/g)) required.add(m[1]);
+    }
+    for (const v of required) assert.ok(example.has(v), `${v} is required by compose but missing from deploy/.env.example`);
+});
+
+// ---------------------------------------------------------------------------
+// Phase 16 part C: zero-downtime gateway, memory budget, worker liveness
+// ---------------------------------------------------------------------------
+
+test('gateway-a and gateway-b are one definition: same image, env and dependencies, distinct container names', () => {
+    assert.strictEqual(services.gateway, undefined, 'the single `gateway` service is gone');
+    const { container_name: nameA, ...a } = services['gateway-a'];
+    const { container_name: nameB, ...b } = services['gateway-b'];
+    assert.strictEqual(nameA, 'examio-gateway-a');
+    assert.strictEqual(nameB, 'examio-gateway-b');
+    assert.deepStrictEqual(a, b);
+    assert.match(a.image, /examio-gateway:\$\{GATEWAY_TAG:-main\}$/);
+    assert.strictEqual(a.ports, undefined);
+});
+
+test('both gateway instances sit on edge + internal; `gateway` stays resolvable for the auth/admin control calls', () => {
+    for (const name of ['gateway-a', 'gateway-b']) {
+        assert.deepStrictEqual(networksOf(name).sort(), ['edge', 'internal']);
+        assert.deepStrictEqual(services[name].networks.internal.aliases, ['gateway']);
+        assert.strictEqual(services[name].stop_grace_period, '30s');
+    }
+    assert.match(envList('auth').join('\n'), /GATEWAY_GRPC_URL=gateway:50051/);
+    assert.match(envList('admin').join('\n'), /GATEWAY_GRPC_URL=gateway:50051/);
+});
+
+test('nothing depends on the removed `gateway` service name', () => {
+    for (const [name, service] of Object.entries(services)) {
+        assert.ok(!('gateway' in (service.depends_on ?? {})), `${name} depends_on gateway`);
+    }
+});
+
+test('every container has a mem_limit; the node services stay between 256m and 512m, the ai pair is sized for models', () => {
+    const bytes = (v) => {
+        const m = /^(\d+)([mg])$/.exec(String(v));
+        assert.ok(m, `mem_limit "${v}" must look like 512m or 2g`);
+        return Number(m[1]) * (m[2] === 'g' ? 1024 : 1);
+    };
+    for (const [name, service] of Object.entries(services)) {
+        assert.ok(service.mem_limit, `${name} has no mem_limit`);
+        bytes(service.mem_limit);
+    }
+    for (const name of ['admin', 'auth', 'content', 'gateway-a', 'gateway-b', 'r2', 'study-room']) {
+        const mb = bytes(services[name].mem_limit);
+        assert.ok(mb >= 256 && mb <= 512, `${name} ${services[name].mem_limit}`);
+    }
+    assert.strictEqual(services.ai.mem_limit, '1536m');
+    assert.strictEqual(services['ai-worker'].mem_limit, '2g');
+});
+
+test('ai-worker has a real liveness check: the heartbeat file must be younger than 2 minutes', () => {
+    const hc = services['ai-worker'].healthcheck;
+    assert.notStrictEqual(hc.disable, true);
+    assert.match(hc.test.join(' '), /find \/tmp\/worker-heartbeat -mmin -2/);
+    assert.match(hc.test.join(' '), /grep -q/);
+});
+
+test('admin stays api-only: it has no worker code, so services.json marks it worker=false', () => {
+    const registry = JSON.parse(fs.readFileSync(path.join(__dirname, 'services.json'), 'utf8'));
+    assert.strictEqual(registry.node.admin.worker, false);
+    assert.strictEqual(registry.node.vocabulary.worker, true);
+    assert.ok(!envList('admin').some((e) => e.startsWith('ROLE=')));
+    assert.ok(envList('vocabulary').includes('ROLE=api,worker'));
+    assert.deepStrictEqual(registry.node.gateway.instances, ['gateway-a', 'gateway-b']);
+});
+
+test('the FE nginx proxies through the gw upstream with re-resolution and no BACKEND_URL', () => {
+    const nginx = fs.readFileSync(path.join(__dirname, '..', '..', 'examio-fe', 'nginx.conf'), 'utf8');
+    assert.match(nginx, /resolver 127\.0\.0\.11 valid=5s/);
+    assert.match(nginx, /upstream gw \{[^}]*zone gw 64k;[^}]*examio-gateway-a:3000[^}]*resolve;[^}]*examio-gateway-b:3000[^}]*resolve;/s);
+    assert.match(nginx, /proxy_pass http:\/\/gw\/api\/;/);
+    assert.match(nginx, /proxy_pass http:\/\/gw\/ws\/;/);
+    assert.ok(!/BACKEND_URL/.test(nginx));
+    assert.ok(!/^[^#\n]*non_idempotent/m.test(nginx), 'a POST must never be retried');
+    const api = /location \/api\/ \{([\s\S]*?)\n    \}/.exec(nginx)[1];
+    const ws = /location \/ws\/ \{([\s\S]*?)\n    \}/.exec(nginx)[1];
+    assert.match(api, /proxy_next_upstream error timeout http_502 http_503;/);
+    assert.ok(!/proxy_next_upstream/.test(ws), 'sockets are not retried');
 });

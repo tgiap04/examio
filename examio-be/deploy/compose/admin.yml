@@ -16,15 +16,17 @@ x-nestjs-healthcheck: &nestjs-healthcheck
 
 services:
     admin:
+        image: ghcr.io/cychipo/examio-admin:${ADMIN_TAG:-main}
         build:
             context: ..
-            dockerfile: deploy/Dockerfile
+            dockerfile: deploy/Dockerfile.node
             args:
-                SERVICE_NAME: admin-service
+                SERVICE: admin-service
         container_name: examio-admin
         environment:
             - NODE_ENV=production
             - PORT=3000
+            - FRONTEND_URL=${FRONTEND_URL}
             - DATABASE_URL=postgresql://admin_svc:${ADMIN_DB_PASSWORD:?ADMIN_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=admin
             - REDIS_HOST=redis
             - REDIS_PORT=6379
@@ -45,7 +47,8 @@ services:
             - GATEWAY_GRPC_URL=gateway:50051
             - VOCABULARY_GRPC_URL=vocabulary:50051
         env_file:
-            - .env
+            - path: env/admin.env
+              required: true
         depends_on:
             admin-migrate:
                 condition: service_completed_successfully
@@ -67,23 +70,29 @@ services:
                     '--spider',
                     'http://localhost:3000/health/ready',
                 ]
+        mem_limit: 384m
         restart: unless-stopped
         logging: *default-logging
 
     # One-shot: `prisma migrate deploy` for the admin schema as admin_svc, then exits.
     admin-migrate:
+        image: ghcr.io/cychipo/examio-admin:${ADMIN_TAG:-main}
         build:
             context: ..
-            dockerfile: deploy/Dockerfile.migration
+            dockerfile: deploy/Dockerfile.node
             args:
-                SERVICE: admin
+                SERVICE: admin-service
         container_name: examio-admin-migrate
         environment:
+            - ROLE=migrate
             - DATABASE_URL=postgresql://admin_svc:${ADMIN_DB_PASSWORD:?ADMIN_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=admin
         depends_on:
             postgres:
                 condition: service_healthy
         networks:
             - internal
+        healthcheck:
+            disable: true
+        mem_limit: 512m
         restart: 'no'
         logging: *default-logging

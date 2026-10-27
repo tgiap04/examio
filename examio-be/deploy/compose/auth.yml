@@ -16,15 +16,17 @@ x-nestjs-healthcheck: &nestjs-healthcheck
 
 services:
     auth:
+        image: ghcr.io/cychipo/examio-auth:${AUTH_TAG:-main}
         build:
             context: ..
-            dockerfile: deploy/Dockerfile
+            dockerfile: deploy/Dockerfile.node
             args:
-                SERVICE_NAME: auth-service
+                SERVICE: auth-service
         container_name: examio-auth
         environment:
             - NODE_ENV=production
             - PORT=3000
+            - FRONTEND_URL=${FRONTEND_URL}
             - DATABASE_URL=postgresql://auth_svc:${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=auth
             - REDIS_HOST=redis
             - REDIS_PORT=6379
@@ -42,11 +44,10 @@ services:
             # Fast-path revoke / invalidate calls into the gateway (phase 05)
             - GATEWAY_CONTROL_ENABLED=${GATEWAY_CONTROL_ENABLED:-true}
             - GATEWAY_GRPC_URL=gateway:50051
-            # Boot-time admin bootstrap (moved from admin-service in phase 04)
-            - ADMIN_EMAILS=${ADMIN_EMAILS}
-            - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD}
+            # Boot-time admin bootstrap (ADMIN_EMAILS, ADMIN_DEFAULT_PASSWORD) is read from env/auth.env.
         env_file:
-            - .env
+            - path: env/auth.env
+              required: true
         depends_on:
             auth-migrate:
                 condition: service_completed_successfully
@@ -71,23 +72,29 @@ services:
                     '--spider',
                     'http://localhost:3000/health/ready',
                 ]
+        mem_limit: 512m
         restart: unless-stopped
         logging: *default-logging
 
     # One-shot: `prisma migrate deploy` for the auth schema as auth_svc, then exits.
     auth-migrate:
+        image: ghcr.io/cychipo/examio-auth:${AUTH_TAG:-main}
         build:
             context: ..
-            dockerfile: deploy/Dockerfile.migration
+            dockerfile: deploy/Dockerfile.node
             args:
-                SERVICE: auth
+                SERVICE: auth-service
         container_name: examio-auth-migrate
         environment:
+            - ROLE=migrate
             - DATABASE_URL=postgresql://auth_svc:${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=auth
         depends_on:
             postgres:
                 condition: service_healthy
         networks:
             - internal
+        healthcheck:
+            disable: true
+        mem_limit: 512m
         restart: 'no'
         logging: *default-logging

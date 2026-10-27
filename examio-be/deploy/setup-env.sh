@@ -18,6 +18,15 @@ else
     exit 1
 fi
 
+# Per-service runtime env (deploy/env/<name>.env, gitignored): create the missing ones from the templates.
+for example in "$SCRIPT_DIR"/env/*.env.example; do
+    target="${example%.example}"
+    if [ ! -f "$target" ]; then
+        cp "$example" "$target"
+        echo "! Created env/$(basename "$target") from its template: fill the empty KEY= lines"
+    fi
+done
+
 # Render the RabbitMQ users/permissions (definitions.json holds password
 # hashes only and is gitignored). Fails fast when a broker password is missing.
 if command -v docker >/dev/null 2>&1; then

@@ -30,6 +30,8 @@ python-venv/
 deploy/env/*
 !deploy/env/*.env.example
 !deploy/env/README.md
+# Image tags pinned per service by deploy/deploy-service.sh (<KEY>_TAG=<sha>); host state, never committed.
+deploy/.tags.env
 **/python-venv/
 __pycache__/
 **/__pycache__/

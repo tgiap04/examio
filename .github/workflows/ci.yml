@@ -37,6 +37,60 @@ jobs:
           archive: false
           comment: true
 
+  # Which services this change touches (examio-be/scripts/changed-services.sh, services.json). Informational:
+  # the be-* jobs below still run for every service on every run, so a shared-lib change can never skip one.
+  # deploy.yml runs the same script on the push range to pick the images to build and the deploy waves.
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.changes.outputs.services }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Changed services (PR base or push before)
+        id: changes
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          services="$(bash examio-be/scripts/changed-services.sh "$BASE" "$GITHUB_SHA")"
+          echo "services=$services" >> "$GITHUB_OUTPUT"
+          echo "changed services: $services" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  # Expand/contract guard: a PR that drops/renames/retypes a column fails unless it carries the label
+  # `migration:contract` (second PR of the two-PR flow, examio-be/deploy/README.md). After adding the
+  # label, re-run this job: label events do not trigger the workflow.
+  migrations:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Lint migrations added in the PR
+        env:
+          MIGRATION_CONTRACT: ${{ contains(github.event.pull_request.labels.*.name, 'migration:contract') && '1' || '' }}
+        run: bash examio-be/scripts/lint-migrations.sh "${{ github.event.pull_request.base.sha }}" "$GITHUB_SHA"
+
+  # The deploy tooling itself: changed-services, lint-migrations and deploy-service.sh (fake docker/curl,
+  # nothing real is touched) have fixture tests, and the scripts must stay shellcheck clean.
+  deploy-scripts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examio-be
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/changed-services.test.sh
+      - run: bash scripts/lint-migrations.test.sh
+      - run: bash deploy/deploy-service.test.sh
+      - run: node --test deploy/compose-topology.spec.cjs
+      - name: shellcheck
+        run: |
+          shellcheck scripts/changed-services.sh scripts/changed-services.test.sh \
+            scripts/lint-migrations.sh scripts/lint-migrations.test.sh \
+            deploy/deploy-service.sh deploy/deploy-service.test.sh deploy/ci-dummy.env.sh deploy/docker-entrypoint.sh
+
   # Typecheck + compile every Node service. `yarn build` alone only builds the
   # default project, so each service is built explicitly.
   be-check:
@@ -550,22 +604,22 @@ jobs:
       - name: docker compose config renders (dummy env)
         working-directory: examio-be/deploy
         run: |
-          for v in FRONTEND_URL DATABASE_URL REDIS_PASSWORD JWT_PRIVATE_KEY JWT_KID SERVICE_CLIENTS \
-            RABBITMQ_USER RABBITMQ_PASS RABBITMQ_AUTH_PASS RABBITMQ_FINANCE_PASS RABBITMQ_CONTENT_PASS RABBITMQ_ASSESSMENT_PASS RABBITMQ_STUDYROOM_PASS RABBITMQ_DOCUMENT_PASS \
-            RABBITMQ_AI_PASS RABBITMQ_GATEWAY_PASS RABBITMQ_AICHAT_PASS STUDYROOM_SERVICE_CLIENT_SECRET VOCABULARY_SERVICE_CLIENT_SECRET DOCUMENT_SERVICE_CLIENT_SECRET AICHAT_SERVICE_CLIENT_SECRET CONTENT_SERVICE_CLIENT_SECRET ASSESSMENT_SERVICE_CLIENT_SECRET FINANCE_SERVICE_CLIENT_SECRET \
-            ADMIN_SERVICE_CLIENT_SECRET POSTGRES_USER POSTGRES_PASSWORD POSTGRES_DB ADMIN_EMAILS \
-            ADMIN_DEFAULT_PASSWORD GEMINI_API_KEYS GEMINI_MODEL_NAMES \
-            AUTH_DB_PASSWORD FINANCE_DB_PASSWORD ADMIN_DB_PASSWORD CONTENT_DB_PASSWORD \
-            ASSESSMENT_DB_PASSWORD STUDYROOM_DB_PASSWORD VOCABULARY_DB_PASSWORD AICHAT_DB_PASSWORD \
-            DOCUMENT_DB_PASSWORD AI_DB_PASSWORD; do echo "$v=ci-dummy"; done > .env
+          # One dummy list for CI and the cutover rehearsal: every KEY= of deploy/.env.example (compose-level)
+          # and of each deploy/env/<name>.env.example (per-service runtime env, env_file required: true).
+          # A ${VAR:?} that the templates do not declare, or a missing template, fails here.
+          bash ci-dummy.env.sh > .env
+          bash ci-dummy.env.sh --service-envs
           docker compose config --quiet
-          rm -f .env
-      - name: nginx accepts the Cloudflare real-ip include
+          docker compose --profile seed config --quiet
+          rm -f .env env/*.env
+      - name: nginx accepts the real-ip include and the gateway upstream
         run: |
+          # `resolve` in the upstream needs nginx >= 1.27.3: keep the tag in step with examio-fe/Dockerfile.
           docker run --rm \
             -v "$PWD/examio-fe/nginx.conf:/etc/nginx/templates/default.conf.template" \
             -v "$PWD/examio-fe/nginx/cloudflare-real-ip.conf:/etc/nginx/cloudflare-real-ip.conf" \
-            -e BACKEND_URL=http://127.0.0.1:3000 nginx:1.27-alpine nginx -t
+            --add-host examio-gateway-a:127.0.0.1 --add-host examio-gateway-b:127.0.0.1 \
+            nginx:1.27-alpine nginx -t
 
   fe:
     runs-on: ubuntu-latest

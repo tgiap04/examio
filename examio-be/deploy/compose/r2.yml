@@ -16,11 +16,12 @@ x-nestjs-healthcheck: &nestjs-healthcheck
 
 services:
     r2:
+        image: ghcr.io/cychipo/examio-r2:${R2_TAG:-main}
         build:
             context: ..
-            dockerfile: deploy/Dockerfile
+            dockerfile: deploy/Dockerfile.node
             args:
-                SERVICE_NAME: r2-service
+                SERVICE: r2-service
         container_name: examio-r2
         environment:
             - NODE_ENV=production
@@ -30,7 +31,8 @@ services:
             - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
             - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
         env_file:
-            - .env
+            - path: env/r2.env
+              required: true
         networks:
             - internal
             - egress
@@ -44,5 +46,6 @@ services:
                     '--spider',
                     'http://localhost:3000/health/ready',
                 ]
+        mem_limit: 384m
         restart: unless-stopped
         logging: *default-logging

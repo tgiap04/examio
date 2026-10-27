@@ -17,11 +17,12 @@ x-nestjs-healthcheck: &nestjs-healthcheck
 
 services:
     vocabulary:
+        image: ghcr.io/cychipo/examio-vocabulary:${VOCABULARY_TAG:-main}
         build:
             context: ..
-            dockerfile: deploy/Dockerfile
+            dockerfile: deploy/Dockerfile.node
             args:
-                SERVICE_NAME: vocabulary-service
+                SERVICE: vocabulary-service
         container_name: examio-vocabulary
         environment:
             - NODE_ENV=production
@@ -46,7 +47,8 @@ services:
             - AUTH_TOKEN_URL=http://auth:3000/internal/token
             - SERVICE_CLIENT_SECRET=${VOCABULARY_SERVICE_CLIENT_SECRET:?VOCABULARY_SERVICE_CLIENT_SECRET is required}
         env_file:
-            - .env
+            - path: env/vocabulary.env
+              required: true
         depends_on:
             vocabulary-migrate:
                 condition: service_completed_successfully
@@ -70,23 +72,29 @@ services:
                     '--spider',
                     'http://localhost:3000/health/ready',
                 ]
+        mem_limit: 384m
         restart: unless-stopped
         logging: *default-logging
 
     # One-shot: `prisma migrate deploy` for the vocabulary schema as vocabulary_svc, then exits.
     vocabulary-migrate:
+        image: ghcr.io/cychipo/examio-vocabulary:${VOCABULARY_TAG:-main}
         build:
             context: ..
-            dockerfile: deploy/Dockerfile.migration
+            dockerfile: deploy/Dockerfile.node
             args:
-                SERVICE: vocabulary
+                SERVICE: vocabulary-service
         container_name: examio-vocabulary-migrate
         environment:
+            - ROLE=migrate
             - DATABASE_URL=postgresql://vocabulary_svc:${VOCABULARY_DB_PASSWORD:?VOCABULARY_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=vocabulary
         depends_on:
             postgres:
                 condition: service_healthy
         networks:
             - internal
+        healthcheck:
+            disable: true
+        mem_limit: 512m
         restart: 'no'
         logging: *default-logging

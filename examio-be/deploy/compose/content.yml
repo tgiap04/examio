@@ -17,12 +17,12 @@ x-nestjs-healthcheck: &nestjs-healthcheck
 
 services:
     content:
+        image: ghcr.io/cychipo/examio-content:${CONTENT_TAG:-main}
         build:
             context: ..
-            dockerfile: deploy/Dockerfile
+            dockerfile: deploy/Dockerfile.node
             args:
-                SERVICE_NAME: content-service
-                ENABLE_OCR: 'false'
+                SERVICE: content-service
         container_name: examio-content
         environment:
             - NODE_ENV=production
@@ -60,7 +60,8 @@ services:
             - AUTH_TOKEN_URL=http://auth:3000/internal/token
             - SERVICE_CLIENT_SECRET=${CONTENT_SERVICE_CLIENT_SECRET:?CONTENT_SERVICE_CLIENT_SECRET is required}
         env_file:
-            - .env
+            - path: env/content.env
+              required: true
         depends_on:
             content-migrate:
                 condition: service_completed_successfully
@@ -90,23 +91,29 @@ services:
                     '--spider',
                     'http://localhost:3000/health/ready',
                 ]
+        mem_limit: 512m
         restart: unless-stopped
         logging: *default-logging
 
     # One-shot: `prisma migrate deploy` for the content schema as content_svc, then exits.
     content-migrate:
+        image: ghcr.io/cychipo/examio-content:${CONTENT_TAG:-main}
         build:
             context: ..
-            dockerfile: deploy/Dockerfile.migration
+            dockerfile: deploy/Dockerfile.node
             args:
-                SERVICE: content
+                SERVICE: content-service
         container_name: examio-content-migrate
         environment:
+            - ROLE=migrate
             - DATABASE_URL=postgresql://content_svc:${CONTENT_DB_PASSWORD:?CONTENT_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=content
         depends_on:
             postgres:
                 condition: service_healthy
         networks:
             - internal
+        healthcheck:
+            disable: true
+        mem_limit: 512m
         restart: 'no'
         logging: *default-logging
