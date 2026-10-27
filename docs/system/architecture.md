@@ -1,6 +1,6 @@
 ---
 title: System Architecture
-last_updated: 2026-10-24
+last_updated: 2026-10-27
 source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/); manually patched 2026-07-19 for Study-Together Room (first WebSocket transport); patched 2026-07-21 for Study Room playlist/access/moderation extension; patched 2026-10-20 for gateway rewrite (microservice-refactor phase 05); patched 2026-10-23 for phase 10 (cross-DB access cut) and phase 11 (database per service); patched 2026-10-24 for phase 12 (study-room-service and vocabulary-service extracted from exam); patched 2026-10-25 for phase 14 (exam-service split into content-service and assessment-service)
 status: ACTIVE
 ---
@@ -108,7 +108,7 @@ graph TB
 
 ## Service Topology
 
-Compose publishes only the gateway on the host, bound to loopback (`127.0.0.1:6369` -> 3000); see [Edge and network topology](#edge-and-network-topology). Ports are unified in containers (`deploy/docker-compose.yml`): every Nest service listens on HTTP `3000`; services with a gRPC server (auth, finance, r2, admin, vocabulary, document, content, ai, and the gateway's control server) use `50051` (content is the server of `ContentService`); assessment, ai-chat and study-room have no gRPC server. `ai-service` serves gRPC on `GRPC_PORT` (50051) and `/health` plus the compat routes on `PORT` (3000 in compose; the `.env.example` default is `3434`). Each container has its own network namespace, so there is no collision. Local `yarn dev:*` runs set `PORT`/`GRPC_PORT` per service in each `.env`.
+Compose publishes no backend port on the host: the only host port is the FE nginx (`FE_PORT`, default 6368), which proxies to the two gateway instances `gateway-a` and `gateway-b` (network alias `gateway`); see [Edge and network topology](#edge-and-network-topology). Ports are unified in containers (`deploy/docker-compose.yml`): every Nest service listens on HTTP `3000`; services with a gRPC server (auth, finance, r2, admin, vocabulary, document, content, ai, and the gateway's control server) use `50051` (content is the server of `ContentService`); assessment, ai-chat and study-room have no gRPC server. `ai-service` serves gRPC on `GRPC_PORT` (50051) and `/health` plus the compat routes on `PORT` (3000 in compose; the `.env.example` default is `3434`). Each container has its own network namespace, so there is no collision. Local `yarn dev:*` runs set `PORT`/`GRPC_PORT` per service in each `.env`.
 
 | Service | HTTP Port | gRPC Port | Runtime | Role |
 |---------|----------:|----------:|---------|------|
@@ -461,7 +461,8 @@ sequenceDiagram
 | Redis 7+ | Cache + pub/sub for events |
 | RabbitMQ 3.13 | Async event bus |
 | Cloudflare R2 | User file storage |
-| Docker Compose | Deploy stack (gateway + 5 services + 3 infra + one `<svc>-migrate` one-shot per DB-owning service; split into `deploy/compose/*.yml`), networks edge / internal / egress |
+| Docker Compose | Deploy stack (two gateway instances + 11 services (+ `ai-worker`) + 3 infra + one `<svc>-migrate` one-shot per DB-owning service; split into `deploy/compose/*.yml`), networks edge / internal / egress |
+| GHCR | Per-service images `ghcr.io/cychipo/examio-<key>` built by `deploy.yml` |
 
 ## Database per service (phase 11)
 
@@ -562,14 +563,22 @@ graph TB
     ADMIN --> REDIS
 ```
 
-Docker Compose file: `examio-be/deploy/docker-compose.yml` (production-grade)
+Docker Compose file: `examio-be/deploy/docker-compose.yml` (production-grade; Docker Compose 2.24+)
+
+### Images, env and deploy (phase 16)
+
+- **One recipe per runtime.** Every Node service is built from `examio-be/deploy/Dockerfile.node` (build arg `SERVICE`; targets `runtime` and `seed`); ai-service from `apps/ai-service/Dockerfile` with context `examio-be`. `deploy/docker-entrypoint.sh` switches on `ROLE`: `api` | `worker` | `api,worker` | `migrate` | `seed` (`SEED_PROFILE=prod|dev`), so one image serves a service's API, worker and `<svc>-migrate` one-shot. The old `examio-be/Dockerfile`, `deploy/Dockerfile`, `Dockerfile.migration`, `Dockerfile.seed` and `entrypoint-seed.sh` are deleted.
+- **Registry.** Images are `ghcr.io/cychipo/examio-<key>:<sha>` (`:main` follows the last deploy); `deploy/services.json` is the catalog read by CI and the deploy script.
+- **Env.** Each container gets `env_file: deploy/env/<name>.env` (required). `deploy/.env` is compose-level only (interpolation); service-only secrets such as `ADMIN_EMAILS`, `ADMIN_DEFAULT_PASSWORD` (`env/auth.env`) and `GEMINI_*`, `AI2_API_KEY` (`env/ai.env`) live in the service's own file, so a compromised container sees only its own. Every container has a `mem_limit`; `ai-worker` has a heartbeat healthcheck.
+- **Pipeline.** `.github/workflows/deploy.yml`: `scripts/changed-services.sh` picks services in two waves (wave 1 = servers of changed proto packages; `auth` first in each wave, `gateway` last) -> per-service GHCR build matrix -> SSH job runs `deploy/deploy-service.sh <svc> <sha>` per service (migrate gate, halt on `P3009`, automatic image rollback, Telegram alerts; it never runs `migrate resolve`, `db push` or `down`). The deploy job is gated by repository variable `CUTOVER_DONE` (production is first deployed once by `examio-be/deploy/cutover-runbook.md`). `ci.yml` adds `detect`, `migrations` (`scripts/lint-migrations.sh` blocks destructive SQL unless the PR is labelled `migration:contract`) and `deploy-scripts` jobs.
+- Operational detail and the rollback rules: `examio-be/deploy/README.md`.
 
 ### Edge and network topology
 
 ```mermaid
 graph LR
     CF[Cloudflare] -->|CF-Connecting-IP| NGX[nginx examio-fe<br/>real_ip + /api/ + /ws/]
-    NGX -->|examio-edge| GW[gateway 127.0.0.1:6369]
+    NGX -->|examio-edge, upstream gw| GW[gateway-a / gateway-b]
     GW -->|examio-internal| SVC[auth / content / assessment / study-room / vocabulary / document / finance / admin / r2 / ai]
     SVC --- DATA[(postgres, redis, rabbitmq)]
     SVC -->|examio-egress| NET[internet: OAuth, SMTP, SePay, R2, Gemini]
@@ -581,7 +590,8 @@ graph LR
 | `internal` (`examio-internal`, `internal: true`) | every service, Postgres, Redis, RabbitMQ | no route out |
 | `egress` (`examio-egress`) | auth, content, assessment, finance, r2, ai | services that really call the internet; admin has none |
 
-- Postgres, Redis and RabbitMQ publish no host ports; the gateway is published only as `127.0.0.1:6369:3000`.
+- No backend container publishes a host port (`deploy/compose-topology.spec.cjs` fails CI if one returns). The only host port is the FE nginx (`FE_PORT`, 6368); the former `127.0.0.1:6369` gateway port is gone.
+- The gateway runs as two instances, `gateway-a` and `gateway-b` (`compose/gateway.yml`), both on `edge` and `internal`; they keep no local state (Redis and RabbitMQ hold revoke/authz/rate-limit state), so either serves any request. nginx upstream `gw` re-resolves both names (`resolve`, needs nginx 1.27.3+), retries idempotent requests on the other instance (`proxy_next_upstream`, `proxy_connect_timeout 3s`), and is never reloaded during a deploy.
 - nginx (`examio-fe/nginx.conf`) includes `nginx/cloudflare-real-ip.conf` (real_ip from `CF-Connecting-IP`, trusted only from Cloudflare ranges) and **overwrites** `X-Forwarded-For` with `$remote_addr` on `/api/` and `/ws/`. The gateway trusts exactly that one hop, so rate-limit keys are the real client IP. `location /ws/` proxies to `${BACKEND_URL}/ws/` with `Upgrade` headers and 3600 s read/send timeouts.
 - Operational detail: `examio-be/deploy/README.md`.
 

@@ -21,12 +21,13 @@ The deployment consists of the following containers:
 - **AI Service** (Python, one image, three containers selected by `ROLE`: `ai` = gRPC `examio.ai.v1.AiService` on 50051 guarded by service tokens, plus `/health` as its only HTTP route; `ai-worker` = RabbitMQ consumer on `ai.events` (OCR/embedding for `document.uploaded`, generation for `content.generation.requested`), outbox relay and purge; `ai-migrate` = one-shot `alembic upgrade head`. Owns schema `ai`; no host port)
 - **`<svc>-migrate`** (`auth-migrate`, `finance-migrate`, `admin-migrate`, `content-migrate`, `assessment-migrate`, `study-room-migrate`, `vocabulary-migrate`, `document-migrate`, `ai-chat-migrate`: one `prisma migrate deploy` per service schema, each runs once and exits; `ai-migrate` is the Alembic equivalent for schema `ai`)
 
-The stack is split by service in `compose/*.yml` (`infra`, `auth`, `finance`, `admin`, `content`, `assessment`, `study-room`, `vocabulary`, `document`, `ai-chat`, `gateway`, `r2`, `ai`, `seed`) and assembled by the `include:` list in `docker-compose.yml` (needs Docker Compose 2.20+). Run every command from `deploy/`; paths stay relative to it.
+The stack is split by service in `compose/*.yml` (`infra`, `auth`, `finance`, `admin`, `content`, `assessment`, `study-room`, `vocabulary`, `document`, `ai-chat`, `gateway`, `r2`, `ai`, `seed`) and assembled by the `include:` list in `docker-compose.yml` (needs Docker Compose 2.24+). Run every command from `deploy/`; paths stay relative to it.
 
 ## Prerequisites
 
 - Docker Engine 20.10+
-- Docker Compose 2.20+ (`include:`)
+- Docker Compose 2.24+ (`include:`, and `env_file` entries with `required:`)
+- `jq` and `git` on the deploy host (`deploy-service.sh`, the cutover runbook)
 - At least 4GB RAM available
 - 20GB disk space
 
@@ -36,7 +37,8 @@ The stack is split by service in `compose/*.yml` (`infra`, `auth`, `finance`, `a
 
 **Option A: Automatic (Recommended)**
 
-Run the setup script to automatically copy the `.env` file:
+Run the setup script to copy the `.env` file and create the missing per-service `env/<name>.env` files
+from their templates:
 
 ```bash
 # For Linux/Mac
@@ -56,13 +58,28 @@ cd examio-be/deploy
 cp ../.env .env
 
 # Or create from example
-cp ../.env.example .env
+cp .env.example .env
 # Then edit .env with your configuration
+
+# Per-service runtime env (see "Per-service env files" below)
+for f in env/*.env.example; do cp -n "$f" "${f%.example}"; done
 ```
+
+**Per-service env files.** `deploy/.env` holds only compose-level variables (database and broker passwords,
+Postgres superuser, Redis password, JWT keypair, service-token secrets, `FRONTEND_URL`): compose uses it to
+interpolate the `${VAR}` in `compose/*.yml` and does not hand it to the containers. Each container gets one file
+`env/<name>.env` through `env_file` (`required: true`, so a missing file stops `up` before anything starts), with
+the secrets only that service reads (`PAYMENT_*` in `finance.env`, `GOOGLE_*`/`EMAIL_*`/`REFRESH_TOKEN_ENC_KEY`
+in `auth.env`, `R2_*` keys in `r2.env`, `GEMINI_*` in `ai.env`, `QUIZ_*`/`TURNSTILE_*` in `assessment.env`).
+A compromised container sees its own file only. Real `*.env` files and `.tags.env` are gitignored; the
+templates are `env/*.env.example` (see `env/README.md`).
 
 ### 2. Configure Environment Variables
 
-Edit the `.env` file and update the following critical values:
+Edit `.env` for the compose-level values below (database and broker passwords, Redis, JWT keypair, service-token
+secrets, RabbitMQ, `R2_PUBLIC_URL`, `FRONTEND_URL`). Secrets that one service reads (`ADMIN_*`, `GEMINI_*`,
+`AI2_API_KEY`, `QUIZ_*`, `PAYMENT_*`, `R2_*` keys, `GOOGLE_*`, `EMAIL_*`) go into that service's `env/<name>.env`
+instead; the blocks below say which file.
 
 #### Database Configuration (PostgreSQL Container)
 ```bash
@@ -109,11 +126,10 @@ GATEWAY_SERVICE_CLIENT_SECRET=<secret>
 # AUTH_JWKS_URL / AUTH_TOKEN_URL are plain http on the INTERNAL network (compose: http://auth:3000/...).
 # Never point them at a public http host: whoever controls the JWKS controls who is an admin.
 # A public JWKS must be https.
-REFRESH_TOKEN_SECRET=change_this_to_another_secure_string
-REFRESH_TOKEN_EXPIRATION=7d
-QUIZ_JWT_SECRET=change_this_to_quiz_secret_32_chars_min
-QUIZ_AES_KEY=change_this_to_aes_key_32_chars_min
 ```
+
+Per-service, not here: `REFRESH_TOKEN_ENC_KEY` in `env/auth.env`; `QUIZ_JWT_SECRET` and `QUIZ_AES_KEY` (32 characters
+minimum each) in `env/assessment.env`.
 
 #### RabbitMQ Configuration
 ```bash
@@ -140,10 +156,12 @@ Phase 15 variables: `DOCUMENT_GRPC_URL` and `AI_GRPC_URL` (content), `DOCUMENT_S
 
 Phase 13 variables: `AICHAT_SERVICE_URL` (gateway), `AICHAT_SERVICE_CLIENT_SECRET` (+ the `ai-chat` entry in auth `SERVICE_CLIENTS`), `RABBITMQ_AICHAT_PASS` (broker user `aichat`), `AICHAT_DB_PASSWORD`, and for ai-chat `AI_GRPC_URL`, `DOCUMENT_GRPC_URL`, `FINANCE_GRPC_URL`, `R2_GRPC_URL`, `R2_PUBLIC_URL` and `AI_CHAT_DOCUMENT_WAIT_MS` (default 120000: how long one message waits for its documents' OCR). `AI_HTTP_COMPAT`, `AI_SERVICE_URL` and `INTERNAL_SERVICE_TOKEN` no longer exist: ai-service has no HTTP route but `/health`, and no service shares an HTTP secret. If an old `deploy/.env` still carries them, delete the lines and rotate the token.
 
+`GEMINI_API_KEYS`, `GEMINI_MODEL_NAMES` and `AI2_API_KEY` live in `env/ai.env` (ai and ai-worker only). The tunables below
+are optional lines in `.env` that compose passes to `ai` (defaults in `compose/ai.yml`).
+
 ```bash
 # AI2 is used only for quiz/flashcard/content generation.
 AI2_BASE_URL=https://ai2.devt.vn/v1
-AI2_API_KEY=your_ai2_api_key
 AI2_GENERATION_MODEL_NAMES=minimax-m2.5-free,nemotron-3-super-free,trinity-large-preview-free
 AI2_DEFAULT_MODEL=minimax-m2.5-free
 AI2_TIMEOUT_SECONDS=3600
@@ -154,28 +172,32 @@ TUTOR_FAST_RETRIEVAL_TIMEOUT_SECONDS=0.5
 CHAT_HISTORY_MAX_MESSAGES=4
 CHAT_HISTORY_MAX_CHARS=1200
 
-# Gemini remains available for content generation selection and uses the same token cap.
-GEMINI_API_KEYS=key1,key2
-GEMINI_MODEL_NAMES=gemini-2.0-flash,gemini-1.5-flash
-
 # Gemini is used for OCR/RAG embeddings.
 GEMINI_EMBEDDING_MODEL=models/text-embedding-004
 ```
 
 #### R2 Storage (Cloudflare)
 ```bash
-R2_ACCOUNT_ID=your_account_id
+# env/r2.env (r2 only); R2_ACCOUNT_ID is no longer used
 R2_ACCESS_KEY_ID=your_access_key
 R2_SECRET_ACCESS_KEY=your_secret_key
 R2_BUCKET_NAME=examio
 R2_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
+
+# .env (compose-level; env/r2.env also carries it)
 R2_PUBLIC_URL=https://pub-....r2.dev
+R2_ALLOWED_HOSTS=<account_id>.r2.cloudflarestorage.com   # ai-worker download allowlist
 ```
+
+The ai-service refuses to download from a private or loopback address even when the host is listed in
+`R2_ALLOWED_HOSTS`, unless `R2_ALLOW_PRIVATE_HOSTS=true` is set in `env/ai.env` (private-network stacks only; default false). Link-local
+addresses, including `169.254.169.254`, are always refused.
 
 `R2_PUBLIC_URL` is required by auth, content, vocabulary, document and ai-chat (they map a stored URL back to an R2 key; a URL on another host is never deleted). Deleting a record queues its R2 keys in `r2_delete_tasks` in the same transaction, and a worker (`libs/messaging/src/r2-delete`) removes them through r2-service with retries; content, vocabulary and document therefore run `ROLE=api,worker` in `compose/content.yml`, `compose/vocabulary.yml` and `compose/document.yml`. document-service calls r2 as `svc:document` (`UploadFile`, `CreatePresignedDownload`, `DeleteObjects`); r2 has no HTTP upload route and no `INTERNAL_SERVICE_TOKEN` any more.
 Use a hostname dedicated to the bucket for `R2_PUBLIC_URL` (e.g. the `r2.dev` host or a custom domain that serves nothing else): any client-supplied image URL on that hostname, on any port or path, must be a key the caller owns, so a shared hostname would also reject unrelated images on it. User-owned objects are stored under `<area>/<ownerUserId>/…`; only those keys are ever deleted on a user's behalf.
 
 #### Payment (SePay)
+`env/finance.env`:
 ```bash
 PAYMENT_SERVICE_SEPAY_KEY=your_sepay_key
 PAYMENT_BASE_URL=https://my.sepay.vn
@@ -185,6 +207,7 @@ PAYMENT_WEBHOOK_SECRET_KEY=your_webhook_secret
 ```
 
 #### Admin Bootstrap & Seed
+`env/auth.env`:
 ```bash
 # Comma-separated list of SYSTEM_ADMIN emails (synced by auth-service on startup
 # and by `yarn bootstrap:admin`; moved from admin-service in phase 04)
@@ -203,7 +226,7 @@ ADMIN_DEFAULT_PASSWORD=ChangeMe123!
 > `*-migrate` services, runs the per-service dev seeds in
 > order auth -> finance -> admin -> ai-chat -> vocabulary (each with its own role/schema URL, `<SVC>_DATABASE_URL`),
 > then exits.
-> The script picks up `ADMIN_DEFAULT_PASSWORD` from `deploy/.env`, so
+> The script picks up `ADMIN_DEFAULT_PASSWORD` from `deploy/env/auth.env`, so
 > seeded users share the same password as admins created by the
 > auth-service bootstrap. Idempotent — safe to re-run.
 >
@@ -231,7 +254,7 @@ docker compose up -d
 docker compose logs -f
 
 # View logs for specific service
-docker compose logs -f gateway
+docker compose logs -f gateway-a gateway-b
 ```
 
 ### 4. Verify Deployment
@@ -242,9 +265,9 @@ Check service health:
 # Check all containers are running
 docker compose ps
 
-# Liveness (process is up) and readiness (database/redis reachable) of the gateway
-curl http://localhost:6369/health/live
-curl http://localhost:6369/health/ready
+# Liveness (process is up) and readiness (redis reachable) of a gateway instance: no host port, so ask the container
+docker compose exec gateway-a wget -qO- http://localhost:3000/health/live
+docker compose exec gateway-a wget -qO- http://localhost:3000/health/ready
 
 # Check RabbitMQ management (if exposed)
 # Access http://your-server:15672 (default: admin/admin)
@@ -260,20 +283,124 @@ docker compose logs auth-migrate     # or finance-migrate | admin-migrate | cont
 
 Lưu ý quan trọng:
 - `auth`, `finance`, `admin`, `content`, `assessment`, `study-room`, `vocabulary`, `document` phụ thuộc vào `<svc>-migrate` tương ứng với điều kiện `service_completed_successfully`; `ai` và `ai-worker` chờ `ai-migrate` (Alembic, schema `ai`); `gateway` và `r2` không có database nên không chờ migration nào;
-- mỗi `<svc>-migrate` build từ `Dockerfile.migration` (`ARG SERVICE`), chạy `prisma migrate deploy --schema apps/<svc>-service/prisma[...]` bằng chính role `<svc>_svc` của service đó (`content` và `assessment` đều dùng một file `schema.prisma`; `study-room` dùng role/schema `studyroom`; `vocabulary` dùng role/schema `vocabulary`; `document` dùng role/schema `document`); `ai-migrate` không dùng Prisma: cùng image ai-service, `ROLE=migrate`, chạy `alembic upgrade head` bằng role `ai_svc`;
+- mỗi `<svc>-migrate` dùng cùng image với service (`Dockerfile.node`, `ARG SERVICE`) với `ROLE=migrate`, chạy `prisma migrate deploy --schema apps/<svc>-service/prisma[...]` bằng chính role `<svc>_svc` của service đó (`content` và `assessment` đều dùng một file `schema.prisma`; `study-room` dùng role/schema `studyroom`; `vocabulary` dùng role/schema `vocabulary`; `document` dùng role/schema `document`); `ai-migrate` không dùng Prisma: cùng image ai-service, `ROLE=migrate`, chạy `alembic upgrade head` bằng role `ai_svc`;
 - `prisma migrate deploy` áp dụng migration đã commit, không đẩy schema trực tiếp vào DB, nên không chủ động làm mất dữ liệu cũ;
 - DB mới (volume rỗng): init script tạo schema/role trước, sau đó từng `<svc>-migrate` tạo bảng; thêm một service DB mới = thêm file `compose/<svc>.yml` + một dòng `include`;
 - nếu bạn thay đổi schema, hãy tạo migration chuẩn trước khi deploy để tránh lệch giữa code và DB.
 
+## Images and the two-PR migration contract flow
+
+**Images.** Every Node service is built from one recipe, `deploy/Dockerfile.node`
+(`docker build -f deploy/Dockerfile.node --build-arg SERVICE=<apps dir> examio-be`), and the Python
+service from `apps/ai-service/Dockerfile` (context `examio-be/`; it regenerates the gRPC stubs from
+`proto/`). The image is named `ghcr.io/cychipo/examio-<key>` and tagged by git SHA (`:main` follows the
+last deploy); compose reads the tag from `${<KEY>_TAG:-main}` (`<KEY>` = key upper-cased, `-` to `_`,
+e.g. `STUDY_ROOM_TAG`). `deploy/services.json` is the single list of services (key = compose service
+name, `dir`, `db`, `worker`, optional `env` / `proto` when the env-file or proto package name differs from
+the key, `instances` for the gateway); CI and the deploy script read it.
+
+One image serves every role of a service. The entrypoint reads `ROLE`:
+
+| `ROLE` | What runs |
+|---|---|
+| `api`, `worker`, `api,worker` (default `api`) | `node dist/apps/<svc>/main` |
+| `migrate` | `prisma migrate deploy` for that service's schema, then exit (never `db push`, never `migrate resolve`) |
+| `seed` | the service seed; `SEED_PROFILE=prod` (default) = reference data only (admin page flags, word-family categories, ai-chat subjects), `SEED_PROFILE=dev` = dev users, wallets and samples |
+
+An unknown `ROLE` exits 64 with a message. The `seed` compose service builds the `seed` target of the same
+Dockerfile, which carries every seed.
+
+**Which services does a change touch?** `scripts/changed-services.sh <base> <head>` prints
+`{"wave1":[...],"wave2":[...]}`: `apps/<dir>/**`, `deploy/compose/<key>.yml` and `deploy/env/<env>.env.example`
+select one service; `libs/**`, `package.json`, `yarn.lock`, `tsconfig*.json`, `nest-cli.json`,
+`deploy/Dockerfile.node` and `deploy/docker-entrypoint.sh` select every Node service; `proto/examio/<x>/**`
+selects the server of `x` in wave 1 (it ships before any caller); `proto/examio/{common,events}/**` selects
+everything. `FORCE_ALL=1` or an unknown base selects everything. Tests: `bash scripts/changed-services.test.sh`.
+
+**Migrations run while the previous image is still serving.** A migration must therefore be backward
+compatible (expand), and the destructive half goes in a later PR (contract).
+
+1. **PR 1, expand.** Add the new column or table (nullable, or `NOT NULL` with a `DEFAULT`), add indexes,
+   make the code write both shapes or read the new one with a fallback. It deploys normally.
+2. **PR 2, contract.** Drop or rename the old column, change a type, set `NOT NULL`. Label the PR
+   `migration:contract`. Merge it only after every service that used the old shape runs the image from PR 1
+   (check `git log` of the callers and the GHCR tags in `deploy/.tags.env`).
+
+`scripts/lint-migrations.sh <base> <head>` enforces this on the migration files a PR adds
+(`apps/*/prisma/migrations/*/migration.sql`, `apps/ai-service/alembic/versions/*.py`). It fails on
+`DROP TABLE|COLUMN|TYPE|SCHEMA`, `RENAME`, `ALTER COLUMN .. [SET DATA] TYPE`, `ALTER TYPE`, `SET NOT NULL`,
+`ADD COLUMN .. NOT NULL` without `DEFAULT`, and in Alembic `op.drop_*` (not `drop_index` / `drop_constraint`),
+`op.rename_*`, `op.alter_column(.. type_= | nullable=False)` and `op.add_column(.. nullable=False)` without
+`server_default`. `DROP INDEX|DEFAULT|NOT NULL|CONSTRAINT` pass. CI sets `MIGRATION_CONTRACT=1` from the
+`migration:contract` label, which skips the check. Tests: `bash scripts/lint-migrations.test.sh`.
+
+A contract migration cannot be rolled back by redeploying the previous image (it no longer matches the
+schema): its rollback is to roll forward.
+
+## Deploying one service
+
+CI (`.github/workflows/deploy.yml`) builds and deploys only what a push changed; the same steps work by hand.
+
+1. **Detect.** `scripts/changed-services.sh <before> <sha>` prints the changed services in two waves. Wave 1 is
+   the server of a changed `proto/examio/<x>/` package (new RPCs exist before any caller ships), wave 2 is
+   everything else, alphabetical with `gateway` last. A manual run (`workflow_dispatch`) takes `services`
+   (`all` or a comma list, `frontend` included) and `force_rebuild`.
+2. **Build.** One matrix job per service pushes `ghcr.io/cychipo/examio-<svc>:<sha>` and `:main`
+   (`deploy/Dockerfile.node` for Node, `apps/ai-service/Dockerfile` for ai; layer cache per service in the GHA cache).
+3. **Deploy.** One SSH job (concurrency `deploy-production`) checks out the sha on the VPS, runs
+   `docker login ghcr.io` with the read-only token `GHCR_READ_TOKEN` (secret; a PAT with `read:packages`,
+   optional `GHCR_READ_USER`), renders the RabbitMQ definitions only when `deploy/rabbitmq/**` changed, then calls
+   `deploy/deploy-service.sh <svc> <sha>` for each wave-1 service and then each wave-2 service. The first failure
+   stops the job. The FE keeps its own step (build on the VPS).
+
+```bash
+cd examio-be/deploy
+./deploy-service.sh study-room 3f9c2ab            # <svc> is a key of services.json
+DRY_RUN=1 ./deploy-service.sh content 3f9c2ab     # print the docker commands, run nothing
+```
+
+`deploy-service.sh` pins the image in `deploy/.tags.env` (`<KEY>_TAG=<sha>`, `KEY` = service name upper-cased,
+`-` becomes `_`; compose reads it through a second `--env-file`; no entry means `:main`), pulls, then:
+
+- **Migrate gate.** A database service runs `docker compose run --rm --no-deps <svc>-migrate` first. If it fails
+  the tag goes back, the service is never recreated (the old container keeps running), Telegram gets an alert
+  and the script exits 1.
+- **P3009.** The output contains `P3009` when an earlier failed migration is recorded in `_prisma_migrations`.
+  The alert then says a manual resolution is required and nothing automatic happens, ever: the script has no
+  resolve, no `db push` and no `down`. Inspect the failed migration and the schema, repair by hand if needed,
+  then mark it with the prisma CLI the image carries (`apps/<dir>/prisma/schema` is a directory for
+  multi-file schemas, `schema.prisma` otherwise):
+  `docker compose --env-file .env --env-file .tags.env run --rm --no-deps --entrypoint ./node_modules/.bin/prisma <svc>-migrate migrate resolve --rolled-back <migration_name> --schema apps/<dir>/prisma/schema`
+  (`--applied` when the SQL did complete), and re-run the deploy. The previous image keeps serving meanwhile.
+- **Recreate.** `up -d --no-deps --wait --wait-timeout 90`. If the new container is not healthy the tag is restored,
+  the old image is recreated and the script exits 1 with an alert. A service with `instances` in `services.json`
+  (`gateway-a`, `gateway-b`) is rolled one instance at a time, without reloading nginx: the FE upstream
+  re-resolves both names every 5 s and retries the other instance on a refused connect (a reload would close
+  idle client keep-alive connections). ai also restarts its separate
+  `workerService` (`ai-worker`); the other services run the worker in the same container (`ROLE=api,worker`).
+
+Rollback restores the previous image only, never the database, which is safe only while migrations are expand-only
+(see the two-PR flow above). After a `migration:contract` deploy, roll forward.
+
+Alerts use `TELEGRAM_TOKEN` and `TELEGRAM_TO` from the environment (the workflow passes the existing secrets); with
+either unset they are a no-op. Tests: `bash deploy/deploy-service.test.sh` (fake docker and curl).
+
+**`CUTOVER_DONE` gate.** Production is deployed once, by the cutover runbook, at the final merge of the refactor.
+Until the repository variable `CUTOVER_DONE` is `true` the push-main deploy job is skipped (a notice job says so)
+and only the images are built. Set it after the cutover smoke passes.
+
+**`deploy/ci-dummy.env.sh`** prints dummy values for every variable in `.env.example` (and, with
+`--service-envs`, writes `env/<name>.env` from the templates); CI uses it for `docker compose config`.
+
 ## Container Ports and Networks
 
-Only the gateway publishes a host port:
+No backend container publishes a host port (a static check, `compose-topology.spec.cjs`,
+fails CI if one comes back). The only way in is the FE nginx (`examio-frontend`, host port `FE_PORT`, default 6368),
+which proxies `/api/` and `/ws/` to the two gateway instances `examio-gateway-a` and `examio-gateway-b` over
+`examio-edge` (upstream `gw`, re-resolved every 5 s, see `examio-fe/nginx.conf`). The loopback port `6369` of the
+build-on-VPS stack is gone; a host-level proxy must target the FE port.
 
-- **127.0.0.1:6369** → Gateway (3000 internally), bound to loopback only; the FE nginx reaches it over `examio-edge`. Phase 16 moves it behind nginx. A host-level proxy on the same machine may use this port.
-
-PostgreSQL, Redis and RabbitMQ publish **no** host port (a static check,
-`compose-topology.spec.cjs`, fails CI if one comes back). Reach them from the
-host through the containers:
+Reach PostgreSQL, Redis and RabbitMQ from the host through the containers:
 
 ```bash
 # DB access is per role now (the superuser $POSTGRES_USER is break-glass only):
@@ -286,7 +413,7 @@ Networks (`docker-compose.yml`):
 
 | Network | Name | Members | Why |
 |---|---|---|---|
-| `edge` | `examio-edge` | gateway, FE nginx (joins from `examio-fe/docker-compose.yml`) | the only way in |
+| `edge` | `examio-edge` | gateway-a, gateway-b, FE nginx (joins from `examio-fe/docker-compose.yml`) | the only way in |
 | `internal` (`internal: true`, no route out) | `examio-internal` | every service, Postgres, Redis, RabbitMQ, `*-migrate`, seed | service-to-service traffic |
 | `egress` | `examio-egress` | auth (Google OAuth, SMTP), content and assessment (Turnstile), finance (SePay), r2 (Cloudflare R2), ai and ai-worker (Gemini; the worker also downloads presigned R2 URLs) | the only services with a real internet dependency |
 
@@ -320,10 +447,12 @@ from Cloudflare ranges (`examio-fe/nginx/cloudflare-real-ip.conf`) and
 **overwrites** `X-Forwarded-For` with that address; the gateway trusts that one
 hop and keys every rate limit on it. Refresh the ranges from
 https://www.cloudflare.com/ips-v4 and `/ips-v6` a few times a year (steps are at
-the top of the file). If a host-level proxy or Cloudflare Tunnel sits between
-Cloudflare and nginx, add its address as another `set_real_ip_from`; confirm the
-production topology before the cutover (gateway logs must show distinct client
-addresses, not Cloudflare ranges).
+the top of the file). Production puts a host reverse proxy (nginx/Caddy) in front:
+`examio-frontend` publishes `FE_PORT` on `127.0.0.1` only (`FE_BIND`), and nginx also
+trusts the Docker private ranges, where the host proxy's connections arrive from. The host
+proxy must accept only Cloudflare addresses and pass `CF-Connecting-IP` through untouched,
+or a client could pick its own address and dodge per-IP limits. Check after the cutover:
+gateway logs show distinct client addresses, not one bridge or Cloudflare address.
 
 ## Data Persistence
 
@@ -353,7 +482,7 @@ docker compose down
 docker compose down -v
 
 # Restart a specific service
-docker compose restart gateway
+docker compose restart gateway-a   # then gateway-b; never both at once
 
 # Scaling: every service pins `container_name`, so `--scale` does not work with
 # this file. Run extra replicas from a separate project/override without
@@ -363,7 +492,7 @@ docker compose restart gateway
 docker compose stats
 
 # Execute command in container
-docker compose exec gateway sh
+docker compose exec gateway-a sh
 docker compose exec postgres psql -U auth_svc -d "$POSTGRES_DB"
 docker compose exec redis redis-cli
 ```
@@ -445,10 +574,9 @@ To update a service:
 git pull
 
 # Rebuild specific service
-docker compose build gateway
+docker compose build gateway-a
 
-# Restart service with zero downtime (if using multiple instances)
-docker compose up -d --no-deps gateway
+# Zero-downtime gateway rollout: use deploy/deploy-service.sh gateway <sha> (a, then b; no nginx reload)
 
 # Or restart all services
 docker compose up -d --build
@@ -457,3 +585,41 @@ docker compose up -d --build
 ## Support
 
 For issues or questions, please refer to the main project documentation or create an issue in the repository.
+
+## Gateway a/b and memory budget (phase 16)
+
+**Gateway a/b.** `gateway-a` and `gateway-b` are one definition (`compose/gateway.yml`, same image, env and
+`env/gateway.env`), both on `edge` + `internal`, `stop_grace_period: 30s`. The gateway keeps no state of its own:
+revocation (`gw:revoked:sid:*`), authz versions (`gw:user:*:av`), page flags and rate limits live in Redis, and the
+RabbitMQ consumer (`gateway.events`, one durable queue, competing consumers) only writes that same Redis state, so
+either instance may serve any request or event. Both carry the network alias `gateway` on `internal`: auth/admin keep
+calling `GATEWAY_GRPC_URL=gateway:50051` and reach whichever instance is up (their control calls write Redis too; the
+durable event is the backstop for a missed call). nginx retries a request on the other instance only for idempotent
+methods on `/api/` (`proxy_next_upstream error timeout http_502 http_503`); WebSocket and SSE connections cut by a
+stopping gateway reconnect, an in-flight AI chat stream is re-sent by the user. nginx 1.27.3+ is required for `resolve`
+in the upstream (the FE image is `nginx:1.27-alpine`, 1.27.5 today).
+
+**Memory limits (`mem_limit`, hard cap per container).** Measure on the VPS after cutover and tune; collapse nothing yet.
+
+| Container | Limit | Notes |
+|---|---|---|
+| `gateway-a`, `gateway-b` | 256m each | router only |
+| `auth`, `assessment`, `content`, `document`, `ai-chat`, `study-room` | 512m each | NestJS API + worker (`ROLE=api,worker`) |
+| `admin`, `finance`, `vocabulary`, `r2` | 384m each | smaller surface |
+| `<svc>-migrate`, `seed` (one-shot) | 512m | `prisma migrate deploy` / seed |
+| `ai` | 1536m | gRPC + retrieval |
+| `ai-worker` | 2g | OCR (tesseract/opencv) and generation |
+| `ai-migrate` | 512m | Alembic |
+| `postgres` | 1g | `max_connections=200` |
+| `rabbitmq` | 512m | |
+| `redis` | 256m | AOF on |
+| `rabbitmq-defs` | 128m | renders definitions |
+
+The caps of the long-running containers add up to about 10.5 GB (the typical working set is far lower). The caps
+are not reservations: on a VPS under 16 GB, measure `docker compose stats` after cutover and lower the `ai-worker`
+and the Node caps (or collapse api/worker) before relying on it.
+
+**Worker liveness.** `ai-worker` has no HTTP port. It touches `/tmp/worker-heartbeat` every 30 s while its broker
+connection, outbox relay and purge are alive (`src/backend/messaging/heartbeat.py`); the compose healthcheck is
+`find /tmp/worker-heartbeat -mmin -2 | grep -q .`. Node workers run inside the `api,worker` containers, which already
+have the HTTP health check (`admin` has no worker code and stays `api`; `study-room` consumes inside its API process).

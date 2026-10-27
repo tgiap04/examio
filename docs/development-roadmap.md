@@ -1,6 +1,6 @@
 ---
 title: Examio Development Roadmap
-last_updated: 2026-10-24
+last_updated: 2026-10-27
 source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/) + phase completions
 status: ACTIVE
 ---
@@ -91,6 +91,10 @@ Phase 10 (cut cross-DB access) is implemented but uncommitted on `refactor/micro
 ## Progress Note (2026-10-24) — microservice-refactor plan, phase 12
 
 Phase 12 (extract study-room and vocabulary) is implemented but uncommitted on `refactor/microservice-rbac`: `study-room-service` (HTTP `/api/v1/studyrooms/*`, Socket.io `/ws/study`, `studyroom.events` consumer) and `vocabulary-service` (HTTP `/api/v1/word-family/*`, gRPC `WordFamilyAdminService` and `WordFamilyService.GetWordFamily`, R2 delete worker) own their schemas, roles, migrations and compose services; exam lost both modules and its gRPC server and keeps only `word-family/:id/to-flashcard`. Live temper found and fixed one bug (auth `SERVICE_AUDIENCES` missing `vocabulary`). Follow-ups: AI generation still HTTP to ai-service until phase 13; non-host study-room `PUT` stays 403 (404 mapping deferred); stale `authz_changed` binding on `exam.events` for pre-existing brokers (phase 16 runbook); `libs/grpc` public-profile client over the size guideline. See [changelog](project-changelog.md) and [architecture](system/architecture.md).
+
+## Progress Note (2026-10-27) — microservice-refactor plan, phase 16
+
+Phase 16 (deploy independence) is done but uncommitted on `refactor/microservice-rbac`: one `deploy/Dockerfile.node` recipe with a `ROLE`-driven entrypoint, per-service GHCR images, per-service `env/<name>.env`, `gateway-a`/`gateway-b` behind nginx upstream `gw`, `mem_limit` everywhere, wave-based `deploy.yml` with `deploy-service.sh` (migrate gate, auto-rollback), the `lint-migrations` contract check and `cutover-runbook.md`. Production is still on the old stack: the first deploy happens once at the final merge via the runbook, and the push deploy stays off until repository variable `CUTOVER_DONE` is `true`. Phase 17 (K8s, observability, Redis ACL) stays deferred; phases 18 and 19 are pending. Details: `project-changelog.md`, `examio-be/deploy/README.md`.
 
 ## Progress Note (2026-10-24) — microservice-refactor plan, phase 15
 

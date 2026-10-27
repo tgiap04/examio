@@ -20,7 +20,7 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 **Context**: Six backend services (gateway, auth, exam, finance, r2) plus one Python AI service each expose HTTP/gRPC listeners. Exposing them directly to the public internet creates a large attack surface and makes CORS/CORS and rate-limiting inconsistent.
 
-**Decision**: All public HTTP traffic enters through `gateway-service` (port 3000). The gateway matches each request against the route table in `apps/gateway-service/config/routes.yaml` (path regex, else longest prefix), checks the token, revoke/stale state, permissions, page flag, body size and rate limit, then streams it to the upstream. Downstream services sit on the internal compose network; only the gateway is published (`127.0.0.1:6369`, reached through the FE nginx).
+**Decision**: All public HTTP traffic enters through `gateway-service` (port 3000). The gateway matches each request against the route table in `apps/gateway-service/config/routes.yaml` (path regex, else longest prefix), checks the token, revoke/stale state, permissions, page flag, body size and rate limit, then streams it to the upstream. Downstream services sit on the internal compose network; no backend port is published; the gateway runs as `gateway-a` and `gateway-b`, reached only through the FE nginx (the one host port, `FE_PORT`).
 
 **Rationale**: Centralizes cross-cutting concerns (rate limiting: 100 req/min default plus per-route buckets, JWT verification, revoked-session check, logging) in one place. Simplifies frontend API wiring — one base URL. A new route is one entry in `routes.yaml`, not a new controller.
 

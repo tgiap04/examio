@@ -1,6 +1,6 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-10-25
+last_updated: 2026-10-27
 ---
 
 # Examio Project Changelog
@@ -8,6 +8,17 @@ last_updated: 2026-10-25
 ## [Unreleased] — 2026-10-23
 
 ### Changed
+
+#### Deploy independence, phase 16 (uncommitted on `refactor/microservice-rbac`)
+
+- **Images**: one recipe `examio-be/deploy/Dockerfile.node` (build arg `SERVICE`; targets `runtime`, `seed`; copies `templates/` for `MailService`) replaces `examio-be/Dockerfile`, `deploy/Dockerfile`, `Dockerfile.migration`, `Dockerfile.seed` and `entrypoint-seed.sh` (deleted). `deploy/docker-entrypoint.sh` switches on `ROLE` (`api` | `worker` | `api,worker` | `migrate` | `seed`, `SEED_PROFILE=prod|dev`) and never runs `db push` or `migrate resolve`. Images are `ghcr.io/cychipo/examio-<key>:<sha>|main`, catalog `deploy/services.json`. The ai Dockerfile builds with context `examio-be`.
+- **Scripts**: `scripts/changed-services.sh` (waves: wave 1 = servers of changed proto packages; auth first, gateway last), `scripts/lint-migrations.sh` (blocks destructive SQL unless `MIGRATION_CONTRACT=1` / label `migration:contract`), `deploy/deploy-service.sh <svc> <sha>` (migrate gate, P3009 halt, auto-rollback, Telegram alerts, never `migrate resolve` / `db push` / `down`; needs `jq`; gateway-a then gateway-b without an nginx reload), `deploy/ci-dummy.env.sh`, `scripts/cutover-smoke.ts` (`yarn smoke:cutover`).
+- **CI and deploy**: `deploy.yml` is detect -> per-service GHCR build matrix -> SSH deploy in waves; gated by repository variable `CUTOVER_DONE`, needs secret `GHCR_READ_TOKEN`; when broker definitions change it runs `rabbitmqctl import_definitions` on the running broker. `ci.yml` adds the `detect`, `migrations` and `deploy-scripts` jobs.
+- **Compose**: per-service `env_file: deploy/env/<name>.env` (required); `deploy/.env` is compose-level only. `ADMIN_EMAILS` and `ADMIN_DEFAULT_PASSWORD` moved to `env/auth.env`, `GEMINI_*` and `AI2_API_KEY` to `env/ai.env`; `R2_ACCOUNT_ID` removed. The gateway is `gateway-a` + `gateway-b` (alias `gateway`); host port 6369 is gone and the only host port is the FE `FE_PORT` (6368). `examio-fe/nginx.conf` has upstream `gw` (`resolve`, `proxy_next_upstream`, `proxy_connect_timeout 3s`). `mem_limit` on every container; `ai-worker` heartbeat healthcheck (`/tmp/worker-heartbeat`, cleared at start, refreshed only while the broker is connected). Docker Compose 2.24+ required.
+- **ai-service**: new env `R2_ALLOW_PRIVATE_HOSTS` (default false); link-local addresses, including 169.254.169.254, are always refused.
+- **ai-chat**: a rejected regenerate (429/403/404) deletes no message; the per-chat limit does not count the messages a regenerate replaces. The Free plan limit is 5 messages a minute (`FREE_TIER_BENEFITS.messagesPerMinute`); the phase 13 entry below and older docs said 6.
+- **Libs**: `libs/redis` `RedisUnavailableFilter` no longer deep-imports `ioredis/built/errors` (matches by error name).
+- **Docs**: new runbook `examio-be/deploy/cutover-runbook.md`; `CLAUDE.md`, `AGENTS.md`, `deploy/README.md`, `system/architecture.md`.
 
 #### Split exam-service into content-service and assessment-service, phase 14 (uncommitted on `refactor/microservice-rbac`)
 
@@ -23,7 +34,7 @@ last_updated: 2026-10-25
 #### Extract ai-chat service and move AI calls to gRPC, phase 13 (uncommitted on `refactor/microservice-rbac`)
 
 - **ai-chat-service** (`apps/ai-chat-service`, new): HTTP `/api/v1/ai-chat/*` (16 routes; SSE on `:chatId/stream` and `message/:id/regenerate-stream`, paths unchanged; `DELETE :chatId?deleteFiles=true` also deletes attached files) and public `/api/v1/subjects/*` (`systemPrompt` is never returned). Schema `aichat`, role `aichat_svc`; models `AIChat`, `AIChatMessage`, `AIChatDocument` (`documentId`, no FK), `SubjectCategory`, `Subject`. No gRPC server. `ROLE=api,worker`: the worker polls `r2_delete_tasks` (message images, only keys under `images/<ownerId>/`, r2 called as `ai-chat`). Consumer queue `aichat.events` runs in the API process: `document.deleted` (unlink) and `finance.subscription.changed` (drop `aichat:benefits:<id>`); broker user `aichat` cannot publish.
-- **AI calls**: chat goes to ai-service gRPC `Query` (60 s deadline) and `StreamChat` (no deadline, 60 s idle timeout) as `svc:ai-chat`. Failures before the first frame are HTTP statuses (429, 502, 503, 504); later ones are `event: error` frames. Free tier: 6 messages a minute, 429 `RATE_LIMITED`; full chat 403 `CHAT_LIMIT_REACHED`; another user's chat or document answers 404. Message files wait for OCR up to `AI_CHAT_DOCUMENT_WAIT_MS` (default 120000).
+- **AI calls**: chat goes to ai-service gRPC `Query` (60 s deadline) and `StreamChat` (no deadline, 60 s idle timeout) as `svc:ai-chat`. Failures before the first frame are HTTP statuses (429, 502, 503, 504); later ones are `event: error` frames. Free tier: 6 messages a minute (corrected to 5 in phase 16), 429 `RATE_LIMITED`; full chat 403 `CHAT_LIMIT_REACHED`; another user's chat or document answers 404. Message files wait for OCR up to `AI_CHAT_DOCUMENT_WAIT_MS` (default 120000).
 - **vocabulary**: word-family generation calls `AiService.GenerateWordFamily` (60 s, no retry, `svc:vocabulary`, `AI_GRPC_URL`); still free, TEACHER only, 20 a day.
 - **ai-service**: HTTP serves only `/` and `/health`; the compat routes, `AI_HTTP_COMPAT`, `AI_SERVICE_URL` and `INTERNAL_SERVICE_TOKEN` are removed everywhere (gateway no longer handles `x-internal-service-token`).
 - **exam**: `ai-chat` and `subject` modules, `ai-chat.prisma` and the subject seed are gone; migration `20261024142236_drop_ai_chat` (DB reset policy, no data copy). The subjects seed now lives in `apps/ai-chat-service/prisma/seed/`.
