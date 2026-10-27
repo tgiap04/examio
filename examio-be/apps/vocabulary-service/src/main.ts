@@ -52,7 +52,7 @@ async function startApi() {
     });
 
     // gRPC server: WordFamilyAdminService (admin-service forwards the admin token)
-    // and WordFamilyService.GetWordFamily (exam-service, service token).
+    // and WordFamilyService.GetWordFamily (content-service, service token).
     app.connectMicroservice<MicroserviceOptions>(
         grpcServerOptions([PROTO_FILES.wordFamilyAdmin, PROTO_FILES.wordFamily]),
         { inheritAppConfig: true }

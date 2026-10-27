@@ -29,7 +29,7 @@ export function toDocumentInfo(row: UserStorage): documentV1.DocumentInfo {
     };
 }
 
-/** The `UserStorage` row as the exam-service routes returned it (no internal bookkeeping columns). */
+/** The `UserStorage` row as the legacy exam routes returned it (no internal bookkeeping columns). */
 export function toHttpDocument(row: UserStorage) {
     return {
         id: row.id,

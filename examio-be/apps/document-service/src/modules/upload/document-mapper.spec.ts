@@ -50,7 +50,7 @@ describe('document mapper', () => {
         });
     });
 
-    it('the HTTP row keeps the exam-service fields and hides the internal bookkeeping columns', () => {
+    it('the HTTP row keeps the legacy exam fields and hides the internal bookkeeping columns', () => {
         const http = toHttpDocument(row());
         expect(Object.keys(http).sort()).toEqual(
             ['createdAt', 'creditCharged', 'filename', 'id', 'keyR2', 'mimetype', 'pageCount', 'processingStatus', 'size', 'updatedAt', 'url', 'userId'].sort()

@@ -157,7 +157,7 @@ async def test_query_maps_the_answer_and_sources(stub, monkeypatch):
             user_storage_id="doc1",
             history=[ai_pb2.ChatMessage(role="user", content="earlier")],
         ),
-        metadata=auth("svc:exam"),
+        metadata=auth("svc:content"),
     )
     assert reply.answer == "42" and reply.timestamp > 0
     assert (reply.sources[0].page, reply.sources[0].title, reply.sources[0].chunk_id) == ("1-2", "T", "k1")

@@ -139,7 +139,7 @@ class DocumentServiceServicer(object):
 
     def ListDocuments(self, request, context):
         """The caller's own documents, newest first, one page at a time (the data
-        behind `GET /ai/recent-uploads`; exam adds its generated-history summaries).
+        behind `GET /ai/recent-uploads`; content adds its generated-history summaries).
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')

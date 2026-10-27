@@ -45,7 +45,7 @@ function toRow(c: wordFamilyAdminV1.WordFamilyCategory): CategoryRow {
 
 /**
  * Word-family category administration through `WordFamilyAdminService` (served
- * by exam today, vocabulary-service from phase 12) with the calling admin's
+ * by vocabulary-service) with the calling admin's
  * token. The owner writes the data (and deletes the R2 image); admin records
  * AdminAudit rows once the RPC committed (best effort, like the other admin
  * modules).

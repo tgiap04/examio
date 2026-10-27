@@ -35,8 +35,7 @@ SERVICE_ROLE = "SERVICE"
 SERVICE_SUBJECT_PREFIX = "svc:"
 ACCESS_TOKEN_TYP = "at+jwt"
 # A code constant, not env: widening who may call the ai-service is a code review.
-# `svc:exam` is removed in phase 14 when generation moves to content-service.
-ALLOWED_CALLERS = frozenset({"svc:exam", "svc:ai-chat", "svc:vocabulary", "svc:content"})
+ALLOWED_CALLERS = frozenset({"svc:ai-chat", "svc:vocabulary", "svc:content"})
 
 
 class TokenError(Exception):

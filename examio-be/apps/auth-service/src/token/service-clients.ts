@@ -6,7 +6,6 @@ const CLIENT_NAME = /^[a-z][a-z0-9-]*$/;
 /** Audiences a service token may target (the service names). */
 export const SERVICE_AUDIENCES: ReadonlySet<string> = new Set([
     'auth',
-    'exam',
     'finance',
     'admin',
     'r2',

@@ -116,7 +116,7 @@ describe('WalletService / SubscriptionService gRPC contract (behind the real gua
             expect(res).toMatchObject({ userId: 'me' });
         });
 
-        it.each(['exam', 'admin', 'auth'])('an allowlisted service (svc:%s) may read any wallet', async (name) => {
+        it.each(['content', 'admin', 'auth'])('an allowlisted service (svc:%s) may read any wallet', async (name) => {
             prisma.wallet.findUnique.mockResolvedValue({ id: 'w2', userId: 'victim', balance: 7 });
             const res = await lastValueFrom(wallet.getWallet({ userId: 'victim' }, await svc(name)));
             expect(res.balance).toBe(7);
@@ -138,7 +138,7 @@ describe('WalletService / SubscriptionService gRPC contract (behind the real gua
                 lastValueFrom(subscription.getUserBenefits({ userId: 'me' }, await student('me')))
             ).resolves.toMatchObject({ tier: 1 });
             await expect(
-                lastValueFrom(subscription.getUserBenefits({ userId: 'victim' }, await svc('exam')))
+                lastValueFrom(subscription.getUserBenefits({ userId: 'victim' }, await svc('content')))
             ).resolves.toMatchObject({ tier: 1 });
         });
     });
@@ -161,9 +161,9 @@ describe('WalletService / SubscriptionService gRPC contract (behind the real gua
         });
         const req = (userId = 'u1') => ({ userId, amount: 5, reason: 'r', idempotencyKey: 'k1' });
 
-        it('Debit by svc:exam maps the transaction and already_applied', async () => {
+        it('Debit by svc:content maps the transaction and already_applied', async () => {
             money.debit.mockResolvedValue({ ...tx({ idempotencyKey: 'debit:k1' }), alreadyApplied: true });
-            const res = await lastValueFrom(wallet.debit(req(), await svc('exam')));
+            const res = await lastValueFrom(wallet.debit(req(), await svc('content')));
             expect(res).toEqual({
                 alreadyApplied: true,
                 transaction: { id: 't1', walletId: 'w1', amount: 5, direction: 'SUBTRACT', reason: 'r', idempotencyKey: 'k1', balanceAfter: 15, createdAt: '1760000000000' },
@@ -183,16 +183,18 @@ describe('WalletService / SubscriptionService gRPC contract (behind the real gua
 
         it('Debit by svc:auth or without metadata never reaches the ledger', async () => {
             await expect(lastValueFrom(wallet.debit(req(), await svc('auth')))).rejects.toMatchObject({ code: 7 });
+            // the retired exam service is no longer a money caller
+            await expect(lastValueFrom(wallet.debit(req(), await svc('exam')))).rejects.toMatchObject({ code: 7 });
             await expect(lastValueFrom(wallet.debit(req(), new Metadata()))).rejects.toMatchObject({ code: 16 });
             expect(money.debit).not.toHaveBeenCalled();
         });
 
-        it('Credit and Refund are service-only (exam/content/document)', async () => {
+        it('Credit and Refund are service-only (content/document)', async () => {
             money.credit.mockResolvedValue(tx({ direction: 'ADD' }));
             money.refund.mockResolvedValue(tx({ direction: 'ADD' }));
-            await expect(lastValueFrom(wallet.credit(req(), await svc('exam')))).resolves.toMatchObject({ alreadyApplied: false });
+            await expect(lastValueFrom(wallet.credit(req(), await svc('content')))).resolves.toMatchObject({ alreadyApplied: false });
             await expect(
-                lastValueFrom(wallet.refund({ debitIdempotencyKey: 'k1', reason: 'r', userId: 'u1' }, await svc('exam')))
+                lastValueFrom(wallet.refund({ debitIdempotencyKey: 'k1', reason: 'r', userId: 'u1' }, await svc('content')))
             ).resolves.toMatchObject({ alreadyApplied: false });
             expect(money.refund).toHaveBeenCalledWith({ userId: 'u1', debitIdempotencyKey: 'k1', reason: 'r' });
             for (const caller of [await teacher('u1'), await svc('admin'), await svc('auth')]) {
@@ -206,7 +208,7 @@ describe('WalletService / SubscriptionService gRPC contract (behind the real gua
         it('a service error keeps its gRPC status and detail code', async () => {
             const { RpcException } = await import('@nestjs/microservices');
             money.debit.mockRejectedValue(new RpcException({ code: 9, message: 'INSUFFICIENT_CREDITS' }));
-            await expect(lastValueFrom(wallet.debit(req(), await svc('exam')))).rejects.toMatchObject({
+            await expect(lastValueFrom(wallet.debit(req(), await svc('content')))).rejects.toMatchObject({
                 code: 9,
                 details: 'INSUFFICIENT_CREDITS',
             });
@@ -222,7 +224,7 @@ describe('WalletService / SubscriptionService gRPC contract (behind the real gua
             chatMessagesLimit: 100,
         });
         const res = await lastValueFrom(
-            subscription.getUserBenefits({ userId: 'u1' }, await svc('exam'))
+            subscription.getUserBenefits({ userId: 'u1' }, await svc('content'))
         );
         expect(res).toEqual({
             tier: 1,

@@ -63,14 +63,14 @@ def _b64(data: dict[str, Any]) -> str:
 def unsigned_token(kid: str) -> str:
     """A well-formed ``alg: none`` token claiming to be an allowed service."""
     header = {"alg": "none", "typ": "at+jwt", "kid": kid}
-    claims = {"sub": "svc:exam", "roles": ["SERVICE"], "aud": "ai", "iss": ISSUER, "exp": int(time.time()) + 900, "iat": 1}
+    claims = {"sub": "svc:content", "roles": ["SERVICE"], "aud": "ai", "iss": ISSUER, "exp": int(time.time()) + 900, "iat": 1}
     return f"{_b64(header)}.{_b64(claims)}."
 
 
 def hs256_token(secret: str, kid: str) -> str:
     """An HS256 token (algorithm-confusion attempt) with valid-looking claims."""
     now = int(time.time())
-    claims = {"sub": "svc:exam", "roles": ["SERVICE"], "aud": "ai", "iss": ISSUER, "exp": now + 900, "iat": now - 1}
+    claims = {"sub": "svc:content", "roles": ["SERVICE"], "aud": "ai", "iss": ISSUER, "exp": now + 900, "iat": now - 1}
     return jwt.encode(claims, secret, algorithm="HS256", headers={"kid": kid, "typ": "at+jwt"})
 
 

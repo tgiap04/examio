@@ -26,7 +26,7 @@ if _version_not_supported:
 
 
 class AiServiceStub(object):
-    """Synchronous AI for exam/ai-chat/vocabulary/content. Served by ai-service on
+    """Synchronous AI for ai-chat/vocabulary/content. Served by ai-service on
     :50051, guarded by a service token (aud=ai, caller allow-list). Callers have
     already authorized every user_storage_id they pass.
 
@@ -67,7 +67,7 @@ class AiServiceStub(object):
 
 
 class AiServiceServicer(object):
-    """Synchronous AI for exam/ai-chat/vocabulary/content. Served by ai-service on
+    """Synchronous AI for ai-chat/vocabulary/content. Served by ai-service on
     :50051, guarded by a service token (aud=ai, caller allow-list). Callers have
     already authorized every user_storage_id they pass.
 
@@ -140,7 +140,7 @@ def add_AiServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class AiService(object):
-    """Synchronous AI for exam/ai-chat/vocabulary/content. Served by ai-service on
+    """Synchronous AI for ai-chat/vocabulary/content. Served by ai-service on
     :50051, guarded by a service token (aud=ai, caller allow-list). Callers have
     already authorized every user_storage_id they pass.
 

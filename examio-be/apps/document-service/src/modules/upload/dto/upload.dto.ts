@@ -12,7 +12,7 @@ export const RegisterUploadSchema = z.object({
 });
 export class RegisterUploadDto extends createZodDto(RegisterUploadSchema) {}
 
-/** Body of the `POST /ai/upload-image` placeholder (unchanged from exam-service). */
+/** Body of the `POST /ai/upload-image` placeholder (unchanged from the old exam routes). */
 export const UploadImageSchema = z.object({
     image: z.string(),
     filename: z.string().optional(),

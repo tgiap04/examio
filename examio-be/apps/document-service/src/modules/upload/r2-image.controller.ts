@@ -15,7 +15,7 @@ import { ImageUploadService } from './image-upload.service';
 
 const MB = 1024 * 1024;
 
-/** `POST /r2/image`, moved from exam-service: a public image (max 2 MB) under `images/<userId>/`. */
+/** `POST /r2/image`, moved from the old exam service: a public image (max 2 MB) under `images/<userId>/`. */
 @ApiTags('R2')
 @Controller('r2')
 export class R2ImageController {

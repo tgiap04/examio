@@ -16,7 +16,7 @@ export class R2ServiceController implements r2V1.R2ServiceController {
 
     constructor(private readonly r2Service: R2ServiceService) {}
 
-    @ServiceOnly('exam', 'auth', 'document')
+    @ServiceOnly('auth', 'document', 'content')
     async uploadFile(
         data: r2V1.UploadFileRequest
     ): Promise<r2V1.UploadFileResponse> {
@@ -58,7 +58,7 @@ export class R2ServiceController implements r2V1.R2ServiceController {
 
     // Keyed by a storage key (a capability, not owned by a user id) and nobody
     // but the internal services that wrote the key needs it: service-only.
-    @ServiceOnly('exam', 'auth')
+    @ServiceOnly('auth')
     async getFileUrl(
         data: r2V1.GetFileUrlRequest
     ): Promise<r2V1.GetFileUrlResponse> {
@@ -70,7 +70,7 @@ export class R2ServiceController implements r2V1.R2ServiceController {
         };
     }
 
-    @ServiceOnly('exam', 'auth')
+    @ServiceOnly('auth')
     async deleteFile(
         data: r2V1.DeleteFileRequest
     ): Promise<r2V1.DeleteFileResponse> {
@@ -98,7 +98,7 @@ export class R2ServiceController implements r2V1.R2ServiceController {
         });
     }
 
-    @ServiceOnly('exam', 'auth', 'vocabulary', 'document', 'ai-chat')
+    @ServiceOnly('auth', 'vocabulary', 'document', 'ai-chat', 'content')
     async deleteObjects(
         data: r2V1.DeleteObjectsRequest
     ): Promise<r2V1.DeleteObjectsResponse> {

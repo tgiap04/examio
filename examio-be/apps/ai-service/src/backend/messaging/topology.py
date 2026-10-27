@@ -20,8 +20,7 @@ PREFETCH = 1  # ai work is heavy (OCR + embeddings): one message at a time
 CONSUMED_KEYS = ("document.uploaded", "document.deleted", "content.generation.requested")
 ALLOWED_SOURCES: dict[str, frozenset[str]] = {
     "document": frozenset({"document"}),
-    # `exam` publishes content.* until phase 14 hands generation to content-service.
-    "content": frozenset({"content", "exam"}),
+    "content": frozenset({"content"}),
 }
 
 

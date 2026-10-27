@@ -15,7 +15,7 @@ with the processing reason (refundable); a transient one is retried like any oth
 Without a ``downloadUrl`` the caller ensures processing first (document-service
 ``EnsureProcessed`` re-emits ``document.uploaded``); until chunks appear the
 event is retried by the consumer, and on the last attempt the job fails with
-``DOCUMENT_NOT_PROCESSED`` so exam/content can refund it.
+``DOCUMENT_NOT_PROCESSED`` so content can refund it.
 """
 
 from __future__ import annotations

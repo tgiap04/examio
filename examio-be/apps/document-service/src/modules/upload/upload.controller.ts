@@ -28,7 +28,7 @@ import { RegisterUploadDto, UploadImageDto } from './dto/upload.dto';
 
 const MB = 1024 * 1024;
 
-/** `/ai/*` upload routes moved verbatim from exam-service (paths and response shapes unchanged). */
+/** `/ai/*` upload routes moved verbatim from the old exam service (paths and response shapes unchanged). */
 @UsePipes(ZodValidationPipe)
 @ApiTags('AI')
 @Controller('ai')
@@ -94,7 +94,7 @@ export class UploadController {
     @Post('upload-image')
     @RequirePermissions('document:upload')
     @ApiCookieAuth('cookie-auth')
-    @ApiOperation({ summary: 'Upload image cho AI chat (placeholder, như exam-service)' })
+    @ApiOperation({ summary: 'Upload image cho AI chat (placeholder, như trước đây)' })
     async uploadImage(@Body() _dto: UploadImageDto) {
         return { success: true, message: 'Image upload endpoint - implementation pending' };
     }

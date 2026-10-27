@@ -69,7 +69,7 @@ async def _abort_model(context: grpc.aio.ServicerContext, code: str, message: st
 
 
 class AiServicer(ai_pb2_grpc.AiServiceServicer):
-    """Synchronous AI endpoints for exam / ai-chat / vocabulary / content."""
+    """Synchronous AI endpoints for ai-chat / vocabulary / content."""
 
     async def StreamChat(self, request, context):  # noqa: N802, D102
         try:

@@ -27,7 +27,7 @@ def forged(type_: str, source: str, routing_key: str | None = None):
     ("type_", "source"),
     [
         ("document.uploaded", "content"),
-        ("document.deleted", "exam"),
+        ("document.deleted", "assessment"),
         ("content.generation.requested", "document"),
         ("content.generation.requested", "ai"),
     ],
@@ -47,13 +47,19 @@ async def test_type_that_differs_from_the_routing_key_is_rejected():
     assert message.nacked and message.requeued is False and called == []
 
 
-@pytest.mark.parametrize("source", ["content", "exam"])
-async def test_content_events_may_come_from_content_or_exam(source, pool):
+async def test_content_events_may_come_from_content(pool):
     consumer, called = build(["content.generation.requested"])
     consumer._pool = pool
-    message = forged("content.generation.requested", source)
+    message = forged("content.generation.requested", "content")
     await consumer.handle_message(message)
     assert message.acked and len(called) == 1
+
+
+async def test_the_retired_exam_source_is_rejected_for_content_events():
+    consumer, called = build(["content.generation.requested"])
+    message = forged("content.generation.requested", "exam")
+    await consumer.handle_message(message)
+    assert message.nacked and message.requeued is False and called == []
 
 
 async def test_document_events_must_come_from_document(pool):

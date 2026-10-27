@@ -34,7 +34,7 @@ async def test_every_allow_listed_caller_is_accepted(sub):
 
 
 def test_allow_list_is_the_code_constant_from_the_plan():
-    assert ALLOWED_CALLERS == {"svc:exam", "svc:ai-chat", "svc:vocabulary", "svc:content"}
+    assert ALLOWED_CALLERS == {"svc:ai-chat", "svc:vocabulary", "svc:content"}
 
 
 async def test_user_token_is_permission_denied():
@@ -67,10 +67,14 @@ async def test_unknown_service_is_permission_denied():
     assert await code_of(verifier(CountingJwks(KEY)), mint(KEY, sub="svc:admin")) == grpc.StatusCode.PERMISSION_DENIED
 
 
+async def test_the_retired_exam_service_is_permission_denied():
+    assert await code_of(verifier(CountingJwks(KEY)), mint(KEY, sub="svc:exam")) == grpc.StatusCode.PERMISSION_DENIED
+
+
 async def test_malformed_claims_are_unauthenticated():
     v = verifier(CountingJwks(KEY))
     assert await code_of(v, mint(KEY, roles=["SERVICE", "ADMIN"])) == grpc.StatusCode.UNAUTHENTICATED
-    assert await code_of(v, mint(KEY, sub="svc:exam", roles=["STUDENT"])) == grpc.StatusCode.UNAUTHENTICATED
+    assert await code_of(v, mint(KEY, sub="svc:content", roles=["STUDENT"])) == grpc.StatusCode.UNAUTHENTICATED
     assert await code_of(v, mint(KEY, sub="user-1", roles=["SERVICE"])) == grpc.StatusCode.UNAUTHENTICATED
     assert await code_of(v, mint(KEY, roles=[])) == grpc.StatusCode.UNAUTHENTICATED
     assert await code_of(v, mint(KEY, typ="JWT")) == grpc.StatusCode.UNAUTHENTICATED

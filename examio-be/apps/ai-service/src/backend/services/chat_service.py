@@ -1,6 +1,6 @@
 """Chat use-cases of the gRPC servicer.
 
-Callers (exam / ai-chat) have already authorized the ``user_storage_id`` they
+Callers (content / ai-chat) have already authorized the ``user_storage_id`` they
 pass; this module does retrieval + answering and never touches another
 service's tables.
 """

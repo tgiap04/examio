@@ -12,8 +12,8 @@ import {
 } from '@examio/auth-jwt';
 import { MoneyResult, WalletMoneyService } from './wallet-money.service';
 
-/** Services allowed to move money on a user's behalf (content/document land in phases 14/15). */
-const MONEY_CALLERS = ['exam', 'content', 'document'];
+/** Services allowed to move money on a user's behalf. */
+const MONEY_CALLERS = ['content', 'document'];
 
 function toResponse(result: MoneyResult): {
     transaction: walletV1.WalletTransaction;

@@ -13,7 +13,7 @@ const text = (value: unknown): string => (typeof value === 'string' ? value : ''
 
 /**
  * Backs `WordFamilyService.GetWordFamily`: the catalog row plus its category
- * name, shaped for the exam-service flashcard bridge. Rows are shared catalog
+ * name, shaped for the content-service flashcard bridge. Rows are shared catalog
  * data, so no per-user check applies.
  */
 @Injectable()

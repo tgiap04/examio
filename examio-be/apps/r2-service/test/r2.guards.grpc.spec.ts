@@ -73,8 +73,11 @@ describe('R2Service gRPC behind the real guards', () => {
         await expect(
             lastValueFrom(client.getFileUrl(req, await md({ sub: 'u', roles: ['SYSTEM_ADMIN'] })))
         ).rejects.toMatchObject({ code: 7 });
-        await expect(lastValueFrom(client.getFileUrl(req, await md(serviceClaims('finance'))))).rejects.toMatchObject({ code: 7 });
-        const res = await lastValueFrom(client.getFileUrl(req, await md(serviceClaims('exam'))));
+        // the retired exam service and content (which never reads URLs from r2) are not allow-listed
+        for (const caller of ['finance', 'exam', 'content']) {
+            await expect(lastValueFrom(client.getFileUrl(req, await md(serviceClaims(caller))))).rejects.toMatchObject({ code: 7 });
+        }
+        const res = await lastValueFrom(client.getFileUrl(req, await md(serviceClaims('auth'))));
         expect(res.url).toBe('https://cdn/public/x.png');
     });
 
@@ -83,6 +86,7 @@ describe('R2Service gRPC behind the real guards', () => {
         await expect(lastValueFrom(client.deleteObjects(req, new Metadata()))).rejects.toMatchObject({ code: 16 });
         await expect(lastValueFrom(client.deleteObjects(req, await md({ sub: 'u', roles: ['SYSTEM_ADMIN'] })))).rejects.toMatchObject({ code: 7 });
         await expect(lastValueFrom(client.deleteObjects(req, await md(serviceClaims('finance'))))).rejects.toMatchObject({ code: 7 });
+        await expect(lastValueFrom(client.deleteObjects(req, await md(serviceClaims('exam'))))).rejects.toMatchObject({ code: 7 });
     });
 
     it('CreatePresignedDownload is document-only; UploadFile and DeleteObjects accept document', async () => {
@@ -91,7 +95,7 @@ describe('R2Service gRPC behind the real guards', () => {
         await expect(
             lastValueFrom(client.createPresignedDownload(req, await md({ sub: 'u', roles: ['TEACHER'] })))
         ).rejects.toMatchObject({ code: 7 });
-        for (const caller of ['exam', 'auth', 'vocabulary', 'finance']) {
+        for (const caller of ['exam', 'content', 'auth', 'vocabulary', 'finance']) {
             await expect(
                 lastValueFrom(client.createPresignedDownload(req, await md(serviceClaims(caller))))
             ).rejects.toMatchObject({ code: 7 });
