@@ -7,7 +7,7 @@
 
 ## Overview
 - [CARRIED from 13] `apps/ai-chat-service/src/clients/{document.client,document-errors}.ts` are near-copies of `apps/exam-service/src/clients/` (`requireUserToken`, `userMetadata`, `isGrpcStatus`, `toDocumentHttpException`). When content-service takes over exam's copy, move the shared DocumentService client + error mapping into `libs/grpc` (like `FinanceClient`) instead of a third copy.
-- Priority: P1 · Status: Pending · Effort: 4.5d (+0.5d: snapshot drift banner + refresh action, snapshot cache, reaper/R2 worker moves; minus the dropped user purgers) <!-- Red Team: RT-1, RT-11, RT-15 --> · Depends on: 07, 11, 13, 15 (the `modules/ai` generation code must already be event-driven by phase 15, with the RT-1 charge flow, before it moves; plan.md agrees). <!-- Reconcile: deps -->
+- Priority: P1 · Status: Done — awaiting sign-off (uncommitted) · Effort: 4.5d (+0.5d: snapshot drift banner + refresh action, snapshot cache, reaper/R2 worker moves; minus the dropped user purgers) <!-- Red Team: RT-1, RT-11, RT-15 --> · Depends on: 07, 11, 13, 15 (the `modules/ai` generation code must already be event-driven by phase 15, with the RT-1 charge flow, before it moves; plan.md agrees). <!-- Reconcile: deps -->
 - Goal: `content-service` ("author and self-study") and `assessment-service` ("proctored exams"). Assessment snapshots the quiz at session time (`ExamSession.quizSnapshot`), so content edits and deletes never change running sessions or results. Teachers see when the source quiz drifted and can refresh the snapshot while it is still safe. Split `/student/*`. **Delete exam-service.** <!-- Red Team: RT-15 -->
 - Last link of the sequential chain 12 → 13 → 14 (shared `exam-service.module.ts`, `main.ts`, exam `prisma/schema/**`, routes YAML).
 
@@ -143,22 +143,30 @@ Write first:
 - `content.quizset.deleted` replayed → `sourceDeleted` stays true, no error (idempotent). <!-- Red Team: RT-11 -->
 
 ## Todo List
-- [ ] content/v1 proto (+ `with_content_hash`) + events <!-- Red Team: RT-15 -->
-- [ ] Scaffold content-service + assessment-service (§13), RabbitMQ users <!-- Red Team: RT-2 -->
-- [ ] Move content modules (+ generation with RT-1 states/reaper, shared finance client) <!-- Red Team: RT-1 -->
-- [ ] Content `r2_delete_tasks` + worker; r2/finance allowlists (+content, −exam) <!-- Red Team: RT-1, RT-8 -->
-- [ ] Move assessment modules
-- [ ] `/student/*` split
-- [ ] quizSnapshot write + snapshot readers + LRU cache + field selection + 1 MB cap <!-- Red Team: RT-15 -->
-- [ ] Drift detection + `refresh-snapshot` (UPCOMING, 0 attempts) + FE banner "Đề đã thay đổi kể từ khi tạo phiên — Cập nhật đề" <!-- Red Team: RT-15 -->
-- [ ] ExamRoom FK cut + `sourceDeleted` + title enrichment
-- [ ] history-stats via RPCs
-- [ ] Event handlers (quizset.deleted, generation, document.deleted, user.updated) <!-- Red Team: RT-11 -->
-- [ ] Email contract test (content + assessment) <!-- Red Team: RT-15 -->
-- [ ] Gateway YAML (no `exam` upstream)
-- [ ] Delete exam-service + init/compose/env/scripts cleanup
-- [ ] [CARRIED from 09] D4 retire the legacy `libs/common` event consumer (`event-subscriber.service.ts:50` JSON.parse outside try) with consumers on `@examio/messaging`; D8 public `ExamSessionPage` renders `sessionUnavailable`
-- [ ] [CARRIED from 10] N3: session `whitelist` accepts any string; validate ids before storage (`create-examsession.dto.ts:30`, `sharing.dto.ts:10`).
+- [x] content/v1 proto (+ `with_content_hash`) + events <!-- Red Team: RT-15 -->
+- [x] Scaffold content-service + assessment-service (§13), RabbitMQ users <!-- Red Team: RT-2 -->
+- [x] Move content modules (+ generation with RT-1 states/reaper, shared finance client) <!-- Red Team: RT-1 -->
+- [x] Content `r2_delete_tasks` + worker; r2/finance allowlists (+content, −exam) <!-- Red Team: RT-1, RT-8 -->
+- [x] Move assessment modules
+- [x] `/student/*` split
+- [x] quizSnapshot write + snapshot readers + LRU cache + field selection + 1 MB cap <!-- Red Team: RT-15 -->
+- [x] Drift detection + `refresh-snapshot` (UPCOMING, 0 attempts) + FE banner "Đề đã thay đổi kể từ khi tạo phiên — Cập nhật đề" <!-- Red Team: RT-15 -->
+- [x] ExamRoom FK cut + `sourceDeleted` + title enrichment
+- [x] history-stats via RPCs
+- [x] Event handlers (quizset.deleted, generation, document.deleted, user.updated) <!-- Red Team: RT-11 -->
+- [x] Email contract test (content + assessment) <!-- Red Team: RT-15 -->
+- [x] Gateway YAML (no `exam` upstream)
+- [x] Delete exam-service + init/compose/env/scripts cleanup
+- [x] [CARRIED from 09] D4 retire the legacy `libs/common` event consumer (`event-subscriber.service.ts:50` JSON.parse outside try) with consumers on `@examio/messaging`; D8 public `ExamSessionPage` renders `sessionUnavailable`
+- [x] [CARRIED from 10] N3: session `whitelist` accepts any string; validate ids before storage (`create-examsession.dto.ts:30`, `sharing.dto.ts:10`).
+
+## Verification
+- Temper: 164 green runs in `evidence/phase-14/temper-final.json`, including live gateway flows and FE checks. The count is taken from the evidence file as reported, not recounted.
+- Review: opus, SEALED, 0 Critical / 0 High. M1 (content had no egress for Turnstile) was fixed.
+- Deferred lows: L1 snapshot LRU bounded by count, not size; L2 legacy `POST /examattempts` ignores RANDOM; L3 room/delete race leaves the `sourceDeleted` banner unset.
+- Deviation not in Delivered: content and assessment run `ROLE=api,worker` in one container each (`content`, `assessment`), with no separate `content-worker`/`assessment-worker` compose services. Same convention as vocabulary and document.
+- Carried to phase 16: CI boot smoke (compose config passes, but `up` needs `PAYMENT_*`, `GOOGLE_CLIENT_*` and `REFRESH_TOKEN_ENC_KEY`).
+- Not run live: AI generate-from-file money flow, ADMIN permission row, flashcard study UI (covered by e2e).
 
 ## Success Criteria
 - `test ! -d /Users/tgiap.dev/devs/examio/examio-be/apps/exam-service && echo ok` → `ok`. `grep -rn "exam-service\|EXAM_SERVICE_URL" /Users/tgiap.dev/devs/examio/examio-be --include='*.ts' --include='*.yaml' --include='*.yml' --include='*.json' --include='*.example'` → no output.
@@ -190,3 +198,19 @@ Write first:
 
 ## Next Steps
 - Phase 16 builds per-service images and the deploy matrix. Phase 19 documents the snapshot contract, the drift/refresh rule and the deletion behaviour change. <!-- Red Team: RT-15 -->
+
+## Delivered beyond plan / deviations
+
+- Built in three parts: A content-service (`git mv` of the content modules), B `git mv apps/exam-service apps/assessment-service` then the snapshot work (exam's multi-file schema and migration history replaced by a fresh `assessment` init migration, DB reset policy), C gateway/deploy/CI/allowlists + FE.
+- Generation pricing follows the phase-15 decision (reused documents always pay 5, no free retry); this file's "free retry" text is outdated.
+- ContentService RPCs take only the caller's forwarded user token: `GetQuizSetSnapshot`/`GetQuizSetsByIds` need `quizset:manage` + ownership (service token → PERMISSION_DENIED, > 50 ids → INVALID_ARGUMENT); `GetUserContentStats` any user. So `SERVICE_AUDIENCES` gets no `content`/`assessment` entry.
+- Student views never call content: `ExamRoom.quizSetTitle` is stored at room creation/re-point; teacher views refresh title + `questionCount` with one cached batch call (falls back to the stored title). `QuizSetSummary.question_count` (additive field 4) was added so teacher room lists keep their question counts.
+- `ExamSession.quizSnapshot` is hidden by a global Prisma `omit`; `SnapshotStore` is its only reader. `selectedQuestionIds` are snapshot question ids. The attempt-detail slider lists only the attempt's selected questions. `available-labels` takes an optional `?sessionId=` to count labels from that session's snapshot.
+- `history-stats` keeps its existing keys (`examsCreated`, `flashcardSets`, `totalPDFs`), each `null` when its dependency is down (plan text said `quizSetCount`).
+- content and assessment each run one container with `ROLE=api,worker` (no separate `content-worker` / `assessment-worker` compose services), matching vocabulary and document.
+- content gets the `egress` network and `TURNSTILE_SECRET_KEY` (flashcard study/with-code verify Turnstile tokens), as exam had (review M1).
+- Security fix on the way: `GET /examsessions/:id/quiz` returned the raw session row (accessCode, whitelist, answers) to examinees; it now goes through the whitelist mapper.
+- Shared libs: DocumentService client + error mapping moved to `libs/grpc` (CARRIED from 13; ai-chat uses it); `BaseRepository` got an opt-in Redis `keyNamespace`; the legacy `libs/common/src/events` consumer was deleted (D4, no importers). `libs/messaging` `alsoPublishes` is unused by apps but kept.
+- r2 allowlist: `content` on `UploadFile` (thumbnails) and `DeleteObjects`; `exam` removed everywhere. Broker users `content` (`^content\.`) and `assessment` (`^assessment\.`); postgres init has 10 roles.
+- FE: the drift chip sits in the teacher room-detail session rows (`session-card.tsx` is the student card, untouched); rooms with `sourceDeleted` show "Bộ đề gốc đã bị xóa — không thể tạo phiên thi mới"; D8 public `ExamSessionPage` renders `SessionUnavailable` instead of redirecting.
+- N3: session whitelist ids validated (`z.string().min(1).max(64)`, same as content sharing).

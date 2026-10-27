@@ -1,0 +1,77 @@
+{
+  "score": 9,
+  "criticalCount": 0,
+  "decision": "SEALED",
+  "acceptanceCovered": [
+    "exam-service gone: apps/exam-service does not exist and git grep for exam-service|EXAM_SERVICE_URL in *.ts, *.yaml, *.yml, *.json, *.example under examio-be -> no output; no exam upstream in gateway routes.yaml; exam removed from r2/finance/ai-service allowlists, RabbitMQ users and postgres init list — routes.yaml upstreams content/assessment only; r2-service.controller.ts:19,61,73,101; wallet.grpc.controller.ts:16 MONEY_CALLERS=[content,document]; service_token.py:38; topology.py:23; broker template content/assessment users; 01-service-schemas.sh:17 without exam; git grep row exit 0",
+    "yarn build && yarn typecheck && yarn test && check:deps && check:ownership --strict green; buf lint + breaking (content/v1 is additive) green; content and assessment compose services healthy from an empty volume; examio-fe yarn build && yarn lint && yarn test green — Stage 1/3 rows exit 0 (243 suites/2462 tests, 0 dep and 0 ownership violations, buf breaking clean, compose up --wait healthy, FE 128 tests); check-model-ownership.ts maps content/assessment models",
+    "snapshot: POST /examsessions stores quizSnapshot + quizSnapshotHash (stable content_hash from one content-hash.ts shared with GetQuizSetsByIds); attempt start, GET :id/quiz, secure-quiz, submit/grading and available-labels read only the snapshot; teacher edits a question and deletes the quiz set -> student submit grades with the original answers; room shows sourceDeleted and a new session -> 422 QUIZSET_DELETED; > 1 MB snapshot -> 422 QUIZSET_TOO_LARGE — content-hash.ts:27 used by quiz-set-snapshot.service.ts:108; snapshot.store.ts:26-41 sole reader + prisma.service.ts:15 omit; examattempt.service.ts:283-287,454; examsession.service.ts:596,935-942; quiz-snapshot.ts:92-110; live S4.10-S4.36",
+    "drift + refresh: host get-by-id returns snapshotOutdated/canRefreshSnapshot; POST /examsessions/:id/refresh-snapshot changes the hash while UPCOMING with 0 attempts, else 409 SNAPSHOT_LOCKED (row lock shared with attempt start; race never yields a started attempt plus a changed snapshot); PUT never changes the hash; content UNAVAILABLE -> snapshotOutdated null with 200; snapshot LRU keyed <sessionId>:<hash>; list endpoints never select quizSnapshot — session-lock.ts:14-19 FOR UPDATE at examsession.service.ts:972 and examattempt.service.ts:277,1021; snapshot-drift.ts:27-29,58-66; snapshot.cache.ts:26-28; prisma.service.ts:15 omit; live S4.9-S4.25",
+    "contracts and privacy: GetQuizSetSnapshot non-owner -> NOT_FOUND, no token -> UNAUTHENTICATED; no pre-submit exam:take/flashcard:study response contains answer, accessCode or whitelist (answers only after submit when the teacher enabled showAnswersAfterSubmit); no content or assessment response contains an email key; profile enrichment uses only GetPublicProfilesByIds; permission matrix (STUDENT/TEACHER/ADMIN) holds in both services incl. refresh-snapshot — content.grpc.controller.ts:17-23,37-85 + content.grpc.contract.e2e-spec.ts:72-140; examattempt.service.ts:449-457; examattempt-view.mapper.ts:71-80; examsession-public.mapper.ts:103-123; live S4.11/S4.12/S4.20, thumb-and-perms 9/9",
+    "generation money unchanged in content-service: new file one Debit(gen:<jobId>); reused COMPLETED file generation-only Debit, reused FAILED/PENDING pays 5; insufficient balance -> FAILED with no outbox row; crash after Debit -> reaper refunds once -> CANCELLED; ai.generation.failed -> one Refund; cancel QUEUED -> CANCELLED + one Refund; cancel COMPLETED -> 409; AI_FREE_MODE -> no finance call; Debit/Refund caller list has content and not exam — generation-job.service.ts:82-215; generation-charge.service.ts:43-96; generation-events.handler.ts:113-142; wallet.grpc.controller.ts:16; content e2e generation money/free-mode/events within 193/193 (not run live)",
+    "R2 and events: deleting a QuizSet/FlashCardSet with an R2 thumbnail enqueues r2_delete_tasks in the same tx and content-worker calls DeleteObjects once as svc:content; no deleteFile(/deleteImage( in content-service src outside r2-delete; content.quizset.deleted sets sourceDeleted idempotently; document.deleted nulls HistoryGenerated userStorageId; auth.user.updated drops profile caches; no auth.user.deleted handler in either service — quizset.service.ts:253-271; flashcardset.service.ts:288-298; r2-delete.sender.ts:17-18; quizset-deleted.handler.ts:34-63; generation-events.handler.ts:120-125; live thumbnail row 1->0",
+    "routing and stats: the 4 /student/* routes reach the right upstream (gateway route test); every former exam route is served by content or assessment (route coverage spec green); GET /examattempts/history-stats returns own stats plus the existing keys examsCreated/flashcardSets (content) and totalPDFs (document), with null fields when a dependency is UNAVAILABLE — routes.yaml student-content/student-exam match student-content.controller.ts:14,29 and student-exam.controller.ts:14,29; examattempt.service.ts:1299-1336; route-coverage spec green; live S4.26/S4.30/S4.31",
+    "FE: teacher session views show the banner \"Đề đã thay đổi kể từ khi tạo phiên — Cập nhật đề\" when snapshotOutdated, the \"Cập nhật đề\" button only when canRefreshSnapshot, and refresh clears it; the sourceDeleted notice shows on the room; /auth/me unreachable on the exam session page shows SessionUnavailable; teacher creates quiz -> room -> session, student takes and submits, teacher sees results (live through the gateway); flashcard study and AI generate-from-file keep their contracts (content e2e) — snapshot-banner.ts; snapshot-outdated-banner.tsx:13-39; useExamRoomDetailStore.ts refreshSnapshot; ManageExamRoomDetailPage.tsx sourceDeleted notice; ExamSessionPage.tsx SessionUnavailable; S5.1-S5.8 PASS + D8 rerun PASS"
+  ],
+  "regressionChecked": [
+    "quiz/flashcard authoring + sharing raw SQL (parameterized, table whitelist)",
+    "exam rooms/sessions/attempts privacy mappers",
+    "attempt start vs refresh lock ordering",
+    "AI generation money flow + finance MONEY_CALLERS",
+    "R2 thumbnail deletion via r2_delete_tasks",
+    "student landing /student/* split",
+    "history stats fail-soft",
+    "gateway routes.yaml upstream switch",
+    "broker users/permissions regex",
+    "postgres init role list",
+    "auth SERVICE_AUDIENCES / SERVICE_CLIENTS",
+    "ai-service ALLOWED_CALLERS/ALLOWED_SOURCES",
+    "compose networks (egress) for content/assessment",
+    "FE banner + store cache invalidation",
+    "CI matrix and e2e steps"
+  ],
+  "contractStatus": "CHANGED",
+  "refuted": [],
+  "unproven": [],
+  "reachableRegressions": [],
+  "riskGate": {
+    "humanSignedOff": true
+  },
+  "findings": [
+    {
+      "severity": "Medium",
+      "category": "Deploy/Network",
+      "location": "examio-be/deploy/compose/content.yml:79-82",
+      "summary": "content-service lacked egress while flashcardset.controller.ts:560,604 verify Turnstile tokens. FIXED: egress added, TURNSTILE_SECRET_KEY added to content env examples, infra.yml comment updated; compose config rendered in scratch (content networks egress+internal).",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "Performance",
+      "location": "examio-be/apps/assessment-service/src/modules/snapshot/snapshot.cache.ts:3",
+      "summary": "LRU bounded by count (50), not size; worst case ~100-150 MB per replica.",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Logic",
+      "location": "examio-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts:1020-1031",
+      "summary": "Legacy POST /examattempts has no selectedQuestionIds, RANDOM modes bypassed; pre-existing.",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Concurrency",
+      "location": "examio-be/apps/assessment-service/src/modules/examroom/examroom.service.ts:42-55",
+      "summary": "Room created during quiz-set delete can miss sourceDeleted; session create still 422 QUIZSET_DELETED.",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Docs",
+      "location": "examio-be/deploy/README.md:21",
+      "summary": "Docs still describe exam-service; doc-writer step of this phase.",
+      "disposition": "Defer"
+    }
+  ]
+}

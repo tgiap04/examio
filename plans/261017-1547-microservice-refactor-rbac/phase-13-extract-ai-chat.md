@@ -7,7 +7,7 @@
 - Prior: [phase-11](./phase-11-database-per-service.md) (`r2_delete_tasks`, `r2-key-from-url.ts`), [phase-12](./phase-12-extract-study-room-and-vocabulary.md), [phase-15](./phase-15-document-service-and-ai-service-db.md) (AiService gRPC + document-service + `DeleteDocuments`)
 
 ## Overview
-- Priority: P1 · Status: Implemented, awaiting sign-off (not committed, 2026-10-25) · Effort: 2d (unchanged: the dropped user-purge work offsets the clear-chat/R2 additions) <!-- Red Team: RT-8, RT-11 --> · Depends on: 11, 12, 15 (ai-chat reads `UserStorage` and streams from ai-service, so it needs document-service + `AiService.StreamChat` from phase 15; plan.md agrees). <!-- Reconcile: deps -->
+- Priority: P1 · Status: Done (signed off and committed 2026-10-25, 8b4a881..ebae483) · Effort: 2d (unchanged: the dropped user-purge work offsets the clear-chat/R2 additions) <!-- Red Team: RT-8, RT-11 --> · Depends on: 11, 12, 15 (ai-chat reads `UserStorage` and streams from ai-service, so it needs document-service + `AiService.StreamChat` from phase 15; plan.md agrees). <!-- Reconcile: deps -->
 - Goal: `ai-chat-service` owns AI conversations, AI-teacher subjects (`Subject.systemPrompt`) and chat↔document links. It talks to ai-service over gRPC only, with a service token. After this phase, no HTTP caller of ai-service remains, so the compat HTTP and the last `INTERNAL_SERVICE_TOKEN` users are removed. <!-- Red Team: RT-2 -->
 - Sequential: after 12, before 14 (shared `exam-service.module.ts`, `main.ts`, exam `prisma/schema/**`, routes YAML).
 
@@ -126,7 +126,7 @@ Write first:
 - [x] Remove ai-service HTTP compat + every remaining INTERNAL_SERVICE_TOKEN <!-- Red Team: RT-15 -->. Evidence: grep gate empty; live `/` and `/health` only (POST 405, removed routes 404).
 
 ## Success Criteria
-Status 2026-10-25: 9/9 PASS (criteria 6 and 9 reworded, see notes). Evidence: [phase-13-runs.md](./evidence/phase-13-runs.md), [inspection-verdict.json](./evidence/phase-13/inspection-verdict.json). Not committed; awaiting human sign-off.
+Status 2026-10-25: 9/9 PASS (criteria 6 and 9 reworded, see notes). Evidence: [phase-13-runs.md](./evidence/phase-13-runs.md), [inspection-verdict.json](./evidence/phase-13/inspection-verdict.json). Signed off and committed 2026-10-25 (8b4a881..ebae483).
 - [x] 1. `grep -rn "AIChatModule\|SubjectModule" /Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src` → no output.
 - [x] 2. <!-- Red Team: RT-15 --> `grep -rn "INTERNAL_SERVICE_TOKEN\|x-internal-service-token\|AI_SERVICE_URL"` over `apps`, `libs`, `deploy` (`*.ts`, `*.py`, `*.example`, `*.yml`) → no output. ai-service serves only `/` and `/health` (live: POST 405, removed routes 404). <!-- Reconcile: X7 -->
 - [x] 3. `grep -rn "deleteImage(\|deleteFile(" /Users/tgiap.dev/devs/examio/examio-be/apps/ai-chat-service/src` → no output. Message image R2 keys are deleted only via `r2_delete_tasks` + worker (`svc:ai-chat`). <!-- Red Team: RT-8 -->
