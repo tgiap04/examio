@@ -44,6 +44,9 @@ export interface ExamSession {
     shuffleQuestions?: boolean;
     createdAt?: string;
     updatedAt?: string;
+    // Snapshot drift (host view only)
+    snapshotOutdated?: boolean | null;
+    canRefreshSnapshot?: boolean;
     // Relations
     examRoom?: ExamRoomBasic;
     _count?: {

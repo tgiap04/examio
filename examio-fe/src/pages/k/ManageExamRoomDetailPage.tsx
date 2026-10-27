@@ -61,6 +61,8 @@ import { ASSESS_TYPE } from "@/types/examSession";
 import type { ExamSessionBasic } from "@/types/examRoom";
 import { useExamRoomDetailStore } from "@/stores/useExamRoomDetailStore";
 import { useExamRoomStore } from "@/stores/useExamRoomStore";
+import { useCan } from "@/hooks/useCan";
+import { SnapshotOutdatedBanner } from "./components/snapshot-outdated-banner";
 
 const PAGE_SIZE = 10;
 
@@ -78,9 +80,12 @@ export default function ManageExamRoomDetailPage() {
     createSession,
     updateSession,
     deleteSession,
+    refreshSnapshot,
     reset,
   } = useExamRoomDetailStore();
 
+  const canManageSessions = useCan("exam_session:manage");
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
   const [sessionsPage, setSessionsPage] = useState(1);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -175,6 +180,15 @@ export default function ManageExamRoomDetailPage() {
     }
 
     return success;
+  };
+
+  const handleRefreshSnapshot = async (sessionId: string) => {
+    setRefreshingId(sessionId);
+    const result = await refreshSnapshot(sessionId);
+    setRefreshingId(null);
+    if (result === "locked") {
+      await fetchSessions(id, sessionsPage, PAGE_SIZE, { forceRefresh: true });
+    }
   };
 
   const renderPagination = () => {
@@ -313,7 +327,7 @@ export default function ManageExamRoomDetailPage() {
           </div>
           <div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <div className="flex items-start gap-3"><div className="rounded-lg bg-coral/10 p-2"><Calendar className="h-5 w-5 text-coral" /></div><div><p className="text-sm font-medium text-ink">Bộ đề</p><p className="text-sm text-muted-foreground">{currentExamRoom.quizSet?.title || "Chưa có bộ đề"}</p></div></div>
+              <div className="flex items-start gap-3"><div className="rounded-lg bg-coral/10 p-2"><Calendar className="h-5 w-5 text-coral" /></div><div><p className="text-sm font-medium text-ink">Bộ đề</p><p className="text-sm text-muted-foreground">{currentExamRoom.quizSet?.title || "Chưa có bộ đề"}</p>{currentExamRoom.sourceDeleted && <p className="text-xs text-error">Bộ đề gốc đã bị xóa — không thể tạo phiên thi mới</p>}</div></div>
               <div className="flex items-start gap-3"><div className="rounded-lg bg-accent-teal/10 p-2"><Users className="h-5 w-5 text-accent-teal" /></div><div><p className="text-sm font-medium text-ink">Người tổ chức</p><p className="text-sm text-muted-foreground">{displayUserName(currentExamRoom.host)}</p></div></div>
               <div className="flex items-start gap-3"><div className="rounded-lg bg-accent-amber/10 p-2"><Clock className="h-5 w-5 text-accent-amber" /></div><div><p className="text-sm font-medium text-ink">Ngày tạo</p><p className="text-sm text-muted-foreground">{format(new Date(currentExamRoom.createdAt), "dd/MM/yyyy")}</p></div></div>
             </div>
@@ -355,7 +369,7 @@ export default function ManageExamRoomDetailPage() {
                   <Table>
                     <TableHeader>
                       <TableRow className="border-hairline bg-surface-soft/70 hover:bg-transparent">
-                        <TableHead className="w-[140px] text-muted-foreground font-medium">Trạng thái</TableHead>
+                        <TableHead className="w-[220px] text-muted-foreground font-medium">Trạng thái</TableHead>
                         <TableHead className="text-muted-foreground font-medium">Thời gian bắt đầu</TableHead>
                         <TableHead className="text-muted-foreground font-medium">Thời gian kết thúc</TableHead>
                         <TableHead className="text-center text-muted-foreground font-medium"><Users className="mr-1 inline h-4 w-4" />Thí sinh</TableHead>
@@ -366,7 +380,15 @@ export default function ManageExamRoomDetailPage() {
                     <TableBody>
                       {sessions.map((session) => (
                         <TableRow key={session.id} className="border-hairline hover:bg-surface-soft">
-                          <TableCell>{getStatusBadge(session.startTime, session.endTime || "")}</TableCell>
+                          <TableCell>
+                            {getStatusBadge(session.startTime, session.endTime || "")}
+                            <SnapshotOutdatedBanner
+                              drift={session}
+                              canManage={canManageSessions}
+                              pending={refreshingId === session.id}
+                              onRefresh={() => handleRefreshSnapshot(session.id)}
+                            />
+                          </TableCell>
                           <TableCell className="font-medium text-ink">{format(new Date(session.startTime), "dd/MM/yyyy HH:mm")}</TableCell>
                           <TableCell>{session.endTime ? format(new Date(session.endTime), "dd/MM/yyyy HH:mm") : <span className="text-muted-foreground">—</span>}</TableCell>
                           <TableCell className="text-center"><Badge variant="outline" className="border-hairline">{session.distinctUserCount || 0}</Badge></TableCell>

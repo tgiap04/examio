@@ -236,3 +236,10 @@ export async function getExamSessionStatsApi(
   const response = await api.get(`/examsessions/study/${id}/stats`);
   return response.data;
 }
+
+export async function refreshSnapshotApi(
+  id: string
+): Promise<{ quizSnapshotHash: string }> {
+  const response = await api.post(`/examsessions/${id}/refresh-snapshot`);
+  return response.data;
+}

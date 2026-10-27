@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { setRedirectBackTarget } from "@/lib/authRedirect";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useCan } from "@/hooks/useCan";
+import { SessionUnavailable } from "@/components/organisms/SessionUnavailable";
 import { canLoadExamStats } from "@/lib/rbac/exam-stats-gate";
 import { useTranslation } from "react-i18next";
 import { useStudentMaterialsStore } from "@/stores/useStudentMaterialsStore";
@@ -39,7 +40,7 @@ export default function ExamSessionPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, initializing } = useAuthStore();
+  const { isAuthenticated, initializing, sessionUnavailable } = useAuthStore();
   const canTakeExam = useCan("exam:take");
   const { t } = useTranslation("common");
   const { invalidateExams } = useStudentMaterialsStore();
@@ -63,6 +64,11 @@ export default function ExamSessionPage() {
       }
 
       if (!isAuthenticated) {
+        // /auth/me unreachable is not "signed out": render the retry state instead of bouncing to login.
+        if (sessionUnavailable) {
+          setLoading(false);
+          return;
+        }
         const returnTo = `${location.pathname}${location.search}${location.hash}`;
         setRedirectBackTarget(returnTo);
         navigate(`/login?from=${encodeURIComponent(returnTo)}`, { replace: true });
@@ -112,7 +118,7 @@ export default function ExamSessionPage() {
     if (id) {
       loadData();
     }
-  }, [id, initializing, isAuthenticated, canTakeExam, location.key, navigate]);
+  }, [id, initializing, isAuthenticated, canTakeExam, sessionUnavailable, location.key, navigate]);
 
   const handleVerifyCode = async () => {
     if (accessCode.length !== 6) {
@@ -145,6 +151,10 @@ export default function ExamSessionPage() {
   const handleGoHome = () => {
     navigate("/");
   };
+
+  if (!isAuthenticated && sessionUnavailable) {
+    return <SessionUnavailable />;
+  }
 
   if (loading) {
     return (
