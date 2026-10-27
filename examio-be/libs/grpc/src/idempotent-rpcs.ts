@@ -44,6 +44,10 @@ export const IDEMPOTENT_RPCS: ReadonlySet<string> = new Set([
     'examio.document.v1.DocumentService/GetQuota',
     'examio.document.v1.DocumentService/ListDocuments',
     'examio.document.v1.DocumentService/GetDownloadUrl',
+    // content reads (assessment-service snapshots and counts; nothing is written)
+    'examio.content.v1.ContentService/GetQuizSetSnapshot',
+    'examio.content.v1.ContentService/GetQuizSetsByIds',
+    'examio.content.v1.ContentService/GetUserContentStats',
     // ai reads
     'examio.ai.v1.AiService/ListModels',
     // gateway control plane (set-style, last write wins)

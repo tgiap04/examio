@@ -11,6 +11,7 @@ export * as wordFamilyAdminV1 from './generated/examio/vocabulary/v1/word_family
 export * as wordFamilyV1 from './generated/examio/vocabulary/v1/word_family';
 export * as r2V1 from './generated/examio/r2/v1/r2';
 export * as documentV1 from './generated/examio/document/v1/document';
+export * as contentV1 from './generated/examio/content/v1/content';
 export * as aiV1 from './generated/examio/ai/v1/ai';
 export * as gatewayControlV1 from './generated/examio/gateway/v1/gateway_control';
 
@@ -47,4 +48,5 @@ export const PROTO_FILES = {
     },
     document: { pkg: 'examio.document.v1', file: 'examio/document/v1/document.proto' },
     ai: { pkg: 'examio.ai.v1', file: 'examio/ai/v1/ai.proto' },
+    content: { pkg: 'examio.content.v1', file: 'examio/content/v1/content.proto' },
 } as const;

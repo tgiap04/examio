@@ -15,7 +15,7 @@ message GenerationOptions {
 
 // Payload (`data`) of `content.generation.requested`: a generation job was
 // charged and queued. Published through the outbox by the generation owner
-// (exam `modules/ai` until phase 14, then content) in the transaction that moves
+// (content-service) in the transaction that moves
 // the job PENDING_CHARGE -> QUEUED. Consumed by ai-service, which processes the
 // document inline (from `download_url`) when it has no chunks yet and answers with
 // `ai.generation.completed|failed`.
@@ -35,4 +35,13 @@ message ContentGenerationRequested {
   optional string download_url = 7;
   // Mimetype of the document; only meaningful with download_url.
   optional string mimetype = 8;
+}
+
+// Payload (`data`) of `content.quizset.deleted`: quiz sets were deleted by their owner.
+// Published by content-service through the outbox in the delete transaction. Consumed by
+// assessment-service, which flags the rooms built on those sets (`sourceDeleted`) and drops its
+// cached titles; running sessions keep their snapshot. Idempotent per quiz set id.
+message ContentQuizSetDeleted {
+  repeated string quiz_set_ids = 1;
+  string owner_id = 2;
 }

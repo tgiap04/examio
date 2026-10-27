@@ -1,9 +1,15 @@
 import { Module } from '@nestjs/common';
 import { ServiceMetadata } from '@examio/auth-jwt';
-import { FINANCE_GRPC_REGISTRATION, FinanceClient, GRPC_METADATA_ATTACHER, GrpcClientModule } from '@examio/grpc';
+import {
+    DOCUMENT_GRPC_REGISTRATION,
+    DocumentClient,
+    FINANCE_GRPC_REGISTRATION,
+    FinanceClient,
+    GRPC_METADATA_ATTACHER,
+    GrpcClientModule,
+} from '@examio/grpc';
 import { R2DeleteTaskWriter } from '@examio/messaging';
 import { AI_GRPC_REGISTRATION, AiClient } from '../../clients/ai.client';
-import { DOCUMENT_GRPC_REGISTRATION, DocumentClient } from '../../clients/document.client';
 import { AIChatController } from './ai-chat.controller';
 import { AIChatRepository } from './ai-chat.repository';
 import { AIChatMessageRepository } from './ai-chat-message.repository';

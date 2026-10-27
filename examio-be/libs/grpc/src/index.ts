@@ -8,3 +8,5 @@ export * from './clients/finance.client';
 export * from './clients/idempotency-key';
 export * from './clients/public-profile.client';
 export * from './clients/user-enricher';
+export * from './clients/document.client';
+export * from './clients/document-errors';

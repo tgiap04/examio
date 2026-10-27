@@ -27,7 +27,7 @@ service DocumentService {
   // Ids that are gone or not owned are reported in not_found_ids.
   rpc DeleteDocuments(DeleteDocumentsRequest) returns (DeleteDocumentsResponse);
   // The caller's own documents, newest first, one page at a time (the data
-  // behind `GET /ai/recent-uploads`; exam adds its generated-history summaries).
+  // behind `GET /ai/recent-uploads`; content adds its generated-history summaries).
   rpc ListDocuments(ListDocumentsRequest) returns (ListDocumentsResponse);
   // A 1 h presigned GET for the caller's own document (the generation path
   // hands it to ai-service so it can OCR a document that has no chunks yet).
@@ -35,7 +35,7 @@ service DocumentService {
   rpc GetDownloadUrl(GetDownloadUrlRequest) returns (GetDownloadUrlResponse);
 }
 
-// Mirrors the exam-service `UserStorage.processingStatus` column
+// Mirrors the `UserStorage.processingStatus` column
 // (PENDING | PROCESSING | COMPLETED | FAILED) plus PENDING_CHARGE, the state
 // between "row inserted" and "upload credit debited".
 enum DocumentProcessingStatus {
@@ -49,7 +49,7 @@ enum DocumentProcessingStatus {
   DOCUMENT_PROCESSING_STATUS_FAILED = 5;
 }
 
-// One uploaded file (exam-service `UserStorage`).
+// One uploaded file (`UserStorage`).
 message DocumentInfo {
   string id = 1;
   string user_id = 2;

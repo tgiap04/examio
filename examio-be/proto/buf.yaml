@@ -8,6 +8,10 @@ lint:
     # Contract name fixed by the architecture (examio.gateway.v1.GatewayControl).
     SERVICE_SUFFIX:
       - examio/gateway/v1/gateway_control.proto
+    # The phase 14 contract returns the domain messages themselves (QuizSetSnapshot,
+    # UserContentStats) instead of one-field wrappers, exactly as the plan specifies.
+    RPC_RESPONSE_STANDARD_NAME:
+      - examio/content/v1/content.proto
 breaking:
   use:
     - FILE

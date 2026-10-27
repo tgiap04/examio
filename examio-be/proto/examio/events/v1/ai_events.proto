@@ -44,7 +44,7 @@ message GeneratedItems {
 }
 
 // Payload (`data`) of `ai.generation.completed`. Published by ai-service;
-// consumed by exam (content from phase 14) which writes `HistoryGenerated*`.
+// consumed by content-service, which writes `HistoryGenerated*`.
 // The whole serialized payload stays under 512 KB (the generator caps items so
 // it does; larger results fail the job instead of being truncated).
 message AiGenerationCompleted {
@@ -54,7 +54,7 @@ message AiGenerationCompleted {
   GeneratedItems items = 3;
 }
 
-// Payload (`data`) of `ai.generation.failed`. Consumed by exam/content (job
+// Payload (`data`) of `ai.generation.failed`. Consumed by content-service (job
 // FAILED + `Refund(gen:<jobId>)`).
 message AiGenerationFailed {
   string job_id = 1;

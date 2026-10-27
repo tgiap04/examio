@@ -4,7 +4,7 @@ import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { AuthenticatedRequest } from '@examio/common';
 import { extractHttpToken, RequirePermissions } from '@examio/auth-jwt';
-import { requireUserToken } from '../../clients/document.client';
+import { requireUserToken } from '@examio/grpc';
 import {
     AddDocumentDto,
     ClearChatDto,

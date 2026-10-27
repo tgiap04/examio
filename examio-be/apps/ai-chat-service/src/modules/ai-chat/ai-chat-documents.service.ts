@@ -2,13 +2,21 @@ import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
 import type { Metadata } from '@grpc/grpc-js';
 import { documentV1 } from '@examio/contracts';
 import type { AuthUser } from '@examio/auth-jwt';
-import { DocumentClient, userMetadata } from '../../clients/document.client';
-import { isGrpcUnavailable, toDocumentHttpException } from '../../clients/document-errors';
+import {
+    DocumentClient,
+    isGrpcUnavailable,
+    toDocumentHttpException as mapDocumentError,
+    userMetadata,
+} from '@examio/grpc';
 import { AIChatRepository } from './ai-chat.repository';
 import { ChatAccessService } from './chat-access.service';
 import { resolveDocumentWaitMs, waitForDocuments } from './ai-chat-document-wait';
 
 const Status = documentV1.DocumentProcessingStatus;
+
+/** A missing or foreign document is `DOCUMENT_NOT_FOUND` on the chat routes (the code the web client reads). */
+const toDocumentHttpException = (error: unknown) =>
+    mapDocumentError(error, { notFound: { code: 'DOCUMENT_NOT_FOUND', message: 'Tài liệu không tồn tại' } });
 
 /**
  * The documents of a chat. Every document-service call is made AS the caller (forwarded user token,
