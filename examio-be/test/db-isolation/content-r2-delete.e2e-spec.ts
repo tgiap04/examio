@@ -1,18 +1,18 @@
 import { Pool } from 'pg';
-import { PrismaClient } from '../../apps/exam-service/src/generated/prisma/client';
-import { createPrismaAdapter } from '../../apps/exam-service/src/prisma/create-prisma-adapter';
-import { FlashcardsetService } from '../../apps/exam-service/src/modules/flashcardset/flashcardset.service';
-import { FlashCardSetRepository } from '../../apps/exam-service/src/modules/flashcardset/flashcardset.repository';
+import { PrismaClient } from '../../apps/content-service/src/generated/prisma/client';
+import { createPrismaAdapter } from '../../apps/content-service/src/prisma/create-prisma-adapter';
+import { FlashcardsetService } from '../../apps/content-service/src/modules/flashcardset/flashcardset.service';
+import { FlashCardSetRepository } from '../../apps/content-service/src/modules/flashcardset/flashcardset.repository';
 import { R2DeleteTaskWriter } from '../../libs/messaging/src/r2-delete/r2-delete-task.writer';
 import { toPgConnectionString } from '../../libs/messaging/src/relay-pool';
 import { assertLocal, describeWhenEnabled, urlOf } from './db-env';
 
 /** Deleting a flashcard set with a thumbnail writes the r2_delete_tasks row in the same tx (real Postgres). */
-const url = urlOf('exam');
-const describeDb = describeWhenEnabled(Boolean(url), 'EXAM_DATABASE_URL');
+const url = urlOf('content');
+const describeDb = describeWhenEnabled(Boolean(url), 'CONTENT_DATABASE_URL');
 const BASE = 'https://cdn.examio.test';
 
-describeDb('FlashcardsetService.deleteFlashcardSet -> r2_delete_tasks (exam schema, real Postgres)', () => {
+describeDb('FlashcardsetService.deleteFlashcardSet -> r2_delete_tasks (content schema, real Postgres)', () => {
     const tag = `t${Date.now().toString(36)}`;
     // Owner-scoped key space of the user deleting: flashcardset-thumbnails/<userId>/<random>-<name>.
     const own = `flashcardset-thumbnails/u-e2e/${tag}`;

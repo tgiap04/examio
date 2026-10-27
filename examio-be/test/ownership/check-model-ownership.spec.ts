@@ -56,7 +56,7 @@ describe('check-model-ownership (self-test)', () => {
     });
 
     it('catches the repository modelName idiom', () => {
-        const v = scanSource("protected modelName = 'walletTransaction';", 'apps/exam-service/src/r.ts', 'exam');
+        const v = scanSource("protected modelName = 'walletTransaction';", 'apps/assessment-service/src/r.ts', 'assessment');
         expect(v).toHaveLength(1);
         expect(v[0]).toMatchObject({ model: 'WalletTransaction', owner: 'finance' });
     });

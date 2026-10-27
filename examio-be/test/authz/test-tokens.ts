@@ -28,7 +28,7 @@ export async function createTestAuth(): Promise<TestAuth> {
     const keys = await createTestKeyPair('matrix-kid');
     const verifier = createTokenVerifier({
         issuer: TEST_ISSUER,
-        audiences: [TEST_AUDIENCE, 'exam'],
+        audiences: [TEST_AUDIENCE, 'content'],
         localJwks: { keys: [keys.publicJwk] },
     });
     return {

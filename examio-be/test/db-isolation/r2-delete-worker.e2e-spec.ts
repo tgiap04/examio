@@ -18,15 +18,15 @@ import { toPgConnectionString } from '../../libs/messaging/src/relay-pool';
 import { assertLocal, describeWhenEnabled, urlOf } from './db-env';
 
 /**
- * The real WorkerModule of auth, exam, vocabulary, document and ai-chat (DI, pg pool, R2 gRPC client) drains a
- * queued key through the REAL r2 controller behind its `@ServiceOnly('exam','auth','vocabulary','document','ai-chat')`
+ * The real WorkerModule of auth, content, vocabulary, document and ai-chat (DI, pg pool, R2 gRPC client) drains a
+ * queued key through the REAL r2 controller behind its `@ServiceOnly('auth','vocabulary','document','ai-chat','content')`
  * guard. Needs the five service DB URLs, RABBITMQ_URL (auth worker also runs the outbox
  * relay), RABBITMQ_DOCUMENT_PASS (the document worker consumes `document.events` as its own broker
  * user) and the auth signing key env (JWT_PRIVATE_KEY/JWT_KID/SERVICE_CLIENTS).
  */
 const enabled = Boolean(
     urlOf('auth') &&
-        urlOf('exam') &&
+        urlOf('content') &&
         urlOf('vocabulary') &&
         urlOf('document') &&
         urlOf('aichat') &&
@@ -36,7 +36,7 @@ const enabled = Boolean(
 );
 const describeWorker = describeWhenEnabled(
     enabled,
-    'AUTH/EXAM/VOCABULARY/DOCUMENT/AICHAT_DATABASE_URL, RABBITMQ_URL, RABBITMQ_DOCUMENT_PASS and JWT_PRIVATE_KEY'
+    'AUTH/CONTENT/VOCABULARY/DOCUMENT/AICHAT_DATABASE_URL, RABBITMQ_URL, RABBITMQ_DOCUMENT_PASS and JWT_PRIVATE_KEY'
 );
 
 /** The broker URL the job was given (auth's user); read once because each worker run overrides RABBITMQ_URL. */
@@ -54,7 +54,7 @@ function brokerUrlFor(svc: string): string {
 /** Services that run an R2 delete worker: the app directory and the identity (`svc:<name>`) of their service token. */
 const WORKERS = {
     auth: { dir: 'auth', identity: 'auth' },
-    exam: { dir: 'exam', identity: 'exam' },
+    content: { dir: 'content', identity: 'content' },
     vocabulary: { dir: 'vocabulary', identity: 'vocabulary' },
     document: { dir: 'document', identity: 'document' },
     aichat: { dir: 'ai-chat', identity: 'ai-chat' },
@@ -69,7 +69,7 @@ describeWorker('R2 delete worker modules -> r2 DeleteObjects (e2e)', () => {
 
     beforeAll(async () => {
         assertLocal(urlOf('auth') as string);
-        assertLocal(urlOf('exam') as string);
+        assertLocal(urlOf('content') as string);
         assertLocal(urlOf('vocabulary') as string);
         assertLocal(urlOf('document') as string);
         assertLocal(urlOf('aichat') as string);

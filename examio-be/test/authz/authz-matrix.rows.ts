@@ -15,8 +15,8 @@ export type Row = {
 };
 
 const SID = 'ses_1';
-export const rows: Record<'exam' | 'studyroom' | 'vocabulary' | 'document' | 'aichat' | 'finance' | 'admin', Row[]> = {
-    exam: [
+export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' | 'document' | 'aichat' | 'finance' | 'admin', Row[]> = {
+    content: [
         {
             name: 'POST /quizsets',
             method: 'post',
@@ -77,40 +77,6 @@ export const rows: Record<'exam' | 'studyroom' | 'vocabulary' | 'document' | 'ai
             },
         },
         {
-            name: 'POST /examattempts/start',
-            method: 'post',
-            path: '/examattempts/start',
-            body: { examSessionId: 's' },
-            expect: {
-                STUDENT: '2xx',
-                TEACHER: 403,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 403,
-            },
-        },
-        {
-            name: 'GET /examsessions/study/:id',
-            method: 'get',
-            path: '/examsessions/study/s1',
-            expect: {
-                STUDENT: 200,
-                TEACHER: 403,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 403,
-            },
-        },
-        {
-            name: 'GET /examattempts/list-by-session/:sid',
-            method: 'get',
-            path: `/examattempts/list-by-session/${SID}`,
-            expect: {
-                STUDENT: 403,
-                TEACHER: 200,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 200,
-            },
-        },
-        {
             name: 'POST /ai/generate-from-file',
             method: 'post',
             path: '/ai/generate-from-file',
@@ -122,7 +88,6 @@ export const rows: Record<'exam' | 'studyroom' | 'vocabulary' | 'document' | 'ai
                 TEACHER_ADMIN: 'gate',
             },
         },
-        // generation stays in exam; the upload routes are document-service's (see `document` below)
         {
             name: 'GET /ai/recent-uploads (documents over gRPC + generated history)',
             method: 'get',
@@ -170,17 +135,6 @@ export const rows: Record<'exam' | 'studyroom' | 'vocabulary' | 'document' | 'ai
                 TEACHER: 'gate',
                 ADMIN_ONLY: 403,
                 TEACHER_ADMIN: 'gate',
-            },
-        },
-        {
-            name: 'GET /examsessions/users/search?q=ab',
-            method: 'get',
-            path: '/examsessions/users/search?q=ab',
-            expect: {
-                STUDENT: 403,
-                TEACHER: 400,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 400,
             },
         },
         {
@@ -313,6 +267,86 @@ export const rows: Record<'exam' | 'studyroom' | 'vocabulary' | 'document' | 'ai
             name: 'GET /quizsets/users/search?q=abc',
             method: 'get',
             path: '/quizsets/users/search?q=abc',
+            expect: {
+                STUDENT: 403,
+                TEACHER: 200,
+                ADMIN_ONLY: 403,
+                TEACHER_ADMIN: 200,
+            },
+        },
+        {
+            name: 'GET /student/recent-flashcards',
+            method: 'get',
+            path: '/student/recent-flashcards',
+            expect: {
+                STUDENT: 200,
+                TEACHER: 403,
+                ADMIN_ONLY: 403,
+                TEACHER_ADMIN: 403,
+            },
+        },
+        {
+            name: 'POST /student/pin-flashcard/:id',
+            method: 'post',
+            path: '/student/pin-flashcard/fs1',
+            expect: {
+                STUDENT: '2xx',
+                TEACHER: 403,
+                ADMIN_ONLY: 403,
+                TEACHER_ADMIN: 403,
+            },
+        },
+    ],
+    assessment: [
+        {
+            name: 'POST /examattempts/start',
+            method: 'post',
+            path: '/examattempts/start',
+            body: { examSessionId: 's' },
+            expect: {
+                STUDENT: '2xx',
+                TEACHER: 403,
+                ADMIN_ONLY: 403,
+                TEACHER_ADMIN: 403,
+            },
+        },
+        {
+            name: 'GET /examsessions/study/:id',
+            method: 'get',
+            path: '/examsessions/study/s1',
+            expect: {
+                STUDENT: 200,
+                TEACHER: 403,
+                ADMIN_ONLY: 403,
+                TEACHER_ADMIN: 403,
+            },
+        },
+        {
+            name: 'GET /examattempts/list-by-session/:sid',
+            method: 'get',
+            path: `/examattempts/list-by-session/${SID}`,
+            expect: {
+                STUDENT: 403,
+                TEACHER: 200,
+                ADMIN_ONLY: 403,
+                TEACHER_ADMIN: 200,
+            },
+        },
+        {
+            name: 'GET /examsessions/users/search?q=ab',
+            method: 'get',
+            path: '/examsessions/users/search?q=ab',
+            expect: {
+                STUDENT: 403,
+                TEACHER: 400,
+                ADMIN_ONLY: 403,
+                TEACHER_ADMIN: 400,
+            },
+        },
+        {
+            name: 'POST /examsessions/:id/refresh-snapshot',
+            method: 'post',
+            path: '/examsessions/s1/refresh-snapshot',
             expect: {
                 STUDENT: 403,
                 TEACHER: 200,

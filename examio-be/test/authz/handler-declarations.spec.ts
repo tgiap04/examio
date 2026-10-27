@@ -1,7 +1,8 @@
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { AuthServiceModule } from '../../apps/auth-service/src/auth-service.module';
-import { ExamServiceModule } from '../../apps/exam-service/src/exam-service.module';
+import { ContentServiceModule } from '../../apps/content-service/src/content-service.module';
+import { AssessmentServiceModule } from '../../apps/assessment-service/src/assessment-service.module';
 import { StudyRoomServiceModule } from '../../apps/study-room-service/src/study-room-service.module';
 import { VocabularyServiceModule } from '../../apps/vocabulary-service/src/vocabulary-service.module';
 import { DocumentServiceModule } from '../../apps/document-service/src/document-service.module';
@@ -19,7 +20,8 @@ const ROOT = join(__dirname, '..', '..');
 
 const services = {
     auth: scanService(AuthServiceModule),
-    exam: scanService(ExamServiceModule),
+    content: scanService(ContentServiceModule),
+    assessment: scanService(AssessmentServiceModule),
     studyRoom: scanService(StudyRoomServiceModule),
     vocabulary: scanService(VocabularyServiceModule),
     document: scanService(DocumentServiceModule),
@@ -33,7 +35,8 @@ const byKey = new Map(all.map((h) => [h.key, h]));
 
 describe('authz declarations (deny by default, RT-5 / RT-6 / RT-7)', () => {
     it('scans every service and finds their handlers', () => {
-        expect(services.exam.http.length).toBeGreaterThan(110);
+        expect(services.content.http.length).toBeGreaterThan(70);
+        expect(services.assessment.http.length).toBeGreaterThan(40);
         expect(services.studyRoom.http.length).toBeGreaterThanOrEqual(10);
         expect(services.vocabulary.http.length).toBeGreaterThanOrEqual(10);
         expect(services.document.http.length).toBeGreaterThanOrEqual(7);

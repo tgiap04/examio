@@ -3,9 +3,10 @@ import { INestApplication, Injectable, type Type } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { AuthJwtModule } from '@examio/auth-jwt';
-import { FlashcardSetOwnerResolver } from '../../apps/exam-service/src/modules/flashcardset/flashcardset-owner.resolver';
-import { QuizSetOwnerResolver } from '../../apps/exam-service/src/modules/quizset/quizset-owner.resolver';
-import { ExamServiceModule } from '../../apps/exam-service/src/exam-service.module';
+import { FlashcardSetOwnerResolver } from '../../apps/content-service/src/modules/flashcardset/flashcardset-owner.resolver';
+import { QuizSetOwnerResolver } from '../../apps/content-service/src/modules/quizset/quizset-owner.resolver';
+import { ContentServiceModule } from '../../apps/content-service/src/content-service.module';
+import { AssessmentServiceModule } from '../../apps/assessment-service/src/assessment-service.module';
 import { StudyRoomServiceModule } from '../../apps/study-room-service/src/study-room-service.module';
 import { VocabularyServiceModule } from '../../apps/vocabulary-service/src/vocabulary-service.module';
 import { DocumentServiceModule } from '../../apps/document-service/src/document-service.module';
@@ -112,7 +113,8 @@ describe('authz matrix (real guards, stubbed services)', () => {
 
     beforeAll(async () => {
         auth = await createTestAuth();
-        apps.exam = await boot(auth, ExamServiceModule, 'exam');
+        apps.content = await boot(auth, ContentServiceModule, 'content');
+        apps.assessment = await boot(auth, AssessmentServiceModule, 'assessment');
         apps.studyroom = await boot(
             auth,
             StudyRoomServiceModule,
@@ -134,9 +136,7 @@ describe('authz matrix (real guards, stubbed services)', () => {
         await Promise.all(Object.values(apps).map((a) => a?.close()));
     });
 
-    for (const [service, serviceRows] of Object.entries(rows) as Array<
-        [keyof typeof rows, Row[]]
-    >) {
+    for (const [service, serviceRows] of Object.entries(rows) as Array<[keyof typeof rows, Row[]]>) {
         describe(`${service}-service`, () => {
             it.each(
                 serviceRows.flatMap((row) =>

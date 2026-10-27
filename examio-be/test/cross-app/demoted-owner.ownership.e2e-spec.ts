@@ -3,25 +3,29 @@ import { createPrismaAdapter as createAuthAdapter } from '../../apps/auth-servic
 import { PrismaClient as AuthPrismaClient } from '../../apps/auth-service/src/generated/prisma/client';
 import type { PrismaService as AuthPrismaService } from '../../apps/auth-service/src/prisma';
 import { serviceDatabaseUrl } from './helpers/real-auth-admin';
+import { startRealContent, type RealContent } from './helpers/real-content';
 import { RoleChangeRepository } from '../../apps/auth-service/src/roles/role-change.repository';
 import { RoleChangeService } from '../../apps/auth-service/src/roles/role-change.service';
 import {
-    bootExamApp,
+    bootAssessmentApp,
     rid,
-    type ExamTestApp,
+    type AssessmentTestApp,
     type TestUser,
-} from '../../apps/exam-service/test/ownership/support/exam-test-app';
-import { call } from '../../apps/exam-service/test/ownership/support/http';
-import { seedExamRoom, seedExamSession, seedQuizSet } from '../../apps/exam-service/test/ownership/support/seed';
+} from '../../apps/assessment-service/test/ownership/support/assessment-test-app';
+import { call } from '../../apps/assessment-service/test/ownership/support/http';
+import { seedExamRoom, seedExamSession } from '../../apps/assessment-service/test/ownership/support/seed';
 
 /**
  * Owner-role independence (decision 2026-10-18): access to shared content is
  * decided from the content's own sharing fields, never from the owner's current
- * role. The demotion goes through the real auth `RoleChangeService`.
+ * role. The demotion goes through the real auth `RoleChangeService`. The harness
+ * boots assessment and, next to it, the real content-service: flashcards and quiz
+ * practice are asked of content, exam sessions of assessment, with the same tokens.
  */
+/** One request, to the service that owns the path: exam sessions are assessment's, everything else content's. */
 describe('demoted owner (e2e)', () => {
-    let t: ExamTestApp;
-    /** auth's own database: the account row and the role change live there, exam only has the id. */
+    let t: AssessmentTestApp<RealContent>;
+    /** auth's own database: the account row and the role change live there, assessment only has the id. */
     let authDb: AuthPrismaClient;
     let teacher: TestUser;
     let student: TestUser;
@@ -34,23 +38,44 @@ describe('demoted owner (e2e)', () => {
     const tok: Record<string, string> = {};
     let demotedToken: string;
 
+    const route = (method: 'get' | 'post' | 'put', path: string, token?: string, body?: object) =>
+        call(path.startsWith('/examsessions') || path.startsWith('/examattempts') ? t.server : t.content.server, method, path, token, body);
+
+    /** A quiz set with one question in content's database, shared with `whitelist`. */
+    async function seedRealQuizSet(ownerId: string, whitelist: string[]) {
+        const id = `qs_${rid()}`;
+        await t.content.prisma.quizSet.create({ data: { id, title: id, userId: ownerId, whitelist } });
+        const q = await t.content.prisma.quizQuestion.create({
+            data: { id: `qq_${rid()}`, question: 'Capital of France?', options: ['Paris', 'Rome'], answer: 'A' },
+        });
+        await t.content.prisma.detailsQuizQuestion.create({ data: { quizSetId: id, quizQuestionId: q.id } });
+        return { id };
+    }
+
     async function seedSet(over: Record<string, unknown>) {
         const id = `fs_${rid()}`;
-        await t.prisma.flashCardSet.create({
+        await t.content.prisma.flashCardSet.create({
             data: { id, title: id, userId: teacher.id, ...over } as never,
         });
-        const card = await t.prisma.flashCard.create({
+        const card = await t.content.prisma.flashCard.create({
             data: { id: `fc_${rid()}`, question: 'Q', answer: 'A' },
         });
-        await t.prisma.detailsFlashCard.create({
+        await t.content.prisma.detailsFlashCard.create({
             data: { flashCardSetId: id, flashCardId: card.id },
         });
         return id;
     }
 
     beforeAll(async () => {
-        process.env.DATABASE_URL = serviceDatabaseUrl('EXAM');
-        t = await bootExamApp();
+        process.env.DATABASE_URL = serviceDatabaseUrl('ASSESSMENT');
+        const contentUrl = serviceDatabaseUrl('CONTENT');
+        t = await bootAssessmentApp({
+            content: (keys) =>
+                startRealContent(keys, {
+                    databaseUrl: contentUrl,
+                    rabbitmqUrl: process.env.CONTENT_RABBITMQ_URL ?? (process.env.RABBITMQ_URL as string),
+                }),
+        });
         authDb = new AuthPrismaClient({ adapter: createAuthAdapter(serviceDatabaseUrl('AUTH')) });
         teacher = await t.createUser(['TEACHER']);
         await authDb.user.create({
@@ -106,9 +131,7 @@ describe('demoted owner (e2e)', () => {
         // students keep access to everything the teacher shared
         expect(
             (
-                await call(
-                    t.server,
-                    'get',
+                await route('get',
                     `/flashcardsets/study/${privateSet}`,
                     tok.student
                 )
@@ -116,9 +139,7 @@ describe('demoted owner (e2e)', () => {
         ).toBe(200);
         expect(
             (
-                await call(
-                    t.server,
-                    'get',
+                await route('get',
                     `/examsessions/study/${whitelistedSessionId}`,
                     tok.student
                 )
@@ -126,9 +147,7 @@ describe('demoted owner (e2e)', () => {
         ).toBe(200);
         expect(
             (
-                await call(
-                    t.server,
-                    'get',
+                await route('get',
                     `/examsessions/study/${whitelistedSessionId}/stats`,
                     tok.student
                 )
@@ -137,9 +156,7 @@ describe('demoted owner (e2e)', () => {
         // a code the teacher handed out keeps working (the unlock itself is not remembered until phase 07)
         expect(
             (
-                await call(
-                    t.server,
-                    'post',
+                await route('post',
                     `/examsessions/study/${sessionId}/with-code`,
                     tok.student,
                     { accessCode: CODE }
@@ -147,14 +164,12 @@ describe('demoted owner (e2e)', () => {
             ).status
         ).toBe(201);
         expect(
-            (await call(t.server, 'get', `/flashcardsets/public/${publicSet}`))
+            (await route('get', `/flashcardsets/public/${publicSet}`))
                 .status
         ).toBe(200);
         expect(
             (
-                await call(
-                    t.server,
-                    'post',
+                await route('post',
                     `/flashcardsets/study/${privateSet}/verify-code`,
                     tok.student,
                     { accessCode: CODE }
@@ -169,14 +184,14 @@ describe('demoted owner (e2e)', () => {
             ['put', `/examsessions/${sessionId}`, {}],
             ['get', `/flashcardsets/${privateSet}/sharing`, undefined],
         ] as const) {
-            const res = await call(t.server, method, path, demotedToken, body);
+            const res = await route(method, path, demotedToken, body);
             expect(`${method} ${path} ${res.status} ${res.body.code}`).toBe(
                 `${method} ${path} 403 PERMISSION_DENIED`
             );
         }
 
         // content rows and owner ids are untouched
-        const set = await t.prisma.flashCardSet.findUniqueOrThrow({
+        const set = await t.content.prisma.flashCardSet.findUniqueOrThrow({
             where: { id: privateSet },
         });
         expect(set.userId).toBe(teacher.id);
@@ -190,9 +205,7 @@ describe('demoted owner (e2e)', () => {
     it('the demoted user, now a STUDENT, can still study their own set (owner relation)', async () => {
         expect(
             (
-                await call(
-                    t.server,
-                    'get',
+                await route('get',
                     `/flashcardsets/study/${privateSet}`,
                     demotedToken
                 )
@@ -210,17 +223,13 @@ describe('demoted owner (e2e)', () => {
 
     it("a whitelisted STUDENT still lists and practices a quiz set whose TEACHER owner was demoted", async () => {
         // seeded after the demotion: the set only has its own sharing fields to go on
-        const quiz = await seedQuizSet(t, teacher.id, {
-            whitelist: [student.id],
-        });
-        const list = await call(t.server, 'get', '/quiz-practice/sets', tok.student);
+        const quiz = await seedRealQuizSet(teacher.id, [student.id]);
+        const list = await route('get', '/quiz-practice/sets', tok.student);
         expect(list.status).toBe(200);
         expect(list.body.sets.map((s: { id: string }) => s.id)).toContain(
             quiz.id
         );
-        const start = await call(
-            t.server,
-            'post',
+        const start = await route('post',
             '/quiz-practice/attempts',
             tok.student,
             { quizSetId: quiz.id }
@@ -228,9 +237,7 @@ describe('demoted owner (e2e)', () => {
         expect([200, 201]).toContain(start.status);
         // the demoted owner is a STUDENT now: their own set needs a grant like anyone's
         // (owner relation still lets them preview it)
-        const own = await call(
-            t.server,
-            'post',
+        const own = await route('post',
             '/quiz-practice/attempts',
             demotedToken,
             { quizSetId: quiz.id }

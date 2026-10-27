@@ -14,44 +14,47 @@ export type AllowlistEntry =
     | { key: string; spec: string; selfScoped?: undefined }
     | { key: string; selfScoped: true; spec?: undefined };
 
-const exam = (file: string) =>
-    `apps/exam-service/test/ownership/${file}.ownership.e2e-spec.ts`;
+const content = (file: string) =>
+    `apps/content-service/test/ownership/${file}.ownership.e2e-spec.ts`;
+const assessment = (file: string) =>
+    `apps/assessment-service/test/ownership/${file}.ownership.e2e-spec.ts`;
 const auth = (file: string) =>
     `apps/auth-service/test/ownership/${file}.ownership.e2e-spec.ts`;
 
 export const AUTHENTICATED_ALLOWLIST: AllowlistEntry[] = [
-    // exam-service
+    // assessment-service (exam attempts: examinee or host, 404 for anyone else)
     {
         key: 'ExamAttemptController.getExamAttemptDetail',
-        spec: exam('examattempt'),
+        spec: assessment('examattempt'),
     },
     {
         key: 'ExamAttemptController.getExamAttemptById',
-        spec: exam('examattempt'),
+        spec: assessment('examattempt'),
     },
     {
         key: 'ExamAttemptController.updateExamAttempt',
-        spec: exam('examattempt'),
+        spec: assessment('examattempt'),
     },
-    { key: 'FlashcardsetController.getForStudy', spec: exam('flashcardset') },
+    // content-service (flashcard study / quiz practice)
+    { key: 'FlashcardsetController.getForStudy', spec: content('flashcardset') },
     {
         key: 'FlashcardStudyController.saveProgress',
-        spec: exam('flashcard-study'),
+        spec: content('flashcard-study'),
     },
     {
         key: 'FlashcardStudyController.getProgress',
-        spec: exam('flashcard-study'),
+        spec: content('flashcard-study'),
     },
-    // exam-service quiz practice (phase 07)
+    // content-service quiz practice (phase 07)
     // `@RequireOwnerOrPermission('quiz:practice', QuizSetOwnerResolver)`: set owner or STUDENT; the service
     // then needs a grant on the set (whitelist / code / public), proved in the spec below.
-    { key: 'QuizPracticeController.startAttempt', spec: exam('quiz-practice') },
+    { key: 'QuizPracticeController.startAttempt', spec: content('quiz-practice') },
     // plain `@Authenticated()`: an attempt belongs to its examinee (owner in `where`) and an open one also
     // needs the grant to still hold
-    { key: 'QuizPracticeController.getAttempt', spec: exam('quiz-practice') },
-    { key: 'QuizPracticeController.saveAttempt', spec: exam('quiz-practice') },
-    { key: 'QuizPracticeController.submitAttempt', spec: exam('quiz-practice') },
-    { key: 'QuizPracticeController.listAttempts', spec: exam('quiz-practice') },
+    { key: 'QuizPracticeController.getAttempt', spec: content('quiz-practice') },
+    { key: 'QuizPracticeController.saveAttempt', spec: content('quiz-practice') },
+    { key: 'QuizPracticeController.submitAttempt', spec: content('quiz-practice') },
+    { key: 'QuizPracticeController.listAttempts', spec: content('quiz-practice') },
 
     // auth-service: caller-only data, no path parameter
     { key: 'AuthController.logout', selfScoped: true },

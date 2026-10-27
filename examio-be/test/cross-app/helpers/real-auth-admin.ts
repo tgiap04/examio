@@ -108,7 +108,7 @@ export const authzEvents = (auth: AuthApp, userId: string) =>
     });
 
 /** `<SVC>_DATABASE_URL`: the service-role URL of one service's schema (local throwaway DB only). */
-export function serviceDatabaseUrl(service: 'AUTH' | 'FINANCE' | 'ADMIN' | 'EXAM'): string {
+export function serviceDatabaseUrl(service: 'AUTH' | 'FINANCE' | 'ADMIN' | 'CONTENT' | 'ASSESSMENT'): string {
     const url = process.env[`${service}_DATABASE_URL`];
     if (!url) throw new Error(`${service}_DATABASE_URL is required for the cross-app e2e`);
     return url;

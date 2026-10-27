@@ -9,6 +9,7 @@ import { SubscriptionGrpcController } from '../../apps/finance-service/src/modul
 import { FinanceStatsGrpcController } from '../../apps/finance-service/src/modules/stats/finance-stats.grpc.controller';
 import { DocumentGrpcController } from '../../apps/document-service/src/modules/upload/document.grpc.controller';
 import { R2ServiceController } from '../../apps/r2-service/src/r2-service.controller';
+import { ContentGrpcController } from '../../apps/content-service/src/grpc/content.grpc.controller';
 import { WordFamilyAdminGrpcController } from '../../apps/vocabulary-service/src/modules/word-family/word-family-admin.grpc.controller';
 import { WordFamilyGrpcController } from '../../apps/vocabulary-service/src/modules/word-family/word-family.grpc.controller';
 
@@ -39,9 +40,9 @@ const TABLE: Array<[Ctor, string, Declaration]> = [
     [WalletGrpcController, 'getWallet', anyUserOrService],
     [SubscriptionGrpcController, 'getUserBenefits', anyUserOrService],
     [WalletGrpcController, 'createWallet', { kind: 'service-only', callers: ['auth'] }],
-    [WalletGrpcController, 'debit', { kind: 'permissions-or-service', permissions: ['wallet:use'], callers: ['exam', 'content', 'document'] }],
-    [WalletGrpcController, 'credit', { kind: 'service-only', callers: ['exam', 'content', 'document'] }],
-    [WalletGrpcController, 'refund', { kind: 'service-only', callers: ['exam', 'content', 'document'] }],
+    [WalletGrpcController, 'debit', { kind: 'permissions-or-service', permissions: ['wallet:use'], callers: ['content', 'document'] }],
+    [WalletGrpcController, 'credit', { kind: 'service-only', callers: ['content', 'document'] }],
+    [WalletGrpcController, 'refund', { kind: 'service-only', callers: ['content', 'document'] }],
     [FinanceAdminGrpcController, 'adjustBalance', { kind: 'permissions', permissions: ['finance:admin'] }],
     [FinanceAdminGrpcController, 'refundPayment', { kind: 'permissions', permissions: ['finance:admin'] }],
     [FinanceAdminGrpcController, 'changeTier', { kind: 'permissions', permissions: ['finance:admin'] }],
@@ -49,12 +50,16 @@ const TABLE: Array<[Ctor, string, Declaration]> = [
     [FinanceAdminGrpcController, 'listSubscriptions', { kind: 'permissions', permissions: ['finance:admin'] }],
     [FinanceAdminGrpcController, 'getUserFinance', { kind: 'permissions', permissions: ['finance:admin'] }],
     [FinanceStatsGrpcController, 'getRevenueStats', { kind: 'permissions', permissions: ['stats:read'] }],
-    [R2ServiceController, 'getFileUrl', { kind: 'service-only', callers: ['exam', 'auth'] }],
+    [R2ServiceController, 'getFileUrl', { kind: 'service-only', callers: ['auth'] }],
     [R2ServiceController, 'listUserFiles', anyUserOrService],
-    [R2ServiceController, 'uploadFile', { kind: 'service-only', callers: ['exam', 'auth', 'document'] }],
-    [R2ServiceController, 'deleteFile', { kind: 'service-only', callers: ['exam', 'auth'] }],
-    [R2ServiceController, 'deleteObjects', { kind: 'service-only', callers: ['exam', 'auth', 'vocabulary', 'document', 'ai-chat'] }],
+    [R2ServiceController, 'uploadFile', { kind: 'service-only', callers: ['auth', 'document', 'content'] }],
+    [R2ServiceController, 'deleteFile', { kind: 'service-only', callers: ['auth'] }],
+    [R2ServiceController, 'deleteObjects', { kind: 'service-only', callers: ['auth', 'vocabulary', 'document', 'ai-chat', 'content'] }],
     [R2ServiceController, 'createPresignedDownload', { kind: 'service-only', callers: ['document'] }],
+    // content: owner-scoped by the forwarded user token; a service token never acts (no owner to scope to)
+    [ContentGrpcController, 'getQuizSetSnapshot', { kind: 'permissions', permissions: ['quizset:manage'] }],
+    [ContentGrpcController, 'getQuizSetsByIds', { kind: 'permissions', permissions: ['quizset:manage'] }],
+    [ContentGrpcController, 'getUserContentStats', { kind: 'permissions-or-service', permissions: [], callers: [] }],
     // document: user-scoped by the forwarded token; no service caller is allowlisted on any RPC
     [DocumentGrpcController, 'createUpload', { kind: 'permissions', permissions: ['document:upload'] }],
     [DocumentGrpcController, 'getDocumentsByIds', { kind: 'permissions', permissions: ['document:upload'] }],

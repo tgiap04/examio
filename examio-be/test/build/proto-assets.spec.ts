@@ -4,7 +4,8 @@ import { join } from 'path';
 const REPO = join(__dirname, '../..');
 const APPS = [
     'auth-service',
-    'exam-service',
+    'content-service',
+    'assessment-service',
     'study-room-service',
     'vocabulary-service',
     'document-service',
@@ -141,6 +142,7 @@ describe('phase 15 contracts', () => {
             'AiGenerationCompleted',
             'AiGenerationFailed',
             'ContentGenerationRequested',
+            'ContentQuizSetDeleted',
         ]) {
             expect(events).toMatch(new RegExp(`^message ${message} \\{`, 'm'));
         }

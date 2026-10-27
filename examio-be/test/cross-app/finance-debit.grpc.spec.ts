@@ -27,15 +27,15 @@ import { WalletGrpcController } from '../../apps/finance-service/src/modules/wal
 import { SubscriptionGrpcController } from '../../apps/finance-service/src/modules/sepay/subscription.grpc.controller';
 import { SubscriptionService } from '../../apps/finance-service/src/modules/sepay/subscription.service';
 import { WalletMoneyService } from '../../apps/finance-service/src/modules/wallet/wallet-money.service';
-import { GenerationChargeService } from '../../apps/exam-service/src/modules/ai/generation-charge.service';
+import { GenerationChargeService } from '../../apps/content-service/src/modules/ai/generation-charge.service';
 import { buildMetadata } from '@examio/grpc';
 
 /**
- * Real gRPC round trip exam -> finance over the generated contracts, through real finance guards: the AI
+ * Real gRPC round trip content -> finance over the generated contracts, through real finance guards: the AI
  * generation charge (GenerationChargeService.debit -> WalletService/Debit as the user, .refund ->
- * WalletService/Refund as svc:exam) moves money once per idempotency key and still fails closed.
+ * WalletService/Refund as svc:content) moves money once per idempotency key and still fails closed.
  */
-describe('exam -> finance debit over gRPC', () => {
+describe('content -> finance debit over gRPC', () => {
     let server: TestGrpcServer;
     let service: GenerationChargeService;
     let finance: FinanceClient;
@@ -82,7 +82,7 @@ describe('exam -> finance debit over gRPC', () => {
         server = await startTestGrpcServer(financeModule, [PROTO_FILES.wallet, PROTO_FILES.subscription]);
 
         process.env[FINANCE_GRPC_REGISTRATION.urlEnv] = server.url;
-        const examModule = await Test.createTestingModule({
+        const consumerModule = await Test.createTestingModule({
             imports: [GrpcClientModule.register(FINANCE_GRPC_REGISTRATION)],
             providers: [
                 FinanceClient,
@@ -94,7 +94,7 @@ describe('exam -> finance debit over gRPC', () => {
                             new ServiceTokenClient({
                                 fetch: async (audience) => ({
                                     token: await signTestToken(keys, {
-                                        claims: serviceClaims('exam'),
+                                        claims: serviceClaims('content'),
                                         audience,
                                     }),
                                     expiresAt: Date.now() + 300_000,
@@ -104,14 +104,14 @@ describe('exam -> finance debit over gRPC', () => {
                 },
             ],
         }).compile();
-        await examModule.init();
+        await consumerModule.init();
         rawWallet = createTestGrpcClient(server.url, [PF.wallet, PF.subscription]).getService<walletV1.WalletServiceClient>(
             walletV1.WALLET_SERVICE_NAME
         );
-        finance = examModule.get(FinanceClient);
+        finance = consumerModule.get(FinanceClient);
         // Only the money side is under test: the job row bookkeeping is a stub.
         service = new GenerationChargeService(finance, { markRefunded: jest.fn() } as never, {} as never);
-        consumer = examModule;
+        consumer = consumerModule;
     });
 
     afterAll(async () => {
@@ -209,7 +209,7 @@ describe('exam -> finance debit over gRPC', () => {
         });
     });
 
-    describe('Refund as svc:exam', () => {
+    describe('Refund as svc:content', () => {
         it('reverses the debit by its key through the real service-only guard and settles the job', async () => {
             money.refund.mockResolvedValue({ alreadyApplied: false, transaction: debited({ direction: 'ADD' }).transaction });
             const markRefunded = jest.fn();
@@ -262,7 +262,7 @@ describe('exam -> finance debit over gRPC', () => {
             await expect(lastValueFrom(rawWallet.debit(req, md))).rejects.toMatchObject({ code: 7 });
         });
 
-        it('svc:auth is PERMISSION_DENIED, only exam/content/document pass', async () => {
+        it('svc:auth is PERMISSION_DENIED, only content/document pass', async () => {
             const md = new Metadata();
             md.set('authorization', `Bearer ${await signTestToken(keys, { claims: serviceClaims('auth'), audience: 'finance' })}`);
             await expect(lastValueFrom(rawWallet.debit(req, md))).rejects.toMatchObject({ code: 7 });
