@@ -17,10 +17,9 @@ services:
                 VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-}
                 VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
         container_name: examio-frontend
-        environment:
-            - BACKEND_URL=${BACKEND_URL:-http://examio-gateway:3000}
         ports:
-            - '${FE_PORT:-6368}:80'
+            # Loopback only: the host reverse proxy (nginx/Caddy) is the way in. FE_BIND=0.0.0.0 to expose it.
+            - '${FE_BIND:-127.0.0.1}:${FE_PORT:-6368}:80'
         restart: unless-stopped
         networks:
             - edge
