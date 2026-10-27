@@ -20,3 +20,10 @@ export function resend(message: {
         documentName: message.documentName || undefined,
     };
 }
+
+/** The message a regenerate replaces: it and every later message are deleted once the new answer is accepted. */
+export interface ReplacedMessage {
+    id: string;
+    createdAt: Date;
+    imageUrl: string | null;
+}

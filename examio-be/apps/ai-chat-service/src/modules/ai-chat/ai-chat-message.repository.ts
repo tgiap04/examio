@@ -19,10 +19,13 @@ export class AIChatMessageRepository {
         return this.prisma.aIChatMessage.findMany({ where: { chatId }, orderBy: { createdAt: 'asc' } });
     }
 
-    /** The most recent `limit` messages in chronological order (AI context without the whole history). */
-    async findRecent(chatId: string, limit: number) {
+    /**
+     * The most recent `limit` messages in chronological order (AI context without the whole history);
+     * with `before`, only those created strictly before it.
+     */
+    async findRecent(chatId: string, limit: number, before?: Date) {
         const messages = await this.prisma.aIChatMessage.findMany({
-            where: { chatId },
+            where: { chatId, ...(before && { createdAt: { lt: before } }) },
             orderBy: { createdAt: 'desc' },
             take: limit,
         });
@@ -52,7 +55,10 @@ export class AIChatMessageRepository {
         });
     }
 
-    countUserMessagesInChat(chatId: string) {
-        return this.prisma.aIChatMessage.count({ where: { chatId, role: 'user' } });
+    /** `before`: count only messages older than it (a regenerate deletes that one and every later message). */
+    countUserMessagesInChat(chatId: string, before?: Date) {
+        return this.prisma.aIChatMessage.count({
+            where: { chatId, role: 'user', ...(before && { createdAt: { lt: before } }) },
+        });
     }
 }

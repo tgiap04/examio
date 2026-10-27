@@ -30,6 +30,8 @@ export interface DocumentWaitDeps {
     sleep(ms: number): Promise<void>;
     now(): number;
     onPollError?(error: unknown): void;
+    /** The client left: polling stops (`sleep` is expected to return early too). */
+    signal?: AbortSignal;
 }
 
 /** COMPLETED and FAILED are final for a chat message: there is nothing more to wait for. */
@@ -41,12 +43,14 @@ const isSettled = (doc: documentV1.DocumentInfo): boolean =>
  * Polls until every id is COMPLETED or FAILED (an id that vanished counts as done), for at most `waitMs`.
  * Returns the ids still unsettled when the budget ran out (empty = everything settled). A poll that
  * fails is retried until the budget is spent; the wait never throws and never exceeds `waitMs`.
+ * An aborted `deps.signal` ends it at once with the ids still pending.
  */
 export async function waitForDocuments(ids: string[], waitMs: number, deps: DocumentWaitDeps): Promise<string[]> {
     const deadline = deps.now() + waitMs;
     let pending = [...new Set(ids)];
     let interval = POLL_START_MS;
     for (;;) {
+        if (deps.signal?.aborted) return pending;
         try {
             const docs = await deps.fetchDocuments(pending);
             const unsettled = new Set(docs.filter((doc) => !isSettled(doc)).map((doc) => doc.id));
@@ -55,6 +59,7 @@ export async function waitForDocuments(ids: string[], waitMs: number, deps: Docu
             deps.onPollError?.(error);
         }
         if (pending.length === 0) return [];
+        if (deps.signal?.aborted) return pending;
         const left = deadline - deps.now();
         if (left <= 0) return pending;
         await deps.sleep(Math.min(interval, left));

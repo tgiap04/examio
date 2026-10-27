@@ -6,7 +6,7 @@ import { AIChatDeletionService } from './ai-chat-deletion.service';
 import { AIChatDocumentsService } from './ai-chat-documents.service';
 import { AIChatTurnService, type MessageInput } from './ai-chat-turn.service';
 import { ChatAccessService } from './chat-access.service';
-import { regeneratable, resend } from './regenerate';
+import { regeneratable, resend, type ReplacedMessage } from './regenerate';
 
 const APOLOGY = 'Xin lỗi, có lỗi xảy ra khi xử lý câu hỏi của bạn.';
 
@@ -23,15 +23,17 @@ export class AIChatAnswerService {
         private readonly ai: AiClient
     ) {}
 
-    async sendMessage(chatId: string, user: AuthUser, input: MessageInput, userToken: string) {
-        const { chat, requestedIds } = await this.turn.admit(chatId, user, input, userToken);
+    /** `replaces` (regenerate): that message and everything after it is deleted once the answer is in hand. */
+    async sendMessage(chatId: string, user: AuthUser, input: MessageInput, userToken: string, replaces?: ReplacedMessage) {
+        const { chat, requestedIds } = await this.turn.admit(chatId, user, input, userToken, replaces?.createdAt);
         const documentIds = await this.documents.effectiveIds(chat.id, requestedIds);
         await this.documents.ensureReady(documentIds, userToken);
-        const { history, isFirstMessage } = await this.turn.history(chat.id, input.message);
+        const { history, isFirstMessage } = await this.turn.history(chat.id, input.message, replaces?.createdAt);
+        const request = await this.turn.aiRequest(chat, input, history, documentIds);
 
         let answer: string;
         try {
-            const response = await this.ai.query({ query: input.message, history, userStorageId: documentIds[0] });
+            const response = await this.ai.query(request);
             answer = response.answer || 'No response';
         } catch (error) {
             if (shouldSurfaceAiFailure(error)) throw toAiHttpException(error);
@@ -39,17 +41,17 @@ export class AIChatAnswerService {
             answer = APOLOGY;
         }
 
+        if (replaces) await this.deletion.deleteFrom(chat, replaces);
         const userMessage = await this.turn.saveUserMessage(chat, input);
         const assistantMessage = await this.turn.saveAssistantMessage(chat.id, answer);
         const { title } = await this.turn.titleFirstMessage(chat, isFirstMessage, input.message);
         return { success: true, userMessage, assistantMessage, chatTitle: title };
     }
 
-    /** Deletes the message and everything after it, then sends the message again. */
+    /** Sends the message again; only once that is accepted and answered are it and everything after it deleted. */
     async regenerateFromMessage(messageId: string, user: AuthUser, userToken: string) {
         const { message, chat } = await this.access.ownedMessage(messageId, user);
         regeneratable(message);
-        await this.deletion.deleteFrom(chat, message);
-        return this.sendMessage(chat.id, user, resend(message), userToken);
+        return this.sendMessage(chat.id, user, resend(message), userToken, message);
     }
 }

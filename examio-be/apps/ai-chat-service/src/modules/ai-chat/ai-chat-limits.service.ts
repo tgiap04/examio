@@ -1,7 +1,7 @@
 import { ForbiddenException, HttpException, Injectable, Logger } from '@nestjs/common';
 import { z } from 'zod';
 import { buildMetadata, FinanceClient } from '@examio/grpc';
-import { RedisService } from '@examio/redis';
+import { EXPIRED_TIME, RedisService } from '@examio/redis';
 import {
     BENEFITS_CACHE_PREFIX,
     BENEFITS_CACHE_SECONDS,
@@ -21,11 +21,14 @@ export type Benefits = z.infer<typeof benefitsSchema>;
 const UNLIMITED = -1;
 
 const benefitsCacheKey = (userId: string): string => `${BENEFITS_CACHE_PREFIX}${userId}`;
+/** When the plan of a user last changed (ms): a read that began before it must not cache its answer. */
+const invalidatedAtKey = (userId: string): string => `${BENEFITS_CACHE_PREFIX}invalidated-at:${userId}`;
 
 /**
  * Subscription limits of AI chat. The plan's benefits come from finance (`GetUserBenefits`, as the
  * caller) and are cached 5 minutes under `aichat:benefits:<userId>`; the `finance.subscription.changed`
- * consumer deletes the key so a tier change applies at once. Unknown benefits fail SAFE (Free tier).
+ * consumer deletes the key so a tier change applies at once, and leaves a timestamp so a read that was
+ * already waiting on finance does not write the old plan back after the delete. Unknown benefits fail SAFE (Free tier).
  */
 @Injectable()
 export class AIChatLimitsService {
@@ -37,8 +40,11 @@ export class AIChatLimitsService {
         private readonly redis: RedisService
     ) {}
 
-    /** Throws 429 (too many messages this minute) or 403 (this chat is full) when the user may not send. */
-    async assertCanSend(userId: string, chatId: string, userToken: string): Promise<void> {
+    /**
+     * Throws 429 (too many messages this minute) or 403 (this chat is full) when the user may not send.
+     * A regenerate passes `replacesFrom`: the messages it deletes do not count toward the chat limit.
+     */
+    async assertCanSend(userId: string, chatId: string, userToken: string, replacesFrom?: Date): Promise<void> {
         const benefits = await this.benefits(userId, userToken);
 
         if (benefits.messagesPerMinute !== UNLIMITED) {
@@ -55,7 +61,7 @@ export class AIChatLimitsService {
             }
         }
         if (benefits.chatMessagesLimit !== UNLIMITED) {
-            const inChat = await this.messages.countUserMessagesInChat(chatId);
+            const inChat = await this.messages.countUserMessagesInChat(chatId, replacesFrom);
             if (inChat >= benefits.chatMessagesLimit) {
                 throw new ForbiddenException({
                     statusCode: 403,
@@ -69,13 +75,14 @@ export class AIChatLimitsService {
     async benefits(userId: string, userToken: string): Promise<Benefits> {
         const cached = await this.readCache(userId);
         if (cached) return cached;
+        const startedAt = Date.now();
         try {
             const fresh = await this.finance.getUserBenefits(
                 userId,
                 buildMetadata({ authorization: `Bearer ${userToken}` })
             );
             const benefits = benefitsSchema.parse(fresh);
-            await this.writeCache(userId, benefits);
+            if (!(await this.invalidatedSince(userId, startedAt))) await this.writeCache(userId, benefits);
             return benefits;
         } catch (error) {
             this.logger.error(`Error getting subscription benefits: ${(error as Error).message}`);
@@ -85,7 +92,20 @@ export class AIChatLimitsService {
 
     /** `finance.subscription.changed`: the next message reads the new plan. */
     async invalidate(userId: string): Promise<void> {
+        // The marker first: a read finishing between the two calls then sees it and skips its write.
+        await this.redis.set(invalidatedAtKey(userId), Date.now(), EXPIRED_TIME.TEN_MINUTES);
         await this.redis.del(benefitsCacheKey(userId));
+    }
+
+    /** True when the plan changed at or after `startedAt`. A marker that cannot be read counts as "no" (the TTL bounds the staleness). */
+    private async invalidatedSince(userId: string, startedAt: number): Promise<boolean> {
+        try {
+            const at = Number(await this.redis.get(invalidatedAtKey(userId)));
+            return Number.isFinite(at) && at >= startedAt;
+        } catch (error) {
+            this.logger.warn(`Benefits invalidation marker read failed: ${(error as Error).message}`);
+            return false;
+        }
     }
 
     private async readCache(userId: string): Promise<Benefits | null> {

@@ -183,4 +183,26 @@ describe('AIChatDocumentsService.ensureReady (OCR wait)', () => {
         expect(documents.ensureProcessed).not.toHaveBeenCalled(); // PROCESSING is already being worked on
         expect(documents.getDocumentsByIds.mock.calls.length).toBeGreaterThanOrEqual(3);
     });
+
+    it('a client that leaves stops the polling: the wait ends at once and no further poll is made', async () => {
+        jest.useFakeTimers();
+        const { documents, checker } = build([S.DOCUMENT_PROCESSING_STATUS_PROCESSING]);
+        const controller = new AbortController();
+        const run = checker.ensureReady(['d1'], token, undefined, controller.signal);
+
+        await jest.advanceTimersByTimeAsync(3_000);
+        const polls = documents.getDocumentsByIds.mock.calls.length;
+        controller.abort();
+        await expect(run).resolves.toBeUndefined();
+        await jest.advanceTimersByTimeAsync(60_000);
+
+        expect(documents.getDocumentsByIds).toHaveBeenCalledTimes(polls);
+    });
+
+    it('an already aborted signal never starts a wait', async () => {
+        jest.useFakeTimers();
+        const { documents, checker } = build([S.DOCUMENT_PROCESSING_STATUS_PROCESSING]);
+        await checker.ensureReady(['d1'], token, undefined, AbortSignal.abort());
+        expect(documents.getDocumentsByIds).toHaveBeenCalledTimes(1); // the initial read only
+    });
 });

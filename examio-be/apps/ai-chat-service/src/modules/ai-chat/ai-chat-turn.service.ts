@@ -32,19 +32,26 @@ export class AIChatTurnService {
     /**
      * Everything that can still be refused with an HTTP status, before anything is saved or sent:
      * the chat is the caller's, the plan's limits allow it, and every document the message names is
-     * the caller's (before it may influence the AI context).
+     * the caller's (before it may influence the AI context). A regenerate passes `replacesFrom` (see assertCanSend).
      */
-    async admit(chatId: string, user: AuthUser, input: MessageInput, userToken: string) {
+    async admit(chatId: string, user: AuthUser, input: MessageInput, userToken: string, replacesFrom?: Date) {
         const chat = await this.access.ownedChat(chatId, user);
-        await this.limits.assertCanSend(user.id, chat.id, userToken);
+        await this.limits.assertCanSend(user.id, chat.id, userToken, replacesFrom);
         const requestedIds = [...new Set([...(input.documentIds ?? []), ...(input.documentId ? [input.documentId] : [])])];
         await this.documents.assertOwned(requestedIds, userToken);
         return { chat, requestedIds };
     }
 
-    /** The last messages as the model gets them (the new user message last), and whether this is the chat's first. */
-    async history(chatId: string, message: string): Promise<{ history: aiV1.ChatMessage[]; isFirstMessage: boolean }> {
-        const recent = await this.messages.findRecent(chatId, HISTORY_FETCH_LIMIT);
+    /**
+     * The last messages as the model gets them (the new user message last), and whether this is the chat's first.
+     * A regenerate passes `before` (the replaced message's time): what is about to be deleted is not context.
+     */
+    async history(
+        chatId: string,
+        message: string,
+        before?: Date
+    ): Promise<{ history: aiV1.ChatMessage[]; isFirstMessage: boolean }> {
+        const recent = await this.messages.findRecent(chatId, HISTORY_FETCH_LIMIT, before);
         const history = [...recent.map((m) => ({ role: m.role, content: m.content })), { role: 'user', content: message }]
             .slice(-HISTORY_KEEP)
             .map(({ role, content }) => ({
@@ -54,8 +61,25 @@ export class AIChatTurnService {
         return { history, isFirstMessage: recent.length === 0 };
     }
 
+    /** The one request both ai-service calls (`Query` and `StreamChat`) are made with. */
+    async aiRequest(
+        chat: OwnedChat,
+        input: MessageInput,
+        history: aiV1.ChatMessage[],
+        documentIds: string[]
+    ): Promise<aiV1.QueryRequest & aiV1.StreamChatRequest> {
+        const systemPrompt = await this.systemPromptOf(chat);
+        return {
+            query: input.message,
+            history,
+            userStorageId: documentIds[0],
+            modelType: input.modelType || undefined,
+            systemPrompt: systemPrompt ?? undefined,
+        };
+    }
+
     /** The AI teacher's prompt of the chat's subject. It goes to ai-service only, never to a client. */
-    systemPromptOf(chat: OwnedChat): Promise<string | null> {
+    private systemPromptOf(chat: OwnedChat): Promise<string | null> {
         return chat.subjectId ? this.chats.findSubjectPrompt(chat.subjectId) : Promise.resolve(null);
     }
 

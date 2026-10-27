@@ -14,6 +14,20 @@ import { resolveDocumentWaitMs, waitForDocuments } from './ai-chat-document-wait
 
 const Status = documentV1.DocumentProcessingStatus;
 
+/** Resolves after `ms`, or at once when `signal` aborts (the timer is cleared either way). */
+function abortableSleep(ms: number, signal?: AbortSignal): Promise<void> {
+    return new Promise((resolve) => {
+        const finish = (): void => {
+            clearTimeout(timer);
+            signal?.removeEventListener('abort', finish);
+            resolve();
+        };
+        const timer = setTimeout(finish, ms);
+        if (signal?.aborted) return finish();
+        signal?.addEventListener('abort', finish, { once: true });
+    });
+}
+
 /** A missing or foreign document is `DOCUMENT_NOT_FOUND` on the chat routes (the code the web client reads). */
 const toDocumentHttpException = (error: unknown) =>
     mapDocumentError(error, { notFound: { code: 'DOCUMENT_NOT_FOUND', message: 'Tài liệu không tồn tại' } });
@@ -87,9 +101,9 @@ export class AIChatDocumentsService {
      * document to be COMPLETED or FAILED, polling `GetDocumentsByIds` for at most
      * `AI_CHAT_DOCUMENT_WAIT_MS` (default 2 minutes). On timeout it goes on without that document's
      * context. `onWait` fires once, right before a wait starts, so a stream can start its heartbeat.
-     * Never throws.
+     * An aborted `signal` (the client left) stops the wait. Never throws.
      */
-    async ensureReady(documentIds: string[], userToken: string, onWait?: () => void): Promise<void> {
+    async ensureReady(documentIds: string[], userToken: string, onWait?: () => void, signal?: AbortSignal): Promise<void> {
         if (documentIds.length === 0) return;
         const metadata = userMetadata(userToken);
         let docs: documentV1.DocumentInfo[];
@@ -105,13 +119,14 @@ export class AIChatDocumentsService {
         const toWaitFor = docs
             .filter((doc) => doc.processingStatus !== Status.DOCUMENT_PROCESSING_STATUS_COMPLETED)
             .map((doc) => doc.id);
-        if (toWaitFor.length === 0) return;
+        if (toWaitFor.length === 0 || signal?.aborted) return;
 
         onWait?.();
         const names = new Map(docs.map((doc) => [doc.id, doc.filename]));
         const timedOut = await waitForDocuments(toWaitFor, this.documentWaitMs, {
             fetchDocuments: (ids) => this.documents.getDocumentsByIds(ids, metadata),
-            sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+            sleep: (ms) => abortableSleep(ms, signal),
+            signal,
             now: () => Date.now(),
             onPollError: (error) => this.logger.warn(`Poll failed: ${(error as Error).message}`),
         });

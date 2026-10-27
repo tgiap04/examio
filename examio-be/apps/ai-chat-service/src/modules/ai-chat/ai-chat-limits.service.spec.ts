@@ -39,7 +39,14 @@ describe('AIChatLimitsService', () => {
         it('answers 403 once the chat reaches chatMessagesLimit', async () => {
             messages.countUserMessagesInChat.mockResolvedValue(30);
             await expect(service.assertCanSend('u1', 'c1', 'tok')).rejects.toThrow(ForbiddenException);
-            expect(messages.countUserMessagesInChat).toHaveBeenCalledWith('c1');
+            expect(messages.countUserMessagesInChat).toHaveBeenCalledWith('c1', undefined);
+        });
+
+        it('lets a full chat regenerate: only messages before the replaced one count toward chatMessagesLimit', async () => {
+            const replacedAt = new Date('2026-10-27T10:00:00Z');
+            messages.countUserMessagesInChat.mockImplementation(async (_chatId: string, before?: Date) => (before ? 29 : 30));
+            await expect(service.assertCanSend('u1', 'c1', 'tok', replacedAt)).resolves.toBeUndefined();
+            expect(messages.countUserMessagesInChat).toHaveBeenCalledWith('c1', replacedAt);
         });
 
         it('skips both counts for unlimited (-1) benefits', async () => {
@@ -90,6 +97,34 @@ describe('AIChatLimitsService', () => {
             redis.set.mockRejectedValue(new Error('redis down'));
             finance.getUserBenefits.mockResolvedValue(PRO);
             await expect(service.benefits('u1', 'tok')).resolves.toEqual(PRO);
+        });
+
+        it('a read that was in flight while the plan changed does not write its stale answer back', async () => {
+            const store = new Map<string, unknown>();
+            redis.get.mockImplementation(async (key: string) => store.get(key) ?? null);
+            redis.set.mockImplementation(async (key: string, value: unknown) => void store.set(key, value));
+            redis.del.mockImplementation(async (key: string) => void store.delete(key));
+            let answer!: (value: typeof FREE) => void;
+            finance.getUserBenefits.mockReturnValue(new Promise((resolve) => (answer = resolve)));
+
+            const inFlight = service.benefits('u1', 'tok'); // asks finance (still the old plan)
+            await new Promise((resolve) => setImmediate(resolve));
+            await service.invalidate('u1'); // finance.subscription.changed arrives meanwhile
+            answer(FREE);
+
+            await expect(inFlight).resolves.toEqual(FREE); // this caller still gets what finance said
+            expect(store.has(`${BENEFITS_CACHE_PREFIX}u1`)).toBe(false); // but the next one asks finance again
+        });
+
+        it('a read that starts after the invalidation caches normally', async () => {
+            const store = new Map<string, unknown>();
+            redis.get.mockImplementation(async (key: string) => store.get(key) ?? null);
+            redis.set.mockImplementation(async (key: string, value: unknown) => void store.set(key, value));
+            finance.getUserBenefits.mockResolvedValue(PRO);
+            await service.invalidate('u1');
+            await new Promise((resolve) => setTimeout(resolve, 5));
+            await service.benefits('u1', 'tok');
+            expect(store.get(`${BENEFITS_CACHE_PREFIX}u1`)).toEqual(PRO);
         });
 
         it('invalidate deletes the key of that user only', async () => {

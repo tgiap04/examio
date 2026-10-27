@@ -8,7 +8,7 @@ import { AIChatDeletionService } from './ai-chat-deletion.service';
 import { AIChatDocumentsService } from './ai-chat-documents.service';
 import { AIChatTurnService, type MessageInput } from './ai-chat-turn.service';
 import { ChatAccessService, type OwnedChat } from './chat-access.service';
-import { regeneratable, resend } from './regenerate';
+import { regeneratable, resend, type ReplacedMessage } from './regenerate';
 import { SseResponse } from './sse-response';
 import { pumpFrames, type PumpResult } from './stream-pump';
 
@@ -38,12 +38,14 @@ export class AIChatStreamService {
         return this.run(chatId, user, input, userToken, sse, { announceStart: true });
     }
 
-    /** Deletes the message and everything after it, then streams the answer to it again (no `started` frame). */
+    /**
+     * Streams the answer to the message again (no `started` frame). The message and everything after it
+     * are deleted only once the regenerate is admitted and ai-service has opened the stream.
+     */
     async regenerateStream(messageId: string, user: AuthUser, userToken: string, sse: SseResponse): Promise<void> {
         const { message, chat } = await this.access.ownedMessage(messageId, user);
         regeneratable(message);
-        await this.deletion.deleteFrom(chat, message);
-        return this.run(chat.id, user, resend(message), userToken, sse, { announceStart: false });
+        return this.run(chat.id, user, resend(message), userToken, sse, { announceStart: false, replaces: message });
     }
 
     private async run(
@@ -52,27 +54,17 @@ export class AIChatStreamService {
         input: MessageInput,
         userToken: string,
         sse: SseResponse,
-        options: { announceStart: boolean }
+        options: { announceStart: boolean; replaces?: ReplacedMessage }
     ): Promise<void> {
         const commit = () => sse.commit({ started: options.announceStart });
-        const { chat, requestedIds } = await this.turn.admit(chatId, user, input, userToken);
+        const { chat, requestedIds } = await this.turn.admit(chatId, user, input, userToken, options.replaces?.createdAt);
         const documentIds = await this.documents.effectiveIds(chat.id, requestedIds);
         // A wait for OCR can take minutes: start the stream (and its heartbeat) first so no proxy gives up.
-        await this.documents.ensureReady(documentIds, userToken, commit);
+        await this.documents.ensureReady(documentIds, userToken, commit, sse.signal);
         if (sse.signal.aborted) return;
 
-        const { history, isFirstMessage } = await this.turn.history(chat.id, input.message);
-        const systemPrompt = await this.turn.systemPromptOf(chat);
-        const stream = await this.open(
-            {
-                query: input.message,
-                history,
-                userStorageId: documentIds[0],
-                modelType: input.modelType || undefined,
-                systemPrompt: systemPrompt ?? undefined,
-            },
-            sse
-        );
+        const { history, isFirstMessage } = await this.turn.history(chat.id, input.message, options.replaces?.createdAt);
+        const stream = await this.open(await this.turn.aiRequest(chat, input, history, documentIds), sse);
         if (!stream) return;
 
         // A stream that ended by itself (done / error) is left to finish; anything else is cancelled.
@@ -80,6 +72,7 @@ export class AIChatStreamService {
         try {
             commit();
             if (sse.signal.aborted) return;
+            if (options.replaces) await this.deletion.deleteFrom(chat, options.replaces);
             const userMessage = await this.turn.saveUserMessage(chat, input);
             sse.send({ type: 'user_message', data: userMessage });
 
