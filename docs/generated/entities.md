@@ -1245,7 +1245,7 @@ Audit trail of every role / admin-flag change. No foreign keys (rows outlive acc
 
 ### GenerationJob (exam, phase 15; no MODEL code assigned yet, run `/tkm:rebuild-spec` to allocate one)
 
-**Description**: One quiz/flashcard generation request and the money behind it. Source: `apps/exam-service/prisma/schema/generation.prisma`.
+**Description**: One quiz/flashcard generation request and the money behind it. Source: `apps/content-service/prisma/schema.prisma`.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|

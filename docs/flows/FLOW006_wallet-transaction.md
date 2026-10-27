@@ -23,11 +23,11 @@ stateDiagram-v2
 | ID | From | Trigger | To | Side Effects | Source |
 |----|------|---------|----|--------------|--------|
 | T1 | INIT | user-action | RECORDED | Buy credits (SePay webhook) | `examio-be/apps/finance-service/src/payment.service.ts:88` |
-| T2 | INIT | user-action | RECORDED | AI use (SUBTRACT): `Debit` with key `doc:<storageId>` (paid upload, document-service) or `gen:<jobId>` (generation or regenerate, exam-service) | `examio-be/apps/document-service/src/modules/upload/document-charge.service.ts`, `examio-be/apps/exam-service/src/modules/ai/generation-charge.service.ts` |
+| T2 | INIT | user-action | RECORDED | AI use (SUBTRACT): `Debit` with key `doc:<storageId>` (paid upload, document-service) or `gen:<jobId>` (generation or regenerate, exam-service) | `examio-be/apps/document-service/src/modules/upload/document-charge.service.ts`, `examio-be/apps/content-service/src/modules/ai/generation-charge.service.ts` |
 | T3 | INIT | user-action | RECORDED | Admin adjustment | `examio-be/apps/finance-service/src/wallet.service.ts:128` |
 | T4 | INIT | user-action | RECORDED | Refund (compensating) | `examio-be/apps/finance-service/src/wallet.service.ts:158` |
 | T5 | RECORDED | derived | RECORDED | Correction via new entry (immutable) | `examio-be/apps/finance-service/src/wallet.service.ts:175` |
-| T6 | RECORDED | service-call | RECORDED | AI refund (ADD): `Refund` with the same key as the debit (`doc:<id>` / `gen:<jobId>`) when a generation fails, is cancelled or times out, or a charged upload fails OCR; a key refunds at most once | `examio-be/apps/exam-service/src/modules/ai/generation-job.service.ts`, `examio-be/apps/document-service/src/modules/upload/document-charge.service.ts` |
+| T6 | RECORDED | service-call | RECORDED | AI refund (ADD): `Refund` with the same key as the debit (`doc:<id>` / `gen:<jobId>`) when a generation fails, is cancelled or times out, or a charged upload fails OCR; a key refunds at most once | `examio-be/apps/content-service/src/modules/ai/generation-job.service.ts`, `examio-be/apps/document-service/src/modules/upload/document-charge.service.ts` |
 
 ## Trigger Types (3)
 

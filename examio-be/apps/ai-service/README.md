@@ -79,7 +79,7 @@ python src/rag/indexing.py
 
 The service has no public HTTP API. Callers are other services:
 
-1. **gRPC** `examio.ai.v1.AiService` (`StreamChat`, `Query`, `GenerateWordFamily`, `ListModels`) on `GRPC_PORT` (50051), accepted only with a service token (RS256, `aud=ai`, allowed callers `svc:exam`, `svc:ai-chat`, `svc:vocabulary`, `svc:content`).
+1. **gRPC** `examio.ai.v1.AiService` (`StreamChat`, `Query`, `GenerateWordFamily`, `ListModels`) on `GRPC_PORT` (50051), accepted only with a service token (RS256, `aud=ai`, allowed callers `svc:ai-chat`, `svc:vocabulary`, `svc:content`).
 2. **RabbitMQ events** on queue `ai.events`: `document.uploaded` (OCR, chunking, embedding, graph), `document.deleted` (drop vectors/entities/graph), `content.generation.requested` (quiz/flashcard generation). Answers: `ai.document.processed|failed`, `ai.generation.completed|failed`.
 3. **HTTP**: only `/` and `/health` (liveness). The former compat routes and their shared HTTP secret are gone.
 

@@ -276,7 +276,7 @@ None.
 ## Unresolved Questions
 
 1. ~~**Credit refund on job failure**~~ — resolved in phase 15: failed, cancelled and timed-out charged jobs are refunded once, whenever they fail (see `docs/system/business-rules.md` § AI credits: charge and refund).
-2. ~~**Credit cost model**~~ — resolved: new file = 1 credit per started 2 MB + 5; reused file = 5; regenerate = 1 per started 10 items (`apps/exam-service/src/modules/ai/generation.constants.ts`).
+2. ~~**Credit cost model**~~ — resolved: new file = 1 credit per started 2 MB + 5; reused file = 5; regenerate = 1 per started 10 items (`apps/content-service/src/modules/ai/generation.constants.ts`).
 3. **Generated content destination**: When AI generates quiz questions, which quiz set do they go into — a new auto-created set, or does the user select an existing set?
 4. **Job history retention**: How long are completed/failed job records kept? Is there a purge policy?
 5. **Concurrent job limits**: Can a user have multiple jobs in PROCESSING state simultaneously, or is there a per-user concurrency limit?

@@ -6,7 +6,7 @@
 
 ## Overview
 
-QuizAuthoring enables authenticated teachers to create, edit, and delete quiz sets; manage labels (chapters/sections) and questions within each set; control visibility (public/private); and generate quizzes from uploaded documents via AI. Students can view their own AI-processed PDF history and delete records. The feature spans `SCR016/REG001` (quiz set grid on MyMaterialsPage), `SCR018/REG001` (PDF history list), `SCR020` (PDF history page), `SCR021` (manage exam page), `SCR022` (quiz set detail), `SCR024` (AI tool, quiz portion), and `SCR017` (flashcard page, modal trigger). Backend lives in `examio-be/apps/exam-service/src/modules/quizset/` and the AI job pipeline in `examio-be/apps/exam-service/src/modules/ai/`.
+QuizAuthoring enables authenticated teachers to create, edit, and delete quiz sets; manage labels (chapters/sections) and questions within each set; control visibility (public/private); and generate quizzes from uploaded documents via AI. Students can view their own AI-processed PDF history and delete records. The feature spans `SCR016/REG001` (quiz set grid on MyMaterialsPage), `SCR018/REG001` (PDF history list), `SCR020` (PDF history page), `SCR021` (manage exam page), `SCR022` (quiz set detail), `SCR024` (AI tool, quiz portion), and `SCR017` (flashcard page, modal trigger). Backend lives in `examio-be/apps/content-service/src/modules/quizset/` and the AI job pipeline in `examio-be/apps/content-service/src/modules/ai/`.
 
 ## Polymorphic Behavior
 
@@ -365,7 +365,7 @@ None.
 
 ## Assumptions
 
-- Cascade delete behavior on QuizSet deletion (questions and labels) is enforced at the Prisma schema level — confirm via `apps/exam-service/prisma/schema/content.prisma` `onDelete: Cascade`.
+- Cascade delete behavior on QuizSet deletion (questions and labels) is enforced at the Prisma schema level — confirm via `apps/content-service/prisma/schema.prisma` `onDelete: Cascade`.
 - AI job polling interval is 10 seconds up to 360 attempts (60 minutes) per `useGenerationGuard` hook.
 - `isPublic` flag defaults to `false` on quiz set creation.
 - Ownership check for quiz set edit/delete is enforced at the repository layer (service throws `ForbiddenException` on mismatch).
@@ -374,8 +374,8 @@ None.
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| QuizSetController | `examio-be/apps/exam-service/src/modules/quizset/quizset.controller.ts` | REST endpoints for quiz set CRUD |
-| QuizSetService | `examio-be/apps/exam-service/src/modules/quizset/quizset.service.ts` | Business logic for quiz set operations |
+| QuizSetController | `examio-be/apps/content-service/src/modules/quizset/quizset.controller.ts` | REST endpoints for quiz set CRUD |
+| QuizSetService | `examio-be/apps/content-service/src/modules/quizset/quizset.service.ts` | Business logic for quiz set operations |
 | QuizQuestionRepository | `examio-be/apps/exam-service/src/modules/quizset/quiz-question.repository.ts` | Question CRUD via Prisma |
 | AIJobController | `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` | AI job create/poll/cancel endpoints |
 | FinanceClientService | `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` | Credit check before AI generation (BL004) |

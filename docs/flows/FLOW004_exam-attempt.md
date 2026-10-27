@@ -2,7 +2,7 @@
 
 **Entity:** `ExamAttempt` (MODEL-019)
 **State Field:** `status` (DISC-008)
-**Source:** `examio-be/apps/exam-service/prisma/schema/assessment.prisma` (ExamAttempt)
+**Source:** `examio-be/apps/assessment-service/prisma/schema.prisma` (ExamAttempt)
 **Last Updated:** 2026-06-05
 
 ## State Diagram
@@ -23,12 +23,12 @@ stateDiagram-v2
 
 | ID | From | Trigger | To | Side Effects | Source |
 |----|------|---------|----|--------------|--------|
-| T1 | INIT | user-action | IN_PROGRESS | POST /examattempts/start | `examio-be/apps/exam-service/src/modules/exam-attempt/exam-attempt.service.ts:42` |
+| T1 | INIT | user-action | IN_PROGRESS | POST /examattempts/start | `examio-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts` |
 | T2 | IN_PROGRESS | user-action | IN_PROGRESS | Auto-save progress (debounced) | `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:278` |
-| T3 | IN_PROGRESS | user-action | COMPLETED | POST /secure-submit | `examio-be/apps/exam-service/src/modules/exam-attempt/exam-attempt.service.ts:88` |
+| T3 | IN_PROGRESS | user-action | COMPLETED | POST /secure-submit | `examio-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts` |
 | T4 | IN_PROGRESS | scheduled | COMPLETED | timeLimitMinutes reached | `examio-be/apps/auth-service/src/session-cleanup.cron.ts:118` |
-| T5 | IN_PROGRESS | event | CANCELLED | ExamSession ended (cascade) | `examio-be/apps/exam-service/src/modules/exam-session/exam-session.service.ts:155` |
-| T6 | IN_PROGRESS | user-action | CANCELLED | Room deleted | `examio-be/apps/exam-service/src/modules/exam-room/exam-room.service.ts:215` |
+| T5 | IN_PROGRESS | event | CANCELLED | ExamSession ended (cascade) | `examio-be/apps/assessment-service/src/modules/examsession/examsession.service.ts` |
+| T6 | IN_PROGRESS | user-action | CANCELLED | Room deleted | `examio-be/apps/assessment-service/src/modules/examroom/examroom.service.ts` |
 
 ## Trigger Types (3)
 

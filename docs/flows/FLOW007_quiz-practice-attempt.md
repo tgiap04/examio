@@ -2,7 +2,7 @@
 
 **Entity:** `QuizPracticeAttempt` (MODEL-022)
 **State Field:** `type` (DISC-009) + `isSubmitted` (derived boolean)
-**Source:** `examio-be/apps/exam-service/prisma/schema/assessment.prisma` (QuizPracticeAttempt)
+**Source:** `examio-be/apps/content-service/prisma/schema.prisma` (QuizPracticeAttempt)
 **Last Updated:** 2026-06-05
 
 ## State Diagram
@@ -24,10 +24,10 @@ stateDiagram-v2
 
 | ID | From | Trigger | To | Side Effects | Source |
 |----|------|---------|----|--------------|--------|
-| T1 | INIT | user-action | DRAFT_PRACTICE | practice.start type=0 | `examio-be/apps/exam-service/src/modules/quizset/quizset.service.ts:142` |
-| T2 | INIT | user-action | DRAFT_REAL | exam.practice.start type=1 | `examio-be/apps/exam-service/src/modules/quizset/quizset.service.ts:158` |
-| T3 | DRAFT_PRACTICE | user-action | SUBMITTED | practice.submit | `examio-be/apps/exam-service/src/modules/quizset/quizset.service.ts:182` |
-| T4 | DRAFT_REAL | user-action | SUBMITTED | exam.practice.submit | `examio-be/apps/exam-service/src/modules/quizset/quizset.service.ts:198` |
+| T1 | INIT | user-action | DRAFT_PRACTICE | practice.start type=0 | `examio-be/apps/content-service/src/modules/quizset/quizset.service.ts:142` |
+| T2 | INIT | user-action | DRAFT_REAL | exam.practice.start type=1 | `examio-be/apps/content-service/src/modules/quizset/quizset.service.ts:158` |
+| T3 | DRAFT_PRACTICE | user-action | SUBMITTED | practice.submit | `examio-be/apps/content-service/src/modules/quizset/quizset.service.ts:182` |
+| T4 | DRAFT_REAL | user-action | SUBMITTED | exam.practice.submit | `examio-be/apps/content-service/src/modules/quizset/quizset.service.ts:198` |
 | T5 | DRAFT_PRACTICE | scheduled | ABANDONED | 30d idle (cron) | `examio-be/apps/auth-service/src/session-cleanup.cron.ts:148` |
 | T6 | DRAFT_REAL | scheduled | ABANDONED | 30d idle (cron) | `examio-be/apps/auth-service/src/session-cleanup.cron.ts:162` |
 

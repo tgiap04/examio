@@ -2,7 +2,7 @@
 
 **Entity:** `ExamSession` (MODEL-018)
 **State Field:** `status` (DISC-001) + `assessType` (DISC-002) + `questionSelectionMode` (DISC-007)
-**Source:** `examio-be/apps/exam-service/prisma/schema/assessment.prisma` (ExamSession)
+**Source:** `examio-be/apps/assessment-service/prisma/schema.prisma` (ExamSession)
 **Last Updated:** 2026-06-05
 
 ## State Diagram
@@ -25,8 +25,8 @@ stateDiagram-v2
 | T2 | UPCOMING | user-action | ONGOING | First student calls start | `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:85` |
 | T3 | ONGOING | scheduled | ENDED | now >= endTime (cron) | `examio-be/apps/auth-service/src/session-cleanup.cron.ts:104` |
 | T4 | ONGOING | derived | ENDED | All attempts submitted | `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:412` |
-| T5 | UPCOMING | user-action | DELETED | Room deleted (cascade) | `examio-be/apps/exam-service/src/modules/exam-room/exam-room.service.ts:188` |
-| T6 | ONGOING | user-action | DELETED | Room deleted during session | `examio-be/apps/exam-service/src/modules/exam-room/exam-room.service.ts:201` |
+| T5 | UPCOMING | user-action | DELETED | Room deleted (cascade) | `examio-be/apps/assessment-service/src/modules/examroom/examroom.service.ts` |
+| T6 | ONGOING | user-action | DELETED | Room deleted during session | `examio-be/apps/assessment-service/src/modules/examroom/examroom.service.ts` |
 
 ## Trigger Types (3)
 

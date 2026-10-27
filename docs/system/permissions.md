@@ -76,22 +76,22 @@ A SYSTEM_ADMIN who is also a STUDENT/TEACHER holds the union of both columns. A 
 
 #### gRPC guards added in phase 10 (2026-10-23)
 
-Admin and exam call other services with the acting user's forwarded token (`AUTH_TOKEN_URL` service tokens identify the calling service). Source: the `*.grpc.controller.ts` files of auth, finance, exam, admin.
+Admin and content call other services with the acting user's forwarded token (`AUTH_TOKEN_URL` service tokens identify the calling service). Source: the `*.grpc.controller.ts` files of auth, finance, content, admin.
 
 | RPC | Declaration |
 |---|---|
-| finance `WalletService.Debit` | `@RequirePermissionsOrService(['wallet:use'], { callers: ['exam','content','document'] })`; only a TEACHER user token may mint the welcome wallet |
-| finance `WalletService.Credit`, `Refund` | `@ServiceOnly('exam','content','document')` |
+| finance `WalletService.Debit` | `@RequirePermissionsOrService(['wallet:use'], { callers: ['content','document'] })`; only a TEACHER user token may mint the welcome wallet |
+| finance `WalletService.Credit`, `Refund` | `@ServiceOnly('content','document')` |
 | finance `WalletService.CreateWallet` | `@ServiceOnly('auth')` |
 | finance `FinanceAdminService.*` (`AdjustBalance`, `RefundPayment`, `ChangeTier`, `ListPayments`, `ListSubscriptions`, `GetUserFinance`) | `@RequirePermissions('finance:admin')`; no service caller, actor = token subject |
 | finance `FinanceStatsService.GetRevenueStats` | `@RequirePermissions('stats:read')` |
 | auth `AuthUserService.UpdateUserAdmin`, `GetUserAdminDetail` | `@RequirePermissions('user:manage')` |
 | auth `AuthUserService.SearchUsers` / `GetUserStats` | `@RequirePermissions('user:search')` / `('stats:read')` |
-| auth `GetPublicProfilesByIds` | `@RequirePermissionsOrService([])` (exam caller; no email in the payload) |
+| auth `GetPublicProfilesByIds` | `@RequirePermissionsOrService([])` (content, assessment and study-room call it; no email in the payload) |
 | auth `GetUsersByIds` | `@RequirePermissionsOrService(['user:manage'], { callers: ['admin'] })` (was open to more callers) |
 | gateway `SetPageFlags` / admin `GetPageFlags` | `@ServiceOnly('admin')` / `@ServiceOnly('gateway')` |
 | vocabulary `WordFamilyAdminService.*` (moved from exam, phase 12) | `@RequirePermissions('word_family:admin')` |
-| vocabulary `WordFamilyService.GetWordFamily` | `@RequirePermissionsOrService([])` (exam calls it with a service token, audience `vocabulary`) |
+| vocabulary `WordFamilyService.GetWordFamily` | `@RequirePermissionsOrService([])` (content calls it with a service token, audience `vocabulary`) |
 
 #### gRPC guards added in phase 15 (2026-10-24)
 
@@ -100,18 +100,18 @@ Source: `document.grpc.controller.ts`, `apps/r2-service/src/r2-service.controlle
 | RPC | Declaration |
 |---|---|
 | document `DocumentService.CreateUpload`, `GetDocumentsByIds`, `AssertOwnership`, `EnsureProcessed`, `ListDocuments`, `GetDownloadUrl` | `@RequirePermissions('document:upload')`; forwarded user token, actor = token `sub`, rows of other users are not found |
-| document `DocumentService.GetQuota` | `@RequirePermissionsOrService([], { callers: [] })`: any verified user, no service caller (exam forwards the user token) |
+| document `DocumentService.GetQuota` | `@RequirePermissionsOrService([], { callers: [] })`: any verified user, no service caller (content, assessment and ai-chat forward the user token) |
 | document `DocumentService.DeleteDocuments` | `@RequirePermissionsOrService(['document:upload'], { callers: [] })`: user token only until a service caller exists (user deletion is deferred) |
-| r2 `UploadFile` | `@ServiceOnly('exam','auth','document')` |
-| r2 `DeleteObjects` | `@ServiceOnly('exam','auth','vocabulary','document')` |
+| r2 `UploadFile` | `@ServiceOnly('auth','document','content')` |
+| r2 `DeleteObjects` | `@ServiceOnly('auth','vocabulary','document','ai-chat','content')` |
 | r2 `CreatePresignedDownload` (new) | `@ServiceOnly('document')` |
-| ai `AiService.StreamChat`, `Query`, `GenerateWordFamily`, `ListModels` | Python interceptor, not a Nest decorator: service token only. RS256, `iss`, `aud=ai`, `exp`, `roles` exactly SERVICE, `sub` in `svc:exam`, `svc:ai-chat`, `svc:vocabulary`, `svc:content` (constant `ALLOWED_CALLERS`, not env). A user token (`aud=examio`) answers `UNAUTHENTICATED` because the audience check runs first; a valid `aud=ai` token from another service (e.g. `svc:document`) answers `PERMISSION_DENIED` |
+| ai `AiService.StreamChat`, `Query`, `GenerateWordFamily`, `ListModels` | Python interceptor, not a Nest decorator: service token only. RS256, `iss`, `aud=ai`, `exp`, `roles` exactly SERVICE, `sub` in `svc:ai-chat`, `svc:vocabulary`, `svc:content` (constant `ALLOWED_CALLERS`, not env). A user token (`aud=examio`) answers `UNAUTHENTICATED` because the audience check runs first; a valid `aud=ai` token from another service (e.g. `svc:document`) answers `PERMISSION_DENIED` |
 
-Auth `SERVICE_AUDIENCES` includes `document` and `ai`; auth `SERVICE_CLIENTS` needs an entry for `document`. finance `Debit` / `Credit` / `Refund` callers already include `document`. The RabbitMQ users `document` and `ai` may publish only `^document\.` and `^ai\.`; user `exam` may publish `^(exam|content)\.`.
+Auth `SERVICE_AUDIENCES` includes `document` and `ai`; auth `SERVICE_CLIENTS` needs an entry for `document`. finance `Debit` / `Credit` / `Refund` callers already include `document`. The RabbitMQ users `document` and `ai` may publish only `^document\.` and `^ai\.`; user `content` may publish `^content\.` and user `assessment` `^assessment\.`.
 
 ### Per-endpoint enforcement (phase 06, 2026-10-20)
 
-> Source: `@RequirePermissions` / `@RequireOwnerOrPermission` / `@Authenticated()` / `@Public()` on the exam, finance, admin and r2 controllers; `examio-be/test/authz/` (`handler-declarations.spec.ts` fails on an undeclared HTTP handler or WS gateway class, on an `@Authenticated()` handler missing from `authenticated-allowlist.ts`, or an entry without a two-user spec; `authz-matrix.spec.ts` proves STUDENT / TEACHER / admin-only per row).
+> Source: `@RequirePermissions` / `@RequireOwnerOrPermission` / `@Authenticated()` / `@Public()` on the content, assessment, finance, admin and r2 controllers; `examio-be/test/authz/` (`handler-declarations.spec.ts` fails on an undeclared HTTP handler or WS gateway class, on an `@Authenticated()` handler missing from `authenticated-allowlist.ts`, or an entry without a two-user spec; `authz-matrix.spec.ts` proves STUDENT / TEACHER / admin-only per row).
 
 | Area (controller) | Routes | Declaration |
 |---|---|---|
@@ -133,6 +133,7 @@ Auth `SERVICE_AUDIENCES` includes `document` and `ai`; auth `SERVICE_CLIENTS` ne
 | | `recent-exams`, `pin-exam-room/:id` | `exam:take` (pin needs room access, else 404) |
 | examroom | CRUD, `detail/:id`, `list`, `list-all`, `:id/sessions` | `exam_room:manage` (host). `get-public/:id` `@Public()`: `{id,title,description,host:{name,avatar}}` only, and only for a room with a PUBLIC session |
 | examsession | CRUD, `get-by-id`, `:id/sharing`, `:id/generate-code`, `room/:roomId/available-labels` | `exam_session:manage` (host) |
+| | `POST :id/refresh-snapshot` (phase 14) | `exam_session:manage` (host): only while UPCOMING with 0 attempts, else 409 `SNAPSHOT_LOCKED` |
 | | `users/search` | `user:search` |
 | | `get-public/:id`, `study/:id/info`, `study/:id/access` | `@Public()` (sanitised) |
 | | `study/:id`, `study/:id/stats` | `exam:take`; answer-free view |
@@ -147,10 +148,10 @@ Auth `SERVICE_AUDIENCES` includes `document` and `ai`; auth `SERVICE_CLIENTS` ne
 | word-family (vocabulary-service since phase 12) | `categories`, `roots`, `category/...`, `generation-status/*` | `word_family:read` |
 | | `save`, `saved`, `DELETE saved/:id` | `word_family:save` |
 | | `generate`, `generate-root` | `word_family:generate` (TEACHER only; free; 20/day per user, 429 `WORD_FAMILY_DAILY_LIMIT`; 503 `GENERATION_LIMIT_UNAVAILABLE` if Redis is down) |
-| | `:id/to-flashcard` (stays in exam: `modules/flashcardset/word-family-to-flashcard.controller.ts`; gateway route `wf-to-flashcard`, POST only) | `flashcardset:manage` |
-| | categories POST/PUT/DELETE | removed from exam HTTP (phase 10); category writes only through admin `admin/word-family/*` to vocabulary gRPC `WordFamilyAdminService` (`word_family:admin`) |
+| | `:id/to-flashcard` (lives in content-service: `modules/flashcardset/word-family-to-flashcard.controller.ts`; gateway route `wf-to-flashcard`, POST only) | `flashcardset:manage` |
+| | categories POST/PUT/DELETE | removed from the exam HTTP surface (phase 10); category writes only through admin `admin/word-family/*` to vocabulary gRPC `WordFamilyAdminService` (`word_family:admin`) |
 | document (document-service since phase 15; gateway route `ai-upload`) | `POST quick-upload`, `POST upload` (JSON), `POST upload-image`, `GET/DELETE upload/:id` | `document:upload` (own; other users' ids answer 404) |
-| ai (exam) | `recent-uploads` (gateway route `ai-recent-uploads`; documents come from document `ListDocuments`) | `document:upload` (own) |
+| ai (content) | `recent-uploads` (gateway route `ai-recent-uploads`; documents come from document `ListDocuments`) | `document:upload` (own) |
 | | `generate-from-file`, `regenerate/:id`, `GET/DELETE job/:id`, `upload/:id/history`, `models` | `ai:generate` (own; `history` first checks `AssertOwnership`) |
 | ai-chat-service (own service since phase 13; `subjects` controller is `@Public`) | all ai-chat handlers (class-level) | `ai_chat:use` (own); `:chatId/exists` is `true` only for the caller's own chat |
 | subject | 4 GETs | `@Public()` |
@@ -184,17 +185,17 @@ Plain `@Authenticated()` handlers (allowlist, each with a two-user negative spec
 | Audit | `AdminAudit` after a successful RPC: `admin.role.set_base` `{from,to,reason}`, `admin.role.set_system_admin` `{from,to,reason}`, `admin.user.ban` / `admin.user.unban` `{previousIsBanned}`. Auth writes `RoleChangeLog` for every change; ban / unban / re-apply rows keep the same role and flag on both sides and a `reason` starting `ban` / `unban` / `reapply` |
 | Lists | `GET roles/users` returns `{ data, meta, systemAdminCount }` (count of active, non-banned admins); rows carry `role` and `isSystemAdmin` (no `isAdmin`). `GET /admin/users` rows carry the same two fields; filter `isSystemAdmin=true|false` |
 
-**Access-code lockout** (`exam-service/src/modules/common/access-code-guard.ts`; used by flashcard `verify-code`/`with-code`, exam session `verify-code`/`with-code`, and exam attempt `start` with an `accessCode`)
+**Access-code lockout** (`modules/common/access-code-guard.ts` in content-service and assessment-service; used by flashcard `verify-code`/`with-code`, exam session `verify-code`/`with-code`, and exam attempt `start` with an `accessCode`)
 
 | Rule | Behaviour |
 |---|---|
 | Format | Code must match `^\d{6}$`, else 400 `INVALID_CODE_FORMAT` (not counted). `GET study/:id` on a code-gated set the caller has no grant for: 403 `CODE_REQUIRED` (send the code to `with-code`) |
-| Counter | Redis `exam:codefail:<resourceId>:<userId>`; every evaluated attempt does an atomic `INCR` (`EXPIRE 900 NX`), so the limit is per resource AND user (an attacker only locks themselves) |
+| Counter | Redis `content:codefail:<resourceId>:<userId>` / `assessment:codefail:<resourceId>:<userId>`; every evaluated attempt does an atomic `INCR` (`EXPIRE 900 NX`), so the limit is per resource AND user (an attacker only locks themselves) |
 | Lockout | More than 5 attempts in 15 min: 429 `CODE_LOCKED` `{ retryAfterSeconds }` before comparing (a correct code is refused too); the 5th wrong code also answers 429 |
 | Compare | `timingSafeEqual(sha256(stored), sha256(given))` (fixed length, no early exit). Wrong code below the limit: 400 `INVALID_CODE`. Success deletes the counter |
 | Redis down | 503 `CODE_CHECK_UNAVAILABLE` (fail-closed) |
 
-exam-service has no `ThrottlerModule`; per-IP rate limits for `verify-code` / `with-code` (5 / 60 s) and `users/search` (30 / 60 s) live in gateway `routes.yaml`.
+content-service and assessment-service have no `ThrottlerModule`; per-IP rate limits for `verify-code` / `with-code` (5 / 60 s) and `users/search` (30 / 60 s) live in gateway `routes.yaml`.
 
 **WebSocket `/ws/study`** (`StudyRoomSocketAuth`, `server.use` in `StudyRoomGateway.afterInit`, both in study-room-service since phase 12; the gateway class carries a declarative `@Authenticated()` because HTTP guards skip `ws`): checks run in order: token present (`handshake.auth.token`, then Bearer/cookie), signature / `iss` / `aud` / `exp`, `email_verified`, `study_room:join`, token `av` vs Redis `gw:user:<sub>:av` (lower = stale; key missing = pass), then account not banned/deleted, then the `study-room` page flag. A failure is a `connect_error` whose message is the code: `TOKEN_MISSING`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `EMAIL_NOT_VERIFIED`, `PERMISSION_DENIED`, `TOKEN_STALE`, `SERVICE_UNAVAILABLE` (Redis or DB error, fail-closed), `UNAUTHORIZED`, `PAGE_DISABLED`. `socket.data` holds `{ user, av, exp }`. `handleConnection` (sync) joins room `user:<id>` and schedules a disconnect at token `exp`; `handleDisconnect` clears the timer. Before the server disconnects it emits `auth:reauth { reason: 'TOKEN_EXPIRED' | 'AUTHZ_CHANGED' }` (client: refresh the token, reconnect). On `auth.user.authz_changed` (`study-room-authz.handler.ts`) sockets of that user whose `av` is below the event's `authzVersion` get `auth:reauth` then `disconnect(true)`. `room:kicked` remains for the in-room ban only.
 
@@ -244,7 +245,7 @@ UX gating only; the backend decisions above are authoritative. Source: `examio-f
 
 **Error policy** (`lib/rbac/api-error-policy.ts`, `apis/api.ts`): 401 `TOKEN_EXPIRED` / `TOKEN_STALE` → one single-flight `/auth/refresh`, then retry; 401 `SESSION_REVOKED`, or a rejected refresh (401/403) → clear the session and go to `/login`; 403 `PERMISSION_DENIED` → toast and refetch `/auth/me` (at most every 5 s); 403 `EMAIL_NOT_VERIFIED` → `/k/verify`; 429, 5xx and network errors never end the session. `/auth/refresh` rotates the `refreshToken` cookie as well as `accessToken`. On a role change (refresh or `/auth/me` returns a different role set) and on logout, role-scoped Zustand stores and `storeCache` are reset.
 
-**Study-room socket**: `auth:reauth`, `TOKEN_EXPIRED`, `TOKEN_STALE` → refresh then reconnect (one retry, then logout); `PERMISSION_DENIED` → leave the room; `SERVICE_UNAVAILABLE` (Redis outage on exam-service) → bounded exponential backoff (1 s doubling, 30 s cap, 5 attempts), then a give-up notice.
+**Study-room socket**: `auth:reauth`, `TOKEN_EXPIRED`, `TOKEN_STALE` → refresh then reconnect (one retry, then logout); `PERMISSION_DENIED` → leave the room; `SERVICE_UNAVAILABLE` (Redis outage on content-service, assessment-service or study-room-service) → bounded exponential backoff (1 s doubling, 30 s cap, 5 attempts), then a give-up notice.
 
 ---
 
@@ -1525,7 +1526,7 @@ Daily cron job deactivates expired sessions. Runs on a configurable schedule. Th
 ## PERM041: FreeModeCreditBypass
 
 **Type**: env-gate
-**Enforced At**: `FinanceClientService` (BL004) — `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts`
+**Enforced At**: `FinanceClientService` (BL004) — `examio-be/apps/content-service/src/modules/ai/generation-charge.service.ts` (the old `FinanceClientService` path no longer exists)
 
 ### Description
 
@@ -1533,7 +1534,7 @@ Daily cron job deactivates expired sessions. Runs on a configurable schedule. Th
 
 ### Related Modules
 
-- exam-service: `FinanceClientService`
+- content-service: `GenerationChargeService`
 
 ### Permission Rules
 
@@ -2015,7 +2016,7 @@ Admin-only CRUD on `WordFamilyCategory` (create, update, soft-delete via `isActi
 - [x] All PERM### codes are unique (PERM001–PERM057)
 - [x] All PERM### codes reference valid screens (SCR###) from ScreenList.md
 - [x] All related route references are valid (RT### in RouteList — omitted here for brevity; cross-referenced via route-path pattern matching)
-- [x] All related module references are valid (auth-service, exam-service, finance-service, r2-service, admin-service, common)
+- [x] All related module references are valid (auth-service, content-service, assessment-service, finance-service, r2-service, admin-service, common)
 - [x] No orphaned permission references
 - [x] Ownership rules (PERM015–PERM022, PERM024–PERM025) correctly target only resource owners
 - [x] Guest vs. authenticated separation correctly enforced for all screen groups

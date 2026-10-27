@@ -94,6 +94,10 @@ Phase 12 (extract study-room and vocabulary) is implemented but uncommitted on `
 
 ## Progress Note (2026-10-24) — microservice-refactor plan, phase 15
 
+## Progress Note (2026-10-25) — microservice-refactor plan, phase 14
+
+Phase 14 (split exam-service) is implemented but uncommitted on `refactor/microservice-rbac`: `content-service` (quiz/flashcard sets, `GenerationJob`, gRPC `ContentService`) and `assessment-service` (exam room/session/attempt/cheating log, renamed from exam-service) replace `exam-service`. Exam sessions read only a frozen quiz snapshot (`refresh-snapshot` while UPCOMING with no attempts); gateway upstreams `content` / `assessment`; the postgres init now creates 10 roles. Details: `project-changelog.md`.
+
 ## Progress Note (2026-10-25) — microservice-refactor plan, phase 13
 
 Phase 13 (extract ai-chat) is implemented but uncommitted on `refactor/microservice-rbac`: `ai-chat-service` owns AI chat and subjects (schema `aichat`, SSE routes unchanged, `aichat.events` consumer, r2 delete worker); chat and vocabulary generation talk to ai-service over gRPC, so `AI_SERVICE_URL`, `INTERNAL_SERVICE_TOKEN` and the HTTP compat routes are gone. Tempering fixes: the gateway now cancels the upstream request when a streaming client disconnects, and finance expires lapsed subscriptions on read and by a sweeper, publishing the effective tier in `finance.subscription.changed`. Phase 14 (content-service for `GenerationJob`) is next. Open: the FE AI chat page is not mounted on any route (pre-existing). See [changelog](project-changelog.md) and [architecture](system/architecture.md) § 5.

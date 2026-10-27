@@ -28,7 +28,7 @@ N/A — no discriminator fields in Key Entities. (The AI-returned `data` JSON bl
 | FR-008 | On page load/reload, student sees whether an AI generation job is already running for the category and gets a "generating" state until it finishes | `WordFamilyController` `GET /generation-status/:slug` | yes |
 | FR-009 | A specific root word's family can be (re-)generated on-demand as a background job — the endpoint acquires a root-specific lock and returns immediately (no gateway timeout), and the client polls a root-scoped status endpoint until the AI call completes and the record is overwritten | `WordFamilyController` `POST /word-family/generate-root` → `WordFamilyService.generateWordFamilyForRoot`; status via `GET /word-family/generation-status/:slug/:rootWord` → `getRootGenerationStatus` | yes |
 
-**Source:** `examio-be/apps/vocabulary-service/src/modules/word-family/word-family.controller.ts`, `examio-be/apps/exam-service/src/modules/flashcardset/word-family-to-flashcard.service.ts`, `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts:32-69`
+**Source:** `examio-be/apps/vocabulary-service/src/modules/word-family/word-family.controller.ts`, `examio-be/apps/content-service/src/modules/flashcardset/word-family-to-flashcard.service.ts`, `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts:32-69`
 
 ### Business Rules
 
@@ -118,7 +118,7 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 | WordFamilyCategory/WordFamily/UserSavedWordFamily (models) | `examio-be/apps/vocabulary-service/prisma/schema.prisma` | Data models |
 | WordFamilyController | `examio-be/apps/vocabulary-service/src/modules/word-family/word-family.controller.ts` | User routes (category writes removed), incl. `GET /generation-status/:slug`, `POST /generate-root`, `GET /generation-status/:slug/:rootWord` |
 | WordFamilyService | `examio-be/apps/vocabulary-service/src/modules/word-family/word-family.service.ts` | Category CRUD, generation orchestration, collection CRUD, `getGenerationStatus`, `generateWordFamilyForRoot` (fires unawaited background job), `runRootGeneration` worker, `getRootGenerationStatus`, flattened `getWordFamily` response |
-| WordFamilyToFlashcardService | `examio-be/apps/exam-service/src/modules/flashcardset/word-family-to-flashcard.service.ts` | Transactional flashcard conversion (moved from `WordFamilyBridgeService`; reads the family via `GetWordFamily`) |
+| WordFamilyToFlashcardService | `examio-be/apps/content-service/src/modules/flashcardset/word-family-to-flashcard.service.ts` | Transactional flashcard conversion (moved from `WordFamilyBridgeService`; reads the family via `GetWordFamily`) |
 | WordFamilyRepository | `examio-be/apps/vocabulary-service/src/modules/word-family/word-family.repository.ts` | Redis-cached Prisma access, upsert dedup |
 | AdminWordFamilyController | `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts:32-69` | Admin category CRUD (HTTP edge; forwards to vocabulary gRPC `word-family-admin.grpc.controller.ts`) |
 | AdminWordFamilyService | `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.service.ts:41-179` | Transactional CRUD + audit diff |

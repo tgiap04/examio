@@ -760,7 +760,7 @@ Shell `/admin` (`AdminRoute` = `RequirePermission admin:access`, `AdminLayout`);
 
 4. **Gateway is the only public entry**: All clients go through `gateway-service` on port 3000. Direct access to auth/exam/finance services is not exposed publicly.
 
-5. **AI service** (Python FastAPI) runs as a separate process; not part of the NestJS scan. It is called by `exam-service` via HTTP and exposes its own endpoints under `/api/v1/...` forwarded by the AI controller.
+5. **AI service** (Python FastAPI) runs as a separate process; not part of the NestJS scan. Since phases 13-15 it is called over gRPC (`AiService`, caller `svc:content`, `svc:ai-chat` or `svc:vocabulary`) and by events; its HTTP surface is only `/` and `/health`.
 
 ## Unresolved
 
