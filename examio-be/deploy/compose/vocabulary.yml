@@ -33,7 +33,7 @@ services:
             - REDIS_PASSWORD=${REDIS_PASSWORD:-}
             # api + the r2_delete_tasks worker (no listener of its own) in this container
             - ROLE=api,worker
-            # WordFamilyAdminService (admin-service) and WordFamilyService (exam-service)
+            # WordFamilyAdminService (admin-service) and WordFamilyService (content-service)
             - GRPC_PORT=50051
             - R2_GRPC_URL=r2:50051
             # Public base of R2 objects: tells an R2-hosted category image from an external URL

@@ -11,7 +11,7 @@
 # moving a service into its own file changed no path. Networks, volumes, Postgres,
 # Redis and RabbitMQ live in compose/infra.yml. Each database-owning service has
 # a `<svc>-migrate` one-shot that its API waits for (service_completed_successfully).
-# Phases 12-15 add a file and one line below (study-room, vocabulary: phase 12; ai-chat: phase 13; document: phase 15).
+# Phases 12-15 added a file and one line below (study-room, vocabulary: phase 12; ai-chat: phase 13; content, assessment: phase 14; document: phase 15).
 # =============================================================================
 include:
     - path: compose/infra.yml
@@ -22,7 +22,9 @@ include:
       project_directory: .
     - path: compose/admin.yml
       project_directory: .
-    - path: compose/exam.yml
+    - path: compose/content.yml
+      project_directory: .
+    - path: compose/assessment.yml
       project_directory: .
     - path: compose/study-room.yml
       project_directory: .

@@ -29,7 +29,8 @@ services:
             - PORT=3000
             - FRONTEND_URL=${FRONTEND_URL}
             - AUTH_SERVICE_URL=http://auth:3000
-            - EXAM_SERVICE_URL=http://exam:3000
+            - CONTENT_SERVICE_URL=http://content:3000
+            - ASSESSMENT_SERVICE_URL=http://assessment:3000
             - STUDYROOM_SERVICE_URL=http://study-room:3000
             - VOCABULARY_SERVICE_URL=http://vocabulary:3000
             - DOCUMENT_SERVICE_URL=http://document:3000
@@ -61,7 +62,9 @@ services:
                 condition: service_healthy
             auth:
                 condition: service_healthy
-            exam:
+            content:
+                condition: service_healthy
+            assessment:
                 condition: service_healthy
             study-room:
                 condition: service_healthy

@@ -14,13 +14,17 @@ const ENV = {
     RABBITMQ_PASS: 'ops-pass',
     RABBITMQ_AUTH_PASS: 'a',
     RABBITMQ_FINANCE_PASS: 'f',
-    RABBITMQ_EXAM_PASS: 'e',
+    RABBITMQ_CONTENT_PASS: 'k',
+    RABBITMQ_ASSESSMENT_PASS: 'm',
     RABBITMQ_STUDYROOM_PASS: 's',
     RABBITMQ_AI_PASS: 'i',
     RABBITMQ_DOCUMENT_PASS: 'd',
     RABBITMQ_GATEWAY_PASS: 'g',
     RABBITMQ_AICHAT_PASS: 'c',
 };
+
+const render = () =>
+    renderDefinitions(fs.readFileSync(path.join(__dirname, 'definitions.template.json'), 'utf8'), ENV);
 
 test('hashPassword matches the RabbitMQ documentation reference (salt 908DC60A, test12)', () => {
     const salt = Buffer.from('908DC60A', 'hex');
@@ -36,7 +40,7 @@ test('renderDefinitions substitutes users, hashes and the admin name', () => {
         ENV
     );
     const names = out.users.map((u) => u.name).sort();
-    assert.deepStrictEqual(names, ['ai', 'aichat', 'auth', 'document', 'exam', 'finance', 'gateway', 'ops', 'studyroom']);
+    assert.deepStrictEqual(names, ['ai', 'aichat', 'assessment', 'auth', 'content', 'document', 'finance', 'gateway', 'ops', 'studyroom']);
     assert.ok(out.users.every((u) => u.hashing_algorithm === 'rabbit_password_hashing_sha256'));
     assert.ok(out.users.find((u) => u.name === 'ops').tags.includes('administrator'));
     assert.ok(!JSON.stringify(out).includes('{{'));
@@ -57,17 +61,53 @@ test('finance may publish only ^finance\\. on examio.events and touch only its o
     assert.ok(!re.test('auth.events') && !re.test('amq.default'));
 });
 
-test('exam may publish exam.* and (until content-service exists) content.*, nothing else', () => {
-    const out = renderDefinitions(
-        fs.readFileSync(path.join(__dirname, 'definitions.template.json'), 'utf8'),
-        ENV
-    );
-    const topic = out.topic_permissions.find((p) => p.user === 'exam');
+test('content may publish only ^content\\. and touch only its own queues; the retired exam user is gone', () => {
+    const out = render();
+    assert.ok(!out.users.some((u) => u.name === 'exam'), 'no exam broker user');
+    assert.ok(!out.permissions.some((p) => p.user === 'exam') && !out.topic_permissions.some((p) => p.user === 'exam'));
+    const topic = out.topic_permissions.find((p) => p.user === 'content');
     assert.strictEqual(topic.exchange, 'examio.events');
+    assert.strictEqual(topic.write, '^content\\.');
     const re = new RegExp(topic.write);
-    assert.ok(re.test('exam.room.created') && re.test('content.generation.requested'));
-    for (const key of ['ai.generation.completed', 'document.deleted', 'auth.user.updated', 'examcontent.x']) {
+    assert.ok(re.test('content.generation.requested') && re.test('content.quizset.deleted'));
+    for (const key of ['exam.room.created', 'assessment.x', 'ai.generation.completed', 'document.deleted', 'auth.user.updated', 'contentx.y']) {
         assert.ok(!re.test(key), key);
+    }
+    const perm = out.permissions.find((p) => p.user === 'content');
+    for (const field of ['configure', 'write', 'read']) {
+        const q = new RegExp(perm[field]);
+        for (const name of ['examio.events', 'content.events', 'content.retry.30s', 'content.dlq']) assert.ok(q.test(name), `${field}: ${name}`);
+        for (const name of ['assessment.events', 'ai.events', 'document.events', 'exam-service', 'amq.default']) {
+            assert.ok(!q.test(name), `${field} must not match ${name}`);
+        }
+    }
+});
+
+test('assessment may publish only ^assessment\\. and touch only its own queues', () => {
+    const out = render();
+    const topic = out.topic_permissions.find((p) => p.user === 'assessment');
+    assert.strictEqual(topic.exchange, 'examio.events');
+    assert.strictEqual(topic.write, '^assessment\\.');
+    assert.strictEqual(topic.read, '.*');
+    const perm = out.permissions.find((p) => p.user === 'assessment');
+    for (const field of ['configure', 'write', 'read']) {
+        const q = new RegExp(perm[field]);
+        for (const name of ['examio.events', 'assessment.events', 'assessment.retry.30s', 'assessment.dlq']) {
+            assert.ok(q.test(name), `${field}: ${name}`);
+        }
+        for (const name of ['content.events', 'auth.events', 'exam-service', 'amq.default']) {
+            assert.ok(!q.test(name), `${field} must not match ${name}`);
+        }
+    }
+});
+
+test('content.quizset.deleted flows content -> assessment: content publishes it, assessment binds it and cannot forge it', () => {
+    const out = render();
+    const topic = (user) => out.topic_permissions.find((p) => p.user === user);
+    for (const key of ['content.quizset.deleted']) {
+        assert.ok(new RegExp(topic('content').write).test(key));
+        assert.ok(new RegExp(topic('assessment').read).test(key));
+        assert.ok(!new RegExp(topic('assessment').write).test(key));
     }
 });
 
@@ -84,7 +124,7 @@ test('studyroom may publish only ^studyroom\\. on examio.events and touch only i
     for (const q of ['examio.events', 'studyroom.events', 'studyroom.retry.30s', 'studyroom.dlq']) {
         assert.ok(re.test(q), q);
     }
-    assert.ok(!re.test('exam.events') && !re.test('amq.default'));
+    assert.ok(!re.test('content.events') && !re.test('amq.default'));
 });
 
 test('gateway may only read examio.events and touch gateway.* queues, and publishes nothing', () => {
@@ -113,9 +153,6 @@ test('auth.session.revoked flows auth -> gateway: auth may publish it, the gatew
     assert.ok(!new RegExp(topic('gateway').write).test('auth.session.revoked'));
 });
 
-const render = () =>
-    renderDefinitions(fs.readFileSync(path.join(__dirname, 'definitions.template.json'), 'utf8'), ENV);
-
 test('document may publish only ^document\\. on examio.events and touch only its own queues', () => {
     const out = render();
     const topic = out.topic_permissions.find((p) => p.user === 'document');
@@ -127,7 +164,7 @@ test('document may publish only ^document\\. on examio.events and touch only its
         for (const q of ['examio.events', 'document.events', 'document.retry.30s', 'document.dlq']) {
             assert.ok(re.test(q), `${field}: ${q}`);
         }
-        assert.ok(!re.test('ai.events') && !re.test('ai.retry.30s') && !re.test('exam.events') && !re.test('amq.default'), field);
+        assert.ok(!re.test('ai.events') && !re.test('ai.retry.30s') && !re.test('content.events') && !re.test('amq.default'), field);
     }
 });
 
@@ -140,7 +177,7 @@ test('ai may publish only ^ai\\. and read only ai.events (+ retry/DLQ): the lega
     for (const field of ['configure', 'write', 'read']) {
         const re = new RegExp(perm[field]);
         for (const q of ['examio.events', 'ai.events', 'ai.retry.30s', 'ai.dlq']) assert.ok(re.test(q), `${field}: ${q}`);
-        assert.ok(!re.test('document.events') && !re.test('ai-service-queue') && !re.test('exam.events'), field);
+        assert.ok(!re.test('document.events') && !re.test('ai-service-queue') && !re.test('content.events'), field);
     }
 });
 
@@ -171,7 +208,7 @@ test('aichat reads only its own queues and the events exchange, and may publish 
         for (const q of ['examio.events', 'aichat.events', 'aichat.retry.30s', 'aichat.dlq']) {
             assert.ok(re.test(q), `${field}: ${q}`);
         }
-        for (const q of ['ai.events', 'auth.events', 'exam.events', 'document.events', 'amq.default']) {
+        for (const q of ['ai.events', 'auth.events', 'content.events', 'document.events', 'amq.default']) {
             assert.ok(!re.test(q), `${field} must not match ${q}`);
         }
     }
@@ -212,7 +249,7 @@ test('CLI writes definitions.json (world-readable, the broker user must read the
         encoding: 'utf8',
     });
     assert.strictEqual(res.status, 0, res.stderr);
-    assert.strictEqual(JSON.parse(fs.readFileSync(out, 'utf8')).users.length, 9);
+    assert.strictEqual(JSON.parse(fs.readFileSync(out, 'utf8')).users.length, 10);
     assert.strictEqual(fs.statSync(out).mode & 0o777, 0o644);
 });
 

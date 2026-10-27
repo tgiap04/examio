@@ -21,8 +21,14 @@
       "tags": []
     },
     {
-      "name": "exam",
-      "password_hash": "{{HASH:RABBITMQ_EXAM_PASS}}",
+      "name": "content",
+      "password_hash": "{{HASH:RABBITMQ_CONTENT_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
+    },
+    {
+      "name": "assessment",
+      "password_hash": "{{HASH:RABBITMQ_ASSESSMENT_PASS}}",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
       "tags": []
     },
@@ -85,11 +91,18 @@
       "read": "^(examio\\.events|finance\\..*)$"
     },
     {
-      "user": "exam",
+      "user": "content",
       "vhost": "/",
-      "configure": "^(examio\\.events|exam\\..*|exam-service)$",
-      "write": "^(examio\\.events|exam\\..*|exam-service)$",
-      "read": "^(examio\\.events|exam\\..*|exam-service)$"
+      "configure": "^(examio\\.events|content\\..*)$",
+      "write": "^(examio\\.events|content\\..*)$",
+      "read": "^(examio\\.events|content\\..*)$"
+    },
+    {
+      "user": "assessment",
+      "vhost": "/",
+      "configure": "^(examio\\.events|assessment\\..*)$",
+      "write": "^(examio\\.events|assessment\\..*)$",
+      "read": "^(examio\\.events|assessment\\..*)$"
     },
     {
       "user": "studyroom",
@@ -143,10 +156,17 @@
       "read": ".*"
     },
     {
-      "user": "exam",
+      "user": "content",
       "vhost": "/",
       "exchange": "examio.events",
-      "write": "^(exam|content)\\.",
+      "write": "^content\\.",
+      "read": ".*"
+    },
+    {
+      "user": "assessment",
+      "vhost": "/",
+      "exchange": "examio.events",
+      "write": "^assessment\\.",
       "read": ".*"
     },
     {

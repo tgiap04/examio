@@ -32,7 +32,7 @@ services:
             - RABBITMQ_URL=amqp://document:${RABBITMQ_DOCUMENT_PASS:?RABBITMQ_DOCUMENT_PASS is required}@rabbitmq:5672
             # api + worker (outbox relay, document.events consumer, reaper, r2_delete_tasks) in this container
             - ROLE=api,worker
-            # DocumentService (exam / ai-chat forward the user token)
+            # DocumentService (content / assessment / ai-chat forward the user token)
             - GRPC_PORT=50051
             # r2: UploadFile, CreatePresignedDownload, DeleteObjects as svc:document. finance: GetUserBenefits,
             # Debit (forwarded user token) and Refund (svc:document).

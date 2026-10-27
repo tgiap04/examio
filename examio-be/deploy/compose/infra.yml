@@ -54,7 +54,8 @@ services:
             - RABBITMQ_PASS=${RABBITMQ_PASS:?RABBITMQ_PASS is required}
             - RABBITMQ_AUTH_PASS=${RABBITMQ_AUTH_PASS:?RABBITMQ_AUTH_PASS is required}
             - RABBITMQ_FINANCE_PASS=${RABBITMQ_FINANCE_PASS:?RABBITMQ_FINANCE_PASS is required}
-            - RABBITMQ_EXAM_PASS=${RABBITMQ_EXAM_PASS:?RABBITMQ_EXAM_PASS is required}
+            - RABBITMQ_CONTENT_PASS=${RABBITMQ_CONTENT_PASS:?RABBITMQ_CONTENT_PASS is required}
+            - RABBITMQ_ASSESSMENT_PASS=${RABBITMQ_ASSESSMENT_PASS:?RABBITMQ_ASSESSMENT_PASS is required}
             - RABBITMQ_STUDYROOM_PASS=${RABBITMQ_STUDYROOM_PASS:?RABBITMQ_STUDYROOM_PASS is required}
             - RABBITMQ_DOCUMENT_PASS=${RABBITMQ_DOCUMENT_PASS:?RABBITMQ_DOCUMENT_PASS is required}
             - RABBITMQ_AI_PASS=${RABBITMQ_AI_PASS:?RABBITMQ_AI_PASS is required}
@@ -79,7 +80,6 @@ services:
             - AUTH_DB_PASSWORD=${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}
             - FINANCE_DB_PASSWORD=${FINANCE_DB_PASSWORD:?FINANCE_DB_PASSWORD is required}
             - ADMIN_DB_PASSWORD=${ADMIN_DB_PASSWORD:?ADMIN_DB_PASSWORD is required}
-            - EXAM_DB_PASSWORD=${EXAM_DB_PASSWORD:?EXAM_DB_PASSWORD is required}
             - CONTENT_DB_PASSWORD=${CONTENT_DB_PASSWORD:?CONTENT_DB_PASSWORD is required}
             - ASSESSMENT_DB_PASSWORD=${ASSESSMENT_DB_PASSWORD:?ASSESSMENT_DB_PASSWORD is required}
             - STUDYROOM_DB_PASSWORD=${STUDYROOM_DB_PASSWORD:?STUDYROOM_DB_PASSWORD is required}
@@ -88,7 +88,7 @@ services:
             - DOCUMENT_DB_PASSWORD=${DOCUMENT_DB_PASSWORD:?DOCUMENT_DB_PASSWORD is required}
             - AI_DB_PASSWORD=${AI_DB_PASSWORD:?AI_DB_PASSWORD is required}
         # Each role's CONNECTION LIMIT 40 (postgres/init/01-service-schemas.sh) is a per-role ceiling,
-        # not a reservation: 11 x 40 = 440 would exceed 200 if every role maxed out. The real budget is
+        # not a reservation: 10 x 40 = 400 would exceed 200 if every role maxed out. The real budget is
         # the sum of the services' configured pools (Prisma connection_limit, relay pools of 2, ai-service
         # asyncpg pools capped by AI_DB_POOL_MAX_*, 28 by default) plus 3 superuser-reserved slots; keep
         # that sum under 200. The default 100 is too low for it.
@@ -133,7 +133,7 @@ services:
 #   edge     gateway + the FE nginx only (the only way in)
 #   internal no route out: every service, Postgres, Redis, RabbitMQ
 #   egress   services that really call the internet: auth (Google OAuth, SMTP),
-#            exam (Turnstile), finance (SePay), r2 (Cloudflare R2), ai (Gemini)
+#            content + assessment (Turnstile), finance (SePay), r2 (Cloudflare R2), ai (Gemini)
 # Data stores publish no host ports. Ops reach Postgres with
 #   docker compose exec postgres psql -U <svc>_svc -d $POSTGRES_DB   (e.g. auth_svc)
 # The superuser ($POSTGRES_USER) is for ops/break-glass only; no service uses it.
