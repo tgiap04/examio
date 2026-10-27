@@ -4,7 +4,16 @@ import {
     ExceptionFilter,
     ServiceUnavailableException,
 } from '@nestjs/common';
-import { MaxRetriesPerRequestError } from 'ioredis/built/errors';
+
+/**
+ * ioredis does not export `MaxRetriesPerRequestError` (only a deep `built/errors` path), so Nest's
+ * `@Catch` is given this matcher instead: `instanceof` is answered by the error's name.
+ */
+class MaxRetriesPerRequestError {
+    static [Symbol.hasInstance](error: unknown): boolean {
+        return error instanceof Error && error.name === 'MaxRetriesPerRequestError';
+    }
+}
 
 /**
  * Maps a Redis connectivity failure on an HTTP request to
@@ -14,8 +23,8 @@ import { MaxRetriesPerRequestError } from 'ioredis/built/errors';
  */
 @Catch(MaxRetriesPerRequestError)
 export class RedisUnavailableFilter implements ExceptionFilter {
-    catch(_exception: MaxRetriesPerRequestError, host: ArgumentsHost): void {
-        if (host.getType() !== 'http') throw _exception;
+    catch(exception: Error, host: ArgumentsHost): void {
+        if (host.getType() !== 'http') throw exception;
         const res = host.switchToHttp().getResponse();
         const ex = new ServiceUnavailableException({
             statusCode: 503,

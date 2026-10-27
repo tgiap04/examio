@@ -1,4 +1,5 @@
-import { MaxRetriesPerRequestError } from 'ioredis/built/errors';
+import { ServiceUnavailableException } from '@nestjs/common';
+import { FILTER_CATCH_EXCEPTIONS } from '@nestjs/common/constants';
 import { RedisUnavailableFilter } from './redis-unavailable.filter';
 
 function http() {
@@ -14,7 +15,22 @@ function http() {
     };
 }
 
+/** ioredis does not export its error classes: the error is recognised by name, like a real one. */
+class MaxRetriesPerRequestError extends Error {
+    constructor(times: number) {
+        super(`Reached the max retries per request limit (which is ${times}).`);
+        this.name = 'MaxRetriesPerRequestError';
+    }
+}
+
 describe('RedisUnavailableFilter', () => {
+    it('is selected by Nest for an error named MaxRetriesPerRequestError and for nothing else', () => {
+        const [metatype] = Reflect.getMetadata(FILTER_CATCH_EXCEPTIONS, RedisUnavailableFilter) as Array<new () => unknown>;
+        expect(new MaxRetriesPerRequestError(20) instanceof metatype).toBe(true);
+        expect(new Error('boom') instanceof metatype).toBe(false);
+        expect(new ServiceUnavailableException() instanceof metatype).toBe(false);
+    });
+
     it('answers 503 SERVICE_UNAVAILABLE for an ioredis max-retries error', () => {
         const h = http();
         new RedisUnavailableFilter().catch(new MaxRetriesPerRequestError(20), h.host);
