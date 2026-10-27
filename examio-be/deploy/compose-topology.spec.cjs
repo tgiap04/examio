@@ -67,7 +67,7 @@ test('edge carries the gateway alone (the FE nginx joins it from its own compose
 });
 
 test('egress is exactly the services with a real internet dependency', () => {
-    assert.deepStrictEqual(members('egress'), ['ai', 'ai-worker', 'assessment', 'auth', 'finance', 'r2']);
+    assert.deepStrictEqual(members('egress'), ['ai', 'ai-worker', 'assessment', 'auth', 'content', 'finance', 'r2']);
 });
 
 test('every networked service is on internal, and admin has no way out', () => {
@@ -208,7 +208,7 @@ test('the exam service is gone from the stack: no service, no migrate, no broker
     assert.ok(!/^(EXAM_|RABBITMQ_EXAM_)/m.test(example), 'deploy/.env.example still lists exam variables');
 });
 
-test('content runs api+worker: it relays the outbox (content.*), settles generation jobs, serves ContentService on gRPC, no egress', () => {
+test('content runs api+worker: it relays the outbox (content.*), settles generation jobs, serves ContentService on gRPC, egress for Turnstile', () => {
     const svc = services.content;
     assert.strictEqual(svc.build.args.SERVICE_NAME, 'content-service');
     assert.strictEqual(envValue('content', 'ROLE'), 'api,worker');
@@ -223,7 +223,7 @@ test('content runs api+worker: it relays the outbox (content.*), settles generat
     assert.strictEqual(envValue('content', 'AI_GRPC_URL'), 'ai:50051');
     assert.ok(envValue('content', 'R2_PUBLIC_URL') !== undefined);
     assert.ok(envValue('content', 'SERVICE_CLIENT_SECRET').includes('${CONTENT_SERVICE_CLIENT_SECRET:?'));
-    assert.deepStrictEqual(networksOf('content'), ['internal']);
+    assert.deepStrictEqual(networksOf('content'), ['internal', 'egress']);
     for (const dep of ['content-migrate', 'postgres', 'redis', 'rabbitmq', 'r2', 'finance']) {
         assert.ok(svc.depends_on[dep], `content waits for ${dep}`);
     }
