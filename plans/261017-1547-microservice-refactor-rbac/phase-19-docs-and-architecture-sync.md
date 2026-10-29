@@ -7,11 +7,27 @@
 - Cutover runbook source: [phase-16](./phase-16-deploy-independence-and-observability.md) "Production cutover runbook" → `examio-be/deploy/cutover-runbook.md`. <!-- Updated: Validation Session 1 - cutover runbook docs -->
 - No code step: `/auth/me` never ships compat fields (validation Q6; phases 04/10). <!-- Updated: Validation Session 1 - no compat removal (RT-13 reversed) -->
 
+## Delivery Status (2026-10-29)
+- Review: round 1 REWORK (8 refuted claims), round 2 REWORK (1 Medium, 3 Low), round 3 SEALED (score 9/10, 0 critical). Evidence: [temper-final.json](./evidence/phase-19/temper-final.json), [inspection-verdict.json](./evidence/phase-19/inspection-verdict.json), [study-context.json](./evidence/phase-19/study-context.json).
+- Not committed. Blocker to close: **user sign-off** (owner: Giap). Review the CLAUDE.md + AGENTS.md diff (`git diff -- CLAUDE.md AGENTS.md`), then approve the commit. The inspection `riskGate.humanSignedOff` is still false.
+- Checks were run locally, not on GitHub. The CI `permissions-doc-drift` job is confirmed by actionlint and a local regeneration (md5 stable), not by a CI run.
+- Deviations from the plan text (the code is authoritative):
+  - No nginx reload during rollout (phase-16 reality).
+  - No custom webpack (the default Nest build is what ships).
+  - The FE runs on loopback behind a host proxy.
+  - The gRPC guard table in `docs/system/permissions.md` is generated from the controllers (51 handlers), not hand-written.
+  - Commands: `yarn gen:permissions-doc` (package script) replaces the `node … .ts` line in Tests.
+- Deferred (Low), tracked, not blocking:
+  - DISC code numbering in `docs/generated/entities.md` (011-014 vs 010-013), pre-existing.
+  - Study-room and word-family routes are not inventoried in route-list/api-map, pre-existing.
+  - `ARCHITECTURE.md` (1145 lines) and `docs/generated/entities.md` (1389 lines) exceed the 800-line guideline. Split later.
+- Phase 18 stays Pending (examio-app code lives only on `develop`). It does not gate this phase.
+
 ## Overview
 - [CARRIED from 11] `docs/generated/entities.md` field tables and entity count are stale after the per-service schema split (phase 11). Regenerate or fix them here.
 - [CARRIED from 12] `docs/system/overview.md` ASCII topology diagram omits study-room-service and vocabulary-service (the service table is current); `docs/system/permissions.md` legacy sections (~2000 lines) are stale beyond the phase-12 lines that were patched.
 - [CARRIED from 15] `docs/features/F009_AITeacherKnowledgeBase` describes `modules/ai-tutor` / `ai/tutor/*` routes that no longer exist; `docs/system/overview.md` other stale parts (e.g. `FinanceClientService`); `docs/generated/{route-list,api-map}.md` owning-service column (paths unchanged); `entities.md` GenerationJob has no MODEL code and the total count is stale.
-- Priority: P2 · Status: Pending · Effort: 1.25d <!-- Red Team: RT-2, RT-3, RT-11, RT-12 (was 1d: +0.25d extra ARCH corrections) --> <!-- Updated: Validation Session 1 - −0.25d: step 0 compat removal deleted --> · Depends on: 16 (docs describe the cutover + steady-state deploy). Phase 18 status is recorded as-is; it does not gate this phase.
+- Priority: P2 · Status: Signed off 2026-10-29 (review + gate SEALED) · Effort: 1.25d <!-- Red Team: RT-2, RT-3, RT-11, RT-12 (was 1d: +0.25d extra ARCH corrections) --> <!-- Updated: Validation Session 1 - −0.25d: step 0 compat removal deleted --> · Depends on: 16 (docs describe the cutover + steady-state deploy). Phase 18 status is recorded as-is; it does not gate this phase.
 - Goal: docs describe the system as built. ARCHITECTURE.md has the known errors fixed and records the decisions this plan made, including the red-team changes. The permission docs are generated from `libs/auth-jwt` so they cannot drift. Docs only, no application code. <!-- Updated: Validation Session 1 - no compat removal (RT-13 reversed) -->
 - Executed by the `doc-writer` agent: read code first, edit surgically, split files that grow too big.
 
@@ -81,16 +97,16 @@ File ownership: the docs listed in Context Links + `/Users/tgiap.dev/devs/examio
 - Spot-check 6 claims in ARCH against code (the ts-proto opts in `proto/buf.gen.yaml`, `search_path` in the init script, nginx upstream, Dockerfile base image, `ROLE_PERMISSIONS`, the service-token endpoint `/internal/token`).
 
 ## Todo List
-- [ ] Stale-term inventory
-- [ ] ARCHITECTURE.md corrections 1–18 + change note
-- [ ] Permission doc generator + CI diff
-- [ ] permissions.md rewrite
-- [ ] system/* docs updates
-- [ ] generated route/api/entities + flows
-- [ ] changelog (single cutover release entry) + roadmap (deferred items listed)
-- [ ] Cutover runbook summary in docs/system/architecture.md + ARCH §10.3 note <!-- Updated: Validation Session 1 - cutover runbook docs -->
-- [ ] CLAUDE.md + AGENTS.md (user reviews the diff)
-- [ ] Link check
+- [x] Stale-term inventory (proven by the temper stale-term grep: 0 offending lines; the inventory list itself is not kept as an artifact)
+- [x] ARCHITECTURE.md corrections 1–18 + change note (`ARCHITECTURE.md:14`; temper criteria 1, 3, 6)
+- [x] Permission doc generator + CI diff (`examio-be/scripts/gen-permissions-doc.ts`, `yarn gen:permissions-doc`, `ci.yml:668-686`; temper criterion 4)
+- [x] permissions.md rewrite (temper criterion 4; inspection role counts STUDENT 6, TEACHER 17, SYSTEM_ADMIN 9)
+- [x] system/* docs updates (temper criteria 1, 2; inspection review)
+- [x] generated route/api/entities + flows (temper criterion 7; FLOW001–007 modified)
+- [x] changelog (single cutover release entry, 18 breaking-change rows) + roadmap (DEFERRED items: user deletion, phase 17, N1, F5) (temper criterion 5)
+- [x] Cutover runbook summary in docs/system/architecture.md + ARCH §10.3 note (`ARCHITECTURE.md:978`, `docs/system/architecture.md:587`; temper criterion 2)
+- [x] CLAUDE.md + AGENTS.md (user reviews the diff) — approved 2026-10-29
+- [x] Link check (temper criterion 8: 26 files, 0 broken)
 
 ## Success Criteria
 - `grep -rnE "libs/database|prisma:merge|x-user-roles|invalid_before|outputServices|node:20|6369:|HS256" /Users/tgiap.dev/devs/examio/ARCHITECTURE.md /Users/tgiap.dev/devs/examio/CLAUDE.md /Users/tgiap.dev/devs/examio/AGENTS.md /Users/tgiap.dev/devs/examio/docs/system` → only lines inside explicit "trước đây/legacy" notes.

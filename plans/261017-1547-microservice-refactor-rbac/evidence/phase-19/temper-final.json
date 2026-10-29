@@ -1,0 +1,98 @@
+[
+ {
+  "command": "git grep -nE \"libs/database|prisma:merge|x-user-roles|invalid_before|outputServices|node:20|6369:|HS256\" -- ARCHITECTURE.md CLAUDE.md AGENTS.md docs/system | grep -viE \"trước đây|legacy|removed|no longer|gone|không còn|~~|không tin\"",
+  "exitCode": 0,
+  "summary": "0 lines left outside explicit legacy notes (criterion 1)",
+  "ts": "2026-10-29T16:00:00+0700"
+ },
+ {
+  "command": "git grep -c cutover-runbook.md -- docs/system/architecture.md ARCHITECTURE.md; no docker compose command lines in those docs",
+  "exitCode": 0,
+  "summary": "ARCHITECTURE.md:3, docs/system/architecture.md:2; 0 runbook command lines (criterion 2)",
+  "ts": "2026-10-29T16:00:00+0700"
+ },
+ {
+  "command": "git grep -n \"auth.user.deleted\\|Grafana\" -- ARCHITECTURE.md | grep -v DEFERRED; test $? -eq 1",
+  "exitCode": 0,
+  "summary": "0 lines without DEFERRED (criterion 3)",
+  "ts": "2026-10-29T16:00:00+0700"
+ },
+ {
+  "command": "cd examio-be && yarn gen:permissions-doc (twice) && md5 of docs/system/permissions.md + docs/generated/permissions-matrix.md equal",
+  "exitCode": 0,
+  "summary": "stable: second run identical (criterion 4); doc-writer set check STUDENT 6/6, TEACHER 17/17, SYSTEM_ADMIN 9/9 == ROLE_PERMISSIONS",
+  "ts": "2026-10-29T16:00:00+0700"
+ },
+ {
+  "command": "actionlint .github/workflows/ci.yml (with new permissions-doc-drift job) vs HEAD",
+  "exitCode": 0,
+  "summary": "12 vs 12 shellcheck infos, no new findings",
+  "ts": "2026-10-29T16:00:00+0700"
+ },
+ {
+  "command": "git grep -n uncommitted -- docs/development-roadmap.md; test $? -eq 1",
+  "exitCode": 0,
+  "summary": "0 hits (criterion 5)",
+  "ts": "2026-10-29T16:00:00+0700"
+ },
+ {
+  "command": "cd examio-be && yarn typecheck && tsc --noEmit scripts/gen-permissions-doc.ts",
+  "exitCode": 0,
+  "summary": "exit 0 (criterion 8)",
+  "ts": "2026-10-29T16:00:00+0700"
+ },
+ {
+  "command": "git diff HEAD | added lines | secret patterns (private key, ghp_, github_pat_, AKIA, sk-, AIza); test $? -eq 1",
+  "exitCode": 0,
+  "summary": "0 hits (criterion 8)",
+  "ts": "2026-10-29T16:00:00+0700"
+ },
+ {
+  "command": "python3 linkcheck.py over the 22 changed docs (relative links + anchors)",
+  "exitCode": 0,
+  "summary": "files 22 bad 0 (criterion 8)",
+  "ts": "2026-10-29T16:00:00+0700"
+ },
+ {
+  "command": "ARCHITECTURE.md 6-claim spot-check (doc-writer, file:line)",
+  "exitCode": 0,
+  "summary": "buf.gen.yaml:7-13 ts-proto opts; 01-service-schemas.sh:48 search_path; nginx.conf:17-20 upstream gw; Dockerfile.node:20 node:22-alpine; permissions.ts:46 ROLE_PERMISSIONS; service-token.controller.ts:29,39 POST /internal/token (criterion 6)",
+  "ts": "2026-10-29T16:00:00+0700"
+ },
+ {
+  "command": "route-list/api-map Owner column computed from routes.yaml upstreams; entities.md field tables diffed by script against every schema.prisma (doc-writer)",
+  "exitCode": 0,
+  "summary": "owner column per backend row; entity field names/nullability/types match; total 49 (criterion 7)",
+  "ts": "2026-10-29T16:00:00+0700"
+ },
+ {
+  "command": "fix round 1: yarn gen:permissions-doc twice (now also emits the generated gRPC guard table from 15 controllers, 43 RPCs) + md5 compare",
+  "exitCode": 0,
+  "summary": "stable; grpc-guards block present in permissions.md",
+  "ts": "2026-10-29T18:30:00+0700"
+ },
+ {
+  "command": "fix round 1: yarn typecheck && tsc --noEmit scripts/gen-permissions-doc.ts",
+  "exitCode": 0,
+  "summary": "exit 0",
+  "ts": "2026-10-29T18:30:00+0700"
+ },
+ {
+  "command": "fix round 1: linkcheck over 26 changed docs",
+  "exitCode": 0,
+  "summary": "files 26 bad 0",
+  "ts": "2026-10-29T18:30:00+0700"
+ },
+ {
+  "command": "fix round 1: stale-term grep (criterion 1) + deferred grep (criterion 3) + read-RPC rule grep in CLAUDE.md/AGENTS.md/ARCHITECTURE.md",
+  "exitCode": 0,
+  "summary": "0 / 0 / 0 offending lines (H1 fixed)",
+  "ts": "2026-10-29T18:30:00+0700"
+ },
+ {
+  "command": "fix round 1: actionlint ci.yml; secret-pattern scan of added lines",
+  "exitCode": 0,
+  "summary": "12 pre-existing infos (no new); 0 secrets",
+  "ts": "2026-10-29T18:30:00+0700"
+ }
+]
