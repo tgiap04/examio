@@ -663,3 +663,24 @@ jobs:
           test -f "$f"
           git ls-files --error-unmatch "$f"
           git diff --exit-code -- "$f"
+
+  # Permission docs are generated from the catalog and the gateway routes: fail on drift.
+  permissions-doc-drift:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: examio-be
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+          cache-dependency-path: examio-be/yarn.lock
+      - run: corepack enable
+      - run: yarn install --immutable
+      - run: yarn gen:permissions-doc
+      - name: Check generated docs are tracked and unchanged
+        run: |
+          git ls-files --error-unmatch ../docs/system/permissions.md ../docs/generated/permissions-matrix.md
+          git diff --exit-code -- ../docs/system/permissions.md ../docs/generated/permissions-matrix.md

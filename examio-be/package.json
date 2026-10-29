@@ -9,6 +9,7 @@
         "proto:lint": "buf lint proto",
         "proto:gen": "cd proto && buf generate",
         "gen:fe-permissions": "ts-node scripts/gen-fe-permissions.ts",
+        "gen:permissions-doc": "ts-node scripts/gen-permissions-doc.ts",
         "typecheck:auth": "tsc --noEmit -p apps/auth-service/tsconfig.app.json",
         "typecheck:content": "tsc --noEmit -p apps/content-service/tsconfig.app.json",
         "typecheck:assessment": "tsc --noEmit -p apps/assessment-service/tsconfig.app.json",
