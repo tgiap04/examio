@@ -13,7 +13,7 @@
 | BL001 | SessionCleanupCron | scheduled-job | Cron (daily) |
 | BL002 | UserRegisteredHandler | event-listener | `auth.user.registered` RabbitMQ event |
 | BL003 | AuthService | integration | Login, OAuth, token validation |
-| BL004 | FinanceClientService | integration | Credit deduction, wallet check |
+| BL004 | FinanceClient | integration | Credit deduction, wallet check |
 | BL005 | R2ClientService | integration | File upload to R2 |
 | BL006 | R2Service | integration | R2 storage operations |
 | BL007 | OcrService | integration | Document OCR processing |
@@ -124,12 +124,12 @@ Core authentication service. Handles email/password login, Google OAuth flow (in
 
 ---
 
-## BL004: FinanceClientService
+## BL004: FinanceClient
 
 **Type**: integration
 **Trigger**: Credit-deductor feature (AI generation, document processing)
-**Source File**: `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts`
-**Source Symbol**: `FinanceClientService` (class, gRPC client or HTTP client to finance-service)
+**Source File**: `examio-be/libs/grpc/src/clients/finance.client.ts`
+**Source Symbol**: `FinanceClient` (class, shared gRPC client to finance-service)
 
 ### Description
 

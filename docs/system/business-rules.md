@@ -47,7 +47,7 @@ An account has exactly one base role (`STUDENT` or `TEACHER`) and an independent
 Users can sign in with an email/password combination or via Google OAuth. On success, the system issues a JWT access token (short-lived) and a refresh token (long-lived). A session record is created with the device fingerprint, browser, OS, and IP address.
 
 **Applies when:** A user submits login credentials or completes a Google OAuth redirect.
-**Says:** Tokens are stored in localStorage and an HTTP-only cookie. The session is associated with the device for multi-device tracking.
+**Says:** The tokens are set by auth-service as HttpOnly cookies (`accessToken`, `refreshToken`); the browser never stores them in `localStorage`. The session is associated with the device for multi-device tracking.
 
 ---
 
@@ -60,12 +60,12 @@ Access tokens are RS256 JWTs signed by auth-service and verified by each service
 
 ---
 
-### OAuth login tokens are synced server-side on redirect
+### OAuth login sets the session cookies on the callback
 
-When a user completes Google OAuth, the auth code is exchanged server-side and tokens are stored in the database. The frontend receives tokens via URL query parameters, stores them in localStorage, and also calls a sync endpoint to persist the session server-side. A device fingerprint is assigned via `X-Device-ID` header.
+When a user completes Google OAuth, auth-service exchanges the code server-side, creates the session, sets the `accessToken` and `refreshToken` cookies and redirects to the frontend. A device fingerprint is assigned via the `X-Device-ID` header. The mobile app (an allowlisted app redirect) never gets tokens in a URL: it receives a one-time code (60 s, single use) and swaps it for the tokens at `POST /auth/exchange`.
 
-**Applies when:** The Google OAuth redirect URL carries `token`, `refreshToken`, and `sessionId` in the query string.
-**Says:** Tokens are persisted both client-side and server-side. The session is linked to the device for future management and revocation.
+**Applies when:** The Google OAuth callback (`/auth/google/callback`) succeeds.
+**Says:** The session is linked to the device for later management and revocation. If the frontend still sees `token`, `refreshToken` or `sessionId` in the URL it removes them without reading them.
 
 ---
 
@@ -85,7 +85,7 @@ A user can view all active sessions across devices and browsers. They can termin
 Before generating quizzes or flashcards from a document, the system takes the cost from the user's wallet and only then queues the job. If credits are insufficient, the request is rejected and no job is queued.
 
 **Applies when:** A user initiates quiz or flashcard generation from the AI tool.
-**Says:** Credits are deducted atomically through finance's `Debit` with the key `gen:<jobId>`, so a retry of the same charge never deducts twice. The job (`GenerationJob`) is created first as `PENDING_CHARGE`, becomes `QUEUED` once the debit succeeds, and is cancelled and refunded if the debit never completes (see the next rule). If free mode is enabled outside production, this credit check is bypassed.
+**Says:** Credits are deducted atomically through finance's `Debit` with the key `gen:<jobId>`, so a retry of the same charge never deducts twice. The job (`GenerationJob`) is created first as `PENDING_CHARGE`, becomes `QUEUED` once the debit succeeds (then `PROCESSING`, and `COMPLETED` or `FAILED`), and is `CANCELLED` and refunded if the debit never completes or the user cancels (see the next rule). Every state change is conditional on the previous state, so a late event or a double click never moves a job twice. If free mode is enabled outside production, this credit check is bypassed.
 
 ---
 
@@ -136,7 +136,7 @@ When a user initiates a subscription purchase, the system creates a payment reco
 
 Every credit movement carries an idempotency key, unique per wallet. Repeating a request with the same key returns the original transaction marked `alreadyApplied` and changes nothing; the same key with a different amount or reason is rejected (`IDEMPOTENCY_KEY_REUSED`). A debit can be refunded at most once. Admin finance actions (credit adjustment, payment refund, tier change) follow the same rule via the `Idempotency-Key` header, so a double-click or retry does not apply twice or add a second audit row.
 
-**Applies when:** exam charges credits, or an admin adjusts credits, refunds a payment or changes a tier.
+**Applies when:** content-service or document-service charges credits (`gen:<jobId>`, `doc:<id>`), or an admin adjusts credits, refunds a payment or changes a tier.
 **Says:** At most one effect per key; replays are safe.
 
 ---
@@ -152,7 +152,7 @@ Finance creates the welcome wallet when the `auth.user.authz_changed` event for 
 
 ### Services read only the data they own
 
-Each database model belongs to one service. Other services reach it through that service's RPCs, never by querying its tables. Exam shows another user's name and avatar from auth's public profile (never the email); a deleted user appears as "Người dùng đã xóa" in the UI.
+Each database model belongs to one service. Other services reach it through that service's RPCs, never by querying its tables. Content, assessment and study-room show another user's name and avatar from auth's public profile (never the email); a deleted user appears as "Người dùng đã xóa" in the UI.
 
 **Applies when:** a service needs data owned by another service.
 **Says:** The owner decides what is returned; CI (`yarn check:ownership`) rejects direct access.
@@ -184,7 +184,7 @@ User files (profile avatars, banners, PDF documents, knowledge base files) are u
 When a user deletes a PDF, a knowledge file, or a profile asset, the system removes the record from the database and also deletes the file from R2. The file URL becomes invalid immediately after deletion.
 
 **Applies when:** A delete operation targets a UserStorage record.
-**Says:** Since phase 11 the R2 keys are queued in an `r2_delete_tasks` row (schema `auth`, `exam`, `vocabulary` or `document`) inside the same transaction as the row delete or image replace: the tasks exist if and only if that transaction commits. A background worker (`R2DeleteWorker`, `libs/messaging/src/r2-delete`) then calls r2-service `DeleteObjects` and removes the tasks; on failure it retries with exponential backoff (capped at 1 hour) and stops after 10 attempts, leaving the task row and logging a stuck metric. Deleting an upload (`DELETE /ai/upload/:id` or the ai-chat "delete files" option) is one document-service transaction: rows removed, R2 keys queued, `document.deleted` written; ai-service then deletes the vectors, entities and graph, and exam drops the links from generation history and chats. The object may therefore outlive the record for a short while, but a crash after commit no longer orphans it. A URL not on the configured `R2_PUBLIC_URL` host is never deleted (`r2KeyFromUrl` returns `null`). Not covered: deleting a `User` account (see roadmap, deferred) — no code path deletes `User` rows today.
+**Says:** Since phase 11 the R2 keys are queued in an `r2_delete_tasks` row (schema `auth`, `content`, `vocabulary`, `document` or `aichat`) inside the same transaction as the row delete or image replace: the tasks exist if and only if that transaction commits. A background worker (`R2DeleteWorker`, `libs/messaging/src/r2-delete`) then calls r2-service `DeleteObjects` and removes the tasks; on failure it retries with exponential backoff (capped at 1 hour) and stops after 10 attempts, leaving the task row and logging a stuck metric. Deleting an upload (`DELETE /ai/upload/:id` or the ai-chat "delete files" option) is one document-service transaction: rows removed, R2 keys queued, `document.deleted` written; ai-service then deletes the vectors, entities and graph, and content (generation history) and ai-chat (chat links) drop their links. The object may therefore outlive the record for a short while, but a crash after commit no longer orphans it. A URL not on the configured `R2_PUBLIC_URL` host is never deleted (`r2KeyFromUrl` returns `null`). Not covered: deleting a `User` account (see roadmap, deferred) — no code path deletes `User` rows today.
 
 ---
 
@@ -226,12 +226,21 @@ Questions are fetched from the server encrypted (via a secure-quiz endpoint) and
 
 ---
 
+### An exam session holds its own copy of the quiz
+
+Creating an exam session copies the quiz set into the session (`ExamSession.quizSnapshot`, with a content hash). From then on questions, answers and scoring come only from that copy: editing or deleting the quiz set afterwards changes nothing for a session that exists. Deleting the set marks its rooms `sourceDeleted`, so no new session can be created, while existing sessions keep working. A host can pull the changes in with "refresh snapshot" only while the session is still UPCOMING and nobody has an attempt; the host view shows `snapshotOutdated` and `canRefreshSnapshot`.
+
+**Applies when:** A host creates a session, refreshes its snapshot, or edits or deletes the source quiz set.
+**Says:** A refresh after the session started or after the first attempt answers 409 `SNAPSHOT_LOCKED` (starting an attempt and refreshing take the same row lock, so an attempt never sits next to a changed snapshot). A set over 1 MB of serialized content answers 422 `QUIZSET_TOO_LARGE`; a deleted set answers 422 `QUIZSET_DELETED`. Changing the question selection of a session is checked against its own snapshot. Students never see the key before submit and never cause a call to content-service.
+
+---
+
 ### Exam attempts are submitted automatically when time expires
 
-The system enforces the session time limit. If a student does not manually submit before the deadline, the attempt is closed automatically and answers are scored. Manual submission is allowed at any time before expiry.
+The exam page counts the time limit down and submits for the student when it reaches zero (`handleAutoSubmit` in `ExamQuizPage`); if that call fails the student is shown a retry. Manual submission is allowed at any time before expiry. The server has no timer of its own: it does not close an attempt on its own, and the sessions' start and end times only gate starting an attempt.
 
-**Applies when:** The session's end time is reached while an attempt is still in progress.
-**Says:** The attempt status changes to COMPLETED. Scoring runs. The student is redirected to the results view.
+**Applies when:** The time limit runs out in the student's browser while the attempt is still in progress.
+**Says:** The browser submits through `secure-submit`; the attempt becomes COMPLETED and scored on the server. A student whose browser is closed keeps an open IN_PROGRESS attempt (open question in the glossary).
 
 ---
 
@@ -282,6 +291,15 @@ Generating word families with AI (`generate`, `generate-root`) is a TEACHER perm
 
 ---
 
+### AI chat limits follow the subscription tier
+
+Before an AI chat message is accepted, ai-chat-service reads the user's benefits from finance (`GetUserBenefits`, cached 5 minutes and dropped on `finance.subscription.changed`). The Free tier allows 5 messages per minute (429 `RATE_LIMITED`) and 30 user messages in one chat (403 `CHAT_LIMIT_REACHED`; start a new chat); paid tiers have higher limits. If finance cannot answer, the Free limits apply (fail safe, never unlimited). A regenerate does not count the messages it will replace toward the chat limit, and a regenerate that is refused (429, 403, 404) deletes nothing.
+
+**Applies when:** A user sends or regenerates an AI chat message.
+**Says:** The gateway also rate-limits the stream routes per client (10 per minute). Chats and documents of another user answer 404.
+
+---
+
 ## Email & Notifications
 
 ### Account verification requires a 6-digit OTP
@@ -311,11 +329,22 @@ When a user successfully changes their password via the profile page, a confirma
 
 ---
 
+## Admin Screens
+
+### The admin user detail has no deletion date, and the audit log names the actor
+
+`GET /admin/users/:id` keeps the `deletedAt` field for compatibility but it is always `null`: auth serves only live accounts and its user message carries no such field (an account soft-deleted before RBAC is cleared when it is unbanned). The audit log shows each actor as the display name, and if the name is empty the username (`name || username`, the same rule as the admin user dropdown), resolved from auth in one batch; if auth does not answer, the row shows `#<adminId>` and the log stays readable.
+
+**Applies when:** An admin opens a user or the audit log.
+**Says:** `deletedAt` is not a signal of anything; ban state is `isBanned`. Role-change history instead shows the actor's email (or "CLI" for bootstrap changes).
+
+---
+
 ## Data Retention
 
 ### User data is retained while account is active
 
-User data (quiz sets, flashcard sets, exam rooms, history, wallet) is retained indefinitely as long as the account exists. Deleted content is removed immediately from the database; its R2 objects are queued in the same transaction and deleted by a worker shortly after (auth, exam and vocabulary each have their own `r2_delete_tasks`). There is no automatic purge of inactive accounts in the current implementation.
+User data (quiz sets, flashcard sets, exam rooms, history, wallet) is retained indefinitely as long as the account exists. Deleted content is removed immediately from the database; its R2 objects are queued in the same transaction and deleted by a worker shortly after (auth, content, vocabulary, document and ai-chat each have their own `r2_delete_tasks`). There is no automatic purge of inactive accounts in the current implementation.
 
 **Applies when:** A user deletes content or an account.
 **Says:** The relevant records and files are permanently removed. This cannot be undone.
@@ -335,10 +364,19 @@ Each time a student moves to the next card in a study session, the card ID is re
 
 ### Flashcard study requires passing an access gate
 
-A flashcard set can be protected by an access code. Students must enter the correct code before the study interface is unlocked (limited to 5 wrong tries per 15 minutes, see Exam Integrity). The owner of the set bypasses the code requirement. A correct code is remembered for that user until the owner changes the code (see "A correct code is remembered" below). A set the user has no grant for (not public, not owner, not whitelisted) answers "not found", never "forbidden". Access depends only on the set's own sharing settings, so a demoted teacher's shared set stays studyable.
+A flashcard set can be protected by an access code. Students must enter the correct code before the study interface is unlocked (limited to 5 wrong tries per 15 minutes, see Exam Integrity). The owner of the set bypasses the code requirement. A correct code is remembered for that user until the owner changes the code (see "A correct code is remembered" below). A set the user has no grant for (not public, not owner, not whitelisted) answers "not found", never "forbidden". The study page `/study-flashcard/:id` itself now requires a signed-in user holding `flashcard:study` or `flashcardset:manage` (decision D13: it used to open without login); an anonymous visitor is sent to `/login`, and the backend still decides whether the set may be opened. Access depends only on the set's own sharing settings, so a demoted teacher's shared set stays studyable.
 
 **Applies when:** A student navigates to a flashcard set that has access code protection enabled.
 **Says:** The study interface is locked behind an access dialog. The code must match the host-configured value.
+
+---
+
+### A shared quiz set, flashcard set or exam session opens through one of four grants
+
+Access to a shared resource depends only on its own sharing settings: the owner; `isPublic` (public sets and sessions); the whitelist (user ids the owner added); or the code-granted list (users who entered the current 6-digit code). Anyone else gets "not found", never "forbidden". The role of the owner is not read, so a demoted teacher's shared set stays open. Code attempts are limited to 5 wrong tries per 15 minutes per user and resource (see Exam Integrity); whitelist and code-granted lists each hold at most 2000 users; rotating or switching off the code empties the code-granted list but not the whitelist.
+
+**Applies when:** A user lists, opens, studies, practises or starts an attempt on a shared resource.
+**Says:** The check never reveals the code or the lists. The details are in the three rules below.
 
 ---
 

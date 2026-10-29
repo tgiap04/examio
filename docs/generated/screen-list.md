@@ -36,7 +36,7 @@
 | SCR022 | ManageQuizSetDetailPage | atomic | ~4 | QuizSet, Label, Question |
 | SCR023 | ManageFlashcardSetDetailPage | atomic | ~4 | FlashCardSet, Label, Flashcard |
 | SCR024 | AIToolPage | atomic | ~3 | AI generation, job status |
-| SCR025 | GenAIKnowledgePage | composite | 5 | Knowledge files, folders, graphs |
+| SCR025 | GenAIKnowledgePage (REMOVED 2026-06-14) | composite | 5 | Removed: page and `ai-tutor` backend deleted |
 | SCR026 | ManageExamRoomPage | atomic | ~2 | ExamRoom list + create |
 | SCR027 | ManageExamRoomDetailPage | composite | 8 | ExamRoom, Session, Stats, Sharing |
 | SCR028 | ExamRoomSessionAnalyticsPage | atomic | ~4 | Attempt leaderboard, cheating stats, charts |
@@ -784,11 +784,13 @@ AI generation tool for creating quizzes and flashcards from uploaded documents. 
 
 ### Related Screens
 
-- SCR025: GenAIKnowledgePage (knowledge base management)
+- SCR025: GenAIKnowledgePage (removed 2026-06-14)
 
 ---
 
-## SCR025: GenAIKnowledgePage
+## SCR025: GenAIKnowledgePage (REMOVED 2026-06-14)
+
+> **REMOVED 2026-06-14.** Page removed in `f1ed596`, backend `ai-tutor` in `343fa97`; no `/k/genai-knowledge` route remains. See `docs/features/F009_AITeacherKnowledgeBase/screens.md`. Retired codes: SCR025, REG001..004. The text below is historical.
 
 **Type**: composite
 
@@ -820,10 +822,10 @@ AI knowledge base management with four independent regions: knowledge folders, k
 
 | Code | Label | Owner | Independence Signals |
 |------|-------|-------|---------------------|
-| REG001 | FolderPanel | F009_AITeacherKnowledgeBase | Own endpoints `GET/POST/PUT/DELETE /api/v1/ai/tutor/knowledge-folders`; independent loading state |
-| REG002 | FilePanel | F009_AITeacherKnowledgeBase | Own endpoints `GET/POST/DELETE /api/v1/ai/tutor/knowledge-files`; independent reprocess/bulk operations; own pagination |
-| REG003 | DatasetImportPanel | F009_AITeacherKnowledgeBase | Own endpoints `GET/POST /api/v1/ai/tutor/dataset-imports`; independent job polling |
-| REG004 | StatsPanel | F009_AITeacherKnowledgeBase | Own endpoint `GET /api/v1/ai/tutor/knowledge-stats`; independent refresh |
+| REG001 | FolderPanel (removed) | F009_AITeacherKnowledgeBase (removed) | Own endpoints `GET/POST/PUT/DELETE /api/v1/ai/tutor/knowledge-folders`; independent loading state |
+| REG002 | FilePanel (removed) | F009_AITeacherKnowledgeBase (removed) | Own endpoints `GET/POST/DELETE /api/v1/ai/tutor/knowledge-files`; independent reprocess/bulk operations; own pagination |
+| REG003 | DatasetImportPanel (removed) | F009_AITeacherKnowledgeBase (removed) | Own endpoints `GET/POST /api/v1/ai/tutor/dataset-imports`; independent job polling |
+| REG004 | StatsPanel (removed) | F009_AITeacherKnowledgeBase (removed) | Own endpoint `GET /api/v1/ai/tutor/knowledge-stats`; independent refresh |
 
 ---
 
@@ -1411,9 +1413,9 @@ Route `/admin/roles`, sidebar item "Phân quyền" (`nav.roles`, `AdminLayout`).
 
 ## Summary
 
-- **Total Screens**: 44
-- **Atomic**: 38 (SCR001–SCR012, SCR014–SCR015, SCR017, SCR019–SCR024, SCR026, SCR028–SCR038, SCR039–SCR044)
-- **Composite**: 6 (SCR013, SCR016, SCR018, SCR025, SCR027)
+- **Total Screens**: 43 active + 1 removed (SCR025)
+- **Atomic**: 39 (SCR001–SCR012, SCR014–SCR015, SCR017, SCR019–SCR024, SCR026, SCR028–SCR038, SCR039–SCR044)
+- **Composite**: 4 active (SCR013, SCR016, SCR018, SCR027) + 1 removed (SCR025)
 - **Total Regions**: 16 across composite screens
 
 ---

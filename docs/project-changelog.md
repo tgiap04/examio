@@ -1,15 +1,62 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-10-27
+last_updated: 2026-10-29
 ---
 
 # Examio Project Changelog
+
+## [Release] Microservice refactor + RBAC cutover — at final merge (date set at cutover)
+
+One production release for the whole branch `refactor/microservice-rbac` (plan `plans/261017-1547-microservice-refactor-rbac/`). Production is not deployed yet: it is deployed once at the final merge, with a **database reset** (no data migration, no compat fields), by `examio-be/deploy/cutover-runbook.md`. The push deploy stays off until repository variable `CUTOVER_DONE` is `true`. Phase 17 (K8s, observability stack, Redis ACL) is deferred; phase 18 (mobile RBAC parity) must finish before the first mobile store release. This entry summarises the per-phase entries below; they keep the detail.
+
+### Milestone A: RBAC end to end (phases 01-09)
+
+- Roles `STUDENT` | `TEACHER` (exclusive) + `isSystemAdmin`; permission catalog in `libs/auth-jwt/src/permissions.ts`; every handler declares its access (deny by default, 403 `NO_AUTHZ_DECLARED` otherwise).
+- Access token RS256 (JWKS) with `sid`, `roles`, `email_verified`, `av`; service tokens for service-to-service calls; admin bootstrap moved to the auth CLI; `/admin/roles` screen.
+- Gateway rewritten as a YAML-driven streaming proxy (revoke/stale checks, Redis rate limits, WS upgrade auth).
+- Quiz-set sharing (whitelist/code/public), server-scored quiz practice, frontend permission routing and `/403`.
+
+### Milestone B: data ownership (phases 10-11)
+
+- One owning service per Prisma model (`yarn check:ownership`, `yarn check:deps`); idempotent money RPCs; no FK to `User`.
+- Database per service: own Postgres schema and `<svc>_svc` role, own Prisma schema and migrations; `libs/database` removed; durable R2 deletion through `r2_delete_tasks`.
+
+### Milestone C: split exam-service (phases 12-15)
+
+- New services: `study-room-service`, `vocabulary-service`, `document-service`, `ai-chat-service`, `content-service`, `assessment-service` (renamed from exam-service); ai-service owns schema `ai` and serves gRPC `AiService`.
+- AI generation is a `GenerationJob` with a crash-safe charge and refunds; exam sessions read a frozen quiz snapshot.
+
+### Milestone D: deploy independence (phase 16; docs in phase 19)
+
+- One `deploy/Dockerfile.node` recipe, per-service images from GHCR, wave-based deploy with a migrate gate and auto-rollback, migration lint (`migration:contract` label), per-service env files, `gateway-a`/`gateway-b` behind nginx.
+
+### Breaking changes
+
+| Area | Before | After |
+|------|--------|-------|
+| `/auth/me` | `user.isAdmin`, `wallet` in the response | `user.isSystemAdmin`; `wallet` removed (balance from `GET /wallet/info`); `roles` and `permissions` added |
+| Tokens | symmetric HS256 token (`JWT_SECRET`), cookies `token` / `session_id` | RS256 + `av` claim; cookies `accessToken` / `refreshToken` |
+| 401 codes | one generic 401 | `TOKEN_EXPIRED`, `TOKEN_STALE` (refresh once), `SESSION_REVOKED` (log out) |
+| 403 codes | generic 403 | `PERMISSION_DENIED`, `EMAIL_NOT_VERIFIED` |
+| Wallet RPC | `UpdateBalance` | `Debit` / `Credit` / `Refund` with `idempotency_key` |
+| ExamRoom | cascaded on quiz-set delete | no cascade; room keeps `sourceDeleted` and `quizSetTitle` |
+| Services | `exam-service` | split into content + assessment (+ study-room, vocabulary, ai-chat, document) |
+| ai-service | `score/`, dev agent, benchmark index; HTTP chat API | removed; gRPC `AiService`, HTTP only `/` and `/health` |
+| Word families | TEACHER could not save | TEACHER has `word_family:save` |
+| Gateway | host port 6369 | removed; only the FE `FE_PORT` (6368) is published |
+| Env | shared `deploy/.env` | per-service `deploy/env/<name>.env` (required) |
+| Images | built on the host | pulled from `ghcr.io/cychipo/examio-<key>:<sha>` |
+| `GET /quizsets/public/:id` | public read | removed (404) |
+| `/study-flashcard/:id` | open to anyone | needs login plus `flashcard:study` or `flashcardset:manage` |
+| Admin grant | `POST /admin/users/:id/grant-admin`, `revoke-admin` | removed; use `PUT /admin/roles/users/:id/system-admin` |
+| `PATCH /admin/users/:id` | could carry admin/role/ban fields | strict schema: `isAdmin`, `isSystemAdmin`, `role`, `isBanned` answer 400 (ban via `ban`/`unban`) |
+| `POST /auth/refresh` | reset only `accessToken` | rotates the refresh token and sets both cookies; the old token works for a short grace window |
 
 ## [Unreleased] — 2026-10-23
 
 ### Changed
 
-#### Deploy independence, phase 16 (uncommitted on `refactor/microservice-rbac`)
+#### Deploy independence, phase 16 (committed on `refactor/microservice-rbac`)
 
 - **Images**: one recipe `examio-be/deploy/Dockerfile.node` (build arg `SERVICE`; targets `runtime`, `seed`; copies `templates/` for `MailService`) replaces `examio-be/Dockerfile`, `deploy/Dockerfile`, `Dockerfile.migration`, `Dockerfile.seed` and `entrypoint-seed.sh` (deleted). `deploy/docker-entrypoint.sh` switches on `ROLE` (`api` | `worker` | `api,worker` | `migrate` | `seed`, `SEED_PROFILE=prod|dev`) and never runs `db push` or `migrate resolve`. Images are `ghcr.io/cychipo/examio-<key>:<sha>|main`, catalog `deploy/services.json`. The ai Dockerfile builds with context `examio-be`.
 - **Scripts**: `scripts/changed-services.sh` (waves: wave 1 = servers of changed proto packages; auth first, gateway last), `scripts/lint-migrations.sh` (blocks destructive SQL unless `MIGRATION_CONTRACT=1` / label `migration:contract`), `deploy/deploy-service.sh <svc> <sha>` (migrate gate, P3009 halt, auto-rollback, Telegram alerts, never `migrate resolve` / `db push` / `down`; needs `jq`; gateway-a then gateway-b without an nginx reload), `deploy/ci-dummy.env.sh`, `scripts/cutover-smoke.ts` (`yarn smoke:cutover`).
@@ -20,7 +67,7 @@ last_updated: 2026-10-27
 - **Libs**: `libs/redis` `RedisUnavailableFilter` no longer deep-imports `ioredis/built/errors` (matches by error name).
 - **Docs**: new runbook `examio-be/deploy/cutover-runbook.md`; `CLAUDE.md`, `AGENTS.md`, `deploy/README.md`, `system/architecture.md`.
 
-#### Split exam-service into content-service and assessment-service, phase 14 (uncommitted on `refactor/microservice-rbac`)
+#### Split exam-service into content-service and assessment-service, phase 14 (committed on `refactor/microservice-rbac`)
 
 - **content-service** (`apps/content-service`, new): quiz sets, flashcard sets (sharing, practice, study progress), `GenerationJob` + `HistoryGenerated*` (Debit/Refund as caller `content`), `/student/*` content routes and the `r2_delete_tasks` worker (r2 `DeleteObjects` as `content`). Local HTTP 3013 / gRPC 50057 (container 3000/50051); schema `content`, role `content_svc`, Redis prefix `content:`, broker user `content` (`^content\.`), `ROLE=api,worker`; needs `egress` and `TURNSTILE_SECRET_KEY` (Turnstile). gRPC `examio.content.v1.ContentService` (`GetQuizSetSnapshot`, `GetQuizSetsByIds`, `GetUserContentStats`): the first two need a forwarded user token with `quizset:manage` plus ownership (a service token gets PERMISSION_DENIED, more than 50 ids INVALID_ARGUMENT), so `SERVICE_AUDIENCES` has no `content` entry. Publishes `content.quizset.deleted` and `content.generation.requested`; consumes `ai.generation.*`, `document.deleted`, `auth.user.updated`.
 - **assessment-service** (`apps/assessment-service`, `git mv` of exam-service): exam rooms, sessions, attempts, cheating log and `/student/*` exam routes. Local port 3014, no gRPC server; schema `assessment`, role `assessment_svc`, broker user `assessment`. The exam schema and migration history were replaced by one fresh `assessment` init migration (DB reset policy).
@@ -31,7 +78,7 @@ last_updated: 2026-10-27
 - **Frontend**: banner "Đề đã thay đổi kể từ khi tạo phiên" with the "Cập nhật đề" action (`src/lib/exam-session/snapshot-banner.ts`, `src/pages/k/components/snapshot-outdated-banner.tsx`), `refreshSnapshot` in `examSessionApi.ts` and `useExamRoomDetailStore.ts`, a source-deleted notice on `ManageExamRoomDetailPage`, and `ExamSessionPage` shows `SessionUnavailable` when `/auth/me` is unreachable.
 - **Docs**: `CLAUDE.md`, `AGENTS.md`, `architecture-overview.mmd`, `system/{architecture,permissions}.md`, `deploy/README.md`, `apps/ai-service/README.md`.
 
-#### Extract ai-chat service and move AI calls to gRPC, phase 13 (uncommitted on `refactor/microservice-rbac`)
+#### Extract ai-chat service and move AI calls to gRPC, phase 13 (committed on `refactor/microservice-rbac`)
 
 - **ai-chat-service** (`apps/ai-chat-service`, new): HTTP `/api/v1/ai-chat/*` (16 routes; SSE on `:chatId/stream` and `message/:id/regenerate-stream`, paths unchanged; `DELETE :chatId?deleteFiles=true` also deletes attached files) and public `/api/v1/subjects/*` (`systemPrompt` is never returned). Schema `aichat`, role `aichat_svc`; models `AIChat`, `AIChatMessage`, `AIChatDocument` (`documentId`, no FK), `SubjectCategory`, `Subject`. No gRPC server. `ROLE=api,worker`: the worker polls `r2_delete_tasks` (message images, only keys under `images/<ownerId>/`, r2 called as `ai-chat`). Consumer queue `aichat.events` runs in the API process: `document.deleted` (unlink) and `finance.subscription.changed` (drop `aichat:benefits:<id>`); broker user `aichat` cannot publish.
 - **AI calls**: chat goes to ai-service gRPC `Query` (60 s deadline) and `StreamChat` (no deadline, 60 s idle timeout) as `svc:ai-chat`. Failures before the first frame are HTTP statuses (429, 502, 503, 504); later ones are `event: error` frames. Free tier: 6 messages a minute (corrected to 5 in phase 16), 429 `RATE_LIMITED`; full chat 403 `CHAT_LIMIT_REACHED`; another user's chat or document answers 404. Message files wait for OCR up to `AI_CHAT_DOCUMENT_WAIT_MS` (default 120000).
@@ -45,7 +92,7 @@ last_updated: 2026-10-27
 - **Open**: the frontend AI chat page is not mounted on any route (pre-existing, F4). Large legacy sections of generated docs still describe the old shape (phase 19).
 - **Docs**: `CLAUDE.md`, `AGENTS.md`, `system/{architecture,overview,glossary,permissions}.md`, `generated/{route-list,api-map}.md` owner notes, `features/F016`, `deploy/README.md`, `apps/ai-service/README.md`, roadmap.
 
-#### Document service and ai-service database, phase 15 (uncommitted on `refactor/microservice-rbac`)
+#### Document service and ai-service database, phase 15 (committed on `refactor/microservice-rbac`)
 
 - **document-service** (`apps/document-service`, new): owns uploads, the monthly quota and processing status (`UserStorage`, `UserMonthlyFileUpload`; schema `document`, role `document_svc`). HTTP `/api/v1/ai/upload` (now JSON), `/ai/quick-upload`, `GET|DELETE /ai/upload/:id`, `/ai/upload-image`, `/api/v1/r2/image`; `recent-uploads` stays in exam (documents via `ListDocuments`). gRPC `examio.document.v1.DocumentService`: `CreateUpload`, `GetDocumentsByIds`, `AssertOwnership`, `GetQuota`, `EnsureProcessed`, `DeleteDocuments`, `ListDocuments`, `GetDownloadUrl` (forwarded user token only). `ROLE=api,worker`; the r2 delete worker runs as `document`. Publishes `document.uploaded` / `document.deleted` (outbox), consumes `ai.document.processed|failed`.
 - **ai-service**: owns schema `ai` (Alembic, `ai-migrate` one-shot; `DB_SEARCH_PATH=ai,extensions`), one shared asyncpg pool, no runtime DDL, no SQL on other services' tables; `AI_RUNTIME_DDL` is gone. gRPC `examio.ai.v1.AiService` (`StreamChat`, `Query`, `GenerateWordFamily`, `ListModels`) on :50051 behind a service-token interceptor (RS256, `aud=ai`, SERVICE role, callers `svc:exam|ai-chat|vocabulary|content`). Python messaging (`src/backend/messaging`) mirrors `libs/messaging` (queue `ai.events`, 30 s retry, DLQ, outbox relay, purge). `ROLE` = `api` | `worker` | `migrate` (compose `ai`, `ai-worker`, `ai-migrate`). HTTP `/api/chat/*` and `/api/generate/word-family` remain behind `AI_HTTP_COMPAT=true` with `INTERNAL_SERVICE_TOKEN` until phase 13. `dev:ai` runs `python -m src.main`. Old routers (`api/file.py`, `api/generation.py`) and `rabbitmq_consumer.py` deleted.
@@ -56,7 +103,7 @@ last_updated: 2026-10-27
 - **Open**: the 2026-10-24 live temper passed stages 1-5 (stage 5 was the targeted AI-page checks, not the full UI matrix); review round 1 asked for rework, fixed, then sealed. Real OCR and generation end to end were not run (needs a Gemini key and a public R2 host); caveats in `plans/261017-1547-microservice-refactor-rbac/evidence/phase-15-runs.md`: R2-key enqueue on the reaper path inferred, not observed; `ai-worker` retries a refused download before the DLQ; the download guard refuses private-address hosts (carried to phase 16). ai-service `poetry.lock` not regenerated; ai-chat and vocabulary still use the HTTP compat routes (phase 13).
 - **Docs**: `CLAUDE.md`, `AGENTS.md`, `system/{architecture,overview,permissions,business-rules,glossary}.md`, `generated/entities.md`, `flows/{FLOW005,FLOW006}`, `features/{F007,F010,F016}` (open questions and edge cases), `deploy/README.md`, `apps/ai-service/README.md`, roadmap.
 
-#### Extract study-room and vocabulary services, phase 12 (uncommitted on `refactor/microservice-rbac`)
+#### Extract study-room and vocabulary services, phase 12 (committed on `refactor/microservice-rbac`)
 
 - **study-room-service** (`apps/study-room-service`): HTTP `/api/v1/studyrooms/*` and Socket.io `/ws/study` moved out of exam. Redis adapter `key: 'studyroom'`, Redis prefix `studyroom:`. It consumes `auth.user.authz_changed` (`auth:reauth`, then disconnect) and `auth.user.updated` (profile cache DEL) on queue `studyroom.events` inside the API process: one container, no gRPC server, no `ROLE` env. SIGTERM drain (`enableShutdownHooks`, `StudyRoomShutdown` flushes buffered focus time). `FRONTEND_URL` is required in production (WS CORS; the service refuses to start without it). A non-host `PUT /studyrooms/:id` still answers 403 (moved behaviour; the 404 mapping is deferred).
 - **vocabulary-service** (`apps/vocabulary-service`): HTTP `/api/v1/word-family/*` except `POST /api/v1/word-family/:id/to-flashcard`, which stays in exam. gRPC `examio.vocabulary.v1` (`proto/examio/vocabulary/v1/word_family.proto`): `WordFamilyAdminService` moved from exam (admin calls it through `VOCABULARY_GRPC_URL`, forwarded admin token) and the new `WordFamilyService.GetWordFamily`. `ROLE=api,worker` in one process; the worker is the `r2_delete_tasks` poller (own table, calls r2 `DeleteObjects` as `vocabulary`). Category images are deleted only for keys under `word-family/`; other R2 URLs are never deleted. AI generation calls ai-service over HTTP with `INTERNAL_SERVICE_TOKEN` (temporary until phase 13), free, TEACHER only, 20/day under Redis prefix `vocab:`. No RabbitMQ.
@@ -70,7 +117,7 @@ last_updated: 2026-10-27
 - **Open**: the shared public-profile client file is 288 lines (over the ~200 guideline); `ioredis/built/errors` deep import remains in `libs/redis/src/redis-unavailable.filter.ts`; AI generation still goes over HTTP until phase 13.
 - **Docs**: `CLAUDE.md`, `AGENTS.md`, `system/{architecture,overview,permissions,glossary,business-rules}.md`, `generated/entities.md`, `features/{F014,F016}`, `deploy/.env.example` comment, roadmap.
 
-#### Database per service, phase 11 (uncommitted on `refactor/microservice-rbac`)
+#### Database per service, phase 11 (committed on `refactor/microservice-rbac`)
 
 - **Schemas**: `libs/database` and `@examio/database` are deleted. auth, finance and admin each have `apps/<svc>-service/prisma/schema.prisma`; exam has the multi-file `apps/exam-service/prisma/schema/*.prisma` with migrations in `prisma/schema/migrations`. Generated clients live in `apps/<svc>-service/src/generated/prisma` (gitignored) and each service has a local `src/prisma` module (`PrismaPg` adapter, pool 5, database readiness check). No foreign key points at `User` any more (`userId` + index).
 - **Postgres roles**: `deploy/postgres/init/01-service-schemas.sh` creates 11 roles `<svc>_svc` (auth, finance, admin, exam, content, assessment, studyroom, vocabulary, aichat, document, ai), one schema each, plus an `extensions` schema (pgvector). Each service gets `DATABASE_URL=postgresql://<svc>_svc:...@postgres:5432/examio?schema=<svc>`; ai-service uses `ai_svc` without `?schema=`, `DB_SEARCH_PATH=exam,extensions`, `AI_RUNTIME_DDL=false` and a temporary read/write grant on exam tables (until phase 15). **Breaking for dev**: the script runs only on an empty volume, so existing stacks need `docker compose down -v` once, and `deploy/.env` needs `<SVC>_DB_PASSWORD` for all 11 roles.
@@ -82,7 +129,7 @@ last_updated: 2026-10-27
 - **Deferred**: user deletion (no `DeleteUser`, purge worker or `auth.user.deleted` event); no code path deletes `User` rows today.
 - **Docs**: `CLAUDE.md`, `AGENTS.md`, `system/{architecture,business-rules,glossary,overview}.md`, `generated/entities.md`, flow/feature source paths, `deploy/README.md`, roadmap.
 
-#### Cut cross-DB access, phase 10 (uncommitted on `refactor/microservice-rbac`)
+#### Cut cross-DB access, phase 10 (committed on `refactor/microservice-rbac`)
 
 - **Ownership**: each Prisma model is read and written by one service (`examio-be/scripts/check-model-ownership.ts`). New commands in `examio-be`: `yarn check:ownership` and `yarn check:deps` (`.dependency-cruiser.cjs`), both in CI. The database is still shared.
 - **Money RPCs**: `WalletService.Debit`, `Credit`, `Refund` take an `idempotency_key` and return `already_applied`; `UpdateBalance` is gone. `WalletTransaction` gains `idempotencyKey` and `balanceAfter` (unique `(walletId, idempotencyKey)`), `Payment` gains `refundIdempotencyKey` (migrations `20261022090000_wallet_idempotency`, `20261023090000_payment_refund_key`). A reused key with a different request fails `IDEMPOTENCY_KEY_REUSED`. `Debit` creates the welcome wallet only for a TEACHER user token; exam forwards the caller's token. The shared client lives in `libs/grpc`; `AI_FREE_MODE` is forced off in production.
@@ -94,7 +141,7 @@ last_updated: 2026-10-27
 - **Docs**: `CLAUDE.md`, `AGENTS.md`, `system/{architecture,permissions,business-rules,overview}.md`, `generated/{route-list,entities,behavior-logic}.md`, `features/{F005,F014,F015}`, `deploy/README.md`, roadmap.
 
 
-#### Frontend RBAC, phase 09 (uncommitted on `refactor/microservice-rbac`)
+#### Frontend RBAC, phase 09 (committed on `refactor/microservice-rbac`)
 
 - **Routing**: every non-public route goes through `guarded()` → `RequirePermission` (anonymous → `/login?from=`, missing permission → new `/403` `ForbiddenPage`, `/auth/me` unreachable → `SessionUnavailable` with retry). `TeacherRoute` (component and guard) removed; `AdminRoute` requires `admin:access` and each `/admin/*` child its own permission. Sidebar and admin nav derive from `src/lib/rbac/nav-items.ts`; `/k` lands by role (`landing-path.ts`). Tables: [permissions](system/permissions.md) § Frontend route guards.
 - **Generated permissions**: `src/types/permissions.generated.ts` comes from `examio-be/scripts/gen-fe-permissions.ts` (`yarn gen:fe-permissions` in `examio-be`); CI job `fe-permissions-drift` fails on drift. `User.id` is a string, `isAdmin` replaced by `isSystemAdmin` in the FE type; `useCan`/`useCanAny`/`useCanFn` for UI gating.
@@ -105,7 +152,7 @@ last_updated: 2026-10-27
 - **Tooling**: `examio-fe` gains Vitest (`yarn test`); CLAUDE.md no longer says the FE has no test script. New i18n keys in `en`/`vi`/`ja` (`rbac.permissionDenied`, `forbidden.*`, `session.unavailable.*`).
 - **Docs**: `CLAUDE.md`, `AGENTS.md`, `system/{permissions,architecture}.md`, `generated/{route-list,screen-list}.md`, `features/F014_AdminDashboard/*`, roadmap.
 
-#### Admin role management, phase 08 (uncommitted on `refactor/microservice-rbac`)
+#### Admin role management, phase 08 (committed on `refactor/microservice-rbac`)
 
 - **New** (admin-service, `role:assign`): `GET /admin/roles` (role to permission matrix), `GET /admin/roles/users`, `GET /admin/roles/changes`, `PUT /admin/roles/users/:id/role`, `PUT /admin/roles/users/:id/system-admin`. All call auth gRPC with the admin's forwarded token; `AdminAudit` rows `admin.role.set_base`, `admin.role.set_system_admin`. Admin-service now registers `HttpErrorEnvelopeFilter`: every `/admin/users*` and `/admin/roles*` refusal is `{ statusCode, code, message, requestId }`, a bad body or query is 400 `VALIDATION_ERROR` (was `BAD_REQUEST` on users).
 - **Removed**: `POST /admin/users/:id/grant-admin` and `revoke-admin` (use `PUT /admin/roles/users/:id/system-admin`); FE `grantAdminApi`, `revokeAdminApi` and their i18n keys.
@@ -114,7 +161,7 @@ last_updated: 2026-10-27
 - **Tooling**: `render-definitions.cjs` writes to `<os.tmpdir()>/definitions.json` unless `--out <file>` is passed (compose and CI pass it). Mail transport (`libs/common/src/config/mail.config.ts`) is built on first send, uses a JSON transport when `NODE_ENV=test` or `MAIL_TRANSPORT=json`, and in production throws without `EMAIL_USER`/`EMAIL_PASS`; jest loads `test/jest-env.setup.js` (`NODE_ENV=test`, `MAIL_TRANSPORT=json`). CI adds `test/ban.e2e-spec.ts` to the admin e2e step.
 - **Docs**: `system/{permissions,business-rules,architecture}.md`, `generated/{route-list,permissions-matrix,screen-list,feature-list}.md`, `features/F014_AdminDashboard/*`, `AGENTS.md`, `CLAUDE.md`.
 
-#### Quiz sharing and student practice, phase 07 (uncommitted on `refactor/microservice-rbac`)
+#### Quiz sharing and student practice, phase 07 (committed on `refactor/microservice-rbac`)
 
 - **New**: student quiz practice `/api/v1/quiz-practice/*` (granted sets list, access check, code unlock, start/resume, autosave, submit, history). No answer key before submit; the result is frozen in `QuizPracticeAttempt.resultSnapshot`; an open attempt answers 404 once the student loses access. Quiz sets gain `accessCode`, `whitelist`, `codeGrantedIds` plus owner routes `GET/PUT /quizsets/:id/sharing`, `POST /quizsets/:id/generate-code`, `GET /quizsets/users/search` (`content:share` / `user:search`, owner only, else 404). Web: `QuizPracticePage` (`/k/practice-quiz/:id`), `ShareQuizSetModal`.
 - **Sharing contract (quiz and flashcard sets)**: `PUT .../sharing` takes a delta (`addUserIds`, `removeUserIds`, `removeCodeGrantedIds`, `isPublic`, `codeEnabled`), lists capped at 2000 (409 `SHARE_LIST_FULL`); `GET` and `PUT` return `{ isPublic, accessCode, whitelist, codeGranted }`. A correct code is remembered (`codeGrantedIds` on quiz set, flashcard set, exam session) and evicted when the code is rotated, changed or disabled.
@@ -123,7 +170,7 @@ last_updated: 2026-10-27
 - **Known gaps**: FE axios interceptor drops status and `code`, so practice calls use `unwrap()` from `src/lib/quiz-practice/api-failure.ts` (phase 09 may fix it centrally); mobile (`examio-app`) not adapted.
 - **Docs**: `system/business-rules.md`, `system/permissions.md`, `generated/{entities,route-list,api-map,feature-list,permissions-matrix}.md`, `features/F006_QuizAuthoring/*`, `flows/FLOW007` note.
 
-#### Microservice refactor, phase 06 (RBAC enforcement and security fixes; uncommitted on `refactor/microservice-rbac`)
+#### Microservice refactor, phase 06 (RBAC enforcement and security fixes; committed on `refactor/microservice-rbac`)
 
 - **Enforcement**: every exam/finance/admin/r2 handler declares a real permission (`@RequirePermissions`), or `@RequireOwnerOrPermission` / `@Authenticated()` on an allowlist with two-user negative specs. New decorator `@RequireOwnerOrPermission(perm, OwnerResolver)` in `@examio/auth-jwt`. Admin controllers use per-controller permissions instead of the class-level `admin:access`. CI: `test/authz` (declaration scan incl. WS gateways, STUDENT/TEACHER/admin matrix) and an exam e2e step with ownership + WebSocket specs. Per-endpoint table: [permissions](system/permissions.md).
 - **Security fixes**: public quiz-set read removed; study/public payloads whitelisted by mappers (no answer key, `accessCode`, `whitelist`, emails); `users/search` TEACHER-only, no emails; access-code lockout with constant-time compare; non-owned resources answer 404; exam attempt `start` no longer admits the room host; pin / progress / recent-* need set or room access; word-family generation TEACHER-only, 20/day; admin PATCH user rejects `isAdmin` / `isSystemAdmin` / `role`; study-room socket checks `study_room:join`, `av`, token expiry.
@@ -153,7 +200,7 @@ last_updated: 2026-10-27
 - **Known gaps**: the web student share button and quiz-set public access break until phases 07/09 (single production deploy of 06-09); `GET /quizsets/public/:id` removal is unchecked against mobile (`examio-app`); full legacy-text regeneration of the generated specs stays in plan phase 19.
 - **Docs**: `system/permissions.md`, `system/business-rules.md`, `system/architecture.md`, `generated/permissions-matrix.md`, `generated/route-list.md`, `CLAUDE.md`, `AGENTS.md` updated.
 
-#### Microservice refactor, phase 05 (gateway rewrite; uncommitted on `refactor/microservice-rbac`)
+#### Microservice refactor, phase 05 (gateway rewrite; committed on `refactor/microservice-rbac`)
 
 - **Gateway**: the 15 per-domain proxy controllers, `ProxyService`, `PageEnabledGuard`/`TogglePage` and the gateway's DB access are removed. Routing is now `apps/gateway-service/config/routes.yaml` (upstreams from `AUTH_/EXAM_/FINANCE_/ADMIN_SERVICE_URL`; `AI_SERVICE_URL` and `DATABASE_URL` no longer used). One dispatcher with `http-proxy-middleware` 3.0.7 streams bodies (SSE, multipart; no body parser). Pipeline: token verify (JWKS) -> revoked/`av` check -> permissions -> page flag -> body cap -> rate limit. Header hygiene runs on the incoming request (client `x-user-*` and `x-forwarded-*` stripped, `Expect` handled, `X-Forwarded-For` overwritten, `Authorization` built from the cookie). Per-route `maxBodySize` is enforced on streamed bytes (413 `PAYLOAD_TOO_LARGE`). Redis-backed (Lua) rate limits per route, default 100 / 60 s.
 - **Control plane**: gRPC `GatewayControl` (`RevokeSession`, `InvalidateUser`, `SetPageFlags`) on `GRPC_PORT`; durable consumers (queue `gateway.events`) for `auth.user.authz_changed` and new `auth.session.revoked`; Redis keys `gw:revoked:sid:*`, `gw:user:*:av`, `gw:rl:*`. Redis down: admin routes and state-changing requests fail closed (503 `AUTH_STATE_UNAVAILABLE`), non-admin reads pass. `GATEWAY_CONTROL_ENABLED` defaults to `true` in compose.
@@ -168,7 +215,7 @@ last_updated: 2026-10-27
 
 ### Changed
 
-#### Microservice refactor, phase 04 (identity and RBAC core; uncommitted on `refactor/microservice-rbac`)
+#### Microservice refactor, phase 04 (identity and RBAC core; committed on `refactor/microservice-rbac`)
 
 - **Roles**: `User.isAdmin` replaced by `User.role` (`BaseRole` STUDENT | TEACHER, default STUDENT), `User.isSystemAdmin` and `User.authzVersion`; new `RoleChangeLog` model; migration `20261018093802_rbac_core`. Only a SYSTEM_ADMIN grants TEACHER / admin; self-change blocked (`CANNOT_CHANGE_OWN_ROLE`), last active admin protected (`LAST_SYSTEM_ADMIN`).
 - **JWT**: RS256 + JWKS (`GET /.well-known/jwks.json` on auth), claims `sub`, `sid`, `roles`, `email_verified`, `av`, access TTL 15 min; `JWT_SECRET` / `JWT_EXPIRATION` removed. Refresh reloads the role in a transaction. `GET /auth/me` returns `roles`, `permissions` and `user.isSystemAdmin`.
@@ -184,14 +231,14 @@ last_updated: 2026-10-27
 
 ### Changed
 
-#### Microservice refactor, phase 03 (messaging foundation; uncommitted on `refactor/microservice-rbac`)
+#### Microservice refactor, phase 03 (messaging foundation; committed on `refactor/microservice-rbac`)
 
 - **Lib**: new `@examio/messaging`: envelope v1, transactional outbox (`outbox_events`) with claim-then-publish relay, idempotent consumer (`processed_events`), `source` validation against the routing key, one 30 s retry tier + per-service DLQ, daily purge (published outbox rows > 7 d, `processed_events` > 14 d). New env `ROLE` (`api` | `worker` | `api,worker`, default `api,worker`); auth and finance gain `worker.module.ts`. New Prisma models + migration `20261018065200_messaging`.
 - **Event rename**: `auth.user.created` -> `auth.user.registered`, written to the outbox inside the register transaction (email and Google). Finance consumes it (`UserRegisteredHandler`: wallet + 20 credits welcome transaction, skipped if the wallet exists). Fire-and-forget publish and `USER_CREATED` removed; the finance subscriber previously acked on error with no DLQ.
 - **RabbitMQ**: image `3.13`; one broker user per service (`auth`, `finance`, `exam`, `ai`) plus the ops user, with topic permissions (write only own domain prefix). Definitions are rendered from `deploy/rabbitmq/definitions.template.json` by the one-shot `rabbitmq-defs` service into the gitignored `definitions.json`. Each service has its own `RABBITMQ_URL`.
 - **Env (deploy)**: new `RABBITMQ_AUTH_PASS`, `RABBITMQ_FINANCE_PASS`, `RABBITMQ_EXAM_PASS`, `RABBITMQ_AI_PASS` (required; must be URL-safe); `RABBITMQ_URL` is no longer a shared `.env` value; `RABBITMQ_USER`/`RABBITMQ_PASS` now only the ops user. `setup-env.sh` and `deploy.yml` render definitions before `up`.
 
-#### Microservice refactor, phase 02 (contracts and infra libs; uncommitted on `refactor/microservice-rbac`)
+#### Microservice refactor, phase 02 (contracts and infra libs; committed on `refactor/microservice-rbac`)
 
 - **Protos**: moved from `libs/common/src/protos` to `examio-be/proto/examio/<svc>/v1` (auth, common, finance, gateway, r2), managed by buf. `yarn proto:lint` / `yarn proto:gen` (ts-proto into gitignored `libs/contracts/src/generated`); ai-service stubs via `apps/ai-service/scripts/gen_grpc.sh`.
 - **Libs**: new `@examio/contracts`, `@examio/grpc` (client module, deadline/retry, error map), `@examio/http` (error envelope filter). `@examio/common` no longer exports gRPC client modules or protos.
@@ -200,7 +247,7 @@ last_updated: 2026-10-27
 - **Finance proto**: money fields are `int32`; `Debit`/`Credit`/`Refund` declared but `UNIMPLEMENTED` until a later phase. r2 proto gains `DeleteObjects`.
 - **Behaviour change**: subscription limits (files per month, AI chat messages) are now actually enforced. A snake_case/camelCase field mismatch had silently disabled them; users over their tier limit will now be rejected.
 
-#### Microservice refactor, phase 01 (guardrails and cleanup; uncommitted on `refactor/microservice-rbac`)
+#### Microservice refactor, phase 01 (guardrails and cleanup; committed on `refactor/microservice-rbac`)
 
 - **CI**: new `.github/workflows/ci.yml` quality gate; `deploy.yml` depends on it.
 - **Runtime**: Node 22 images (`examio-be/Dockerfile`); pino JSON logs with `X-Request-Id`.

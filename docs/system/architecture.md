@@ -1,7 +1,7 @@
 ---
 title: System Architecture
-last_updated: 2026-10-27
-source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/); manually patched 2026-07-19 for Study-Together Room (first WebSocket transport); patched 2026-07-21 for Study Room playlist/access/moderation extension; patched 2026-10-20 for gateway rewrite (microservice-refactor phase 05); patched 2026-10-23 for phase 10 (cross-DB access cut) and phase 11 (database per service); patched 2026-10-24 for phase 12 (study-room-service and vocabulary-service extracted from exam); patched 2026-10-25 for phase 14 (exam-service split into content-service and assessment-service)
+last_updated: 2026-10-29
+source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/); manually patched 2026-07-19 for Study-Together Room (first WebSocket transport); patched 2026-07-21 for Study Room playlist/access/moderation extension; patched 2026-10-20 for gateway rewrite (microservice-refactor phase 05); patched 2026-10-23 for phase 10 (cross-DB access cut) and phase 11 (database per service); patched 2026-10-24 for phase 12 (study-room-service and vocabulary-service extracted from exam); patched 2026-10-25 for phase 14 (exam-service split into content-service and assessment-service); patched 2026-10-29 for phase 19 (docs sync: ownership, cutover summary, stale names)
 status: ACTIVE
 ---
 
@@ -29,6 +29,7 @@ graph TB
         FIN[finance-service<br/>:3000 HTTP<br/>:50051 gRPC<br/>Wallet/Payment/Sub]
         DOC[document-service<br/>:3000 HTTP + :50051 gRPC<br/>Uploads, quota, OCR status]
         R2[r2-service<br/>:3000 HTTP<br/>:50051 gRPC<br/>Cloudflare R2]
+        ADMIN[admin-service<br/>:3000 HTTP + :50051 gRPC GetPageFlags<br/>Dashboard, audit, page flags]
     end
 
     subgraph AI[AI Layer — Python]
@@ -96,11 +97,13 @@ graph TB
     VOCAB -->|Prisma| PG
     DOC -->|Prisma, schema document| PG
     AISVC -->|asyncpg, schema ai| PG
+    AICHAT -->|Prisma, schema aichat| PG
     AUTH -->|cache| REDIS
     STUDY -->|studyroom: keys, socket.io adapter| REDIS
     VOCAB -->|vocab: keys| REDIS
     CONTENT -->|content: keys| REDIS
     ASSESS -->|assessment: keys| REDIS
+    AICHAT -->|aichat: keys| REDIS
     FIN -->|cache| REDIS
     ADMIN -->|cache| REDIS
     R2 -->|upload| R2STORE
@@ -198,7 +201,7 @@ sequenceDiagram
 
 Finance `WalletService` money fields are `int32` (credits are whole numbers). `R2Service` has `DeleteObjects` and `CreatePresignedDownload` (service `document` only); r2's HTTP `internal/upload` route and its `INTERNAL_SERVICE_TOKEN` are gone. gRPC env: `AUTH_GRPC_URL`, `R2_GRPC_URL`, `FINANCE_GRPC_URL`, `GATEWAY_GRPC_URL`, `VOCABULARY_GRPC_URL` (admin and content to vocabulary), `CONTENT_GRPC_URL` (assessment to content), `DOCUMENT_GRPC_URL` (content, assessment and ai-chat to document), `AI_GRPC_URL` (content, ai-chat and vocabulary to ai), `ADMIN_GRPC_URL` (gateway to admin), `GRPC_PORT` on each serving service.
 
-**Data ownership (phase 10, enforced by the database since phase 11).** Each Prisma model is read and written by exactly one service; the services share one Postgres database but each has its own schema and role (see Database per service below): auth (`User`, `UserSession`, `VerifyAccountCode`, `ResetPasswordCode`, `RoleChangeLog`), finance (`Wallet`, `WalletTransaction`, `Payment`, `UserSubscription`), admin (`AdminAudit`, `PageFeatureFlag`), study-room (`StudyRoom`, `StudyRoomMember`, `StudyRoomPlaylistItem`, `StudyRoomChatBlock`), vocabulary (`WordFamilyCategory`, `WordFamily`, `UserSavedWordFamily`, `R2DeleteTask`), content (quiz/flashcard sets, practice, study progress, `GenerationJob`, `HistoryGenerated*`, `R2DeleteTask`), assessment (`ExamRoom`, `ExamSession`, `ExamAttempt`, `CheatingLog`, `UserPinnedExamRoom`). `OutboxEvent` and `ProcessedEvent` are per-service. The map is `examio-be/scripts/check-model-ownership.ts` (`yarn check:ownership`, strict in CI, also catches relation access through `include`/`select`/nested writes); `yarn check:deps` runs dependency-cruiser with `.dependency-cruiser.cjs`. A service needing foreign data calls the owner over gRPC.
+**Data ownership (phase 10, enforced by the database since phase 11).** Each Prisma model is read and written by exactly one service; the services share one Postgres database but each has its own schema and role (see Database per service below): auth (`User`, `UserSession`, `VerifyAccountCode`, `ResetPasswordCode`, `RoleChangeLog`), finance (`Wallet`, `WalletTransaction`, `Payment`, `UserSubscription`), admin (`AdminAudit`, `PageFeatureFlag`), study-room (`StudyRoom`, `StudyRoomMember`, `StudyRoomPlaylistItem`, `StudyRoomChatBlock`), vocabulary (`WordFamilyCategory`, `WordFamily`, `UserSavedWordFamily`, `R2DeleteTask`), content (quiz/flashcard sets, practice, study progress, `GenerationJob`, `HistoryGenerated*`, `R2DeleteTask`), assessment (`ExamRoom`, `ExamSession`, `ExamAttempt`, `CheatingLog`, `UserPinnedExamRoom`), ai-chat (`AIChat`, `AIChatMessage`, `AIChatDocument`, `SubjectCategory`, `Subject`), document (`UserStorage`, `UserMonthlyFileUpload`); the ai-service tables (`Document`, `DocumentEntity`, `UserStorageGraph`, `UserStorageGraphGroup`) are in its own schema `ai`. `OutboxEvent` and `ProcessedEvent` are per-service. The map is `examio-be/scripts/check-model-ownership.ts` (`yarn check:ownership`, strict in CI, also catches relation access through `include`/`select`/nested writes); `yarn check:deps` runs dependency-cruiser with `.dependency-cruiser.cjs`. A service needing foreign data calls the owner over gRPC.
 
 | Service (proto) | RPC | Guard |
 |---|---|---|
@@ -216,7 +219,7 @@ Finance `WalletService` money fields are `int32` (credits are whole numbers). `R
 | vocabulary `WordFamilyAdminService` | `ListCategories`, `UpsertCategory`, `DeleteCategory` | `word_family:admin` (forwarded admin token) |
 | vocabulary `WordFamilyService` | `GetWordFamily` | `@RequirePermissionsOrService([])`: no permission needed, any service caller; content calls it with a service token of audience `vocabulary` (auth `SERVICE_AUDIENCES` must list it) |
 
-**Money idempotency.** `WalletTransaction` has `idempotencyKey` and `balanceAfter`, unique on `(walletId, idempotencyKey)`; `Payment.refundIdempotencyKey` is unique. Stored keys are namespaced: `debit:`, `credit:`, `refund:<debit key>` (a debit refunds at most once), `adjust:`, `refund-payment:`, `welcome:`. Replaying a key returns the original transaction with `alreadyApplied = true`; the same key with a different request fails `FAILED_PRECONDITION` `IDEMPOTENCY_KEY_REUSED`. `UpdateBalance` no longer exists. `Debit` creates the welcome wallet only when the forwarded token belongs to a TEACHER; otherwise a missing wallet is `WALLET_NOT_FOUND`. Admin HTTP finance actions accept an `Idempotency-Key` header (1-200 chars) and answer with `alreadyApplied`. Exam charges through the shared client in `libs/grpc` (`FinanceClient`), where `AI_FREE_MODE=true` skips charging but is forced off when `NODE_ENV=production`.
+**Money idempotency.** `WalletTransaction` has `idempotencyKey` and `balanceAfter`, unique on `(walletId, idempotencyKey)`; `Payment.refundIdempotencyKey` is unique. Stored keys are namespaced: `debit:`, `credit:`, `refund:<debit key>` (a debit refunds at most once), `adjust:`, `refund-payment:`, `welcome:`. Replaying a key returns the original transaction with `alreadyApplied = true`; the same key with a different request fails `FAILED_PRECONDITION` `IDEMPOTENCY_KEY_REUSED`. `UpdateBalance` no longer exists. `Debit` creates the welcome wallet only when the forwarded token belongs to a TEACHER; otherwise a missing wallet is `WALLET_NOT_FOUND`. Admin HTTP finance actions accept an `Idempotency-Key` header (1-200 chars) and answer with `alreadyApplied`. content-service and document-service charge through the shared client in `libs/grpc` (`FinanceClient`), where `AI_FREE_MODE=true` skips charging but is forced off when `NODE_ENV=production`.
 
 ### 3. RabbitMQ Topic Exchange (async events)
 
@@ -231,7 +234,7 @@ graph LR
     FQ -.->|permanent / 5 retries| DLQ[finance.dlq]
 ```
 
-**Library**: `@examio/messaging` (`examio-be/libs/messaging`), used by auth, finance, the gateway, study-room-service (consumer only: `authz_changed` and `user.updated`), document-service, content-service (`user.updated`, `ai.generation.*` and `document.deleted` consumers; it writes `content.generation.requested` and `content.quizset.deleted` to its outbox) and assessment-service (`content.quizset.deleted` and `user.updated` consumers). vocabulary-service has no RabbitMQ. ai-service uses a Python port of the same contract (`apps/ai-service/src/backend/messaging`: envelope, consumer, outbox relay, purge; queue `ai.events`, retry tier `ai.retry.30s`, `ai.dlq`, dead-letter at `x-retry-count >= 5`; a shared topology contract keeps the queue arguments identical). `MessagingModuleOptions.alsoPublishes` lets a service write outbox rows whose `source` is another domain: exam publishes `content.*` (`source=content`) until content-service exists (phase 14).
+**Library**: `@examio/messaging` (`examio-be/libs/messaging`), used by auth, finance, the gateway, study-room-service (consumer only: `authz_changed` and `user.updated`), document-service, content-service (`user.updated`, `ai.generation.*` and `document.deleted` consumers; it writes `content.generation.requested` and `content.quizset.deleted` to its outbox) and assessment-service (`content.quizset.deleted` and `user.updated` consumers). vocabulary-service has no RabbitMQ. ai-service uses a Python port of the same contract (`apps/ai-service/src/backend/messaging`: envelope, consumer, outbox relay, purge; queue `ai.events`, retry tier `ai.retry.30s`, `ai.dlq`, dead-letter at `x-retry-count >= 5`; a shared topology contract keeps the queue arguments identical). `MessagingModuleOptions.alsoPublishes` lets a service write outbox rows whose `source` is another domain; no app uses it today (content-service publishes its own `content.*`).
 
 **Envelope v1**: `{ id: "evt_<ulid>", type, version: 1, occurredAt, source, correlationId, data }`. AMQP props: `messageId=id`, persistent, `application/json`. `parseEnvelope` rejects `version !== 1` as permanent. State events (`*.updated`, `*.changed`, `*_changed`) must carry a numeric version (`data.version`, or `data.authzVersion` for `auth.user.authz_changed`); `createEnvelope` throws otherwise.
 
@@ -309,7 +312,7 @@ sequenceDiagram
 
 #### AI chat (phase 13)
 
-ai-chat-service answers `POST /ai-chat/:chatId/message` through gRPC `AiService.Query` (deadline 60 s) and `.../stream` and `message/:id/regenerate-stream` through `AiService.StreamChat` (server stream, no deadline, 60 s idle timeout), both with a `svc:ai-chat` service token. The SSE is written by hand (`text/event-stream`, `X-Accel-Buffering: no`, `: hb` every 15 s). Until the first frame arrives a failure is an HTTP status (`RESOURCE_EXHAUSTED` 429, `PERMISSION_DENIED`/`UNAUTHENTICATED` 502, `UNAVAILABLE` 503, deadline 504); afterwards it is an `event: error` frame. A client disconnect cancels the gRPC call and saves the text received so far; the gateway also destroys the upstream request when the client closes a streamed route (`abortOnClientClose` in `pipeline/proxy-factory.ts`), so the LLM call stops. Document RPCs (`GetDocumentsByIds`, `AssertOwnership`, `EnsureProcessed`, `DeleteDocuments`) and finance `GetUserBenefits` (cached `aichat:benefits:<id>`, 5 min) use the forwarded user token. Deleting a chat calls `DeleteDocuments` once (503 keeps the chat), then queues `r2_delete_tasks` for message images under `images/<ownerId>/` only. The free tier is limited to 6 messages a minute (429 `RATE_LIMITED`). Chats and documents of another user answer 404; `systemPrompt` is never in a response.
+ai-chat-service answers `POST /ai-chat/:chatId/message` through gRPC `AiService.Query` (deadline 60 s) and `.../stream` and `message/:id/regenerate-stream` through `AiService.StreamChat` (server stream, no deadline, 60 s idle timeout), both with a `svc:ai-chat` service token. The SSE is written by hand (`text/event-stream`, `X-Accel-Buffering: no`, `: hb` every 15 s). Until the first frame arrives a failure is an HTTP status (`RESOURCE_EXHAUSTED` 429, `PERMISSION_DENIED`/`UNAUTHENTICATED` 502, `UNAVAILABLE` 503, deadline 504); afterwards it is an `event: error` frame. A client disconnect cancels the gRPC call and saves the text received so far; the gateway also destroys the upstream request when the client closes a streamed route (`abortOnClientClose` in `pipeline/proxy-factory.ts`), so the LLM call stops. Document RPCs (`GetDocumentsByIds`, `AssertOwnership`, `EnsureProcessed`, `DeleteDocuments`) and finance `GetUserBenefits` (cached `aichat:benefits:<id>`, 5 min) use the forwarded user token. Deleting a chat calls `DeleteDocuments` once (503 keeps the chat), then queues `r2_delete_tasks` for message images under `images/<ownerId>/` only. The Free tier is limited to 5 messages a minute (429 `RATE_LIMITED`) and 30 user messages per chat (403 `CHAT_LIMIT_REACHED`); limits come from finance `GetUserBenefits` and default to the Free tier when finance cannot answer ([business-rules](business-rules.md#ai-chat-limits-follow-the-subscription-tier)). Chats and documents of another user answer 404; `systemPrompt` is never in a response.
 
 `finance.subscription.changed` carries the effective tier (an inactive subscription is tier 0) and fires on admin set-tier, activation, reactivation and expiry; ai-chat drops `aichat:benefits:<id>` on it and unlinks documents on `document.deleted` (queue `aichat.events`). Expiry is flipped by `SubscriptionExpiryService.expireIfLapsed` on read paths and by a finance worker sweeper every `SUBSCRIPTION_EXPIRY_SWEEP_MS` (default 60000, batch 200).
 
@@ -356,7 +359,7 @@ Source of truth: `examio-be/libs/auth-jwt` (`@examio/auth-jwt`), `apps/auth-serv
 
 - **Tokens**: auth signs RS256 access tokens (`typ at+jwt`, default 15 min via `ACCESS_TOKEN_EXPIRATION`) with claims `sub`, `sid`, `roles`, `email_verified`, `av` (authz version). Public keys are served at `GET /.well-known/jwks.json` on auth (current key plus `JWT_RETIRED_PUBLIC_KEYS`). Refresh (`POST /auth/refresh`) reloads the account in a transaction, so the new token carries the current role/`av`; banned or deleted accounts are refused (`ACCOUNT_DISABLED`) and the session revoked.
 - **Verification**: every service uses `AuthJwtModule.forRoot({ serviceName })`, which registers global `JwtAuthGuard` (verify against JWKS, no DB per request) then `PermissionsGuard` (deny by default, 403 `NO_AUTHZ_DECLARED`). The gateway registers it with `globalGuards: false`; its route-level checks are the guard chain in § 1, and its own Nest controllers (`status`, `config`) declare `@Public` / `@Authenticated`.
-- **Declarations**: `@Public`, `@Authenticated`, `@AllowUnverified`, `@RequirePermissions`, `@RequireOwnerOrPermission(perm, OwnerResolver)` (permission or resource owner; phase 06), `@ServiceOnly`, `@RequirePermissionsOrService`. Since phase 06 exam, finance, admin and r2 handlers carry the real permission; plain `@Authenticated()` is limited to `test/authz/authenticated-allowlist.ts` and `test/authz/handler-declarations.spec.ts` fails CI on any undeclared handler or unlisted `@Authenticated()`. Per-endpoint table: [permissions](permissions.md). `apps/auth-service/test/allow-unverified-allowlist.spec.ts` pins the `@AllowUnverified` handlers.
+- **Declarations**: `@Public`, `@Authenticated`, `@AllowUnverified`, `@RequirePermissions`, `@RequireOwnerOrPermission(perm, OwnerResolver)` (permission or resource owner; phase 06), `@ServiceOnly`, `@RequirePermissionsOrService`. Since phase 06 content, assessment, finance, admin and r2 handlers carry the real permission; plain `@Authenticated()` is limited to `test/authz/authenticated-allowlist.ts` and `test/authz/handler-declarations.spec.ts` fails CI on any undeclared handler or unlisted `@Authenticated()`. Per-endpoint table: [permissions](permissions.md). `apps/auth-service/test/allow-unverified-allowlist.spec.ts` pins the `@AllowUnverified` handlers.
 - **Service tokens**: callers fetch `POST /internal/token` on auth (`client_credentials`: `client_id`, `client_secret`, `audience`; 5 min TTL; `ServiceTokenClient` caches per audience and refreshes 60 s early). Auth stores only sha256 hashes (`SERVICE_CLIENTS`). Service tokens have `sub = svc:<name>`, `roles = ["SERVICE"]`. gRPC calls send them in `authorization` metadata (`@examio/auth-jwt` `grpc-metadata`); RPCs taking a `user_id` use `assertSelfOrService`.
 - **Cookies**: only auth sets them (`libs/common/src/utils/cookie-config.ts`): `accessToken` (`Path=/`, lives one access TTL) and `refreshToken` (`Path=/api/v1/auth`, 30 days); both `HttpOnly`, `SameSite=Lax`, `Secure` in production, host-only (no `Domain`). Logout (`clearAuthCookies`) clears them plus the legacy `token`, `session_id` and `refreshToken` names, including the `COOKIE_DOMAIN` variants in production. Neither the gateway nor any other service sets cookies.
 - **Credential throttle**: auth's credential routes (register, login, verifyAccount, reset/change-password flows, google/one-tap) use `@StrictThrottle()` (5 / 60 s per IP, same budget as the gateway bucket, defense in depth); the marker makes the global throttler skip the handler so each request is counted once.
@@ -382,7 +385,7 @@ sequenceDiagram
     EX-->>FE: { attemptId }
     FE->>GW: GET /api/v1/examattempts/:id/secure-quiz
     GW->>EX: Forward
-    EX->>EX: CryptoService.encryptContent (AES-256-CBC)
+    EX->>EX: questions from the session's own quizSnapshot (SnapshotStore), then CryptoService.encryptContent (AES-256-CBC)
     EX-->>FE: { encrypted_questions, token_map }
     FE->>FE: lib/crypto.ts decrypt with VITE_QUIZ_AES_KEY
     S->>FE: Answer + submit
@@ -485,7 +488,7 @@ One Postgres database, one schema and one login role per service. `libs/database
 - Each service has a local Prisma module `apps/<svc>-service/src/prisma` (`PrismaPg` adapter, pool of 5, a database `ReadinessCheck` feeding `/health/ready`) and a generated client in `apps/<svc>-service/src/generated/prisma` (gitignored; `yarn prisma:generate` loops over `apps/*/prisma`).
 - No foreign key points at `User` any more: other services keep `userId` (usually indexed), and read profile data from auth over gRPC.
 - Migrations: `PRISMA_ADMIN_URL=... scripts/prisma-migrate-dev.sh <svc> <name>` (local only, diffs against a throwaway shadow DB); deploy applies them as the service role through the `<svc>-migrate` one-shot containers.
-- Durable R2 deletion: `r2_delete_tasks` exists in the `auth`, `content`, `vocabulary` and `document` schemas. `R2DeleteTaskWriter.enqueue(tx, keys)` inserts rows in the caller's own transaction; `R2DeleteWorker` (`libs/messaging/src/r2-delete`) claims batches with `FOR UPDATE SKIP LOCKED`, retries with exponential backoff (cap 1 h) and stops retrying after 10 attempts (default `maxAttempts`), logging a stuck metric. content, vocabulary and document therefore run `ROLE=api,worker` (content's worker calls r2 `DeleteObjects` as service `content`; document's worker calls r2 `DeleteObjects` as service `document`; vocabulary's worker calls r2 `DeleteObjects` as service `vocabulary`; it deletes only keys under `word-family/`, so a category image pointing at a generic `images/` upload is never deleted). auth, exam, vocabulary and document need `R2_PUBLIC_URL` so `r2KeyFromUrl` can map a stored URL to a key; URLs outside that host are never deleted.
+- Durable R2 deletion: `r2_delete_tasks` exists in the `auth`, `content`, `vocabulary`, `document` and `aichat` schemas. `R2DeleteTaskWriter.enqueue(tx, keys)` inserts rows in the caller's own transaction; `R2DeleteWorker` (`libs/messaging/src/r2-delete`) claims batches with `FOR UPDATE SKIP LOCKED`, retries with exponential backoff (cap 1 h) and stops retrying after 10 attempts (default `maxAttempts`), logging a stuck metric. content, vocabulary and document therefore run `ROLE=api,worker` (content's worker calls r2 `DeleteObjects` as service `content`; document's worker calls r2 `DeleteObjects` as service `document`; vocabulary's worker calls r2 `DeleteObjects` as service `vocabulary`; it deletes only keys under `word-family/`, so a category image pointing at a generic `images/` upload is never deleted). auth, content, vocabulary, document and ai-chat need `R2_PUBLIC_URL` so `r2KeyFromUrl` can map a stored URL to a key; URLs outside that host are never deleted.
 - Admin `set-tier` first checks the user with auth (404 `USER_NOT_FOUND`) since it can no longer join to `User`.
 
 ## Key Architectural Patterns
@@ -528,7 +531,9 @@ graph TB
         FIN[finance :3000/:50051]
         ADMIN[admin :3000]
         R2[r2 :3000/:50051]
-        AI[ai :3000]
+        DOC[document :3000/:50051]
+        AICHAT[ai-chat :3000]
+        AI[ai :3000/:50051]
         PG[(PostgreSQL HA)]
         REDIS[(Redis HA)]
         RMQ[RabbitMQ HA]
@@ -541,8 +546,10 @@ graph TB
     GW --> VOCAB
     GW --> FIN
     GW --> ADMIN
-    GW --> R2
+    GW --> DOC
+    GW --> AICHAT
     CONTENT --> AI
+    AICHAT --> AI
     ASSESS --> CONTENT
     AUTH --> PG
     CONTENT --> PG
@@ -551,6 +558,8 @@ graph TB
     VOCAB --> PG
     FIN --> PG
     ADMIN --> PG
+    DOC --> PG
+    AICHAT --> PG
     AUTH --> RMQ
     FIN --> RMQ
     STUDY --> RMQ
@@ -572,6 +581,23 @@ Docker Compose file: `examio-be/deploy/docker-compose.yml` (production-grade; Do
 - **Env.** Each container gets `env_file: deploy/env/<name>.env` (required). `deploy/.env` is compose-level only (interpolation); service-only secrets such as `ADMIN_EMAILS`, `ADMIN_DEFAULT_PASSWORD` (`env/auth.env`) and `GEMINI_*`, `AI2_API_KEY` (`env/ai.env`) live in the service's own file, so a compromised container sees only its own. Every container has a `mem_limit`; `ai-worker` has a heartbeat healthcheck.
 - **Pipeline.** `.github/workflows/deploy.yml`: `scripts/changed-services.sh` picks services in two waves (wave 1 = servers of changed proto packages; `auth` first in each wave, `gateway` last) -> per-service GHCR build matrix -> SSH job runs `deploy/deploy-service.sh <svc> <sha>` per service (migrate gate, halt on `P3009`, automatic image rollback, Telegram alerts; it never runs `migrate resolve`, `db push` or `down`). The deploy job is gated by repository variable `CUTOVER_DONE` (production is first deployed once by `examio-be/deploy/cutover-runbook.md`). `ci.yml` adds `detect`, `migrations` (`scripts/lint-migrations.sh` blocks destructive SQL unless the PR is labelled `migration:contract`) and `deploy-scripts` jobs.
 - Operational detail and the rollback rules: `examio-be/deploy/README.md`.
+
+### Production cutover (one-time)
+
+Production is first deployed once, at the final merge of `refactor/microservice-rbac` (date not set yet: "at the final merge"), replacing the old build-on-VPS stack with the per-service GHCR images on a **reset database**. The commands live only in [`examio-be/deploy/cutover-runbook.md`](../../examio-be/deploy/cutover-runbook.md); after it, every deploy is the steady-state flow above (waves, migrate gate, contract flow). The ten steps, one line each:
+
+1. **Backup and mark** the running stack: `pg_dump`, copy it off-host, tag the running commit and images `pre-cutover`.
+2. **Drain and stop** the old stack: wait for an idle broker, `down` without `-v`.
+3. **Drop the data volumes** (Postgres, Redis, RabbitMQ) and point R2 at a new empty bucket.
+4. **Checkout the merge sha**, pin every image tag to it, render the RabbitMQ definitions, pull all images.
+5. **Start infra** (Postgres, Redis, RabbitMQ); the empty volume runs `01-service-schemas.sh` and creates the ten `*_svc` roles.
+6. **Migrate** every database service in wave order (`<svc>-migrate`; Prisma `migrate deploy`, Alembic for ai).
+7. **Seed reference data** only (`SEED_PROFILE=prod`: page flags, word-family categories, subjects), never the dev seed.
+8. **Start the services** wave by wave through `deploy-service.sh` (auth first, gateway last), then the frontend.
+9. **Create the first SYSTEM_ADMIN** through the `ADMIN_EMAILS` boot sync of auth, then the smoke accounts.
+10. **Smoke** (`yarn smoke:cutover` plus a manual browser pass), then set `CUTOVER_DONE=true`.
+
+**Rollback rule**: any failure in steps 4 to 10, or a problem inside the 24 h window, means stop the new stack, remove the new volumes, restore the `pre-cutover` commit, images and env, and restore the step-1 dump. Data created after the cutover is lost (announced beforehand); `CUTOVER_DONE` stays `false`; the old R2 bucket stays untouched until the window ends.
 
 ### Edge and network topology
 
@@ -600,7 +626,7 @@ graph LR
 | # | Issue | Source | Owner | Priority |
 |---|-------|--------|-------|:--------:|
 | A.1 | ~~`ocr-service` gRPC port collision~~ — resolved 2026-10-18: service deleted | scout + W7a | platform | P0 |
-| A.2 | `FREE_MODE = true` shipped in `FinanceClientService.deductCredits` — credit gating bypassed | scout + W7a | backend | P0 |
+| A.2 | ~~`FREE_MODE = true` in `FinanceClientService.deductCredits`~~ — resolved: charging uses the shared `FinanceClient` (`libs/grpc`); `AI_FREE_MODE` is dev-only and forced off when `NODE_ENV=production` | scout + W7a | backend | P0 |
 | A.4 | `EventType` enum defines legacy events (unused); `auth.user.authz_changed` is consumed by finance (wallet), the gateway and study-room-service's authz handler; `auth.user.registered` is published without a consumer | W7a | backend | P3 |
 | A.6 | `r2/image` (≤2MB cap) routed through `document-service` (was exam) rather than directly to `r2-service` | W7a | backend | P3 |
 | A.7 | 12 v3.x legacy feature spec dirs in `docs/features/f001-*` (kebab-case) — now archived to `_archive/legacy-v3x/` | rebuild-spec | devops | ✅ done |
