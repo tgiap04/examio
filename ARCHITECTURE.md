@@ -9,7 +9,7 @@
 > **Nguồn:** đọc code `examio-be/`, `examio-fe/`, `deploy/`, `.github/workflows/` (bản gốc 17/10/2026, đồng bộ lại với code ở phase 19), đối chiếu với kiến trúc cụm ssv-wsm (Gateway + JWT verify phân tán + DB per service + gRPC contract-first + event bus).
 > Chỗ nào ghi *(cần xác nhận)* là chưa kiểm chứng đủ trong code.
 >
-> **Phạm vi:** backend `examio-be` (NestJS + Python). Đường dẫn API public `/api/v1/...` **giữ nguyên**. Nhưng client **có** phải đổi: web (phase 09) và mobile (phase 18) đã đổi theo shape `/auth/me` và mã lỗi mới (xem 4.6).
+> **Phạm vi:** backend `examio-be` (NestJS + Python). Đường dẫn API public `/api/v1/...` **giữ nguyên**. Nhưng client **có** phải đổi: web (phase 09) đã đổi theo shape `/auth/me` và mã lỗi mới (xem 4.6); mobile (`examio-app`, chỉ có trên nhánh `develop`) nằm ngoài phạm vi theo quyết định 29/10/2026 và **chưa** được đổi theo API mới.
 
 ### Thay đổi so với bản 17/10/2026
 
@@ -313,7 +313,7 @@ Chi tiết token, cookie và thu hồi ở mục 5.
 - **Không đổi URL.** Mọi đường dẫn `/api/v1/...` và `/ws/study` giữ nguyên. Gateway tự định tuyến về service mới. Hợp đồng response thì **có** đổi, xem bên dưới.
 - Web dùng cookie httpOnly do auth set. Mobile dùng `Authorization: Bearer`, token nhận trong body của `/auth/login` và `/auth/refresh`.
 - Mã lỗi 401: `TOKEN_EXPIRED`, `TOKEN_STALE` (`av` cũ) → client refresh **một lần** rồi retry; `SESSION_REVOKED` → về login. Mã lỗi 403: `PERMISSION_DENIED` (client báo và nạp lại `/auth/me`) và `EMAIL_NOT_VERIFIED` (chuyển tới `/k/verify`).
-- Câu "client không phải sửa" của bản cũ là **sai**: web (phase 09) và mobile (phase 18) đã đổi. `/auth/me` trả `{ user, roles, permissions }` với `user.isSystemAdmin` (không còn `isAdmin`) và **không còn `wallet`** (số dư lấy từ `GET /wallet/info`). Mobile phải đồng bộ xong trước lần release store đầu tiên.
+- Câu "client không phải sửa" của bản cũ là **sai**: web (phase 09) đã đổi; mobile (`examio-app`, chỉ có trên nhánh `develop`) nằm ngoài phạm vi theo quyết định 29/10/2026 và **chưa** được đổi theo API mới. `/auth/me` trả `{ user, roles, permissions }` với `user.isSystemAdmin` (không còn `isAdmin`) và **không còn `wallet`** (số dư lấy từ `GET /wallet/info`). App mobile cần đồng bộ lại trước khi phát hành, nếu sau này đưa vào phạm vi.
 - SSE của AI chat sẽ **stream thật** sau khi gateway chuyển sang proxy dạng stream (hiện tại bị gom).
 
 ### 4.7 Hạ tầng dùng chung
@@ -1095,7 +1095,7 @@ Thứ tự thực tế: **P6 (document + ai-service DB, phase 15) đi trước v
 3. ~~`score/database.py` trong ai-service~~ **Đã đóng:** `src/score/`, dev agent, benchmark index và `BenchmarkItem` đã bị xóa ở phase 01.
 4. Có cần notification-service (email, push cho mobile) trong 6 tháng tới không? Nếu có thì tách khỏi auth ở P7.
 5. RAM trên một VPS: các cap `mem_limit` cộng lại khoảng 10,5 GB (bảng trong `examio-be/deploy/README.md`). **Chưa có số đo thực tế** (chưa chạy trên VPS); phải đo bằng `docker compose stats` sau cutover. Đã gộp `api,worker` vào một container.
-6. `[DEFERRED]` Xóa user (`auth.user.deleted`, fan-out và purger), phase 17 (K8s, Grafana/Loki/Tempo/Prometheus, Redis ACL, OpenTelemetry) và mobile parity (phase 18): chưa làm.
+6. `[DEFERRED]` Xóa user (`auth.user.deleted`, fan-out và purger), phase 17 (K8s, Grafana/Loki/Tempo/Prometheus, Redis ACL, OpenTelemetry): chưa làm. Mobile parity (phase 18) đã bỏ khỏi plan (quyết định 29/10/2026).
 
 ---
 

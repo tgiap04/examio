@@ -58,13 +58,13 @@ Plan: `plans/261017-1547-microservice-refactor-rbac/`. Branch `refactor/microser
 | B: data ownership | 10-11 | Committed |
 | C: split exam-service | 12-15 | Committed |
 | D: deploy independence + docs | 16 committed; 19 in progress | 17 deferred |
-| Mobile | 18 (RBAC parity, `examio-app`) | Pending. The app code lives on branch `develop`; must finish before the first mobile store release. 19 was started first (decision 2026-10-29) |
+| Mobile | 18 (RBAC parity, `examio-app`) | Removed from the plan (user decision 2026-10-29): the mobile app is out of scope and is not touched. `examio-app` (branch `develop`) still expects the old API (`isAdmin`, `wallet` in `/auth/me`, old 401 codes) and must be adapted before any release. |
 
 Follow-ups carried out of the plan:
 
 - **[DEFERRED] User deletion**: admin `DELETE` -> auth `DeleteUser` -> event fan-out + per-service purgers (see "Deferred: user account deletion" below).
 - **[DEFERRED] Phase 17**: K8s readiness, observability stack (Prometheus/Loki/Grafana, OTel), Redis ACL, admin logs on Loki.
-- **Mobile student practice**: quiz practice (`/quiz-practice/*`) exists on web only; phase 18 covers RBAC parity, not this feature.
+- **Mobile student practice**: quiz practice (`/quiz-practice/*`) exists on web only (mobile is out of scope; phase 18 was removed 2026-10-29).
 - **Reserve -> Capture credits**: generation charges are still a single `Debit` with refund on failure.
 - **N1 (phase 16 review)**: two concurrent ai-chat regenerates of one message are both admitted and can leave two reply pairs; fix with a Redis `SET NX` claim.
 - **F5 (phase 16 temper)**: the gateway does not log 429 responses (`pipeline/guard-chain.ts` returns `RATE_LIMITED` silently), so rate-limit pressure is invisible in logs.

@@ -7,7 +7,7 @@ last_updated: 2026-10-29
 
 ## [Release] Microservice refactor + RBAC cutover — at final merge (date set at cutover)
 
-One production release for the whole branch `refactor/microservice-rbac` (plan `plans/261017-1547-microservice-refactor-rbac/`). Production is not deployed yet: it is deployed once at the final merge, with a **database reset** (no data migration, no compat fields), by `examio-be/deploy/cutover-runbook.md`. The push deploy stays off until repository variable `CUTOVER_DONE` is `true`. Phase 17 (K8s, observability stack, Redis ACL) is deferred; phase 18 (mobile RBAC parity) must finish before the first mobile store release. This entry summarises the per-phase entries below; they keep the detail.
+One production release for the whole branch `refactor/microservice-rbac` (plan `plans/261017-1547-microservice-refactor-rbac/`). Production is not deployed yet: it is deployed once at the final merge, with a **database reset** (no data migration, no compat fields), by `examio-be/deploy/cutover-runbook.md`. The push deploy stays off until repository variable `CUTOVER_DONE` is `true`. Phase 17 (K8s, observability stack, Redis ACL) is deferred; phase 18 (mobile RBAC parity) was removed from the plan on 2026-10-29: the mobile app is out of scope and still targets the old API. This entry summarises the per-phase entries below; they keep the detail.
 
 ### Milestone A: RBAC end to end (phases 01-09)
 

@@ -11,7 +11,7 @@
 - Pending mobile plans to align: `/Users/tgiap.dev/devs/examio/plans/260525-0629-mobile-screens/`, `/Users/tgiap.dev/devs/examio/plans/260704-1030-ai-flashcard-quiz-generation-app/`
 
 ## Overview
-- Priority: P2 · Status: Pending · Effort: 2.75d **provisional — re-estimate after step 1** · Depends on: 09 (web behaviour + final API shapes from 04/05/10) · Gate: done before the first mobile store release. Blocks: nothing in this plan. <!-- Updated: Validation Session 1 - P2, deps 09, −0.25d (no legacy fallback, no coordinated release) -->
+- Priority: P2 · Status: **Removed 2026-10-29** (user: "không đưa app vào đâu, không đụng tới phần app nữa"). The mobile app stays on `develop`, unadapted to the new API. · Effort: 2.75d **provisional — re-estimate after step 1** · Depends on: 09 (web behaviour + final API shapes from 04/05/10) · Gate: done before the first mobile store release. Blocks: nothing in this plan. <!-- Updated: Validation Session 1 - P2, deps 09, −0.25d (no legacy fallback, no coordinated release) -->
 - Goal: the mobile app reads permissions from the server, shows only the features they allow, handles `TOKEN_STALE` (one refresh → refetch me → reset caches) and `SESSION_REVOKED` (logout). It shows no admin screens. Same behaviour on Android and iOS.
 
 ## Key Insights
