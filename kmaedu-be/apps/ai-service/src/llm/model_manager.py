@@ -177,7 +177,7 @@ class ModelManager:
         }
 
     def get_ai2_base_url(self) -> str:
-        raw_base_url = os.getenv('AI2_BASE_URL', 'https://ai2.devt.vn/v1').strip().rstrip('/')
+        raw_base_url = os.getenv('AI2_BASE_URL', 'https://ai.fayedark.com/v1').strip().rstrip('/')
         return raw_base_url if raw_base_url.endswith('/v1') else f'{raw_base_url}/v1'
 
     def get_ai2_timeout(self) -> float:
