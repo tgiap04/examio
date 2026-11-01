@@ -7,10 +7,11 @@ ModelProvider = Literal['gemini', 'ai2']
 ModelTask = Literal['generation', 'chat', 'embedding']
 
 
+# Non-reasoning (or light-reasoning) models: reasoning models such as oc/minimax-m3.1-flash-free spend most of
+# max_tokens on hidden reasoning and return cut-off JSON.
 DEFAULT_AI2_GENERATION_MODEL_NAMES = (
-    'minimax-m2.5-free',
-    'nemotron-3-super-free',
-    'trinity-large-preview-free',
+    'oc/deepseek-v4.1-flash-free',
+    'oc/nemotron-3.5-lightning-free',
 )
 
 
@@ -65,7 +66,8 @@ def _get_ai2_default_model_name(model_names: tuple[str, ...]) -> str:
 
 
 def _format_ai2_display_name(model_name: str) -> str:
-    return model_name.replace('-', ' ').replace('.', ' ').title()
+    # Router ids carry a provider prefix ("oc/minimax-m3.1-flash-free"); show only the model part.
+    return model_name.rsplit('/', 1)[-1].replace('-', ' ').replace('.', ' ').title()
 
 
 EMBEDDING_MODEL = ModelRegistryEntry(
@@ -140,6 +142,7 @@ LEGACY_MODEL_ALIASES: dict[str, str] = {
     'gemma2_9b': '__default__',
     'ai2': '__default__',
     'gemini': '__default__',
+    # Model ids of the retired ai2.devt.vn router, kept so stored selections fall back to the default.
     'minimax-m2.5-free': '__default__',
     'nemotron-3-super-free': '__default__',
     'trinity-large-preview-free': '__default__',

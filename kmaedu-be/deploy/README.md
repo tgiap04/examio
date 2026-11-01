@@ -158,8 +158,8 @@ are optional lines in `.env` that compose passes to `ai` (defaults in `compose/a
 ```bash
 # AI2 is used only for quiz/flashcard/content generation.
 AI2_BASE_URL=https://ai.fayedark.com/v1
-AI2_GENERATION_MODEL_NAMES=minimax-m2.5-free,nemotron-3-super-free,trinity-large-preview-free
-AI2_DEFAULT_MODEL=minimax-m2.5-free
+AI2_GENERATION_MODEL_NAMES=oc/deepseek-v4.1-flash-free,oc/nemotron-3.5-lightning-free
+AI2_DEFAULT_MODEL=oc/deepseek-v4.1-flash-free
 AI2_TIMEOUT_SECONDS=3600
 AI2_MAX_TOKENS=4096
 DEFAULT_MAX_TOKENS=4096
