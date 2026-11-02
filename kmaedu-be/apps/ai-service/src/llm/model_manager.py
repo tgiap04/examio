@@ -513,6 +513,21 @@ class ModelManager:
                     )
                 if not isinstance(content, str):
                     raise ModelUnavailableError('AI2 response missing message content.', code='MODEL_RUNTIME_ERROR')
+                finish_reason = choices[0].get('finish_reason') if isinstance(choices[0], dict) else None
+                if finish_reason == 'length' or not content.strip():
+                    # Reasoning models spend max_tokens on hidden reasoning, so the answer comes back cut or empty
+                    # and the JSON parser fails later with a misleading error; say why here.
+                    usage = data.get('usage') or {}
+                    logger.warning(
+                        '[AI2_OUTPUT] model=%s finish_reason=%s content_chars=%s completion_tokens=%s '
+                        'reasoning_tokens=%s max_tokens=%s',
+                        ai2_info['model'],
+                        finish_reason,
+                        len(content),
+                        usage.get('completion_tokens'),
+                        (usage.get('completion_tokens_details') or {}).get('reasoning_tokens'),
+                        payload['max_tokens'],
+                    )
                 return content
             except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as error:
                 last_error = error
