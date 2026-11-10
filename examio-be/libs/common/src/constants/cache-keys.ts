@@ -10,8 +10,6 @@
 export const CACHE_MODULES = {
     // User & Auth
     USER: 'user',
-    WALLET: 'wallet',
-    WALLET_TRANSACTION: 'wallet_transaction',
 
     // Quiz & Flashcard Sets
     QUIZSET: 'quizset',
@@ -23,9 +21,6 @@ export const CACHE_MODULES = {
     EXAMATTEMPT: 'examattempt',
     PARTICIPANT: 'participant',
     STUDY_ROOM: 'study_room',
-
-    // Finance
-    PAYMENT: 'payment',
 
     // Statistics
     QUIZ_STATS: 'quiz_stats',
@@ -53,7 +48,7 @@ export function getCacheKey(
 /**
  * Generate user-scoped cache key
  * Pattern: {module}:user:{userId}
- * Example: getUserCacheKey('WALLET', 'user123') => 'wallet:user:user123'
+ * Example: getUserCacheKey('QUIZSET', 'user123') => 'quizset:user:user123'
  */
 export function getUserCacheKey(module: CacheModule, userId: string): string {
     return `${CACHE_MODULES[module]}:user:${userId}`;

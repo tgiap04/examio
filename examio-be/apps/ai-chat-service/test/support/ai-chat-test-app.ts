@@ -17,7 +17,6 @@ import { RedisService } from '@examio/redis';
 import { PrismaService } from '../../src/prisma';
 import { startFakeAi, type FakeAi } from './fake-ai';
 import { startFakeDocument, type FakeDocument } from './fake-document';
-import { startFakeFinance, type FakeFinance } from './fake-finance';
 import { startFakeR2, type FakeR2 } from './fake-r2';
 
 export type TestRole = 'STUDENT' | 'TEACHER' | 'SYSTEM_ADMIN';
@@ -41,8 +40,6 @@ export interface AiChatTestApp {
     ai: FakeAi;
     /** document-service over real gRPC (user token only, owner-scoped, with call log). */
     document: FakeDocument;
-    /** finance-service over real gRPC (GetUserBenefits). */
-    finance: FakeFinance;
     /** r2-service over real gRPC (DeleteObjects as the worker). */
     r2: FakeR2;
     /** The public base of R2 objects the app was started with. */
@@ -63,7 +60,7 @@ export interface BootOptions {
 
 /**
  * Boots the real AIChatServiceModule (real Postgres, Redis and RabbitMQ) as main.ts wires it, with
- * real gRPC fakes for ai-service, document-service, finance and r2, so the shared clients, token
+ * real gRPC fakes for ai-service, document-service and r2, so the shared clients, token
  * forwarding and stream handling are exercised end to end. Only the JWKS fetch and the service-token
  * fetch are replaced (a local key pair).
  */
@@ -71,10 +68,10 @@ export async function bootAiChatApp(options: BootOptions = {}): Promise<AiChatTe
     const originalCwd = process.cwd();
     // Proto paths resolve against the repo root (examio-be/).
     process.chdir(join(__dirname, '..', '..', '..', '..'));
-    const [ai, document, finance, r2] = await Promise.all([startFakeAi(), startFakeDocument(), startFakeFinance(), startFakeR2()]);
+    const [ai, document, r2] = await Promise.all([startFakeAi(), startFakeDocument(), startFakeR2()]);
     process.env.AI_GRPC_URL = ai.server.url;
     process.env.DOCUMENT_GRPC_URL = document.server.url;
-    process.env.FINANCE_GRPC_URL = finance.server.url;
+    // Nothing in ai-chat may need finance-service any more: boot without it.
     process.env.R2_GRPC_URL = r2.server.url;
     const r2PublicBase = 'https://r2.test.examio.local';
     process.env.R2_PUBLIC_URL = r2PublicBase;
@@ -118,7 +115,6 @@ export async function bootAiChatApp(options: BootOptions = {}): Promise<AiChatTe
         keys,
         ai,
         document,
-        finance,
         r2,
         r2PublicBase,
         createUser: (roles) => ({ id: `u_${rid()}`, roles, av: 0 }),
@@ -127,7 +123,7 @@ export async function bootAiChatApp(options: BootOptions = {}): Promise<AiChatTe
         async close() {
             // Closing right after boot can hang on the RabbitMQ channel teardown.
             await Promise.race([app.close(), new Promise((resolve) => setTimeout(resolve, 5000))]);
-            await Promise.all([ai.close(), document.close(), finance.close(), r2.close()]);
+            await Promise.all([ai.close(), document.close(), r2.close()]);
             process.chdir(originalCwd);
         },
     };

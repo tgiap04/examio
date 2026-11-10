@@ -30,7 +30,7 @@ export class AdminStatsController {
     @Get('series')
     @ApiOperation({
         summary:
-            'Time-series points for signups / traffic / revenue charts, bucketed by day with gaps filled to zero.',
+            'Time-series points for signups / traffic charts, bucketed by day with gaps filled to zero.',
     })
     async getSeries(@Query() query: SeriesQueryDto, @Req() req: AuthedAdminRequest) {
         return this.adminStatsService.getSeries(query.name, query.range, forwardUser(req));

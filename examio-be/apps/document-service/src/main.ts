@@ -14,11 +14,11 @@ import { DocumentServiceModule } from './document-service.module';
 import { WorkerModule } from './worker.module';
 
 async function startWorker() {
-    // Outbox relay + document.events consumer + PENDING_CHARGE reaper + R2 delete tasks. No listener.
+    // Outbox relay + document.events consumer + R2 delete tasks. No listener.
     const worker = await NestFactory.createApplicationContext(WorkerModule, { bufferLogs: true });
     worker.useLogger(worker.get(Logger));
     worker.enableShutdownHooks();
-    console.log('📮 Document Service worker running (outbox, consumer, reaper, R2 delete tasks)');
+    console.log('📮 Document Service worker running (outbox, consumer, R2 delete tasks)');
 }
 
 async function startApi() {

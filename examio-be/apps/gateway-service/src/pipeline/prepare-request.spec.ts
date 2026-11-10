@@ -45,7 +45,7 @@ describe.each([
         expect(h['x-forwarded-proto']).toBe('https');
         expect(h['x-forwarded-host']).toBe('examio.top');
         expect(h['x-request-id']).toBe('req_prep');
-        // admin-finance replays on the client key: the gateway must not eat it
+        // a client-chosen Idempotency-Key is forwarded as is: the gateway must not eat it
         expect(h['idempotency-key']).toBe('admin-action-1');
     });
 

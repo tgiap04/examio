@@ -34,7 +34,6 @@ export default function FooterSection() {
       title: t("footer.group.product"),
       links: [
         { label: t("footer.link.features"), to: "/#features" },
-        { label: t("footer.link.pricing"), to: "/#pricing" },
         { label: t("footer.link.examRoom"), to: "/k/manage-exam-room" },
         { label: t("footer.link.aiTool"), to: "/k/ai-tool" },
       ],

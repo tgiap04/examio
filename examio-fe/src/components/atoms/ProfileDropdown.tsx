@@ -18,7 +18,6 @@ interface Profile {
   name: string;
   email: string;
   avatar: string;
-  subscription?: string;
   model?: string;
 }
 
@@ -31,7 +30,6 @@ const SAMPLE_PROFILE_DATA: Profile = {
   name: "Anonymous User",
   email: "user@mail.com",
   avatar: "",
-  subscription: "PRO",
 };
 
 export default function ProfileDropdown({

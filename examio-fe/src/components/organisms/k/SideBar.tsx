@@ -30,7 +30,6 @@ interface Profile {
   name: string;
   email: string;
   avatar: string;
-  subscription?: string;
   model?: string;
 }
 

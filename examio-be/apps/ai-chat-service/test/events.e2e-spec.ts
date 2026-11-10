@@ -10,22 +10,20 @@ import { DocumentDeletedHandler } from '../src/modules/events/document-deleted.h
  * deploy/rabbitmq/definitions.template.json (the file production uses):
  *   RABBITMQ_URL            amqp://aichat:<RABBITMQ_AICHAT_PASS>@host   (the app's own user)
  *   RABBITMQ_DOCUMENT_URL   amqp://document:<RABBITMQ_DOCUMENT_PASS>@host (publishes document.deleted)
- *   RABBITMQ_FINANCE_URL    amqp://finance:<RABBITMQ_FINANCE_PASS>@host   (publishes finance.subscription.changed)
  * Under CI=true a missing URL FAILS the suite instead of skipping it.
  */
 const urls = {
     aichat: process.env.RABBITMQ_URL,
     document: process.env.RABBITMQ_DOCUMENT_URL,
-    finance: process.env.RABBITMQ_FINANCE_URL,
 };
-const enabled = Boolean(urls.aichat && urls.document && urls.finance);
+const enabled = Boolean(urls.aichat && urls.document);
 const describeBroker = enabled
     ? describe
     : process.env.CI === 'true'
       ? (name: string) =>
             describe(name, () => {
-                it('requires RABBITMQ_URL, RABBITMQ_DOCUMENT_URL and RABBITMQ_FINANCE_URL in CI (refusing to skip)', () => {
-                    throw new Error('the three broker URLs must be set when CI=true');
+                it('requires RABBITMQ_URL and RABBITMQ_DOCUMENT_URL in CI (refusing to skip)', () => {
+                    throw new Error('the two broker URLs must be set when CI=true');
                 });
             })
       : describe.skip;
@@ -113,41 +111,6 @@ describeBroker('ai-chat events (e2e)', () => {
         });
     });
 
-    describe('finance.subscription.changed', () => {
-        it('deletes the cached benefits of that user, and of no other', async () => {
-            const user = await teacher(t);
-            const bystander = await teacher(t);
-            for (const u of [user, bystander]) await t.redis.set(`aichat:benefits:${u.id}`, { tier: 0, tierName: 'Free', filesPerMonth: 5, messagesPerMinute: 5, chatMessagesLimit: 30 }, 300);
-            const publisher = await connectPublisher(urls.finance as string);
-            try {
-                await publisher.publish('finance.subscription.changed', { userId: user.id, fromTier: 0, toTier: 2, at: Date.now(), version: Date.now() });
-                await eventually(async () => (await t.redis.get(`aichat:benefits:${user.id}`)) === null);
-                expect(await t.redis.get(`aichat:benefits:${bystander.id}`)).not.toBeNull();
-            } finally {
-                await publisher.close();
-            }
-        });
-
-        it('the next message reads the new plan: a Free-capped user is released by the event', async () => {
-            const user = await teacher(t);
-            t.finance.setBenefits(user.id, { tier: 0, messagesPerMinute: 1 });
-            const chat = await chatWith(t, user.id);
-            const send = () => import('./support/http').then(({ call }) => call(t.server, 'post', `/ai-chat/${chat.id}/message`, user.token, { message: 'hi' }));
-            expect((await send()).status).toBeLessThan(300);
-            expect((await send()).status).toBe(429);
-
-            t.finance.setBenefits(user.id, { tier: 2, messagesPerMinute: 100 });
-            const publisher = await connectPublisher(urls.finance as string);
-            try {
-                await publisher.publish('finance.subscription.changed', { userId: user.id, fromTier: 0, toTier: 2, at: Date.now(), version: Date.now() });
-                await eventually(async () => (await t.redis.get(`aichat:benefits:${user.id}`)) === null);
-                expect((await send()).status).toBeLessThan(300);
-            } finally {
-                await publisher.close();
-            }
-        });
-    });
-
     describe('broker permissions of the aichat user', () => {
         const refusal = async (action: (ch: amqp.ConfirmChannel) => unknown): Promise<string | null> => {
             const connection = await amqp.connect(urls.aichat as string);
@@ -162,8 +125,8 @@ describeBroker('ai-chat events (e2e)', () => {
             }
         };
 
-        it('publishing document.deleted or finance.subscription.changed is ACCESS_REFUSED (only ^aichat\\. may be published)', async () => {
-            for (const key of ['document.deleted', 'finance.subscription.changed', 'auth.user.updated']) {
+        it('publishing document.deleted or auth.user.updated is ACCESS_REFUSED (only ^aichat\\. may be published)', async () => {
+            for (const key of ['document.deleted', 'auth.user.updated']) {
                 expect(await refusal((ch) => ch.publish(EVENTS_EXCHANGE, key, Buffer.from('{}'), { persistent: true }))).toMatch(/ACCESS_REFUSED/);
             }
         });

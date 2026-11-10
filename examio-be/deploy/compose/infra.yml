@@ -54,7 +54,6 @@ services:
             - RABBITMQ_USER=${RABBITMQ_USER:?RABBITMQ_USER is required}
             - RABBITMQ_PASS=${RABBITMQ_PASS:?RABBITMQ_PASS is required}
             - RABBITMQ_AUTH_PASS=${RABBITMQ_AUTH_PASS:?RABBITMQ_AUTH_PASS is required}
-            - RABBITMQ_FINANCE_PASS=${RABBITMQ_FINANCE_PASS:?RABBITMQ_FINANCE_PASS is required}
             - RABBITMQ_CONTENT_PASS=${RABBITMQ_CONTENT_PASS:?RABBITMQ_CONTENT_PASS is required}
             - RABBITMQ_ASSESSMENT_PASS=${RABBITMQ_ASSESSMENT_PASS:?RABBITMQ_ASSESSMENT_PASS is required}
             - RABBITMQ_STUDYROOM_PASS=${RABBITMQ_STUDYROOM_PASS:?RABBITMQ_STUDYROOM_PASS is required}
@@ -80,7 +79,6 @@ services:
             # One password per service role; deploy/postgres/init/01-service-schemas.sh
             # creates <svc>_svc + schema <svc> from these (empty data directory only).
             - AUTH_DB_PASSWORD=${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}
-            - FINANCE_DB_PASSWORD=${FINANCE_DB_PASSWORD:?FINANCE_DB_PASSWORD is required}
             - ADMIN_DB_PASSWORD=${ADMIN_DB_PASSWORD:?ADMIN_DB_PASSWORD is required}
             - CONTENT_DB_PASSWORD=${CONTENT_DB_PASSWORD:?CONTENT_DB_PASSWORD is required}
             - ASSESSMENT_DB_PASSWORD=${ASSESSMENT_DB_PASSWORD:?ASSESSMENT_DB_PASSWORD is required}
@@ -137,7 +135,7 @@ services:
 #   edge     gateway + the FE nginx only (the only way in)
 #   internal no route out: every service, Postgres, Redis, RabbitMQ
 #   egress   services that really call the internet: auth (Google OAuth, SMTP),
-#            content + assessment (Turnstile), finance (SePay), r2 (Cloudflare R2), ai (Gemini)
+#            content + assessment (Turnstile), r2 (Cloudflare R2), ai (Gemini)
 # Data stores publish no host ports. Ops reach Postgres with
 #   docker compose exec postgres psql -U <svc>_svc -d $POSTGRES_DB   (e.g. auth_svc)
 # The superuser ($POSTGRES_USER) is for ops/break-glass only; no service uses it.

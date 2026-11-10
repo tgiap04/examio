@@ -58,7 +58,6 @@ export async function startFakeDocument(): Promise<FakeDocument> {
             keyR2: `ai-uploads/${userId}/${id}.pdf`,
             url: `https://r2.test/ai-uploads/${userId}/${id}.pdf`,
             processingStatus: Status.DOCUMENT_PROCESSING_STATUS_COMPLETED,
-            creditCharged: false,
             pageCount: 0,
             createdAt: now,
             updatedAt: now,

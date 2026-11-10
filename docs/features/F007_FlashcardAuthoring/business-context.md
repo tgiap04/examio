@@ -13,7 +13,7 @@ Teachers need to build and maintain flashcard decks for students to study. Witho
 
 1. Teacher navigates to My Materials and clicks "Create Flashcard Set", entering a title, description, and privacy setting.
 2. Teacher is taken to the flashcard set detail page and adds cards — entering the front (question) and back (answer) text. They optionally add chapter labels to organize cards by topic.
-3. Alternatively, teacher uploads a document, waits for it to finish processing, then launches AI flashcard generation. Credits are deducted (or bypassed in free mode), a background job starts, and generated cards appear in the deck when complete.
+3. Alternatively, teacher uploads a document, waits for it to finish processing, then launches AI flashcard generation. A background job starts (no charge), and generated cards appear in the deck when complete.
 4. Teacher saves and sets the deck to public so students can find it, or keeps it private with an access code for a specific group.
 5. Students browse the FlashcardsPage, find a public deck, and begin studying with the flip-card interface.
 

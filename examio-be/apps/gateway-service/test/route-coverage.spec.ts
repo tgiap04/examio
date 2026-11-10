@@ -18,7 +18,6 @@ function expectedUpstream(path: string): string {
     const resource = path.split('/')[3];
     if (resource === 'status' || resource === 'config') return 'self';
     if (['auth', 'profile', 'devices'].includes(resource)) return 'auth';
-    if (['wallet', 'payment', 'webhook'].includes(resource)) return 'finance';
     if (resource === 'admin') return 'admin';
     if (resource === 'studyrooms') return 'studyroom';
     // AI chat and the public AI-teacher subjects live in ai-chat-service.
@@ -55,7 +54,6 @@ describe('routes.yaml covers the phase-01 route inventory', () => {
         expect(target('/api/v1/auth/me')).toBe('http://localhost:3001');
         expect(target('/api/v1/quizsets')).toBe('http://localhost:3013');
         expect(target('/api/v1/examrooms')).toBe('http://localhost:3014');
-        expect(target('/api/v1/wallet/details')).toBe('http://localhost:3003');
         expect(target('/api/v1/admin/users')).toBe('http://localhost:7006');
         expect(target('/api/v1/studyrooms/mine')).toBe('http://localhost:3009');
         expect(target('/api/v1/word-family/categories')).toBe('http://localhost:3010');
@@ -227,8 +225,6 @@ describe('coarse permission table', () => {
         ['POST', '/api/v1/ai/upload', ['document:upload']],
         ['POST', '/api/v1/r2/image', ['document:upload']],
         ['POST', '/api/v1/ai-chat/c1/message', ['ai_chat:use']],
-        ['GET', '/api/v1/wallet/details', ['wallet:use']],
-        ['POST', '/api/v1/payment/create', ['wallet:use']],
     ])('%s %s requires %j', (method, path, permissions) => {
         expect(route(method, path).permissions).toEqual(permissions);
     });
@@ -271,15 +267,18 @@ describe('coarse permission table', () => {
         expect(route('POST', '/api/v1/r2/image')).toMatchObject({ id: 'r2-image', upstream: 'document', maxBodyBytes: 3 * 1024 * 1024 });
     });
 
-    it('subscription plans are the one public payment route', () => {
-        const plans = route('GET', '/api/v1/payment/subscription/plans');
-        expect(table.effectiveAuth(plans, 'GET', plans.prefix!)).toBe('required');
-        expect(
-            table.effectiveAuth(plans, 'GET', '/api/v1/payment/subscription/plans')
-        ).toBe('optional');
-        expect(
-            table.effectiveAuth(plans, 'POST', '/api/v1/payment/subscription/plans')
-        ).toBe('required');
+    it.each([
+        ['GET', '/api/v1/wallet/info'],
+        ['GET', '/api/v1/wallet/details'],
+        ['POST', '/api/v1/payment/create'],
+        ['GET', '/api/v1/payment/subscription/plans'],
+        ['POST', '/api/v1/webhook/sepay'],
+    ])('the removed finance route %s %s is not routed (404)', (method, path) => {
+        expect(table.match(method, path)).toBeUndefined();
+    });
+
+    it('no route targets a finance upstream', () => {
+        expect(table.routes.filter((r) => r.upstream === 'finance')).toEqual([]);
     });
 
     it('flashcardsets/public/:id is public (auth optional) like the service @Public(), nothing else under it', () => {

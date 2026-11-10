@@ -35,12 +35,12 @@ export class AuthGrpcController implements authV1.AuthServiceController {
         return { profiles: await this.users.getPublicProfiles(data.userIds) };
     }
 
-    @RequirePermissionsOrService(['user:manage'], { callers: ['admin', 'finance'] })
+    @RequirePermissionsOrService(['user:manage'], { callers: ['admin'] })
     async getUser(data: authV1.GetUserRequest): Promise<authV1.GetUserResponse> {
         return { user: await this.users.getUser(data.userId) };
     }
 
-    // Returns emails: admin only (service token + user:manage), never exam/finance.
+    // Returns emails: admin only (service token + user:manage), never other services.
     @RequirePermissionsOrService(['user:manage'], { callers: ['admin'] })
     async getUsersByIds(
         data: authV1.GetUsersByIdsRequest
@@ -48,14 +48,15 @@ export class AuthGrpcController implements authV1.AuthServiceController {
         return { users: await this.users.getUsersByIds(data.userIds) };
     }
 
-    @RequirePermissionsOrService(['user:manage'], { callers: ['admin', 'finance'] })
+    @RequirePermissionsOrService(['user:manage'], { callers: ['admin'] })
     async findUserByEmail(
         data: authV1.FindUserByEmailRequest
     ): Promise<authV1.FindUserByEmailResponse> {
         return { user: await this.users.findByEmail(data.email) };
     }
 
-    @RequirePermissionsOrService(['user:manage'], { callers: ['finance'] })
+    // User token only (admin role screen forwards the admin's token); service tokens are refused.
+    @RequirePermissions('user:manage')
     listUsers(data: authV1.ListUsersRequest): Promise<authV1.ListUsersResponse> {
         return this.users.listUsers(data);
     }

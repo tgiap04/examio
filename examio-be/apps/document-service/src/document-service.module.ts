@@ -10,7 +10,7 @@ import { UploadModule } from './modules/upload/upload.module';
         HealthModule.forRoot({ checks: [PrismaReadinessCheck] }),
         PrismaModule,
         // Audience `document`: HTTP user tokens and forwarded user tokens (gRPC). The service token
-        // is this service's own identity towards r2 (`svc:document`) and finance (Refund).
+        // is this service's own identity towards r2 (`svc:document`).
         AuthJwtModule.forRoot({ serviceName: 'document', serviceClient: true }),
         UploadModule,
     ],

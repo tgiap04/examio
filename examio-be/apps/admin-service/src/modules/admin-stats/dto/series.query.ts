@@ -3,7 +3,7 @@ import { createZodDto } from 'nestjs-zod';
 import { ApiProperty } from '@nestjs/swagger';
 
 export const SeriesQuerySchema = z.object({
-    name: z.enum(['signups', 'traffic', 'revenue']),
+    name: z.enum(['signups', 'traffic']),
     range: z.enum(['7d', '30d', '90d']).default('30d'),
     bucket: z.enum(['day', 'week', 'month']).default('day'),
 });
@@ -11,10 +11,10 @@ export const SeriesQuerySchema = z.object({
 export class SeriesQueryDto extends createZodDto(SeriesQuerySchema) {
     @ApiProperty({
         description: 'Metric name to chart',
-        enum: ['signups', 'traffic', 'revenue'],
+        enum: ['signups', 'traffic'],
         example: 'signups',
     })
-    name: 'signups' | 'traffic' | 'revenue';
+    name: 'signups' | 'traffic';
 
     @ApiProperty({
         description: 'Time range',

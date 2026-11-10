@@ -4,7 +4,7 @@
 extraction) -> outbox ``ai.document.processed``. A failure that retrying cannot
 fix publishes ``ai.document.failed`` straight away; a transient one raises so the
 consumer retries, and on the last attempt publishes ``ai.document.failed`` so
-document-service can refund the upload credit instead of waiting on the DLQ.
+document-service marks the row FAILED instead of waiting on the DLQ.
 
 ``document.deleted``: drop vectors, entities and graph state in the same
 transaction as the idempotency record.

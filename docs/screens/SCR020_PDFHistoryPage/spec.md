@@ -62,7 +62,6 @@ KLayout-wrapped page containing a single main content area with the shared `Hist
 | status | "Completed" / "Processing" / "Failed" | `userStorage.processingStatus` | badge | — | DISC-013 |
 | uploadedAt | "Jan 15, 2024" | `userStorage.createdAt` | date | dash | MODEL-027 |
 | size | "2.3 MB" | `userStorage.size` | bytes→MB | dash | MODEL-027 |
-| creditCharged | "5 credits" | `userStorage.creditCharged` | integer | dash | MODEL-027 |
 
 ## UI States
 

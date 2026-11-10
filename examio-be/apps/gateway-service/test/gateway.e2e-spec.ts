@@ -16,7 +16,7 @@ describe('gateway proxy (e2e)', () => {
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.content, h.assessment, h.vocabulary, h.aichat, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.content, h.assessment, h.vocabulary, h.aichat, h.auth, h.admin]) u.reset();
     });
 
     it('passes status, headers and BOTH Set-Cookie headers through verbatim', async () => {
@@ -51,11 +51,11 @@ describe('gateway proxy (e2e)', () => {
         const plant = (_req: unknown, res: import('http').ServerResponse) =>
             void res.writeHead(200, { 'set-cookie': ['accessToken=evil; Path=/', 'x=1'] }).end('{}');
         h.content.handler = plant;
-        h.finance.handler = plant;
+        h.vocabulary.handler = plant;
         h.admin.handler = plant;
         const teacher = await h.issuer.user('cookies', ['TEACHER', 'SYSTEM_ADMIN']);
         const auth = { authorization: `Bearer ${teacher}`, ...via(12) };
-        for (const path of ['/api/v1/quizsets', '/api/v1/wallet/details', '/api/v1/admin/users']) {
+        for (const path of ['/api/v1/quizsets', '/api/v1/word-family/saved', '/api/v1/admin/users']) {
             const res = await fetch(`${h.baseUrl}${path}`, { headers: auth });
             expect({ path, status: res.status, cookies: res.headers.getSetCookie() }).toEqual({
                 path,
@@ -148,14 +148,14 @@ describe('gateway proxy (e2e)', () => {
     });
 
     it('502 UPSTREAM_UNAVAILABLE when the upstream is down', async () => {
-        await h.finance.stop();
-        const token = await h.issuer.user('wal', ['TEACHER']);
-        const res = await fetch(`${h.baseUrl}/api/v1/wallet/details`, {
+        await h.vocabulary.stop();
+        const token = await h.issuer.user('voc', ['TEACHER']);
+        const res = await fetch(`${h.baseUrl}/api/v1/word-family/saved`, {
             headers: { authorization: `Bearer ${token}` },
         });
         expect(res.status).toBe(502);
         expect(await res.json()).toMatchObject({ code: 'UPSTREAM_UNAVAILABLE' });
-        await h.finance.start();
+        await h.vocabulary.start();
     });
 
     it('serves /health, /status and /config/pages itself and sets no cookies', async () => {
@@ -170,14 +170,24 @@ describe('gateway proxy (e2e)', () => {
         expect(stream.status).toBe(401);
     });
 
-    it('SePay webhook keeps its Apikey authorization and is rewritten to /api/v1/webhook', async () => {
-        await fetch(`${h.baseUrl}/api/v1/webhook/sepay`, {
-            method: 'POST',
-            headers: { authorization: 'Apikey secret-key', 'content-type': 'application/json', ...via(10) },
-            body: '{}',
-        });
-        expect(h.finance.seen[0].url).toBe('/api/v1/webhook');
-        expect(h.finance.seen[0].headers.authorization).toBe('Apikey secret-key');
+    it('the removed finance routes (wallet, payment, SePay webhook) are 404 ROUTE_NOT_FOUND', async () => {
+        const token = await h.issuer.user('nofin', ['TEACHER']);
+        for (const [method, path] of [
+            ['GET', '/api/v1/wallet/details'],
+            ['GET', '/api/v1/payment/subscription/plans'],
+            ['POST', '/api/v1/webhook/sepay'],
+        ]) {
+            const res = await fetch(`${h.baseUrl}${path}`, {
+                method,
+                headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json', ...via(10) },
+                body: method === 'POST' ? '{}' : undefined,
+            });
+            expect({ path, status: res.status, code: (await res.json()).code }).toEqual({
+                path,
+                status: 404,
+                code: 'ROUTE_NOT_FOUND',
+            });
+        }
     });
 
     it('appends one redacted line to Redis logs:gateway per proxied request', async () => {

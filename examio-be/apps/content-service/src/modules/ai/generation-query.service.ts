@@ -109,8 +109,6 @@ export class GenerationQueryService {
                 };
             case JobStatus.CANCELLED:
                 return { ...base, status: 'failed', error: JOB_CANCELLED_MESSAGE };
-            case JobStatus.PENDING_CHARGE:
-                return { ...base, status: 'pending' };
             default:
                 return { ...base, status: 'processing' };
         }

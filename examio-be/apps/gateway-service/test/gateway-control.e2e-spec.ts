@@ -22,7 +22,7 @@ describe('gateway control plane and outage policy (e2e)', () => {
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.content, h.assessment, h.aichat, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.content, h.assessment, h.aichat, h.auth, h.admin]) u.reset();
     });
 
     describe('GatewayControl authorization', () => {
@@ -37,7 +37,7 @@ describe('gateway control plane and outage policy (e2e)', () => {
             expect(await call('InvalidateUser', inv, user)).toBe(status.PERMISSION_DENIED);
             expect(await call('InvalidateUser', inv, await h.issuer.service('exam'))).toBe(status.PERMISSION_DENIED);
             expect(await call('InvalidateUser', inv, await h.issuer.service('admin'))).toBe(status.PERMISSION_DENIED);
-            expect(await call('InvalidateUser', inv, await h.issuer.service('auth', 'finance'))).toBe(status.UNAUTHENTICATED);
+            expect(await call('InvalidateUser', inv, await h.issuer.service('auth', 'admin'))).toBe(status.UNAUTHENTICATED);
             expect(await call('InvalidateUser', inv, await h.issuer.service('auth'))).toBe(0);
 
             expect(await call('SetPageFlags', { flags }, await h.issuer.service('auth'))).toBe(status.PERMISSION_DENIED);

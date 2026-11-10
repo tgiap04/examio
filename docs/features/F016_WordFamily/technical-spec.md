@@ -34,7 +34,7 @@ N/A — no discriminator fields in Key Entities. (The AI-returned `data` JSON bl
 
 - **BR-001**: Dedup is enforced at two layers — app-level (existing root words for the category are merged into the AI request's exclude-list) and DB-level (`@@unique([rootWord, categorySlug])` with `upsert` on write). If the AI still returns a duplicate, the existing row's `data` is silently updated rather than erroring. Source: `word-family.service.ts:114-116`, `word-family.repository.ts:117-131`.
 - **BR-002**: Only one generation job per `userId:categorySlug` may run at a time — enforced by a Redis `SET NX EX` lock with a 30-minute TTL; a concurrent second request gets `ConflictException`; the lock is always released in `finally` even on failure. Source: `word-family.service.ts:119-126,196`.
-- **BR-003**: No credit/quota check exists before AI generation — unlike other AI flows in the codebase (e.g. AI chat, which checks wallet/subscription via gRPC), word-family generation has no wallet gate.
+- **BR-003**: AI generation is not charged (there is no wallet or credit check anywhere in the platform); it is TEACHER-only and capped at 20 generations per user per UTC day.
 - **BR-004**: Category deletion is soft-delete only (`isActive: false`) through the admin API (admin-service to vocabulary gRPC `WordFamilyAdminService`; the HTTP category write routes were removed in phase 10); the Prisma `onDelete: Cascade` relation to `WordFamily`/`UserSavedWordFamily` exists but is unreachable via any exposed hard-delete route. Source: `examio-be/apps/vocabulary-service/prisma/schema.prisma` (`onDelete: Cascade`), `admin-word-family.service.ts`.
 - **BR-005**: Saving a word family is idempotent — `@@unique([userId, wordFamilyId])` on `UserSavedWordFamily` makes repeated saves a no-op rather than an error. Source: `word-family.prisma:47`.
 - **BR-006**: Flashcard bridge content is HTML-escaped before being written to `FlashCard.question`/`answer` to prevent XSS from AI-generated text. Source: `word-family-bridge.service.ts:65-69,122-130`.
@@ -109,7 +109,6 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 ## Assumptions
 
 - Category writes have a single path since phase 10: admin-service HTTP (`/admin/word-family/categories*`, `word_family:admin`) calling vocabulary's gRPC `WordFamilyAdminService`. Category images are pasted URLs; replacing or deleting one enqueues the old R2 object in vocabulary's `r2_delete_tasks` (same transaction), and the worker deletes it only when the key is under `word-family/` (a URL pointing at a generic `images/` upload is left alone). Phase 12 also adds `WordFamilyService.GetWordFamily` (vocabulary gRPC), which exam calls for `POST /word-family/:id/to-flashcard`; the family is read over gRPC and the cards get pre-assigned ids so an identical `question` owned by another user is never linked. Since phase 13 AI generation in vocabulary-service calls ai-service gRPC `GenerateWordFamily` (`svc:vocabulary` token, `AI_GRPC_URL`, 60 s deadline); `AI_SERVICE_URL` and `INTERNAL_SERVICE_TOKEN` are gone.
-- No credit/quota enforcement on AI generation is assumed intentional (feature launched without a wallet gate), not an oversight — flagged in Unresolved Questions for confirmation.
 
 ## Source Code References
 
@@ -132,6 +131,5 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 ## Unresolved Questions
 
-1. **Credit/quota gate**: Is the absence of a wallet/credit check on AI generation intentional, or should it be added to match other AI flows?
-2. **Saved collection page**: No dedicated "My Saved Word Families" page/route was found in the frontend — is this planned, or is inline save-state on the detail page the intended final UX?
-3. **Hard delete path**: Is a hard-delete admin action planned for categories, or is soft-delete-only permanent by design?
+1. **Saved collection page**: No dedicated "My Saved Word Families" page/route was found in the frontend — is this planned, or is inline save-state on the detail page the intended final UX?
+2. **Hard delete path**: Is a hard-delete admin action planned for categories, or is soft-delete-only permanent by design?

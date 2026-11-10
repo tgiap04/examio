@@ -83,7 +83,6 @@ jobs:
       - run: bash scripts/changed-services.test.sh
       - run: bash scripts/lint-migrations.test.sh
       - run: bash deploy/deploy-service.test.sh
-      - run: node --test deploy/compose-topology.spec.cjs
       - name: shellcheck
         run: |
           shellcheck scripts/changed-services.sh scripts/changed-services.test.sh \
@@ -101,15 +100,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        svc: [auth, content, assessment, study-room, vocabulary, document, ai-chat, finance, admin, r2, gateway]
+        svc: [auth, content, assessment, study-room, vocabulary, document, ai-chat, admin, r2, gateway]
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-be/yarn.lock
-      - run: corepack enable
       - run: yarn install --immutable
       - run: yarn proto:gen
       - run: yarn prisma:generate
@@ -161,7 +162,6 @@ jobs:
       # The roles/schemas come from deploy/postgres/init/01-service-schemas.sh (same as production).
       DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/examio_ci?schema=auth
       AUTH_DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/examio_ci?schema=auth
-      FINANCE_DATABASE_URL: postgresql://finance_svc:ci-finance@localhost:5432/examio_ci?schema=finance
       ADMIN_DATABASE_URL: postgresql://admin_svc:ci-admin@localhost:5432/examio_ci?schema=admin
       STUDYROOM_DATABASE_URL: postgresql://studyroom_svc:ci-studyroom@localhost:5432/examio_ci?schema=studyroom
       VOCABULARY_DATABASE_URL: postgresql://vocabulary_svc:ci-vocabulary@localhost:5432/examio_ci?schema=vocabulary
@@ -186,19 +186,18 @@ jobs:
       # Boot-time required config; inert placeholders (nothing calls these providers).
       GOOGLE_CLIENT_ID: ci-dummy
       GOOGLE_CLIENT_SECRET: ci-dummy
-      PAYMENT_SERVICE_SEPAY_KEY: ci-dummy
-      PAYMENT_QR_BANK_ACCOUNT: ci-dummy
-      PAYMENT_QR_BANK_CODE: ci-dummy
       QUIZ_JWT_SECRET: ci-dummy-quiz-jwt-secret-0123456789abcdef
       QUIZ_AES_KEY: ci-dummy-quiz-aes-key-0123456789
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-be/yarn.lock
-      - run: corepack enable
       - run: yarn install --immutable
       - run: yarn prisma:generate
       - run: yarn build:all
@@ -215,7 +214,6 @@ jobs:
           POSTGRES_USER: examio
           POSTGRES_DB: examio_ci
           AUTH_DB_PASSWORD: ci-auth
-          FINANCE_DB_PASSWORD: ci-finance
           ADMIN_DB_PASSWORD: ci-admin
           CONTENT_DB_PASSWORD: ci-content
           ASSESSMENT_DB_PASSWORD: ci-assessment
@@ -227,7 +225,7 @@ jobs:
         run: bash deploy/postgres/init/01-service-schemas.sh
       - name: Apply every service's migrations as its own role (empty database)
         run: |
-          for svc in auth finance admin content assessment studyroom vocabulary document aichat; do
+          for svc in auth admin content assessment studyroom vocabulary document aichat; do
             url_var="$(echo "$svc" | tr a-z A-Z)_DATABASE_URL"
             DATABASE_URL="${!url_var}" npx prisma migrate deploy --schema "$(scripts/prisma-schema-path.sh "$svc")"
           done
@@ -245,12 +243,14 @@ jobs:
         working-directory: examio-be
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-be/yarn.lock
-      - run: corepack enable
       - run: yarn install --immutable
       - run: yarn proto:gen
       - run: yarn prisma:generate
@@ -303,7 +303,6 @@ jobs:
       # The roles/schemas come from deploy/postgres/init/01-service-schemas.sh (same as production).
       DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/examio_ci?schema=auth
       AUTH_DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/examio_ci?schema=auth
-      FINANCE_DATABASE_URL: postgresql://finance_svc:ci-finance@localhost:5432/examio_ci?schema=finance
       ADMIN_DATABASE_URL: postgresql://admin_svc:ci-admin@localhost:5432/examio_ci?schema=admin
       STUDYROOM_DATABASE_URL: postgresql://studyroom_svc:ci-studyroom@localhost:5432/examio_ci?schema=studyroom
       VOCABULARY_DATABASE_URL: postgresql://vocabulary_svc:ci-vocabulary@localhost:5432/examio_ci?schema=vocabulary
@@ -320,7 +319,6 @@ jobs:
       RABBITMQ_USER: ci_admin
       RABBITMQ_PASS: ci-only-admin-pass
       RABBITMQ_AUTH_PASS: ci-only-auth-pass
-      RABBITMQ_FINANCE_PASS: ci-only-finance-pass
       RABBITMQ_CONTENT_PASS: ci-only-content-pass
       RABBITMQ_ASSESSMENT_PASS: ci-only-assessment-pass
       RABBITMQ_STUDYROOM_PASS: ci-only-studyroom-pass
@@ -342,12 +340,14 @@ jobs:
       GOOGLE_CLIENT_SECRET: ci-dummy
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-be/yarn.lock
-      - run: corepack enable
       - run: yarn install --immutable
       - run: yarn proto:gen
       - run: yarn prisma:generate
@@ -379,7 +379,6 @@ jobs:
           POSTGRES_USER: examio
           POSTGRES_DB: examio_ci
           AUTH_DB_PASSWORD: ci-auth
-          FINANCE_DB_PASSWORD: ci-finance
           ADMIN_DB_PASSWORD: ci-admin
           CONTENT_DB_PASSWORD: ci-content
           ASSESSMENT_DB_PASSWORD: ci-assessment
@@ -391,13 +390,13 @@ jobs:
         run: bash deploy/postgres/init/01-service-schemas.sh
       - name: Apply every service's migrations as its own role (empty database)
         run: |
-          for svc in auth finance admin content assessment studyroom vocabulary document aichat; do
+          for svc in auth admin content assessment studyroom vocabulary document aichat; do
             url_var="$(echo "$svc" | tr a-z A-Z)_DATABASE_URL"
             DATABASE_URL="${!url_var}" npx prisma migrate deploy --schema "$(scripts/prisma-schema-path.sh "$svc")"
           done
       - name: Migrations cover every service schema (no drift)
         run: |
-          for svc in auth finance admin content assessment studyroom vocabulary document aichat; do
+          for svc in auth admin content assessment studyroom vocabulary document aichat; do
             url_var="$(echo "$svc" | tr a-z A-Z)_DATABASE_URL"
             DATABASE_URL="${!url_var}" npx prisma migrate diff \
               --from-url "${!url_var}" \
@@ -415,10 +414,10 @@ jobs:
       - name: Service health e2e
         run: |
           # content's, assessment's, study-room's, vocabulary's, document's and ai-chat's health e2e run with their whole e2e folders in the RBAC step below
-          for svc in auth finance admin r2 gateway; do
+          for svc in auth admin r2 gateway; do
             echo "::group::$svc-service e2e"
             # Services without a broker user of their own boot with auth's.
-            case "$svc" in auth|finance|gateway) user=$svc ;; *) user=auth ;; esac
+            case "$svc" in auth|gateway) user=$svc ;; *) user=auth ;; esac
             pass_var="RABBITMQ_$(echo "$user" | tr a-z A-Z)_PASS"
             export RABBITMQ_URL="amqp://$user:${!pass_var}@localhost:5672"
             export SERVICE_NAME="$svc-service"
@@ -432,19 +431,18 @@ jobs:
           export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"
           (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/register-outbox.e2e-spec.ts)
           (cd libs/messaging && ../../node_modules/.bin/jest --config test/jest-e2e.json)
-      - name: Identity and RBAC e2e (tokens, service tokens, role change, gRPC guards, teacher wallet, admin)
+      - name: Identity and RBAC e2e (tokens, service tokens, role change, gRPC guards, admin)
         run: |
           export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"
           export SERVICE_NAME="auth-service"
           (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/token.e2e-spec.ts test/service-token.e2e-spec.ts test/role-change.e2e-spec.ts test/public-profiles.e2e-spec.ts test/login-throttle.e2e-spec.ts test/auth-users.e2e-spec.ts test/auth-me-shape.e2e-spec.ts)
-          (cd apps/finance-service && DATABASE_URL="$FINANCE_DATABASE_URL" RABBITMQ_URL="amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-authz-changed.e2e-spec.ts test/wallet-money.e2e-spec.ts test/finance-admin.e2e-spec.ts test/wallet-cache.e2e-spec.ts test/subscription-changed.e2e-spec.ts)
-          (cd apps/admin-service && DATABASE_URL="$ADMIN_DATABASE_URL" RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin.e2e-spec.ts test/admin-finance.e2e-spec.ts)
+          (cd apps/admin-service && DATABASE_URL="$ADMIN_DATABASE_URL" RABBITMQ_URL="$RABBITMQ_AUTH_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin.e2e-spec.ts)
           # real auth (HTTP + gRPC) + real admin, each on its own schema (AUTH_/ADMIN_DATABASE_URL): roles, ban, users, stats, page flags
           RABBITMQ_URL="$RABBITMQ_AUTH_URL" ./node_modules/.bin/jest --config test/cross-app/jest-e2e.json test/cross-app/admin-roles.e2e-spec.ts test/cross-app/ban.e2e-spec.ts test/cross-app/admin-users-real-auth.e2e-spec.ts
       - name: RBAC enforcement e2e (whole content and assessment folders, one process each, plus auth device ownership)
         run: |
           export RABBITMQ_AUTH_URL="amqp://auth:$RABBITMQ_AUTH_PASS@localhost:5672"
-          # The WHOLE content e2e folder (health, ownership, validation, practice, generation money flow, worker, gRPC
+          # The WHOLE content e2e folder (health, ownership, validation, practice, generation flow, worker, gRPC
           # contract) in ONE jest process. The generation specs consume as `content`, play the ai-service worker as the broker
           # user `ai` (RABBITMQ_AI_URL), the document-service events as `document` (RABBITMQ_DOCUMENT_URL) and
           # auth.user.updated as `auth` (RABBITMQ_AUTH_URL, exported above).
@@ -461,9 +459,9 @@ jobs:
           (cd apps/vocabulary-service && DATABASE_URL="$VOCABULARY_DATABASE_URL" ../../node_modules/.bin/jest --config test/jest-e2e.json)
           # The WHOLE ai-chat e2e folder (health, stream/SSE over real gRPC, ownership, documents, limits, clear chat + R2
           # worker, events, broker permissions) in ONE jest process. It consumes as `aichat` and publishes document.deleted
-          # as `document` (RABBITMQ_DOCUMENT_URL) and finance.subscription.changed as `finance` (RABBITMQ_FINANCE_URL).
-          (cd apps/ai-chat-service && DATABASE_URL="$AICHAT_DATABASE_URL" RABBITMQ_URL="amqp://aichat:$RABBITMQ_AICHAT_PASS@localhost:5672" RABBITMQ_DOCUMENT_URL="amqp://document:$RABBITMQ_DOCUMENT_PASS@localhost:5672" RABBITMQ_FINANCE_URL="amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json)
-          # The WHOLE document e2e folder (health, money flow, DeleteDocuments, gRPC contract, broker permissions,
+          # as `document` (RABBITMQ_DOCUMENT_URL).
+          (cd apps/ai-chat-service && DATABASE_URL="$AICHAT_DATABASE_URL" RABBITMQ_URL="amqp://aichat:$RABBITMQ_AICHAT_PASS@localhost:5672" RABBITMQ_DOCUMENT_URL="amqp://document:$RABBITMQ_DOCUMENT_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json)
+          # The WHOLE document e2e folder (health, uploads, DeleteDocuments, gRPC contract, broker permissions,
           # worker pipeline) in ONE jest process. It publishes as the `ai` broker user (RABBITMQ_AI_PASS) and consumes as `document`.
           (cd apps/document-service && DATABASE_URL="$DOCUMENT_DATABASE_URL" RABBITMQ_URL="amqp://document:$RABBITMQ_DOCUMENT_PASS@localhost:5672" RABBITMQ_AI_URL="amqp://ai:$RABBITMQ_AI_PASS@localhost:5672" ../../node_modules/.bin/jest --config test/jest-e2e.json)
           (cd apps/auth-service && RABBITMQ_URL="$RABBITMQ_AUTH_URL" SERVICE_NAME=auth-service ../../node_modules/.bin/jest --config test/jest-e2e.json test/ownership)
@@ -484,10 +482,6 @@ jobs:
           export RABBITMQ_URL="$RABBITMQ_AUTH_URL"
           export RABBITMQ_GATEWAY_URL="amqp://gateway:$RABBITMQ_GATEWAY_PASS@localhost:5672"
           SERVICE_NAME=auth-service ./node_modules/.bin/jest --config test/cross-app/jest-e2e.json test/cross-app/gateway-integration.e2e-spec.ts
-      # LAST e2e step: it TRUNCATEs auth's User/UserSession and finance's Payment/UserSubscription/Wallet to seed a
-      # fixed fixture (refuses any non-local AUTH_/FINANCE_DATABASE_URL), then compares admin stats with the golden JSON.
-      - name: Admin stats parity (auth + finance SQL vs golden JSON of the pre-phase-10 service)
-        run: ./node_modules/.bin/jest --config test/stats-parity/jest-e2e.json
 
   # Python ai-service: pytest against a real pgvector + broker (integration tests
   # fail instead of skipping), Alembic on an empty `ai` schema as ai_svc, and ruff
@@ -515,7 +509,6 @@ jobs:
       RABBITMQ_USER: ci_admin
       RABBITMQ_PASS: ci-only-admin-pass
       RABBITMQ_AUTH_PASS: ci-only-auth-pass
-      RABBITMQ_FINANCE_PASS: ci-only-finance-pass
       RABBITMQ_CONTENT_PASS: ci-only-content-pass
       RABBITMQ_ASSESSMENT_PASS: ci-only-assessment-pass
       RABBITMQ_STUDYROOM_PASS: ci-only-studyroom-pass
@@ -528,12 +521,14 @@ jobs:
       REQUIRE_INTEGRATION: '1'
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-be/yarn.lock
-      - run: corepack enable
       # ts-node + libs/messaging for the Python/Nest queue topology contract test
       - run: yarn install --immutable
       - uses: actions/setup-python@v5
@@ -566,7 +561,6 @@ jobs:
           POSTGRES_USER: examio
           POSTGRES_DB: examio_ci
           AUTH_DB_PASSWORD: ci-auth
-          FINANCE_DB_PASSWORD: ci-finance
           ADMIN_DB_PASSWORD: ci-admin
           CONTENT_DB_PASSWORD: ci-content
           ASSESSMENT_DB_PASSWORD: ci-assessment
@@ -627,12 +621,14 @@ jobs:
         working-directory: examio-fe
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-fe/yarn.lock
-      - run: corepack enable
       - run: yarn install --immutable
       - run: yarn build
       - run: yarn lint
@@ -646,12 +642,14 @@ jobs:
         working-directory: examio-be
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-be/yarn.lock
-      - run: corepack enable
       - run: yarn install --immutable
       - run: yarn gen:fe-permissions
       # Fail if the file is missing or untracked (a bare `git diff` is vacuous
@@ -671,12 +669,14 @@ jobs:
         working-directory: examio-be
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-be/yarn.lock
-      - run: corepack enable
       - run: yarn install --immutable
       - run: yarn gen:permissions-doc
       - name: Check generated docs are tracked and unchanged

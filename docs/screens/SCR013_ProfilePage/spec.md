@@ -27,7 +27,7 @@ The page uses a two-column grid layout at large viewports: a sticky left summary
 │                     │ R4: Active Tab Content (scrollable)     │
 │ - Avatar + Banner   │   ProfileForm | ChangePasswordSection  │
 │ - Completeness bar  │   | DeviceList                         │
-│ - Wallet balance    │                                        │
+│                     │                                        │
 │ - Email + join date │                                        │
 └─────────────────────┴────────────────────────────────────────┘
 ```
@@ -37,7 +37,7 @@ The page uses a two-column grid layout at large viewports: a sticky left summary
 | Region ID | Name | Position | Scrollable | Key Components | Responsive Behavior |
 |-----------|------|----------|------------|----------------|---------------------|
 | R1 | Page Header | static | no | Title + subtitle | Always visible, fluid width |
-| R2 | Left Summary Card | sticky (lg), static (sm) | yes | Avatar/banner upload zones, completeness bar, wallet balance card | Hidden on xs; full-width stacked on sm; sticky sidebar on lg |
+| R2 | Left Summary Card | sticky (lg), static (sm) | yes | Avatar/banner upload zones, completeness bar | Hidden on xs; full-width stacked on sm; sticky sidebar on lg |
 | R3 | Tab Bar | static | no | Three tab `<button>` elements | `overflow-x-auto` on sm; inline-flex on md+ |
 | R4 | Tab Content | static | yes | ProfileForm / ChangePasswordSection / DeviceList | Fluid, full width |
 
@@ -47,7 +47,7 @@ The page uses a two-column grid layout at large viewports: a sticky left summary
 
 ### Happy Path
 
-1. User lands on `/k/profile`; profile data fetches via `GET /profile`; left summary card renders with avatar initials (or image), wallet balance, email, and join date. R1: left card
+1. User lands on `/k/profile`; profile data fetches via `GET /profile`; left summary card renders with avatar initials (or image), email, and join date. R1: left card
 2. Default active tab is `profile`; `ProfileForm` renders in R4 showing editable name and bio fields. R4: tab content
 3. User clicks avatar or banner area → hidden `<input type="file">` triggers; on file select `uploadAvatarApi` or `uploadBannerApi` is called; on success `handleProfileUpdate` PATCHes the profile. R2: avatar/banner zone
 4. User types in name/bio fields; save button enables when `hasChanges`; on submit `updateProfileApi` fires; on success toast confirms and `getUser()` refreshes auth store. R4: ProfileForm
@@ -85,7 +85,6 @@ The page uses a two-column grid layout at large viewports: a sticky left summary
 | `profile.isVerified` | Trạng thái xác minh | API field | boolean badge | "Chưa xác minh" badge | MODEL-001.isVerified |
 | `profile.createdAt` | Ngày tham gia | API field | `DD tháng MM, YYYY` (vi-VN) | hidden | MODEL-001.createdAt |
 | `completeness` | Độ hoàn thiện | computed (5 × 20%) | percentage + progress bar | — | N/A |
-| `user?.wallet?.balance` | Số dư ví | store state | VND currency | `0` | MODEL-027.balance |
 | `devices[].deviceName` | Tên thiết bị | API field | raw string | "Thiết bị hiện tại" / "Thiết bị không xác định" | MODEL-002.deviceName |
 | `devices[].browser` | Trình duyệt | API field | raw string | "Trình duyệt" | MODEL-002.browser |
 | `devices[].os` | Hệ điều hành | API field | raw string | "Hệ điều hành" | MODEL-002.os |

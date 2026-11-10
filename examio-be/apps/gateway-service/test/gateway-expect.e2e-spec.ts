@@ -21,7 +21,7 @@ describe.each([
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.content, h.assessment, h.document, h.aichat, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.content, h.assessment, h.document, h.aichat, h.auth, h.admin]) u.reset();
     });
 
     interface Sent {

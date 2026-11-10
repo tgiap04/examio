@@ -51,7 +51,6 @@
     "src/components/organisms/FeedbackSection.tsx",
     "src/components/organisms/HeroSection.tsx",
     "src/components/organisms/PendingJobDialog.tsx",
-    "src/components/organisms/PricingSection.tsx",
     "src/components/organisms/StackSection.tsx",
     "src/components/organisms/auth/signin-form.tsx",
     "src/components/organisms/auth/signup-form.tsx",

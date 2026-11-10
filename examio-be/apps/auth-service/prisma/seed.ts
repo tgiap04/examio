@@ -53,7 +53,7 @@ export async function seedDevUsers(prisma: PrismaClient): Promise<{ adminId: str
         const id = devSeedUserId(u.email);
         await prisma.user.upsert({
             where: { email: u.email },
-            // Dev users own a wallet, so they are TEACHERs (wallets are teacher-only).
+            // Dev users are TEACHERs so they can author content out of the box.
             update: { role: 'TEACHER', isBanned: u.isBanned ?? false, isVerified: true, deletedAt: null, password: hash },
             create: {
                 id,

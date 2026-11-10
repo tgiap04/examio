@@ -35,7 +35,7 @@
 | F002 | Authentication | ui | TypeScript | examio-fe | P0 |
 | F003 | AccountManagement | ui | TypeScript | examio-fe | P0 |
 | F004 | ProfileManagement | ui | TypeScript | examio-fe | P1 |
-| F005 | Finance | ui | TypeScript | examio-fe | P1 |
+| F005 | Finance (REMOVED 2026-11-10) | ui | TypeScript | examio-fe | P1 |
 | F006 | QuizAuthoring | ui | TypeScript | examio-fe | P1 |
 | F007 | FlashcardAuthoring | ui | TypeScript | examio-fe | P1 |
 | F008 | ExamHosting | ui | TypeScript | examio-fe | P1 |
@@ -224,43 +224,9 @@
 
 ---
 
-### F005: Finance
+### F005: Finance (REMOVED 2026-11-10)
 
-**Type**: ui
-**Description**: Subscription purchase via SePay virtual account and QR payment. Wallet balance display and transaction history. Subscription tier gating for AI features.
-
-**Workspace**: examio-fe
-**Languages**: TypeScript
-**Components**: 3
-
-**Related Screens**:
-- SCR013/REG003: ProfilePage / SubscriptionWallet
-- SCR015: SubscriptionPage
-
-**Related User Stories**:
-- US012: Purchase Subscription
-
-**Related APIs/Routes**:
-- (GET) `/api/v1/wallet/details`
-- (GET) `/api/v1/payment/subscription`
-- (POST) `/api/v1/payment/subscription`
-- (webhook) SePay callback
-
-**Related Data Models**:
-- Wallet
-- WalletTransaction
-- Payment
-- UserSubscription
-
-**Related Background Logic**:
-- (none)
-
-**Related Permissions**:
-- PERM002: AuthenticatedRouteAccess
-- PERM003: UnverifiedAccountGate
-- PERM011: WalletViewOwn
-- PERM012: SubscriptionViewOwn
-- PERM013: SubscriptionPurchase
+> **REMOVED 2026-11-10.** The wallet / subscription / payment feature was removed from the product (finance-service, SePay, credits, subscription tiers, the SubscriptionPage and admin finance page). The feature folder `docs/features/F005_Finance` was deleted. Retired codes (not reused): F005, US012, SCR015, SCR036, REG003 of SCR013, MODEL-005, MODEL-006, MODEL-026..028, PERM011..013, PERM036, PERM041, PERM049..051, BL002, BL004, BL010, BL011, FLOW001, FLOW002, FLOW006.
 
 ---
 
@@ -346,9 +312,7 @@
 - PERM015: QuizSetAuthorEdit
 - PERM016: QuizSetAuthorDelete
 - PERM035: AIGenerationAccess
-- PERM036: AIGenerationCredits
 - PERM038: PDFHistoryViewOwn
-- PERM041: FreeModeCreditBypass
 - PERM043: QuizSetVisibilityControl
 
 ---
@@ -414,8 +378,6 @@
 - PERM018: FlashcardSetAuthorEdit
 - PERM019: FlashcardSetAuthorDelete
 - PERM035: AIGenerationAccess
-- PERM036: AIGenerationCredits
-- PERM041: FreeModeCreditBypass
 - PERM044: FlashcardSetVisibilityControl
 
 ---
@@ -573,7 +535,7 @@
 ### F010: AITool
 
 **Type**: ui
-**Description**: AI content generation tool for creating quizzes and flashcards from uploaded documents. Job status polling and cancellation. Integrates with finance service for credit deduction (or FREE_MODE bypass).
+**Description**: AI content generation tool for creating quizzes and flashcards from uploaded documents. Job status polling and cancellation. Not charged: there is no wallet or credit check, and cost is guarded only by the gateway rate limits.
 
 **Workspace**: examio-fe
 **Languages**: TypeScript
@@ -598,14 +560,12 @@
 - HistoryGeneratedFlashcard
 
 **Related Background Logic**:
-- BL004: FinanceClient (credit deduction path)
+- (none)
 
 **Related Permissions**:
 - PERM002: AuthenticatedRouteAccess
 - PERM003: UnverifiedAccountGate
 - PERM035: AIGenerationAccess
-- PERM036: AIGenerationCredits
-- PERM041: FreeModeCreditBypass
 
 ---
 
@@ -725,7 +685,7 @@
 ### F014: AdminDashboard
 
 **Type**: ui
-**Description**: Admin dashboard providing privileged access to platform operations: KPI overview and analytics, user management (ban/unban), role management (`/admin/roles`), finance operations (refund/credit adjustment/subscription tier change), server-side log viewing with SSE streaming, and audit log query. Backed by `admin-service` (port 7006) with dedicated `AdminGuard`.
+**Description**: Admin dashboard providing privileged access to platform operations: KPI overview and analytics, user management (ban/unban), role management (`/admin/roles`), server-side log viewing with SSE streaming, and audit log query. Backed by `admin-service` (port 7006) with dedicated `AdminGuard`.
 
 **Workspace**: examio-fe + examio-be
 **Languages**: TypeScript
@@ -735,7 +695,6 @@
 - SCR033: AdminOverviewPage
 - SCR034: AdminStatsPage
 - SCR035: AdminUsersPage
-- SCR036: AdminFinancePage
 - SCR037: AdminLogsPage
 - SCR038: AdminAuditPage
 - SCR044: AdminRolesPage
@@ -754,10 +713,6 @@
 - (GET) `/api/v1/admin/roles/changes`
 - (PUT) `/api/v1/admin/roles/users/:id/role`
 - (PUT) `/api/v1/admin/roles/users/:id/system-admin`
-- (GET) `/api/v1/admin/finance/refunds`
-- (POST) `/api/v1/admin/finance/refund`
-- (POST) `/api/v1/admin/finance/adjust-credit`
-- (PUT) `/api/v1/admin/finance/subscription-tier`
 - (GET) `/api/v1/admin/audit`
 - (GET) `/api/v1/admin/logs`
 - (GET) `/api/v1/admin/logs/stream`
@@ -773,9 +728,6 @@
 - PERM046: AdminRouteAccess
 - PERM047: AdminUserManagement
 - PERM048: AdminGrantRevoke
-- PERM049: AdminFinanceRefund
-- PERM050: AdminCreditAdjustment
-- PERM051: AdminSubscriptionTierChange
 - PERM052: AdminAuditLogView
 - PERM053: AdminLogView
 
@@ -863,13 +815,13 @@
 
 ## Summary
 
-- **Total Features**: 15 active + 1 removed (F009)
-- **Total Screens**: 43 (with 16 regions across 5 composite screens)
-- **Total User Stories**: 67
-- **Total Routes**: ~118
-- **Total Data Models**: 28
+- **Total Features**: 14 active + 2 removed (F005, F009)
+- **Total Screens**: 41 (with 15 regions across 5 composite screens)
+- **Total User Stories**: 66
+- **Total Routes**: ~107
+- **Total Data Models**: 23
 - **Total Background Logic**: 5
-- **Total Permissions**: 57
+- **Total Permissions**: 49
 - **Languages Detected**: TypeScript, Python
 
 ## Cross-Reference Validation

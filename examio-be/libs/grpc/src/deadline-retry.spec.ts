@@ -2,7 +2,7 @@ import { status } from '@grpc/grpc-js';
 import { Observable, of, throwError } from 'rxjs';
 import { invokeRpc } from './deadline-retry';
 
-const ALLOWED = 'examio.finance.v1.WalletService/GetWallet';
+const ALLOWED = 'examio.auth.v1.AuthService/GetUser';
 const sleep = jest.fn().mockResolvedValue(undefined);
 
 const failing = (code: number) => () =>
@@ -39,16 +39,11 @@ describe('invokeRpc', () => {
         expect(sleep.mock.calls[1][0]).toBeGreaterThan(sleep.mock.calls[0][0]);
     });
 
-    it.each([
-        'examio.finance.v1.WalletService/Debit',
-        'examio.finance.v1.WalletService/Credit',
-        'examio.finance.v1.WalletService/Refund',
-        'examio.finance.v1.FinanceAdminService/AdjustBalance',
-    ])('retries the key-guarded money RPC %s on UNAVAILABLE', async (rpc) => {
+    it('retries the idempotent batch delete DeleteObjects on UNAVAILABLE', async () => {
         const invoke = jest.fn(failing(status.UNAVAILABLE));
-        await expect(invokeRpc(rpc, invoke, { sleep })).rejects.toMatchObject({
-            code: status.UNAVAILABLE,
-        });
+        await expect(
+            invokeRpc('examio.r2.v1.R2Service/DeleteObjects', invoke, { sleep })
+        ).rejects.toMatchObject({ code: status.UNAVAILABLE });
         expect(invoke).toHaveBeenCalledTimes(3);
     });
 
@@ -67,7 +62,7 @@ describe('invokeRpc', () => {
     });
 
     it.each([
-        'examio.finance.v1.WalletService/CreateWallet',
+        'examio.r2.v1.R2Service/DeleteFile',
         'examio.vocabulary.v1.WordFamilyAdminService/DeleteCategory',
         'examio.r2.v1.R2Service/UploadFile',
         'examio.auth.v1.AuthService/SetUserRole',

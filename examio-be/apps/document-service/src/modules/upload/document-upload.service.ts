@@ -4,9 +4,8 @@ import { R2DeleteTaskWriter } from '@examio/messaging';
 import { PrismaService, UserStorage } from '../../prisma';
 import { R2Client } from '../../clients/r2.client';
 import { AI_UPLOAD_AREAS, DocumentStatus, MAX_UPLOAD_BYTES } from '../../config/document.constants';
-import { DocumentChargeService } from './document-charge.service';
 import { DocumentErrorCode, documentError } from './document-errors';
-import { DocumentQueryService } from './document-query.service';
+import { DocumentQueueService } from './document-queue.service';
 import { DocumentRepository } from './document.repository';
 
 export interface UploadBytes {
@@ -16,8 +15,6 @@ export interface UploadBytes {
 }
 
 export interface UploadBytesOptions {
-    /** Debit `ceil(sizeMB/2)` (`doc:<id>`) and queue OCR; false = the caller charges itself. */
-    chargeCredits: boolean;
     /** Return the caller's existing `(filename, size)` upload instead of storing again. */
     reuseDuplicate: boolean;
 }
@@ -25,13 +22,12 @@ export interface UploadBytesOptions {
 export interface UploadOutcome {
     document: UserStorage;
     reused: boolean;
-    newBalance?: number;
 }
 
 const storageUnavailable = () =>
     documentError(500, DocumentErrorCode.STORAGE_UNAVAILABLE, 'Không thể tải file lên lưu trữ, vui lòng thử lại.');
 
-/** Accepting files: R2 object, row, and (for charged uploads) the 3-step debit. */
+/** Accepting files: the R2 object, then the row (queued for OCR with its event, except quick-upload). */
 @Injectable()
 export class DocumentUploadService {
     private readonly logger = new Logger(DocumentUploadService.name);
@@ -39,16 +35,14 @@ export class DocumentUploadService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly repo: DocumentRepository,
-        private readonly query: DocumentQueryService,
-        private readonly charge: DocumentChargeService,
+        private readonly queue: DocumentQueueService,
         private readonly r2: R2Client,
         private readonly r2Deletes: R2DeleteTaskWriter,
         private readonly ids: GenerateIdService
     ) {}
 
-    /** `POST /ai/quick-upload`: never charged, no OCR until the first chat message. */
+    /** `POST /ai/quick-upload`: no OCR until the first chat message. */
     async quick(userId: string, file: UploadBytes) {
-        await this.query.enforceQuota(userId);
         const stored = await this.store('ai-teacher', userId, file);
         const doc = await this.discardOnFailure(userId, stored.keyR2, () =>
             this.repo.insert(this.prisma, {
@@ -60,32 +54,17 @@ export class DocumentUploadService {
     }
 
     /** gRPC `CreateUpload`: the bytes arrive over gRPC; OCR is queued with the row. */
-    async createFromBytes(
-        userId: string,
-        file: UploadBytes,
-        options: UploadBytesOptions,
-        userToken?: string
-    ): Promise<UploadOutcome> {
+    async createFromBytes(userId: string, file: UploadBytes, options: UploadBytesOptions): Promise<UploadOutcome> {
         if (options.reuseDuplicate) {
             const dup = await this.repo.findDuplicate(userId, file.filename, file.data.length);
             if (dup) return { document: dup, reused: true };
         }
-        await this.query.enforceQuota(userId);
         const stored = await this.store('ai-uploads', userId, file);
         const base = this.newRow(userId, file, stored);
 
-        if (options.chargeCredits) {
-            const doc = await this.discardOnFailure(userId, stored.keyR2, () =>
-                this.repo.insert(this.prisma, { ...base, processingStatus: DocumentStatus.PENDING_CHARGE })
-            );
-            const { newBalance } = await this.charge.chargeAndQueue(doc, userToken);
-            const fresh = (await this.repo.findRaw(this.prisma, doc.id)) ?? doc;
-            return { document: fresh, reused: false, newBalance };
-        }
-
-        // The caller charges itself: row and `document.uploaded` commit together.
+        // Row and `document.uploaded` commit together.
         const downloadUrl = await this.discardOnFailure(userId, stored.keyR2, () =>
-            this.charge.downloadUrl({ keyR2: stored.keyR2 })
+            this.queue.downloadUrl({ keyR2: stored.keyR2 })
         );
         const doc = await this.discardOnFailure(userId, stored.keyR2, () =>
             this.prisma.$transaction(async (tx) => {
@@ -94,7 +73,7 @@ export class DocumentUploadService {
                     processingStatus: DocumentStatus.PENDING,
                     queuedAt: new Date(),
                 });
-                await this.charge.recordUploaded(tx, row, downloadUrl);
+                await this.queue.recordUploaded(tx, row, downloadUrl);
                 return row;
             })
         );

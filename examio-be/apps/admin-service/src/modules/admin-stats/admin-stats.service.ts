@@ -3,7 +3,6 @@ import { Metadata } from '@grpc/grpc-js';
 import { RedisService } from '@examio/redis';
 
 import { AuthUsersClient } from '../../clients/auth-users.client';
-import { FinanceClient } from '../../clients/finance.client';
 import {
     OverviewResponse,
     SeriesName,
@@ -24,8 +23,8 @@ const SERIES_CACHE_TTL_SECONDS = 5 * 60; // 5 minutes
 const utcMidnight = (day: string): Date => new Date(`${day}T00:00:00.000Z`);
 
 /**
- * Admin dashboard numbers. The aggregates are computed by their owners (auth:
- * users/sessions/utm, finance: subscriptions/payments) and fetched with the
+ * Admin dashboard numbers. The aggregates are computed by their owner (auth:
+ * users/sessions/utm) and fetched with the
  * calling admin's token (`stats:read`); this service only combines them, fills
  * date gaps and keeps the 5-minute Redis cache. Response shapes are unchanged.
  */
@@ -33,8 +32,7 @@ const utcMidnight = (day: string): Date => new Date(`${day}T00:00:00.000Z`);
 export class AdminStatsService {
     constructor(
         private readonly redis: RedisService,
-        private readonly authUsers: AuthUsersClient,
-        private readonly finance: FinanceClient
+        private readonly authUsers: AuthUsersClient
     ) {}
 
     /**
@@ -45,24 +43,21 @@ export class AdminStatsService {
         const cached = await this.redis.get<OverviewResponse>(OVERVIEW_CACHE_KEY);
         if (cached) return cached;
 
-        const [users, revenue] = await Promise.all([
-            this.authUsers.getUserStats({ days: 1, includeUtmSources: false }, metadata),
-            this.finance.getRevenueStats({ days: 1 }, metadata),
-        ]);
+        const users = await this.authUsers.getUserStats(
+            { days: 1, includeUtmSources: false },
+            metadata
+        );
         const overview: OverviewResponse = {
             totalUsers: Number(users.totalUsers),
             activeToday: Number(users.activeToday),
             active30d: Number(users.activeLast30d),
-            proCount: revenue.proUsers,
-            vipCount: revenue.vipUsers,
-            revenue30d: Number(revenue.revenueLast30d),
         };
         await this.redis.set(OVERVIEW_CACHE_KEY, overview, SERIES_CACHE_TTL_SECONDS);
         return overview;
     }
 
     /**
-     * Time series for one of {signups, traffic, revenue} across {7d, 30d, 90d}.
+     * Time series for one of {signups, traffic} across {7d, 30d, 90d}.
      * Owners bucket by day in SQL; gaps are filled here so the chart always
      * receives N continuous points.
      */
@@ -115,7 +110,7 @@ export class AdminStatsService {
         return response;
     }
 
-    /** Cache invalidation hooks for use by other modules (e.g. finance). */
+    /** Cache invalidation hooks for use by other modules (e.g. auth events). */
     async invalidateOverview(): Promise<void> {
         await this.redis.del(OVERVIEW_CACHE_KEY);
     }
@@ -129,10 +124,6 @@ export class AdminStatsService {
         days: number,
         metadata: Metadata
     ): Promise<{ date: Date; value: number }[]> {
-        if (name === 'revenue') {
-            const { revenueSeries } = await this.finance.getRevenueStats({ days }, metadata);
-            return revenueSeries.map((p) => ({ date: utcMidnight(p.date), value: Number(p.revenue) }));
-        }
         const users = await this.authUsers.getUserStats(
             { days, includeUtmSources: false },
             metadata

@@ -1,23 +1,18 @@
 import { Harness, bearer, bootHarness, makeUser, onlyAdmins } from './helpers/real-auth-admin';
 import { RedisService } from '@examio/redis';
-import { FinanceClient } from '../../apps/admin-service/src/clients/finance.client';
 import { GatewayClient } from '../../apps/admin-service/src/clients/gateway.client';
 
 /**
  * admin users / stats / page flags against the REAL auth-service (HTTP + gRPC,
- * real guards, real Postgres). finance and the gateway are the only fakes:
- * their servers are not booted in this harness (finance has its own contract specs).
+ * real guards, real Postgres). The gateway is the only fake: its server is
+ * not booted in this harness.
  */
 describe('admin over real auth gRPC (phase 10 e2e)', () => {
     let h: Harness;
-    const finance = {
-        getUserFinance: jest.fn(async (..._a: unknown[]) => ({ wallet: { id: 'w1', balance: 12 }, subscription: { id: 's1', tier: 1, billingCycle: 'monthly', isActive: true } })),
-        getRevenueStats: jest.fn(async (..._a: unknown[]) => ({ proUsers: 3, vipUsers: 1, revenueLast30d: '12345', revenueSeries: [] })),
-    };
     const gateway = { setPageFlags: jest.fn(async (..._a: unknown[]) => undefined) };
 
     beforeAll(async () => {
-        h = await bootHarness({ providers: [[FinanceClient, finance], [GatewayClient, gateway]] });
+        h = await bootHarness({ providers: [[GatewayClient, gateway]] });
     });
     afterAll(() => h.close());
 
@@ -76,25 +71,23 @@ describe('admin over real auth gRPC (phase 10 e2e)', () => {
         expect(missing.status).toBe(404);
     });
 
-    it('GET /admin/users/:id = auth detail + finance wallet/subscription, shape unchanged', async () => {
+    it('GET /admin/users/:id = auth detail only (no wallet/subscription)', async () => {
         const a = await makeAdmin();
         const target = await makeUser(h.auth);
         const res = await get(`/admin/users/${target.id}`, a.token);
         expect(res.status).toBe(200);
-        expect(Object.keys(res.body).sort()).toEqual(['financeUnavailable', 'lastSession', 'subscription', 'user', 'wallet']);
-        expect(res.body.wallet).toEqual({ id: 'w1', balance: 12 });
-        expect(res.body.subscription).toMatchObject({ tier: 1 });
+        expect(Object.keys(res.body).sort()).toEqual(['lastSession', 'user']);
         expect(res.body.lastSession).toMatchObject({ isActive: true });
         expect((await get('/admin/users/ghost', a.token)).status).toBe(404);
     });
 
-    it('GET /admin/overview combines auth counts with finance aggregates', async () => {
+    it('GET /admin/overview returns auth counts only', async () => {
         const a = await makeAdmin();
         // The 5-minute cache is shared with earlier runs of this suite.
         await h.admin.get(RedisService).delPattern('admin:stats:*');
         const res = await get('/admin/overview', a.token);
         expect(res.status).toBe(200);
-        expect(res.body).toMatchObject({ proCount: 3, vipCount: 1, revenue30d: 12345 });
+        expect(Object.keys(res.body).sort()).toEqual(['active30d', 'activeToday', 'totalUsers']);
         expect(res.body.totalUsers).toBeGreaterThan(0);
         expect(res.body.activeToday).toBeGreaterThanOrEqual(1);
     });

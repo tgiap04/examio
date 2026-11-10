@@ -8,10 +8,6 @@ import { useAdminStore } from "@/stores/useAdminStore";
 const { RangePicker } = DatePicker;
 
 const ACTION_LABELS: Record<string, string> = {
-  "admin.finance.refund": "Hoàn tiền",
-  "admin.finance.credit": "Cộng tiền",
-  "admin.finance.tier": "Đổi gói",
-  "admin.finance.tier_change": "Đổi gói",
   "admin.user.ban": "Khóa người dùng",
   "admin.user.unban": "Mở khóa người dùng",
   "admin.user.grant": "Cấp quyền admin",

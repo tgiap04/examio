@@ -53,16 +53,7 @@ None.
 **Target:** `ai-service` (Python FastAPI)
 **Trigger:** `POST /api/v1/ai/job` with `generationType: "flashcard"`
 **Payload:** `{ sourceFileId, generationType, userId, flashcardSetId? }`
-**Failure handling:** Job status set to `failed`; credits restored if deduction was upfront
-
-**INT-007_02 — Credit Deduction (FinanceClientService)**
-**Linked FR:** FR-007_07
-**Source:** `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` (BL004)
-**Type:** api-call
-**Target:** `finance-service` via gRPC
-**Trigger:** Before creating AI flashcard generation job
-**Payload:** `{ userId, creditsToDeduct }`
-**Failure handling:** Job creation blocked if insufficient credits; unless `FREE_MODE = true`
+**Failure handling:** Job status set to `failed`; nothing to refund (generation is not charged)
 
 ### Verification
 
@@ -156,21 +147,20 @@ None.
 
 ### US023 — Generate Flashcards via AI (Priority: P1)
 
-**What happens:** A student or teacher on FlashcardsPage or AIToolPage selects a source document (COMPLETED status only) and triggers flashcard generation. Credits are checked via `FinanceClientService`; if insufficient and FREE_MODE is false, an error is shown.
+**What happens:** A student or teacher on FlashcardsPage or AIToolPage selects a source document (COMPLETED status only) and triggers flashcard generation. Generation is not charged.
 **Why this priority:** AI generation dramatically reduces manual card creation effort.
 **Independent Test:** POST `/api/v1/ai/job` with `generationType: "flashcard"` returns a `jobId`; polling the ID eventually returns `status: "completed"` with a `HistoryGeneratedFlashcard` ID.
 
 **Acceptance Scenarios:**
 
-1. **Given** the user has a COMPLETED document and sufficient credits (or FREE_MODE), **When** they submit generation, **Then** a job is created and pollable.
+1. **Given** the user has a COMPLETED document, **When** they submit generation, **Then** a job is created and pollable.
 2. **Given** the document is still PROCESSING, **When** generation is attempted, **Then** the generate button is disabled.
-3. **Given** credits are insufficient and FREE_MODE is false, **Then** an error is shown with a subscription link.
 
 **Requirements fulfilled:**
 - **FR-007_07** Users initiate AI flashcard generation — `POST /api/v1/ai/job`
 - **FR-007_08** Users poll job status — `GET /api/v1/ai/job/:jobId`
 
-**Rules enforced:** PERM035 (AIGenerationAccess), PERM036 (AIGenerationCredits), PERM041 (FreeModeCreditBypass)
+**Rules enforced:** PERM035 (AIGenerationAccess)
 
 ---
 
@@ -240,19 +230,18 @@ None.
 
 ### US036 — Generate Quiz via AI (Priority: P1)
 
-**What happens:** (FlashcardAuthoring participates in quiz generation as a destination for generated content.) User initiates quiz generation that may target a flashcard set or create a new quiz set from source documents. Credit and document status checks are identical to US023.
+**What happens:** (FlashcardAuthoring participates in quiz generation as a destination for generated content.) User initiates quiz generation that may target a flashcard set or create a new quiz set from source documents. The document status check is identical to US023 (no charge).
 **Why this priority:** Overlaps with F006; documented here for completeness as SCR017 and SCR024 both serve both quiz and flashcard generation.
 **Independent Test:** Same as F006 US036.
 
 **Acceptance Scenarios:**
 
-1. **Given** the user has a COMPLETED document and sufficient credits, **When** they generate a quiz, **Then** a quiz generation job is created.
-2. **Given** credits are insufficient, **When** generation is attempted, **Then** an error is shown.
+1. **Given** the user has a COMPLETED document, **When** they generate a quiz, **Then** a quiz generation job is created.
 
 **Requirements fulfilled:**
 - **FR-007_07** Users initiate AI generation (quiz path) — `POST /api/v1/ai/job`
 
-**Rules enforced:** PERM035, PERM036, PERM041
+**Rules enforced:** PERM035
 
 ---
 
@@ -280,10 +269,9 @@ None.
 | User without ownership attempts to edit a flashcard set | HTTP 403: "You do not have permission to edit this flashcard set" |
 | User creates a flashcard with empty front text | HTTP 400: "Front text cannot be empty" |
 | Generate flashcards from a PROCESSING document | UI disables generate button; tooltip explains document is not ready |
-| Generate flashcards with insufficient credits (FREE_MODE=false) | Error: "You don't have enough credits" with subscription page link |
 | Delete flashcard set linked to an active study session | API returns 409 or cascades deletion (behavior unverified) |
 | Delete a label that has tagged flashcards | Label tag removed from cards (SetNull); cards remain intact |
-| AI generation job fails after credit deduction | Credits restored or not depending on deduction timing (unverified) |
+| AI generation job fails | Job status FAILED; nothing is charged or refunded |
 | Concurrent edits by two users on same set | Last-write-wins; no optimistic locking detected |
 
 ## Key Entities
@@ -303,8 +291,8 @@ None.
 | System Overview | [system-overview.md](../../docs/system/system-overview.md) | — | [x] |
 | Feature List | [feature-list.md](../../docs/generated/feature-list.md) | F007 | [x] |
 | Screens | [screens.md](./screens.md) | SCR016/REG002, SCR017, SCR023 | [x] |
-| Behavior Logic | [behavior-logic.md](../../docs/system/behavior-logic.md) | BL004, BL015 | [x] |
-| Permissions | [permissions.md](../../docs/system/permissions.md) | PERM002, PERM003, PERM017, PERM018, PERM019, PERM035, PERM036, PERM041, PERM044 | [x] |
+| Behavior Logic | [behavior-logic.md](../../docs/system/behavior-logic.md) | BL015 | [x] |
+| Permissions | [permissions.md](../../docs/system/permissions.md) | PERM002, PERM003, PERM017, PERM018, PERM019, PERM035, PERM044 | [x] |
 | User Stories | [user-stories.md](../../docs/generated/user-stories.md) | US016, US017, US018, US022, US023, US032, US033, US034, US035, US036, US037 | [x] |
 | Data Model | [data-model.md](../../docs/system/data-model.md) | MODEL-012, MODEL-013, MODEL-014, MODEL-015 | [x] |
 
@@ -323,7 +311,6 @@ None.
 | FlashcardSetService | `examio-be/apps/content-service/src/modules/flashcardset/flashcardset.service.ts` | Business logic for flashcard set operations |
 | FlashcardController | `examio-be/apps/exam-service/src/modules/flashcardset/flashcard.controller.ts` | Flashcard CRUD within sets |
 | AIJobController | `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` | AI job create/poll/cancel |
-| FinanceClientService | `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` | Credit check (BL004) |
 | useGenerationGuard | `examio-fe/src/hooks/useGenerationGuard.ts` | Client-side job polling (BL015) |
 | FlashcardSetModal | `examio-fe/src/components/k/flashcardset/FlashcardSetModal.tsx` | Create/edit flashcard set dialog |
 | FlashcardEditorDialog | `examio-fe/src/components/k/flashcardset/FlashcardEditorDialog.tsx` | Add/edit flashcard dialog |
@@ -331,7 +318,6 @@ None.
 
 ## Unresolved Questions
 
-1. ~~**Credit refund policy on failed jobs**~~ — resolved in phase 15: a failed, cancelled or timed-out charged job is refunded once (`Refund` key `gen:<jobId>`).
-2. **Access code enforcement**: Is the 6-digit access code validated server-side on every study session access, or only on initial entry?
-3. **Cascade delete scope**: Does deleting a FlashCardSet also delete the associated `FlashcardStudyProgress` records for students who studied the set?
+1. **Access code enforcement**: Is the 6-digit access code validated server-side on every study session access, or only on initial entry?
+2. **Cascade delete scope**: Does deleting a FlashCardSet also delete the associated `FlashcardStudyProgress` records for students who studied the set?
 4. **DetailsFlashCard usage**: Is the join table populated for all cards, or only when a label is assigned? If label assignment is optional, how does the system handle cards without a DetailsFlashCard row?

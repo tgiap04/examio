@@ -15,12 +15,6 @@
       "tags": []
     },
     {
-      "name": "finance",
-      "password_hash": "{{HASH:RABBITMQ_FINANCE_PASS}}",
-      "hashing_algorithm": "rabbit_password_hashing_sha256",
-      "tags": []
-    },
-    {
       "name": "content",
       "password_hash": "{{HASH:RABBITMQ_CONTENT_PASS}}",
       "hashing_algorithm": "rabbit_password_hashing_sha256",
@@ -84,13 +78,6 @@
       "read": "^(examio\\.events|auth\\..*)$"
     },
     {
-      "user": "finance",
-      "vhost": "/",
-      "configure": "^(examio\\.events|finance\\..*)$",
-      "write": "^(examio\\.events|finance\\..*)$",
-      "read": "^(examio\\.events|finance\\..*)$"
-    },
-    {
       "user": "content",
       "vhost": "/",
       "configure": "^(examio\\.events|content\\..*)$",
@@ -146,13 +133,6 @@
       "vhost": "/",
       "exchange": "examio.events",
       "write": "^auth\\.",
-      "read": ".*"
-    },
-    {
-      "user": "finance",
-      "vhost": "/",
-      "exchange": "examio.events",
-      "write": "^finance\\.",
       "read": ".*"
     },
     {

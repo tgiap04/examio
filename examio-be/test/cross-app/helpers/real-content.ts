@@ -46,10 +46,9 @@ export async function startRealContent(
     keys: TestKeyPair,
     env: { databaseUrl: string; rabbitmqUrl: string }
 ): Promise<RealContent> {
-    // content's clients to finance / document / r2 / vocabulary / ai connect lazily and are not used by the
+    // content's clients to document / r2 / vocabulary / ai connect lazily and are not used by the
     // quiz-set paths assessment exercises: the placeholders only have to exist.
     const placeholders = {
-        FINANCE_GRPC_URL: '127.0.0.1:1',
         DOCUMENT_GRPC_URL: '127.0.0.1:1',
         R2_GRPC_URL: '127.0.0.1:1',
         VOCABULARY_GRPC_URL: '127.0.0.1:1',

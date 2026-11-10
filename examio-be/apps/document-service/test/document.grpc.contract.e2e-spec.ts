@@ -25,7 +25,6 @@ describe('DocumentService gRPC contract (e2e)', () => {
                     filename: `grpc-${rid()}.pdf`,
                     mimetype: 'application/pdf',
                     data: Buffer.alloc(1024, 9),
-                    chargeCredits: false,
                     reuseDuplicate: false,
                     ...over,
                 },
@@ -41,19 +40,18 @@ describe('DocumentService gRPC contract (e2e)', () => {
     }
 
     describe('CreateUpload', () => {
-        it('reuse_duplicate: an existing (filename, size) upload comes back as reused, with no R2 upload and no debit', async () => {
+        it('reuse_duplicate: an existing (filename, size) upload comes back as reused, with no R2 upload and no new event', async () => {
             const user = t.teacher();
-            const first = await create(user, { filename: 'same.pdf', chargeCredits: true });
+            const first = await create(user, { filename: 'same.pdf' });
             expect(first.reused).toBe(false);
             const uploads = t.r2.calls.filter((c) => c.rpc === 'UploadFile').length;
-            const debits = t.finance.count('Debit');
 
-            const second = await create(user, { filename: 'same.pdf', reuseDuplicate: true, chargeCredits: true });
+            const second = await create(user, { filename: 'same.pdf', reuseDuplicate: true });
 
             expect(second.reused).toBe(true);
             expect(second.document?.id).toBe(first.document?.id);
             expect(t.r2.calls.filter((c) => c.rpc === 'UploadFile')).toHaveLength(uploads);
-            expect(t.finance.count('Debit')).toBe(debits);
+            expect(await outboxFor(t.prisma, 'document.uploaded', first.document!.id)).toHaveLength(1);
         });
 
         it('reuse_duplicate matches on (userId, filename, size): another size or another user stores a new file', async () => {
@@ -66,55 +64,53 @@ describe('DocumentService gRPC contract (e2e)', () => {
             expect(new Set([first.document?.id, otherSize.document?.id, otherUser.document?.id]).size).toBe(3);
         });
 
-        it('charge_credits=true: one Debit(doc:<id>) as the forwarded user, row PENDING + charged, document.uploaded queued', async () => {
-            const user = t.teacher(50);
-            const res = await create(user, { chargeCredits: true });
+        it('stores the file as svc:document, commits the row PENDING with document.uploaded; the response carries no charge flag', async () => {
+            const user = t.teacher();
+            const res = await create(user);
             const id = res.document!.id;
 
-            expect(res.document).toMatchObject({
+            expect(res.document).toEqual({
+                id,
                 userId: user.id,
-                processingStatus: Status.DOCUMENT_PROCESSING_STATUS_PENDING,
-                creditCharged: true,
+                filename: expect.any(String),
                 mimetype: 'application/pdf',
                 size: '1024',
+                keyR2: expect.stringMatching(new RegExp(`^ai-uploads/${user.id}/`)),
+                url: expect.any(String),
+                processingStatus: Status.DOCUMENT_PROCESSING_STATUS_PENDING,
+                pageCount: 0,
+                createdAt: expect.any(String),
+                updatedAt: expect.any(String),
             });
-            expect(res.document!.keyR2.startsWith(`ai-uploads/${user.id}/`)).toBe(true);
-            expect(t.finance.calls.filter((c) => c.rpc === 'Debit' && c.userId === user.id)).toEqual([
-                expect.objectContaining({ key: `doc:${id}`, amount: 1, caller: user.id }),
-            ]);
-            expect(await outboxFor(t.prisma, 'document.uploaded', id)).toHaveLength(1);
-        });
-
-        it('charge_credits=false (the caller charges itself): no Debit, row PENDING uncharged, OCR still queued', async () => {
-            const user = t.teacher(50);
-            const res = await create(user, { chargeCredits: false });
-            const id = res.document!.id;
-
-            expect(res.document).toMatchObject({ creditCharged: false, processingStatus: Status.DOCUMENT_PROCESSING_STATUS_PENDING });
-            expect(t.finance.calls.filter((c) => c.rpc === 'Debit' && c.userId === user.id)).toHaveLength(0);
+            expect(await t.prisma.userStorage.findUniqueOrThrow({ where: { id } })).toMatchObject({ processingStatus: 'PENDING', queuedAt: expect.any(Date) });
             expect(await outboxFor(t.prisma, 'document.uploaded', id)).toHaveLength(1);
             expect(t.r2.calls.filter((c) => c.rpc === 'UploadFile' && c.keys[0].includes(`/${user.id}/`))).toEqual([
                 expect.objectContaining({ caller: 'svc:document' }),
             ]);
         });
 
+        it('there is no monthly quota: many uploads in one month are all accepted', async () => {
+            const user = t.teacher();
+            for (let i = 0; i < 7; i += 1) await expect(create(user)).resolves.toMatchObject({ reused: false });
+        });
+
         it('rejects bad input and unauthorized callers', async () => {
             const user = t.teacher();
             await expect(create(user, { filename: ' ' })).rejects.toMatchObject({ code: 3 });
             await expect(create(user, { data: Buffer.alloc(0) })).rejects.toMatchObject({ code: 3 });
-            await expect(lastValueFrom(t.grpc.createUpload({ filename: 'a', mimetype: 'b', data: Buffer.from('x'), chargeCredits: false, reuseDuplicate: false }, new Metadata()))).rejects.toMatchObject({ code: 16 });
+            await expect(lastValueFrom(t.grpc.createUpload({ filename: 'a', mimetype: 'b', data: Buffer.from('x'), reuseDuplicate: false }, new Metadata()))).rejects.toMatchObject({ code: 16 });
             await expect(create(t.user(['STUDENT']))).rejects.toMatchObject({ code: 7 });
             const service = await t.md(user);
             service.set('authorization', `Bearer ${await t.serviceToken('exam', 'document')}`);
-            await expect(lastValueFrom(t.grpc.createUpload({ filename: 'a', mimetype: 'b', data: Buffer.from('x'), chargeCredits: false, reuseDuplicate: false }, service))).rejects.toMatchObject({ code: 7 });
+            await expect(lastValueFrom(t.grpc.createUpload({ filename: 'a', mimetype: 'b', data: Buffer.from('x'), reuseDuplicate: false }, service))).rejects.toMatchObject({ code: 7 });
         });
 
-        it('r2 refusing the upload is UNAVAILABLE and leaves no row and no debit', async () => {
+        it('r2 refusing the upload is UNAVAILABLE and leaves no row and no event', async () => {
             const user = t.teacher();
             t.r2.failNextUpload.value = true;
-            await expect(create(user, { chargeCredits: true })).rejects.toMatchObject({ code: 14 });
+            await expect(create(user)).rejects.toMatchObject({ code: 14 });
             expect(await t.prisma.userStorage.count({ where: { userId: user.id } })).toBe(0);
-            expect(t.finance.calls.filter((c) => c.rpc === 'Debit' && c.userId === user.id)).toHaveLength(0);
+            expect((await outbox(t.prisma, 'document.uploaded')).filter((e) => JSON.stringify(e.envelope).includes(user.id))).toHaveLength(0);
         });
     });
 
@@ -162,9 +158,8 @@ describe('DocumentService gRPC contract (e2e)', () => {
     });
 
     describe('GetQuota', () => {
-        it('reports this month, the plan limit (-1 = unlimited) and the all-time count; a STUDENT may ask for their own', async () => {
+        it('reports this month and the all-time count (no limit field); a STUDENT may ask for their own', async () => {
             const user = t.teacher();
-            t.finance.filesPerMonth.set(user.id, 7);
             await quickRow(user);
             await quickRow(user);
             // a file from last month: counts in file_count, not in used_this_month
@@ -172,9 +167,7 @@ describe('DocumentService gRPC contract (e2e)', () => {
                 data: { id: `old_${rid()}`, userId: user.id, filename: 'old.pdf', url: 'u', mimetype: 'application/pdf', size: 1, keyR2: `ai-uploads/${user.id}/${rid()}.pdf`, processingStatus: 'COMPLETED', createdAt: new Date(Date.now() - 62 * 24 * 3600 * 1000) },
             });
 
-            expect(await lastValueFrom(t.grpc.getQuota({}, await t.md(user)))).toEqual({ usedThisMonth: 2, monthlyLimit: 7, fileCount: 3 });
-            t.finance.filesPerMonth.set(user.id, -1);
-            expect((await lastValueFrom(t.grpc.getQuota({}, await t.md(user)))).monthlyLimit).toBe(-1);
+            expect(await lastValueFrom(t.grpc.getQuota({}, await t.md(user)))).toEqual({ usedThisMonth: 2, fileCount: 3 });
 
             const student = t.user(['STUDENT']);
             expect(await lastValueFrom(t.grpc.getQuota({}, await t.md(student)))).toMatchObject({ usedThisMonth: 0, fileCount: 0 });
@@ -227,11 +220,10 @@ describe('DocumentService gRPC contract (e2e)', () => {
     describe('GetDownloadUrl', () => {
         const getUrl = async (user: TestUser, id: string) => lastValueFrom(t.grpc.getDownloadUrl({ id }, await t.md(user)));
 
-        it('signs a 1 h GET for the owner only, without touching the row, the outbox or finance', async () => {
+        it('signs a 1 h GET for the owner only, without touching the row or the outbox', async () => {
             const owner = t.teacher();
             const id = await quickRow(owner);
             const before = await t.prisma.userStorage.findUniqueOrThrow({ where: { id } });
-            const debits = t.finance.count('Debit');
 
             const res = await getUrl(owner, id);
 
@@ -241,7 +233,6 @@ describe('DocumentService gRPC contract (e2e)', () => {
             expect(left).toBeLessThanOrEqual(3_600_000);
             expect(await t.prisma.userStorage.findUniqueOrThrow({ where: { id } })).toEqual(before);
             expect(await outboxFor(t.prisma, 'document.uploaded', id)).toHaveLength(0);
-            expect(t.finance.count('Debit')).toBe(debits);
         });
 
         it('another user, a missing id and an empty id are NOT_FOUND / INVALID_ARGUMENT; STUDENT, service and anonymous callers are refused', async () => {
@@ -273,7 +264,7 @@ describe('DocumentService gRPC contract (e2e)', () => {
             expect(await outboxFor(t.prisma, 'document.uploaded', id)).toHaveLength(1);
         });
 
-        it('a FAILED document goes back to PENDING and is re-announced with a fresh URL, without a new charge', async () => {
+        it('a FAILED document goes back to PENDING and is re-announced with a fresh URL', async () => {
             const user = t.teacher();
             const id = await quickRow(user);
             await t.prisma.userStorage.update({ where: { id }, data: { processingStatus: 'FAILED', queuedAt: new Date() } });
@@ -284,7 +275,6 @@ describe('DocumentService gRPC contract (e2e)', () => {
             const events = await outboxFor(t.prisma, 'document.uploaded', id);
             expect(events).toHaveLength(1);
             expect(JSON.stringify(events[0].envelope)).toContain('https://r2.test/signed/');
-            expect(t.finance.calls.filter((c) => c.userId === user.id && c.rpc === 'Debit')).toHaveLength(0);
         });
 
         it('PROCESSING, COMPLETED and recently queued PENDING rows are returned unchanged; a stale queued PENDING is re-announced', async () => {

@@ -1,27 +1,24 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService, UserStorage } from '../../prisma';
-import { DocumentFinance } from '../../clients/document-finance.service';
 import { MAX_QUERY_IDS } from '../../config/document.constants';
 import { distinctIds } from './distinct-ids';
 import { DocumentErrorCode, documentError } from './document-errors';
 import { DocumentRepository } from './document.repository';
 
+/** Upload counts of a user (dashboard stats); there is no monthly limit. */
 export interface Quota {
     usedThisMonth: number;
-    /** -1 = unlimited. */
-    monthlyLimit: number;
     fileCount: number;
 }
 
 const notFound = () => documentError(404, DocumentErrorCode.NOT_FOUND, 'Upload không tồn tại');
 
-/** Owner-scoped reads and the monthly quota. A row of another user is a 404, never a 403. */
+/** Owner-scoped reads and upload counts. A row of another user is a 404, never a 403. */
 @Injectable()
 export class DocumentQueryService {
     constructor(
         private readonly prisma: PrismaService,
-        private readonly repo: DocumentRepository,
-        private readonly finance: DocumentFinance
+        private readonly repo: DocumentRepository
     ) {}
 
     async getOwned(userId: string, id: string): Promise<UserStorage> {
@@ -49,26 +46,11 @@ export class DocumentQueryService {
     }
 
     async getQuota(userId: string): Promise<Quota> {
-        const [monthlyLimit, usedThisMonth, fileCount] = await Promise.all([
-            this.finance.filesPerMonth(userId),
+        const [usedThisMonth, fileCount] = await Promise.all([
             this.repo.countSince(userId, startOfMonth()),
             this.repo.countAll(userId),
         ]);
-        return { usedThisMonth, monthlyLimit, fileCount };
-    }
-
-    /** 403 once the plan's `filesPerMonth` is spent (-1 = unlimited); run before anything expensive. */
-    async enforceQuota(userId: string): Promise<void> {
-        const limit = await this.finance.filesPerMonth(userId);
-        if (limit === -1) return;
-        const used = await this.repo.countSince(userId, startOfMonth());
-        if (used >= limit) {
-            throw documentError(
-                403,
-                DocumentErrorCode.QUOTA_EXCEEDED,
-                `Bạn đã đạt giới hạn ${limit} file/tháng. Vui lòng nâng cấp gói hoặc thử lại vào tháng sau.`
-            );
-        }
+        return { usedThisMonth, fileCount };
     }
 }
 

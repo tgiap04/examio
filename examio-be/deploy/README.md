@@ -10,18 +10,17 @@ The deployment consists of the following containers:
 - **RabbitMQ** (Message Queue)
 - **Gateway Service** (YAML-routed streaming proxy; JWT verify, revoke/stale checks, rate limits; no database)
 - **Auth Service** (Authentication)
-- **Content Service** (quiz sets, flashcard sets, quiz/flashcard generation jobs with charge and refund, `/student/*` content routes: HTTP + gRPC `examio.content.v1.ContentService` on 50051; `ROLE=api,worker`: outbox relay and the R2 delete worker; calls Cloudflare Turnstile, so it joins `egress`)
+- **Content Service** (quiz sets, flashcard sets, quiz/flashcard generation jobs, `/student/*` content routes: HTTP + gRPC `examio.content.v1.ContentService` on 50051; `ROLE=api,worker`: outbox relay and the R2 delete worker; calls Cloudflare Turnstile, so it joins `egress`)
 - **Assessment Service** (exam rooms, sessions, attempts, cheating log, `/student/*` exam routes; no gRPC server; `ROLE=api,worker`: outbox relay and purge; reads quizzes only from the snapshot frozen in each session, fetched from content over gRPC at session create)
 - **Study-room Service** (study rooms: HTTP + Socket.io `/ws/study`; consumes `auth.user.authz_changed` and `auth.user.updated` inside the API process)
 - **Vocabulary Service** (word families + categories: HTTP + gRPC `WordFamilyAdminService`/`WordFamilyService`, plus an R2 delete worker for category images in the same container; calls ai-service for generation)
-- **Document Service** (uploaded-file metadata, monthly upload quota and OCR status: HTTP `/ai/upload*`, `/ai/quick-upload`, `/ai/recent-uploads`, `/r2/image` + gRPC `DocumentService`; one container runs `api,worker`: outbox relay, `document.events` consumer, charge reaper and the R2 delete worker. Charges `Debit(doc:<id>)` through finance, refunds on failure)
-- **AI Chat Service** (AI conversations, messages, attached documents and the public AI-teacher subjects: HTTP `/ai-chat/*` (SSE streaming) and `/subjects/*`, no gRPC server; one container runs `api,worker`: the `aichat.events` consumer and the R2 delete worker for message images. Calls ai-service `Query`/`StreamChat` as `svc:ai-chat`, document-service and finance as the caller)
-- **Finance Service** (Payment & Wallet)
+- **Document Service** (uploaded-file metadata and OCR status: HTTP `/ai/upload*`, `/ai/quick-upload`, `/r2/image` + gRPC `DocumentService`; one container runs `api,worker`: outbox relay, `document.events` consumer and the R2 delete worker)
+- **AI Chat Service** (AI conversations, messages, attached documents and the public AI-teacher subjects: HTTP `/ai-chat/*` (SSE streaming) and `/subjects/*`, no gRPC server; one container runs `api,worker`: the `aichat.events` consumer and the R2 delete worker for message images. Calls ai-service `Query`/`StreamChat` as `svc:ai-chat`, document-service as the caller)
 - **R2 Service** (File Storage)
 - **AI Service** (Python, one image, three containers selected by `ROLE`: `ai` = gRPC `examio.ai.v1.AiService` on 50051 guarded by service tokens, plus `/health` as its only HTTP route; `ai-worker` = RabbitMQ consumer on `ai.events` (OCR/embedding for `document.uploaded`, generation for `content.generation.requested`), outbox relay and purge; `ai-migrate` = one-shot `alembic upgrade head`. Owns schema `ai`; no host port)
-- **`<svc>-migrate`** (`auth-migrate`, `finance-migrate`, `admin-migrate`, `content-migrate`, `assessment-migrate`, `study-room-migrate`, `vocabulary-migrate`, `document-migrate`, `ai-chat-migrate`: one `prisma migrate deploy` per service schema, each runs once and exits; `ai-migrate` is the Alembic equivalent for schema `ai`)
+- **`<svc>-migrate`** (`auth-migrate`, `admin-migrate`, `content-migrate`, `assessment-migrate`, `study-room-migrate`, `vocabulary-migrate`, `document-migrate`, `ai-chat-migrate`: one `prisma migrate deploy` per service schema, each runs once and exits; `ai-migrate` is the Alembic equivalent for schema `ai`)
 
-The stack is split by service in `compose/*.yml` (`infra`, `auth`, `finance`, `admin`, `content`, `assessment`, `study-room`, `vocabulary`, `document`, `ai-chat`, `gateway`, `r2`, `ai`, `seed`) and assembled by the `include:` list in `docker-compose.yml` (needs Docker Compose 2.24+). Run every command from `deploy/`; paths stay relative to it.
+The stack is split by service in `compose/*.yml` (`infra`, `auth`, `admin`, `content`, `assessment`, `study-room`, `vocabulary`, `document`, `ai-chat`, `gateway`, `r2`, `ai`, `seed`) and assembled by the `include:` list in `docker-compose.yml` (needs Docker Compose 2.24+). Run every command from `deploy/`; paths stay relative to it.
 
 ## Prerequisites
 
@@ -69,7 +68,7 @@ for f in env/*.env.example; do cp -n "$f" "${f%.example}"; done
 Postgres superuser, Redis password, JWT keypair, service-token secrets, `FRONTEND_URL`): compose uses it to
 interpolate the `${VAR}` in `compose/*.yml` and does not hand it to the containers. Each container gets one file
 `env/<name>.env` through `env_file` (`required: true`, so a missing file stops `up` before anything starts), with
-the secrets only that service reads (`PAYMENT_*` in `finance.env`, `GOOGLE_*`/`EMAIL_*`/`REFRESH_TOKEN_ENC_KEY`
+the secrets only that service reads (`GOOGLE_*`/`EMAIL_*`/`REFRESH_TOKEN_ENC_KEY`
 in `auth.env`, `R2_*` keys in `r2.env`, `GEMINI_*` in `ai.env`, `QUIZ_*`/`TURNSTILE_*` in `assessment.env`).
 A compromised container sees its own file only. Real `*.env` files and `.tags.env` are gitignored; the
 templates are `env/*.env.example` (see `env/README.md`).
@@ -78,7 +77,7 @@ templates are `env/*.env.example` (see `env/README.md`).
 
 Edit `.env` for the compose-level values below (database and broker passwords, Redis, JWT keypair, service-token
 secrets, RabbitMQ, `R2_PUBLIC_URL`, `FRONTEND_URL`). Secrets that one service reads (`ADMIN_*`, `GEMINI_*`,
-`AI2_API_KEY`, `QUIZ_*`, `PAYMENT_*`, `R2_*` keys, `GOOGLE_*`, `EMAIL_*`) go into that service's `env/<name>.env`
+`AI2_API_KEY`, `QUIZ_*`, `R2_*` keys, `GOOGLE_*`, `EMAIL_*`) go into that service's `env/<name>.env`
 instead; the blocks below say which file.
 
 #### Database Configuration (PostgreSQL Container)
@@ -87,13 +86,12 @@ POSTGRES_USER=examio
 POSTGRES_PASSWORD=your_strong_password_here
 POSTGRES_DB=examio
 
-# One password per service role (all 11 required; URL-safe, e.g. `openssl rand -hex 24`)
-AUTH_DB_PASSWORD=...  FINANCE_DB_PASSWORD=...  ADMIN_DB_PASSWORD=...  CONTENT_DB_PASSWORD=...  ASSESSMENT_DB_PASSWORD=...
-CONTENT_DB_PASSWORD=...  ASSESSMENT_DB_PASSWORD=...  STUDYROOM_DB_PASSWORD=... (used by study-room)
+# One password per service role (all 9 required; URL-safe, e.g. `openssl rand -hex 24`)
+AUTH_DB_PASSWORD=...  ADMIN_DB_PASSWORD=...  CONTENT_DB_PASSWORD=...  ASSESSMENT_DB_PASSWORD=...  STUDYROOM_DB_PASSWORD=... (used by study-room)
 VOCABULARY_DB_PASSWORD=... (used by vocabulary)  AICHAT_DB_PASSWORD=...  DOCUMENT_DB_PASSWORD=...  AI_DB_PASSWORD=...
 ```
 
-There is no shared `DATABASE_URL`. `postgres/init/01-service-schemas.sh` runs once on an **empty** data volume and creates, for each of `auth finance admin content assessment studyroom vocabulary aichat document ai`, the role `<svc>_svc` (own password, `CONNECTION LIMIT 40`), the schema `<svc>` it owns, and a role-level `search_path = <svc>, extensions` (pgvector lives in `extensions`). `PUBLIC` has no privileges on the database or on `public`, so one role cannot read another's schema (`content_svc` selecting from `auth."User"` gets `permission denied`). Compose gives each service `postgresql://<svc>_svc:...@postgres:5432/$POSTGRES_DB?schema=<svc>`; the Python ai-service connects as `ai_svc` (no `?schema=`; it pins `DB_SEARCH_PATH=ai,extensions`, creates its tables through Alembic, runs no DDL at runtime and holds no grant on any other service's schema; the temporary grant on the old `exam` schema was revoked in phase 15; that schema no longer exists). Changing a password or adding a role later needs a volume reset (`down -v`) or a manual `ALTER ROLE`. Per-service variable lists: `env/<svc>.env.example`.
+There is no shared `DATABASE_URL`. `postgres/init/01-service-schemas.sh` runs once on an **empty** data volume and creates, for each of `auth admin content assessment studyroom vocabulary aichat document ai`, the role `<svc>_svc` (own password, `CONNECTION LIMIT 40`), the schema `<svc>` it owns, and a role-level `search_path = <svc>, extensions` (pgvector lives in `extensions`). `PUBLIC` has no privileges on the database or on `public`, so one role cannot read another's schema (`content_svc` selecting from `auth."User"` gets `permission denied`). Compose gives each service `postgresql://<svc>_svc:...@postgres:5432/$POSTGRES_DB?schema=<svc>`; the Python ai-service connects as `ai_svc` (no `?schema=`; it pins `DB_SEARCH_PATH=ai,extensions`, creates its tables through Alembic, runs no DDL at runtime and holds no grant on any other service's schema; the temporary grant on the old `exam` schema was revoked in phase 15; that schema no longer exists). Changing a password or adding a role later needs a volume reset (`down -v`) or a manual `ALTER ROLE`. Per-service variable lists: `env/<svc>.env.example`.
 
 #### Redis Configuration (Redis Container)
 ```bash
@@ -110,16 +108,15 @@ JWT_KID=<kid>
 JWT_ISSUER=examio-auth
 JWT_AUDIENCE=examio
 ACCESS_TOKEN_EXPIRATION=15m
-# Service tokens: `scripts/gen-service-secret.sh <content|assessment|studyroom|vocabulary|document|ai-chat|finance|admin|gateway>` prints the secret
+# Service tokens: `scripts/gen-service-secret.sh <content|assessment|studyroom|vocabulary|document|ai-chat|admin|gateway>` prints the secret
 # (that service only) and the hash that goes into auth's SERVICE_CLIENTS.
-SERVICE_CLIENTS={"content":"<sha256>","assessment":"<sha256>","studyroom":"<sha256>","vocabulary":"<sha256>","document":"<sha256>","ai-chat":"<sha256>","finance":"<sha256>","admin":"<sha256>","gateway":"<sha256>"}
+SERVICE_CLIENTS={"content":"<sha256>","assessment":"<sha256>","studyroom":"<sha256>","vocabulary":"<sha256>","document":"<sha256>","ai-chat":"<sha256>","admin":"<sha256>","gateway":"<sha256>"}
 CONTENT_SERVICE_CLIENT_SECRET=<secret>
 ASSESSMENT_SERVICE_CLIENT_SECRET=<secret>
 STUDYROOM_SERVICE_CLIENT_SECRET=<secret>
 VOCABULARY_SERVICE_CLIENT_SECRET=<secret>
 AICHAT_SERVICE_CLIENT_SECRET=<secret>
 DOCUMENT_SERVICE_CLIENT_SECRET=<secret>
-FINANCE_SERVICE_CLIENT_SECRET=<secret>
 ADMIN_SERVICE_CLIENT_SECRET=<secret>
 # Gateway uses it to pull AdminService.GetPageFlags at boot (compose maps it to the gateway's SERVICE_CLIENT_SECRET; optional).
 GATEWAY_SERVICE_CLIENT_SECRET=<secret>
@@ -139,7 +136,6 @@ RABBITMQ_PASS=secure_password_here
 # One broker user per service; docker-compose.yml builds each service's RABBITMQ_URL.
 # Passwords go into amqp:// URLs: use URL-safe characters (e.g. `openssl rand -hex 24`).
 RABBITMQ_AUTH_PASS=...
-RABBITMQ_FINANCE_PASS=...
 RABBITMQ_CONTENT_PASS=...
 RABBITMQ_ASSESSMENT_PASS=...
 RABBITMQ_STUDYROOM_PASS=...
@@ -154,7 +150,7 @@ Broker users and permissions are rendered from `rabbitmq/definitions.template.js
 #### AI Service
 Phase 15 variables: `DOCUMENT_GRPC_URL` and `AI_GRPC_URL` (content), `DOCUMENT_SERVICE_URL` (gateway), `DOCUMENT_SERVICE_CLIENT_SECRET` (+ the `document` entry in auth `SERVICE_CLIENTS`), `RABBITMQ_DOCUMENT_PASS` and `RABBITMQ_AI_PASS` (broker users `document`, `ai`), `DOCUMENT_DB_PASSWORD` and `AI_DB_PASSWORD`, `R2_ALLOWED_HOSTS` and `GENERATION_JOB_TIMEOUT_MINUTES` (content, default 60, minimum 10). `R2_ALLOWED_HOSTS` is a comma-separated allow-list of hostnames that `ai-worker` may download presigned URLs from (the host of `R2_ENDPOINT`, plus bucket virtual hosts); if it is empty the worker falls back to the host of `R2_PUBLIC_URL`, and with neither set it refuses every download. Downloads must be https and the host must not resolve to a private, loopback or link-local address, so an S3-compatible endpoint on a private network is refused.
 
-Phase 13 variables: `AICHAT_SERVICE_URL` (gateway), `AICHAT_SERVICE_CLIENT_SECRET` (+ the `ai-chat` entry in auth `SERVICE_CLIENTS`), `RABBITMQ_AICHAT_PASS` (broker user `aichat`), `AICHAT_DB_PASSWORD`, and for ai-chat `AI_GRPC_URL`, `DOCUMENT_GRPC_URL`, `FINANCE_GRPC_URL`, `R2_GRPC_URL`, `R2_PUBLIC_URL` and `AI_CHAT_DOCUMENT_WAIT_MS` (default 120000: how long one message waits for its documents' OCR). `AI_HTTP_COMPAT`, `AI_SERVICE_URL` and `INTERNAL_SERVICE_TOKEN` no longer exist: ai-service has no HTTP route but `/health`, and no service shares an HTTP secret. If an old `deploy/.env` still carries them, delete the lines and rotate the token.
+Phase 13 variables: `AICHAT_SERVICE_URL` (gateway), `AICHAT_SERVICE_CLIENT_SECRET` (+ the `ai-chat` entry in auth `SERVICE_CLIENTS`), `RABBITMQ_AICHAT_PASS` (broker user `aichat`), `AICHAT_DB_PASSWORD`, and for ai-chat `AI_GRPC_URL`, `DOCUMENT_GRPC_URL`, `R2_GRPC_URL`, `R2_PUBLIC_URL` and `AI_CHAT_DOCUMENT_WAIT_MS` (default 120000: how long one message waits for its documents' OCR). `AI_HTTP_COMPAT`, `AI_SERVICE_URL` and `INTERNAL_SERVICE_TOKEN` no longer exist: ai-service has no HTTP route but `/health`, and no service shares an HTTP secret. If an old `deploy/.env` still carries them, delete the lines and rotate the token.
 
 `GEMINI_API_KEYS`, `GEMINI_MODEL_NAMES` and `AI2_API_KEY` live in `env/ai.env` (ai and ai-worker only). The tunables below
 are optional lines in `.env` that compose passes to `ai` (defaults in `compose/ai.yml`).
@@ -196,16 +192,6 @@ addresses, including `169.254.169.254`, are always refused.
 `R2_PUBLIC_URL` is required by auth, content, vocabulary, document and ai-chat (they map a stored URL back to an R2 key; a URL on another host is never deleted). Deleting a record queues its R2 keys in `r2_delete_tasks` in the same transaction, and a worker (`libs/messaging/src/r2-delete`) removes them through r2-service with retries; content, vocabulary and document therefore run `ROLE=api,worker` in `compose/content.yml`, `compose/vocabulary.yml` and `compose/document.yml`. document-service calls r2 as `svc:document` (`UploadFile`, `CreatePresignedDownload`, `DeleteObjects`); r2 has no HTTP upload route and no `INTERNAL_SERVICE_TOKEN` any more.
 Use a hostname dedicated to the bucket for `R2_PUBLIC_URL` (e.g. the `r2.dev` host or a custom domain that serves nothing else): any client-supplied image URL on that hostname, on any port or path, must be a key the caller owns, so a shared hostname would also reject unrelated images on it. User-owned objects are stored under `<area>/<ownerUserId>/…`; only those keys are ever deleted on a user's behalf.
 
-#### Payment (SePay)
-`env/finance.env`:
-```bash
-PAYMENT_SERVICE_SEPAY_KEY=your_sepay_key
-PAYMENT_BASE_URL=https://my.sepay.vn
-PAYMENT_QR_BANK_ACCOUNT=your_bank_account
-PAYMENT_QR_BANK_CODE=your_bank_code
-PAYMENT_WEBHOOK_SECRET_KEY=your_webhook_secret
-```
-
 #### Admin Bootstrap & Seed
 `env/auth.env`:
 ```bash
@@ -224,14 +210,14 @@ ADMIN_DEFAULT_PASSWORD=ChangeMe123!
 > users and passwords. Run it on a dev/staging stack with
 > `docker compose --profile seed run --rm seed`. It waits for the
 > `*-migrate` services, runs the per-service dev seeds in
-> order auth -> finance -> admin -> ai-chat -> vocabulary (each with its own role/schema URL, `<SVC>_DATABASE_URL`),
+> order auth -> admin -> ai-chat -> vocabulary (each with its own role/schema URL, `<SVC>_DATABASE_URL`),
 > then exits.
 > The script picks up `ADMIN_DEFAULT_PASSWORD` from `deploy/env/auth.env`, so
 > seeded users share the same password as admins created by the
 > auth-service bootstrap. Idempotent — safe to re-run.
 >
 > Roles: new accounts are STUDENT; promote with `yarn bootstrap:admin:grant <email> [--teacher]`
-> (auth-service CLI) and run `yarn finance:reconcile-teachers` if a TEACHER wallet is missing.
+> (auth-service CLI).
 >
 > To re-seed (e.g. after editing a seed file):
 > ```bash
@@ -278,11 +264,11 @@ docker compose exec gateway-a wget -qO- http://localhost:3000/health/ready
 Each database-owning service has its own one-shot migration container that runs automatically on startup. Check its logs:
 
 ```bash
-docker compose logs auth-migrate     # or finance-migrate | admin-migrate | content-migrate | assessment-migrate | study-room-migrate | vocabulary-migrate | document-migrate
+docker compose logs auth-migrate     # or admin-migrate | content-migrate | assessment-migrate | study-room-migrate | vocabulary-migrate | document-migrate
 ```
 
 Lưu ý quan trọng:
-- `auth`, `finance`, `admin`, `content`, `assessment`, `study-room`, `vocabulary`, `document` phụ thuộc vào `<svc>-migrate` tương ứng với điều kiện `service_completed_successfully`; `ai` và `ai-worker` chờ `ai-migrate` (Alembic, schema `ai`); `gateway` và `r2` không có database nên không chờ migration nào;
+- `auth`, `admin`, `content`, `assessment`, `study-room`, `vocabulary`, `document` phụ thuộc vào `<svc>-migrate` tương ứng với điều kiện `service_completed_successfully`; `ai` và `ai-worker` chờ `ai-migrate` (Alembic, schema `ai`); `gateway` và `r2` không có database nên không chờ migration nào;
 - mỗi `<svc>-migrate` dùng cùng image với service (`Dockerfile.node`, `ARG SERVICE`) với `ROLE=migrate`, chạy `prisma migrate deploy --schema apps/<svc>-service/prisma[...]` bằng chính role `<svc>_svc` của service đó (`content` và `assessment` đều dùng một file `schema.prisma`; `study-room` dùng role/schema `studyroom`; `vocabulary` dùng role/schema `vocabulary`; `document` dùng role/schema `document`); `ai-migrate` không dùng Prisma: cùng image ai-service, `ROLE=migrate`, chạy `alembic upgrade head` bằng role `ai_svc`;
 - `prisma migrate deploy` áp dụng migration đã commit, không đẩy schema trực tiếp vào DB, nên không chủ động làm mất dữ liệu cũ;
 - DB mới (volume rỗng): init script tạo schema/role trước, sau đó từng `<svc>-migrate` tạo bảng; thêm một service DB mới = thêm file `compose/<svc>.yml` + một dòng `include`;
@@ -305,7 +291,7 @@ One image serves every role of a service. The entrypoint reads `ROLE`:
 |---|---|
 | `api`, `worker`, `api,worker` (default `api`) | `node dist/apps/<svc>/main` |
 | `migrate` | `prisma migrate deploy` for that service's schema, then exit (never `db push`, never `migrate resolve`) |
-| `seed` | the service seed; `SEED_PROFILE=prod` (default) = reference data only (admin page flags, word-family categories, ai-chat subjects), `SEED_PROFILE=dev` = dev users, wallets and samples |
+| `seed` | the service seed; `SEED_PROFILE=prod` (default) = reference data only (admin page flags, word-family categories, ai-chat subjects), `SEED_PROFILE=dev` = dev users and samples |
 
 An unknown `ROLE` exits 64 with a message. The `seed` compose service builds the `seed` target of the same
 Dockerfile, which carries every seed.
@@ -415,7 +401,7 @@ Networks (`docker-compose.yml`):
 |---|---|---|---|
 | `edge` | `examio-edge` | gateway-a, gateway-b, FE nginx (joins from `examio-fe/docker-compose.yml`) | the only way in |
 | `internal` (`internal: true`, no route out) | `examio-internal` | every service, Postgres, Redis, RabbitMQ, `*-migrate`, seed | service-to-service traffic |
-| `egress` | `examio-egress` | auth (Google OAuth, SMTP), content and assessment (Turnstile), finance (SePay), r2 (Cloudflare R2), ai and ai-worker (Gemini; the worker also downloads presigned R2 URLs) | the only services with a real internet dependency |
+| `egress` | `examio-egress` | auth (Google OAuth, SMTP), content and assessment (Turnstile), r2 (Cloudflare R2), ai and ai-worker (Gemini; the worker also downloads presigned R2 URLs) | the only services with a real internet dependency |
 
 `admin` is on `internal` only. If a service gains an internet dependency, add it
 to `egress` and to the list in `compose-topology.spec.cjs`.
@@ -471,6 +457,22 @@ docker compose exec postgres pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > backup
 # Restore PostgreSQL
 docker compose exec -T postgres psql -U "$POSTGRES_USER" "$POSTGRES_DB" < backup.sql
 ```
+
+## Removing finance-service from an existing stack
+
+finance-service (wallets, subscriptions, SePay payments) was removed. A fresh volume never has its
+objects; a dev or staging stack that ran an older image still does.
+
+- Preferred (same as the exam-service removal): `docker compose down -v`, then bring the stack up again
+  (the init script creates the nine remaining roles and schemas, each `<svc>-migrate` recreates its tables).
+- To keep the volume instead: optionally back up first (`pg_dump -n finance`), then as the Postgres superuser
+  `DROP SCHEMA finance CASCADE; DROP ROLE finance_svc;`. On the broker: `rabbitmqctl delete_user finance`,
+  delete the queues `finance.events`, `finance.retry.30s`, `finance.dlq` and the exchanges `finance.retry`,
+  `finance.requeue`, `finance.dead`, and unbind `finance.subscription.changed` from `aichat.events`.
+- Remove `FINANCE_DB_PASSWORD`, `RABBITMQ_FINANCE_PASS`, `FINANCE_SERVICE_CLIENT_SECRET`, `FINANCE_TAG` and the
+  `finance` entry of `SERVICE_CLIENTS` from `deploy/.env`, delete `env/finance.env`, and delete the GHCR image
+  `examio-finance`. A leaked `finance` service secret is useless: auth no longer issues tokens for that client
+  once its `SERVICE_CLIENTS` entry is gone, and no audience `finance` exists.
 
 ## Useful Commands
 
@@ -605,7 +607,7 @@ in the upstream (the FE image is `nginx:1.27-alpine`, 1.27.5 today).
 |---|---|---|
 | `gateway-a`, `gateway-b` | 256m each | router only |
 | `auth`, `assessment`, `content`, `document`, `ai-chat`, `study-room` | 512m each | NestJS API + worker (`ROLE=api,worker`) |
-| `admin`, `finance`, `vocabulary`, `r2` | 384m each | smaller surface |
+| `admin`, `vocabulary`, `r2` | 384m each | smaller surface |
 | `<svc>-migrate`, `seed` (one-shot) | 512m | `prisma migrate deploy` / seed |
 | `ai` | 1536m | gRPC + retrieval |
 | `ai-worker` | 2g | OCR (tesseract/opencv) and generation |

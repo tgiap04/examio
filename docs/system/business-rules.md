@@ -19,12 +19,12 @@ Every night, the system scans all active user sessions. Any session whose expiry
 
 ---
 
-### A new user is a STUDENT; only a TEACHER gets a wallet and the welcome credits
+### A new user is a STUDENT; an admin grants TEACHER
 
-Registration (email or Google) creates the account with base role `STUDENT`. Students have no wallet. The wallet and the 20-credit welcome bonus are provisioned when the account becomes a `TEACHER`. This is asynchronous — the wallet may not appear for a moment after the role change.
+Registration (email or Google) creates the account with base role `STUDENT`. Nothing else is provisioned: there is no wallet, welcome bonus or subscription.
 
-**Applies when:** Finance receives `auth.user.authz_changed` with `role = TEACHER` (published by auth through the outbox in the role-change transaction). A TEACHER who calls the wallet API before the event is processed gets the wallet created lazily (`ensureWallet`). The `reconcile-teachers` CLI re-ensures a wallet for every TEACHER.
-**Says:** A wallet with 20 credits (one `Welcome bonus credits` transaction) and an inactive Free subscription row are created once. Replays and the lazy path never duplicate the wallet or the bonus. Demoting a TEACHER keeps the wallet but it is unreachable without `wallet:use`.
+**Applies when:** A user registers.
+**Says:** The account is a `STUDENT` until a SYSTEM_ADMIN grants `TEACHER` (see the next rule). Students keep the same permissions as before; AI generation stays TEACHER-only.
 
 ### Roles: STUDENT or TEACHER, plus the SYSTEM_ADMIN flag
 
@@ -78,75 +78,20 @@ A user can view all active sessions across devices and browsers. They can termin
 
 ---
 
-## Finance & Payments
+## AI Cost and Limits
 
-### AI generation deducts credits before processing
+### AI generation has no charge
 
-Before generating quizzes or flashcards from a document, the system takes the cost from the user's wallet and only then queues the job. If credits are insufficient, the request is rejected and no job is queued.
+Generating quizzes or flashcards from a document, regenerating, and uploading a file cost nothing and have no monthly quota. Examio no longer has wallets, credits, subscriptions or payments. The only things that bound AI use are the TEACHER-only permission (`ai:generate`), the gateway rate limits and the technical limits listed below.
 
-**Applies when:** A user initiates quiz or flashcard generation from the AI tool.
-**Says:** Credits are deducted atomically through finance's `Debit` with the key `gen:<jobId>`, so a retry of the same charge never deducts twice. The job (`GenerationJob`) is created first as `PENDING_CHARGE`, becomes `QUEUED` once the debit succeeds (then `PROCESSING`, and `COMPLETED` or `FAILED`), and is `CANCELLED` and refunded if the debit never completes or the user cancels (see the next rule). Every state change is conditional on the previous state, so a late event or a double click never moves a job twice. If free mode is enabled outside production, this credit check is bypassed.
+**Applies when:** A teacher starts, regenerates or cancels a generation, or uploads a file.
+**Says:** The job (`GenerationJob`) is created as `QUEUED` together with its outbox row in one transaction, then becomes `PROCESSING`, and `COMPLETED` or `FAILED`. Every state change is conditional on the previous state, so a late event or a double click never moves a job twice. A failed job (`ai.generation.failed`) or a failed OCR (`ai.document.failed`) only changes the status; there is nothing to refund, so retrying a failed document is free.
 
----
+- The user cancels a job that has not finished (`DELETE /ai/job/:id`): it becomes `CANCELLED`; cancelling twice answers 200, cancelling a completed or failed job is refused (`JOB_NOT_CANCELLABLE`). Cancelling keeps the processed document, so it stays reusable.
+- A queued or running job shows no progress for `GENERATION_JOB_TIMEOUT_MINUTES` (default 60, never below 10): a watchdog fails it with `GENERATION_TIMEOUT`; a late result is ignored.
+- Generating from a file whose processing is still running returns the running job.
 
-### AI credits: charge and refund (phase 15)
-
-| Action | Charge |
-|---|---|
-| Generate from a new file | upload credits (1 per started 2 MB) + 5 generation credits, in one debit |
-| Generate from a file already uploaded by the same user (same filename and size), whatever its state (completed, failed, pending, or a quick upload) | 5 |
-| Generate from a file whose processing is still running | nothing: the running job is returned |
-| Regenerate | 1 per started 10 items |
-| `POST /ai/upload` (standalone upload) | 1 per started 2 MB, debit key `doc:<id>` |
-| `POST /ai/quick-upload` | free |
-
-There is no free retry any more: a failed or cancelled job is refunded, so retrying a failed document costs 5 again.
-
-**Applies when:** a charged generation or upload does not end in a usable result.
-**Says:** The credits come back, exactly once, in each of these cases:
-- the user cancels a job that has not finished (`DELETE /ai/job/:id`); cancelling twice refunds once, cancelling a completed or failed job is refused (`JOB_NOT_CANCELLABLE`). Cancelling keeps the processed document, so it stays reusable;
-- generation fails (`ai.generation.failed`);
-- a job stays `PENDING_CHARGE` for more than 10 minutes (the service crashed between debit and queueing): it is cancelled and refunded;
-- a queued or running job shows no progress for `GENERATION_JOB_TIMEOUT_MINUTES` (default 60, never below 10): it fails with `GENERATION_TIMEOUT` and is refunded; a late result is ignored;
-- OCR of a charged upload fails (`ai.document.failed`): the document is marked failed and refunded once.
-
-If the answer to a debit is lost (timeout, network), the system cannot know whether money moved. For an upload, the file is dropped (hidden, not counted against the monthly quota), a refund is tried at once, the user sees `CHARGE_UNAVAILABLE` (403), and a sweeper retries every open refund each minute. "Never charged" is only accepted after a 2-minute grace, because a late debit may still commit. A refused debit (insufficient credits, no wallet, no permission) is final: nothing is taken and nothing is refunded.
-
----
-
-### Credits are bypassed in free mode
-
-When the `AI_FREE_MODE` environment flag is `true`, the shared finance client (`libs/grpc`) skips the charge. It is for dev/local only: with `NODE_ENV=production` the flag is ignored (forced off, error logged) so it cannot bypass revenue.
-
-**Applies when:** `AI_FREE_MODE` is true and the environment is not production.
-**Says:** No credit check or deduction occurs. All users can generate content freely.
-
----
-
-### Bank transfers top up wallet credits
-
-When a user initiates a subscription purchase, the system creates a payment record with a SePay virtual account and displays a QR code. When the user transfers the correct amount to that virtual account, SePay sends a webhook notification. The system verifies the webhook signature, marks the payment as paid, and adds credits to the user's wallet or activates their subscription.
-
-**Applies when:** A bank transfer is made to the virtual account and SePay delivers a signed webhook.
-**Says:** Wallet is credited or subscription is activated. The payment record is updated from `unpaid` to `paid`. Duplicate webhook deliveries are handled idempotently.
-
----
-
-### Money movements are idempotent
-
-Every credit movement carries an idempotency key, unique per wallet. Repeating a request with the same key returns the original transaction marked `alreadyApplied` and changes nothing; the same key with a different amount or reason is rejected (`IDEMPOTENCY_KEY_REUSED`). A debit can be refunded at most once. Admin finance actions (credit adjustment, payment refund, tier change) follow the same rule via the `Idempotency-Key` header, so a double-click or retry does not apply twice or add a second audit row.
-
-**Applies when:** content-service or document-service charges credits (`gen:<jobId>`, `doc:<id>`), or an admin adjusts credits, refunds a payment or changes a tier.
-**Says:** At most one effect per key; replays are safe.
-
----
-
-### Only TEACHER accounts get a wallet, created on first charge or by event
-
-Finance creates the welcome wallet when the `auth.user.authz_changed` event for a TEACHER arrives, or when a TEACHER's own token is used for a first `Debit`. A debit with a STUDENT's token never creates a wallet.
-
-**Applies when:** a TEACHER has no wallet yet.
-**Says:** The wallet exists with the welcome credits once.
+**Kept on purpose (technical limits, not plans):** credential routes allow 5 requests per minute; the gateway applies its per-route `rateLimits` and `maxBodySize`; an exam-session snapshot is at most 1 MB; word-family generation is 20 per day; access-code entry locks after 5 wrong tries. AI chat keeps ai-service `AI_BUSY`.
 
 ---
 
@@ -159,12 +104,12 @@ Each database model belongs to one service. Other services reach it through that
 
 ---
 
-### Wallet is provisioned from an authz event
+### Role and ban changes reach other services through an authz event
 
-Finance consumes `auth.user.authz_changed` from the `examio.events` exchange. Only `role = TEACHER` provisions a wallet; other roles are ignored. See "A new user is a STUDENT" above. `auth.user.registered` is still published by auth but finance no longer consumes it.
+Auth publishes `auth.user.authz_changed` through its outbox in the same transaction as every role, admin, ban or password change. The gateway raises the user's stored authz version (older tokens answer `TOKEN_STALE`) and study-room-service closes that user's stale sockets. `auth.user.registered` is still published but nothing consumes it.
 
-**Applies when:** `auth.user.authz_changed` (outbox, idempotent consumer) reaches finance.
-**Says:** Wallet (20 credits, once) and Free subscription row exist for the TEACHER afterwards.
+**Applies when:** `auth.user.authz_changed` (outbox, idempotent consumers) reaches the gateway or study-room-service.
+**Says:** The user's next request or socket message is re-evaluated against the new role.
 
 ---
 
@@ -284,19 +229,19 @@ Users can export their flashcard study history or exam history as a PDF. The bro
 
 ### Word-family generation is for teachers, 20 per day
 
-Generating word families with AI (`generate`, `generate-root`) is a TEACHER permission, costs no credits, and is capped at 20 generations per user per UTC day. Students can read and save word families but not generate them.
+Generating word families with AI (`generate`, `generate-root`) is a TEACHER permission, is not charged, and is capped at 20 generations per user per UTC day. Students can read and save word families but not generate them.
 
 **Applies when:** A teacher triggers word-family generation.
-**Says:** The 21st attempt of the day is refused with `WORD_FAMILY_DAILY_LIMIT`. If the quota counter (Redis) is down the request is refused (`GENERATION_LIMIT_UNAVAILABLE`). The gateway also rate-limits the route per IP.
+**Says:** The 21st attempt of the day is refused with `WORD_FAMILY_DAILY_LIMIT`. If the daily counter (Redis) is down the request is refused (`GENERATION_LIMIT_UNAVAILABLE`). The gateway also rate-limits the route per IP.
 
 ---
 
-### AI chat limits follow the subscription tier
+### AI chat has no per-user message limit
 
-Before an AI chat message is accepted, ai-chat-service reads the user's benefits from finance (`GetUserBenefits`, cached 5 minutes and dropped on `finance.subscription.changed`). The Free tier allows 5 messages per minute (429 `RATE_LIMITED`) and 30 user messages in one chat (403 `CHAT_LIMIT_REACHED`; start a new chat); paid tiers have higher limits. If finance cannot answer, the Free limits apply (fail safe, never unlimited). A regenerate does not count the messages it will replace toward the chat limit, and a regenerate that is refused (429, 403, 404) deletes nothing.
+There is no 5-messages-per-minute cap and no 30-messages-per-chat cap any more (the former `RATE_LIMITED` and `CHAT_LIMIT_REACHED` answers are gone), and ai-chat-service no longer reads benefits from anywhere. A regenerate that is refused (404) deletes nothing.
 
 **Applies when:** A user sends or regenerates an AI chat message.
-**Says:** The gateway also rate-limits the stream routes per client (10 per minute). Chats and documents of another user answer 404.
+**Says:** The gateway still rate-limits the stream routes per client (10 per minute) and ai-service may answer `AI_BUSY`. Chats and documents of another user answer 404.
 
 ---
 
@@ -344,7 +289,7 @@ When a user successfully changes their password via the profile page, a confirma
 
 ### User data is retained while account is active
 
-User data (quiz sets, flashcard sets, exam rooms, history, wallet) is retained indefinitely as long as the account exists. Deleted content is removed immediately from the database; its R2 objects are queued in the same transaction and deleted by a worker shortly after (auth, content, vocabulary, document and ai-chat each have their own `r2_delete_tasks`). There is no automatic purge of inactive accounts in the current implementation.
+User data (quiz sets, flashcard sets, exam rooms, history) is retained indefinitely as long as the account exists. Deleted content is removed immediately from the database; its R2 objects are queued in the same transaction and deleted by a worker shortly after (auth, content, vocabulary, document and ai-chat each have their own `r2_delete_tasks`). There is no automatic purge of inactive accounts in the current implementation.
 
 **Applies when:** A user deletes content or an account.
 **Says:** The relevant records and files are permanently removed. This cannot be undone.

@@ -20,11 +20,11 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **AIChatMessage** — A single message in an AI chat session. Each message has a role (user or assistant), text content, and optionally an attached image or document reference.
 
-**AI Chat Service** — NestJS service (`apps/ai-chat-service`, schema `aichat`) for AI chat sessions, messages and subjects. HTTP only (SSE for streaming); it calls ai-service over gRPC with a service token, reads documents through the Document Service and subscription benefits through finance, and enforces the chat limits of the user's tier.
+**AI Chat Service** — NestJS service (`apps/ai-chat-service`, schema `aichat`) for AI chat sessions, messages and subjects. HTTP only (SSE for streaming); it calls ai-service over gRPC with a service token, and reads documents through the Document Service. It applies no per-user message limits (no plans or tiers).
 
 **AI Service** — Standalone Python FastAPI service responsible for RAG (document retrieval), embedding generation, AI chat orchestration, and AI-assisted quiz/flashcard generation. Callers (content, ai-chat, vocabulary) reach it over gRPC with service tokens; its HTTP serves only `/` and `/health`.
 
-**Admin Service** — NestJS service providing the admin dashboard backend. Handles KPI/stats, user management (list/detail/edit, ban/unban), role changes, finance operations (refund/credit adjust/tier change), word-family categories, page flags, log streaming (SSE via ticket exchange), and audit log query. Exposed via the gateway at `/api/v1/admin/*` (HTTP port 3000 in containers) and serves one gRPC method, `AdminService.GetPageFlags`, to the gateway only. The gateway requires `admin:access` at the edge; each controller then declares its own permission (`user:manage`, `role:assign`, `finance:admin`, `stats:read`, ...). Role and admin-flag changes go through auth `SetUserRole` / `SetSystemAdmin`; there is no user deletion.
+**Admin Service** — NestJS service providing the admin dashboard backend. Handles KPI/stats, user management (list/detail/edit, ban/unban), role changes, word-family categories, page flags, log streaming (SSE via ticket exchange), and audit log query. Exposed via the gateway at `/api/v1/admin/*` (HTTP port 3000 in containers) and serves one gRPC method, `AdminService.GetPageFlags`, to the gateway only. The gateway requires `admin:access` at the edge; each controller then declares its own permission (`user:manage`, `role:assign`, `stats:read`, ...). Role and admin-flag changes go through auth `SetUserRole` / `SetSystemAdmin`; there is no user deletion.
 
 **Answer Token (JWT)** — A signed JSON Web Token submitted by the client when a student finishes an exam. Contains the map of question IDs to selected answers. The server validates the signature before grading — preventing answer forgery or tampering.
 
@@ -44,8 +44,6 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Bcrypt Hash** — The hashed representation of a user's password stored in the database. OAuth-only accounts have a null password field.
 
-**Billing Cycle** — How often a subscription renews: either `monthly` or `yearly`. Determines the renewal date and pricing displayed to the user.
-
 ---
 
 ## C
@@ -62,9 +60,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Community (Graph)** — A cluster of related chunks detected by the Louvain community detection algorithm within a UserStorageGraph. Represents a semantically coherent section of the document used for selective RAG retrieval.
 
-**Content Service** — NestJS service (`apps/content-service`, schema `content`) for quiz sets, flashcard sets (sharing, practice, study progress), AI generation orchestration (`GenerationJob`, charge and refund) and the flashcard half of `/student/*`. It is the gRPC server of `ContentService` (quiz snapshots for assessment-service) and runs `ROLE=api,worker` (outbox relay, generation reaper, R2 delete worker).
-
-**Credits** — The platform's virtual currency. Used to pay for AI-powered quiz and flashcard generation. Users purchase credits via SePay bank transfer; TEACHERs receive a 20-credit welcome bonus on wallet creation.
+**Content Service** — NestJS service (`apps/content-service`, schema `content`) for quiz sets, flashcard sets (sharing, practice, study progress), AI generation orchestration (`GenerationJob`, no charge) and the flashcard half of `/student/*`. It is the gRPC server of `ContentService` (quiz snapshots for assessment-service) and runs `ROLE=api,worker` (outbox relay, generation reaper, R2 delete worker).
 
 ---
 
@@ -82,17 +78,17 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Document** — A chunked and embedded representation of an uploaded UserStorage file. Stored by ai-service in its own schema `ai` (keeps `userStorageId` as a plain column, no foreign key); holds extracted text alongside a vector embedding for semantic search.
 
-**Document Service** — NestJS service (`apps/document-service`, schema `document`) that owns uploaded files (`UserStorage`), the monthly upload quota and the processing status. Charges and refunds uploads, exposes gRPC `DocumentService`, publishes `document.uploaded` / `document.deleted`.
+**Document Service** — NestJS service (`apps/document-service`, schema `document`) that owns uploaded files (`UserStorage`) and their processing status (no quota, no charge). Exposes gRPC `DocumentService`, publishes `document.uploaded` / `document.deleted`.
 
 **Document Entity** — A named entity (person, concept, formula, etc.) extracted from a document during processing. Used for knowledge graph construction and entity-based retrieval in AI chat.
 
-**Domain** — A top-level grouping of related data models. The platform has 5 domains: User & Auth, Quiz/Flashcard Authoring, Exam Lifecycle, Finance, and AI/Storage/RAG.
+**Domain** — A top-level grouping of related data models. The platform has 4 domains: User & Auth, Quiz/Flashcard Authoring, Exam Lifecycle, and AI/Storage/RAG.
 
 ---
 
 ## E
 
-**End User** — A student or teacher who has registered and verified their account on the platform. Can access all non-restricted features (subject to subscription tier).
+**End User** — A student or teacher who has registered and verified their account on the platform. Can access all features its role's permissions allow.
 
 **Exam Attempt** — A single student's attempt at an ExamSession. Tracks all answers (encrypted), score, violation count, and lifecycle status (in-progress, completed, cancelled).
 
@@ -109,8 +105,6 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 ## F
 
 **FAISS** — Facebook AI Similarity Search. Library used by the Python AI service to perform fast vector similarity search over document embeddings.
-
-**Finance Service** — NestJS service managing the credit wallet, SePay payment integration, and subscription lifecycle. Exposes gRPC `WalletService` on port 50051 for synchronous credit operations (`Debit`/`Credit`/`Refund`, each with an idempotency key), plus `FinanceAdminService`, `FinanceStatsService` and `SubscriptionService`.
 
 **FlashCard** — A reusable question/answer pair (front and back). Can appear in multiple FlashCardSets via DetailsFlashCard join records.
 
@@ -130,11 +124,11 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **GatewayControl** — Internal gRPC service on the gateway (`GRPC_PORT`, default 50051; service token with `aud = gateway` required). `RevokeSession` and `InvalidateUser` (called by auth) write `gw:revoked:sid:<sid>` / `gw:user:<id>:av` in Redis; `SetPageFlags` (admin allowlisted) writes the page-flag cache. Backed by durable events `auth.session.revoked` and `auth.user.authz_changed`.
 
-**GenerationJob** — One quiz/flashcard generation request in content-service, with the money behind it. Status `PENDING_CHARGE` → `QUEUED` → `COMPLETED`, or `FAILED` / `CANCELLED` (both refunded when charged). The charge key is `gen:<jobId>`; `refundedAt` records that the refund is settled.
+**GenerationJob** — One quiz/flashcard generation request in content-service. Created as `QUEUED` (with its outbox row, one transaction) → `PROCESSING` → `COMPLETED`, or `FAILED` / `CANCELLED`. Nothing is charged or refunded; a watchdog fails jobs that make no progress for `GENERATION_JOB_TIMEOUT_MINUTES`.
 
 **Gemini** — The LLM model used by the Python AI service for chat, generation, and reasoning tasks.
 
-**gRPC** — Google Remote Procedure Call. Protocol used for synchronous, typed communication between NestJS services (auth-service, finance-service, r2-service) and their callers.
+**gRPC** — Google Remote Procedure Call. Protocol used for synchronous, typed communication between NestJS services (auth-service, r2-service) and their callers.
 
 **Grant** — A reason a user may open a shared quiz set, flashcard set or exam session that is not theirs: public visibility, the whitelist, or the code-granted list (users who entered the current access code). The owner always has access. A user without a grant gets "not found". Whitelist and code-granted lists hold at most 2000 users; rotating the code empties the code-granted list.
 
@@ -149,8 +143,6 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 ---
 
 ## I
-
-**Idempotency Key** — A caller-chosen string sent with every money movement (`Debit`, `Credit`, `Refund`, admin finance actions via the `Idempotency-Key` header). Repeating the same key returns the original result marked `alreadyApplied`; the same key with a different request is refused (`IDEMPOTENCY_KEY_REUSED`). Examples: `gen:<jobId>`, `doc:<id>`, `welcome:<userId>`.
 
 ---
 
@@ -188,15 +180,11 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 ## P
 
-**Payment** — A payment intent record tracking a SePay virtual account order. Tracks amount, currency, status (unpaid/paid/overdue/cancelled), and payment type (credits or subscription).
-
 **Permission** — A string such as `quizset:manage` from the catalog in `libs/auth-jwt/src/permissions.ts`. Roles hold fixed permission sets; permissions are derived from the token `roles`, never carried in the token. See [permissions](permissions.md).
 
-**Prisma** — ORM used by the DB-owning NestJS services (auth, finance, admin, content, assessment, ai-chat, study-room, vocabulary, document). Each has its own schema under `apps/<svc>-service/prisma` and its own generated client; there is no shared schema package (`@examio/database` was removed in phase 11).
+**Prisma** — ORM used by the DB-owning NestJS services (auth, admin, content, assessment, ai-chat, study-room, vocabulary, document). Each has its own schema under `apps/<svc>-service/prisma` and its own generated client; there is no shared schema package (`@examio/database` was removed in phase 11).
 
-**PENDING_CHARGE** — Initial state of a paid upload (`UserStorage`) or a `GenerationJob`: the row exists but the credit debit is not confirmed yet. A reaper settles rows stuck here for more than 10 minutes (refund attempt, then failed or cancelled).
-
-**Processing Status** — A discriminator on UserStorage tracking where a document is in the pipeline: `PENDING_CHARGE` (paid uploads only) → `PENDING` → `COMPLETED` or `FAILED` (`PROCESSING` is a valid value but document-service does not set it today). Controls whether the document is available for AI chat and generation.
+**Processing Status** — A discriminator on UserStorage tracking where a document is in the pipeline: `PENDING` → `COMPLETED` or `FAILED` (`PROCESSING` is a valid value but document-service does not set it today). Controls whether the document is available for AI chat and generation.
 
 **Profile** — The user-editable identity section (name, username, bio, avatar, banner) displayed on the platform. Changes take effect immediately across the platform.
 
@@ -228,7 +216,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **RAG (Retrieval-Augmented Generation)** — AI technique where the system retrieves relevant document chunks before generating a response, grounding AI answers in the user's uploaded course materials rather than generic training data.
 
-**RabbitMQ** — Message broker using a topic exchange (`examio.events`) for asynchronous event-driven workflows between services. Events go through a transactional outbox and an idempotent consumer (`@examio/messaging`). Currently used for wallet creation on user registration.
+**RabbitMQ** — Message broker using a topic exchange (`examio.events`) for asynchronous event-driven workflows between services. Events go through a transactional outbox and an idempotent consumer (`@examio/messaging`). Used for identity/permission propagation (`auth.user.authz_changed`), profile cache invalidation, and the document/generation pipeline between document, content and ai-service.
 
 **ReAct Agent** — An AI agent pattern (Reason + Act) used by the Python AI service to reason about user questions, retrieve relevant document chunks, and generate grounded responses.
 
@@ -250,8 +238,6 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Score** — A floating-point value representing the student's exam result, typically expressed as a percentage (0–100). Compared against the ExamSession's passingScore to determine pass/fail.
 
-**SePay** — Vietnamese payment provider enabling bank transfers via virtual account numbers and QR codes. The platform generates a SePay VA for each payment; a webhook confirms when the transfer is received.
-
 **Service Token** — Short-lived (5 min) JWT for service-to-service calls (`sub = svc:<name>`, `roles = ["SERVICE"]`), obtained from `POST /internal/token` with client credentials and sent as `authorization` header / gRPC metadata.
 
 **Session** — See UserSession.
@@ -266,15 +252,13 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **SSE (Server-Sent Events)** — HTTP-based streaming mechanism used for AI chat responses. The server pushes tokens to the client in real time as the AI generates them.
 
-**Student** — A platform user with base role `STUDENT` (the default): studies flashcards, practices quizzes, takes exams, joins study rooms. Has no wallet.
+**Student** — A platform user with base role `STUDENT` (the default): studies flashcards, practices quizzes, takes exams, joins study rooms.
 
 **Study Room Service** — NestJS service (`apps/study-room-service`, schema `studyroom`) for Study-Together rooms: HTTP `/api/v1/studyrooms/*` and Socket.io `/ws/study`. One container, no gRPC server; it consumes `auth.user.authz_changed` and `auth.user.updated` in the API process.
 
 **Subject** — An AI teacher persona defined by a name, icon, and system prompt stored in the database. Students select a Subject when starting an AI chat session.
 
 **SubjectCategory** — A top-level grouping of AI teacher Subjects (e.g., "Mathematics", "Natural Sciences"). Used for UI navigation and organizing the Subject catalog.
-
-**Subscription Tier** — A discriminator on UserSubscription gating feature access: `0=none` (free), `1=basic`, `2=advanced`, `3=vip`. Controls upload limits and AI feature quotas.
 
 **SYSTEM_ADMIN** — Role of an account with `User.isSystemAdmin = true` (replaces `isAdmin`). Holds the admin permissions; can grant TEACHER and the admin flag. Cannot change their own role; the last active one cannot be demoted.
 
@@ -290,11 +274,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 ## U
 
-**Upload Quota** — A monthly limit on how many files a user can upload, enforced by UserMonthlyFileUpload counters. Limits vary by subscription tier.
-
 **User** — A registered account on the platform. Can be a student (takes exams, studies flashcards) or teacher (authors content). Account may be email/password or OAuth-only.
-
-**UserMonthlyFileUpload** — A per-user monthly counter tracking how many files the user has uploaded in the current calendar month. Enforces subscription-tier upload limits.
 
 **UserPinnedExamRoom** — A pin record linking a user to an ExamRoom for quick access. One record per user per room.
 
@@ -302,21 +282,17 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **UserSession** — An active login session tied to a specific device. Tracks device fingerprint, browser, OS, IP, and last activity timestamp. Invalidated on logout or remote device termination.
 
-**UserStorage** — A record of a user-uploaded file (PDF, DOC, TXT), owned by document-service (schema `document`). Stores metadata, R2 URL, R2 key, processing status and whether the upload credit was charged. Anchors the document processing pipeline (OCR, chunking, graph building).
+**UserStorage** — A record of a user-uploaded file (PDF, DOC, TXT), owned by document-service (schema `document`). Stores metadata, R2 URL, R2 key, and processing status. Anchors the document processing pipeline (OCR, chunking, graph building).
 
 **UserStorageGraph** — A community detection graph built from a UserStorage document. One graph per file. Stores chunk count, edge count, community statistics, and readiness status.
 
 **UserStorageGraphGroup** — A semantic community of chunks within a UserStorageGraph. Represents a coherent section of the document used for selective RAG retrieval with an estimated token count for LLM context.
-
-**User Subscription** — A per-user record tracking the current subscription tier, billing cycle, payment dates, and active/inactive status.
 
 ---
 
 ## V
 
 **VerifyAccountCode** — A one-time 6-digit code sent to the user's email after registration. Entering the code activates the account and unlocks all platform features.
-
-**Virtual Account (SePay)** — A temporary bank account number generated for a payment. The user transfers the purchase amount to this VA; the platform confirms receipt via webhook and activates credits or subscription.
 
 **Violation Count** — The total number of cheating violations recorded against an ExamAttempt. Tracked per violation type in CheatingLog entries.
 
@@ -327,14 +303,6 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 ---
 
 ## W
-
-**Wallet** — A per-user credit balance. The wallet balance is the sum of all WalletTransactions (credits added and spent). Exists only for TEACHERs: created when the account becomes a TEACHER (with a 20-credit welcome bonus); STUDENTs have none.
-
-**Wallet Transaction** — An immutable ledger entry recording a credit change on a Wallet. Includes type (buy credits, subscription, refund, admin adjustment, use services) and direction (ADD or SUBTRACT).
-
-**Webhook (SePay)** — An automated HTTP POST from SePay notifying the platform that a bank transfer was received. Triggers credit activation or subscription renewal.
-
-**Welcome Bonus** — 20 credits added once to a TEACHER's wallet when it is provisioned, by the finance-service's `UserAuthzChangedHandler` consuming `auth.user.authz_changed` with `role = TEACHER` (or lazily on first wallet read).
 
 **Whitelist** — A list of user IDs with explicit access to a private exam session or flashcard deck. In addition to access codes, teachers can grant access to specific students by adding their user IDs.
 
@@ -352,7 +320,7 @@ The following business questions remain open at the time of this glossary and ma
 
 1. Does flashcard study progress reset when the deck owner adds new cards?
 2. ~~Is there brute-force protection on access code attempts?~~ Answered: yes, 5 wrong tries per 15 minutes per user and resource (`CODE_LOCKED`).
-3. ~~If AI generation fails after credits were deducted, are credits automatically restored?~~ Answered: yes, exactly once, through `Refund` with the same idempotency key.
+3. ~~If AI generation fails after credits were deducted, are credits automatically restored?~~ Moot: credits no longer exist; generation is not charged.
 4. When AI generates questions from a shared document, who is listed as the question author — the document uploader or the initiator?
 5. If a teacher deletes a deck that students have studied, is individual card progress preserved or removed?
 6. Can a teacher share their knowledge base with specific students, or is it purely personal?

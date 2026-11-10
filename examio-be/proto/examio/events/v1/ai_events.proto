@@ -10,8 +10,7 @@ message AiDocumentProcessed {
 }
 
 // Payload (`data`) of `ai.document.failed`: processing gave up. Consumed by
-// document-service (row -> FAILED, and a `Refund(doc:<storageId>)` when the
-// upload credit was charged).
+// document-service (row -> FAILED).
 message AiDocumentFailed {
   string storage_id = 1;
   string reason = 2;
@@ -55,7 +54,7 @@ message AiGenerationCompleted {
 }
 
 // Payload (`data`) of `ai.generation.failed`. Consumed by content-service (job
-// FAILED + `Refund(gen:<jobId>)`).
+// FAILED, generation lock released).
 message AiGenerationFailed {
   string job_id = 1;
   string reason = 2;

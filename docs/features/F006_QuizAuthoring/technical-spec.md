@@ -76,15 +76,6 @@ None.
 **Payload:** `{ sourceFileId, generationType, userId, quizSetId? }`
 **Failure handling:** Job status set to `failed`; user notified via polling response
 
-**INT-006_02 — Credit Deduction (FinanceClientService)**
-**Linked FR:** FR-006_09
-**Source:** `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` (BL004)
-**Type:** api-call
-**Target:** `finance-service` via gRPC
-**Trigger:** Before creating AI job
-**Payload:** `{ userId, creditsToDeduct }`
-**Failure handling:** Job creation blocked if insufficient credits; unless `FREE_MODE = true`
-
 ### Verification
 
 - **SC-006_01** — Quiz set created with title is visible in quiz set grid (covers FR-006_02)
@@ -277,15 +268,14 @@ None.
 
 **Acceptance Scenarios:**
 
-1. **Given** the user has a COMPLETED document and sufficient credits (or FREE_MODE), **When** they submit quiz generation, **Then** a job is created and the status becomes pollable.
-2. **Given** the user has insufficient credits and FREE_MODE is false, **When** they submit, **Then** an error is shown with a link to the subscription page.
-3. **Given** the source document has PROCESSING status, **When** the user tries to generate, **Then** the generate button is disabled.
+1. **Given** the user has a COMPLETED document, **When** they submit quiz generation, **Then** a job is created and the status becomes pollable.
+2. **Given** the source document has PROCESSING status, **When** the user tries to generate, **Then** the generate button is disabled.
 
 **Requirements fulfilled:**
 - **FR-006_09** Users initiate AI quiz generation job — `POST /api/v1/ai/job`
 - **FR-006_10** Users poll AI job status — `GET /api/v1/ai/job/:jobId`
 
-**Rules enforced:** PERM035 (AIGenerationAccess), PERM036 (AIGenerationCredits), PERM041 (FreeModeCreditBypass)
+**Rules enforced:** PERM035 (AIGenerationAccess)
 
 **Verification:**
 - **SC-006_10** Job status transitions: PENDING → PROCESSING → COMPLETED/FAILED (covers FR-006_10)
@@ -311,19 +301,19 @@ None.
 
 ### US023 — Generate Flashcards via AI (Priority: P1)
 
-**What happens:** A student on FlashcardsPage or AIToolPage selects a source document and triggers flashcard generation. Identical credit and status checks apply. Generated flashcards are linked to the source document via `HistoryGeneratedFlashcard`.
+**What happens:** A student on FlashcardsPage or AIToolPage selects a source document and triggers flashcard generation. The same document status check applies (no charge). Generated flashcards are linked to the source document via `HistoryGeneratedFlashcard`.
 **Why this priority:** Same as US036 but for the flashcard authoring workflow.
 **Independent Test:** POST `/api/v1/ai/job` with `generationType: "flashcard"` returns a `jobId`; polling eventually returns `status: "completed"`.
 
 **Acceptance Scenarios:**
 
-1. **Given** the user has a COMPLETED document and sufficient credits, **When** they generate flashcards, **Then** the job is created and flashcards are associated with the document record.
-2. **Given** FREE_MODE is true, **When** generation is initiated, **Then** credits are not deducted.
+1. **Given** the user has a COMPLETED document, **When** they generate flashcards, **Then** the job is created and flashcards are associated with the document record.
+2. **Given** generation is initiated, **Then** nothing is charged.
 
 **Requirements fulfilled:**
 - **FR-006_09** Users initiate AI generation (flashcard path) — `POST /api/v1/ai/job`
 
-**Rules enforced:** PERM035 (AIGenerationAccess), PERM036 (AIGenerationCredits), PERM041 (FreeModeCreditBypass)
+**Rules enforced:** PERM035 (AIGenerationAccess)
 
 ---
 
@@ -336,7 +326,6 @@ None.
 | Generate quiz from a FAILED document | UI prevents generation; "Retry processing" prompt shown |
 | Polling exceeds 60 minutes (360 attempts) | Polling stops; user shown "Generation timed out — please try again" |
 | Delete quiz set that is linked to an active ExamRoom | HTTP 409: "Cannot delete quiz set linked to active exam room" (or cascade — behavior unverified) |
-| FREE_MODE=false and wallet has 0 credits | Error toast: "Insufficient credits — purchase a subscription to continue" |
 
 ## Key Entities
 
@@ -358,8 +347,8 @@ None.
 | System Overview | [system-overview.md](../../docs/system/system-overview.md) | — | [x] |
 | Feature List | [feature-list.md](../../docs/generated/feature-list.md) | F006 | [x] |
 | Screens | [screens.md](./screens.md) | SCR016/REG001, SCR018/REG001, SCR020, SCR021, SCR022, SCR024, SCR017 | [x] |
-| Behavior Logic | [behavior-logic.md](../../docs/system/behavior-logic.md) | BL004, BL015 | [x] |
-| Permissions | [permissions.md](../../docs/system/permissions.md) | PERM002, PERM003, PERM014, PERM015, PERM016, PERM035, PERM036, PERM038, PERM041, PERM043 | [x] |
+| Behavior Logic | [behavior-logic.md](../../docs/system/behavior-logic.md) | BL015 | [x] |
+| Permissions | [permissions.md](../../docs/system/permissions.md) | PERM002, PERM003, PERM014, PERM015, PERM016, PERM035, PERM038, PERM043 | [x] |
 | User Stories | [user-stories.md](../../docs/generated/user-stories.md) | US013, US014, US015, US023, US024, US025, US028, US029, US030, US031, US036, US037 | [x] |
 | Data Model | [data-model.md](../../docs/system/data-model.md) | MODEL-007, MODEL-008, MODEL-009, MODEL-010, MODEL-011, MODEL-016 | [x] |
 
@@ -378,7 +367,6 @@ None.
 | QuizSetService | `examio-be/apps/content-service/src/modules/quizset/quizset.service.ts` | Business logic for quiz set operations |
 | QuizQuestionRepository | `examio-be/apps/exam-service/src/modules/quizset/quiz-question.repository.ts` | Question CRUD via Prisma |
 | AIJobController | `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` | AI job create/poll/cancel endpoints |
-| FinanceClientService | `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` | Credit check before AI generation (BL004) |
 | useGenerationGuard | `examio-fe/src/hooks/useGenerationGuard.ts` | Client-side job polling + localStorage resume (BL015) |
 | QuizSetModal | `examio-fe/src/components/k/quizset/QuizSetModal.tsx` | Create/edit quiz set dialog |
 | QuestionList | `examio-fe/src/components/k/quizset/QuestionList.tsx` | Question management list on detail page |
@@ -387,6 +375,5 @@ None.
 ## Unresolved Questions
 
 1. **Cascade delete scope for ExamRoom dependency**: If a quiz set is used as the source for an active ExamRoom, does DELETE return 409 or does Prisma cascade delete ExamRoom records too? Requires source read of `quizset.service.ts` delete method.
-2. **AI job credit deduction timing**: Does credit deduction happen atomically with job creation, or is it deducted on job completion? Affects UX when a job fails mid-processing.
-3. **Question deduplication**: Can the same QuizQuestion appear in multiple quiz sets via DetailsQuizQuestion? If so, editing the question text in one set changes it in all sets — intended behavior or bug?
-4. **PDF record delete side effects**: Does deleting a UserStorage record also delete the associated Document chunks and embeddings?
+2. **Question deduplication**: Can the same QuizQuestion appear in multiple quiz sets via DetailsQuizQuestion? If so, editing the question text in one set changes it in all sets — intended behavior or bug?
+3. **PDF record delete side effects**: Does deleting a UserStorage record also delete the associated Document chunks and embeddings?

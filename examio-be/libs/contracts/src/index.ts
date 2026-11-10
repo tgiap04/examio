@@ -3,9 +3,6 @@
 export * as authV1 from './generated/examio/auth/v1/auth';
 export * as authUsersV1 from './generated/examio/auth/v1/auth_users';
 export * as commonV1 from './generated/examio/common/v1/pagination';
-export * as walletV1 from './generated/examio/finance/v1/wallet';
-export * as subscriptionV1 from './generated/examio/finance/v1/subscription';
-export * as financeAdminV1 from './generated/examio/finance/v1/finance_admin';
 export * as adminV1 from './generated/examio/admin/v1/admin';
 export * as wordFamilyAdminV1 from './generated/examio/vocabulary/v1/word_family_admin';
 export * as wordFamilyV1 from './generated/examio/vocabulary/v1/word_family';
@@ -23,15 +20,6 @@ export * as gatewayControlV1 from './generated/examio/gateway/v1/gateway_control
 export const PROTO_FILES = {
     auth: { pkg: 'examio.auth.v1', file: 'examio/auth/v1/auth.proto' },
     authUsers: { pkg: 'examio.auth.v1', file: 'examio/auth/v1/auth_users.proto' },
-    wallet: { pkg: 'examio.finance.v1', file: 'examio/finance/v1/wallet.proto' },
-    subscription: {
-        pkg: 'examio.finance.v1',
-        file: 'examio/finance/v1/subscription.proto',
-    },
-    financeAdmin: {
-        pkg: 'examio.finance.v1',
-        file: 'examio/finance/v1/finance_admin.proto',
-    },
     admin: { pkg: 'examio.admin.v1', file: 'examio/admin/v1/admin.proto' },
     wordFamilyAdmin: {
         pkg: 'examio.vocabulary.v1',

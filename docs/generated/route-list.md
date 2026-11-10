@@ -13,9 +13,9 @@
 
 Gateway proxies all requests to downstream services. **Routing source of truth (2026-10-20): `examio-be/apps/gateway-service/config/routes.yaml`**; the per-domain proxy controllers this inventory was generated from no longer exist, so the tables below describe the downstream endpoints behind each YAML entry. Auth: `Authorization: Bearer` header or cookie `accessToken` (the legacy `token` cookie is no longer read); the gateway verifies the token and forwards it as `Authorization: Bearer`.
 
-> **Owner column (phase 19)**: the last column is the service that serves the route, taken from the `upstream` of the matching entry in `routes.yaml` (a `match.path` regex wins over a `prefix`; env URL names `AUTH_SERVICE_URL`, `CONTENT_SERVICE_URL`, `ASSESSMENT_SERVICE_URL`, `STUDYROOM_SERVICE_URL`, `VOCABULARY_SERVICE_URL`, `DOCUMENT_SERVICE_URL`, `AICHAT_SERVICE_URL`, `FINANCE_SERVICE_URL`, `ADMIN_SERVICE_URL` map upstream to service). Paths did not change when exam-service was split. `/ai/tutor/*` (knowledge folders, files, dataset imports) was removed from the code and from this list. Study-room (`/studyrooms/*`, `/ws/study`) and word-family (`/word-family/*`) endpoints are not inventoried here; they are routed to study-room-service and vocabulary-service (`/word-family/:id/to-flashcard` to content-service).
+> **Owner column (phase 19)**: the last column is the service that serves the route, taken from the `upstream` of the matching entry in `routes.yaml` (a `match.path` regex wins over a `prefix`; env URL names `AUTH_SERVICE_URL`, `CONTENT_SERVICE_URL`, `ASSESSMENT_SERVICE_URL`, `STUDYROOM_SERVICE_URL`, `VOCABULARY_SERVICE_URL`, `DOCUMENT_SERVICE_URL`, `AICHAT_SERVICE_URL`, `ADMIN_SERVICE_URL` map upstream to service). Paths did not change when exam-service was split. `/ai/tutor/*` (knowledge folders, files, dataset imports) was removed from the code and from this list. Study-room (`/studyrooms/*`, `/ws/study`) and word-family (`/word-family/*`) endpoints are not inventoried here; they are routed to study-room-service and vocabulary-service (`/word-family/:id/to-flashcard` to content-service).
 
-> **Phase 06 (2026-10-20)**: every exam/finance/admin/r2 handler now declares a permission (`@RequirePermissions` / `@RequireOwnerOrPermission`; plain `@Authenticated()` only on an allowlist). The per-route permission is in `system/permissions.md` § Per-endpoint enforcement; "Bearer" below means a verified user holding that permission. Removed: `GET /api/v1/quizsets/public/:id` (404 `ROUTE_NOT_FOUND` at the gateway). The gateway lists `study/:id/(verify-code|with-code)` as `public` so anonymous callers reach the service, which still answers 401 without a token. Non-owned resources answer 404, not 403. Only rows whose guard changed were edited; full regeneration stays in plan phase 19.
+> **Phase 06 (2026-10-20)**: every exam/admin/r2 handler now declares a permission (`@RequirePermissions` / `@RequireOwnerOrPermission`; plain `@Authenticated()` only on an allowlist). The per-route permission is in `system/permissions.md` § Per-endpoint enforcement; "Bearer" below means a verified user holding that permission. Removed: `GET /api/v1/quizsets/public/:id` (404 `ROUTE_NOT_FOUND` at the gateway). The gateway lists `study/:id/(verify-code|with-code)` as `public` so anonymous callers reach the service, which still answers 401 without a token. Non-owned resources answer 404, not 403. Only rows whose guard changed were edited; full regeneration stays in plan phase 19.
 
 > **Phase 07 (2026-10-20)**: new `/quiz-practice/*` student routes (replace `/quiz-practice-attempts*`), quiz-set sharing routes (`/quizsets/:id/sharing`, `generate-code`, `users/search`) and the delta body of `PUT /flashcardsets/:id/sharing`. Source: `quiz-practice.controller.ts`, `quizset-sharing.controller.ts`, `routes.yaml`.
 
@@ -33,7 +33,7 @@ Gateway proxies all requests to downstream services. **Routing source of truth (
 | GET | /api/v1/auth/google/callback | Google OAuth callback | public | auth |
 | POST | /api/v1/auth/google/one-tap | Google One Tap login | public | auth |
 | POST | /api/v1/auth/sync-refresh-token | Sync refresh token from current session | Bearer | auth |
-| GET | /api/v1/auth/me | Current user: `{ user, roles, permissions }` (no wallet/subscription; balance via `GET /wallet/info`) | Bearer | auth |
+| GET | /api/v1/auth/me | Current user: `{ user, roles, permissions }` (no wallet/subscription; the feature was removed) | Bearer | auth |
 | POST | /api/v1/auth/sendVerificationEmail | Send account verification email | Bearer | auth |
 | POST | /api/v1/auth/verifyAccount | Verify account with code | Bearer | auth |
 | POST | /api/v1/auth/send-code-change-password | Send code to change password | Bearer | auth |
@@ -183,22 +183,6 @@ Gateway proxies all requests to downstream services. **Routing source of truth (
 | GET | /api/v1/subjects/:id | Get subject by ID | Bearer | ai-chat |
 | GET | /api/v1/subjects/slug/:slug | Get subject by slug | Bearer | ai-chat |
 
-#### Wallet
-
-| Method | Path | Description | Auth | Owner |
-|--------|------|-------------|------|-------|
-| GET | /api/v1/wallet/details | Get wallet with transaction history | Bearer | finance |
-
-#### Payment
-
-| Method | Path | Description | Auth | Owner |
-|--------|------|-------------|------|-------|
-| POST | /api/v1/payment/create | Create payment (credits/subscription) | Bearer | finance |
-| GET | /api/v1/payment/status/:paymentId | Check payment status | Bearer | finance |
-| GET | /api/v1/payment/subscription | Get current subscription | Bearer | finance |
-| GET | /api/v1/payment/subscription/plans | List subscription plans | Bearer | finance |
-| DELETE | /api/v1/payment/cancel/:paymentId | Cancel pending payment | Bearer | finance |
-
 #### Student
 
 | Method | Path | Description | Auth | Owner |
@@ -287,12 +271,6 @@ Student practice on shared quiz sets (phase 07; routes.yaml entry `quiz-practice
 | Method | Path | Description | Auth | Owner |
 |--------|------|-------------|------|-------|
 | POST | /api/v1/r2/image | Upload image to R2 storage (max 2MB) | Bearer | document |
-
-#### Webhook
-
-| Method | Path | Description | Auth | Owner |
-|--------|------|-------------|------|-------|
-| POST | /api/v1/webhook/sepay | SePay payment webhook callback | ApiKey | finance |
 
 ---
 
@@ -547,31 +525,7 @@ exam-service was split in phases 12-15; the Owner column says which service serv
 
 ---
 
-### Finance and Admin Services (finance `localhost:3003`, admin `localhost:7006`, `/api/v1/...`)
-
-#### Wallet
-
-| Method | Path | Description | Auth | Owner |
-|--------|------|-------------|------|-------|
-| GET | /api/v1/wallet/info | Get wallet info | Bearer | finance |
-| GET | /api/v1/wallet/details | Get wallet with transaction history | Bearer | finance |
-
-#### Payment
-
-| Method | Path | Description | Auth | Owner |
-|--------|------|-------------|------|-------|
-| POST | /api/v1/payment/create | Create payment and get QR code | Bearer | finance |
-| GET | /api/v1/payment/status/:paymentId | Check payment status | Bearer | finance |
-| GET | /api/v1/payment/history | Get payment history | Bearer | finance |
-| DELETE | /api/v1/payment/cancel/:paymentId | Cancel pending payment | Bearer | finance |
-| GET | /api/v1/payment/subscription | Get current subscription | Bearer | finance |
-| GET | /api/v1/payment/subscription/plans | Get subscription plans | Bearer | finance |
-
-#### Webhook
-
-| Method | Path | Description | Auth | Owner |
-|--------|------|-------------|------|-------|
-| POST | /api/v1/webhook | SePay payment webhook (apikey auth) | ApiKey | finance |
+### Admin Service (admin `localhost:7006`, `/api/v1/...`)
 
 #### Admin
 
@@ -593,10 +547,6 @@ All admin routes are proxied from gateway via `/api/v1/admin/*` to `admin-servic
 | GET | /api/v1/admin/roles/changes | Role change history (`userId`, `page`, `limit`), newest first | Admin (`role:assign`) | admin |
 | PUT | /api/v1/admin/roles/users/:id/role | Set base role `STUDENT` / `TEACHER` (`reason` optional); 403 `CANNOT_CHANGE_OWN_ROLE`, 404 `USER_NOT_FOUND`, 409 `ROLE_CHANGE_CONFLICT` | Admin (`role:assign`) | admin |
 | PUT | /api/v1/admin/roles/users/:id/system-admin | Grant / revoke SYSTEM_ADMIN (`{ isSystemAdmin, reason? }`); also 409 `LAST_SYSTEM_ADMIN` | Admin (`role:assign`) | admin |
-| POST | /api/v1/admin/finance/refund | Refund a payment (finance `RefundPayment`); optional `Idempotency-Key` header (1-200 chars, else a fresh key per request), response carries `alreadyApplied` | Admin (`finance:admin`) | admin |
-| POST | /api/v1/admin/finance/credit | Manual credit adjustment (finance `AdjustBalance`); `Idempotency-Key`, `alreadyApplied` | Admin (`finance:admin`) | admin |
-| POST | /api/v1/admin/finance/set-tier | Change user subscription tier (finance `ChangeTier`); `Idempotency-Key`, `alreadyApplied` | Admin (`finance:admin`) | admin |
-| POST | /api/v1/admin/finance/tier | Alias of `set-tier` (used by the FE) | Admin (`finance:admin`) | admin |
 | GET | /api/v1/admin/audit | Query audit log (paginated, date-filtered) | Admin | admin |
 | GET | /api/v1/admin/logs | Fetch server-side logs (polling fallback) | Admin | admin |
 | GET | /api/v1/admin/logs/stream | SSE stream for real-time logs (ticket exchange) | Admin | admin |
@@ -635,7 +585,6 @@ Updated 2026-10-22 (phase 09): every non-public route is wrapped by `guarded()` 
 | /k | KRootRedirect | KLayout | login only |
 | /k/profile | ProfilePage | KLayout | login only |
 | /k/verify | VerifyPage | KLayout | login only |
-| /k/subscription | SubscriptionPage | KLayout | `subscription:manage` |
 | /k/my-materials | MyMaterialsPage | KLayout | `flashcard:study` |
 | /k/flash-card | FlashcardsPage | KLayout | `flashcardset:manage` |
 | /k/history | HistoryPage | KLayout | `ai:generate` or `exam:take` |
@@ -666,7 +615,6 @@ Shell `/admin` (`AdminRoute` = `RequirePermission admin:access`, `AdminLayout`);
 | /admin/stats | AdminStatsPage | `stats:read` |
 | /admin/users | AdminUsersPage | `user:manage` |
 | /admin/roles | AdminRolesPage | `role:assign` |
-| /admin/finance | AdminFinancePage | `finance:admin` |
 | /admin/logs | AdminLogsPage | `logs:read` |
 | /admin/audit | AdminAuditPage | `audit:read` |
 | /admin/word-family | AdminWordFamilyPage | `word_family:admin` |
@@ -692,22 +640,21 @@ Shell `/admin` (`AdminRoute` = `RequirePermission admin:access`, `AdminLayout`);
 
 | Category | Count |
 |----------|-------|
-| Gateway section rows (public, optional and authenticated) | 174 |
+| Gateway section rows (public, optional and authenticated) | 167 |
 | of which owned by content | 79 |
 | of which owned by assessment | 41 |
 | of which owned by auth | 23 |
 | of which owned by ai-chat | 18 |
-| of which owned by finance | 7 |
 | of which owned by document | 6 |
-| Service-section rows (auth 23, content/assessment/ai-chat/document 137, finance 9, admin 21) | 190 |
-| Frontend routes (router entries incl. `/admin` shell, 9 admin children, `/403`, catch-all) | 48 |
-| **Total frontend routes** | **48** |
+| Service-section rows (auth 23, content/assessment/ai-chat/document 137, admin 17) | 177 |
+| Frontend routes (router entries incl. `/admin` shell, 8 admin children, `/403`, catch-all) | 46 |
+| **Total frontend routes** | **46** |
 
 ## Notes
 
-1. **Finance routes** (updated 2026-10-20): the duplicate gateway proxy controllers are gone. `routes.yaml` has one `wallet` entry (`/api/v1/wallet`) and one `payment` entry (`/api/v1/payment`, public `GET /payment/subscription/plans`), both `permissions: [wallet:use]`; `/api/v1/profile` routes to auth-service. SePay `POST /api/v1/webhook/sepay` is rewritten to `/api/v1/webhook` on finance.
+1. **Finance routes (removed)**: finance-service and its gateway entries (`wallet`, `payment`, `webhook-sepay`) are gone together with the wallet/subscription/payment feature. Removed routes: `/api/v1/wallet/*`, `/api/v1/payment/*`, `POST /api/v1/webhook/sepay` (rewritten to `/api/v1/webhook`), `/api/v1/admin/finance/*`. `/api/v1/profile` routes to auth-service. Admin `GET /admin/series/:name` accepts `signups` and `traffic` only (`revenue` removed).
 
-2. **Public vs optional vs authenticated** (updated 2026-10-20): each `routes.yaml` entry sets `auth: none | optional | required` (plus `public` method/path exceptions). Public: auth endpoints (login, register, reset, OAuth), `GET /status`, SePay webhook, admin log stream (ticket), public exam room/session/flashcard set access. `optional`: `/config/pages`, `/subjects`. Unmatched paths return 404 `ROUTE_NOT_FOUND`. Services still re-verify the token with `@examio/auth-jwt`.
+2. **Public vs optional vs authenticated** (updated 2026-10-20): each `routes.yaml` entry sets `auth: none | optional | required` (plus `public` method/path exceptions). Public: auth endpoints (login, register, reset, OAuth), `GET /status`, admin log stream (ticket), public exam room/session/flashcard set access. `optional`: `/config/pages`, `/subjects`. Unmatched paths return 404 `ROUTE_NOT_FOUND`. Services still re-verify the token with `@examio/auth-jwt`.
 
 3. **Quiz encryption** (assessment-service): Exam attempts have two submission paths — legacy `submit` (plain answers) and secure `secure-submit` (answers wrapped in JWT tokens from encrypted quiz). The `secure-quiz` endpoint returns AES-256-CBC encrypted questions with server-signed JWT tokens.
 
@@ -719,4 +666,3 @@ Shell `/admin` (`AdminRoute` = `RequirePermission admin:access`, `AdminLayout`);
 
 - `PendingJobDialog` rendered unconditionally in `KLayout` — unclear if intentional.
 - `ProfilePage` uses both `getProfileApi` and `useAuthStore.user` — possible state drift.
-- `SubscriptionPage` vs `SubscriptionTemplate` — two subscription UIs, unclear canonical.

@@ -5,7 +5,6 @@ import { documentV1 } from '@examio/contracts';
 import {
     RequirePermissions,
     RequirePermissionsOrService,
-    extractRpcToken,
     principalOfMetadata,
 } from '@examio/auth-jwt';
 import { DEFAULT_LIST_SIZE, MAX_LIST_SIZE, MAX_UPLOAD_BYTES } from '../../config/document.constants';
@@ -61,8 +60,7 @@ export class DocumentGrpcController implements documentV1.DocumentServiceControl
             const outcome = await this.uploads.createFromBytes(
                 userId,
                 { filename: request.filename, mimetype: request.mimetype, data: Buffer.from(request.data) },
-                { chargeCredits: request.chargeCredits, reuseDuplicate: request.reuseDuplicate },
-                extractRpcToken(metadata)
+                { reuseDuplicate: request.reuseDuplicate }
             );
             return { document: toDocumentInfo(outcome.document), reused: outcome.reused };
         });

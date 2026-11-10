@@ -10,7 +10,6 @@ const APPS = [
     'vocabulary-service',
     'document-service',
     'ai-chat-service',
-    'finance-service',
     'admin-service',
     'gateway-service',
     'r2-service',

@@ -17,7 +17,7 @@ interface AuditTableProps {
 }
 
 /** Longest common prefix — used for `contains` filtering when
- *  multiple actions are grouped (e.g. all admin.finance.* actions). */
+ *  multiple actions are grouped (e.g. all admin.user.* actions). */
 function commonPrefix(strings: string[]): string {
   if (!strings.length) return "";
   let prefix = strings[0];
@@ -36,8 +36,8 @@ function toAuditAction(
   if (!action) return undefined;
   if (Array.isArray(action)) {
     // Backend uses Prisma `contains` (SQL ILIKE). Find the longest common
-    // prefix so a group like ["admin.finance.refund","admin.finance.credit"]
-    // becomes "admin.finance." and matches all finance audit rows.
+    // prefix so a group like ["admin.user.ban","admin.user.unban"]
+    // becomes "admin.user." and matches both audit rows.
     return commonPrefix(action) || undefined;
   }
   return action;
@@ -50,10 +50,6 @@ const actionLabels: Record<string, string> = {
   "admin.user.ban": "Khóa người dùng",
   "admin.user.unban": "Mở khóa người dùng",
   "admin.user.update": "Cập nhật thông tin",
-  "admin.finance.refund": "Hoàn tiền",
-  "admin.finance.credit": "Cộng tiền",
-  "admin.finance.tier": "Đổi gói",
-  "admin.finance.tier_change": "Đổi gói",
 };
 
 function displayAction(action: string): string {
@@ -61,8 +57,6 @@ function displayAction(action: string): string {
 }
 
 function actionVariant(action: string): BadgeVariant {
-  if (action.startsWith("admin.finance.refund")) return "negative";
-  if (action.startsWith("admin.finance.credit")) return "positive";
   if (action.startsWith("admin.user.ban")) return "negative";
   if (action.startsWith("admin.user.unban")) return "positive";
   if (action.startsWith("admin.user.grant")) return "positive";

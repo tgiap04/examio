@@ -7,16 +7,18 @@ const rpcCode = (error: unknown) => (toRpcException(error).getError() as { code:
 
 describe('toRpcException', () => {
     it.each([
-        [DocumentErrorCode.QUOTA_EXCEEDED, 403, status.RESOURCE_EXHAUSTED],
-        [DocumentErrorCode.INSUFFICIENT_CREDITS, 403, status.FAILED_PRECONDITION],
-        [DocumentErrorCode.WALLET_NOT_FOUND, 403, status.FAILED_PRECONDITION],
-        [DocumentErrorCode.CHARGE_UNAVAILABLE, 403, status.UNAVAILABLE],
         [DocumentErrorCode.STORAGE_UNAVAILABLE, 500, status.UNAVAILABLE],
-        [DocumentErrorCode.UPLOAD_EXPIRED, 409, status.ABORTED],
+        [DocumentErrorCode.STORAGE_KEY_TAKEN, 409, status.ALREADY_EXISTS],
         [DocumentErrorCode.NOT_FOUND, 404, status.NOT_FOUND],
         [DocumentErrorCode.VALIDATION_FAILED, 400, status.INVALID_ARGUMENT],
     ])('%s (HTTP %i) maps to gRPC %i and carries the code as the detail', (code, http, grpc) => {
         expect(rpcCode(documentError(http, code, 'text'))).toEqual({ code: grpc, message: code });
+    });
+
+    it('no charge or quota code exists any more', () => {
+        for (const code of ['QUOTA_EXCEEDED', 'INSUFFICIENT_CREDITS', 'WALLET_NOT_FOUND', 'CHARGE_UNAVAILABLE', 'UPLOAD_EXPIRED']) {
+            expect(Object.values(DocumentErrorCode)).not.toContain(code);
+        }
     });
 
     it('falls back to the HTTP status for exceptions without a known code', () => {

@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { GenerateIdService } from '@examio/common';
 import { Envelope, EventHandler, PermanentEventError } from '@examio/messaging';
 import { GenerationJob, Prisma, PrismaService } from '../../prisma';
-import { GenerationChargeService } from './generation-charge.service';
 import { GenerationJobRepository } from './generation-job.repository';
 import { GenerationLockService } from './generation-lock.service';
 import { IN_FLIGHT_STATUSES, JobStatus } from './generation.constants';
@@ -60,7 +59,6 @@ export class GenerationEventsHandler {
     constructor(
         private readonly prisma: PrismaService,
         private readonly jobs: GenerationJobRepository,
-        private readonly charge: GenerationChargeService,
         private readonly locks: GenerationLockService,
         private readonly ids: GenerateIdService
     ) {}
@@ -88,8 +86,7 @@ export class GenerationEventsHandler {
         }
         const items = job.type === 'flashcard' ? data.items.flashcards : data.items.quizzes;
         if (items.length === 0) {
-            // ai-service never reports an empty success; treat it as a failure. The refund is left to the
-            // sweeper: no network call runs inside this DB transaction.
+            // ai-service never reports an empty success; treat it as a failure.
             return (await this.jobs.transition(tx, job.id, IN_FLIGHT_STATUSES, JobStatus.FAILED, { error: 'GENERATION_FAILED' }))
                 ? job
                 : null;
@@ -106,9 +103,8 @@ export class GenerationEventsHandler {
     }
 
     /**
-     * QUEUED / PROCESSING -> FAILED, then the refund. No idempotency tx: the refund is a network call that
-     * must not run inside a DB transaction; a replay finds the job already FAILED, and a refund that did
-     * not complete stays open (`refundedAt` null) for the sweeper.
+     * QUEUED / PROCESSING -> FAILED, then the generation lock is released. No idempotency tx: the
+     * conditional transition is the idempotency (a replay finds the job already FAILED and changes nothing).
      */
     @EventHandler('ai.generation.failed', { dedupe: false })
     async onFailed(envelope: Envelope): Promise<void> {
@@ -135,10 +131,5 @@ export class GenerationEventsHandler {
             return;
         }
         await this.locks.releaseAfterTerminal(job);
-        try {
-            await this.charge.refund(job, this.prisma);
-        } catch (error) {
-            this.logger.error(`Refund of failed job ${jobId} did not complete, the sweeper retries: ${(error as Error).message}`);
-        }
     }
 }

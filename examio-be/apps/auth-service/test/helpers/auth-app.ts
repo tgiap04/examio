@@ -12,7 +12,7 @@ import { HEALTH_ROUTES_EXCLUDED_FROM_PREFIX } from '@examio/observability';
 
 export const SERVICE_SECRETS = {
     exam: `exam-${randomBytes(8).toString('hex')}`,
-    finance: `finance-${randomBytes(8).toString('hex')}`,
+    content: `content-${randomBytes(8).toString('hex')}`,
     admin: `admin-${randomBytes(8).toString('hex')}`,
 };
 

@@ -3,7 +3,7 @@
  * Pure functions — no NestJS or Prisma imports.
  */
 
-export type SeriesName = 'signups' | 'traffic' | 'revenue';
+export type SeriesName = 'signups' | 'traffic';
 export type SeriesRange = '7d' | '30d' | '90d';
 export type SeriesBucket = 'day' | 'week' | 'month';
 
@@ -11,9 +11,6 @@ export interface OverviewResponse {
     totalUsers: number;
     activeToday: number;
     active30d: number;
-    proCount: number;
-    vipCount: number;
-    revenue30d: number;
 }
 
 export interface SeriesPoint {

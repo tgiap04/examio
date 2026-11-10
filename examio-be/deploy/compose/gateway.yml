@@ -39,7 +39,6 @@ x-gateway: &gateway
         - VOCABULARY_SERVICE_URL=http://vocabulary:3000
         - DOCUMENT_SERVICE_URL=http://document:3000
         - AICHAT_SERVICE_URL=http://ai-chat:3000
-        - FINANCE_SERVICE_URL=http://finance:3000
         - ADMIN_SERVICE_URL=http://admin:3000
         - REDIS_HOST=redis
         - REDIS_PORT=6379
@@ -78,8 +77,6 @@ x-gateway: &gateway
         document:
             condition: service_healthy
         ai-chat:
-            condition: service_healthy
-        finance:
             condition: service_healthy
         admin:
             condition: service_healthy

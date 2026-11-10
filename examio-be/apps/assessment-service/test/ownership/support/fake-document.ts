@@ -13,8 +13,7 @@ export interface DocumentCall {
     ids?: string[];
     /** `sub` of the bearer token: a user id. A `svc:*` token is refused like the real service does. */
     caller: string;
-    /** CreateUpload request fields, for assertions. */
-    chargeCredits?: boolean;
+    /** CreateUpload request field, for assertions. */
     reuseDuplicate?: boolean;
 }
 
@@ -68,7 +67,6 @@ export async function startFakeDocument(): Promise<FakeDocument> {
             keyR2: `ai-uploads/${userId}/${id}.pdf`,
             url: `https://r2.test/ai-uploads/${userId}/${id}.pdf`,
             processingStatus: Status.DOCUMENT_PROCESSING_STATUS_COMPLETED,
-            creditCharged: false,
             pageCount: 0,
             createdAt: now,
             updatedAt: now,
@@ -101,7 +99,7 @@ export async function startFakeDocument(): Promise<FakeDocument> {
 
         @GrpcMethod('DocumentService', 'CreateUpload')
         createUpload(req: documentV1.CreateUploadRequest, md: Metadata): documentV1.CreateUploadResponse {
-            const userId = this.enter('CreateUpload', md, { chargeCredits: req.chargeCredits, reuseDuplicate: req.reuseDuplicate });
+            const userId = this.enter('CreateUpload', md, { reuseDuplicate: req.reuseDuplicate });
             const size = req.data.length;
             if (req.reuseDuplicate) {
                 const existing = [...this.s.docs.values()]
@@ -135,7 +133,7 @@ export async function startFakeDocument(): Promise<FakeDocument> {
         getQuota(_req: documentV1.GetQuotaRequest, md: Metadata): documentV1.GetQuotaResponse {
             const userId = this.enter('GetQuota', md);
             const fileCount = this.s.quotaFileCount.get(userId) ?? [...this.s.docs.values()].filter((d) => d.userId === userId).length;
-            return { usedThisMonth: fileCount, monthlyLimit: -1, fileCount };
+            return { usedThisMonth: fileCount, fileCount };
         }
 
         @GrpcMethod('DocumentService', 'EnsureProcessed')

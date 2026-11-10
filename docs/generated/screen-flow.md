@@ -32,7 +32,6 @@ graph TD
     KROOT --> MATERIALS[SCR016_MyMaterialsPage<br/>/k/my-materials]
     KROOT --> PROFILE[SCR013_ProfilePage<br/>/k/profile]
     KROOT --> VERIFY[SCR014_VerifyPage<br/>/k/verify]
-    KROOT --> SUBS[SCR015_SubscriptionPage<br/>/k/subscription]
     KROOT --> FLASHCARDS[SCR017_FlashcardsPage<br/>/k/flash-card]
     KROOT --> HISTORY[SCR018_HistoryPage<br/>/k/history]
     HISTORY --> EXAMHIST[SCR019_ExamHistoryPage<br/>/k/history/exam]
@@ -92,7 +91,6 @@ graph TD
 | SCR016 | SCR023 | Click flashcard set card | None | |
 | SCR016 | SCR027 | Click exam room card | None | |
 | SCR016 | SCR027 | Click exam room in list | None | |
-| SCR013 | SCR015 | Click "Nâng cấp" subscription | None | |
 | SCR018 | SCR019 | Click exam history item | None | |
 | SCR018 | SCR020 | Click PDF history item | None | |
 | SCR021 | SCR026 | Click "Quản lý phòng thi" | None | |
@@ -212,13 +210,11 @@ graph TD
 - From SCR016 nav
 
 **Exit Points**:
-- To SCR015: Click subscription upgrade
 - To SCR008: Logout action
 
 **Decision Points**:
 - REG001 dirty form → warn before navigation
 - REG002 logout device → confirmation dialog
-- REG003 payment/subscription → redirect to SCR015
 
 ---
 
@@ -231,22 +227,6 @@ graph TD
 **Exit Points**:
 - To SCR016: Verification success → `/k`
 - To SCR008: Verification fails → login
-
----
-
-### SCR015 (SubscriptionPage)
-
-**Entry Points**:
-- Direct URL access `/k/subscription`
-- From SCR013 click
-
-**Exit Points**:
-- To SCR013: Back after purchase or close QR dialog
-- To SCR008: Logout
-
-**Decision Points**:
-- Payment pending → show QR + poll status
-- Payment confirmed → update subscription + redirect to SCR013
 
 ---
 
@@ -533,7 +513,6 @@ graph TD
 | From Region | To Target | Action/Trigger | Client-State Only |
 |-------------|-----------|----------------|-------------------|
 | SCR013/REG001 (ProfileForm) | SCR013/REG002 (DeviceList) | Click "Thiết bị" tab in profile | Yes |
-| SCR013/REG001 (ProfileForm) | SCR013/REG003 (SubscriptionWallet) | Click "Ví/Tiền" tab in profile | Yes |
 | SCR016/REG001 (QuizSetGrid) | SCR022 (ManageQuizSetDetailPage) | Click quiz set card | No (URL changes) |
 | SCR016/REG002 (FlashCardSetGrid) | SCR023 (ManageFlashcardSetDetailPage) | Click flashcard set card | No (URL changes) |
 | SCR016/REG003 (ExamRoomGrid) | SCR027 (ManageExamRoomDetailPage) | Click exam room card | No (URL changes) |
@@ -579,7 +558,7 @@ graph LR
 | SCR027 | Yes | Teacher/host role (`TeacherRoute`) |
 | SCR021, SCR026 | Yes | Teacher/host role (`TeacherRoute`) |
 | SCR022, SCR023 | Yes | Owner of quiz/flashcard set |
-| SCR024 (SCR025 removed 2026-06-14) | Yes | Authenticated user (AI features gated by subscription) |
+| SCR024 (SCR025 removed 2026-06-14) | Yes | TEACHER (`ai:generate`; no subscription gating) |
 
 ---
 
@@ -595,7 +574,6 @@ graph LR
 | SCR011 | Invalid/expired OTP | Show error, allow resend | screen |
 | SCR013 | Profile load failed | Show inline error in REG001 | region:REG001 |
 | SCR013 | Device list load failed | Show inline error in REG002 | region:REG002 |
-| SCR013 | Wallet/subscription load failed | Show inline error in REG003 | region:REG003 |
 | SCR016 | Quiz set load failed | Show inline error in REG001 | region:REG001 |
 | SCR016 | Flashcard set load failed | Show inline error in REG002 | region:REG002 |
 | SCR016 | Exam room load failed | Show inline error in REG003 | region:REG003 |

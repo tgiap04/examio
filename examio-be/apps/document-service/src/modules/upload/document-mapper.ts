@@ -3,7 +3,6 @@ import { UserStorage } from '../../prisma';
 import { DocumentStatus } from '../../config/document.constants';
 
 const STATUS_TO_PROTO: Record<string, documentV1.DocumentProcessingStatus> = {
-    [DocumentStatus.PENDING_CHARGE]: documentV1.DocumentProcessingStatus.DOCUMENT_PROCESSING_STATUS_PENDING_CHARGE,
     [DocumentStatus.PENDING]: documentV1.DocumentProcessingStatus.DOCUMENT_PROCESSING_STATUS_PENDING,
     [DocumentStatus.PROCESSING]: documentV1.DocumentProcessingStatus.DOCUMENT_PROCESSING_STATUS_PROCESSING,
     [DocumentStatus.COMPLETED]: documentV1.DocumentProcessingStatus.DOCUMENT_PROCESSING_STATUS_COMPLETED,
@@ -22,7 +21,6 @@ export function toDocumentInfo(row: UserStorage): documentV1.DocumentInfo {
         processingStatus:
             STATUS_TO_PROTO[row.processingStatus] ??
             documentV1.DocumentProcessingStatus.DOCUMENT_PROCESSING_STATUS_UNSPECIFIED,
-        creditCharged: row.creditCharged,
         pageCount: row.pageCount,
         createdAt: String(row.createdAt.getTime()),
         updatedAt: String(row.updatedAt.getTime()),
@@ -42,7 +40,6 @@ export function toHttpDocument(row: UserStorage) {
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
         processingStatus: row.processingStatus,
-        creditCharged: row.creditCharged,
         pageCount: row.pageCount,
     };
 }

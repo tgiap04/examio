@@ -9,7 +9,6 @@ import { RedisModule, RedisReadinessCheck } from '@examio/redis';
 
 import { AdminServiceController } from './admin-service.controller';
 import { AdminServiceService } from './admin-service.service';
-import { AdminFinanceModule } from './modules/admin-finance/admin-finance.module';
 import { AdminStatsModule } from './modules/admin-stats/admin-stats.module';
 import { AdminLogsModule } from './modules/admin-logs/admin-logs.module';
 import { AdminUsersModule } from './modules/admin-users/admin-users.module';
@@ -47,7 +46,6 @@ function serviceClientEnabled(): boolean {
             },
         ]),
         AdminStatsModule,
-        AdminFinanceModule,
         AdminLogsModule,
         AdminUsersModule,
         AdminRolesModule,

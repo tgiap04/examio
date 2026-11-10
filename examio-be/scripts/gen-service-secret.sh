@@ -8,7 +8,7 @@ set -euo pipefail
 
 name="${1:-}"
 if [[ ! "$name" =~ ^[a-z][a-z0-9-]*$ ]]; then
-    echo "usage: $0 <service-name>   (lowercase, e.g. content, finance, admin)" >&2
+    echo "usage: $0 <service-name>   (lowercase, e.g. content, document, admin)" >&2
     exit 1
 fi
 

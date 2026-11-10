@@ -5,7 +5,6 @@ import { HISTORY_CONTENT_MAX_CHARS, HISTORY_FETCH_LIMIT, HISTORY_KEEP } from '..
 import { AIChatRepository } from './ai-chat.repository';
 import { AIChatMessageRepository } from './ai-chat-message.repository';
 import { AIChatDocumentsService } from './ai-chat-documents.service';
-import { AIChatLimitsService } from './ai-chat-limits.service';
 import { ChatAccessService, type OwnedChat } from './chat-access.service';
 import { newId } from './ids';
 
@@ -23,7 +22,6 @@ export interface MessageInput {
 export class AIChatTurnService {
     constructor(
         private readonly access: ChatAccessService,
-        private readonly limits: AIChatLimitsService,
         private readonly documents: AIChatDocumentsService,
         private readonly chats: AIChatRepository,
         private readonly messages: AIChatMessageRepository
@@ -31,12 +29,11 @@ export class AIChatTurnService {
 
     /**
      * Everything that can still be refused with an HTTP status, before anything is saved or sent:
-     * the chat is the caller's, the plan's limits allow it, and every document the message names is
-     * the caller's (before it may influence the AI context). A regenerate passes `replacesFrom` (see assertCanSend).
+     * the chat is the caller's, and every document the message names is the caller's (before it may
+     * influence the AI context). There is no per-minute or per-chat message limit.
      */
-    async admit(chatId: string, user: AuthUser, input: MessageInput, userToken: string, replacesFrom?: Date) {
+    async admit(chatId: string, user: AuthUser, input: MessageInput, userToken: string) {
         const chat = await this.access.ownedChat(chatId, user);
-        await this.limits.assertCanSend(user.id, chat.id, userToken, replacesFrom);
         const requestedIds = [...new Set([...(input.documentIds ?? []), ...(input.documentId ? [input.documentId] : [])])];
         await this.documents.assertOwned(requestedIds, userToken);
         return { chat, requestedIds };

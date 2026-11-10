@@ -19,8 +19,8 @@ fi
 # BOOT_CWD: run from a directory without service .env files (default: the repo root).
 BOOT_CWD="${BOOT_CWD:-$ROOT}"
 
-SERVICES="${SERVICES:-auth content assessment study-room vocabulary document ai-chat finance admin r2 gateway}"
-GRPC_SERVICES="${GRPC_SERVICES:-auth content vocabulary document finance r2 gateway}"
+SERVICES="${SERVICES:-auth content assessment study-room vocabulary document ai-chat admin r2 gateway}"
+GRPC_SERVICES="${GRPC_SERVICES:-auth content vocabulary document r2 gateway}"
 export PORT="${PORT:-3000}"
 export GRPC_PORT="${GRPC_PORT:-50051}"
 failed=0

@@ -44,7 +44,7 @@ describe('role change (e2e, real Postgres)', () => {
         });
 
     it('demoting a TEACHER touches only role/authzVersion: the row and open sessions are untouched', async () => {
-        // Content/finance rows live in other services' databases: auth cannot touch them by construction.
+        // Content rows live in other services' databases: auth cannot touch them by construction.
         const teacher = await newUser({ role: 'TEACHER' });
         const admin = await newUser({ isSystemAdmin: true });
         const session = await ctx.prisma.userSession.create({

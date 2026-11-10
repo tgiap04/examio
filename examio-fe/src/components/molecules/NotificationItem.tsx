@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 export interface NotificationItemData {
   id: string;
-  type: "security" | "message" | "payment" | "system" | "team" | "meeting";
+  type: "security" | "message" | "system" | "team" | "meeting";
   title: string;
   description: string;
   time: string;

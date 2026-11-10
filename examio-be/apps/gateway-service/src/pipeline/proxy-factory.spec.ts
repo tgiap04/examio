@@ -285,7 +285,7 @@ describe('createRouteProxy', () => {
         const handler = (_q: IncomingMessage, res: ServerResponse) =>
             res.writeHead(200, { 'set-cookie': cookies }).end('ok');
 
-        it.each(['exam', 'finance', 'admin'])('drops %s upstream cookies before they reach the client', async (upstreamName) => {
+        it.each(['content', 'document', 'admin'])('drops %s upstream cookies before they reach the client', async (upstreamName) => {
             const r = await make({ upstreamName, handler });
             const res = await get(`${r.gateway}/api/x`);
             expect(res.status).toBe(200);

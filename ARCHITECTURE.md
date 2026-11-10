@@ -35,6 +35,7 @@ Phase 19 đồng bộ file này với code thực tế. Khi plan và code lệch
 | 16 | 10.3 | CI/CD theo `.github/workflows/deploy.yml`: wave, migration lint, cutover. |
 | 17 | 4.5, 4.7, 8.3, 10.4 | Hạ tầng quan sát và Redis ACL `[DEFERRED]` (phase 17); KPI admin qua RPC tổng hợp. |
 | 18 | 4.6 | Mã lỗi 403, `TOKEN_STALE`, `/auth/me` đổi shape; mobile phải đồng bộ trước release. |
+| 19 | 1, 3, 4.3–4.4, 5, 6, 7, 8, 9, 10, 15 | Bỏ tính năng ví, gói và thanh toán: không còn finance-service, proto `finance/v1`, quyền `wallet:use`/`subscription:manage`/`finance:admin`, luồng trừ/hoàn tiền và giới hạn theo gói. Mục 2, 12 và phụ lục C là lịch sử, giữ nguyên. |
 
 ## Mục lục
 
@@ -60,7 +61,7 @@ Phase 19 đồng bộ file này với code thực tế. Khi plan và code lệch
 
 **Bài toán:** nền tảng học tập B2C.
 - Người dùng tạo quiz/flashcard (thủ công hoặc sinh bằng AI từ tài liệu), tổ chức phòng thi, học nhóm realtime, chat với "giáo viên AI".
-- Thanh toán bằng ví credit + gói subscription (SePay).
+- Không có ví, gói hay thanh toán (đã bỏ); chi phí AI chỉ được chặn bằng rate limit ở gateway.
 - Client: web SPA (`examio-fe`) và mobile (`examio-app`, Kotlin Multiplatform). Cả hai chỉ nói chuyện với một cửa vào duy nhất.
 
 **Nguyên tắc kiến trúc:**
@@ -122,14 +123,14 @@ Trước đây backend là **distributed monolith**: tách process nhưng vẫn 
                     │ rate limit Redis · stream   │
                     └──────────────┬──────────────┘
                                    │ HTTP proxy (stream) + Bearer JWT    mạng "internal"
-   ┌──────────┬──────────┬─────────┼─────────┬──────────┬──────────┬───────────┬─────────┐
-   ▼          ▼          ▼         ▼         ▼          ▼          ▼           ▼         ▼
- auth     finance    content  assessment study-room vocabulary  ai-chat   document   admin
- (JWT,    (ví, gói,  (quiz,   (phòng thi, (Socket.io (word      (chat,    (file,    (audit,
- user,    payment)   flash-   phiên, bài  realtime)  family)    subject)  quota)    flags,
- session)            card)    làm)                                                  KPI)
-   │          │          │         │         │          │          │           │         │
-   └──────────┴────┬─────┴─────────┴────┬────┴──────────┴────┬─────┴───────────┴─────────┘
+   ┌──────────┬─────────┼─────────┬──────────┬──────────┬───────────┬─────────┐
+   ▼          ▼         ▼         ▼          ▼          ▼           ▼         ▼
+ auth     content  assessment study-room vocabulary  ai-chat   document   admin
+ (JWT,    (quiz,   (phòng thi, (Socket.io (word      (chat,    (file,    (audit,
+ user,    flash-   phiên, bài  realtime)  family)    subject)  OCR)      flags,
+ session) card)    làm)                                                  KPI)
+   │          │         │         │          │          │           │         │
+   └──────────┴────┬────┴─────────┴────┬─────┴──────────┴───────────┴─────────┘
                    │ gRPC (đồng bộ)     │ RabbitMQ           │ gRPC
                    ▼                    ▼ examio.events      ▼
             service khác        (outbox → exchange →     ai-service (Python)
@@ -179,7 +180,6 @@ upstreams:
   assessment: ${ASSESSMENT_SERVICE_URL:-http://localhost:3014}
   studyroom: ${STUDYROOM_SERVICE_URL:-http://localhost:3009}
   document: ${DOCUMENT_SERVICE_URL:-http://localhost:3011}
-  finance: ${FINANCE_SERVICE_URL:-http://localhost:3003}
 
 routes:
   - id: quizsets
@@ -197,12 +197,6 @@ routes:
     upstream: assessment
     match: { path: '/api/v1/student/(recent-exams|pin-exam-room/[^/]+)' }
     auth: required
-
-  - id: wallet
-    upstream: finance
-    match: { prefix: /api/v1/wallet }
-    auth: required
-    permissions: [wallet:use]         # quyền thô, kiểm ở gateway
 
   - id: ai-recent-uploads             # khai báo trước ai-upload; content giữ route này
     upstream: content
@@ -263,7 +257,7 @@ routes:
 - Công khai `GET /.well-known/jwks.json`, chỉ trong mạng `internal`. Hỗ trợ nhiều `kid` để xoay khoá.
 - Cung cấp **gRPC** `AuthService` / `AuthUserService` (danh mục ở 6.2) và `POST /internal/token` cho service token (5.3).
 - Publish `auth.user.authz_changed` (sự kiện duy nhất về danh tính/quyền), `auth.user.updated`, `auth.session.revoked`; `auth.user.registered` vẫn được publish nhưng không còn consumer. **Không có** `auth.user.deleted` (`[DEFERRED]`, xem 7.2) và không có `auth.user.logged_in`.
-- **Không** tạo `UserSubscription` trong transaction đăng ký. finance tự tạo ví + gói Free khi nhận `auth.user.authz_changed` với `role=TEACHER` (4.4).
+- Đăng ký không tạo ví hay gói nào (tính năng đã bỏ).
 - Gửi mail (verify, reset) vẫn nằm ở auth. Chỉ tách notification-service khi có service thứ hai cần gửi mail (YAGNI).
 
 Chi tiết token, cookie và thu hồi ở mục 5.
@@ -272,15 +266,14 @@ Chi tiết token, cookie và thu hồi ở mục 5.
 
 | Service | Vai trò | Sở hữu dữ liệu | Gọi ra (gRPC) | Event |
 |---|---|---|---|---|
-| `finance-service` | Ví credit, giao dịch, thanh toán SePay, gói subscription | `Wallet`, `WalletTransaction`, `Payment`, `UserSubscription` | — | Pub: `finance.subscription.changed`. Sub: `auth.user.authz_changed` (tạo ví cho TEACHER) |
-| `content-service` | Quiz set, flashcard set, câu hỏi, nhãn, luyện tập, tiến độ học flashcard, **sinh quiz/flashcard bằng AI** | `QuizSet*`, `QuizQuestion`, `DetailsQuizQuestion`, `FlashCardSet*`, `FlashCard`, `DetailsFlashCard`, `HistoryGenerated{Quizz,Flashcard}`, `QuizPracticeAttempt`, `FlashCardViewHistory`, `UserPinnedFlashcard`, `FlashcardStudyProgress` | auth, finance, document, r2 | Pub: `content.generation.requested`, `content.quizset.deleted`. Sub: `ai.generation.*`, `document.deleted`, `auth.user.updated` |
+| `content-service` | Quiz set, flashcard set, câu hỏi, nhãn, luyện tập, tiến độ học flashcard, **sinh quiz/flashcard bằng AI** | `QuizSet*`, `QuizQuestion`, `DetailsQuizQuestion`, `FlashCardSet*`, `FlashCard`, `DetailsFlashCard`, `HistoryGenerated{Quizz,Flashcard}`, `QuizPracticeAttempt`, `FlashCardViewHistory`, `UserPinnedFlashcard`, `FlashcardStudyProgress` | auth, document, r2 | Pub: `content.generation.requested`, `content.quizset.deleted`. Sub: `ai.generation.*`, `document.deleted`, `auth.user.updated` |
 | `assessment-service` | Phòng thi, phiên thi, bài làm, chống gian lận, mã hoá đề (`QUIZ_AES_KEY`), màn "student" | `ExamRoom`, `ExamSession`, `ExamAttempt`, `CheatingLog`, `UserPinnedExamRoom` | content (snapshot đề), auth | Sub: `content.quizset.deleted`, `auth.user.updated` |
 | `study-room-service` | Phòng học nhóm realtime: timer, playlist YouTube, chat, kiểm duyệt | `StudyRoom`, `StudyRoomMember`, `StudyRoomPlaylistItem`, `StudyRoomChatBlock` + state sống trong Redis | auth (tên, avatar) | Sub: `auth.user.authz_changed`, `auth.user.updated` |
 | `vocabulary-service` | Word family, danh mục, từ đã lưu, sinh word family bằng AI | `WordFamilyCategory`, `WordFamily`, `UserSavedWordFamily` | ai (`GenerateWordFamily`) | — (không dùng RabbitMQ) |
-| `ai-chat-service` | Hội thoại AI, giáo viên AI theo môn (`Subject.systemPrompt`), đính kèm tài liệu | `AIChat`, `AIChatMessage`, `AIChatDocument`, `SubjectCategory`, `Subject` | ai (`StreamChat`), finance (`GetUserBenefits`), document | Sub: `document.deleted`, `finance.subscription.changed` |
-| `document-service` | File người dùng tải lên (metadata), quota upload theo tháng, trạng thái xử lý, trừ credit xử lý | `UserStorage`, `UserMonthlyFileUpload` | r2, finance | Pub: `document.uploaded`, `document.deleted`. Sub: `ai.document.processed`, `ai.document.failed` |
+| `ai-chat-service` | Hội thoại AI, giáo viên AI theo môn (`Subject.systemPrompt`), đính kèm tài liệu | `AIChat`, `AIChatMessage`, `AIChatDocument`, `SubjectCategory`, `Subject` | ai (`StreamChat`), document | Sub: `document.deleted` |
+| `document-service` | File người dùng tải lên (metadata), số lượt upload (chỉ thống kê, không giới hạn), trạng thái xử lý | `UserStorage` | r2 | Pub: `document.uploaded`, `document.deleted`. Sub: `ai.document.processed`, `ai.document.failed` |
 | `r2-service` | Hạ tầng blob: presigned URL, xoá object, ảnh public/private | — (bucket R2) | — | — |
-| `admin-service` | Dashboard admin, audit, page feature flags, KPI | `AdminAudit`, `PageFeatureFlag` | auth, finance, vocabulary, gateway (RPC, token admin được chuyển tiếp) | — (KPI lấy qua RPC tổng hợp `GetUserStats`, `GetRevenueStats`, cache Redis 5 phút; không có read model) |
+| `admin-service` | Dashboard admin, audit, page feature flags, KPI | `AdminAudit`, `PageFeatureFlag` | auth, vocabulary, gateway (RPC, token admin được chuyển tiếp) | — (KPI lấy qua RPC tổng hợp `GetUserStats`, cache Redis 5 phút; KPI tổng quan là `totalUsers`/`activeToday`/`active30d`; không có read model) |
 | `ai-service` (Python) | RAG, OCR/parse tài liệu, embedding, knowledge graph, sinh nội dung, LLM streaming | `Document` (chunk + `vector`), `DocumentEntity`, `UserStorageGraph`, `UserStorageGraphGroup` | — | Sub: `document.uploaded`, `document.deleted`, `content.generation.requested`. Pub: `ai.document.processed/failed`, `ai.generation.completed/failed` |
 
 **Đã bỏ:**
@@ -313,7 +306,7 @@ Chi tiết token, cookie và thu hồi ở mục 5.
 - **Không đổi URL.** Mọi đường dẫn `/api/v1/...` và `/ws/study` giữ nguyên. Gateway tự định tuyến về service mới. Hợp đồng response thì **có** đổi, xem bên dưới.
 - Web dùng cookie httpOnly do auth set. Mobile dùng `Authorization: Bearer`, token nhận trong body của `/auth/login` và `/auth/refresh`.
 - Mã lỗi 401: `TOKEN_EXPIRED`, `TOKEN_STALE` (`av` cũ) → client refresh **một lần** rồi retry; `SESSION_REVOKED` → về login. Mã lỗi 403: `PERMISSION_DENIED` (client báo và nạp lại `/auth/me`) và `EMAIL_NOT_VERIFIED` (chuyển tới `/k/verify`).
-- Câu "client không phải sửa" của bản cũ là **sai**: web (phase 09) đã đổi; mobile (`examio-app`, chỉ có trên nhánh `develop`) nằm ngoài phạm vi theo quyết định 29/10/2026 và **chưa** được đổi theo API mới. `/auth/me` trả `{ user, roles, permissions }` với `user.isSystemAdmin` (không còn `isAdmin`) và **không còn `wallet`** (số dư lấy từ `GET /wallet/info`). App mobile cần đồng bộ lại trước khi phát hành, nếu sau này đưa vào phạm vi.
+- Câu "client không phải sửa" của bản cũ là **sai**: web (phase 09) đã đổi; mobile (`examio-app`, chỉ có trên nhánh `develop`) nằm ngoài phạm vi theo quyết định 29/10/2026 và **chưa** được đổi theo API mới. `/auth/me` trả `{ user, roles, permissions }` với `user.isSystemAdmin` (không còn `isAdmin`) và **không có `wallet`** (tính năng ví đã bỏ; mobile chưa đổi theo nên nếu còn gọi `/wallet/*` thì route không còn). App mobile cần đồng bộ lại trước khi phát hành, nếu sau này đưa vào phạm vi.
 - SSE của AI chat sẽ **stream thật** sau khi gateway chuyển sang proxy dạng stream (hiện tại bị gom).
 
 ### 4.7 Hạ tầng dùng chung
@@ -360,7 +353,7 @@ Chi tiết token, cookie và thu hồi ở mục 5.
 
 - `roles`: một trong `STUDENT` hoặc `TEACHER` (loại trừ nhau), cộng thêm `SYSTEM_ADMIN` nếu là admin hệ thống. `av` là `User.authzVersion` (5.4).
 - **Quyền không nằm trong token.** Quyền suy ra từ `roles` qua bảng `ROLE_PERMISSIONS` trong `examio-be/libs/auth-jwt/src/permissions.ts` (nguồn sự thật; FE sinh bản sao `src/types/permissions.generated.ts` từ đó).
-- **Không** đưa tier subscription hay số dư vào token, vì những giá trị này đổi liên tục. Service nào cần thì gọi finance `GetUserBenefits` (có cache ngắn).
+- Không có tier hay số dư trong token: Examio không còn gói hay ví, và không có giới hạn nào suy ra từ gói.
 
 ### 5.2 Cookie (web)
 
@@ -379,7 +372,7 @@ Chi tiết token, cookie và thu hồi ở mục 5.
 - **gRPC nội bộ: vị trí mạng không cấp quyền gì.**
   - *Gọi do user khởi tạo:* bên gọi chuyển tiếp **access token của user** trong metadata `authorization`, qua tham số `metadata` tường minh của client wrapper (không dùng AsyncLocalStorage). Bên nhận verify lại bằng `libs/auth-jwt`; người thực hiện là `sub` của token, không bao giờ là `actor_id` trong body.
   - *Gọi của hệ thống (event, cron, worker):* dùng **service token**. Caller gọi `POST /internal/token` của auth (chỉ trong mạng `internal`, không route qua gateway; kiểu `client_credentials`, mỗi service một `SERVICE_CLIENT_SECRET`, auth chỉ giữ hash trong `SERVICE_CLIENTS`) và nhận JWT RS256 với `sub=svc:<name>`, `aud=<service đích>`, `roles=["SERVICE"]`, TTL 5 phút; caller cache lại.
-  - *RPC đổi trạng thái* (ví `Debit/Credit/Refund`, `FinanceAdmin*`, auth `SetUserRole/SetSystemAdmin/SetUserStatus`, `GatewayControl*`, r2 xóa/upload) cần token user có đúng quyền, hoặc service token của caller nằm trong allowlist (`@ServiceOnly(...)`, `@RequirePermissionsOrService`). RPC chỉ đọc cũng khai báo quyền tối thiểu đủ dùng (permission, kiểm tra chủ sở hữu hoặc allowlist service, ví dụ `GetQuizSetSnapshot` cần `quizset:manage` + chủ sở hữu, `GetPageFlags` là `@ServiceOnly('gateway')`); `@RequirePermissionsOrService([])` (mọi token hợp lệ) chỉ dành cho dữ liệu công khai như public profile, hoặc dữ liệu của chính user khi handler gọi `assertSelfOrService` (ví dụ `GetWallet`, `GetUserBenefits`).
+  - *RPC đổi trạng thái* (auth `SetUserRole/SetSystemAdmin/SetUserStatus`, `GatewayControl*`, r2 xóa/upload) cần token user có đúng quyền, hoặc service token của caller nằm trong allowlist (`@ServiceOnly(...)`, `@RequirePermissionsOrService`). RPC chỉ đọc cũng khai báo quyền tối thiểu đủ dùng (permission, kiểm tra chủ sở hữu hoặc allowlist service, ví dụ `GetQuizSetSnapshot` cần `quizset:manage` + chủ sở hữu, `GetPageFlags` là `@ServiceOnly('gateway')`); `@RequirePermissionsOrService([])` (mọi token hợp lệ) chỉ dành cho dữ liệu công khai như public profile, hoặc dữ liệu của chính user khi handler gọi `assertSelfOrService` (ví dụ r2 `ListUserFiles`).
   - (Trước đây) metadata `x-user-id`/`x-user-roles` được tin vì cổng gRPC "chỉ mở trong mạng internal"; cách đó đã bỏ, không service nào đọc các header này.
   - mTLS (Linkerd) trên K8s: `[DEFERRED]` phase 17.
 
@@ -406,7 +399,6 @@ Chi tiết token, cookie và thu hồi ở mục 5.
 | Quyền theo role | Claim `roles` → `ROLE_PERMISSIONS` | `SYSTEM_ADMIN` được vào `/api/v1/admin/*` (quyền `admin:access`); TEACHER có quyền quản lý nội dung, phòng thi |
 | Sở hữu tài nguyên | Từng service (`@RequireOwnerOrPermission`; tài nguyên không thuộc người gọi trả 404, thiếu quyền trả 403) | Sửa hoặc xoá quiz, phòng thi, tài liệu… |
 | Theo phòng | assessment, study-room | Host/cohost, whitelist, mã mời, ban/mute |
-| Theo gói | finance `GetUserBenefits` | Giới hạn upload, model AI, số lượt chat |
 
 **Multi-tenancy:** không áp dụng. Nếu sau này bán cho trường học (B2B) thì thêm claim `org_id` và cột `org_id` theo mô hình "tenant theo cột" của hệ thống tham chiếu.
 
@@ -419,13 +411,13 @@ Chi tiết token, cookie và thu hồi ở mục 5.
 | Nhu cầu | Kiểu | Ví dụ |
 |---|---|---|
 | Client gọi backend | **REST qua gateway** (+ SSE, WS) | `POST /api/v1/quizsets` |
-| Cần kết quả ngay (đọc, hoặc ghi cần phản hồi) | **gRPC** đồng bộ | assessment lấy snapshot đề; content trừ credit (`Debit`) |
+| Cần kết quả ngay (đọc, hoặc ghi cần phản hồi) | **gRPC** đồng bộ | assessment lấy snapshot đề; content kiểm tra tài liệu qua document (`AssertOwnership`) |
 | Stream kết quả LLM | **gRPC server-streaming** | ai-chat → ai `StreamChat`, rồi ai-chat phát lại cho client bằng SSE |
-| Báo cho service khác tự xử lý, không cần chờ | **RabbitMQ** event | `auth.user.authz_changed` (role=TEACHER) → finance tạo ví |
+| Báo cho service khác tự xử lý, không cần chờ | **RabbitMQ** event | `auth.user.authz_changed` → gateway cập nhật `av`, study-room ngắt socket |
 | Việc chạy lâu (giây → phút) | **RabbitMQ** request/completed | `document.uploaded` → `ai.document.processed` |
 | Thu hồi token, đổi cấu hình edge | **gRPC** sang gateway | `RevokeSession`, `SetPageFlags` |
 | HTTP giữa các service | **Cấm** | HTTP nội bộ và `INTERNAL_SERVICE_TOKEN` đã bỏ; thay bằng gRPC hoặc event |
-| Truy cập DB của service khác | **Cấm tuyệt đối** (`yarn check:ownership`, `yarn check:deps` chạy trong CI) | admin điều chỉnh ví qua finance `AdjustBalance`, không ghi `wallet` |
+| Truy cập DB của service khác | **Cấm tuyệt đối** (`yarn check:ownership`, `yarn check:deps` chạy trong CI) | admin đổi role qua auth `SetUserRole`, không ghi bảng `User` |
 
 ### 6.2 gRPC
 
@@ -433,28 +425,22 @@ Chi tiết token, cookie và thu hồi ở mục 5.
 
 ```proto
 syntax = "proto3";
-package examio.finance.v1;                         // examio.<svc>.v<major>
+package examio.document.v1;                        // examio.<svc>.v<major>
 
-import "examio/common/v1/pagination.proto";
-
-service WalletService {
-  rpc GetWallet (GetWalletRequest) returns (Wallet);
-  rpc Debit (DebitRequest) returns (WalletTransaction);    // idempotency_key bắt buộc
-  rpc Credit (CreditRequest) returns (WalletTransaction);
-  rpc GetWalletsByUserIds (GetWalletsByUserIdsRequest) returns (GetWalletsByUserIdsResponse); // batch, tránh N+1
+service DocumentService {
+  rpc GetDocumentsByIds (GetDocumentsByIdsRequest) returns (GetDocumentsByIdsResponse); // batch, tránh N+1
+  rpc AssertOwnership (AssertOwnershipRequest) returns (AssertOwnershipResponse);
+  rpc DeleteDocuments (DeleteDocumentsRequest) returns (DeleteDocumentsResponse);       // idempotent
 }
 
-message DebitRequest {
-  string user_id = 1;
-  int64 amount = 2;
-  string reason = 3;            // "ai.generation.quiz"
-  string idempotency_key = 4;   // ví dụ jobId: gọi lại không trừ hai lần
+message GetDocumentsByIdsRequest {
+  repeated string ids = 1;      // chỉ trả bản ghi của người gọi
 }
 ```
 
-- Tên RPC theo dạng `GetX`, `GetXsByIds` (batch), `ListX`, `CreateX`, `UpdateX`, `DeleteX`, hoặc động từ nghiệp vụ (`Debit`, `RevokeSession`).
+- Tên RPC theo dạng `GetX`, `GetXsByIds` (batch), `ListX`, `CreateX`, `UpdateX`, `DeleteX`, hoặc động từ nghiệp vụ (`AssertOwnership`, `RevokeSession`).
 - **Thay đổi tương thích ngược:** chỉ thêm field hoặc RPC. Muốn breaking thì tạo package `v2` và chạy song song. `buf breaking` chặn ngay trong CI.
-- **Mọi RPC ghi tiền hay ghi trạng thái quan trọng** phải có `idempotency_key`.
+- **RPC ghi trạng thái quan trọng** phải idempotent (ví dụ `DeleteDocuments` xóa lặp lại không lỗi; event có `id` để consumer bỏ trùng).
 
 **Pipeline sinh code:**
 
@@ -475,15 +461,11 @@ proto/**/*.proto ──► buf lint ──► buf breaking (so với main) ─�
 **gRPC server (NestJS):** mỗi service là **hybrid app** gồm HTTP `:3000` và gRPC `:50051` trong cùng process (vai trò `api`). Khi cần scale riêng thì tách thành vai trò `grpc`.
 
 ```ts
-// apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts
+// apps/document-service/src/modules/upload/document.grpc.controller.ts
 @Controller()
-@WalletServiceControllerMethods()                    // sinh từ ts-proto
-export class WalletGrpcController implements WalletServiceController {
-  constructor(private readonly wallets: WalletService) {}
-
-  debit(req: DebitRequest): Promise<WalletTransaction> {
-    return this.wallets.debit(req);                  // dùng chung Service layer với HTTP controller
-  }
+@documentV1.DocumentServiceControllerMethods()      // sinh từ ts-proto
+export class DocumentGrpcController implements documentV1.DocumentServiceController {
+  // mỗi method khai báo quyền (@RequirePermissions) và gọi cùng Service layer với HTTP controller
 }
 ```
 
@@ -493,7 +475,7 @@ export class WalletGrpcController implements WalletServiceController {
   - retry có backoff cho `UNAVAILABLE`, **chỉ với RPC trong allowlist idempotent** (`IDEMPOTENT_RPCS`; ví dụ upload file không bao giờ được retry),
   - metadata (`authorization`) truyền qua tham số tường minh, không ngầm,
   - chuyển gRPC status sang HTTP.
-- Mỗi service gói lời gọi ra ngoài trong một class `clients/<x>.client.ts` (ví dụ `FinanceClient.debit()`). Code nghiệp vụ không gọi stub trực tiếp.
+- Mỗi service gói lời gọi ra ngoài trong một class `clients/<x>.client.ts` (ví dụ `AuthClient`, `DocumentClient`). Code nghiệp vụ không gọi stub trực tiếp.
 
 | gRPC status | HTTP (ở service gọi) |
 |---|---|
@@ -501,7 +483,7 @@ export class WalletGrpcController implements WalletServiceController {
 | `UNAUTHENTICATED` / `PERMISSION_DENIED` | 401 / 403 |
 | `NOT_FOUND` | 404 |
 | `ALREADY_EXISTS` / `ABORTED` | 409 |
-| `FAILED_PRECONDITION` | 422 (ví dụ `INSUFFICIENT_BALANCE`) |
+| `FAILED_PRECONDITION` | 422 |
 | `RESOURCE_EXHAUSTED` | 429 |
 | `UNAVAILABLE` / `DEADLINE_EXCEEDED` | 503 / 504 |
 
@@ -513,7 +495,6 @@ export class WalletGrpcController implements WalletServiceController {
 |---|---|---|---|
 | `auth/v1` | `GetUser`, `GetUsersByIds` (đặc quyền: service token + `user:manage`), `GetPublicProfilesByIds` (chỉ field công khai), `FindUserByEmail`, `ListUsers`, `SetUserRole`, `SetSystemAdmin`, `SetUserStatus`, `ListRoleChanges`; `AuthUserService`: `UpdateUserAdmin`, `SearchUsers`, `GetUserStats(range)`, `GetUserAdminDetail` | auth | content, assessment, study-room, admin |
 | `gateway/v1` | `RevokeSession`, `InvalidateUser`, `SetPageFlags` | gateway | auth, admin |
-| `finance/v1` | `WalletService`: `CreateWallet`, `GetWallet`, `Debit`, `Credit`, `Refund` (có `idempotency_key`, trả `already_applied`; `UpdateBalance` đã xóa); `GetUserBenefits`; `FinanceAdminService`: `AdjustBalance`, `RefundPayment`, `ChangeTier`, `ListPayments`, `ListSubscriptions`, `GetUserFinance` (người thực hiện lấy từ token, không có `actor_id`); `GetRevenueStats(range)` | finance | content, document, ai-chat, admin |
 | `r2/v1` | `UploadFile`, `GetFileUrl`, `DeleteFile`, `ListUserFiles`, `DeleteObjects(keys[])`, `CreatePresignedDownload` (HTTP `internal/upload` và `INTERNAL_SERVICE_TOKEN` đã bỏ) | r2 | document, content, ai-chat, vocabulary, auth |
 | `document/v1` | `CreateUpload`, `GetDocumentsByIds`, `AssertOwnership`, `GetQuota`, `EnsureProcessed`, `DeleteDocuments`, `ListDocuments`, `GetDownloadUrl` | document | content, ai-chat |
 | `content/v1` | `GetQuizSetSnapshot`, `GetQuizSetsByIds`, `GetUserContentStats` | content | assessment, admin |
@@ -530,7 +511,7 @@ Không có RPC `DeleteUser` (xóa user là `[DEFERRED]`, 7.2). Danh mục trên 
 ```
 exchange: examio.events (topic, durable)            exchange: examio.dlx (topic)
    │ routing key = <domain>.<entity>.<verb-past>        │
-   ├─► queue finance.events     (bind auth.user.authz_changed)
+   ├─► queue gateway.events     (bind auth.user.authz_changed, auth.session.revoked)
    ├─► queue document.events    (bind ai.document.*)
    ├─► queue ai.events          (bind document.uploaded, document.deleted, content.generation.requested)
    ├─► queue content.events     (bind ai.generation.*, document.deleted, auth.user.updated)
@@ -573,10 +554,9 @@ exchange: examio.events (topic, durable)            exchange: examio.dlx (topic)
 
   ```ts
   @EventHandler('auth.user.authz_changed')
-  async onAuthzChanged(evt: EventEnvelope<AuthzChanged>) {
-    if (evt.data.role === 'TEACHER') {
-      await this.wallets.ensureWallet(evt.data.userId); // ví + giao dịch welcome:<userId> + gói Free, 1 INSERT … ON CONFLICT DO NOTHING
-    }
+  async onAuthzChanged(envelope: Envelope) {
+    // gateway-service/src/events/authz-changed.handler.ts (rút gọn)
+    await this.state.raiseAuthzVersion(data.userId, data.authzVersion); // gw:user:<id>:av
   }
   ```
 
@@ -584,24 +564,23 @@ exchange: examio.events (topic, durable)            exchange: examio.dlx (topic)
 
 | Event | Bên gửi | Bên nhận | Tác dụng |
 |---|---|---|---|
-| `auth.user.authz_changed` `{userId, authzVersion, role, isSystemAdmin, isBanned, reason, version}` | auth | finance, gateway, study-room | Event duy nhất về danh tính/quyền (không có `role_changed`). finance tạo ví cho TEACHER (có thêm `ensureWallet` lazy và CLI `finance reconcile-teachers`); gateway cập nhật `gw:user:<id>:av`; study-room ngắt socket. |
+| `auth.user.authz_changed` `{userId, authzVersion, role, isSystemAdmin, isBanned, reason, version}` | auth | gateway, study-room | Event duy nhất về danh tính/quyền (không có `role_changed`). Gateway cập nhật `gw:user:<id>:av`; study-room ngắt socket. |
 | `auth.session.revoked` | auth | gateway | Ghi `gw:revoked:sid:<sid>` (đường bền) |
 | `auth.user.updated` `{…, version}` | auth | study-room, content, assessment, ai-chat | Xoá cache tên/avatar. |
-| `auth.user.registered` | auth | — (không còn consumer) | Chỉ để tương thích; ví **không** tạo từ event này. |
+| `auth.user.registered` | auth | — (không còn consumer) | Chỉ để tương thích. |
 | `auth.user.deleted` | auth | — | `[DEFERRED]` (xóa user, 7.2): chưa tồn tại. |
-| `finance.subscription.changed` | finance | ai-chat | Xoá cache benefits `aichat:benefits:<id>` |
 | `document.uploaded` | document | ai-service | Parse, OCR, chunk, embed, dựng graph |
-| `ai.document.processed` / `ai.document.failed` | ai-service | document | Cập nhật `processingStatus`; `failed` cho file đã trừ tiền → `Refund`. Phí upload trừ ở bước upload (key `doc:<id>`), không trừ ở đây. |
+| `ai.document.processed` / `ai.document.failed` | ai-service | document | Cập nhật `processingStatus` (`failed` chỉ đánh dấu file lỗi, không có bước hoàn tiền). |
 | `document.deleted` (mảng id) | document | ai-service, content, ai-chat | Xoá vector. Gỡ liên kết `storageId`. |
 | `content.generation.requested` | content | ai-service | Sinh quiz/flashcard |
-| `ai.generation.completed` / `ai.generation.failed` | ai-service | content | Ghi quiz/flashcard, lịch sử sinh; `failed` → `Refund` (key `gen:<jobId>`) |
+| `ai.generation.completed` / `ai.generation.failed` | ai-service | content | Ghi quiz/flashcard, lịch sử sinh; `failed` → job `FAILED`, không có hoàn tiền |
 | `content.quizset.deleted` (mảng id) | content | assessment | Đánh dấu phòng thi `sourceDeleted`. Phiên thi vẫn dùng snapshot. |
 
 ### 6.4 Không có transaction phân tán
 
 - Nhất quán giữa các service đạt được dần qua event (eventual consistency) + outbox + consumer idempotent.
-- **Tiền:** chỉ finance được ghi. Mọi lần trừ hoặc cộng tiền đi qua `Debit`/`Credit` có `idempotency_key`, nên retry không bao giờ trừ hai lần.
-- **Trường hợp cần bù trừ** (ví dụ AI sinh lỗi sau khi đã trừ tiền): content gọi `Refund(idempotency_key)` khi nhận `ai.generation.failed`, khi người dùng hủy, hoặc khi job quá hạn; reaper hoàn tiền các job kẹt. Đây là saga dạng choreography, không cần orchestrator.
+- **Không có luồng tiền.** Examio không còn ví, gói hay thanh toán, nên không có bước trừ/hoàn tiền cần bù.
+- **Trường hợp cần bù trừ** (ví dụ AI sinh lỗi): content chỉ đổi trạng thái job (`FAILED`); watchdog fail job `QUEUED`/`PROCESSING` quá hạn. Không có saga hoàn tiền.
 
 ---
 
@@ -610,7 +589,7 @@ exchange: examio.events (topic, durable)            exchange: examio.dlx (topic)
 ### 7.1 Nguyên tắc
 
 - **Mỗi service một database.**
-  - Giai đoạn đầu: một server Postgres, mỗi service một **schema** (`auth`, `finance`, `content`…) + một **role** chỉ có quyền trên schema đó.
+  - Giai đoạn đầu: một server Postgres, mỗi service một **schema** (`auth`, `content`…) + một **role** chỉ có quyền trên schema đó.
   - Prisma kết nối bằng `DATABASE_URL=postgresql://content_svc:***@postgres:5432/examio?schema=content`. Nhưng `?schema=` **không đủ** cho raw SQL qua `@prisma/adapter-pg`, nên init script `deploy/postgres/init/01-service-schemas.sh` còn chạy `ALTER ROLE <svc>_svc SET search_path = <svc>, extensions`. pgvector nằm trong schema `extensions`. ai-service (Python) đặt `search_path` cho từng pool (`DB_SEARCH_PATH=ai,extensions`) và kết nối **không** dùng `?schema=`.
   - Giai đoạn sau: mỗi service một database riêng. Chỉ phải `pg_dump --schema` sang DB mới và đổi URL, code không đổi.
 - **Không FK xuyên service.**
@@ -634,7 +613,7 @@ Các FK xuyên service đã bị bỏ (giữ `userId` + `@@index`), nên xóa `U
 - Tên thí sinh lấy qua `GetPublicProfilesByIds` (có cache). `ExamAttempt.userDisplayName` và read model `admin_metrics_daily` **không có**: KPI admin qua RPC tổng hợp (4.4).
 - Quiz set bị xóa **không** cascade sang `ExamRoom`: phòng giữ `sourceDeleted` và `quizSetTitle`; phiên thi vẫn dùng snapshot (tạo phiên mới trả 422 `QUIZSET_DELETED` / `QUIZSET_TOO_LARGE`).
 - Banner "Đề đã thay đổi" (`snapshotOutdated`) và `POST /examsessions/:id/refresh-snapshot`: chỉ khi phiên còn UPCOMING và 0 lượt làm bài, ngược lại 409 `SNAPSHOT_LOCKED`.
-- **Phí sinh quiz/flashcard:** job `PENDING_CHARGE` → một `Debit(gen:<jobId>)` → `QUEUED` + outbox; reaper hủy job kẹt `PENDING_CHARGE` quá 10 phút; hủy (`DELETE /ai/job/:id`) và lỗi sinh đều `Refund`.
+- **Sinh quiz/flashcard:** job được tạo thẳng ở `QUEUED` + outbox trong một transaction (không có bước tính phí); watchdog fail job quá hạn (`GENERATION_JOB_TIMEOUT_MINUTES`); hủy (`DELETE /ai/job/:id`) và lỗi sinh chỉ đổi trạng thái.
 
 ### 7.4 Redis
 
@@ -642,7 +621,6 @@ Các FK xuyên service đã bị bỏ (giữ `userId` + `@@index`), nên xóa `U
 |---|---|---|
 | `gw:` | gateway | Revoke list, page flags, rate limit |
 | `auth:` | auth | Mã OAuth exchange một lần, cache user |
-| `finance:` | finance | Cache ví, thống kê |
 | `content:` | content | Cache quiz/flashcard, khoá sinh AI `content:gen:lock:<userId>:<type>` |
 | `assessment:` | assessment | Cache phòng thi, phiên thi |
 | `studyroom:` | study-room | State sống (timer, media, chat, presence) + Socket.io adapter |
@@ -685,9 +663,8 @@ examio-be/
 ├─ proto/                                 # NGUỒN GỐC mọi contract
 │  ├─ buf.yaml  buf.gen.yaml
 │  └─ examio/
-│     ├─ common/v1/*.proto                # pagination, money, error detail
+│     ├─ common/v1/*.proto                # pagination
 │     ├─ auth/v1/auth.proto
-│     ├─ finance/v1/{wallet,subscription,finance_admin}.proto
 │     ├─ gateway/v1/gateway_control.proto
 │     ├─ ...
 │     └─ events/v1/*.proto                # schema data của event
@@ -704,7 +681,7 @@ examio-be/
 │  │  │  │  ├─ <feature>.service.ts     <feature>.repository.ts
 │  │  │  │  └─ dto/
 │  │  │  ├─ events/  handlers/*.handler.ts   (consumer)
-│  │  │  ├─ clients/ auth.client.ts  finance.client.ts   (gRPC ra ngoài)
+│  │  │  ├─ clients/ auth.client.ts  document.client.ts  (gRPC ra ngoài)
 │  │  │  └─ config/  env.schema.ts       # zod validate env lúc khởi động
 │  │  ├─ test/  *.e2e-spec.ts  contract/
 │  │  └─ .env.example
@@ -749,7 +726,7 @@ Mỗi service build **một image riêng** từ một recipe chung (`deploy/Dock
 | `api` | HTTP `:3000` + gRPC `:50051` (hybrid) | `<key>` | mọi service |
 | `worker` | Outbox relay, consumer, reaper, poller `r2_delete_tasks` | trong `<key>` khi `ROLE=api,worker` | service có event/worker (xem `services.json`) |
 | `migrate` | `prisma migrate deploy` rồi thoát (one-shot) | `<key>-migrate` | service có DB |
-| `seed` | seed của service (`SEED_PROFILE=prod\|dev`) | `seed` (compose/seed.yml) | auth, finance, admin, ai-chat, vocabulary |
+| `seed` | seed của service (`SEED_PROFILE=prod\|dev`) | `seed` (compose/seed.yml) | auth, admin, ai-chat, vocabulary |
 
 Service Node chạy `ROLE=api,worker` trong **một container** (không có `<svc>-worker` riêng); `admin` và `study-room` không có worker riêng. ai-service là ngoại lệ: ba container `ai` (`ROLE=api`: gRPC + health), `ai-worker` (`ROLE=worker`: consumer, xử lý tài liệu nặng, có healthcheck heartbeat) và `ai-migrate` (`ROLE=migrate`: `alembic upgrade head`).
 
@@ -782,7 +759,6 @@ SERVICE_CLIENT_SECRET=***          # secret của riêng service, auth giữ has
 JWT_ISSUER=examio-auth
 JWT_AUDIENCE=examio
 AUTH_GRPC_URL=auth:50051
-FINANCE_GRPC_URL=finance:50051
 DOCUMENT_GRPC_URL=document:50051
 R2_GRPC_URL=r2:50051
 AI_GRPC_URL=ai:50051
@@ -804,7 +780,6 @@ sequenceDiagram
     participant G as Gateway
     participant A as Auth
     participant C as Content
-    participant F as Finance
 
     B->>G: POST /api/v1/auth/login
     G->>A: proxy (route auth: none)
@@ -814,31 +789,30 @@ sequenceDiagram
     G->>G: verify JWKS, check gw:revoked:sid, gw:user:av, rate limit
     G->>C: proxy + Authorization Bearer
     C->>C: JwtAuthGuard (chỉ verify chữ ký, không query DB)
-    C->>F: gRPC Debit(user, key=gen:jobId) kèm token user được chuyển tiếp
-    F-->>C: balance
+    C->>C: INSERT GenerationJob(QUEUED) + outbox(content.generation.requested), một transaction
     C-->>B: 202 { jobId }
 ```
 
-### 9.2 Cấp quyền TEACHER → tạo ví (outbox + consumer idempotent)
+### 9.2 Cấp quyền TEACHER → báo gateway và study-room (outbox + consumer idempotent)
 
 ```mermaid
 sequenceDiagram
     participant A as Auth
     participant ADB as auth DB
     participant R as RabbitMQ
-    participant F as Finance worker
-    participant FDB as finance DB
+    participant G as Gateway
+    participant S as Study-room
 
     A->>ADB: BEGIN; UPDATE User (role, authzVersion+1); INSERT outbox_events(auth.user.authz_changed); COMMIT
     A-->>A: (relay trong auth-worker) đọc outbox SKIP LOCKED
     A->>R: publish (confirm) → examio.events / auth.user.authz_changed
-    R-->>F: queue finance.events
-    F->>FDB: BEGIN; INSERT processed_events(id) — trùng thì bỏ qua
-    F->>FDB: role=TEACHER: INSERT … ON CONFLICT DO NOTHING (Wallet, welcome:userId +20, UserSubscription Free); COMMIT
-    F-->>R: ack
+    R-->>G: queue gateway.events
+    G->>G: ghi gw:user:<id>:av (token cũ → TOKEN_STALE)
+    R-->>S: queue studyroom.events
+    S->>S: gửi auth:reauth rồi ngắt socket
 ```
 
-### 9.3 Upload tài liệu → AI xử lý → trừ credit
+### 9.3 Upload tài liệu → AI xử lý
 
 ```mermaid
 sequenceDiagram
@@ -847,20 +821,17 @@ sequenceDiagram
     participant R2 as r2-service
     participant Q as RabbitMQ
     participant AI as ai-service worker
-    participant F as Finance
 
     B->>D: POST /api/v1/ai/upload (qua gateway, stream multipart)
-    D->>D: INSERT UserStorage(PENDING_CHARGE)
-    D->>F: gRPC GetUserBenefits (quota) + Debit(key=doc:id), token user chuyển tiếp
     D->>R2: gRPC UploadFile (token svc:document)
-    D->>D: UserStorage → PENDING + outbox(document.uploaded, presigned GET URL)
+    D->>D: INSERT UserStorage(PENDING) + outbox(document.uploaded, presigned GET URL), một transaction
     D-->>B: 201 { uploadId, status: PENDING }
     Q-->>AI: document.uploaded
     AI->>AI: tải file, OCR/parse, chunk, embed, lưu vào DB ai (pgvector)
     AI->>Q: ai.document.processed { storageId, pages }
     Q-->>D: ai.document.processed
     D->>D: UPDATE UserStorage status=COMPLETED
-    Note over D,F: ai.document.failed → Refund(doc:id)
+    Note over D: ai.document.failed → UserStorage FAILED (không hoàn tiền: upload không tính phí)
     B->>D: GET /api/v1/ai/upload/:id (poll; sau này có thể đẩy SSE)
 ```
 
@@ -918,7 +889,7 @@ Stack nằm ở `examio-be/deploy/docker-compose.yml`, ghép từ `deploy/compos
 networks:
   edge:      {}                       # nginx FE ↔ gateway
   internal:  { internal: true }       # gateway ↔ service ↔ data; không ra Internet trực tiếp
-  egress:    {}                       # chỉ service cần gọi ra ngoài (ai, finance/SePay, r2, auth/OAuth/mail, Turnstile)
+  egress:    {}                       # chỉ service cần gọi ra ngoài (ai, r2, auth/OAuth/mail, Turnstile)
 
 services:
   gateway-a:                          # gateway-b giống hệt; alias mạng: gateway
@@ -942,7 +913,7 @@ services:
 - **Hai gateway** `gateway-a` và `gateway-b` sau upstream `gw` của nginx FE (`examio-fe/nginx.conf`): `resolve` (nginx ≥ 1.27.3; image `nginx:1.27-alpine`), `max_fails=1 fail_timeout=5s`, `proxy_next_upstream error timeout http_502 http_503` chỉ cho method idempotent, `proxy_connect_timeout 3s`. Có `location /api/` (SSE: `proxy_buffering off`) và `location /ws/` (WebSocket), và khối `real_ip` (`CF-Connecting-IP`, 4.1). Rollout gateway **không reload nginx**: `deploy-service.sh` thay lần lượt `gateway-a` rồi `gateway-b`.
 - `depends_on` chỉ dùng cho quan hệ `migrate → api` của chính service đó (và hạ tầng healthy). Bỏ chuỗi "gateway chờ mọi service". Service tự chịu được phụ thuộc chưa sẵn sàng: retry khi kết nối, readiness trả 503 tới khi kết nối được.
 - Health: `/health/live` (process còn sống) và `/health/ready` (DB, Redis, broker) qua `@nestjs/terminus`, từ `libs/observability`. `ai-worker` không có cổng HTTP nên dùng healthcheck heartbeat (`/tmp/worker-heartbeat`).
-- **Tài nguyên (RAM):** mỗi container có `mem_limit` (cap cứng, không phải reservation). Bảng `mem_limit` trong `examio-be/deploy/README.md` cộng lại khoảng **10,5 GB** cho các container chạy thường trực (gateway 256m ×2; auth, assessment, content, document, ai-chat, study-room 512m; admin, finance, vocabulary, r2 384m; `ai` 1536m; `ai-worker` 2g; postgres 1g; rabbitmq 512m; redis 256m). **Chưa đo RAM thực tế** trên VPS; README yêu cầu chạy `docker compose stats` sau cutover rồi hạ cap `ai-worker` và các cap Node trước khi dựa vào số này. Đã gộp `api` và `worker` thành một container (`ROLE=api,worker`) để tiết kiệm RAM.
+- **Tài nguyên (RAM):** mỗi container có `mem_limit` (cap cứng, không phải reservation). Bảng `mem_limit` trong `examio-be/deploy/README.md` cộng lại khoảng **10,5 GB** cho các container chạy thường trực (gateway 256m ×2; auth, assessment, content, document, ai-chat, study-room 512m; admin, vocabulary, r2 384m; `ai` 1536m; `ai-worker` 2g; postgres 1g; rabbitmq 512m; redis 256m). **Chưa đo RAM thực tế** trên VPS; README yêu cầu chạy `docker compose stats` sau cutover rồi hạ cap `ai-worker` và các cap Node trước khi dựa vào số này. Đã gộp `api` và `worker` thành một container (`ROLE=api,worker`) để tiết kiệm RAM.
 
 ### 10.2 Docker image
 
@@ -1043,7 +1014,7 @@ Thứ tự thực tế: **P6 (document + ai-service DB, phase 15) đi trước v
 | **P3 — Cắt truy cập chéo DB** (phase 10) | finance thêm `Debit`/`Credit`/`Refund` (idempotent), `AdjustBalance`/`ChangeTier`/`ListPayments`. admin gọi các RPC này thay vì ghi `wallet`. auth thêm `ListUsers`/`SetUserStatus`. admin KPI qua RPC tổng hợp (`GetUserStats`, `GetRevenueStats`, cache Redis 5 phút), không có read model. auth bỏ tạo `UserSubscription`. Service đọc user qua `GetPublicProfilesByIds` + cache thay vì `include: { user }`. `PageFeatureFlag` đi qua `SetPageFlags`. | `dependency-cruiser` + một script quét `prisma.<model>` khẳng định mỗi model chỉ có một service chạm tới. | — (cutover một lần) |
 | **P4 — Tách schema** (phase 11) | Mỗi service có `prisma/schema.prisma` riêng. `ALTER TABLE … SET SCHEMA <svc>` (không copy dữ liệu). Drop FK xuyên service, giữ cột + index. Role DB per service. Chuyển từ `db push` sang `migrate deploy`. Xóa user thay cho cascade: `[DEFERRED]` (7.2); xoá file R2 đi qua `r2_delete_tasks`. | Mỗi service kết nối bằng role chỉ thấy schema của mình. Không còn thư viện Prisma chung (legacy `libs/database`). | Do DB reset ở cutover: restore dump. |
 | **P5 — Tách exam-service** (phase 12–14) | Thứ tự từ ít phụ thuộc tới nhiều: **study-room** (đã không có FK) → **vocabulary** → **ai-chat** (+ subject) → **content** → **assessment** (+ snapshot đề). Mỗi lần tách: tạo app mới, chuyển module, chuyển schema, đổi route trong YAML, chạy song song, rồi xoá khỏi exam. | `exam-service` bị xoá. Mỗi service mới deploy độc lập. | `exam-service` đã bị xóa; rollback toàn bộ theo cutover |
-| **P6 — ai-service & document** (phase 15, đi trước phase 13) | Tạo document-service (`UserStorage`, quota). DB `ai` + Alembic, chuyển `Document`, `DocumentEntity`, graph vào đó (`BenchmarkItem` đã xóa). Bỏ `CREATE TABLE` lúc chạy. ai-service chuyển sang gRPC (`StreamChat`…) + event (`document.uploaded`, `content.generation.requested`). Bỏ HTTP nội bộ và `INTERNAL_SERVICE_TOKEN`. | ai-service chỉ dùng `DATABASE_URL` của DB `ai`. Không còn HTTP giữa các service. | — (HTTP compat đã bỏ) |
+| **P6 — ai-service & document** (phase 15, đi trước phase 13) | Tạo document-service (`UserStorage`). DB `ai` + Alembic, chuyển `Document`, `DocumentEntity`, graph vào đó (`BenchmarkItem` đã xóa). Bỏ `CREATE TABLE` lúc chạy. ai-service chuyển sang gRPC (`StreamChat`…) + event (`document.uploaded`, `content.generation.requested`). Bỏ HTTP nội bộ và `INTERNAL_SERVICE_TOKEN`. | ai-service chỉ dùng `DATABASE_URL` của DB `ai`. Không còn HTTP giữa các service. | — (HTTP compat đã bỏ) |
 | **P7 — Deploy độc lập** (phase 16) | Image riêng, GHCR, tag theo sha. CI build và deploy theo service, theo **wave** (`changed-services.sh`), có migration lint và cổng migrate. `env/<svc>.env` riêng. Một database vật lý riêng cho mỗi service chưa làm (vẫn một server, mỗi service một schema + role). Redis ACL, Grafana/Loki/Tempo/Prometheus, admin đọc log từ Loki: `[DEFERRED]` phase 17. | Đổi một service → chỉ service đó build và restart. | Đổi tag về sha trước (`deploy-service.sh` tự rollback) |
 | **P8 — K8s** `[DEFERRED]` (phase 17) | Helm chart chuẩn, NetworkPolicy, Linkerd mTLS, HPA cho worker. | — | — |
 
@@ -1082,7 +1053,7 @@ Thứ tự thực tế: **P6 (document + ai-service DB, phase 15) đi trước v
 | Event broker | **Giữ RabbitMQ**, thêm outbox, DLQ, idempotency, topic theo domain | Đã có sẵn. Quy mô hiện tại chưa cần replay log của Kafka. |
 | Triển khai | **Compose trên VPS, thiết kế sẵn cho K8s** (image, registry, deploy theo service) | Chi phí vận hành thấp, chuyển sang Helm không phải sửa code |
 | Tách exam-service | **Tách mạnh:** content, assessment, study-room, vocabulary, ai-chat | Theo yêu cầu. Ranh giới theo vòng đời dữ liệu, có snapshot để content và assessment không phụ thuộc runtime. |
-| Dữ liệu tài liệu / RAG | **document-service** giữ metadata và quota. **ai-service** có DB riêng cho chunk, vector, graph. | ai-service thôi ghi bảng của người khác. Trạng thái đồng bộ qua event. |
+| Dữ liệu tài liệu / RAG | **document-service** giữ metadata và trạng thái xử lý. **ai-service** có DB riêng cho chunk, vector, graph. | ai-service thôi ghi bảng của người khác. Trạng thái đồng bộ qua event. |
 | Repo | Giữ **monorepo** `examio-be`, ranh giới cưỡng chế bằng dependency-cruiser + image riêng | Ít overhead hơn polyrepo. Khi tách repo thì proto publish thành package. |
 | Multi-tenancy | Không áp dụng (B2C) | — |
 | Auth | RS256 + JWKS, access token 15 phút, revoke ở gateway; gRPC luôn mang token (user hoặc service) | Bỏ secret dùng chung và 2 query DB mỗi request; mạng không cấp quyền |
@@ -1091,7 +1062,7 @@ Thứ tự thực tế: **P6 (document + ai-service DB, phase 15) đi trước v
 ### 14.2 Câu hỏi mở
 
 1. Gateway: giữ NestJS hay chuyển sang Envoy/APISIX khi lên K8s? Đề xuất giữ NestJS tới P8.
-2. Trừ credit cho AI: giữ "trừ khi xong" hay đổi sang **Reserve → Capture** để chặn tiêu vượt số dư khi chạy song song?
+2. ~~Trừ credit cho AI~~ **Đã đóng:** tính năng ví/credit đã bỏ; chi phí AI chỉ được chặn bằng rate limit của gateway (có cần hạn mức theo người dùng không là câu hỏi mở nếu sau này cần).
 3. ~~`score/database.py` trong ai-service~~ **Đã đóng:** `src/score/`, dev agent, benchmark index và `BenchmarkItem` đã bị xóa ở phase 01.
 4. Có cần notification-service (email, push cho mobile) trong 6 tháng tới không? Nếu có thì tách khỏi auth ở P7.
 5. RAM trên một VPS: các cap `mem_limit` cộng lại khoảng 10,5 GB (bảng trong `examio-be/deploy/README.md`). **Chưa có số đo thực tế** (chưa chạy trên VPS); phải đo bằng `docker compose stats` sau cutover. Đã gộp `api,worker` vào một container.
@@ -1106,8 +1077,7 @@ Thứ tự thực tế: **P6 (document + ai-service DB, phase 15) đi trước v
 | Model | Service sở hữu | Tham chiếu ra ngoài sau khi cắt FK |
 |---|---|---|
 | `User`, `UserSession`, `VerifyAccountCode`, `ResetPasswordCode` | auth | — |
-| `Wallet`, `WalletTransaction`, `Payment`, `UserSubscription` | finance | `userId` |
-| `UserStorage`, `UserMonthlyFileUpload` | document | `userId` |
+| `UserStorage` | document | `userId` |
 | `Document` (vector), `DocumentEntity`, `UserStorageGraph`, `UserStorageGraphGroup` | ai-service | `storageId`, `userId` |
 | `QuizSet`, `QuizSetLabel`, `QuizQuestion`, `DetailsQuizQuestion`, `FlashCardSet`, `FlashCardSetLabel`, `FlashCard`, `DetailsFlashCard`, `HistoryGeneratedQuizz`, `HistoryGeneratedFlashcard`, `QuizPracticeAttempt`, `FlashCardViewHistory`, `UserPinnedFlashcard`, `FlashcardStudyProgress` | content | `userId`, `storageId` |
 | `ExamRoom`, `ExamSession`, `ExamAttempt`, `CheatingLog`, `UserPinnedExamRoom` | assessment | `userId`/`hostId`, `quizSetId` (+ snapshot) |
@@ -1123,7 +1093,6 @@ Thứ tự thực tế: **P6 (document + ai-service DB, phase 15) đi trước v
 | Prefix / path | Hiện tại | Đích |
 |---|---|---|
 | `/api/v1/auth/*`, `/api/v1/profile`, `/api/v1/devices` | auth | auth |
-| `/api/v1/wallet/*`, `/api/v1/payment/*`, webhook SePay | finance | finance |
 | (trước đây) `/api/v1/exam/*`, `/api/v1/finance/*` (alias trong `exam-proxy`/`finance-proxy.controller.ts`) | **không chạy**: hai controller không được đăng ký | Đã xóa ở phase 01 |
 | `/api/v1/quizsets/*`, `/flashcardsets/*`, `/flashcard-study/*` | exam | content |
 | `/api/v1/ai/{generate-from-file, regenerate/:id, job/:id, upload/:id/history, models}` | exam | content |

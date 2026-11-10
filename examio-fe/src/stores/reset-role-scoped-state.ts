@@ -16,7 +16,6 @@ import { useQuizSetStore } from "@/stores/useQuizSetStore";
 import { useStatsStore } from "@/stores/useStatsStore";
 import { useStudentMaterialsStore } from "@/stores/useStudentMaterialsStore";
 import { useStudyRoomStore } from "@/stores/useStudyRoomStore";
-import { useWalletStore } from "@/stores/useWalletStore";
 import { useWordFamilyStore } from "@/stores/useWordFamilyStore";
 
 interface ResettableStore {
@@ -43,7 +42,6 @@ const ROLE_SCOPED_STORES: readonly ResettableStore[] = [
   useStatsStore,
   useStudentMaterialsStore,
   useStudyRoomStore,
-  useWalletStore,
   useWordFamilyStore,
 ] as unknown as readonly ResettableStore[];
 

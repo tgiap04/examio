@@ -63,7 +63,7 @@ describeWorker('document worker pipeline (e2e)', () => {
         }
     };
     const rowOf = (id: string) => t.prisma.userStorage.findUniqueOrThrow({ where: { id } });
-    const chargedDoc = async (user: TestUser) => {
+    const registeredDoc = async (user: TestUser) => {
         const res = await call(t.server, 'post', '/ai/upload', await t.tokenFor(user), registerBody(user));
         expect(res.status).toBe(201);
         return res.body.id as string;
@@ -103,7 +103,7 @@ describeWorker('document worker pipeline (e2e)', () => {
 
     it('the outbox relay publishes document.uploaded and document.deleted; ai-service binds and receives them', async () => {
         const user = t.teacher();
-        const id = await chargedDoc(user);
+        const id = await registeredDoc(user);
         const uploaded = await until(
             async () => seenByAi.find((e) => e.type === 'document.uploaded' && (e.data as { storageId: string }).storageId === id),
             'document.uploaded at ai'
@@ -142,57 +142,45 @@ describeWorker('document worker pipeline (e2e)', () => {
 
     it('ai.document.processed makes the row COMPLETED with its page count', async () => {
         const user = t.teacher();
-        const id = await chargedDoc(user);
+        const id = await registeredDoc(user);
         await publishAsAi('ai.document.processed', { storageId: id, pageCount: 12 });
         await until(async () => (await rowOf(id)).processingStatus === 'COMPLETED', 'COMPLETED');
-        expect(await rowOf(id)).toMatchObject({ processingStatus: 'COMPLETED', pageCount: 12, creditCharged: true });
-        expect(t.finance.count('Refund', `doc:${id}`)).toBe(0);
+        expect(await rowOf(id)).toMatchObject({ processingStatus: 'COMPLETED', pageCount: 12 });
     });
 
-    it('ai.document.failed for a charged document: FAILED and exactly one Refund, and a replayed event changes nothing', async () => {
-        const user = t.teacher(100);
-        const id = await chargedDoc(user);
-        expect(t.finance.balances.get(user.id)).toBe(98);
+    it('ai.document.failed only makes the row FAILED, and a replayed or repeated event changes nothing', async () => {
+        const user = t.teacher();
+        const id = await registeredDoc(user);
 
         const failed = await publishAsAi('ai.document.failed', { storageId: id, reason: 'OCR crashed' });
         await until(async () => (await rowOf(id)).processingStatus === 'FAILED', 'FAILED');
-        expect(t.finance.balances.get(user.id)).toBe(100);
-        expect(t.finance.calls.filter((c) => c.rpc === 'Refund' && c.key === `doc:${id}`)).toEqual([
-            expect.objectContaining({ caller: 'svc:document', userId: user.id }),
-        ]);
 
         // the broker redelivers the same envelope (same event id): dropped by processed_events
         await publishAsAi('ai.document.failed', { storageId: id, reason: 'OCR crashed' }, 'ai', failed);
-        // a different event id for the same document finds the row already refunded and uncharged
         const second = await publishAsAi('ai.document.failed', { storageId: id, reason: 'again' });
         await until(async () => (await t.prisma.processedEvent.count({ where: { eventId: second.id } })) === 1, 'the second event');
-        expect(t.finance.count('Refund', `doc:${id}`)).toBe(1); // refunded rows are no longer charged: finance is not asked again
-        expect(t.finance.balances.get(user.id)).toBe(100); // and money moved back exactly once
-        expect(t.finance.refunds.has(`doc:${id}`)).toBe(true);
         expect(await t.prisma.processedEvent.count({ where: { eventId: failed.id } })).toBe(1);
-        expect(await rowOf(id)).toMatchObject({ processingStatus: 'FAILED', creditCharged: false });
+        expect(await rowOf(id)).toMatchObject({ processingStatus: 'FAILED' });
     });
 
-    it('L2: a refunded document that a free retry then completes is not left marked as charged, and a later failure refunds nothing', async () => {
-        const user = t.teacher(100);
-        const id = await chargedDoc(user);
+    it('a FAILED document that EnsureProcessed re-queues can then complete; a late failure does not undo COMPLETED', async () => {
+        const user = t.teacher();
+        const id = await registeredDoc(user);
         await publishAsAi('ai.document.failed', { storageId: id, reason: 'OCR crashed' });
         await until(async () => (await rowOf(id)).processingStatus === 'FAILED', 'FAILED');
-        expect(t.finance.balances.get(user.id)).toBe(100);
 
-        // EnsureProcessed = the free retry: FAILED goes back to PENDING and is re-announced
         const retried = await lastValueFrom(t.grpc.ensureProcessed({ id }, await t.md(user)));
-        expect(retried.document?.creditCharged).toBe(false);
+        expect(retried.document?.id).toBe(id);
         await publishAsAi('ai.document.processed', { storageId: id, pageCount: 3 });
         await until(async () => (await rowOf(id)).processingStatus === 'COMPLETED', 'COMPLETED');
 
-        expect(await rowOf(id)).toMatchObject({ processingStatus: 'COMPLETED', pageCount: 3, creditCharged: false });
-        expect(t.finance.count('Refund', `doc:${id}`)).toBe(1);
-        expect(t.finance.balances.get(user.id)).toBe(100);
+        const late = await publishAsAi('ai.document.failed', { storageId: id, reason: 'late' });
+        await until(async () => (await t.prisma.processedEvent.count({ where: { eventId: late.id } })) === 1, 'the late event');
+        expect(await rowOf(id)).toMatchObject({ processingStatus: 'COMPLETED', pageCount: 3 });
     });
 
-    it('ai.document.failed for an uncharged document (quick-upload) is FAILED without any finance call', async () => {
-        const user = t.teacher(100);
+    it('ai.document.failed for a quick-upload row makes it FAILED', async () => {
+        const user = t.teacher();
         const res = await call(t.server, 'post', '/ai/quick-upload', await t.tokenFor(user)).attach('file', Buffer.alloc(64), {
             filename: `u-${rid()}.pdf`,
             contentType: 'application/pdf',
@@ -200,22 +188,11 @@ describeWorker('document worker pipeline (e2e)', () => {
         const id = res.body.userStorageId as string;
         await publishAsAi('ai.document.failed', { storageId: id, reason: 'x' });
         await until(async () => (await rowOf(id)).processingStatus === 'FAILED', 'FAILED');
-        expect(t.finance.calls.filter((c) => c.rpc === 'Refund' && c.userId === user.id)).toHaveLength(0);
-    });
-
-    it('a failed refund rolls the event back for the retry tier: the row is not FAILED until finance answers', async () => {
-        const user = t.teacher(100);
-        const id = await chargedDoc(user);
-        t.finance.refundFaults.push('internal');
-        await publishAsAi('ai.document.failed', { storageId: id, reason: 'x' });
-        await until(async () => t.finance.count('Refund', `doc:${id}`) >= 1, 'the first refund attempt');
-        expect(await rowOf(id)).toMatchObject({ processingStatus: 'PENDING' });
-        expect(t.finance.balances.get(user.id)).toBe(98);
     });
 
     it('an unknown document is ignored; a forged source or a malformed payload is dead-lettered with no effect', async () => {
-        const user = t.teacher(100);
-        const id = await chargedDoc(user);
+        const user = t.teacher();
+        const id = await registeredDoc(user);
         const dlqBefore = await dlqCount();
 
         await publishAsAi('ai.document.processed', { storageId: `gone_${rid()}`, pageCount: 1 }); // acked, nothing to update
@@ -223,7 +200,6 @@ describeWorker('document worker pipeline (e2e)', () => {
         await publishAsAi('ai.document.failed', { reason: 'no storageId' }); // invalid payload
 
         await until(async () => (await dlqCount()) >= dlqBefore + 2, 'two dead letters');
-        expect(await rowOf(id)).toMatchObject({ processingStatus: 'PENDING', creditCharged: true });
-        expect(t.finance.count('Refund', `doc:${id}`)).toBe(0);
+        expect(await rowOf(id)).toMatchObject({ processingStatus: 'PENDING' });
     });
 });
