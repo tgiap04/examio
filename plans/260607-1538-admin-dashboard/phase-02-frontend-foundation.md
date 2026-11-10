@@ -3,14 +3,14 @@
 - Parent plan: [plan.md](../plan.md)
 - Locked design: [brainstorm session record](../../reports/brainstorm-260607-1517-admin-dashboard.md)
 - Research: [researcher-02-frontend.md](../research/researcher-02-frontend.md)
-- Routes: [examio-fe/src/routes/index.tsx](../../../../examio-fe/src/routes/index.tsx)
-- Existing guard: [examio-fe/src/routes/guards/TeacherRoute.tsx](../../../../examio-fe/src/routes/guards/TeacherRoute.tsx)
-- Auth store: [examio-fe/src/stores/useAuthStore.ts](../../../../examio-fe/src/stores/useAuthStore.ts)
-- User type: [examio-fe/src/types/user.ts](../../../../examio-fe/src/types/user.ts)
-- API example: [examio-fe/src/apis/subscriptionApi.ts](../../../../examio-fe/src/apis/subscriptionApi.ts)
-- Store example: [examio-fe/src/stores/useStatsStore.ts](../../../../examio-fe/src/stores/useStatsStore.ts)
+- Routes: [kmaedu-fe/src/routes/index.tsx](../../../../kmaedu-fe/src/routes/index.tsx)
+- Existing guard: [kmaedu-fe/src/routes/guards/TeacherRoute.tsx](../../../../kmaedu-fe/src/routes/guards/TeacherRoute.tsx)
+- Auth store: [kmaedu-fe/src/stores/useAuthStore.ts](../../../../kmaedu-fe/src/stores/useAuthStore.ts)
+- User type: [kmaedu-fe/src/types/user.ts](../../../../kmaedu-fe/src/types/user.ts)
+- API example: [kmaedu-fe/src/apis/subscriptionApi.ts](../../../../kmaedu-fe/src/apis/subscriptionApi.ts)
+- Store example: [kmaedu-fe/src/stores/useStatsStore.ts](../../../../kmaedu-fe/src/stores/useStatsStore.ts)
 - Design system: [DESIGN.md](../../../../DESIGN.md)
-- AppProviders: [examio-fe/src/provider/AppProviders.tsx](../../../../examio-fe/src/provider/AppProviders.tsx)
+- AppProviders: [kmaedu-fe/src/provider/AppProviders.tsx](../../../../kmaedu-fe/src/provider/AppProviders.tsx)
 
 ## Overview
 
@@ -50,7 +50,7 @@ Foundation cho 6 trang admin: `AdminRoute` guard, `adminApi.ts` typed surface, `
 ## Architecture
 
 ```
-examio-fe/src/
+kmaedu-fe/src/
   routes/
     guards/AdminRoute.tsx        ← new
     index.tsx                    ← +6 admin routes
@@ -70,17 +70,17 @@ examio-fe/src/
 ## Related code files
 
 **New:**
-- `examio-fe/src/routes/guards/AdminRoute.tsx`
-- `examio-fe/src/pages/admin/AdminLayout.tsx`
-- `examio-fe/src/apis/adminApi.ts`
-- `examio-fe/src/stores/useAdminStore.ts`
-- `examio-fe/src/locales/vi/admin.json`
-- `examio-fe/src/pages/admin/AdminOverviewPage.tsx` (skeleton — list các tab trong layout, hiện "Coming soon" cho phase 08)
+- `kmaedu-fe/src/routes/guards/AdminRoute.tsx`
+- `kmaedu-fe/src/pages/admin/AdminLayout.tsx`
+- `kmaedu-fe/src/apis/adminApi.ts`
+- `kmaedu-fe/src/stores/useAdminStore.ts`
+- `kmaedu-fe/src/locales/vi/admin.json`
+- `kmaedu-fe/src/pages/admin/AdminOverviewPage.tsx` (skeleton — list các tab trong layout, hiện "Coming soon" cho phase 08)
 
 **Modify:**
-- `examio-fe/src/routes/index.tsx` — thêm 6 admin routes với `AdminRoute` + `AdminLayout` wrap
-- `examio-fe/src/provider/AppProviders.tsx` — confirm antd theme tokens aligned với DESIGN.md (no change nếu đã align)
-- `examio-fe/src/components/kokonutui/KLayout.tsx` (hoặc sidebar tương đương) — thêm "Trang quản trị" link gated `user.isAdmin` (move sang phase 10 nếu conflict)
+- `kmaedu-fe/src/routes/index.tsx` — thêm 6 admin routes với `AdminRoute` + `AdminLayout` wrap
+- `kmaedu-fe/src/provider/AppProviders.tsx` — confirm antd theme tokens aligned với DESIGN.md (no change nếu đã align)
+- `kmaedu-fe/src/components/kokonutui/KLayout.tsx` (hoặc sidebar tương đương) — thêm "Trang quản trị" link gated `user.isAdmin` (move sang phase 10 nếu conflict)
 
 ## Implementation Steps
 

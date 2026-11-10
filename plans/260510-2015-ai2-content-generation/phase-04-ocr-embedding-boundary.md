@@ -6,10 +6,10 @@ Status: implemented
 Keep local Ollama only for embedding/vector work required by OCR/RAG and prevent accidental AI2 embedding usage.
 
 ## Context Links
-- `../examio-be/apps/ai-service/src/llm/ollama_embeddings.py`
-- `../examio-be/apps/ai-service/src/rag/vector_store_pg.py`
-- `../examio-be/apps/ai-service/src/backend/services/ocr_service.py`
-- `../examio-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py`
+- `../kmaedu-be/apps/ai-service/src/llm/ollama_embeddings.py`
+- `../kmaedu-be/apps/ai-service/src/rag/vector_store_pg.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/ocr_service.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py`
 
 ## Requirements
 - `get_embedding_info()` remains Ollama-based.

@@ -49,4 +49,4 @@
 - `behavior-logic.md` BL003-BL006, BL030-BL033, BL053, BL070-BL073
 - `api-map.md` API006, API009, API010
 - `permissions.md` PERM008, PERM022, PERM031, PERM040
-- Source paths: `examio-fe/src/apis/studentMaterialsApi.ts`, `examio-fe/src/apis/historyApi.ts`, related Zustand stores; exact screen files Need verification.
+- Source paths: `kmaedu-fe/src/apis/studentMaterialsApi.ts`, `kmaedu-fe/src/apis/historyApi.ts`, related Zustand stores; exact screen files Need verification.

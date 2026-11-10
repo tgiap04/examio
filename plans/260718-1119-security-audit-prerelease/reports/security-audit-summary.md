@@ -1,10 +1,10 @@
-# Examio — Pre-Release Security Audit (Consolidated)
+# KMAEdu — Pre-Release Security Audit (Consolidated)
 
 > **FIX STATUS (2026-07-18):** Fix batch applied (user excluded C6). All affected services + FE build/typecheck clean, 0 lint errors. See `## Fix Log` at the bottom for per-item status. Not committed.
 
 
 **Date:** 2026-07-18
-**Scope:** `examio-be` (8 NestJS services + Python AI service) + `examio-fe` (React 19)
+**Scope:** `kmaedu-be` (8 NestJS services + Python AI service) + `kmaedu-fe` (React 19)
 **Method:** 6 parallel read-only reviewer agents (auth/session, gateway/API surface, IDOR/money/R2, Python AI, frontend, secrets/infra). No files modified.
 **Verdict:** **NOT ready for public release as-is.** 6 CRITICAL and 9 HIGH findings, several of which are direct revenue/data-integrity/account-takeover risks. All are fixable; none require architectural rewrites except the quiz-encryption key (C5).
 
@@ -18,8 +18,8 @@
 | C2 | `const FREE_MODE = true` hardcoded → **all** AI credit deduction short-circuits | `exam-service/modules/finance-client/finance-client.service.ts:28` | Any user runs unlimited AI generation/OCR/upload for free; refunds still work → system only ever pays out. Git shows it was `false` then flipped back "temporarily". |
 | C3 | Exam attempt creation ignores `assessType`/`whitelist`/`accessCode` (IDOR) | `exam-service/modules/examattempt/examattempt.service.ts` `startExamAttempt` (L49-185), `createExamAttempt` (L1105-1192) | Any authenticated user who knows/guesses a private `examSessionId` takes the exam, gets graded — bypasses whitelist + 6-digit access code entirely. `checkAccess()` exists but isn't called here. |
 | C4 | Live production secrets in plaintext `.env` files on disk (11 Gemini keys, R2 key pair, SePay key+webhook secret, Google/GitHub OAuth secrets, Gmail app password, CloudAMQP creds, Postgres/Redis passwords, JWT/AES secrets, admin default password) | 10 `.env` files across BE/FE (NOT committed — git history clean) | Any backup/tool/agent/CI with disk access exfiltrates everything in one pass. **Rotate all before release** regardless of git cleanliness. |
-| C5 | `QUIZ_AES_KEY` (encrypts exam question/answer content at rest) is inlined into the public FE JS bundle via `VITE_QUIZ_AES_KEY` | `examio-fe/Dockerfile:18-24`, `examio-fe/src/lib/crypto.ts:8` | Any student greps `dist/assets/*.js` for the key → decrypts all exam content pre-submit → defeats anti-cheat. Team already flagged it "temporary stopgap." Needs server-side decryption. |
-| C6 | Postgres port `5411:5432` published on host (`0.0.0.0`) in production compose + weak DB password (`examio_devt@28112004`) | `examio-be/deploy/docker-compose.yml:374-375`, `deploy/.env:20` | DB directly reachable from internet unless VPS firewall is airtight, bypassing all app-layer auth. Bind to `127.0.0.1` or drop the mapping; rotate password. |
+| C5 | `QUIZ_AES_KEY` (encrypts exam question/answer content at rest) is inlined into the public FE JS bundle via `VITE_QUIZ_AES_KEY` | `kmaedu-fe/Dockerfile:18-24`, `kmaedu-fe/src/lib/crypto.ts:8` | Any student greps `dist/assets/*.js` for the key → decrypts all exam content pre-submit → defeats anti-cheat. Team already flagged it "temporary stopgap." Needs server-side decryption. |
+| C6 | Postgres port `5411:5432` published on host (`0.0.0.0`) in production compose + weak DB password (`kmaedu_devt@28112004`) | `kmaedu-be/deploy/docker-compose.yml:374-375`, `deploy/.env:20` | DB directly reachable from internet unless VPS firewall is airtight, bypassing all app-layer auth. Bind to `127.0.0.1` or drop the mapping; rotate password. |
 
 ---
 
@@ -32,8 +32,8 @@
 | H3 | AI IDOR: `generate_quiz`/`generate_flashcards` never compare `file_info.user_id` (real owner) to `request.user_id` | `ai-service/.../generation_service.py:522-528, 700-706` | Generate study content from another user's private document; result persisted to attacker's history. Ownership data is on hand but unused. |
 | H4 | SSRF hardening has DNS-rebinding TOCTOU (validate resolves once, httpx re-resolves at connect) + allowlist silently disabled when `R2_ALLOWED_HOSTS`/`R2_PUBLIC_URL` unset (not in `.env.example`) | `ai-service/.../ocr_service.py:54-119, 324-346` | If a download URL is ever attacker-influenceable, fetch internal/metadata endpoints. Pin to validated IP; make allowlist fail-closed. |
 | H5 | Refresh tokens stored **plaintext** in Postgres | `libs/database/src/schema.prisma:768-796` (`UserSession.refreshToken`/`previousRefreshToken`) | DB read (via C6 or a dump) yields usable long-lived refresh tokens. Hash at rest. |
-| H6 | Weak shared `JWT_SECRET=examio_secret_key` (18 chars, guessable) in 4 service `.env` files pointing at live host `sv.fayedark.com` | `apps/{auth,gateway,admin,finance}-service/.env` | Guess/brute the secret → forge valid JWT as any user against a real backend. Use distinct high-entropy secret per env. |
-| H7 | Dead duplicate `libs/common/guard/*.ts` + `libs/common/services/*.ts` (no `src/`) — weaker auth checks and hardcoded default secrets (`'default-aes-256-key-32-chars!!!'`) | `libs/common/guard/`, `libs/common/services/crypto.service.ts:26-29` | Unreachable today (tsconfig maps `@examio/common`→`src`), but a stray import resurrects a known-key encryptor or a guard missing ban/verify checks. Delete them. |
+| H6 | Weak shared `JWT_SECRET=kmaedu_secret_key` (18 chars, guessable) in 4 service `.env` files pointing at live host `sv.fayedark.com` | `apps/{auth,gateway,admin,finance}-service/.env` | Guess/brute the secret → forge valid JWT as any user against a real backend. Use distinct high-entropy secret per env. |
+| H7 | Dead duplicate `libs/common/guard/*.ts` + `libs/common/services/*.ts` (no `src/`) — weaker auth checks and hardcoded default secrets (`'default-aes-256-key-32-chars!!!'`) | `libs/common/guard/`, `libs/common/services/crypto.service.ts:26-29` | Unreachable today (tsconfig maps `@kmaedu/common`→`src`), but a stray import resurrects a known-key encryptor or a guard missing ban/verify checks. Delete them. |
 | H8 | No boot-time validation of `JWT_SECRET` in gateway/exam/finance/admin | `main.ts` of those services; guards read `process.env.JWT_SECRET` with no assertion | Fail-closed (not a bypass) but a missing env turns into a silent "everyone is 401" outage. Add fail-fast assertion (auth grpc controller already does). |
 | H9 | (grouped w/ H2) AI service has no internal rate limiting; `rate_limit.py` model is fully unwired; no `max_length` on chat `query`/`system_prompt`/history | `ai-service/.../api/chat.py:26-46`, `models/rate_limit.py` | Internal-token holder / buggy caller sends unbounded payloads → cost explosion / OOM. |
 
@@ -120,7 +120,7 @@ Applied via parallel implementer agents (per-service, no file conflicts) + orche
 
 ### Operational — YOUR action required (cannot be code-fixed)
 - **C4** — rotate EVERY secret in the `.env` files (Gemini×11, R2, SePay, Google/GitHub OAuth, Gmail app password, CloudAMQP, Postgres/Redis, JWT/AES, admin default password). `.gitignore` already covers `.env`; nothing is committed — but treat all as exposed. Move to a secrets manager.
-- **H6 / H8 interaction** — the new min-32-char `JWT_SECRET` assertion means services WON'T BOOT until you replace the current weak `JWT_SECRET` (`examio_secret_key`, 17–18 chars) with a distinct high-entropy ≥32-char value per environment. This is intended fail-fast; set it before deploy/local run.
+- **H6 / H8 interaction** — the new min-32-char `JWT_SECRET` assertion means services WON'T BOOT until you replace the current weak `JWT_SECRET` (`kmaedu_secret_key`, 17–18 chars) with a distinct high-entropy ≥32-char value per environment. This is intended fail-fast; set it before deploy/local run.
 - **C6** — excluded per your instruction (Postgres port). Still recommend binding to loopback before public launch.
 
 ### Deferred (lower-risk, not blind-applied pre-release)
@@ -137,5 +137,5 @@ A focused regression review of the highest-risk fixes (H1 session order, C3 acce
 - **OptionalAuthGuard parity (MEDIUM) — FIXED.** It now also enforces the `sessionId`-active check (fail-soft → treats a revoked session as anonymous), matching AuthGuard/AdminGuard.
 - **H1, C5, C2 — VERIFIED-SAFE.** Every token path embeds a resolvable `sessionId`; pre-existing tokens degrade gracefully (no mass logout on deploy — they fall through unchecked until natural expiry as clients refresh); FE/BE plaintext-quiz shapes match; FREE_MODE defaults to charging and can't run free in production.
 
-### ⚠ Mobile app consequence (examio-app — NOT in this audit's scope)
-The C3 server-side enforcement now correctly blocks code-gated exam sessions from the **mobile app**, because `examio-app`'s `StartExamAttemptRequest` has no `accessCode` field and no code-entry UI. Before the fix these "worked" only because there was no enforcement (the IDOR). Public / host / whitelisted exams still work on mobile. **Follow-up (separate effort):** add access-code entry to the mobile start flow (Kotlin shared model + API + UI on BOTH iOS and Android per project rule). Flagged as a release-scope decision — not silently shipped.
+### ⚠ Mobile app consequence (kmaedu-app — NOT in this audit's scope)
+The C3 server-side enforcement now correctly blocks code-gated exam sessions from the **mobile app**, because `kmaedu-app`'s `StartExamAttemptRequest` has no `accessCode` field and no code-entry UI. Before the fix these "worked" only because there was no enforcement (the IDOR). Public / host / whitelisted exams still work on mobile. **Follow-up (separate effort):** add access-code entry to the mobile start flow (Kotlin shared model + API + UI on BOTH iOS and Android per project rule). Flagged as a release-scope decision — not silently shipped.

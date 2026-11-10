@@ -11,11 +11,11 @@ status: complete
 
 Full-stack Admin Dashboard implementation (Phase 3 of roadmap).
 
-## Backend (examio-be/apps/admin-service)
+## Backend (kmaedu-be/apps/admin-service)
 
 - `admin-service` NestJS app: port 7006 HTTP, gRPC 50056 (opt-in)
 - 6 modules: bootstrap, management, users, audit, stats, finance, logs
-- `AdminGuard` in `@examio/common` — JWT verify + Prisma `isAdmin` lookup
+- `AdminGuard` in `@kmaedu/common` — JWT verify + Prisma `isAdmin` lookup
 - `AuditWriterService` — shared service, one `AdminAudit` row per changed field
 - User soft-delete: `isBanned` + `deletedAt`
 - Ticket exchange SSE for log streaming
@@ -24,7 +24,7 @@ Full-stack Admin Dashboard implementation (Phase 3 of roadmap).
 - CLI: `yarn bootstrap:admin sync|list|grant|revoke`
 - Gateway: `@All('*')` catch-all proxy to admin-service
 
-## Frontend (examio-fe)
+## Frontend (kmaedu-fe)
 
 - Route `/admin` with `AdminRoute` guard + `AdminLayout`
 - 6 pages: overview, stats, users, finance, logs, audit

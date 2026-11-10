@@ -9,26 +9,26 @@ Fix và refactor 3 vấn đề trong trang `ManageFlashcardSetDetailPage`:
 ## Phases
 
 ### Phase 1: Add Flashcard View Modal in FlashcardLabelManager
-- File: `examio-fe/src/components/organisms/FlashcardLabelManager.tsx`
+- File: `kmaedu-fe/src/components/organisms/FlashcardLabelManager.tsx`
 - Thêm state `viewFlashcard` + `isViewDialogOpen` để xem chi tiết flashcard (read-only)
 - Thêm nút Eye icon ở mỗi flashcard trong danh sách label
 - Thêm Dialog hiển thị question/answer bằng `RichTextViewer`
 
 ### Phase 2: Increase FlashcardEditorDialog Width
-- File: `examio-fe/src/components/organisms/FlashcardEditorDialog.tsx`
+- File: `kmaedu-fe/src/components/organisms/FlashcardEditorDialog.tsx`
 - Tăng `max-w-4xl` → `max-w-[900px]` (tương đương ~75rem)
 - Thêm `modalWidth={900}` prop vào DialogContent
 
 ### Phase 3: Fix Scroll Position After Save
-- File: `examio-fe/src/pages/k/ManageFlashcardSetDetailPage.tsx`
+- File: `kmaedu-fe/src/pages/k/ManageFlashcardSetDetailPage.tsx`
 - Xóa `window.scrollTo({ top: 0 })` ở `handleEditCard` và `handleAddCard`
 - Thêm `scrollPositionRef` để track scroll Y trước khi mở form
 - Sau `fetchFlashcards()` → `window.scrollTo({ top: scrollY, behavior: "instant" })`
 
 ## Files to Modify
-- `examio-fe/src/components/organisms/FlashcardLabelManager.tsx`
-- `examio-fe/src/components/organisms/FlashcardEditorDialog.tsx`
-- `examio-fe/src/pages/k/ManageFlashcardSetDetailPage.tsx`
+- `kmaedu-fe/src/components/organisms/FlashcardLabelManager.tsx`
+- `kmaedu-fe/src/components/organisms/FlashcardEditorDialog.tsx`
+- `kmaedu-fe/src/pages/k/ManageFlashcardSetDetailPage.tsx`
 
 ## Status: `completed`
 

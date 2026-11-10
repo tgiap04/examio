@@ -3,9 +3,9 @@
 - Parent plan: [plan.md](../plan.md)
 - Research: [researcher-01-backend.md](../research/researcher-01-backend.md)
 - Locked design: [brainstorm session record](../../reports/brainstorm-260607-1517-admin-dashboard.md) (Q2: SSE auth, Q12: log file names)
-- Proxy service: [examio-be/apps/gateway-service/src/services/proxy.service.ts](../../../../examio-be/apps/gateway-service/src/services/proxy.service.ts)
-- Auth proxy example: [examio-be/apps/gateway-service/src/controllers/auth-proxy.controller.ts](../../../../examio-be/apps/gateway-service/src/controllers/auth-proxy.controller.ts)
-- Throttler: [examio-be/apps/gateway-service/src/gateway.module.ts](../../../../examio-be/apps/gateway-service/src/gateway.module.ts) (lines 50-55, 91-94)
+- Proxy service: [kmaedu-be/apps/gateway-service/src/services/proxy.service.ts](../../../../kmaedu-be/apps/gateway-service/src/services/proxy.service.ts)
+- Auth proxy example: [kmaedu-be/apps/gateway-service/src/controllers/auth-proxy.controller.ts](../../../../kmaedu-be/apps/gateway-service/src/controllers/auth-proxy.controller.ts)
+- Throttler: [kmaedu-be/apps/gateway-service/src/gateway.module.ts](../../../../kmaedu-be/apps/gateway-service/src/gateway.module.ts) (lines 50-55, 91-94)
 - Phase 01: [phase-01-backend-infra-foundation.md](phase-01-backend-infra-foundation.md)
 
 ## Overview
@@ -148,19 +148,19 @@ export function redactPII(line: string): string {
 ## Related code files
 
 **New:**
-- `examio-be/apps/admin-service/src/modules/admin-logs/admin-logs.service.ts`
-- `examio-be/apps/admin-service/src/modules/admin-logs/admin-logs.controller.ts`
-- `examio-be/apps/admin-service/src/modules/admin-logs/admin-logs.module.ts`
-- `examio-be/apps/admin-service/src/modules/admin-logs/log-watcher.service.ts`
-- `examio-be/apps/admin-service/src/modules/admin-logs/log-redactor.util.ts`
-- `examio-be/apps/admin-service/src/modules/admin-logs/dto/recent.query.ts`
-- `examio-be/apps/admin-service/src/modules/admin-logs/admin-logs.service.spec.ts`
-- `examio-be/apps/gateway-service/src/controllers/admin-proxy.controller.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-logs/admin-logs.service.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-logs/admin-logs.controller.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-logs/admin-logs.module.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-logs/log-watcher.service.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-logs/log-redactor.util.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-logs/dto/recent.query.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-logs/admin-logs.service.spec.ts`
+- `kmaedu-be/apps/gateway-service/src/controllers/admin-proxy.controller.ts`
 
 **Modify:**
-- `examio-be/apps/gateway-service/src/gateway.module.ts` — register `AdminProxyController`
-- `examio-be/apps/admin-service/src/admin-service.module.ts` — import `AdminLogsModule`
-- `examio-be/.env.example` — add `LOGS_DIR=/var/log/examio` (đã có từ phase 01)
+- `kmaedu-be/apps/gateway-service/src/gateway.module.ts` — register `AdminProxyController`
+- `kmaedu-be/apps/admin-service/src/admin-service.module.ts` — import `AdminLogsModule`
+- `kmaedu-be/.env.example` — add `LOGS_DIR=/var/log/kmaedu` (đã có từ phase 01)
 
 ## Implementation Steps
 
@@ -245,7 +245,7 @@ export function redactPII(line: string): string {
 ## Next steps
 
 - Phase 09 (frontend AdminLogs) — dùng EventSource connect tới SSE, render lines real-time.
-- Phase 10 (integration) — docker compose mount `examio_logs` volume, e2e test SSE t�ng frontend → backend.
+- Phase 10 (integration) — docker compose mount `kmaedu_logs` volume, e2e test SSE t�ng frontend → backend.
 
 ## Implementation Notes
 

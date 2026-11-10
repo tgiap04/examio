@@ -62,7 +62,7 @@ created: 2026-06-14
 ### Seed File Structure
 
 ```typescript
-// examio-be/libs/database/src/seed/word-family-category.seed.ts
+// kmaedu-be/libs/database/src/seed/word-family-category.seed.ts
 
 const categories = [
   {
@@ -99,10 +99,10 @@ Otherwise: Use placeholder images or skip image generation in initial seed.
 ## Related Code Files
 
 ### Files to Create
-- `examio-be/libs/database/src/seed/word-family-category.seed.ts` — seed file
+- `kmaedu-be/libs/database/src/seed/word-family-category.seed.ts` — seed file
 
 ### Files to Modify
-- `examio-be/libs/database/prisma/seed.ts` — import and call seed
+- `kmaedu-be/libs/database/prisma/seed.ts` — import and call seed
 
 ## Implementation Steps
 
@@ -115,7 +115,7 @@ Otherwise: Use placeholder images or skip image generation in initial seed.
    - Import `wordFamilyCategorySeed`
    - Call after `subjectSeed()` (if category order matters)
 3. **Run seed locally**:
-   - `cd examio-be && yarn prisma seed`
+   - `cd kmaedu-be && yarn prisma seed`
    - Verify 10 categories created
 4. **Generate AI images** (if time permits):
    - For each category, call AI image generation
@@ -170,8 +170,8 @@ Otherwise: Use placeholder images or skip image generation in initial seed.
 ## Completion Notes (2026-06-14)
 
 ### Completed
-- Seed file already existed at `examio-be/libs/database/src/seed/word-family-category.seed.ts` with 10 categories
-- Already wired into `examio-be/libs/database/prisma/seed.ts` (line 208)
+- Seed file already existed at `kmaedu-be/libs/database/src/seed/word-family-category.seed.ts` with 10 categories
+- Already wired into `kmaedu-be/libs/database/prisma/seed.ts` (line 208)
 - Successfully ran seed via `npx tsx` — all 10 categories inserted with upsert
 - Backend build (webpack) compiled successfully
 

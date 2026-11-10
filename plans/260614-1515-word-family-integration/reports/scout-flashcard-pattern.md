@@ -1,4 +1,4 @@
-# Flashcard Module Pattern Report (examio-be)
+# Flashcard Module Pattern Report (kmaedu-be)
 
 ## 1. Module Structure
 ```ts
@@ -28,7 +28,7 @@ export class FlashcardSetModule {}
 }
 ```
 - Guards: `AuthGuard` (always auth) / `OptionalAuthGuard` (guest OK, use `req.user?.id`)
-- `AuthenticatedRequest` from `@examio/common`; `req.user.id` always set with `AuthGuard`
+- `AuthenticatedRequest` from `@kmaedu/common`; `req.user.id` always set with `AuthGuard`
 - Multipart form-data: parse `req.body` manually; `@Body()` does NOT work with `FileInterceptor`
 - Swagger: `@ApiOperation`, `@ApiResponse(type=...)`, `@ApiParam`, `@ApiCookieAuth`
 - Response: service returns plain object `{ message, ...data }`, NestJS serializes directly
@@ -55,7 +55,7 @@ export class FlashcardSetModule {}
     protected defaultCacheTTL = EXPIRED_TIME.FIVE_MINUTES;
 }
 ```
-- Extends `BaseRepository` from `@examio/common`; model via `this.model`
+- Extends `BaseRepository` from `@kmaedu/common`; model via `this.model`
 - BaseRepository methods: `findOne({ where, include, cache })`, `findAll({ where, cache, cacheTTL })`, `paginate({ page, size, ...filters, cache }, userId)`, `create/update/delete(id, data, userId)`
 - Cache invalidation: automatic on BaseRepository CRUD; manual via `invalidateUserListCache(userId)`, `invalidateItemCache(userId, id)`, `invalidateCache()`
 - Service also uses `this.prisma.flashCardSet.*` directly for custom queries, aggregations, view history
@@ -92,7 +92,7 @@ export class CreateFlashcardsetDto extends createZodDto(CreateFlashcardsetSchema
 
 ## 7. Auth Guards
 ```ts
-import { AuthGuard, OptionalAuthGuard, AuthenticatedRequest } from '@examio/common';
+import { AuthGuard, OptionalAuthGuard, AuthenticatedRequest } from '@kmaedu/common';
 @UseGuards(AuthGuard)       // requires login
 @UseGuards(OptionalAuthGuard)  // allows guest
 ```
@@ -101,10 +101,10 @@ import { AuthGuard, OptionalAuthGuard, AuthenticatedRequest } from '@examio/comm
 ## 8. Key Import Paths
 | Item | From |
 |---|---|
-| `PrismaService` | `@examio/database` |
-| `RedisService`, `EXPIRED_TIME` | `@examio/redis` |
-| `BaseRepository`, `GenerateIdService`, `AuthGuard`, `OptionalAuthGuard`, `AuthenticatedRequest`, `R2ClientService`, `TurnstileService`, `sanitizeFilename`, `AuthModule` | `@examio/common` |
-| `GrpcClientsModule.registerR2Client()` | `@examio/common` |
+| `PrismaService` | `@kmaedu/database` |
+| `RedisService`, `EXPIRED_TIME` | `@kmaedu/redis` |
+| `BaseRepository`, `GenerateIdService`, `AuthGuard`, `OptionalAuthGuard`, `AuthenticatedRequest`, `R2ClientService`, `TurnstileService`, `sanitizeFilename`, `AuthModule` | `@kmaedu/common` |
+| `GrpcClientsModule.registerR2Client()` | `@kmaedu/common` |
 
 ## 9. Conventions
 - Files: `xxx.module.ts`, `xxx.controller.ts`, `xxx.service.ts`, `xxx.repository.ts`; DTOs in `dto/` subdir

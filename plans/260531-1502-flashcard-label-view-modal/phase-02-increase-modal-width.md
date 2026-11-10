@@ -1,7 +1,7 @@
 # Phase 2: Increase FlashcardEditorDialog Width
 
 ## Context
-- File: `examio-fe/src/components/organisms/FlashcardEditorDialog.tsx`
+- File: `kmaedu-fe/src/components/organisms/FlashcardEditorDialog.tsx`
 - Reference: `FlashcardEditorDialog` hiện dùng `max-w-4xl` (64rem = ~1024px)
 - Cần tăng width cho thoáng hơn khi chỉnh sửa flashcard
 

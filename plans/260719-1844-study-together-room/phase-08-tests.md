@@ -3,7 +3,7 @@
 ## Context Links
 
 - Plan: [plan.md](plan.md) · Depends: phase-04 (BE), phase-07 (FE)
-- Jest config sẵn: `cd examio-be && yarn test`; pattern spec hiện có trong `apps/exam-service/src/**/*.spec.ts`
+- Jest config sẵn: `cd kmaedu-be && yarn test`; pattern spec hiện có trong `apps/exam-service/src/**/*.spec.ts`
 - FE chưa có test script — KHÔNG dựng test infra FE mới trong plan này (ngoài scope); logic FE quan trọng nhất đã được tách thuần ở `lib/pomodoro.ts` — nếu muốn test thì thêm sau.
 
 ## Overview

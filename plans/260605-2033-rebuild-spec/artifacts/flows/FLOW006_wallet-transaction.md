@@ -2,7 +2,7 @@
 
 **Entity:** `WalletTransaction` (MODEL-039)
 **State Field:** `type` (DISC-010) + `direction` (DISC-011)
-**Source:** `examio-be/libs/database/src/schema.prisma` (WalletTransaction)
+**Source:** `kmaedu-be/libs/database/src/schema.prisma` (WalletTransaction)
 **Last Updated:** 2026-06-05
 
 ## State Diagram
@@ -22,11 +22,11 @@ stateDiagram-v2
 
 | ID | From | Trigger | To | Side Effects | Source |
 |----|------|---------|----|--------------|--------|
-| T1 | INIT | user-action | RECORDED | Buy credits (SePay webhook) | `examio-be/apps/finance-service/src/payment.service.ts:88` |
-| T2 | INIT | user-action | RECORDED | AI service use (SUBTRACT) | `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts:62` |
-| T3 | INIT | user-action | RECORDED | Admin adjustment | `examio-be/apps/finance-service/src/wallet.service.ts:128` |
-| T4 | INIT | user-action | RECORDED | Refund (compensating) | `examio-be/apps/finance-service/src/wallet.service.ts:158` |
-| T5 | RECORDED | derived | RECORDED | Correction via new entry (immutable) | `examio-be/apps/finance-service/src/wallet.service.ts:175` |
+| T1 | INIT | user-action | RECORDED | Buy credits (SePay webhook) | `kmaedu-be/apps/finance-service/src/payment.service.ts:88` |
+| T2 | INIT | user-action | RECORDED | AI service use (SUBTRACT) | `kmaedu-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts:62` |
+| T3 | INIT | user-action | RECORDED | Admin adjustment | `kmaedu-be/apps/finance-service/src/wallet.service.ts:128` |
+| T4 | INIT | user-action | RECORDED | Refund (compensating) | `kmaedu-be/apps/finance-service/src/wallet.service.ts:158` |
+| T5 | RECORDED | derived | RECORDED | Correction via new entry (immutable) | `kmaedu-be/apps/finance-service/src/wallet.service.ts:175` |
 
 ## Trigger Types (2)
 

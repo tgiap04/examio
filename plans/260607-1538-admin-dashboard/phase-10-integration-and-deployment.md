@@ -6,7 +6,7 @@
 - Architecture: [docs/system/architecture.md](../../../../docs/system/architecture.md)
 - Permissions: [docs/system/permissions.md](../../../../docs/system/permissions.md)
 - Roadmap: [docs/development-roadmap.md](../../../../docs/development-roadmap.md)
-- Docker compose: [examio-be/deploy/docker-compose.yml](../../../../examio-be/deploy/docker-compose.yml)
+- Docker compose: [kmaedu-be/deploy/docker-compose.yml](../../../../kmaedu-be/deploy/docker-compose.yml)
 
 ## Overview
 
@@ -16,12 +16,12 @@
 - **Implementation status:** done
 - **Review status:** done
 
-Replace mock data bằng real API, e2e test admin happy path + 401/403, docker compose với admin-service + shared `examio_logs` volume, KLayout admin link, docs update (roadmap, changelog, architecture, permissions).
+Replace mock data bằng real API, e2e test admin happy path + 401/403, docker compose với admin-service + shared `kmaedu_logs` volume, KLayout admin link, docs update (roadmap, changelog, architecture, permissions).
 
 ## Key Insights
 
 - Track A (backend) + Track B (frontend) chạy song song từ phase 01–09. Phase 10 chỉ là glue + verify.
-- Docker compose volume share: `examio_logs:/var/log/examio` attach vào admin + auth + gateway. File pattern: `auth-service.log`, `gateway-service.log`.
+- Docker compose volume share: `kmaedu_logs:/var/log/kmaedu` attach vào admin + auth + gateway. File pattern: `auth-service.log`, `gateway-service.log`.
 - KLayout sidebar cần thêm link "Trang quản trị" gated `user.isAdmin` — đã có sẵn check ở `src/lib/genai-knowledge-access.ts:18,21`.
 - E2E test scaffold pattern ở `apps/auth-service/test/jest-e2e.json + app.e2e-spec.ts`.
 - Docs update cần thiết: architecture (admin-service entry), permissions (PERM046-PERM050), roadmap (entry), changelog (entry).
@@ -42,15 +42,15 @@ E2E test (`admin.e2e-spec.ts`):
 
 Docker compose:
 - New `admin-service` block (mirror `auth-service` pattern)
-- Volume `examio_logs` shared
-- Env additions: `ADMIN_EMAILS`, `ADMIN_DEFAULT_PASSWORD`, `ADMIN_SERVICE_URL=http://admin-service:7006`, `LOGS_DIR=/var/log/examio`
+- Volume `kmaedu_logs` shared
+- Env additions: `ADMIN_EMAILS`, `ADMIN_DEFAULT_PASSWORD`, `ADMIN_SERVICE_URL=http://admin-service:7006`, `LOGS_DIR=/var/log/kmaedu`
 - Throttler check
 
 KLayout:
 - Thêm menu item "Trang quản trị" link tới `/admin` gated `user.isAdmin`
 
 Docs:
-- `docs/system/architecture.md` — add admin-service row, add `examio_logs` volume
+- `docs/system/architecture.md` — add admin-service row, add `kmaedu_logs` volume
 - `docs/system/permissions.md` — add PERM046-PERM050 (AdminRouteAccess, AdminUserManage, AdminFinanceAction, AdminLogRead, AdminAuditRead)
 - `docs/development-roadmap.md` — entry "Admin Dashboard (P1, completed)"
 - `docs/project-changelog.md` — entry (nếu file tồn tại; nếu không, tạo mới)
@@ -71,7 +71,7 @@ docker-compose.yml:
         context: ..
         dockerfile: deploy/Dockerfile
         args: { SERVICE_NAME: admin-service }
-      container_name: examio-admin
+      container_name: kmaedu-admin
       ports: ['7006:7006']
       environment:
         - DATABASE_URL=${DATABASE_URL}
@@ -79,38 +79,38 @@ docker-compose.yml:
         - JWT_SECRET=${JWT_SECRET}
         - ADMIN_EMAILS=${ADMIN_EMAILS}
         - ADMIN_DEFAULT_PASSWORD=${ADMIN_DEFAULT_PASSWORD}
-        - LOGS_DIR=/var/log/examio
+        - LOGS_DIR=/var/log/kmaedu
         - GRPC_PORT=50056
       volumes:
-        - examio_logs:/var/log/examio
+        - kmaedu_logs:/var/log/kmaedu
       depends_on: [migration, postgres]
     
     gateway:
       environment:
         - ADMIN_SERVICE_URL=http://admin-service:7006
       volumes:
-        - examio_logs:/var/log/examio
+        - kmaedu_logs:/var/log/kmaedu
     
     auth-service:
       volumes:
-        - examio_logs:/var/log/examio
+        - kmaedu_logs:/var/log/kmaedu
       # ADMIN_EMAILS injected here too
 
 volumes:
-  examio_logs:                     ← new
+  kmaedu_logs:                     ← new
 ```
 
 ## Related code files
 
 **New:**
-- `examio-be/apps/admin-service/test/admin.e2e-spec.ts`
-- `examio-be/apps/admin-service/test/jest-e2e.json`
+- `kmaedu-be/apps/admin-service/test/admin.e2e-spec.ts`
+- `kmaedu-be/apps/admin-service/test/jest-e2e.json`
 - `docs/project-changelog.md` (nếu chưa tồn tại)
 
 **Modify:**
-- `examio-be/deploy/docker-compose.yml` — add `admin-service` + `examio_logs` volume + env
-- `examio-be/.env.example` — add new envs (verify đã có từ phase 01)
-- `examio-fe/src/components/kokonutui/KLayout.tsx` (hoặc sidebar component) — add admin link
+- `kmaedu-be/deploy/docker-compose.yml` — add `admin-service` + `kmaedu_logs` volume + env
+- `kmaedu-be/.env.example` — add new envs (verify đã có từ phase 01)
+- `kmaedu-fe/src/components/kokonutui/KLayout.tsx` (hoặc sidebar component) — add admin link
 - `docs/system/architecture.md` — add admin-service entry
 - `docs/system/permissions.md` — add PERM046-PERM050
 - `docs/development-roadmap.md` — add entry
@@ -127,12 +127,12 @@ volumes:
    - `logs.test.ts` — append log line → SSE event received trong < 1s
 2. **Docker compose** — edit `docker-compose.yml`:
    - Add `admin-service` block (mirror `auth-service` build args, env, healthcheck)
-   - Add `examio_logs:/var/log/examio` volume tới `admin-service`, `gateway-service`, `auth-service`
+   - Add `kmaedu_logs:/var/log/kmaedu` volume tới `admin-service`, `gateway-service`, `auth-service`
    - Add `ADMIN_SERVICE_URL` env tới `gateway`
-   - Add top-level `volumes.examio_logs:`
+   - Add top-level `volumes.kmaedu_logs:`
 3. **KLayout admin link** — edit sidebar component (search KLayout file). Add menu item: `{ label: 'Trang quản trị', icon: <ShieldIcon/>, path: '/admin', visible: user.isAdmin }`.
 4. **Docs update**:
-   - `architecture.md` — add row: `| admin-service | 7006 | 50056 | Node 20+ | Admin dashboard backend |`. Add to mermaid diagram. Add `examio_logs` volume to Infra subgraph.
+   - `architecture.md` — add row: `| admin-service | 7006 | 50056 | Node 20+ | Admin dashboard backend |`. Add to mermaid diagram. Add `kmaedu_logs` volume to Infra subgraph.
    - `permissions.md` — add PERM046-PERM050:
      - PERM046 AdminRouteAccess: AdminRoute guard
      - PERM047 AdminUserManage: list/ban/grant admin
@@ -151,7 +151,7 @@ volumes:
 
 - [ ] Tạo `apps/admin-service/test/jest-e2e.json`
 - [ ] Tạo `apps/admin-service/test/admin.e2e-spec.ts` (6 test suites)
-- [ ] Update `docker-compose.yml`: add admin-service + examio_logs volume
+- [ ] Update `docker-compose.yml`: add admin-service + kmaedu_logs volume
 - [ ] Update `docker-compose.yml`: add ADMIN_SERVICE_URL env to gateway
 - [ ] Verify `.env.example` has all new envs (phase 01)
 - [ ] Add admin link to KLayout sidebar
@@ -176,7 +176,7 @@ volumes:
 - [ ] E2E test pass 6 suites trong CI
 - [ ] `docker compose config` valid, no warning
 - [ ] `docker compose up` → 7 services running (gateway, auth, exam, finance, r2, ai, admin)
-- [ ] Mounted volume `examio_logs` shared — append to `auth-service.log` → admin SSE nhận được trong < 1s
+- [ ] Mounted volume `kmaedu_logs` shared — append to `auth-service.log` → admin SSE nhận được trong < 1s
 - [ ] KLayout admin link visible cho admin user, không hiện cho non-admin
 - [ ] Docs updated đầy đủ (architecture, permissions, roadmap, changelog)
 - [ ] Non-admin JWT → 401/403 trên mọi `/api/v1/admin/*`
@@ -189,7 +189,7 @@ volumes:
 |---|---|
 | E2E test flaky do DB state | Seed fixtures riêng cho test; chạy trên dedicated test DB; cleanup after each suite |
 | Docker compose build fail (deps missing) | Build admin-service với cùng Dockerfile pattern (NestJS monorepo đã có sẵn) |
-| Volume mount conflict với local dev logs | Phase 10 set `LOGS_DIR=./logs` cho local, container dùng `/var/log/examio` |
+| Volume mount conflict với local dev logs | Phase 10 set `LOGS_DIR=./logs` cho local, container dùng `/var/log/kmaedu` |
 | KLayout admin link conflict với KLayout auth check | Admin link là navigation, không phải route guard; gate bằng `user.isAdmin` |
 | Docs outdated sau merge | Verify bằng grep trước commit |
 | E2E SSE test flaky trên CI | Mock EventSource ở frontend; backend SSE test qua curl thủ công |
@@ -216,7 +216,7 @@ volumes:
 ## Implementation Notes
 
 - E2E test created: `apps/admin-service/test/admin.e2e-spec.ts` (6 test suites: bootstrap, users, finance, audit, rbac, logs)
-- docker-compose.yml updated: admin-service block + `examio_logs` shared volume + ADMIN_SERVICE_URL env to gateway
+- docker-compose.yml updated: admin-service block + `kmaedu_logs` shared volume + ADMIN_SERVICE_URL env to gateway
 - Admin nav link added to `src/components/organisms/k/SideBar.tsx` (gated `user.isAdmin`)
 - `docs/development-roadmap.md` updated with Phase 3 entry (Admin Dashboard, completed 2026-06-07)
 - `docs/system/architecture.md` updated with admin-service section

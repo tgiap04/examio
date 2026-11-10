@@ -4,7 +4,7 @@
 Priority: high. Status: planned. Validate compile safety and access behavior after role gates are removed.
 
 ## Validation Commands
-Run from `examio-be/`:
+Run from `kmaedu-be/`:
 
 ```bash
 yarn build

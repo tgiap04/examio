@@ -7,7 +7,7 @@
 
 ## Purpose
 
-A static legal page that explains examio's security practices (encryption, auth, data handling). Users reach it from the public footer when they want to understand how their data is protected. Fully static, no async operations.
+A static legal page that explains kmaedu's security practices (encryption, auth, data handling). Users reach it from the public footer when they want to understand how their data is protected. Fully static, no async operations.
 
 ## Screen Layout
 
@@ -63,7 +63,7 @@ Identical to SCR006 (CookiesPage): single-column legal page wrapped in the share
 
 ## Interaction Patterns
 
-- **Clicking "Back to Home" navigates to `/`** — source: `examio-fe/src/components/molecules/HeaderSection.tsx:42`
+- **Clicking "Back to Home" navigates to `/`** — source: `kmaedu-fe/src/components/molecules/HeaderSection.tsx:42`
 
 `N/A — no non-trivial interaction patterns detected.`
 
@@ -88,6 +88,6 @@ Identical to SCR006 (CookiesPage): single-column legal page wrapped in the share
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/landing/SecurityPage.tsx:1`
-- Shell: `examio-fe/src/components/organisms/landing/LegalPageShell.tsx:1`
-- Header: `examio-fe/src/components/molecules/HeaderSection.tsx:42`
+- Page/View: `kmaedu-fe/src/pages/landing/SecurityPage.tsx:1`
+- Shell: `kmaedu-fe/src/components/organisms/landing/LegalPageShell.tsx:1`
+- Header: `kmaedu-fe/src/components/molecules/HeaderSection.tsx:42`

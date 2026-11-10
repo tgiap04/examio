@@ -1,11 +1,11 @@
-# Examio Glossary
+# KMAEdu Glossary
 
 Generated: 2026-05-27 20:54 Asia/Saigon
 Source artifacts: `_session-context.md`, `data-model.md`, `feature-list.md`, `features/*/business-context.md`, `api-map.md`.
 
 ## Product Terms
 
-- **Examio**: Learning and assessment platform spanning web, backend services, AI/OCR processing, and Android/iOS mobile companion apps.
+- **KMAEdu**: Learning and assessment platform spanning web, backend services, AI/OCR processing, and Android/iOS mobile companion apps.
 - **Workspace**: Authenticated user area under `/k` where users navigate materials, history, AI tools, profile, subscriptions, and teacher flows.
 - **My Materials**: Workspace area for recent or pinned study content such as quiz sets, flashcard sets, exam materials, and uploaded/generated files.
 - **History**: User-facing record of prior exam attempts, uploaded PDFs/files, and AI-generated quiz or flashcard outputs.
@@ -102,7 +102,7 @@ Source artifacts: `_session-context.md`, `data-model.md`, `feature-list.md`, `fe
 - **Finance Service**: NestJS service for wallet, payment, subscription, and finance gRPC behavior.
 - **AI Service**: Python FastAPI service for RAG, OCR/document processing, chat, generation, entity extraction, graph stats, and tutor APIs.
 - **gRPC Contract**: Service-to-service typed API, including auth, wallet, subscription, R2, and OCR proto packages.
-- **RabbitMQ Event**: Asynchronous domain message on `examio.events`, including user, payment/wallet/subscription, exam, and OCR events.
+- **RabbitMQ Event**: Asynchronous domain message on `kmaedu.events`, including user, payment/wallet/subscription, exam, and OCR events.
 - **Wallet Bootstrap**: Finance-side creation of a user wallet triggered by user registration or `user.created` event.
 - **Prisma Schema**: Shared PostgreSQL model source of truth under backend database library.
 - **Zustand Store**: Web frontend feature state layer that calls API wrappers and caches/manages client state.
@@ -131,5 +131,5 @@ Source artifacts: `_session-context.md`, `data-model.md`, `feature-list.md`, `fe
 - Whether `UserStorageGraph` and `UserStorageGraphGroup` are active Prisma models or planned/context-only terms.
 
 **Status:** DONE
-**Summary:** Created concise Examio product/domain/technical glossary from existing rebuild specs at `plans/260527-1951-rebuild-spec/artifacts/glossary.md`.
+**Summary:** Created concise KMAEdu product/domain/technical glossary from existing rebuild specs at `plans/260527-1951-rebuild-spec/artifacts/glossary.md`.
 **Concerns/Blockers:** Some source artifacts mark role enforcement, route coverage, GraphRAG storage models, and mobile wiring as needing verification; listed unresolved terms above.

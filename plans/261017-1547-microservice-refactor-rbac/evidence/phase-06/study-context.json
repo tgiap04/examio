@@ -20,13 +20,13 @@
     "access to shared content never depends on the owner's current role (demoted teacher's shared set still studyable; demoted user gets 403 on manage)"
   ],
   "touchpoints": [
-    "examio-be/apps/exam-service/src/modules",
-    "examio-be/apps/finance-service/src",
-    "examio-be/apps/admin-service/src",
-    "examio-be/apps/auth-service/src",
-    "examio-be/apps/r2-service/src",
-    "examio-be/libs/auth-jwt",
-    "examio-be/test/authz"
+    "kmaedu-be/apps/exam-service/src/modules",
+    "kmaedu-be/apps/finance-service/src",
+    "kmaedu-be/apps/admin-service/src",
+    "kmaedu-be/apps/auth-service/src",
+    "kmaedu-be/apps/r2-service/src",
+    "kmaedu-be/libs/auth-jwt",
+    "kmaedu-be/test/authz"
   ],
   "blastRadius": [
     "every exam-service route used by FE (quiz, flashcard, exam room/session/attempt, study room, word family, AI, AI chat, student)",

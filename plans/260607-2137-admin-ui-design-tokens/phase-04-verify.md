@@ -2,7 +2,7 @@
 
 ## Commands
 ```bash
-cd /Users/tgiap.dev/devs/examio/examio-fe
+cd /Users/tgiap.dev/devs/kmaedu/kmaedu-fe
 
 # 1. Grep for any remaining non-brand colors / hardcoded hex / dark: variants
 grep -rE "gray-|slate-|zinc-|stone-|text-(red|blue|green|yellow|orange|purple|pink|indigo|violet|sky|emerald|teal|cyan|amber|lime|fuchsia)-[0-9]|bg-(red|blue|green|yellow|orange|purple|pink|indigo|violet|sky|emerald|teal|cyan|amber|lime|fuchsia)-[0-9]|dark:" src/pages/admin/ src/components/admin/ src/routes/layouts/AdminLayout.tsx

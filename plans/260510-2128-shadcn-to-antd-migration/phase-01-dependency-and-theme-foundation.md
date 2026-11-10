@@ -26,7 +26,7 @@ Cài Ant Design và thiết lập nền theme/provider để các phase sau migr
 
 ## Implementation Steps
 
-1. Chạy `yarn add antd` trong `examio-fe`.
+1. Chạy `yarn add antd` trong `kmaedu-fe`.
 2. Tạo hoặc cập nhật provider hiện có để thêm `ConfigProvider`.
 3. Thiết lập token tối thiểu:
    - `colorPrimary`: màu primary hiện tại của hệ thống.

@@ -13,9 +13,9 @@ track: Prereq
 
 ## Context Links
 
-- Report: `../reports/brainstorm-260627-1527-examio-app-k-screens-parity.md`
-- FE api clients (DTO source of truth): `../../examio-fe/src/apis/`
-- Shared layer: `../../examio-app/shared/src/commonMain/kotlin/com/examio/app/`
+- Report: `../reports/brainstorm-260627-1527-kmaedu-app-k-screens-parity.md`
+- FE api clients (DTO source of truth): `../../kmaedu-fe/src/apis/`
+- Shared layer: `../../kmaedu-app/shared/src/commonMain/kotlin/com/kmaedu/app/`
 
 ## Overview
 

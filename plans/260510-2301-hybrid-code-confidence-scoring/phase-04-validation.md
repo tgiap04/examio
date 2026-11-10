@@ -15,8 +15,8 @@ Xác thực đầy đủ các nhánh chấm điểm để đảm bảo benchmark
 - `src/apis/aiStudentApi.ts`
 - `src/stores/useAIStudentStore.ts`
 - `src/app/k/ai-student/page.tsx`
-- `../examio-be/apps/ai-service/src/backend/services/student_programming_evaluation_service.py`
-- `../examio-be/apps/ai-service/src/backend/tests/test_student_programming_evaluation_service.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/student_programming_evaluation_service.py`
+- `../kmaedu-be/apps/ai-service/src/backend/tests/test_student_programming_evaluation_service.py`
 
 ## Requirements
 
@@ -46,7 +46,7 @@ Xác thực đầy đủ các nhánh chấm điểm để đảm bảo benchmark
 Frontend:
 
 ```bash
-cd /Users/tgiap.dev/devs/kma-edu/examio-fe
+cd /Users/tgiap.dev/devs/kma-edu/kmaedu-fe
 yarn build
 yarn lint
 ```
@@ -54,7 +54,7 @@ yarn lint
 AI service:
 
 ```bash
-cd /Users/tgiap.dev/devs/kma-edu/examio-be/apps/ai-service
+cd /Users/tgiap.dev/devs/kma-edu/kmaedu-be/apps/ai-service
 ./venv/bin/pytest src/backend/tests/test_student_programming_evaluation_service.py
 ```
 

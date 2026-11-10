@@ -50,4 +50,4 @@
 - `behavior-logic.md` BL030, BL032, BL052, BL070-BL072
 - `api-map.md` API003, API010, API006, API011
 - `permissions.md` PERM015-PERM017, PERM030, PERM040
-- Source paths: `examio-fe/src/apis/quizsetApi.ts`, `examio-fe/src/stores/useQuizSetStore.ts`; exact backend module/controller paths Need verification.
+- Source paths: `kmaedu-fe/src/apis/quizsetApi.ts`, `kmaedu-fe/src/stores/useQuizSetStore.ts`; exact backend module/controller paths Need verification.

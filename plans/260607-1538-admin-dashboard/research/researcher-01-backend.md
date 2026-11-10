@@ -1,10 +1,10 @@
 # Researcher 01 — Backend admin-service patterns
 
-Scope: research only (no code). All decisions in the plan doc are locked; this report maps the existing examio NestJS monorepo patterns that the new `admin-service` will reuse.
+Scope: research only (no code). All decisions in the plan doc are locked; this report maps the existing kmaedu NestJS monorepo patterns that the new `admin-service` will reuse.
 
 ## 1. New service skeleton (apps/admin-service)
 
-Pattern matches `apps/auth-service` exactly — see `examio-be/apps/auth-service/src/main.ts:1-55`.
+Pattern matches `apps/auth-service` exactly — see `kmaedu-be/apps/auth-service/src/main.ts:1-55`.
 
 - `apps/admin-service/src/main.ts`:
   - `config({ path: join(process.cwd(), 'apps', 'admin-service', '.env') })` (line 5).
@@ -13,19 +13,19 @@ Pattern matches `apps/auth-service` exactly — see `examio-be/apps/auth-service
   - `connectMicroservice` for gRPC on `process.env.GRPC_PORT || 50056`, proto in `libs/common/src/protos/admin.proto` (lines 32-43).
   - `app.startAllMicroservices()` then `app.listen(process.env.PORT || 7006)` (lines 46-50).
 - `apps/admin-service/src/admin-service.module.ts`: thin wrapper, mirrors `auth-service/src/auth-service.module.ts:1-13` (`imports: [DatabaseModule, AdminModule]; controllers: [AdminServiceController, AdminGrpcController]; providers: [AdminServiceService]`).
-- `apps/admin-service/src/admin.module.ts`: feature module that imports `DatabaseModule`, `AuthModule` (from `@examio/common` — provides `AuthGuard` + `JwtModule`), `GrpcClientsModule.registerAll()` for inter-service calls, and the six feature modules: `AdminBootstrapModule`, `AdminUsersModule`, `AdminStatsModule`, `AdminFinanceModule`, `AdminLogsModule`, `AdminAuditModule`.
-- `nest-cli.json`: add `admin-service` project entry (see `auth-service` block at `examio-be/nest-cli.json:48-66`).
+- `apps/admin-service/src/admin.module.ts`: feature module that imports `DatabaseModule`, `AuthModule` (from `@kmaedu/common` — provides `AuthGuard` + `JwtModule`), `GrpcClientsModule.registerAll()` for inter-service calls, and the six feature modules: `AdminBootstrapModule`, `AdminUsersModule`, `AdminStatsModule`, `AdminFinanceModule`, `AdminLogsModule`, `AdminAuditModule`.
+- `nest-cli.json`: add `admin-service` project entry (see `auth-service` block at `kmaedu-be/nest-cli.json:48-66`).
 - `package.json` scripts: add `dev:admin` (mirror `dev:auth`).
 
 ## 2. AdminGuard (libs/common)
 
-`AuthGuard` already exists at `examio-be/libs/common/src/guard/auth.guard.ts:13-79` and is already exported via `libs/common/src/index.ts:15`. It sets `request.user` (which includes `isAdmin: boolean` per line 38).
+`AuthGuard` already exists at `kmaedu-be/libs/common/src/guard/auth.guard.ts:13-79` and is already exported via `libs/common/src/index.ts:15`. It sets `request.user` (which includes `isAdmin: boolean` per line 38).
 
 - New file: `libs/common/src/guard/admin.guard.ts` — `@Injectable() export class AdminGuard implements CanActivate` that depends on `AuthGuard` (or duplicates its token extraction) and on `PrismaService`. Implementation:
   1. Call AuthGuard-equivalent logic OR extract `request.user` if a global `AuthGuard` APP_GUARD already ran.
   2. Throw `ForbiddenException` if `request.user.isAdmin !== true`.
 - Register in `libs/common/src/index.ts:14-17` guard block: `export * from './guard/admin.guard';`
-- Apply per-route with `@UseGuards(AdminGuard)` (same decorator used for `AuthGuard` at `examio-be/apps/finance-service/src/modules/wallet/wallet.controller.ts:36`).
+- Apply per-route with `@UseGuards(AdminGuard)` (same decorator used for `AuthGuard` at `kmaedu-be/apps/finance-service/src/modules/wallet/wallet.controller.ts:36`).
 
 ## 3. AdminBootstrapService
 
@@ -42,7 +42,7 @@ Pattern matches `apps/auth-service` exactly — see `examio-be/apps/auth-service
 
 ## 4. AdminAudit Prisma model
 
-Insert in `examio-be/libs/database/src/schema.prisma` after the last model. Pattern from `UserSession` (`schema.prisma` line 711) and `Payment` (line 428).
+Insert in `kmaedu-be/libs/database/src/schema.prisma` after the last model. Pattern from `UserSession` (`schema.prisma` line 711) and `Payment` (line 428).
 
 ```prisma
 model AdminAudit {
@@ -64,14 +64,14 @@ model AdminAudit {
 ```
 
 - Add reverse relation `adminAudits AdminAudit[]` to `User` model (line 618).
-- Migration: `cd examio-be && yarn prisma:merge && yarn prisma:migrate --name add_admin_audit && yarn prisma:generate`.
+- Migration: `cd kmaedu-be && yarn prisma:merge && yarn prisma:migrate --name add_admin_audit && yarn prisma:generate`.
 
 ## 5. Log reading + SSE
 
 No existing SSE / `readline` / `fs.watch` in repo (`grep` returned 0 hits under `apps/` and `libs/`). Greenfield:
 
 - `AdminLogsService` in `apps/admin-service/src/modules/admin-logs/`:
-  - Config: `LOGS_DIR` env (default `/var/log/examio` in compose, `./logs` locally).
+  - Config: `LOGS_DIR` env (default `/var/log/kmaedu` in compose, `./logs` locally).
   - `fs.watch(path.join(LOGS_DIR, 'auth-service.log'), { persistent: false })` plus same for `gateway-service.log`.
   - On `change`/`rename` event, read new bytes via `fs.createReadStream(path, { start: lastOffset, end: currSize })` and emit to a `Subject<LogLine>` (use `rxjs` — already in deps via `proxy.service.ts:2`).
   - Redact: regex list for emails (`/[\w.+-]+@[\w-]+\.[\w.-]+/g`), bearer tokens (`/Bearer\s+[\w-.]+/gi`), passwords in JSON bodies (`/"password"\s*:\s*"[^"]*"/gi`). Replace with `[REDACTED]`.
@@ -127,7 +127,7 @@ Template at `apps/auth-service/test/jest-e2e.json` and `apps/auth-service/test/a
 
 ## 9. Other reuse
 
-- `GenerateIdService` from `@examio/common` (used in `auth.module.ts:10`, `wallet.grpc.controller.ts:23`) — generate IDs for `AdminAudit` and any seeded admin user.
+- `GenerateIdService` from `@kmaedu/common` (used in `auth.module.ts:10`, `wallet.grpc.controller.ts:23`) — generate IDs for `AdminAudit` and any seeded admin user.
 - `MailService` (exported at `libs/common/src/index.ts:6`) — for sending bootstrap password to admin email if random.
 - `RedisService` / `RedisModule` (global, `libs/redis/src/redis.module.ts:1-9`) — cache admin lookups if needed.
 - `EventPublisherService` (exported at `libs/common/src/index.ts:13`) — emit `admin.action.performed` event for downstream observability.
@@ -154,14 +154,14 @@ Add `AdminGuard` inside admin-service controllers — gateway proxy does NOT nee
 
 ## 11. docker-compose
 
-Add `admin-service` block after `auth-service` (search for `auth-service:` in `examio-be/deploy/docker-compose.yml`). Mirror structure: same `build.args.SERVICE_NAME: admin-service`, container_name, depends_on (postgres, redis, rabbitmq), env file. Add shared volume:
+Add `admin-service` block after `auth-service` (search for `auth-service:` in `kmaedu-be/deploy/docker-compose.yml`). Mirror structure: same `build.args.SERVICE_NAME: admin-service`, container_name, depends_on (postgres, redis, rabbitmq), env file. Add shared volume:
 
 ```yaml
 volumes:
-  - examio_logs:/var/log/examio
+  - kmaedu_logs:/var/log/kmaedu
 ```
 
-Attach the same volume to `auth-service` and `gateway-service` so admin can read their logs. Define `examio_logs:` at the bottom `volumes:` section.
+Attach the same volume to `auth-service` and `gateway-service` so admin can read their logs. Define `kmaedu_logs:` at the bottom `volumes:` section.
 
 ## Unresolved questions
 

@@ -1,0 +1,106 @@
+# AI chat service: conversations, messages, attached documents and the public AI-teacher subjects
+# (HTTP only, plus the aichat.events consumer and the R2 delete worker), and its schema migration.
+# Included from deploy/docker-compose.yml; paths are relative to deploy/ (project_directory).
+# =============================================================================
+# Shared fragments (YAML anchors are per file, so each file carries its own copy)
+x-logging: &default-logging
+    driver: 'json-file'
+    options:
+        max-size: '10m'
+        max-file: '3'
+
+x-nestjs-healthcheck: &nestjs-healthcheck
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    start_period: 60s
+
+services:
+    ai-chat:
+        image: ghcr.io/tgiap04/kmaedu-ai-chat:${AI_CHAT_TAG:-main}
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile.node
+            args:
+                SERVICE: ai-chat-service
+        container_name: kmaedu-ai-chat
+        environment:
+            - NODE_ENV=production
+            - PORT=3000
+            - FRONTEND_URL=${FRONTEND_URL:?FRONTEND_URL is required}
+            - DATABASE_URL=postgresql://aichat_svc:${AICHAT_DB_PASSWORD:?AICHAT_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=aichat
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+            - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+            # Consumes aichat.events (document.deleted); publishes nothing
+            - RABBITMQ_URL=amqp://aichat:${RABBITMQ_AICHAT_PASS:?RABBITMQ_AICHAT_PASS is required}@rabbitmq:5672
+            # api + the r2_delete_tasks worker (no listener of its own) in this container
+            - ROLE=api,worker
+            # AiService (Query, StreamChat) as svc:ai-chat; DocumentService as the caller (forwarded
+            # user token); r2 DeleteObjects as svc:ai-chat (worker)
+            - AI_GRPC_URL=ai:50051
+            - DOCUMENT_GRPC_URL=document:50051
+            - R2_GRPC_URL=r2:50051
+            # Public base of R2 objects: tells an R2-hosted message image from an external URL
+            - R2_PUBLIC_URL=${R2_PUBLIC_URL:-}
+            # How long one message waits for its documents' OCR before answering without them
+            - AI_CHAT_DOCUMENT_WAIT_MS=${AI_CHAT_DOCUMENT_WAIT_MS:-120000}
+            - JWT_ISSUER=${JWT_ISSUER:-kmaedu-auth}
+            - JWT_AUDIENCE=${JWT_AUDIENCE:-kmaedu}
+            - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
+            - AUTH_TOKEN_URL=http://auth:3000/internal/token
+            - SERVICE_CLIENT_SECRET=${AICHAT_SERVICE_CLIENT_SECRET:?AICHAT_SERVICE_CLIENT_SECRET is required}
+        env_file:
+            - path: env/aichat.env
+              required: true
+        # ai, document and r2 are reached through lazy gRPC clients: a chat boots (and lists
+        # its history) while one of them is down.
+        depends_on:
+            ai-chat-migrate:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            auth:
+                condition: service_healthy
+        networks:
+            - internal
+        healthcheck:
+            <<: *nestjs-healthcheck
+            test:
+                [
+                    'CMD',
+                    'wget',
+                    '-q',
+                    '--spider',
+                    'http://localhost:3000/health/ready',
+                ]
+        mem_limit: 512m
+        restart: unless-stopped
+        logging: *default-logging
+
+    # One-shot: `prisma migrate deploy` for the aichat schema as aichat_svc, then exits.
+    ai-chat-migrate:
+        image: ghcr.io/tgiap04/kmaedu-ai-chat:${AI_CHAT_TAG:-main}
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile.node
+            args:
+                SERVICE: ai-chat-service
+        container_name: kmaedu-ai-chat-migrate
+        environment:
+            - ROLE=migrate
+            - DATABASE_URL=postgresql://aichat_svc:${AICHAT_DB_PASSWORD:?AICHAT_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=aichat
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - internal
+        healthcheck:
+            disable: true
+        mem_limit: 512m
+        restart: 'no'
+        logging: *default-logging

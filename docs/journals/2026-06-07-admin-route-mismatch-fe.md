@@ -9,7 +9,7 @@ status: complete
 
 ## What
 
-Fixed 3 admin-service endpoints returning 404 because admin-service routes didn't match what the FE admin dashboard (`examio-fe/src/apis/adminApi.ts`) calls.
+Fixed 3 admin-service endpoints returning 404 because admin-service routes didn't match what the FE admin dashboard (`kmaedu-fe/src/apis/adminApi.ts`) calls.
 
 ## Root cause
 

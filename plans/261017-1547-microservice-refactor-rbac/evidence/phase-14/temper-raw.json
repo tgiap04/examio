@@ -2,7 +2,7 @@
   {
     "command": "grep -rnE 'exam-service|EXAM_SERVICE_URL' . --include='*.ts' --include='*.yaml' --include='*.yml' --include='*.json' --include='*.example' --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.git; test $? -eq 1",
     "exitCode": 1,
-    "summary": "./coverage/coverage-summary.json:30:,\"/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/quizset/dto/update-quizset.dto.ts\": {\"lines\":{\"total\":14,\"covered\":11,\"skipped\":0,\"pct\":78.57",
+    "summary": "./coverage/coverage-summary.json:30:,\"/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/quizset/dto/update-quizset.dto.ts\": {\"lines\":{\"total\":14,\"covered\":11,\"skipped\":0,\"pct\":78.57",
     "ts": "2026-10-25T13:18:04+0700"
   },
   {
@@ -60,13 +60,13 @@
     "ts": "2026-10-25T13:19:22+0700"
   },
   {
-    "command": "test $(grep -v -e '^./graphify-out/' -e '^./coverage/' /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/logs/c1-find-hits.txt | wc -l) -eq 0",
+    "command": "test $(grep -v -e '^./graphify-out/' -e '^./coverage/' /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/logs/c1-find-hits.txt | wc -l) -eq 0",
     "exitCode": 0,
     "summary": "",
     "ts": "2026-10-25T13:20:11+0700"
   },
   {
-    "command": "node_modules/.bin/buf breaking proto --against /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/protohead/examio-be/proto",
+    "command": "node_modules/.bin/buf breaking proto --against /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/protohead/kmaedu-be/proto",
     "exitCode": 0,
     "summary": "",
     "ts": "2026-10-25T13:20:17+0700"
@@ -134,7 +134,7 @@
   {
     "command": "[harness-invalid] (wrapper not executable, exit 126) [stage2] bash deploy/postgres/init/01-service-schemas.sh (empty db, 10 roles)",
     "exitCode": 126,
-    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 9: /privat",
+    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 9: /privat",
     "ts": "2026-10-25T13:24:10+0700"
   },
   {
@@ -146,7 +146,7 @@
   {
     "command": "[harness-invalid] (wrapper not executable, exit 126) [stage2] prisma migrate diff --exit-code (auth, drift)",
     "exitCode": 126,
-    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
+    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
     "ts": "2026-10-25T13:24:10+0700"
   },
   {
@@ -158,7 +158,7 @@
   {
     "command": "[harness-invalid] (wrapper not executable, exit 126) [stage2] prisma migrate diff --exit-code (finance, drift)",
     "exitCode": 126,
-    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
+    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
     "ts": "2026-10-25T13:24:11+0700"
   },
   {
@@ -170,7 +170,7 @@
   {
     "command": "[harness-invalid] (wrapper not executable, exit 126) [stage2] prisma migrate diff --exit-code (admin, drift)",
     "exitCode": 126,
-    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
+    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
     "ts": "2026-10-25T13:24:11+0700"
   },
   {
@@ -182,7 +182,7 @@
   {
     "command": "[harness-invalid] (wrapper not executable, exit 126) [stage2] prisma migrate diff --exit-code (content, drift)",
     "exitCode": 126,
-    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
+    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
     "ts": "2026-10-25T13:24:11+0700"
   },
   {
@@ -194,7 +194,7 @@
   {
     "command": "[harness-invalid] (wrapper not executable, exit 126) [stage2] prisma migrate diff --exit-code (assessment, drift)",
     "exitCode": 126,
-    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
+    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
     "ts": "2026-10-25T13:24:11+0700"
   },
   {
@@ -206,7 +206,7 @@
   {
     "command": "[harness-invalid] (wrapper not executable, exit 126) [stage2] prisma migrate diff --exit-code (studyroom, drift)",
     "exitCode": 126,
-    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
+    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
     "ts": "2026-10-25T13:24:11+0700"
   },
   {
@@ -218,7 +218,7 @@
   {
     "command": "[harness-invalid] (wrapper not executable, exit 126) [stage2] prisma migrate diff --exit-code (vocabulary, drift)",
     "exitCode": 126,
-    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
+    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
     "ts": "2026-10-25T13:24:11+0700"
   },
   {
@@ -230,7 +230,7 @@
   {
     "command": "[harness-invalid] (wrapper not executable, exit 126) [stage2] prisma migrate diff --exit-code (document, drift)",
     "exitCode": 126,
-    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
+    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
     "ts": "2026-10-25T13:24:11+0700"
   },
   {
@@ -242,7 +242,7 @@
   {
     "command": "[harness-invalid] (wrapper not executable, exit 126) [stage2] prisma migrate diff --exit-code (aichat, drift)",
     "exitCode": 126,
-    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
+    "summary": "/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/stage2-migrate.sh: line 17: /private/tmp/cla",
     "ts": "2026-10-25T13:24:12+0700"
   },
   {
@@ -722,7 +722,7 @@
   {
     "command": "[stage2] render broker definitions (scratch, ops user ci_admin as in CI)",
     "exitCode": 0,
-    "summary": "rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/",
+    "summary": "rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/",
     "ts": "2026-10-25T13:34:46+0700"
   },
   {
@@ -896,7 +896,7 @@
   {
     "command": "[harness-invalid] (superseded: finance SePay dummy env and QUIZ secrets missing from scratch deploy/.env) [stage3] docker compose -p p14t up -d --wait (empty volume, no seed profile)",
     "exitCode": 1,
-    "summary": "dependency failed to start: container examio-finance is unhealthy",
+    "summary": "dependency failed to start: container kmaedu-finance is unhealthy",
     "ts": "2026-10-25T13:51:24+0700"
   },
   {
@@ -974,7 +974,7 @@
   {
     "command": "[harness-invalid] (superseded: REFRESH_TOKEN_ENC_KEY missing from scratch deploy/.env) [stage3] docker compose -p p14t up -d --wait (empty volume, no seed profile)",
     "exitCode": 1,
-    "summary": "dependency failed to start: container examio-auth is unhealthy",
+    "summary": "dependency failed to start: container kmaedu-auth is unhealthy",
     "ts": "2026-10-25T13:52:07+0700"
   },
   {
@@ -1050,79 +1050,79 @@
     "ts": "2026-10-25T13:52:09+0700"
   },
   {
-    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB examio_ci) [stage3] docker compose -p p14t up -d --wait (empty volume, no seed profile)",
+    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB kmaedu_ci) [stage3] docker compose -p p14t up -d --wait (empty volume, no seed profile)",
     "exitCode": 1,
     "summary": "service \"finance-migrate\" didn't complete successfully: exit 1",
     "ts": "2026-10-25T13:52:50+0700"
   },
   {
-    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB examio_ci) [stage3] service content healthy (compose state)",
+    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB kmaedu_ci) [stage3] service content healthy (compose state)",
     "exitCode": 1,
     "summary": "content created  exit=0",
     "ts": "2026-10-25T13:52:50+0700"
   },
   {
-    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB examio_ci) [stage3] service assessment healthy (compose state)",
+    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB kmaedu_ci) [stage3] service assessment healthy (compose state)",
     "exitCode": 1,
     "summary": "assessment created  exit=0",
     "ts": "2026-10-25T13:52:50+0700"
   },
   {
-    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB examio_ci) [stage3] one-shot content-migrate exit code",
+    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB kmaedu_ci) [stage3] one-shot content-migrate exit code",
     "exitCode": 1,
     "summary": "content-migrate exited  exit=1",
     "ts": "2026-10-25T13:52:50+0700"
   },
   {
-    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB examio_ci) [stage3] one-shot assessment-migrate exit code",
+    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB kmaedu_ci) [stage3] one-shot assessment-migrate exit code",
     "exitCode": 1,
     "summary": "assessment-migrate exited  exit=1",
     "ts": "2026-10-25T13:52:50+0700"
   },
   {
-    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB examio_ci) [stage3] one-shot auth-migrate exit code",
+    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB kmaedu_ci) [stage3] one-shot auth-migrate exit code",
     "exitCode": 1,
     "summary": "auth-migrate exited  exit=1",
     "ts": "2026-10-25T13:52:50+0700"
   },
   {
-    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB examio_ci) [stage3] one-shot finance-migrate exit code",
+    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB kmaedu_ci) [stage3] one-shot finance-migrate exit code",
     "exitCode": 1,
     "summary": "finance-migrate exited  exit=1",
     "ts": "2026-10-25T13:52:50+0700"
   },
   {
-    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB examio_ci) [stage3] one-shot admin-migrate exit code",
+    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB kmaedu_ci) [stage3] one-shot admin-migrate exit code",
     "exitCode": 1,
     "summary": "admin-migrate exited  exit=1",
     "ts": "2026-10-25T13:52:51+0700"
   },
   {
-    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB examio_ci) [stage3] one-shot study-room-migrate exit code",
+    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB kmaedu_ci) [stage3] one-shot study-room-migrate exit code",
     "exitCode": 1,
     "summary": "study-room-migrate exited  exit=1",
     "ts": "2026-10-25T13:52:51+0700"
   },
   {
-    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB examio_ci) [stage3] one-shot vocabulary-migrate exit code",
+    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB kmaedu_ci) [stage3] one-shot vocabulary-migrate exit code",
     "exitCode": 1,
     "summary": "vocabulary-migrate exited  exit=1",
     "ts": "2026-10-25T13:52:51+0700"
   },
   {
-    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB examio_ci) [stage3] one-shot document-migrate exit code",
+    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB kmaedu_ci) [stage3] one-shot document-migrate exit code",
     "exitCode": 1,
     "summary": "document-migrate exited  exit=1",
     "ts": "2026-10-25T13:52:51+0700"
   },
   {
-    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB examio_ci) [stage3] one-shot ai-chat-migrate exit code",
+    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB kmaedu_ci) [stage3] one-shot ai-chat-migrate exit code",
     "exitCode": 1,
     "summary": "ai-chat-migrate exited  exit=1",
     "ts": "2026-10-25T13:52:51+0700"
   },
   {
-    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB examio_ci) [stage3] one-shot ai-migrate exit code",
+    "command": "[harness-invalid] (superseded: compose ran with CI env leaked into interpolation; DB kmaedu_ci) [stage3] one-shot ai-migrate exit code",
     "exitCode": 1,
     "summary": "ai-migrate exited  exit=1",
     "ts": "2026-10-25T13:52:51+0700"
@@ -1130,7 +1130,7 @@
   {
     "command": "[stage3] docker compose -p p14t down -v --remove-orphans (reset to empty volume)",
     "exitCode": 0,
-    "summary": " Network examio-internal Removed ",
+    "summary": " Network kmaedu-internal Removed ",
     "ts": "2026-10-25T13:53:29+0700"
   },
   {
@@ -1142,7 +1142,7 @@
   {
     "command": "[harness-invalid] (superseded: OAuth/Turnstile placeholders missing from scratch deploy/.env) [stage3] docker compose -p p14t up -d --wait (empty volume, no seed profile)",
     "exitCode": 1,
-    "summary": "dependency failed to start: container examio-auth is unhealthy",
+    "summary": "dependency failed to start: container kmaedu-auth is unhealthy",
     "ts": "2026-10-25T13:53:44+0700"
   },
   {
@@ -1220,7 +1220,7 @@
   {
     "command": "[stage3] docker compose -p p14t down -v --remove-orphans (reset to empty volume)",
     "exitCode": 0,
-    "summary": " Network examio-internal Removed ",
+    "summary": " Network kmaedu-internal Removed ",
     "ts": "2026-10-25T13:54:21+0700"
   },
   {
@@ -1232,7 +1232,7 @@
   {
     "command": "[stage3] docker compose -p p14t up -d --wait (empty volume, no seed profile)",
     "exitCode": 0,
-    "summary": " Container examio-gateway Healthy ",
+    "summary": " Container kmaedu-gateway Healthy ",
     "ts": "2026-10-25T13:54:52+0700"
   },
   {
@@ -1308,13 +1308,13 @@
     "ts": "2026-10-25T13:54:53+0700"
   },
   {
-    "command": "[stage3] broker permission probes content/assessment (one-off container on examio-internal)",
+    "command": "[stage3] broker permission probes content/assessment (one-off container on kmaedu-internal)",
     "exitCode": 0,
     "summary": "PROBE_FAILS=0",
     "ts": "2026-10-25T13:55:51+0700"
   },
   {
-    "command": "[stage3] container examio-exam absent (names exactly examio-exam)",
+    "command": "[stage3] container kmaedu-exam absent (names exactly kmaedu-exam)",
     "exitCode": 0,
     "summary": "matches: 0",
     "ts": "2026-10-25T13:56:14+0700"
@@ -1488,37 +1488,37 @@
     "ts": "2026-10-25T14:13:13+0700"
   },
   {
-    "command": "[teardown] proof: docker ps -a | grep -E 'p14t|examio' (containers left)",
+    "command": "[teardown] proof: docker ps -a | grep -E 'p14t|kmaedu' (containers left)",
     "exitCode": 0,
     "summary": "containers=0",
     "ts": "2026-10-25T14:13:13+0700"
   },
   {
-    "command": "[teardown] proof: docker volume ls | grep -E 'p14t|examio' (volumes left)",
+    "command": "[teardown] proof: docker volume ls | grep -E 'p14t|kmaedu' (volumes left)",
     "exitCode": 0,
     "summary": "volumes=0",
     "ts": "2026-10-25T14:13:13+0700"
   },
   {
-    "command": "[teardown] proof: docker network ls | grep -E 'examio|p14t' (networks left)",
+    "command": "[teardown] proof: docker network ls | grep -E 'kmaedu|p14t' (networks left)",
     "exitCode": 1,
     "summary": "networks=1",
     "ts": "2026-10-25T14:13:13+0700"
   },
   {
-    "command": "[teardown] removed leftover network examio-internal (compose label p14t, 0 containers attached)",
+    "command": "[teardown] removed leftover network kmaedu-internal (compose label p14t, 0 containers attached)",
     "exitCode": 0,
     "summary": "network removed",
     "ts": "2026-10-25T14:15:04+0700"
   },
   {
-    "command": "[teardown] re-proof after network removal: containers/volumes/networks matching p14t|examio",
+    "command": "[teardown] re-proof after network removal: containers/volumes/networks matching p14t|kmaedu",
     "exitCode": 0,
     "summary": "containers=0 volumes=0 networks=0",
     "ts": "2026-10-25T14:15:04+0700"
   },
   {
-    "command": "cd examio-be && git grep -nE \"exam-service|EXAM_SERVICE_URL\" -- \"*.ts\" \"*.yaml\" \"*.yml\" \"*.json\" \"*.example\"; test $? -eq 1 && ! test -d apps/exam-service",
+    "command": "cd kmaedu-be && git grep -nE \"exam-service|EXAM_SERVICE_URL\" -- \"*.ts\" \"*.yaml\" \"*.yml\" \"*.json\" \"*.example\"; test $? -eq 1 && ! test -d apps/exam-service",
     "exitCode": 0,
     "summary": "git grep: 0 tracked hits (exit 1 = no match); apps/exam-service absent. Supersedes the working-tree grep row (its only hits were gitignored coverage/ and graphify-out/ caches)",
     "ts": "2026-10-25T07:19:30.073Z"
@@ -1536,7 +1536,7 @@
     "ts": "2026-10-25T07:19:48.551Z"
   },
   {
-    "command": "[M1 fix] scratch copy of tracked examio-be/deploy + CI dummy .env: env -i docker compose config --quiet; then config --format json | services.content.networks",
+    "command": "[M1 fix] scratch copy of tracked kmaedu-be/deploy + CI dummy .env: env -i docker compose config --quiet; then config --format json | services.content.networks",
     "exitCode": 0,
     "summary": "config exit 0; content networks [egress, internal] (deploy/compose/content.yml egress added for Turnstile; TURNSTILE_SECRET_KEY in content env examples); scratch copy deleted",
     "ts": "2026-10-25T07:25:53.158Z"

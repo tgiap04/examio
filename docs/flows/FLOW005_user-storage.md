@@ -2,7 +2,7 @@
 
 **Entity:** `UserStorage` (MODEL-029)
 **State Field:** `processingStatus` (DISC-013)
-**Source:** `examio-be/apps/document-service/prisma/schema.prisma` (UserStorage), moved from exam-service in phase 15
+**Source:** `kmaedu-be/apps/document-service/prisma/schema.prisma` (UserStorage), moved from exam-service in phase 15
 **Last Updated:** 2026-11-10
 
 ## State Diagram
@@ -27,10 +27,10 @@ Uploads are not charged and have no monthly quota (the credit and quota machiner
 
 | ID | From | Trigger | To | Side Effects | Source |
 |----|------|---------|----|--------------|--------|
-| T1 | INIT | user-action | PENDING | `POST /api/v1/ai/upload` (JSON, object already in R2): row inserted with `queuedAt` set and outbox `document.uploaded` (with presigned `downloadUrl`) in one tx; a duplicate R2 key resumes the winner's row | `examio-be/apps/document-service/src/modules/upload/document-register.service.ts` |
+| T1 | INIT | user-action | PENDING | `POST /api/v1/ai/upload` (JSON, object already in R2): row inserted with `queuedAt` set and outbox `document.uploaded` (with presigned `downloadUrl`) in one tx; a duplicate R2 key resumes the winner's row | `kmaedu-be/apps/document-service/src/modules/upload/document-register.service.ts` |
 | T4 | INIT | user-action | PENDING | `POST /api/v1/ai/quick-upload`: `queuedAt` null (not processed until first use) | `.../upload/document-upload.service.ts` (`quick`) |
 | T4b | INIT | service-call | PENDING | gRPC `CreateUpload`: bytes stored in R2, row inserted with `queuedAt` set and outbox `document.uploaded` in one tx. With `reuseDuplicate`, a matching file (name + size) is returned as is, no new row | `.../upload/document-upload.service.ts` (`createFromBytes`) |
-| T5 | PENDING | event | COMPLETED | `ai.document.processed`: `pageCount` stored | `examio-be/apps/document-service/src/modules/events/document-events.handler.ts` |
+| T5 | PENDING | event | COMPLETED | `ai.document.processed`: `pageCount` stored | `kmaedu-be/apps/document-service/src/modules/events/document-events.handler.ts` |
 | T6 | PENDING | event | FAILED | `ai.document.failed` (ignored for a COMPLETED row): status only, nothing to refund | `.../events/document-events.handler.ts`, `.../upload/document-processing.service.ts` (`markFailed`) |
 | T7 | FAILED, PENDING | user-action / service-call | PENDING | `EnsureProcessed` (from ai-chat or generation) re-emits `document.uploaded` | `.../upload/document-processing.service.ts` (`ensureProcessed`) |
 | T8 | any | user-action | DELETED | `DELETE /api/v1/ai/upload/:id` or `DeleteDocuments`: one tx = rows removed + `r2_delete_tasks` + outbox `document.deleted` | `.../upload/document-delete.service.ts` |

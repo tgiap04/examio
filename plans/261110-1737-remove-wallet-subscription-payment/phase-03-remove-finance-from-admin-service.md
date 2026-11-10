@@ -8,7 +8,7 @@
 - Delete admin finance actions (`POST /admin/finance/{refund,credit,set-tier,tier}`), the admin finance gRPC client, revenue/pro/VIP stats and user-detail wallet/subscription. Drop the `admin.finance.*` audit label mapping and its seed samples (the DB resets).
 
 ## Key Insights
-- Admin imports `assertWholeCredits` from `@examio/grpc` (`admin-finance.service.ts:3`). After this phase nothing outside finance-service uses it, which unblocks deleting it in 05.
+- Admin imports `assertWholeCredits` from `@kmaedu/grpc` (`admin-finance.service.ts:3`). After this phase nothing outside finance-service uses it, which unblocks deleting it in 05.
 - The stats response shape changes: `proCount`, `vipCount`, `revenue30d` and the `revenue` series are removed. FE phase 04 removes the readers, and both land in the same release.
 - `test/stats-parity/**` was a one-off cutover parity guard against the legacy admin stats (which include finance). Delete the suite and its CI step instead of keeping a fake legacy side.
 
@@ -19,7 +19,7 @@
 ## Architecture
 - Admin-stats calls auth (users) and other non-finance sources only. Admin-users calls auth only.
 
-## Related Code Files (BE = `/Users/tgiap.dev/devs/examio/examio-be`)
+## Related Code Files (BE = `/Users/tgiap.dev/devs/kmaedu/kmaedu-be`)
 - Delete `BE/apps/admin-service/src/clients/finance.client.ts`, `BE/apps/admin-service/src/modules/admin-finance/**`, `BE/apps/admin-service/test/admin-finance.e2e-spec.ts`, and `admin-finance.service.spec.ts`.
 - Modify:
   - `BE/apps/admin-service/src/admin-service.module.ts` (12, 50)
@@ -31,7 +31,7 @@
 - Rewrite tests: `BE/apps/admin-service/test/admin.e2e-spec.ts` (17, 62, 78, 237), `admin-stats.service.spec.ts`, `admin-users.service.queries.spec.ts`.
 - Root (owned by this phase during the parallel window):
   - Delete `BE/test/stats-parity/**`.
-  - Edit `/Users/tgiap.dev/devs/examio/.github/workflows/ci.yml`: the stats-parity step only (~487-490).
+  - Edit `/Users/tgiap.dev/devs/kmaedu/.github/workflows/ci.yml`: the stats-parity step only (~487-490).
   - Edit `BE/test/cross-app/admin-users-real-auth.e2e-spec.ts` (3-91).
   - Edit `BE/test/authz/authz-matrix.rows.ts`: the admin finance row only (~610).
 
@@ -54,18 +54,18 @@
 - [ ] Green (admin e2e 17/17 per tester; `typecheck:admin` and `test/authz` not recorded)
 
 ## Success Criteria
-- Admin compiles with no `@examio/grpc` finance import, and `yarn seed:dev:admin` runs.
+- Admin compiles with no `@kmaedu/grpc` finance import, and `yarn seed:dev:admin` runs.
 - Admin e2e is green, and the authz matrix has no admin-finance row.
 
 ## Test Plan — Scope Contract (SAFETY-CRITICAL: authz, public API, CI)
 - Changed: admin-service; root authz rows (admin); cross-app admin test; stats-parity removal; one CI step.
 - Impacted: FE admin pages (phase 04), auth `GetUserAdminDetail` callers (none changed).
 - Will verify:
-  - `cd examio-be && yarn typecheck:admin`
+  - `cd kmaedu-be && yarn typecheck:admin`
   - `yarn test apps/admin-service`
   - `cd apps/admin-service && ../../node_modules/.bin/jest --config test/jest-e2e.json`
   - `yarn test test/authz` (whole group)
-  - `cd examio-be && ./node_modules/.bin/jest --config test/cross-app/jest-e2e.json test/cross-app/admin-users-real-auth.e2e-spec.ts` (if the DB env is available, else "verification incomplete")
+  - `cd kmaedu-be && ./node_modules/.bin/jest --config test/cross-app/jest-e2e.json test/cross-app/admin-users-real-auth.e2e-spec.ts` (if the DB env is available, else "verification incomplete")
   - `yarn check:deps`
 - Bugs caught: stale finance call at runtime (DI unresolved), leaking removed keys, route still reachable, audit list crashing on unknown action.
 - Deliberately skipped: finance-service tests (unchanged until 05).

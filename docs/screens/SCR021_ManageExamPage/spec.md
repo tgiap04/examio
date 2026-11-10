@@ -11,7 +11,7 @@ A teacher views and manages their authored quiz sets — creating, editing, and 
 
 ## Screen Layout
 
-The page renders inside a `TeacherRoute` wrapper with a `max-w-7xl mx-auto` container and standard padding. The layout is a vertical stack: a header row (title + create button), a stats summary section (4 metric cards), and a full-width data table with search/filter controls. The table scrolls independently. Responsive: table scrolls horizontally on small screens. (source: `examio-fe/src/pages/k/ManageExamPage.tsx`:207–247)
+The page renders inside a `TeacherRoute` wrapper with a `max-w-7xl mx-auto` container and standard padding. The layout is a vertical stack: a header row (title + create button), a stats summary section (4 metric cards), and a full-width data table with search/filter controls. The table scrolls independently. Responsive: table scrolls horizontally on small screens. (source: `kmaedu-fe/src/pages/k/ManageExamPage.tsx`:207–247)
 
 ### Layout Sketch
 
@@ -192,10 +192,10 @@ Omit — no shared polymorphic component rendered on this page.
 
 ## Source References
 
-- Page: `examio-fe/src/pages/k/ManageExamPage.tsx`
-- Quiz set store: `examio-fe/src/stores/useQuizSetStore.ts`
-- Stats store: `examio-fe/src/stores/useStatsStore.ts`
-- Quiz set API: `examio-fe/src/apis/quizsetApi.ts`
-- Debounce hook: `examio-fe/src/hooks/useDebounce.ts`
-- ExamManagementTemplate: `examio-fe/src/templates/ExamManagementTemplate.tsx` (referenced, not read)
-- TeacherRoute: `examio-fe/src/components/organisms/TeacherRoute.tsx`
+- Page: `kmaedu-fe/src/pages/k/ManageExamPage.tsx`
+- Quiz set store: `kmaedu-fe/src/stores/useQuizSetStore.ts`
+- Stats store: `kmaedu-fe/src/stores/useStatsStore.ts`
+- Quiz set API: `kmaedu-fe/src/apis/quizsetApi.ts`
+- Debounce hook: `kmaedu-fe/src/hooks/useDebounce.ts`
+- ExamManagementTemplate: `kmaedu-fe/src/templates/ExamManagementTemplate.tsx` (referenced, not read)
+- TeacherRoute: `kmaedu-fe/src/components/organisms/TeacherRoute.tsx`

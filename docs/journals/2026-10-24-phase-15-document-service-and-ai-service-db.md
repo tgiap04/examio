@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-24 20:43
 **Severity**: high
-**Component**: examio-be document-service (new), ai-service (schema, gRPC, messaging), exam-service modules/ai (GenerationJob), r2-service, gateway routes.yaml, deploy/compose, RabbitMQ definitions, .github/workflows/ci.yml
+**Component**: kmaedu-be document-service (new), ai-service (schema, gRPC, messaging), exam-service modules/ai (GenerationJob), r2-service, gateway routes.yaml, deploy/compose, RabbitMQ definitions, .github/workflows/ci.yml
 **Status**: resolved
 
 ## What Happened

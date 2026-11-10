@@ -4,7 +4,7 @@
 > **Deferred. Not in the plan effort total.** Start only when the team decides to (more traffic, an ops owner, or leaving Compose-on-VPS; decisions.md: "Docker Compose on VPS, K8s-ready"). Nothing in phases 01–16, 18, 19 depends on it. Each block below (A–D) can be adopted alone.
 
 ## Context Links
-- [plan.md](./plan.md) · [red-team-changes.md](./reports/red-team-changes.md) RT-10, RT-11 · [phase-16](./phase-16-deploy-independence-and-observability.md) · `/Users/tgiap.dev/devs/examio/ARCHITECTURE.md` §4.7, §8.3, §10.4, §12 P7–P8
+- [plan.md](./plan.md) · [red-team-changes.md](./reports/red-team-changes.md) RT-10, RT-11 · [phase-16](./phase-16-deploy-independence-and-observability.md) · `/Users/tgiap.dev/devs/kmaedu/ARCHITECTURE.md` §4.7, §8.3, §10.4, §12 P7–P8
 
 ## Overview
 - Priority: P3 · Status: Deferred · Effort: ~3.5d **(excluded from the total)** <!-- Red Team: RT-11 (was 1.5d K8s only; +1d obs stack, +0.5d Redis ACL, +0.5d Loki admin logs) --> · Depends on: 16
@@ -25,13 +25,13 @@ C. Redis ACL (~0.5d) — moved from phase 16
 - Test: `redis-cli --user content_svc --pass … get gw:config:pages` → `NOPERM`.
 
 D. K8s readiness (~1.5d)
-- Chart `deploy/k8s/charts/examio-service/`: deployment-api, deployment-worker (toggle), job-migrate (`pre-install,pre-upgrade` hook; runs `migrate deploy` only, never `migrate resolve`, same rule as phase 16), service (`http:3000`, `grpc:50051`), configmap, secret (External Secrets ref), networkpolicy, pdb, hpa (CPU, toggle). Liveness `/health/live`, readiness `/health/ready`. `terminationGracePeriodSeconds: 30`.
+- Chart `deploy/k8s/charts/kmaedu-service/`: deployment-api, deployment-worker (toggle), job-migrate (`pre-install,pre-upgrade` hook; runs `migrate deploy` only, never `migrate resolve`, same rule as phase 16), service (`http:3000`, `grpc:50051`), configmap, secret (External Secrets ref), networkpolicy, pdb, hpa (CPU, toggle). Liveness `/health/live`, readiness `/health/ready`. `terminationGracePeriodSeconds: 30`.
 - `deploy/k8s/values/<svc>.yaml` per service (image, ROLE toggles, resources from compose `mem_limit`, env keys), keys from `deploy/services.json`.
-- NetworkPolicy: default deny; ingress from the `examio` namespace + gateway; egress to postgres/redis/rabbitmq + the phase-05 `egress` set. <!-- Red Team: RT-11 --> No per-caller allow-lists (phase 16 keeps no proto client graph); tighten at adoption if needed.
+- NetworkPolicy: default deny; ingress from the `kmaedu` namespace + gateway; egress to postgres/redis/rabbitmq + the phase-05 `egress` set. <!-- Red Team: RT-11 --> No per-caller allow-lists (phase 16 keeps no proto client graph); tighten at adoption if needed.
 - Out of scope until a cluster exists: Linkerd mTLS, KEDA queue scaling.
 
 ## Related Code Files
-File ownership (when adopted): `examio-be/deploy/{compose/observability.yml,observability/**,redis/**,k8s/**}`, `examio-be/libs/{observability,redis}/**`, `examio-be/apps/admin-service/src/modules/admin-logs/**`, `examio-be/apps/gateway-service/src/common/log-publisher.service.ts`, `examio-be/apps/*/src/main.ts` (OTel bootstrap only).
+File ownership (when adopted): `kmaedu-be/deploy/{compose/observability.yml,observability/**,redis/**,k8s/**}`, `kmaedu-be/libs/{observability,redis}/**`, `kmaedu-be/apps/admin-service/src/modules/admin-logs/**`, `kmaedu-be/apps/gateway-service/src/common/log-publisher.service.ts`, `kmaedu-be/apps/*/src/main.ts` (OTel bootstrap only).
 
 ## Success Criteria (per block, when adopted)
 - A: one Grafana trace spans gateway → content → gRPC finance → RabbitMQ → ai worker; alert rules load.

@@ -2,7 +2,7 @@
 
 ## Context Links
 - Plan: [plan.md](plan.md) · Depends: phase-03
-- File: `examio-fe/src/{types/studyRoom.ts, hooks/useStudyRoomSocket.ts, stores/useStudyRoomStore.ts, apis/studyRoomApi.ts}` + `pages/study-room/**`
+- File: `kmaedu-fe/src/{types/studyRoom.ts, hooks/useStudyRoomSocket.ts, stores/useStudyRoomStore.ts, apis/studyRoomApi.ts}` + `pages/study-room/**`
 - Design-system wrappers `@/components/antd/*`; style FE (nháy kép, 2 spaces)
 
 ## Overview

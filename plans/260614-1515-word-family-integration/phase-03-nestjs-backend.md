@@ -122,12 +122,12 @@ interface FlashCardSetCreate {
 ## Related Code Files
 
 ### Files to Create
-- `examio-be/apps/exam-service/src/modules/word-family/` — entire module
+- `kmaedu-be/apps/exam-service/src/modules/word-family/` — entire module
 
 ### Files to Modify
-- `examio-be/apps/exam-service/src/app.module.ts` — import WordFamilyModule
-- `examio-be/apps/exam-service/src/modules/index.ts` — export WordFamilyModule
-- `examio-be/apps/gateway-service/src/controllers/` — add proxy routes for word-family
+- `kmaedu-be/apps/exam-service/src/app.module.ts` — import WordFamilyModule
+- `kmaedu-be/apps/exam-service/src/modules/index.ts` — export WordFamilyModule
+- `kmaedu-be/apps/gateway-service/src/controllers/` — add proxy routes for word-family
 
 ## Implementation Steps
 

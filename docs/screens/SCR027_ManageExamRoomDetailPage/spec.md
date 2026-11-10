@@ -56,9 +56,9 @@ KLayout-wrapped page with the shared `ExamRoomDetailTemplate` component. 4 top-l
 
 | Decision point | Condition | Outcome on this screen | Source |
 |----------------|-----------|------------------------|--------|
-| Empty sessions | `sessions.length === 0` | empty-state + "Create your first session" CTA | `examio-fe/src/components/organisms/k/ExamTable.tsx:88` |
-| Delete room | confirm dialog | room deleted, navigate to /k/manage-exam | `examio-fe/src/components/organisms/k/DialogAddExam.tsx:142` |
-| Regenerate access code | access type = private | 6-digit code generated + displayed | `examio-fe/src/components/organisms/k/ExamTable.tsx:188` |
+| Empty sessions | `sessions.length === 0` | empty-state + "Create your first session" CTA | `kmaedu-fe/src/components/organisms/k/ExamTable.tsx:88` |
+| Delete room | confirm dialog | room deleted, navigate to /k/manage-exam | `kmaedu-fe/src/components/organisms/k/DialogAddExam.tsx:142` |
+| Regenerate access code | access type = private | 6-digit code generated + displayed | `kmaedu-fe/src/components/organisms/k/ExamTable.tsx:188` |
 
 ## Data Inventory
 
@@ -76,10 +76,10 @@ KLayout-wrapped page with the shared `ExamRoomDetailTemplate` component. 4 top-l
 | State | Trigger | Visual Behavior | User Action Available | Source |
 |-------|---------|----------------|-----------------------|--------|
 | loading | regions fetching | skeleton cards + table rows | none | varies |
-| empty | 0 sessions | empty-state + CTA | create session | `examio-fe/src/components/organisms/k/ExamTable.tsx:88` |
+| empty | 0 sessions | empty-state + CTA | create session | `kmaedu-fe/src/components/organisms/k/ExamTable.tsx:88` |
 | error | API error | error message + retry | retry | varies |
-| deleting | mutation in-flight | spinner on row | none | `examio-fe/src/components/organisms/k/DialogAddExam.tsx:142` |
-| share-modal | User clicks Share | ShareDialog opens | configure + submit | `examio-fe/src/components/organisms/k/ExamTable.tsx:188` |
+| deleting | mutation in-flight | spinner on row | none | `kmaedu-fe/src/components/organisms/k/DialogAddExam.tsx:142` |
+| share-modal | User clicks Share | ShareDialog opens | configure + submit | `kmaedu-fe/src/components/organisms/k/ExamTable.tsx:188` |
 
 ## Validation & Error Feedback
 
@@ -98,20 +98,20 @@ KLayout-wrapped page with the shared `ExamRoomDetailTemplate` component. 4 top-l
 - **Request:** `{ examRoomId, title, startTime, endTime, timeLimitMinutes, accessType, accessCode? }`
 - **Success:** `201` → session created, list refreshed
 - **Errors:** `400` (validation) | `403` (not owner) | `409` (time conflict)
-- **Source:** `examio-fe/src/apis/examSessionApi.ts:42`
+- **Source:** `kmaedu-fe/src/apis/examSessionApi.ts:42`
 
 #### Update sharing
 - **Endpoint:** `PUT /api/v1/examsessions/:id/sharing`
 - **Request:** `{ assessType, accessCode?, whitelist? }`
 - **Success:** `200` → sharing updated
-- **Source:** `examio-fe/src/apis/examSessionApi.ts:88`
+- **Source:** `kmaedu-fe/src/apis/examSessionApi.ts:88`
 
 ## Interaction Patterns
 
-- **Pagination via URL state** — source: `examio-fe/src/components/organisms/k/ExamTablePagination.tsx:42`
-- **Delete with double confirmation** — source: `examio-fe/src/components/organisms/DeleteConfirmDialog.tsx:31`
-- **Share dialog regenerates access code on demand** — source: `examio-fe/src/apis/examSessionApi.ts:128`
-- **Cache invalidation after create/update/delete** — source: `examio-fe/src/stores/useExamRoomDetailStore.ts:88`
+- **Pagination via URL state** — source: `kmaedu-fe/src/components/organisms/k/ExamTablePagination.tsx:42`
+- **Delete with double confirmation** — source: `kmaedu-fe/src/components/organisms/DeleteConfirmDialog.tsx:31`
+- **Share dialog regenerates access code on demand** — source: `kmaedu-fe/src/apis/examSessionApi.ts:128`
+- **Cache invalidation after create/update/delete** — source: `kmaedu-fe/src/stores/useExamRoomDetailStore.ts:88`
 
 ## Accessibility
 
@@ -142,8 +142,8 @@ KLayout-wrapped page with the shared `ExamRoomDetailTemplate` component. 4 top-l
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/k/ManageExamRoomDetailPage.tsx:1`
-- Template: `examio-fe/src/templates/ExamRoomDetailTemplate.tsx:1`
-- Store: `examio-fe/src/stores/useExamRoomDetailStore.ts:1`
-- API: `examio-fe/src/apis/examRoomApi.ts:42` + `examio-fe/src/apis/examSessionApi.ts:42`
-- Share dialog: `examio-fe/src/components/organisms/ShareFlashcardModal.tsx:1` (reused)
+- Page/View: `kmaedu-fe/src/pages/k/ManageExamRoomDetailPage.tsx:1`
+- Template: `kmaedu-fe/src/templates/ExamRoomDetailTemplate.tsx:1`
+- Store: `kmaedu-fe/src/stores/useExamRoomDetailStore.ts:1`
+- API: `kmaedu-fe/src/apis/examRoomApi.ts:42` + `kmaedu-fe/src/apis/examSessionApi.ts:42`
+- Share dialog: `kmaedu-fe/src/components/organisms/ShareFlashcardModal.tsx:1` (reused)

@@ -12,7 +12,7 @@ blocks: []
 Reduce end-to-end latency for document OCR, embedding storage, retrieval planning, and quiz/flashcard generation without changing product behavior or generation quality.
 
 ## Current Evidence
-- Embedding uses Ollama via `examio-be/apps/ai-service/src/llm/ollama_embeddings.py`.
+- Embedding uses Ollama via `kmaedu-be/apps/ai-service/src/llm/ollama_embeddings.py`.
 - `create_embeddings_batch()` reads env values but hard-caps batch size to `3` and concurrency to `2`.
 - `GenerationService.DEFAULT_GENERATION_MAX_CONCURRENCY = 1`, so quiz/flashcard LLM calls are sequential unless env overrides it.
 - `retrieve_for_generation()` reads all document chunks, builds/loads graph, then `generate_quiz()`/`generate_flashcards()` calls `_get_or_build_graph_entry()` again with another full `get_document_chunks()` call.
@@ -34,12 +34,12 @@ Reduce end-to-end latency for document OCR, embedding storage, retrieval plannin
 - Memory remains bounded for large PDFs; no unbounded full-file duplication beyond unavoidable OCR extraction.
 
 ## Key Files
-- `../examio-be/apps/ai-service/src/llm/ollama_embeddings.py`
-- `../examio-be/apps/ai-service/src/backend/services/ocr_service.py`
-- `../examio-be/apps/ai-service/src/rag/vector_store_pg.py`
-- `../examio-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py`
-- `../examio-be/apps/ai-service/src/backend/services/generation_service.py`
-- `../examio-be/libs/database/src/schema.prisma`
+- `../kmaedu-be/apps/ai-service/src/llm/ollama_embeddings.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/ocr_service.py`
+- `../kmaedu-be/apps/ai-service/src/rag/vector_store_pg.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/generation_service.py`
+- `../kmaedu-be/libs/database/src/schema.prisma`
 
 ## Constraints
 - Keep changes small and measurable; do not change model/provider unless user approves.

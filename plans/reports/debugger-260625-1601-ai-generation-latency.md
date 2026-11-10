@@ -1,6 +1,6 @@
 # Debug Report — AI Data-Generation Latency (OCR / Embedding / Generate)
 
-> Date: 2026-06-25 · Scope: `examio-be/apps/ai-service` (Python FastAPI) + `exam-service` orchestration
+> Date: 2026-06-25 · Scope: `kmaedu-be/apps/ai-service` (Python FastAPI) + `exam-service` orchestration
 > Verdict: User's intuition is correct — **LLM is fast; the flow/algorithm is the bottleneck.** Root cause proven below with file:line evidence.
 
 ## Executive Summary

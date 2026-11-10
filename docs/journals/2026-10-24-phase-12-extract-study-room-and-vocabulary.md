@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-24 02:32
 **Severity**: high
-**Component**: examio-be study-room-service (new), vocabulary-service (new), exam-service (to-flashcard bridge), auth-service (SERVICE_AUDIENCES), gateway routes.yaml, deploy/compose, .github/workflows/ci.yml, libs/grpc
+**Component**: kmaedu-be study-room-service (new), vocabulary-service (new), exam-service (to-flashcard bridge), auth-service (SERVICE_AUDIENCES), gateway routes.yaml, deploy/compose, .github/workflows/ci.yml, libs/grpc
 **Status**: resolved
 
 ## What Happened

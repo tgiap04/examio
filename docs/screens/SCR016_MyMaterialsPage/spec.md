@@ -209,8 +209,8 @@ The page renders a full-width single-column layout with a sticky header and a 3-
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/k/MyMaterialsPage.tsx:1`
-- Student materials store: `examio-fe/src/stores/useStudentMaterialsStore.ts:1`
-- Student materials API: `examio-fe/src/apis/studentMaterialsApi.ts:1`
-- Flashcard set API: `examio-fe/src/apis/flashcardSetApi.ts:1` (referenced via `updateSharingSettings`)
-- Auth store: `examio-fe/src/stores/useAuthStore.ts:1`
+- Page/View: `kmaedu-fe/src/pages/k/MyMaterialsPage.tsx:1`
+- Student materials store: `kmaedu-fe/src/stores/useStudentMaterialsStore.ts:1`
+- Student materials API: `kmaedu-fe/src/apis/studentMaterialsApi.ts:1`
+- Flashcard set API: `kmaedu-fe/src/apis/flashcardSetApi.ts:1` (referenced via `updateSharingSettings`)
+- Auth store: `kmaedu-fe/src/stores/useAuthStore.ts:1`

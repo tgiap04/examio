@@ -12,7 +12,7 @@ track: B
 > BlockedBy Phase 01 only. Parallel-runnable with Phase 02 (Track A). NO A↔B block.
 
 ## Context Links
-- DTO source: `../../examio-fe/src/apis/profileApi.ts`
+- DTO source: `../../kmaedu-fe/src/apis/profileApi.ts`
 - Shared: `AccountRepository.kt`, `ProfileApiService.kt`, `WalletApiService.kt`
 - Multipart helper from Phase 01
 
@@ -37,7 +37,7 @@ Build platform ViewModels over the existing `AccountRepository` for profile + wa
 
 ### Create
 - Android: `androidApp/.../features/account/ProfileViewModel.kt`, `WalletViewModel.kt`
-- iOS: `iosApp/ExamioApp/ViewModels/ProfileViewModel.swift`, `WalletViewModel.swift`
+- iOS: `iosApp/KMAEduApp/ViewModels/ProfileViewModel.swift`, `WalletViewModel.swift`
 
 ### Modify
 - `shared/.../features/account/repository/AccountRepository.kt` (add multipart upload fns if missing)

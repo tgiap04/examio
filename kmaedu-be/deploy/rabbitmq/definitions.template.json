@@ -1,0 +1,191 @@
+{
+  "users": [
+    {
+      "name": "{{ENV:RABBITMQ_USER}}",
+      "password_hash": "{{HASH:RABBITMQ_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": [
+        "administrator"
+      ]
+    },
+    {
+      "name": "auth",
+      "password_hash": "{{HASH:RABBITMQ_AUTH_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
+    },
+    {
+      "name": "content",
+      "password_hash": "{{HASH:RABBITMQ_CONTENT_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
+    },
+    {
+      "name": "assessment",
+      "password_hash": "{{HASH:RABBITMQ_ASSESSMENT_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
+    },
+    {
+      "name": "studyroom",
+      "password_hash": "{{HASH:RABBITMQ_STUDYROOM_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
+    },
+    {
+      "name": "document",
+      "password_hash": "{{HASH:RABBITMQ_DOCUMENT_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
+    },
+    {
+      "name": "ai",
+      "password_hash": "{{HASH:RABBITMQ_AI_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
+    },
+    {
+      "name": "gateway",
+      "password_hash": "{{HASH:RABBITMQ_GATEWAY_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
+    },
+    {
+      "name": "aichat",
+      "password_hash": "{{HASH:RABBITMQ_AICHAT_PASS}}",
+      "hashing_algorithm": "rabbit_password_hashing_sha256",
+      "tags": []
+    }
+  ],
+  "vhosts": [
+    {
+      "name": "/"
+    }
+  ],
+  "permissions": [
+    {
+      "user": "{{ENV:RABBITMQ_USER}}",
+      "vhost": "/",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    },
+    {
+      "user": "auth",
+      "vhost": "/",
+      "configure": "^(kmaedu\\.events|auth\\..*)$",
+      "write": "^(kmaedu\\.events|auth\\..*)$",
+      "read": "^(kmaedu\\.events|auth\\..*)$"
+    },
+    {
+      "user": "content",
+      "vhost": "/",
+      "configure": "^(kmaedu\\.events|content\\..*)$",
+      "write": "^(kmaedu\\.events|content\\..*)$",
+      "read": "^(kmaedu\\.events|content\\..*)$"
+    },
+    {
+      "user": "assessment",
+      "vhost": "/",
+      "configure": "^(kmaedu\\.events|assessment\\..*)$",
+      "write": "^(kmaedu\\.events|assessment\\..*)$",
+      "read": "^(kmaedu\\.events|assessment\\..*)$"
+    },
+    {
+      "user": "studyroom",
+      "vhost": "/",
+      "configure": "^(kmaedu\\.events|studyroom\\..*)$",
+      "write": "^(kmaedu\\.events|studyroom\\..*)$",
+      "read": "^(kmaedu\\.events|studyroom\\..*)$"
+    },
+    {
+      "user": "document",
+      "vhost": "/",
+      "configure": "^(kmaedu\\.events|document\\..*)$",
+      "write": "^(kmaedu\\.events|document\\..*)$",
+      "read": "^(kmaedu\\.events|document\\..*)$"
+    },
+    {
+      "user": "ai",
+      "vhost": "/",
+      "configure": "^(kmaedu\\.events|ai\\..*)$",
+      "write": "^(kmaedu\\.events|ai\\..*)$",
+      "read": "^(kmaedu\\.events|ai\\..*)$"
+    },
+    {
+      "user": "gateway",
+      "vhost": "/",
+      "configure": "^(kmaedu\\.events|gateway\\..*)$",
+      "write": "^(kmaedu\\.events|gateway\\..*)$",
+      "read": "^(kmaedu\\.events|gateway\\..*)$"
+    },
+    {
+      "user": "aichat",
+      "vhost": "/",
+      "configure": "^(kmaedu\\.events|aichat\\..*)$",
+      "write": "^(kmaedu\\.events|aichat\\..*)$",
+      "read": "^(kmaedu\\.events|aichat\\..*)$"
+    }
+  ],
+  "topic_permissions": [
+    {
+      "user": "auth",
+      "vhost": "/",
+      "exchange": "kmaedu.events",
+      "write": "^auth\\.",
+      "read": ".*"
+    },
+    {
+      "user": "content",
+      "vhost": "/",
+      "exchange": "kmaedu.events",
+      "write": "^content\\.",
+      "read": ".*"
+    },
+    {
+      "user": "assessment",
+      "vhost": "/",
+      "exchange": "kmaedu.events",
+      "write": "^assessment\\.",
+      "read": ".*"
+    },
+    {
+      "user": "studyroom",
+      "vhost": "/",
+      "exchange": "kmaedu.events",
+      "write": "^studyroom\\.",
+      "read": ".*"
+    },
+    {
+      "user": "document",
+      "vhost": "/",
+      "exchange": "kmaedu.events",
+      "write": "^document\\.",
+      "read": ".*"
+    },
+    {
+      "user": "ai",
+      "vhost": "/",
+      "exchange": "kmaedu.events",
+      "write": "^ai\\.",
+      "read": ".*"
+    },
+    {
+      "user": "gateway",
+      "vhost": "/",
+      "exchange": "kmaedu.events",
+      "write": "^gateway\\.",
+      "read": ".*"
+    },
+    {
+      "user": "aichat",
+      "vhost": "/",
+      "exchange": "kmaedu.events",
+      "write": "^aichat\\.",
+      "read": ".*"
+    }
+  ],
+  "exchanges": [],
+  "queues": [],
+  "bindings": []
+}

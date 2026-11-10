@@ -6,9 +6,9 @@ Status: implemented
 Ensure quiz/flashcard/content generation uses AI2 provider and never calls Ollama generation.
 
 ## Context Links
-- `../examio-be/apps/ai-service/src/backend/services/generation_service.py`
-- `../examio-be/apps/ai-service/src/llm/model_manager.py`
-- `../examio-be/apps/ai-service/src/llm/llm_factory.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/generation_service.py`
+- `../kmaedu-be/apps/ai-service/src/llm/model_manager.py`
+- `../kmaedu-be/apps/ai-service/src/llm/llm_factory.py`
 
 ## Requirements
 - `generate_content_with_model()` routes provider `ai2` to `_generate_with_ai2()`.

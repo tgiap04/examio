@@ -8,7 +8,7 @@ warnings: 0
 # Wave 6 Feature Spec Promotion Review
 
 Review time: 2026-05-27 21:04 Asia/Saigon
-Scope: `/Users/tgiap.dev/devs/examio/plans/260527-1951-rebuild-spec/artifacts/features/`
+Scope: `/Users/tgiap.dev/devs/kmaedu/plans/260527-1951-rebuild-spec/artifacts/features/`
 
 ## Result
 

@@ -2,8 +2,8 @@
   "task": "Phase 16 Deploy Independence: per-service images (deploy/Dockerfile.node ROLE api|worker|migrate|seed, ai Dockerfile with protoc), deploy/services.json, scripts/changed-services.sh (waves), scripts/lint-migrations.sh (migration:contract), deploy/deploy-service.sh (migrate gate, P3009 halt, auto-rollback, Telegram), deploy.yml detect/build(GHCR)/deploy waves gated by CUTOVER_DONE, ci.yml detect/migrations/deploy-scripts, per-service env_file env/<name>.env, gateway-a/b + nginx upstream resolve, mem_limit, ai-worker heartbeat, cutover-runbook.md + cutover-smoke.ts; carried fixes: ai-chat regenerate admission before delete + lows, OCR private-host switch (link-local always refused), ioredis deep import, compose-topology spec content egress",
   "mode": "code",
   "acceptanceCriteria": [
-    "static: changed-services.test.sh, lint-migrations.test.sh, deploy-service.test.sh exit 0; shellcheck clean on new scripts; node --test deploy/compose-topology.spec.cjs green; actionlint clean on deploy.yml and no new findings in ci.yml; examio-be yarn build && typecheck && yarn test && check:deps && check:ownership green; ai-service pytest for touched modules green; examio-fe build && lint && test green",
-    "selection: a change only under apps/vocabulary-service -> {wave1:[],wave2:[vocabulary]}; proto/examio/finance + apps/content-service -> finance in wave1 and content in wave2; libs/** -> every Node service; docs-only -> empty",
+    "static: changed-services.test.sh, lint-migrations.test.sh, deploy-service.test.sh exit 0; shellcheck clean on new scripts; node --test deploy/compose-topology.spec.cjs green; actionlint clean on deploy.yml and no new findings in ci.yml; kmaedu-be yarn build && typecheck && yarn test && check:deps && check:ownership green; ai-service pytest for touched modules green; kmaedu-fe build && lint && test green",
+    "selection: a change only under apps/vocabulary-service -> {wave1:[],wave2:[vocabulary]}; proto/kmaedu/finance + apps/content-service -> finance in wave1 and content in wave2; libs/** -> every Node service; docs-only -> empty",
     "migration lint: an added migration with DROP COLUMN fails without MIGRATION_CONTRACT and passes with it; expand-safe DROP INDEX/DEFAULT/CONSTRAINT/NOT NULL pass",
     "images: every services.json key builds (Node from deploy/Dockerfile.node, ai from apps/ai-service/Dockerfile, one at a time) and the full compose stack reaches healthy from empty volumes with every <svc>-migrate exit 0; ROLE=seed SEED_PROFILE=prod seeds admin, vocabulary and ai-chat reference data; image sizes recorded",
     "deploy-service.sh live: redeploying one service with a new tag recreates only that service (other containers keep their StartedAt); a failing migrate leaves the previous container running and restores the tag; no code path runs migrate resolve, db push or down",
@@ -13,15 +13,15 @@
     "carried fixes: a rejected ai-chat regenerate (429/403/404) deletes no message (unit + live), non-stream query sends systemPrompt/modelType, OCR private-host switch refuses link-local always, libs/redis has no ioredis deep import, ai-worker heartbeat healthcheck is healthy and turns unhealthy when the broker is stopped"
   ],
   "touchpoints": [
-    "examio-be/deploy/**",
-    "examio-be/scripts/{changed-services,lint-migrations,cutover-smoke}*",
+    "kmaedu-be/deploy/**",
+    "kmaedu-be/scripts/{changed-services,lint-migrations,cutover-smoke}*",
     ".github/workflows/{ci,deploy}.yml",
-    "examio-fe/nginx.conf",
-    "examio-fe/docker-compose.yml",
-    "examio-be/apps/ai-chat-service/src/modules/ai-chat",
-    "examio-be/apps/ai-service/src/backend/{services/ocr_service.py,messaging}",
-    "examio-be/libs/redis",
-    "examio-be/apps/ai-service/Dockerfile"
+    "kmaedu-fe/nginx.conf",
+    "kmaedu-fe/docker-compose.yml",
+    "kmaedu-be/apps/ai-chat-service/src/modules/ai-chat",
+    "kmaedu-be/apps/ai-service/src/backend/{services/ocr_service.py,messaging}",
+    "kmaedu-be/libs/redis",
+    "kmaedu-be/apps/ai-service/Dockerfile"
   ],
   "blastRadius": [
     "production deploy pipeline",
@@ -36,7 +36,7 @@
   "contracts": [
     "deploy.yml inputs changed (services, force_rebuild); new secret GHCR_READ_TOKEN and repo variable CUTOVER_DONE",
     "compose: gateway renamed gateway-a/gateway-b (alias gateway), host port 6369 removed, env_file per service (deploy/env/<name>.env required)",
-    "image names ghcr.io/cychipo/examio-<key>:<sha>|main; ROLE contract api|worker|api,worker|migrate|seed",
+    "image names ghcr.io/tgiap04/kmaedu-<key>:<sha>|main; ROLE contract api|worker|api,worker|migrate|seed",
     "new env R2_ALLOW_PRIVATE_HOSTS (ai)",
     "HTTP/gRPC/event contracts unchanged"
   ]

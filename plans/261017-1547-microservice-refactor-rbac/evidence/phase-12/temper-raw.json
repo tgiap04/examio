@@ -92,7 +92,7 @@
   {
     "command": "temper-1: infra-rabbit-render",
     "exitCode": 0,
-    "summary": "exit 0 in 0s; last: rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/repo/deploy/rabbitmq/definitions.json (7 users)",
+    "summary": "exit 0 in 0s; last: rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/repo/deploy/rabbitmq/definitions.json (7 users)",
     "ts": "2026-10-23T07:22:04.547Z"
   },
   {
@@ -128,7 +128,7 @@
   {
     "command": "temper-2: infra-rabbit-render",
     "exitCode": 0,
-    "summary": "exit 0 in 0s; last: rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/repo/deploy/rabbitmq/definitions.json (7 users)",
+    "summary": "exit 0 in 0s; last: rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/repo/deploy/rabbitmq/definitions.json (7 users)",
     "ts": "2026-10-23T08:28:56.335Z"
   },
   {
@@ -398,7 +398,7 @@
   {
     "command": "temper-2: s3-stubs-mkbucket",
     "exitCode": 0,
-    "summary": "exit 0 in 1s; last: buckets: examio-p12t",
+    "summary": "exit 0 in 1s; last: buckets: kmaedu-p12t",
     "ts": "2026-10-23T08:47:33.060Z"
   },
   {
@@ -410,7 +410,7 @@
   {
     "command": "temper-2: s3-up-wait-empty-volume",
     "exitCode": 0,
-    "summary": "exit 0 in 36s; last:  Container examio-gateway Healthy ",
+    "summary": "exit 0 in 36s; last:  Container kmaedu-gateway Healthy ",
     "ts": "2026-10-23T08:48:06.013Z"
   },
   {
@@ -470,7 +470,7 @@
   {
     "command": "temper-2: s3-up-plain-after-seed",
     "exitCode": 0,
-    "summary": "exit 0 in 4s; last:  Container examio-admin Healthy ",
+    "summary": "exit 0 in 4s; last:  Container kmaedu-admin Healthy ",
     "ts": "2026-10-23T08:48:52.037Z"
   },
   {
@@ -596,7 +596,7 @@
   {
     "command": "temper-2: f1-up-auth-recreate",
     "exitCode": 0,
-    "summary": "exit 0 in 9s; last:  Container examio-auth Healthy ",
+    "summary": "exit 0 in 9s; last:  Container kmaedu-auth Healthy ",
     "ts": "2026-10-23T09:22:18.598Z"
   },
   {
@@ -788,7 +788,7 @@
   {
     "command": "temper-2: s3-stubs-mkbucket",
     "exitCode": 0,
-    "summary": "exit 0 in 1s; last: buckets: examio-p12t",
+    "summary": "exit 0 in 1s; last: buckets: kmaedu-p12t",
     "ts": "2026-10-23T17:56:53.133Z"
   },
   {
@@ -800,7 +800,7 @@
   {
     "command": "temper-2: s6b-up-wait-empty-volume",
     "exitCode": 0,
-    "summary": "exit 0 in 39s; last:  Container examio-gateway Healthy ",
+    "summary": "exit 0 in 39s; last:  Container kmaedu-gateway Healthy ",
     "ts": "2026-10-23T17:57:26.059Z"
   },
   {
@@ -842,7 +842,7 @@
   {
     "command": "temper-2: s6b-ui-study-room-2ctx-admin-crud-student-wf",
     "exitCode": 2,
-    "summary": "exit 2 in 241s; last:     at async /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/ui/s6b-ui.cjs:66:3",
+    "summary": "exit 2 in 241s; last:     at async /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/ui/s6b-ui.cjs:66:3",
     "ts": "2026-10-23T18:04:09.342Z"
   },
   {
@@ -860,7 +860,7 @@
   {
     "command": "temper-2: s6b-ui-study-room-2ctx-admin-crud-student-wf-run2",
     "exitCode": 2,
-    "summary": "exit 2 in 245s; last:     at async /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/ui/s6b-ui.cjs:71:3",
+    "summary": "exit 2 in 245s; last:     at async /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/ui/s6b-ui.cjs:71:3",
     "ts": "2026-10-23T18:10:47.667Z"
   },
   {
@@ -878,7 +878,7 @@
   {
     "command": "temper-2: s6b-ui-study-room-2ctx-admin-crud-student-wf-run3",
     "exitCode": 2,
-    "summary": "exit 2 in 240s; last:     at async /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/ui/s6b-ui.cjs:71:3",
+    "summary": "exit 2 in 240s; last:     at async /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/ui/s6b-ui.cjs:71:3",
     "ts": "2026-10-23T18:16:39.266Z"
   },
   {
@@ -896,7 +896,7 @@
   {
     "command": "temper-2: s6b-ui-study-room-2ctx-admin-crud-student-wf-run4",
     "exitCode": 2,
-    "summary": "exit 2 in 241s; last:     at async /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/ui/s6b-ui.cjs:76:3",
+    "summary": "exit 2 in 241s; last:     at async /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/ui/s6b-ui.cjs:76:3",
     "ts": "2026-10-23T18:22:32.083Z"
   },
   {
@@ -914,7 +914,7 @@
   {
     "command": "temper-2: s6b-ui-study-room-2ctx-admin-crud-student-wf-run5",
     "exitCode": 2,
-    "summary": "exit 2 in 240s; last:     at async /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/ui/s6b-ui.cjs:76:3",
+    "summary": "exit 2 in 240s; last:     at async /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/ui/s6b-ui.cjs:76:3",
     "ts": "2026-10-23T18:29:52.838Z"
   },
   {
@@ -932,7 +932,7 @@
   {
     "command": "temper-2: s6b-ui-study-room-2ctx-admin-crud-student-wf-run6",
     "exitCode": 2,
-    "summary": "exit 2 in 249s; last:     at async /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/ui/s6b-ui.cjs:77:3",
+    "summary": "exit 2 in 249s; last:     at async /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/ui/s6b-ui.cjs:77:3",
     "ts": "2026-10-23T18:36:02.420Z"
   },
   {
@@ -950,7 +950,7 @@
   {
     "command": "temper-2: s6b-ui-study-room-2ctx-admin-crud-student-wf-run7",
     "exitCode": 2,
-    "summary": "exit 2 in 250s; last:     at async /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/ui/s6b-ui.cjs:81:3",
+    "summary": "exit 2 in 250s; last:     at async /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/ui/s6b-ui.cjs:81:3",
     "ts": "2026-10-23T18:42:20.855Z"
   },
   {

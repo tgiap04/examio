@@ -6,7 +6,7 @@
 
 ## Overview
 
-ExamHosting enables authenticated teachers to create and manage exam rooms, schedule exam sessions within those rooms, configure access control (public/whitelist/access code), and view analytics on student attempts (leaderboard, score distribution, cheating stats). Students can browse available sessions, enter with or without an access code, and attempt exams. The feature spans `SCR016/REG003` (exam room grid on MyMaterialsPage), `SCR018/REG002` and `SCR018/REG003` (exam history and stats on HistoryPage), `SCR019` (exam history page), `SCR021` (manage exam page), `SCR026` (manage exam room page), `SCR027/REG001–REG004` (exam room detail with stats, info, sessions, sharing), `SCR028` (session analytics page), `SCR029` (my exams page), and `SCR031` (exam session entry page). Backend lives in `examio-be/apps/exam-service/src/modules/exam-room/` and `examio-be/apps/exam-service/src/modules/exam-session/`.
+ExamHosting enables authenticated teachers to create and manage exam rooms, schedule exam sessions within those rooms, configure access control (public/whitelist/access code), and view analytics on student attempts (leaderboard, score distribution, cheating stats). Students can browse available sessions, enter with or without an access code, and attempt exams. The feature spans `SCR016/REG003` (exam room grid on MyMaterialsPage), `SCR018/REG002` and `SCR018/REG003` (exam history and stats on HistoryPage), `SCR019` (exam history page), `SCR021` (manage exam page), `SCR026` (manage exam room page), `SCR027/REG001–REG004` (exam room detail with stats, info, sessions, sharing), `SCR028` (session analytics page), `SCR029` (my exams page), and `SCR031` (exam session entry page). Backend lives in `kmaedu-be/apps/exam-service/src/modules/exam-room/` and `kmaedu-be/apps/exam-service/src/modules/exam-session/`.
 
 ## Polymorphic Behavior
 
@@ -84,7 +84,7 @@ None.
 **Triggers in:** SCR031 (ExamSessionPage) on mount
 **Involved entities:** `ExamAttempt.status`, `ExamSession.status`
 **user_visible_outcome:** Shows "Start Exam" if no in-progress attempt exists; shows "Resume Exam" if one does
-**Source:** `examio-fe/src/pages/k/ExamSessionPage.tsx` (inferred)
+**Source:** `kmaedu-fe/src/pages/k/ExamSessionPage.tsx` (inferred)
 
 ```pseudo
 attempts = fetchAttempts(sessionId)
@@ -99,7 +99,7 @@ else → render "Session not active" disabled state
 **Triggers in:** SCR031 (ExamSessionPage) on load
 **Involved entities:** `ExamSession.assessType`, `ExamSession.hostId`, `User.id`
 **user_visible_outcome:** Prompts for access code only when assessType=PRIVATE and user is not the host
-**Source:** `examio-fe/src/pages/exam-session/ExamSessionPage.tsx` (inferred)
+**Source:** `kmaedu-fe/src/pages/exam-session/ExamSessionPage.tsx` (inferred)
 
 ```pseudo
 if session.assessType === 0 (PUBLIC) → grant access
@@ -131,7 +131,7 @@ stateDiagram-v2
 
 #### SM-008_02 — ExamQuizPage Form Status
 **Linked FR:** FR-008_14, FR-008_15
-**Source:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx` (BL016)
+**Source:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx` (BL016)
 
 ```mermaid
 stateDiagram-v2
@@ -151,7 +151,7 @@ None.
 
 **INT-008_01 — Secure Quiz Fetch (Encrypted Questions)**
 **Linked FR:** FR-008_14
-**Source:** `examio-be/apps/exam-service/src/modules/exam-session/exam-session.service.ts` (inferred)
+**Source:** `kmaedu-be/apps/exam-service/src/modules/exam-session/exam-session.service.ts` (inferred)
 **Type:** api-call
 **Target:** exam-service
 **Trigger:** `POST /api/v1/secure-quiz`
@@ -160,7 +160,7 @@ None.
 
 **INT-008_02 — Secure Submit (JWT-wrapped Answer Submission)**
 **Linked FR:** FR-008_15
-**Source:** `examio-be/apps/exam-service/src/modules/exam-session/exam-session.service.ts` (inferred)
+**Source:** `kmaedu-be/apps/exam-service/src/modules/exam-session/exam-session.service.ts` (inferred)
 **Type:** api-call
 **Target:** exam-service
 **Trigger:** Student clicks Submit or timer expires
@@ -169,7 +169,7 @@ None.
 
 **INT-008_03 — CheatingDetectionHook (BL013)**
 **Linked FR:** FR-008_17
-**Source:** `examio-fe/src/hooks/useCheatingDetection.ts`
+**Source:** `kmaedu-fe/src/hooks/useCheatingDetection.ts`
 **Type:** event-publish
 **Target:** `POST /api/v1/cheatinglogs`
 **Trigger:** Tab switch, window blur, copy/paste, right-click, fullscreen exit, print screen
@@ -178,7 +178,7 @@ None.
 
 **INT-008_04 — ExamQuizPagePolling (BL016)**
 **Linked FR:** FR-008_16
-**Source:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx`
+**Source:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx`
 **Type:** queue-job
 **Trigger:** Active attempt, every 30 seconds
 **Payload:** `{ attemptId, currentIndex, answers, markedQuestions, timeSpentSeconds }`
@@ -544,19 +544,19 @@ None.
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| ExamRoomController | `examio-be/apps/exam-service/src/modules/exam-room/exam-room.controller.ts` | REST endpoints for exam room CRUD |
-| ExamRoomService | `examio-be/apps/exam-service/src/modules/exam-room/exam-room.service.ts` | Business logic for room operations |
-| ExamSessionController | `examio-be/apps/exam-service/src/modules/exam-session/exam-session.controller.ts` | REST endpoints for session CRUD and sharing |
-| ExamSessionService | `examio-be/apps/exam-service/src/modules/exam-session/exam-session.service.ts` | Business logic for session lifecycle |
-| ExamAttemptService | `examio-be/apps/exam-service/src/modules/exam-attempt/exam-attempt.service.ts` | Attempt creation, submission, grading |
-| useCheatingDetection | `examio-fe/src/hooks/useCheatingDetection.ts` | Browser event listeners for integrity violations (BL013) |
-| ExamQuizPage | `examio-fe/src/pages/exam-session/ExamQuizPage.tsx` | Active exam UI with auto-save polling (BL016) |
-| ExamRoomDetailTemplate | `examio-fe/src/pages/k/ExamSessionPage.tsx` | Session entry page with access check |
-| ExamRoomModal | `examio-fe/src/components/k/examroom/ExamRoomModal.tsx` | Create/edit exam room dialog |
-| SessionTable | `examio-fe/src/components/k/examroom/SessionTable.tsx` | Paginated session list on room detail page |
-| ShareDialog | `examio-fe/src/components/k/examroom/ShareDialog.tsx` | Access code and sharing configuration |
-| AttemptTable | `examio-fe/src/components/k/analytics/AttemptTable.tsx` | Leaderboard table on analytics page |
-| ScoreBarChart | `examio-fe/src/components/k/analytics/ScoreBarChart.tsx` | Score distribution chart |
+| ExamRoomController | `kmaedu-be/apps/exam-service/src/modules/exam-room/exam-room.controller.ts` | REST endpoints for exam room CRUD |
+| ExamRoomService | `kmaedu-be/apps/exam-service/src/modules/exam-room/exam-room.service.ts` | Business logic for room operations |
+| ExamSessionController | `kmaedu-be/apps/exam-service/src/modules/exam-session/exam-session.controller.ts` | REST endpoints for session CRUD and sharing |
+| ExamSessionService | `kmaedu-be/apps/exam-service/src/modules/exam-session/exam-session.service.ts` | Business logic for session lifecycle |
+| ExamAttemptService | `kmaedu-be/apps/exam-service/src/modules/exam-attempt/exam-attempt.service.ts` | Attempt creation, submission, grading |
+| useCheatingDetection | `kmaedu-fe/src/hooks/useCheatingDetection.ts` | Browser event listeners for integrity violations (BL013) |
+| ExamQuizPage | `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx` | Active exam UI with auto-save polling (BL016) |
+| ExamRoomDetailTemplate | `kmaedu-fe/src/pages/k/ExamSessionPage.tsx` | Session entry page with access check |
+| ExamRoomModal | `kmaedu-fe/src/components/k/examroom/ExamRoomModal.tsx` | Create/edit exam room dialog |
+| SessionTable | `kmaedu-fe/src/components/k/examroom/SessionTable.tsx` | Paginated session list on room detail page |
+| ShareDialog | `kmaedu-fe/src/components/k/examroom/ShareDialog.tsx` | Access code and sharing configuration |
+| AttemptTable | `kmaedu-fe/src/components/k/analytics/AttemptTable.tsx` | Leaderboard table on analytics page |
+| ScoreBarChart | `kmaedu-fe/src/components/k/analytics/ScoreBarChart.tsx` | Score distribution chart |
 
 ## Unresolved Questions
 

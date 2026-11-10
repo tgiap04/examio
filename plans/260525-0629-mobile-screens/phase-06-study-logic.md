@@ -12,7 +12,7 @@ track: B
 > BlockedBy Phase 01 only. Parallel-runnable with Phase 05. NO A↔B block.
 
 ## Context Links
-- DTO sources: `../../examio-fe/src/apis/studentMaterialsApi.ts`, `flashcardSetApi.ts`, `quizsetApi.ts`
+- DTO sources: `../../kmaedu-fe/src/apis/studentMaterialsApi.ts`, `flashcardSetApi.ts`, `quizsetApi.ts`
 - Shared: `FlashcardRepository.kt`, `ExamRepository.kt`, `StudentMaterialsApiService.kt`, `FlashcardApiService.kt`, `QuizSetApiService.kt`
 - Multipart helper from Phase 01
 
@@ -39,7 +39,7 @@ Build ViewModels over existing FlashcardRepository (flashcards/materials) and Ex
 
 ### Create
 - Android: `androidApp/.../features/study/MyMaterialsViewModel.kt`, `FlashcardSetListViewModel.kt`, `QuizSetDetailViewModel.kt`, `FlashcardSetDetailViewModel.kt`
-- iOS: matching `*ViewModel.swift` under `iosApp/ExamioApp/ViewModels/`
+- iOS: matching `*ViewModel.swift` under `iosApp/KMAEduApp/ViewModels/`
 
 ### Modify
 - `shared/.../features/study/repository/FlashcardRepository.kt` (add thumbnail upload + detail/labels fns if missing)

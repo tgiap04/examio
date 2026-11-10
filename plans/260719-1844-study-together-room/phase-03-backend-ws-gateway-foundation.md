@@ -3,8 +3,8 @@
 ## Context Links
 
 - Plan: [plan.md](plan.md) · Depends: phase-02
-- Redis service sẵn có: `examio-be/libs/redis/src/redis.service.ts` (ioredis)
-- Auth JWT helpers: `@examio/common` (xem AuthGuard hiện dùng verify thế nào — dùng chung secret/logic)
+- Redis service sẵn có: `kmaedu-be/libs/redis/src/redis.service.ts` (ioredis)
+- Auth JWT helpers: `@kmaedu/common` (xem AuthGuard hiện dùng verify thế nào — dùng chung secret/logic)
 
 ## Overview
 
@@ -20,7 +20,7 @@
 
 ## Implementation Steps
 
-1. Deps (root `examio-be/package.json`): `@nestjs/websockets`, `@nestjs/platform-socket.io`, `@socket.io/redis-adapter`, `socket.io`.
+1. Deps (root `kmaedu-be/package.json`): `@nestjs/websockets`, `@nestjs/platform-socket.io`, `@socket.io/redis-adapter`, `socket.io`.
 2. Tạo `study-room.gateway.ts` trong module study-room:
 
 ```typescript

@@ -1,8 +1,8 @@
 # Permissions
 
-Authorization model of examio after the microservice RBAC refactor: who can do what, how a request is checked, and where the check lives. Code is authoritative; this page is the map.
+Authorization model of kmaedu after the microservice RBAC refactor: who can do what, how a request is checked, and where the check lives. Code is authoritative; this page is the map.
 
-- Source of truth: `examio-be/libs/auth-jwt/src/permissions.ts` (`PERMISSIONS`, `ROLE_PERMISSIONS`) and the guards beside it.
+- Source of truth: `kmaedu-be/libs/auth-jwt/src/permissions.ts` (`PERMISSIONS`, `ROLE_PERMISSIONS`) and the guards beside it.
 - Full permission x role matrix and permission -> gateway routes: [generated/permissions-matrix.md](../generated/permissions-matrix.md) (generated, do not edit).
 - Decisions and ownership rules in business terms: [business-rules.md](business-rules.md).
 
@@ -155,13 +155,13 @@ Reading the table:
 
 ### Python ai-service (phase 15)
 
-Source: `apps/ai-service/src/backend/auth/service_token.py`. `AiService.StreamChat`, `Query`, `GenerateWordFamily` and `ListModels` use a Python interceptor, not a Nest decorator: service token only. RS256, `iss`, `aud=ai`, `exp`, `roles` exactly SERVICE, `sub` in `svc:ai-chat`, `svc:vocabulary`, `svc:content` (constant `ALLOWED_CALLERS`, not env). A user token (`aud=examio`) answers `UNAUTHENTICATED` because the audience check runs first; a valid `aud=ai` token from another service (e.g. `svc:document`) answers `PERMISSION_DENIED`.
+Source: `apps/ai-service/src/backend/auth/service_token.py`. `AiService.StreamChat`, `Query`, `GenerateWordFamily` and `ListModels` use a Python interceptor, not a Nest decorator: service token only. RS256, `iss`, `aud=ai`, `exp`, `roles` exactly SERVICE, `sub` in `svc:ai-chat`, `svc:vocabulary`, `svc:content` (constant `ALLOWED_CALLERS`, not env). A user token (`aud=kmaedu`) answers `UNAUTHENTICATED` because the audience check runs first; a valid `aud=ai` token from another service (e.g. `svc:document`) answers `PERMISSION_DENIED`.
 
 Auth `SERVICE_AUDIENCES` includes `document` and `ai`; auth `SERVICE_CLIENTS` needs an entry for `document`. There is no `finance` audience or client any more. The RabbitMQ users `document` and `ai` may publish only `^document\.` and `^ai\.`; user `content` may publish `^content\.` and user `assessment` `^assessment\.`.
 
 ## Per-endpoint enforcement (phase 06, 2026-10-20)
 
-> Source: `@RequirePermissions` / `@RequireOwnerOrPermission` / `@Authenticated()` / `@Public()` on the content, assessment, admin and r2 controllers; `examio-be/test/authz/` (`handler-declarations.spec.ts` fails on an undeclared HTTP handler or WS gateway class, on an `@Authenticated()` handler missing from `authenticated-allowlist.ts`, or an entry without a two-user spec; `authz-matrix.spec.ts` proves STUDENT / TEACHER / admin-only per row).
+> Source: `@RequirePermissions` / `@RequireOwnerOrPermission` / `@Authenticated()` / `@Public()` on the content, assessment, admin and r2 controllers; `kmaedu-be/test/authz/` (`handler-declarations.spec.ts` fails on an undeclared HTTP handler or WS gateway class, on an `@Authenticated()` handler missing from `authenticated-allowlist.ts`, or an entry without a two-user spec; `authz-matrix.spec.ts` proves STUDENT / TEACHER / admin-only per row).
 
 | Area (controller) | Routes | Declaration |
 |---|---|---|
@@ -254,7 +254,7 @@ A middleware failure is a `connect_error` whose message is the code (`SocketAuth
 
 ## Frontend route guards (phase 09, 2026-10-22)
 
-UX gating only; the backend decisions above are authoritative. Source: `examio-fe/src/routes/index.tsx` (`guarded()` → `RequirePermission`), `examio-fe/src/lib/rbac/nav-items.ts`, `examio-fe/src/lib/rbac/landing-path.ts`. The permission names come from `examio-fe/src/types/permissions.generated.ts`, generated from `libs/auth-jwt/src/permissions.ts` by `yarn gen:fe-permissions` (in `examio-be`; CI job `fe-permissions-drift` fails when the file is stale). The session (`user`, `roles`, `permissions`) comes from `GET /auth/me` / login / refresh responses; the client never decodes the JWT.
+UX gating only; the backend decisions above are authoritative. Source: `kmaedu-fe/src/routes/index.tsx` (`guarded()` → `RequirePermission`), `kmaedu-fe/src/lib/rbac/nav-items.ts`, `kmaedu-fe/src/lib/rbac/landing-path.ts`. The permission names come from `kmaedu-fe/src/types/permissions.generated.ts`, generated from `libs/auth-jwt/src/permissions.ts` by `yarn gen:fe-permissions` (in `kmaedu-be`; CI job `fe-permissions-drift` fails when the file is stale). The session (`user`, `roles`, `permissions`) comes from `GET /auth/me` / login / refresh responses; the client never decodes the JWT.
 
 **Guard outcomes** (`lib/rbac/guard-decision.ts`): session loading → spinner; anonymous → `/login?from=<path>`; `/auth/me` unreachable and no session in memory → `SessionUnavailable` (retry button, no redirect); permission missing → `/403` (`ForbiddenPage`, link to the role landing path); otherwise render. `/403` itself only needs a login.
 

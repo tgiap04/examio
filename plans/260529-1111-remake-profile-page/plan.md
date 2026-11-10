@@ -58,5 +58,5 @@ Based on `DESIGN.md` + `globals.css`:
 - Ensure proper styling using design variables and typography.
 
 ### Phase 3: Verify & Build
-- Run `cd examio-fe && yarn build` to verify no compile errors
+- Run `cd kmaedu-fe && yarn build` to verify no compile errors
 - Check that all features work properly (uploads, profile edits, email verifications).

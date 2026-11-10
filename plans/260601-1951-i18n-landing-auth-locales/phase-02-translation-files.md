@@ -13,7 +13,7 @@ tags: [i18n, translations, json]
 
 - [plan.md](./plan.md) — overview
 - [phase-01](./phase-01-install-config.md) — i18n config (must complete first)
-- `examio-fe/public/locales/` — target directory
+- `kmaedu-fe/public/locales/` — target directory
 
 ## Overview
 
@@ -49,7 +49,7 @@ Create 9 JSON locale files (3 languages x 3 namespaces) containing all translata
 
 ### File Structure
 ```
-examio-fe/public/locales/
+kmaedu-fe/public/locales/
 ├── vi/
 │   ├── common.json
 │   ├── landing.json
@@ -67,35 +67,35 @@ examio-fe/public/locales/
 ## Related Code Files
 
 ### Files to Create
-- `examio-fe/public/locales/vi/common.json`
-- `examio-fe/public/locales/vi/landing.json`
-- `examio-fe/public/locales/vi/auth.json`
-- `examio-fe/public/locales/en/common.json`
-- `examio-fe/public/locales/en/landing.json`
-- `examio-fe/public/locales/en/auth.json`
-- `examio-fe/public/locales/ja/common.json`
-- `examio-fe/public/locales/ja/landing.json`
-- `examio-fe/public/locales/ja/auth.json`
+- `kmaedu-fe/public/locales/vi/common.json`
+- `kmaedu-fe/public/locales/vi/landing.json`
+- `kmaedu-fe/public/locales/vi/auth.json`
+- `kmaedu-fe/public/locales/en/common.json`
+- `kmaedu-fe/public/locales/en/landing.json`
+- `kmaedu-fe/public/locales/en/auth.json`
+- `kmaedu-fe/public/locales/ja/common.json`
+- `kmaedu-fe/public/locales/ja/landing.json`
+- `kmaedu-fe/public/locales/ja/auth.json`
 
 ### Files to Read (source of strings)
-- `examio-fe/src/components/molecules/HeaderSection.tsx`
-- `examio-fe/src/components/organisms/FooterSection.tsx`
-- `examio-fe/src/components/organisms/landing/HeroBand.tsx`
-- `examio-fe/src/components/organisms/landing/TrustStrip.tsx`
-- `examio-fe/src/components/organisms/landing/FeatureGrid.tsx`
-- `examio-fe/src/components/organisms/landing/ProductShowcase.tsx`
-- `examio-fe/src/components/organisms/landing/WaysToStudy.tsx`
-- `examio-fe/src/components/organisms/landing/PricingBand.tsx`
-- `examio-fe/src/components/organisms/landing/PricingCards.tsx`
-- `examio-fe/src/components/organisms/landing/CoralCallout.tsx`
-- `examio-fe/src/components/organisms/auth/signin-form.tsx`
-- `examio-fe/src/components/organisms/auth/signup-form.tsx`
-- `examio-fe/src/pages/auth/ForgotPasswordPage.tsx`
-- `examio-fe/src/pages/auth/ResetPasswordPage.tsx`
-- `examio-fe/src/routes/index.tsx` (NotFoundPage)
+- `kmaedu-fe/src/components/molecules/HeaderSection.tsx`
+- `kmaedu-fe/src/components/organisms/FooterSection.tsx`
+- `kmaedu-fe/src/components/organisms/landing/HeroBand.tsx`
+- `kmaedu-fe/src/components/organisms/landing/TrustStrip.tsx`
+- `kmaedu-fe/src/components/organisms/landing/FeatureGrid.tsx`
+- `kmaedu-fe/src/components/organisms/landing/ProductShowcase.tsx`
+- `kmaedu-fe/src/components/organisms/landing/WaysToStudy.tsx`
+- `kmaedu-fe/src/components/organisms/landing/PricingBand.tsx`
+- `kmaedu-fe/src/components/organisms/landing/PricingCards.tsx`
+- `kmaedu-fe/src/components/organisms/landing/CoralCallout.tsx`
+- `kmaedu-fe/src/components/organisms/auth/signin-form.tsx`
+- `kmaedu-fe/src/components/organisms/auth/signup-form.tsx`
+- `kmaedu-fe/src/pages/auth/ForgotPasswordPage.tsx`
+- `kmaedu-fe/src/pages/auth/ResetPasswordPage.tsx`
+- `kmaedu-fe/src/routes/index.tsx` (NotFoundPage)
 - Legal pages: TermsPage, PrivacyPage, CookiesPage, SecurityPage
-- `examio-fe/src/components/organisms/AboutSection.tsx`
-- `examio-fe/src/components/organisms/ContactSection.tsx`
+- `kmaedu-fe/src/components/organisms/AboutSection.tsx`
+- `kmaedu-fe/src/components/organisms/ContactSection.tsx`
 
 ## Todo List
 

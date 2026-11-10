@@ -58,7 +58,7 @@ FE (React 19)                    BE (NestJS)                       AI (Python)
 
 ## Reports
 
-- `/Users/tgiap.dev/devs/examio/plans/reports/researcher-260614-1506-flashcard-module-scan.md`
-- `/Users/tgiap.dev/devs/examio/plans/reports/researcher-260614-1506-ai-service-integration.md`
-- `/Users/tgiap.dev/devs/examio/plans/reports/researcher-260614-1506-codebase-scan.md`
-- `/Users/tgiap.dev/devs/examio/plans/reports/researcher-260614-1516-schema-flashcard-subject.md`
+- `/Users/tgiap.dev/devs/kmaedu/plans/reports/researcher-260614-1506-flashcard-module-scan.md`
+- `/Users/tgiap.dev/devs/kmaedu/plans/reports/researcher-260614-1506-ai-service-integration.md`
+- `/Users/tgiap.dev/devs/kmaedu/plans/reports/researcher-260614-1506-codebase-scan.md`
+- `/Users/tgiap.dev/devs/kmaedu/plans/reports/researcher-260614-1516-schema-flashcard-subject.md`

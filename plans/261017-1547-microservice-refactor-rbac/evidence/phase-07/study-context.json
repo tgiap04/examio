@@ -3,7 +3,7 @@
   "mode": "code",
   "acceptanceCriteria": [
     "yarn typecheck, build:all and test exit 0; quiz-practice and ownership e2e pass",
-    "examio-fe build and lint exit 0",
+    "kmaedu-fe build and lint exit 0",
     "no practice response before submit contains isCorrect or correct-answer fields",
     "a student who entered a code once is not prompted again; after the teacher regenerates or disables the code the student is prompted again",
     "PUT sharing takes deltas (addUserIds, removeUserIds, isPublic, codeEnabled) applied atomically, single cap 2000 per list (409 SHARE_LIST_FULL)",
@@ -13,13 +13,13 @@
     "handler-declarations spec passes with the new controllers and allowlist entries"
   ],
   "touchpoints": [
-    "examio-be/libs/database/src/models/exam.prisma",
-    "examio-be/apps/exam-service/src/modules/quizset",
-    "examio-be/apps/exam-service/src/modules/quiz-practice",
-    "examio-be/apps/exam-service/src/modules/flashcardset",
-    "examio-be/apps/exam-service/src/modules/examsession",
-    "examio-be/apps/gateway-service/config/routes.yaml",
-    "examio-fe/src"
+    "kmaedu-be/libs/database/src/models/exam.prisma",
+    "kmaedu-be/apps/exam-service/src/modules/quizset",
+    "kmaedu-be/apps/exam-service/src/modules/quiz-practice",
+    "kmaedu-be/apps/exam-service/src/modules/flashcardset",
+    "kmaedu-be/apps/exam-service/src/modules/examsession",
+    "kmaedu-be/apps/gateway-service/config/routes.yaml",
+    "kmaedu-fe/src"
   ],
   "blastRadius": [
     "teacher sharing flows for quiz sets, flashcard sets and exam sessions",

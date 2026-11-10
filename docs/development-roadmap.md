@@ -1,11 +1,11 @@
 ---
-title: Examio Development Roadmap
+title: KMAEdu Development Roadmap
 last_updated: 2026-11-10
 source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/) + phase completions
 status: ACTIVE
 ---
 
-# Examio Development Roadmap
+# KMAEdu Development Roadmap
 
 Living document tracking follow-up work derived from the rebuild-spec pipeline run on **2026-06-05/06** (plan `260605-2033-rebuild-spec`).
 
@@ -28,8 +28,7 @@ The 2026-06-05 rebuild-spec baseline is now **873 files behind HEAD** (94k+ line
 
 - ✅ Added F015 (PageFeatureFlags) and F016 (WordFamily) to `feature-list.md`, `screen-list.md` (SCR039–SCR043), `permissions.md` (PERM054–PERM057), `user-stories.md` (US063–US067), with full 4-file feature specs
 - ✅ Added F014 (AdminDashboard) 4-file feature specs (was in feature-list.md but missing `docs/features/` dir)
-- ✅ Fixed `CLAUDE.md` — added the third workspace `examio-app` (Kotlin Multiplatform mobile), previously undocumented entirely
-- ⚠️ **NOT done**: full core artifact re-scan (route-list, data-model, entities, behavior-logic, architecture) against the 873-file diff — these may still miss changes in `examio-app/`, `word-family` AI-service internals not covered above, and other commits not specifically researched
+- ⚠️ **NOT done**: full core artifact re-scan (route-list, data-model, entities, behavior-logic, architecture) against the 873-file diff — these may still miss changes `word-family` AI-service internals not covered above, and other commits not specifically researched
 - ⚠️ **NOT done**: `docs/flows/*.md` and `docs/system/glossary.md` regeneration for the new features
 - **Recommendation**: run `/tkm:rebuild-spec --full` (core pass) via Claude Code IDE when feasible to catch anything this scoped pass missed, followed by `--flows` and `--glossary`
 
@@ -50,7 +49,7 @@ The 2026-06-05 rebuild-spec baseline is now **873 files behind HEAD** (94k+ line
 
 ## Status Note (2026-10-29) — microservice-refactor plan, milestones A-D
 
-Plan: `plans/261017-1547-microservice-refactor-rbac/`. Branch `refactor/microservice-rbac`. Production is not deployed yet: one cutover happens at the final merge with a DB reset (`examio-be/deploy/cutover-runbook.md`); the push deploy stays off until repository variable `CUTOVER_DONE` is `true`.
+Plan: `plans/261017-1547-microservice-refactor-rbac/`. Branch `refactor/microservice-rbac`. Production is not deployed yet: one cutover happens at the final merge with a DB reset (`kmaedu-be/deploy/cutover-runbook.md`); the push deploy stays off until repository variable `CUTOVER_DONE` is `true`.
 
 | Milestone | Phases | Status |
 |-----------|--------|--------|
@@ -58,14 +57,12 @@ Plan: `plans/261017-1547-microservice-refactor-rbac/`. Branch `refactor/microser
 | B: data ownership | 10-11 | Committed |
 | C: split exam-service | 12-15 | Committed |
 | D: deploy independence + docs | 16 committed; 19 in progress | 17 deferred |
-| Mobile | 18 (RBAC parity, `examio-app`) | Removed from the plan (user decision 2026-10-29): the mobile app is out of scope and is not touched. `examio-app` (branch `develop`) still expects the old API (`isAdmin`, `wallet` in `/auth/me`, old 401 codes) and must be adapted before any release. |
 
 Follow-ups carried out of the plan:
 
 - **[DEFERRED] User deletion**: admin `DELETE` -> auth `DeleteUser` -> event fan-out + per-service purgers (see "Deferred: user account deletion" below).
 - **[DEFERRED] Phase 17**: K8s readiness, observability stack (Prometheus/Loki/Grafana, OTel), Redis ACL, admin logs on Loki.
-- **Mobile student practice**: quiz practice (`/quiz-practice/*`) exists on web only (mobile is out of scope; phase 18 was removed 2026-10-29).
-- **Wallet / subscription / payment removed (2026-11-10, branch `feat/remove-finance`)**: finance-service, credits, subscription tiers, SePay payments and every limit derived from them are gone (breaking; PR label `migration:contract`). The mobile app `examio-app` is untouched and still calls the removed `/wallet/*` and `/payment/*` routes. AI cost is guarded only by gateway rate limits, so a per-user AI budget is a possible follow-up if abuse appears. Changelog: `project-changelog.md` § Unreleased.
+- **Wallet / subscription / payment removed (2026-11-10, branch `feat/remove-finance`)**: finance-service, credits, subscription tiers, SePay payments and every limit derived from them are gone (breaking; PR label `migration:contract`). AI cost is guarded only by gateway rate limits, so a per-user AI budget is a possible follow-up if abuse appears. Changelog: `project-changelog.md` § Unreleased.
 - **N1 (phase 16 review)**: two concurrent ai-chat regenerates of one message are both admitted and can leave two reply pairs; fix with a Redis `SET NX` claim.
 - **F5 (phase 16 temper)**: the gateway does not log 429 responses (`pipeline/guard-chain.ts` returns `RATE_LIMITED` silently), so rate-limit pressure is invisible in logs.
 
@@ -75,15 +72,15 @@ Phase 01 (guardrails and cleanup) is committed on `refactor/microservice-rbac`: 
 
 ## Progress Note (2026-10-18) — microservice-refactor plan, phase 02
 
-Phase 02 (contracts and infra libs) is committed on `refactor/microservice-rbac`: protos moved to `examio-be/proto/` (buf), new libs `@examio/contracts`, `@examio/grpc`, `@examio/http`, unified container ports (HTTP 3000 / gRPC 50051), `FINANCE_GRPC_URL` env. Subscription limits are now enforced. See [changelog](project-changelog.md).
+Phase 02 (contracts and infra libs) is committed on `refactor/microservice-rbac`: protos moved to `kmaedu-be/proto/` (buf), new libs `@kmaedu/contracts`, `@kmaedu/grpc`, `@kmaedu/http`, unified container ports (HTTP 3000 / gRPC 50051), `FINANCE_GRPC_URL` env. Subscription limits are now enforced. See [changelog](project-changelog.md).
 
 ## Progress Note (2026-10-18) — microservice-refactor plan, phase 03
 
-Phase 03 (messaging foundation) is committed on `refactor/microservice-rbac`: `@examio/messaging` (outbox + relay, idempotent consumer, retry/DLQ, `ROLE`), `auth.user.created` replaced by `auth.user.registered`, per-service RabbitMQ users rendered from definitions at deploy, RabbitMQ 3.13. See [changelog](project-changelog.md).
+Phase 03 (messaging foundation) is committed on `refactor/microservice-rbac`: `@kmaedu/messaging` (outbox + relay, idempotent consumer, retry/DLQ, `ROLE`), `auth.user.created` replaced by `auth.user.registered`, per-service RabbitMQ users rendered from definitions at deploy, RabbitMQ 3.13. See [changelog](project-changelog.md).
 
 ## Progress Note (2026-10-19) — microservice-refactor plan, phase 04
 
-Phase 04 (identity and RBAC core) is committed on `refactor/microservice-rbac`: roles STUDENT/TEACHER + `isSystemAdmin` (replaces `isAdmin`), RS256/JWKS tokens, new `@examio/auth-jwt` (deny-by-default guards, permission catalog), service tokens, TEACHER-only wallets, admin bootstrap moved to auth CLI. Roadmap item 1.2 (session/refresh policy) is partly addressed: access 15 min, refresh reloads role. Frontend still reads `isAdmin`. See [changelog](project-changelog.md) and [permissions](system/permissions.md).
+Phase 04 (identity and RBAC core) is committed on `refactor/microservice-rbac`: roles STUDENT/TEACHER + `isSystemAdmin` (replaces `isAdmin`), RS256/JWKS tokens, new `@kmaedu/auth-jwt` (deny-by-default guards, permission catalog), service tokens, TEACHER-only wallets, admin bootstrap moved to auth CLI. Roadmap item 1.2 (session/refresh policy) is partly addressed: access 15 min, refresh reloads role. Frontend still reads `isAdmin`. See [changelog](project-changelog.md) and [permissions](system/permissions.md).
 
 ## Progress Note (2026-10-20) — microservice-refactor plan, phase 05
 
@@ -95,7 +92,7 @@ Phase 06 (RBAC enforcement and security fixes) is committed on `refactor/microse
 
 ## Progress Note (2026-10-20) — microservice-refactor plan, phase 07
 
-Phase 07 (quiz sharing and student practice) is committed on `refactor/microservice-rbac`: quiz-set whitelist/code/public sharing, the delta sharing API (2000 cap) shared with flashcard sets, remembered code unlocks evicted on rotation, and `/quiz-practice/*` with server-side scoring and frozen results. Follow-ups: migration `20261020132225_quiz_sharing` is not applied on shared databases; mobile adaptation and a central axios error fix remain. See [changelog](project-changelog.md).
+Phase 07 (quiz sharing and student practice) is committed on `refactor/microservice-rbac`: quiz-set whitelist/code/public sharing, the delta sharing API (2000 cap) shared with flashcard sets, remembered code unlocks evicted on rotation, and `/quiz-practice/*` with server-side scoring and frozen results. Follow-ups: migration `20261020132225_quiz_sharing` is not applied on shared databases; a central axios error fix remains. See [changelog](project-changelog.md).
 
 ## Progress Note (2026-10-20) — microservice-refactor plan, phase 08
 
@@ -103,11 +100,11 @@ Phase 08 (admin role management) is committed on `refactor/microservice-rbac`: `
 
 ## Progress Note (2026-10-22) — microservice-refactor plan, phase 09
 
-Phase 09 (frontend RBAC) is committed on `refactor/microservice-rbac`: permission-driven routing and nav, `/403`, generated permission types with a CI drift check, `ApiRequestError` plus the 401/403 policy, single-flight refresh, session-probe, role-scoped store reset, study-room socket recovery, Vitest for the FE, and backend fixes (refresh cookie rotation, exam-service Redis-outage 503). Follow-ups: `/study-flashcard/:id` now needs login; mobile (`examio-app`) still not adapted. See [changelog](project-changelog.md) and [permissions](system/permissions.md) § Frontend route guards.
+Phase 09 (frontend RBAC) is committed on `refactor/microservice-rbac`: permission-driven routing and nav, `/403`, generated permission types with a CI drift check, `ApiRequestError` plus the 401/403 policy, single-flight refresh, session-probe, role-scoped store reset, study-room socket recovery, Vitest for the FE, and backend fixes (refresh cookie rotation, exam-service Redis-outage 503). Follow-ups: `/study-flashcard/:id` now needs login. See [changelog](project-changelog.md) and [permissions](system/permissions.md) § Frontend route guards.
 
 ## Progress Note (2026-10-23) — microservice-refactor plan, phase 10
 
-Phase 10 (cut cross-DB access) is committed on `refactor/microservice-rbac`: one owning service per Prisma model (`yarn check:ownership`, `yarn check:deps` in CI), idempotent money RPCs (`WalletService.Debit`/`Credit`/`Refund`, `UpdateBalance` removed), finance admin/stats RPCs, auth user admin RPCs and `auth.user.updated`, `/auth/me` without wallet/subscription, admin stats from `GetUserStats` plus `GetRevenueStats`, page flags pushed admin to gateway by gRPC, exam user enrichment through auth public profiles, word-family category admin through exam gRPC. Migrations `20261022090000_wallet_idempotency` and `20261023090000_payment_refund_key`. Follow-ups: the database is still shared (schema split is phase 11); `examio-app` was not checked against the new `/auth/me` shape. See [changelog](project-changelog.md) and [architecture](system/architecture.md) § gRPC.
+Phase 10 (cut cross-DB access) is committed on `refactor/microservice-rbac`: one owning service per Prisma model (`yarn check:ownership`, `yarn check:deps` in CI), idempotent money RPCs (`WalletService.Debit`/`Credit`/`Refund`, `UpdateBalance` removed), finance admin/stats RPCs, auth user admin RPCs and `auth.user.updated`, `/auth/me` without wallet/subscription, admin stats from `GetUserStats` plus `GetRevenueStats`, page flags pushed admin to gateway by gRPC, exam user enrichment through auth public profiles, word-family category admin through exam gRPC. Migrations `20261022090000_wallet_idempotency` and `20261023090000_payment_refund_key`. Follow-ups: the database is still shared (schema split is phase 11). See [changelog](project-changelog.md) and [architecture](system/architecture.md) § gRPC.
 
 ## Progress Note (2026-10-24) — microservice-refactor plan, phase 12
 
@@ -115,7 +112,7 @@ Phase 12 (extract study-room and vocabulary) is committed on `refactor/microserv
 
 ## Progress Note (2026-10-27) — microservice-refactor plan, phase 16
 
-Phase 16 (deploy independence) is committed on `refactor/microservice-rbac`: one `deploy/Dockerfile.node` recipe with a `ROLE`-driven entrypoint, per-service GHCR images, per-service `env/<name>.env`, `gateway-a`/`gateway-b` behind nginx upstream `gw`, `mem_limit` everywhere, wave-based `deploy.yml` with `deploy-service.sh` (migrate gate, auto-rollback), the `lint-migrations` contract check and `cutover-runbook.md`. Production is still on the old stack: the first deploy happens once at the final merge via the runbook, and the push deploy stays off until repository variable `CUTOVER_DONE` is `true`. Phase 17 (K8s, observability, Redis ACL) stays deferred; phase 18 (mobile RBAC parity) is pending; phase 19 (docs) is in progress. Details: `project-changelog.md`, `examio-be/deploy/README.md`.
+Phase 16 (deploy independence) is committed on `refactor/microservice-rbac`: one `deploy/Dockerfile.node` recipe with a `ROLE`-driven entrypoint, per-service GHCR images, per-service `env/<name>.env`, `gateway-a`/`gateway-b` behind nginx upstream `gw`, `mem_limit` everywhere, wave-based `deploy.yml` with `deploy-service.sh` (migrate gate, auto-rollback), the `lint-migrations` contract check and `cutover-runbook.md`. Production is still on the old stack: the first deploy happens once at the final merge via the runbook, and the push deploy stays off until repository variable `CUTOVER_DONE` is `true`. Phase 17 (K8s, observability, Redis ACL) stays deferred; phase 19 (docs) is in progress. Details: `project-changelog.md`, `kmaedu-be/deploy/README.md`.
 
 ## Progress Note (2026-10-24) — microservice-refactor plan, phase 15
 
@@ -231,7 +228,7 @@ Removed 2026-06-14 (frontend page `f1ed596`, backend `ai-tutor` module `343fa97`
 | 3.6 | antd Table with pagination + filters on all list pages | frontend | ✅ Complete |
 
 Key decisions made during implementation:
-- Admin routes are guarded by `@RequirePermissions('admin:access')` from `@examio/auth-jwt` (stateless JWT; `AdminGuard` removed in microservice-refactor phase 04)
+- Admin routes are guarded by `@RequirePermissions('admin:access')` from `@kmaedu/auth-jwt` (stateless JWT; `AdminGuard` removed in microservice-refactor phase 04)
 - Ticket exchange uses SSE (no WebSocket); graceful fallback to polling if SSE fails
 - User soft-delete: `isBanned = true` + `deletedAt = now()`; hard delete deferred
 - All admin mutations write one `AdminAudit` row per changed field
@@ -243,7 +240,7 @@ Key decisions made during implementation:
 |---|------|-------|--------|
 | 4.1 | `PageFeatureFlag` Prisma model + seed file | backend | ✅ Complete |
 | 4.2 | `PageConfigModule` (admin-service) + proxy controller (gateway) | backend | ✅ Complete |
-| 4.3 | `PageEnabledGuard` in `@examio/common` | backend | ✅ Complete |
+| 4.3 | `PageEnabledGuard` in `@kmaedu/common` | backend | ✅ Complete |
 | 4.4 | Shared page-key constants (`page-keys.enum.ts`) | backend | ✅ Complete |
 | 4.5 | SSE endpoint for real-time flag updates | backend | ✅ Complete |
 | 4.6 | `usePageConfigStore` (Zustand) + `PageConfigApiClient` | frontend | ✅ Complete |
@@ -255,7 +252,6 @@ Key decisions made during implementation:
 - SSE preferred over WebSocket for lighter client footprint; polling fallback if SSE unavailable
 - Flags cached in Zustand; synced via SSE (300ms debounce) to reduce noise
 - `PageEnabledGuard` runs after `JwtAuthGuard` to ensure authenticated context
-- Mobile sync (iosApp/androidApp) deferred to next phase
 
 ## Phase 6 — Study-Together Room (Web)
 
@@ -267,7 +263,6 @@ Key decisions made during implementation:
 | 6.4 | Gateway WS upgrade proxy (`/ws/study`, `http-proxy` `ws:true`; authenticated at the gateway since phase 05) | backend | ✅ Complete |
 | 6.5 | REST surface `/api/v1/studyrooms/*` (create/join/detail/update/delete/leave/regenerate-code/leaderboard) | backend | ✅ Complete |
 | 6.6 | Frontend routes `/k/study-room`, `/k/study-room/:id` + Socket.io client + store | frontend | ✅ Complete |
-| 6.7 | Mobile (iosApp/androidApp) parity | mobile | ❌ Not started (web only by design) |
 | 6.8 | Playlist: `StudyRoomPlaylistItem` model + add/remove/reorder/next/prev/jump + leader-reported `media:ended` auto-advance (no YouTube Data API) | backend | ✅ Complete (⚠️ no migration applied yet) |
 | 6.9 | Access modes: `StudyRoom.accessType` (PUBLIC/CODE/WHITELIST) + `POST /studyrooms/:id/join` | backend | ✅ Complete (⚠️ no migration applied yet) |
 | 6.10 | Moderation: `StudyRoomMember.isBanned`/`.isMuted` (host/cohost ban+mute, cross-instance kick via redis-adapter) | backend | ✅ Complete (⚠️ no migration applied yet) |
@@ -288,10 +283,7 @@ Key decisions made during implementation:
 | # | Item | Source | Owner |
 |---|------|--------|-------|
 | 5.2 | `ProfilePage` dual data source (`getProfileApi` + `useAuthStore.user`) — pick one | W7a | frontend |
-| 5.3 | Add a 6th feature for **Mobile Companion** (iOS + Android app) — currently not covered in spec | F012 in legacy v3.x | spec |
-| 5.4 | Add iOS + Android spec parity for any screen changes | CLAUDE.md rule | spec + mobile |
 | 5.5 | Document the FREE_MODE dev-only bypass before it leaks to production | system rule | devops |
-| 5.6 | Implement native feature flag bridge for iosApp + androidApp | Phase 4 follow-up | mobile |
 
 ---
 
@@ -301,11 +293,11 @@ Database per service dropped every FK to `User`, so deleting a user no longer ca
 
 ## Roadmap Stats
 
-- **Completed Phases**: Phase 3 (Admin Dashboard), Phase 4 (Page Feature Flags), Phase 6 (Study-Together Room + Playlist/Access/Moderation — web only; migration pending, mobile parity not started)
+- **Completed Phases**: Phase 3 (Admin Dashboard), Phase 4 (Page Feature Flags), Phase 6 (Study-Together Room + Playlist/Access/Moderation — web only; migration pending)
 - **P0 (blocking/correctness)**: 6 items
 - **P1 (security/integrity)**: 6 items
 - **P2 (spec edge cases)**: 30+ items across 12 features
-- **P3 (UX polish)**: 6 items (Phase 5 + 1 mobile item)
+- **P3 (UX polish)**: 2 items (Phase 5)
 - **Total unresolved**: ~48 work items, ~55 sub-decisions
 
 ## Owner Mapping
@@ -317,7 +309,6 @@ Database per service dropped every FK to `User`, so deleting a user no longer ca
 | `platform` | 3 |
 | `spec` | 2 |
 | `devops` | 1 |
-| `mobile` | 1 |
 
 ## Implementation Phases (Suggested)
 
@@ -328,7 +319,7 @@ All 6 items complete. Dashboard live with audit, stats, user management and role
 All 8 items complete. Dynamic page enable/disable without redeployment. SSE real-time sync.
 
 ### ✅ Completed — Phase 6 (Study-Together Room, web only)
-11 of 12 items complete (mobile parity not started, by design). Synchronized Pomodoro + shared YouTube media + roster + chat + leaderboard over the backend's first WebSocket transport, extended with an ordered playlist (leader-reported auto-advance), PUBLIC/CODE/WHITELIST access modes, host/cohost ban+mute moderation, and personal chat blocking. **Blocker before any deploy that runs `prisma:deploy` gating**: no migration exists yet for any Study Room model (`StudyRoom`, `StudyRoomMember`, `StudyRoomPlaylistItem`, `StudyRoomChatBlock`).
+11 of 11 items complete. Synchronized Pomodoro + shared YouTube media + roster + chat + leaderboard over the backend's first WebSocket transport, extended with an ordered playlist (leader-reported auto-advance), PUBLIC/CODE/WHITELIST access modes, host/cohost ban+mute moderation, and personal chat blocking. **Blocker before any deploy that runs `prisma:deploy` gating**: no migration exists yet for any Study Room model (`StudyRoom`, `StudyRoomMember`, `StudyRoomPlaylistItem`, `StudyRoomChatBlock`).
 
 ### Sprint Next — Phase 0 (System Correctness)
 Goal: remove blockers that mask real bugs
@@ -346,7 +337,7 @@ Tackle per feature. Suggestion: 1 feature per sprint.
 - F006 (largest), F008 (most complex), F012 (most security-sensitive) first.
 
 ### Backlog — Phase 5
-P3 items (UX polish, mobile sync) nice-to-have; not blocking for v1.
+P3 items (UX polish) nice-to-have; not blocking for v1.
 
 ## Cross-References
 

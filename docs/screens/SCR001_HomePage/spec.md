@@ -111,10 +111,10 @@ N/A — no auth guards or permission checks detected on this screen.
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/landing/HomePage.tsx:1-34`
-- HeroBand component: `examio-fe/src/components/organisms/landing/HeroBand.tsx:1-117`
-- TrustStrip component: `examio-fe/src/components/organisms/landing/TrustStrip.tsx:1-24`
-- FeatureGrid component: `examio-fe/src/components/organisms/landing/FeatureGrid.tsx:1-67`
-- ProductShowcase component: `examio-fe/src/components/organisms/landing/ProductShowcase.tsx:1-106`
-- WaysToStudy component: `examio-fe/src/components/organisms/landing/WaysToStudy.tsx:1-58`
-- CoralCallout component: `examio-fe/src/components/organisms/landing/CoralCallout.tsx:1-87`
+- Page/View: `kmaedu-fe/src/pages/landing/HomePage.tsx:1-34`
+- HeroBand component: `kmaedu-fe/src/components/organisms/landing/HeroBand.tsx:1-117`
+- TrustStrip component: `kmaedu-fe/src/components/organisms/landing/TrustStrip.tsx:1-24`
+- FeatureGrid component: `kmaedu-fe/src/components/organisms/landing/FeatureGrid.tsx:1-67`
+- ProductShowcase component: `kmaedu-fe/src/components/organisms/landing/ProductShowcase.tsx:1-106`
+- WaysToStudy component: `kmaedu-fe/src/components/organisms/landing/WaysToStudy.tsx:1-58`
+- CoralCallout component: `kmaedu-fe/src/components/organisms/landing/CoralCallout.tsx:1-87`

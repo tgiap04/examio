@@ -25,7 +25,7 @@ created: 2026-06-14
 
 - Admin panel is in `/admin/*` with `AdminRoute` guard
 - Gateway proxies `/api/v1/admin/*` to admin-service (external service at :7006)
-- Frontend admin panel lives in `examio-fe/src/pages/admin/`
+- Frontend admin panel lives in `kmaedu-fe/src/pages/admin/`
 - Need to check if admin-service is separate repo or part of this monorepo
 - Admin audit logging via `AuditWriterService` (existing pattern)
 
@@ -49,7 +49,7 @@ created: 2026-06-14
 ### Admin-Service Module (if internal)
 
 ```
-examio-be/apps/admin-service/src/modules/
+kmaedu-be/apps/admin-service/src/modules/
 ├── admin-word-family/
 │   ├── admin-word-family.module.ts
 │   ├── admin-word-family.controller.ts
@@ -59,7 +59,7 @@ examio-be/apps/admin-service/src/modules/
 ### Frontend Admin Page
 
 ```
-examio-fe/src/pages/admin/
+kmaedu-fe/src/pages/admin/
 ├── AdminWordFamilyPage.tsx           # Category list + CRUD
 ├── components/
 │   ├── WordFamilyCategoryForm.tsx    # Create/Edit form
@@ -80,22 +80,22 @@ gateway-service:
 ## Related Code Files
 
 ### Files to Check
-- `examio-be/apps/admin-service/` — check if exists in this repo
-- `examio-be/apps/gateway-service/src/controllers/admin-proxy.controller.ts` — existing proxy pattern
+- `kmaedu-be/apps/admin-service/` — check if exists in this repo
+- `kmaedu-be/apps/gateway-service/src/controllers/admin-proxy.controller.ts` — existing proxy pattern
 
 ### Files to Create (if admin-service internal)
-- `examio-be/apps/admin-service/src/modules/admin-word-family/` — module
+- `kmaedu-be/apps/admin-service/src/modules/admin-word-family/` — module
 
 ### Files to Modify
-- `examio-be/apps/gateway-service/src/controllers/admin-proxy.controller.ts` — add routes
-- `examio-fe/src/routes/index.tsx` — add admin route
-- `examio-fe/src/routes/layouts/AdminLayout.tsx` — add nav item
-- `examio-fe/src/pages/admin/` — create admin page
+- `kmaedu-be/apps/gateway-service/src/controllers/admin-proxy.controller.ts` — add routes
+- `kmaedu-fe/src/routes/index.tsx` — add admin route
+- `kmaedu-fe/src/routes/layouts/AdminLayout.tsx` — add nav item
+- `kmaedu-fe/src/pages/admin/` — create admin page
 
 ## Implementation Steps
 
 1. **Check admin-service location**:
-   - If `examio-be/apps/admin-service/` exists → extend it
+   - If `kmaedu-be/apps/admin-service/` exists → extend it
    - If external repo → add API endpoints there + update gateway proxy
 2. **Read existing admin module pattern** (e.g., `AdminUsersModule`) — understand structure
 3. **Create admin-word-family module** (if internal):
@@ -114,7 +114,7 @@ gateway-service:
    - `/admin/word-family` → `AdminWordFamilyPage`
 7. **Add nav item** in `AdminLayout.tsx`:
    - Add to `NAV_ITEMS` array: `{ path: "/admin/word-family", label: "wordFamily", icon: BookOpen }`
-8. **Add API functions** in `examio-fe/src/apis/adminApi.ts`:
+8. **Add API functions** in `kmaedu-fe/src/apis/adminApi.ts`:
    - `getWordFamilyCategoriesApi()`
    - `createWordFamilyCategoryApi()`
    - `updateWordFamilyCategoryApi()`

@@ -1,0 +1,16 @@
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "setupFiles": ["<rootDir>/../../../test/jest-env.setup.js"],
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@kmaedu/auth-jwt(.*)$": "<rootDir>/../src/$1",
+    "^@kmaedu/messaging(.*)$": "<rootDir>/../src/$1"
+  },
+  "testTimeout": 60000,
+  "forceExit": true
+}

@@ -33,7 +33,7 @@ N/A — no discriminator fields in Key Entities (User, UserSession, VerifyAccoun
 None.
 ### BR-001_LoginCredentials
 **Linked FR:** FR-001
-**Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+**Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 **Applies to:** `POST /api/v1/auth/login`
 **Rule:** Email and password are validated. If credentials are invalid, a generic "invalid email or password" message is returned (do not reveal which field is wrong).
 
@@ -47,7 +47,7 @@ return JWT access token and refresh token
 
 ### BR-002_TurnstileOnRegister
 **Linked FR:** FR-003
-**Source:** `examio-be/apps/auth-service/src/auth.controller.ts`
+**Source:** `kmaedu-be/apps/auth-service/src/auth.controller.ts`
 **Applies to:** `POST /api/v1/auth/register`
 **Rule:** Registration form must include a valid Turnstile token. Submission without a valid token is rejected with 400.
 
@@ -60,25 +60,25 @@ send verification email with OTP
 
 ### BR-003_SessionDeviceFingerprint
 **Linked FR:** FR-001, FR-002
-**Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+**Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 **Applies to:** login events
 **Rule:** On successful login, a new UserSession record is created with device fingerprint (deviceId, deviceName, browser, OS, IP). Session token is opaque and stored in the database.
 
 ### BR-004_PasswordResetExpiry
 **Linked FR:** FR-005
-**Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+**Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 **Applies to:** `POST /api/v1/auth/reset-password`
 **Rule:** Reset code expires after a configured window. Expired code returns 400.
 
 ### BR-005_AuthenticatedRedirect
 **Linked FR:** FR-001, FR-002
-**Source:** `examio-fe/src/pages/LoginPage.tsx`
+**Source:** `kmaedu-fe/src/pages/LoginPage.tsx`
 **Applies to:** LoginPage mount
 **Rule:** Authenticated users are redirected away from login and register pages to `/k/my-materials`.
 
 ### BR-006_UtmSourceAttribution
 **Linked FR:** FR-002, FR-003
-**Source:** `examio-fe/src/lib/utmSource.ts`, `examio-be/apps/auth-service/src/utils/utm-source.util.ts`
+**Source:** `kmaedu-fe/src/lib/utmSource.ts`, `kmaedu-be/apps/auth-service/src/utils/utm-source.util.ts`
 **Applies to:** `POST /api/v1/auth/register`, Google OAuth callback, Google One Tap
 **Rule:** FE captures `?utm_source` first-touch on initial page load (persisted client-side until signup, never overwritten). Value is sanitized (`[\w.-]+` pattern; `direct` rejected as a spoofed value) and stamped onto `User.utmSource` at email/OAuth/One-Tap signup. OAuth flows carry it through the `state` param. Null/missing → `utmSource` stays null (attributed as "direct" by admin reporting).
 
@@ -100,7 +100,7 @@ None.
 None.
 ### INT-001_GoogleOAuth
 **Linked FR:** FR-002
-**Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+**Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 **Type:** api-call
 **Target:** Google OAuth provider
 **Trigger:** User clicks Google sign-in button or One Tap prompt
@@ -109,7 +109,7 @@ None.
 
 ### INT-002_MailService
 **Linked FR:** FR-003, FR-004, FR-005
-**Source:** `examio-be/libs/common/src/services/mail.service.ts`
+**Source:** `kmaedu-be/libs/common/src/services/mail.service.ts`
 **Type:** notification
 **Target:** User email inbox
 **Trigger:** Account registration, password reset request
@@ -150,7 +150,7 @@ None.
 **Requirements fulfilled:**
 
 - **FR-001** Sign in with email/password — `POST /api/v1/auth/login` via `AuthService.login`
-  **Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+  **Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 
 **Rules enforced:** BR-001, BR-003, BR-005
 
@@ -172,9 +172,9 @@ None.
 **Requirements fulfilled:**
 
 - **FR-002** Sign in with Google OAuth — `GET /api/v1/auth/google` via `AuthService.googleLogin`
-  **Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+  **Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 - **FR-008** Sync OAuth refresh token — `POST /api/v1/auth/sync-refresh-token`
-  **Source:** `examio-fe/src/components/auth/AuthSyncBootstrap.tsx`
+  **Source:** `kmaedu-fe/src/components/auth/AuthSyncBootstrap.tsx`
 
 **Rules enforced:** BR-003
 
@@ -197,7 +197,7 @@ None.
 **Requirements fulfilled:**
 
 - **FR-003** Register account with Turnstile — `POST /api/v1/auth/register` via `AuthService.register`
-  **Source:** `examio-be/apps/auth-service/src/auth.controller.ts`
+  **Source:** `kmaedu-be/apps/auth-service/src/auth.controller.ts`
 
 **Rules enforced:** BR-002
 
@@ -219,7 +219,7 @@ None.
 **Requirements fulfilled:**
 
 - **FR-004** Request password reset OTP — `POST /api/v1/auth/send-code-reset-password`
-  **Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+  **Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 
 ---
 
@@ -240,7 +240,7 @@ None.
 **Requirements fulfilled:**
 
 - **FR-005** Reset password with OTP — `POST /api/v1/auth/reset-password` via `AuthService.resetPassword`
-  **Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+  **Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 
 **Rules enforced:** BR-004
 
@@ -282,15 +282,15 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| AuthService | `examio-be/apps/auth-service/src/auth.service.ts` | Core auth logic: login, register, OAuth, token refresh |
-| AuthController | `examio-be/apps/auth-service/src/auth.controller.ts` | HTTP endpoints for all auth routes |
-| MailService | `examio-be/libs/common/src/services/mail.service.ts` | Email sending for OTP and password notifications |
-| SessionValidationMiddleware | `examio-be/libs/common/src/middleware/session-validation.middleware.ts` | Validates session token on every protected request |
-| AuthSyncBootstrap | `examio-fe/src/components/auth/AuthSyncBootstrap.tsx` | OAuth callback token sync on frontend |
-| LoginPage | `examio-fe/src/pages/LoginPage.tsx` | Login form UI |
-| RegisterPage | `examio-fe/src/pages/RegisterPage.tsx` | Registration form with Turnstile |
-| utmSource lib | `examio-fe/src/lib/utmSource.ts` | Captures/persists first-touch `utm_source`; encodes into OAuth `state` |
-| utm-source util | `examio-be/apps/auth-service/src/utils/utm-source.util.ts` | Sanitizes `utm_source`; extracts from OAuth `state` |
+| AuthService | `kmaedu-be/apps/auth-service/src/auth.service.ts` | Core auth logic: login, register, OAuth, token refresh |
+| AuthController | `kmaedu-be/apps/auth-service/src/auth.controller.ts` | HTTP endpoints for all auth routes |
+| MailService | `kmaedu-be/libs/common/src/services/mail.service.ts` | Email sending for OTP and password notifications |
+| SessionValidationMiddleware | `kmaedu-be/libs/common/src/middleware/session-validation.middleware.ts` | Validates session token on every protected request |
+| AuthSyncBootstrap | `kmaedu-fe/src/components/auth/AuthSyncBootstrap.tsx` | OAuth callback token sync on frontend |
+| LoginPage | `kmaedu-fe/src/pages/LoginPage.tsx` | Login form UI |
+| RegisterPage | `kmaedu-fe/src/pages/RegisterPage.tsx` | Registration form with Turnstile |
+| utmSource lib | `kmaedu-fe/src/lib/utmSource.ts` | Captures/persists first-touch `utm_source`; encodes into OAuth `state` |
+| utm-source util | `kmaedu-be/apps/auth-service/src/utils/utm-source.util.ts` | Sanitizes `utm_source`; extracts from OAuth `state` |
 
 ## Unresolved Questions
 

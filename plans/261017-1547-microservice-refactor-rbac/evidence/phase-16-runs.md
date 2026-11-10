@@ -4,12 +4,12 @@ Branch `refactor/microservice-rbac`, HEAD `2137847` plus the uncommitted phase-1
 
 ## Method
 
-- Work was done in a scratch root (`.../scratchpad/p16t`). The real `examio-be/deploy` and `examio-fe` were never composed; the real `.env` files were never opened. The stack ran from a copy of `git ls-files -co --exclude-standard` (no `.env`), with throwaway values from `ci-dummy.env.sh` plus `scripts/gen-jwt-keypair.sh` and `scripts/gen-service-secret.sh`.
+- Work was done in a scratch root (`.../scratchpad/p16t`). The real `kmaedu-be/deploy` and `kmaedu-fe` were never composed; the real `.env` files were never opened. The stack ran from a copy of `git ls-files -co --exclude-standard` (no `.env`), with throwaway values from `ci-dummy.env.sh` plus `scripts/gen-jwt-keypair.sh` and `scripts/gen-service-secret.sh`.
 - Compose project `p16new` (new), `p16old` (old main). Images built one at a time. No GHCR access: `docker compose pull` was replaced by a shim (`DOCKER=` for `deploy-service.sh`) that adds `--ignore-pull-failures`; a missing local image still fails at `up`.
 - R2: a node S3-compatible stub (`r2stub`, logs method/path/status only) added through a scratch `docker-compose.override.yml`. Turnstile: Cloudflare always-pass test secret (`1x000...AA`), token `XXXX.DUMMY.TOKEN.XXXX`. Mail: `MAIL_TRANSPORT=json`.
 - Smoke accounts: registered through the API, verified by SQL (`UPDATE auth."User" SET "isVerified"=true`, the runbook appendix allows it because the mail templates are missing, F1), TEACHER set through `PUT /api/v1/admin/roles/users/:id/role`.
 - Load: a node fixed-rate GET generator (`k6` is not installed); socket.io probe on `/ws/study` (joined to a room).
-- Deviations from the runbook text: the FE port is pinned to `127.0.0.1:6368` in the scratch copy (F11); the admin password was not changed (step 9); the in-container file `/tmp/restore.dump` was left in `examio-postgres` (see the refused command below), removed with the container at teardown.
+- Deviations from the runbook text: the FE port is pinned to `127.0.0.1:6368` in the scratch copy (F11); the admin password was not changed (step 9); the in-container file `/tmp/restore.dump` was left in `kmaedu-postgres` (see the refused command below), removed with the container at teardown.
 
 ## Stage 1: static
 
@@ -35,12 +35,12 @@ Carried fixes checked statically: `libs/redis` has no `ioredis/` deep import (gr
 
 ## Stage 2: images
 
-Built one at a time, `docker build -f deploy/Dockerfile.node --build-arg SERVICE=<dir> -t ghcr.io/cychipo/examio-<key>:p16t .`, then ai, then FE.
+Built one at a time, `docker build -f deploy/Dockerfile.node --build-arg SERVICE=<dir> -t ghcr.io/tgiap04/kmaedu-<key>:p16t .`, then ai, then FE.
 
 | Image | Size (bytes) | Note |
 |---|---|---|
-| examio-admin / ai-chat / assessment / auth / content / document / finance / gateway / r2 / study-room / vocabulary | 176.3 to 176.6 MB each (about 168 MiB) | target < 250 MB met |
-| examio-ai (`apps/ai-service/Dockerfile`) | 477049061 (about 455 MiB) | |
+| kmaedu-admin / ai-chat / assessment / auth / content / document / finance / gateway / r2 / study-room / vocabulary | 176.3 to 176.6 MB each (about 168 MiB) | target < 250 MB met |
+| kmaedu-ai (`apps/ai-service/Dockerfile`) | 477049061 (about 455 MiB) | |
 | p16new-frontend (FE, `VITE_API_URL=/api/v1`, Turnstile test key) | 28357825 (about 27 MiB) | |
 
 The first Node build pass used the working-tree context, where `migration.sql` is mode 0600 (F2). The Node images were rebuilt from a normalized context (`a+r`, execute bits kept), the same as a clean checkout. The reconciled rows say so.
@@ -54,11 +54,11 @@ The first Node build pass used the working-tree context, where `migration.sql` i
 | 6 `<svc>-migrate` x10 in order | 0 | all exit 0 (second pass on the rebuilt stack too) |
 | 7 `ROLE=seed SEED_PROFILE=prod` admin, vocabulary, ai-chat | 0 | `admin.PageFeatureFlag` = 9 rows |
 | 8 `deploy-service.sh` auth, finance, r2, admin, content, assessment, study-room, vocabulary, document, ai-chat, ai, gateway | 0 | auth first, gateway last (runbook order, not the wave order, F10) |
-| 8 FE `docker compose up --wait` on `examio-edge` | 0 | FE healthy |
+| 8 FE `docker compose up --wait` on `kmaedu-edge` | 0 | FE healthy |
 | 9 admin sync (ADMIN_EMAILS) | - | `sync complete: total=1 created=1 errors=0` |
 | 10 `yarn smoke:cutover` | 0 | 18 PASS, 0 FAIL (run on the first stack and again after the rebuild from empty volumes) |
 
-`docker compose ps` (rebuilt stack): all 17 running containers `healthy`, including `ai-worker` (heartbeat) and `rabbitmq-defs` `Exited (0)`. Published host ports: only `examio-frontend 127.0.0.1:6368->80`; backend containers show exposed ports only.
+`docker compose ps` (rebuilt stack): all 17 running containers `healthy`, including `ai-worker` (heartbeat) and `rabbitmq-defs` `Exited (0)`. Published host ports: only `kmaedu-frontend 127.0.0.1:6368->80`; backend containers show exposed ports only.
 
 Memory (first stack, `docker stats --no-stream`): gateway-a 65 MiB / 256 MiB, gateway-b 59 MiB / 256 MiB, ai 427 MiB / 1.5 GiB, ai-worker 120 MiB / 2 GiB, content 84 MiB / 512 MiB, auth 106 MiB / 512 MiB, postgres 90 MiB / 1 GiB, rabbitmq 89 MiB / 512 MiB. The sum is about 1.7 GiB.
 
@@ -66,7 +66,7 @@ Memory (first stack, `docker stats --no-stream`): gateway-a 65 MiB / 256 MiB, ga
 
 | Test | Exit | Result |
 |---|---|---|
-| Single-service redeploy: `vocabulary p16t2` | 0 | Only `examio-vocabulary` changed `StartedAt` (line 18 of 19). The other 18 containers unchanged. `VOCABULARY_TAG` pinned to `p16t2`. |
+| Single-service redeploy: `vocabulary p16t2` | 0 | Only `kmaedu-vocabulary` changed `StartedAt` (line 18 of 19). The other 18 containers unchanged. `VOCABULARY_TAG` pinned to `p16t2`. |
 | Failing migrate: `content p16bad` (migration `29990101000000_p16t_broken`, invalid SQL) | 1 | P3018. Alert text "migrate failed ... previous image p16t still running". `CONTENT_TAG` restored to `p16t`. Content `StartedAt` 14:30:58.908 unchanged, still healthy. |
 | P3009 halt: `content p16t` after the failed row exists | 1 | P3009 detected; alert "manual resolution ... required"; content still running. The failed row was then deleted by hand (the README's manual step; the script never resolves). |
 | Gateway rollout run 1 (`p16t2`, default rateLimit) | 0 | Load invalid (F5): 6821 of 7500 were 429. Window 14:38:00 to 14:38:43 UTC: 2150 requests, 117 2xx, 2033 429. Zero 5xx, zero transport errors. Socket: disconnect 14:38:37.824, reconnect 14:38:38.476 (0.65 s). |
@@ -99,7 +99,7 @@ Missing env file: `env/finance.env` moved aside, `docker compose config --quiet`
 | Old stack from `git archive main` built one service per command (`docker compose -p p16old build <svc>`, 9 images) | 0 | `ai` 267 s, `gateway` 135 s, rest 30 s |
 | Old stack up | 1 then 0 | `up -d --wait` exits 1 on main (F8), `up -d` converges. Old finance initially crashed on `JWT_SECRET` too short (throwaway secret, harness). |
 | Sample data on old: register (201), verify (SQL), login (201), `POST /api/v1/quizsets` (201), list (count 1, title present) | 0 | via old gateway port 6369 |
-| Step 1 `pg_dump -Fc` | 0 | `examio-pre-cutover-20261027-2205.dump`, 133151 bytes |
+| Step 1 `pg_dump -Fc` | 0 | `kmaedu-pre-cutover-20261027-2205.dump`, 133151 bytes |
 | Step 1 `pg_restore --list` on the copied file | 0 | TOC 307 entries, 98 TABLE, `QuizSet` data present (the stdin variant printed only the header and is excluded) |
 | Step 1 `:pre-cutover` tags on 9 old app images | 0 | same image ids as `:latest` |
 | Step 2 drain check | 0 | no queues with messages |
@@ -117,18 +117,18 @@ Severity: Blocker (cutover cannot succeed), High, Medium, Low, Info.
 
 | ID | Severity | Where | What | Repro |
 |---|---|---|---|---|
-| F1 | Blocker | `examio-be/deploy/Dockerfile.node:101-105` (runtime-core copies `dist`, `libs`, tsconfig, `stage`; not `templates/`). `examio-be/libs/common/src/services/mail.service.ts:15-20` looks for `process.cwd()/templates/<name>.ejs`. HEAD `deploy/Dockerfile` has the same gap; `main`'s root `Dockerfile:77` had `COPY templates ./templates`. | Every image sends mail through `MailService`, which cannot find `welcome`, `verify-account`, `reset-password`, `change-password` templates. Register still returns 201, so the failure is silent to the caller. Users cannot verify or reset accounts in production. | `POST /api/v1/auth/register` then `docker logs examio-auth \| grep "Template not found"` ("welcome.template.ejs. Tried paths: /app/templates/..."). `docker run --rm --entrypoint sh ghcr.io/cychipo/examio-auth:p16t -c 'ls /app/templates'` gives "No such file". |
-| F2 | Medium | `examio-be/deploy/Dockerfile.node:58-66` (`stage-service` `cp -r` keeps the source mode). | The build copies context modes verbatim. On this laptop `migration.sql` is `-rw-------` (git index says 100644). The image keeps `root:root 0600`, `USER node` cannot read it, and `prisma migrate deploy` reports P3015 "Could not find the migration file" (misleading). A clean checkout is not affected. Fix: `COPY --chmod=a+rX` or `RUN chmod -R a+rX` in the stage step. | `docker run --rm --user node --entrypoint sh ghcr.io/cychipo/examio-auth:<image-from-0600-context> -c 'head -c1 /app/apps/auth-service/prisma/migrations/*/migration.sql'` -> Permission denied (repro on the first build, now replaced). |
-| F3 | High | `examio-be/apps/ai-service/src/backend/messaging/consumer.py:74-76` (`is_connected` = `connection is not None and not connection.is_closed`); `worker.py:59` (heartbeat gated on it); `heartbeat.py` (touches the file every 30 s while healthy). | aio-pika `connect_robust` keeps `is_closed` False while it retries. During a broker outage the heartbeat keeps refreshing, so the compose healthcheck (`find ... -mmin -2`) never fails. The carried-fix acceptance ("turns unhealthy when the broker is stopped") fails. | `docker stop examio-rabbitmq`; `docker inspect -f '{{.State.Health.Status}}' examio-ai-worker` stays `healthy` for 3.5 min (14:47:38 to 14:51:11); `docker logs examio-ai-worker` shows "Name or service not known" retries. |
-| F4 | Medium | `examio-fe/nginx.conf:68-69` (`proxy_next_upstream error timeout http_502 http_503`, retries only upstream errors), `examio-be/deploy/compose/gateway.yml` (`stop_grace_period` / recreate). | One client-visible `socket hang up` on a GET during gateway-a recreate and nginx reload (run 2, 14:41:51Z). Not a 5xx. Likely an idle keep-alive connection closed by nginx during reload (client keep-alive race) but not proven. Run 1 had 0 transport errors, so this is intermittent. Criterion 6 literal ("0 non-2xx") is not met. | `node loadgen.cjs` at 50 rps for 150 s with `./deploy-service.sh gateway <tag>` at t+15 s; count `ERR:` rows in the load log. Reproduced 1 in 2 runs. |
-| F5 | Medium | `examio-be/apps/gateway-service/config/routes.yaml:262` (`defaultRateLimit` 100 per 60 s per client IP; `rateLimits` entries for `status`/`config-pages`/`auth/me` fall through to it). `apps/gateway-service/src/pipeline/guard-chain.ts:86` (deny path). | A single-IP load test cannot exceed 100 requests/min without 429. Denials are not logged by the request logger (gateway logs had 0 `statusCode":429` lines while clients saw 429). After raising the default in a scratch image, 429s still appeared at a steady ~16 to 17/s through the rollout and stopped after the load. Source not attributed (OPEN). | `for i in $(seq 1 400); do curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:6368/api/v1/status; done \| sort \| uniq -c` (default image: 429 after about 100). |
-| F6 | Medium | `examio-be/deploy/cutover-runbook.md:68` (and the step 0/`.env` sourcing guidance). `examio-be/scripts/gen-jwt-keypair.sh:32` (prints `JWT_PRIVATE_KEY=-----BEGIN ...` unquoted). | `set -a; . ./.env; set +a` fails on the unquoted PEM line: `./.env: line 27: PRIVATE: command not found`. Compose parses the file fine, but the runbook's shell sourcing breaks in the middle of the cutover. | `bash -c 'set -a; . ./.env'` in the deploy dir with a generated key. Fix: quote the value in `gen-jwt-keypair.sh` output, or use `docker compose config --variables`/`--env-file` in the runbook. |
-| F7 | Low | `examio-be/deploy/cutover-runbook.md:89` (step 3) and the Rollback section (`docker volume rm deploy_postgres_data ...`). | Volume names carry the compose project name, not `deploy_` unless the checkout directory is named `deploy`. Rehearsal volumes were `p16old_*` and `p16new_*`. | `docker volume ls --format '{{.Name}}' \| grep -E 'postgres_data\|redis_data\|rabbitmq_data'`. Fix: derive the names from `docker volume ls` or `COMPOSE_PROJECT_NAME`. |
-| F8 | Low | main's `deploy/docker-compose.yml` (old stack, `examio-migration` and `examio-seed` one-shots). | `docker compose up -d --wait` exits 1 because the one-shots exit 0 (`container examio-seed exited (0)`). `up -d` converges. The new stack is unaffected (`run --rm`). Only matters if the old runbook is reused. | `COMPOSE_PROJECT_NAME=p16old docker compose up -d --wait` (exit 1); `... up -d` (exit 0, all healthy). |
-| F9 | Low | `CLAUDE.md` (examio-be notes, "Rate limit 6 tin/phút gói Free") vs `examio-be/apps/ai-chat-service/src/config/ai-chat.constants.ts:33` (`messagesPerMinute: 5`). | Doc says 6, code and the live 429 text say 5. | Send 6 messages as a teacher: 5 x 201, 6th 429. |
-| F10 | Low | `examio-be/scripts/changed-services.sh:100-101` (alphabetical sort, gateway last). | Runbook step 8 says auth first; the wave output starts with `admin`. The automated push deploy would start `admin` before `auth` (runtime dependency not verified). I followed the runbook order. | `cd examio-be && scripts/changed-services.sh "" HEAD` -> `"wave2":["admin","ai",...,"auth",...,"gateway"]`. |
-| F11 | Low | `examio-fe/docker-compose.yml:21` (`'${FE_PORT:-6368}:80'` binds all interfaces). | The phase says only the FE publishes a port; the default binds 0.0.0.0, so the FE is reachable on the VPS address without Cloudflare. Scratch copy pinned to 127.0.0.1. | `docker ps --format '{{.Ports}}'` shows `0.0.0.0:6368->80/tcp` with the unchanged file. |
-| F12 | Low | `examio-be/dist/apps/` (`exam-service`, `codecraft-be`, `ocr-service` stale output) | `build:all` does not clean `dist`. Carried item U1. No effect on the Dockerfile (it copies one service dir). | `ls examio-be/dist/apps`. |
+| F1 | Blocker | `kmaedu-be/deploy/Dockerfile.node:101-105` (runtime-core copies `dist`, `libs`, tsconfig, `stage`; not `templates/`). `kmaedu-be/libs/common/src/services/mail.service.ts:15-20` looks for `process.cwd()/templates/<name>.ejs`. HEAD `deploy/Dockerfile` has the same gap; `main`'s root `Dockerfile:77` had `COPY templates ./templates`. | Every image sends mail through `MailService`, which cannot find `welcome`, `verify-account`, `reset-password`, `change-password` templates. Register still returns 201, so the failure is silent to the caller. Users cannot verify or reset accounts in production. | `POST /api/v1/auth/register` then `docker logs kmaedu-auth \| grep "Template not found"` ("welcome.template.ejs. Tried paths: /app/templates/..."). `docker run --rm --entrypoint sh ghcr.io/tgiap04/kmaedu-auth:p16t -c 'ls /app/templates'` gives "No such file". |
+| F2 | Medium | `kmaedu-be/deploy/Dockerfile.node:58-66` (`stage-service` `cp -r` keeps the source mode). | The build copies context modes verbatim. On this laptop `migration.sql` is `-rw-------` (git index says 100644). The image keeps `root:root 0600`, `USER node` cannot read it, and `prisma migrate deploy` reports P3015 "Could not find the migration file" (misleading). A clean checkout is not affected. Fix: `COPY --chmod=a+rX` or `RUN chmod -R a+rX` in the stage step. | `docker run --rm --user node --entrypoint sh ghcr.io/tgiap04/kmaedu-auth:<image-from-0600-context> -c 'head -c1 /app/apps/auth-service/prisma/migrations/*/migration.sql'` -> Permission denied (repro on the first build, now replaced). |
+| F3 | High | `kmaedu-be/apps/ai-service/src/backend/messaging/consumer.py:74-76` (`is_connected` = `connection is not None and not connection.is_closed`); `worker.py:59` (heartbeat gated on it); `heartbeat.py` (touches the file every 30 s while healthy). | aio-pika `connect_robust` keeps `is_closed` False while it retries. During a broker outage the heartbeat keeps refreshing, so the compose healthcheck (`find ... -mmin -2`) never fails. The carried-fix acceptance ("turns unhealthy when the broker is stopped") fails. | `docker stop kmaedu-rabbitmq`; `docker inspect -f '{{.State.Health.Status}}' kmaedu-ai-worker` stays `healthy` for 3.5 min (14:47:38 to 14:51:11); `docker logs kmaedu-ai-worker` shows "Name or service not known" retries. |
+| F4 | Medium | `kmaedu-fe/nginx.conf:68-69` (`proxy_next_upstream error timeout http_502 http_503`, retries only upstream errors), `kmaedu-be/deploy/compose/gateway.yml` (`stop_grace_period` / recreate). | One client-visible `socket hang up` on a GET during gateway-a recreate and nginx reload (run 2, 14:41:51Z). Not a 5xx. Likely an idle keep-alive connection closed by nginx during reload (client keep-alive race) but not proven. Run 1 had 0 transport errors, so this is intermittent. Criterion 6 literal ("0 non-2xx") is not met. | `node loadgen.cjs` at 50 rps for 150 s with `./deploy-service.sh gateway <tag>` at t+15 s; count `ERR:` rows in the load log. Reproduced 1 in 2 runs. |
+| F5 | Medium | `kmaedu-be/apps/gateway-service/config/routes.yaml:262` (`defaultRateLimit` 100 per 60 s per client IP; `rateLimits` entries for `status`/`config-pages`/`auth/me` fall through to it). `apps/gateway-service/src/pipeline/guard-chain.ts:86` (deny path). | A single-IP load test cannot exceed 100 requests/min without 429. Denials are not logged by the request logger (gateway logs had 0 `statusCode":429` lines while clients saw 429). After raising the default in a scratch image, 429s still appeared at a steady ~16 to 17/s through the rollout and stopped after the load. Source not attributed (OPEN). | `for i in $(seq 1 400); do curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:6368/api/v1/status; done \| sort \| uniq -c` (default image: 429 after about 100). |
+| F6 | Medium | `kmaedu-be/deploy/cutover-runbook.md:68` (and the step 0/`.env` sourcing guidance). `kmaedu-be/scripts/gen-jwt-keypair.sh:32` (prints `JWT_PRIVATE_KEY=-----BEGIN ...` unquoted). | `set -a; . ./.env; set +a` fails on the unquoted PEM line: `./.env: line 27: PRIVATE: command not found`. Compose parses the file fine, but the runbook's shell sourcing breaks in the middle of the cutover. | `bash -c 'set -a; . ./.env'` in the deploy dir with a generated key. Fix: quote the value in `gen-jwt-keypair.sh` output, or use `docker compose config --variables`/`--env-file` in the runbook. |
+| F7 | Low | `kmaedu-be/deploy/cutover-runbook.md:89` (step 3) and the Rollback section (`docker volume rm deploy_postgres_data ...`). | Volume names carry the compose project name, not `deploy_` unless the checkout directory is named `deploy`. Rehearsal volumes were `p16old_*` and `p16new_*`. | `docker volume ls --format '{{.Name}}' \| grep -E 'postgres_data\|redis_data\|rabbitmq_data'`. Fix: derive the names from `docker volume ls` or `COMPOSE_PROJECT_NAME`. |
+| F8 | Low | main's `deploy/docker-compose.yml` (old stack, `kmaedu-migration` and `kmaedu-seed` one-shots). | `docker compose up -d --wait` exits 1 because the one-shots exit 0 (`container kmaedu-seed exited (0)`). `up -d` converges. The new stack is unaffected (`run --rm`). Only matters if the old runbook is reused. | `COMPOSE_PROJECT_NAME=p16old docker compose up -d --wait` (exit 1); `... up -d` (exit 0, all healthy). |
+| F9 | Low | `CLAUDE.md` (kmaedu-be notes, "Rate limit 6 tin/phút gói Free") vs `kmaedu-be/apps/ai-chat-service/src/config/ai-chat.constants.ts:33` (`messagesPerMinute: 5`). | Doc says 6, code and the live 429 text say 5. | Send 6 messages as a teacher: 5 x 201, 6th 429. |
+| F10 | Low | `kmaedu-be/scripts/changed-services.sh:100-101` (alphabetical sort, gateway last). | Runbook step 8 says auth first; the wave output starts with `admin`. The automated push deploy would start `admin` before `auth` (runtime dependency not verified). I followed the runbook order. | `cd kmaedu-be && scripts/changed-services.sh "" HEAD` -> `"wave2":["admin","ai",...,"auth",...,"gateway"]`. |
+| F11 | Low | `kmaedu-fe/docker-compose.yml:21` (`'${FE_PORT:-6368}:80'` binds all interfaces). | The phase says only the FE publishes a port; the default binds 0.0.0.0, so the FE is reachable on the VPS address without Cloudflare. Scratch copy pinned to 127.0.0.1. | `docker ps --format '{{.Ports}}'` shows `0.0.0.0:6368->80/tcp` with the unchanged file. |
+| F12 | Low | `kmaedu-be/dist/apps/` (`exam-service`, `codecraft-be`, `ocr-service` stale output) | `build:all` does not clean `dist`. Carried item U1. No effect on the Dockerfile (it copies one service dir). | `ls kmaedu-be/dist/apps`. |
 | F13 | Info | `.github/workflows/ci.yml` | actionlint exit 1 with 12 pre-existing shellcheck findings (same as HEAD, line numbers moved). `deploy.yml` now clean (HEAD had 10 SC2086). | `actionlint .github/workflows/ci.yml` on HEAD and on the working tree. |
 
 ## Excluded rows
@@ -140,7 +140,7 @@ Severity: Blocker (cutover cannot succeed), High, Medium, Low, Info.
 - `s7-old-up-all` (old finance `JWT_SECRET` too short, exit 1). Superseded by `s7-old-up-nowait.log`.
 - `s7-pg-restore-list` (stdin variant; printed only the header). Superseded by the file-based row.
 - One junk row `s7-old-sample-teacher` (no payload, no evidence).
-- Not in the raw file: a command that was refused by the Claude Code safety check. It removed `/tmp/restore.dump` inside the `examio-postgres` container (`docker exec ... rm -f`) while also restoring the dump. It was not run, so no row exists. The rest of the restore ran without the `rm`. The file was removed with the container at teardown (verified below).
+- Not in the raw file: a command that was refused by the Claude Code safety check. It removed `/tmp/restore.dump` inside the `kmaedu-postgres` container (`docker exec ... rm -f`) while also restoring the dump. It was not run, so no row exists. The rest of the restore ran without the `rm`. The file was removed with the container at teardown (verified below).
 
 ## Not run / deliberate gaps
 
@@ -155,13 +155,13 @@ Severity: Blocker (cutover cannot succeed), High, Medium, Low, Info.
 - amd64: images were built and run on the host architecture only.
 - Telegram alerts: no credentials, so the alert text was checked in the logs only.
 - Changed-services selection on live commits: fixtures only (`changed-services.test.sh`), not a live diff.
-- Real repo side effects (gitignored, not product code): `yarn build:all` rewrote `examio-be/dist`; `yarn proto:gen` regenerated `libs/contracts/src/generated`. No tracked file was edited, and no git stash/checkout/reset/restore.
+- Real repo side effects (gitignored, not product code): `yarn build:all` rewrote `kmaedu-be/dist`; `yarn proto:gen` regenerated `libs/contracts/src/generated`. No tracked file was edited, and no git stash/checkout/reset/restore.
 
 ## Teardown proof
 
-- Old stack: `COMPOSE_PROJECT_NAME=p16old docker compose down -v --remove-orphans` (exit 0): removed `p16old_postgres_data` and `examio-network`. Its `examio-postgres` container, `/tmp/restore.dump` included, went with it.
-- Images removed by name: `ghcr.io/cychipo/examio-{admin,ai-chat,assessment,auth,content,document,finance,gateway,r2,study-room,vocabulary,ai}:p16t`, `examio-gateway:p16t2`, `examio-gateway:p16t3`, `examio-vocabulary:p16t2`, `examio-content:p16bad`, `p16new-frontend:latest`, `p16old-*:latest` and `p16old-*:pre-cutover` (9 each). Base images were kept (`redis:7-alpine`, `pgvector/pgvector:pg16`, `rabbitmq:3.12/3.13-management-alpine`, `node:22-alpine`); they predate this run.
-- After teardown: `docker images | grep -E 'p16|examio'` empty; `docker ps -a | grep -E 'p16|examio'` empty; `docker volume ls | grep -E 'p16|examio'` empty; `docker network ls | grep -E 'p16|examio'` empty.
+- Old stack: `COMPOSE_PROJECT_NAME=p16old docker compose down -v --remove-orphans` (exit 0): removed `p16old_postgres_data` and `kmaedu-network`. Its `kmaedu-postgres` container, `/tmp/restore.dump` included, went with it.
+- Images removed by name: `ghcr.io/tgiap04/kmaedu-{admin,ai-chat,assessment,auth,content,document,finance,gateway,r2,study-room,vocabulary,ai}:p16t`, `kmaedu-gateway:p16t2`, `kmaedu-gateway:p16t3`, `kmaedu-vocabulary:p16t2`, `kmaedu-content:p16bad`, `p16new-frontend:latest`, `p16old-*:latest` and `p16old-*:pre-cutover` (9 each). Base images were kept (`redis:7-alpine`, `pgvector/pgvector:pg16`, `rabbitmq:3.12/3.13-management-alpine`, `node:22-alpine`); they predate this run.
+- After teardown: `docker images | grep -E 'p16|kmaedu'` empty; `docker ps -a | grep -E 'p16|kmaedu'` empty; `docker volume ls | grep -E 'p16|kmaedu'` empty; `docker network ls | grep -E 'p16|kmaedu'` empty.
 - Scratch copies deleted with literal absolute paths (`stack`, `old`, `ctx`, `dump`, `headwf`, `bad`, the two cookie files, `old-pw.txt`). Logs (`logs/`), harness scripts (`bin/`) and `findings.txt` are kept under the scratch root; they hold no secrets (values were never printed).
 - No background processes left (`pgrep` for socketprobe, loadgen, r2stub, builds, docker-shim: none).
 
@@ -201,10 +201,10 @@ Goal: prove the phase-16 gateway rollout causes no client-visible error after th
 
 ### Method
 
-- Scratch only: `scratchpad/p16t/p16r/{be,fe}` copies of the working trees (`git ls-files -co --exclude-standard`: 1472 be files, 555 fe files; `find` confirms no `.env` file copied). Real `examio-be/deploy` and `examio-fe` were never composed and no real `.env` was opened.
-- `deploy-service.test.sh` ran in the real `examio-be` directory (fake docker and curl): exit 0, 53 checks passed.
+- Scratch only: `scratchpad/p16t/p16r/{be,fe}` copies of the working trees (`git ls-files -co --exclude-standard`: 1472 be files, 555 fe files; `find` confirms no `.env` file copied). Real `kmaedu-be/deploy` and `kmaedu-fe` were never composed and no real `.env` was opened.
+- `deploy-service.test.sh` ran in the real `kmaedu-be` directory (fake docker and curl): exit 0, 53 checks passed.
 - Images, one at a time from the copy: gateway (`p16r`, re-tagged `p16r2`), auth, admin, study-room, FE (`p16r-frontend`). All build exit 0. No `fork failed`.
-- Env: `ci-dummy.env.sh` and `mkenv.cjs` (throwaway values). `POSTGRES_USER`/`POSTGRES_DB` set to `examio`. FE port pinned to `127.0.0.1:6368` in the scratch copy (F11).
+- Env: `ci-dummy.env.sh` and `mkenv.cjs` (throwaway values). `POSTGRES_USER`/`POSTGRES_DB` set to `kmaedu`. FE port pinned to `127.0.0.1:6368` in the scratch copy (F11).
 - Stack (project `p16r`): infra `--wait`; `auth-migrate`, `admin-migrate`, `study-room-migrate` exit 0; `up --no-deps --wait` for auth, admin, study-room, gateway-a, gateway-b, FE. Admin served page flags to the gateway at boot.
 - Accounts: teacher and student registered via `/api/v1/auth/register` (201), verified by SQL, teacher role set by SQL (`auth."User".role`; deviation: admin UI not used). Login 201, room created 201, student join 201.
 - Rollout: `COMPOSE_PROJECT_NAME=p16r DOCKER=docker-shim.sh bash deploy-service.sh gateway <tag>`. The shim adds `--ignore-pull-failures` (GHCR unreachable, as in stage 4). Tags alternated `p16r2` and `p16r`, so each run recreated both instances.
@@ -231,7 +231,7 @@ Goal: prove the phase-16 gateway rollout causes no client-visible error after th
 ### Positive control (not part of the verdict)
 
 Same load and socket, but `nginx -s reload` x3 at 16:00:19, 16:00:49 and 16:01:19 instead of a deploy (`bash control-reload-run.sh`, exit 0).
-- The reloads appear in `docker logs examio-frontend` as `[notice] signal 1 (SIGHUP) received ... reconfiguring` (3 lines). The default `error_log` level is `notice`, so the reload check is valid. Runs 1 to 4: 0 such lines.
+- The reloads appear in `docker logs kmaedu-frontend` as `[notice] signal 1 (SIGHUP) received ... reconfiguring` (3 lines). The default `error_log` level is `notice`, so the reload check is valid. Runs 1 to 4: 0 such lines.
 - One client `socket hang up` on `GET /api/v1/status` at 16:00:49.345Z, at reload 2. This is the client-visible reset that F4 suspected, so the harness does detect it.
 - Confound: 2002 `401` responses from access-token expiry at 16:01:24.046Z (15:00 after the 15:46:24Z login), and a server-side `auth:reauth` socket disconnect at the same time. The control's socket reconnect data is not usable.
 
@@ -239,18 +239,18 @@ Same load and socket, but `nginx -s reload` x3 at 16:00:19, 16:00:49 and 16:01:1
 
 - Acceptance "0 client transport errors and 0 5xx/502/503 caused by the rollout": PASS in 4 of 4 runs.
 - Socket reconnect at most 10 s: PASS (max 754 ms).
-- `docker logs examio-frontend` shows no reload signal during the rollout: PASS (0 SIGHUP lines in runs 1 to 4; PID check for run 4).
+- `docker logs kmaedu-frontend` shows no reload signal during the rollout: PASS (0 SIGHUP lines in runs 1 to 4; PID check for run 4).
 - Limits of this evidence: 4 clean runs are consistent with the fix. They do not prove the event is gone. F4 was seen once in 2 earlier runs, so 4 clean runs would miss it about 1 time in 16 if the rate were still 1 in 2. See F15 and F17 below.
 
 ### Teardown proof
 
 - Before: 10 `p16r` containers (9 running, `rabbitmq-defs` exited 0).
 - `docker compose -p p16r -f docker-compose.yml down -v --remove-orphans` in the scratch FE dir: exit 0. Same in the scratch backend deploy dir (`--env-file .env --env-file .tags.env`): exit 0.
-- `docker rmi` by name: `examio-gateway:p16r`, `examio-gateway:p16r2`, `examio-auth:p16r`, `examio-admin:p16r`, `examio-study-room:p16r`, `p16r-frontend:latest`: exit 0.
+- `docker rmi` by name: `kmaedu-gateway:p16r`, `kmaedu-gateway:p16r2`, `kmaedu-auth:p16r`, `kmaedu-admin:p16r`, `kmaedu-study-room:p16r`, `p16r-frontend:latest`: exit 0.
 - After, each filter empty:
-  - containers, label `com.docker.compose.project=p16r`: empty. Name `p16r`: empty. Names `examio-(frontend|gateway-a|gateway-b|auth|admin|study-room|postgres|redis|rabbitmq|rabbitmq-defs)`: empty.
+  - containers, label `com.docker.compose.project=p16r`: empty. Name `p16r`: empty. Names `kmaedu-(frontend|gateway-a|gateway-b|auth|admin|study-room|postgres|redis|rabbitmq|rabbitmq-defs)`: empty.
   - volumes, label and name `p16r`: empty.
-  - networks, label and name (`p16r`, `examio-edge`, `examio-internal`, `examio-egress`): empty.
+  - networks, label and name (`p16r`, `kmaedu-edge`, `kmaedu-internal`, `kmaedu-egress`): empty.
   - images, reference `*p16r*` and the six tags above: empty. Dangling images: 0.
 - Scratch copies removed by literal path: `.../scratchpad/p16t/p16r` (be and fe copies, deploy env with throwaway secrets, cookie files, room id). `ls` reports no such file. Harness scripts and logs are kept under `.../scratchpad/p16t/` (cookie values were written only to the removed directory and never printed).
 - Background processes: `pgrep` for loadgen, socketprobe, rollout-run, control-reload-run, deploy-service, docker-shim, session.cjs, room.cjs: none.
@@ -260,10 +260,10 @@ Same load and socket, but `nginx -s reload` x3 at 16:00:19, 16:00:49 and 16:01:1
 
 | ID | Severity | Where | What | Evidence |
 |---|---|---|---|---|
-| F14 | Low | `examio-fe/nginx.conf:17-20` (upstream `gw`, `resolve`, `fail_timeout=5s`) | Each gateway instance stop costs nginx 7 to 12 `[error] connect() failed (111)` plus `[warn] upstream server temporarily disabled` lines, while the cached address still points at the stopped container (`resolver valid=5s`). Clients see nothing (retried internally). Log noise only. A drain before stop would remove it. | `grep -c 'connect() failed' scratchpad/p16t/logs/f4-run{1..4}-fe.log` = 7, 12, 7, 7 |
-| F15 | Medium (test design) | `examio-be/apps/gateway-service/config/routes.yaml:262` (`defaultRateLimit: { window: 60s, max: 100 }`) | One client IP means about 93% of requests are 429. The 2xx path during the rollout window is sampled by only 117 to 160 requests per run. The zero-error verdict is strong for transport errors (all requests counted) but thin for the 2xx path. Fix: a scratch image or config with a higher limit for a 2xx-dominant pass. | In-window 2xx counts above |
-| F16 | Low (harness) | `examio-be/apps/study-room-service/src/modules/study-room/study-room.gateway.ts:223`; `study-room.events.ts:96` | The probe waited for `room:joined`, which the server never emits. The server confirms a join with `room:snapshot`. This explains the Stage 4 "ack not observed" note. Product code is fine. | Probe rejoin now logged on every reconnect |
-| F17 | Medium (process) | `examio-be/deploy/deploy-service.sh`, `examio-be/deploy/deploy-service.test.sh` | Both are untracked (`??` in git status), so the no-reload rollout and its test are not in any commit. `examio-fe/nginx.conf` is modified and not committed either. The claim cannot be verified from history or CI until these are committed. | `git status --short -- deploy/deploy-service.sh deploy/deploy-service.test.sh` |
+| F14 | Low | `kmaedu-fe/nginx.conf:17-20` (upstream `gw`, `resolve`, `fail_timeout=5s`) | Each gateway instance stop costs nginx 7 to 12 `[error] connect() failed (111)` plus `[warn] upstream server temporarily disabled` lines, while the cached address still points at the stopped container (`resolver valid=5s`). Clients see nothing (retried internally). Log noise only. A drain before stop would remove it. | `grep -c 'connect() failed' scratchpad/p16t/logs/f4-run{1..4}-fe.log` = 7, 12, 7, 7 |
+| F15 | Medium (test design) | `kmaedu-be/apps/gateway-service/config/routes.yaml:262` (`defaultRateLimit: { window: 60s, max: 100 }`) | One client IP means about 93% of requests are 429. The 2xx path during the rollout window is sampled by only 117 to 160 requests per run. The zero-error verdict is strong for transport errors (all requests counted) but thin for the 2xx path. Fix: a scratch image or config with a higher limit for a 2xx-dominant pass. | In-window 2xx counts above |
+| F16 | Low (harness) | `kmaedu-be/apps/study-room-service/src/modules/study-room/study-room.gateway.ts:223`; `study-room.events.ts:96` | The probe waited for `room:joined`, which the server never emits. The server confirms a join with `room:snapshot`. This explains the Stage 4 "ack not observed" note. Product code is fine. | Probe rejoin now logged on every reconnect |
+| F17 | Medium (process) | `kmaedu-be/deploy/deploy-service.sh`, `kmaedu-be/deploy/deploy-service.test.sh` | Both are untracked (`??` in git status), so the no-reload rollout and its test are not in any commit. `kmaedu-fe/nginx.conf` is modified and not committed either. The claim cannot be verified from history or CI until these are committed. | `git status --short -- deploy/deploy-service.sh deploy/deploy-service.test.sh` |
 | F18 | Info | auth access token | 15 min TTL confirmed (401 at login plus 15:00). Long socket or load runs must re-login. | Control 401 at 16:01:24.046Z |
 
 ### Status
@@ -286,7 +286,7 @@ Tester row 172 (the run with one hang-up, made while the script still reloaded n
 The user chose a host reverse proxy (nginx/Caddy) in front of the FE container.
 
 Changes:
-- `examio-fe/docker-compose.yml` publishes `${FE_BIND:-127.0.0.1}:${FE_PORT:-6368}`.
+- `kmaedu-fe/docker-compose.yml` publishes `${FE_BIND:-127.0.0.1}:${FE_PORT:-6368}`.
 - `nginx/cloudflare-real-ip.conf` also trusts `CF-Connecting-IP` from the Docker private ranges.
 - The runbook's step 0 requires that the host proxy accepts Cloudflare addresses only.
 

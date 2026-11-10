@@ -6,9 +6,9 @@
 Thêm một cột nullable lưu nguồn first-touch trên bảng `User`. Nền tảng cho mọi phase sau.
 
 ## Related Code Files
-- Modify: `examio-be/libs/database/src/schema.prisma` (hoặc file model chứa `model User` — xác nhận
+- Modify: `kmaedu-be/libs/database/src/schema.prisma` (hoặc file model chứa `model User` — xác nhận
   vị trí thực; scan trước đó chỉ ra `model User` ~dòng 404-435 trong schema dùng chung).
-- Create: file migration Prisma dưới `examio-be/libs/database/**/migrations/`.
+- Create: file migration Prisma dưới `kmaedu-be/libs/database/**/migrations/`.
 
 ## Implementation Steps
 1. Thêm vào `model User`:

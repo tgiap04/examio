@@ -18,7 +18,7 @@ Tags: [V] verified this session, [K] standard knowledge not re-verified, [?] nee
 Corrections to ARCHITECTURE.md:
 1. §6.2 `outputServices=grpc-js, nestJs=true`: drop `outputServices` (ignored).
 2. §10.2 "bundle webpack": default Nest webpack does not bundle node_modules; need custom config, else image carries ALL root deps.
-3. §10.1 gateway `ports: 6369:3000` blocks 2 replicas; §4.1 says nginx (in examio-fe) fronts it => drop host port.
+3. §10.1 gateway `ports: 6369:3000` blocks 2 replicas; §4.1 says nginx (in kmaedu-fe) fronts it => drop host port.
 4. §7.1 `?schema=` alone insufficient at runtime with driver adapter (§1).
 5. Node 20 EOL Apr 2026 [K]: use Node 22 LTS images.
 
@@ -56,7 +56,7 @@ Gotchas
 - `migrate dev --create-only --name init` per service, commit SQL. Outbox partial index: declare plain `@@index`, hand-edit migration SQL to add `WHERE published_at IS NULL` (drift check compares columns [?]).
 - webpack: `engineType=client` => no `.node` engine, no schema copy, no `binaryTargets`. Wasm is a dynamic import => extra chunks unless `LimitChunkCountPlugin({maxChunks:1})` (§5).
 
-Generate all (~13 ms/schema [V]; gitignore `apps/*/src/generated`): script `for s in apps/*/prisma/schema.prisma; do prisma generate --schema $s || exit 1; done`. Docker build stage generates only `$SERVICE`. Delete `@examio/database` mapper in jest.config.js.
+Generate all (~13 ms/schema [V]; gitignore `apps/*/src/generated`): script `for s in apps/*/prisma/schema.prisma; do prisma generate --schema $s || exit 1; done`. Docker build stage generates only `$SERVICE`. Delete `@kmaedu/database` mapper in jest.config.js.
 
 Ranking: A > B keep `prisma-client-js` + custom output + copy engines (fallback if adapter-pg regresses) > C multiSchema (reject).
 
@@ -78,7 +78,7 @@ plugins:
 Python: do not use buf plugin (grpcio-tools ships protoc, no standalone plugin binary for buf `local`):
 ```bash
 python -m grpc_tools.protoc -I proto --python_out=src/grpc_generated --pyi_out=src/grpc_generated \
-  --grpc_python_out=src/grpc_generated $(find proto/examio -name '*.proto' -path '*ai*' -o -path '*common*')
+  --grpc_python_out=src/grpc_generated $(find proto/kmaedu -name '*.proto' -path '*ai*' -o -path '*common*')
 ```
 Alt: buf remote plugins `buf.build/protocolbuffers/python` + `buf.build/grpc/python` (network/BSR limits [?]). Gotchas: absolute imports => `src/grpc_generated` on PYTHONPATH + `__init__.py`; gencode checks protobuf runtime version => pin grpcio, grpcio-tools, protobuf together (PyPI: 1.84.0/1.84.0/7.36.2) [K]. Replace existing ad-hoc `apps/ai-service/src/backend/grpc_generated`.
 
@@ -111,8 +111,8 @@ No gzip on this route; 15 s `: hb` heartbeat; idle guard via rxjs `timeout({each
 # permissions: contents read, pull-requests write; after actions/checkout
 - uses: bufbuild/buf-action@v1
   with:
-    input: examio-be/proto
-    breaking_against: ${{ github.event.repository.clone_url }}#format=git,commit=${{ github.event.pull_request.base.sha }},subdir=examio-be/proto
+    input: kmaedu-be/proto
+    breaking_against: ${{ github.event.repository.clone_url }}#format=git,commit=${{ github.event.pull_request.base.sha }},subdir=kmaedu-be/proto
 ```
 Label `buf skip breaking` bypasses (intentional `v2` package).
 Ranking: A > B all-remote buf plugins (network dep) > C proto-loader types only (no contract typing).
@@ -139,7 +139,7 @@ Relay (worker role, ONE replica; poll 500 ms; LISTEN/NOTIFY = YAGNI):
 await prisma.$transaction(async tx => {
   const rows = await tx.$queryRaw<Row[]>`SELECT seq::text, id, type, envelope FROM outbox_events
     WHERE published_at IS NULL AND next_attempt_at <= now() ORDER BY seq LIMIT 100 FOR UPDATE SKIP LOCKED`;
-  const res = await Promise.allSettled(rows.map(r => channel.publish('examio.events', r.type, r.envelope,
+  const res = await Promise.allSettled(rows.map(r => channel.publish('kmaedu.events', r.type, r.envelope,
     { persistent: true, messageId: r.id, contentType: 'application/json', headers: { traceparent } })));
   const ok = rows.filter((_, i) => res[i].status === 'fulfilled').map(r => BigInt(r.seq));
   if (ok.length) await tx.$executeRaw`UPDATE outbox_events SET published_at = now() WHERE seq = ANY(${ok})`;
@@ -158,8 +158,8 @@ await prisma.$transaction(async tx => {
 Prune rows > 14 d (> retry horizon + DLQ replay window).
 
 Topology (declared idempotently at start; queue args MUST match between Nest and Python or PRECONDITION_FAILED => contract test; mild DRY violation, accept):
-- `examio.events`, `examio.dlx` topic durable.
-- `<svc>.events` durable: `x-dead-letter-exchange=examio.dlx`, `x-dead-letter-routing-key=<svc>.dlq`.
+- `kmaedu.events`, `kmaedu.dlx` topic durable.
+- `<svc>.events` durable: `x-dead-letter-exchange=kmaedu.dlx`, `x-dead-letter-routing-key=<svc>.dlq`.
 - Retry: one queue PER delay `<svc>.retry.10s|60s|5m`, `x-message-ttl=<tier>`, `x-dead-letter-exchange=""`, `x-dead-letter-routing-key=<svc>.events`. Per-delay queues because TTL expires only at queue head, so mixed per-message TTLs reorder [V rabbitmq ttl doc].
 - Failure: transient => publish to retry tier by `x-retry-count` (confirm) THEN ack; count>=5 or permanent => `nack(requeue=false)` => DLQ. Never `requeue=true` (hot loop [V]).
 - Manual ack after DB commit, same channel [V]. Prefetch: ARCH 10-20 right for DB-bound handlers; RabbitMQ docs say 100-300 maximizes throughput for light handlers [V]; start 10, tune.
@@ -241,8 +241,8 @@ nest-cli per project: `"webpackConfigPath": "deploy/webpack.service.js"` + `asse
 
 `Dockerfile.node` (`ARG SERVICE`): deps (`yarn install --immutable`, BuildKit cache) -> build (`yarn proto:gen`, `prisma generate --schema apps/$SERVICE/...`, `nest build $SERVICE`) -> `node:22-alpine`, copy `dist/apps/$SERVICE`, `USER node`, `HEALTHCHECK wget`, `ROLE` from env. ai-service: own Dockerfile (`python:3.12-slim`, `grpc_tools.protoc` step).
 
-GHCR/CI: `ghcr.io/<owner>/examio-<svc>:<sha>` + `:main`; `GITHUB_TOKEN` with `packages: write`; `docker/build-push-action` `cache-from/to: type=gha,scope=<svc>`.
-Change detection: existing deploy.yml diffs `github.event.before..sha` (multi-commit safe) — extend it with `scripts/changed-services.sh`, not `dorny/paths-filter@v4` (matrix from `changes` works [V] but duplicates logic). Rules: `apps/<svc>/**` -> svc; `libs/** | package.json | yarn.lock | tsconfig*.json | deploy/Dockerfile.node | deploy/webpack.service.js` -> ALL node services (KISS; narrow later via `depcruise --reaches` [?]); `proto/examio/<pkg>/**` -> servers+clients of `<pkg>` (10-line map `deploy/services.json`); `apps/ai-service/**`, `proto/examio/ai/**` -> ai-service. Emit JSON => `matrix.service: ${{ fromJSON(needs.detect.outputs.services) }}`; skip when `[]`. PR job per service: `tsc --noEmit -p apps/$SVC/tsconfig.app.json` (verify webpack build fails on type error [?]), lint, jest, `depcruise`, buf lint/breaking, e2e with service containers.
+GHCR/CI: `ghcr.io/<owner>/kmaedu-<svc>:<sha>` + `:main`; `GITHUB_TOKEN` with `packages: write`; `docker/build-push-action` `cache-from/to: type=gha,scope=<svc>`.
+Change detection: existing deploy.yml diffs `github.event.before..sha` (multi-commit safe) — extend it with `scripts/changed-services.sh`, not `dorny/paths-filter@v4` (matrix from `changes` works [V] but duplicates logic). Rules: `apps/<svc>/**` -> svc; `libs/** | package.json | yarn.lock | tsconfig*.json | deploy/Dockerfile.node | deploy/webpack.service.js` -> ALL node services (KISS; narrow later via `depcruise --reaches` [?]); `proto/kmaedu/<pkg>/**` -> servers+clients of `<pkg>` (10-line map `deploy/services.json`); `apps/ai-service/**`, `proto/kmaedu/ai/**` -> ai-service. Emit JSON => `matrix.service: ${{ fromJSON(needs.detect.outputs.services) }}`; skip when `[]`. PR job per service: `tsc --noEmit -p apps/$SVC/tsconfig.app.json` (verify webpack build fails on type error [?]), lint, jest, `depcruise`, buf lint/breaking, e2e with service containers.
 
 ## 6. Compose, Postgres, Redis
 
@@ -254,7 +254,7 @@ docker compose up -d --no-deps --wait --wait-timeout 90 $SVC $SVC-worker || { se
 ```
 `depends_on` only acts on full `up`. `up` recreates containers without health gating => short blip for single-replica services; callers retry UNAVAILABLE (§6.2). Expand-contract migrations mandatory.
 
-Gateway: recommend two services `gateway-a`, `gateway-b` deployed sequentially with `--wait`; nginx (examio-fe):
+Gateway: recommend two services `gateway-a`, `gateway-b` deployed sequentially with `--wait`; nginx (kmaedu-fe):
 ```nginx
 upstream gw { server gateway-a:3000 max_fails=1 fail_timeout=5s; server gateway-b:3000 max_fails=1 fail_timeout=5s; }
 location /api/ { proxy_pass http://gw; proxy_next_upstream error timeout http_502 http_503; proxy_buffering off; proxy_read_timeout 3600s; }

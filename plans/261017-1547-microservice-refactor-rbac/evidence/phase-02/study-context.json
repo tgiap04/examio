@@ -1,5 +1,5 @@
 {
-  "task": "Phase 02 Contracts & Infra Libs: buf + ts-proto + python codegen, examio.<svc>.v1 protos (auth roles, finance Debit/Credit/Refund contract, r2 DeleteObjects, gateway control), unified ports 3000/50051, libs/contracts, libs/grpc, libs/http",
+  "task": "Phase 02 Contracts & Infra Libs: buf + ts-proto + python codegen, kmaedu.<svc>.v1 protos (auth roles, finance Debit/Credit/Refund contract, r2 DeleteObjects, gateway control), unified ports 3000/50051, libs/contracts, libs/grpc, libs/http",
   "mode": "code",
   "acceptanceCriteria": [
     "yarn proto:lint, proto:gen, typecheck, build:all and test exit 0",
@@ -14,15 +14,15 @@
     "exam AI generation still debits credits via gRPC"
   ],
   "touchpoints": [
-    "examio-be/proto",
-    "examio-be/libs/contracts",
-    "examio-be/libs/grpc",
-    "examio-be/libs/http",
-    "examio-be/libs/common/src/grpc",
-    "examio-be/apps/*/src/main.ts",
-    "examio-be/deploy/docker-compose.yml",
-    "examio-fe/docker-compose.yml",
-    "examio-be/apps/ai-service/src/backend/grpc_generated"
+    "kmaedu-be/proto",
+    "kmaedu-be/libs/contracts",
+    "kmaedu-be/libs/grpc",
+    "kmaedu-be/libs/http",
+    "kmaedu-be/libs/common/src/grpc",
+    "kmaedu-be/apps/*/src/main.ts",
+    "kmaedu-be/deploy/docker-compose.yml",
+    "kmaedu-fe/docker-compose.yml",
+    "kmaedu-be/apps/ai-service/src/backend/grpc_generated"
   ],
   "blastRadius": [
     "exam -> finance credit check and debit",
@@ -32,7 +32,7 @@
     "ai-service import of generated stubs"
   ],
   "contracts": [
-    "gRPC package names change to examio.<svc>.v1 (all callers migrated in-phase)",
+    "gRPC package names change to kmaedu.<svc>.v1 (all callers migrated in-phase)",
     "ports unified to HTTP 3000 / gRPC 50051",
     "public /api/v1 routes unchanged"
   ]

@@ -1,6 +1,6 @@
 # Scout 01 — Backend money & benefit flows (content, document, ai-chat, libs)
 
-Source: Explore agent, 2026-11-10 (read-only; saved by orchestrator). Paths under `examio-be/`.
+Source: Explore agent, 2026-11-10 (read-only; saved by orchestrator). Paths under `kmaedu-be/`.
 
 ## 1. content-service — AI generation charging
 Today:
@@ -62,7 +62,7 @@ Replacement: delete enforceQuota (3 call sites), DocumentFinance, DocumentReaper
 - content `prisma/schema.prisma`: comment 325-335; `status @default("PENDING_CHARGE")` 345; `chargeKey @unique` 347; `chargedAmount` 349; `refundedAt` 350; `@@index([status, refundedAt])` 362. Migration `20261025044727_init` 247-250, 380, 389.
 - document `prisma/schema.prisma`: comment 18; `creditCharged` 31; `chargeFailedAt` 34; `refundSettledAt` 39; `@@index([refundSettledAt, chargeFailedAt])` 51; `UserMonthlyFileUpload` 54-66 (unused). Migrations `20261023195111_init` 11-12, 22-30, 84, 87; `20261024100000_refund_settled_at`.
 - ai-chat: nothing.
-- `proto/examio/document/v1/document.proto`: `DOCUMENT_PROCESSING_STATUS_PENDING_CHARGE = 1` (44), `credit_charged = 9` (66), `charge_credits = 4` (81), `monthly_limit = 2` (112), comments 11-13. Use `reserved`, never renumber. Comment-only: `content_events.proto:17-19`, `ai_events.proto:14`, `document_events.proto:7`.
+- `proto/kmaedu/document/v1/document.proto`: `DOCUMENT_PROCESSING_STATUS_PENDING_CHARGE = 1` (44), `credit_charged = 9` (66), `charge_credits = 4` (81), `monthly_limit = 2` (112), comments 11-13. Use `reserved`, never renumber. Comment-only: `content_events.proto:17-19`, `ai_events.proto:14`, `document_events.proto:7`.
 
 ## Risks
 1. In-flight rows at cutover (PENDING_CHARGE jobs/uploads, unrefunded jobs, chargeFailedAt uploads): refunds moot once wallets abolished — state explicitly.

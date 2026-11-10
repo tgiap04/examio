@@ -22,7 +22,7 @@ The FE refresh flow itself was correct — it just kept being invoked on every a
 ```bash
 cat >> apps/admin-service/.env << 'EOF'
 
-JWT_SECRET=examio_secret_key
+JWT_SECRET=kmaedu_secret_key
 EOF
 
 pkill -f "dist/apps/admin-service"
@@ -47,7 +47,7 @@ All previously-401 admin endpoints now return 200 with real data, confirming:
 ## Files changed (1)
 
 ```
-apps/admin-service/.env   (append JWT_SECRET=examio_secret_key)
+apps/admin-service/.env   (append JWT_SECRET=kmaedu_secret_key)
 ```
 
 ## Prevention (deferred)

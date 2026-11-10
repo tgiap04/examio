@@ -8,7 +8,7 @@
 - Delete `apps/finance-service` (83 files) and the finance protos and finance events. Delete the lib finance client and wallet cache. Remove 3 permissions and regenerate the docs and FE types. Remove the gateway finance routes and the auth `finance` audience and caller entries. Remove infra (compose, env, RabbitMQ, Postgres init, image, scripts) and CI matrix entries, and update the root tests.
 
 ## Key Insights
-- The buf FILE category flags `FILE_NO_DELETE`. Decision: add scoped `ignore_only.FILE_NO_DELETE` for `examio/finance` and `examio/events/v1/finance_events.proto` in `proto/buf.yaml`, and delete the stale phase-10 wallet ignores. Verified on a scratch copy with buf 1.74.0: exit 0, lint clean.
+- The buf FILE category flags `FILE_NO_DELETE`. Decision: add scoped `ignore_only.FILE_NO_DELETE` for `kmaedu/finance` and `kmaedu/events/v1/finance_events.proto` in `proto/buf.yaml`, and delete the stale phase-10 wallet ignores. Verified on a scratch copy with buf 1.74.0: exit 0, lint clean.
   - Rejected: changing `breaking_against` or turning `breaking` off in `ci.yml`. That disables the check for every proto in this PR.
   - Rejected: switching to `WIRE_JSON`. That permanently weakens source-compat checks for ts-proto consumers.
   - Same precedent as phase 10. Remove the ignores in a follow-up commit after merge.
@@ -27,11 +27,11 @@
 ## Architecture
 - Topology after: gateway → auth, content, assessment, study-room, vocabulary, document, ai-chat, admin, r2, ai. There is no finance node and no `FINANCE_GRPC_URL` or `FINANCE_SERVICE_URL` anywhere.
 
-## Related Code Files (BE = `/Users/tgiap.dev/devs/examio/examio-be`, ROOT = `/Users/tgiap.dev/devs/examio`)
+## Related Code Files (BE = `/Users/tgiap.dev/devs/kmaedu/kmaedu-be`, ROOT = `/Users/tgiap.dev/devs/kmaedu`)
 - Delete:
   - `BE/apps/finance-service/**`
-  - `BE/proto/examio/finance/v1/{wallet,subscription,finance_admin}.proto`
-  - `BE/proto/examio/events/v1/finance_events.proto`
+  - `BE/proto/kmaedu/finance/v1/{wallet,subscription,finance_admin}.proto`
+  - `BE/proto/kmaedu/events/v1/finance_events.proto`
   - `BE/libs/grpc/src/clients/finance.client.ts` (+spec)
   - `BE/libs/common/src/utils/wallet-cache.ts` (+spec)
   - `BE/deploy/compose/finance.yml`
@@ -45,7 +45,7 @@
   - `BE/libs/common/src/seed/dev-seed-users.ts`
   - `BE/libs/contracts/src/index.ts` (6-8, 26-34)
   - `BE/libs/auth-jwt/src/permissions.ts` (27, 28, 32, 71-72, 78) (+`permissions.spec.ts`)
-- Modify, protos: `BE/proto/buf.yaml`, and the `BE/proto/examio/document/v1/document.proto` comment at 112 if still present.
+- Modify, protos: `BE/proto/buf.yaml`, and the `BE/proto/kmaedu/document/v1/document.proto` comment at 112 if still present.
 - Modify, auth:
   - `BE/apps/auth-service/src/token/service-clients.ts:9`
   - `src/grpc/auth.grpc.controller.ts` (38, 51, 58)
@@ -84,7 +84,7 @@
   - `BE/test/build/proto-assets.spec.ts:13`
   - `BE/test/ownership/check-model-ownership.spec.ts` (Wallet fixture → another model)
 - Regenerate:
-  - `ROOT/examio-fe/src/types/permissions.generated.ts` (`yarn gen:fe-permissions`)
+  - `ROOT/kmaedu-fe/src/types/permissions.generated.ts` (`yarn gen:fe-permissions`)
   - `ROOT/docs/generated/permissions-matrix.md` and the generated block of `ROOT/docs/system/permissions.md` (`yarn gen:permissions-doc`)
   - `libs/contracts` generated (`yarn proto:gen`, gitignored)
   - ai-service stubs if any import finance (`apps/ai-service/scripts/gen_grpc.sh`)
@@ -97,15 +97,15 @@
    - Gateway `route-coverage`: no `/wallet`, `/payment` or `/webhook` routes.
    - `render-definitions.spec.cjs`: no finance user, and `aichat.events` has no `finance.*` binding.
 2. Delete finance-service, its protos, and the lib finance client and wallet cache. Edit `libs/contracts`, `libs/grpc` and `libs/common`.
-3. Edit buf.yaml: remove the stale wallet ignores and add the scoped `FILE_NO_DELETE` ignores. Run `yarn proto:lint`, then `node_modules/.bin/buf breaking proto --against '../.git#branch=develop,subdir=examio-be/proto'`; expect exit 0. Then `yarn proto:gen`.
-4. Permissions: edit the catalog, then run `yarn gen:permissions-doc && yarn gen:fe-permissions`. Then `cd ../examio-fe && yarn build` must stay green (proves 04 was complete).
+3. Edit buf.yaml: remove the stale wallet ignores and add the scoped `FILE_NO_DELETE` ignores. Run `yarn proto:lint`, then `node_modules/.bin/buf breaking proto --against '../.git#branch=develop,subdir=kmaedu-be/proto'`; expect exit 0. Then `yarn proto:gen`.
+4. Permissions: edit the catalog, then run `yarn gen:permissions-doc && yarn gen:fe-permissions`. Then `cd ../kmaedu-fe && yarn build` must stay green (proves 04 was complete).
 5. Auth, gateway and vocabulary edits, then test updates.
-6. Infra, scripts, package.json, nest-cli.json and CI. Then: `git grep -n -i "finance" -- examio-be ':!examio-be/docs' .github` should leave only the intentional sample-string specs.
+6. Infra, scripts, package.json, nest-cli.json and CI. Then: `git grep -n -i "finance" -- kmaedu-be ':!kmaedu-be/docs' .github` should leave only the intentional sample-string specs.
 7. Root tests: authz, cross-app, db-isolation, build and ownership.
 
 ## Todo List
 - [ ] RED tests (permissions, audience, routes, rabbit definitions) (a red-first run is not recorded)
-- [x] Delete app, protos and lib code (`apps/finance-service`, `proto/examio/finance`, `libs/grpc` finance client absent)
+- [x] Delete app, protos and lib code (`apps/finance-service`, `proto/kmaedu/finance`, `libs/grpc` finance client absent)
 - [ ] buf.yaml ignores and proto:lint (ignores present; buf breaking exit 0 and proto:gen not recorded)
 - [ ] Permission catalog, gen docs, gen FE, FE build (catalog has none of the three permissions; permissions drift diff and FE build not recorded)
 - [x] auth, gateway, vocabulary (no finance route or upstream in `routes.yaml`; reviewer confirms audiences)
@@ -114,7 +114,7 @@
 - [ ] Green (unit suite, `typecheck`, `build:all` not recorded)
 
 ## Success Criteria
-- `apps/finance-service` and `proto/examio/finance` are gone, and `yarn build:all` exits 0.
+- `apps/finance-service` and `proto/kmaedu/finance` are gone, and `yarn build:all` exits 0.
 - `docker compose -f deploy/docker-compose.yml config` succeeds (with the example env) and lists no finance service.
 - CI drift jobs pass: the FE permissions file and the permissions doc match the generators.
 
@@ -122,7 +122,7 @@
 - Changed: whole finance surface; auth-jwt catalog; auth audiences and callers; gateway routes; infra; CI; root tests.
 - Impacted: every service (catalog and libs), FE types, deploy topology.
 - Will verify (whole groups):
-  - `cd examio-be && yarn typecheck`
+  - `cd kmaedu-be && yarn typecheck`
   - `yarn build:all`
   - `yarn test` (full unit suite: libs and apps; the catalog and libs touch every service)
   - `yarn test test/authz` and `yarn test test/build test/ownership`
@@ -132,7 +132,7 @@
   - `yarn check:ownership && yarn check:deps && yarn proto:lint`, plus the buf breaking command above
   - `node --test deploy/compose-topology.spec.cjs deploy/rabbitmq/render-definitions.spec.cjs`, or the runner `ci.yml` uses for those specs (check the `deploy-tooling` job)
   - `bash scripts/changed-services.test.sh`, `bash scripts/lint-migrations.test.sh`
-  - `cd ../examio-fe && yarn build && yarn test`
+  - `cd ../kmaedu-fe && yarn build && yarn test`
 - Bugs caught:
   - A permission literal left in a decorator, which would make every route on that service 500.
   - A service still requesting a `finance` audience token at boot.
@@ -161,7 +161,7 @@
   - `rabbitmqctl delete_user finance`.
   - Delete queues `finance.events`, `finance.retry.30s`, `finance.dlq` and exchanges `finance.retry`, `finance.requeue`, `finance.dead`.
   - Unbind `finance.subscription.changed` from `aichat.events`.
-  - Remove `FINANCE_DB_PASSWORD`, `RABBITMQ_FINANCE_PASS`, `FINANCE_TAG` and the `finance` `SERVICE_CLIENTS` entry from `deploy/.env`. Delete the GHCR image `examio-finance`.
+  - Remove `FINANCE_DB_PASSWORD`, `RABBITMQ_FINANCE_PASS`, `FINANCE_TAG` and the `finance` `SERVICE_CLIENTS` entry from `deploy/.env`. Delete the GHCR image `kmaedu-finance`.
 
 ## Next Steps
 - 06 docs and final gate. After merge: remove the temporary buf `ignore_only` entries (FILE_NO_DELETE, FIELD_NO_DELETE, ENUM_VALUE_NO_DELETE).

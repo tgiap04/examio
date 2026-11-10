@@ -1,30 +1,30 @@
 # Frontend Responsive Mockups Plan
 
 ## Mục tiêu
-Tạo bộ mockups HTML trong `examio-fe/mockups/` để dùng làm tham chiếu refactor UI frontend, tuân thủ `examio-app/DESIGN.md` và `examio-app/ui-design.html`.
+Tạo bộ mockups HTML trong `kmaedu-fe/mockups/` để dùng làm tham chiếu refactor UI frontend, tuân thủ `kmaedu-app/DESIGN.md` và `kmaedu-app/ui-design.html`.
 
 ## Scope
-- Bao phủ các route app đã audit từ `examio-fe/src/routes/index.tsx`.
+- Bao phủ các route app đã audit từ `kmaedu-fe/src/routes/index.tsx`.
 - Loại trừ landing/public marketing: `/`, `/about`, `/contact`.
-- Mobile có thể giữ tương tự `examio-app/mockups/`.
+- Mobile có thể giữ tương tự `kmaedu-app/mockups/`.
 - Bổ sung responsive preview cho desktop, tablet, mobile trong mỗi file.
 
 ## Files tạo
-- `examio-fe/mockups/index.html`
-- `examio-fe/mockups/auth-flow.html`
-- `examio-fe/mockups/student-dashboard.html`
-- `examio-fe/mockups/teacher-dashboard.html`
-- `examio-fe/mockups/profile-settings.html`
-- `examio-fe/mockups/subscription-wallet.html`
-- `examio-fe/mockups/student-materials.html`
-- `examio-fe/mockups/student-exams.html`
-- `examio-fe/mockups/ai-student-programming.html`
-- `examio-fe/mockups/history.html`
-- `examio-fe/mockups/ai-generator.html`
-- `examio-fe/mockups/genai-knowledge.html`
-- `examio-fe/mockups/manage-exams.html`
-- `examio-fe/mockups/manage-flashcards.html`
-- `examio-fe/mockups/manage-exam-rooms.html`
+- `kmaedu-fe/mockups/index.html`
+- `kmaedu-fe/mockups/auth-flow.html`
+- `kmaedu-fe/mockups/student-dashboard.html`
+- `kmaedu-fe/mockups/teacher-dashboard.html`
+- `kmaedu-fe/mockups/profile-settings.html`
+- `kmaedu-fe/mockups/subscription-wallet.html`
+- `kmaedu-fe/mockups/student-materials.html`
+- `kmaedu-fe/mockups/student-exams.html`
+- `kmaedu-fe/mockups/ai-student-programming.html`
+- `kmaedu-fe/mockups/history.html`
+- `kmaedu-fe/mockups/ai-generator.html`
+- `kmaedu-fe/mockups/genai-knowledge.html`
+- `kmaedu-fe/mockups/manage-exams.html`
+- `kmaedu-fe/mockups/manage-flashcards.html`
+- `kmaedu-fe/mockups/manage-exam-rooms.html`
 
 ## Cách triển khai
 1. Dùng dữ liệu route và nội dung từ bộ mobile mockups hiện có.
@@ -35,6 +35,6 @@ Tạo bộ mockups HTML trong `examio-fe/mockups/` để dùng làm tham chiếu
 6. `index.html` có gallery, coverage matrix, và link đến từng mockup.
 
 ## Validation
-- Kiểm tra đủ 15 HTML files trong `examio-fe/mockups/`.
+- Kiểm tra đủ 15 HTML files trong `kmaedu-fe/mockups/`.
 - Parse bằng Python `html.parser`.
 - Verify coverage matrix chứa đủ 27 app routes.

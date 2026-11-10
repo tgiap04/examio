@@ -2,7 +2,7 @@
 
 **Entity:** `ExamAttempt` (MODEL-019)
 **State Field:** `status` (DISC-008)
-**Source:** `examio-be/apps/assessment-service/prisma/schema.prisma` (ExamAttempt)
+**Source:** `kmaedu-be/apps/assessment-service/prisma/schema.prisma` (ExamAttempt)
 **Last Updated:** 2026-10-29
 
 An attempt reads its questions and answer letters only from the `quizSnapshot` of its session (`SnapshotStore`, cached in process under `<sessionId>:<quizSnapshotHash>`); content-service is never called for a student.
@@ -28,12 +28,12 @@ There is no server-side timer: nothing closes an attempt when the session ends, 
 
 | ID | From | Trigger | To | Side Effects | Source |
 |----|------|---------|----|--------------|--------|
-| T1 | (none) | user-action | IN_PROGRESS | `POST /examattempts/start`: Turnstile check, `startTime`/`endTime` window check, access check (public, whitelist, or the 6-digit code with the 5-wrong-tries-per-15-minutes lock), retry limits (`allowRetake`, `maxAttempts`). Then one transaction locks the session row, draws the questions from the snapshot and creates the attempt. An existing IN_PROGRESS attempt of the same user is returned instead (`isResume`) | `examio-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts` (`startExamAttempt`, `createAttemptUnderLock`) |
-| T2 | IN_PROGRESS | user-action | IN_PROGRESS | `PUT /examattempts/:id/progress` saves answers, current index and marks; a submitted attempt answers 400 | `examio-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts` (`updateExamAttemptProgress`) |
-| T3 | IN_PROGRESS | user-action | COMPLETED | `GET :id/secure-quiz` serves the snapshot questions with per-question JWT tokens (never the key); `POST :id/secure-submit` verifies each token (attempt, user, type) and scores against the snapshot on the server. The older `POST :id/submit` path still exists | `examio-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts` (`getSecureQuizQuestions`, `submitSecureExamAttempt`, `submitExamAttempt`) |
-| T4 | IN_PROGRESS | user-action (browser) | COMPLETED | The exam page counts the time limit down and calls the submit itself at zero (`handleAutoSubmit`, retry shown on failure) | `examio-fe/src/pages/exam-session/ExamQuizPage.tsx` |
-| T5 | IN_PROGRESS | user-action (host) | CANCELLED | `PUT /examattempts/:id` with `status`, `score` or `violationCount`: only the room host may set these (finishedAt is stamped for COMPLETED or CANCELLED); an examinee sending them gets 403 | `examio-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts` (`updateExamAttempt`) |
-| T6 | any | user-action / derived | DELETED | `DELETE /examattempts/:id`, or the attempt's session or room is deleted (database cascade) | `examio-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts` (`deleteExamAttempt`) |
+| T1 | (none) | user-action | IN_PROGRESS | `POST /examattempts/start`: Turnstile check, `startTime`/`endTime` window check, access check (public, whitelist, or the 6-digit code with the 5-wrong-tries-per-15-minutes lock), retry limits (`allowRetake`, `maxAttempts`). Then one transaction locks the session row, draws the questions from the snapshot and creates the attempt. An existing IN_PROGRESS attempt of the same user is returned instead (`isResume`) | `kmaedu-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts` (`startExamAttempt`, `createAttemptUnderLock`) |
+| T2 | IN_PROGRESS | user-action | IN_PROGRESS | `PUT /examattempts/:id/progress` saves answers, current index and marks; a submitted attempt answers 400 | `kmaedu-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts` (`updateExamAttemptProgress`) |
+| T3 | IN_PROGRESS | user-action | COMPLETED | `GET :id/secure-quiz` serves the snapshot questions with per-question JWT tokens (never the key); `POST :id/secure-submit` verifies each token (attempt, user, type) and scores against the snapshot on the server. The older `POST :id/submit` path still exists | `kmaedu-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts` (`getSecureQuizQuestions`, `submitSecureExamAttempt`, `submitExamAttempt`) |
+| T4 | IN_PROGRESS | user-action (browser) | COMPLETED | The exam page counts the time limit down and calls the submit itself at zero (`handleAutoSubmit`, retry shown on failure) | `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx` |
+| T5 | IN_PROGRESS | user-action (host) | CANCELLED | `PUT /examattempts/:id` with `status`, `score` or `violationCount`: only the room host may set these (finishedAt is stamped for COMPLETED or CANCELLED); an examinee sending them gets 403 | `kmaedu-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts` (`updateExamAttempt`) |
+| T6 | any | user-action / derived | DELETED | `DELETE /examattempts/:id`, or the attempt's session or room is deleted (database cascade) | `kmaedu-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts` (`deleteExamAttempt`) |
 
 ## Trigger Types (3)
 

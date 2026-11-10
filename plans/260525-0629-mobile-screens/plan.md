@@ -1,5 +1,5 @@
 ---
-title: "Examio App /k Parity — Wire Existing UI to Real API"
+title: "KMAEdu App /k Parity — Wire Existing UI to Real API"
 description: "Wire existing mock-data mobile screens (Android+iOS) to the shared API/repo layer + build 4 missing screens, for /k feature parity"
 status: pending
 priority: P1
@@ -11,14 +11,14 @@ tags: [mobile, kmp, ios, android, swiftui, compose, wire-to-api]
 created: 2026-05-25
 ---
 
-# Examio App /k Parity
+# KMAEdu App /k Parity
 
 > **Supersedes the build-from-scratch framing.** Scout ground-truth: EVERY app screen already has UI on BOTH platforms but ALL render HARDCODED MOCK data, and NONE are wired to the shared API/repo layer. Dominant work is **WIRE existing UI → real API + add ViewModels**, NOT build-from-scratch. Only 4 screens are genuinely missing.
 > `spec_waived`: UI parity of existing FE `/k` screens; contracts already defined by FE api clients — no new spec needed.
 
 ## Overview
 
-Bring `examio-fe` `/k` route surface to `examio-app` (KMP: shared commonMain + androidApp Compose + iosApp SwiftUI) as **native-mobile** UI, wired to the **existing shared backend** via the shared repository/api layer. Two kinds of work: (1) replace mock with real repo calls + ViewModels across existing screens; (2) build 4 missing screens (manage-quiz-set detail, manage-flashcard-set detail, manage-exam-room list, manage-exam-room detail).
+Bring `kmaedu-fe` `/k` route surface to `kmaedu-app` (KMP: shared commonMain + androidApp Compose + iosApp SwiftUI) as **native-mobile** UI, wired to the **existing shared backend** via the shared repository/api layer. Two kinds of work: (1) replace mock with real repo calls + ViewModels across existing screens; (2) build 4 missing screens (manage-quiz-set detail, manage-flashcard-set detail, manage-exam-room list, manage-exam-room detail).
 
 Shared layer ALREADY has api+repository for auth, profile+wallet (AccountRepository), flashcard+studentMaterials (FlashcardRepository), quizset+examroom+examattempt (ExamRepository), ai chat+generator+subject (AIChatRepository). `HistoryApiService` exists but has NO repository — ADD `HistoryRepository`.
 

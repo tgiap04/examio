@@ -1,6 +1,6 @@
 # Scout — RBAC Surface (2026-10-17)
 
-Roots: `BE`=`examio-be`, `FE`=`examio-fe`, `ES`=`BE/apps/exam-service/src/modules`. All routes under `/api/v1`.
+Roots: `BE`=`kmaedu-be`, `FE`=`kmaedu-fe`, `ES`=`BE/apps/exam-service/src/modules`. All routes under `/api/v1`.
 Codes: **S** STUDENT-allowed · **T** TEACHER-only · **A** SYSTEM_ADMIN · **P** public · **U** any authenticated.
 
 ## Summary

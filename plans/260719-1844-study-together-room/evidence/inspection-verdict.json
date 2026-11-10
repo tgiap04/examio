@@ -9,12 +9,12 @@
     "Deterministic Pomodoro engine transitions work to break to long-break correctly and normalizes a running timer on read — proof: study-room-pomodoro.spec covers work→break, work→longbreak at cycle boundary, longbreak→work, and normalize-on-read",
     "Invite-code join handles error paths (invalid code, room full, room closed) and is idempotent for an existing member — proof: study-room.service.spec covers NotFound/Conflict/Forbidden and no-add idempotent re-join",
     "WS event contract is in parity between backend study-room.events.ts and frontend types/studyRoom.ts, and chat renders as plain text — proof: reviewer verified event/payload parity line-by-line and chat-panel renders a plain text node (no dangerouslySetInnerHTML)",
-    "Frontend builds green (tsc + vite) with the study-room pages, panels, store, socket hook, and routes — proof: examio-fe yarn build succeeded; lint clean on all study-room files"
+    "Frontend builds green (tsc + vite) with the study-room pages, panels, store, socket hook, and routes — proof: kmaedu-fe yarn build succeeded; lint clean on all study-room files"
   ],
   "regressionChecked": [
     "Full backend yarn test: 150 pass, 1 pre-existing UNRELATED failure (admin-stats date-dependent spec) — no study-room regression",
     "Changes are additive only: new Prisma models, new CACHE_MODULES entry, new exam-service module, new gateway proxy + upgrade handler; no existing model/service/controller behavior modified",
-    "exam-service and gateway-service webpack builds green after all edits; examio-fe tsc+vite build green",
+    "exam-service and gateway-service webpack builds green after all edits; kmaedu-fe tsc+vite build green",
     "Reviewer critical finding (StudyRoom missing createdBy/updatedBy used by BaseRepository.update) FIXED and re-built; focus-farming throttle + atomic GETDEL flush + timer:config clamp + YouTube regex anchoring applied"
   ],
   "contractStatus": "OK",

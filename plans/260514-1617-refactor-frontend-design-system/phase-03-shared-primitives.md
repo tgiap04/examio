@@ -1,10 +1,10 @@
 # Phase 03: Shared Primitive Component Migration
 
 ## Context Links
-- `examio-fe/src/components/antd/button.tsx`
-- `examio-fe/src/components/antd/card.tsx`
-- `examio-fe/src/components/antd/dialog.tsx`
-- `examio-fe/src/components/antd/input-otp.tsx`
+- `kmaedu-fe/src/components/antd/button.tsx`
+- `kmaedu-fe/src/components/antd/card.tsx`
+- `kmaedu-fe/src/components/antd/dialog.tsx`
+- `kmaedu-fe/src/components/antd/input-otp.tsx`
 - `DESIGN.md` components section
 
 ## Overview
@@ -30,8 +30,8 @@
 - Avoid creating parallel enhanced components.
 
 ## Related Code Files
-- Modify: `examio-fe/src/components/antd/button.tsx`
-- Modify: `examio-fe/src/components/antd/card.tsx`
+- Modify: `kmaedu-fe/src/components/antd/button.tsx`
+- Modify: `kmaedu-fe/src/components/antd/card.tsx`
 - Modify as needed: input, dialog, badge, tabs, tooltip, drawer, sheet, skeleton.
 
 ## Implementation Steps

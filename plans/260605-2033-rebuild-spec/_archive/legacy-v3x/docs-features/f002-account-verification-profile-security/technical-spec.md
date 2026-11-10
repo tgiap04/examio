@@ -47,4 +47,4 @@
 - `behavior-logic.md` BL003-BL004, BL009, BL057, BL070-BL072
 - `api-map.md` API002, API012
 - `permissions.md` PERM009-PERM011, PERM038, PERM040
-- Source paths: `examio-fe/src/apis/profileApi.ts`, `examio-fe/src/apis/devicesApi.ts`, `examio-fe/src/apis/mediaApi.ts`; backend route file paths Need verification.
+- Source paths: `kmaedu-fe/src/apis/profileApi.ts`, `kmaedu-fe/src/apis/devicesApi.ts`, `kmaedu-fe/src/apis/mediaApi.ts`; backend route file paths Need verification.

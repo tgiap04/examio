@@ -42,49 +42,49 @@
     {
       "severity": "High",
       "category": "Data leakage",
-      "location": "examio-be/apps/exam-service/src/modules/examattempt/examattempt.service.ts:1272-1300",
+      "location": "kmaedu-be/apps/exam-service/src/modules/examattempt/examattempt.service.ts:1272-1300",
       "summary": "FIXED in re-inspection: getExamAttemptById returns the full examSession (accessCode, whitelist of other user ids) to the examinee; same raw-include shape in start/create attempt responses. Pick fields by name or strip accessCode/whitelist for relation=examinee",
       "disposition": "Accept"
     },
     {
       "severity": "Medium",
       "category": "Data leakage",
-      "location": "examio-be/apps/exam-service/src/modules/examattempt/examattempt.service.ts:890-905",
+      "location": "kmaedu-be/apps/exam-service/src/modules/examattempt/examattempt.service.ts:890-905",
       "summary": "FIXED in re-inspection: Answer key returned once status is COMPLETED regardless of showAnswersAfterSubmit=false (slider detail and get-by-id); gate on session.showAnswersAfterSubmit for relation=examinee",
       "disposition": "Accept"
     },
     {
       "severity": "Medium",
       "category": "Concurrency",
-      "location": "examio-be/apps/exam-service/src/modules/common/access-code-guard.ts:79-90",
+      "location": "kmaedu-be/apps/exam-service/src/modules/common/access-code-guard.ts:79-90",
       "summary": "FIXED in re-inspection: Lockout is check-then-increment: N parallel guesses all read failures<5 before any INCR, so a burst exceeds the limit (only the gateway 5/min cap bounds it). Incr first atomically, compare, del on success",
       "disposition": "Accept"
     },
     {
       "severity": "Medium",
       "category": "Reliability",
-      "location": "examio-be/apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts:197",
+      "location": "kmaedu-be/apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts:197",
       "summary": "FIXED in re-inspection: invalidateWalletCaches after commit sits inside the try; a Redis error returns success:false for a committed balance change (caller may retry/double-apply). Same after-commit throw risk in webhook.service.ts:231,309. Make invalidation best-effort (catch+log)",
       "disposition": "Accept"
     },
     {
       "severity": "Low",
       "category": "Security",
-      "location": "examio-be/apps/exam-service/src/modules/flashcardset/flashcardset.service.ts:1300-1302",
+      "location": "kmaedu-be/apps/exam-service/src/modules/flashcardset/flashcardset.service.ts:1300-1302",
       "summary": "FIXED in re-inspection: Access code from Math.random (not CSPRNG); use crypto.randomInt(100000,1000000); same in examsession service",
       "disposition": "Accept"
     },
     {
       "severity": "Low",
       "category": "Reliability",
-      "location": "examio-be/libs/messaging/src/amqp-connection.ts:74-80",
+      "location": "kmaedu-be/libs/messaging/src/amqp-connection.ts:74-80",
       "summary": "Channel error listener logs warn only; a permanently failing consumer setup (authz_changed never delivered) has no health/readiness signal",
       "disposition": "Defer"
     },
     {
       "severity": "Low",
       "category": "Privacy",
-      "location": "examio-be/apps/exam-service/src/modules/common/user-search.service.ts:60-70",
+      "location": "kmaedu-be/apps/exam-service/src/modules/common/user-search.service.ts:60-70",
       "summary": "Exact-email OR clause lets a TEACHER confirm whether an email is registered (no email returned); rate-limited 30/min; acceptable if intended for whitelist-by-email",
       "disposition": "Defer"
     }

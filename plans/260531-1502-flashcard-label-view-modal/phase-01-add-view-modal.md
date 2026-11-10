@@ -1,7 +1,7 @@
 # Phase 1: Add Flashcard View Modal in FlashcardLabelManager
 
 ## Context
-- File: `examio-fe/src/components/organisms/FlashcardLabelManager.tsx`
+- File: `kmaedu-fe/src/components/organisms/FlashcardLabelManager.tsx`
 - Reference: Quiz-set page (`ManageQuizSetDetailPage.tsx`) — khi click xem câu hỏi trong label thì mở modal
 
 ## Overview

@@ -1,7 +1,7 @@
-# Backend Codebase Scout Report -- ExamIO
+# Backend Codebase Scout Report -- KMAEdu
 
 > Generated: 2026-05-27
-> Root: `/Users/tgiap.dev/devs/examio/examio-be/`
+> Root: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/`
 
 ---
 
@@ -317,7 +317,7 @@
 | `src/evaluation/` | Benchmark evaluation: code extraction, pass@k, codebleu, sandboxed execution |
 | `src/backend/rabbitmq_consumer.py` | RabbitMQ consumer for async tasks |
 
-**Message queue:** AI Service consumes from RabbitMQ `examio.events` exchange (topic type). On startup, starts async consumer. Tutor knowledge file processing events routed via RabbitMQ.
+**Message queue:** AI Service consumes from RabbitMQ `kmaedu.events` exchange (topic type). On startup, starts async consumer. Tutor knowledge file processing events routed via RabbitMQ.
 
 **AI models used:** Google Gemini (via langchain-google-genai), OpenAI (via langchain-openai), local HuggingFace models. Model registry supports runtime resolution.
 
@@ -354,7 +354,7 @@
 
 ## 3. Shared Libraries
 
-### 3.1 `@examio/common` (`libs/common`)
+### 3.1 `@kmaedu/common` (`libs/common`)
 
 | File | Description |
 |---|---|
@@ -384,7 +384,7 @@
 | `src/events/` | Event system: publisher, subscriber, types, RabbitMQ service |
 | `src/grpc/` | gRPC clients module, R2 client service |
 
-### 3.2 `@examio/database` (`libs/database`)
+### 3.2 `@kmaedu/database` (`libs/database`)
 
 | File | Description |
 |---|---|
@@ -396,7 +396,7 @@
 | `prisma/models/*.prisma` | Individual model files (merged via prisma-merge) |
 | `prisma/seed.ts` | Database seed script |
 
-### 3.3 `@examio/redis` (`libs/redis`)
+### 3.3 `@kmaedu/redis` (`libs/redis`)
 
 | File | Description |
 |---|---|
@@ -409,7 +409,7 @@
 
 ## 4. gRPC Contracts (Proto Files)
 
-All proto files in `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/protos/`:
+All proto files in `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/common/src/protos/`:
 
 | File | Package | Services |
 |---|---|---|
@@ -432,7 +432,7 @@ All proto files in `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/proto
 
 ## 5. Database Schema (Prisma)
 
-**Location:** `/Users/tgiap.dev/devs/examio/examio-be/libs/database/prisma/schema.prisma` (auto-generated from `prisma/models/*.prisma` via prisma-merge)
+**Location:** `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/database/prisma/schema.prisma` (auto-generated from `prisma/models/*.prisma` via prisma-merge)
 
 **Datasource:** PostgreSQL
 
@@ -491,7 +491,7 @@ All proto files in `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/proto
 **Library (NestJS):** `amqp-connection-manager` + `amqplib` (NestJS services)
 **Library (Python):** `aio-pika` (AI service)
 
-**Exchange:** `examio.events` (topic exchange, durable)
+**Exchange:** `kmaedu.events` (topic exchange, durable)
 
 **Event types (`libs/common/src/events/event-types.ts`):**
 
@@ -527,7 +527,7 @@ All proto files in `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/proto
 **Auth flow:**
 1. Login/Register -> JWT token issued -> Set in httpOnly cookies (`token`, `accessToken`, `refreshToken`, `session_id`)
 2. Subsequent requests: Cookie parsed by `AuthGuard` (higher priority) or Bearer token (`Authorization: Bearer <jwt>`)
-3. `AuthGuard` (in `@examio/common`) verifies JWT, loads user from DB, attaches `request.user`
+3. `AuthGuard` (in `@kmaedu/common`) verifies JWT, loads user from DB, attaches `request.user`
 
 **OAuth:** Google OAuth2 via passport-google-oauth20 with One Tap support
 
@@ -615,7 +615,7 @@ All proto files in `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/proto
 
 All routes prefixed with `/api/v1/`.
 
-### Gateway (`examio-be:3000`)
+### Gateway (`kmaedu-be:3000`)
 
 | Route | Internal Target |
 |---|---|
@@ -760,7 +760,7 @@ All routes prefixed with `/api/v1/`.
 
 3. **AI Service dual-dependencies:** Python AI service reads/writes the same PostgreSQL database as NestJS services (`UserStorage`, `Document`, `HistoryGenerated*` tables). This creates implicit coupling.
 
-4. **Shared auth library:** `@examio/common` is the most critical shared lib -- used by gateway, auth, exam, and finance services.
+4. **Shared auth library:** `@kmaedu/common` is the most critical shared lib -- used by gateway, auth, exam, and finance services.
 
 5. **Prisma merge workflow:** Individual `.prisma` model files under `prisma/models/` are merged into `schema.prisma` via `prisma-merge` before generation. Model files exist in both `prisma/models/` and `src/models/` (duplicates).
 

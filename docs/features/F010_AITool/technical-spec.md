@@ -6,7 +6,7 @@
 
 ## Overview
 
-AITool provides a unified interface for AI-assisted content generation from uploaded documents. Users select a source document, choose generation type (quiz or flashcards), configure parameters, and initiate a background job. The system queues the job (generation is not charged: there is no wallet, credit check or subscription gate) and provides polling-based status updates. The feature spans `SCR024` (AIToolPage) with cross-feature participation from `SCR017` (FlashcardsPage) for flashcard generation trigger. Backend lives in `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts`.
+AITool provides a unified interface for AI-assisted content generation from uploaded documents. Users select a source document, choose generation type (quiz or flashcards), configure parameters, and initiate a background job. The system queues the job (generation is not charged: there is no wallet, credit check or subscription gate) and provides polling-based status updates. The feature spans `SCR024` (AIToolPage) with cross-feature participation from `SCR017` (FlashcardsPage) for flashcard generation trigger. Backend lives in `kmaedu-be/apps/exam-service/src/modules/ai/ai-job.controller.ts`.
 
 ## Polymorphic Behavior
 
@@ -37,7 +37,7 @@ N/A — no other discriminator fields in AITool Key Entities.
 
 **BR-010_02 — Source Document Readiness Check**
 **Linked FR:** FR-010_01
-**Source:** `examio-be/apps/exam-service/src/modules/ai/ai-job.service.ts` (inferred)
+**Source:** `kmaedu-be/apps/exam-service/src/modules/ai/ai-job.service.ts` (inferred)
 **Applies to:** `POST /api/v1/ai/job`
 **Rule:** Only documents with `processingStatus = COMPLETED` can be used as the source for AI generation. PENDING, PROCESSING, and FAILED documents are rejected with HTTP 400.
 **Pseudocode:**
@@ -54,7 +54,7 @@ if doc.processingStatus != 'COMPLETED':
 **Triggers in:** SCR024 (AIToolPage) on document list render
 **Involved entities:** `UserStorage.processingStatus`
 **user_visible_outcome:** Generate button is enabled only when the selected document is COMPLETED
-**Source:** `examio-fe/src/pages/k/AIToolPage.tsx` (inferred)
+**Source:** `kmaedu-fe/src/pages/k/AIToolPage.tsx` (inferred)
 
 ```pseudo
 doc = selectedDocument
@@ -71,7 +71,7 @@ else:
 
 #### SM-010_01 — Generation Flow Status
 **Linked FR:** FR-010_01, FR-010_02, FR-010_03
-**Source:** `examio-fe/src/hooks/useGenerationGuard.ts` (BL015)
+**Source:** `kmaedu-fe/src/hooks/useGenerationGuard.ts` (BL015)
 
 ```mermaid
 stateDiagram-v2
@@ -102,7 +102,7 @@ None.
 
 **INT-010_02 — AI Generation Pipeline**
 **Linked FR:** FR-010_01, FR-010_02
-**Source:** `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` (inferred)
+**Source:** `kmaedu-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` (inferred)
 **Type:** api-call
 **Target:** `ai-service` (Python FastAPI)
 **Trigger:** `POST /api/v1/ai/job`
@@ -233,13 +233,13 @@ None.
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| AIJobController | `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` | REST endpoints for AI job create/poll/cancel |
-| AIJobService | `examio-be/apps/exam-service/src/modules/ai/ai-job.service.ts` | Job creation logic, queue dispatch |
-| useGenerationGuard | `examio-fe/src/hooks/useGenerationGuard.ts` | Client-side job polling + localStorage resume (BL015) |
-| AIToolPage | `examio-fe/src/pages/k/AIToolPage.tsx` | Main AI tool page with TestGenerator and FlashcardGenerator |
-| TestGenerator | `examio-fe/src/components/k/ai-tool/TestGenerator.tsx` | Quiz generation UI component |
-| FlashcardGenerator | `examio-fe/src/components/k/ai-tool/FlashcardGenerator.tsx` | Flashcard generation UI component |
-| PendingJobDialog | `examio-fe/src/components/k/ai-tool/PendingJobDialog.tsx` | Job status polling dialog |
+| AIJobController | `kmaedu-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` | REST endpoints for AI job create/poll/cancel |
+| AIJobService | `kmaedu-be/apps/exam-service/src/modules/ai/ai-job.service.ts` | Job creation logic, queue dispatch |
+| useGenerationGuard | `kmaedu-fe/src/hooks/useGenerationGuard.ts` | Client-side job polling + localStorage resume (BL015) |
+| AIToolPage | `kmaedu-fe/src/pages/k/AIToolPage.tsx` | Main AI tool page with TestGenerator and FlashcardGenerator |
+| TestGenerator | `kmaedu-fe/src/components/k/ai-tool/TestGenerator.tsx` | Quiz generation UI component |
+| FlashcardGenerator | `kmaedu-fe/src/components/k/ai-tool/FlashcardGenerator.tsx` | Flashcard generation UI component |
+| PendingJobDialog | `kmaedu-fe/src/components/k/ai-tool/PendingJobDialog.tsx` | Job status polling dialog |
 
 ## Unresolved Questions
 

@@ -5,10 +5,10 @@
 - Research: [researcher-01-backend.md](../research/researcher-01-backend.md), [researcher-02-frontend.md](../research/researcher-02-frontend.md)
 - Architecture: [docs/system/architecture.md](../../../../docs/system/architecture.md)
 - Permissions: [docs/system/permissions.md](../../../../docs/system/permissions.md)
-- Auth service skeleton: [examio-be/apps/auth-service/src/auth.module.ts](../../../../examio-be/apps/auth-service/src/auth.module.ts)
-- AuthGuard: [examio-be/libs/common/src/guard/auth.guard.ts](../../../../examio-be/libs/common/src/guard/auth.guard.ts)
-- Prisma schema: [examio-be/libs/database/src/schema.prisma](../../../../examio-be/libs/database/src/schema.prisma)
-- Gateway module: [examio-be/apps/gateway-service/src/gateway.module.ts](../../../../examio-be/apps/gateway-service/src/gateway.module.ts)
+- Auth service skeleton: [kmaedu-be/apps/auth-service/src/auth.module.ts](../../../../kmaedu-be/apps/auth-service/src/auth.module.ts)
+- AuthGuard: [kmaedu-be/libs/common/src/guard/auth.guard.ts](../../../../kmaedu-be/libs/common/src/guard/auth.guard.ts)
+- Prisma schema: [kmaedu-be/libs/database/src/schema.prisma](../../../../kmaedu-be/libs/database/src/schema.prisma)
+- Gateway module: [kmaedu-be/apps/gateway-service/src/gateway.module.ts](../../../../kmaedu-be/apps/gateway-service/src/gateway.module.ts)
 
 ## Overview
 
@@ -23,7 +23,7 @@ Bootstrap nền tảng cho admin-service: Prisma model `AdminAudit` + migration,
 ## Key Insights
 
 - `AuthGuard` đã expose `isAdmin` trên `request.user` (`libs/common/src/guard/auth.guard.ts:38`) — `AdminGuard` chỉ cần check flag này.
-- `PasswordService` (bcrypt 10) + `GenerateIdService` đã export từ `@examio/common` — không cần thêm lib.
+- `PasswordService` (bcrypt 10) + `GenerateIdService` đã export từ `@kmaedu/common` — không cần thêm lib.
 - `ProxyService.serviceUrls` union type ở `apps/gateway-service/src/services/proxy.service.ts:16-20` cần thêm `'admin'`.
 - Throttler đã globally applied ở gateway — admin-service phải dùng **named** throttler + `@Throttle` per-controller để tránh double-limit.
 
@@ -36,7 +36,7 @@ Bootstrap nền tảng cho admin-service: Prisma model `AdminAudit` + migration,
 - ThrottlerModule named `'admin'` (60s TTL, 30 req limit)
 - nest-cli.json + package.json scripts (`dev:admin`, `build:admin`)
 - `.env.example` thêm: `ADMIN_EMAILS`, `ADMIN_DEFAULT_PASSWORD`, `ADMIN_SERVICE_URL`, `GRPC_PORT=50056`, `LOGS_DIR`, `THROTTLE_ADMIN_LIMIT=30`
-- Export `AdminGuard` từ `@examio/common` index
+- Export `AdminGuard` từ `@kmaedu/common` index
 
 **Non-functional**
 - Build pass: `yarn build` ở root
@@ -70,25 +70,25 @@ apps/gateway-service/src/
 ## Related code files
 
 **New:**
-- `examio-be/libs/common/src/guard/admin.guard.ts`
-- `examio-be/apps/admin-service/src/main.ts`
-- `examio-be/apps/admin-service/src/admin-service.module.ts`
-- `examio-be/apps/admin-service/src/admin-service.controller.ts`
-- `examio-be/apps/admin-service/src/admin-service.controller.spec.ts`
-- `examio-be/apps/admin-service/src/common/audit-writer.service.ts` (skeleton, full impl in phase 04)
-- `examio-be/apps/admin-service/test/`
-- `examio-be/apps/admin-service/tsconfig.app.json`
-- `examio-be/apps/admin-service/nest-cli.json` (or root nest-cli.json entry)
-- `examio-be/apps/admin-service/.env.example`
-- `examio-be/apps/admin-service/src/common/types.ts`
+- `kmaedu-be/libs/common/src/guard/admin.guard.ts`
+- `kmaedu-be/apps/admin-service/src/main.ts`
+- `kmaedu-be/apps/admin-service/src/admin-service.module.ts`
+- `kmaedu-be/apps/admin-service/src/admin-service.controller.ts`
+- `kmaedu-be/apps/admin-service/src/admin-service.controller.spec.ts`
+- `kmaedu-be/apps/admin-service/src/common/audit-writer.service.ts` (skeleton, full impl in phase 04)
+- `kmaedu-be/apps/admin-service/test/`
+- `kmaedu-be/apps/admin-service/tsconfig.app.json`
+- `kmaedu-be/apps/admin-service/nest-cli.json` (or root nest-cli.json entry)
+- `kmaedu-be/apps/admin-service/.env.example`
+- `kmaedu-be/apps/admin-service/src/common/types.ts`
 
 **Modify:**
-- `examio-be/libs/database/src/schema.prisma` — add AdminAudit model + reverse on User
-- `examio-be/libs/common/src/index.ts` — export AdminGuard
-- `examio-be/apps/gateway-service/src/services/proxy.service.ts` — add 'admin' to union
-- `examio-be/package.json` — add `dev:admin`, `build:admin` scripts
-- `examio-be/nest-cli.json` — add admin-service project
-- `examio-be/.env.example` — add new envs
+- `kmaedu-be/libs/database/src/schema.prisma` — add AdminAudit model + reverse on User
+- `kmaedu-be/libs/common/src/index.ts` — export AdminGuard
+- `kmaedu-be/apps/gateway-service/src/services/proxy.service.ts` — add 'admin' to union
+- `kmaedu-be/package.json` — add `dev:admin`, `build:admin` scripts
+- `kmaedu-be/nest-cli.json` — add admin-service project
+- `kmaedu-be/.env.example` — add new envs
 
 ## Implementation Steps
 
@@ -126,7 +126,7 @@ apps/gateway-service/src/
 - [ ] `GET /api/v1/admin/health` trả 200
 - [ ] JWT không có `isAdmin` → 403 trên route bất kỳ dùng `AdminGuard`
 - [ ] Prisma migration `add_admin_audit` tạo thành công, không phá data cũ
-- [ ] `AdminGuard` re-exportable từ `@examio/common`
+- [ ] `AdminGuard` re-exportable từ `@kmaedu/common`
 
 ## Risk Assessment
 

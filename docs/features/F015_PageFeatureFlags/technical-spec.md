@@ -25,7 +25,7 @@ N/A — no discriminator fields in Key Entities.
 | FR-005 | Gateway blocks proxy routes whose page flag is explicitly disabled | `PageEnabledGuard.canActivate` | yes |
 | FR-006 | Frontend hides routes/sidebar items whose page flag is disabled | `FeatureRoute`, `SideBar.tsx` filter | yes |
 
-**Source:** `examio-be/apps/admin-service/src/modules/admin-page-config/admin-page-config.controller.ts:34-49`, `examio-be/apps/gateway-service/src/controllers/config.controller.ts:26-54`, `examio-be/apps/gateway-service/src/guards/page-enabled.guard.ts:31-52`
+**Source:** `kmaedu-be/apps/admin-service/src/modules/admin-page-config/admin-page-config.controller.ts:34-49`, `kmaedu-be/apps/gateway-service/src/controllers/config.controller.ts:26-54`, `kmaedu-be/apps/gateway-service/src/guards/page-enabled.guard.ts:31-52`
 
 ### Business Rules
 
@@ -33,7 +33,7 @@ N/A — no discriminator fields in Key Entities.
 - **BR-002**: Any infrastructure error (Redis/DB failure) during flag lookup fails OPEN — the request/page is allowed rather than blocked. Source: `page-enabled.guard.ts:45-51`, `usePageConfigStore.ts:28-31`.
 - **BR-003**: A blocked route returns `404 Not Found`, not `403 Forbidden`, specifically to avoid revealing the page's existence to a caller who shouldn't see it. Source: `page-enabled.guard.ts:12-14`.
 - **BR-004**: `toggle()` validates the key against `TOGGLEABLE_PAGE_KEYS` before writing; an invalid key raises `BadRequestException`, and a key with no matching DB row raises `NotFoundException`. Source: `admin-page-config.service.ts:66-79`.
-- **BR-005**: Toggle write order is fixed: (1) DB update as source of truth, (2) `AdminAudit` row (try/catch; failure only logs), (3) push the full map from DB to the gateway via `SetPageFlags` (serialized; each push re-reads the map; failure is rethrown). The gateway owns `config:pages:flags` and the `config:pages` publish. Source: `examio-be/apps/admin-service/src/modules/admin-page-config/admin-page-config.service.ts`.
+- **BR-005**: Toggle write order is fixed: (1) DB update as source of truth, (2) `AdminAudit` row (try/catch; failure only logs), (3) push the full map from DB to the gateway via `SetPageFlags` (serialized; each push re-reads the map; failure is rethrown). The gateway owns `config:pages:flags` and the `config:pages` publish. Source: `kmaedu-be/apps/admin-service/src/modules/admin-page-config/admin-page-config.service.ts`.
 - **BR-006**: Some page keys (`my-materials`, `my-exams`, `history`) have an empty `PAGE_ROUTE_MAP` entry — they are FE-only toggles, deliberately not enforced at the gateway because they share core routes with other still-enabled features. Source: `page-keys.ts:31-34`.
 - **BR-007**: Route-prefix matching in `pathname-to-page-key.ts` is order-sensitive — longer/more specific prefixes (e.g. `manage-exam-room`) must be checked before shorter ones (e.g. `manage-exam`) to avoid mis-mapping. Source: `pathname-to-page-key.ts:8-9,11-23`.
 
@@ -94,28 +94,28 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 ## Assumptions
 
-- Page-key constants exist in two copies with no shared import — backend (`examio-be/libs/common/src/constants/page-keys.ts:10-19`) and frontend (`examio-fe/src/lib/page-keys.ts:6-15`) — the FE copy's own comment notes it "must be kept in sync manually."
+- Page-key constants exist in two copies with no shared import — backend (`kmaedu-be/libs/common/src/constants/page-keys.ts:10-19`) and frontend (`kmaedu-fe/src/lib/page-keys.ts:6-15`) — the FE copy's own comment notes it "must be kept in sync manually."
 - No dedicated Prisma migration file was found for `PageFeatureFlag`; schema is assumed applied via `prisma db push` rather than a tracked migration.
 
 ## Source Code References
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| PageFeatureFlag (model) | `examio-be/apps/admin-service/prisma/schema.prisma` | Data model |
-| AdminPageConfigController | `examio-be/apps/admin-service/src/modules/admin-page-config/admin-page-config.controller.ts:27-49` | Admin list + toggle endpoints |
-| AdminPageConfigService | `examio-be/apps/admin-service/src/modules/admin-page-config/admin-page-config.service.ts:46-124` | Toggle write-order logic, cache rebuild |
-| ConfigController (gateway) | `examio-be/apps/gateway-service/src/controllers/config.controller.ts:16-54` | Public flag fetch + SSE stream |
-| ConfigService (gateway) | `examio-be/apps/gateway-service/src/controllers/config.service.ts:40-89` | Read-through cache, pub/sub fan-out |
-| PageEnabledGuard | `examio-be/apps/gateway-service/src/guards/page-enabled.guard.ts:31-52` | Route-level enforcement, fail-open |
-| page-keys constants | `examio-be/libs/common/src/constants/page-keys.ts:10-45` | `TOGGLEABLE_PAGE_KEYS`, `PAGE_ROUTE_MAP` |
-| usePageConfigStore | `examio-fe/src/stores/usePageConfigStore.ts:20-32` | FE state, fail-open `loadPages` |
-| configApi | `examio-fe/src/apis/configApi.ts:17-151` | `fetchPages`, `openConfigStream` (SSE + backoff) |
-| adminPageConfigApi | `examio-fe/src/apis/adminPageConfigApi.ts:11-25` | Admin list/toggle API client |
-| AdminPageConfigPage | `examio-fe/src/pages/admin/AdminPageConfigPage.tsx:35-51` | Admin UI, optimistic update + rollback |
-| FeatureRoute | `examio-fe/src/routes/guards/FeatureRoute.tsx:17-23` | Client-side route gate |
-| pathname-to-page-key | `examio-fe/src/lib/pathname-to-page-key.ts:8-23` | Pathname → PageKey mapping (order-sensitive) |
-| usePageConfigSse | `examio-fe/src/hooks/usePageConfigSse.ts:16-33` | SSE subscription + self-eviction toast |
-| SideBar (filter) | `examio-fe/src/components/organisms/k/SideBar.tsx:61,175-186` | Nav item filtering |
+| PageFeatureFlag (model) | `kmaedu-be/apps/admin-service/prisma/schema.prisma` | Data model |
+| AdminPageConfigController | `kmaedu-be/apps/admin-service/src/modules/admin-page-config/admin-page-config.controller.ts:27-49` | Admin list + toggle endpoints |
+| AdminPageConfigService | `kmaedu-be/apps/admin-service/src/modules/admin-page-config/admin-page-config.service.ts:46-124` | Toggle write-order logic, cache rebuild |
+| ConfigController (gateway) | `kmaedu-be/apps/gateway-service/src/controllers/config.controller.ts:16-54` | Public flag fetch + SSE stream |
+| ConfigService (gateway) | `kmaedu-be/apps/gateway-service/src/controllers/config.service.ts:40-89` | Read-through cache, pub/sub fan-out |
+| PageEnabledGuard | `kmaedu-be/apps/gateway-service/src/guards/page-enabled.guard.ts:31-52` | Route-level enforcement, fail-open |
+| page-keys constants | `kmaedu-be/libs/common/src/constants/page-keys.ts:10-45` | `TOGGLEABLE_PAGE_KEYS`, `PAGE_ROUTE_MAP` |
+| usePageConfigStore | `kmaedu-fe/src/stores/usePageConfigStore.ts:20-32` | FE state, fail-open `loadPages` |
+| configApi | `kmaedu-fe/src/apis/configApi.ts:17-151` | `fetchPages`, `openConfigStream` (SSE + backoff) |
+| adminPageConfigApi | `kmaedu-fe/src/apis/adminPageConfigApi.ts:11-25` | Admin list/toggle API client |
+| AdminPageConfigPage | `kmaedu-fe/src/pages/admin/AdminPageConfigPage.tsx:35-51` | Admin UI, optimistic update + rollback |
+| FeatureRoute | `kmaedu-fe/src/routes/guards/FeatureRoute.tsx:17-23` | Client-side route gate |
+| pathname-to-page-key | `kmaedu-fe/src/lib/pathname-to-page-key.ts:8-23` | Pathname → PageKey mapping (order-sensitive) |
+| usePageConfigSse | `kmaedu-fe/src/hooks/usePageConfigSse.ts:16-33` | SSE subscription + self-eviction toast |
+| SideBar (filter) | `kmaedu-fe/src/components/organisms/k/SideBar.tsx:61,175-186` | Nav item filtering |
 
 ## Unresolved Questions
 

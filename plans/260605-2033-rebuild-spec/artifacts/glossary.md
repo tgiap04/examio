@@ -1,6 +1,6 @@
-# Glossary — examio Platform
+# Glossary — kmaedu Platform
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Sources**: `data-model.md`, all feature `business-context.md`, `system-overview.md`
 
@@ -156,7 +156,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Payment** — A payment intent record tracking a SePay virtual account order. Tracks amount, currency, status (unpaid/paid/overdue/cancelled), and payment type (credits or subscription).
 
-**Prisma** — ORM used across all NestJS services to interact with the shared PostgreSQL database. Schema lives in `@examio/database`.
+**Prisma** — ORM used across all NestJS services to interact with the shared PostgreSQL database. Schema lives in `@kmaedu/database`.
 
 **Processing Status** — A discriminator on UserStorage tracking where a document is in the pipeline: `PENDING` → `PROCESSING` → `COMPLETED` or `FAILED`. Controls whether the document is available for AI chat and generation.
 
@@ -190,7 +190,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **RAG (Retrieval-Augmented Generation)** — AI technique where the system retrieves relevant document chunks before generating a response, grounding AI answers in the user's uploaded course materials rather than generic training data.
 
-**RabbitMQ** — Message broker using a topic exchange (`examio.events`) for asynchronous event-driven workflows between services. Currently used for wallet creation on user registration.
+**RabbitMQ** — Message broker using a topic exchange (`kmaedu.events`) for asynchronous event-driven workflows between services. Currently used for wallet creation on user registration.
 
 **ReAct Agent** — An AI agent pattern (Reason + Act) used by the Python AI service to reason about user questions, retrieve relevant document chunks, and generate grounded responses.
 

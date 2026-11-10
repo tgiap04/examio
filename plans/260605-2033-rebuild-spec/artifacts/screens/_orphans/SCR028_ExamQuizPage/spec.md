@@ -252,15 +252,15 @@ The page renders a full-height flex column (`flex-col min-h-screen`). A sticky h
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:42`
-- QuizOptionRow: `examio-fe/src/components/molecules/QuizOptionRow.tsx`
-- CheatingWarningModal: `examio-fe/src/components/molecules/CheatingWarningModal.tsx`
-- ConfirmDialog: `examio-fe/src/components/organisms/ConfirmDialog.tsx`
-- StandardMarkdownRenderer: `examio-fe/src/components/molecules/StandardMarkdownRenderer.tsx`
-- useCheatingDetection: `examio-fe/src/hooks/useCheatingDetection.ts`
-- secureQuizHelpers: `examio-fe/src/lib/secureQuizHelpers.ts`
-- useDebounce: `examio-fe/src/hooks/useDebounce.ts`
-- ExamAttemptApi: `examio-fe/src/apis/examAttemptApi.ts`
-- AuthStore: `examio-fe/src/stores/useAuthStore.ts`
-- ThemeProvider: `examio-fe/src/provider/ThemeProvider.tsx`
-- quizAnswerUtils: `examio-fe/src/lib/quizAnswerUtils.ts`
+- Page/View: `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:42`
+- QuizOptionRow: `kmaedu-fe/src/components/molecules/QuizOptionRow.tsx`
+- CheatingWarningModal: `kmaedu-fe/src/components/molecules/CheatingWarningModal.tsx`
+- ConfirmDialog: `kmaedu-fe/src/components/organisms/ConfirmDialog.tsx`
+- StandardMarkdownRenderer: `kmaedu-fe/src/components/molecules/StandardMarkdownRenderer.tsx`
+- useCheatingDetection: `kmaedu-fe/src/hooks/useCheatingDetection.ts`
+- secureQuizHelpers: `kmaedu-fe/src/lib/secureQuizHelpers.ts`
+- useDebounce: `kmaedu-fe/src/hooks/useDebounce.ts`
+- ExamAttemptApi: `kmaedu-fe/src/apis/examAttemptApi.ts`
+- AuthStore: `kmaedu-fe/src/stores/useAuthStore.ts`
+- ThemeProvider: `kmaedu-fe/src/provider/ThemeProvider.tsx`
+- quizAnswerUtils: `kmaedu-fe/src/lib/quizAnswerUtils.ts`

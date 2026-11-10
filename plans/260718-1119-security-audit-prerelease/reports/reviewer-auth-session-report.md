@@ -1,6 +1,6 @@
 # Security Audit — Auth & Session Management (Pre-release)
 
-Scope: `examio-be/apps/auth-service/`, `libs/common/{guard,auth,services,utils}`, `libs/database` (schema), gateway auth proxy, FE OAuth-callback consumer. Read-only review.
+Scope: `kmaedu-be/apps/auth-service/`, `libs/common/{guard,auth,services,utils}`, `libs/database` (schema), gateway auth proxy, FE OAuth-callback consumer. Read-only review.
 
 ## Overall Assessment
 
@@ -12,7 +12,7 @@ The auth-service shows clear evidence of prior hardening passes — constant-tim
 
 ### C1. Gateway OAuth callback leaks live access/refresh tokens via URL query string
 
-**File:** `examio-be/apps/gateway-service/src/controllers/auth-proxy.controller.ts`, `handleOAuthCallback()` (lines ~369-417), invoked from `googleCallback()` (line ~171-183).
+**File:** `kmaedu-be/apps/gateway-service/src/controllers/auth-proxy.controller.ts`, `handleOAuthCallback()` (lines ~369-417), invoked from `googleCallback()` (line ~171-183).
 
 Flow: browser hits gateway `GET /api/v1/auth/google/callback` → `AuthProxyController.googleCallback` → `ProxyService.forwardWithRedirect('auth', ...)` (registered in `gateway.module.ts:80`, this is a live route, not dead code) → auth-service's own callback (`auth.controller.ts:googleAuthRedirect`) already does the *secure* thing: sets `token`/`session_id`/`refreshToken` as httpOnly cookies and 302-redirects to a path-only frontend URL (or, for allowlisted mobile schemes, a one-time Redis exchange code — see the "prevents tokens from appearing in URL" comment at `auth.controller.ts:548-556`).
 
@@ -28,7 +28,7 @@ Impact: the 30-day-lived `refreshToken` (full account-takeover credential) and a
 
 This directly defeats the security work already done in `auth.controller.ts` — the httpOnly-cookie + exchange-code design is redundant once this code path also puts the same secrets in the URL.
 
-**Confirmed as a live, exploited path**: the frontend has already had to add a defensive patch for it — `examio-fe/src/hooks/useAuthSync.ts:7-37` strips `token`/`refreshToken`/`sessionId` from the URL client-side with a comment: *"The gateway may forward auth tokens in the query string alongside the httpOnly cookies... strip them client-side."* This is a band-aid (via `history.replaceState`, presumably) applied **after** the tokens have already reached the browser/log layer — it does not prevent the leak, only shortens its lifetime in the visible address bar/browser history.
+**Confirmed as a live, exploited path**: the frontend has already had to add a defensive patch for it — `kmaedu-fe/src/hooks/useAuthSync.ts:7-37` strips `token`/`refreshToken`/`sessionId` from the URL client-side with a comment: *"The gateway may forward auth tokens in the query string alongside the httpOnly cookies... strip them client-side."* This is a band-aid (via `history.replaceState`, presumably) applied **after** the tokens have already reached the browser/log layer — it does not prevent the leak, only shortens its lifetime in the visible address bar/browser history.
 
 **Fix:** Remove the token/refreshToken/sessionId query-param injection in `handleOAuthCallback` entirely. The `Set-Cookie` relay already delivers the credentials securely; the redirect should carry no more than a path (mirroring what `auth-service`'s own `resolveFrontendTarget` already does). If a non-cookie transport is genuinely needed for some client, route it through the existing Redis one-time exchange-code mechanism instead of raw tokens in the URL.
 
@@ -48,7 +48,7 @@ Refresh tokens (30-day validity, `sessionTtlMs` in `auth.service.ts:43`) are sto
 
 **Files:** `libs/common/guard/auth.guard.ts`, `libs/common/guard/optional-auth.guard.ts`, `libs/common/guard/google-auth.guard.ts`, and sibling `libs/common/services/*.ts` (top-level, **not** under `libs/common/src/`).
 
-These are git-tracked (`git log` shows a 2026-05-13 commit), import from a nonexistent `'src/prisma/prisma.service'` path (leftover from a pre-monorepo layout), and are **not** reachable via the `@examio/common` alias (`tsconfig.json` paths map `@examio/common` → `libs/common/src` only) — confirmed no relative imports reference them either. So today they are dead weight, not a live vuln. But the stale `auth.guard.ts` copy is missing the `isBanned`/`deletedAt`/`isVerified` checks present in the real `libs/common/src/guard/auth.guard.ts` — i.e. it's a materially less-secure version of the guard sitting in the tree under a name identical to the real one. Risk: a future refactor, IDE auto-import, or a relative-path import typo silently wires in the insecure version with no compile error (since it's independently valid TypeScript). Given this is pre-release, recommend deleting the stale top-level `guard/` and `services/` (and any other orphaned top-level dirs mirroring `src/`) rather than leaving them as a landmine.
+These are git-tracked (`git log` shows a 2026-05-13 commit), import from a nonexistent `'src/prisma/prisma.service'` path (leftover from a pre-monorepo layout), and are **not** reachable via the `@kmaedu/common` alias (`tsconfig.json` paths map `@kmaedu/common` → `libs/common/src` only) — confirmed no relative imports reference them either. So today they are dead weight, not a live vuln. But the stale `auth.guard.ts` copy is missing the `isBanned`/`deletedAt`/`isVerified` checks present in the real `libs/common/src/guard/auth.guard.ts` — i.e. it's a materially less-secure version of the guard sitting in the tree under a name identical to the real one. Risk: a future refactor, IDE auto-import, or a relative-path import typo silently wires in the insecure version with no compile error (since it's independently valid TypeScript). Given this is pre-release, recommend deleting the stale top-level `guard/` and `services/` (and any other orphaned top-level dirs mirroring `src/`) rather than leaving them as a landmine.
 
 ---
 

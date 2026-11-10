@@ -11,7 +11,7 @@ A student views their study history hub — recent PDF uploads, past exam attemp
 
 ## Screen Layout
 
-The page renders `HistoryTemplate` as a full-height container with a centered content column (`max-w-7xl mx-auto`). The layout splits into three horizontal sections stacked vertically: a stats summary bar at the top, a two-column middle region (PDF history left, exam history right), and a recent activity feed at the bottom. All regions scroll independently within the page. The component is responsive: stacks to single-column on mobile. (source: `examio-fe/src/pages/k/HistoryPage.tsx`:252)
+The page renders `HistoryTemplate` as a full-height container with a centered content column (`max-w-7xl mx-auto`). The layout splits into three horizontal sections stacked vertically: a stats summary bar at the top, a two-column middle region (PDF history left, exam history right), and a recent activity feed at the bottom. All regions scroll independently within the page. The component is responsive: stacks to single-column on mobile. (source: `kmaedu-fe/src/pages/k/HistoryPage.tsx`:252)
 
 ### Layout Sketch
 
@@ -170,7 +170,7 @@ Omit — no shared polymorphic component rendered on this page.
 
 ## Source References
 
-- Page: `examio-fe/src/pages/k/HistoryPage.tsx`
-- History API: `examio-fe/src/apis/historyApi.ts`
-- Store cache: `examio-fe/src/lib/storeCache.ts`
-- HistoryTemplate: `examio-fe/src/templates/HistoryTemplate.tsx` (referenced, not read)
+- Page: `kmaedu-fe/src/pages/k/HistoryPage.tsx`
+- History API: `kmaedu-fe/src/apis/historyApi.ts`
+- Store cache: `kmaedu-fe/src/lib/storeCache.ts`
+- HistoryTemplate: `kmaedu-fe/src/templates/HistoryTemplate.tsx` (referenced, not read)

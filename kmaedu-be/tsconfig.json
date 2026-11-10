@@ -1,0 +1,70 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "target": "ES2024",
+    "strictNullChecks": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./",
+    "baseUrl": "./",
+    "paths": {
+      "@kmaedu/common": [
+        "libs/common/src"
+      ],
+      "@kmaedu/common/*": [
+        "libs/common/src/*"
+      ],
+      "@kmaedu/redis": [
+        "libs/redis/src"
+      ],
+      "@kmaedu/redis/*": [
+        "libs/redis/src/*"
+      ],
+      "@kmaedu/observability": [
+        "libs/observability/src"
+      ],
+      "@kmaedu/observability/*": [
+        "libs/observability/src/*"
+      ],
+      "@kmaedu/contracts": [
+        "libs/contracts/src"
+      ],
+      "@kmaedu/contracts/*": [
+        "libs/contracts/src/*"
+      ],
+      "@kmaedu/grpc": [
+        "libs/grpc/src"
+      ],
+      "@kmaedu/grpc/*": [
+        "libs/grpc/src/*"
+      ],
+      "@kmaedu/http": [
+        "libs/http/src"
+      ],
+      "@kmaedu/http/*": [
+        "libs/http/src/*"
+      ],
+      "@kmaedu/auth-jwt": [
+        "libs/auth-jwt/src"
+      ],
+      "@kmaedu/auth-jwt/*": [
+        "libs/auth-jwt/src/*"
+      ],
+      "@kmaedu/messaging": [
+        "libs/messaging/src"
+      ],
+      "@kmaedu/messaging/*": [
+        "libs/messaging/src/*"
+      ]
+    },
+    "skipLibCheck": true,
+    "incremental": true
+  }
+}

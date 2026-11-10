@@ -1,6 +1,6 @@
 # Behavior Logic
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Analysis Scope**: All BL inventory entries from Wave 0 scout
 
@@ -33,7 +33,7 @@
 
 **Type**: scheduled-job
 **Trigger**: Cron (daily, time-based)
-**Source File**: `examio-be/apps/auth-service/src/session-cleanup.cron.ts`
+**Source File**: `kmaedu-be/apps/auth-service/src/session-cleanup.cron.ts`
 **Source Symbol**: `SessionCleanupCron` (class with `@Cron()` decorator)
 
 ### Description
@@ -57,8 +57,8 @@ Daily cron job that scans all `UserSession` records and deactivates expired sess
 ## BL002: UserEventHandler
 
 **Type**: event-listener
-**Trigger**: RabbitMQ topic `auth.user.created` on `examio.events` durable exchange
-**Source File**: `examio-be/apps/finance-service/src/user-event.handler.ts`
+**Trigger**: RabbitMQ topic `auth.user.created` on `kmaedu.events` durable exchange
+**Source File**: `kmaedu-be/apps/finance-service/src/user-event.handler.ts`
 **Source Symbol**: `UserEventHandler` (class with `@EventHandler()` or equivalent)
 
 ### Description
@@ -85,7 +85,7 @@ Idempotent event listener that handles the `auth.user.created` RabbitMQ event. O
 
 **Type**: integration
 **Trigger**: Login form submit, OAuth callback, token refresh
-**Source File**: `examio-be/apps/auth-service/src/auth.service.ts`
+**Source File**: `kmaedu-be/apps/auth-service/src/auth.service.ts`
 **Source Symbol**: `AuthService` (class)
 
 ### Description
@@ -128,7 +128,7 @@ Core authentication service. Handles email/password login, Google OAuth flow (in
 
 **Type**: integration
 **Trigger**: Credit-deductor feature (AI generation, document processing)
-**Source File**: `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts`
+**Source File**: `kmaedu-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts`
 **Source Symbol**: `FinanceClientService` (class, gRPC client or HTTP client to finance-service)
 
 ### Description
@@ -154,7 +154,7 @@ Finance service client used by exam-service to check user wallet balance and ded
 
 **Type**: integration
 **Trigger**: File upload in exam-service context (AI generation input files, avatar upload)
-**Source File**: `examio-be/apps/exam-service/src/modules/r2/r2-client.service.ts`
+**Source File**: `kmaedu-be/apps/exam-service/src/modules/r2/r2-client.service.ts`
 **Source Symbol**: `R2ClientService` (class, gRPC client to r2-service)
 
 ### Description
@@ -179,7 +179,7 @@ R2 storage client used by exam-service for uploading and retrieving user files. 
 
 **Type**: integration
 **Trigger**: Direct file storage operations via gateway proxy
-**Source File**: `examio-be/apps/r2-service/src/r2.service.ts`
+**Source File**: `kmaedu-be/apps/r2-service/src/r2.service.ts`
 **Source Symbol**: `R2Service` (class, Cloudflare R2 SDK client)
 
 ### Description
@@ -204,7 +204,7 @@ R2 storage service managing Cloudflare R2 bucket operations. Handles file upload
 
 **Type**: integration
 **Trigger**: Document upload for OCR processing
-**Source File**: `examio-be/apps/ocr-service/src/ocr.service.ts`
+**Source File**: `kmaedu-be/apps/ocr-service/src/ocr.service.ts`
 **Source Symbol**: `OcrService` (class, gRPC client or HTTP)
 
 ### Description
@@ -230,7 +230,7 @@ OCR service client used by exam-service for extracting text from uploaded docume
 
 **Type**: mail
 **Trigger**: User actions requiring email notification
-**Source File**: `examio-be/libs/common/src/services/mail.service.ts`
+**Source File**: `kmaedu-be/libs/common/src/services/mail.service.ts`
 **Source Symbol**: `MailService` (class with `send*` methods)
 
 ### Description
@@ -262,7 +262,7 @@ Email service for transactional emails. Sends account verification emails (6-dig
 
 **Type**: middleware
 **Trigger**: Every non-public HTTP request to backend services
-**Source File**: `examio-be/libs/common/src/middleware/session-validation.middleware.ts`
+**Source File**: `kmaedu-be/libs/common/src/middleware/session-validation.middleware.ts`
 **Source Symbol**: `SessionValidationMiddleware` (class implementing `NestMiddleware`)
 
 ### Description
@@ -287,7 +287,7 @@ Request-level middleware that validates the user's session token on every protec
 
 **Type**: webhook
 **Trigger**: Incoming bank transfer notification from SePay
-**Source File**: `examio-be/apps/finance-service/src/webhook.controller.ts`
+**Source File**: `kmaedu-be/apps/finance-service/src/webhook.controller.ts`
 **Source Symbol**: `WebhookController` (class with webhook route handler)
 
 ### Description
@@ -314,7 +314,7 @@ Incoming webhook controller receiving payment notifications from SePay virtual a
 
 **Type**: webhook
 **Trigger**: Incoming webhook forwarded through gateway to downstream service
-**Source File**: `examio-be/apps/gateway-service/src/controllers/webhook-proxy.controller.ts`
+**Source File**: `kmaedu-be/apps/gateway-service/src/controllers/webhook-proxy.controller.ts`
 **Source Symbol**: `WebhookProxyController` (class)
 
 ### Description
@@ -339,7 +339,7 @@ Gateway-level webhook proxy that forwards incoming webhook requests to downstrea
 
 **Type**: integration
 **Trigger**: OAuth redirect URL with token params (`?token=&refreshToken=&sessionId=`)
-**Source File**: `examio-fe/src/components/auth/AuthSyncBootstrap.tsx`
+**Source File**: `kmaedu-fe/src/components/auth/AuthSyncBootstrap.tsx`
 **Source Symbol**: `AuthSyncBootstrap` (React component)
 
 ### Description
@@ -348,7 +348,7 @@ Client-side OAuth callback handler. Reads `token`, `refreshToken`, and `sessionI
 
 ### Related Modules
 
-- examio-fe: auth flow, API client
+- kmaedu-fe: auth flow, API client
 
 ### Related Routes
 
@@ -365,7 +365,7 @@ Client-side OAuth callback handler. Reads `token`, `refreshToken`, and `sessionI
 
 **Type**: event-listener
 **Trigger**: Browser events during active exam attempt
-**Source File**: `examio-fe/src/hooks/useCheatingDetection.ts`
+**Source File**: `kmaedu-fe/src/hooks/useCheatingDetection.ts`
 **Source Symbol**: `useCheatingDetection` (React hook)
 
 ### Description
@@ -374,7 +374,7 @@ Client-side exam integrity hook. Registers listeners for tab visibility changes 
 
 ### Related Modules
 
-- examio-fe: ExamQuizPage, CheatingWarningModal
+- kmaedu-fe: ExamQuizPage, CheatingWarningModal
 
 ### Related Routes
 
@@ -391,7 +391,7 @@ Client-side exam integrity hook. Registers listeners for tab visibility changes 
 
 **Type**: integration
 **Trigger**: User clicks "Export PDF" on PDF history item
-**Source File**: `examio-fe/src/hooks/useExportPDF.ts`
+**Source File**: `kmaedu-fe/src/hooks/useExportPDF.ts`
 **Source Symbol**: `useExportPDF` (React hook)
 
 ### Description
@@ -400,7 +400,7 @@ Client-side hook for generating and downloading PDF files from processed documen
 
 ### Related Modules
 
-- examio-fe: HistoryPage, PDFHistoryPage
+- kmaedu-fe: HistoryPage, PDFHistoryPage
 
 ### Related Routes
 
@@ -417,7 +417,7 @@ Client-side hook for generating and downloading PDF files from processed documen
 
 **Type**: scheduled-job
 **Trigger**: AI generation page mount, tab visibility change
-**Source File**: `examio-fe/src/hooks/useGenerationGuard.ts`
+**Source File**: `kmaedu-fe/src/hooks/useGenerationGuard.ts`
 **Source Symbol**: `useGenerationGuard` (React hook)
 
 ### Description
@@ -426,7 +426,7 @@ Client-side guard that manages AI generation state persistence and resume logic.
 
 ### Related Modules
 
-- examio-fe: AIToolPage, PendingJobDialog
+- kmaedu-fe: AIToolPage, PendingJobDialog
 
 ### Related Routes
 
@@ -444,7 +444,7 @@ Client-side guard that manages AI generation state persistence and resume logic.
 
 **Type**: scheduled-job
 **Trigger**: Active exam attempt, time-based interval
-**Source File**: `examio-fe/src/pages/exam-session/ExamQuizPage.tsx`
+**Source File**: `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx`
 **Source Symbol**: `ExamQuizPage` (component with `setInterval` + `sendBeacon`)
 
 ### Description
@@ -453,7 +453,7 @@ Exam quiz page background auto-save mechanism. Uses `setInterval` to poll `updat
 
 ### Related Modules
 
-- examio-fe: ExamQuizPage
+- kmaedu-fe: ExamQuizPage
 
 ### Related Routes
 
@@ -501,14 +501,14 @@ N/A — no debounce or throttle patterns detected in the current scan.
 
 **BL-C01 — Session card pin toggle**
 pattern: optimistic-ui
-source: `examio-fe/src/pages/k/MyExamsPage.tsx:191` (inline handler)
+source: `kmaedu-fe/src/pages/k/MyExamsPage.tsx:191` (inline handler)
 trigger: user clicks pin/unpin on exam session card
 optimistic-action: immediately updates `examAttempts` state with toggled `isPinned` flag
 rollback: reverts `isPinned` on API error + shows error toast
 
 **BL-C02 — Flashcard study progress**
 pattern: optimistic-ui
-source: `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:221`
+source: `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:221`
 trigger: user navigates to next card
 optimistic-action: immediately adds current card ID to `studiedCards` Set
 rollback: silent (fire-and-forget API call `addStudiedCardApi`)
@@ -517,7 +517,7 @@ rollback: silent (fire-and-forget API call `addStudiedCardApi`)
 
 **BL-C03 — AI job status polling**
 pattern: polling
-source: `examio-fe/src/hooks/useGenerationGuard.ts`
+source: `kmaedu-fe/src/hooks/useGenerationGuard.ts`
 trigger: `pending_generation_job` key exists in localStorage on mount
 interval: 10000ms (10s)
 stops-when: job status changes to "completed" or "failed", or user cancels
@@ -525,7 +525,7 @@ max-attempts: 360 (60 minutes)
 
 **BL-C04 — Exam attempt auto-save**
 pattern: polling
-source: `examio-fe/src/pages/exam-session/ExamQuizPage.tsx` (setInterval)
+source: `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx` (setInterval)
 trigger: active exam attempt (status = IN_PROGRESS)
 interval: 30000ms (30s)
 stops-when: attempt status changes to COMPLETED/CANCELLED, or tab closes

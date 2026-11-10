@@ -1,6 +1,6 @@
 # F006 Business Context - AI File Upload, OCR & Content Generation
 
-This feature lets a learner turn a file, such as a PDF or image, into useful study content. Instead of manually typing questions or flashcards, the user uploads material and asks Examio to generate learning assets from it.
+This feature lets a learner turn a file, such as a PDF or image, into useful study content. Instead of manually typing questions or flashcards, the user uploads material and asks KMAEdu to generate learning assets from it.
 
 The flow matters because users often arrive with existing lecture notes, documents, or screenshots. The product should store the file, process the content, and show progress while generation is running.
 

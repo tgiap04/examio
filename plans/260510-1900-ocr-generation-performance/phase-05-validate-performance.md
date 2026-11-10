@@ -1,9 +1,9 @@
 # Phase 05 — Validate Performance and Regressions
 
 ## Context Links
-- `../examio-be/apps/ai-service`
-- `../examio-be/apps/exam-service/src/modules/ai/ai.service.ts`
-- `../examio-fe/src/stores/useAIGeneratorStore.ts`
+- `../kmaedu-be/apps/ai-service`
+- `../kmaedu-be/apps/exam-service/src/modules/ai/ai.service.ts`
+- `../kmaedu-fe/src/stores/useAIGeneratorStore.ts`
 
 ## Overview
 Priority: critical  
@@ -24,13 +24,13 @@ Verify speed gains, correctness, job status behavior, and frontend polling behav
 
 ## Related Code Files
 Read/validate:
-- `../examio-be/apps/exam-service/src/modules/ai/ai.service.ts`
-- `../examio-fe/src/stores/useAIGeneratorStore.ts`
+- `../kmaedu-be/apps/exam-service/src/modules/ai/ai.service.ts`
+- `../kmaedu-fe/src/stores/useAIGeneratorStore.ts`
 
 Commands:
-- `cd ../examio-be && yarn build`
+- `cd ../kmaedu-be && yarn build`
 - If frontend touched: `cd . && yarn build`
-- Python syntax/lint if available: `cd ../examio-be/apps/ai-service && ./venv/bin/ruff check src` or targeted Python compile.
+- Python syntax/lint if available: `cd ../kmaedu-be/apps/ai-service && ./venv/bin/ruff check src` or targeted Python compile.
 
 ## Implementation Steps
 1. Re-run baseline scenarios after each optimization phase.

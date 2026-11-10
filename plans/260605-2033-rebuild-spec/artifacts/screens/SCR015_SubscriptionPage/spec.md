@@ -150,6 +150,6 @@ N/A — no client-side form validation detected.
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/k/SubscriptionPage.tsx:1`
-- Subscription API: `examio-fe/src/apis/subscriptionApi.ts:1`
-- Store cache: `examio-fe/src/lib/storeCache.ts` (referenced via `storeCache.fetchWithCache`)
+- Page/View: `kmaedu-fe/src/pages/k/SubscriptionPage.tsx:1`
+- Subscription API: `kmaedu-fe/src/apis/subscriptionApi.ts:1`
+- Store cache: `kmaedu-fe/src/lib/storeCache.ts` (referenced via `storeCache.fetchWithCache`)

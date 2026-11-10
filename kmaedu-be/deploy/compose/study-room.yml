@@ -1,0 +1,95 @@
+# Study-room service: HTTP + Socket.io (/ws/study) in one container, plus its schema migration
+# Included from deploy/docker-compose.yml; paths are relative to deploy/ (project_directory).
+# No gRPC server, no worker container: the studyroom.events consumer runs inside the API
+# process because it must reach the Socket.io server (and its Redis adapter).
+# =============================================================================
+# Shared fragments (YAML anchors are per file, so each file carries its own copy)
+x-logging: &default-logging
+    driver: 'json-file'
+    options:
+        max-size: '10m'
+        max-file: '3'
+
+x-nestjs-healthcheck: &nestjs-healthcheck
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    start_period: 60s
+
+services:
+    study-room:
+        image: ghcr.io/tgiap04/kmaedu-study-room:${STUDY_ROOM_TAG:-main}
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile.node
+            args:
+                SERVICE: study-room-service
+        container_name: kmaedu-study-room
+        environment:
+            - NODE_ENV=production
+            - PORT=3000
+            - FRONTEND_URL=${FRONTEND_URL:?FRONTEND_URL is required}
+            - DATABASE_URL=postgresql://studyroom_svc:${STUDYROOM_DB_PASSWORD:?STUDYROOM_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=studyroom
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+            - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+            - RABBITMQ_URL=amqp://studyroom:${RABBITMQ_STUDYROOM_PASS:?RABBITMQ_STUDYROOM_PASS is required}@rabbitmq:5672
+            # Names/avatars from auth (GetPublicProfilesByIds with a service token)
+            - AUTH_GRPC_URL=auth:50051
+            - JWT_ISSUER=${JWT_ISSUER:-kmaedu-auth}
+            - JWT_AUDIENCE=${JWT_AUDIENCE:-kmaedu}
+            - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
+            - AUTH_TOKEN_URL=http://auth:3000/internal/token
+            - SERVICE_CLIENT_SECRET=${STUDYROOM_SERVICE_CLIENT_SECRET:?STUDYROOM_SERVICE_CLIENT_SECRET is required}
+        env_file:
+            - path: env/studyroom.env
+              required: true
+        depends_on:
+            study-room-migrate:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            auth:
+                condition: service_healthy
+        networks:
+            - internal
+        healthcheck:
+            <<: *nestjs-healthcheck
+            test:
+                [
+                    'CMD',
+                    'wget',
+                    '-q',
+                    '--spider',
+                    'http://localhost:3000/health/ready',
+                ]
+        mem_limit: 512m
+        restart: unless-stopped
+        logging: *default-logging
+
+    # One-shot: `prisma migrate deploy` for the studyroom schema as studyroom_svc, then exits.
+    study-room-migrate:
+        image: ghcr.io/tgiap04/kmaedu-study-room:${STUDY_ROOM_TAG:-main}
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile.node
+            args:
+                SERVICE: study-room-service
+        container_name: kmaedu-study-room-migrate
+        environment:
+            - ROLE=migrate
+            - DATABASE_URL=postgresql://studyroom_svc:${STUDYROOM_DB_PASSWORD:?STUDYROOM_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=studyroom
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - internal
+        healthcheck:
+            disable: true
+        mem_limit: 512m
+        restart: 'no'
+        logging: *default-logging

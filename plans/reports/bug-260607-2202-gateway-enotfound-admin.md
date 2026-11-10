@@ -83,7 +83,7 @@ The codebase has a **per-service `.env` + per-service `main.ts` load** pattern. 
 
 Mitigation ideas (not implemented; deferred):
 - Add a startup `validateEnv()` in gateway that throws if any key in `serviceUrls` is missing — catches misconfig at boot, not at first request.
-- Add a `CONTRIBUTING.md` note under `examio-be/` warning that adding a new service URL to `proxy.service.ts` requires updating `apps/gateway-service/.env(.example)`.
+- Add a `CONTRIBUTING.md` note under `kmaedu-be/` warning that adding a new service URL to `proxy.service.ts` requires updating `apps/gateway-service/.env(.example)`.
 
 ## Open questions
 

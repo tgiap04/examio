@@ -16,15 +16,15 @@
     "demotion keeps content and ownership untouched"
   ],
   "touchpoints": [
-    "examio-be/libs/auth-jwt",
-    "examio-be/libs/common/src/guard",
-    "examio-be/apps/auth-service",
-    "examio-be/apps/finance-service",
-    "examio-be/apps/admin-service",
-    "examio-be/apps/exam-service",
-    "examio-be/apps/gateway-service",
-    "examio-be/apps/r2-service",
-    "examio-be/libs/database/src/models/user.prisma"
+    "kmaedu-be/libs/auth-jwt",
+    "kmaedu-be/libs/common/src/guard",
+    "kmaedu-be/apps/auth-service",
+    "kmaedu-be/apps/finance-service",
+    "kmaedu-be/apps/admin-service",
+    "kmaedu-be/apps/exam-service",
+    "kmaedu-be/apps/gateway-service",
+    "kmaedu-be/apps/r2-service",
+    "kmaedu-be/libs/database/src/models/user.prisma"
   ],
   "blastRadius": [
     "every authenticated HTTP route in all services",

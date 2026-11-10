@@ -1,10 +1,10 @@
 # Phase 03 — Optimize Retrieval, Graph Planning, and Database Queries
 
 ## Context Links
-- `../examio-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py`
-- `../examio-be/apps/ai-service/src/backend/services/ocr_service.py`
-- `../examio-be/apps/ai-service/src/rag/vector_store_pg.py`
-- `../examio-be/libs/database/src/schema.prisma`
+- `../kmaedu-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/ocr_service.py`
+- `../kmaedu-be/apps/ai-service/src/rag/vector_store_pg.py`
+- `../kmaedu-be/libs/database/src/schema.prisma`
 
 ## Overview
 Priority: high  
@@ -26,12 +26,12 @@ Reduce repeated full chunk scans and make hot DB reads/indexes match actual acce
 
 ## Related Code Files
 Modify:
-- `../examio-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py`
-- `../examio-be/apps/ai-service/src/backend/services/generation_service.py`
-- `../examio-be/libs/database/src/schema.prisma`
+- `../kmaedu-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/generation_service.py`
+- `../kmaedu-be/libs/database/src/schema.prisma`
 
 Potential migration:
-- Prisma migration under `../examio-be/libs/database/src/migrations` or the repo's existing migration workflow.
+- Prisma migration under `../kmaedu-be/libs/database/src/migrations` or the repo's existing migration workflow.
 
 ## Implementation Steps
 1. Return enough metadata from `retrieve_for_generation()` to reuse the already-loaded graph entry or generation groups.

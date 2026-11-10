@@ -4,7 +4,7 @@
   "decision": "SEALED",
   "acceptanceCovered": [
     "yarn typecheck, build:all and test exit 0; quiz-practice and ownership e2e pass (temper 27/27, exam e2e 193/193 x2, migrate deploy + drift clean)",
-    "examio-fe build and lint exit 0 (temper evidence)",
+    "kmaedu-fe build and lint exit 0 (temper evidence)",
     "no practice response before submit contains isCorrect or correct-answer fields (mapper whitelist: toPracticeQuestions/toAttemptView hide score; read-verified on start, GET attempt, save, list)",
     "a student who entered a code once is not prompted again; after the teacher regenerates or disables the code the student is prompted again (codeGrantedIds append gated on stored code; cleared atomically on rotate/disable/exam-session code change)",
     "PUT sharing takes deltas (addUserIds, removeUserIds, isPublic, codeEnabled) applied atomically, single cap 2000 per list (409 SHARE_LIST_FULL) (single UPDATE...RETURNING, strict zod rejects old body)",
@@ -30,35 +30,35 @@
     {
       "severity": "High",
       "category": "Security",
-      "location": "examio-be/apps/exam-service/src/modules/quiz-practice/quiz-practice-attempt.service.ts:34-86",
+      "location": "kmaedu-be/apps/exam-service/src/modules/quiz-practice/quiz-practice-attempt.service.ts:34-86",
       "summary": "Open attempts never re-check set access: after whitelist removal, code rotate/disable or set made private, the student can still GET/save/submit and submit returns the answer key (violates 'rotate/disable revokes at once') [FIXED, verified in code + 160 focused unit tests + live probe 30/30]",
       "disposition": "Accept"
     },
     {
       "severity": "Medium",
       "category": "Logic",
-      "location": "examio-be/apps/exam-service/src/modules/quiz-practice/quiz-practice.service.ts:112-117",
+      "location": "kmaedu-be/apps/exam-service/src/modules/quiz-practice/quiz-practice.service.ts:112-117",
       "summary": "unlock appends a whitelisted/public user to codeGrantedIds; FE removing them from the code-granted list sends removeUserIds which also strips their whitelist grant [FIXED, verified in code + 160 focused unit tests + live probe 30/30]",
       "disposition": "Accept"
     },
     {
       "severity": "Medium",
       "category": "Correctness",
-      "location": "examio-be/apps/exam-service/src/modules/quiz-practice/quiz-practice-attempt.service.ts:38-47",
+      "location": "kmaedu-be/apps/exam-service/src/modules/quiz-practice/quiz-practice-attempt.service.ts:38-47",
       "summary": "Submitted attempt result is re-scored from the live question set on every GET, so teacher edits to answers after submit change verdicts while stored score stays old [FIXED, verified in code + 160 focused unit tests + live probe 30/30]",
       "disposition": "Accept"
     },
     {
       "severity": "Low",
       "category": "Data leakage",
-      "location": "examio-be/apps/exam-service/src/modules/quiz-practice/quiz-practice.service.ts:84-92",
+      "location": "kmaedu-be/apps/exam-service/src/modules/quiz-practice/quiz-practice.service.ts:84-92",
       "summary": "Anonymous access route returns title and questionCount of code-protected private sets (brief says status only) [FIXED, verified in code + 160 focused unit tests + live probe 30/30]",
       "disposition": "Accept"
     },
     {
       "severity": "Low",
       "category": "Logic",
-      "location": "examio-be/apps/exam-service/src/modules/quiz-practice/quiz-practice-scoring.ts:33-35",
+      "location": "kmaedu-be/apps/exam-service/src/modules/quiz-practice/quiz-practice-scoring.ts:33-35",
       "summary": "Exact option-text match beats letter, so an option whose text is a single letter can mis-resolve a submitted letter [FIXED, verified in code + 160 focused unit tests + live probe 30/30]",
       "disposition": "Accept"
     }

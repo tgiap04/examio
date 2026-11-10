@@ -1,6 +1,6 @@
 # Screen Flow
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Analysis Scope**: All 32 SCR screens across public, auth, and protected zones
 
@@ -610,7 +610,7 @@ graph LR
 
 ### GUARD-001 — ProtectedRoute on `/k/*`
 **trigger:** `beforeEnter` (React Router v6 ProtectedRoute wrapper)
-**source:** `examio-fe/src/routes/guards/ProtectedRoute.tsx`
+**source:** `kmaedu-fe/src/routes/guards/ProtectedRoute.tsx`
 **logic:**
 ```
 if (!isAuthenticated) → redirect /login?from={currentPath}
@@ -622,7 +622,7 @@ if (initializing) → show loading spinner
 
 ### GUARD-002 — PublicRoute on `/login`, `/register`, `/forgot-password`, `/reset-password`
 **trigger:** `beforeEnter` (React Router v6 PublicRoute wrapper)
-**source:** `examio-fe/src/routes/guards/PublicRoute.tsx`
+**source:** `kmaedu-fe/src/routes/guards/PublicRoute.tsx`
 **logic:**
 ```
 if (isAuthenticated) → redirect /k
@@ -633,7 +633,7 @@ if (isAuthenticated) → redirect /k
 
 ### GUARD-003 — TeacherRoute on `/k/manage-exam`, `/k/manage-exam-room`, `/k/manage-exam-room/:id`, `/k/manage-exam-room/:id/session/:sessionId`
 **trigger:** `beforeEnter` (React Router v6 TeacherRoute wrapper)
-**source:** `examio-fe/src/routes/guards/TeacherRoute.tsx`
+**source:** `kmaedu-fe/src/routes/guards/TeacherRoute.tsx`
 **logic:**
 ```
 if (!isTeacher) → redirect /k
@@ -644,7 +644,7 @@ if (!isTeacher) → redirect /k
 
 ### GUARD-004 — SessionValidationMiddleware on all non-public backend routes
 **trigger:** NestJS middleware `@Injectable() implements NestMiddleware`
-**source:** `examio-be/libs/common/src/middleware/session-validation.middleware.ts`
+**source:** `kmaedu-be/libs/common/src/middleware/session-validation.middleware.ts`
 **logic:**
 ```
 if (!token && !cookie) → 401 SESSION_MISSING
@@ -710,7 +710,7 @@ if (session.expiresAt < now) → 401 SESSION_EXPIRED
 
 ### SCR013 (ProfilePage) — REG001 ProfileForm
 **trigger:** `beforeunload` (form dirty check)
-**source:** `examio-fe/src/components/molecules/profile/ProfileForm.tsx`
+**source:** `kmaedu-fe/src/components/molecules/profile/ProfileForm.tsx`
 **dirty detection:** React Hook Form `formState.isDirty` + direct field comparison
 **prompt:** "Bạn có thay đổi chưa lưu. Bạn có chắc muốn rời khỏi trang này?"
 
@@ -718,7 +718,7 @@ if (session.expiresAt < now) → 401 SESSION_EXPIRED
 
 ### SCR032 (ExamQuizPage)
 **trigger:** `beforeunload` (unsubmitted answers)
-**source:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx`
+**source:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx`
 **dirty detection:** `answeredCount > 0 && status !== COMPLETED`
 **prompt:** "Bạn có bài thi chưa nộp. Bạn có chắc muốn rời khỏi?"
 
@@ -726,7 +726,7 @@ if (session.expiresAt < now) → 401 SESSION_EXPIRED
 
 ### SCR022 (ManageQuizSetDetailPage)
 **trigger:** route leave guard (question editor dirty state)
-**source:** `examio-fe/src/components/organisms/InlineQuestionEditor.tsx`
+**source:** `kmaedu-fe/src/components/organisms/InlineQuestionEditor.tsx`
 **dirty detection:** local `isDirty` flag on inline editor
 **prompt:** "Bạn có thay đổi chưa lưu trong câu hỏi."
 
@@ -734,7 +734,7 @@ if (session.expiresAt < now) → 401 SESSION_EXPIRED
 
 ### SCR023 (ManageFlashcardSetDetailPage)
 **trigger:** route leave guard (flashcard editor dirty state)
-**source:** `examio-fe/src/components/organisms/FlashcardEditorDialog.tsx`
+**source:** `kmaedu-fe/src/components/organisms/FlashcardEditorDialog.tsx`
 **dirty detection:** local `isDirty` flag on dialog
 **prompt:** "Bạn có thay đổi chưa lưu trong thẻ."
 
@@ -742,7 +742,7 @@ if (session.expiresAt < now) → 401 SESSION_EXPIRED
 
 ### SCR027 (ManageExamRoomDetailPage) — ExamSessionFormModal
 **trigger:** modal close intercept
-**source:** `examio-fe/src/components/organisms/ExamSessionFormModal.tsx`
+**source:** `kmaedu-fe/src/components/organisms/ExamSessionFormModal.tsx`
 **dirty detection:** React Hook Form `formState.isDirty`
 **prompt:** "Bạn có thay đổi chưa lưu trong biểu mẫu phiên thi."
 

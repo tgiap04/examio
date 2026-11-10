@@ -2,7 +2,7 @@
 
 **Entity:** `UserStorage` (MODEL-027)
 **State Field:** `processingStatus` (DISC-013)
-**Source:** `examio-be/libs/database/src/schema.prisma` (UserStorage)
+**Source:** `kmaedu-be/libs/database/src/schema.prisma` (UserStorage)
 **Last Updated:** 2026-06-05
 
 ## State Diagram
@@ -25,12 +25,12 @@ stateDiagram-v2
 
 | ID | From | Trigger | To | Side Effects | Source |
 |----|------|---------|----|--------------|--------|
-| T1 | INIT | user-action | PENDING | POST /r2/image (multipart) | `examio-be/apps/exam-service/src/modules/r2/r2.controller.ts:42` |
-| T2 | PENDING | event | PROCESSING | ocr.requested RabbitMQ event | `examio-be/libs/common/src/events/event-publisher.service.ts:68` |
-| T3 | PROCESSING | event | COMPLETED | ocr.completed event | `examio-be/libs/common/src/events/event-subscriber.service.ts:91` |
-| T4 | PROCESSING | event | FAILED | ocr.failed event | `examio-be/libs/common/src/events/event-subscriber.service.ts:104` |
-| T5 | FAILED | user-action | PROCESSING | User clicks Retry | `examio-fe/src/components/organisms/k/FlashcardGenerator.tsx:212` |
-| T6 | COMPLETED | user-action | DELETED | DELETE /r2/image/:id | `examio-be/apps/exam-service/src/modules/r2/r2.service.ts:78` |
+| T1 | INIT | user-action | PENDING | POST /r2/image (multipart) | `kmaedu-be/apps/exam-service/src/modules/r2/r2.controller.ts:42` |
+| T2 | PENDING | event | PROCESSING | ocr.requested RabbitMQ event | `kmaedu-be/libs/common/src/events/event-publisher.service.ts:68` |
+| T3 | PROCESSING | event | COMPLETED | ocr.completed event | `kmaedu-be/libs/common/src/events/event-subscriber.service.ts:91` |
+| T4 | PROCESSING | event | FAILED | ocr.failed event | `kmaedu-be/libs/common/src/events/event-subscriber.service.ts:104` |
+| T5 | FAILED | user-action | PROCESSING | User clicks Retry | `kmaedu-fe/src/components/organisms/k/FlashcardGenerator.tsx:212` |
+| T6 | COMPLETED | user-action | DELETED | DELETE /r2/image/:id | `kmaedu-be/apps/exam-service/src/modules/r2/r2.service.ts:78` |
 
 ## Trigger Types (2)
 

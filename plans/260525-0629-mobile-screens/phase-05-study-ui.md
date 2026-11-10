@@ -19,11 +19,11 @@ Native-mobile UI for the materials list/dashboard and flashcard-set list, PLUS b
 
 ## Files to modify
 - Android: `androidApp/.../features/study/StudyScreen.kt` (split: `MyMaterialsSection.kt`, `FlashcardSetListSection.kt`)
-- iOS: `iosApp/ExamioApp/Views/StudyView.swift` (split subviews)
+- iOS: `iosApp/KMAEduApp/Views/StudyView.swift` (split subviews)
 
 ## Files to create (MISSING detail screens)
 - Android: `androidApp/.../features/study/QuizSetDetailScreen.kt`, `FlashcardSetDetailScreen.kt`
-- iOS: `iosApp/ExamioApp/Views/QuizSetDetailView.swift`, `FlashcardSetDetailView.swift`
+- iOS: `iosApp/KMAEduApp/Views/QuizSetDetailView.swift`, `FlashcardSetDetailView.swift`
 
 ## Out of scope
 - API calls / ViewModels / CRUD logic (Phase 06/07). Word-family (deferred).

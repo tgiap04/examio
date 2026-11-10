@@ -1,6 +1,6 @@
 # Screen List
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Analysis Scope**: All 32 frontend page files + 5 layout shells + backend route controllers
 
@@ -1179,7 +1179,7 @@ Audit log query page. Paginated antd Table showing `AdminAudit` rows: admin user
 
 ### Description
 
-Admin screen listing every togglable page (`PageFeatureFlag` rows) with a `Switch` per row. Toggling calls the admin API with optimistic update + rollback on failure. Source: `examio-fe/src/pages/admin/AdminPageConfigPage.tsx`.
+Admin screen listing every togglable page (`PageFeatureFlag` rows) with a `Switch` per row. Toggling calls the admin API with optimistic update + rollback on failure. Source: `kmaedu-fe/src/pages/admin/AdminPageConfigPage.tsx`.
 
 ### Components
 
@@ -1205,7 +1205,7 @@ Admin screen listing every togglable page (`PageFeatureFlag` rows) with a `Switc
 
 ### Description
 
-Category browse page — grid of `WordFamilyCategory` cards (image, name, description), filtered to `isActive = true`. Each card links to `SCR041`. Source: `examio-fe/src/pages/k/WordFamilyPage.tsx`.
+Category browse page — grid of `WordFamilyCategory` cards (image, name, description), filtered to `isActive = true`. Each card links to `SCR041`. Source: `kmaedu-fe/src/pages/k/WordFamilyPage.tsx`.
 
 ### Components
 
@@ -1229,7 +1229,7 @@ Category browse page — grid of `WordFamilyCategory` cards (image, name, descri
 
 ### Description
 
-Root-word list within one category, shown as chips. "Tạo thêm từ gốc" button triggers AI generation (`POST /generate`) then refetches with `forceRefresh`. Source: `examio-fe/src/pages/k/WordFamilyCategoryPage.tsx`.
+Root-word list within one category, shown as chips. "Tạo thêm từ gốc" button triggers AI generation (`POST /generate`) then refetches with `forceRefresh`. Source: `kmaedu-fe/src/pages/k/WordFamilyCategoryPage.tsx`.
 
 ### Components
 
@@ -1255,7 +1255,7 @@ Root-word list within one category, shown as chips. "Tạo thêm từ gốc" but
 
 ### Description
 
-Word family detail with Tree/List view toggle, word selection checkboxes, save-to-collection action, and "Tạo Flashcard (N)" bridge to a new `FlashCardSet`. Source: `examio-fe/src/pages/k/WordFamilyDetailPage.tsx`.
+Word family detail with Tree/List view toggle, word selection checkboxes, save-to-collection action, and "Tạo Flashcard (N)" bridge to a new `FlashCardSet`. Source: `kmaedu-fe/src/pages/k/WordFamilyDetailPage.tsx`.
 
 ### Components
 
@@ -1285,7 +1285,7 @@ Word family detail with Tree/List view toggle, word selection checkboxes, save-t
 
 ### Description
 
-Admin CRUD for `WordFamilyCategory` — antd Table + Modal, auto-slug generator from Vietnamese name. Calls admin-service endpoints (`/admin/word-family/*`), distinct from the exam-service admin category routes. Source: `examio-fe/src/pages/admin/AdminWordFamilyPage.tsx`.
+Admin CRUD for `WordFamilyCategory` — antd Table + Modal, auto-slug generator from Vietnamese name. Calls admin-service endpoints (`/admin/word-family/*`), distinct from the exam-service admin category routes. Source: `kmaedu-fe/src/pages/admin/AdminWordFamilyPage.tsx`.
 
 ### Components
 
@@ -1313,7 +1313,7 @@ Admin CRUD for `WordFamilyCategory` — antd Table + Modal, auto-slug generator 
 
 ### Description
 
-Route `/admin/roles`, sidebar item "Phân quyền" (`nav.roles`, `AdminLayout`). Three tabs kept in the URL (`?tab=users|matrix|history`, filters `q`, `role`, `admin`, `page`; history `user`, `hpage`). Users tab: table with a STUDENT/TEACHER select and a SYSTEM_ADMIN switch per row, ban/unban actions, confirm dialog that lists the consequences. Own row is locked; the last active admin cannot be demoted. Matrix tab: read-only role to permission grid. History tab: `RoleChangeLog` rows (who, from/to, reason, source). Source: `examio-fe/src/pages/admin/AdminRolesPage.tsx`; the client rules mirror auth (server answers are authoritative).
+Route `/admin/roles`, sidebar item "Phân quyền" (`nav.roles`, `AdminLayout`). Three tabs kept in the URL (`?tab=users|matrix|history`, filters `q`, `role`, `admin`, `page`; history `user`, `hpage`). Users tab: table with a STUDENT/TEACHER select and a SYSTEM_ADMIN switch per row, ban/unban actions, confirm dialog that lists the consequences. Own row is locked; the last active admin cannot be demoted. Matrix tab: read-only role to permission grid. History tab: `RoleChangeLog` rows (who, from/to, reason, source). Source: `kmaedu-fe/src/pages/admin/AdminRolesPage.tsx`; the client rules mirror auth (server answers are authoritative).
 
 ### Components
 

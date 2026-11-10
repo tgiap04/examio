@@ -2,9 +2,9 @@
 
 - Parent plan: [plan.md](../plan.md)
 - Research: [researcher-01-backend.md](../research/researcher-01-backend.md)
-- Auth guard: [examio-be/libs/common/src/guard/auth.guard.ts](../../../../examio-be/libs/common/src/guard/auth.guard.ts)
-- Prisma: [examio-be/libs/database/src/schema.prisma](../../../../examio-be/libs/database/src/schema.prisma)
-- UserRepository: [examio-be/apps/auth-service/src/repositories/user.repository.ts](../../../../examio-be/apps/auth-service/src/repositories/user.repository.ts)
+- Auth guard: [kmaedu-be/libs/common/src/guard/auth.guard.ts](../../../../kmaedu-be/libs/common/src/guard/auth.guard.ts)
+- Prisma: [kmaedu-be/libs/database/src/schema.prisma](../../../../kmaedu-be/libs/database/src/schema.prisma)
+- UserRepository: [kmaedu-be/apps/auth-service/src/repositories/user.repository.ts](../../../../kmaedu-be/apps/auth-service/src/repositories/user.repository.ts)
 - Zod pattern: existing `nestjs-zod` ZodValidationPipe trong repo (verify version)
 - Phase 01: [phase-01-backend-infra-foundation.md](phase-01-backend-infra-foundation.md)
 - Phase 03: [phase-03-backend-admin-bootstrap.md](phase-03-backend-admin-bootstrap.md)
@@ -82,23 +82,23 @@ admin-service/src/common/
 ## Related code files
 
 **New:**
-- `examio-be/apps/admin-service/src/modules/admin-users/admin-users.service.ts`
-- `examio-be/apps/admin-service/src/modules/admin-users/admin-users.controller.ts`
-- `examio-be/apps/admin-service/src/modules/admin-users/admin-users.module.ts`
-- `examio-be/apps/admin-service/src/modules/admin-users/dto/list-users.query.ts`
-- `examio-be/apps/admin-service/src/modules/admin-users/dto/update-user.body.ts`
-- `examio-be/apps/admin-service/src/modules/admin-users/admin-users.service.spec.ts`
-- `examio-be/apps/admin-service/src/modules/admin-audit/admin-audit.service.ts`
-- `examio-be/apps/admin-service/src/modules/admin-audit/admin-audit.controller.ts`
-- `examio-be/apps/admin-service/src/modules/admin-audit/admin-audit.module.ts`
-- `examio-be/apps/admin-service/src/modules/admin-audit/dto/list-audit.query.ts`
-- `examio-be/apps/admin-service/src/modules/admin-audit/admin-audit.service.spec.ts`
-- `examio-be/apps/admin-service/src/common/audit-writer.service.ts` (full impl, đã có skeleton từ phase 01)
-- `examio-be/apps/admin-service/src/common/audit-writer.module.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-users/admin-users.service.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-users/admin-users.controller.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-users/admin-users.module.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-users/dto/list-users.query.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-users/dto/update-user.body.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-users/admin-users.service.spec.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-audit/admin-audit.service.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-audit/admin-audit.controller.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-audit/admin-audit.module.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-audit/dto/list-audit.query.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-audit/admin-audit.service.spec.ts`
+- `kmaedu-be/apps/admin-service/src/common/audit-writer.service.ts` (full impl, đã có skeleton từ phase 01)
+- `kmaedu-be/apps/admin-service/src/common/audit-writer.module.ts`
 
 **Modify:**
-- `examio-be/libs/database/src/schema.prisma` — add `deletedAt DateTime?`, `isBanned Boolean @default(false)` trên `User` model
-- `examio-be/apps/admin-service/src/admin-service.module.ts` — import `AdminUsersModule`, `AdminAuditModule`, `AuditWriterModule`
+- `kmaedu-be/libs/database/src/schema.prisma` — add `deletedAt DateTime?`, `isBanned Boolean @default(false)` trên `User` model
+- `kmaedu-be/apps/admin-service/src/admin-service.module.ts` — import `AdminUsersModule`, `AdminAuditModule`, `AuditWriterModule`
 - Migration: `add_user_ban_fields` (mới, sau `add_admin_audit`)
 
 ## Implementation Steps

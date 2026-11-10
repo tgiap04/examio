@@ -57,9 +57,9 @@ no infinite loop.
 
 ## Files
 
-- `examio-fe/src/pages/admin/AdminOverviewPage.tsx` — replaced
+- `kmaedu-fe/src/pages/admin/AdminOverviewPage.tsx` — replaced
   `selectSeries` with inline selectors that read stable references.
-- `examio-fe/src/pages/admin/AdminStatsPage.tsx` — same fix.
+- `kmaedu-fe/src/pages/admin/AdminStatsPage.tsx` — same fix.
 
 ## Out of Scope (separate issue)
 

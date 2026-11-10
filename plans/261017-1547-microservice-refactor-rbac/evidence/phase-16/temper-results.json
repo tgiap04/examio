@@ -1,630 +1,630 @@
 {
  "commands": [
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-be && bash scripts/changed-services.test.sh)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && bash scripts/changed-services.test.sh)",
    "exitCode": 0,
    "status": "pass",
-   "summary": " without the examio-be prefix work too ok - FORCE_ALL=1 selects everything ok - base '' selects everything ok - base '0000000000000000000000000000000000000000' selects everything ok - base 'not-a-rev-55473' selects everything ok - git diff HEAD HEAD selects nothing all changed-services tests passed ",
+   "summary": " without the kmaedu-be prefix work too ok - FORCE_ALL=1 selects everything ok - base '' selects everything ok - base '0000000000000000000000000000000000000000' selects everything ok - base 'not-a-rev-55473' selects everything ok - git diff HEAD HEAD selects nothing all changed-services tests passed ",
    "ts": "2026-10-27T14:09:32.115Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-be && bash scripts/lint-migrations.test.sh)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && bash scripts/lint-migrations.test.sh)",
    "exitCode": 0,
    "status": "pass",
    "summary": "- alembic raw SQL drop table (lowercase) fails ok - files that are not migrations are ignored ok - no changed files passes ok - a missing file is an error, not a pass ok - report names file, line and rule ok - unresolvable base exits 2 ok - git diff HEAD HEAD passes all lint-migrations tests passed ",
    "ts": "2026-10-27T14:09:33.205Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-be && bash deploy/deploy-service.test.sh)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && bash deploy/deploy-service.test.sh)",
    "exitCode": 0,
    "status": "pass",
    "summary": "ok - DRY_RUN never calls docker ok - DRY_RUN leaves the tags file alone ok - no telegram credentials: still fails ok - no telegram credentials: alert is a no-op ok - script never runs migrate resolve ok - script never runs db push ok - script does not log in to GHCR all deploy-service checks passed ",
    "ts": "2026-10-27T14:09:35.254Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-be && node --test deploy/compose-topology.spec.cjs)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && node --test deploy/compose-topology.spec.cjs)",
    "exitCode": 0,
    "status": "pass",
    "summary": " api-only: it has no worker code, so services.json marks it worker=false (0.085584ms) ✔ the FE nginx proxies through the gw upstream with re-resolution and no BACKEND_URL (0.200417ms) ℹ tests 45 ℹ suites 0 ℹ pass 45 ℹ fail 0 ℹ cancelled 0 ℹ skipped 0 ℹ todo 0 ℹ duration_ms 105.279 ",
    "ts": "2026-10-27T14:09:35.432Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-be && node --test deploy/rabbitmq/render-definitions.spec.cjs)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && node --test deploy/rabbitmq/render-definitions.spec.cjs)",
    "exitCode": 0,
    "status": "pass",
    "summary": "-readable, the broker user must read the mount) when all passwords are set (34.050292ms) ✔ CLI without --out never writes inside the repo tree: default is the OS temp dir (33.2765ms) ℹ tests 17 ℹ suites 0 ℹ pass 17 ℹ fail 0 ℹ cancelled 0 ℹ skipped 0 ℹ todo 0 ℹ duration_ms 158.3395 ",
    "ts": "2026-10-27T14:09:35.660Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-be && shellcheck deploy/deploy-service.sh deploy/docker-entrypoint.sh deploy/setup-env.sh deploy/ci-dummy.env.sh scripts/changed-services.sh scripts/lint-migrations.sh scripts/changed-services.test.sh scripts/lint-migrations.test.sh deploy/deploy-service.test.sh)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && shellcheck deploy/deploy-service.sh deploy/docker-entrypoint.sh deploy/setup-env.sh deploy/ci-dummy.env.sh scripts/changed-services.sh scripts/lint-migrations.sh scripts/changed-services.test.sh scripts/lint-migrations.test.sh deploy/deploy-service.test.sh)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "(cd /Users/tgiap.dev/devs/examio/examio-be && shellcheck deploy/deploy-service.sh deploy/docker-entrypoint.sh deploy/setup-env.sh deploy/ci-dummy.env.sh scripts/changed-services.sh scripts/lint-migrations.sh scripts/changed-services.test.sh scripts/lint-migrations.test.sh deploy/deploy-service.test.sh) → exit 0",
+   "summary": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && shellcheck deploy/deploy-service.sh deploy/docker-entrypoint.sh deploy/setup-env.sh deploy/ci-dummy.env.sh scripts/changed-services.sh scripts/lint-migrations.sh scripts/changed-services.test.sh scripts/lint-migrations.test.sh deploy/deploy-service.test.sh) → exit 0",
    "ts": "2026-10-27T14:09:35.966Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio && actionlint .github/workflows/deploy.yml)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu && actionlint .github/workflows/deploy.yml)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "(cd /Users/tgiap.dev/devs/examio && actionlint .github/workflows/deploy.yml) → exit 0",
+   "summary": "(cd /Users/tgiap.dev/devs/kmaedu && actionlint .github/workflows/deploy.yml) → exit 0",
    "ts": "2026-10-27T14:09:47.470Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-be && yarn typecheck)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && yarn typecheck)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "(cd /Users/tgiap.dev/devs/examio/examio-be && yarn typecheck) → exit 0",
+   "summary": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && yarn typecheck) → exit 0",
    "ts": "2026-10-27T14:10:12.570Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-be && yarn check:deps)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && yarn check:deps)",
    "exitCode": 0,
    "status": "pass",
    "summary": " ✔ no dependency violations found (1071 modules, 4198 dependencies cruised) ",
    "ts": "2026-10-27T14:10:15.060Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-be && yarn check:ownership)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && yarn check:ownership)",
    "exitCode": 0,
    "status": "pass",
    "summary": " Violations: 0 ",
    "ts": "2026-10-27T14:10:16.539Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-be && yarn build:all)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && yarn build:all)",
    "exitCode": 0,
    "status": "pass",
    "summary": "sfully\u001b[39m\u001b[22m in 2017 ms webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 2046 ms webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 1950 ms webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 2112 ms webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 2022 ms ",
    "ts": "2026-10-27T14:11:02.285Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-be && bash -c npx jest --forceExit 2>&1 | tail -c 20000; exit ${PIPESTATUS[0]})",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && bash -c npx jest --forceExit 2>&1 | tail -c 20000; exit ${PIPESTATUS[0]})",
    "exitCode": 0,
    "status": "pass",
    "summary": "d on them. Test Suites: 1 skipped, 244 passed, 244 of 245 total Tests: 6 skipped, 2480 passed, 2486 total Snapshots: 0 total Time: 16.321 s Ran all test suites. Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
    "ts": "2026-10-27T14:11:24.771Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-be/apps/ai-service && ./venv/bin/pytest src/backend/tests -q -p no:cacheprovider)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ai-service && ./venv/bin/pytest src/backend/tests -q -p no:cacheprovider)",
    "exitCode": 0,
    "status": "pass",
    "summary": "recated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC). 'updated_at': datetime.utcnow(), -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html 114 passed, 58 skipped, 12 warnings in 8.21s ",
    "ts": "2026-10-27T14:11:39.637Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-fe && yarn build)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-fe && yarn build)",
    "exitCode": 0,
    "status": "pass",
    "summary": "cation. Consider: - Using dynamic import() to code-split the application - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit. ✓ built in 11.21s ",
    "ts": "2026-10-27T14:11:52.295Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-fe && yarn lint)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-fe && yarn lint)",
    "exitCode": 0,
    "status": "pass",
-   "summary": ".dev/devs/examio/examio-fe/src/templates/ExamRoomDetailTemplate.tsx 73:16 warning A/an 'array expression' as default prop. This could lead to potential infinite render loop in React. Use a variable instead of 'array expression' react/no-unstable-default-props ✖ 29 problems (0 errors, 29 warnings) ",
+   "summary": ".dev/devs/kmaedu/kmaedu-fe/src/templates/ExamRoomDetailTemplate.tsx 73:16 warning A/an 'array expression' as default prop. This could lead to potential infinite render loop in React. Use a variable instead of 'array expression' react/no-unstable-default-props ✖ 29 problems (0 errors, 29 warnings) ",
    "ts": "2026-10-27T14:11:58.749Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-fe && yarn test)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-fe && yarn test)",
    "exitCode": 0,
    "status": "pass",
-   "summary": " RUN v5.0.5 /Users/tgiap.dev/devs/examio/examio-fe Test Files 19 passed (19) Tests 128 passed (128) Start at 21:11:59 Duration 358ms (transform 38%, import 35%, tests 14%, worker 13%) ",
+   "summary": " RUN v5.0.5 /Users/tgiap.dev/devs/kmaedu/kmaedu-fe Test Files 19 passed (19) Tests 128 passed (128) Start at 21:11:59 Duration 358ms (transform 38%, import 35%, tests 14%, worker 13%) ",
    "ts": "2026-10-27T14:11:59.856Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=admin-service -t ghcr.io/cychipo/examio-admin:p16t .",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=admin-service -t ghcr.io/tgiap04/kmaedu-admin:p16t .",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=73s size=176387974 bytes",
    "ts": "2026-10-27T14:13:52.042Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=ai-chat-service -t ghcr.io/cychipo/examio-ai-chat:p16t .",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=ai-chat-service -t ghcr.io/tgiap04/kmaedu-ai-chat:p16t .",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=29s size=176415344 bytes",
    "ts": "2026-10-27T14:14:21.243Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=assessment-service -t ghcr.io/cychipo/examio-assessment:p16t .",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=assessment-service -t ghcr.io/tgiap04/kmaedu-assessment:p16t .",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=30s size=176447754 bytes",
    "ts": "2026-10-27T14:14:51.880Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=auth-service -t ghcr.io/cychipo/examio-auth:p16t .",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=auth-service -t ghcr.io/tgiap04/kmaedu-auth:p16t .",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=32s size=176443779 bytes",
    "ts": "2026-10-27T14:15:24.052Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && bash -c docker compose --env-file .env --env-file .tags.env config --quiet)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && bash -c docker compose --env-file .env --env-file .tags.env config --quiet)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && bash -c docker compose --env-file .env --env-file .tags.env config --quiet) → exit 0",
+   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && bash -c docker compose --env-file .env --env-file .tags.env config --quiet) → exit 0",
    "ts": "2026-10-27T14:15:56.354Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && bash -c docker compose --env-file .env --env-file .tags.env run --rm rabbitmq-defs && test -s rabbitmq/definitions.json)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && bash -c docker compose --env-file .env --env-file .tags.env run --rm rabbitmq-defs && test -s rabbitmq/definitions.json)",
    "exitCode": 0,
    "status": "pass",
    "summary": " Container p16new-rabbitmq-defs-run-cf41c9dafece Creating Container p16new-rabbitmq-defs-run-cf41c9dafece Created rendered /defs/definitions.json (10 users) ",
    "ts": "2026-10-27T14:15:57.230Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=content-service -t ghcr.io/cychipo/examio-content:p16t .",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=content-service -t ghcr.io/tgiap04/kmaedu-content:p16t .",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=33s size=176555690 bytes",
    "ts": "2026-10-27T14:15:57.329Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && bash -c docker compose --env-file .env --env-file .tags.env up -d --wait postgres redis rabbitmq)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && bash -c docker compose --env-file .env --env-file .tags.env up -d --wait postgres redis rabbitmq)",
    "exitCode": 0,
    "status": "pass",
-   "summary": " examio-rabbitmq Started Container examio-rabbitmq Waiting Container examio-postgres Waiting Container examio-redis Waiting Container examio-rabbitmq-defs Waiting Container examio-rabbitmq-defs Exited Container examio-redis Healthy Container examio-postgres Healthy Container examio-rabbitmq Healthy ",
+   "summary": " kmaedu-rabbitmq Started Container kmaedu-rabbitmq Waiting Container kmaedu-postgres Waiting Container kmaedu-redis Waiting Container kmaedu-rabbitmq-defs Waiting Container kmaedu-rabbitmq-defs Exited Container kmaedu-redis Healthy Container kmaedu-postgres Healthy Container kmaedu-rabbitmq Healthy ",
    "ts": "2026-10-27T14:16:03.775Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T postgres sh -c psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -tAc \"select rolname from pg_roles where rolname like '%_svc' order by 1\" | tr \"\\n\" \" \")",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T postgres sh -c psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -tAc \"select rolname from pg_roles where rolname like '%_svc' order by 1\" | tr \"\\n\" \" \")",
    "exitCode": 0,
    "status": "pass",
    "summary": "admin_svc ai_svc aichat_svc assessment_svc auth_svc content_svc document_svc finance_svc studyroom_svc vocabulary_svc ",
    "ts": "2026-10-27T14:16:22.923Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T -u rabbitmq rabbitmq rabbitmqctl list_users -q)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T -u rabbitmq rabbitmq rabbitmqctl list_users -q)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "user\ttags gateway\t[] aichat\t[] studyroom\t[] content\t[] finance\t[] auth\t[] document\t[] ai\t[] assessment\t[] examio\t[administrator] ",
+   "summary": "user\ttags gateway\t[] aichat\t[] studyroom\t[] content\t[] finance\t[] auth\t[] document\t[] ai\t[] assessment\t[] kmaedu\t[administrator] ",
    "ts": "2026-10-27T14:16:23.405Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T -u rabbitmq rabbitmq rabbitmqctl list_queues -q name)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T -u rabbitmq rabbitmq rabbitmqctl list_queues -q name)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T -u rabbitmq rabbitmq rabbitmqctl list_queues -q name) → exit 0",
+   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T -u rabbitmq rabbitmq rabbitmqctl list_queues -q name) → exit 0",
    "ts": "2026-10-27T14:16:23.872Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T postgres sh -c psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -tAc \"select extname from pg_extension\" | tr \"\\n\" \" \")",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T postgres sh -c psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -tAc \"select extname from pg_extension\" | tr \"\\n\" \" \")",
    "exitCode": 0,
    "status": "pass",
    "summary": "plpgsql vector ",
    "ts": "2026-10-27T14:16:24.019Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=document-service -t ghcr.io/cychipo/examio-document:p16t .",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=document-service -t ghcr.io/tgiap04/kmaedu-document:p16t .",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=31s size=176395896 bytes",
    "ts": "2026-10-27T14:16:28.429Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=finance-service -t ghcr.io/cychipo/examio-finance:p16t .",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=finance-service -t ghcr.io/tgiap04/kmaedu-finance:p16t .",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=32s size=176414103 bytes",
    "ts": "2026-10-27T14:17:00.522Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=gateway-service -t ghcr.io/cychipo/examio-gateway:p16t .",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=gateway-service -t ghcr.io/tgiap04/kmaedu-gateway:p16t .",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=30s size=176346921 bytes",
    "ts": "2026-10-27T14:17:30.602Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=r2-service -t ghcr.io/cychipo/examio-r2:p16t .",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=r2-service -t ghcr.io/tgiap04/kmaedu-r2:p16t .",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=29s size=176321668 bytes",
    "ts": "2026-10-27T14:18:00.047Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=study-room-service -t ghcr.io/cychipo/examio-study-room:p16t .",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=study-room-service -t ghcr.io/tgiap04/kmaedu-study-room:p16t .",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=30s size=176398681 bytes",
    "ts": "2026-10-27T14:18:30.701Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=vocabulary-service -t ghcr.io/cychipo/examio-vocabulary:p16t .",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=vocabulary-service -t ghcr.io/tgiap04/kmaedu-vocabulary:p16t .",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=33s size=176384662 bytes",
    "ts": "2026-10-27T14:19:03.585Z"
   },
   {
-   "command": "docker build -f apps/ai-service/Dockerfile -t ghcr.io/cychipo/examio-ai:p16t .",
+   "command": "docker build -f apps/ai-service/Dockerfile -t ghcr.io/tgiap04/kmaedu-ai:p16t .",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=278s size=477049061 bytes",
    "ts": "2026-10-27T14:23:41.597Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-fe && docker build -t p16new-frontend:latest --build-arg VITE_API_URL=/api/v1 --build-arg VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA .)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-fe && docker build -t p16new-frontend:latest --build-arg VITE_API_URL=/api/v1 --build-arg VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA .)",
    "exitCode": 0,
    "status": "pass",
    "summary": "structions for sensitive data (ENV \"VITE_TURNSTILE_SITE_KEY\") (line 24) - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG \"VITE_TURNSTILE_SITE_KEY\") (line 22) View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/1n8239hq8nz8q8y0cjwl8l4k3 ",
    "ts": "2026-10-27T14:25:24.672Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=admin-service -t ghcr.io/cychipo/examio-admin:p16t . (mode-normalized context)",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=admin-service -t ghcr.io/tgiap04/kmaedu-admin:p16t . (mode-normalized context)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=23s size=176387664 bytes",
    "ts": "2026-10-27T14:26:57.403Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=ai-chat-service -t ghcr.io/cychipo/examio-ai-chat:p16t . (mode-normalized context)",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=ai-chat-service -t ghcr.io/tgiap04/kmaedu-ai-chat:p16t . (mode-normalized context)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=10s size=176415341 bytes",
    "ts": "2026-10-27T14:27:07.306Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=assessment-service -t ghcr.io/cychipo/examio-assessment:p16t . (mode-normalized context)",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=assessment-service -t ghcr.io/tgiap04/kmaedu-assessment:p16t . (mode-normalized context)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=21s size=176447471 bytes",
    "ts": "2026-10-27T14:27:29.073Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=auth-service -t ghcr.io/cychipo/examio-auth:p16t . (mode-normalized context)",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=auth-service -t ghcr.io/tgiap04/kmaedu-auth:p16t . (mode-normalized context)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=10s size=176443773 bytes",
    "ts": "2026-10-27T14:27:39.716Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=content-service -t ghcr.io/cychipo/examio-content:p16t . (mode-normalized context)",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=content-service -t ghcr.io/tgiap04/kmaedu-content:p16t . (mode-normalized context)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=23s size=176555399 bytes",
    "ts": "2026-10-27T14:28:02.670Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=document-service -t ghcr.io/cychipo/examio-document:p16t . (mode-normalized context)",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=document-service -t ghcr.io/tgiap04/kmaedu-document:p16t . (mode-normalized context)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=11s size=176395898 bytes",
    "ts": "2026-10-27T14:28:13.121Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=finance-service -t ghcr.io/cychipo/examio-finance:p16t . (mode-normalized context)",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=finance-service -t ghcr.io/tgiap04/kmaedu-finance:p16t . (mode-normalized context)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=20s size=176413967 bytes",
    "ts": "2026-10-27T14:28:34.150Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=gateway-service -t ghcr.io/cychipo/examio-gateway:p16t . (mode-normalized context)",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=gateway-service -t ghcr.io/tgiap04/kmaedu-gateway:p16t . (mode-normalized context)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=9s size=176346921 bytes",
    "ts": "2026-10-27T14:28:44.045Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=r2-service -t ghcr.io/cychipo/examio-r2:p16t . (mode-normalized context)",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=r2-service -t ghcr.io/tgiap04/kmaedu-r2:p16t . (mode-normalized context)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=20s size=176321373 bytes",
    "ts": "2026-10-27T14:29:04.851Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=study-room-service -t ghcr.io/cychipo/examio-study-room:p16t . (mode-normalized context)",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=study-room-service -t ghcr.io/tgiap04/kmaedu-study-room:p16t . (mode-normalized context)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=11s size=176398679 bytes",
    "ts": "2026-10-27T14:29:15.153Z"
   },
   {
-   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=vocabulary-service -t ghcr.io/cychipo/examio-vocabulary:p16t . (mode-normalized context)",
+   "command": "docker build -f deploy/Dockerfile.node --build-arg SERVICE=vocabulary-service -t ghcr.io/tgiap04/kmaedu-vocabulary:p16t . (mode-normalized context)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0 duration=9s size=176384663 bytes",
    "ts": "2026-10-27T14:29:24.132Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps auth-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps auth-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "ma \"auth\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261022215122_init` The following migration(s) have been applied: migrations/ └─ 20261022215122_init/ └─ migration.sql All migrations have been successfully applied. ==> auth-service migration complete. ",
    "ts": "2026-10-27T14:29:45.377Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps finance-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps finance-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "nance\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261022215123_init` The following migration(s) have been applied: migrations/ └─ 20261022215123_init/ └─ migration.sql All migrations have been successfully applied. ==> finance-service migration complete. ",
    "ts": "2026-10-27T14:29:46.485Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps admin-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps admin-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": " \"admin\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261022215123_init` The following migration(s) have been applied: migrations/ └─ 20261022215123_init/ └─ migration.sql All migrations have been successfully applied. ==> admin-service migration complete. ",
    "ts": "2026-10-27T14:29:47.609Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps content-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps content-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "ntent\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261025044727_init` The following migration(s) have been applied: migrations/ └─ 20261025044727_init/ └─ migration.sql All migrations have been successfully applied. ==> content-service migration complete. ",
    "ts": "2026-10-27T14:29:48.812Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps assessment-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps assessment-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "nt\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261025051218_init` The following migration(s) have been applied: migrations/ └─ 20261025051218_init/ └─ migration.sql All migrations have been successfully applied. ==> assessment-service migration complete. ",
    "ts": "2026-10-27T14:29:49.923Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps study-room-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps study-room-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "om\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261023063053_init` The following migration(s) have been applied: migrations/ └─ 20261023063053_init/ └─ migration.sql All migrations have been successfully applied. ==> study-room-service migration complete. ",
    "ts": "2026-10-27T14:29:51.070Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps vocabulary-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps vocabulary-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "ry\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261023065424_init` The following migration(s) have been applied: migrations/ └─ 20261023065424_init/ └─ migration.sql All migrations have been successfully applied. ==> vocabulary-service migration complete. ",
    "ts": "2026-10-27T14:29:52.215Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps document-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps document-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "gration `20261024100000_refund_settled_at` The following migration(s) have been applied: migrations/ └─ 20261023195111_init/ └─ migration.sql └─ 20261024100000_refund_settled_at/ └─ migration.sql All migrations have been successfully applied. ==> document-service migration complete. ",
    "ts": "2026-10-27T14:29:53.368Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps ai-chat-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps ai-chat-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "ichat\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261024141256_init` The following migration(s) have been applied: migrations/ └─ 20261024141256_init/ └─ migration.sql All migrations have been successfully applied. ==> ai-chat-service migration complete. ",
    "ts": "2026-10-27T14:29:54.545Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps ai-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps ai-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "ugin alembic.ext.checkconstraint_byname INFO [alembic.runtime.migration] Context impl PostgresqlImpl. INFO [alembic.runtime.migration] Will assume transactional DDL. INFO [alembic.runtime.migration] Running upgrade -> 0001, Baseline for schema ``ai``: vectors, entities, graph state, outbox, ledger. ",
    "ts": "2026-10-27T14:29:59.496Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps -e ROLE=seed -e SEED_PROFILE=prod admin)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps -e ROLE=seed -e SEED_PROFILE=prod admin)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "examio-egress Creating Network examio-egress Created Network examio-egress Created Container p16new-admin-run-3ff7a07ec579 Creating Container p16new-admin-run-3ff7a07ec579 Created ==> Seeding admin-service (profile=prod, ADMIN_DATABASE_URL=<set>) admin seed: 9 page feature flags ==> Seeds complete. ",
+   "summary": "kmaedu-egress Creating Network kmaedu-egress Created Network kmaedu-egress Created Container p16new-admin-run-3ff7a07ec579 Creating Container p16new-admin-run-3ff7a07ec579 Created ==> Seeding admin-service (profile=prod, ADMIN_DATABASE_URL=<set>) admin seed: 9 page feature flags ==> Seeds complete. ",
    "ts": "2026-10-27T14:30:09.707Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps -e ROLE=seed -e SEED_PROFILE=prod vocabulary)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps -e ROLE=seed -e SEED_PROFILE=prod vocabulary)",
    "exitCode": 0,
    "status": "pass",
    "summary": "��━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 🎉 Word Family Categories seeded: 10 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ==> Seeds complete. ",
    "ts": "2026-10-27T14:30:10.795Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps -e ROLE=seed -e SEED_PROFILE=prod ai-chat)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps -e ROLE=seed -e SEED_PROFILE=prod ai-chat)",
    "exitCode": 0,
    "status": "pass",
    "summary": " Container p16new-ai-chat-run-11f7fa1b1b4a Creating Container p16new-ai-chat-run-11f7fa1b1b4a Created ==> Seeding ai-chat-service (profile=prod, AICHAT_DATABASE_URL=<set>) ai-chat seed: 4 subject categories, 15 subjects ==> Seeds complete. ",
    "ts": "2026-10-27T14:30:11.807Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T postgres sh -c psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -tAc \"select count(*) from admin.\\\"PageFeatureFlag\\\"\")",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T postgres sh -c psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -tAc \"select count(*) from admin.\\\"PageFeatureFlag\\\"\")",
    "exitCode": 0,
    "status": "pass",
    "summary": "9 ",
    "ts": "2026-10-27T14:30:11.967Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh auth p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh auth p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "rations No pending migrations to apply. ==> auth-service migration complete. Container examio-auth Creating Container examio-auth Created Container examio-auth Starting Container examio-auth Started Container examio-auth Waiting Container examio-auth Healthy [deploy-service:auth] deployed auth@p16t ",
+   "summary": "rations No pending migrations to apply. ==> auth-service migration complete. Container kmaedu-auth Creating Container kmaedu-auth Created Container kmaedu-auth Starting Container kmaedu-auth Started Container kmaedu-auth Waiting Container kmaedu-auth Healthy [deploy-service:auth] deployed auth@p16t ",
    "ts": "2026-10-27T14:30:28.258Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh finance p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh finance p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "ns to apply. ==> finance-service migration complete. Container examio-finance Creating Container examio-finance Created Container examio-finance Starting Container examio-finance Started Container examio-finance Waiting Container examio-finance Healthy [deploy-service:finance] deployed finance@p16t ",
+   "summary": "ns to apply. ==> finance-service migration complete. Container kmaedu-finance Creating Container kmaedu-finance Created Container kmaedu-finance Starting Container kmaedu-finance Started Container kmaedu-finance Waiting Container kmaedu-finance Healthy [deploy-service:finance] deployed finance@p16t ",
    "ts": "2026-10-27T14:30:36.268Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh r2 p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh r2 p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "NING: Some service image(s) must be built from source by running:\\n docker compose build r2\" Container examio-r2 Creating Container examio-r2 Created Container examio-r2 Starting Container examio-r2 Started Container examio-r2 Waiting Container examio-r2 Healthy [deploy-service:r2] deployed r2@p16t ",
+   "summary": "NING: Some service image(s) must be built from source by running:\\n docker compose build r2\" Container kmaedu-r2 Creating Container kmaedu-r2 Created Container kmaedu-r2 Starting Container kmaedu-r2 Started Container kmaedu-r2 Waiting Container kmaedu-r2 Healthy [deploy-service:r2] deployed r2@p16t ",
    "ts": "2026-10-27T14:30:43.238Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh admin p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh admin p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "o pending migrations to apply. ==> admin-service migration complete. Container examio-admin Creating Container examio-admin Created Container examio-admin Starting Container examio-admin Started Container examio-admin Waiting Container examio-admin Healthy [deploy-service:admin] deployed admin@p16t ",
+   "summary": "o pending migrations to apply. ==> admin-service migration complete. Container kmaedu-admin Creating Container kmaedu-admin Created Container kmaedu-admin Starting Container kmaedu-admin Started Container kmaedu-admin Waiting Container kmaedu-admin Healthy [deploy-service:admin] deployed admin@p16t ",
    "ts": "2026-10-27T14:30:51.353Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh content p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh content p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "ns to apply. ==> content-service migration complete. Container examio-content Creating Container examio-content Created Container examio-content Starting Container examio-content Started Container examio-content Waiting Container examio-content Healthy [deploy-service:content] deployed content@p16t ",
+   "summary": "ns to apply. ==> content-service migration complete. Container kmaedu-content Creating Container kmaedu-content Created Container kmaedu-content Starting Container kmaedu-content Started Container kmaedu-content Waiting Container kmaedu-content Healthy [deploy-service:content] deployed content@p16t ",
    "ts": "2026-10-27T14:31:04.569Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh assessment p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh assessment p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "-service migration complete. Container examio-assessment Creating Container examio-assessment Created Container examio-assessment Starting Container examio-assessment Started Container examio-assessment Waiting Container examio-assessment Healthy [deploy-service:assessment] deployed assessment@p16t ",
+   "summary": "-service migration complete. Container kmaedu-assessment Creating Container kmaedu-assessment Created Container kmaedu-assessment Starting Container kmaedu-assessment Started Container kmaedu-assessment Waiting Container kmaedu-assessment Healthy [deploy-service:assessment] deployed assessment@p16t ",
    "ts": "2026-10-27T14:31:12.571Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh study-room p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh study-room p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "-service migration complete. Container examio-study-room Creating Container examio-study-room Created Container examio-study-room Starting Container examio-study-room Started Container examio-study-room Waiting Container examio-study-room Healthy [deploy-service:study-room] deployed study-room@p16t ",
+   "summary": "-service migration complete. Container kmaedu-study-room Creating Container kmaedu-study-room Created Container kmaedu-study-room Starting Container kmaedu-study-room Started Container kmaedu-study-room Waiting Container kmaedu-study-room Healthy [deploy-service:study-room] deployed study-room@p16t ",
    "ts": "2026-10-27T14:31:20.702Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh vocabulary p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh vocabulary p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "-service migration complete. Container examio-vocabulary Creating Container examio-vocabulary Created Container examio-vocabulary Starting Container examio-vocabulary Started Container examio-vocabulary Waiting Container examio-vocabulary Healthy [deploy-service:vocabulary] deployed vocabulary@p16t ",
+   "summary": "-service migration complete. Container kmaedu-vocabulary Creating Container kmaedu-vocabulary Created Container kmaedu-vocabulary Starting Container kmaedu-vocabulary Started Container kmaedu-vocabulary Waiting Container kmaedu-vocabulary Healthy [deploy-service:vocabulary] deployed vocabulary@p16t ",
    "ts": "2026-10-27T14:31:28.777Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh document p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh document p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "ly. ==> document-service migration complete. Container examio-document Creating Container examio-document Created Container examio-document Starting Container examio-document Started Container examio-document Waiting Container examio-document Healthy [deploy-service:document] deployed document@p16t ",
+   "summary": "ly. ==> document-service migration complete. Container kmaedu-document Creating Container kmaedu-document Created Container kmaedu-document Starting Container kmaedu-document Started Container kmaedu-document Waiting Container kmaedu-document Healthy [deploy-service:document] deployed document@p16t ",
    "ts": "2026-10-27T14:31:37.007Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh ai-chat p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh ai-chat p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "ns to apply. ==> ai-chat-service migration complete. Container examio-ai-chat Creating Container examio-ai-chat Created Container examio-ai-chat Starting Container examio-ai-chat Started Container examio-ai-chat Waiting Container examio-ai-chat Healthy [deploy-service:ai-chat] deployed ai-chat@p16t ",
+   "summary": "ns to apply. ==> ai-chat-service migration complete. Container kmaedu-ai-chat Creating Container kmaedu-ai-chat Created Container kmaedu-ai-chat Starting Container kmaedu-ai-chat Started Container kmaedu-ai-chat Waiting Container kmaedu-ai-chat Healthy [deploy-service:ai-chat] deployed ai-chat@p16t ",
    "ts": "2026-10-27T14:31:45.460Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh ai p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh ai p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": " Created Container examio-ai-worker Starting Container examio-ai Starting Container examio-ai Started Container examio-ai-worker Started Container examio-ai-worker Waiting Container examio-ai Waiting Container examio-ai-worker Healthy Container examio-ai Healthy [deploy-service:ai] deployed ai@p16t ",
+   "summary": " Created Container kmaedu-ai-worker Starting Container kmaedu-ai Starting Container kmaedu-ai Started Container kmaedu-ai-worker Started Container kmaedu-ai-worker Waiting Container kmaedu-ai Waiting Container kmaedu-ai-worker Healthy Container kmaedu-ai Healthy [deploy-service:ai] deployed ai@p16t ",
    "ts": "2026-10-27T14:32:02.249Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh gateway p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh gateway p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "mio-gateway-b Created Container examio-gateway-b Starting Container examio-gateway-b Started Container examio-gateway-b Waiting Container examio-gateway-b Healthy [deploy-service:gateway] warning: container examio-frontend not found, nginx not reloaded [deploy-service:gateway] deployed gateway@p16t ",
+   "summary": "mio-gateway-b Created Container kmaedu-gateway-b Starting Container kmaedu-gateway-b Started Container kmaedu-gateway-b Waiting Container kmaedu-gateway-b Healthy [deploy-service:gateway] warning: container kmaedu-frontend not found, nginx not reloaded [deploy-service:gateway] deployed gateway@p16t ",
    "ts": "2026-10-27T14:32:22.887Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-fe && bash -c COMPOSE_PROJECT_NAME=p16new docker compose up -d --wait)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-fe && bash -c COMPOSE_PROJECT_NAME=p16new docker compose up -d --wait)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "n your compose file, you can run this command with the --remove-orphans flag to clean it up.\" Container examio-frontend Creating Container examio-frontend Created Container examio-frontend Starting Container examio-frontend Started Container examio-frontend Waiting Container examio-frontend Healthy ",
+   "summary": "n your compose file, you can run this command with the --remove-orphans flag to clean it up.\" Container kmaedu-frontend Creating Container kmaedu-frontend Created Container kmaedu-frontend Starting Container kmaedu-frontend Started Container kmaedu-frontend Waiting Container kmaedu-frontend Healthy ",
    "ts": "2026-10-27T14:32:38.580Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-be && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/smoke.sh)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/smoke.sh)",
    "exitCode": 0,
    "status": "pass",
    "summary": "oom; student joins it over socket.io at /ws/study (transport websocket) PASS admin flips TARGET role; the next call gets 401 TOKEN_STALE, then refresh succeeds PASS cleanup: delete study room PASS cleanup: delete flashcard set PASS cleanup: delete quiz set PASS cleanup: restore TARGET role SMOKE OK ",
    "ts": "2026-10-27T14:35:14.554Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh ps -a --format table {{.Name}}\\t{{.Status}}\\t{{.Ports}})",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh ps -a --format table {{.Name}}\\t{{.Status}}\\t{{.Ports}})",
    "exitCode": 0,
    "status": "pass",
-   "summary": "nutes (healthy) 4369/tcp, 5671-5672/tcp, 15671-15672/tcp, 15691-15692/tcp, 25672/tcp examio-rabbitmq-defs Exited (0) 19 minutes ago examio-redis Up 19 minutes (healthy) 6379/tcp examio-study-room Up 4 minutes (healthy) 3000/tcp, 50051/tcp examio-vocabulary Up 4 minutes (healthy) 3000/tcp, 50051/tcp ",
+   "summary": "nutes (healthy) 4369/tcp, 5671-5672/tcp, 15671-15672/tcp, 15691-15692/tcp, 25672/tcp kmaedu-rabbitmq-defs Exited (0) 19 minutes ago kmaedu-redis Up 19 minutes (healthy) 6379/tcp kmaedu-study-room Up 4 minutes (healthy) 3000/tcp, 50051/tcp kmaedu-vocabulary Up 4 minutes (healthy) 3000/tcp, 50051/tcp ",
    "ts": "2026-10-27T14:35:31.452Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t && bash -c docker ps --filter label=com.docker.compose.project=p16new --format \"{{.Names}} {{.Ports}}\" | grep -- \"->\" || echo \"published-ports-only-examio-frontend\")",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t && bash -c docker ps --filter label=com.docker.compose.project=p16new --format \"{{.Names}} {{.Ports}}\" | grep -- \"->\" || echo \"published-ports-only-kmaedu-frontend\")",
    "exitCode": 0,
    "status": "pass",
-   "summary": "examio-frontend 127.0.0.1:6368->80/tcp ",
+   "summary": "kmaedu-frontend 127.0.0.1:6368->80/tcp ",
    "ts": "2026-10-27T14:35:31.555Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t && docker stats --no-stream --format {{.Name}} {{.MemUsage}} {{.CPUPerc}} 793b375d3cc7 d3c4cc94ab76 7b820a48f671 2f3cd0b87965 6b175469a34b 5e56ef2bf39c e56ad71a608a 632451247ac4 68194152609d 95a8d93296eb eae81a3407bc 6d6281b83707 06ca3a3c7b3a 8c6c52c1b694 3109a1f28b64 c40475a040a6 e9c57955daf2 adbb16788e85)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t && docker stats --no-stream --format {{.Name}} {{.MemUsage}} {{.CPUPerc}} 793b375d3cc7 d3c4cc94ab76 7b820a48f671 2f3cd0b87965 6b175469a34b 5e56ef2bf39c e56ad71a608a 632451247ac4 68194152609d 95a8d93296eb eae81a3407bc 6d6281b83707 06ca3a3c7b3a 8c6c52c1b694 3109a1f28b64 c40475a040a6 e9c57955daf2 adbb16788e85)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "examio-content 84.42MiB / 512MiB 0.39% examio-admin 78.39MiB / 384MiB 0.00% examio-r2 57.04MiB / 384MiB 0.00% examio-finance 71.99MiB / 384MiB 0.53% examio-auth 105.5MiB / 512MiB 0.69% examio-rabbitmq 89.47MiB / 512MiB 1.68% examio-redis 9.922MiB / 256MiB 1.03% examio-postgres 89.66MiB / 1GiB 1.10% ",
+   "summary": "kmaedu-content 84.42MiB / 512MiB 0.39% kmaedu-admin 78.39MiB / 384MiB 0.00% kmaedu-r2 57.04MiB / 384MiB 0.00% kmaedu-finance 71.99MiB / 384MiB 0.53% kmaedu-auth 105.5MiB / 512MiB 0.69% kmaedu-rabbitmq 89.47MiB / 512MiB 1.68% kmaedu-redis 9.922MiB / 256MiB 1.03% kmaedu-postgres 89.66MiB / 1GiB 1.10% ",
    "ts": "2026-10-27T14:35:33.801Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh up -d r2stub)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh up -d r2stub)",
    "exitCode": 0,
    "status": "pass",
    "summary": "frontend) for this project. If you removed or renamed this service in your compose file, you can run this command with the --remove-orphans flag to clean it up.\" Container p16new-r2stub-1 Creating Container p16new-r2stub-1 Created Container p16new-r2stub-1 Starting Container p16new-r2stub-1 Started ",
    "ts": "2026-10-27T14:35:43.660Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh vocabulary p16t2)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh vocabulary p16t2)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "ans flag to clean it up.\" Container examio-vocabulary Recreate Container examio-vocabulary Recreated Container examio-vocabulary Starting Container examio-vocabulary Started Container examio-vocabulary Waiting Container examio-vocabulary Healthy [deploy-service:vocabulary] deployed vocabulary@p16t2 ",
+   "summary": "ans flag to clean it up.\" Container kmaedu-vocabulary Recreate Container kmaedu-vocabulary Recreated Container kmaedu-vocabulary Starting Container kmaedu-vocabulary Started Container kmaedu-vocabulary Waiting Container kmaedu-vocabulary Healthy [deploy-service:vocabulary] deployed vocabulary@p16t2 ",
    "ts": "2026-10-27T14:35:55.272Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bad && docker build -t ghcr.io/cychipo/examio-content:p16bad -f Dockerfile .)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bad && docker build -t ghcr.io/tgiap04/kmaedu-content:p16bad -f Dockerfile .)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "c39302d43656ffbb5ce028b76d6e4b13831d3059c0660e08a85121 done #6 naming to ghcr.io/cychipo/examio-content:p16bad done #6 unpacking to ghcr.io/cychipo/examio-content:p16bad 0.0s done #6 DONE 0.1s View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/4oeo4t9b78fnysk67abscku4l ",
+   "summary": "c39302d43656ffbb5ce028b76d6e4b13831d3059c0660e08a85121 done #6 naming to ghcr.io/tgiap04/kmaedu-content:p16bad done #6 unpacking to ghcr.io/tgiap04/kmaedu-content:p16bad 0.0s done #6 DONE 0.1s View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/4oeo4t9b78fnysk67abscku4l ",
    "ts": "2026-10-27T14:36:05.793Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh content p16bad); test $? -eq 1",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh content p16bad); test $? -eq 1",
    "exitCode": 0,
    "status": "pass",
    "summary": "asserted exit 1: invalid SQL migrate -> P3018, alert \"previous image p16t still running\", tag restored, content StartedAt unchanged",
    "ts": "2026-10-27T14:36:08.207Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh content p16t); test $? -eq 1",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh content p16t); test $? -eq 1",
    "exitCode": 0,
    "status": "pass",
    "summary": "asserted exit 1: P3009 halt with \"manual resolution\" alert, content still running",
    "ts": "2026-10-27T14:36:19.139Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/ctx/examio-be && docker build -f deploy/Dockerfile.node --build-arg SERVICE=gateway-service -t ghcr.io/cychipo/examio-gateway:p16t3 .)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/ctx/kmaedu-be && docker build -f deploy/Dockerfile.node --build-arg SERVICE=gateway-service -t ghcr.io/tgiap04/kmaedu-gateway:p16t3 .)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "0e done #33 naming to ghcr.io/cychipo/examio-gateway:p16t3 #33 naming to ghcr.io/cychipo/examio-gateway:p16t3 done #33 unpacking to ghcr.io/cychipo/examio-gateway:p16t3 0.1s done #33 DONE 0.2s View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/ycswod5fw3c4umj2m6wnedlk2 ",
+   "summary": "0e done #33 naming to ghcr.io/tgiap04/kmaedu-gateway:p16t3 #33 naming to ghcr.io/tgiap04/kmaedu-gateway:p16t3 done #33 unpacking to ghcr.io/tgiap04/kmaedu-gateway:p16t3 0.1s done #33 DONE 0.2s View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/ycswod5fw3c4umj2m6wnedlk2 ",
    "ts": "2026-10-27T14:41:21.973Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh gateway p16t3)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh gateway p16t3)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "y-b Recreate Container examio-gateway-b Recreated Container examio-gateway-b Starting Container examio-gateway-b Started Container examio-gateway-b Waiting Container examio-gateway-b Healthy 2026/10/27 14:42:27 [notice] 226#226: signal process started [deploy-service:gateway] deployed gateway@p16t3 ",
+   "summary": "y-b Recreate Container kmaedu-gateway-b Recreated Container kmaedu-gateway-b Starting Container kmaedu-gateway-b Started Container kmaedu-gateway-b Waiting Container kmaedu-gateway-b Healthy 2026/10/27 14:42:27 [notice] 226#226: signal process started [deploy-service:gateway] deployed gateway@p16t3 ",
    "ts": "2026-10-27T14:42:27.669Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/envnames.sh)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/envnames.sh)",
    "exitCode": 0,
    "status": "pass",
    "summary": "stgres: ADMIN_DB_PASSWORD AICHAT_DB_PASSWORD AI_DB_PASSWORD ASSESSMENT_DB_PASSWORD AUTH_DB_PASSWORD CONTENT_DB_PASSWORD DOCUMENT_DB_PASSWORD FINANCE_DB_PASSWORD GOSU_VERSION LANG PATH PGDATA PG_MAJOR PG_VERSION POSTGRES_DB POSTGRES_PASSWORD POSTGRES_USER STUDYROOM_DB_PASSWORD VOCABULARY_DB_PASSWORD ",
    "ts": "2026-10-27T14:45:59.885Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh config --quiet); test $? -eq 1",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh config --quiet); test $? -eq 1",
    "exitCode": 0,
    "status": "pass",
    "summary": "asserted exit 1: missing env/finance.env fails docker compose config",
    "ts": "2026-10-27T14:46:25.939Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh config --quiet)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh config --quiet)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh config --quiet) → exit 0",
+   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh config --quiet) → exit 0",
    "ts": "2026-10-27T14:46:26.113Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh down --remove-orphans)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh down --remove-orphans)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "tend Stopping Container examio-frontend Stopped Container examio-frontend Removing Container examio-frontend Removed Network examio-egress Removing Network examio-edge Removing Network examio-internal Removing Network examio-edge Removed Network examio-egress Removed Network examio-internal Removed ",
+   "summary": "tend Stopping Container kmaedu-frontend Stopped Container kmaedu-frontend Removing Container kmaedu-frontend Removed Network kmaedu-egress Removing Network kmaedu-edge Removing Network kmaedu-internal Removing Network kmaedu-edge Removed Network kmaedu-egress Removed Network kmaedu-internal Removed ",
    "ts": "2026-10-27T14:53:00.720Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-fe && bash -c COMPOSE_PROJECT_NAME=p16new docker compose down)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-fe && bash -c COMPOSE_PROJECT_NAME=p16new docker compose down)",
    "exitCode": 0,
    "status": "pass",
    "summary": "time=\"2026-10-27T21:53:00+07:00\" level=warning msg=\"Warning: No resource found to remove for project \\\"p16new\\\".\" ",
@@ -694,350 +694,350 @@
    "ts": "2026-10-27T15:03:33.505Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/examio-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose up -d --wait postgres redis rabbitmq)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/kmaedu-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose up -d --wait postgres redis rabbitmq)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "ng Container examio-redis Started Container examio-postgres Started Container examio-rabbitmq Started Container examio-postgres Waiting Container examio-rabbitmq Waiting Container examio-redis Waiting Container examio-rabbitmq Healthy Container examio-redis Healthy Container examio-postgres Healthy ",
+   "summary": "ng Container kmaedu-redis Started Container kmaedu-postgres Started Container kmaedu-rabbitmq Started Container kmaedu-postgres Waiting Container kmaedu-rabbitmq Waiting Container kmaedu-redis Waiting Container kmaedu-rabbitmq Healthy Container kmaedu-redis Healthy Container kmaedu-postgres Healthy ",
    "ts": "2026-10-27T15:03:43.832Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/examio-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose up -d)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/kmaedu-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose up -d)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "ion Waiting Container examio-postgres Waiting Container examio-redis Waiting Container examio-postgres Healthy Container examio-finance Healthy Container examio-exam Healthy Container examio-redis Healthy Container examio-auth Healthy Container examio-migration Exited Container examio-admin Healthy ",
+   "summary": "ion Waiting Container kmaedu-postgres Waiting Container kmaedu-redis Waiting Container kmaedu-postgres Healthy Container kmaedu-finance Healthy Container kmaedu-exam Healthy Container kmaedu-redis Healthy Container kmaedu-auth Healthy Container kmaedu-migration Exited Container kmaedu-admin Healthy ",
    "ts": "2026-10-27T15:05:09.578Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/examio-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose exec -T postgres sh -c 'pg_dump -U \"$POSTGRES_USER\" -Fc \"$POSTGRES_DB\"' > /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/dump/examio-pre-cutover-20261027-2205.dump)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/kmaedu-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose exec -T postgres sh -c 'pg_dump -U \"$POSTGRES_USER\" -Fc \"$POSTGRES_DB\"' > /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/dump/kmaedu-pre-cutover-20261027-2205.dump)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/examio-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose exec -T postgres sh -c 'pg_dump -U \"$POSTGRES_USER\" -Fc \"$POSTGRES_DB\"' > /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/dump/examio-pre-cutover-20261027-2205.dump) → exit 0",
+   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/kmaedu-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose exec -T postgres sh -c 'pg_dump -U \"$POSTGRES_USER\" -Fc \"$POSTGRES_DB\"' > /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/dump/kmaedu-pre-cutover-20261027-2205.dump) → exit 0",
    "ts": "2026-10-27T15:05:52.401Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/examio-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose exec -T -u rabbitmq rabbitmq rabbitmqctl list_queues name messages_ready)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/kmaedu-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose exec -T -u rabbitmq rabbitmq rabbitmqctl list_queues name messages_ready)",
    "exitCode": 0,
    "status": "pass",
    "summary": "Timeout: 60.0 seconds ... Listing queues for vhost / ... ",
    "ts": "2026-10-27T15:06:07.787Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/examio-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose down)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/kmaedu-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose down)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "oved Container examio-postgres Stopping Container examio-redis Stopped Container examio-redis Removing Container examio-redis Removed Container examio-postgres Stopped Container examio-postgres Removing Container examio-postgres Removed Network examio-network Removing Network examio-network Removed ",
+   "summary": "oved Container kmaedu-postgres Stopping Container kmaedu-redis Stopped Container kmaedu-redis Removing Container kmaedu-redis Removed Container kmaedu-postgres Stopped Container kmaedu-postgres Removing Container kmaedu-postgres Removed Network kmaedu-network Removing Network kmaedu-network Removed ",
    "ts": "2026-10-27T15:06:20.904Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && docker volume rm p16new_postgres_data p16new_redis_data p16new_rabbitmq_data)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && docker volume rm p16new_postgres_data p16new_redis_data p16new_rabbitmq_data)",
    "exitCode": 0,
    "status": "pass",
    "summary": "p16new_postgres_data p16new_redis_data p16new_rabbitmq_data ",
    "ts": "2026-10-27T15:06:40.412Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t && bash -c docker volume ls --format \"{{.Name}}\" | grep -E \"p16|examio\" || echo \"no p16/examio volumes\")",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t && bash -c docker volume ls --format \"{{.Name}}\" | grep -E \"p16|kmaedu\" || echo \"no p16/kmaedu volumes\")",
    "exitCode": 0,
    "status": "pass",
-   "summary": "no p16/examio volumes ",
+   "summary": "no p16/kmaedu volumes ",
    "ts": "2026-10-27T15:06:40.475Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm rabbitmq-defs)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm rabbitmq-defs)",
    "exitCode": 0,
    "status": "pass",
    "summary": " Container p16new-rabbitmq-defs-run-3dd2aebb3eb3 Creating Container p16new-rabbitmq-defs-run-3dd2aebb3eb3 Created rendered /defs/definitions.json (10 users) ",
    "ts": "2026-10-27T15:06:40.944Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && test -s /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy/rabbitmq/definitions.json)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && test -s /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy/rabbitmq/definitions.json)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && test -s /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy/rabbitmq/definitions.json) → exit 0",
+   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && test -s /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy/rabbitmq/definitions.json) → exit 0",
    "ts": "2026-10-27T15:06:40.987Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh up -d --wait postgres redis rabbitmq)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh up -d --wait postgres redis rabbitmq)",
    "exitCode": 0,
    "status": "pass",
-   "summary": " examio-rabbitmq Started Container examio-rabbitmq Waiting Container examio-rabbitmq-defs Waiting Container examio-postgres Waiting Container examio-redis Waiting Container examio-rabbitmq-defs Exited Container examio-postgres Healthy Container examio-redis Healthy Container examio-rabbitmq Healthy ",
+   "summary": " kmaedu-rabbitmq Started Container kmaedu-rabbitmq Waiting Container kmaedu-rabbitmq-defs Waiting Container kmaedu-postgres Waiting Container kmaedu-redis Waiting Container kmaedu-rabbitmq-defs Exited Container kmaedu-postgres Healthy Container kmaedu-redis Healthy Container kmaedu-rabbitmq Healthy ",
    "ts": "2026-10-27T15:06:47.544Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T -u rabbitmq rabbitmq rabbitmqctl list_users -q)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T -u rabbitmq rabbitmq rabbitmqctl list_users -q)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "user\ttags gateway\t[] aichat\t[] studyroom\t[] content\t[] finance\t[] auth\t[] document\t[] ai\t[] assessment\t[] examio\t[administrator] ",
+   "summary": "user\ttags gateway\t[] aichat\t[] studyroom\t[] content\t[] finance\t[] auth\t[] document\t[] ai\t[] assessment\t[] kmaedu\t[administrator] ",
    "ts": "2026-10-27T15:06:53.521Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T -u rabbitmq rabbitmq rabbitmqctl list_queues -q name)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T -u rabbitmq rabbitmq rabbitmqctl list_queues -q name)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T -u rabbitmq rabbitmq rabbitmqctl list_queues -q name) → exit 0",
+   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh exec -T -u rabbitmq rabbitmq rabbitmqctl list_queues -q name) → exit 0",
    "ts": "2026-10-27T15:06:54.032Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps auth-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps auth-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "ma \"auth\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261022215122_init` The following migration(s) have been applied: migrations/ └─ 20261022215122_init/ └─ migration.sql All migrations have been successfully applied. ==> auth-service migration complete. ",
    "ts": "2026-10-27T15:07:01.458Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps finance-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps finance-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "nance\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261022215123_init` The following migration(s) have been applied: migrations/ └─ 20261022215123_init/ └─ migration.sql All migrations have been successfully applied. ==> finance-service migration complete. ",
    "ts": "2026-10-27T15:07:02.853Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps admin-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps admin-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": " \"admin\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261022215123_init` The following migration(s) have been applied: migrations/ └─ 20261022215123_init/ └─ migration.sql All migrations have been successfully applied. ==> admin-service migration complete. ",
    "ts": "2026-10-27T15:07:04.204Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps content-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps content-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "ntent\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261025044727_init` The following migration(s) have been applied: migrations/ └─ 20261025044727_init/ └─ migration.sql All migrations have been successfully applied. ==> content-service migration complete. ",
    "ts": "2026-10-27T15:07:05.414Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps assessment-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps assessment-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "nt\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261025051218_init` The following migration(s) have been applied: migrations/ └─ 20261025051218_init/ └─ migration.sql All migrations have been successfully applied. ==> assessment-service migration complete. ",
    "ts": "2026-10-27T15:07:06.578Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps study-room-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps study-room-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "om\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261023063053_init` The following migration(s) have been applied: migrations/ └─ 20261023063053_init/ └─ migration.sql All migrations have been successfully applied. ==> study-room-service migration complete. ",
    "ts": "2026-10-27T15:07:07.727Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps vocabulary-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps vocabulary-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "ry\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261023065424_init` The following migration(s) have been applied: migrations/ └─ 20261023065424_init/ └─ migration.sql All migrations have been successfully applied. ==> vocabulary-service migration complete. ",
    "ts": "2026-10-27T15:07:08.896Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps document-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps document-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "gration `20261024100000_refund_settled_at` The following migration(s) have been applied: migrations/ └─ 20261023195111_init/ └─ migration.sql └─ 20261024100000_refund_settled_at/ └─ migration.sql All migrations have been successfully applied. ==> document-service migration complete. ",
    "ts": "2026-10-27T15:07:10.070Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps ai-chat-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps ai-chat-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "ichat\" at \"postgres:5432\" 1 migration found in prisma/migrations Applying migration `20261024141256_init` The following migration(s) have been applied: migrations/ └─ 20261024141256_init/ └─ migration.sql All migrations have been successfully applied. ==> ai-chat-service migration complete. ",
    "ts": "2026-10-27T15:07:11.239Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps ai-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps ai-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "ugin alembic.ext.checkconstraint_byname INFO [alembic.runtime.migration] Context impl PostgresqlImpl. INFO [alembic.runtime.migration] Will assume transactional DDL. INFO [alembic.runtime.migration] Running upgrade -> 0001, Baseline for schema ``ai``: vectors, entities, graph state, outbox, ledger. ",
    "ts": "2026-10-27T15:07:16.137Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps -e ROLE=seed -e SEED_PROFILE=prod admin)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps -e ROLE=seed -e SEED_PROFILE=prod admin)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "examio-egress Creating Network examio-egress Created Network examio-egress Created Container p16new-admin-run-19ec9deae24e Creating Container p16new-admin-run-19ec9deae24e Created ==> Seeding admin-service (profile=prod, ADMIN_DATABASE_URL=<set>) admin seed: 9 page feature flags ==> Seeds complete. ",
+   "summary": "kmaedu-egress Creating Network kmaedu-egress Created Network kmaedu-egress Created Container p16new-admin-run-19ec9deae24e Creating Container p16new-admin-run-19ec9deae24e Created ==> Seeding admin-service (profile=prod, ADMIN_DATABASE_URL=<set>) admin seed: 9 page feature flags ==> Seeds complete. ",
    "ts": "2026-10-27T15:07:17.142Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps -e ROLE=seed -e SEED_PROFILE=prod vocabulary)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps -e ROLE=seed -e SEED_PROFILE=prod vocabulary)",
    "exitCode": 0,
    "status": "pass",
    "summary": "��━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 🎉 Word Family Categories seeded: 10 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ==> Seeds complete. ",
    "ts": "2026-10-27T15:07:18.167Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps -e ROLE=seed -e SEED_PROFILE=prod ai-chat)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh run --rm --no-deps -e ROLE=seed -e SEED_PROFILE=prod ai-chat)",
    "exitCode": 0,
    "status": "pass",
    "summary": " Container p16new-ai-chat-run-5ab0b26b8cb4 Creating Container p16new-ai-chat-run-5ab0b26b8cb4 Created ==> Seeding ai-chat-service (profile=prod, AICHAT_DATABASE_URL=<set>) ai-chat seed: 4 subject categories, 15 subjects ==> Seeds complete. ",
    "ts": "2026-10-27T15:07:19.212Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh up -d r2stub)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh up -d r2stub)",
    "exitCode": 0,
    "status": "pass",
    "summary": " Container p16new-r2stub-1 Creating Container p16new-r2stub-1 Created Container p16new-r2stub-1 Starting Container p16new-r2stub-1 Started ",
    "ts": "2026-10-27T15:07:23.935Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh auth p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh auth p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "rations No pending migrations to apply. ==> auth-service migration complete. Container examio-auth Creating Container examio-auth Created Container examio-auth Starting Container examio-auth Started Container examio-auth Waiting Container examio-auth Healthy [deploy-service:auth] deployed auth@p16t ",
+   "summary": "rations No pending migrations to apply. ==> auth-service migration complete. Container kmaedu-auth Creating Container kmaedu-auth Created Container kmaedu-auth Starting Container kmaedu-auth Started Container kmaedu-auth Waiting Container kmaedu-auth Healthy [deploy-service:auth] deployed auth@p16t ",
    "ts": "2026-10-27T15:07:32.593Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh finance p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh finance p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "ns to apply. ==> finance-service migration complete. Container examio-finance Creating Container examio-finance Created Container examio-finance Starting Container examio-finance Started Container examio-finance Waiting Container examio-finance Healthy [deploy-service:finance] deployed finance@p16t ",
+   "summary": "ns to apply. ==> finance-service migration complete. Container kmaedu-finance Creating Container kmaedu-finance Created Container kmaedu-finance Starting Container kmaedu-finance Started Container kmaedu-finance Waiting Container kmaedu-finance Healthy [deploy-service:finance] deployed finance@p16t ",
    "ts": "2026-10-27T15:07:40.651Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh r2 p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh r2 p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "NING: Some service image(s) must be built from source by running:\\n docker compose build r2\" Container examio-r2 Creating Container examio-r2 Created Container examio-r2 Starting Container examio-r2 Started Container examio-r2 Waiting Container examio-r2 Healthy [deploy-service:r2] deployed r2@p16t ",
+   "summary": "NING: Some service image(s) must be built from source by running:\\n docker compose build r2\" Container kmaedu-r2 Creating Container kmaedu-r2 Created Container kmaedu-r2 Starting Container kmaedu-r2 Started Container kmaedu-r2 Waiting Container kmaedu-r2 Healthy [deploy-service:r2] deployed r2@p16t ",
    "ts": "2026-10-27T15:07:47.638Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh admin p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh admin p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "o pending migrations to apply. ==> admin-service migration complete. Container examio-admin Creating Container examio-admin Created Container examio-admin Starting Container examio-admin Started Container examio-admin Waiting Container examio-admin Healthy [deploy-service:admin] deployed admin@p16t ",
+   "summary": "o pending migrations to apply. ==> admin-service migration complete. Container kmaedu-admin Creating Container kmaedu-admin Created Container kmaedu-admin Starting Container kmaedu-admin Started Container kmaedu-admin Waiting Container kmaedu-admin Healthy [deploy-service:admin] deployed admin@p16t ",
    "ts": "2026-10-27T15:07:55.702Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh content p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh content p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "ns to apply. ==> content-service migration complete. Container examio-content Creating Container examio-content Created Container examio-content Starting Container examio-content Started Container examio-content Waiting Container examio-content Healthy [deploy-service:content] deployed content@p16t ",
+   "summary": "ns to apply. ==> content-service migration complete. Container kmaedu-content Creating Container kmaedu-content Created Container kmaedu-content Starting Container kmaedu-content Started Container kmaedu-content Waiting Container kmaedu-content Healthy [deploy-service:content] deployed content@p16t ",
    "ts": "2026-10-27T15:08:03.707Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh assessment p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh assessment p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "-service migration complete. Container examio-assessment Creating Container examio-assessment Created Container examio-assessment Starting Container examio-assessment Started Container examio-assessment Waiting Container examio-assessment Healthy [deploy-service:assessment] deployed assessment@p16t ",
+   "summary": "-service migration complete. Container kmaedu-assessment Creating Container kmaedu-assessment Created Container kmaedu-assessment Starting Container kmaedu-assessment Started Container kmaedu-assessment Waiting Container kmaedu-assessment Healthy [deploy-service:assessment] deployed assessment@p16t ",
    "ts": "2026-10-27T15:08:11.883Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh study-room p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh study-room p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "-service migration complete. Container examio-study-room Creating Container examio-study-room Created Container examio-study-room Starting Container examio-study-room Started Container examio-study-room Waiting Container examio-study-room Healthy [deploy-service:study-room] deployed study-room@p16t ",
+   "summary": "-service migration complete. Container kmaedu-study-room Creating Container kmaedu-study-room Created Container kmaedu-study-room Starting Container kmaedu-study-room Started Container kmaedu-study-room Waiting Container kmaedu-study-room Healthy [deploy-service:study-room] deployed study-room@p16t ",
    "ts": "2026-10-27T15:08:24.835Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh vocabulary p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh vocabulary p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "-service migration complete. Container examio-vocabulary Creating Container examio-vocabulary Created Container examio-vocabulary Starting Container examio-vocabulary Started Container examio-vocabulary Waiting Container examio-vocabulary Healthy [deploy-service:vocabulary] deployed vocabulary@p16t ",
+   "summary": "-service migration complete. Container kmaedu-vocabulary Creating Container kmaedu-vocabulary Created Container kmaedu-vocabulary Starting Container kmaedu-vocabulary Started Container kmaedu-vocabulary Waiting Container kmaedu-vocabulary Healthy [deploy-service:vocabulary] deployed vocabulary@p16t ",
    "ts": "2026-10-27T15:08:32.849Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh document p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh document p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "ly. ==> document-service migration complete. Container examio-document Creating Container examio-document Created Container examio-document Starting Container examio-document Started Container examio-document Waiting Container examio-document Healthy [deploy-service:document] deployed document@p16t ",
+   "summary": "ly. ==> document-service migration complete. Container kmaedu-document Creating Container kmaedu-document Created Container kmaedu-document Starting Container kmaedu-document Started Container kmaedu-document Waiting Container kmaedu-document Healthy [deploy-service:document] deployed document@p16t ",
    "ts": "2026-10-27T15:08:40.957Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh ai-chat p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh ai-chat p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "ns to apply. ==> ai-chat-service migration complete. Container examio-ai-chat Creating Container examio-ai-chat Created Container examio-ai-chat Starting Container examio-ai-chat Started Container examio-ai-chat Waiting Container examio-ai-chat Healthy [deploy-service:ai-chat] deployed ai-chat@p16t ",
+   "summary": "ns to apply. ==> ai-chat-service migration complete. Container kmaedu-ai-chat Creating Container kmaedu-ai-chat Created Container kmaedu-ai-chat Starting Container kmaedu-ai-chat Started Container kmaedu-ai-chat Waiting Container kmaedu-ai-chat Healthy [deploy-service:ai-chat] deployed ai-chat@p16t ",
    "ts": "2026-10-27T15:08:49.184Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh ai p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh ai p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": " Created Container examio-ai Starting Container examio-ai-worker Starting Container examio-ai-worker Started Container examio-ai Started Container examio-ai Waiting Container examio-ai-worker Waiting Container examio-ai-worker Healthy Container examio-ai Healthy [deploy-service:ai] deployed ai@p16t ",
+   "summary": " Created Container kmaedu-ai Starting Container kmaedu-ai-worker Starting Container kmaedu-ai-worker Started Container kmaedu-ai Started Container kmaedu-ai Waiting Container kmaedu-ai-worker Waiting Container kmaedu-ai-worker Healthy Container kmaedu-ai Healthy [deploy-service:ai] deployed ai@p16t ",
    "ts": "2026-10-27T15:09:06.022Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && ./deploy-service.sh gateway p16t)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && ./deploy-service.sh gateway p16t)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "mio-gateway-b Created Container examio-gateway-b Starting Container examio-gateway-b Started Container examio-gateway-b Waiting Container examio-gateway-b Healthy [deploy-service:gateway] warning: container examio-frontend not found, nginx not reloaded [deploy-service:gateway] deployed gateway@p16t ",
+   "summary": "mio-gateway-b Created Container kmaedu-gateway-b Starting Container kmaedu-gateway-b Started Container kmaedu-gateway-b Waiting Container kmaedu-gateway-b Healthy [deploy-service:gateway] warning: container kmaedu-frontend not found, nginx not reloaded [deploy-service:gateway] deployed gateway@p16t ",
    "ts": "2026-10-27T15:09:19.235Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-fe && bash -c COMPOSE_PROJECT_NAME=p16new docker compose up -d --wait)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-fe && bash -c COMPOSE_PROJECT_NAME=p16new docker compose up -d --wait)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "n your compose file, you can run this command with the --remove-orphans flag to clean it up.\" Container examio-frontend Creating Container examio-frontend Created Container examio-frontend Starting Container examio-frontend Started Container examio-frontend Waiting Container examio-frontend Healthy ",
+   "summary": "n your compose file, you can run this command with the --remove-orphans flag to clean it up.\" Container kmaedu-frontend Creating Container kmaedu-frontend Created Container kmaedu-frontend Starting Container kmaedu-frontend Started Container kmaedu-frontend Waiting Container kmaedu-frontend Healthy ",
    "ts": "2026-10-27T15:09:25.157Z"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-be && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/smoke.sh)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/smoke.sh)",
    "exitCode": 0,
    "status": "pass",
    "summary": "oom; student joins it over socket.io at /ws/study (transport websocket) PASS admin flips TARGET role; the next call gets 401 TOKEN_STALE, then refresh succeeds PASS cleanup: delete study room PASS cleanup: delete flashcard set PASS cleanup: delete quiz set PASS cleanup: restore TARGET role SMOKE OK ",
    "ts": "2026-10-27T15:10:44.578Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-fe && bash -c COMPOSE_PROJECT_NAME=p16new docker compose down)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-fe && bash -c COMPOSE_PROJECT_NAME=p16new docker compose down)",
    "exitCode": 0,
    "status": "pass",
-   "summary": " Container examio-frontend Stopping Container examio-frontend Stopped Container examio-frontend Removing Container examio-frontend Removed ",
+   "summary": " Container kmaedu-frontend Stopping Container kmaedu-frontend Stopped Container kmaedu-frontend Removing Container kmaedu-frontend Removed ",
    "ts": "2026-10-27T15:10:55.294Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/examio-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh down --remove-orphans)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/stack/kmaedu-be/deploy && /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/bin/dc.sh down --remove-orphans)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "xamio-postgres Removed Container examio-redis Stopped Container examio-redis Removing Container examio-redis Removed Network examio-internal Removing Network examio-edge Removing Network examio-egress Removing Network examio-egress Removed Network examio-edge Removed Network examio-internal Removed ",
+   "summary": "xamio-postgres Removed Container kmaedu-redis Stopped Container kmaedu-redis Removing Container kmaedu-redis Removed Network kmaedu-internal Removing Network kmaedu-edge Removing Network kmaedu-egress Removing Network kmaedu-egress Removed Network kmaedu-edge Removed Network kmaedu-internal Removed ",
    "ts": "2026-10-27T15:11:05.846Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t && bash -c docker volume rm p16new_postgres_data p16new_redis_data p16new_rabbitmq_data)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t && bash -c docker volume rm p16new_postgres_data p16new_redis_data p16new_rabbitmq_data)",
    "exitCode": 0,
    "status": "pass",
    "summary": "p16new_postgres_data p16new_redis_data p16new_rabbitmq_data ",
    "ts": "2026-10-27T15:11:05.942Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t && bash -c docker volume ls --format \"{{.Name}}\" | grep -E \"p16\" || echo \"no p16 volumes left\")",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t && bash -c docker volume ls --format \"{{.Name}}\" | grep -E \"p16\" || echo \"no p16 volumes left\")",
    "exitCode": 0,
    "status": "pass",
    "summary": "no p16 volumes left ",
    "ts": "2026-10-27T15:11:06.011Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/examio-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose up -d postgres)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/kmaedu-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose up -d postgres)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "6old_postgres_data Creating Volume p16old_postgres_data Created Volume p16old_postgres_data Created Network examio-network Created Network examio-network Created Container examio-postgres Creating Container examio-postgres Created Container examio-postgres Starting Container examio-postgres Started ",
+   "summary": "6old_postgres_data Creating Volume p16old_postgres_data Created Volume p16old_postgres_data Created Network kmaedu-network Created Network kmaedu-network Created Container kmaedu-postgres Creating Container kmaedu-postgres Created Container kmaedu-postgres Starting Container kmaedu-postgres Started ",
    "ts": "2026-10-27T15:11:25.207Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/examio-be/deploy && docker exec examio-postgres pg_restore -U examio -d examio --no-owner --clean --if-exists /tmp/restore.dump)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/kmaedu-be/deploy && docker exec kmaedu-postgres pg_restore -U kmaedu -d kmaedu --no-owner --clean --if-exists /tmp/restore.dump)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/examio-be/deploy && docker exec examio-postgres pg_restore -U examio -d examio --no-owner --clean --if-exists /tmp/restore.dump) → exit 0",
+   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/kmaedu-be/deploy && docker exec kmaedu-postgres pg_restore -U kmaedu -d kmaedu --no-owner --clean --if-exists /tmp/restore.dump) → exit 0",
    "ts": "2026-10-27T15:11:31.774Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/examio-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose up -d --no-build)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/kmaedu-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose up -d --no-build)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "s Waiting Container examio-redis Healthy Container examio-postgres Healthy Container examio-migration Exited Container examio-exam Healthy Container examio-finance Healthy Container examio-auth Healthy Container examio-admin Healthy Container examio-gateway Starting Container examio-gateway Started ",
+   "summary": "s Waiting Container kmaedu-redis Healthy Container kmaedu-postgres Healthy Container kmaedu-migration Exited Container kmaedu-exam Healthy Container kmaedu-finance Healthy Container kmaedu-auth Healthy Container kmaedu-admin Healthy Container kmaedu-gateway Starting Container kmaedu-gateway Started ",
    "ts": "2026-10-27T15:11:54.762Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/examio-be/deploy && bash -c test -s /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/logs/rb-old-check.txt && grep -q 'has-title true' /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/logs/rb-old-check.txt)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/kmaedu-be/deploy && bash -c test -s /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/logs/rb-old-check.txt && grep -q 'has-title true' /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/logs/rb-old-check.txt)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/examio-be/deploy && bash -c test -s /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/logs/rb-old-check.txt && grep -q 'has-title true' /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/logs/rb-old-check.txt) → exit 0",
+   "summary": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/kmaedu-be/deploy && bash -c test -s /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/logs/rb-old-check.txt && grep -q 'has-title true' /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/logs/rb-old-check.txt) → exit 0",
    "ts": "2026-10-27T15:12:26.503Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/examio-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose down -v --remove-orphans)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/old/kmaedu-be/deploy && bash -c COMPOSE_PROJECT_NAME=p16old docker compose down -v --remove-orphans)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "examio-postgres Removed Network examio-network Removing Volume p16old_redis_data Removing Volume p16old_postgres_data Removing Volume p16old_rabbitmq_data Removing Volume p16old_redis_data Removed Volume p16old_rabbitmq_data Removed Volume p16old_postgres_data Removed Network examio-network Removed ",
+   "summary": "kmaedu-postgres Removed Network kmaedu-network Removing Volume p16old_redis_data Removing Volume p16old_postgres_data Removing Volume p16old_rabbitmq_data Removing Volume p16old_redis_data Removed Volume p16old_rabbitmq_data Removed Volume p16old_postgres_data Removed Network kmaedu-network Removed ",
    "ts": "2026-10-27T15:12:58.994Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t && bash -c docker image rm ghcr.io/cychipo/examio-admin:p16t ghcr.io/cychipo/examio-ai-chat:p16t ghcr.io/cychipo/examio-assessment:p16t ghcr.io/cychipo/examio-auth:p16t ghcr.io/cychipo/examio-content:p16t ghcr.io/cychipo/examio-document:p16t ghcr.io/cychipo/examio-finance:p16t ghcr.io/cychipo/examio-gateway:p16t ghcr.io/cychipo/examio-gateway:p16t2 ghcr.io/cychipo/examio-gateway:p16t3 ghcr.io/cychipo/examio-r2:p16t ghcr.io/cychipo/examio-study-room:p16t ghcr.io/cychipo/examio-vocabulary:p16t ghcr.io/cychipo/examio-vocabulary:p16t2 ghcr.io/cychipo/examio-content:p16bad ghcr.io/cychipo/examio-ai:p16t p16new-frontend:latest 2>&1; docker image rm p16old-admin:latest p16old-ai:latest p16old-auth:latest p16old-exam:latest p16old-finance:latest p16old-gateway:latest p16old-migration:latest p16old-r2:latest p16old-seed:latest p16old-admin:pre-cutover p16old-ai:pre-cutover p16old-auth:pre-cutover p16old-exam:pre-cutover p16old-finance:pre-cutover p16old-gateway:pre-cutover p16old-migration:pre-cutover p16old-r2:pre-cutover p16old-seed:pre-cutover 2>&1; true)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t && bash -c docker image rm ghcr.io/tgiap04/kmaedu-admin:p16t ghcr.io/tgiap04/kmaedu-ai-chat:p16t ghcr.io/tgiap04/kmaedu-assessment:p16t ghcr.io/tgiap04/kmaedu-auth:p16t ghcr.io/tgiap04/kmaedu-content:p16t ghcr.io/tgiap04/kmaedu-document:p16t ghcr.io/tgiap04/kmaedu-finance:p16t ghcr.io/tgiap04/kmaedu-gateway:p16t ghcr.io/tgiap04/kmaedu-gateway:p16t2 ghcr.io/tgiap04/kmaedu-gateway:p16t3 ghcr.io/tgiap04/kmaedu-r2:p16t ghcr.io/tgiap04/kmaedu-study-room:p16t ghcr.io/tgiap04/kmaedu-vocabulary:p16t ghcr.io/tgiap04/kmaedu-vocabulary:p16t2 ghcr.io/tgiap04/kmaedu-content:p16bad ghcr.io/tgiap04/kmaedu-ai:p16t p16new-frontend:latest 2>&1; docker image rm p16old-admin:latest p16old-ai:latest p16old-auth:latest p16old-exam:latest p16old-finance:latest p16old-gateway:latest p16old-migration:latest p16old-r2:latest p16old-seed:latest p16old-admin:pre-cutover p16old-ai:pre-cutover p16old-auth:pre-cutover p16old-exam:pre-cutover p16old-finance:pre-cutover p16old-gateway:pre-cutover p16old-migration:pre-cutover p16old-r2:pre-cutover p16old-seed:pre-cutover 2>&1; true)",
    "exitCode": 0,
    "status": "pass",
    "summary": "sha256:5a6ceae3612baf71eca6a2d7aa84e0f9f5e2c5ad2cdd251375de128a265b72bb Untagged: p16old-r2:pre-cutover Deleted: sha256:d1b25a41ead400ca4a406af3ae40722df6efed828aeb57992e2e351610cadae0 Untagged: p16old-seed:pre-cutover Deleted: sha256:7e45e69ec48bfb3e91212378c4c41698e54ba72c8c18051903c9ab77a8af2edc ",
@@ -1058,7 +1058,7 @@
    "ts": "2026-10-27T15:14:37.015Z"
   },
   {
-   "command": "pg_restore --list on copied dump file (examio-pre-cutover-20261027-2205.dump)",
+   "command": "pg_restore --list on copied dump file (kmaedu-pre-cutover-20261027-2205.dump)",
    "exitCode": 0,
    "status": "pass",
    "summary": "TOC 307 entries; 98 TABLE; QuizSet table data present; the stdin variant printed only the header",
@@ -1107,21 +1107,21 @@
    "ts": "2026-10-27T15:14:37.015Z"
   },
   {
-   "command": "teardown proof: docker ps -a / volume ls / network ls / images filtered p16|examio",
+   "command": "teardown proof: docker ps -a / volume ls / network ls / images filtered p16|kmaedu",
    "exitCode": 0,
    "status": "pass",
    "summary": "0 containers, 0 volumes, 0 networks, 0 images after teardown",
    "ts": "2026-10-27T15:14:37.015Z"
   },
   {
-   "command": "(cd examio-be/apps/ai-service && venv/bin/pytest -q src/backend/tests/messaging)  # after F3 fix (consumer.py is_connected uses connection.connected)",
+   "command": "(cd kmaedu-be/apps/ai-service && venv/bin/pytest -q src/backend/tests/messaging)  # after F3 fix (consumer.py is_connected uses connection.connected)",
    "exitCode": 0,
    "status": "pass",
    "summary": "28 passed, 54 skipped",
    "ts": "2026-10-27T23:40:00+0700"
   },
   {
-   "command": "(cd examio-be/apps/ai-service && venv/bin/ruff check src/backend/messaging/consumer.py src/backend/tests/messaging/test_heartbeat.py)",
+   "command": "(cd kmaedu-be/apps/ai-service && venv/bin/ruff check src/backend/messaging/consumer.py src/backend/tests/messaging/test_heartbeat.py)",
    "exitCode": 0,
    "status": "pass",
    "summary": "All checks passed!",
@@ -1135,28 +1135,28 @@
    "ts": "2026-10-27T23:40:00+0700"
   },
   {
-   "command": "(cd examio-be && docker build -f deploy/Dockerfile.node --build-arg SERVICE=auth-service -t examio-auth:p16fix . && docker run --rm --entrypoint sh examio-auth:p16fix -c \"id -un; ls /app/templates; find /app/apps /app/templates -type f ! -perm -o+r\")",
+   "command": "(cd kmaedu-be && docker build -f deploy/Dockerfile.node --build-arg SERVICE=auth-service -t kmaedu-auth:p16fix . && docker run --rm --entrypoint sh kmaedu-auth:p16fix -c \"id -un; ls /app/templates; find /app/apps /app/templates -type f ! -perm -o+r\")",
    "exitCode": 0,
    "status": "pass",
    "summary": "user node; /app/templates has change-password, reset-password, verify-account, welcome .ejs (F1 fixed); 0 files unreadable by others (F2 fixed: chmod -R a+rX /stage, laptop tree still has the 0600 migration.sql). Image removed.",
    "ts": "2026-10-27T23:40:00+0700"
   },
   {
-   "command": "(cd examio-be && bash scripts/changed-services.test.sh && shellcheck scripts/changed-services.sh scripts/changed-services.test.sh)  # F10: auth first inside a wave",
+   "command": "(cd kmaedu-be && bash scripts/changed-services.test.sh && shellcheck scripts/changed-services.sh scripts/changed-services.test.sh)  # F10: auth first inside a wave",
    "exitCode": 0,
    "status": "pass",
    "summary": "all changed-services tests passed; shellcheck clean",
    "ts": "2026-10-27T23:40:00+0700"
   },
   {
-   "command": "(cd examio-be && bash deploy/deploy-service.test.sh)",
+   "command": "(cd kmaedu-be && bash deploy/deploy-service.test.sh)",
    "exitCode": 0,
    "status": "pass",
    "summary": "all deploy-service checks passed",
    "ts": "2026-10-27T23:40:00+0700"
   },
   {
-   "command": "(cd examio-be && node --test deploy/compose-topology.spec.cjs)",
+   "command": "(cd kmaedu-be && node --test deploy/compose-topology.spec.cjs)",
    "exitCode": 0,
    "status": "pass",
    "summary": "tests 45 pass 45 fail 0",
@@ -1177,147 +1177,147 @@
    "ts": "2026-10-27T23:40:00+0700"
   },
   {
-   "command": "git grep -nc '\\. \\./\\.env\\|deploy_postgres_data' -- examio-be/deploy/cutover-runbook.md; test $? -eq 1",
+   "command": "git grep -nc '\\. \\./\\.env\\|deploy_postgres_data' -- kmaedu-be/deploy/cutover-runbook.md; test $? -eq 1",
    "exitCode": 0,
    "status": "pass",
    "summary": "F6/F7 fixed: no shell sourcing of .env (pg_dump/pg_restore/psql expand POSTGRES_* inside the container), volume names derived from the compose project",
    "ts": "2026-10-27T23:40:00+0700"
   },
   {
-   "command": "(cd /Users/tgiap.dev/devs/examio/examio-be && bash deploy/deploy-service.test.sh)",
+   "command": "(cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && bash deploy/deploy-service.test.sh)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0; ok - script never runs migrate resolve ok - script never runs db push ok - script does not log in to GHCR all deploy-service checks passed ",
    "ts": "2026-10-27T15:42:19.265Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be && docker build -f deploy/Dockerfile.node --build-arg SERVICE=gateway-service -t ghcr.io/cychipo/examio-gateway:p16r .)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be && docker build -f deploy/Dockerfile.node --build-arg SERVICE=gateway-service -t ghcr.io/tgiap04/kmaedu-gateway:p16r .)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "exit=0; #34 unpacking to ghcr.io/cychipo/examio-gateway:p16r 2.6s done #34 DONE 2.7s View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/4glfx5bw8wn1y7o7rftefc7yr ",
+   "summary": "exit=0; #34 unpacking to ghcr.io/tgiap04/kmaedu-gateway:p16r 2.6s done #34 DONE 2.7s View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/4glfx5bw8wn1y7o7rftefc7yr ",
    "ts": "2026-10-27T15:42:51.496Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be && docker build -f deploy/Dockerfile.node --build-arg SERVICE=auth-service -t ghcr.io/cychipo/examio-auth:p16r .)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be && docker build -f deploy/Dockerfile.node --build-arg SERVICE=auth-service -t ghcr.io/tgiap04/kmaedu-auth:p16r .)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "exit=0; #34 unpacking to ghcr.io/cychipo/examio-auth:p16r 2.6s done #34 DONE 2.6s View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/ua12ku1w3h0l2pshx2sisfbug ",
+   "summary": "exit=0; #34 unpacking to ghcr.io/tgiap04/kmaedu-auth:p16r 2.6s done #34 DONE 2.6s View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/ua12ku1w3h0l2pshx2sisfbug ",
    "ts": "2026-10-27T15:43:11.114Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be && docker build -f deploy/Dockerfile.node --build-arg SERVICE=admin-service -t ghcr.io/cychipo/examio-admin:p16r .)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be && docker build -f deploy/Dockerfile.node --build-arg SERVICE=admin-service -t ghcr.io/tgiap04/kmaedu-admin:p16r .)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "exit=0; #34 unpacking to ghcr.io/cychipo/examio-admin:p16r 2.6s done #34 DONE 2.7s View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/tkp4u7i971vxqsk6z07eo9fhv ",
+   "summary": "exit=0; #34 unpacking to ghcr.io/tgiap04/kmaedu-admin:p16r 2.6s done #34 DONE 2.7s View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/tkp4u7i971vxqsk6z07eo9fhv ",
    "ts": "2026-10-27T15:43:23.526Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be && docker build -f deploy/Dockerfile.node --build-arg SERVICE=study-room-service -t ghcr.io/cychipo/examio-study-room:p16r .)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be && docker build -f deploy/Dockerfile.node --build-arg SERVICE=study-room-service -t ghcr.io/tgiap04/kmaedu-study-room:p16r .)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "exit=0; #34 unpacking to ghcr.io/cychipo/examio-study-room:p16r 2.5s done #34 DONE 2.6s View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/gtder8ksflqm4f21fieguis64 ",
+   "summary": "exit=0; #34 unpacking to ghcr.io/tgiap04/kmaedu-study-room:p16r 2.5s done #34 DONE 2.6s View build details: docker-desktop://dashboard/build/desktop-linux/desktop-linux/gtder8ksflqm4f21fieguis64 ",
    "ts": "2026-10-27T15:43:35.453Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/fe && env COMPOSE_PROJECT_NAME=p16r VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA docker compose -f docker-compose.yml build frontend)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/fe && env COMPOSE_PROJECT_NAME=p16r VITE_TURNSTILE_SITE_KEY=1x00000000000000000000AA docker compose -f docker-compose.yml build frontend)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0;  #22 resolving provenance for metadata file #22 DONE 0.0s Image p16r-frontend Built ",
    "ts": "2026-10-27T15:44:50.596Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env up -d --no-build --wait postgres redis rabbitmq rabbitmq-defs)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env up -d --no-build --wait postgres redis rabbitmq rabbitmq-defs)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "exit=0;  Container examio-rabbitmq-defs Exited Container examio-postgres Healthy Container examio-redis Healthy Container examio-rabbitmq Healthy ",
+   "summary": "exit=0;  Container kmaedu-rabbitmq-defs Exited Container kmaedu-postgres Healthy Container kmaedu-redis Healthy Container kmaedu-rabbitmq Healthy ",
    "ts": "2026-10-27T15:45:14.224Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env run --rm --no-deps auth-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env run --rm --no-deps auth-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0;  └─ migration.sql All migrations have been successfully applied. ==> auth-service migration complete. ",
    "ts": "2026-10-27T15:45:20.741Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env run --rm --no-deps admin-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env run --rm --no-deps admin-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0;  └─ migration.sql All migrations have been successfully applied. ==> admin-service migration complete. ",
    "ts": "2026-10-27T15:45:21.731Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env run --rm --no-deps study-room-migrate)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env run --rm --no-deps study-room-migrate)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit=0;  └─ migration.sql All migrations have been successfully applied. ==> study-room-service migration complete. ",
    "ts": "2026-10-27T15:45:22.724Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env up -d --no-deps --no-build --wait auth)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env up -d --no-deps --no-build --wait auth)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "exit=0;  Container examio-auth Starting Container examio-auth Started Container examio-auth Waiting Container examio-auth Healthy ",
+   "summary": "exit=0;  Container kmaedu-auth Starting Container kmaedu-auth Started Container kmaedu-auth Waiting Container kmaedu-auth Healthy ",
    "ts": "2026-10-27T15:45:32.395Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env up -d --no-deps --no-build --wait admin)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env up -d --no-deps --no-build --wait admin)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "exit=0;  Container examio-admin Starting Container examio-admin Started Container examio-admin Waiting Container examio-admin Healthy ",
+   "summary": "exit=0;  Container kmaedu-admin Starting Container kmaedu-admin Started Container kmaedu-admin Waiting Container kmaedu-admin Healthy ",
    "ts": "2026-10-27T15:45:38.298Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env up -d --no-deps --no-build --wait study-room)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env up -d --no-deps --no-build --wait study-room)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "exit=0;  Container examio-study-room Starting Container examio-study-room Started Container examio-study-room Waiting Container examio-study-room Healthy ",
+   "summary": "exit=0;  Container kmaedu-study-room Starting Container kmaedu-study-room Started Container kmaedu-study-room Waiting Container kmaedu-study-room Healthy ",
    "ts": "2026-10-27T15:45:44.182Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env up -d --no-deps --no-build --wait gateway-a)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env up -d --no-deps --no-build --wait gateway-a)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "exit=0;  Container examio-gateway-a Starting Container examio-gateway-a Started Container examio-gateway-a Waiting Container examio-gateway-a Healthy ",
+   "summary": "exit=0;  Container kmaedu-gateway-a Starting Container kmaedu-gateway-a Started Container kmaedu-gateway-a Waiting Container kmaedu-gateway-a Healthy ",
    "ts": "2026-10-27T15:45:53.816Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env up -d --no-deps --no-build --wait gateway-b)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env up -d --no-deps --no-build --wait gateway-b)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "exit=0;  Container examio-gateway-b Starting Container examio-gateway-b Started Container examio-gateway-b Waiting Container examio-gateway-b Healthy ",
+   "summary": "exit=0;  Container kmaedu-gateway-b Starting Container kmaedu-gateway-b Started Container kmaedu-gateway-b Waiting Container kmaedu-gateway-b Healthy ",
    "ts": "2026-10-27T15:45:59.724Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/fe && docker compose -p p16r -f docker-compose.yml up -d --no-build --wait frontend)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/fe && docker compose -p p16r -f docker-compose.yml up -d --no-build --wait frontend)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "exit=0;  Container examio-frontend Starting Container examio-frontend Started Container examio-frontend Waiting Container examio-frontend Healthy ",
+   "summary": "exit=0;  Container kmaedu-frontend Starting Container kmaedu-frontend Started Container kmaedu-frontend Waiting Container kmaedu-frontend Healthy ",
    "ts": "2026-10-27T15:46:11.506Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/fe && docker compose -p p16r -f docker-compose.yml down -v --remove-orphans)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/fe && docker compose -p p16r -f docker-compose.yml down -v --remove-orphans)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "exit=0;  Container examio-rabbitmq Removed Container examio-admin Stopped Container examio-admin Removing Container examio-admin Removed ",
+   "summary": "exit=0;  Container kmaedu-rabbitmq Removed Container kmaedu-admin Stopped Container kmaedu-admin Removing Container kmaedu-admin Removed ",
    "ts": "2026-10-27T16:09:16.818Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env down -v --remove-orphans)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t/p16r/be/deploy && docker compose -p p16r --env-file .env --env-file .tags.env down -v --remove-orphans)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "exit=0;  Volume p16r_rabbitmq_data Removed Network examio-edge Removed Network examio-egress Removed Network examio-internal Removed ",
+   "summary": "exit=0;  Volume p16r_rabbitmq_data Removed Network kmaedu-edge Removed Network kmaedu-egress Removed Network kmaedu-internal Removed ",
    "ts": "2026-10-27T16:09:17.194Z"
   },
   {
-   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t && docker rmi ghcr.io/cychipo/examio-gateway:p16r ghcr.io/cychipo/examio-gateway:p16r2 ghcr.io/cychipo/examio-auth:p16r ghcr.io/cychipo/examio-admin:p16r ghcr.io/cychipo/examio-study-room:p16r p16r-frontend:latest)",
+   "command": "(cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p16t && docker rmi ghcr.io/tgiap04/kmaedu-gateway:p16r ghcr.io/tgiap04/kmaedu-gateway:p16r2 ghcr.io/tgiap04/kmaedu-auth:p16r ghcr.io/tgiap04/kmaedu-admin:p16r ghcr.io/tgiap04/kmaedu-study-room:p16r p16r-frontend:latest)",
    "exitCode": 0,
    "status": "pass",
-   "summary": "exit=0; Untagged: ghcr.io/cychipo/examio-study-room:p16r Deleted: sha256:11c6effdc1c3655a2699cc70be9d5fbf43fa008fe41a9169d263cc850aa80048 Untagged: p16r-frontend:latest Deleted: sha256:bc2606ff89cbde4c028b9415f2ae0574f441c8e08a65e05e2bb648dd3825bdd6 ",
+   "summary": "exit=0; Untagged: ghcr.io/tgiap04/kmaedu-study-room:p16r Deleted: sha256:11c6effdc1c3655a2699cc70be9d5fbf43fa008fe41a9169d263cc850aa80048 Untagged: p16r-frontend:latest Deleted: sha256:bc2606ff89cbde4c028b9415f2ae0574f441c8e08a65e05e2bb648dd3825bdd6 ",
    "ts": "2026-10-27T16:09:18.135Z"
   },
   {
-   "command": "(cd examio-be/deploy scratch p16r && COMPOSE_PROJECT_NAME=p16r docker compose --env-file .env --env-file .tags.env config --quiet)",
+   "command": "(cd kmaedu-be/deploy scratch p16r && COMPOSE_PROJECT_NAME=p16r docker compose --env-file .env --env-file .tags.env config --quiet)",
    "exitCode": 0,
    "status": "pass",
    "summary": "scratch deploy env renders (values not printed)",
@@ -1359,14 +1359,14 @@
    "ts": "2026-10-27T16:00:04Z"
   },
   {
-   "command": "(cd examio-be && jest --forceExit apps/ai-chat-service libs/redis)  # after M2 fix",
+   "command": "(cd kmaedu-be && jest --forceExit apps/ai-chat-service libs/redis)  # after M2 fix",
    "exitCode": 0,
    "status": "pass",
    "summary": "Test Suites 16 passed; Tests 101 passed (incl. full chat 30/30 regenerate allowed, only messages before the replaced one counted)",
    "ts": "2026-10-28T00:20:00+0700"
   },
   {
-   "command": "(cd examio-be && yarn typecheck)",
+   "command": "(cd kmaedu-be && yarn typecheck)",
    "exitCode": 0,
    "status": "pass",
    "summary": "exit 0",
@@ -1394,21 +1394,21 @@
    "ts": "2026-10-28T00:20:00+0700"
   },
   {
-   "command": "(cd examio-be && bash deploy/deploy-service.test.sh && shellcheck deploy/deploy-service.sh deploy/deploy-service.test.sh && node --test deploy/compose-topology.spec.cjs)  # M1 no reload",
+   "command": "(cd kmaedu-be && bash deploy/deploy-service.test.sh && shellcheck deploy/deploy-service.sh deploy/deploy-service.test.sh && node --test deploy/compose-topology.spec.cjs)  # M1 no reload",
    "exitCode": 0,
    "status": "pass",
    "summary": "all deploy-service checks passed (gateway order a, b; 0 nginx reloads); shellcheck clean; topology 45/45",
    "ts": "2026-10-28T00:20:00+0700"
   },
   {
-   "command": "(cd examio-be/apps/ai-service && venv/bin/pytest -q src/backend/tests/messaging && venv/bin/ruff check src/backend/messaging)  # stale heartbeat cleared at worker start",
+   "command": "(cd kmaedu-be/apps/ai-service && venv/bin/pytest -q src/backend/tests/messaging && venv/bin/ruff check src/backend/messaging)  # stale heartbeat cleared at worker start",
    "exitCode": 0,
    "status": "pass",
    "summary": "29 passed, 54 skipped; ruff clean",
    "ts": "2026-10-28T00:20:00+0700"
   },
   {
-   "command": "docker run nginx:1.27-alpine nginx -t with examio-fe/nginx.conf + nginx/cloudflare-real-ip.conf  # F11 fix",
+   "command": "docker run nginx:1.27-alpine nginx -t with kmaedu-fe/nginx.conf + nginx/cloudflare-real-ip.conf  # F11 fix",
    "exitCode": 0,
    "status": "pass",
    "summary": "syntax is ok; test is successful",

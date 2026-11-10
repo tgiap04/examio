@@ -2,7 +2,7 @@
 
 This feature helps users trust and control their accounts after they sign in. It covers email verification, profile personalization, profile media, and device/session security.
 
-Verification gives Examio a way to distinguish confirmed accounts from accounts that have not proven ownership of their email address. The workspace can guide users to verify when needed.
+Verification gives KMAEdu a way to distinguish confirmed accounts from accounts that have not proven ownership of their email address. The workspace can guide users to verify when needed.
 
 Profile management lets users keep their name, avatar, banner, and other personal details up to date. Media uploads are backed by the storage service, so profile images can be reused consistently across clients.
 

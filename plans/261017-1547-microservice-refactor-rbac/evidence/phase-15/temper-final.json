@@ -14,7 +14,7 @@
   {
     "command": "temper-2: infra-rabbit-render",
     "exitCode": 0,
-    "summary": "exit 0 in 0s; last: rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/repo/deploy/rabbitmq/definitions.json (8 users)",
+    "summary": "exit 0 in 0s; last: rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/repo/deploy/rabbitmq/definitions.json (8 users)",
     "ts": "2026-10-23T21:24:13.950Z"
   },
   {
@@ -326,59 +326,59 @@
   {
     "command": "temper-2: stage3b-up-wait-empty-volume",
     "exitCode": 0,
-    "summary": "exit 0 in 32s;  Container examio-gateway Healthy",
+    "summary": "exit 0 in 32s;  Container kmaedu-gateway Healthy",
     "ts": "2026-10-24T06:48:33.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-auth-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-auth-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-finance-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-finance-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-admin-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-admin-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-exam-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-exam-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-study-room-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-study-room-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-vocabulary-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-vocabulary-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-document-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-document-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-ai-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-ai-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-rabbitmq-defs",
+    "command": "temper-2: stage3b-oneshot-kmaedu-rabbitmq-defs",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
@@ -386,13 +386,13 @@
   {
     "command": "temper-2: stage3b-s3-mkbucket",
     "exitCode": 0,
-    "summary": "curl exit 0 (bucket examio-p15t on s3proxy stub)",
+    "summary": "curl exit 0 (bucket kmaedu-p15t on s3proxy stub)",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
     "command": "temper-2: stage3b-shim-alias-resolves",
     "exitCode": 0,
-    "summary": "virtual-host alias examio-p15t.s3shim on examio-internal",
+    "summary": "virtual-host alias kmaedu-p15t.s3shim on kmaedu-internal",
     "ts": "2026-10-24T06:48:40.000Z"
   },
   {
@@ -416,7 +416,7 @@
   {
     "command": "temper-2: stage4-up-turnstile-standin-auth-ca",
     "exitCode": 0,
-    "summary": "exit 0 in 13s;  Container examio-vocabulary Healthy",
+    "summary": "exit 0 in 13s;  Container kmaedu-vocabulary Healthy",
     "ts": "2026-10-24T06:50:05.000Z"
   },
   {
@@ -428,19 +428,19 @@
   {
     "command": "temper-2: stage4-up-s3-tls-standin",
     "exitCode": 0,
-    "summary": "exit 0 in 46s;  Container examio-gateway Healthy",
+    "summary": "exit 0 in 46s;  Container kmaedu-gateway Healthy",
     "ts": "2026-10-24T06:52:58.000Z"
   },
   {
     "command": "temper-2: stage4-ai-worker-restart",
     "exitCode": 0,
-    "summary": "exit 0: docker start examio-ai-worker (real worker resumes)",
+    "summary": "exit 0: docker start kmaedu-ai-worker (real worker resumes)",
     "ts": "2026-10-24T06:59:53.000Z"
   },
   {
     "command": "temper-2: stage4f-ai-worker-stop-for-watchdog",
     "exitCode": 0,
-    "summary": "docker stop examio-ai-worker (keep job QUEUED)",
+    "summary": "docker stop kmaedu-ai-worker (keep job QUEUED)",
     "ts": "2026-10-24T07:00:53.000Z"
   },
   {
@@ -458,7 +458,7 @@
   {
     "command": "temper-2: stage4h-ai-worker-restart",
     "exitCode": 0,
-    "summary": "docker start examio-ai-worker",
+    "summary": "docker start kmaedu-ai-worker",
     "ts": "2026-10-24T07:03:13.000Z"
   },
   {
@@ -476,7 +476,7 @@
   {
     "command": "temper-2: stage4h2-ai-worker-stop",
     "exitCode": 0,
-    "summary": "docker stop examio-ai-worker (keep generation QUEUED for fake completion)",
+    "summary": "docker stop kmaedu-ai-worker (keep generation QUEUED for fake completion)",
     "ts": "2026-10-24T07:04:50.000Z"
   },
   {
@@ -1484,7 +1484,7 @@
   {
     "command": "temper-2: s4k-check#185 4k.r2-image-upload-201",
     "exitCode": 0,
-    "summary": "PASS status=201 {\"url\":\"https://examio-p15t.s3shim:8443/images/81ae44047473791f52a4a657/1792825592565-p15t.png\"}",
+    "summary": "PASS status=201 {\"url\":\"https://kmaedu-p15t.s3shim:8443/images/81ae44047473791f52a4a657/1792825592565-p15t.png\"}",
     "ts": "2026-10-24T07:14:54.000Z"
   },
   {
@@ -1670,7 +1670,7 @@
   {
     "command": "temper-2: s5-check#226 5.student-demotion-fixture",
     "exitCode": 0,
-    "summary": "PASS status=200 {\"user\":{\"id\":\"1979300aa29eb142c9d9a5ae\",\"email\":\"user5@examio.vn\",\"username\":\"user5\",\"name\":\"Ho\u00e0ng",
+    "summary": "PASS status=200 {\"user\":{\"id\":\"1979300aa29eb142c9d9a5ae\",\"email\":\"user5@kmaedu.fayedark.com\",\"username\":\"user5\",\"name\":\"Ho\u00e0ng",
     "ts": "2026-10-24T07:14:54.000Z"
   },
   {

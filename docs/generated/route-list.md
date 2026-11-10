@@ -1,6 +1,6 @@
-# Route List — examio
+# Route List — kmaedu
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Stack**: TypeScript (NestJS monorepo backend + React 19 SPA frontend)
 **Gateway**: `http://localhost:3000` — single HTTP entry point; all backend routes live under `/api/v1`
@@ -11,7 +11,7 @@
 
 ### Gateway (`/api/v1/...`)
 
-Gateway proxies all requests to downstream services. **Routing source of truth (2026-10-20): `examio-be/apps/gateway-service/config/routes.yaml`**; the per-domain proxy controllers this inventory was generated from no longer exist, so the tables below describe the downstream endpoints behind each YAML entry. Auth: `Authorization: Bearer` header or cookie `accessToken` (the legacy `token` cookie is no longer read); the gateway verifies the token and forwards it as `Authorization: Bearer`.
+Gateway proxies all requests to downstream services. **Routing source of truth (2026-10-20): `kmaedu-be/apps/gateway-service/config/routes.yaml`**; the per-domain proxy controllers this inventory was generated from no longer exist, so the tables below describe the downstream endpoints behind each YAML entry. Auth: `Authorization: Bearer` header or cookie `accessToken` (the legacy `token` cookie is no longer read); the gateway verifies the token and forwards it as `Authorization: Bearer`.
 
 > **Owner column (phase 19)**: the last column is the service that serves the route, taken from the `upstream` of the matching entry in `routes.yaml` (a `match.path` regex wins over a `prefix`; env URL names `AUTH_SERVICE_URL`, `CONTENT_SERVICE_URL`, `ASSESSMENT_SERVICE_URL`, `STUDYROOM_SERVICE_URL`, `VOCABULARY_SERVICE_URL`, `DOCUMENT_SERVICE_URL`, `AICHAT_SERVICE_URL`, `ADMIN_SERVICE_URL` map upstream to service). Paths did not change when exam-service was split. `/ai/tutor/*` (knowledge folders, files, dataset imports) was removed from the code and from this list. Study-room (`/studyrooms/*`, `/ws/study`) and word-family (`/word-family/*`) endpoints are not inventoried here; they are routed to study-room-service and vocabulary-service (`/word-family/:id/to-flashcard` to content-service).
 
@@ -38,7 +38,7 @@ Gateway proxies all requests to downstream services. **Routing source of truth (
 | POST | /api/v1/auth/verifyAccount | Verify account with code | Bearer | auth |
 | POST | /api/v1/auth/send-code-change-password | Send code to change password | Bearer | auth |
 | POST | /api/v1/auth/change-password | Change password with code | Bearer | auth |
-| POST | /api/v1/auth/exchange | Exchange OAuth code for tokens (mobile app) | public | auth |
+| POST | /api/v1/auth/exchange | Exchange OAuth code for tokens (native client app redirect) | public | auth |
 
 #### Profile
 
@@ -555,7 +555,7 @@ All admin routes are proxied from gateway via `/api/v1/admin/*` to `admin-servic
 
 ## Frontend Routes
 
-### File: `examio-fe/src/routes/index.tsx`
+### File: `kmaedu-fe/src/routes/index.tsx`
 
 React Router v6 `createBrowserRouter` — all routes use layout wrappers.
 
@@ -654,7 +654,7 @@ Shell `/admin` (`AdminRoute` = `RequirePermission admin:access`, `AdminLayout`);
 
 1. **Finance routes (removed)**: finance-service and its gateway entries (`wallet`, `payment`, `webhook-sepay`) are gone together with the wallet/subscription/payment feature. Removed routes: `/api/v1/wallet/*`, `/api/v1/payment/*`, `POST /api/v1/webhook/sepay` (rewritten to `/api/v1/webhook`), `/api/v1/admin/finance/*`. `/api/v1/profile` routes to auth-service. Admin `GET /admin/series/:name` accepts `signups` and `traffic` only (`revenue` removed).
 
-2. **Public vs optional vs authenticated** (updated 2026-10-20): each `routes.yaml` entry sets `auth: none | optional | required` (plus `public` method/path exceptions). Public: auth endpoints (login, register, reset, OAuth), `GET /status`, admin log stream (ticket), public exam room/session/flashcard set access. `optional`: `/config/pages`, `/subjects`. Unmatched paths return 404 `ROUTE_NOT_FOUND`. Services still re-verify the token with `@examio/auth-jwt`.
+2. **Public vs optional vs authenticated** (updated 2026-10-20): each `routes.yaml` entry sets `auth: none | optional | required` (plus `public` method/path exceptions). Public: auth endpoints (login, register, reset, OAuth), `GET /status`, admin log stream (ticket), public exam room/session/flashcard set access. `optional`: `/config/pages`, `/subjects`. Unmatched paths return 404 `ROUTE_NOT_FOUND`. Services still re-verify the token with `@kmaedu/auth-jwt`.
 
 3. **Quiz encryption** (assessment-service): Exam attempts have two submission paths — legacy `submit` (plain answers) and secure `secure-submit` (answers wrapped in JWT tokens from encrypted quiz). The `secure-quiz` endpoint returns AES-256-CBC encrypted questions with server-signed JWT tokens.
 

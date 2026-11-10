@@ -218,13 +218,13 @@ The page uses a 3-column grid on desktop (`lg:grid-cols-3`) with a `max-w-7xl` c
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/exam-session/ExamSessionPage.tsx:35`
-- Template: `examio-fe/src/templates/ExamRoomDetailTemplate.tsx:67`
-- ExamHeaderSection: `examio-fe/src/components/organisms/k/ExamHeaderSection.tsx`
-- ExamInstructionsSection: `examio-fe/src/components/organisms/k/ExamInstructionsSection.tsx`
-- SystemCheckSection: `examio-fe/src/components/molecules/SystemCheckSection.tsx`
-- CountdownTimer: `examio-fe/src/components/atoms/k/CountdownTimer.tsx`
-- ExamProgressSection: `examio-fe/src/components/organisms/k/ExamProgressSection.tsx`
-- API: `examio-fe/src/apis/examSessionApi.ts`
-- Auth store: `examio-fe/src/stores/useAuthStore.ts`
-- Student materials store: `examio-fe/src/stores/useStudentMaterialsStore.ts`
+- Page/View: `kmaedu-fe/src/pages/exam-session/ExamSessionPage.tsx:35`
+- Template: `kmaedu-fe/src/templates/ExamRoomDetailTemplate.tsx:67`
+- ExamHeaderSection: `kmaedu-fe/src/components/organisms/k/ExamHeaderSection.tsx`
+- ExamInstructionsSection: `kmaedu-fe/src/components/organisms/k/ExamInstructionsSection.tsx`
+- SystemCheckSection: `kmaedu-fe/src/components/molecules/SystemCheckSection.tsx`
+- CountdownTimer: `kmaedu-fe/src/components/atoms/k/CountdownTimer.tsx`
+- ExamProgressSection: `kmaedu-fe/src/components/organisms/k/ExamProgressSection.tsx`
+- API: `kmaedu-fe/src/apis/examSessionApi.ts`
+- Auth store: `kmaedu-fe/src/stores/useAuthStore.ts`
+- Student materials store: `kmaedu-fe/src/stores/useStudentMaterialsStore.ts`

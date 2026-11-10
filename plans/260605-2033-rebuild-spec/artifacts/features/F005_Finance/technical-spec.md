@@ -19,7 +19,7 @@ Finance feature covering wallet balance display, transaction history, subscripti
 | 2 (overdue) | Warning shown on subscription page | VA expiry time reached before payment | Payment status updated to overdue |
 | 3 (cancelled) | Payment dialog closed; new payment required | User cancels or duplicate webhook | Payment status updated to cancelled |
 
-**Source:** `examio-be/apps/finance-service/src/webhook.controller.ts`
+**Source:** `kmaedu-be/apps/finance-service/src/webhook.controller.ts`
 
 ### DISC-005 / DISC-004 — UserSubscription.tier
 
@@ -30,7 +30,7 @@ Finance feature covering wallet balance display, transaction history, subscripti
 | 2 (advanced) | Advanced features enabled | Higher limits than basic | UserSubscription record with tier = 2 |
 | 3 (vip) | All features enabled | Highest limits | UserSubscription record with tier = 3 |
 
-**Source:** `examio-be/apps/finance-service/src/wallet.service.ts`
+**Source:** `kmaedu-be/apps/finance-service/src/wallet.service.ts`
 
 ---
 
@@ -51,7 +51,7 @@ Finance feature covering wallet balance display, transaction history, subscripti
 None.
 ### BR-001_SePayWebhookSignature
 **Linked FR:** FR-004
-**Source:** `examio-be/apps/finance-service/src/webhook.controller.ts`
+**Source:** `kmaedu-be/apps/finance-service/src/webhook.controller.ts`
 **Applies to:** SePay webhook endpoint
 **Rule:** Every incoming webhook must have a valid signature (API key). Invalid signatures are rejected and not processed.
 
@@ -63,19 +63,19 @@ if signature valid → process payment update
 
 ### BR-002_PaymentAmountMatch
 **Linked FR:** FR-004
-**Source:** `examio-be/apps/finance-service/src/payment.service.ts`
+**Source:** `kmaedu-be/apps/finance-service/src/payment.service.ts`
 **Applies to:** SePay webhook handler
 **Rule:** The transfer amount must match the expected amount for the created Payment record. Mismatched amounts are logged and credited as a generic deposit.
 
 ### BR-003_WalletCreditOnPayment
 **Linked FR:** FR-004
-**Source:** `examio-be/apps/finance-service/src/wallet.service.ts`
+**Source:** `kmaedu-be/apps/finance-service/src/wallet.service.ts`
 **Applies to:** Payment marked as paid
 **Rule:** When a payment with `paymentType = credits` is confirmed, the corresponding amount is added to the user's wallet balance via a WalletTransaction with `direction = ADD`. Subscription payments activate or extend the UserSubscription.
 
 ### BR-004_SubscriptionTierGating
 **Linked FR:** FR-002
-**Source:** `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts`
+**Source:** `kmaedu-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts`
 **Applies to:** AI generation endpoints
 **Rule:** AI generation requires sufficient wallet credits or an active subscription tier (PERM036). However, FREE_MODE = true bypasses this check in production.
 
@@ -97,7 +97,7 @@ None.
 None.
 ### INT-001_SePayWebhook
 **Linked FR:** FR-004
-**Source:** `examio-be/apps/finance-service/src/webhook.controller.ts`
+**Source:** `kmaedu-be/apps/finance-service/src/webhook.controller.ts`
 **Type:** webhook-emit
 **Target:** Finance service webhook endpoint
 **Trigger:** Bank transfer to the SePay virtual account
@@ -137,11 +137,11 @@ None.
 **Requirements fulfilled:**
 
 - **FR-003** Initiate subscription purchase — `POST /api/v1/payment/subscription` via `PaymentController.createSubscription`
-  **Source:** `examio-be/apps/finance-service/src/payment.controller.ts`
+  **Source:** `kmaedu-be/apps/finance-service/src/payment.controller.ts`
 - **FR-004** SePay webhook — `POST /api/v1/webhook/sepay` via `WebhookController.handleSepay`
-  **Source:** `examio-be/apps/finance-service/src/webhook.controller.ts`
+  **Source:** `kmaedu-be/apps/finance-service/src/webhook.controller.ts`
 - **FR-001** View wallet — `GET /api/v1/wallet/details` via `WalletController.getWallet`
-  **Source:** `examio-be/apps/finance-service/src/wallet.controller.ts`
+  **Source:** `kmaedu-be/apps/finance-service/src/wallet.controller.ts`
 
 **Rules enforced:** BR-001, BR-002, BR-003, BR-004
 
@@ -183,12 +183,12 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| WebhookController | `examio-be/apps/finance-service/src/webhook.controller.ts` | Receives and processes SePay payment webhook |
-| PaymentService | `examio-be/apps/finance-service/src/payment.service.ts` | Payment creation and status management |
-| WalletService | `examio-be/apps/finance-service/src/wallet.service.ts` | Wallet balance and transaction ledger |
-| FinanceClientService | `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` | Credit deduction for AI generation |
-| SubscriptionPage | `examio-fe/src/pages/k/SubscriptionPage.tsx` | Subscription plan selection and QR payment |
-| WalletSection | `examio-fe/src/components/k/WalletSection.tsx` | Wallet balance and transaction history display |
+| WebhookController | `kmaedu-be/apps/finance-service/src/webhook.controller.ts` | Receives and processes SePay payment webhook |
+| PaymentService | `kmaedu-be/apps/finance-service/src/payment.service.ts` | Payment creation and status management |
+| WalletService | `kmaedu-be/apps/finance-service/src/wallet.service.ts` | Wallet balance and transaction ledger |
+| FinanceClientService | `kmaedu-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` | Credit deduction for AI generation |
+| SubscriptionPage | `kmaedu-fe/src/pages/k/SubscriptionPage.tsx` | Subscription plan selection and QR payment |
+| WalletSection | `kmaedu-fe/src/components/k/WalletSection.tsx` | Wallet balance and transaction history display |
 
 ## Unresolved Questions
 

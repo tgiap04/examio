@@ -3,7 +3,7 @@
 ## Context Links
 
 - Plan: [plan.md](plan.md) · Depends: phase-06
-- Routing: `examio-fe/src/routes/index.tsx` + layouts trong `src/routes/layouts/`; guard `ProtectedRoute`
+- Routing: `kmaedu-fe/src/routes/index.tsx` + layouts trong `src/routes/layouts/`; guard `ProtectedRoute`
 - Design system hiện có: components trong `src/components/ui` (không sửa — generated), match style file đang sửa (nháy kép, 2 spaces)
 
 ## Overview
@@ -15,7 +15,7 @@
 ## Architecture — files to create
 
 ```
-examio-fe/src/pages/study-room/
+kmaedu-fe/src/pages/study-room/
 ├── StudyRoomListPage.tsx            # /study-rooms — phòng của tôi + nút tạo/join
 ├── StudyRoomPage.tsx                # /study-rooms/:id — compose các panel, gọi useStudyRoomSocket
 └── components/

@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+package kmaedu.vocabulary.v1;
+
+// Word-family category administration. Served by vocabulary-service. Requires a
+// forwarded token with `word_family:admin`.
+service WordFamilyAdminService {
+  rpc ListCategories(ListCategoriesRequest) returns (ListCategoriesResponse);
+  rpc UpsertCategory(UpsertCategoryRequest) returns (UpsertCategoryResponse);
+  // Soft-deactivates or hard-deletes per the current admin behaviour and
+  // deletes the category image object from R2.
+  rpc DeleteCategory(DeleteCategoryRequest) returns (DeleteCategoryResponse);
+}
+
+message WordFamilyCategory {
+  string id = 1;
+  string name = 2;
+  string slug = 3;
+  string description = 4;
+  string image_url = 5;
+  int32 order = 6;
+  bool is_active = 7;
+  int64 created_at = 8;
+  int64 updated_at = 9;
+}
+
+message ListCategoriesRequest {
+  bool include_inactive = 1;
+}
+
+message ListCategoriesResponse {
+  repeated WordFamilyCategory categories = 1;
+}
+
+message UpsertCategoryRequest {
+  // Empty id creates; otherwise updates the category.
+  string id = 1;
+  string name = 2;
+  string slug = 3;
+  optional string description = 4;
+  optional string image_url = 5;
+  optional int32 order = 6;
+  optional bool is_active = 7;
+}
+
+message UpsertCategoryResponse {
+  WordFamilyCategory category = 1;
+}
+
+message DeleteCategoryRequest {
+  string id = 1;
+}
+
+message DeleteCategoryResponse {
+  WordFamilyCategory category = 1;
+}

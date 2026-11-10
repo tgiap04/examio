@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package kmaedu.events.v1;
+
+// Payload (`data`) of `document.uploaded`: a file is stored and ready for
+// OCR/embedding. Published by document-service through the outbox in the
+// transaction that makes the row PENDING. A fact event; consumed by ai-service. The JSON payload uses the
+// camelCase names (`storageId`, `downloadUrl`, ...).
+message DocumentUploaded {
+  // `UserStorage.id`.
+  string storage_id = 1;
+  string user_id = 2;
+  string filename = 3;
+  string mimetype = 4;
+  // Presigned GET URL for the R2 object, valid for 1 hour.
+  string download_url = 5;
+}
+
+// Payload (`data`) of `document.deleted`: rows were removed by the owner.
+// Published by document-service through the outbox in the delete transaction.
+// Consumers drop everything derived from the ids (ai-service vectors/entities/
+// graph, ai-chat links, generated-history links). Idempotent per storage id.
+message DocumentDeleted {
+  repeated string storage_ids = 1;
+  string user_id = 2;
+}

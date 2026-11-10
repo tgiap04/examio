@@ -17,7 +17,7 @@ completed: 2026-06-07
 
 Tách hẳn `admin-service` NestJS mới, 6 trang admin React, đọc log auth + gateway qua SSE, ghi audit mọi thao tác tài chính. Track A (backend) và Track B (frontend) chạy song song. Integration ở cuối.
 
-**Locked decisions** (xem `/Users/tgiap.dev/devs/examio/plans/reports/brainstorm-260607-1517-admin-dashboard.md`):
+**Locked decisions** (xem `/Users/tgiap.dev/devs/kmaedu/plans/reports/brainstorm-260607-1517-admin-dashboard.md`):
 - Path A: `admin-service` riêng (port 7006, gRPC 50056)
 - 6 modules: bootstrap, users, audit, stats, finance, logs
 - `AdminGuard` trong `libs/common`, `AdminAudit` Prisma model
@@ -68,7 +68,7 @@ Track A (B) và Track B (F) **không block nhau**. Phase 10 là điểm hội t�
 
 - **Schema:** thêm `AdminAudit` model + `Payment.status = 4 (refunded)`. Migrate chung tất cả service (`prisma:merge && prisma:migrate`).
 - **Env:** `ADMIN_EMAILS`, `ADMIN_DEFAULT_PASSWORD`, `ADMIN_SERVICE_URL`, `GRPC_PORT=50056`, `LOGS_DIR`, `THROTTLE_ADMIN_LIMIT=30`.
-- **Compose:** thêm `admin-service`, share volume `examio_logs:/var/log/examio` với auth + gateway.
+- **Compose:** thêm `admin-service`, share volume `kmaedu_logs:/var/log/kmaedu` với auth + gateway.
 - **Test:** e2e `apps/admin-service/test/admin.e2e-spec.ts` (bootstrap → grant → refund → audit).
 
 ## Open Questions (resolved in validate session 2026-06-07)
@@ -83,7 +83,7 @@ Track A (B) và Track B (F) **không block nhau**. Phase 10 là điểm hội t�
 8. ✅ **Throttler scope** → named throttler `'admin'`, skip `/admin/health`
 9. ✅ **Cross-track sidebar** → KLayout thêm link "Trang quản trị" gated `user.isAdmin` (phase 10)
 10. ✅ **`admin.proto`** → không cần, dùng HTTP qua gateway proxy
-11. ✅ **Log file names** → chuẩn `{service}-service.log` trong `LOGS_DIR=/var/log/examio`
+11. ✅ **Log file names** → chuẩn `{service}-service.log` trong `LOGS_DIR=/var/log/kmaedu`
 
 ## Success Criteria
 
@@ -106,7 +106,7 @@ Track A (B) và Track B (F) **không block nhau**. Phase 10 là điểm hội t�
 
 ### Key files created / modified
 
-**Backend (examio-be):**
+**Backend (kmaedu-be):**
 - `libs/database/src/models/admin-audit.prisma` — new model file (separate from schema.prisma)
 - `libs/database/src/models/user.prisma` — isBanned, deletedAt, adminAudits relation
 - `libs/database/src/models/payment.prisma` — refund status comment (status = 4)
@@ -128,9 +128,9 @@ Track A (B) và Track B (F) **không block nhau**. Phase 10 là điểm hội t�
 - `apps/gateway-service/src/controllers/admin-proxy.controller.ts`
 - `nest-cli.json` — admin-service project entry
 - `package.json` — dev:admin, bootstrap:admin scripts
-- `deploy/docker-compose.yml` — admin service + examio_logs volume
+- `deploy/docker-compose.yml` — admin service + kmaedu_logs volume
 
-**Frontend (examio-fe):**
+**Frontend (kmaedu-fe):**
 - `src/routes/guards/AdminRoute.tsx`
 - `src/routes/layouts/AdminLayout.tsx`
 - `src/routes/index.tsx` — admin routes

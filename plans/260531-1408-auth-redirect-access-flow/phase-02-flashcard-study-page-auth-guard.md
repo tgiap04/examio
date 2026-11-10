@@ -9,10 +9,10 @@ created: 2026-05-31
 
 ## Context Links
 
-- Report: `/Users/tgiap.dev/devs/examio/plans/reports/researcher-260531-1419-auth-coverage-audit.md`
-- FlashcardStudyPage: `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx`
-- ProtectedRoute pattern: `examio-fe/src/routes/guards/ProtectedRoute.tsx`
-- Auth store: `examio-fe/src/stores/useAuthStore.ts`
+- Report: `/Users/tgiap.dev/devs/kmaedu/plans/reports/researcher-260531-1419-auth-coverage-audit.md`
+- FlashcardStudyPage: `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx`
+- ProtectedRoute pattern: `kmaedu-fe/src/routes/guards/ProtectedRoute.tsx`
+- Auth store: `kmaedu-fe/src/stores/useAuthStore.ts`
 
 ## Overview
 
@@ -49,18 +49,18 @@ FlashcardStudyPage mount:
 
 ## Related Code Files
 
-- `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx` — main file to modify
+- `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx` — main file to modify
   - Line 1-40: imports
   - Line 47-76: component state and hook declarations
   - Line 117-149: `useEffect` that calls `checkAccess()` — this is where auth check must be inserted
-- `examio-fe/src/lib/authRedirect.ts` — `setRedirectBackTarget` utility
-- `examio-fe/src/stores/useAuthStore.ts` — `isAuthenticated` state
+- `kmaedu-fe/src/lib/authRedirect.ts` — `setRedirectBackTarget` utility
+- `kmaedu-fe/src/stores/useAuthStore.ts` — `isAuthenticated` state
 
 ## Implementation Steps
 
 ### Step 1 — Import `useAuthStore` and `useLocation` in `FlashcardStudyPage`
 
-**File:** `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx`
+**File:** `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx`
 
 Add to the existing import from `@/stores/useAuthStore` if not already present, and add `useLocation` to the React Router import:
 
@@ -72,7 +72,7 @@ import { setRedirectBackTarget } from "@/lib/authRedirect"; // add
 
 ### Step 2 — Destructure `isAuthenticated` from `useAuthStore`
 
-**File:** `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx`
+**File:** `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx`
 **Location:** inside `FlashcardStudyPage` component body
 
 ```ts
@@ -84,7 +84,7 @@ const { isAuthenticated } = useAuthStore(); // add
 
 ### Step 3 — Redirect to login BEFORE access check in `useEffect`
 
-**File:** `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx`
+**File:** `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx`
 **Location:** inside the `useEffect` at line 117, before the `checkAccess()` call
 
 The current `useEffect` (lines 117-149) starts with:

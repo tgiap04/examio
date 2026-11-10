@@ -1,9 +1,9 @@
 # Phase 07: Validation, Cleanup, And Docs Sync
 
 ## Context Links
-- `examio-fe/package.json`
-- `examio-fe/src/app/globals.css`
-- `examio-fe/tailwind.config.ts`
+- `kmaedu-fe/package.json`
+- `kmaedu-fe/src/app/globals.css`
+- `kmaedu-fe/tailwind.config.ts`
 - `docs/`
 
 ## Overview
@@ -16,7 +16,7 @@
 - Current migration should be proven through compile/lint plus manual visual smoke checks.
 
 ## Requirements
-- Run validation from `examio-fe`, not repo root.
+- Run validation from `kmaedu-fe`, not repo root.
 - Fix syntax/build errors introduced by visual refactor.
 - Do not ignore failing lint/build output.
 - Document changed design conventions if implementation materially updates code standards or project docs.
@@ -30,8 +30,8 @@
 - Possibly update: `docs/code-standards.md`, `docs/project-changelog.md`, or design docs if user wants docs sync
 
 ## Implementation Steps
-1. Run `cd examio-fe && yarn lint`.
-2. Run `cd examio-fe && yarn build`.
+1. Run `cd kmaedu-fe && yarn lint`.
+2. Run `cd kmaedu-fe && yarn build`.
 3. Fix introduced errors without broad unrelated rewrites.
 4. Grep for remaining high-risk conflicting classes in migrated files: `red-*`, `yellow-*`, `purple-*`, `violet-*`, `bg-white`, heavy shadows.
 5. Manually inspect responsive pages: landing, login, register, forgot/reset, `/k`, dashboards, key modals.
@@ -46,10 +46,10 @@
 - [x] Update docs if warranted.
 
 ## Validation Note
-- `cd examio-fe && yarn lint && yarn build` passed.
+- `cd kmaedu-fe && yarn lint && yarn build` passed.
 - Lint reported 63 warnings and 0 errors; warnings are existing style warnings.
 - Build passed with large chunk warnings only.
-- Reviewer fixes applied: restored `--animate-grid`, removed hard-forced input height/padding, and replaced user-visible KMA branding in migrated auth/logo/feedback/footer with Examio/brand mark.
+- Reviewer fixes applied: restored `--animate-grid`, removed hard-forced input height/padding, and replaced user-visible KMA branding in migrated auth/logo/feedback/footer with KMAEdu/brand mark.
 
 ## Success Criteria
 - `yarn lint` passes or only pre-existing accepted warnings remain clearly documented.

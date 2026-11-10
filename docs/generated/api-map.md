@@ -1,8 +1,8 @@
-# API Map — examio
+# API Map — kmaedu
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
-**Sources**: `route-list.md` (gateway routes, authoritative), `behavior-logic.md` (BL handlers). Gateway routing since 2026-10-20 is defined in `examio-be/apps/gateway-service/config/routes.yaml` (no proxy controllers; `BL` names refer to the downstream handler behind the YAML entry)
+**Sources**: `route-list.md` (gateway routes, authoritative), `behavior-logic.md` (BL handlers). Gateway routing since 2026-10-20 is defined in `kmaedu-be/apps/gateway-service/config/routes.yaml` (no proxy controllers; `BL` names refer to the downstream handler behind the YAML entry)
 
 Groups backend routes by domain. Each route maps to a BL handler (from `behavior-logic.md § Source Symbol`) or is marked `[UNMAPPED]`. Auth column uses `PERM###` where defined, otherwise `Bearer` / `public` / `ApiKey`.
 

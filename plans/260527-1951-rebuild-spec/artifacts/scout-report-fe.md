@@ -1,8 +1,8 @@
-# Frontend Scout Report: examio-fe
+# Frontend Scout Report: kmaedu-fe
 
-**Project**: examio-fe (React 19 + Vite + TypeScript + Yarn 4)
+**Project**: kmaedu-fe (React 19 + Vite + TypeScript + Yarn 4)
 **Date**: 2026-05-27
-**Path**: `/Users/tgiap.dev/devs/examio/examio-fe/`
+**Path**: `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/`
 
 ---
 
@@ -345,4 +345,4 @@ These serve as the bridge between page components and organisms.
 
 ---
 
-*Report generated from source code analysis of `/Users/tgiap.dev/devs/examio/examio-fe/src/` -- 180+ source files examined.*
+*Report generated from source code analysis of `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/` -- 180+ source files examined.*

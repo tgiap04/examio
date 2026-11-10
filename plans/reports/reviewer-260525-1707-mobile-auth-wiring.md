@@ -19,7 +19,7 @@
 | androidApp/backend/AndroidAppContainer.kt | 23 |
 | androidApp/backend/AndroidSecureTokenStorage.kt | 90 |
 | androidApp/features/auth/AuthNavGraph.kt | 156 |
-| androidApp/ExamioApp.kt | 69 |
+| androidApp/KMAEduApp.kt | 69 |
 | iosApp/Features/Auth/AuthViewModel.swift | 199 |
 | **Total** | **~756** |
 
@@ -166,10 +166,10 @@ A corrupted ciphertext, a Keystore key rotation after a device backup/restore, o
 
 ## Medium Priority
 
-### M1 — `ExamioApp.kt`: `onAuthenticated` called with nullable `User?`, fallback userId is `"local-session"` (data integrity)
+### M1 — `KMAEduApp.kt`: `onAuthenticated` called with nullable `User?`, fallback userId is `"local-session"` (data integrity)
 
 ```kotlin
-// ExamioApp.kt:60-68
+// KMAEduApp.kt:60-68
 private fun User?.toSession(): UserSession =
     UserSession(
         userId = this?.id ?: "local-session",
@@ -239,7 +239,7 @@ install(Logging) { level = if (config.environmentName == "local") LogLevel.INFO 
 
 ### L1 — `UserRole` defined in two places with identical values
 
-`com.examio.app.core.session.UserRole` (SessionModels.kt) and `com.examio.app.features.navigation.UserRole` (AuthState.kt) are identical enums. `ExamioApp.kt` imports the navigation one and compares `.name` strings against the auth model one — a fragile string comparison that will silently break if either enum is renamed.
+`com.kmaedu.app.core.session.UserRole` (SessionModels.kt) and `com.kmaedu.app.features.navigation.UserRole` (AuthState.kt) are identical enums. `KMAEduApp.kt` imports the navigation one and compares `.name` strings against the auth model one — a fragile string comparison that will silently break if either enum is renamed.
 
 **Fix:** consolidate to one `UserRole` definition, or use the auth model's `UserRole` directly in navigation state.
 
@@ -295,7 +295,7 @@ If `tokens.refreshToken` is null (e.g., backend did not return one at login), `a
 ## Metrics
 
 - Type coverage: strong on KMP (sealed types, no `Any`); iOS uses private structs with optional fields — adequate
-- Test coverage: 0 tests observed for any auth path (no test files found under `examio-app/`)
+- Test coverage: 0 tests observed for any auth path (no test files found under `kmaedu-app/`)
 - Linting issues: not run (no lint config found in scope)
 
 ---

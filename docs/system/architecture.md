@@ -12,7 +12,7 @@ status: ACTIVE
 ```mermaid
 graph TB
     subgraph Client[Client Layer]
-        FE[examio-fe<br/>React 19 SPA<br/>Zustand · Axios · React Router]
+        FE[kmaedu-fe<br/>React 19 SPA<br/>Zustand · Axios · React Router]
     end
 
     subgraph Edge[Edge Layer]
@@ -38,7 +38,7 @@ graph TB
     subgraph Infra[Infrastructure]
         PG[(PostgreSQL<br/>one schema + role per service)]
         REDIS[(Redis<br/>Cache)]
-        RMQ[RabbitMQ<br/>Topic exchange<br/>examio.events]
+        RMQ[RabbitMQ<br/>Topic exchange<br/>kmaedu.events]
         R2STORE[(Cloudflare R2<br/>Object storage)]
     end
 
@@ -126,11 +126,11 @@ Compose publishes no backend port on the host: the only host port is the FE ngin
 
 ### 1. HTTP Reverse Proxy (gateway -> downstream)
 
-Source of truth: `examio-be/apps/gateway-service/config/routes.yaml` (route table), `src/pipeline/**` (guard chain, header hygiene, body cap), `src/routing/**` (matcher). The 15 per-domain proxy controllers, `ProxyService` and the gateway's own DB access were removed in phase 05; adding a route means editing `routes.yaml`.
+Source of truth: `kmaedu-be/apps/gateway-service/config/routes.yaml` (route table), `src/pipeline/**` (guard chain, header hygiene, body cap), `src/routing/**` (matcher). The 15 per-domain proxy controllers, `ProxyService` and the gateway's own DB access were removed in phase 05; adding a route means editing `routes.yaml`.
 
 ```mermaid
 sequenceDiagram
-    participant FE as examio-fe / nginx
+    participant FE as kmaedu-fe / nginx
     participant GW as gateway:3000
     participant R as Redis
     participant EX as assessment:3000
@@ -150,7 +150,7 @@ sequenceDiagram
 - **Token**: `extractHttpToken`: `Authorization: Bearer`, then cookie `accessToken`; never the query string. Verified against auth's JWKS (`AUTH_JWKS_URL`, `JWT_ISSUER`, `JWT_AUDIENCE`). Service tokens are refused at the edge (`TOKEN_INVALID`). On `optional` routes an unusable credential is stripped and the request continues anonymously.
 - **Request preparation** (`pipeline/prepare-request.ts`) runs on the incoming request before it reaches http-proxy (http-proxy skips its `proxyReq` hook when `Expect` is present): client `x-user-*` and `forwarded`, `x-real-ip`, `x-internal-service-token`, `x-forwarded-port/prefix/server`, `x-original-url`, `x-rewrite-url` are removed; `x-request-id` is reused if well-formed else `req_<ulid>`; `x-forwarded-for` / `x-real-ip` are overwritten with the computed client IP, `x-forwarded-proto` / `-host` set; verified routes get `Authorization: Bearer <token>` (also when the token came from the cookie); `Expect` is dropped.
 - **Body caps**: `maxBodySize` (e.g. `profile` 3mb, `r2-image` 3mb, `ai-upload` and `ai-chat` 100mb) is enforced on streamed bytes by a counting transform (`pipeline/body-cap.ts`), so a chunked body without `Content-Length` is also cut. Over the cap: 413 `PAYLOAD_TOO_LARGE`, upstream request destroyed, the rest of the body drained within a bounded byte/time budget.
-- **Error envelope**: `{ statusCode, code, message, requestId }` on the gateway (`pipeline/error-response.ts`) and on auth (`HttpErrorEnvelopeFilter` from `@examio/http`). Gateway codes: `TOKEN_MISSING`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `SESSION_REVOKED`, `TOKEN_STALE` (all 401), `AUTH_STATE_UNAVAILABLE` (503), `EMAIL_NOT_VERIFIED`, `PERMISSION_DENIED`, `PAGE_DISABLED` (403), `RATE_LIMITED` (429), `PAYLOAD_TOO_LARGE` (413), `ROUTE_NOT_FOUND` (404), `UPSTREAM_UNAVAILABLE` (502), `UPSTREAM_TIMEOUT` (504), `INTERNAL_ERROR` (500). The FE reads `message`.
+- **Error envelope**: `{ statusCode, code, message, requestId }` on the gateway (`pipeline/error-response.ts`) and on auth (`HttpErrorEnvelopeFilter` from `@kmaedu/http`). Gateway codes: `TOKEN_MISSING`, `TOKEN_EXPIRED`, `TOKEN_INVALID`, `SESSION_REVOKED`, `TOKEN_STALE` (all 401), `AUTH_STATE_UNAVAILABLE` (503), `EMAIL_NOT_VERIFIED`, `PERMISSION_DENIED`, `PAGE_DISABLED` (403), `RATE_LIMITED` (429), `PAYLOAD_TOO_LARGE` (413), `ROUTE_NOT_FOUND` (404), `UPSTREAM_UNAVAILABLE` (502), `UPSTREAM_TIMEOUT` (504), `INTERNAL_ERROR` (500). The FE reads `message`.
 - **Rate limits** (fixed window, Lua `INCR` on Redis, key `gw:rl:<id>:<user id | client ip>:<window start>`; first matching `rateLimits` entry wins, else `defaultRateLimit` 100 / 60 s):
 
 | Entry (`routes.yaml` `rateLimits`) | Limit |
@@ -178,7 +178,7 @@ sequenceDiagram
 | durable event `auth.user.authz_changed` (queue `gateway.events`) | twin of `InvalidateUser`; covers a lost gRPC call | same SETMAX |
 | durable event `auth.session.revoked` | twin of `RevokeSession` | same revoked key; ignored if `exp` already passed |
 
-The gRPC server listens on `GRPC_PORT` (50051) inside the internal network only and requires a service token with `aud = gateway` (`@ServiceOnly`). Auth calls it only when `GATEWAY_CONTROL_ENABLED=true` (compose default `true`, `GATEWAY_GRPC_URL=gateway:50051`); failures are logged, never block the mutation. Consumers use `@examio/messaging` with `dedupe: false` (handlers are idempotent), so the gateway needs no `processed_events` table and no DB. Source: `src/control/`, `src/events/`.
+The gRPC server listens on `GRPC_PORT` (50051) inside the internal network only and requires a service token with `aud = gateway` (`@ServiceOnly`). Auth calls it only when `GATEWAY_CONTROL_ENABLED=true` (compose default `true`, `GATEWAY_GRPC_URL=gateway:50051`); failures are logged, never block the mutation. Consumers use `@kmaedu/messaging` with `dedupe: false` (handlers are idempotent), so the gateway needs no `processed_events` table and no DB. Source: `src/control/`, `src/events/`.
 
 ### 2. gRPC (synchronous inter-service)
 
@@ -191,11 +191,11 @@ sequenceDiagram
     Note over EX,DOC: Forwarded user token: the actor is the token subject, never a service
 ```
 
-**Proto definitions**: `examio-be/proto/examio/<svc>/v1/` (packages `admin`, `ai`, `auth`, `common`, `content`, `document`, `events`, `gateway`, `r2`, `vocabulary`), linted and generated with buf. `yarn proto:lint` runs `buf lint proto`; `yarn proto:gen` runs `buf generate` (ts-proto, output `libs/contracts/src/generated/`, gitignored) and is exposed as `@examio/contracts`. The Python ai-service generates its stubs with `apps/ai-service/scripts/gen_grpc.sh`. Client helpers live in `@examio/grpc`, HTTP helpers in `@examio/http`.
+**Proto definitions**: `kmaedu-be/proto/kmaedu/<svc>/v1/` (packages `admin`, `ai`, `auth`, `common`, `content`, `document`, `events`, `gateway`, `r2`, `vocabulary`), linted and generated with buf. `yarn proto:lint` runs `buf lint proto`; `yarn proto:gen` runs `buf generate` (ts-proto, output `libs/contracts/src/generated/`, gitignored) and is exposed as `@kmaedu/contracts`. The Python ai-service generates its stubs with `apps/ai-service/scripts/gen_grpc.sh`. Client helpers live in `@kmaedu/grpc`, HTTP helpers in `@kmaedu/http`.
 
 `R2Service` has `DeleteObjects` and `CreatePresignedDownload` (service `document` only); r2's HTTP `internal/upload` route and its `INTERNAL_SERVICE_TOKEN` are gone. gRPC env: `AUTH_GRPC_URL`, `R2_GRPC_URL`, `GATEWAY_GRPC_URL`, `VOCABULARY_GRPC_URL` (admin and content to vocabulary), `CONTENT_GRPC_URL` (assessment to content), `DOCUMENT_GRPC_URL` (content, assessment and ai-chat to document), `AI_GRPC_URL` (content, ai-chat and vocabulary to ai), `ADMIN_GRPC_URL` (gateway to admin), `GRPC_PORT` on each serving service.
 
-**Data ownership (phase 10, enforced by the database since phase 11).** Each Prisma model is read and written by exactly one service; the services share one Postgres database but each has its own schema and role (see Database per service below): auth (`User`, `UserSession`, `VerifyAccountCode`, `ResetPasswordCode`, `RoleChangeLog`), admin (`AdminAudit`, `PageFeatureFlag`), study-room (`StudyRoom`, `StudyRoomMember`, `StudyRoomPlaylistItem`, `StudyRoomChatBlock`), vocabulary (`WordFamilyCategory`, `WordFamily`, `UserSavedWordFamily`, `R2DeleteTask`), content (quiz/flashcard sets, practice, study progress, `GenerationJob`, `HistoryGenerated*`, `R2DeleteTask`), assessment (`ExamRoom`, `ExamSession`, `ExamAttempt`, `CheatingLog`, `UserPinnedExamRoom`), ai-chat (`AIChat`, `AIChatMessage`, `AIChatDocument`, `SubjectCategory`, `Subject`), document (`UserStorage`); the ai-service tables (`Document`, `DocumentEntity`, `UserStorageGraph`, `UserStorageGraphGroup`) are in its own schema `ai`. `OutboxEvent` and `ProcessedEvent` are per-service. The map is `examio-be/scripts/check-model-ownership.ts` (`yarn check:ownership`, strict in CI, also catches relation access through `include`/`select`/nested writes); `yarn check:deps` runs dependency-cruiser with `.dependency-cruiser.cjs`. A service needing foreign data calls the owner over gRPC.
+**Data ownership (phase 10, enforced by the database since phase 11).** Each Prisma model is read and written by exactly one service; the services share one Postgres database but each has its own schema and role (see Database per service below): auth (`User`, `UserSession`, `VerifyAccountCode`, `ResetPasswordCode`, `RoleChangeLog`), admin (`AdminAudit`, `PageFeatureFlag`), study-room (`StudyRoom`, `StudyRoomMember`, `StudyRoomPlaylistItem`, `StudyRoomChatBlock`), vocabulary (`WordFamilyCategory`, `WordFamily`, `UserSavedWordFamily`, `R2DeleteTask`), content (quiz/flashcard sets, practice, study progress, `GenerationJob`, `HistoryGenerated*`, `R2DeleteTask`), assessment (`ExamRoom`, `ExamSession`, `ExamAttempt`, `CheatingLog`, `UserPinnedExamRoom`), ai-chat (`AIChat`, `AIChatMessage`, `AIChatDocument`, `SubjectCategory`, `Subject`), document (`UserStorage`); the ai-service tables (`Document`, `DocumentEntity`, `UserStorageGraph`, `UserStorageGraphGroup`) are in its own schema `ai`. `OutboxEvent` and `ProcessedEvent` are per-service. The map is `kmaedu-be/scripts/check-model-ownership.ts` (`yarn check:ownership`, strict in CI, also catches relation access through `include`/`select`/nested writes); `yarn check:deps` runs dependency-cruiser with `.dependency-cruiser.cjs`. A service needing foreign data calls the owner over gRPC.
 
 | Service (proto) | RPC | Guard |
 |---|---|---|
@@ -213,7 +213,7 @@ sequenceDiagram
 ```mermaid
 graph LR
     AUTH[auth API] -->|same tx| OUTBOX[(outbox_events<br/>source=auth)]
-    OUTBOX -->|auth worker relay<br/>claim, publish, mark| EXCHANGE[examio.events<br/>topic, durable]
+    OUTBOX -->|auth worker relay<br/>claim, publish, mark| EXCHANGE[kmaedu.events<br/>topic, durable]
     EXCHANGE -->|auth.user.authz_changed| GQ[gateway.events]
     GQ -->|gateway consumer<br/>dedupe: false, idempotent| STATE[(Redis gw:user:id:av)]
     EXCHANGE -->|auth.user.authz_changed| SQ[studyroom.events]
@@ -223,7 +223,7 @@ graph LR
     SQ -.->|permanent / 5 retries| DLQ[studyroom.dlq]
 ```
 
-**Library**: `@examio/messaging` (`examio-be/libs/messaging`), used by auth, the gateway, study-room-service (consumer only: `authz_changed` and `user.updated`), document-service, content-service (`user.updated`, `ai.generation.*` and `document.deleted` consumers; it writes `content.generation.requested` and `content.quizset.deleted` to its outbox) and assessment-service (`content.quizset.deleted` and `user.updated` consumers). vocabulary-service has no RabbitMQ. ai-service uses a Python port of the same contract (`apps/ai-service/src/backend/messaging`: envelope, consumer, outbox relay, purge; queue `ai.events`, retry tier `ai.retry.30s`, `ai.dlq`, dead-letter at `x-retry-count >= 5`; a shared topology contract keeps the queue arguments identical). `MessagingModuleOptions.alsoPublishes` lets a service write outbox rows whose `source` is another domain; no app uses it today (content-service publishes its own `content.*`).
+**Library**: `@kmaedu/messaging` (`kmaedu-be/libs/messaging`), used by auth, the gateway, study-room-service (consumer only: `authz_changed` and `user.updated`), document-service, content-service (`user.updated`, `ai.generation.*` and `document.deleted` consumers; it writes `content.generation.requested` and `content.quizset.deleted` to its outbox) and assessment-service (`content.quizset.deleted` and `user.updated` consumers). vocabulary-service has no RabbitMQ. ai-service uses a Python port of the same contract (`apps/ai-service/src/backend/messaging`: envelope, consumer, outbox relay, purge; queue `ai.events`, retry tier `ai.retry.30s`, `ai.dlq`, dead-letter at `x-retry-count >= 5`; a shared topology contract keeps the queue arguments identical). `MessagingModuleOptions.alsoPublishes` lets a service write outbox rows whose `source` is another domain; no app uses it today (content-service publishes its own `content.*`).
 
 **Envelope v1**: `{ id: "evt_<ulid>", type, version: 1, occurredAt, source, correlationId, data }`. AMQP props: `messageId=id`, persistent, `application/json`. `parseEnvelope` rejects `version !== 1` as permanent. State events (`*.updated`, `*.changed`, `*_changed`) must carry a numeric version (`data.version`, or `data.authzVersion` for `auth.user.authz_changed`); `createEnvelope` throws otherwise.
 
@@ -236,7 +236,7 @@ graph LR
 
 **Process role**: env `ROLE` = `api` | `worker` | `api,worker` (default `api,worker`; compose sets `api,worker` for auth, content, assessment, vocabulary and document). study-room-service has no `ROLE`: its consumer needs the Socket.io server, so it runs in the API process of a single container. `worker` runs the relay/purge (auth) via `worker.module.ts`.
 
-**Broker security**: one RabbitMQ user per service (`auth`, `content`, `assessment`, `studyroom`, `document`, `ai`, `gateway`, and others) plus the ops user from `RABBITMQ_USER`/`RABBITMQ_PASS` (management UI only). Per user: configure/write/read limited to `examio.events` and `<svc>.*`. Topic permissions on `examio.events`: write only `^<domain>\.`, read `.*`; `content` writes `^content\.` and `assessment` writes `^assessment\.`. So a validated `source` cannot be forged. Users come from `deploy/rabbitmq/definitions.template.json` (committed, no secrets), rendered by the one-shot `rabbitmq-defs` compose service (`render-definitions.cjs`) into the gitignored `definitions.json` (compose and CI pass `--out`; without `--out` the script writes `<os.tmpdir()>/definitions.json`, never into the repo tree) and loaded at broker boot (`rabbitmq.conf`). Each service gets its own `RABBITMQ_URL`; broker passwords must be URL-safe because they are embedded in `amqp://` URLs. Broker image: `rabbitmq:3.13-management-alpine`.
+**Broker security**: one RabbitMQ user per service (`auth`, `content`, `assessment`, `studyroom`, `document`, `ai`, `gateway`, and others) plus the ops user from `RABBITMQ_USER`/`RABBITMQ_PASS` (management UI only). Per user: configure/write/read limited to `kmaedu.events` and `<svc>.*`. Topic permissions on `kmaedu.events`: write only `^<domain>\.`, read `.*`; `content` writes `^content\.` and `assessment` writes `^assessment\.`. So a validated `source` cannot be forged. Users come from `deploy/rabbitmq/definitions.template.json` (committed, no secrets), rendered by the one-shot `rabbitmq-defs` compose service (`render-definitions.cjs`) into the gitignored `definitions.json` (compose and CI pass `--out`; without `--out` the script writes `<os.tmpdir()>/definitions.json`, never into the repo tree) and loaded at broker boot (`rabbitmq.conf`). Each service gets its own `RABBITMQ_URL`; broker passwords must be URL-safe because they are embedded in `amqp://` URLs. Broker image: `rabbitmq:3.13-management-alpine`.
 
 **Currently wired events**:
 - `auth.user.registered` (auth-service): `{ userId, email, username, utmSource|null }`, written to the outbox in the register tx (email and Google OAuth paths). No consumer since phase 04. Replaces `auth.user.created`.
@@ -256,7 +256,7 @@ graph LR
 **HTTP Port**: 3000 (container)
 **gRPC Port**: 50051 (`GRPC_PORT`; serves `AdminService.GetPageFlags` to the gateway, `@ServiceOnly('gateway')`)
 
-**Auth**: per-controller `@RequirePermissions(...)` from `@examio/auth-jwt` (stateless JWT; `user:manage` for users, `role:assign` for `/admin/roles*`, others per phase 06). Role, admin-flag and ban changes are RPCs to auth (`AUTH_GRPC_URL`: `SetUserRole`, `SetSystemAdmin`, `SetUserStatus`, `ListUsers`, `ListRoleChanges`) that forward the calling admin's own token (`forwardUser(req)`), so auth decides from the token `sub` and permissions; admin-service writes `AdminAudit` only after the RPC succeeds and answers with the `HttpErrorEnvelopeFilter` envelope. It no longer owns the bootstrap (see § 7).
+**Auth**: per-controller `@RequirePermissions(...)` from `@kmaedu/auth-jwt` (stateless JWT; `user:manage` for users, `role:assign` for `/admin/roles*`, others per phase 06). Role, admin-flag and ban changes are RPCs to auth (`AUTH_GRPC_URL`: `SetUserRole`, `SetSystemAdmin`, `SetUserStatus`, `ListUsers`, `ListRoleChanges`) that forward the calling admin's own token (`forwardUser(req)`), so auth decides from the token `sub` and permissions; admin-service writes `AdminAudit` only after the RPC succeeds and answers with the `HttpErrorEnvelopeFilter` envelope. It no longer owns the bootstrap (see § 7).
 
 **Proxy**: `routes.yaml` routes `/api/v1/admin/*` to `admin-service` (`auth: required`, `permissions: [admin:access]`); the SSE `GET /admin/logs/stream` is `auth: none` at the edge because EventSource cannot send headers, and admin-service checks the single-use ticket from `POST /admin/logs/ticket`.
 
@@ -268,7 +268,7 @@ graph LR
 - `AdminWordFamilyModule` — category list/create/update/delete via vocabulary `WordFamilyAdminService` (`VOCABULARY_GRPC_URL`); the image is a pasted URL, and the owner (vocabulary) deletes R2 objects only under the `word-family/` prefix
 - `AdminAuditModule` — audit log query (one row per changed field per mutation)
 
-**Audit**: every admin mutation writes an `AdminAudit` row via `AuditWriterService` (shared, `@examio/common`). Fields captured: `adminId`, `targetId`, `action`, `payload` (JSON diff of changed fields), `ipAddress`, `userAgent`.
+**Audit**: every admin mutation writes an `AdminAudit` row via `AuditWriterService` (shared, `@kmaedu/common`). Fields captured: `adminId`, `targetId`, `action`, `payload` (JSON diff of changed fields), `ipAddress`, `userAgent`.
 
 **Rate limiting**: `ThrottlerModule` 30 req/min per admin (configured via `THROTTLE_ADMIN_LIMIT`).
 
@@ -278,7 +278,7 @@ Generation is asynchronous and idempotent per job: conditional status updates an
 
 ```mermaid
 sequenceDiagram
-    participant FE as examio-fe
+    participant FE as kmaedu-fe
     participant EX as content-service
     participant DOC as document-service
     participant AI as ai-service (worker)
@@ -309,7 +309,7 @@ Upload path (`POST /ai/upload`, JSON): document-service inserts `UserStorage` as
 
 ```mermaid
 sequenceDiagram
-    participant FE as examio-fe
+    participant FE as kmaedu-fe
     participant GW as gateway:3000
     participant EX as study-room-service<br/>StudyRoomGateway
     participant R as Redis
@@ -327,7 +327,7 @@ sequenceDiagram
 - **Gateway**: the `study-ws` route (`prefix: /ws/study`, `websocket: true`, `auth: required`, `pageFlag: study-room`, no timeout) is handled by `ws/ws-upgrade.handler.ts` on the Node `upgrade` event. It runs the same guard chain as HTTP (token verify, revoke/`av`, page flag, `UPGRADE` rate limit 20 / 10 s per client IP), then `prepareUpgradeRequest` (same header hygiene) and hands the handshake to the proxy (`study-ws` and `studyrooms` point at the named upstream `studyroom`). A refused upgrade gets a bare status line with `X-Error-Code` and the socket is closed; any other path: 404 `ROUTE_NOT_FOUND`. HTTP long-polling on the same path takes the HTTP route with the same checks. socket.io's `handshake.auth` payload is not visible to the gateway, so study-room-service re-verifies in its socket middleware.
 - **study-room-service**: `StudyRoomGateway` (`@nestjs/websockets`, path `/ws/study`); the FE client connects with `transports: ["websocket"]` (no long-polling, avoids sticky sessions)
 - **Multi-instance fan-out**: `RedisIoAdapter` (`@socket.io/redis-adapter`) — required once `study-room-service` runs more than one instance, otherwise a broadcast only reaches sockets connected to the same process; also used to force-disconnect a banned member's socket regardless of which instance holds it (see Moderation below)
-- **Auth**: JWT passed via `handshake.auth.token` (cookie `accessToken` fallback; the legacy `token` cookie is no longer read), verified in the socket `server.use` middleware by `@examio/auth-jwt`'s `TOKEN_VERIFIER` (RS256/JWKS), then `email_verified`, `study_room:join` and the token `av` against Redis `gw:user:<sub>:av` (phase 06). The guards skip `ws` contexts (the gateway class is declared `@Authenticated()` for the declaration test). A DB read remains only for display data and a banned/deleted check. Sockets join room `user:<id>`, are closed at token `exp` and on `auth.user.authz_changed`, each time after an `auth:reauth` event; connect failures surface as `connect_error` codes (see [permissions](permissions.md) § Per-endpoint enforcement)
+- **Auth**: JWT passed via `handshake.auth.token` (cookie `accessToken` fallback; the legacy `token` cookie is no longer read), verified in the socket `server.use` middleware by `@kmaedu/auth-jwt`'s `TOKEN_VERIFIER` (RS256/JWKS), then `email_verified`, `study_room:join` and the token `av` against Redis `gw:user:<sub>:av` (phase 06). The guards skip `ws` contexts (the gateway class is declared `@Authenticated()` for the declaration test). A DB read remains only for display data and a banned/deleted check. Sockets join room `user:<id>`, are closed at token `exp` and on `auth.user.authz_changed`, each time after an `auth:reauth` event; connect failures surface as `connect_error` codes (see [permissions](permissions.md) § Per-endpoint enforcement)
 - **State model**: Redis holds all live/ephemeral state (timer phase/cycle, YouTube media position, playlist playback position/leader, chat, presence); Prisma (`StudyRoom`, `StudyRoomMember`, `StudyRoomPlaylistItem`, `StudyRoomChatBlock`) holds room config, membership/focus-time totals, playlist item list (persisted, unlike other live state), and moderation/block state (persisted so it survives Redis flushes and reconnects)
 - **Access control** (added 2026-07-21): `StudyRoom.accessType` — 0 PUBLIC (any authenticated user), 1 CODE (6-digit invite, existing), 2 WHITELIST (`StudyRoom.whitelist` userId list) — mirrors the `ExamSession` access model. `POST /api/v1/studyrooms/:id/join` added alongside the existing code-based `POST /studyrooms/join`
 - **Playlist** (added 2026-07-21): `StudyRoomPlaylistItem` (ordered, `kind` 0 VIDEO / 1 PLAYLIST) per room; auto-advance is reported by a single designated "leader client" via `media:ended` (no YouTube Data API call) — the server treats that report as authoritative and advances `currentIndex`, broadcasting to the rest of the room. Add/remove/reorder gated by `StudyRoom.playlistAddPermission` (0 EVERYONE / 1 COHOST+ / 2 HOST); next/prev/jump reserved to host/cohost
@@ -340,12 +340,12 @@ sequenceDiagram
 
 ### 7. Identity and Authorization (phase 04)
 
-Source of truth: `examio-be/libs/auth-jwt` (`@examio/auth-jwt`), `apps/auth-service/src/{token,roles,admin-bootstrap}`. Role-to-permission table: [permissions](permissions.md).
+Source of truth: `kmaedu-be/libs/auth-jwt` (`@kmaedu/auth-jwt`), `apps/auth-service/src/{token,roles,admin-bootstrap}`. Role-to-permission table: [permissions](permissions.md).
 
 - **Tokens**: auth signs RS256 access tokens (`typ at+jwt`, default 15 min via `ACCESS_TOKEN_EXPIRATION`) with claims `sub`, `sid`, `roles`, `email_verified`, `av` (authz version). Public keys are served at `GET /.well-known/jwks.json` on auth (current key plus `JWT_RETIRED_PUBLIC_KEYS`). Refresh (`POST /auth/refresh`) reloads the account in a transaction, so the new token carries the current role/`av`; banned or deleted accounts are refused (`ACCOUNT_DISABLED`) and the session revoked.
 - **Verification**: every service uses `AuthJwtModule.forRoot({ serviceName })`, which registers global `JwtAuthGuard` (verify against JWKS, no DB per request) then `PermissionsGuard` (deny by default, 403 `NO_AUTHZ_DECLARED`). The gateway registers it with `globalGuards: false`; its route-level checks are the guard chain in § 1, and its own Nest controllers (`status`, `config`) declare `@Public` / `@Authenticated`.
 - **Declarations**: `@Public`, `@Authenticated`, `@AllowUnverified`, `@RequirePermissions`, `@RequireOwnerOrPermission(perm, OwnerResolver)` (permission or resource owner; phase 06), `@ServiceOnly`, `@RequirePermissionsOrService`. Since phase 06 content, assessment, admin and r2 handlers carry the real permission; plain `@Authenticated()` is limited to `test/authz/authenticated-allowlist.ts` and `test/authz/handler-declarations.spec.ts` fails CI on any undeclared handler or unlisted `@Authenticated()`. Per-endpoint table: [permissions](permissions.md). `apps/auth-service/test/allow-unverified-allowlist.spec.ts` pins the `@AllowUnverified` handlers.
-- **Service tokens**: callers fetch `POST /internal/token` on auth (`client_credentials`: `client_id`, `client_secret`, `audience`; 5 min TTL; `ServiceTokenClient` caches per audience and refreshes 60 s early). Auth stores only sha256 hashes (`SERVICE_CLIENTS`). Service tokens have `sub = svc:<name>`, `roles = ["SERVICE"]`. gRPC calls send them in `authorization` metadata (`@examio/auth-jwt` `grpc-metadata`); RPCs taking a `user_id` use `assertSelfOrService`.
+- **Service tokens**: callers fetch `POST /internal/token` on auth (`client_credentials`: `client_id`, `client_secret`, `audience`; 5 min TTL; `ServiceTokenClient` caches per audience and refreshes 60 s early). Auth stores only sha256 hashes (`SERVICE_CLIENTS`). Service tokens have `sub = svc:<name>`, `roles = ["SERVICE"]`. gRPC calls send them in `authorization` metadata (`@kmaedu/auth-jwt` `grpc-metadata`); RPCs taking a `user_id` use `assertSelfOrService`.
 - **Cookies**: only auth sets them (`libs/common/src/utils/cookie-config.ts`): `accessToken` (`Path=/`, lives one access TTL) and `refreshToken` (`Path=/api/v1/auth`, 30 days); both `HttpOnly`, `SameSite=Lax`, `Secure` in production, host-only (no `Domain`). Logout (`clearAuthCookies`) clears them plus the legacy `token`, `session_id` and `refreshToken` names, including the `COOKIE_DOMAIN` variants in production. Neither the gateway nor any other service sets cookies.
 - **Credential throttle**: auth's credential routes (register, login, verifyAccount, reset/change-password flows, google/one-tap) use `@StrictThrottle()` (5 / 60 s per IP, same budget as the gateway bucket, defense in depth); the marker makes the global throttler skip the handler so each request is counted once.
 - **Roles**: `User.role` (`BaseRole` STUDENT | TEACHER), `User.isSystemAdmin`, `User.authzVersion`; every change goes through `RoleChangeService` (advisory lock, self-change and last-admin guards, `RoleChangeLog`, outbox event). The fast-path `InvalidateUser` / `RevokeSession` calls to the gateway are behind `GATEWAY_CONTROL_ENABLED` (code default off; compose default `true`) and are backed by durable events (§ 1).
@@ -358,7 +358,7 @@ Source of truth: `examio-be/libs/auth-jwt` (`@examio/auth-jwt`), `apps/auth-serv
 ```mermaid
 sequenceDiagram
     participant S as Student
-    participant FE as examio-fe
+    participant FE as kmaedu-fe
     participant GW as gateway
     participant EX as assessment-service
     participant PG as PostgreSQL
@@ -383,7 +383,7 @@ sequenceDiagram
 
 ## Tech Stack
 
-### Frontend (`examio-fe/`)
+### Frontend (`kmaedu-fe/`)
 
 | Layer | Technology | Version |
 |-------|-----------|--------:|
@@ -402,11 +402,11 @@ sequenceDiagram
 | Auth sync | httpOnly cookies (`withCredentials`) + `X-Device-ID` header; session (`user`, `roles`, `permissions`) from `/auth/me` held in Zustand, never persisted | — |
 | Tests | Vitest (`yarn test`, `src/**/*.test.ts`, node env) | latest |
 
-**Frontend RBAC (phase 09, 2026-10-22)**: routes go through `guarded()` → `RequirePermission` (`examio-fe/src/routes/index.tsx`); permission names are generated from `libs/auth-jwt/src/permissions.ts` into `src/types/permissions.generated.ts` (`yarn gen:fe-permissions`, CI `fe-permissions-drift`). `src/apis/api.ts` throws `ApiRequestError` (status, code, requestId) and applies the 401/403 policy of `src/lib/rbac/api-error-policy.ts` with a single-flight refresh shared with the study-room socket. Role change or logout resets role-scoped stores. Route, nav and error tables: [permissions](permissions.md) § Frontend route guards.
+**Frontend RBAC (phase 09, 2026-10-22)**: routes go through `guarded()` → `RequirePermission` (`kmaedu-fe/src/routes/index.tsx`); permission names are generated from `libs/auth-jwt/src/permissions.ts` into `src/types/permissions.generated.ts` (`yarn gen:fe-permissions`, CI `fe-permissions-drift`). `src/apis/api.ts` throws `ApiRequestError` (status, code, requestId) and applies the 401/403 policy of `src/lib/rbac/api-error-policy.ts` with a single-flight refresh shared with the study-room socket. Role change or logout resets role-scoped stores. Route, nav and error tables: [permissions](permissions.md) § Frontend route guards.
 
-**Redis outage handling (content, assessment, study-room, vocabulary, ai-chat)**: HTTP requests that fail with ioredis `MaxRetriesPerRequestError` answer 503 `SERVICE_UNAVAILABLE` (`RedisUnavailableFilter` from `@examio/redis`, registered globally in `main.ts`); `/ws/study` message handlers answer with an `error` event `SERVICE_UNAVAILABLE` (`StudyRoomWsExceptionFilter`) and lifecycle/timer work runs through `runSafely` so a Redis failure is logged, not an unhandled rejection. The web client treats it as retryable (bounded backoff).
+**Redis outage handling (content, assessment, study-room, vocabulary, ai-chat)**: HTTP requests that fail with ioredis `MaxRetriesPerRequestError` answer 503 `SERVICE_UNAVAILABLE` (`RedisUnavailableFilter` from `@kmaedu/redis`, registered globally in `main.ts`); `/ws/study` message handlers answer with an `error` event `SERVICE_UNAVAILABLE` (`StudyRoomWsExceptionFilter`) and lifecycle/timer work runs through `runSafely` so a Redis failure is logged, not an unhandled rejection. The web client treats it as retryable (bounded backoff).
 
-### Backend (`examio-be/`)
+### Backend (`kmaedu-be/`)
 
 | Layer | Technology | Version |
 |-------|-----------|--------:|
@@ -428,7 +428,7 @@ sequenceDiagram
 | Cron | @nestjs/schedule | latest |
 | File upload | multipart/form-data (max 50MB for gRPC R2) | — |
 
-### AI Layer (`examio-be/apps/ai-service/`)
+### AI Layer (`kmaedu-be/apps/ai-service/`)
 
 | Layer | Technology | Version |
 |-------|-----------|--------:|
@@ -449,11 +449,11 @@ sequenceDiagram
 | RabbitMQ 3.13 | Async event bus |
 | Cloudflare R2 | User file storage |
 | Docker Compose | Deploy stack (two gateway instances + 11 services (+ `ai-worker`) + 3 infra + one `<svc>-migrate` one-shot per DB-owning service; split into `deploy/compose/*.yml`), networks edge / internal / egress |
-| GHCR | Per-service images `ghcr.io/cychipo/examio-<key>` built by `deploy.yml` |
+| GHCR | Per-service images `ghcr.io/tgiap04/kmaedu-<key>` built by `deploy.yml` |
 
 ## Database per service (phase 11)
 
-One Postgres database, one schema and one login role per service. `libs/database` and `@examio/database` are gone.
+One Postgres database, one schema and one login role per service. `libs/database` and `@kmaedu/database` are gone.
 
 | Service | Prisma schema | Migrations | Postgres schema / role |
 |---|---|---|---|
@@ -467,7 +467,7 @@ One Postgres database, one schema and one login role per service. `libs/database
 | ai (Python) | none (no Prisma; Alembic) | `apps/ai-service/alembic/versions` (one-shot `ai-migrate`, `ROLE=migrate`) | `ai` / `ai_svc`; `DB_SEARCH_PATH=ai,extensions`; one shared asyncpg pool, no runtime DDL, no access to other schemas |
 
 - Roles `content` and `assessment` are used since phase 14 (the former `exam` schema and role no longer exist; the DB was reset, not migrated); `studyroom` and `vocabulary` are used since phase 12, `document` and `ai` since phase 15, `aichat` since phase 13 (the temporary `ai_svc` grants on `exam` were revoked). All 9 roles and the `extensions` schema (pgvector) come from `deploy/postgres/init/01-service-schemas.sh`, which runs only on an empty data volume; existing dev stacks need `docker compose down -v` once. `PUBLIC` has no privileges, so a role selecting another service's table gets `permission denied` (checked by `test/db-isolation`, a CI step).
-- `DATABASE_URL` per service: `postgresql://<svc>_svc:...@postgres:5432/examio?schema=<svc>`. There is no shared URL.
+- `DATABASE_URL` per service: `postgresql://<svc>_svc:...@postgres:5432/kmaedu?schema=<svc>`. There is no shared URL.
 - Each service has a local Prisma module `apps/<svc>-service/src/prisma` (`PrismaPg` adapter, pool of 5, a database `ReadinessCheck` feeding `/health/ready`) and a generated client in `apps/<svc>-service/src/generated/prisma` (gitignored; `yarn prisma:generate` loops over `apps/*/prisma`).
 - No foreign key points at `User` any more: other services keep `userId` (usually indexed), and read profile data from auth over gRPC.
 - Migrations: `PRISMA_ADMIN_URL=... scripts/prisma-migrate-dev.sh <svc> <name>` (local only, diffs against a throwaway shadow DB); deploy applies them as the service role through the `<svc>-migrate` one-shot containers.
@@ -477,7 +477,7 @@ One Postgres database, one schema and one login role per service. `libs/database
 
 1. **Gateway as single public entry** — every request hits the gateway first; routing is data (`routes.yaml`), not controllers
 2. **Database per service** — each of auth, admin, content, assessment, study-room, vocabulary has its own Prisma schema, migrations and generated client; no FK crosses services (`userId` + index instead); `yarn check:ownership` still guards model access; cross-service data goes over gRPC
-3. **Shared infra libs** — `@examio/common`, `@examio/redis`, `@examio/messaging`, `@examio/auth-jwt`
+3. **Shared infra libs** — `@kmaedu/common`, `@kmaedu/redis`, `@kmaedu/messaging`, `@kmaedu/auth-jwt`
 4. **Repository pattern with cache** — `BaseRepository<T>` wraps Prisma + Redis invalidation
 5. **Composite screen detection** — single page with independent regions (REG###)
 6. **Backend-for-frontend (BFF) pattern** — the frontend never calls ai-service; content-service (generation), ai-chat-service (chat), vocabulary-service (word-family generation) and document-service (uploads) front it, over gRPC and events
@@ -488,7 +488,7 @@ One Postgres database, one schema and one login role per service. `libs/database
 
 | Concern | Implementation |
 |---------|---------------|
-| Auth | `@examio/auth-jwt`: `JwtAuthGuard` + `PermissionsGuard` (stateless, deny by default); see § 7 |
+| Auth | `@kmaedu/auth-jwt`: `JwtAuthGuard` + `PermissionsGuard` (stateless, deny by default); see § 7 |
 | Rate limiting | Gateway Lua fixed window from `routes.yaml` (default 100 / 60 s, per-route buckets, § 1); auth keeps `@StrictThrottle` (5 / 60 s) on credential routes |
 | Logging | `LoggingInterceptor` (sanitizes sensitive body fields) |
 | Cache invalidation | `BaseRepository` scoped to userId + itemId. Since phase 06 a cached `findOne` lives under the scope writes invalidate (`{id, owner}` item scope, `{id}` public scope, `{owner}` user `one:` scope), so create/update/delete/upsert/updateMany clear it. |
@@ -553,19 +553,19 @@ graph TB
     ADMIN --> REDIS
 ```
 
-Docker Compose file: `examio-be/deploy/docker-compose.yml` (production-grade; Docker Compose 2.24+)
+Docker Compose file: `kmaedu-be/deploy/docker-compose.yml` (production-grade; Docker Compose 2.24+)
 
 ### Images, env and deploy (phase 16)
 
-- **One recipe per runtime.** Every Node service is built from `examio-be/deploy/Dockerfile.node` (build arg `SERVICE`; targets `runtime` and `seed`); ai-service from `apps/ai-service/Dockerfile` with context `examio-be`. `deploy/docker-entrypoint.sh` switches on `ROLE`: `api` | `worker` | `api,worker` | `migrate` | `seed` (`SEED_PROFILE=prod|dev`), so one image serves a service's API, worker and `<svc>-migrate` one-shot. The old `examio-be/Dockerfile`, `deploy/Dockerfile`, `Dockerfile.migration`, `Dockerfile.seed` and `entrypoint-seed.sh` are deleted.
-- **Registry.** Images are `ghcr.io/cychipo/examio-<key>:<sha>` (`:main` follows the last deploy); `deploy/services.json` is the catalog read by CI and the deploy script.
+- **One recipe per runtime.** Every Node service is built from `kmaedu-be/deploy/Dockerfile.node` (build arg `SERVICE`; targets `runtime` and `seed`); ai-service from `apps/ai-service/Dockerfile` with context `kmaedu-be`. `deploy/docker-entrypoint.sh` switches on `ROLE`: `api` | `worker` | `api,worker` | `migrate` | `seed` (`SEED_PROFILE=prod|dev`), so one image serves a service's API, worker and `<svc>-migrate` one-shot. The old `kmaedu-be/Dockerfile`, `deploy/Dockerfile`, `Dockerfile.migration`, `Dockerfile.seed` and `entrypoint-seed.sh` are deleted.
+- **Registry.** Images are `ghcr.io/tgiap04/kmaedu-<key>:<sha>` (`:main` follows the last deploy); `deploy/services.json` is the catalog read by CI and the deploy script.
 - **Env.** Each container gets `env_file: deploy/env/<name>.env` (required). `deploy/.env` is compose-level only (interpolation); service-only secrets such as `ADMIN_EMAILS`, `ADMIN_DEFAULT_PASSWORD` (`env/auth.env`) and `GEMINI_*`, `AI2_API_KEY` (`env/ai.env`) live in the service's own file, so a compromised container sees only its own. Every container has a `mem_limit`; `ai-worker` has a heartbeat healthcheck.
-- **Pipeline.** `.github/workflows/deploy.yml`: `scripts/changed-services.sh` picks services in two waves (wave 1 = servers of changed proto packages; `auth` first in each wave, `gateway` last) -> per-service GHCR build matrix -> SSH job runs `deploy/deploy-service.sh <svc> <sha>` per service (migrate gate, halt on `P3009`, automatic image rollback, Telegram alerts; it never runs `migrate resolve`, `db push` or `down`). The deploy job is gated by repository variable `CUTOVER_DONE` (production is first deployed once by `examio-be/deploy/cutover-runbook.md`). `ci.yml` adds `detect`, `migrations` (`scripts/lint-migrations.sh` blocks destructive SQL unless the PR is labelled `migration:contract`) and `deploy-scripts` jobs.
-- Operational detail and the rollback rules: `examio-be/deploy/README.md`.
+- **Pipeline.** `.github/workflows/deploy.yml`: `scripts/changed-services.sh` picks services in two waves (wave 1 = servers of changed proto packages; `auth` first in each wave, `gateway` last) -> per-service GHCR build matrix -> SSH job runs `deploy/deploy-service.sh <svc> <sha>` per service (migrate gate, halt on `P3009`, automatic image rollback, Telegram alerts; it never runs `migrate resolve`, `db push` or `down`). The deploy job is gated by repository variable `CUTOVER_DONE` (production is first deployed once by `kmaedu-be/deploy/cutover-runbook.md`). `ci.yml` adds `detect`, `migrations` (`scripts/lint-migrations.sh` blocks destructive SQL unless the PR is labelled `migration:contract`) and `deploy-scripts` jobs.
+- Operational detail and the rollback rules: `kmaedu-be/deploy/README.md`.
 
 ### Production cutover (one-time)
 
-Production is first deployed once, at the final merge of `refactor/microservice-rbac` (date not set yet: "at the final merge"), replacing the old build-on-VPS stack with the per-service GHCR images on a **reset database**. The commands live only in [`examio-be/deploy/cutover-runbook.md`](../../examio-be/deploy/cutover-runbook.md); after it, every deploy is the steady-state flow above (waves, migrate gate, contract flow). The ten steps, one line each:
+Production is first deployed once, at the final merge of `refactor/microservice-rbac` (date not set yet: "at the final merge"), replacing the old build-on-VPS stack with the per-service GHCR images on a **reset database**. The commands live only in [`kmaedu-be/deploy/cutover-runbook.md`](../../kmaedu-be/deploy/cutover-runbook.md); after it, every deploy is the steady-state flow above (waves, migrate gate, contract flow). The ten steps, one line each:
 
 1. **Backup and mark** the running stack: `pg_dump`, copy it off-host, tag the running commit and images `pre-cutover`.
 2. **Drain and stop** the old stack: wait for an idle broker, `down` without `-v`.
@@ -584,23 +584,23 @@ Production is first deployed once, at the final merge of `refactor/microservice-
 
 ```mermaid
 graph LR
-    CF[Cloudflare] -->|CF-Connecting-IP| NGX[nginx examio-fe<br/>real_ip + /api/ + /ws/]
-    NGX -->|examio-edge, upstream gw| GW[gateway-a / gateway-b]
-    GW -->|examio-internal| SVC[auth / content / assessment / study-room / vocabulary / document / admin / r2 / ai]
+    CF[Cloudflare] -->|CF-Connecting-IP| NGX[nginx kmaedu-fe<br/>real_ip + /api/ + /ws/]
+    NGX -->|kmaedu-edge, upstream gw| GW[gateway-a / gateway-b]
+    GW -->|kmaedu-internal| SVC[auth / content / assessment / study-room / vocabulary / document / admin / r2 / ai]
     SVC --- DATA[(postgres, redis, rabbitmq)]
-    SVC -->|examio-egress| NET[internet: OAuth, SMTP, R2, Gemini]
+    SVC -->|kmaedu-egress| NET[internet: OAuth, SMTP, R2, Gemini]
 ```
 
 | Network | Members | Notes |
 |---|---|---|
-| `edge` (`examio-edge`) | gateway, FE nginx | only way in; bring this stack up first (it creates the network) |
-| `internal` (`examio-internal`, `internal: true`) | every service, Postgres, Redis, RabbitMQ | no route out |
-| `egress` (`examio-egress`) | auth, content, assessment, r2, ai | services that really call the internet; admin has none |
+| `edge` (`kmaedu-edge`) | gateway, FE nginx | only way in; bring this stack up first (it creates the network) |
+| `internal` (`kmaedu-internal`, `internal: true`) | every service, Postgres, Redis, RabbitMQ | no route out |
+| `egress` (`kmaedu-egress`) | auth, content, assessment, r2, ai | services that really call the internet; admin has none |
 
 - No backend container publishes a host port (`deploy/compose-topology.spec.cjs` fails CI if one returns). The only host port is the FE nginx (`FE_PORT`, 6368); the former `127.0.0.1:6369` gateway port is gone.
 - The gateway runs as two instances, `gateway-a` and `gateway-b` (`compose/gateway.yml`), both on `edge` and `internal`; they keep no local state (Redis and RabbitMQ hold revoke/authz/rate-limit state), so either serves any request. nginx upstream `gw` re-resolves both names (`resolve`, needs nginx 1.27.3+), retries idempotent requests on the other instance (`proxy_next_upstream`, `proxy_connect_timeout 3s`), and is never reloaded during a deploy.
-- nginx (`examio-fe/nginx.conf`) includes `nginx/cloudflare-real-ip.conf` (real_ip from `CF-Connecting-IP`, trusted only from Cloudflare ranges) and **overwrites** `X-Forwarded-For` with `$remote_addr` on `/api/` and `/ws/`. The gateway trusts exactly that one hop, so rate-limit keys are the real client IP. `location /ws/` proxies to `${BACKEND_URL}/ws/` with `Upgrade` headers and 3600 s read/send timeouts.
-- Operational detail: `examio-be/deploy/README.md`.
+- nginx (`kmaedu-fe/nginx.conf`) includes `nginx/cloudflare-real-ip.conf` (real_ip from `CF-Connecting-IP`, trusted only from Cloudflare ranges) and **overwrites** `X-Forwarded-For` with `$remote_addr` on `/api/` and `/ws/`. The gateway trusts exactly that one hop, so rate-limit keys are the real client IP. `location /ws/` proxies to `${BACKEND_URL}/ws/` with `Upgrade` headers and 3600 s read/send timeouts.
+- Operational detail: `kmaedu-be/deploy/README.md`.
 
 ## Known Architectural Issues
 
@@ -627,6 +627,6 @@ graph LR
 - Health probes: `GET /health/live` and `GET /health/ready` (`libs/observability`), replacing `/api/v1/health`.
 - Logs: pino JSON with `X-Request-Id` correlation.
 - Schema: per-service migrations (see Database per service) applied with `prisma migrate deploy`; `db push` is no longer used. The phase-01 shared baseline (`libs/database`) no longer exists.
-- Postgres, Redis and RabbitMQ are not published on host ports; reach them through the containers or an SSH tunnel (`examio-be/deploy/README.md`).
+- Postgres, Redis and RabbitMQ are not published on host ports; reach them through the containers or an SSH tunnel (`kmaedu-be/deploy/README.md`).
 - Unverified users may only reach logout, sendVerificationEmail, verifyAccount, me (`@AllowUnverified`); other guarded routes return 403.
 - CI: `.github/workflows/ci.yml` runs as a quality gate that `deploy.yml` requires before deploying.

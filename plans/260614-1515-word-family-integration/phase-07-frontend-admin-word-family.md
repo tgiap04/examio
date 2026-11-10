@@ -1,9 +1,9 @@
 # Phase 7: Frontend - Admin Word Family Management Page
 
 ## Context
-- Admin layout: `examio-fe/src/routes/layouts/AdminLayout.tsx`
-- Admin routes: `examio-fe/src/routes/index.tsx` (children under `/admin`)
-- Admin users page: `examio-fe/src/pages/admin/AdminUsersPage.tsx` (reference pattern)
+- Admin layout: `kmaedu-fe/src/routes/layouts/AdminLayout.tsx`
+- Admin routes: `kmaedu-fe/src/routes/index.tsx` (children under `/admin`)
+- Admin users page: `kmaedu-fe/src/pages/admin/AdminUsersPage.tsx` (reference pattern)
 - Admin API: uses gateway proxy `/api/v1/admin/*`
 
 ## Overview
@@ -56,14 +56,14 @@ AdminWordFamilyPage
 ```
 
 ## Files to Create
-- `examio-fe/src/pages/admin/AdminWordFamilyPage.tsx`
-- `examio-fe/src/components/organisms/admin/word-family/AdminWordFamilyTable.tsx`
-- `examio-fe/src/components/organisms/admin/word-family/AdminWordFamilyRow.tsx`
-- `examio-fe/src/components/organisms/admin/word-family/CategoryFormModal.tsx`
-- `examio-fe/src/apis/adminWordFamilyApi.ts`
+- `kmaedu-fe/src/pages/admin/AdminWordFamilyPage.tsx`
+- `kmaedu-fe/src/components/organisms/admin/word-family/AdminWordFamilyTable.tsx`
+- `kmaedu-fe/src/components/organisms/admin/word-family/AdminWordFamilyRow.tsx`
+- `kmaedu-fe/src/components/organisms/admin/word-family/CategoryFormModal.tsx`
+- `kmaedu-fe/src/apis/adminWordFamilyApi.ts`
 
 ## Files to Modify
-- `examio-fe/src/routes/index.tsx` — add admin word-family route
+- `kmaedu-fe/src/routes/index.tsx` — add admin word-family route
 
 ## Implementation Steps
 

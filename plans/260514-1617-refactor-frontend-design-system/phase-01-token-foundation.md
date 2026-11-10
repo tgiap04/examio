@@ -3,7 +3,7 @@
 ## Context Links
 - `DESIGN.md`
 - `ui-design.html`
-- `examio-fe/src/app/globals.css`
+- `kmaedu-fe/src/app/globals.css`
 
 ## Overview
 - Priority: Critical
@@ -27,7 +27,7 @@
 - Old KMA utility classes can remain temporarily only if mapped to new tokens or marked for later removal.
 
 ## Related Code Files
-- Modify: `examio-fe/src/app/globals.css`
+- Modify: `kmaedu-fe/src/app/globals.css`
 - Do not modify yet: route/page files unless needed for compile errors.
 
 ## Implementation Steps

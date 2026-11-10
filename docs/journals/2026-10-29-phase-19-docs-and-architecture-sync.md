@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-29
 **Severity**: medium
-**Component**: ARCHITECTURE.md, CLAUDE.md, AGENTS.md, docs/system/*, docs/generated/*, docs/flows/*, examio-be/scripts/gen-permissions-doc.ts, ci.yml
+**Component**: ARCHITECTURE.md, CLAUDE.md, AGENTS.md, docs/system/*, docs/generated/*, docs/flows/*, kmaedu-be/scripts/gen-permissions-doc.ts, ci.yml
 **Status**: resolved (signed off 2026-10-29)
 
 ## What Happened
@@ -15,7 +15,7 @@ Phase 19 brought the docs up to date with the system as built after phases 01–
 - **Changelog:** one cutover release entry (18 breaking-change rows).
 - **Roadmap:** phases 01–15 had been listed as "uncommitted"; now listed as committed.
 
-Phase 18 (mobile) was postponed. examio-app exists only on `develop`, so the user chose to do 19 first.
+Phase 18 (mobile) was postponed. kmaedu-app exists only on `develop`, so the user chose to do 19 first.
 
 ## The Brutal Truth
 

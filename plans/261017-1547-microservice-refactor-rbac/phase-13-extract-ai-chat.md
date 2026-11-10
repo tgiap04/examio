@@ -2,7 +2,7 @@
 
 ## Context Links
 - [plan.md](./plan.md) · [planner-brief.md](./reports/planner-brief.md) decisions 5, 9 · [red-team-changes.md](./reports/red-team-changes.md) RT-2, RT-8, RT-11, RT-15 (authoritative over this file's earlier text) <!-- Red Team: RT-2, RT-8, RT-11, RT-15 -->
-- `/Users/tgiap.dev/devs/examio/ARCHITECTURE.md` §4.4 (ai-chat row), §4.5, §6.2 (`ai/v1`, `document/v1`), §12 P5, **§13 checklist**
+- `/Users/tgiap.dev/devs/kmaedu/ARCHITECTURE.md` §4.4 (ai-chat row), §4.5, §6.2 (`ai/v1`, `document/v1`), §12 P5, **§13 checklist**
 - [researcher-02 §2 server-streaming → SSE](./research/researcher-02-migration-mechanics-report.md)
 - Prior: [phase-11](./phase-11-database-per-service.md) (`r2_delete_tasks`, `r2-key-from-url.ts`), [phase-12](./phase-12-extract-study-room-and-vocabulary.md), [phase-15](./phase-15-document-service-and-ai-service-db.md) (AiService gRPC + document-service + `DeleteDocuments`)
 
@@ -69,14 +69,14 @@ Gateway `config/routes.yaml` (phase-05 schema; change `upstream` on the existing
 
 ## Related Code Files
 File ownership (globs):
-- Create: `/Users/tgiap.dev/devs/examio/examio-be/apps/ai-chat-service/**`, `/Users/tgiap.dev/devs/examio/examio-be/deploy/compose/ai-chat.yml`, `/Users/tgiap.dev/devs/examio/examio-be/deploy/env/aichat.env.example`
-- Modify (sequential with 12/14): `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/{exam-service.module.ts,worker.module.ts}`, `.../apps/exam-service/prisma/schema/ai-chat.prisma` (delete) + exam drop migration
-- Modify: `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/config/routes.yaml` (entries `ai-chat*`, `subjects`)
-- Modify: `/Users/tgiap.dev/devs/examio/examio-be/apps/vocabulary-service/src/clients/ai.client.ts`, `.../apps/vocabulary-service/src/config/env.schema.ts`
-- Modify/Delete (phase 15 finished, so no collision): `/Users/tgiap.dev/devs/examio/examio-be/apps/ai-service/src/backend/{main.py,api/**}`, `.../apps/ai-service/.env.example`
-- Modify: `/Users/tgiap.dev/devs/examio/examio-be/apps/r2-service/src/r2-service.controller.ts` (`DeleteObjects` `@ServiceOnly` + `ai-chat`, decorator line only), ai-service `src/backend/auth/service_token.py` (`ALLOWED_CALLERS` constant already lists `ai-chat`, `vocabulary` from 15; verify), `/Users/tgiap.dev/devs/examio/examio-be/deploy/rabbitmq/definitions.template.json` (user `aichat`; rendered at deploy) <!-- Red Team: RT-2, RT-8 --> <!-- Reconcile: X6 -->
-- Modify (append-only): `/Users/tgiap.dev/devs/examio/examio-be/{nest-cli.json,package.json,jest.config.js,deploy/docker-compose.yml,scripts/check-model-ownership.ts}`, `deploy/env/*.env.example` (drop `INTERNAL_SERVICE_TOKEN`, `AI_SERVICE_URL`), `/Users/tgiap.dev/devs/examio/examio-be/deploy/.env.example` (line 7) <!-- Red Team: RT-15 -->
-- Delete: `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/{ai-chat,subject}/**`
+- Create: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ai-chat-service/**`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/compose/ai-chat.yml`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/env/aichat.env.example`
+- Modify (sequential with 12/14): `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/{exam-service.module.ts,worker.module.ts}`, `.../apps/exam-service/prisma/schema/ai-chat.prisma` (delete) + exam drop migration
+- Modify: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/config/routes.yaml` (entries `ai-chat*`, `subjects`)
+- Modify: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/vocabulary-service/src/clients/ai.client.ts`, `.../apps/vocabulary-service/src/config/env.schema.ts`
+- Modify/Delete (phase 15 finished, so no collision): `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ai-service/src/backend/{main.py,api/**}`, `.../apps/ai-service/.env.example`
+- Modify: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/r2-service/src/r2-service.controller.ts` (`DeleteObjects` `@ServiceOnly` + `ai-chat`, decorator line only), ai-service `src/backend/auth/service_token.py` (`ALLOWED_CALLERS` constant already lists `ai-chat`, `vocabulary` from 15; verify), `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/rabbitmq/definitions.template.json` (user `aichat`; rendered at deploy) <!-- Red Team: RT-2, RT-8 --> <!-- Reconcile: X6 -->
+- Modify (append-only): `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/{nest-cli.json,package.json,jest.config.js,deploy/docker-compose.yml,scripts/check-model-ownership.ts}`, `deploy/env/*.env.example` (drop `INTERNAL_SERVICE_TOKEN`, `AI_SERVICE_URL`), `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/.env.example` (line 7) <!-- Red Team: RT-15 -->
+- Delete: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/{ai-chat,subject}/**`
 - Seed move: `apps/exam-service/prisma/seed/subjects.ts` (phase-11 per-owner seed file) → `apps/ai-chat-service/prisma/seed.ts` <!-- Red Team: RT-14 -->
 
 ## Implementation Steps
@@ -127,9 +127,9 @@ Write first:
 
 ## Success Criteria
 Status 2026-10-25: 9/9 PASS (criteria 6 and 9 reworded, see notes). Evidence: [phase-13-runs.md](./evidence/phase-13-runs.md), [inspection-verdict.json](./evidence/phase-13/inspection-verdict.json). Signed off and committed 2026-10-25 (8b4a881..ebae483).
-- [x] 1. `grep -rn "AIChatModule\|SubjectModule" /Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src` → no output.
+- [x] 1. `grep -rn "AIChatModule\|SubjectModule" /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src` → no output.
 - [x] 2. <!-- Red Team: RT-15 --> `grep -rn "INTERNAL_SERVICE_TOKEN\|x-internal-service-token\|AI_SERVICE_URL"` over `apps`, `libs`, `deploy` (`*.ts`, `*.py`, `*.example`, `*.yml`) → no output. ai-service serves only `/` and `/health` (live: POST 405, removed routes 404). <!-- Reconcile: X7 -->
-- [x] 3. `grep -rn "deleteImage(\|deleteFile(" /Users/tgiap.dev/devs/examio/examio-be/apps/ai-chat-service/src` → no output. Message image R2 keys are deleted only via `r2_delete_tasks` + worker (`svc:ai-chat`). <!-- Red Team: RT-8 -->
+- [x] 3. `grep -rn "deleteImage(\|deleteFile(" /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ai-chat-service/src` → no output. Message image R2 keys are deleted only via `r2_delete_tasks` + worker (`svc:ai-chat`). <!-- Red Team: RT-8 -->
 - [x] 4. `yarn build && yarn test && check:deps && check:ownership` green (2314 tests pass); ai-service pytest green; `ai-chat-service` healthy after `up -d --wait` from an empty volume.
 - [x] 5. `POST /api/v1/ai-chat/:id/stream` through the gateway prints incremental `data:` frames (11 frames, ~400 ms apart, not one burst). Client abort cancels the gRPC call (F1 fixed). Upstream error → `event: error` frame. `regenerate-stream` works.
 - [x] 6. (reworded, F3 accepted) STUDENT → 403 on `/ai-chat/*`. Another user's chatId → 404 on messages, stream and DELETE. On `GET :chatId/exists` another user's chat returns 200 `{exists:false}`, the same body as a missing chat, so existence does not leak. Anonymous `GET /subjects` → 200 with no `systemPrompt` or `email`.
@@ -167,7 +167,7 @@ Part A (2026-10-24):
 - `finance.subscription.changed` now carries the EFFECTIVE tier (`effectiveTier(sub, now)`: inactive/expired → 0) and fires on lazy expiry (guarded `updateMany`, outbox in the same tx, published once under concurrent observers), on admin reactivation and on payment activation of an expired same-tier row; no event when the effective tier does not change. `finance_events.proto` comment-only. No consumer existed before ai-chat. `finance-admin.e2e-spec.ts` same-tier reactivation now expects 2 events (`0 → tier`).
 - Open product question (deferred): admin reactivation does not reset a past `nextPaymentDate`, so such a row stays effective tier 0 (no event), consistent with `getUserSubscriptionBenefits`.
 - vocabulary `ai.client.ts` → gRPC `AiService.GenerateWordFamily` (60 s, not retried, service token `svc:vocabulary`, aud `ai`); `{success, error}` mapping kept; HTTP/`AI_SERVICE_URL`/`INTERNAL_SERVICE_TOKEN` removed from vocabulary code, env and compose; `AI_GRPC_URL` added.
-- Incident: an implementer's plain `grep -r` over `deploy/` matched the real gitignored `examio-be/deploy/.env` and printed a live `INTERNAL_SERVICE_TOKEN` value into the session transcript (not into git). The token is removed from the code in this phase; rotate it wherever it is still configured. Repo-wide greps now use `git grep`.
+- Incident: an implementer's plain `grep -r` over `deploy/` matched the real gitignored `kmaedu-be/deploy/.env` and printed a live `INTERNAL_SERVICE_TOKEN` value into the session transcript (not into git). The token is removed from the code in this phase; rotate it wherever it is still configured. Repo-wide greps now use `git grep`.
 Coordinator decisions for part B: keep the phase-15 bounded OCR wait (no `409 DOCUMENT_PROCESSING`); stream cancel keeps the HEAD behaviour for partial text; `systemPrompt` never returned; exam keeps its `document.deleted` handler for `HistoryGenerated*` only.
 Part B (2026-10-24):
 - `ai-chat-service`: HTTP + `ROLE=api,worker` (r2 delete poller as `svc:ai-chat`; `aichat.events` consumer in the API process), schema `aichat`, seed (4 categories / 15 subjects) moved from exam; exam no longer seeds reference data.

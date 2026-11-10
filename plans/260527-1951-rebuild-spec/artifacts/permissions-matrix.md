@@ -22,7 +22,7 @@ Source artifacts: `permissions.md`, `screen-list.md`, `route-list.md`, `scout-re
 | PERM013 | Wallet/payment/subscription | No | Yes | Own wallet/payment | Admin needs verification | SePay webhook | Webhook protected by API key. |
 | PERM014 | R2 storage operations | No | Yes | Own files | Admin needs verification | gRPC internal | Product rule: deleting DB record with R2 asset should delete R2 object too. |
 | PERM015 | Service-to-service gRPC auth/wallet/r2/ocr/subscription | No | No | No | No | Internal services | Proto contracts in `libs/common/src/protos`. |
-| PERM016 | RabbitMQ events | No | No | No | No | Internal services | Topic exchange `examio.events`. |
+| PERM016 | RabbitMQ events | No | No | No | No | Internal services | Topic exchange `kmaedu.events`. |
 | PERM017 | Mobile auth flows | Yes | N/A | N/A | N/A | No | Android/iOS email+OAuth auth real. |
 | PERM018 | Mobile non-auth feature data | No | Intended auth | Intended own data | Needs verification | No | Shared API/repo ready; platform UI mostly mock-backed. |
 

@@ -17,13 +17,13 @@
 - Gateway sets cookies again (30d, `auth-proxy.controller.ts:308-341`). Auth sets `token`, `session_id`, `refreshToken` (`auth.controller.ts:232-237, 292-297, 375-376, 518-523, 565-570`).
 - WS `/ws/study` is hand-proxied via `http-proxy` with a per-IP limiter (`main.ts:139-211`). socket.io `auth.token` is in the CONNECT packet and not visible at HTTP upgrade. Decision 10: the gateway checks cookie `accessToken` / `Authorization` at upgrade, and study-room re-verifies in its `server.use` middleware (phase 06, RT-5).
 - <!-- Red Team: RT-15 --> The WS limiter keys on the **leftmost** `X-Forwarded-For` entry (`main.ts:187-191`), which the client controls, so it is bypassable. Raw upgrade requests have no `req.ip`; the fix computes the IP with `proxy-addr` and Express's own `trust proxy fn`, the same function behind HTTP `req.ip`.
-- <!-- Red Team: RT-15 --> nginx forwards `X-Forwarded-For $proxy_add_x_forwarded_for` and `X-Real-IP $remote_addr` (`examio-fe/nginx.conf:48-49`) with no `real_ip` config. Behind Cloudflare, `$remote_addr` is a Cloudflare edge IP, so every per-IP limit today collapses onto a few CF addresses.
+- <!-- Red Team: RT-15 --> nginx forwards `X-Forwarded-For $proxy_add_x_forwarded_for` and `X-Real-IP $remote_addr` (`kmaedu-fe/nginx.conf:48-49`) with no `real_ip` config. Behind Cloudflare, `$remote_addr` is a Cloudflare edge IP, so every per-IP limit today collapses onto a few CF addresses.
 - <!-- Red Team: RT-15 --> Current edge hardening to port: helmet with a Swagger-friendly CSP (`main.ts:35-46`), CORS allowlist from `CORS_ORIGINS|FRONTEND_URL` with dev origins and a production fail-fast (`main.ts:54-82`). The admin proxy already overwrites `x-forwarded-for` with `req.ip` (`admin-proxy.controller.ts:131-134`); the dispatcher does the same for every upstream so service throttlers (auth `trust proxy 1`, `auth-service/src/main.ts:40`) see the client.
 - <!-- Red Team: RT-4 --> Current per-route limits (all `{limit, ttl: 60000}`, one bucket per handler):
   - gateway: `POST studyrooms/join` 5 (`study-room-proxy.controller.ts:49`); `POST ai/quick-upload` 10, `POST ai/generate-from-file` 5, `POST ai/regenerate/:uploadId` 5, `POST ai-chat/:chatId/stream` 10, `POST ai-chat/message/:messageId/regenerate-stream` 10 (`ai-study-proxy.controller.ts:55,124,293,437,574`); global 100/min (`gateway.module.ts:67-71`).
   - auth (service-side, kept): register, login, verifyAccount, send-code-reset-password, reset-password, send-code-change-password, change-password, google/one-tap → 5 (`auth.controller.ts:186-496`); refresh → auth global 30/min (`auth.module.ts:47-52`).
   - No limit today on `flashcardsets|examsessions /study/:id/verify-code|with-code` (`flashcardset.controller.ts:599,614`, `examsession.controller.ts:197,212`) or `users/search` (`flashcardset.controller.ts:698`, `examsession.controller.ts:286`); `quiz-practice/sets/:id/unlock` arrives in phase 07.
-- <!-- Red Team: RT-2 --> Compose today: one `examio-network` for everything (`deploy/docker-compose.yml:461-464`), Postgres published on the host `5411:5432` (`:374-375`), gateway `6369:7000` (`:39-40`). The FE compose joins `examio-network` as external (`examio-fe/docker-compose.yml:25-26,39-42`). Services that call the internet: auth (Google OAuth, SMTP), exam (Turnstile verify, `libs/common/src/services/turnstile.service.ts`), finance (SePay, `sepay.service.ts:15`), r2 (Cloudflare R2), ai (Gemini).
+- <!-- Red Team: RT-2 --> Compose today: one `kmaedu-network` for everything (`deploy/docker-compose.yml:461-464`), Postgres published on the host `5411:5432` (`:374-375`), gateway `6369:7000` (`:39-40`). The FE compose joins `kmaedu-network` as external (`kmaedu-fe/docker-compose.yml:25-26,39-42`). Services that call the internet: auth (Google OAuth, SMTP), exam (Turnstile verify, `libs/common/src/services/turnstile.service.ts`), finance (SePay, `sepay.service.ts:15`), r2 (Cloudflare R2), ai (Gemini).
 - Page flags: gateway reads Redis `CONFIG_PAGES_KEY` and falls back to Prisma `pageFeatureFlag` (`services/config.service.ts:63-75`). Admin already rebuilds the cache and publishes `CONFIG_PAGES_CHANNEL` on change (`admin-page-config.service.ts:86-100`). **So the DB fallback can go** if admin warms the cache at boot. A cache miss means all pages are enabled (the default-on semantics FE already uses).
 - hpm 3.0.7 v3 API: `pathFilter`, `on.{proxyReq,error}`, `proxyTimeout`. It streams (no `selfHandleResponse`). Status and multiple `Set-Cookie` pass verbatim. `ws:true` auto-subscribes only after the first HTTP request, so use an explicit `server.on('upgrade')`. `xfwd` is NOT used: the dispatcher sets `X-Forwarded-*` itself (overwrite, not append). <!-- Red Team: RT-15 -->
 - `bodyParser:false` is mandatory, so no Nest body-consuming controllers remain except `config` (GET only) and health. Swagger setup (`main.ts:84-137`) is dropped: it documented the deleted proxy controllers.
@@ -84,15 +84,15 @@
   - helmet with today's options (`main.ts:35-46`).
   - `app.enableCors` with today's allowlist logic and allowed headers (`main.ts:54-82`), registered before the dispatcher. Production with an empty allowlist → throw at boot.
   - `trust proxy 1` (nginx is the one trusted hop).
-  - nginx (`examio-fe/nginx.conf`): `include /etc/nginx/cloudflare-real-ip.conf;` (`set_real_ip_from` for every Cloudflare v4/v6 range + `real_ip_header CF-Connecting-IP;`), and `proxy_set_header X-Forwarded-For $remote_addr;` (overwrite). A client-sent `X-Forwarded-For` or `CF-Connecting-IP` from a non-Cloudflare source never changes the key.
+  - nginx (`kmaedu-fe/nginx.conf`): `include /etc/nginx/cloudflare-real-ip.conf;` (`set_real_ip_from` for every Cloudflare v4/v6 range + `real_ip_header CF-Connecting-IP;`), and `proxy_set_header X-Forwarded-For $remote_addr;` (overwrite). A client-sent `X-Forwarded-For` or `CF-Connecting-IP` from a non-Cloudflare source never changes the key.
 - Functional — error envelope <!-- Red Team: RT-11 -->: register `HttpErrorEnvelopeFilter` (phase 02) in the gateway (Nest controllers) and in auth `main.ts`; the dispatcher's `error-response.ts` emits the same `{ statusCode, code, message, requestId }`. `message` keeps today's value (string or array), so FE readers of `response.data.message` keep working. Other services adopt it when a later phase touches them.
 - Functional — admin log stream <!-- Reconcile: X9 -->: the dispatcher keeps today's request log line (`→ METHOD url status ms`) and, on `res.finish`, calls the existing `LogPublisherService.publish('gateway', line)` (`src/common/log-publisher.service.ts`, today called from `middleware/proxy.middleware.ts:20-24`; redaction kept). Admin logs keep working until phase 17.
 - Functional — compose networks (moved here from 16) <!-- Red Team: RT-2 -->:
-  - `edge` (`name: examio-edge`): gateway + FE nginx only.
-  - `internal` (`name: examio-internal`, `internal: true`): every service, Postgres, Redis, RabbitMQ, migration, seed.
-  - `egress` (`name: examio-egress`): auth, exam, finance, r2, ai.
+  - `edge` (`name: kmaedu-edge`): gateway + FE nginx only.
+  - `internal` (`name: kmaedu-internal`, `internal: true`): every service, Postgres, Redis, RabbitMQ, migration, seed.
+  - `egress` (`name: kmaedu-egress`): auth, exam, finance, r2, ai.
   - No host port for Postgres, Redis, or RabbitMQ (drop `5411:5432`). The gateway host port `6369` stays until phase 16 moves nginx onto the gateway upstream.
-  - FE compose joins `examio-edge` as external. (The `BACKEND_URL` default `:3000` change is owned by phase 02.) <!-- Reconcile: X9 -->
+  - FE compose joins `kmaedu-edge` as external. (The `BACKEND_URL` default `:3000` change is owned by phase 02.) <!-- Reconcile: X9 -->
   - Gateway gets `RABBITMQ_URL` for user `gateway` (added to the phase-03 definitions template: read `gateway.*`, topic write `^gateway\.` (none used)).
 - Functional — cookies (auth only): `accessToken` (Path=/, Max-Age 900) and `refreshToken` (Path=/api/v1/auth, Max-Age = session TTL), `HttpOnly; SameSite=Lax; Secure` when `NODE_ENV=production`, host-only. Drop the `token` and `session_id` cookies. Logout clears both, including legacy names.
 - Functional — streaming: SSE routes (`ai-chat/*/stream`, `regenerate-stream`, `admin/logs/stream`) get `timeout: 0` and no compression. Uploads stream through. `maxBodySize` is checked on `content-length` → 413 `PAYLOAD_TOO_LARGE` before proxying.
@@ -108,7 +108,7 @@ Cloudflare ─► nginx [edge] (real_ip CF-Connecting-IP; XFF := $remote_addr)
                 └─ dispatcher: match → verify → MGET(revoked sid, av) → coarse perms → pageFlag → rateLimit(Lua) → hpm[routeId] ─► upstream [internal]
 upgrade ─► wsUpgradeHandler: match(websocket) → clientIp(proxy-addr) → same checks → hpm.upgrade ─► study-room (exam-service)
 auth (RevokeSession, InvalidateUser) / admin (SetPageFlags) ─gRPC (svc token, aud=gateway)─► GatewayControl ─► Redis gw:* <!-- Reconcile: X1 -->
-auth outbox ─► examio.events auth.user.authz_changed ─► gateway.events ─► gateway consumer ─► SETMAX gw:user:<id>:av
+auth outbox ─► kmaedu.events auth.user.authz_changed ─► gateway.events ─► gateway consumer ─► SETMAX gw:user:<id>:av
 services needing internet [internal+egress]: auth, exam, finance, r2, ai
 ```
 <!-- Red Team: RT-2, RT-3, RT-15 -->
@@ -126,28 +126,28 @@ Coarse permission routes (everything else: auth required/optional only):
 Rate limit Lua (atomic): `c=INCR k; if c==1 then PEXPIRE k w end; return {c, PTTL k}`. Key per `rateLimits` entry (see Requirements). <!-- Red Team: RT-4 -->
 
 ## Related Code Files
-File ownership (globs): `examio-be/apps/gateway-service/**`, `examio-be/libs/auth-jwt/src/extract-token.ts` (drop `token` cookie fallback), `examio-be/libs/common/src/utils/cookie-config.ts`, `examio-be/apps/auth-service/src/{auth.controller.ts,devices/devices.service.ts,auth.service.ts}` (cookie + RevokeSession/InvalidateUser call sites only), `examio-be/apps/auth-service/src/main.ts` (envelope filter line only), `examio-be/apps/admin-service/src/modules/admin-page-config/admin-page-config.service.ts` (warm cache on boot), `examio-be/deploy/docker-compose.yml` (`networks` for every service, data-store `ports`, gateway env), `examio-be/deploy/rabbitmq/definitions.template.json` (`gateway` user only), `examio-be/deploy/README.md` (ports/networks section), `examio-fe/{nginx.conf,docker-compose.yml,Dockerfile}`, `examio-fe/nginx/cloudflare-real-ip.conf`. <!-- Red Team: RT-2, RT-11, RT-15 -->
+File ownership (globs): `kmaedu-be/apps/gateway-service/**`, `kmaedu-be/libs/auth-jwt/src/extract-token.ts` (drop `token` cookie fallback), `kmaedu-be/libs/common/src/utils/cookie-config.ts`, `kmaedu-be/apps/auth-service/src/{auth.controller.ts,devices/devices.service.ts,auth.service.ts}` (cookie + RevokeSession/InvalidateUser call sites only), `kmaedu-be/apps/auth-service/src/main.ts` (envelope filter line only), `kmaedu-be/apps/admin-service/src/modules/admin-page-config/admin-page-config.service.ts` (warm cache on boot), `kmaedu-be/deploy/docker-compose.yml` (`networks` for every service, data-store `ports`, gateway env), `kmaedu-be/deploy/rabbitmq/definitions.template.json` (`gateway` user only), `kmaedu-be/deploy/README.md` (ports/networks section), `kmaedu-fe/{nginx.conf,docker-compose.yml,Dockerfile}`, `kmaedu-fe/nginx/cloudflare-real-ip.conf`. <!-- Red Team: RT-2, RT-11, RT-15 -->
 
 - Create:
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/config/routes.yaml`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/routing/{route-config.schema.ts,route-table.ts,route-matcher.ts,rate-limit-table.ts}` <!-- Red Team: RT-4 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/pipeline/{dispatcher.middleware.ts,auth-check.ts,auth-state.service.ts,rate-limiter.service.ts,rate-limit.lua,set-max.lua,page-flag.check.ts,error-response.ts,proxy-factory.ts,client-ip.ts,forward-headers.ts,request-log.ts}` <!-- Reconcile: X9 --> <!-- Red Team: RT-3, RT-6, RT-15 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/ws/ws-upgrade.handler.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/control/gateway-control.grpc.controller.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/events/authz-changed.handler.ts` <!-- Red Team: RT-3 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/test/{route-coverage.spec.ts,gateway.e2e-spec.ts,jest-e2e.json}`
-  - `/Users/tgiap.dev/devs/examio/examio-fe/nginx/cloudflare-real-ip.conf` <!-- Red Team: RT-15 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/config/routes.yaml`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/routing/{route-config.schema.ts,route-table.ts,route-matcher.ts,rate-limit-table.ts}` <!-- Red Team: RT-4 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/pipeline/{dispatcher.middleware.ts,auth-check.ts,auth-state.service.ts,rate-limiter.service.ts,rate-limit.lua,set-max.lua,page-flag.check.ts,error-response.ts,proxy-factory.ts,client-ip.ts,forward-headers.ts,request-log.ts}` <!-- Reconcile: X9 --> <!-- Red Team: RT-3, RT-6, RT-15 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/ws/ws-upgrade.handler.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/control/gateway-control.grpc.controller.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/events/authz-changed.handler.ts` <!-- Red Team: RT-3 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/test/{route-coverage.spec.ts,gateway.e2e-spec.ts,jest-e2e.json}`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/nginx/cloudflare-real-ip.conf` <!-- Red Team: RT-15 -->
 - Modify:
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/{main.ts,gateway.module.ts}`, `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/services/config.service.ts` (drop Prisma), `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/controllers/config.controller.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/utils/cookie-config.ts`, `/Users/tgiap.dev/devs/examio/examio-be/libs/auth-jwt/src/extract-token.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service/src/{auth.controller.ts,auth.service.ts,main.ts}`, `/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service/src/devices/devices.service.ts` <!-- Red Team: RT-11 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/admin-service/src/modules/admin-page-config/admin-page-config.service.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/deploy/docker-compose.yml`, `/Users/tgiap.dev/devs/examio/examio-be/deploy/rabbitmq/definitions.template.json`, `/Users/tgiap.dev/devs/examio/examio-be/deploy/README.md` <!-- Red Team: RT-2 -->
-  - `/Users/tgiap.dev/devs/examio/examio-fe/nginx.conf`, `/Users/tgiap.dev/devs/examio/examio-fe/docker-compose.yml`, `/Users/tgiap.dev/devs/examio/examio-fe/Dockerfile` (copy the real-ip include) <!-- Red Team: RT-2, RT-15 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/package.json` (`http-proxy-middleware@3.0.7`, `yaml`, `proxy-addr`; drop `http-proxy`)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/{main.ts,gateway.module.ts}`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/services/config.service.ts` (drop Prisma), `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/controllers/config.controller.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/common/src/utils/cookie-config.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/auth-jwt/src/extract-token.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/auth-service/src/{auth.controller.ts,auth.service.ts,main.ts}`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/auth-service/src/devices/devices.service.ts` <!-- Red Team: RT-11 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/admin-service/src/modules/admin-page-config/admin-page-config.service.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/docker-compose.yml`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/rabbitmq/definitions.template.json`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/README.md` <!-- Red Team: RT-2 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/nginx.conf`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/docker-compose.yml`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/Dockerfile` (copy the real-ip include) <!-- Red Team: RT-2, RT-15 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/package.json` (`http-proxy-middleware@3.0.7`, `yaml`, `proxy-addr`; drop `http-proxy`)
 - Delete:
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/controllers/*-proxy.controller.ts` (all 15 remaining)
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/services/proxy.service.ts`, `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/middleware/proxy.middleware.ts`, `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/guards/{page-enabled.guard.ts,toggle-page.decorator.ts}`, `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/ws-study.constant.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/controllers/*-proxy.controller.ts` (all 15 remaining)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/services/proxy.service.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/middleware/proxy.middleware.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/guards/{page-enabled.guard.ts,toggle-page.decorator.ts}`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/ws-study.constant.ts`
 
 ## Implementation Steps
 1. Write `route-coverage.spec.ts` first. It loads `routes.yaml` and, for each line in `route-inventory.json`, turns `:param` into a sample segment and asserts a match. It also asserts no route matches `/.well-known/jwks.json`, `/internal/token`, `/api/v1/internal/token`, or `/api/v1/r2/internal/upload`, and that every throttled handler listed in Key Insights resolves to its `rateLimits` entry with the same `max`. Fails initially. <!-- Red Team: RT-2, RT-4 -->
@@ -166,7 +166,7 @@ File ownership (globs): `examio-be/apps/gateway-service/**`, `examio-be/libs/aut
 8. Cookie cleanup in auth (`cookie-config.ts`, every `res.cookie`) and the extractor (drop `token`). Register the envelope filter in auth `main.ts`. <!-- Red Team: RT-11 -->
 9. Compose + nginx <!-- Red Team: RT-2, RT-15 -->:
    - declare `edge`/`internal`/`egress`, assign every service per Requirements, drop `5411:5432`, add the gateway `RABBITMQ_URL`, add the `gateway` broker user to the definitions template;
-   - FE compose: `examio-edge` external (`BACKEND_URL` already `:3000` from phase 02); <!-- Reconcile: X9 -->
+   - FE compose: `kmaedu-edge` external (`BACKEND_URL` already `:3000` from phase 02); <!-- Reconcile: X9 -->
    - `cloudflare-real-ip.conf` from https://www.cloudflare.com/ips-v4 and /ips-v6 (committed; refresh steps in `deploy/README.md`), `include` it in `nginx.conf`, switch XFF to `$remote_addr`, `COPY` it in the FE `Dockerfile`;
    - `deploy/README.md`: ports/networks section, ops DB access via `docker compose exec postgres psql`.
 10. Write and run `gateway.e2e-spec.ts` (fake upstreams + real Redis + RabbitMQ).
@@ -196,7 +196,7 @@ File ownership (globs): `examio-be/apps/gateway-service/**`, `examio-be/libs/aut
   - a proxied request appends one redacted line to Redis `logs:gateway` (admin log stream unchanged); <!-- Reconcile: X9 -->
   - WS upgrade without a cookie → 401 and the socket is closed.
 - Auth: `logout.e2e` → the next request with the old access token → 401 `SESSION_REVOKED`.
-- Config: `docker compose config` passes; a CI step asserts no `ports:` on `postgres|redis|rabbitmq` and that `postgres` is only on `internal`. `docker run --rm -v $PWD/examio-fe/nginx.conf:/etc/nginx/templates/default.conf.template -v $PWD/examio-fe/nginx/cloudflare-real-ip.conf:/etc/nginx/cloudflare-real-ip.conf -e BACKEND_URL=http://x:3000 nginx:1.27-alpine nginx -t` → exit 0. <!-- Red Team: RT-2, RT-15 -->
+- Config: `docker compose config` passes; a CI step asserts no `ports:` on `postgres|redis|rabbitmq` and that `postgres` is only on `internal`. `docker run --rm -v $PWD/kmaedu-fe/nginx.conf:/etc/nginx/templates/default.conf.template -v $PWD/kmaedu-fe/nginx/cloudflare-real-ip.conf:/etc/nginx/cloudflare-real-ip.conf -e BACKEND_URL=http://x:3000 nginx:1.27-alpine nginx -t` → exit 0. <!-- Red Team: RT-2, RT-15 -->
 
 ## Todo List
 - [x] Coverage contract test (red) → routes.yaml (green), incl. rate-limit parity <!-- Red Team: RT-4 -->
@@ -212,28 +212,28 @@ File ownership (globs): `examio-be/apps/gateway-service/**`, `examio-be/libs/aut
 - [ ] e2e + manual FE smoke + compose smoke (OPEN: e2e green; no browser FE smoke and no `docker compose up` of the real stack in evidence; static `compose config` + live curl/nginx checks only)
 
 ## Success Criteria
-- `cd examio-be && yarn typecheck && yarn build:all && yarn test`: exit 0. `cd examio-be/apps/gateway-service && ../../node_modules/.bin/jest --config test/jest-e2e.json`: exit 0.
-- `grep -rn "prisma\|@examio/database" examio-be/apps/gateway-service/src` → none. `ls examio-be/apps/gateway-service/src/controllers` → `config.controller.ts` only. `grep -rn "split(',')\[0\]" examio-be/apps/gateway-service/src` → none. <!-- Reconcile: X5 --> <!-- Red Team: RT-3, RT-15 -->
+- `cd kmaedu-be && yarn typecheck && yarn build:all && yarn test`: exit 0. `cd kmaedu-be/apps/gateway-service && ../../node_modules/.bin/jest --config test/jest-e2e.json`: exit 0.
+- `grep -rn "prisma\|@kmaedu/database" kmaedu-be/apps/gateway-service/src` → none. `ls kmaedu-be/apps/gateway-service/src/controllers` → `config.controller.ts` only. `grep -rn "split(',')\[0\]" kmaedu-be/apps/gateway-service/src` → none. <!-- Reconcile: X5 --> <!-- Red Team: RT-3, RT-15 -->
 - Browser devtools: `/api/v1/ai-chat/:id/stream` shows incremental chunks. The response sets only `accessToken`/`refreshToken` cookies, `SameSite=Lax`.
 - After logout, replaying the old cookie → 401 `SESSION_REVOKED`. After an admin role change, the next request → 401 `TOKEN_STALE`, then FE refresh succeeds with new roles. The same holds with the `GatewayControl` call blocked (durable path). <!-- Red Team: RT-3 -->
 - <!-- Red Team: RT-2 --> On the compose host: `docker compose ps --format '{{.Name}} {{.Ports}}'` shows no host port for postgres/redis/rabbitmq; `docker compose exec admin wget -qO- -T 3 https://example.com` fails (no egress) while `exec auth` succeeds.
 - <!-- Red Team: RT-15 --> Local compose (nginx with a test `set_real_ip_from`): 6 failed logins from one client → 429 regardless of a spoofed `X-Forwarded-For`. The real-Cloudflare check (distinct client IPs in gateway logs, not CF ranges) runs once in the phase-16 cutover smoke at final merge. <!-- Updated: Validation Session 1 - single production deploy -->
-- `cd examio-fe && yarn build && yarn lint`: exit 0 (no FE code change expected).
+- `cd kmaedu-fe && yarn build && yarn lint`: exit 0 (no FE code change expected).
 
 ## Risk Assessment
 - Missed route (FE 404) → High/Medium. The coverage contract vs the inventory catches it, plus a manual click-through of every sidebar page.
 - <!-- Red Team: RT-4 --> A limit lost in the port → brute force reopens → Medium/High. The coverage spec asserts parity for every throttled handler.
-- Upload/SSE timeouts too short → per-route `timeout` and nginx `proxy_read_timeout 3600s` (`examio-fe/nginx.conf:54-55`).
+- Upload/SSE timeouts too short → per-route `timeout` and nginx `proxy_read_timeout 3600s` (`kmaedu-fe/nginx.conf:54-55`).
 - Express 5 path matching quirks → dispatcher is mounted pathless and matches on `req.url` itself.
-- WS clients relying on the `token` cookie → the study-room client connects with `withCredentials: true` and no `auth` option (`examio-fe/src/hooks/useStudyRoomSocket.ts`), so it sends the `accessToken` cookie at upgrade. Unaffected by dropping `token`.
+- WS clients relying on the `token` cookie → the study-room client connects with `withCredentials: true` and no `auth` option (`kmaedu-fe/src/hooks/useStudyRoomSocket.ts`), so it sends the `accessToken` cookie at upgrade. Unaffected by dropping `token`.
 - `SameSite=Lax` breaks the Google OAuth callback cookie → top-level GET navigations send Lax cookies. E2E-check the Google login manually.
 - Mobile reads cookies? Mobile uses Bearer (ARCH §4.6). Unaffected.
 - <!-- Red Team: RT-3 --> Redis outage makes the site read-only for writes (503 on non-GET) → Medium/Medium. Accepted trade (RT-3): stale/revoked tokens must not write. Countermove: Redis healthcheck + restart policy; the counter/log surfaces it.
 - <!-- Red Team: RT-2 --> A service loses an internet dependency on `internal: true` → Medium/High (e.g. exam's Turnstile verify). Countermove: the egress list comes from code (Key Insights); the compose smoke exercises login (Turnstile + Google), SePay plans, R2 upload, AI generation.
 - <!-- Red Team: RT-2 --> Ops lose host DB access (`5411`) → Low. `docker compose exec postgres psql` is documented.
-- <!-- Red Team: RT-2 --> Network rename leaves the FE container on the old `examio-network` → FE 502 → Medium. Compose bring-up order (local now, production once at the phase-16 cutover): BE compose first (creates `examio-edge`), then FE compose; both changes are on the same branch. <!-- Updated: Validation Session 1 - single production deploy -->
+- <!-- Red Team: RT-2 --> Network rename leaves the FE container on the old `kmaedu-network` → FE 502 → Medium. Compose bring-up order (local now, production once at the phase-16 cutover): BE compose first (creates `kmaedu-edge`), then FE compose; both changes are on the same branch. <!-- Updated: Validation Session 1 - single production deploy -->
 - <!-- Red Team: RT-15 --> A host-level proxy or Cloudflare Tunnel sits between Cloudflare and nginx → `$remote_addr` is that proxy, CF ranges never match, every client shares one key → Medium/High [UNVERIFIED production topology]. Countermove: confirm the production topology before the final-merge cutover (phase 16 runbook); if present, add its address to `set_real_ip_from`. The cutover smoke (distinct IPs in logs) catches it. <!-- Updated: Validation Session 1 - single production deploy -->
-- <!-- Red Team: RT-11 --> Envelope changes auth error bodies → FE reads `message`; `message` is preserved verbatim, `error` field dropped. Low: `grep -rn "data\.error\|data?\.error" examio-fe/src` → no hits today; re-run before merge.
+- <!-- Red Team: RT-11 --> Envelope changes auth error bodies → FE reads `message`; `message` is preserved verbatim, `error` field dropped. Low: `grep -rn "data\.error\|data?\.error" kmaedu-fe/src` → no hits today; re-run before merge.
 
 ## Rollback
 - Gateway is stateless: on the branch, revert the phase commits (old controllers in git). Production only changes at the final-merge cutover; its rollback is the phase-16 runbook (previous image tags + DB dump). <!-- Updated: Validation Session 1 - single production deploy -->
@@ -256,7 +256,7 @@ File ownership (globs): `examio-be/apps/gateway-service/**`, `examio-be/libs/aut
 - [CROSS-PHASE] Admin page flags: here the DB fallback is removed and admin warms the Redis cache. Phase 10 still owns the move to `SetPageFlags` (server ready here, `@ServiceOnly('admin')`).
 - Single `config/routes.yaml` with env-interpolated upstreams (DRY); phases 12–14 append named entries to that one file (plan.md agrees).
 - [CROSS-PHASE] Ban is auth `SetUserStatus`, implemented in phase 08 (durable `authz_changed(reason:'ban')` + auth-side `InvalidateUser`). 04 + 05 + 08 are verified together on local compose and reach production only in the single final-merge deploy, so there is no interim gap. <!-- Reconcile: X1 --> <!-- Updated: Validation Session 1 - single production deploy -->
-- [CROSS-PHASE] <!-- Red Team: RT-2 --> Phase 16 no longer owns the network split or data-port removal; it adds `gateway-a/b`, drops the gateway host port, and adds the nginx `/ws/` location (nginx has none today, `examio-fe/nginx.conf` proxies only `/api/`).
+- [CROSS-PHASE] <!-- Red Team: RT-2 --> Phase 16 no longer owns the network split or data-port removal; it adds `gateway-a/b`, drops the gateway host port, and adds the nginx `/ws/` location (nginx has none today, `kmaedu-fe/nginx.conf` proxies only `/api/`).
 - [CROSS-PHASE] <!-- Red Team: RT-4 --> Phases 06/07 add per-resource code-failure counters behind the `flashcard-code`/`examsession-code`/`quiz-unlock` gateway limits.
 
 ### Deferred / carried (closed 2026-10-20)

@@ -55,9 +55,9 @@ KLayout-wrapped page with the shared analytics layout. Top: session metadata + s
 
 | Decision point | Condition | Outcome on this screen | Source |
 |----------------|-----------|------------------------|--------|
-| Empty attempts | `attempts.length === 0` | empty-state + "No attempts yet" | `examio-fe/src/components/organisms/k/ExamTable.tsx:88` |
-| Filter by cheating | User toggles "Suspicious only" | Table re-fetches with filter | `examio-fe/src/components/molecules/NotificationFilterButton.tsx:18` |
-| Export PDF | User clicks "Export" | `useExportPDF` generates PDF | `examio-fe/src/hooks/useExportPDF.ts:31` |
+| Empty attempts | `attempts.length === 0` | empty-state + "No attempts yet" | `kmaedu-fe/src/components/organisms/k/ExamTable.tsx:88` |
+| Filter by cheating | User toggles "Suspicious only" | Table re-fetches with filter | `kmaedu-fe/src/components/molecules/NotificationFilterButton.tsx:18` |
+| Export PDF | User clicks "Export" | `useExportPDF` generates PDF | `kmaedu-fe/src/hooks/useExportPDF.ts:31` |
 
 ## Data Inventory
 
@@ -78,9 +78,9 @@ KLayout-wrapped page with the shared analytics layout. Top: session metadata + s
 | State | Trigger | Visual Behavior | User Action Available | Source |
 |-------|---------|----------------|-----------------------|--------|
 | loading | API in-flight | skeleton cards + chart placeholders | none | varies |
-| empty | 0 attempts | empty-state illustration | none | `examio-fe/src/components/organisms/k/ExamTable.tsx:88` |
+| empty | 0 attempts | empty-state illustration | none | `kmaedu-fe/src/components/organisms/k/ExamTable.tsx:88` |
 | error | API error | error message + retry | retry | varies |
-| exporting | PDF generation in-flight | progress toast | none | `examio-fe/src/hooks/useExportPDF.ts:31` |
+| exporting | PDF generation in-flight | progress toast | none | `kmaedu-fe/src/hooks/useExportPDF.ts:31` |
 
 ## Validation & Error Feedback
 
@@ -92,19 +92,19 @@ KLayout-wrapped page with the shared analytics layout. Top: session metadata + s
 - **Endpoint:** `GET /api/v1/examsessions/:id/analytics`
 - **Success:** `200` → `{ session, stats, charts, attempts }`
 - **Errors:** `403` (not host) | `404` (session not found)
-- **Source:** `examio-fe/src/apis/examSessionApi.ts:142`
+- **Source:** `kmaedu-fe/src/apis/examSessionApi.ts:142`
 
 #### Get cheating stats
 - **Endpoint:** `GET /api/v1/cheatinglogs/session/:id/stats`
 - **Success:** `200` → `{ totalViolations, byType, timeline }`
-- **Source:** `examio-fe/src/apis/cheatingLogApi.ts:42`
+- **Source:** `kmaedu-fe/src/apis/cheatingLogApi.ts:42`
 
 ## Interaction Patterns
 
-- **Recharts BarChart for score distribution** — source: `examio-fe/src/components/molecules/HistoryStatCard.tsx:18`
-- **Recharts LineChart for cheating events** — source: `examio-fe/src/components/molecules/ExamMetricCard.tsx:31`
-- **Sort by score desc, then by time asc** — source: `examio-fe/src/components/organisms/k/ExamTable.tsx:188`
-- **Export PDF with charts embedded** — source: `examio-fe/src/hooks/useExportPDF.ts:42`
+- **Recharts BarChart for score distribution** — source: `kmaedu-fe/src/components/molecules/HistoryStatCard.tsx:18`
+- **Recharts LineChart for cheating events** — source: `kmaedu-fe/src/components/molecules/ExamMetricCard.tsx:31`
+- **Sort by score desc, then by time asc** — source: `kmaedu-fe/src/components/organisms/k/ExamTable.tsx:188`
+- **Export PDF with charts embedded** — source: `kmaedu-fe/src/hooks/useExportPDF.ts:42`
 
 ## Accessibility
 
@@ -133,7 +133,7 @@ KLayout-wrapped page with the shared analytics layout. Top: session metadata + s
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/k/ExamRoomSessionAnalyticsPage.tsx:1`
-- Charts: `examio-fe/src/components/molecules/HistoryStatCard.tsx:1` + `examio-fe/src/components/molecules/ExamMetricCard.tsx:1`
-- API: `examio-fe/src/apis/examSessionApi.ts:142` + `examio-fe/src/apis/cheatingLogApi.ts:42`
-- Export: `examio-fe/src/hooks/useExportPDF.ts:1`
+- Page/View: `kmaedu-fe/src/pages/k/ExamRoomSessionAnalyticsPage.tsx:1`
+- Charts: `kmaedu-fe/src/components/molecules/HistoryStatCard.tsx:1` + `kmaedu-fe/src/components/molecules/ExamMetricCard.tsx:1`
+- API: `kmaedu-fe/src/apis/examSessionApi.ts:142` + `kmaedu-fe/src/apis/cheatingLogApi.ts:42`
+- Export: `kmaedu-fe/src/hooks/useExportPDF.ts:1`

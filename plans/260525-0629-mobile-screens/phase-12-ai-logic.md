@@ -12,7 +12,7 @@ track: B
 > BlockedBy Phase 01 only. Parallel-runnable with Phase 11. NO A↔B block.
 
 ## Context Links
-- DTO source: `../../examio-fe/src/apis/aiApi.ts`
+- DTO source: `../../kmaedu-fe/src/apis/aiApi.ts`
 - Shared: `AIChatRepository.kt`, `AIGeneratorApiService.kt`
 - Multipart helper + `AiJobPoller` from Phase 01
 
@@ -41,7 +41,7 @@ Build the AI tool ViewModel over the existing AIGenerator api + AIChatRepository
 
 ### Create
 - Android: `androidApp/.../features/ai/AiToolViewModel.kt`
-- iOS: `iosApp/ExamioApp/ViewModels/AiToolViewModel.swift`
+- iOS: `iosApp/KMAEduApp/ViewModels/AiToolViewModel.swift`
 
 ### Modify
 - `shared/.../features/ai/repository/AIChatRepository.kt` (add generate/job/recent/delete/regenerate fns if missing) OR add a focused `AIGeneratorRepository.kt` if AIChatRepository scope is chat-only

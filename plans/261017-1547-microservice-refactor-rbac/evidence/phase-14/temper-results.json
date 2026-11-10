@@ -50,17 +50,17 @@
       "ts": "2026-10-25T13:19:22+0700"
     },
     {
-      "command": "test $(grep -v -e '^./graphify-out/' -e '^./coverage/' /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/logs/c1-find-hits.txt | wc -l) -eq 0",
+      "command": "test $(grep -v -e '^./graphify-out/' -e '^./coverage/' /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/logs/c1-find-hits.txt | wc -l) -eq 0",
       "exitCode": 0,
       "status": "pass",
-      "summary": "test $(grep -v -e '^./graphify-out/' -e '^./coverage/' /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/logs/c1-find-hits.txt | wc -l) -eq 0 → exit 0",
+      "summary": "test $(grep -v -e '^./graphify-out/' -e '^./coverage/' /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/logs/c1-find-hits.txt | wc -l) -eq 0 → exit 0",
       "ts": "2026-10-25T13:20:11+0700"
     },
     {
-      "command": "node_modules/.bin/buf breaking proto --against /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/protohead/examio-be/proto",
+      "command": "node_modules/.bin/buf breaking proto --against /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/protohead/kmaedu-be/proto",
       "exitCode": 0,
       "status": "pass",
-      "summary": "node_modules/.bin/buf breaking proto --against /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/protohead/examio-be/proto → exit 0",
+      "summary": "node_modules/.bin/buf breaking proto --against /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/protohead/kmaedu-be/proto → exit 0",
       "ts": "2026-10-25T13:20:17+0700"
     },
     {
@@ -452,7 +452,7 @@
       "command": "[stage2] render broker definitions (scratch, ops user ci_admin as in CI)",
       "exitCode": 0,
       "status": "pass",
-      "summary": "rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/",
+      "summary": "rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/",
       "ts": "2026-10-25T13:34:46+0700"
     },
     {
@@ -795,7 +795,7 @@
       "command": "[stage3] docker compose -p p14t down -v --remove-orphans (reset to empty volume)",
       "exitCode": 0,
       "status": "pass",
-      "summary": " Network examio-internal Removed ",
+      "summary": " Network kmaedu-internal Removed ",
       "ts": "2026-10-25T13:53:29+0700"
     },
     {
@@ -879,7 +879,7 @@
       "command": "[stage3] docker compose -p p14t down -v --remove-orphans (reset to empty volume)",
       "exitCode": 0,
       "status": "pass",
-      "summary": " Network examio-internal Removed ",
+      "summary": " Network kmaedu-internal Removed ",
       "ts": "2026-10-25T13:54:21+0700"
     },
     {
@@ -893,7 +893,7 @@
       "command": "[stage3] docker compose -p p14t up -d --wait (empty volume, no seed profile)",
       "exitCode": 0,
       "status": "pass",
-      "summary": " Container examio-gateway Healthy ",
+      "summary": " Container kmaedu-gateway Healthy ",
       "ts": "2026-10-25T13:54:52+0700"
     },
     {
@@ -981,14 +981,14 @@
       "ts": "2026-10-25T13:54:53+0700"
     },
     {
-      "command": "[stage3] broker permission probes content/assessment (one-off container on examio-internal)",
+      "command": "[stage3] broker permission probes content/assessment (one-off container on kmaedu-internal)",
       "exitCode": 0,
       "status": "pass",
       "summary": "PROBE_FAILS=0",
       "ts": "2026-10-25T13:55:51+0700"
     },
     {
-      "command": "[stage3] container examio-exam absent (names exactly examio-exam)",
+      "command": "[stage3] container kmaedu-exam absent (names exactly kmaedu-exam)",
       "exitCode": 0,
       "status": "pass",
       "summary": "matches: 0",
@@ -1093,35 +1093,35 @@
       "ts": "2026-10-25T14:13:13+0700"
     },
     {
-      "command": "[teardown] proof: docker ps -a | grep -E 'p14t|examio' (containers left)",
+      "command": "[teardown] proof: docker ps -a | grep -E 'p14t|kmaedu' (containers left)",
       "exitCode": 0,
       "status": "pass",
       "summary": "containers=0",
       "ts": "2026-10-25T14:13:13+0700"
     },
     {
-      "command": "[teardown] proof: docker volume ls | grep -E 'p14t|examio' (volumes left)",
+      "command": "[teardown] proof: docker volume ls | grep -E 'p14t|kmaedu' (volumes left)",
       "exitCode": 0,
       "status": "pass",
       "summary": "volumes=0",
       "ts": "2026-10-25T14:13:13+0700"
     },
     {
-      "command": "[teardown] removed leftover network examio-internal (compose label p14t, 0 containers attached)",
+      "command": "[teardown] removed leftover network kmaedu-internal (compose label p14t, 0 containers attached)",
       "exitCode": 0,
       "status": "pass",
       "summary": "network removed",
       "ts": "2026-10-25T14:15:04+0700"
     },
     {
-      "command": "[teardown] re-proof after network removal: containers/volumes/networks matching p14t|examio",
+      "command": "[teardown] re-proof after network removal: containers/volumes/networks matching p14t|kmaedu",
       "exitCode": 0,
       "status": "pass",
       "summary": "containers=0 volumes=0 networks=0",
       "ts": "2026-10-25T14:15:04+0700"
     },
     {
-      "command": "cd examio-be && git grep -nE \"exam-service|EXAM_SERVICE_URL\" -- \"*.ts\" \"*.yaml\" \"*.yml\" \"*.json\" \"*.example\"; test $? -eq 1 && ! test -d apps/exam-service",
+      "command": "cd kmaedu-be && git grep -nE \"exam-service|EXAM_SERVICE_URL\" -- \"*.ts\" \"*.yaml\" \"*.yml\" \"*.json\" \"*.example\"; test $? -eq 1 && ! test -d apps/exam-service",
       "exitCode": 0,
       "status": "pass",
       "summary": "git grep: 0 tracked hits (exit 1 = no match); apps/exam-service absent. Supersedes the working-tree grep row (its only hits were gitignored coverage/ and graphify-out/ caches)",
@@ -1142,7 +1142,7 @@
       "ts": "2026-10-25T07:19:48.551Z"
     },
     {
-      "command": "[M1 fix] scratch copy of tracked examio-be/deploy + CI dummy .env: env -i docker compose config --quiet; then config --format json | services.content.networks",
+      "command": "[M1 fix] scratch copy of tracked kmaedu-be/deploy + CI dummy .env: env -i docker compose config --quiet; then config --format json | services.content.networks",
       "exitCode": 0,
       "status": "pass",
       "summary": "config exit 0; content networks [egress, internal] (deploy/compose/content.yml egress added for Turnstile; TURNSTILE_SECRET_KEY in content env examples); scratch copy deleted",
