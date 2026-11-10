@@ -178,7 +178,7 @@ describe('auth user RPCs of phase 10 (e2e, real Postgres + real guards)', () => 
             const tag = uniq('lst');
             const made: Array<{ id: string }> = [];
             for (let i = 0; i < 5; i++) made.push(await registerUser(ctx, `${tag}${i}`));
-            const token = md(await serviceToken('finance'));
+            const token = md(admin.token);
             const filtered = await lastValueFrom(
                 auth.listUsers({ query: tag, page: 1, limit: 50, isVerified: false, createdFrom: String(Date.now() - 60_000), createdTo: String(Date.now() + 60_000) }, token)
             );
@@ -199,10 +199,10 @@ describe('auth user RPCs of phase 10 (e2e, real Postgres + real guards)', () => 
             expect(new Set(seen).size).toBe(5);
         });
 
-        it('GetUsersByIds is admin-only: svc:admin works, svc:exam and svc:finance are PERMISSION_DENIED', async () => {
+        it('GetUsersByIds is admin-only: svc:admin works, svc:exam and svc:content are PERMISSION_DENIED', async () => {
             const res = await lastValueFrom(auth.getUsersByIds({ userIds: [student.id] }, md(await serviceToken('admin'))));
             expect(res.users[0]).toMatchObject({ id: student.id, email: expect.stringContaining('@') });
-            for (const svc of ['exam', 'finance'] as const) {
+            for (const svc of ['exam', 'content'] as const) {
                 await expect(
                     lastValueFrom(auth.getUsersByIds({ userIds: [student.id] }, md(await serviceToken(svc))))
                 ).rejects.toMatchObject({ code: 7 });

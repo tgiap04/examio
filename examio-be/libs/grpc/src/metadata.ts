@@ -29,3 +29,13 @@ export function redactMetadata(md: Metadata): Record<string, string> {
     }
     return out;
 }
+
+/**
+ * How a caller turns its metadata into one carrying a service token for the
+ * target audience (`ServiceMetadata` from `@examio/auth-jwt` satisfies this;
+ * a structural contract keeps `libs/grpc` free of an auth-jwt dependency).
+ */
+export interface GrpcMetadataAttacher {
+    attach(metadata: Metadata, audience: string): Promise<Metadata>;
+}
+export const GRPC_METADATA_ATTACHER = 'GRPC_METADATA_ATTACHER';

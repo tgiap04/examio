@@ -89,7 +89,7 @@ describe('applyForwardHeaders', () => {
         expect(h.has('cookie')).toBe(false);
     });
 
-    it('passthrough leaves authorization (e.g. SePay Apikey) and cookies untouched', () => {
+    it('passthrough leaves a non-bearer authorization and cookies untouched', () => {
         const h = apply(
             { authorization: 'Apikey k', cookie: 'accessToken=a' },
             { mode: 'passthrough', token: undefined }

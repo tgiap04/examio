@@ -184,11 +184,11 @@ describe('admin role management (e2e, real auth + admin)', () => {
         expect(res.body.data[1]).toMatchObject({ fromRole: 'STUDENT', toRole: 'TEACHER', reason: 'r1' });
     });
 
-    it('GET /admin/roles is the catalog from code (3 roles, 29 permissions)', async () => {
+    it('GET /admin/roles is the catalog from code (3 roles, 26 permissions)', async () => {
         const a = await makeAdmin();
         const res = await h.http().get('/admin/roles').set(bearer(a.token));
         expect(res.status).toBe(200);
         expect(res.body.roles.map((r: { key: string }) => r.key)).toEqual(['STUDENT', 'TEACHER', 'SYSTEM_ADMIN']);
-        expect(res.body.permissions).toHaveLength(29);
+        expect(res.body.permissions).toHaveLength(26);
     });
 });

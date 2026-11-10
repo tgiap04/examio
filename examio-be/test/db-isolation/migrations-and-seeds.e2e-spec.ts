@@ -95,7 +95,7 @@ describeDb('migrations and seeds on a fresh database (e2e)', () => {
         expect(diff.status).toBe(0);
     });
 
-    it('seed:dev (auth -> finance -> admin -> ai-chat -> vocabulary) exits 0 and the counts match the pre-split seed', async () => {
+    it('seed:dev (auth -> admin -> ai-chat -> vocabulary) exits 0 and the counts match the pre-split seed', async () => {
         for (const svc of SEEDED) {
             const r = seed(svc, '--dev');
             expect([svc, r.status, r.stderr]).toEqual([svc, 0, '']);
@@ -105,19 +105,14 @@ describeDb('migrations and seeds on a fresh database (e2e)', () => {
         expect(await count('aichat', 'Subject')).toBe(15);
         expect(await count('vocabulary', 'WordFamilyCategory')).toBe(10);
         expect(await count('auth', 'User')).toBe(8); // admin + 7 dev accounts
-        expect(await count('finance', 'Wallet')).toBe(7); // teacher-only: the admin has none
         expect(await count('admin', 'AdminAudit')).toBe(20);
-        expect(await count('finance', 'Payment')).toBeGreaterThanOrEqual(12); // 6 users x 2-4
-        expect(await count('finance', 'Payment')).toBeLessThanOrEqual(24);
-        expect(await count('finance', 'WalletTransaction')).toBeGreaterThanOrEqual(15); // 5 users x 3-7
     });
 
-    it('the reference seeds are idempotent (a second run adds no flags, subjects, categories, users or wallets)', async () => {
+    it('the reference seeds are idempotent (a second run adds no flags, subjects, categories or users)', async () => {
         for (const svc of SEEDED) expect(seed(svc, '--dev').status).toBe(0);
         expect(await count('admin', 'PageFeatureFlag')).toBe(9);
         expect(await count('aichat', 'Subject')).toBe(15);
         expect(await count('vocabulary', 'WordFamilyCategory')).toBe(10);
         expect(await count('auth', 'User')).toBe(8);
-        expect(await count('finance', 'Wallet')).toBe(7);
     });
 });

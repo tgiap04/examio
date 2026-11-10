@@ -55,10 +55,10 @@ describe('TokenService', () => {
 
     it('signs a service token (svc:<name>, aud, roles SERVICE, 5 min, no sid/av)', async () => {
         const svc = service();
-        const { token, expiresInSeconds } = await svc.signServiceToken('exam', 'finance');
+        const { token, expiresInSeconds } = await svc.signServiceToken('exam', 'admin');
         expect(expiresInSeconds).toBe(300);
         const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
-        expect(claims).toMatchObject({ sub: 'svc:exam', aud: 'finance', roles: ['SERVICE'], iss: 'examio-auth' });
+        expect(claims).toMatchObject({ sub: 'svc:exam', aud: 'admin', roles: ['SERVICE'], iss: 'examio-auth' });
         expect(claims).not.toHaveProperty('sid');
         expect(claims).not.toHaveProperty('av');
         expect(claims.exp - claims.iat).toBe(300);
@@ -66,7 +66,7 @@ describe('TokenService', () => {
 
     it('a service token for another audience is rejected by auth (aud mismatch)', async () => {
         const svc = service();
-        const { token } = await svc.signServiceToken('exam', 'finance');
+        const { token } = await svc.signServiceToken('exam', 'admin');
         await expect(svc.verify(token)).rejects.toMatchObject({ code: 'TOKEN_INVALID' });
     });
 

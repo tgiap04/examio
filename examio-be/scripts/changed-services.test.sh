@@ -7,8 +7,8 @@ here="$(cd "$(dirname "$0")" && pwd)"
 script="$here/changed-services.sh"
 fail=0
 
-ALL_NODE='"auth","admin","ai-chat","assessment","content","document","finance","r2","study-room","vocabulary","gateway"'
-ALL='"auth","admin","ai","ai-chat","assessment","content","document","finance","r2","study-room","vocabulary","gateway"'
+ALL_NODE='"auth","admin","ai-chat","assessment","content","document","r2","study-room","vocabulary","gateway"'
+ALL='"auth","admin","ai","ai-chat","assessment","content","document","r2","study-room","vocabulary","gateway"'
 
 # expect <name> <expected json> <newline-separated files> [VAR=value ...]
 expect() {
@@ -83,8 +83,8 @@ expect "a service in wave 1 is not repeated in wave 2" \
     $'examio-be/proto/examio/content/v1/a.proto\nexamio-be/apps/content-service/src/a.ts'
 
 expect "gateway is last inside a wave" \
-    '{"wave1":["auth","gateway"],"wave2":["finance"]}' \
-    $'examio-be/proto/examio/gateway/v1/g.proto\nexamio-be/proto/examio/auth/v1/a.proto\nexamio-be/apps/finance-service/x.ts'
+    '{"wave1":["auth","gateway"],"wave2":["admin"]}' \
+    $'examio-be/proto/examio/gateway/v1/g.proto\nexamio-be/proto/examio/auth/v1/a.proto\nexamio-be/apps/admin-service/x.ts'
 
 expect "unknown proto package selects nothing" \
     '{"wave1":[],"wave2":[]}' \

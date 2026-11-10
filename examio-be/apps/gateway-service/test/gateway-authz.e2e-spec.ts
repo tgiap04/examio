@@ -23,7 +23,7 @@ describe('gateway authorization (e2e)', () => {
     }, 60_000);
     afterAll(() => h?.close());
     beforeEach(() => {
-        for (const u of [h.content, h.assessment, h.aichat, h.auth, h.finance, h.admin]) u.reset();
+        for (const u of [h.content, h.assessment, h.aichat, h.auth, h.admin]) u.reset();
     });
 
     describe('token verification', () => {
@@ -36,10 +36,10 @@ describe('gateway authorization (e2e)', () => {
             expect(h.content.seen).toHaveLength(0);
         });
 
-        it('a service token (aud=finance / aud=gateway) is TOKEN_INVALID on every route', async () => {
-            for (const aud of ['finance', 'gateway']) {
+        it('a service token (aud=admin / aud=gateway) is TOKEN_INVALID on every route', async () => {
+            for (const aud of ['admin', 'gateway']) {
                 const svc = await h.issuer.service('exam', aud);
-                for (const path of ['/api/v1/quizsets', '/api/v1/wallet/details', '/api/v1/subjects']) {
+                for (const path of ['/api/v1/quizsets', '/api/v1/admin/users', '/api/v1/subjects']) {
                     const res = await get(path, svc, via(2));
                     // `optional` routes strip it and answer anonymously; required ones reject.
                     if (path === '/api/v1/subjects') {

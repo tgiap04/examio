@@ -1,19 +1,18 @@
 /**
  * Env contract of the database e2e specs (all point at a LOCAL throwaway Postgres
  * initialised like deploy/postgres/init/01-service-schemas.sh):
- *   <SVC>_DATABASE_URL   service-role URL of auth|finance|admin|content|assessment|vocabulary|aichat (+ DOCUMENT for the isolation probes)
+ *   <SVC>_DATABASE_URL   service-role URL of auth|admin|content|assessment|vocabulary|aichat (+ DOCUMENT for the isolation probes)
  *   PRISMA_ADMIN_URL     superuser URL (only the migration/seed spec: it creates a throwaway database)
  * A spec skips itself when its env is missing, so the plain unit run never needs a database,
  * but under `CI=true` a missing env FAILS it (see `describeWhenEnabled`), so a CI wiring slip cannot go green.
  */
-export const SERVICES = ['auth', 'finance', 'admin', 'content', 'assessment', 'vocabulary', 'aichat'] as const;
+export const SERVICES = ['auth', 'admin', 'content', 'assessment', 'vocabulary', 'aichat'] as const;
 export type Service = (typeof SERVICES)[number];
 
 /** Services whose `apps/<dir>-service/prisma/seed.ts` exists (content and assessment have no reference data) and their app directory. */
-export const SEEDED = ['auth', 'finance', 'admin', 'vocabulary', 'aichat'] as const satisfies readonly Service[];
+export const SEEDED = ['auth', 'admin', 'vocabulary', 'aichat'] as const satisfies readonly Service[];
 export const APP_DIR: Readonly<Record<Service, string>> = {
     auth: 'auth',
-    finance: 'finance',
     admin: 'admin',
     content: 'content',
     assessment: 'assessment',

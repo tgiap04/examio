@@ -2,7 +2,7 @@
 # Creates the next migration of one service from its Prisma schema.
 #
 #   PRISMA_ADMIN_URL=postgresql://examio:examio@127.0.0.1:5432/examio \
-#     scripts/prisma-migrate-dev.sh <auth|finance|admin|content|assessment|studyroom|vocabulary|document|aichat> <name>
+#     scripts/prisma-migrate-dev.sh <auth|admin|content|assessment|studyroom|vocabulary|document|aichat> <name>
 #
 # The history is replayed into a throwaway SUPERUSER shadow database
 # (examio_shadow_<svc>) and diffed against the schema, so no service database is
@@ -11,7 +11,7 @@
 # index, `extensions.vector` columns). Production applies it with
 # `prisma migrate deploy --schema <path>` as the service role.
 set -euo pipefail
-svc="${1:?service required (auth|finance|admin|content|assessment|studyroom|vocabulary|document|aichat)}"
+svc="${1:?service required (auth|admin|content|assessment|studyroom|vocabulary|document|aichat)}"
 # `ai-chat` (the app name) is accepted for `aichat` (the database schema the shadow DB is named after).
 [[ "$svc" == "ai-chat" ]] && svc="aichat"
 name="${2:?migration name required, e.g. init}"

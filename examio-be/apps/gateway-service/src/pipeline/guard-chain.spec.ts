@@ -4,7 +4,7 @@ import { GuardChain } from './guard-chain';
 
 const table = compileRouteTable(
     {
-        upstreams: { exam: 'http://exam', finance: 'http://finance' },
+        upstreams: { exam: 'http://exam', content: 'http://content' },
         routes: [
             {
                 id: 'ai',
@@ -16,14 +16,14 @@ const table = compileRouteTable(
                 maxBodySize: '1kb',
             },
             {
-                id: 'payment',
-                upstream: 'finance',
-                match: { prefix: '/api/v1/payment' },
+                id: 'library',
+                upstream: 'content',
+                match: { prefix: '/api/v1/library' },
                 auth: 'required',
-                permissions: ['wallet:use'],
-                public: [{ method: 'GET', path: '/api/v1/payment/subscription/plans' }],
+                permissions: ['quizset:manage'],
+                public: [{ method: 'GET', path: '/api/v1/library/catalog' }],
             },
-            { id: 'hook', upstream: 'finance', match: { prefix: '/api/v1/webhook' }, auth: 'none' },
+            { id: 'hook', upstream: 'content', match: { prefix: '/api/v1/hook' }, auth: 'none' },
         ],
         rateLimits: [{ id: 'tight', method: 'POST', path: '/api/v1/ai/tight', window: '60s', max: 1 }],
     },
@@ -66,7 +66,7 @@ const input = (method: string, pathname: string, headers = { authorization: 'Bea
 describe('GuardChain', () => {
     it('auth none: no verification, passthrough mode', async () => {
         const c = chain(undefined);
-        await expect(c.gc.run(input('POST', '/api/v1/webhook/sepay'))).resolves.toMatchObject({
+        await expect(c.gc.run(input('POST', '/api/v1/hook/ping'))).resolves.toMatchObject({
             ok: true,
             mode: 'passthrough',
         });
@@ -92,11 +92,11 @@ describe('GuardChain', () => {
     });
 
     it('a public exception is optional and skips the permission check', async () => {
-        const d = await chain(student).gc.run(input('GET', '/api/v1/payment/subscription/plans'));
+        const d = await chain(student).gc.run(input('GET', '/api/v1/library/catalog'));
         expect(d).toMatchObject({ ok: true, mode: 'verified' });
-        const anon = await chain(undefined).gc.run(input('GET', '/api/v1/payment/subscription/plans'));
+        const anon = await chain(undefined).gc.run(input('GET', '/api/v1/library/catalog'));
         expect(anon).toMatchObject({ ok: true, mode: 'anonymous', stripToken: true });
-        await expect(chain(student).gc.run(input('GET', '/api/v1/payment/subscription'))).resolves.toMatchObject({
+        await expect(chain(student).gc.run(input('GET', '/api/v1/library/mine'))).resolves.toMatchObject({
             ok: false,
             code: 'PERMISSION_DENIED',
         });
@@ -133,7 +133,7 @@ describe('GuardChain', () => {
             't1'
         );
         const anon = chain(undefined);
-        await anon.gc.run(input('POST', '/api/v1/webhook/sepay'));
+        await anon.gc.run(input('POST', '/api/v1/hook/ping'));
         expect(anon.limiter.check).toHaveBeenCalledWith(expect.objectContaining({ id: 'default' }), '9.9.9.9');
     });
 

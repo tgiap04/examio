@@ -18,12 +18,11 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs';
 import { join, relative, sep } from 'path';
 
-export type Service = 'auth' | 'finance' | 'content' | 'assessment' | 'studyroom' | 'vocabulary' | 'document' | 'aichat' | 'admin' | 'r2' | 'gateway';
+export type Service = 'auth' | 'content' | 'assessment' | 'studyroom' | 'vocabulary' | 'document' | 'aichat' | 'admin' | 'r2' | 'gateway';
 
 /** Owner app directory -> service name. ai-service (python) is out of scope here. */
 export const APP_SERVICE: Readonly<Record<string, Service>> = {
     'auth-service': 'auth',
-    'finance-service': 'finance',
     'content-service': 'content',
     'assessment-service': 'assessment',
     'study-room-service': 'studyroom',
@@ -45,12 +44,10 @@ export const OWNERSHIP: Readonly<Record<string, Service>> = {
     // auth
     User: 'auth', UserSession: 'auth', VerifyAccountCode: 'auth',
     ResetPasswordCode: 'auth', RoleChangeLog: 'auth',
-    // finance
-    Wallet: 'finance', WalletTransaction: 'finance', Payment: 'finance', UserSubscription: 'finance',
     // admin
     AdminAudit: 'admin', PageFeatureFlag: 'admin',
     // document (phase 15)
-    UserStorage: 'document', UserMonthlyFileUpload: 'document',
+    UserStorage: 'document',
     // content (phase 14): quiz sets, flashcard sets, practice, study progress and generation jobs. The
     // vector / entity / graph tables are ai-service's (Python, schema `ai`), not part of any Prisma schema.
     GenerationJob: 'content',

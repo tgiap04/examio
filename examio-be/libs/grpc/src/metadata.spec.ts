@@ -1,5 +1,5 @@
 import { Metadata } from '@grpc/grpc-js';
-import { buildMetadata, redactMetadata } from './metadata';
+import { GRPC_METADATA_ATTACHER, buildMetadata, redactMetadata } from './metadata';
 
 describe('buildMetadata', () => {
     it('sets x-request-id (generated when absent) and authorization', () => {
@@ -19,5 +19,11 @@ describe('redactMetadata', () => {
         const out = redactMetadata(md);
         expect(out).toEqual({ authorization: '[redacted]', 'x-request-id': 'req_9' });
         expect(JSON.stringify(out)).not.toContain('secret-token');
+    });
+});
+
+describe('GRPC_METADATA_ATTACHER', () => {
+    it('keeps the DI token value services inject by', () => {
+        expect(GRPC_METADATA_ATTACHER).toBe('GRPC_METADATA_ATTACHER');
     });
 });

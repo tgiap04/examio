@@ -166,10 +166,6 @@
                         "outDir": "dist/apps/document-service/proto/examio/document"
                     },
                     {
-                        "include": "../../../proto/examio/finance/**/*.proto",
-                        "outDir": "dist/apps/document-service/proto/examio/finance"
-                    },
-                    {
                         "include": "../../../proto/examio/r2/**/*.proto",
                         "outDir": "dist/apps/document-service/proto/examio/r2"
                     }
@@ -191,10 +187,6 @@
                     {
                         "include": "../../../proto/examio/document/**/*.proto",
                         "outDir": "dist/apps/ai-chat-service/proto/examio/document"
-                    },
-                    {
-                        "include": "../../../proto/examio/finance/**/*.proto",
-                        "outDir": "dist/apps/ai-chat-service/proto/examio/finance"
                     },
                     {
                         "include": "../../../proto/examio/r2/**/*.proto",
@@ -232,39 +224,12 @@
                         "outDir": "dist/apps/content-service/proto/examio/document"
                     },
                     {
-                        "include": "../../../proto/examio/finance/**/*.proto",
-                        "outDir": "dist/apps/content-service/proto/examio/finance"
-                    },
-                    {
                         "include": "../../../proto/examio/r2/**/*.proto",
                         "outDir": "dist/apps/content-service/proto/examio/r2"
                     },
                     {
                         "include": "../../../proto/examio/vocabulary/**/*.proto",
                         "outDir": "dist/apps/content-service/proto/examio/vocabulary"
-                    }
-                ]
-            }
-        },
-        "finance-service": {
-            "type": "application",
-            "root": "apps/finance-service",
-            "entryFile": "main",
-            "sourceRoot": "apps/finance-service/src",
-            "compilerOptions": {
-                "tsConfigPath": "apps/finance-service/tsconfig.app.json",
-                "assets": [
-                    {
-                        "include": "../../../proto/examio/auth/**/*.proto",
-                        "outDir": "dist/apps/finance-service/proto/examio/auth"
-                    },
-                    {
-                        "include": "../../../proto/examio/common/**/*.proto",
-                        "outDir": "dist/apps/finance-service/proto/examio/common"
-                    },
-                    {
-                        "include": "../../../proto/examio/finance/**/*.proto",
-                        "outDir": "dist/apps/finance-service/proto/examio/finance"
                     }
                 ]
             }
@@ -288,10 +253,6 @@
                     {
                         "include": "../../../proto/examio/common/**/*.proto",
                         "outDir": "dist/apps/admin-service/proto/examio/common"
-                    },
-                    {
-                        "include": "../../../proto/examio/finance/**/*.proto",
-                        "outDir": "dist/apps/admin-service/proto/examio/finance"
                     },
                     {
                         "include": "../../../proto/examio/gateway/**/*.proto",

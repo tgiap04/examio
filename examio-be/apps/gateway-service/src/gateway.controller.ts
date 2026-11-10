@@ -26,8 +26,6 @@ export class GatewayController {
                     process.env.DOCUMENT_SERVICE_URL || 'http://localhost:3011',
                 aichat:
                     process.env.AICHAT_SERVICE_URL || 'http://localhost:3012',
-                finance:
-                    process.env.FINANCE_SERVICE_URL || 'http://localhost:3003',
             },
             timestamp: new Date().toISOString(),
         };

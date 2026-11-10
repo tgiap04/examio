@@ -22,7 +22,6 @@ export * from './utils/generate-code';
 export * from './utils/sanitize-filename';
 export * from './utils/r2-key-from-url';
 export * from './utils/r2-owned-key';
-export * from './utils/wallet-cache';
 
 // DTOs
 export * from './dto/authenticated-request.dto';
