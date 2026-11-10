@@ -6,7 +6,7 @@
 
 ## Overview
 
-AITool provides a unified interface for AI-assisted content generation from uploaded documents. Users select a source document, choose generation type (quiz or flashcards), configure parameters, and initiate a background job. The system checks wallet credits (or bypasses via FREE_MODE), queues the job, and provides polling-based status updates. The feature spans `SCR024` (AIToolPage) with cross-feature participation from `SCR017` (FlashcardsPage) for flashcard generation trigger. Backend lives in `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` and `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` (BL004).
+AITool provides a unified interface for AI-assisted content generation from uploaded documents. Users select a source document, choose generation type (quiz or flashcards), configure parameters, and initiate a background job. The system queues the job (generation is not charged: there is no wallet, credit check or subscription gate) and provides polling-based status updates. The feature spans `SCR024` (AIToolPage) with cross-feature participation from `SCR017` (FlashcardsPage) for flashcard generation trigger. Backend lives in `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts`.
 
 ## Polymorphic Behavior
 
@@ -35,20 +35,6 @@ N/A — no other discriminator fields in AITool Key Entities.
 
 ### Business Rules
 
-**BR-010_01 — Credit Check Before Generation**
-**Linked FR:** FR-010_01
-**Source:** `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` (BL004)
-**Applies to:** `POST /api/v1/ai/job`
-**Rule:** Before creating an AI generation job, the system checks the user's wallet balance via `FinanceClientService`. If balance is insufficient and `FREE_MODE` is not enabled, job creation is rejected. If `FREE_MODE = true`, the check is bypassed entirely.
-**Pseudocode:**
-```
-wallet = getWallet(userId)
-if FREE_MODE == false and wallet.balance < generationCost:
-    raise InsufficientCreditsError
-else:
-    createJob(userId, sourceFileId, generationType)
-```
-
 **BR-010_02 — Source Document Readiness Check**
 **Linked FR:** FR-010_01
 **Source:** `examio-be/apps/exam-service/src/modules/ai/ai-job.service.ts` (inferred)
@@ -66,20 +52,17 @@ if doc.processingStatus != 'COMPLETED':
 #### DEC-010_01 — Generate Button State
 **subtype:** render
 **Triggers in:** SCR024 (AIToolPage) on document list render
-**Involved entities:** `UserStorage.processingStatus`, `Wallet.balance`
-**user_visible_outcome:** Generate button is enabled only when the selected document is COMPLETED and wallet has sufficient credits (or FREE_MODE is active)
+**Involved entities:** `UserStorage.processingStatus`
+**user_visible_outcome:** Generate button is enabled only when the selected document is COMPLETED
 **Source:** `examio-fe/src/pages/k/AIToolPage.tsx` (inferred)
 
 ```pseudo
 doc = selectedDocument
-hasCredits = wallet.balance >= generationCost OR FREE_MODE == true
 isReady = doc.processingStatus == 'COMPLETED'
-if isReady AND hasCredits:
+if isReady:
     render "Generate" button (enabled)
-else if !isReady:
+else:
     render "Generate" button (disabled) with tooltip "Document not ready"
-else if !hasCredits:
-    render "Generate" button (disabled) with link to subscription
 ```
 
 ### State Machines
@@ -117,15 +100,6 @@ stateDiagram-v2
 None.
 ### External Integrations
 
-**INT-010_01 — Credit Deduction (BL004)**
-**Linked FR:** FR-010_01
-**Source:** `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts`
-**Type:** api-call
-**Target:** `finance-service` via gRPC
-**Trigger:** Before creating AI job
-**Payload:** `{ userId, creditsToDeduct }`
-**Failure handling:** Job creation blocked; error returned to client
-
 **INT-010_02 — AI Generation Pipeline**
 **Linked FR:** FR-010_01, FR-010_02
 **Source:** `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` (inferred)
@@ -138,7 +112,6 @@ None.
 ### Verification
 
 - **SC-010_01** — Generate button is disabled for PENDING/PROCESSING documents (covers BR-010_02)
-- **SC-010_02** — Job creation fails with insufficient credits when FREE_MODE is false (covers BR-010_01)
 - **SC-010_03** — Cancelling a pending job stops polling and resets UI to idle (covers FR-010_03)
 - **SC-010_04** — Polling resumes after page reload via localStorage (covers BL015)
 
@@ -153,21 +126,21 @@ None.
 
 ### US023 — Generate Flashcards via AI (Priority: P1)
 
-**What happens:** A student on AIToolPage or FlashcardsPage selects a source document (COMPLETED status) from their file list, chooses "Flashcards" as the generation type, and clicks Generate. The system checks credits (or bypasses via FREE_MODE), creates a background job, and shows a progress dialog. When complete, generated flashcards are associated with the source document via `HistoryGeneratedFlashcard`.
+**What happens:** A student on AIToolPage or FlashcardsPage selects a source document (COMPLETED status) from their file list, chooses "Flashcards" as the generation type, and clicks Generate. The system creates a background job (no charge), and shows a progress dialog. When complete, generated flashcards are associated with the source document via `HistoryGeneratedFlashcard`.
 **Why this priority:** AI flashcard generation is a primary value proposition — dramatic reduction in manual card creation effort.
 **Independent Test:** POST `/api/v1/ai/job` with `generationType: "flashcard"` and a COMPLETED document returns a `jobId`. Polling the job ID eventually returns `status: "completed"` with the `HistoryGeneratedFlashcard` ID.
 
 **Acceptance Scenarios:**
 
-1. **Given** the user has a COMPLETED document and sufficient credits (or FREE_MODE), **When** they submit flashcard generation, **Then** a job is created, the progress dialog opens, and generated flashcards appear when complete.
+1. **Given** the user has a COMPLETED document, **When** they submit flashcard generation, **Then** a job is created, the progress dialog opens, and generated flashcards appear when complete.
 2. **Given** the selected document has PROCESSING status, **When** the user clicks Generate, **Then** the button is disabled and a tooltip explains the document is not ready.
-3. **Given** credits are insufficient and FREE_MODE is false, **When** generation is attempted, **Then** an error dialog is shown with a link to the subscription page.
+3. **Given** the job fails or times out, **When** the user views it, **Then** the error is shown and retrying costs nothing.
 
 **Requirements fulfilled:**
 - **FR-010_01** Users initiate AI generation job — `POST /api/v1/ai/job` with `generationType: "flashcard"`
 - **FR-010_02** Users poll job status — `GET /api/v1/ai/job/:jobId`
 
-**Rules enforced:** PERM035 (AIGenerationAccess), PERM036 (AIGenerationCredits), PERM041 (FreeModeCreditBypass)
+**Rules enforced:** PERM035 (AIGenerationAccess)
 
 **Verification:**
 - **SC-010_05** Generated flashcards appear in the linked flashcard set after job completion (covers FR-010_01)
@@ -176,21 +149,21 @@ None.
 
 ### US036 — Generate Quiz via AI (Priority: P1)
 
-**What happens:** A student on AIToolPage selects a source document (COMPLETED status), chooses "Quiz" as the generation type, configures parameters (number of questions, difficulty), and clicks Generate. Identical credit and document readiness checks apply as US023. Generated questions are linked to the source document via `HistoryGeneratedQuizz`.
+**What happens:** A student on AIToolPage selects a source document (COMPLETED status), chooses "Quiz" as the generation type, configures parameters (number of questions, difficulty), and clicks Generate. The same document readiness check applies as US023 (no charge). Generated questions are linked to the source document via `HistoryGeneratedQuizz`.
 **Why this priority:** AI quiz generation is the core differentiator for exam preparation — without it, users must manually enter every question.
 **Independent Test:** POST `/api/v1/ai/job` with `generationType: "quiz"` returns a `jobId`; polling the ID eventually returns `status: "completed"` with the `HistoryGeneratedQuizz` ID.
 
 **Acceptance Scenarios:**
 
-1. **Given** the user has a COMPLETED document and sufficient credits, **When** they generate a quiz, **Then** a job is created and the progress dialog tracks status until completion.
-2. **Given** FREE_MODE is true, **When** generation is initiated, **Then** no credits are deducted and the job proceeds.
+1. **Given** the user has a COMPLETED document, **When** they generate a quiz, **Then** a job is created and the progress dialog tracks status until completion.
+2. **Given** generation is initiated, **Then** nothing is charged and the job proceeds.
 3. **Given** the document is FAILED, **When** the user tries to generate, **Then** a "Retry processing" button is shown instead of the generate button.
 
 **Requirements fulfilled:**
 - **FR-010_01** Users initiate AI generation job — `POST /api/v1/ai/job` with `generationType: "quiz"`
 - **FR-010_02** Users poll job status — `GET /api/v1/ai/job/:jobId`
 
-**Rules enforced:** PERM035 (AIGenerationAccess), PERM036 (AIGenerationCredits), PERM041 (FreeModeCreditBypass)
+**Rules enforced:** PERM035 (AIGenerationAccess)
 
 ---
 
@@ -220,15 +193,14 @@ None.
 | Scenario | Behavior |
 |----------|----------|
 | User attempts to generate from a PROCESSING document | Generate button disabled; tooltip "Document still processing" |
-| User attempts to generate with 0 credits (FREE_MODE=false) | API returns 402; subscription page link shown |
 | User navigates away during active polling and returns later | `useGenerationGuard` resumes polling from localStorage; PendingJobDialog reappears |
 | Job exceeds 60-minute polling timeout (360 attempts) | Polling stops; job may still complete server-side; user shown timeout message |
-| User cancels a job while it is QUEUED or PROCESSING on the server | Job becomes CANCELLED and the charge is refunded once (`Refund` key `gen:<jobId>`); a late AI result is ignored; the processed document stays reusable. Cancelling a COMPLETED or FAILED job answers 409 `JOB_NOT_CANCELLABLE` (phase 15) |
+| User cancels a job while it is QUEUED or PROCESSING on the server | Job becomes CANCELLED (nothing to refund); a late AI result is ignored; the processed document stays reusable. Cancelling a COMPLETED or FAILED job answers 409 `JOB_NOT_CANCELLABLE` (phase 15) |
 | User attempts to generate from a FAILED document | "Retry processing" button shown instead of Generate |
-| User retries a FAILED job with the same source document | New job created and charged again (5 credits; there is no free retry since a failed job is refunded); old failed job record remains in history |
+| User retries a FAILED job with the same source document | New job created (free); old failed job record remains in history |
 | Concurrent generation requests by the same user and type | One at a time: a Redis lock (`content:gen:lock:<userId>:<type>`) makes the second request answer 409 until the first job reaches a terminal state (phase 15) |
 | User has no source documents uploaded | Empty state shown with "Upload a document first" prompt |
-| Credit deduction succeeds but AI service returns an error | Job status set to FAILED and the credits are refunded once (phase 15). A job with no progress for `GENERATION_JOB_TIMEOUT_MINUTES` (default 60, min 10) fails with `GENERATION_TIMEOUT` and is refunded |
+| AI service returns an error | Job status set to FAILED. A job with no progress for `GENERATION_JOB_TIMEOUT_MINUTES` (default 60, min 10) fails with `GENERATION_TIMEOUT` |
 
 ## Key Entities
 
@@ -237,8 +209,6 @@ None.
 | UserStorage | `UserStorage` | id, userId, filename, processingStatus | Source documents uploaded for AI processing |
 | HistoryGeneratedQuizz | `HistoryGeneratedQuizz` | id, userId, userStorageId | AI-generated quiz batch linked to source document |
 | HistoryGeneratedFlashcard | `HistoryGeneratedFlashcard` | id, userId, userStorageId | AI-generated flashcard batch linked to source document |
-| Wallet | `Wallet` | id, userId, balance | Credit balance checked before generation |
-| WalletTransaction | `WalletTransaction` | id, walletId, type, direction, amount | Credit debit transaction for AI generation |
 
 ## Artifact References
 
@@ -247,26 +217,24 @@ None.
 | System Overview | [system-overview.md](../../docs/system/system-overview.md) | — | [x] |
 | Feature List | [feature-list.md](../../docs/generated/feature-list.md) | F010 | [x] |
 | Screens | [screens.md](./screens.md) | SCR024, SCR017 | [x] |
-| Behavior Logic | [behavior-logic.md](../../docs/system/behavior-logic.md) | BL004, BL015 | [x] |
-| Permissions | [permissions.md](../../docs/system/permissions.md) | PERM002, PERM003, PERM035, PERM036, PERM041 | [x] |
+| Behavior Logic | [behavior-logic.md](../../docs/system/behavior-logic.md) | BL015 | [x] |
+| Permissions | [permissions.md](../../docs/system/permissions.md) | PERM002, PERM003, PERM035 | [x] |
 | User Stories | [user-stories.md](../../docs/generated/user-stories.md) | US023, US036, US037 | [x] |
 | Data Model | [data-model.md](../../docs/system/data-model.md) | MODEL-016, MODEL-011, MODEL-012 | [x] |
 
 ## Assumptions
 
-- `AI_FREE_MODE` skips the charge only outside production; the shared finance client forces it off when `NODE_ENV=production`.
+- Generation is not charged and has no per-user limit; cost is guarded only by the gateway rate limits (the wallet/credit feature and `AI_FREE_MODE` were removed). Generation is TEACHER-only (`ai:generate`).
 - AI job status polling is client-driven (recursive GET) rather than server-sent events or WebSocket.
 - Maximum polling duration is 60 minutes (360 attempts at 10-second intervals) before the client stops.
 - Since phase 15 ai-service no longer writes generated history or checks ownership: it answers `ai.generation.completed` (items inline up to 512 KB) and exam-service writes `HistoryGenerated*` and marks the `GenerationJob` COMPLETED. The source file is stored by document-service; exam asks it over gRPC (`CreateUpload`, `AssertOwnership`, `EnsureProcessed`).
-- Credit cost per generation is fixed regardless of document size or number of questions generated.
 
 ## Source Code References
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
 | AIJobController | `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` | REST endpoints for AI job create/poll/cancel |
-| AIJobService | `examio-be/apps/exam-service/src/modules/ai/ai-job.service.ts` | Job creation logic, credit check, queue dispatch |
-| FinanceClientService | `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` | Wallet balance check and credit deduction (BL004) |
+| AIJobService | `examio-be/apps/exam-service/src/modules/ai/ai-job.service.ts` | Job creation logic, queue dispatch |
 | useGenerationGuard | `examio-fe/src/hooks/useGenerationGuard.ts` | Client-side job polling + localStorage resume (BL015) |
 | AIToolPage | `examio-fe/src/pages/k/AIToolPage.tsx` | Main AI tool page with TestGenerator and FlashcardGenerator |
 | TestGenerator | `examio-fe/src/components/k/ai-tool/TestGenerator.tsx` | Quiz generation UI component |
@@ -275,8 +243,6 @@ None.
 
 ## Unresolved Questions
 
-1. ~~**Credit refund on job failure**~~ — resolved in phase 15: failed, cancelled and timed-out charged jobs are refunded once, whenever they fail (see `docs/system/business-rules.md` § AI credits: charge and refund).
-2. ~~**Credit cost model**~~ — resolved: new file = 1 credit per started 2 MB + 5; reused file = 5; regenerate = 1 per started 10 items (`apps/content-service/src/modules/ai/generation.constants.ts`).
-3. **Generated content destination**: When AI generates quiz questions, which quiz set do they go into — a new auto-created set, or does the user select an existing set?
-4. **Job history retention**: How long are completed/failed job records kept? Is there a purge policy?
-5. **Concurrent job limits**: Can a user have multiple jobs in PROCESSING state simultaneously, or is there a per-user concurrency limit?
+1. **Generated content destination**: When AI generates quiz questions, which quiz set do they go into — a new auto-created set, or does the user select an existing set?
+2. **Job history retention**: How long are completed/failed job records kept? Is there a purge policy?
+3. **Concurrent job limits**: Can a user have multiple jobs in PROCESSING state simultaneously, or is there a per-user concurrency limit?

@@ -9,8 +9,6 @@
 | Admin changes or bans their own account | 403 `CANNOT_CHANGE_OWN_ROLE` / `CANNOT_CHANGE_OWN_STATUS` | FE locks the own row |
 | Demoting the last active SYSTEM_ADMIN | 409 `LAST_SYSTEM_ADMIN` | FE disables the switch when `systemAdminCount` is 1 |
 | `PATCH /admin/users/:id` with `role`, `isSystemAdmin` or `isBanned` | 400 `VALIDATION_ERROR` (strict body) | Use `/admin/roles` or ban/unban |
-| Admin processes a refund for an already-refunded payment | `$transaction` Serializable isolation prevents double-refund race | Error indicating already processed (exact message not confirmed in source) |
-| Two admins attempt to finance-adjust the same wallet simultaneously | Serializable transaction isolation forces one to retry/fail rather than corrupt state | Transient error on the losing transaction |
 | SSE log stream ticket expires (300s) before use | Ticket is single-use + time-limited; expired ticket rejected | Stream fails to open, admin must re-request a ticket |
 | Log output contains a raw email/token/password pattern | Redactor replaces it before returning to the admin's browser | Redacted placeholder shown instead |
 | `ADMIN_EMAILS` env var changes on redeploy | `admin-bootstrap` `OnModuleInit` syncs idempotently — grants new admins, does not revoke ones no longer listed | Silent on non-error path |

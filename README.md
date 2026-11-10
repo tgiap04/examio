@@ -64,7 +64,6 @@ python -m venv venv
 | `auth-service` | Xác thực, OAuth, session |
 | `content-service` | Quiz, flashcard, sinh nội dung bằng AI |
 | `assessment-service` | Phòng thi, phiên thi, lượt làm bài |
-| `finance-service` | Ví, thanh toán, subscription |
 | `r2-service` | Lưu trữ file (Cloudflare R2) |
 | `ai-service` | RAG, document processing, AI generation (Python/FastAPI) |
 

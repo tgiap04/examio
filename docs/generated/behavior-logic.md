@@ -11,16 +11,12 @@
 | Code | Name | Type | Trigger |
 |------|------|------|---------|
 | BL001 | SessionCleanupCron | scheduled-job | Cron (daily) |
-| BL002 | UserRegisteredHandler | event-listener | `auth.user.registered` RabbitMQ event |
 | BL003 | AuthService | integration | Login, OAuth, token validation |
-| BL004 | FinanceClient | integration | Credit deduction, wallet check |
 | BL005 | R2ClientService | integration | File upload to R2 |
 | BL006 | R2Service | integration | R2 storage operations |
 | BL007 | OcrService | integration | Document OCR processing |
 | BL008 | MailService | mail | Account verification, password reset |
 | BL009 | SessionValidationMiddleware | middleware | Every non-public HTTP request |
-| BL010 | SePayWebhook | webhook | SePay bank transfer callback |
-| BL011 | GatewayWebhookProxy | webhook | Forwarded webhook to downstream |
 | BL012 | AuthSyncBootstrap | integration | OAuth callback token sync |
 | BL013 | CheatingDetectionHook | event-listener | Tab switch, window blur, devtools |
 | BL014 | ExportPDFHook | integration | PDF generation and download |
@@ -51,33 +47,6 @@ Daily cron job that scans all `UserSession` records and deactivates expired sess
 ### Related Data Models
 
 - MODEL-002: UserSession
-
----
-
-## BL002: UserRegisteredHandler
-
-**Type**: event-listener
-**Trigger**: RabbitMQ topic `auth.user.registered` on `examio.events` durable exchange (queue `finance.events`)
-**Source File**: `examio-be/apps/finance-service/src/events/handlers/user-registered.handler.ts`
-**Source Symbol**: `UserRegisteredHandler` (`@EventHandler('auth.user.registered')` from `@examio/messaging`)
-
-### Description
-
-Idempotent event listener that handles the `auth.user.registered` RabbitMQ event (published via auth-service transactional outbox). Runs in the consumer's dedupe transaction (`processed_events`), skips if the wallet already exists, otherwise creates a Wallet with a 20-credit welcome transaction.
-
-### Related Modules
-
-- finance-service: FinanceModule, WalletModule
-- auth-service: AuthModule (publishes event)
-
-### Related Routes
-
-- (event-driven, no HTTP route)
-
-### Related Data Models
-
-- MODEL-027: Wallet
-- MODEL-001: User
 
 ---
 
@@ -121,32 +90,6 @@ Core authentication service. Handles email/password login, Google OAuth flow (in
 - MODEL-002: UserSession
 - MODEL-003: VerifyAccountCode
 - MODEL-004: ResetPasswordCode
-
----
-
-## BL004: FinanceClient
-
-**Type**: integration
-**Trigger**: Credit-deductor feature (AI generation, document processing)
-**Source File**: `examio-be/libs/grpc/src/clients/finance.client.ts`
-**Source Symbol**: `FinanceClient` (class, shared gRPC client to finance-service)
-
-### Description
-
-Finance service client used by exam-service to check user wallet balance and deduct credits before allowing AI generation or document processing. Charges through the shared `FinanceClient` (`libs/grpc`) with finance `WalletService.Debit` (idempotency key, caller's access token forwarded); benefits fall back to Free-tier defaults when finance is unreachable. `AI_FREE_MODE=true` skips the charge only outside production (forced off when `NODE_ENV=production`).
-
-### Related Modules
-
-- exam-service: ExamServiceModule, AIGenerationModule
-
-### Related Routes
-
-- (internal gRPC/HTTP) Wallet info and credit deduction
-
-### Related Data Models
-
-- MODEL-027: Wallet
-- MODEL-028: WalletTransaction
 
 ---
 
@@ -283,58 +226,6 @@ Request-level middleware that validates the user's session token on every protec
 
 ---
 
-## BL010: SePayWebhook
-
-**Type**: webhook
-**Trigger**: Incoming bank transfer notification from SePay
-**Source File**: `examio-be/apps/finance-service/src/webhook.controller.ts`
-**Source Symbol**: `WebhookController` (class with webhook route handler)
-
-### Description
-
-Incoming webhook controller receiving payment notifications from SePay virtual account provider. Verifies webhook signature (API key), parses payment confirmation (VA number, amount, transfer content), and updates Payment status from `unpaid` to `paid`. Triggers wallet credit top-up or subscription activation.
-
-### Related Modules
-
-- finance-service: FinanceModule, WalletModule
-
-### Related Routes
-
-- (POST) `/api/v1/webhook/sepay`
-
-### Related Data Models
-
-- MODEL-026: Payment
-- MODEL-027: Wallet
-- MODEL-028: WalletTransaction
-
----
-
-## BL011: GatewayWebhookProxy
-
-**Type**: webhook
-**Trigger**: Incoming webhook forwarded through gateway to downstream service
-**Source File**: `examio-be/apps/gateway-service/src/controllers/webhook-proxy.controller.ts`
-**Source Symbol**: `WebhookProxyController` (class)
-
-### Description
-
-Gateway-level webhook proxy that forwards incoming webhook requests to downstream services. The SePay payment webhook is received at the gateway and proxied to finance-service. Maintains webhook signature verification and request logging.
-
-### Related Modules
-
-- gateway-service: GatewayModule
-
-### Related Routes
-
-- (POST) `/api/v1/webhook/sepay` (gateway receives, proxies to finance-service)
-
-### Related Data Models
-
-- MODEL-026: Payment
-
----
-
 ## BL012: AuthSyncBootstrap
 
 **Type**: integration
@@ -467,20 +358,19 @@ Exam quiz page background auto-save mechanism. Uses `setInterval` to poll `updat
 
 ## Summary
 
-- **Total Behavior Logic Items**: 16
+- **Total Behavior Logic Items**: 12 (BL002, BL004, BL010, BL011 were removed with the finance feature; codes are retired, not reused)
 - **By Type**:
   - scheduled-job: 3 (BL001, BL015, BL016)
-  - event-listener: 2 (BL002, BL013)
-  - integration: 7 (BL003–BL007, BL012, BL014)
+  - event-listener: 1 (BL013)
+  - integration: 6 (BL003, BL005–BL007, BL012, BL014)
   - mail: 1 (BL008)
   - middleware: 1 (BL009)
-  - webhook: 2 (BL010–BL011)
 
 ---
 
 ## Cross-Reference Validation
 
-- [x] All BL### codes are unique (BL001–BL016)
+- [x] All BL### codes are unique (BL001, BL003, BL005–BL009, BL012–BL016)
 - [x] All BL### Source File paths match Wave 0 scout `## Background Logic Source Inventory` entries
 - [x] All BL### Source Symbol fields are single-valued (Rule C2)
 - [x] All sentinel entries (`_(none found)_`) from scout inventory are skipped (no BL items emitted)

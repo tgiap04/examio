@@ -13,7 +13,7 @@ Manually authoring quiz questions and flashcards from scratch is time-consuming 
 
 1. User navigates to the AI Tool page and sees a list of their previously uploaded documents, each with a status badge.
 2. User selects a document that shows "Ready" and chooses whether to generate a quiz or flashcards. They configure generation parameters (number of questions, difficulty level).
-3. User clicks Generate. The system checks their credit balance — if sufficient, a background job is queued. A progress dialog appears showing real-time status as the AI service processes the document.
+3. User clicks Generate. A background job is queued (no charge). A progress dialog appears showing real-time status as the AI service processes the document.
 4. When generation completes, the user sees the result summary — for example, "15 quiz questions generated" or "30 flashcards created" — and can review the output before saving it to their materials.
 5. If the user closes the tab during an active job, they return to the AI Tool page and the progress dialog reappears automatically, continuing to poll until the job finishes or the user cancels.
 

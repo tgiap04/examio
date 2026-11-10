@@ -24,9 +24,8 @@
 | SCR010 | ForgotPasswordPage | atomic | ~1 | Email reset form |
 | SCR011 | ResetPasswordPage | atomic | ~1 | OTP + new password form |
 | SCR012 | KRootRedirect | atomic | ~1 | Redirect logic |
-| SCR013 | ProfilePage | composite | 6 | User, Device, Subscription, Wallet |
+| SCR013 | ProfilePage | composite | 5 | User, Device |
 | SCR014 | VerifyPage | atomic | ~1 | Account verification |
-| SCR015 | SubscriptionPage | atomic | ~1 | Subscription + Payment QR |
 | SCR016 | MyMaterialsPage | composite | 5 | QuizSet, FlashCardSet, ExamRoom |
 | SCR017 | FlashcardsPage | atomic | ~3 | FlashCardSet, FlashcardGenerator |
 | SCR018 | HistoryPage | composite | 4 | PDF history, Exam history, Stats |
@@ -45,9 +44,8 @@
 | SCR031 | ExamSessionPage | atomic | ~1 | ExamRoomDetailTemplate |
 | SCR032 | ExamQuizPage | atomic | ~3 | Exam attempt, questions, cheating detection |
 | SCR033 | AdminOverviewPage | atomic | ~2 | KPI cards, quick stats, recent activity |
-| SCR034 | AdminStatsPage | atomic | ~5 | Time-series charts, user/exam/finance metrics, signup-source breakdown |
+| SCR034 | AdminStatsPage | atomic | ~5 | Time-series charts, user/exam metrics, signup-source breakdown |
 | SCR035 | AdminUsersPage | atomic | ~3 | User table (role, admin flag) with ban/unban actions |
-| SCR036 | AdminFinancePage | atomic | ~3 | Refund history, credit adjustments, tier changes |
 | SCR037 | AdminLogsPage | atomic | ~2 | Log viewer with SSE stream + polling fallback |
 | SCR038 | AdminAuditPage | atomic | ~2 | Audit log table with filters + export |
 | SCR039 | AdminPageConfigPage | atomic | ~2 | PageFeatureFlag list + toggle switches |
@@ -384,7 +382,7 @@ Root redirect for protected `/k/` section. Redirects authenticated users to the 
 
 ### Description
 
-User profile management with three independent data regions: profile form, device management, and subscription/wallet display. Each region loads from its own API endpoint with independent loading state.
+User profile management with independent data regions: profile form and device management. Each region loads from its own API endpoint with independent loading state.
 
 ### Components
 
@@ -393,23 +391,15 @@ User profile management with three independent data regions: profile form, devic
 | ProfileForm | form | Avatar/banner/name/bio update |
 | ChangePasswordSection | form | Password change |
 | DeviceList | list | Active sessions/devices |
-| SubscriptionSection | section | Subscription tier + plans |
-| WalletSection | section | Credit balance + transactions |
 
 ### Data Displayed
 
 - User: id, email, username, name, avatar, banner, bio
 - UserSession: active sessions with device/browser/OS/IP
-- Wallet: balance, recent transactions
-- UserSubscription: tier, billing cycle, isActive
 
 ### Routes/URLs
 
 - `/k/profile`
-
-### Related Screens
-
-- SCR015: SubscriptionPage (subscription management)
 
 ### Regions
 
@@ -417,7 +407,6 @@ User profile management with three independent data regions: profile form, devic
 |------|-------|-------|---------------------|
 | REG001 | ProfileForm | F004_ProfileManagement | Own endpoint `GET/PUT /api/v1/profile`; own loading/error state |
 | REG002 | DeviceList | F004_ProfileManagement | Own endpoint `GET /api/v1/devices`; independent list state; separate DELETE mutation |
-| REG003 | SubscriptionWallet | F005_Finance | Own endpoints `GET /api/v1/payment/subscription`, `GET /api/v1/wallet/details`; independent refresh |
 
 ---
 
@@ -442,36 +431,6 @@ Account verification page. Accepts 6-digit OTP from email to activate account.
 ### Routes/URLs
 
 - `/k/verify`
-
----
-
-## SCR015: SubscriptionPage
-
-**Type**: atomic
-
-### Description
-
-Subscription purchase page with plan selection and QR payment via SePay.
-
-### Components
-
-| Component | Type | Purpose |
-|-----------|------|---------|
-| SubscriptionTemplate | template | Plan cards + QR payment |
-| QRPaymentDialog | dialog | SePay QR display |
-
-### Data Displayed
-
-- UserSubscription: current plan, status
-- Payment: QR code, payment status
-
-### Routes/URLs
-
-- `/k/subscription`
-
-### Related Screens
-
-- SCR013: ProfilePage (redirect after purchase)
 
 ---
 
@@ -1085,7 +1044,7 @@ Active exam-taking interface. Fetches encrypted questions via `secure-quiz` endp
 
 ### Description
 
-Admin dashboard home page. Displays KPI cards (total users, active sessions, revenue today, pending refunds) and recent activity feed. Quick-navigate links to other admin sections.
+Admin dashboard home page. Displays KPI cards (total users, active today, active in the last 30 days) and recent activity feed. Quick-navigate links to other admin sections.
 
 ### Components
 
@@ -1111,7 +1070,7 @@ Admin dashboard home page. Displays KPI cards (total users, active sessions, rev
 
 ### Description
 
-Detailed analytics page with time-series charts for user growth, exam sessions, revenue, and AI usage. Date range picker, export functionality, and a signup-source ("Top nguồn") breakdown card.
+Detailed analytics page with time-series charts for signups and traffic. Date range picker, export functionality, and a signup-source ("Top nguồn") breakdown card.
 
 ### Components
 
@@ -1158,36 +1117,6 @@ User management page with paginated antd Table. Columns: avatar, name, email, ro
 ### Auth
 
 - `@RequirePermissions('user:manage')` — `SYSTEM_ADMIN` role required.
-
----
-
-## SCR036: AdminFinancePage
-
-**Type**: atomic
-
-### Description
-
-Finance management page with tabs: Refund History, Credit Adjustments, Subscription Tier Changes. Each tab shows a paginated antd Table with relevant details and action buttons.
-
-### Components
-
-| Component | Type | Purpose |
-|-----------|------|---------|
-| AdminFinanceTabs | atomic | Tabbed interface (refunds / credits / tiers) |
-| AdminRefundTable | atomic | Refund history table |
-| AdminCreditAdjustDialog | atomic | Dialog for manual credit adjustment |
-| AdminTierChangeDialog | atomic | Dialog for subscription tier change |
-
-### Routes
-
-- `GET /api/v1/admin/finance/refunds`
-- `POST /api/v1/admin/finance/refund`
-- `POST /api/v1/admin/finance/adjust-credit`
-- `PUT /api/v1/admin/finance/subscription-tier`
-
-### Auth
-
-- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required.
 
 ---
 
@@ -1413,16 +1342,16 @@ Route `/admin/roles`, sidebar item "Phân quyền" (`nav.roles`, `AdminLayout`).
 
 ## Summary
 
-- **Total Screens**: 43 active + 1 removed (SCR025)
-- **Atomic**: 39 (SCR001–SCR012, SCR014–SCR015, SCR017, SCR019–SCR024, SCR026, SCR028–SCR038, SCR039–SCR044)
+- **Total Screens**: 41 active + 3 removed (SCR015, SCR025, SCR036)
+- **Atomic**: 37 (SCR001–SCR012, SCR014, SCR017, SCR019–SCR024, SCR026, SCR028–SCR035, SCR037–SCR044)
 - **Composite**: 4 active (SCR013, SCR016, SCR018, SCR027) + 1 removed (SCR025)
-- **Total Regions**: 16 across composite screens
+- **Total Regions**: 15 across composite screens
 
 ---
 
 ## Cross-Reference Validation
 
-- [x] All SCR### codes are unique (SCR001–SCR044)
+- [x] All SCR### codes are unique (SCR001–SCR044; SCR015, SCR025 and SCR036 are retired, not reused)
 - [x] All SCR### codes are referenced in ScreenFlow.md
 - [x] All route URLs are properly formatted
 - [x] All SCR### codes are referenced in FeatureList.md

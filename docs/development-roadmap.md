@@ -1,6 +1,6 @@
 ---
 title: Examio Development Roadmap
-last_updated: 2026-10-29
+last_updated: 2026-11-10
 source: rebuild-spec pipeline run (plans/260605-2033-rebuild-spec/) + phase completions
 status: ACTIVE
 ---
@@ -65,7 +65,7 @@ Follow-ups carried out of the plan:
 - **[DEFERRED] User deletion**: admin `DELETE` -> auth `DeleteUser` -> event fan-out + per-service purgers (see "Deferred: user account deletion" below).
 - **[DEFERRED] Phase 17**: K8s readiness, observability stack (Prometheus/Loki/Grafana, OTel), Redis ACL, admin logs on Loki.
 - **Mobile student practice**: quiz practice (`/quiz-practice/*`) exists on web only (mobile is out of scope; phase 18 was removed 2026-10-29).
-- **Reserve -> Capture credits**: generation charges are still a single `Debit` with refund on failure.
+- **Wallet / subscription / payment removed (2026-11-10, branch `feat/remove-finance`)**: finance-service, credits, subscription tiers, SePay payments and every limit derived from them are gone (breaking; PR label `migration:contract`). The mobile app `examio-app` is untouched and still calls the removed `/wallet/*` and `/payment/*` routes. AI cost is guarded only by gateway rate limits, so a per-user AI budget is a possible follow-up if abuse appears. Changelog: `project-changelog.md` § Unreleased.
 - **N1 (phase 16 review)**: two concurrent ai-chat regenerates of one message are both admitted and can leave two reply pairs; fix with a Redis `SET NX` claim.
 - **F5 (phase 16 temper)**: the gateway does not log 429 responses (`pipeline/guard-chain.ts` returns `RATE_LIMITED` silently), so rate-limit pressure is invisible in logs.
 
@@ -133,9 +133,9 @@ Phase 15 (document-service and ai-service database) is committed on `refactor/mi
 
 | # | Item | Source | Owner | Deps |
 |---|------|--------|-------|------|
-| 0.1 | ~~Remove `FREE_MODE = true` from `FinanceClientService.deductCredits`~~ — resolved 2026-10-23 (microservice-refactor phase 10): charging goes through the shared `FinanceClient` (`libs/grpc`); `AI_FREE_MODE` is dev/local only and forced off when `NODE_ENV=production` | W7a + scout | backend | — |
+| 0.1 | ~~Remove `FREE_MODE = true` from `FinanceClientService.deductCredits`~~ — resolved 2026-10-23 (microservice-refactor phase 10): charging goes through the shared `FinanceClient` (`libs/grpc`); `AI_FREE_MODE` was later removed with finance-service (2026-11-10) | W7a + scout | backend | — |
 | 0.2 | ~~Fix `ocr-service` gRPC port collision~~ — resolved 2026-10-18: `ocr-service` deleted (microservice-refactor phase 01) | W7a + scout | platform | — |
-| 0.3 | ~~Remove duplicate finance routes in gateway~~ — resolved 2026-10-20: proxy controllers removed, `routes.yaml` has one `wallet` / `payment` entry (microservice-refactor phase 05) | W7a | backend | — |
+| 0.3 | ~~Remove duplicate finance routes in gateway~~ — resolved 2026-10-20: proxy controllers removed, the finance routes were later removed entirely (2026-11-10) | W7a | backend | — |
 | 0.4 | **Decide `AuthService.ValidateToken` gRPC** — wired but unused; either remove or have downstream services use it instead of Prisma-direct lookup | W7a | backend | — |
 | 0.5 | **Verify `ExamAttempt.submit` legacy endpoint** — `submitSecureQuiz` is canonical, but `submitExamAttemptApi` still exists; remove if unused | W7a | backend | — |
 | 0.6 | **Fix `PendingJobDialog` unconditional render in `KLayout`** — should only appear on AI-tool pages | W7a | frontend | — |
@@ -172,24 +172,15 @@ Phase 15 (document-service and ai-service database) is committed on `refactor/mi
 | 2.4.1 | Image dimension constraints for avatar/banner | frontend |
 | 2.4.2 | Concurrent profile edit handling (last-write-wins vs optimistic locking) | backend |
 
-### F005 Finance
-| # | Item | Owner |
-|---|------|-------|
-| 2.5.1 | VA expiry window (currently unknown) | backend |
-| 2.5.2 | SePay webhook retry policy | backend |
-| 2.5.3 | Refund/dispute handling for cancelled payments | backend |
-
 ### F006 QuizAuthoring
 | # | Item | Owner |
 |---|------|-------|
 | 2.6.1 | Cascade delete scope for ExamRoom when QuizSet is deleted | backend |
-| 2.6.2 | AI job credit deduction timing (atomic vs completion-time) | backend |
 | 2.6.3 | Question deduplication behavior in DetailsQuizQuestion | backend |
 
 ### F007 FlashcardAuthoring
 | # | Item | Owner |
 |---|------|-------|
-| 2.7.1 | Credit refund policy on failed AI jobs | backend |
 | 2.7.2 | Access code brute-force protection | backend |
 | 2.7.3 | Cascade delete scope for FlashcardStudyProgress | backend |
 
@@ -207,8 +198,6 @@ Removed 2026-06-14 (frontend page `f1ed596`, backend `ai-tutor` module `343fa97`
 ### F010 AITool
 | # | Item | Owner |
 |---|------|-------|
-| 2.10.1 | Credit refund on AI job failure | backend |
-| 2.10.2 | Credit cost model per generation type | backend |
 | 2.10.3 | Job history retention window | backend |
 | 2.10.4 | Concurrent job limit per user | backend |
 
@@ -235,8 +224,8 @@ Removed 2026-06-14 (frontend page `f1ed596`, backend `ai-tutor` module `343fa97`
 | # | Item | Owner | Status |
 |---|------|-------|--------|
 | 3.1 | Admin service (HTTP port 3000 in containers since microservice-refactor phase 02; originally 7006 / gRPC 50056, no gRPC server now) | backend | ✅ Complete |
-| 3.2 | 6 admin modules: bootstrap, stats, finance, logs, users, audit | backend | ✅ Complete |
-| 3.3 | Frontend admin pages (6 pages: overview, stats, users, finance, logs, audit) | frontend | ✅ Complete |
+| 3.2 | Admin modules: bootstrap, stats, logs, users, roles, audit (the finance module was removed 2026-11-10) | backend | ✅ Complete |
+| 3.3 | Frontend admin pages (overview, stats, users, roles, logs, audit; the finance page was removed 2026-11-10) | frontend | ✅ Complete |
 | 3.4 | Ticket exchange SSE (server-sent events for real-time updates) | backend | ✅ Complete |
 | 3.5 | Soft delete for users (`isBanned` + `deletedAt`) | backend | ✅ Complete |
 | 3.6 | antd Table with pagination + filters on all list pages | frontend | ✅ Complete |
@@ -298,7 +287,6 @@ Key decisions made during implementation:
 
 | # | Item | Source | Owner |
 |---|------|--------|-------|
-| 5.1 | `SubscriptionPage` vs `SubscriptionTemplate` — pick canonical UI, archive the other | W7a | frontend |
 | 5.2 | `ProfilePage` dual data source (`getProfileApi` + `useAuthStore.user`) — pick one | W7a | frontend |
 | 5.3 | Add a 6th feature for **Mobile Companion** (iOS + Android app) — currently not covered in spec | F012 in legacy v3.x | spec |
 | 5.4 | Add iOS + Android spec parity for any screen changes | CLAUDE.md rule | spec + mobile |
@@ -334,7 +322,7 @@ Database per service dropped every FK to `User`, so deleting a user no longer ca
 ## Implementation Phases (Suggested)
 
 ### ✅ Completed — Phase 3 (Admin Dashboard)
-All 6 items complete. Dashboard live with audit, stats, user management, finance controls.
+All 6 items complete. Dashboard live with audit, stats, user management and role management.
 
 ### ✅ Completed — Phase 4 (Page Feature Flags)
 All 8 items complete. Dynamic page enable/disable without redeployment. SSE real-time sync.
