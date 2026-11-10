@@ -1,0 +1,130 @@
+{
+  "commands": [
+    {
+      "command": "cd examio-be && yarn test",
+      "exitCode": 0,
+      "testCount": 2249,
+      "phase": "GREEN"
+    },
+    {
+      "command": "cd examio-be && yarn test test/authz test/cross-app test/build test/ownership test/db-isolation test/r2-delete",
+      "exitCode": 0,
+      "testCount": 476,
+      "phase": "GREEN"
+    },
+    {
+      "command": "cd examio-be && node --test deploy/*.spec.cjs deploy/rabbitmq/*.spec.cjs",
+      "exitCode": 0,
+      "testCount": 63,
+      "phase": "GREEN"
+    },
+    {
+      "command": "cd examio-fe && yarn test",
+      "exitCode": 0,
+      "testCount": 106,
+      "phase": "GREEN"
+    },
+    {
+      "command": "db-isolation e2e (CI be-e2e mirror, local docker)",
+      "exitCode": 0,
+      "testCount": 69,
+      "phase": "GREEN"
+    },
+    {
+      "command": "rbac-content e2e (CI be-e2e mirror, local docker) before spec fix",
+      "exitCode": 1,
+      "testCount": 180,
+      "phase": "RED"
+    },
+    {
+      "command": "rbac-content e2e (CI be-e2e mirror, local docker) after spec fix, run 1",
+      "exitCode": 0,
+      "testCount": 180,
+      "phase": "GREEN"
+    },
+    {
+      "command": "rbac-content e2e (CI be-e2e mirror, local docker) after spec fix, run 2",
+      "exitCode": 0,
+      "testCount": 180,
+      "phase": "GREEN"
+    },
+    {
+      "command": "rbac-assessment e2e",
+      "exitCode": 0,
+      "testCount": 139,
+      "phase": "GREEN"
+    },
+    {
+      "command": "rbac-aichat e2e",
+      "exitCode": 0,
+      "testCount": 77,
+      "phase": "GREEN"
+    },
+    {
+      "command": "rbac-document e2e",
+      "exitCode": 0,
+      "testCount": 60,
+      "phase": "GREEN"
+    },
+    {
+      "command": "rbac-studyroom e2e",
+      "exitCode": 0,
+      "testCount": 22,
+      "phase": "GREEN"
+    },
+    {
+      "command": "rbac-vocabulary e2e",
+      "exitCode": 0,
+      "testCount": 19,
+      "phase": "GREEN"
+    },
+    {
+      "command": "identity-auth e2e",
+      "exitCode": 0,
+      "testCount": 51,
+      "phase": "GREEN"
+    },
+    {
+      "command": "identity-admin e2e",
+      "exitCode": 0,
+      "testCount": 17,
+      "phase": "GREEN"
+    },
+    {
+      "command": "identity-cross-app-auth-admin e2e",
+      "exitCode": 0,
+      "testCount": 30,
+      "phase": "GREEN"
+    },
+    {
+      "command": "gateway-e2e",
+      "exitCode": 0,
+      "testCount": 62,
+      "phase": "GREEN"
+    },
+    {
+      "command": "gateway-cross-app-integration e2e",
+      "exitCode": 0,
+      "testCount": 9,
+      "phase": "GREEN"
+    },
+    {
+      "command": "cd examio-be && yarn test apps/auth-service test/authz test/cross-app/rpc-guard-table.spec.ts (after review fixes)",
+      "exitCode": 0,
+      "testCount": 632,
+      "phase": "GREEN"
+    },
+    {
+      "command": "cd examio-be && yarn test (final tree)",
+      "exitCode": 0,
+      "testCount": 2249,
+      "phase": "GREEN"
+    },
+    {
+      "command": "cd examio-fe && yarn test (final tree)",
+      "exitCode": 0,
+      "testCount": 106,
+      "phase": "GREEN"
+    }
+  ]
+}
