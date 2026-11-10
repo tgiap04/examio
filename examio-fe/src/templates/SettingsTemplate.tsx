@@ -142,25 +142,6 @@ export function SettingsTemplate({
           </Card>
         );
 
-      case "billing":
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-xl font-semibold text-foreground">
-                Thanh toán
-              </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                Quản lý phương thức thanh toán và hóa đơn
-              </p>
-            </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                Tính năng đang được phát triển...
-              </p>
-            </CardContent>
-          </Card>
-        );
-
       default:
         return null;
     }

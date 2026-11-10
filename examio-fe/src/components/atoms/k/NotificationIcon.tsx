@@ -1,7 +1,6 @@
 import {
   AlertTriangle,
   MessageSquare,
-  CheckCircle,
   Wrench,
   UserPlus,
   Calendar,
@@ -10,7 +9,7 @@ import {
 import { cn } from "@/lib/utils";
 
 interface NotificationIconProps {
-  type: "security" | "message" | "payment" | "system" | "team" | "meeting";
+  type: "security" | "message" | "system" | "team" | "meeting";
   className?: string;
 }
 
@@ -22,11 +21,6 @@ const iconMap: Record<string, { icon: LucideIcon; bgClass: string }> = {
   message: {
     icon: MessageSquare,
     bgClass: "bg-red-100 text-primary",
-  },
-  payment: {
-    icon: CheckCircle,
-    bgClass:
-      "bg-green-100 text-green-600",
   },
   system: {
     icon: Wrench,

@@ -7,7 +7,6 @@ import {
   Lock,
   User,
   Layers,
-  CreditCard,
 } from "lucide-react";
 
 export type SettingsSection =
@@ -16,8 +15,7 @@ export type SettingsSection =
   | "notifications"
   | "privacy"
   | "account"
-  | "integrations"
-  | "billing";
+  | "integrations";
 
 interface SettingsSidebarProps {
   activeSection: SettingsSection;
@@ -75,13 +73,6 @@ export function SettingsSidebar({
           label="Tích hợp"
           isActive={activeSection === "integrations"}
           onClick={() => onSectionChange("integrations")}
-        />
-
-        <SettingsSidebarItem
-          icon={CreditCard}
-          label="Thanh toán"
-          isActive={activeSection === "billing"}
-          onClick={() => onSectionChange("billing")}
         />
       </div>
     </Card>

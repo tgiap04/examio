@@ -22,7 +22,6 @@
   "footer.group.resources": "Resources",
   "footer.group.legal": "Legal",
   "footer.link.features": "Features",
-  "footer.link.pricing": "Pricing",
   "footer.link.examRoom": "Exam Room",
   "footer.link.aiTool": "AI Tool",
   "footer.link.about": "About",
@@ -48,7 +47,6 @@
   "rbac.teacherCannotTakeExam": "Teacher accounts cannot take exams",
   "session.unavailable.title": "Cannot reach the server",
   "session.unavailable.retry": "Retry",
-  "rbac.plansForTeachers": "Plans for teachers",
   "rbac.studyRoomDenied": "You are not allowed to join this study room",
   "rbac.studyRoomUnavailable": "Study room is temporarily unavailable. Please try again later."
 }

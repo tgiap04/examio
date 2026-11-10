@@ -54,7 +54,11 @@ describe("filterAdminNav", () => {
   });
 
   it("covers every admin child route", () => {
-    expect(Object.keys(ADMIN_NAV_PERMISSIONS)).toHaveLength(9);
+    expect(Object.keys(ADMIN_NAV_PERMISSIONS)).toHaveLength(8);
+  });
+
+  it("has no finance route", () => {
+    expect(Object.keys(ADMIN_NAV_PERMISSIONS)).not.toContain("/admin/finance");
   });
 });
 

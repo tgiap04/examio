@@ -20,14 +20,12 @@ export const PERMISSION_GROUPS: ReadonlyArray<{ id: string; keys: readonly strin
   { id: "content", keys: ["quizset:manage", "flashcardset:manage", "content:share", "user:search", "document:upload"] },
   { id: "exams", keys: ["exam_room:manage", "exam_session:manage", "exam_result:view"] },
   { id: "ai", keys: ["ai:generate", "ai_chat:use"] },
-  { id: "wallet", keys: ["wallet:use", "subscription:manage"] },
   {
     id: "admin",
     keys: [
       "admin:access",
       "user:manage",
       "role:assign",
-      "finance:admin",
       "stats:read",
       "logs:read",
       "audit:read",

@@ -7,7 +7,6 @@ import { toast } from "@/components/antd/toast";
 import { aiApi, RecentUpload } from "@/apis/aiApi";
 import { storeCache } from "@/lib/storeCache";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useWalletStore } from "@/stores/useWalletStore";
 import { MODEL_UNAVAILABLE_MESSAGE } from "@/types/ai";
 
 interface FileInfo {
@@ -449,32 +448,6 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
       return;
     }
 
-    // [TEMP DISABLED] Check balance before proceeding
-    // const user = useAuthStore.getState().user;
-    // const balance = useWalletStore.getState().balance ?? 0;
-
-    // [TEMP DISABLED] Calculate cost
-    // const { calculateTotalCost, calculateRegenerateCost, checkBalance } =
-    //   await import("@/lib/creditUtils");
-
-    // [TEMP DISABLED] let requiredCost: number;
-    // [TEMP DISABLED] if (uploadId && fileInfo) {
-    //   requiredCost = calculateRegenerateCost(questionCount);
-    // } else if (file) {
-    //   const costs = calculateTotalCost(file.size, questionCount);
-    //   requiredCost = costs.totalCost;
-    // } else {
-    //   requiredCost = calculateRegenerateCost(questionCount);
-    // }
-
-    // [TEMP DISABLED] const { isEnough, deficit } = checkBalance(balance, requiredCost);
-    // [TEMP DISABLED] if (!isEnough) {
-    //   toast.error("Không đủ tín dụng", {
-    //     description: `Cần ${requiredCost} token, hiện có ${balance} token. Thiếu ${deficit} token.`,
-    //   });
-    //   return;
-    // }
-
     set({ isGenerating: true });
 
     try {
@@ -488,9 +461,6 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
           isNarrowSearch: isNarrow,
           keyword: isNarrow ? keyword : undefined,
         });
-        // [TEMP DISABLED] if (jobResponse.newBalance !== undefined) {
-        // [TEMP DISABLED]   useWalletStore.getState().setBalance(jobResponse.newBalance);
-        // [TEMP DISABLED] }
         jobId = jobResponse.jobId;
       } else {
         // Nếu có file mới, sử dụng generate API với job queue
@@ -501,9 +471,6 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
           isNarrowSearch: isNarrow,
           keyword: isNarrow ? keyword : undefined,
         });
-        // [TEMP DISABLED] if (jobResponse.newBalance !== undefined) {
-        // [TEMP DISABLED]   useWalletStore.getState().setBalance(jobResponse.newBalance);
-        // [TEMP DISABLED] }
         jobId = jobResponse.jobId;
       }
 
@@ -529,8 +496,6 @@ export const useTestGeneratorStore = create<TestGeneratorState>((set, get) => ({
           });
           // Refresh recent uploads list after successful generation
           useRecentUploadsStore.getState().fetchRecentUploads(true);
-          // The debit happened server-side: refresh the cached wallet balance
-          void useWalletStore.getState().loadBalance({ force: true });
         },
         // onError
         (error) => {
@@ -635,32 +600,6 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
         return;
       }
 
-      // [TEMP DISABLED] Check balance before proceeding
-      // const user = useAuthStore.getState().user;
-      // const balance = useWalletStore.getState().balance ?? 0;
-
-      // [TEMP DISABLED] Calculate cost
-      // const { calculateTotalCost, calculateRegenerateCost, checkBalance } =
-      //   await import("@/lib/creditUtils");
-
-      // [TEMP DISABLED] let requiredCost: number;
-      // [TEMP DISABLED] if (uploadId && fileInfo) {
-      //   requiredCost = calculateRegenerateCost(cardCount);
-      // } else if (file) {
-      //   const costs = calculateTotalCost(file.size, cardCount);
-      //   requiredCost = costs.totalCost;
-      // } else {
-      //   requiredCost = calculateRegenerateCost(cardCount);
-      // }
-
-      // [TEMP DISABLED] const { isEnough, deficit } = checkBalance(balance, requiredCost);
-      // [TEMP DISABLED] if (!isEnough) {
-      //   toast.error("Không đủ tín dụng", {
-      //     description: `Cần ${requiredCost} token, hiện có ${balance} token. Thiếu ${deficit} token.`,
-      //   });
-      //   return;
-      // }
-
       set({ isGenerating: true });
 
       try {
@@ -674,9 +613,6 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
             isNarrowSearch: isNarrow,
             keyword: isNarrow ? keyword : undefined,
           });
-          // [TEMP DISABLED] if (jobResponse.newBalance !== undefined) {
-          // [TEMP DISABLED]   useWalletStore.getState().setBalance(jobResponse.newBalance);
-          // [TEMP DISABLED] }
           jobId = jobResponse.jobId;
         } else {
           // Nếu có file mới, sử dụng generate API với job queue
@@ -687,9 +623,6 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
             isNarrowSearch: isNarrow,
             keyword: isNarrow ? keyword : undefined,
           });
-          // [TEMP DISABLED] if (jobResponse.newBalance !== undefined) {
-          // [TEMP DISABLED]   useWalletStore.getState().setBalance(jobResponse.newBalance);
-          // [TEMP DISABLED] }
           jobId = jobResponse.jobId;
         }
 
@@ -718,8 +651,6 @@ export const useFlashcardGeneratorStore = create<FlashcardGeneratorState>(
             });
             // Refresh recent uploads list after successful generation
             useRecentUploadsStore.getState().fetchRecentUploads(true);
-            // The debit happened server-side: refresh the cached wallet balance
-            void useWalletStore.getState().loadBalance({ force: true });
           },
           // onError
           (error) => {
