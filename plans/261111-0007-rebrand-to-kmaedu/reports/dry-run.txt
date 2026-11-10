@@ -1,0 +1,24 @@
+mode: dry-run
+files with content changes: 1154
+  api-url  5
+  api-host 4
+  r2-host  2
+  site-host 59
+  ghcr     219
+  repo     1
+  EXAMIO   7
+  ExamIO   6
+  Examio   319
+  examio   15734
+path moves: 10
+  examio-be/apps/ai-service/src/backend/grpc_generated/examio -> examio-be/apps/ai-service/src/backend/grpc_generated/kmaedu
+  examio-be/proto/examio -> examio-be/proto/kmaedu
+  plans/reports/Explore-260605-2038-examio-be-services.md -> plans/reports/Explore-260605-2038-kmaedu-be-services.md
+  plans/reports/brainstorm-260627-1527-examio-app-k-screens-parity.md -> plans/reports/brainstorm-260627-1527-kmaedu-app-k-screens-parity.md
+  plans/reports/debugger-260613-1607-502-bad-gateway-examio.md -> plans/reports/debugger-260613-1607-502-bad-gateway-kmaedu.md
+  docx/examio-full-spec-bundle.docx -> docx/kmaedu-full-spec-bundle.docx
+  docx/examio-full-spec-bundle.md -> docx/kmaedu-full-spec-bundle.md
+  plans/260512-1928-examio-mobile-codebase-setup -> plans/260512-1928-kmaedu-mobile-codebase-setup
+  examio-be -> kmaedu-be
+  examio-fe -> kmaedu-fe
+binary files still containing the old name: 0
