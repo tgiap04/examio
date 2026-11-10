@@ -84,14 +84,9 @@ python -m venv venv
 
 ## Deploy
 
-Deploy tự động qua GitHub Actions khi push `main`. Xem `.github/workflows/deploy.yml`.
+Hiện chưa có deploy tự động: workflow `deploy.yml` đã bị gỡ để làm lại flow CD. Deploy tay theo `examio-be/deploy/README.md` (script `deploy/deploy-service.sh`).
 
-```bash
-# Manual deploy
-gh workflow run deploy.yml -f target=all
-```
-
-Cần configure GitHub Secrets: `SERVER_HOST`, `SERVER_USER`, `SERVER_SSH_KEY`, `SERVER_SSH_PORT`, `DEPLOY_DIR`, `PAT_TOKEN`.
+Flow nhánh: tách nhánh feature từ `develop` rồi PR vào `develop`; release là PR từ `develop` vào `main`.
 
 ## Tech Stack
 
