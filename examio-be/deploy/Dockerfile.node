@@ -68,7 +68,7 @@ RUN set -e; mkdir -p /stage; \
 FROM builder AS stage-seeds
 RUN yarn prisma:generate
 RUN set -e; mkdir -p /stage; \
-    for s in auth-service finance-service admin-service ai-chat-service vocabulary-service; do \
+    for s in auth-service admin-service ai-chat-service vocabulary-service; do \
         for d in prisma src/prisma src/generated; do \
             mkdir -p "/stage/apps/$s/$(dirname "$d")"; \
             cp -r "apps/$s/$d" "/stage/apps/$s/$d"; \

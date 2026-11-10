@@ -6,7 +6,6 @@
         "auth": { "dir": "auth-service", "image": "examio-auth", "db": true, "worker": true },
         "content": { "dir": "content-service", "image": "examio-content", "db": true, "worker": true },
         "document": { "dir": "document-service", "image": "examio-document", "db": true, "worker": true },
-        "finance": { "dir": "finance-service", "image": "examio-finance", "db": true, "worker": true },
         "gateway": { "dir": "gateway-service", "image": "examio-gateway", "db": false, "worker": false, "instances": ["gateway-a", "gateway-b"] },
         "r2": { "dir": "r2-service", "image": "examio-r2", "db": false, "worker": false },
         "study-room": { "dir": "study-room-service", "image": "examio-study-room", "env": "studyroom", "db": true, "worker": false },

@@ -19,8 +19,8 @@ const compose = {
     services: Object.assign({}, top.services, ...parts.map((p) => p.services ?? {})),
 };
 const services = compose.services;
-const DB_SERVICES = ['auth', 'finance', 'admin', 'content', 'assessment'];
-const ROLES = 'auth finance admin content assessment studyroom vocabulary aichat document ai'.split(' ');
+const DB_SERVICES = ['auth', 'admin', 'content', 'assessment'];
+const ROLES = 'auth admin content assessment studyroom vocabulary aichat document ai'.split(' ');
 // Compose accepts `environment` as a list (`K=V`) or a map (`K: V`); the ai services use the map form.
 const envList = (name) => {
     const env = services[name].environment ?? [];
@@ -70,8 +70,21 @@ test('edge carries the two gateway instances (the FE nginx joins it from its own
     assert.deepStrictEqual(members('edge'), ['gateway-a', 'gateway-b']);
 });
 
+test('finance-service is gone: no finance container, migrate one-shot, gateway upstream, broker or DB password', () => {
+    for (const name of ['finance', 'finance-migrate']) assert.strictEqual(services[name], undefined, name);
+    assert.ok(!includedPaths.includes('compose/finance.yml'));
+    for (const [name, svc] of Object.entries(services)) {
+        assert.strictEqual(svc.depends_on?.finance, undefined, `${name} waits for finance`);
+        for (const key of ['FINANCE_GRPC_URL', 'FINANCE_SERVICE_URL', 'FINANCE_DB_PASSWORD', 'RABBITMQ_FINANCE_PASS', 'FINANCE_DATABASE_URL']) {
+            assert.strictEqual(envValue(name, key), undefined, `${name}: ${key}`);
+        }
+    }
+    assert.ok(!fs.readFileSync(path.join(__dirname, 'postgres/init/01-service-schemas.sh'), 'utf8').includes('finance'));
+    assert.ok(!fs.readFileSync(path.join(__dirname, '.env.example'), 'utf8').includes('FINANCE'));
+});
+
 test('egress is exactly the services with a real internet dependency', () => {
-    assert.deepStrictEqual(members('egress'), ['ai', 'ai-worker', 'assessment', 'auth', 'content', 'finance', 'r2']);
+    assert.deepStrictEqual(members('egress'), ['ai', 'ai-worker', 'assessment', 'auth', 'content', 'r2']);
 });
 
 test('every networked service is on internal, and admin has no way out', () => {
@@ -178,7 +191,7 @@ test('r2 has no database and no migrate dependency', () => {
     assert.ok(!Object.keys(services.r2.depends_on ?? {}).some((d) => d.endsWith('-migrate')));
 });
 
-test('postgres mounts the init dir, raises max_connections and takes all 10 role passwords', () => {
+test('postgres mounts the init dir, raises max_connections and takes all 9 role passwords', () => {
     const pg = services.postgres;
     assert.ok(pg.volumes.includes('./postgres/init:/docker-entrypoint-initdb.d:ro'));
     assert.ok(pg.command.join(' ').includes('max_connections=200'));
@@ -219,7 +232,7 @@ test('content runs api+worker: it relays the outbox (content.*), settles generat
     assert.strictEqual(envValue('content', 'GRPC_PORT'), '50051');
     assert.ok(envValue('content', 'RABBITMQ_URL').startsWith('amqp://content:${RABBITMQ_CONTENT_PASS:?'), 'the relay publishes as the broker user content');
     assert.ok(envList('rabbitmq-defs').some((e) => e.startsWith('RABBITMQ_CONTENT_PASS=')), 'the broker definitions need the content password');
-    assert.strictEqual(envValue('content', 'FINANCE_GRPC_URL'), 'finance:50051', 'charges and refunds go to finance');
+    assert.strictEqual(envValue('content', 'FINANCE_GRPC_URL'), undefined, 'generation is free: no finance wiring');
     assert.strictEqual(envValue('content', 'DOCUMENT_GRPC_URL'), 'document:50051');
     assert.strictEqual(envValue('content', 'R2_GRPC_URL'), 'r2:50051');
     assert.strictEqual(envValue('content', 'VOCABULARY_GRPC_URL'), 'vocabulary:50051');
@@ -228,7 +241,7 @@ test('content runs api+worker: it relays the outbox (content.*), settles generat
     assert.ok(envValue('content', 'R2_PUBLIC_URL') !== undefined);
     assert.ok(envValue('content', 'SERVICE_CLIENT_SECRET').includes('${CONTENT_SERVICE_CLIENT_SECRET:?'));
     assert.deepStrictEqual(networksOf('content'), ['internal', 'egress']);
-    for (const dep of ['content-migrate', 'postgres', 'redis', 'rabbitmq', 'r2', 'finance']) {
+    for (const dep of ['content-migrate', 'postgres', 'redis', 'rabbitmq', 'r2']) {
         assert.ok(svc.depends_on[dep], `content waits for ${dep}`);
     }
     for (const lazy of ['vocabulary', 'document', 'ai', 'auth']) {
@@ -305,7 +318,7 @@ test('vocabulary (vocabulary role + schema) has its own migrate one-shot, a gRPC
     assert.ok(envValue('vocabulary', 'R2_PUBLIC_URL') !== undefined, 'R2_PUBLIC_URL is needed to tell R2 images from external URLs');
     assert.ok(envValue('vocabulary', 'SERVICE_CLIENT_SECRET').includes('${VOCABULARY_SERVICE_CLIENT_SECRET:?'));
     assert.strictEqual(envValue('vocabulary', 'RABBITMQ_URL'), undefined, 'vocabulary has no broker user');
-    // no finance wiring: generation is free and TEACHER-only
+    // generation is free and TEACHER-only
     assert.strictEqual(envValue('vocabulary', 'FINANCE_GRPC_URL'), undefined);
     assert.ok(services.seed.depends_on['vocabulary-migrate'], 'the seed seeds the word-family categories');
     assert.ok(envList('seed').some((e) => e.startsWith('VOCABULARY_DATABASE_URL=postgresql://vocabulary_svc:')));
@@ -330,12 +343,12 @@ test('document (document role + schema) has its own migrate one-shot, a gRPC ser
     assert.strictEqual(envValue('document', 'ROLE'), 'api,worker');
     assert.strictEqual(envValue('document', 'GRPC_PORT'), '50051');
     assert.strictEqual(envValue('document', 'R2_GRPC_URL'), 'r2:50051');
-    assert.strictEqual(envValue('document', 'FINANCE_GRPC_URL'), 'finance:50051');
+    assert.strictEqual(envValue('document', 'FINANCE_GRPC_URL'), undefined, 'uploads are free: no finance wiring');
     assert.ok(envValue('document', 'R2_PUBLIC_URL') !== undefined, 'R2_PUBLIC_URL is the base of the stored url');
     assert.ok(envValue('document', 'SERVICE_CLIENT_SECRET').includes('${DOCUMENT_SERVICE_CLIENT_SECRET:?'));
     assert.ok(envValue('document', 'RABBITMQ_URL').startsWith('amqp://document:${RABBITMQ_DOCUMENT_PASS:?'));
     assert.strictEqual(envValue('document', 'INTERNAL_SERVICE_TOKEN'), undefined, 'document never used the shared internal token');
-    for (const dep of ['r2', 'finance', 'rabbitmq', 'postgres', 'auth']) {
+    for (const dep of ['r2', 'rabbitmq', 'postgres', 'auth']) {
         assert.strictEqual(services.document.depends_on[dep].condition, 'service_healthy', dep);
     }
     assert.ok(envList('rabbitmq-defs').some((e) => e.startsWith('RABBITMQ_DOCUMENT_PASS=')), 'the broker definitions need the document password');
@@ -372,7 +385,7 @@ test('the gateway routes studyrooms and /ws/study to study-room, and waits for i
 });
 
 test('seed runs after every migration of a service that has reference data, one URL per service (content and assessment have none)', () => {
-    for (const svc of ['auth', 'finance', 'admin', 'aichat']) {
+    for (const svc of ['auth', 'admin', 'aichat']) {
         const migrate = svc === 'aichat' ? 'ai-chat-migrate' : `${svc}-migrate`;
         assert.strictEqual(services.seed.depends_on[migrate].condition, 'service_completed_successfully', migrate);
         assert.ok(envValue('seed', `${svc.toUpperCase()}_DATABASE_URL`).startsWith(`postgresql://${svc}_svc:`), svc);
@@ -408,10 +421,10 @@ test('ai-chat (aichat role + schema) has its own migrate one-shot, api+worker ro
     assert.deepStrictEqual(networksOf('ai-chat-migrate'), ['internal']);
     assert.strictEqual(envValue('ai-chat', 'ROLE'), 'api,worker');
     assert.strictEqual(envValue('ai-chat', 'GRPC_PORT'), undefined, 'ai-chat serves no gRPC');
-    // gRPC out: ai-service (service token), document + finance (forwarded user token), r2 (worker, service token)
+    // gRPC out: ai-service (service token), document (forwarded user token), r2 (worker, service token)
     assert.strictEqual(envValue('ai-chat', 'AI_GRPC_URL'), 'ai:50051');
     assert.strictEqual(envValue('ai-chat', 'DOCUMENT_GRPC_URL'), 'document:50051');
-    assert.strictEqual(envValue('ai-chat', 'FINANCE_GRPC_URL'), 'finance:50051');
+    assert.strictEqual(envValue('ai-chat', 'FINANCE_GRPC_URL'), undefined, 'no subscription limits: no finance wiring');
     assert.strictEqual(envValue('ai-chat', 'R2_GRPC_URL'), 'r2:50051');
     assert.ok(envValue('ai-chat', 'R2_PUBLIC_URL') !== undefined, 'R2_PUBLIC_URL tells an R2 message image from an external URL');
     assert.ok(envValue('ai-chat', 'SERVICE_CLIENT_SECRET').includes('${AICHAT_SERVICE_CLIENT_SECRET:?'));
@@ -495,8 +508,8 @@ test('a variable lives either inline in compose or in the service env file, neve
     }
 });
 
-test('secrets of one service are in its env file only (PAYMENT, GOOGLE, EMAIL, R2 keys, GEMINI, QUIZ)', () => {
-    const owner = { PAYMENT_: ['finance'], GOOGLE_: ['auth'], EMAIL_: ['auth'], R2_ACCESS_KEY_ID: ['r2'], R2_SECRET_ACCESS_KEY: ['r2'], GEMINI_API_KEYS: ['ai'], QUIZ_: ['assessment'] };
+test('secrets of one service are in its env file only (GOOGLE, EMAIL, R2 keys, GEMINI, QUIZ)', () => {
+    const owner = { GOOGLE_: ['auth'], EMAIL_: ['auth'], R2_ACCESS_KEY_ID: ['r2'], R2_SECRET_ACCESS_KEY: ['r2'], GEMINI_API_KEYS: ['ai'], QUIZ_: ['assessment'] };
     for (const [prefix, owners] of Object.entries(owner)) {
         for (const group of Object.values(manifest)) {
             for (const [key, meta] of Object.entries(group)) {

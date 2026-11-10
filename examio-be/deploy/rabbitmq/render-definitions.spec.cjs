@@ -13,7 +13,6 @@ const ENV = {
     RABBITMQ_USER: 'ops',
     RABBITMQ_PASS: 'ops-pass',
     RABBITMQ_AUTH_PASS: 'a',
-    RABBITMQ_FINANCE_PASS: 'f',
     RABBITMQ_CONTENT_PASS: 'k',
     RABBITMQ_ASSESSMENT_PASS: 'm',
     RABBITMQ_STUDYROOM_PASS: 's',
@@ -40,25 +39,22 @@ test('renderDefinitions substitutes users, hashes and the admin name', () => {
         ENV
     );
     const names = out.users.map((u) => u.name).sort();
-    assert.deepStrictEqual(names, ['ai', 'aichat', 'assessment', 'auth', 'content', 'document', 'finance', 'gateway', 'ops', 'studyroom']);
+    assert.deepStrictEqual(names, ['ai', 'aichat', 'assessment', 'auth', 'content', 'document', 'gateway', 'ops', 'studyroom']);
     assert.ok(out.users.every((u) => u.hashing_algorithm === 'rabbit_password_hashing_sha256'));
     assert.ok(out.users.find((u) => u.name === 'ops').tags.includes('administrator'));
     assert.ok(!JSON.stringify(out).includes('{{'));
     assert.ok(!JSON.stringify(out).includes('ops-pass'));
 });
 
-test('finance may publish only ^finance\\. on examio.events and touch only its own queues', () => {
-    const out = renderDefinitions(
-        fs.readFileSync(path.join(__dirname, 'definitions.template.json'), 'utf8'),
-        ENV
-    );
-    const topic = out.topic_permissions.find((p) => p.user === 'finance');
-    assert.strictEqual(topic.exchange, 'examio.events');
-    assert.strictEqual(topic.write, '^finance\\.');
-    const perm = out.permissions.find((p) => p.user === 'finance');
-    const re = new RegExp(perm.configure);
-    assert.ok(re.test('examio.events') && re.test('finance.events') && re.test('finance.dlq'));
-    assert.ok(!re.test('auth.events') && !re.test('amq.default'));
+test('finance-service is gone: no finance user, permission, topic permission or binding', () => {
+    const out = render();
+    assert.ok(!out.users.some((u) => u.name === 'finance'), 'no finance broker user');
+    assert.ok(!out.permissions.some((p) => p.user === 'finance'));
+    assert.ok(!out.topic_permissions.some((p) => p.user === 'finance'));
+    assert.ok(!JSON.stringify(out).includes('RABBITMQ_FINANCE_PASS'));
+    for (const binding of out.bindings) {
+        assert.ok(!/^finance\./.test(binding.routing_key || ''), JSON.stringify(binding));
+    }
 });
 
 test('content may publish only ^content\\. and touch only its own queues; the retired exam user is gone', () => {
@@ -214,13 +210,10 @@ test('aichat reads only its own queues and the events exchange, and may publish 
     }
 });
 
-test('aichat consumes document.deleted and finance.subscription.changed, and publishes neither', () => {
+test('aichat consumes document.deleted and does not publish it', () => {
     const out = render();
     const topic = (user) => out.topic_permissions.find((p) => p.user === user);
-    for (const [key, publisher] of [
-        ['document.deleted', 'document'],
-        ['finance.subscription.changed', 'finance'],
-    ]) {
+    for (const [key, publisher] of [['document.deleted', 'document']]) {
         assert.ok(new RegExp(topic(publisher).write).test(key), `${publisher} publishes ${key}`);
         assert.ok(new RegExp(topic('aichat').read).test(key), `aichat binds ${key}`);
         assert.ok(!new RegExp(topic('aichat').write).test(key), `aichat must not publish ${key}`);
@@ -231,13 +224,13 @@ test('CLI exits 1 when a password is missing and writes nothing', () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'defs-'));
     const out = path.join(dir, 'definitions.json');
     const env = { ...ENV };
-    delete env.RABBITMQ_FINANCE_PASS;
+    delete env.RABBITMQ_AICHAT_PASS;
     const res = spawnSync(process.execPath, [SCRIPT, '--out', out], {
         env: { PATH: process.env.PATH, ...env },
         encoding: 'utf8',
     });
     assert.strictEqual(res.status, 1);
-    assert.match(res.stderr, /RABBITMQ_FINANCE_PASS/);
+    assert.match(res.stderr, /RABBITMQ_AICHAT_PASS/);
     assert.ok(!fs.existsSync(out));
 });
 
@@ -249,7 +242,7 @@ test('CLI writes definitions.json (world-readable, the broker user must read the
         encoding: 'utf8',
     });
     assert.strictEqual(res.status, 0, res.stderr);
-    assert.strictEqual(JSON.parse(fs.readFileSync(out, 'utf8')).users.length, 10);
+    assert.strictEqual(JSON.parse(fs.readFileSync(out, 'utf8')).users.length, 9);
     assert.strictEqual(fs.statSync(out).mode & 0o777, 0o644);
 });
 
