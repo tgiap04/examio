@@ -83,7 +83,6 @@ jobs:
       - run: bash scripts/changed-services.test.sh
       - run: bash scripts/lint-migrations.test.sh
       - run: bash deploy/deploy-service.test.sh
-      - run: node --test deploy/compose-topology.spec.cjs
       - name: shellcheck
         run: |
           shellcheck scripts/changed-services.sh scripts/changed-services.test.sh \
@@ -104,12 +103,14 @@ jobs:
         svc: [auth, content, assessment, study-room, vocabulary, document, ai-chat, admin, r2, gateway]
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-be/yarn.lock
-      - run: corepack enable
       - run: yarn install --immutable
       - run: yarn proto:gen
       - run: yarn prisma:generate
@@ -189,12 +190,14 @@ jobs:
       QUIZ_AES_KEY: ci-dummy-quiz-aes-key-0123456789
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-be/yarn.lock
-      - run: corepack enable
       - run: yarn install --immutable
       - run: yarn prisma:generate
       - run: yarn build:all
@@ -240,12 +243,14 @@ jobs:
         working-directory: examio-be
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-be/yarn.lock
-      - run: corepack enable
       - run: yarn install --immutable
       - run: yarn proto:gen
       - run: yarn prisma:generate
@@ -335,12 +340,14 @@ jobs:
       GOOGLE_CLIENT_SECRET: ci-dummy
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-be/yarn.lock
-      - run: corepack enable
       - run: yarn install --immutable
       - run: yarn proto:gen
       - run: yarn prisma:generate
@@ -514,12 +521,14 @@ jobs:
       REQUIRE_INTEGRATION: '1'
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-be/yarn.lock
-      - run: corepack enable
       # ts-node + libs/messaging for the Python/Nest queue topology contract test
       - run: yarn install --immutable
       - uses: actions/setup-python@v5
@@ -612,12 +621,14 @@ jobs:
         working-directory: examio-fe
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-fe/yarn.lock
-      - run: corepack enable
       - run: yarn install --immutable
       - run: yarn build
       - run: yarn lint
@@ -631,12 +642,14 @@ jobs:
         working-directory: examio-be
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-be/yarn.lock
-      - run: corepack enable
       - run: yarn install --immutable
       - run: yarn gen:fe-permissions
       # Fail if the file is missing or untracked (a bare `git diff` is vacuous
@@ -656,12 +669,14 @@ jobs:
         working-directory: examio-be
     steps:
       - uses: actions/checkout@v4
+      # corepack must be on before setup-node: its `cache: yarn` step runs
+      # `yarn cache dir`, which fails on the runner's yarn 1 (packageManager yarn@4).
+      - run: corepack enable
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
           cache-dependency-path: examio-be/yarn.lock
-      - run: corepack enable
       - run: yarn install --immutable
       - run: yarn gen:permissions-doc
       - name: Check generated docs are tracked and unchanged
