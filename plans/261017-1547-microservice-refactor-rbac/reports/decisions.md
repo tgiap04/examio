@@ -5,7 +5,7 @@
 - Q: Deploy target? → A: Docker Compose on VPS, K8s-ready (per-service image, GHCR, per-service deploy).
 - Q: Split exam-service? → A: Strong split: content, assessment, study-room, vocabulary, ai-chat.
 - Q: Document/RAG data owner? → A: New document-service (UserStorage, quota); ai-service own DB `ai` (pgvector, Alembic).
-- Q: Repo? → A: Keep monorepo `examio-be`, boundaries via dependency-cruiser + per-service image.
+- Q: Repo? → A: Keep monorepo `kmaedu-be`, boundaries via dependency-cruiser + per-service image.
 - Q: Auth? → A: RS256 + JWKS, access 15m, revoke at gateway (Redis), public `/api/v1` paths unchanged.
 
 ## Session 2026-10-17 — Plan scope + RBAC

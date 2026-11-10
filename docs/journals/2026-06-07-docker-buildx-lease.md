@@ -21,7 +21,7 @@ Docker Desktop `desktop-linux` buildx context had a stale cache lease for the `p
 
 ```bash
 docker pull python:3.12-slim       # seed local image cache
-cd examio-be/deploy
+cd kmaedu-be/deploy
 docker compose build                # now uses local image, no fresh commit
 ```
 

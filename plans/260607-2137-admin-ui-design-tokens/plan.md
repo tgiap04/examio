@@ -40,31 +40,31 @@ This plan realigns every admin file with the design system. It is a **surgical t
 
 | Path | Purpose |
 |---|---|
-| `examio-fe/src/components/admin/BadgePill.tsx` | Token-driven badge with 3 variants: `positive`, `negative`, `neutral`. Replaces antd `<Tag color=...>` everywhere in admin. |
+| `kmaedu-fe/src/components/admin/BadgePill.tsx` | Token-driven badge with 3 variants: `positive`, `negative`, `neutral`. Replaces antd `<Tag color=...>` everywhere in admin. |
 
 ## Files to Modify (16)
 
 ### Layout (1)
-- `examio-fe/src/routes/layouts/AdminLayout.tsx` — replace 4× `bg-[#faf9f5]` with `bg-canvas`; h1 to `font-display font-normal tracking-tight`.
+- `kmaedu-fe/src/routes/layouts/AdminLayout.tsx` — replace 4× `bg-[#faf9f5]` with `bg-canvas`; h1 to `font-display font-normal tracking-tight`.
 
 ### Pages (6)
-- `examio-fe/src/pages/admin/AdminOverviewPage.tsx` — h1 to display style.
-- `examio-fe/src/pages/admin/AdminStatsPage.tsx` — h1 already uses `font-display`; just confirm tracking.
-- `examio-fe/src/pages/admin/AdminUsersPage.tsx` — h1 upgrade.
-- `examio-fe/src/pages/admin/AdminFinancePage.tsx` — h1 + h2 upgrade.
-- `examio-fe/src/pages/admin/AdminAuditPage.tsx` — h1 upgrade.
-- `examio-fe/src/pages/admin/AdminLogsPage.tsx` — h1 upgrade.
+- `kmaedu-fe/src/pages/admin/AdminOverviewPage.tsx` — h1 to display style.
+- `kmaedu-fe/src/pages/admin/AdminStatsPage.tsx` — h1 already uses `font-display`; just confirm tracking.
+- `kmaedu-fe/src/pages/admin/AdminUsersPage.tsx` — h1 upgrade.
+- `kmaedu-fe/src/pages/admin/AdminFinancePage.tsx` — h1 + h2 upgrade.
+- `kmaedu-fe/src/pages/admin/AdminAuditPage.tsx` — h1 upgrade.
+- `kmaedu-fe/src/pages/admin/AdminLogsPage.tsx` — h1 upgrade.
 
 ### Components (9)
-- `examio-fe/src/components/admin/KpiCard.tsx` — `rounded-xl` → `rounded-lg`.
-- `examio-fe/src/components/admin/MiniChartCard.tsx` — `rounded-xl` → `rounded-lg`; replace 3 raw hex consts (`PRIMARY/GRID/AXIS_TEXT`) with CSS-var reads; replace tooltip inline hex with vars.
-- `examio-fe/src/components/admin/StatChart.tsx` — same as above.
-- `examio-fe/src/components/admin/RangeSelector.tsx` — `text-white` → `text-on-primary`.
-- `examio-fe/src/components/admin/LogViewer.tsx` — raw hex → `bg-surface-dark text-on-dark text-on-dark-soft`; drop `shadow-inner`; `rounded-md` → keep (terminal sub-component).
-- `examio-fe/src/components/admin/AuditTable.tsx` — `bg-[#faf9f5]` → `bg-canvas`; replace `<Tag color={actionColor(...)}>` with `<BadgePill>`.
-- `examio-fe/src/components/admin/UserTable.tsx` — replace 3 `<Tag>` usages with `<BadgePill>`.
-- `examio-fe/src/components/admin/UserDetailDrawer.tsx` — replace 4 `<Tag>` usages; h3 → display style; drop `uppercase`.
-- `examio-fe/src/components/admin/LogStreamPanel.tsx` — replace 1 `<Tag>` usage; label to token colors.
+- `kmaedu-fe/src/components/admin/KpiCard.tsx` — `rounded-xl` → `rounded-lg`.
+- `kmaedu-fe/src/components/admin/MiniChartCard.tsx` — `rounded-xl` → `rounded-lg`; replace 3 raw hex consts (`PRIMARY/GRID/AXIS_TEXT`) with CSS-var reads; replace tooltip inline hex with vars.
+- `kmaedu-fe/src/components/admin/StatChart.tsx` — same as above.
+- `kmaedu-fe/src/components/admin/RangeSelector.tsx` — `text-white` → `text-on-primary`.
+- `kmaedu-fe/src/components/admin/LogViewer.tsx` — raw hex → `bg-surface-dark text-on-dark text-on-dark-soft`; drop `shadow-inner`; `rounded-md` → keep (terminal sub-component).
+- `kmaedu-fe/src/components/admin/AuditTable.tsx` — `bg-[#faf9f5]` → `bg-canvas`; replace `<Tag color={actionColor(...)}>` with `<BadgePill>`.
+- `kmaedu-fe/src/components/admin/UserTable.tsx` — replace 3 `<Tag>` usages with `<BadgePill>`.
+- `kmaedu-fe/src/components/admin/UserDetailDrawer.tsx` — replace 4 `<Tag>` usages; h3 → display style; drop `uppercase`.
+- `kmaedu-fe/src/components/admin/LogStreamPanel.tsx` — replace 1 `<Tag>` usage; label to token colors.
 
 ## BadgePill Spec
 
@@ -125,11 +125,11 @@ DESIGN.md §Surfaces has a `.dark` block already in `globals.css` mapping all cr
 
 ## Success Criteria
 
-1. `grep -rE "gray-|slate-|zinc-|neutral-|stone-|text-(red|blue|green|yellow|orange|purple|pink)-[0-9]|bg-(red|blue|green|yellow|orange|purple|pink)-[0-9]|dark:" examio-fe/src/pages/admin/ examio-fe/src/components/admin/ examio-fe/src/routes/layouts/AdminLayout.tsx` returns **0 matches**.
-2. `grep -nE "#[0-9a-fA-F]{3,8}" examio-fe/src/pages/admin/ examio-fe/src/components/admin/ examio-fe/src/routes/layouts/AdminLayout.tsx` returns **0 matches** (except for content like `pay_...` strings, not colors).
-3. `grep -E "Tag color=\"" examio-fe/src/components/admin/` returns **0 matches**.
-4. `cd examio-fe && yarn tsc --noEmit` passes.
-5. `cd examio-fe && yarn lint` passes (warnings allowed, no errors).
+1. `grep -rE "gray-|slate-|zinc-|neutral-|stone-|text-(red|blue|green|yellow|orange|purple|pink)-[0-9]|bg-(red|blue|green|yellow|orange|purple|pink)-[0-9]|dark:" kmaedu-fe/src/pages/admin/ kmaedu-fe/src/components/admin/ kmaedu-fe/src/routes/layouts/AdminLayout.tsx` returns **0 matches**.
+2. `grep -nE "#[0-9a-fA-F]{3,8}" kmaedu-fe/src/pages/admin/ kmaedu-fe/src/components/admin/ kmaedu-fe/src/routes/layouts/AdminLayout.tsx` returns **0 matches** (except for content like `pay_...` strings, not colors).
+3. `grep -E "Tag color=\"" kmaedu-fe/src/components/admin/` returns **0 matches**.
+4. `cd kmaedu-fe && yarn tsc --noEmit` passes.
+5. `cd kmaedu-fe && yarn lint` passes (warnings allowed, no errors).
 6. Visual smoke test of `/admin`, `/admin/stats`, `/admin/users`, `/admin/finance`, `/admin/logs`, `/admin/audit` shows h1 in Cormorant Garamond, cards in 12px radius, no raw hex bleed-through.
 
 ## Out of Scope

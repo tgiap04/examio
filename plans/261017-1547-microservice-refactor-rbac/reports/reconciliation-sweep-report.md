@@ -14,7 +14,7 @@ Scope: all 19 phase files + `reports/planner-brief.md` header. `plan.md` untouch
 | X6 allowlists in code | P11 step 7 trimmed. P12/P13/P14/P15: r2 `DeleteObjects`/`UploadFile` + finance `Debit`/`Refund` caller lists → `@ServiceOnly`/`@RequirePermissionsOrService` decorators (files named); RabbitMQ edits → `deploy/rabbitmq/definitions.template.json`. P15 ai-service `AI_ALLOWED_CALLERS` env → in-code `ALLOWED_CALLERS` constant in `service_token.py` (P13/P14 follow). |
 | X7 P13 gate | P13 Success Criteria: plain grep, `--exclude-dir=r2-service` removed. |
 | X8 claims | P04 `@AllowUnverified` list + `sync-refresh-token` (verified `auth.controller.ts:633`); CROSS-PHASE claim question → resolved. P19 claim list already matched. |
-| X9 small fixes | P01 Next Steps → "Phase 17 (deferred)". P05: gateway log publisher ported into dispatcher (`request-log.ts`, Requirements/Steps/Files/Tests/Todo; source verified `proxy.middleware.ts:20-24`, `common/log-publisher.service.ts`). P12 step 10 + P15 (interceptor note, Roles) `/metrics` removed. P02 owns FE `BACKEND_URL` `:7000 → :3000` (verified `examio-fe/docker-compose.yml:21`; ownership, Files, Steps, Todo); P05 duplicate removed. |
+| X9 small fixes | P01 Next Steps → "Phase 17 (deferred)". P05: gateway log publisher ported into dispatcher (`request-log.ts`, Requirements/Steps/Files/Tests/Todo; source verified `proxy.middleware.ts:20-24`, `common/log-publisher.service.ts`). P12 step 10 + P15 (interceptor note, Roles) `/metrics` removed. P02 owns FE `BACKEND_URL` `:7000 → :3000` (verified `kmaedu-fe/docker-compose.yml:21`; ownership, Files, Steps, Todo); P05 duplicate removed. |
 | X10 brief | `reports/planner-brief.md` header note added (brief not rewritten). |
 
 ## 2. Stale terms fixed (count per file)

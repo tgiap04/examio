@@ -113,7 +113,7 @@ All other fields are writable inputs (documented in Validation).
 
 | Aspect | Status | Notes |
 |--------|--------|-------|
-| ARIA roles/labels | partial | `id`/`htmlFor` on all labels; `alt="Examio"` on logo; no `role="form"` |
+| ARIA roles/labels | partial | `id`/`htmlFor` on all labels; `alt="KMAEdu"` on logo; no `role="form"` |
 | Keyboard navigation | supported | Tab order: email → OTP slots → newPassword → confirmPassword → toggle → submit → back-to-login |
 | Focus management | unmanaged | No explicit `focus()` calls; OTP slots are custom components without native tab behavior |
 | Screen reader compatibility | supported | Labels linked via `htmlFor`/`id`; OTP group uses `InputOTP` from Ant Design |
@@ -138,8 +138,8 @@ All other fields are writable inputs (documented in Validation).
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/auth/ResetPasswordPage.tsx:1`
-- Auth store: `examio-fe/src/stores/useAuthStore.ts:191`
-- API client: `examio-fe/src/apis/authApi.ts:81`
-- Route guard: `examio-fe/src/routes/guards/PublicRoute.tsx:1`
-- Router config: `examio-fe/src/routes/index.tsx:143`
+- Page/View: `kmaedu-fe/src/pages/auth/ResetPasswordPage.tsx:1`
+- Auth store: `kmaedu-fe/src/stores/useAuthStore.ts:191`
+- API client: `kmaedu-fe/src/apis/authApi.ts:81`
+- Route guard: `kmaedu-fe/src/routes/guards/PublicRoute.tsx:1`
+- Router config: `kmaedu-fe/src/routes/index.tsx:143`

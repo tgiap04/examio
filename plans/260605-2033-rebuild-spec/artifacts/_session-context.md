@@ -1,6 +1,6 @@
 # Session Context — rebuild-spec
 
-<!-- Generated: 2026-06-05T13:55:03Z  | Plan: /Users/tgiap.dev/devs/examio/plans/260605-2033-rebuild-spec -->
+<!-- Generated: 2026-06-05T13:55:03Z  | Plan: /Users/tgiap.dev/devs/kmaedu/plans/260605-2033-rebuild-spec -->
 <!-- All subagents in this session MUST read this file before any other artifact read. -->
 
 ## Stack

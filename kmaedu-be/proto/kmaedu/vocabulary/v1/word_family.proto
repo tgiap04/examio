@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package kmaedu.vocabulary.v1;
+
+// Read access to word-family catalog rows for other services. Served by
+// vocabulary-service. Callable with any valid user token or service token
+// (word families are shared catalog data, not per-user).
+service WordFamilyService {
+  // NOT_FOUND when the id matches no word family;
+  // FAILED_PRECONDITION when the stored payload has no usable words.
+  rpc GetWordFamily(GetWordFamilyRequest) returns (GetWordFamilyResponse);
+}
+
+message GetWordFamilyRequest {
+  string id = 1;
+}
+
+message GetWordFamilyResponse {
+  WordFamily word_family = 1;
+}
+
+message WordFamily {
+  string id = 1;
+  string root_word = 2;
+  string category_slug = 3;
+  // Display name of the category; falls back to the slug when the category row is gone.
+  string category_name = 4;
+  repeated WordFamilyWord words = 5;
+}
+
+message WordFamilyWord {
+  string word = 1;
+  string pos = 2;
+  string meaning_en = 3;
+  string meaning_vi = 4;
+  string example = 5;
+}

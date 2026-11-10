@@ -3,7 +3,7 @@
 ## Context Links
 
 - Plan: [plan.md](plan.md) · Depends: phase-01
-- Pattern tham chiếu: `examio-be/apps/exam-service/src/modules/examroom/` (controller + service + repository + dto), `examsession.controller.ts` verify-code flow, AuthGuard từ `@examio/common`
+- Pattern tham chiếu: `kmaedu-be/apps/exam-service/src/modules/examroom/` (controller + service + repository + dto), `examsession.controller.ts` verify-code flow, AuthGuard từ `@kmaedu/common`
 
 ## Overview
 
@@ -22,7 +22,7 @@
 ## Architecture — files to create
 
 ```
-examio-be/apps/exam-service/src/modules/study-room/
+kmaedu-be/apps/exam-service/src/modules/study-room/
 ├── study-room.module.ts
 ├── study-room.controller.ts        # @Controller('studyrooms'), AuthGuard
 ├── study-room.service.ts           # business logic (giữ <200 dòng, tách helper nếu phình)

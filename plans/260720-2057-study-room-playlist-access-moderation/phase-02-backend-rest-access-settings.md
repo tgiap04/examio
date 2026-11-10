@@ -2,7 +2,7 @@
 
 ## Context Links
 - Plan: [plan.md](plan.md) · Depends: phase-01
-- File: `examio-be/apps/exam-service/src/modules/study-room/{study-room.service.ts, .repository.ts, .controller.ts, dto/study-room.dto.ts, study-room.constants.ts}`
+- File: `kmaedu-be/apps/exam-service/src/modules/study-room/{study-room.service.ts, .repository.ts, .controller.ts, dto/study-room.dto.ts, study-room.constants.ts}`
 - Gateway proxy: `apps/gateway-service/src/controllers/study-room-proxy.controller.ts`
 
 ## Overview

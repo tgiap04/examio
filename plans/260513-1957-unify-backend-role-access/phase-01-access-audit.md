@@ -4,10 +4,10 @@
 Priority: high. Status: planned. Confirm every teacher/student access boundary before editing.
 
 ## Context Links
-- `examio-be/libs/common/src/guard/roles.guard.ts`
-- `examio-be/libs/common/src/guard/roles.decorator.ts`
-- `examio-be/libs/common/src/guard/auth.guard.ts`
-- `examio-be/libs/database/src/schema.prisma`
+- `kmaedu-be/libs/common/src/guard/roles.guard.ts`
+- `kmaedu-be/libs/common/src/guard/roles.decorator.ts`
+- `kmaedu-be/libs/common/src/guard/auth.guard.ts`
+- `kmaedu-be/libs/database/src/schema.prisma`
 
 ## Key Findings To Verify
 - `User.role` is a string defaulting to `student` in Prisma and is selected into `req.user` by `AuthGuard`.
@@ -24,7 +24,7 @@ Priority: high. Status: planned. Confirm every teacher/student access boundary b
 
 ## Commands
 ```bash
-cd examio-be
+cd kmaedu-be
 rg -n "@Roles|RolesGuard" apps/gateway-service/src apps/exam-service/src apps/auth-service/src libs/common/src
 rg -n "role\s*===|role\s*!==|user\.role|teacher|student" apps/exam-service/src apps/gateway-service/src apps/auth-service/src --glob '!**/*.spec.ts'
 rg -n "enum \['teacher', 'student'\]|role\?: 'teacher' \| 'student'|OAuthRole|dashboard-teacher|dashboard-student" apps/auth-service/src libs/database/src

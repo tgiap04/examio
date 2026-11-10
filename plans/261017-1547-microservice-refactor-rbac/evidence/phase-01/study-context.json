@@ -11,19 +11,19 @@
     "Postgres port 5411 not published, DATABASE_URL not echoed, Node 22 images",
     "dead code removed (ocr-service, unregistered proxies, ai-service score/agent/benchmark, FE dead APIs) and ai-service still imports and boots",
     "route inventory snapshot committed and differs from HEAD only by the removed dead routes",
-    "examio-fe yarn build and yarn lint exit 0",
+    "kmaedu-fe yarn build and yarn lint exit 0",
     "Prisma spike verdict recorded in plan.md"
   ],
   "touchpoints": [
     ".github/workflows/ci.yml",
     ".github/workflows/deploy.yml",
-    "examio-be/libs/observability",
-    "examio-be/libs/common/src/guard/auth.guard.ts",
-    "examio-be/apps/*/src/main.ts",
-    "examio-be/libs/database/src/migrations",
-    "examio-be/deploy",
-    "examio-be/apps/ai-service/src",
-    "examio-fe/src"
+    "kmaedu-be/libs/observability",
+    "kmaedu-be/libs/common/src/guard/auth.guard.ts",
+    "kmaedu-be/apps/*/src/main.ts",
+    "kmaedu-be/libs/database/src/migrations",
+    "kmaedu-be/deploy",
+    "kmaedu-be/apps/ai-service/src",
+    "kmaedu-fe/src"
   ],
   "blastRadius": [
     "all service boot paths (logger + health wiring)",

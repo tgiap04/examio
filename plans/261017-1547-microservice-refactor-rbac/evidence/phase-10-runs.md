@@ -7,11 +7,11 @@ Raw rows: `evidence/phase-10/temper-raw.json` (70 rows: command, real exit code,
 ## Environment and safety
 
 - Throwaway containers on 127.0.0.1 only: `p10-pg` (pgvector:pg16, 58741), `p10-redis` (redis:7-alpine with password, 58791), `p10-rmq` (rabbitmq:3.13-management-alpine, 58993, p09 definitions). A passwordless `p10-redis-open` (58792) was used only for the study-room spec probe. All removed at the end (`containers left: 0`).
-- Databases: `examio_p10_{auth,finance,admin,exam,stats,live}`, each migrated with `prisma migrate deploy` (guard: host must be 127.0.0.1:58741).
+- Databases: `kmaedu_p10_{auth,finance,admin,exam,stats,live}`, each migrated with `prisma migrate deploy` (guard: host must be 127.0.0.1:58741).
 - Every BE command ran under `env -i` with the local env. `MAIL_TRANSPORT=json`. JWT key and service secrets were generated into scratch (mode 600) and never printed. No `.env` file was read. No `docker compose config` was run.
 - Services ran from `dist/` with cwd `scratchpad/p10t/live-run`, not from the repo.
 - Browser: puppeteer-core with CDP Fetch; non-local requests were failed (`blockedOutside=6` in the probe; 48 in the matrix, including `www.googletagmanager.com` and `challenges.cloudflare.com`). The blocked requests were never sent.
-- Scratch dir: `/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/` (logs under `logs/`).
+- Scratch dir: `/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/` (logs under `logs/`).
 
 ## A. Static
 
@@ -20,9 +20,9 @@ Raw rows: `evidence/phase-10/temper-raw.json` (70 rows: command, real exit code,
 | proto gen | `yarn proto:gen` | 0 | ok |
 | proto lint | `yarn proto:lint` | 0 | ok |
 | buf lint (direct) | `node_modules/.bin/buf lint` | 0 | ok |
-| buf breaking vs HEAD | `buf breaking --against …/.git#ref=HEAD,subdir=examio-be/proto` | 0 | ok, with the override in `buf.yaml` |
+| buf breaking vs HEAD | `buf breaking --against …/.git#ref=HEAD,subdir=kmaedu-be/proto` | 0 | ok, with the override in `buf.yaml` |
 | buf breaking, override removed | scratch config, same ref | 100 | exactly 2 messages and 1 RPC: `UpdateBalance` (negative control, as documented) |
-| buf breaking vs main | `…#branch=main` | 1 | main has no `examio-be/proto` (protos are new on this branch), so HEAD is the correct baseline |
+| buf breaking vs main | `…#branch=main` | 1 | main has no `kmaedu-be/proto` (protos are new on this branch), so HEAD is the correct baseline |
 | typecheck | `yarn typecheck` (6 services) | 0 | ok |
 | ownership strict | `yarn check:ownership` | 0 | `Violations: 0` |
 | depcruise | `yarn check:deps` | 0 | 0 errors, 8 warnings (see W1) |
@@ -88,46 +88,46 @@ Services up: auth 3781, exam 3782, finance 3783, admin 3785, gateway 3780, vite 
 Matrix FAILs, fixture-caused, not verified:
 - 6 TEACHER and STUDENT exam session checks: no seeded exam session (`notes-seed.json` was `{}`).
 - 7 study room, 2 checks: `room.env` was a placeholder (`none-p10`). The phase-09 run had a seeded room.
-- NOTE: "Từ đã lưu" view does not exist in `examio-fe/src` (0 hits), so it cannot be verified as written.
+- NOTE: "Từ đã lưu" view does not exist in `kmaedu-fe/src` (0 hits), so it cannot be verified as written.
 
 Screenshots: `evidence/phase-10/ui-screens/` was not written (0 files).
 
 ## Bugs (ranked, heaviest first)
 
 **B1 (blocker). The built dist cannot boot exam-service or admin-service.**
-- Where: `examio-be/nest-cli.json:87-125` (exam-service assets copy only `finance/**` and `r2/**`) and `:126-159` (admin-service assets copy only `auth/**` and `common/**`). The gateway block at `:160` copies only `gateway/**`, and it loads `admin/v1/admin.proto` for the boot pull.
-- Repro: `yarn build:all`, then `node dist/apps/admin-service/main.js` from any cwd. Also `node dist/apps/exam-service/main.js`. Both exit on `ENOENT … dist/apps/admin-service/proto/examio/finance/v1/finance_admin.proto` (exam: `…/auth/v1/auth.proto`).
+- Where: `kmaedu-be/nest-cli.json:87-125` (exam-service assets copy only `finance/**` and `r2/**`) and `:126-159` (admin-service assets copy only `auth/**` and `common/**`). The gateway block at `:160` copies only `gateway/**`, and it loads `admin/v1/admin.proto` for the boot pull.
+- Repro: `yarn build:all`, then `node dist/apps/admin-service/main.js` from any cwd. Also `node dist/apps/exam-service/main.js`. Both exit on `ENOENT … dist/apps/admin-service/proto/kmaedu/finance/v1/finance_admin.proto` (exam: `…/auth/v1/auth.proto`).
 - Expected: each dist bundle carries every proto its clients and servers load (`resolveProtoRoot()` in `libs/grpc/src/proto-paths.ts`).
 - Actual: both services fail to start. Unit and e2e pass because they run from source, with `cwd/proto`.
-- Workaround used for the live run only: `PROTO_ROOT=<scratch copy of examio-be/proto>`. Nothing in the repo was changed.
+- Workaround used for the live run only: `PROTO_ROOT=<scratch copy of kmaedu-be/proto>`. Nothing in the repo was changed.
 - The gateway's `admin` proto is probably affected too. It was not run without the override.
 
 **B2 (blocker, money). AI debit keys are not stable across client retries.**
-- Where: `examio-be/apps/exam-service/src/modules/ai/ai.service.ts:382` (`newIdempotencyKey('quick-upload-reuse')`, a fresh UUID per call) and `:481-486` (`const id = this.generateIdService.generateId()` then `quick-upload:${id}`). The `id` is not the persisted `userStorage.id`, so the "once per file" comment is not true.
+- Where: `kmaedu-be/apps/exam-service/src/modules/ai/ai.service.ts:382` (`newIdempotencyKey('quick-upload-reuse')`, a fresh UUID per call) and `:481-486` (`const id = this.generateIdService.generateId()` then `quick-upload:${id}`). The `id` is not the persisted `userStorage.id`, so the "once per file" comment is not true.
 - Repro (static): the same HTTP request sent twice (client retry) gets two different keys, so `Debit` applies twice.
 - Expected (acceptance): "AI generate retried by the client lib → one debit". Keys must be derived from something the client does not change on retry (storage id or a client request id).
 - Actual: two debits. Not run live (needs R2 and ai-service). The money RPC itself is correct (finance e2e 52/52).
 
 **B3 (medium). Admin audit `actorId` is always null, and the page shows `#null`.**
-- Where: `examio-be/apps/admin-service/src/modules/admin-audit/admin-audit.service.ts:105` (`actorId: Number(r.adminId)`). `adminId` is a cuid string, so the result is NaN. The FE renders it at `examio-fe/src/components/admin/AuditTable.tsx:121-123`. Same line on `main` (pre-existing).
+- Where: `kmaedu-be/apps/admin-service/src/modules/admin-audit/admin-audit.service.ts:105` (`actorId: Number(r.adminId)`). `adminId` is a cuid string, so the result is NaN. The FE renders it at `kmaedu-fe/src/components/admin/AuditTable.tsx:121-123`. Same line on `main` (pre-existing).
 - Repro: `GET /api/v1/admin/audit` → `rows[0].actorId === null`. C14b fails.
 - Expected: `actorId` is the admin's id (string), and the page shows the admin name, not `#null`.
 
 **B4 (medium, test). Auth e2e is not repeatable.**
-- Where: `examio-be/apps/auth-service/test/auth-users.e2e-spec.ts:149` (inserts `utmSource: 'e2e-source'`) and `:156` (`toBe('1')`).
+- Where: `kmaedu-be/apps/auth-service/test/auth-users.e2e-spec.ts:149` (inserts `utmSource: 'e2e-source'`) and `:156` (`toBe('1')`).
 - Repro: run the auth suite twice on the same DB. Run 2 fails with `Expected: "1" Received: "2"`.
 - Expected: the test owns its data (unique utm per run, or count relative to a baseline), or cleans up.
 
 **B5 (medium, test). Study-room WS spec ignores the app's Redis password.**
-- Where: `examio-be/apps/exam-service/test/study-room-ws.e2e-spec.ts:109-111` (`new Redis({ host, port })`, no password).
+- Where: `kmaedu-be/apps/exam-service/test/study-room-ws.e2e-spec.ts:109-111` (`new Redis({ host, port })`, no password).
 - Repro: with `REDIS_PASSWORD` set (as in the app and most envs), 1 test fails with `ReplyError: NOAUTH Authentication required` (`a stale token … TOKEN_STALE`). Passwordless Redis: 8/8 pass.
 - Expected: use the same Redis config as the app (`REDIS_PASSWORD`).
 
 **W1 (low). depcruise warnings.** `check:deps` exits 0 with 8 warnings. Cross-app imports in exam tests (`test/finance-debit.grpc.spec.ts`, `test/ownership/demoted-owner.ownership.e2e-spec.ts`) and `libs-no-prisma` on `libs/common` (expected until phase 11).
 
-**W2 (low). Leftover email field in exam OpenAPI.** `examio-be/apps/exam-service/src/modules/examroom/dto/examroom-response.dto.ts:19` still declares `email` on `HostSummaryDto`. It is not populated, but the contract still advertises it.
+**W2 (low). Leftover email field in exam OpenAPI.** `kmaedu-be/apps/exam-service/src/modules/examroom/dto/examroom-response.dto.ts:19` still declares `email` on `HostSummaryDto`. It is not populated, but the contract still advertises it.
 
-**W3 (low). Legacy event subscriber default queue is not granted.** `examio-be/libs/common/src/events/event-subscriber.service.ts:31` defaults to `common-queue` when `SERVICE_NAME` is unset. No RabbitMQ user has a grant on it (`deploy/rabbitmq/definitions.template.json`), so the consumer gets 403 ACCESS-REFUSED and closes its channel.
+**W3 (low). Legacy event subscriber default queue is not granted.** `kmaedu-be/libs/common/src/events/event-subscriber.service.ts:31` defaults to `common-queue` when `SERVICE_NAME` is unset. No RabbitMQ user has a grant on it (`deploy/rabbitmq/definitions.template.json`), so the consumer gets 403 ACCESS-REFUSED and closes its channel.
 
 **W4 (low, plan drift). Page-flag key name.** The plan says the gateway writes `gw:config:pages`. The code writes `config:pages:flags` (`libs/common/src/constants/cache-keys.ts:158`, `apps/gateway-service/src/services/config.service.ts:61-73`). Behaviour is correct. Only the name differs.
 
@@ -153,7 +153,7 @@ Screenshots: `evidence/phase-10/ui-screens/` was not written (0 files).
 
 ## Re-temper 2 (live)
 
-Scratch harness: `scratchpad/p10t2/` (copies of the round-1 scripts, containers `p10t2-*`). All rows are `re-temper-2:` in `evidence/phase-10/temper-raw.json`. Boot had no `PROTO_ROOT` override. The shared live DB is `examio_p10_live` (all dist services point at it, as in round 1).
+Scratch harness: `scratchpad/p10t2/` (copies of the round-1 scripts, containers `p10t2-*`). All rows are `re-temper-2:` in `evidence/phase-10/temper-raw.json`. Boot had no `PROTO_ROOT` override. The shared live DB is `kmaedu_p10_live` (all dist services point at it, as in round 1).
 
 Setup notes, all disclosed:
 - MinIO is not pullable here (`minio/minio` denied on docker.io, `quay.io/minio/minio` 401). `andrewgaul/s3proxy` (S3-compatible, transient backend, dummy local creds) stands in on `127.0.0.1:59000`.
@@ -246,7 +246,7 @@ Scratch harness (not in repo): `scratchpad/p10t3/` (copies of the round-2 script
 ### Environment
 
 - Infra: postgres pgvector:pg16, redis 7 with password, rabbitmq 3.13 (`--user rabbitmq` needed, see harness notes), s3proxy stand-in on 127.0.0.1 only.
-- DBs: `examio_p10_{auth,finance,admin,exam,live}`, each `prisma migrate deploy` from scratch (all six migration dirs, both new ones applied). Every DB command ran under `env -i` through `with-env.sh`, and the guard refused anything not on 127.0.0.1:58741.
+- DBs: `kmaedu_p10_{auth,finance,admin,exam,live}`, each `prisma migrate deploy` from scratch (all six migration dirs, both new ones applied). Every DB command ran under `env -i` through `with-env.sh`, and the guard refused anything not on 127.0.0.1:58741.
 - Boot: 6 dist services plus a second exam instance (3788), no `PROTO_ROOT`. Vite 5273 proxies to the gateway 3780.
 - `MAIL_TRANSPORT=json`, dummy/local keys only. No `.env` read, no `docker compose config`, no JWT or password written to evidence.
 
@@ -283,32 +283,32 @@ Scratch harness (not in repo): `scratchpad/p10t3/` (copies of the round-2 script
 ### Bugs (ranked, heaviest first)
 
 **C1 (blocker). An exam instance dies on a cross-instance `fetchSockets`.**
-- Where: the response builder in `examio-be/node_modules/@socket.io/redis-adapter/dist/index.js:264` (`REMOTE_FETCH`, `JSON.stringify` of `socket.data`). The unsafe field is `socket.data.expTimer`, a Node `Timeout`, set at `examio-be/apps/exam-service/src/modules/study-room/study-room.gateway.ts:158-162`. Callers that reach it: `study-room-broadcaster.service.ts:31` (`reauthStaleSockets`, triggered by authz changes) and `study-room.gateway.ts:671`.
+- Where: the response builder in `kmaedu-be/node_modules/@socket.io/redis-adapter/dist/index.js:264` (`REMOTE_FETCH`, `JSON.stringify` of `socket.data`). The unsafe field is `socket.data.expTimer`, a Node `Timeout`, set at `kmaedu-be/apps/exam-service/src/modules/study-room/study-room.gateway.ts:158-162`. Callers that reach it: `study-room-broadcaster.service.ts:31` (`reauthStaleSockets`, triggered by authz changes) and `study-room.gateway.ts:671`.
 - Repro (`crash-repro-r3.cjs`): two exam instances (3782, 3788) on one Redis. A student socket is on 3788 and has joined a room. An admin bans the student (`POST /admin/users/:id/ban`). The event is consumed on 3782, which calls `fetchSockets` on the user room. Instance 3788 then throws `TypeError: Converting circular structure to JSON` (`--> starting at object with constructor 'Timeout' … property '_idleNext' closes the circle`) and exits. Repeated: runs 3 and 4 pass, run 5 crashes (runs 1–2 failed on a harness path bug and are not counted). Outcome depends on which instance consumes the event.
 - Expected: a remote fetch returns only safe fields, and the process stays up.
 - Actual: uncaught rejection in `RedisAdapter.onrequest`, process exit. A restart is needed. There is no restart policy in the harness.
 - Pre-existing on HEAD: `git show HEAD:…study-room.gateway.ts` has `expTimer` 3 times and `fetchSockets` once. Fix direction: store the timer id or a plain number, not the `Timeout`; pick only safe fields in any `fetchSockets` consumer; add a guard so an adapter failure cannot kill the process.
 
 **F1 (blocker, money). The admin credit modal sends a body the BE always rejects.**
-- Where: FE `examio-fe/src/apis/adminApi.ts:96-100` (`CreditBody { userId: number; amount; reason }`, no `direction`) and `:181-184`. The modal negates `amount` for SUBTRACT at `examio-fe/src/components/admin/FinanceActionModal.tsx:89-91`, and takes `userId` from an `InputNumber` at `:156-162`. BE: `examio-be/apps/admin-service/src/modules/admin-finance/dto/credit.body.ts` (`userId` string, `amount` `.positive()`, `direction` ADD|SUBTRACT).
+- Where: FE `kmaedu-fe/src/apis/adminApi.ts:96-100` (`CreditBody { userId: number; amount; reason }`, no `direction`) and `:181-184`. The modal negates `amount` for SUBTRACT at `kmaedu-fe/src/components/admin/FinanceActionModal.tsx:89-91`, and takes `userId` from an `InputNumber` at `:156-162`. BE: `kmaedu-be/apps/admin-service/src/modules/admin-finance/dto/credit.body.ts` (`userId` string, `amount` `.positive()`, `direction` ADD|SUBTRACT).
 - Repro: API probe `M0` (body without `direction`, numeric `userId`) → 400. Browser (`fe-finance-r3.cjs`): Điều chỉnh credits → ID 1, amount 5, reason → Tiếp tục → Xác nhận → toast "Thao tác thất bại: Validation failed", 0 tx.
 - Expected: one tx, balance +5. Actual: 400, 0 tx. Also, real user ids are strings, so an `InputNumber` cannot address any real user. SUBTRACT would fail the same way (negative amount vs `.positive()`); this part is from reading the code, not run live.
 
 **B2-upload (blocker, money). The upload debit is not retry-safe.**
-- Where: `examio-be/apps/exam-service/src/modules/ai/ai.service.ts:1029-1030` (`const id = this.generateIdService.generateId()` per call, with a comment that says "once per file"). The debit key `upload:${id}` follows. The R2 key (`keyR2`) is the stable identity of the file and is not used.
+- Where: `kmaedu-be/apps/exam-service/src/modules/ai/ai.service.ts:1029-1030` (`const id = this.generateIdService.generateId()` per call, with a comment that says "once per file"). The debit key `upload:${id}` follows. The R2 key (`keyR2`) is the stable identity of the file and is not used.
 - Repro (`money-r3.cjs` M6b): the same `POST /ai/upload` body twice → second 201, two `debit:upload:*` rows, balance 18 → 16.
 - Expected: one debit per file. Actual: two. Suggested key: derive from `keyR2` (or a client-supplied id). This is the same class as the round-1 B2 for AI generation, which is still open.
 
 **M1 (low, money contract). Refund replay looks like the first call.**
-- Where: `examio-be/apps/admin-service/src/modules/admin-finance/admin-finance.service.ts:87-93` builds `RefundResult` without `alreadyApplied`. The controller returns `{success, data}` only.
+- Where: `kmaedu-be/apps/admin-service/src/modules/admin-finance/admin-finance.service.ts:87-93` builds `RefundResult` without `alreadyApplied`. The controller returns `{success, data}` only.
 - Repro: M5. Both calls return 200 with the same body shape. The caller cannot tell "already_applied". The effect is correct (one audit row, status 4).
 
 **F2 (low). Deleted user's name is served from the exam profile cache until it expires.**
-- Where: `examio-be/apps/exam-service/src/clients/auth.client.ts:46` (`exam:cache:user:<id>`). Auth itself excludes deleted users: `examio-be/apps/auth-service/src/grpc/users-query.service.ts:66,78` (`deletedAt: null`).
+- Where: `kmaedu-be/apps/exam-service/src/clients/auth.client.ts:46` (`exam:cache:user:<id>`). Auth itself excludes deleted users: `kmaedu-be/apps/auth-service/src/grpc/users-query.service.ts:66,78` (`deletedAt: null`).
 - Repro: H2. The name "P10 H2 student" was still shown after the soft delete. After `DEL exam:cache:user:*`, the label appeared. Note: no product path in this repo sets `deletedAt` (grep found none), so the soft delete was done in SQL. The TTL was not measured.
 
 **U1 (concern, unexplained). The exam dist folder disappeared during the run.**
-- `examio-be/dist/apps/exam-service` was gone at about 20:06 UTC, while the other five service dirs stayed. The restart failed with `Cannot find module …/dist/apps/exam-service/main.js`. `nest build exam-service` restored it. A full `yarn build:all` afterwards produced all six dirs, so I could not reproduce the loss. Cause not found. Root `nest-cli.json` has `deleteOutDir: true` (unchanged from HEAD) and applies to every project. Watch this in CI.
+- `kmaedu-be/dist/apps/exam-service` was gone at about 20:06 UTC, while the other five service dirs stayed. The restart failed with `Cannot find module …/dist/apps/exam-service/main.js`. `nest build exam-service` restored it. A full `yarn build:all` afterwards produced all six dirs, so I could not reproduce the loss. Cause not found. Root `nest-cli.json` has `deleteOutDir: true` (unchanged from HEAD) and applies to every project. Watch this in CI.
 
 **Harness notes (not product defects, all disclosed):**
 - `xi-test.cjs` presence check is weak: `some((p) => JSON.stringify(p).includes(""))` is always true, so presence is checked by count only.
@@ -345,7 +345,7 @@ Verdict: **C1 and F1 pass live. One new low-severity bug found (word-family dupl
 
 ### Build and boot
 
-- Static (one `build:all`, then copied to `scratchpad/p10t4/dist-copy`, all services ran from that copy with `NODE_PATH` pointing at `examio-be/node_modules`, so no reviewer `nest build` can wipe what ran): typecheck exit 0; `build:all` exit 0 (6 services); BE `TZ=UTC yarn test`: 174 suites pass, 1 skipped, 1864 tests pass, 5 skipped; `check:ownership` 0 violations; FE build 0, lint 0 errors / 29 warnings, test 124 pass.
+- Static (one `build:all`, then copied to `scratchpad/p10t4/dist-copy`, all services ran from that copy with `NODE_PATH` pointing at `kmaedu-be/node_modules`, so no reviewer `nest build` can wipe what ran): typecheck exit 0; `build:all` exit 0 (6 services); BE `TZ=UTC yarn test`: 174 suites pass, 1 skipped, 1864 tests pass, 5 skipped; `check:ownership` 0 violations; FE build 0, lint 0 errors / 29 warnings, test 124 pass.
 - Boot: 6 services plus a second exam (3788), no PROTO_ROOT, vite 5273. Infra `p10t4-pg|redis|rmq|s3`, fresh migrations on all five DBs.
 - One infra fix (not product): the S3 stand-in accepts only `p10nlocal`. The services' R2 env had another identity, so R2 deletes returned `Forbidden` (seen in `exam.log`). I changed the round-4 service env to the stand-in identity and restarted exam, exam2 and r2 only. The round-2/3 word-family claims were made with a different credential pair and should be treated as unverified until re-run; the N6 result below is with the aligned credentials.
 
@@ -373,7 +373,7 @@ Verdict: **C1 and F1 pass live. One new low-severity bug found (word-family dupl
 ### Bugs found this round
 
 **W1 (low). A duplicate category name returns 500 instead of a 4xx.**
-- Where: `examio-be/apps/exam-service/src/modules/word-family/word-family-admin.service.ts:112-124`. There is a slug pre-check (`ALREADY_EXISTS`), but no name check. `examio-be/apps/exam-service/src/modules/word-family/word-family.repository.ts:48` (`createCategory`) hits Prisma's unique constraint on `name`.
+- Where: `kmaedu-be/apps/exam-service/src/modules/word-family/word-family-admin.service.ts:112-124`. There is a slug pre-check (`ALREADY_EXISTS`), but no name check. `kmaedu-be/apps/exam-service/src/modules/word-family/word-family.repository.ts:48` (`createCategory`) hits Prisma's unique constraint on `name`.
 - Repro: create a category with name "P10 N6 x", then create another category with the same name and a different slug. Observed: `500 UNKNOWN` (`exam.log`: `PrismaClientKnownRequestError … Unique constraint failed on the fields: (name)`, `RpcExceptionsHandler`).
 - Expected: 409 (or 400) with a clear message, as the slug case does. Actual: 500.
 

@@ -32,31 +32,31 @@ N/A — no discriminator fields in Key Entities (User, UserSession have no DISC-
 None.
 ### BR-001_ProfileOwnership
 **Linked FR:** FR-001, FR-002
-**Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+**Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 **Applies to:** `GET /api/v1/profile`, `PUT /api/v1/profile`
 **Rule:** Users can only read and update their own profile. The profile endpoint reads the user ID from the session token — cross-user access is not possible.
 
 ### BR-002_AvatarUploadSizeLimit
 **Linked FR:** FR-003
-**Source:** `examio-be/apps/r2-service/src/r2.service.ts`
+**Source:** `kmaedu-be/apps/r2-service/src/r2.service.ts`
 **Applies to:** `POST /api/v1/r2/image`
 **Rule:** Uploaded images must not exceed 2MB. Files exceeding this limit return 400.
 
 ### BR-003_DeviceOwnership
 **Linked FR:** FR-004, FR-005
-**Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+**Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 **Applies to:** `GET /api/v1/devices`, `DELETE /api/v1/devices/:deviceId`
 **Rule:** Sessions are scoped to the owning user. A user can view and delete only their own sessions. The current session cannot be deleted via this endpoint.
 
 ### BR-004_PasswordChangeRequiresCurrent
 **Linked FR:** FR-006
-**Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+**Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 **Applies to:** `POST /api/v1/auth/change-password`
 **Rule:** Password change requires the current password as confirmation. Incorrect current password returns 400.
 
 ### BR-005_PasswordChangeEmailNotification
 **Linked FR:** FR-006
-**Source:** `examio-be/libs/common/src/services/mail.service.ts`
+**Source:** `kmaedu-be/libs/common/src/services/mail.service.ts`
 **Applies to:** password change success
 **Rule:** Upon successful password change, a confirmation email is sent to the user's registered email address to alert them of the change.
 
@@ -78,7 +78,7 @@ None.
 None.
 ### INT-001_R2Storage
 **Linked FR:** FR-003
-**Source:** `examio-be/apps/r2-service/src/r2.service.ts`
+**Source:** `kmaedu-be/apps/r2-service/src/r2.service.ts`
 **Type:** api-call
 **Target:** Cloudflare R2 object storage
 **Trigger:** User uploads avatar or banner image
@@ -87,7 +87,7 @@ None.
 
 ### INT-002_MailService
 **Linked FR:** FR-006
-**Source:** `examio-be/libs/common/src/services/mail.service.ts`
+**Source:** `kmaedu-be/libs/common/src/services/mail.service.ts`
 **Type:** notification
 **Target:** User email inbox
 **Trigger:** Successful password change
@@ -129,11 +129,11 @@ None.
 **Requirements fulfilled:**
 
 - **FR-001** Get profile — `GET /api/v1/profile` via `ProfileController.getProfile`
-  **Source:** `examio-be/apps/auth-service/src/profile.controller.ts`
+  **Source:** `kmaedu-be/apps/auth-service/src/profile.controller.ts`
 - **FR-002** Update profile — `PUT /api/v1/profile` via `ProfileController.updateProfile`
-  **Source:** `examio-be/apps/auth-service/src/profile.controller.ts`
+  **Source:** `kmaedu-be/apps/auth-service/src/profile.controller.ts`
 - **FR-003** Upload image — `POST /api/v1/r2/image` via `R2Service.uploadImage`
-  **Source:** `examio-be/apps/r2-service/src/r2.service.ts`
+  **Source:** `kmaedu-be/apps/r2-service/src/r2.service.ts`
 
 **Rules enforced:** BR-001, BR-002
 
@@ -156,9 +156,9 @@ None.
 **Requirements fulfilled:**
 
 - **FR-006** Change password — `POST /api/v1/auth/change-password` via `AuthService.changePassword`
-  **Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+  **Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 - **FR-007** Send change-password OTP — `POST /api/v1/auth/send-code-change-password` via `AuthService.sendCodeChangePassword`
-  **Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+  **Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 
 **Rules enforced:** BR-004, BR-005
 
@@ -181,9 +181,9 @@ None.
 **Requirements fulfilled:**
 
 - **FR-004** List sessions — `GET /api/v1/devices` via `AuthController.getDevices`
-  **Source:** `examio-be/apps/auth-service/src/auth.controller.ts`
+  **Source:** `kmaedu-be/apps/auth-service/src/auth.controller.ts`
 - **FR-005** Delete session — `DELETE /api/v1/devices/:deviceId` via `AuthController.deleteDevice`
-  **Source:** `examio-be/apps/auth-service/src/auth.controller.ts`
+  **Source:** `kmaedu-be/apps/auth-service/src/auth.controller.ts`
 
 **Rules enforced:** BR-003
 
@@ -223,12 +223,12 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| AuthService | `examio-be/apps/auth-service/src/auth.service.ts` | Password change, session termination logic |
-| ProfileController | `examio-be/apps/auth-service/src/profile.controller.ts` | Profile GET/PUT endpoints |
-| R2Service | `examio-be/apps/r2-service/src/r2.service.ts` | Image upload to R2 object storage |
-| MailService | `examio-be/libs/common/src/services/mail.service.ts` | Password change confirmation email |
-| ProfilePage | `examio-fe/src/pages/k/ProfilePage.tsx` | Profile form and device list UI |
-| ProfileForm | `examio-fe/src/components/k/ProfileForm.tsx` | Profile edit form component |
+| AuthService | `kmaedu-be/apps/auth-service/src/auth.service.ts` | Password change, session termination logic |
+| ProfileController | `kmaedu-be/apps/auth-service/src/profile.controller.ts` | Profile GET/PUT endpoints |
+| R2Service | `kmaedu-be/apps/r2-service/src/r2.service.ts` | Image upload to R2 object storage |
+| MailService | `kmaedu-be/libs/common/src/services/mail.service.ts` | Password change confirmation email |
+| ProfilePage | `kmaedu-fe/src/pages/k/ProfilePage.tsx` | Profile form and device list UI |
+| ProfileForm | `kmaedu-fe/src/components/k/ProfileForm.tsx` | Profile edit form component |
 
 ## Unresolved Questions
 

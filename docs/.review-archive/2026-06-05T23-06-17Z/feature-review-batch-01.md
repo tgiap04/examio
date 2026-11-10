@@ -6,7 +6,7 @@ warnings: 3
 
 # Wave 7b batch-01 — F001–F005 Feature Review
 
-**Project**: examio
+**Project**: kmaedu
 **Review Date**: 2026-06-05
 **Reviewer**: reviewer (semantic pass)
 **Scope**: 5 features (F001_PublicLanding, F002_Authentication, F003_AccountManagement, F004_ProfileManagement, F005_Finance)

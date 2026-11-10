@@ -1,10 +1,10 @@
 # Phase 4: Exam-Service Word Family API
 
 ## Context
-- Exam-service modules: `examio-be/apps/exam-service/src/modules/`
-- Flashcard service: `examio-be/apps/exam-service/src/modules/flashcardset/flashcardset.service.ts`
-- Redis module: `examio-be/libs/redis/src/`
-- AI orchestrator: `examio-be/apps/exam-service/src/modules/ai/ai.service.ts`
+- Exam-service modules: `kmaedu-be/apps/exam-service/src/modules/`
+- Flashcard service: `kmaedu-be/apps/exam-service/src/modules/flashcardset/flashcardset.service.ts`
+- Redis module: `kmaedu-be/libs/redis/src/`
+- AI orchestrator: `kmaedu-be/apps/exam-service/src/modules/ai/ai.service.ts`
 
 ## Overview
 Build the full Word Family API in exam-service: category listing, word family generation (orchestrates Python AI), word family details, user collection management, and flashcard bridge creation.
@@ -61,16 +61,16 @@ User selects words → POST /word-family/create-flashcard
 Same as `FlashCardSetRepository` — extend base repository for caching.
 
 ## Files to Create
-- `examio-be/apps/exam-service/src/modules/word-family/word-family.module.ts`
-- `examio-be/apps/exam-service/src/modules/word-family/word-family.controller.ts`
-- `examio-be/apps/exam-service/src/modules/word-family/word-family.service.ts`
-- `examio-be/apps/exam-service/src/modules/word-family/word-family.repository.ts`
-- `examio-be/apps/exam-service/src/modules/word-family/dto/generate-words.params.ts`
-- `examio-be/apps/exam-service/src/modules/word-family/dto/create-flashcard.body.ts`
-- `examio-be/apps/exam-service/src/modules/word-family/dto/collection-query.dto.ts`
+- `kmaedu-be/apps/exam-service/src/modules/word-family/word-family.module.ts`
+- `kmaedu-be/apps/exam-service/src/modules/word-family/word-family.controller.ts`
+- `kmaedu-be/apps/exam-service/src/modules/word-family/word-family.service.ts`
+- `kmaedu-be/apps/exam-service/src/modules/word-family/word-family.repository.ts`
+- `kmaedu-be/apps/exam-service/src/modules/word-family/dto/generate-words.params.ts`
+- `kmaedu-be/apps/exam-service/src/modules/word-family/dto/create-flashcard.body.ts`
+- `kmaedu-be/apps/exam-service/src/modules/word-family/dto/collection-query.dto.ts`
 
 ## Files to Modify
-- `examio-be/apps/exam-service/src/exam-service.module.ts` — register `WordFamilyModule`
+- `kmaedu-be/apps/exam-service/src/exam-service.module.ts` — register `WordFamilyModule`
 
 ## Implementation Steps
 

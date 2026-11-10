@@ -49,10 +49,10 @@ KLayout-wrapped page containing a single main content area with the shared `Hist
 
 | Decision point | Condition | Outcome on this screen | Source |
 |----------------|-----------|------------------------|--------|
-| Empty history | `uploads.length === 0` | empty-state illustration + "Upload your first PDF" CTA | `examio-fe/src/components/molecules/PDFHistoryListItem.tsx:38` |
-| Filter applied | Date/status filter changed | Re-fetch with new params | `examio-fe/src/components/organisms/k/ExamSearchFilterBar.tsx:18` |
-| Job still running | `processingStatus === 'PROCESSING'` | disabled "Regenerate" + spinner on row | `examio-fe/src/components/molecules/PDFHistoryListItem.tsx:62` |
-| Job failed | `processingStatus === 'FAILED'` | red badge + "Retry" CTA | `examio-fe/src/components/molecules/PDFHistoryListItem.tsx:71` |
+| Empty history | `uploads.length === 0` | empty-state illustration + "Upload your first PDF" CTA | `kmaedu-fe/src/components/molecules/PDFHistoryListItem.tsx:38` |
+| Filter applied | Date/status filter changed | Re-fetch with new params | `kmaedu-fe/src/components/organisms/k/ExamSearchFilterBar.tsx:18` |
+| Job still running | `processingStatus === 'PROCESSING'` | disabled "Regenerate" + spinner on row | `kmaedu-fe/src/components/molecules/PDFHistoryListItem.tsx:62` |
+| Job failed | `processingStatus === 'FAILED'` | red badge + "Retry" CTA | `kmaedu-fe/src/components/molecules/PDFHistoryListItem.tsx:71` |
 
 ## Data Inventory
 
@@ -68,9 +68,9 @@ KLayout-wrapped page containing a single main content area with the shared `Hist
 
 | State | Trigger | Visual Behavior | User Action Available | Source |
 |-------|---------|----------------|-----------------------|--------|
-| loading | API in-flight | skeleton row list | none | `examio-fe/src/components/organisms/k/PDFHistoryListSection.tsx:31` |
-| empty | 0 results | empty-state illustration + CTA | upload PDF | `examio-fe/src/components/molecules/PDFHistoryListItem.tsx:38` |
-| error | API error / network | error message + retry | retry | `examio-fe/src/components/organisms/k/PDFHistoryListSection.tsx:78` |
+| loading | API in-flight | skeleton row list | none | `kmaedu-fe/src/components/organisms/k/PDFHistoryListSection.tsx:31` |
+| empty | 0 results | empty-state illustration + CTA | upload PDF | `kmaedu-fe/src/components/molecules/PDFHistoryListItem.tsx:38` |
+| error | API error / network | error message + retry | retry | `kmaedu-fe/src/components/organisms/k/PDFHistoryListSection.tsx:78` |
 
 ## Validation & Error Feedback
 
@@ -84,13 +84,13 @@ KLayout-wrapped page containing a single main content area with the shared `Hist
 - **Success:** `200` → renders list
 - **Errors:** `401` (unauthenticated) | `500` (server error)
 - **Trigger:** page mount / pagination / filter
-- **Source:** `examio-fe/src/apis/aiApi.ts:42`
+- **Source:** `kmaedu-fe/src/apis/aiApi.ts:42`
 
 ## Interaction Patterns
 
-- **Clicking "View Result" opens result modal** — source: `examio-fe/src/components/molecules/PDFHistoryListItem.tsx:78`
-- **Clicking "Regenerate" navigates to AI tool with pre-filled upload** — source: `examio-fe/src/components/molecules/PDFHistoryListItem.tsx:92`
-- **Filter changes debounce 500ms** — source: `examio-fe/src/hooks/useDebounce.ts:12`
+- **Clicking "View Result" opens result modal** — source: `kmaedu-fe/src/components/molecules/PDFHistoryListItem.tsx:78`
+- **Clicking "Regenerate" navigates to AI tool with pre-filled upload** — source: `kmaedu-fe/src/components/molecules/PDFHistoryListItem.tsx:92`
+- **Filter changes debounce 500ms** — source: `kmaedu-fe/src/hooks/useDebounce.ts:12`
 
 ## Accessibility
 
@@ -119,7 +119,7 @@ KLayout-wrapped page containing a single main content area with the shared `Hist
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/k/PDFHistoryPage.tsx:1`
-- Template: `examio-fe/src/templates/HistoryTemplate.tsx:1`
-- API: `examio-fe/src/apis/aiApi.ts:42`
-- Store: `examio-fe/src/stores/useRecentUploadsStore.ts:1`
+- Page/View: `kmaedu-fe/src/pages/k/PDFHistoryPage.tsx:1`
+- Template: `kmaedu-fe/src/templates/HistoryTemplate.tsx:1`
+- API: `kmaedu-fe/src/apis/aiApi.ts:42`
+- Store: `kmaedu-fe/src/stores/useRecentUploadsStore.ts:1`

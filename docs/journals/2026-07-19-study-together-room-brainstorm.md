@@ -20,7 +20,7 @@ Brainstorm + blueprint for NEW feature **Study-Together Room** (phòng học chu
 5. **State architecture:** Live state (timer phase/cycle, media play position, chat, presence) lives in Redis; Prisma holds StudyRoom + StudyRoomMember metadata only.
 6. **Deterministic timer:** Server stores {phase, cycle, phaseStartedAt, running}; clients compute countdown locally, normalize on read.
 7. **Focus-time credit:** 30s heartbeat increments Redis counter, flushed to StudyRoomMember.totalFocusSeconds on room close.
-8. **Scope:** Web only (examio-fe); private rooms, 6-digit invite code, ~10–20 capacity, host+cohost controls; WebRTC excluded.
+8. **Scope:** Web only (kmaedu-fe); private rooms, 6-digit invite code, ~10–20 capacity, host+cohost controls; WebRTC excluded.
 
 ## Artifacts
 

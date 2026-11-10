@@ -1,8 +1,8 @@
-# Study Report: ExamIO Flashcard Module
+# Study Report: KMAEdu Flashcard Module
 
 ## Summary
 
-The ExamIO Flashcard module is a full-stack feature spanning 3 backend modules (`flashcardset`, `flashcard-study`, `flashcardset` repository) and ~20 frontend files. It uses a **join-table pattern** (`DetailsFlashCard`) to allow the same `FlashCard` content to belong to multiple sets. AI-generated flashcards are stored in `HistoryGeneratedFlashcard` and can be saved into sets via deduplication. Study progress is tracked per-user per-set.
+The KMAEdu Flashcard module is a full-stack feature spanning 3 backend modules (`flashcardset`, `flashcard-study`, `flashcardset` repository) and ~20 frontend files. It uses a **join-table pattern** (`DetailsFlashCard`) to allow the same `FlashCard` content to belong to multiple sets. AI-generated flashcards are stored in `HistoryGeneratedFlashcard` and can be saved into sets via deduplication. Study progress is tracked per-user per-set.
 
 ---
 
@@ -184,12 +184,12 @@ Indexes: `[userId, viewedAt]`, `[flashCardSetId]`
 
 ## 3. Frontend State Management & UI Structure
 
-### 3.1 API Client (`examio-fe/src/apis/flashcardSetApi.ts`)
+### 3.1 API Client (`kmaedu-fe/src/apis/flashcardSetApi.ts`)
 Flat functions: `createFlashcardSetApi`, `getFlashcardSetsApi`, `getFlashcardSetByIdApi`, `updateFlashcardSetApi`, `deleteFlashcardSetApi`, `addFlashcardToFlashcardSet`, `updateFlashcardInFlashcardSet`, `deleteFlashcardFromFlashcardSet`, `getFlashcardSetFlashcardsApi`, `getFlashcardSetStatsApi`, `setFlashcardsToFlashcardSet`, `setHistoryFlashcardsToFlashcardSet`, label CRUD, sharing CRUD.
 
-Also: `examio-fe/src/apis/flashcardStudyApi.ts` — study progress API.
+Also: `kmaedu-fe/src/apis/flashcardStudyApi.ts` — study progress API.
 
-### 3.2 Zustand Store (`examio-fe/src/stores/useFlashcardSetStore.ts`)
+### 3.2 Zustand Store (`kmaedu-fe/src/stores/useFlashcardSetStore.ts`)
 Single store with:
 - State: `flashcardSetsK[]`, `currentFlashcardSet`, `loading`, `error`
 - Actions: `fetchFlashcardSets` (with 5-min cache), `fetchFlashcardSetById`, `createFlashcardSet`, `updateFlashcardSet`, `deleteFlashcardSet`, `setHistoryFlashcardsToFlashcardSet`, `invalidateCache`
@@ -215,7 +215,7 @@ Single store with:
 | `components/organisms/k/FlashcardManagementHeader.tsx` | Header with actions |
 | `templates/FlashcardManagementTemplate.tsx` | Page template |
 
-### 3.4 Types (`examio-fe/src/types/flashcardSet.ts`)
+### 3.4 Types (`kmaedu-fe/src/types/flashcardSet.ts`)
 `Flashcard`, `FlashcardSet`, `FlashcardSetPublicInfo`, `AccessCheckResult`, `SharingSettings`, `FlashcardStudySession`, `FlashcardSetProgress`, `FlashcardSetCreator`
 
 ---

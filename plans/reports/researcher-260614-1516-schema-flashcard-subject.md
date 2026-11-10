@@ -1,6 +1,6 @@
 # Prisma Schema Research: FlashCard, Subject, UserStorage, and Seed Patterns
 
-**Report:** `/Users/tgiap.dev/devs/examio/plans/reports/researcher-260614-1516-schema-flashcard-subject.md`
+**Report:** `/Users/tgiap.dev/devs/kmaedu/plans/reports/researcher-260614-1516-schema-flashcard-subject.md`
 **Date:** 2026-06-14
 **Scope:** schema.prisma + seed files, Word Family feature research
 

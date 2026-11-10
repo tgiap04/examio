@@ -56,10 +56,10 @@ KLayout-wrapped page with 4 independent regions: FolderPanel, FilePanel, Dataset
 
 | Decision point | Condition | Outcome on this screen | Source |
 |----------------|-----------|------------------------|--------|
-| Email not allowed | email not in `VITE_GENAI_TUTOR_ALLOWED_EMAILS` | "Access denied" overlay | `examio-fe/src/lib/genai-knowledge-access.ts:42` |
-| File upload large | `file.size > 50MB` | Inline error | `examio-fe/src/components/organisms/k/genai-knowledge/KnowledgeUploadZone.tsx:88` |
-| Dataset import failed | job status FAILED | red badge + retry | `examio-fe/src/components/organisms/k/genai-knowledge/KnowledgeDatasetImportDialog.tsx:142` |
-| Folder delete with files | folder has children | "Move files first?" confirm | `examio-fe/src/components/organisms/k/genai-knowledge/KnowledgeFolderDialog.tsx:78` |
+| Email not allowed | email not in `VITE_GENAI_TUTOR_ALLOWED_EMAILS` | "Access denied" overlay | `kmaedu-fe/src/lib/genai-knowledge-access.ts:42` |
+| File upload large | `file.size > 50MB` | Inline error | `kmaedu-fe/src/components/organisms/k/genai-knowledge/KnowledgeUploadZone.tsx:88` |
+| Dataset import failed | job status FAILED | red badge + retry | `kmaedu-fe/src/components/organisms/k/genai-knowledge/KnowledgeDatasetImportDialog.tsx:142` |
+| Folder delete with files | folder has children | "Move files first?" confirm | `kmaedu-fe/src/components/organisms/k/genai-knowledge/KnowledgeFolderDialog.tsx:78` |
 
 ## Data Inventory
 
@@ -80,9 +80,9 @@ KLayout-wrapped page with 4 independent regions: FolderPanel, FilePanel, Dataset
 | loading | region API in-flight | skeleton (varies by region) | none | varies by region |
 | empty | 0 results | empty-state illustration + CTA | varies (new folder, upload) | varies |
 | error | region API error | error message + retry | retry | varies |
-| uploading | file upload in-flight | progress bar | cancel | `examio-fe/src/components/organisms/k/genai-knowledge/KnowledgeUploadZone.tsx:88` |
-| importing | dataset import in-flight | spinner + job status | none | `examio-fe/src/components/organisms/k/genai-knowledge/KnowledgeDatasetImportDialog.tsx:142` |
-| access-denied | email not in allowlist | full-page overlay | none | `examio-fe/src/lib/genai-knowledge-access.ts:42` |
+| uploading | file upload in-flight | progress bar | cancel | `kmaedu-fe/src/components/organisms/k/genai-knowledge/KnowledgeUploadZone.tsx:88` |
+| importing | dataset import in-flight | spinner + job status | none | `kmaedu-fe/src/components/organisms/k/genai-knowledge/KnowledgeDatasetImportDialog.tsx:142` |
+| access-denied | email not in allowlist | full-page overlay | none | `kmaedu-fe/src/lib/genai-knowledge-access.ts:42` |
 
 ## Validation & Error Feedback
 
@@ -100,22 +100,22 @@ KLayout-wrapped page with 4 independent regions: FolderPanel, FilePanel, Dataset
 - **Request:** `{ name, parentId? }`
 - **Success:** `201` → folder created, list refreshed
 - **Errors:** `400` (validation) | `409` (duplicate name)
-- **Source:** `examio-fe/src/apis/genaiTutorKnowledgeApi.ts:42`
+- **Source:** `kmaedu-fe/src/apis/genaiTutorKnowledgeApi.ts:42`
 
 #### Upload file
 - **Endpoint:** `POST /api/v1/ai/tutor/knowledge-files` (multipart)
 - **Request:** `{ file, folderId }`
 - **Success:** `201` → file uploaded, processing started
 - **Errors:** `413` (too large) | `415` (unsupported type) | `507` (storage full)
-- **Source:** `examio-fe/src/apis/genaiTutorKnowledgeApi.ts:88`
+- **Source:** `kmaedu-fe/src/apis/genaiTutorKnowledgeApi.ts:88`
 
 ## Interaction Patterns
 
-- **Upload progress polled every 2.5s per file** — source: `examio-fe/src/components/organisms/k/genai-knowledge/KnowledgeUploadZone.tsx:88`
-- **Dataset import progress polled every 3s** — source: `examio-fe/src/components/organisms/k/genai-knowledge/KnowledgeDatasetImportDialog.tsx:142`
-- **Active processing polled every 4s** — source: `examio-fe/src/components/organisms/k/genai-knowledge/KnowledgePendingUploadList.tsx:42`
-- **Folder tree drag-drop to reorganize** — source: `examio-fe/src/components/organisms/k/genai-knowledge/KnowledgeFolderList.tsx:88`
-- **5 AlertDialog confirmations on destructive actions** — source: `examio-fe/src/components/organisms/k/genai-knowledge/KnowledgeFolderDialog.tsx:78`
+- **Upload progress polled every 2.5s per file** — source: `kmaedu-fe/src/components/organisms/k/genai-knowledge/KnowledgeUploadZone.tsx:88`
+- **Dataset import progress polled every 3s** — source: `kmaedu-fe/src/components/organisms/k/genai-knowledge/KnowledgeDatasetImportDialog.tsx:142`
+- **Active processing polled every 4s** — source: `kmaedu-fe/src/components/organisms/k/genai-knowledge/KnowledgePendingUploadList.tsx:42`
+- **Folder tree drag-drop to reorganize** — source: `kmaedu-fe/src/components/organisms/k/genai-knowledge/KnowledgeFolderList.tsx:88`
+- **5 AlertDialog confirmations on destructive actions** — source: `kmaedu-fe/src/components/organisms/k/genai-knowledge/KnowledgeFolderDialog.tsx:78`
 
 ## Accessibility
 
@@ -145,10 +145,10 @@ KLayout-wrapped page with 4 independent regions: FolderPanel, FilePanel, Dataset
 
 ## Source References
 
-- Page/View: `examio-fe/src/app/k/genai-knowledge/page.tsx:1`
-- FolderPanel: `examio-fe/src/components/organisms/k/genai-knowledge/KnowledgeFolderList.tsx:1`
-- FilePanel: `examio-fe/src/components/organisms/k/genai-knowledge/KnowledgeFileGrid.tsx:1`
-- DatasetImportPanel: `examio-fe/src/components/organisms/k/genai-knowledge/KnowledgeDatasetImportDialog.tsx:1`
-- StatsPanel: `examio-fe/src/components/organisms/k/genai-knowledge/KnowledgeStatsCards.tsx:1`
-- Access guard: `examio-fe/src/lib/genai-knowledge-access.ts:1`
-- API: `examio-fe/src/apis/genaiTutorKnowledgeApi.ts:1`
+- Page/View: `kmaedu-fe/src/app/k/genai-knowledge/page.tsx:1`
+- FolderPanel: `kmaedu-fe/src/components/organisms/k/genai-knowledge/KnowledgeFolderList.tsx:1`
+- FilePanel: `kmaedu-fe/src/components/organisms/k/genai-knowledge/KnowledgeFileGrid.tsx:1`
+- DatasetImportPanel: `kmaedu-fe/src/components/organisms/k/genai-knowledge/KnowledgeDatasetImportDialog.tsx:1`
+- StatsPanel: `kmaedu-fe/src/components/organisms/k/genai-knowledge/KnowledgeStatsCards.tsx:1`
+- Access guard: `kmaedu-fe/src/lib/genai-knowledge-access.ts:1`
+- API: `kmaedu-fe/src/apis/genaiTutorKnowledgeApi.ts:1`

@@ -1,0 +1,126 @@
+# syntax=docker/dockerfile:1
+# =============================================================================
+# KMAEdu NestJS services: ONE image recipe for every Node service.
+#   docker build -f deploy/Dockerfile.node --build-arg SERVICE=<apps dir> -t kmaedu-<key> .
+#   (context = kmaedu-be/, SERVICE = the apps/ directory, e.g. content-service)
+#
+# The container does what ROLE says (deploy/docker-entrypoint.sh):
+#   api | worker | api,worker  node dist/apps/$SERVICE/main (the app reads ROLE itself)
+#   migrate                    prisma migrate deploy for apps/$SERVICE/prisma, then exit
+#   seed                       the service's seed, SEED_PROFILE=prod (reference data) | dev
+# So one image per service serves its API, its worker and its `<svc>-migrate` one-shot.
+#
+# Production node_modules stay in the image (no webpack externals bundling), devDependencies
+# do not: `prisma` (a dependency) serves ROLE=migrate, and ts-node + typescript for ROLE=seed
+# are installed on their own into /opt/seed-tools. Image size is a later optimisation.
+#
+# Targets: `runtime` (default, last stage) and `seed` (every service's seed in one
+# image, used by deploy/compose/seed.yml).
+# =============================================================================
+ARG NODE_IMAGE=node:22-alpine
+
+# ─── base: yarn via corepack ────────────────────────────────────────────────
+FROM ${NODE_IMAGE} AS base
+RUN corepack enable && corepack prepare yarn@4.9.2 --activate
+WORKDIR /app
+
+# ─── deps: full install (cached while the lockfile is unchanged) ────────────
+FROM base AS deps
+COPY package.json yarn.lock .yarnrc.yml ./
+RUN --mount=type=cache,target=/root/.yarn/berry/cache \
+    yarn install --immutable
+
+# ─── builder: generated code + the service bundle ───────────────────────────
+FROM deps AS builder
+ARG SERVICE
+RUN test -n "${SERVICE}" || (echo "build arg SERVICE is required (an apps/ directory, e.g. content-service)" >&2; exit 1)
+COPY libs ./libs
+COPY apps ./apps
+COPY proto ./proto
+COPY scripts ./scripts
+COPY tsconfig*.json nest-cli.json ./
+# proto:gen emits libs/contracts/src/generated (gitignored); the .proto files themselves
+# reach dist through the nest-cli assets. The service's Prisma client (gitignored
+# apps/<svc>/src/generated/prisma) is bundled by webpack, so the runtime needs no
+# `prisma generate`. `generate` never connects; DATABASE_URL only has to parse.
+RUN yarn proto:gen \
+    && if [ -d "apps/${SERVICE}/prisma" ]; then \
+        DATABASE_URL=postgresql://generate:generate@127.0.0.1:5432/generate \
+        node_modules/.bin/prisma generate --schema "$(scripts/prisma-schema-path.sh "${SERVICE%-service}")"; \
+    fi \
+    && yarn build "${SERVICE}" \
+    && test -f "dist/apps/${SERVICE}/main.js"
+
+# What ROLE=migrate / ROLE=seed need next to the bundle, copied into /stage:
+# prisma/ (schema, migrations, seed), src/prisma/ and src/generated/ (seed imports).
+# Services without Prisma (gateway, r2) stage nothing.
+FROM builder AS stage-service
+RUN set -e; mkdir -p /stage; \
+    for d in prisma src/prisma src/generated; do \
+        if [ -e "apps/${SERVICE}/$d" ]; then \
+            mkdir -p "/stage/apps/${SERVICE}/$(dirname "$d")"; \
+            cp -r "apps/${SERVICE}/$d" "/stage/apps/${SERVICE}/$d"; \
+        fi; \
+    done; \
+    chmod -R a+rX /stage
+
+# Same, for every service that owns a seed (the `seed` target).
+FROM builder AS stage-seeds
+RUN yarn prisma:generate
+RUN set -e; mkdir -p /stage; \
+    for s in auth-service admin-service ai-chat-service vocabulary-service; do \
+        for d in prisma src/prisma src/generated; do \
+            mkdir -p "/stage/apps/$s/$(dirname "$d")"; \
+            cp -r "apps/$s/$d" "/stage/apps/$s/$d"; \
+        done; \
+    done; \
+    chmod -R a+rX /stage
+
+# ─── prod-deps: node_modules without devDependencies ────────────────────────
+FROM deps AS prod-deps
+RUN yarn workspaces focus --production \
+    && rm -rf /root/.cache /tmp/* node_modules/.cache \
+    && find node_modules \( -name "*.md" -o -name "*.map" \) -type f -delete
+
+# ─── seed-tools: ts-node + typescript (devDependencies) for ROLE=seed only ──
+FROM base AS seed-tools
+COPY package.json ./
+RUN mkdir /tools && cd /tools && npm init -y >/dev/null \
+    && npm install --no-audit --no-fund --no-package-lock \
+        "ts-node@$(node -p "require('/app/package.json').devDependencies['ts-node']")" \
+        "typescript@$(node -p "require('/app/package.json').devDependencies.typescript")"
+
+# ─── runtime-core ───────────────────────────────────────────────────────────
+FROM ${NODE_IMAGE} AS runtime-core
+ARG SERVICE
+ENV SERVICE=${SERVICE} NODE_ENV=production \
+    CHECKPOINT_DISABLE=1 PRISMA_HIDE_UPDATE_MESSAGE=1
+# openssl: the prisma schema engine (ROLE=migrate) links against it on musl.
+RUN apk add --no-cache openssl
+WORKDIR /app
+COPY --from=prod-deps /app/node_modules ./node_modules
+COPY --from=seed-tools /tools/node_modules /opt/seed-tools/node_modules
+COPY --from=builder /app/dist ./dist
+# ROLE=seed runs the seed through ts-node, which resolves libs/ and tsconfig.json.
+COPY --from=builder /app/libs ./libs
+COPY --from=builder /app/tsconfig*.json ./
+COPY --from=stage-service /stage/ ./
+# MailService (libs/common) reads <cwd>/templates/*.ejs at send time.
+COPY templates ./templates
+COPY deploy/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod 0755 /usr/local/bin/docker-entrypoint.sh
+USER node
+
+# HTTP 3000, gRPC 50051 (never published to the host)
+EXPOSE 3000 50051
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=30s \
+    CMD wget -qO- "http://localhost:${PORT:-3000}/health/ready" >/dev/null || exit 1
+ENTRYPOINT ["docker-entrypoint.sh"]
+
+# ─── seed: every seed in one image (docker compose --profile seed run --rm seed) ─
+FROM runtime-core AS seed
+ENV ROLE=seed
+COPY --from=stage-seeds /stage/ ./
+
+# ─── runtime: the default target (must stay the last stage) ─────────────────
+FROM runtime-core AS runtime

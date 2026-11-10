@@ -172,5 +172,5 @@ The page renders a centered single-card layout inside a full-height flex contain
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/k/VerifyPage.tsx:1`
-- Auth store: `examio-fe/src/stores/useAuthStore.ts:1`
+- Page/View: `kmaedu-fe/src/pages/k/VerifyPage.tsx:1`
+- Auth store: `kmaedu-fe/src/stores/useAuthStore.ts:1`

@@ -12,7 +12,7 @@ track: B
 > BlockedBy Phase 01 only. Parallel-runnable with Phase 08. NO A↔B block.
 
 ## Context Links
-- DTO sources: `../../examio-fe/src/apis/studentMaterialsApi.ts` (recent-exams), `quizsetApi.ts`, `examRoomApi.ts`, `examSessionApi.ts`
+- DTO sources: `../../kmaedu-fe/src/apis/studentMaterialsApi.ts` (recent-exams), `quizsetApi.ts`, `examRoomApi.ts`, `examSessionApi.ts`
 - Shared: `ExamRepository.kt`, `QuizSetApiService.kt`, `ExamRoomApiService.kt`, `ExamAttemptApiService.kt`
 
 ## Overview

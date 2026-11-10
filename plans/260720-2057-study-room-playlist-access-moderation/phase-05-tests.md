@@ -2,7 +2,7 @@
 
 ## Context Links
 - Plan: [plan.md](plan.md) · Depends: phase-03 (BE), phase-04 (FE)
-- Jest: `cd examio-be && yarn test --testPathPatterns="study-room"`; pattern spec sẵn trong module study-room
+- Jest: `cd kmaedu-be && yarn test --testPathPatterns="study-room"`; pattern spec sẵn trong module study-room
 
 ## Test Targets (backend unit)
 1. **access / join** (`study-room.service.spec` mở rộng):

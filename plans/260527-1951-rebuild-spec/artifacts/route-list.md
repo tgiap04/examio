@@ -239,7 +239,7 @@ Mobile has simple local navigation rather than route URLs. Shared KMP endpoint c
 | ROUTE163 | Study | `/flashcardsets`, `/student/materials/` | Shared API ready; platform UI mock |
 | ROUTE164 | Exams | `/quizsets`, `/examrooms`, `/examattempts` | Shared API ready; platform UI mock |
 | ROUTE165 | History | `/examattempts/history-stats`, `/ai/recent-uploads`, `/examattempts/list` | Shared API ready; platform UI mock |
-| ROUTE166 | Deep links | `examio://auth`, `examio://...` parsed to exam/flashcard/chat/profile | Auth callback real; feature deep-link behavior needs verification |
+| ROUTE166 | Deep links | `kmaedu://auth`, `kmaedu://...` parsed to exam/flashcard/chat/profile | Auth callback real; feature deep-link behavior needs verification |
 
 Sources: `scout-report.md` lines 1209-1288, 1311-1323, 1408-1412, 1440-1459, 1464-1488.
 

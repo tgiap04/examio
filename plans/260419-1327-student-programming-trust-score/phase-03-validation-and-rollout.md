@@ -1,9 +1,9 @@
 # Phase 3 — Validation and rollout
 
 ## Context Links
-- `examio-be/apps/ai-service/src/backend/tests/test_student_programming_evaluation_service.py`
-- `examio-fe/src/app/k/ai-student/page.tsx`
-- `examio-fe/src/stores/useAIStudentStore.ts`
+- `kmaedu-be/apps/ai-service/src/backend/tests/test_student_programming_evaluation_service.py`
+- `kmaedu-fe/src/app/k/ai-student/page.tsx`
+- `kmaedu-fe/src/stores/useAIStudentStore.ts`
 
 ## Overview
 - Priority: Medium

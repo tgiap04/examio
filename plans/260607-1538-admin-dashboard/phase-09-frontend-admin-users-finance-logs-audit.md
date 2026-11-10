@@ -4,10 +4,10 @@
 - Research: [researcher-02-frontend.md](../research/researcher-02-frontend.md)
 - Locked design: [brainstorm session record](../../reports/brainstorm-260607-1517-admin-dashboard.md) (Q2: SSE auth, Q3: antd Table, Q4: 2-step confirm)
 - Design system: [DESIGN.md](../../../../DESIGN.md)
-- AdminRoute: [examio-fe/src/routes/guards/AdminRoute.tsx](../../../../examio-fe/src/routes/guards/AdminRoute.tsx)
-- adminApi: [examio-fe/src/apis/adminApi.ts](../../../../examio-fe/src/apis/adminApi.ts)
-- useAdminStore: [examio-fe/src/stores/useAdminStore.ts](../../../../examio-fe/src/stores/useAdminStore.ts)
-- Antd ConfigProvider: [examio-fe/src/provider/AppProviders.tsx](../../../../examio-fe/src/provider/AppProviders.tsx)
+- AdminRoute: [kmaedu-fe/src/routes/guards/AdminRoute.tsx](../../../../kmaedu-fe/src/routes/guards/AdminRoute.tsx)
+- adminApi: [kmaedu-fe/src/apis/adminApi.ts](../../../../kmaedu-fe/src/apis/adminApi.ts)
+- useAdminStore: [kmaedu-fe/src/stores/useAdminStore.ts](../../../../kmaedu-fe/src/stores/useAdminStore.ts)
+- Antd ConfigProvider: [kmaedu-fe/src/provider/AppProviders.tsx](../../../../kmaedu-fe/src/provider/AppProviders.tsx)
 - Phase 02: [phase-02-frontend-foundation.md](phase-02-frontend-foundation.md)
 - Phase 04: [phase-04-backend-admin-users-and-audit.md](phase-04-backend-admin-users-and-audit.md)
 - Phase 06: [phase-06-backend-admin-finance.md](phase-06-backend-admin-finance.md)
@@ -79,21 +79,21 @@
 ## Architecture
 
 ```
-examio-fe/src/pages/admin/
+kmaedu-fe/src/pages/admin/
   AdminUsersPage.tsx
   AdminFinancePage.tsx
   AdminLogsPage.tsx
   AdminAuditPage.tsx
-examio-fe/src/components/admin/
+kmaedu-fe/src/components/admin/
   UserTable.tsx
   UserDetailDrawer.tsx
   FinanceActionModal.tsx
   LogViewer.tsx
   EventSourceProvider.tsx           ← manages SSE lifecycle
   AuditTable.tsx
-examio-fe/src/hooks/
+kmaedu-fe/src/hooks/
   useEventSource.ts                ← reconnect logic
-examio-fe/src/locales/vi/
+kmaedu-fe/src/locales/vi/
   admin.json                       ← extend
 ```
 
@@ -182,21 +182,21 @@ export function useEventSource(url: string | null, options: { onMessage, onError
 ## Related code files
 
 **New:**
-- `examio-fe/src/pages/admin/AdminUsersPage.tsx`
-- `examio-fe/src/pages/admin/AdminFinancePage.tsx`
-- `examio-fe/src/pages/admin/AdminLogsPage.tsx`
-- `examio-fe/src/pages/admin/AdminAuditPage.tsx`
-- `examio-fe/src/components/admin/UserTable.tsx`
-- `examio-fe/src/components/admin/UserDetailDrawer.tsx`
-- `examio-fe/src/components/admin/FinanceActionModal.tsx`
-- `examio-fe/src/components/admin/LogViewer.tsx`
-- `examio-fe/src/components/admin/AuditTable.tsx`
-- `examio-fe/src/hooks/useEventSource.ts`
-- `examio-fe/src/hooks/useDebounce.ts` (cho search filter)
+- `kmaedu-fe/src/pages/admin/AdminUsersPage.tsx`
+- `kmaedu-fe/src/pages/admin/AdminFinancePage.tsx`
+- `kmaedu-fe/src/pages/admin/AdminLogsPage.tsx`
+- `kmaedu-fe/src/pages/admin/AdminAuditPage.tsx`
+- `kmaedu-fe/src/components/admin/UserTable.tsx`
+- `kmaedu-fe/src/components/admin/UserDetailDrawer.tsx`
+- `kmaedu-fe/src/components/admin/FinanceActionModal.tsx`
+- `kmaedu-fe/src/components/admin/LogViewer.tsx`
+- `kmaedu-fe/src/components/admin/AuditTable.tsx`
+- `kmaedu-fe/src/hooks/useEventSource.ts`
+- `kmaedu-fe/src/hooks/useDebounce.ts` (cho search filter)
 
 **Modify:**
-- `examio-fe/src/locales/vi/admin.json` — extend với users/finance/logs/audit keys
-- `examio-fe/src/stores/useAdminStore.ts` — thêm `invalidateAudit()`, `invalidateUsers()`
+- `kmaedu-fe/src/locales/vi/admin.json` — extend với users/finance/logs/audit keys
+- `kmaedu-fe/src/stores/useAdminStore.ts` — thêm `invalidateAudit()`, `invalidateUsers()`
 
 ## Implementation Steps
 

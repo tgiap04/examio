@@ -1,6 +1,6 @@
 # Scout 02 — finance-service, proto, admin/auth/gateway, permissions, infra, CI, docs
 
-Source: Explore agent, 2026-11-10 (read-only; saved by orchestrator). Paths under `examio-be/` unless absolute.
+Source: Explore agent, 2026-11-10 (read-only; saved by orchestrator). Paths under `kmaedu-be/` unless absolute.
 
 ## 1. finance-service — delete whole `apps/finance-service` (83 tracked files)
 - API: Wallet, SePay, FinanceAdmin, FinanceStats modules. Worker: `auth.user.authz_changed` handler (teacher wallet), outbox relay, subscription-expiry sweeper publishing `finance.subscription.changed`. CLI `src/commands/{cli,reconcile-teachers}.ts`.
@@ -8,8 +8,8 @@ Source: Explore agent, 2026-11-10 (read-only; saved by orchestrator). Paths unde
 - Still needed elsewhere → must replace/drop: `GetRevenueStats` (admin overview proCount/vipCount/revenue30d, `revenue` series), `GetUserFinance` (admin user detail), `GetUserBenefits` (document monthly quota, ai-chat limits; free tier filesPerMonth 5 / messagesPerMinute 5 / chatMessagesLimit 30 at `src/types/subscription.ts:40-46`), Debit/Refund (content, document).
 
 ## 2. Proto
-- Delete `proto/examio/finance/v1/{wallet,subscription,finance_admin}.proto`, `proto/examio/events/v1/finance_events.proto`.
-- Edit `proto/examio/document/v1/document.proto:112` comment; `proto/buf.yaml:19-26` stale wallet ignores; `libs/contracts/src/index.ts:6-8,26-34`.
+- Delete `proto/kmaedu/finance/v1/{wallet,subscription,finance_admin}.proto`, `proto/kmaedu/events/v1/finance_events.proto`.
+- Edit `proto/kmaedu/document/v1/document.proto:112` comment; `proto/buf.yaml:19-26` stale wallet ignores; `libs/contracts/src/index.ts:6-8,26-34`.
 - RISK: CI `buf` job (`.github/workflows/ci.yml:20-37`) breaking category FILE → `FILE_NO_DELETE` trips. No precedent of deleting a proto file. Add ignores in buf.yaml or accept; verify locally.
 
 ## 3. admin-service
@@ -29,7 +29,7 @@ Source: Explore agent, 2026-11-10 (read-only; saved by orchestrator). Paths unde
 - Remove WALLET_USE (:27), SUBSCRIPTION_MANAGE (:28) + TEACHER entries (:71-72); FINANCE_ADMIN (:32) + SYSTEM_ADMIN entry (:78).
 - Student AI chat: all `/ai-chat/*` need `ai_chat:use` (gateway `routes.yaml:122-134`, `ai-chat.controller.ts:34`). Attachments need `document:upload` (ai-chat forwards user token to GetDocumentsByIds/AssertOwnership/EnsureProcessed/DeleteDocuments, all `document:upload`, `document.grpc.controller.ts:51-146`). Upload routes `/ai/upload*`, `/ai/quick-upload`, `/ai/upload-image` (`upload.controller.ts`), `/r2/image` (`r2-image.controller.ts:25`), `/ai/recent-uploads` (content `ai.controller.ts:79`) need `document:upload`. Gateway `ai-upload` has `pageFlag: ai-tool` (`routes.yaml:107-114`).
 - Pinning tests: `libs/auth-jwt/src/permissions.spec.ts:10-60`; `test/authz/authz-matrix.rows.ts` (union :18, document rows :420-453 + ai-chat :455-465 expect STUDENT 403, finance rows :472-518, admin finance :610); `test/authz/authz-matrix.spec.ts:14,130`; `handler-declarations.spec.ts:10,29,46`; `test/cross-app/rpc-guard-table.spec.ts:43-51`; `apps/ai-chat-service/test/ownership.e2e-spec.ts:90`, `apps/document-service/test/upload-money.e2e-spec.ts:405` (STUDENT 403).
-- Regenerate: `yarn gen:permissions-doc` (→ docs/generated/permissions-matrix.md + docs/system/permissions.md block), `yarn gen:fe-permissions` (→ examio-fe/src/types/permissions.generated.ts). CI drift jobs `ci.yml:642-681`.
+- Regenerate: `yarn gen:permissions-doc` (→ docs/generated/permissions-matrix.md + docs/system/permissions.md block), `yarn gen:fe-permissions` (→ kmaedu-fe/src/types/permissions.generated.ts). CI drift jobs `ci.yml:642-681`.
 
 ## 7. Infra / CI
 - Delete `deploy/compose/finance.yml`, `deploy/env/finance.env.example`.

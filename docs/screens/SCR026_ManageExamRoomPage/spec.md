@@ -11,7 +11,7 @@ A teacher views and manages their hosted exam rooms — creating, editing, and d
 
 ## Screen Layout
 
-The page renders inside a `TeacherRoute` wrapper with a `max-w-7xl mx-auto` container and standard padding. The layout is a vertical stack: a header row (title + create button), a `RoomStatsSection` stats bar, and a two-column grid (exam room list takes 2/3 width, recent participants sidebar takes 1/3). All regions scroll independently. Two dialogs (`ExamRoomModal`, `DeleteConfirmDialog`) float above the content. Responsive: two-column grid stacks to single column on mobile. (source: `examio-fe/src/pages/k/ManageExamRoomPage.tsx`:207–275)
+The page renders inside a `TeacherRoute` wrapper with a `max-w-7xl mx-auto` container and standard padding. The layout is a vertical stack: a header row (title + create button), a `RoomStatsSection` stats bar, and a two-column grid (exam room list takes 2/3 width, recent participants sidebar takes 1/3). All regions scroll independently. Two dialogs (`ExamRoomModal`, `DeleteConfirmDialog`) float above the content. Responsive: two-column grid stacks to single column on mobile. (source: `kmaedu-fe/src/pages/k/ManageExamRoomPage.tsx`:207–275)
 
 ### Layout Sketch
 
@@ -206,13 +206,13 @@ Omit — no shared polymorphic component rendered on this page.
 
 ## Source References
 
-- Page: `examio-fe/src/pages/k/ManageExamRoomPage.tsx`
-- Exam room store: `examio-fe/src/stores/useExamRoomStore.ts`
-- Quiz set store: `examio-fe/src/stores/useQuizSetStore.ts`
-- Exam attempt API: `examio-fe/src/apis/examAttemptApi.ts`
-- RoomStatsSection: `examio-fe/src/components/organisms/k/RoomStatsSection.tsx` (referenced, not read)
-- ExamRoomList: `examio-fe/src/components/organisms/k/ExamRoomList.tsx` (referenced, not read)
-- RecentParticipantsList: `examio-fe/src/components/organisms/k/RecentParticipantsList.tsx` (referenced, not read)
-- ExamRoomModal: `examio-fe/src/components/organisms/ExamRoomModal.tsx` (referenced, not read)
-- DeleteConfirmDialog: `examio-fe/src/components/organisms/DeleteConfirmDialog.tsx` (referenced, not read)
-- TeacherRoute: `examio-fe/src/components/organisms/TeacherRoute.tsx`
+- Page: `kmaedu-fe/src/pages/k/ManageExamRoomPage.tsx`
+- Exam room store: `kmaedu-fe/src/stores/useExamRoomStore.ts`
+- Quiz set store: `kmaedu-fe/src/stores/useQuizSetStore.ts`
+- Exam attempt API: `kmaedu-fe/src/apis/examAttemptApi.ts`
+- RoomStatsSection: `kmaedu-fe/src/components/organisms/k/RoomStatsSection.tsx` (referenced, not read)
+- ExamRoomList: `kmaedu-fe/src/components/organisms/k/ExamRoomList.tsx` (referenced, not read)
+- RecentParticipantsList: `kmaedu-fe/src/components/organisms/k/RecentParticipantsList.tsx` (referenced, not read)
+- ExamRoomModal: `kmaedu-fe/src/components/organisms/ExamRoomModal.tsx` (referenced, not read)
+- DeleteConfirmDialog: `kmaedu-fe/src/components/organisms/DeleteConfirmDialog.tsx` (referenced, not read)
+- TeacherRoute: `kmaedu-fe/src/components/organisms/TeacherRoute.tsx`

@@ -1,6 +1,6 @@
-# Route List — examio
+# Route List — kmaedu
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Stack**: TypeScript (NestJS monorepo backend + React 19 SPA frontend)
 **Gateway**: `http://localhost:3000` — single HTTP entry point; all backend routes live under `/api/v1`
@@ -603,7 +603,7 @@ Internal service routes — not directly exposed to clients (gateway proxies to 
 
 ## Frontend Routes
 
-### File: `examio-fe/src/routes/index.tsx`
+### File: `kmaedu-fe/src/routes/index.tsx`
 
 React Router v6 `createBrowserRouter` — all routes use layout wrappers.
 

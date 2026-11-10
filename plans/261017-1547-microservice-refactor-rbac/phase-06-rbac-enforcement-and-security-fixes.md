@@ -16,7 +16,7 @@
 - TEACHER has no `flashcard:study`/`quiz:practice`/`exam:take`, but may preview OWN sets. The pattern is "permission OR owner": `@RequireOwnerOrPermission(perm, OwnerResolver)` (new, below). The ad-hoc service helper `assertPermissionOrOwner` is not built. <!-- Red Team: RT-7 -->
 - Ownership stays in services as `findFirst({ where: { id, userId } })` → 404 (no existence leak). Most quizset/flashcardset methods already do this (scout §1).
 - `whitelist` stores user ids (`flashcardset.service.ts:1088,1392`). `users/search` matches `email contains` (`:1411+`) and returns email. Fix: exact-email or username/name prefix match, no email in results.
-- FE does not call `GET /quizsets/public/:id` (grep `examio-fe/src`: no hit) → delete it (gap #1). `examrooms/get-public` and `examsessions/get-public` are used (`examRoomApi.ts:89`, `examSessionApi.ts:118`) → sanitize, do not delete.
+- FE does not call `GET /quizsets/public/:id` (grep `kmaedu-fe/src`: no hit) → delete it (gap #1). `examrooms/get-public` and `examsessions/get-public` are used (`examRoomApi.ts:89`, `examSessionApi.ts:118`) → sanitize, do not delete.
 - `MyMaterialsPage.tsx:433` (student) calls `POST /flashcardsets/:id/share`. Owner-only breaks it until phase 07 changes the FE to build the link client-side.
 - Large service files (quizset 1398, flashcardset 1774, examsession 1149 lines). Put new logic in small new files (mappers/access helpers), not in the giants.
 - <!-- Red Team: RT-4 --> exam-service has **no `ThrottlerModule`** (grep `ThrottlerModule`: only gateway, admin, auth), so any `@Throttle` added there is a silent no-op. Code entry is compared with plain `!==`/`===`: `flashcardset.service.ts:1124`, `examsession.service.ts:493`, and `examattempt.service.ts:52-92` (`assertSessionAccess`, `providedCode === …`, called from `start` `:170` and `:1178`). `verify-code` is unauthenticated today (`flashcardset.controller.ts:599-611`, `examsession.controller.ts:197-210`).
@@ -134,35 +134,35 @@ FE reaction to `auth:reauth` (refresh, then reconnect) is phase 09.
 ```
 
 ## Related Code Files
-File ownership (globs): `examio-be/apps/exam-service/src/modules/**` (controllers, + listed services/mappers/helpers), `examio-be/apps/exam-service/test/{ownership/**,study-room-ws.e2e-spec.ts}`, `examio-be/apps/auth-service/test/ownership/**` (new spec files only; auth source stays 04-final), `examio-be/apps/finance-service/src/modules/**/*.controller.ts`, `examio-be/apps/admin-service/src/modules/**/*.controller.ts`, `examio-be/apps/admin-service/src/modules/admin-users/dto/update-user.body.ts`, `examio-be/apps/r2-service/src/r2-service.controller.ts`, `examio-be/libs/auth-jwt/src/{owner-or-permission.decorator.ts,owner-or-permission.guard.ts,index.ts}`, `examio-be/libs/auth-jwt/test/**`, `examio-be/test/authz/**`, `examio-be/package.json` (devDependency `socket.io-client` line only). <!-- Red Team: RT-4, RT-5, RT-7 -->
+File ownership (globs): `kmaedu-be/apps/exam-service/src/modules/**` (controllers, + listed services/mappers/helpers), `kmaedu-be/apps/exam-service/test/{ownership/**,study-room-ws.e2e-spec.ts}`, `kmaedu-be/apps/auth-service/test/ownership/**` (new spec files only; auth source stays 04-final), `kmaedu-be/apps/finance-service/src/modules/**/*.controller.ts`, `kmaedu-be/apps/admin-service/src/modules/**/*.controller.ts`, `kmaedu-be/apps/admin-service/src/modules/admin-users/dto/update-user.body.ts`, `kmaedu-be/apps/r2-service/src/r2-service.controller.ts`, `kmaedu-be/libs/auth-jwt/src/{owner-or-permission.decorator.ts,owner-or-permission.guard.ts,index.ts}`, `kmaedu-be/libs/auth-jwt/test/**`, `kmaedu-be/test/authz/**`, `kmaedu-be/package.json` (devDependency `socket.io-client` line only). <!-- Red Team: RT-4, RT-5, RT-7 -->
 
 - Create:
-  - `/Users/tgiap.dev/devs/examio/examio-be/libs/auth-jwt/src/{owner-or-permission.decorator.ts,owner-or-permission.guard.ts}` (`@RequireOwnerOrPermission`, `OwnerResolver` interface) <!-- Red Team: RT-7 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/flashcardset/{flashcardset-access.ts,flashcardset-owner.resolver.ts,flashcardset-public.mapper.ts}` <!-- Red Team: RT-7 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/examsession/examsession-public.mapper.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/examattempt/examattempt-access.ts` <!-- Red Team: RT-7 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/common/user-search.service.ts` (shared by flashcardset + examsession, DRY)
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/common/access-code-guard.ts` (+ `.spec.ts`) <!-- Red Team: RT-4 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/study-room/study-room-authz.handler.ts` (`auth.user.authz_changed` consumer) <!-- Red Team: RT-5 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/word-family/word-family-generation-limit.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/test/authz/{handler-declarations.spec.ts,authz-matrix.spec.ts,authenticated-allowlist.ts,test-tokens.ts}` <!-- Red Team: RT-6, RT-7 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/test/ownership/{flashcardset,flashcard-study,examattempt,examsession,quizset,examroom,ai,ai-chat}.ownership.e2e-spec.ts` (two users, real Postgres) <!-- Red Team: RT-7 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/test/study-room-ws.e2e-spec.ts` <!-- Red Team: RT-5 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/test/ownership/demoted-owner.ownership.e2e-spec.ts` <!-- Updated: Validation Session 1 - demotion keeps content -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service/test/ownership/devices.ownership.e2e-spec.ts` (user B cannot list/revoke A's devices; the other auth allowlist entries are `selfScoped`) <!-- Red Team: RT-7 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/auth-jwt/src/{owner-or-permission.decorator.ts,owner-or-permission.guard.ts}` (`@RequireOwnerOrPermission`, `OwnerResolver` interface) <!-- Red Team: RT-7 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/flashcardset/{flashcardset-access.ts,flashcardset-owner.resolver.ts,flashcardset-public.mapper.ts}` <!-- Red Team: RT-7 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/examsession/examsession-public.mapper.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/examattempt/examattempt-access.ts` <!-- Red Team: RT-7 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/common/user-search.service.ts` (shared by flashcardset + examsession, DRY)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/common/access-code-guard.ts` (+ `.spec.ts`) <!-- Red Team: RT-4 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/study-room/study-room-authz.handler.ts` (`auth.user.authz_changed` consumer) <!-- Red Team: RT-5 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/word-family/word-family-generation-limit.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/test/authz/{handler-declarations.spec.ts,authz-matrix.spec.ts,authenticated-allowlist.ts,test-tokens.ts}` <!-- Red Team: RT-6, RT-7 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/test/ownership/{flashcardset,flashcard-study,examattempt,examsession,quizset,examroom,ai,ai-chat}.ownership.e2e-spec.ts` (two users, real Postgres) <!-- Red Team: RT-7 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/test/study-room-ws.e2e-spec.ts` <!-- Red Team: RT-5 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/test/ownership/demoted-owner.ownership.e2e-spec.ts` <!-- Updated: Validation Session 1 - demotion keeps content -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/auth-service/test/ownership/devices.ownership.e2e-spec.ts` (user B cannot list/revoke A's devices; the other auth allowlist entries are `selfScoped`) <!-- Red Team: RT-7 -->
 - Modify: every controller in the table. Services:
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/quizset/quizset.service.ts` (remove `getPublic`)
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/flashcardset/flashcardset.service.ts` (share owner-only, generate-code, `verifyAccessCode` `:1114-1130` → code guard, use mapper/access/search) <!-- Red Team: RT-4 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/examsession/examsession.service.ts` (generate-code, study mapper, search, `verifyAccessCode` `:483-500` → code guard) <!-- Red Team: RT-4 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/examroom/examroom.service.ts` (get-public select)
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/examattempt/examattempt.service.ts` (`assertSessionAccess` `:52-92`: no host branch, code guard instead of `===`) <!-- Red Team: RT-4 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/student/student.service.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/flashcard-study/flashcard-study.service.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/ai-chat/ai-chat.service.ts` (`exists`)
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/word-family/word-family.service.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/study-room/{study-room.gateway.ts,study-room-socket-auth.service.ts,study-room.events.ts,study-room.module.ts}` (middleware checks, `OnGatewayConnection`, `auth:reauth` event, consumer wiring) <!-- Red Team: RT-5 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/admin-service/src/modules/admin-users/dto/update-user.body.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/package.json` (devDependency `socket.io-client@^4.8`) <!-- Red Team: RT-5 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/quizset/quizset.service.ts` (remove `getPublic`)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/flashcardset/flashcardset.service.ts` (share owner-only, generate-code, `verifyAccessCode` `:1114-1130` → code guard, use mapper/access/search) <!-- Red Team: RT-4 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/examsession/examsession.service.ts` (generate-code, study mapper, search, `verifyAccessCode` `:483-500` → code guard) <!-- Red Team: RT-4 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/examroom/examroom.service.ts` (get-public select)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/examattempt/examattempt.service.ts` (`assertSessionAccess` `:52-92`: no host branch, code guard instead of `===`) <!-- Red Team: RT-4 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/student/student.service.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/flashcard-study/flashcard-study.service.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/ai-chat/ai-chat.service.ts` (`exists`)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/word-family/word-family.service.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/study-room/{study-room.gateway.ts,study-room-socket-auth.service.ts,study-room.events.ts,study-room.module.ts}` (middleware checks, `OnGatewayConnection`, `auth:reauth` event, consumer wiring) <!-- Red Team: RT-5 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/admin-service/src/modules/admin-users/dto/update-user.body.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/package.json` (devDependency `socket.io-client@^4.8`) <!-- Red Team: RT-5 -->
 - Delete: `quizset.controller.ts:256` handler + service method `quizset.service.ts:245-270`.
 
 ## Implementation Steps
@@ -252,10 +252,10 @@ File ownership (globs): `examio-be/apps/exam-service/src/modules/**` (controller
 - [ ] Manual smoke STUDENT vs TEACHER+ADMIN — **partial, left open:** API-level curl smoke run for STUDENT vs TEACHER (fresh signup, role set to TEACHER). Not run: browser FE pass, and a single TEACHER+ADMIN actor. Carried to P09 (see Next Steps item 10).
 
 ## Success Criteria
-- `cd examio-be && yarn typecheck && yarn build:all && yarn test`: exit 0, including `yarn test test/authz`.
-- `cd examio-be/apps/exam-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/ownership test/study-room-ws.e2e-spec.ts`: exit 0. `cd examio-be/apps/auth-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/ownership`: exit 0. <!-- Red Team: RT-5, RT-7 -->
-- `grep -rn "@Authenticated()" examio-be/apps/{exam,finance,admin,r2}-service/src` → only allowlisted handlers + the WS gateway class.
-- `grep -rn "@Throttle" examio-be/apps/exam-service/src` → none. `grep -rn "accessCode?.toString() !==\|providedCode ===" examio-be/apps/exam-service/src` → none. <!-- Red Team: RT-4 -->
+- `cd kmaedu-be && yarn typecheck && yarn build:all && yarn test`: exit 0, including `yarn test test/authz`.
+- `cd kmaedu-be/apps/exam-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/ownership test/study-room-ws.e2e-spec.ts`: exit 0. `cd kmaedu-be/apps/auth-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/ownership`: exit 0. <!-- Red Team: RT-5, RT-7 -->
+- `grep -rn "@Authenticated()" kmaedu-be/apps/{exam,finance,admin,r2}-service/src` → only allowlisted handlers + the WS gateway class.
+- `grep -rn "@Throttle" kmaedu-be/apps/exam-service/src` → none. `grep -rn "accessCode?.toString() !==\|providedCode ===" kmaedu-be/apps/exam-service/src` → none. <!-- Red Team: RT-4 -->
 - `curl -s localhost:<gw>/api/v1/quizsets/public/x` → 404 `ROUTE_NOT_FOUND`/404.
 - STUDENT session in browser: AI tool, manage pages, wallet calls → 403. Study of a whitelisted flashcard set works.
 
@@ -286,7 +286,7 @@ File ownership (globs): `examio-be/apps/exam-service/src/modules/**` (controller
 - Unblocks 07 (sharing builds on `flashcardset-access.ts`, `access-code-guard.ts`, the allowlist), 08 (admin perms in place), 09 (FE mirrors this table; handles `auth:reauth`), 12 (moves the WS middleware unchanged). <!-- Red Team: RT-4, RT-5, RT-6 -->
 - [CROSS-PHASE] <!-- Red Team: RT-4 --> Gateway `rateLimit` for `users/search`, `*/verify-code`, `*/with-code`, `*/unlock` lives in `apps/gateway-service/config/routes.yaml` (P05 owns it). The service-side lockout does not depend on it.
 - Resolved (reconciliation X4): on `authz_changed` the server emits `auth:reauth` then disconnects; `room:kicked` stays only for the in-room ban. P12 now matches this phase. <!-- Reconcile: X4 -->
-- [CROSS-PHASE] Deleting `GET /quizsets/public/:id` must be confirmed against mobile (`examio-app`, phase 18) — not in this checkout.
+- [CROSS-PHASE] Deleting `GET /quizsets/public/:id` must be confirmed against mobile (`kmaedu-app`, phase 18) — not in this checkout.
 - Resolved (validation Q1): word-family generation is free (no finance `Debit`), TEACHER-only (`word_family:generate`), rate-limited at the gateway (`word-family-generate`, P05) plus the 20/day per-user cap. <!-- Updated: Validation Session 1 - word-family gen free + gateway rate-limited -->
 
 ### Deferred / carried (sync 2026-10-20)
@@ -296,7 +296,7 @@ File ownership (globs): `examio-be/apps/exam-service/src/modules/**` (controller
 4. Multipart with a real file is not tested live (needs R2). Cover in the P15/P16 cutover smoke. Owner: P16 cutover runbook.
 5. P09 must apply the response-shape change list in `evidence/phase-06/response-shape-changes.md` (sources: `evidence/phase-06-runs.md` and the implementer summaries). Owner: P09 implementer.
 6. Code-unlocked students' access is not remembered until P07 (a code unlock lasts one request). Owner: P07 implementer.
-7. `GET /quizsets/public/:id` removed. Confirm mobile does not call it during P18. Owner: P18 implementer (examio-app).
+7. `GET /quizsets/public/:id` removed. Confirm mobile does not call it during P18. Owner: P18 implementer (kmaedu-app).
 8. Zod pipe now enforces DTOs. Run a browser pass on exam-session and study-room forms in P09. Owner: P09 implementer.
 9. BaseRepository cache key change affects all services using it (verified finance/exam only). Re-verify any other consumer in P10/P11. Owner: P10 implementer.
 10. Added by sync: manual smoke is API-level only (curl, STUDENT vs TEACHER). The browser FE pass and a single TEACHER+ADMIN actor are not in evidence. Run in P09 browser smoke. Owner: P09 implementer.

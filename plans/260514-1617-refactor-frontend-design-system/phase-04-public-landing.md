@@ -1,12 +1,12 @@
 # Phase 04: Public Layout And Landing Migration
 
 ## Context Links
-- `examio-fe/src/routes/layouts/PublicLayout.tsx`
-- `examio-fe/src/components/molecules/HeaderSection.tsx`
-- `examio-fe/src/components/organisms/FooterSection.tsx`
-- `examio-fe/src/components/organisms/HeroSection.tsx`
-- `examio-fe/src/components/organisms/FeaturesSectionHome.tsx`
-- `examio-fe/src/components/organisms/PricingSection.tsx`
+- `kmaedu-fe/src/routes/layouts/PublicLayout.tsx`
+- `kmaedu-fe/src/components/molecules/HeaderSection.tsx`
+- `kmaedu-fe/src/components/organisms/FooterSection.tsx`
+- `kmaedu-fe/src/components/organisms/HeroSection.tsx`
+- `kmaedu-fe/src/components/organisms/FeaturesSectionHome.tsx`
+- `kmaedu-fe/src/components/organisms/PricingSection.tsx`
 - `ui-design.html`
 
 ## Overview

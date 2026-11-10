@@ -5,7 +5,7 @@ Source artifacts: `scout-report.md`, `_session-context.md`.
 ## Public Visitor & Account Access
 
 ### US001 - Create an account
-As a visitor, I want to register with email/password or Google OAuth so that I can access Examio learning features.
+As a visitor, I want to register with email/password or Google OAuth so that I can access KMAEdu learning features.
 - References: routes `/register`, `/api/v1/auth/register`, `/api/v1/auth/google`; entities MODEL001 User, MODEL002 UserSession.
 
 ### US002 - Sign in and keep my session active
@@ -84,10 +84,10 @@ As a teacher/admin, I want to create folders, upload knowledge files, import dat
 
 ## Mobile Companion
 
-### US019 - Use core Examio flows on mobile
-As a mobile user, I want to log in, view AI, study, exams, history, profile, and wallet screens so that I can use Examio from Android or iOS.
-- References: `examio-app` Android Compose screens, iOS SwiftUI views, shared KMP repositories; entities mirror web/backend models. Most non-auth platform UIs are mock-data backed and need repository wiring.
+### US019 - Use core KMAEdu flows on mobile
+As a mobile user, I want to log in, view AI, study, exams, history, profile, and wallet screens so that I can use KMAEdu from Android or iOS.
+- References: `kmaedu-app` Android Compose screens, iOS SwiftUI views, shared KMP repositories; entities mirror web/backend models. Most non-auth platform UIs are mock-data backed and need repository wiring.
 
 ### US020 - Receive deep links on mobile
 As a mobile user, I want exam, flashcard, chat, profile, and OAuth links to open the right mobile destination so that shared workflows continue in-app.
-- References: Android `examio://auth`, iOS `examio` URL scheme, KMP `DeepLink`; Needs verification for non-auth deep link handling completeness.
+- References: Android `kmaedu://auth`, iOS `kmaedu` URL scheme, KMP `DeepLink`; Needs verification for non-auth deep link handling completeness.

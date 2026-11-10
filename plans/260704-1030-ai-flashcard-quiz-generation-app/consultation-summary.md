@@ -1,12 +1,12 @@
-# Consultation — AI Flashcard/Quiz Generation for examio-app
+# Consultation — AI Flashcard/Quiz Generation for kmaedu-app
 
 **Date:** 2026-07-04 · **Lens:** CTO (default) · **Status:** design recorded, awaiting user confirmation of assumptions
 
 ## The Commission (as stated)
-"Add a flashcard/quiz generation feature to `examio-app` like the one in `examio-fe`, reusing `examio-be`."
+"Add a flashcard/quiz generation feature to `kmaedu-app` like the one in `kmaedu-fe`, reusing `kmaedu-be`."
 
 ## The Reframe (key finding)
-The feature is **~80% already implemented in `examio-app`, on both platforms** — but it is **orphaned** (not wired into DI or navigation). This is not a build-from-scratch job; it is **wire-up + contract-verify + finish the save/navigation seam**.
+The feature is **~80% already implemented in `kmaedu-app`, on both platforms** — but it is **orphaned** (not wired into DI or navigation). This is not a build-from-scratch job; it is **wire-up + contract-verify + finish the save/navigation seam**.
 
 What already exists:
 - **Shared KMP** (`shared/.../features/ai/`): `AIGeneratorApiService` (`generate-from-file`, `regenerate/{id}`, `job/{id}`, `recent-uploads`, `upload/{id}`), DTOs (`AIGeneratorModels.kt`), `AiJobPoller` (exponential-backoff polling), `AIChatRepository`.

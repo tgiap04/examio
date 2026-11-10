@@ -23,11 +23,11 @@ Three bugs: (1) `api.ts:41` clears redirect target immediately after setting it 
 
 ## Key Changes
 
-- `examio-fe/src/apis/api.ts` — remove erroneous `clearRedirectBackTarget()` in `handleAuthFailure`
-- `examio-fe/src/components/organisms/auth/signup-form.tsx` — read `?from=` URL param, apply alongside `response.redirectTo`
-- `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx` — check `isAuthenticated` before calling `checkFlashcardSetAccess`
-- `examio-fe/src/pages/exam-session/ExamSessionPage.tsx` — check `isAuthenticated` before calling `checkExamSessionAccessApi`
-- `examio-fe/src/pages/exam-session/ExamQuizPage.tsx` — audit: check if needs auth guard or ProtectedRoute wrapper
+- `kmaedu-fe/src/apis/api.ts` — remove erroneous `clearRedirectBackTarget()` in `handleAuthFailure`
+- `kmaedu-fe/src/components/organisms/auth/signup-form.tsx` — read `?from=` URL param, apply alongside `response.redirectTo`
+- `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx` — check `isAuthenticated` before calling `checkFlashcardSetAccess`
+- `kmaedu-fe/src/pages/exam-session/ExamSessionPage.tsx` — check `isAuthenticated` before calling `checkExamSessionAccessApi`
+- `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx` — audit: check if needs auth guard or ProtectedRoute wrapper
 
 ## Success Criteria
 

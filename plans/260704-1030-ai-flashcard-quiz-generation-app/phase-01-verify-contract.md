@@ -19,8 +19,8 @@
 
 ## Related Code Files
 - Read: `shared/.../features/ai/api/AIGeneratorApiService.kt`, `models/AIGeneratorModels.kt`, `util/AiJobPoller.kt`
-- Read (BE truth): `examio-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`, `examio-be/apps/exam-service/src/modules/ai/{ai.controller.ts,ai.service.ts,dto/ai.dto.ts}`
-- Read (iOS): `iosApp/ExamioApp/Features/AI/AIToolViewModel.swift`
+- Read (BE truth): `kmaedu-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`, `kmaedu-be/apps/exam-service/src/modules/ai/{ai.controller.ts,ai.service.ts,dto/ai.dto.ts}`
+- Read (iOS): `iosApp/KMAEduApp/Features/AI/AIToolViewModel.swift`
 
 ## Implementation Steps
 1. Diff each client DTO field against BE DTO/response. Produce a drift table.

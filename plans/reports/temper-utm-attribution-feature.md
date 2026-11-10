@@ -69,7 +69,7 @@ webpack 5.106.0 compiled successfully in 2036 ms
 ```
 ✅ **PASS**
 
-#### Frontend (`examio-fe`)
+#### Frontend (`kmaedu-fe`)
 **Command:** `yarn build` (tsc + vite)
 ```
 ✓ built in 9.21s

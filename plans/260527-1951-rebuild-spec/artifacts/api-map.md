@@ -152,7 +152,7 @@ SePay callback endpoint for payment completion/failure processing.
 ## API018 - Service-to-Service Auth & Events
 Internal contracts for JWT validation, permission checks, wallet bootstrap, subscription checks, file storage, OCR, and asynchronous events.
 - gRPC auth methods: `ValidateToken`, `GetUserInfo`, `CheckPermission`
-- RabbitMQ exchange: `examio.events`
+- RabbitMQ exchange: `kmaedu.events`
 - Event types: `user.created`, `user.updated`, `user.deleted`, `user.verified`, `payment.success`, `payment.failed`, `wallet.created`, `wallet.updated`, `subscription.activated`, `subscription.expired`, `exam.created`, `exam.started`, `exam.submitted`, `ocr.requested`, `ocr.completed`, `ocr.failed`
 - Features: F001, F006, F010, F011
 - Entities: MODEL001 User, MODEL006 Wallet, MODEL008 Payment, MODEL009 UserSubscription, MODEL024 UserStorage, MODEL025 Document

@@ -7,7 +7,7 @@
 
 ## Overview
 
-This feature no longer exists. The GenAI Knowledge page (`/k/genai-knowledge`) was removed from the frontend (commit `f1ed596`) and the whole `modules/ai-tutor` backend with its `/api/v1/ai/tutor/*` routes (knowledge folders, knowledge files, dataset imports, knowledge stats, tutor graph) was removed from the backend (commit `343fa97`). `git grep` finds no `ai-tutor`, `ai/tutor` or knowledge-folder code in `examio-be` or `examio-fe/src` today; two orphan files remain in the frontend (`examio-fe/src/types/genai-knowledge.ts`, `examio-fe/src/lib/genai-knowledge-cache.ts`) and are not imported by any page.
+This feature no longer exists. The GenAI Knowledge page (`/k/genai-knowledge`) was removed from the frontend (commit `f1ed596`) and the whole `modules/ai-tutor` backend with its `/api/v1/ai/tutor/*` routes (knowledge folders, knowledge files, dataset imports, knowledge stats, tutor graph) was removed from the backend (commit `343fa97`). `git grep` finds no `ai-tutor`, `ai/tutor` or knowledge-folder code in `kmaedu-be` or `kmaedu-fe/src` today; two orphan files remain in the frontend (`kmaedu-fe/src/types/genai-knowledge.ts`, `kmaedu-fe/src/lib/genai-knowledge-cache.ts`) and are not imported by any page.
 
 ## What replaced it
 

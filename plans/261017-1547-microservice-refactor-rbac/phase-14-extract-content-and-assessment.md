@@ -2,7 +2,7 @@
 
 ## Context Links
 - [plan.md](./plan.md) · [planner-brief.md](./reports/planner-brief.md) decisions 5, 8, 9 · [red-team-changes.md](./reports/red-team-changes.md) RT-1, RT-8, RT-11, RT-15 (authoritative over this file's earlier text) <!-- Red Team: RT-1, RT-8, RT-11, RT-15 -->
-- `/Users/tgiap.dev/devs/examio/ARCHITECTURE.md` §4.4 (content/assessment rows + boundary notes), §6.2 (`content/v1`), §6.3 events, §7.3 snapshots, §9.4 flow, §12 P5, **§13 checklist**, Appendix B
+- `/Users/tgiap.dev/devs/kmaedu/ARCHITECTURE.md` §4.4 (content/assessment rows + boundary notes), §6.2 (`content/v1`), §6.3 events, §7.3 snapshots, §9.4 flow, §12 P5, **§13 checklist**, Appendix B
 - Prior: [phase-07](./phase-07-quiz-sharing-and-student-practice.md) (QuizSet sharing, practice), [phase-10](./phase-10-cut-cross-db-access.md) (`Debit`/`Refund`, shared finance client, `GetPublicProfilesByIds`), [phase-11](./phase-11-database-per-service.md) (`r2_delete_tasks`), [phase-13](./phase-13-extract-ai-chat.md), [phase-15](./phase-15-document-service-and-ai-service-db.md) (generation already event-driven, RT-1 charge flow)
 
 ## Overview
@@ -25,7 +25,7 @@
 
 ## Requirements
 Functional — contracts
-- `examio.content.v1.ContentService` (server: content; client: assessment):
+- `kmaedu.content.v1.ContentService` (server: content; client: assessment):
 ```proto
 rpc GetQuizSetSnapshot(GetQuizSetSnapshotRequest) returns (QuizSetSnapshot);   // caller token must be owner, else NOT_FOUND
 rpc GetQuizSetsByIds(GetQuizSetsByIdsRequest) returns (GetQuizSetsByIdsResponse); // only sets owned by caller; missing ids omitted
@@ -102,13 +102,13 @@ Gateway `config/routes.yaml` (phase-05 schema; `path` regex wins over `prefix`).
 
 ## Related Code Files
 File ownership (globs):
-- Create: `/Users/tgiap.dev/devs/examio/examio-be/apps/{content,assessment}-service/**`, `/Users/tgiap.dev/devs/examio/examio-be/proto/examio/content/v1/content.proto`, `.../proto/examio/events/v1/content_events.proto`, `.../deploy/compose/{content,assessment}.yml`, `.../deploy/env/{content,assessment}.env.example`
-- Delete: `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/**`, `.../deploy/compose/exam.yml`, `.../deploy/env/exam.env.example`
-- Modify: `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/config/routes.yaml` (all remaining exam entries), gateway env (upstreams)
-- Modify: `/Users/tgiap.dev/devs/examio/examio-be/deploy/postgres/init/01-service-schemas.sh` (drop `exam` from the list; DB reset), `.../{nest-cli.json,package.json,jest.config.js,deploy/docker-compose.yml,scripts/check-model-ownership.ts}`
-- Modify (decorator/constant lines only; allowlists live in code <!-- Reconcile: X6 -->): `/Users/tgiap.dev/devs/examio/examio-be/apps/r2-service/src/r2-service.controller.ts` (`DeleteObjects` `@ServiceOnly`: + `content`, − `exam`), `/Users/tgiap.dev/devs/examio/examio-be/apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts` (`Debit`/`Refund` caller lists: − `exam`), ai-service `src/backend/auth/service_token.py` (`ALLOWED_CALLERS`: − `svc:exam`), `/Users/tgiap.dev/devs/examio/examio-be/deploy/rabbitmq/definitions.template.json` (users `content`, `assessment`; remove `exam`) <!-- Red Team: RT-1, RT-2, RT-8 -->
-- Modify: `/Users/tgiap.dev/devs/examio/examio-be/apps/{admin,vocabulary,ai-chat}-service/src/**` only if they still name `exam-service` hosts in env/clients (grep)
-- Modify (FE, drift banner) <!-- Red Team: RT-15 -->: `/Users/tgiap.dev/devs/examio/examio-fe/src/apis/examSessionApi.ts` (`refreshSnapshot`, `snapshotOutdated`/`canRefreshSnapshot` types), `.../examio-fe/src/stores/useExamRoomDetailStore.ts` (refresh action + invalidate the cached session), `.../examio-fe/src/pages/k/components/session-card.tsx` and `.../examio-fe/src/pages/k/ManageExamRoomDetailPage.tsx` (banner + button). New component `.../examio-fe/src/pages/k/components/snapshot-outdated-banner.tsx`.
+- Create: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/{content,assessment}-service/**`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/proto/kmaedu/content/v1/content.proto`, `.../proto/kmaedu/events/v1/content_events.proto`, `.../deploy/compose/{content,assessment}.yml`, `.../deploy/env/{content,assessment}.env.example`
+- Delete: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/**`, `.../deploy/compose/exam.yml`, `.../deploy/env/exam.env.example`
+- Modify: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/config/routes.yaml` (all remaining exam entries), gateway env (upstreams)
+- Modify: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/postgres/init/01-service-schemas.sh` (drop `exam` from the list; DB reset), `.../{nest-cli.json,package.json,jest.config.js,deploy/docker-compose.yml,scripts/check-model-ownership.ts}`
+- Modify (decorator/constant lines only; allowlists live in code <!-- Reconcile: X6 -->): `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/r2-service/src/r2-service.controller.ts` (`DeleteObjects` `@ServiceOnly`: + `content`, − `exam`), `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts` (`Debit`/`Refund` caller lists: − `exam`), ai-service `src/backend/auth/service_token.py` (`ALLOWED_CALLERS`: − `svc:exam`), `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/rabbitmq/definitions.template.json` (users `content`, `assessment`; remove `exam`) <!-- Red Team: RT-1, RT-2, RT-8 -->
+- Modify: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/{admin,vocabulary,ai-chat}-service/src/**` only if they still name `exam-service` hosts in env/clients (grep)
+- Modify (FE, drift banner) <!-- Red Team: RT-15 -->: `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/apis/examSessionApi.ts` (`refreshSnapshot`, `snapshotOutdated`/`canRefreshSnapshot` types), `.../kmaedu-fe/src/stores/useExamRoomDetailStore.ts` (refresh action + invalidate the cached session), `.../kmaedu-fe/src/pages/k/components/session-card.tsx` and `.../kmaedu-fe/src/pages/k/ManageExamRoomDetailPage.tsx` (banner + button). New component `.../kmaedu-fe/src/pages/k/components/snapshot-outdated-banner.tsx`.
 - Docs (`CLAUDE.md`, `docs/system/*`) are updated in phase 19, not here.
 
 ## Implementation Steps
@@ -122,7 +122,7 @@ Assessment moves:
 15. Replace every live question read (examsession `detailsQuizQuestion`, quizSet relations) with snapshot readers (`snapshot.reader.ts`: select by mode/label, shuffle, strip answers, grade) behind `snapshot.cache.ts` (LRU, 5 min, key `<sessionId>:<hash>`). Drop `quizSnapshot` from every list `select`. <!-- Red Team: RT-15 -->
 16. Snapshot write on create; `refresh-snapshot` endpoint with the row-locked guard; 1 MB cap; `snapshotOutdated`/`canRefreshSnapshot` on the host session views. `available-labels` from the snapshot. Room create/list via `GetQuizSetsByIds`. <!-- Red Team: RT-15 -->
 17. history-stats via content + document RPCs.
-18. FE: `snapshot-outdated-banner.tsx` + store action + API; `yarn build && yarn lint` in `examio-fe`. <!-- Red Team: RT-15 -->
+18. FE: `snapshot-outdated-banner.tsx` + store action + API; `yarn build && yarn lint` in `kmaedu-fe`. <!-- Red Team: RT-15 -->
 Cutover + delete:
 19. Run both migrate jobs, switch the YAML, run the smoke matrix (below), then `git rm -r apps/exam-service`. Remove the `exam` project/scripts/compose/env, the `exam` RabbitMQ user and `exam` from the init schema list. Ownership map without `exam`.
 
@@ -157,7 +157,7 @@ Write first:
 - [x] Email contract test (content + assessment) <!-- Red Team: RT-15 -->
 - [x] Gateway YAML (no `exam` upstream)
 - [x] Delete exam-service + init/compose/env/scripts cleanup
-- [x] [CARRIED from 09] D4 retire the legacy `libs/common` event consumer (`event-subscriber.service.ts:50` JSON.parse outside try) with consumers on `@examio/messaging`; D8 public `ExamSessionPage` renders `sessionUnavailable`
+- [x] [CARRIED from 09] D4 retire the legacy `libs/common` event consumer (`event-subscriber.service.ts:50` JSON.parse outside try) with consumers on `@kmaedu/messaging`; D8 public `ExamSessionPage` renders `sessionUnavailable`
 - [x] [CARRIED from 10] N3: session `whitelist` accepts any string; validate ids before storage (`create-examsession.dto.ts:30`, `sharing.dto.ts:10`).
 
 ## Verification
@@ -169,11 +169,11 @@ Write first:
 - Not run live: AI generate-from-file money flow, ADMIN permission row, flashcard study UI (covered by e2e).
 
 ## Success Criteria
-- `test ! -d /Users/tgiap.dev/devs/examio/examio-be/apps/exam-service && echo ok` → `ok`. `grep -rn "exam-service\|EXAM_SERVICE_URL" /Users/tgiap.dev/devs/examio/examio-be --include='*.ts' --include='*.yaml' --include='*.yml' --include='*.json' --include='*.example'` → no output.
-- `cd /Users/tgiap.dev/devs/examio/examio-be && yarn build && yarn test && npx depcruise apps libs && npx ts-node scripts/check-model-ownership.ts --strict` green.
-- `grep -rn "deleteFile(\|deleteImage(" /Users/tgiap.dev/devs/examio/examio-be/apps/content-service/src --exclude-dir=r2-delete` → no output. <!-- Red Team: RT-8 -->
-- `grep -rn "auth.user.deleted" /Users/tgiap.dev/devs/examio/examio-be/apps/{content,assessment}-service/src` → no output. <!-- Red Team: RT-11 -->
-- Compose from an empty volume: all services healthy. The phase-01 route snapshot test is green. `cd /Users/tgiap.dev/devs/examio/examio-fe && yarn build && yarn lint` green. <!-- Red Team: RT-15 -->
+- `test ! -d /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service && echo ok` → `ok`. `grep -rn "exam-service\|EXAM_SERVICE_URL" /Users/tgiap.dev/devs/kmaedu/kmaedu-be --include='*.ts' --include='*.yaml' --include='*.yml' --include='*.json' --include='*.example'` → no output.
+- `cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && yarn build && yarn test && npx depcruise apps libs && npx ts-node scripts/check-model-ownership.ts --strict` green.
+- `grep -rn "deleteFile(\|deleteImage(" /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/content-service/src --exclude-dir=r2-delete` → no output. <!-- Red Team: RT-8 -->
+- `grep -rn "auth.user.deleted" /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/{content,assessment}-service/src` → no output. <!-- Red Team: RT-11 -->
+- Compose from an empty volume: all services healthy. The phase-01 route snapshot test is green. `cd /Users/tgiap.dev/devs/kmaedu/kmaedu-fe && yarn build && yarn lint` green. <!-- Red Team: RT-15 -->
 - Manual FE: teacher creates a quiz → room → session (private code); edits a question → the banner appears → "Cập nhật đề" refreshes it; student joins, takes and submits; the banner shows without the button afterwards; teacher sees results; flashcard study via code; AI generate-from-file end to end (balance debited once). <!-- Red Team: RT-1, RT-15 -->
 
 ## Risk Assessment

@@ -4,7 +4,7 @@
   "decision": "SEALED",
   "acceptanceCovered": [
     "yarn typecheck, build:all and test exit 0 and gateway e2e passes (temper 80/80 pass, 0 fail; not re-run)",
-    "gateway has no prisma/@examio/database usage and only config.controller.ts remains under controllers",
+    "gateway has no prisma/@kmaedu/database usage and only config.controller.ts remains under controllers",
     "every route in the phase 01 route inventory is covered by routes.yaml",
     "SSE responses stream incrementally and uploads stream without buffering; status codes and headers are preserved (body-cap Transform is pass-through under cap; live 2MB chunked intact, mid-body cut per temper)",
     "only auth sets accessToken/refreshToken cookies with SameSite=Lax",
@@ -16,7 +16,7 @@
     "helmet, CORS allowlist and OPTIONS short-circuit are in place",
     "compose exposes no host ports for postgres, redis or rabbitmq and only edge-facing services have egress",
     "WebSocket upgrade verifies the token and page flag before proxying (prepareUpgradeRequest then guarded proxy.upgrade)",
-    "examio-fe build and lint still pass"
+    "kmaedu-fe build and lint still pass"
   ],
   "regressionChecked": [
     "every path into http-proxy: only dispatcher (after prepareProxiedRequest) and ws-upgrade (after prepareUpgradeRequest); sole createProxyMiddleware call; guarded wrapper 500s requests with no forward context; forwardContexts.set only in prepare-request.ts",
@@ -34,11 +34,11 @@
   "unproven": [],
   "reachableRegressions": [],
   "findings": [
-    { "severity": "Medium", "category": "Security", "location": "examio-be/apps/gateway-service/src/pipeline/dispatcher.middleware.ts:57", "summary": "413 from the Content-Length guard path has no bounded drain: Node dumps the declared body on a keep-alive socket until requestTimeout. Only the streamed-cap path has the 8MB/5s bound. Reuse capRequestBody's drain bound or set Connection: close after the response. Mitigated by nginx 100M cap, rate limiter and loopback-only port", "disposition": "Defer" },
-    { "severity": "Low", "category": "Security", "location": "examio-be/apps/gateway-service/src/pipeline/forward-headers.ts:46", "summary": "Denylist scrubs only x-user-*, forwarded, x-real-ip, x-internal-service-token; x-forwarded-port/prefix/server and x-original-url from clients still reach upstreams. Harmless today; consider removing or an allowlist", "disposition": "Defer" },
-    { "severity": "Low", "category": "Performance", "location": "examio-be/apps/auth-service/src/devices/session-revoker.service.ts:60", "summary": "One outbox insert per session in a loop inside the transaction (password reset with many sessions); batch with createMany if OutboxService allows", "disposition": "Defer" },
-    { "severity": "Low", "category": "Contract", "location": "examio-be/apps/auth-service/src/auth.controller.ts:688", "summary": "POST /auth/exchange is @Public in auth but routed under required auth; never proxied before, no client uses it", "disposition": "Defer" },
-    { "severity": "Low", "category": "Security", "location": "examio-be/apps/gateway-service/src/ws/ws-upgrade.handler.ts:35", "summary": "No Origin check on WS upgrade; SameSite=Lax mitigates today", "disposition": "Defer" },
-    { "severity": "Low", "category": "Infra", "location": "examio-be/deploy/docker-compose.yml:76", "summary": "gateway on non-internal edge network has outbound internet it does not need", "disposition": "Defer" }
+    { "severity": "Medium", "category": "Security", "location": "kmaedu-be/apps/gateway-service/src/pipeline/dispatcher.middleware.ts:57", "summary": "413 from the Content-Length guard path has no bounded drain: Node dumps the declared body on a keep-alive socket until requestTimeout. Only the streamed-cap path has the 8MB/5s bound. Reuse capRequestBody's drain bound or set Connection: close after the response. Mitigated by nginx 100M cap, rate limiter and loopback-only port", "disposition": "Defer" },
+    { "severity": "Low", "category": "Security", "location": "kmaedu-be/apps/gateway-service/src/pipeline/forward-headers.ts:46", "summary": "Denylist scrubs only x-user-*, forwarded, x-real-ip, x-internal-service-token; x-forwarded-port/prefix/server and x-original-url from clients still reach upstreams. Harmless today; consider removing or an allowlist", "disposition": "Defer" },
+    { "severity": "Low", "category": "Performance", "location": "kmaedu-be/apps/auth-service/src/devices/session-revoker.service.ts:60", "summary": "One outbox insert per session in a loop inside the transaction (password reset with many sessions); batch with createMany if OutboxService allows", "disposition": "Defer" },
+    { "severity": "Low", "category": "Contract", "location": "kmaedu-be/apps/auth-service/src/auth.controller.ts:688", "summary": "POST /auth/exchange is @Public in auth but routed under required auth; never proxied before, no client uses it", "disposition": "Defer" },
+    { "severity": "Low", "category": "Security", "location": "kmaedu-be/apps/gateway-service/src/ws/ws-upgrade.handler.ts:35", "summary": "No Origin check on WS upgrade; SameSite=Lax mitigates today", "disposition": "Defer" },
+    { "severity": "Low", "category": "Infra", "location": "kmaedu-be/deploy/docker-compose.yml:76", "summary": "gateway on non-internal edge network has outbound internet it does not need", "disposition": "Defer" }
   ]
 }

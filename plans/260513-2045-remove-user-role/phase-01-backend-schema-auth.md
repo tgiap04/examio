@@ -4,20 +4,20 @@
 Remove writes/reads of `User.role` from Prisma user creation, auth responses, OAuth role selection, and register DTOs.
 
 ## Impacted Files
-- `examio-be/libs/database/src/schema.prisma`
-- `examio-be/libs/database/src/models/user.prisma`
-- `examio-be/libs/database/prisma/schema.prisma` if generated/merged schema is tracked
-- `examio-be/apps/auth-service/src/dto/register.dto.ts`
-- `examio-be/apps/auth-service/src/auth.service.ts`
-- `examio-be/apps/auth-service/src/auth.controller.ts`
-- `examio-be/apps/auth-service/src/strategies/google.strategy.ts`
-- `examio-be/apps/auth-service/src/strategies/facebook.strategy.ts`
-- `examio-be/apps/auth-service/src/strategies/github.strategy.ts`
-- `examio-be/apps/auth-service/src/auth.service.spec.ts`
-- `examio-be/libs/common/src/guard/auth.guard.ts`
-- `examio-be/libs/common/src/guard/google-auth.guard.ts`
-- `examio-be/libs/common/src/guard/facebook-auth.guard.ts`
-- `examio-be/libs/common/src/guard/github-auth.guard.ts`
+- `kmaedu-be/libs/database/src/schema.prisma`
+- `kmaedu-be/libs/database/src/models/user.prisma`
+- `kmaedu-be/libs/database/prisma/schema.prisma` if generated/merged schema is tracked
+- `kmaedu-be/apps/auth-service/src/dto/register.dto.ts`
+- `kmaedu-be/apps/auth-service/src/auth.service.ts`
+- `kmaedu-be/apps/auth-service/src/auth.controller.ts`
+- `kmaedu-be/apps/auth-service/src/strategies/google.strategy.ts`
+- `kmaedu-be/apps/auth-service/src/strategies/facebook.strategy.ts`
+- `kmaedu-be/apps/auth-service/src/strategies/github.strategy.ts`
+- `kmaedu-be/apps/auth-service/src/auth.service.spec.ts`
+- `kmaedu-be/libs/common/src/guard/auth.guard.ts`
+- `kmaedu-be/libs/common/src/guard/google-auth.guard.ts`
+- `kmaedu-be/libs/common/src/guard/facebook-auth.guard.ts`
+- `kmaedu-be/libs/common/src/guard/github-auth.guard.ts`
 
 ## Implementation Steps
 1. Remove `role String @default("student")` from the User model source and merged schema.

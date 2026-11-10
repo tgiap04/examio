@@ -11,7 +11,7 @@ A teacher edits a specific quiz set — managing its chapter/section labels and 
 
 ## Screen Layout
 
-The page is a single-column full-height layout (`min-h-screen`) with `max-w-7xl mx-auto` centering. Vertical regions stack top to bottom: a breadcrumb + tag bar header, a 2-column stat cards row (question count, creation date), a `LabelManager` section, and a `Card`-wrapped question list with inline search and a paginated question table. Modals (`DeleteConfirmDialog`) float above the content. Responsive: stat cards stack to single column on mobile; question list is a single-column scrollable card list. (source: `examio-fe/src/pages/k/ManageQuizSetDetailPage.tsx`:191–492)
+The page is a single-column full-height layout (`min-h-screen`) with `max-w-7xl mx-auto` centering. Vertical regions stack top to bottom: a breadcrumb + tag bar header, a 2-column stat cards row (question count, creation date), a `LabelManager` section, and a `Card`-wrapped question list with inline search and a paginated question table. Modals (`DeleteConfirmDialog`) float above the content. Responsive: stat cards stack to single column on mobile; question list is a single-column scrollable card list. (source: `kmaedu-fe/src/pages/k/ManageQuizSetDetailPage.tsx`:191–492)
 
 ### Layout Sketch
 
@@ -198,11 +198,11 @@ No `TeacherRoute` wrapper in this page. Auth is handled by the parent K layout s
 
 ## Source References
 
-- Page: `examio-fe/src/pages/k/ManageQuizSetDetailPage.tsx`
-- Quiz set store: `examio-fe/src/stores/useQuizSetStore.ts`
-- Quiz set API: `examio-fe/src/apis/quizsetApi.ts`
-- Store cache: `examio-fe/src/lib/storeCache.ts`
-- Debounce hook: `examio-fe/src/hooks/useDebounce.ts`
-- InlineQuestionEditor: `examio-fe/src/components/organisms/InlineQuestionEditor.tsx` (referenced, not read)
-- LabelManager: `examio-fe/src/components/organisms/LabelManager.tsx` (referenced, not read)
-- DeleteConfirmDialog: `examio-fe/src/components/organisms/DeleteConfirmDialog.tsx` (referenced, not read)
+- Page: `kmaedu-fe/src/pages/k/ManageQuizSetDetailPage.tsx`
+- Quiz set store: `kmaedu-fe/src/stores/useQuizSetStore.ts`
+- Quiz set API: `kmaedu-fe/src/apis/quizsetApi.ts`
+- Store cache: `kmaedu-fe/src/lib/storeCache.ts`
+- Debounce hook: `kmaedu-fe/src/hooks/useDebounce.ts`
+- InlineQuestionEditor: `kmaedu-fe/src/components/organisms/InlineQuestionEditor.tsx` (referenced, not read)
+- LabelManager: `kmaedu-fe/src/components/organisms/LabelManager.tsx` (referenced, not read)
+- DeleteConfirmDialog: `kmaedu-fe/src/components/organisms/DeleteConfirmDialog.tsx` (referenced, not read)

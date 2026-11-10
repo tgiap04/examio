@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-22 06:12
 **Severity**: high
-**Component**: examio-fe session, guards and study-room socket; examio-be auth-service (`/auth/refresh`) and exam-service study-room (Redis path)
+**Component**: kmaedu-fe session, guards and study-room socket; kmaedu-be auth-service (`/auth/refresh`) and exam-service study-room (Redis path)
 **Status**: resolved
 
 ## What Happened

@@ -1,6 +1,6 @@
-# Glossary — examio Platform
+# Glossary — kmaedu Platform
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Sources**: `data-model.md`, all feature `business-context.md`, `system-overview.md`
 
@@ -66,7 +66,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 ## D
 
-**Dead-letter queue (DLQ)** — Per-service queue `<svc>.dlq` where `@examio/messaging` parks an event that failed permanently or failed 5 times. Transient failures first go through a 30-second retry queue.
+**Dead-letter queue (DLQ)** — Per-service queue `<svc>.dlq` where `@kmaedu/messaging` parks an event that failed permanently or failed 5 times. Transient failures first go through a 30-second retry queue.
 
 **DetailsFlashCard** — A junction record that places a reusable FlashCard into a specific FlashCardSet. Enables the same card to appear in multiple decks with optional per-instance label assignment.
 
@@ -182,7 +182,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **Permission** — A string such as `quizset:manage` from the catalog in `libs/auth-jwt/src/permissions.ts`. Roles hold fixed permission sets; permissions are derived from the token `roles`, never carried in the token. See [permissions](permissions.md).
 
-**Prisma** — ORM used by the DB-owning NestJS services (auth, admin, content, assessment, ai-chat, study-room, vocabulary, document). Each has its own schema under `apps/<svc>-service/prisma` and its own generated client; there is no shared schema package (`@examio/database` was removed in phase 11).
+**Prisma** — ORM used by the DB-owning NestJS services (auth, admin, content, assessment, ai-chat, study-room, vocabulary, document). Each has its own schema under `apps/<svc>-service/prisma` and its own generated client; there is no shared schema package (`@kmaedu/database` was removed in phase 11).
 
 **Processing Status** — A discriminator on UserStorage tracking where a document is in the pipeline: `PENDING` → `COMPLETED` or `FAILED` (`PROCESSING` is a valid value but document-service does not set it today). Controls whether the document is available for AI chat and generation.
 
@@ -216,7 +216,7 @@ Terms are grouped alphabetically. Each entry is a plain-language definition.
 
 **RAG (Retrieval-Augmented Generation)** — AI technique where the system retrieves relevant document chunks before generating a response, grounding AI answers in the user's uploaded course materials rather than generic training data.
 
-**RabbitMQ** — Message broker using a topic exchange (`examio.events`) for asynchronous event-driven workflows between services. Events go through a transactional outbox and an idempotent consumer (`@examio/messaging`). Used for identity/permission propagation (`auth.user.authz_changed`), profile cache invalidation, and the document/generation pipeline between document, content and ai-service.
+**RabbitMQ** — Message broker using a topic exchange (`kmaedu.events`) for asynchronous event-driven workflows between services. Events go through a transactional outbox and an idempotent consumer (`@kmaedu/messaging`). Used for identity/permission propagation (`auth.user.authz_changed`), profile cache invalidation, and the document/generation pipeline between document, content and ai-service.
 
 **ReAct Agent** — An AI agent pattern (Reason + Act) used by the Python AI service to reason about user questions, retrieve relevant document chunks, and generate grounded responses.
 

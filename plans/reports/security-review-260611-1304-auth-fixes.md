@@ -8,11 +8,11 @@
 ## CRITICAL
 
 ### 1. Open Redirect via OAuth `redirect` Parameter in useAuthStore.ts
-**Location:** `examio-fe/src/stores/useAuthStore.ts:330`
+**Location:** `kmaedu-fe/src/stores/useAuthStore.ts:330`
 ```ts
 window.location.href = `${env.apiUrl}/auth/google?redirect=${redirect}`;
 ```
-**Issue:** `redirect` built from `getOAuthRedirectPath()` passes through URL query param (`from`). An attacker can craft: `https://examio.fayedark.com/login?from=https://evil.com` → OAuth backend decodes and uses it as redirect → victim lands on attacker domain after login.
+**Issue:** `redirect` built from `getOAuthRedirectPath()` passes through URL query param (`from`). An attacker can craft: `https://kmaedu.fayedark.com/login?from=https://evil.com` → OAuth backend decodes and uses it as redirect → victim lands on attacker domain after login.
 **Impact:** Phishing, credential theft post-login.
 **Fix:** Validate `redirect` parameter is same-origin before passing to backend. Backend should also validate `redirect` is safe (whitelist or same-origin check).
 
@@ -21,7 +21,7 @@ window.location.href = `${env.apiUrl}/auth/google?redirect=${redirect}`;
 ## HIGH
 
 ### 2. Auth Guard / Admin Guard Skip `isVerified` Check
-**Location:** `examio-be/libs/common/src/guard/auth.guard.ts:47-53`, `admin.guard.ts:65-67`
+**Location:** `kmaedu-be/libs/common/src/guard/auth.guard.ts:47-53`, `admin.guard.ts:65-67`
 **Issue:** Guards select `isVerified` but never enforce it. Unverified accounts (registered but not confirmed) get full authenticated access.
 **Impact:** Bypass email verification requirement.
 **Fix:** Enforce `isVerified` in guards. Add `isVerified: true` check in the user ban/deleted guard block:
@@ -30,7 +30,7 @@ if (!user.isVerified) throw new ForbiddenException('Email not verified');
 ```
 
 ### 3. Tokens Logged in URL Parameters (useAuthSync → syncRefreshTokenApi)
-**Location:** `examio-fe/src/hooks/useAuthSync.ts:72`
+**Location:** `kmaedu-fe/src/hooks/useAuthSync.ts:72`
 ```ts
 void syncRefreshTokenApi(storedSessionId || undefined)...
 ```
@@ -39,9 +39,9 @@ void syncRefreshTokenApi(storedSessionId || undefined)...
 **Fix:** Verify `syncRefreshTokenApi` uses POST body, not GET URL params. Confirm no tokens ever sent as URL query strings.
 
 ### 4. Hardcoded Production Domain in useAuthSync.ts
-**Location:** `examio-fe/src/hooks/useAuthSync.ts:18`
+**Location:** `kmaedu-fe/src/hooks/useAuthSync.ts:18`
 ```ts
-window.location.hostname === "examio.fayedark.com"
+window.location.hostname === "kmaedu.fayedark.com"
 ```
 **Issue:** Hardcoded domain breaks staging/preview deployments. Multi-environment deploys fail silently (cookie not deleted on other hosts).
 **Impact:** Auth token leakage on non-production domains.
@@ -52,7 +52,7 @@ window.location.hostname === "examio.fayedark.com"
 ## MEDIUM
 
 ### 5. Full Webhook Payload Logged (Sensitive Data Exposure)
-**Location:** `examio-be/apps/finance-service/src/modules/sepay/webhook.controller.ts:27-29`
+**Location:** `kmaedu-be/apps/finance-service/src/modules/sepay/webhook.controller.ts:27-29`
 ```ts
 this.logger.log(`Received SePay webhook: ${JSON.stringify(webhookData)}`, headers);
 ```

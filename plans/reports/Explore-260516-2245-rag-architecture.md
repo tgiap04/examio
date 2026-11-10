@@ -1,29 +1,29 @@
 # Workshop Survey Report
 
 ## Scope
-Current RAG / Hybrid GraphRAG architecture in `examio-be/apps/ai-service`, focused on quiz and flashcard generation.
+Current RAG / Hybrid GraphRAG architecture in `kmaedu-be/apps/ai-service`, focused on quiz and flashcard generation.
 
 ## Relevant Files
-- `examio-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py` - Main HybridGraphRAG orchestration; modes `vector`, `graph`, `hybrid`; builds graph cache, vector seed retrieval, graph expansion, generation groups.
-- `examio-be/apps/ai-service/src/backend/services/generation_service.py` - Quiz/flashcard generation service; calls `hybrid_retrieval_service.retrieve_for_generation`, allocates questions/cards to graph groups, invokes LLM, stores history.
-- `examio-be/apps/ai-service/src/backend/api/generation.py` - FastAPI endpoints `/generate-quiz` and `/generate-flashcards`; validates request and calls generation service.
-- `examio-be/apps/ai-service/src/backend/api/file.py` - File upload / processing entrypoints; feeds OCR chunks into storage/vector pipeline.
-- `examio-be/apps/ai-service/src/backend/services/ocr_service.py` - Document extraction/chunk model source for `DocumentChunk`.
-- `examio-be/apps/ai-service/src/rag/vector_store_pg.py` - PostgreSQL vector store; Gemini embeddings; `search_similar`, `search_and_combine`, document storage.
-- `examio-be/apps/ai-service/src/graph_rag/graph_builder.py` - Builds NetworkX document graph from chunks with structural, metadata, and semantic edges; optional FAISS semantic edge acceleration.
-- `examio-be/apps/ai-service/src/graph_rag/subgraph_partitioner.py` - Community detection and query routing; Louvain/greedy/asyn label propagation; community summaries/metadata.
-- `examio-be/apps/ai-service/src/graph_rag/graph_retriever.py` - Older/standalone graph-routed retriever used by experiments.
-- `examio-be/apps/ai-service/src/backend/services/graph_storage_service.py` - Persists graph state/groups/nodes/edges to DB and reloads them.
-- `examio-be/apps/ai-service/src/backend/services/tutor_knowledge_storage_service.py` - Stores tutor knowledge artifacts related to ingestion.
-- `examio-be/apps/ai-service/src/genai_tutor/knowledge_base/ingestion_pipeline.py` - Tutor knowledge ingestion pipeline.
-- `examio-be/apps/ai-service/src/genai_tutor/knowledge_base/graph_extractor.py` - Extracts knowledge graph entities/relationships for tutor KB.
-- `examio-be/apps/ai-service/src/rag/table_aware_chunking.py` - Chunking implementation for table-aware document splitting.
-- `examio-be/apps/ai-service/src/rag/rag_graph.py` and `src/rag/retriever.py` - Older/general RAG graph/retriever flows.
-- `examio-be/apps/ai-service/build_graph.py`, `build_department_graphs.py`, `warmup_graph_cache.py`, `clear_graph_cache.py`, `test_graph_rag_with_llm.py` - Operational scripts for graph build/cache/test.
-- `examio-be/apps/ai-service/src/backend/scripts/benchmark_hybrid_retrieval.py` - Hybrid retrieval benchmark script.
-- `examio-be/apps/ai-service/src/backend/tests/test_hybrid_retrieval_service.py` - Tests for the hybrid retrieval service.
-- `examio-be/apps/ai-service/pyproject.toml` - Dependencies: `faiss-cpu`, `python-louvain`, vector/LLM stack.
-- `examio-be/apps/ai-service/requirements.txt` and `poetry.lock` - Runtime dependency pins.
+- `kmaedu-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py` - Main HybridGraphRAG orchestration; modes `vector`, `graph`, `hybrid`; builds graph cache, vector seed retrieval, graph expansion, generation groups.
+- `kmaedu-be/apps/ai-service/src/backend/services/generation_service.py` - Quiz/flashcard generation service; calls `hybrid_retrieval_service.retrieve_for_generation`, allocates questions/cards to graph groups, invokes LLM, stores history.
+- `kmaedu-be/apps/ai-service/src/backend/api/generation.py` - FastAPI endpoints `/generate-quiz` and `/generate-flashcards`; validates request and calls generation service.
+- `kmaedu-be/apps/ai-service/src/backend/api/file.py` - File upload / processing entrypoints; feeds OCR chunks into storage/vector pipeline.
+- `kmaedu-be/apps/ai-service/src/backend/services/ocr_service.py` - Document extraction/chunk model source for `DocumentChunk`.
+- `kmaedu-be/apps/ai-service/src/rag/vector_store_pg.py` - PostgreSQL vector store; Gemini embeddings; `search_similar`, `search_and_combine`, document storage.
+- `kmaedu-be/apps/ai-service/src/graph_rag/graph_builder.py` - Builds NetworkX document graph from chunks with structural, metadata, and semantic edges; optional FAISS semantic edge acceleration.
+- `kmaedu-be/apps/ai-service/src/graph_rag/subgraph_partitioner.py` - Community detection and query routing; Louvain/greedy/asyn label propagation; community summaries/metadata.
+- `kmaedu-be/apps/ai-service/src/graph_rag/graph_retriever.py` - Older/standalone graph-routed retriever used by experiments.
+- `kmaedu-be/apps/ai-service/src/backend/services/graph_storage_service.py` - Persists graph state/groups/nodes/edges to DB and reloads them.
+- `kmaedu-be/apps/ai-service/src/backend/services/tutor_knowledge_storage_service.py` - Stores tutor knowledge artifacts related to ingestion.
+- `kmaedu-be/apps/ai-service/src/genai_tutor/knowledge_base/ingestion_pipeline.py` - Tutor knowledge ingestion pipeline.
+- `kmaedu-be/apps/ai-service/src/genai_tutor/knowledge_base/graph_extractor.py` - Extracts knowledge graph entities/relationships for tutor KB.
+- `kmaedu-be/apps/ai-service/src/rag/table_aware_chunking.py` - Chunking implementation for table-aware document splitting.
+- `kmaedu-be/apps/ai-service/src/rag/rag_graph.py` and `src/rag/retriever.py` - Older/general RAG graph/retriever flows.
+- `kmaedu-be/apps/ai-service/build_graph.py`, `build_department_graphs.py`, `warmup_graph_cache.py`, `clear_graph_cache.py`, `test_graph_rag_with_llm.py` - Operational scripts for graph build/cache/test.
+- `kmaedu-be/apps/ai-service/src/backend/scripts/benchmark_hybrid_retrieval.py` - Hybrid retrieval benchmark script.
+- `kmaedu-be/apps/ai-service/src/backend/tests/test_hybrid_retrieval_service.py` - Tests for the hybrid retrieval service.
+- `kmaedu-be/apps/ai-service/pyproject.toml` - Dependencies: `faiss-cpu`, `python-louvain`, vector/LLM stack.
+- `kmaedu-be/apps/ai-service/requirements.txt` and `poetry.lock` - Runtime dependency pins.
 
 ## Key Classes And Functions
 - `HybridRetrievalService` (`hybrid_retrieval_service.py`)
@@ -82,8 +82,8 @@ Current RAG / Hybrid GraphRAG architecture in `examio-be/apps/ai-service`, focus
 - Additional generation concurrency/model behavior is configured in `generation_service.py` via service methods/env lookups.
 
 ## LightRAG References
-No direct `lightrag` or `light_rag` implementation was found in `examio-be/apps/ai-service`. The lightweight/custom equivalent is the in-house `HybridRetrievalService` + `DocumentGraph` + `SubgraphPartitioner` stack.
+No direct `lightrag` or `light_rag` implementation was found in `kmaedu-be/apps/ai-service`. The lightweight/custom equivalent is the in-house `HybridRetrievalService` + `DocumentGraph` + `SubgraphPartitioner` stack.
 
 ## Unresolved Questions
 - Exact DB schema/migration files for persisted graph/vector tables were not fully traced outside `ai-service`.
-- Exact file ingestion entrypoint sequence may include upstream services outside `examio-be/apps/ai-service`.
+- Exact file ingestion entrypoint sequence may include upstream services outside `kmaedu-be/apps/ai-service`.

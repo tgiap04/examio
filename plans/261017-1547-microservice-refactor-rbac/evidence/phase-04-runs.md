@@ -1,6 +1,6 @@
 # Phase 04 verification runs (implementer)
 
-All commands from `/Users/tgiap.dev/devs/examio/examio-be` unless noted. Exit codes are real.
+All commands from `/Users/tgiap.dev/devs/kmaedu/kmaedu-be` unless noted. Exit codes are real.
 
 SAFETY: every infra-touching command ran with a COMPLETE env (`env -i` wrapper that exports DATABASE_URL, REDIS_*, RABBITMQ_*, JWT_*, SERVICE_* and refuses any DATABASE_URL host other than localhost/127.0.0.1) against local docker containers `p04-pg` (pgvector pg16, 127.0.0.1:55434), `p04-redis` (:56381), `p04-rmq` (rabbitmq 3.13 with the rendered per-service definitions, :56673). No `.env` file was read or printed. Built services and the CLI were launched with cwd OUTSIDE the repo so `main.ts`/`cli.ts` `dotenv` could not load the gitignored `apps/*/.env` (remote DB). RS256 keys and service secrets for these runs were generated at run time into the scratchpad (never in the repo). Migrations were generated with `migrate dev --create-only` against a throwaway local DB as the deploying role. Containers `p04-*` removed at the end.
 
@@ -29,7 +29,7 @@ Mutation checks: removing the advisory lock call makes `role-change.e2e-spec` "t
 
 | # | Command | Exit | Result |
 |---|---|---|---|
-| 13 | `prisma migrate dev --create-only --name rbac_core` (throwaway DB examio_mig) | 0 | `20261018093802_rbac_core` (BaseRole enum, role/isSystemAdmin/authzVersion, drops isAdmin, RoleChangeLog) |
+| 13 | `prisma migrate dev --create-only --name rbac_core` (throwaway DB kmaedu_mig) | 0 | `20261018093802_rbac_core` (BaseRole enum, role/isSystemAdmin/authzVersion, drops isAdmin, RoleChangeLog) |
 | 14 | `prisma migrate deploy` on empty DB (baseline + messaging + rbac_core) | 0 | all applied |
 | 15 | `prisma migrate diff --from-url <local> --to-schema-datamodel schema.prisma --exit-code` | 0 | No difference detected |
 | 16 | `yarn proto:lint && yarn proto:gen` (`UserAuthzChanged` added) | 0 | clean |
@@ -73,7 +73,7 @@ Mutation checks: removing the advisory lock call makes `role-change.e2e-spec` "t
 
 Same SAFETY rules (complete local env wrapper, local DB host guard, containers p04-pg/p04-redis/p04-rmq re-created and removed afterwards, no .env read).
 
-Finding: finance `GetWallet` (`@RequirePermissionsOrService([])`) returned `data.userId`'s wallet to any verified user. Fix: new `assertSelfOrService(metadata, userId)` in `@examio/auth-jwt`: a USER principal may only name its own `sub` (empty id never matches; no principal is denied), an allowlisted SERVICE principal may name anyone. Applied to every user-callable RPC that takes a user id in the body: finance `GetWallet`, finance `GetUserBenefits`, r2 `ListUserFiles`. Audit of the rest: auth `GetUser/GetUsersByIds/FindUserByEmail/ListUsers` need `user:manage` (privileged by design) or an allowlisted service; `SetUserRole/SetSystemAdmin/ListRoleChanges` need `role:assign` and take the actor from the token; `GetPublicProfilesByIds` is the no-email projection; r2 `GetFileUrl` is keyed by storage key (no user id); all other writes are `@ServiceOnly`.
+Finding: finance `GetWallet` (`@RequirePermissionsOrService([])`) returned `data.userId`'s wallet to any verified user. Fix: new `assertSelfOrService(metadata, userId)` in `@kmaedu/auth-jwt`: a USER principal may only name its own `sub` (empty id never matches; no principal is denied), an allowlisted SERVICE principal may name anyone. Applied to every user-callable RPC that takes a user id in the body: finance `GetWallet`, finance `GetUserBenefits`, r2 `ListUserFiles`. Audit of the rest: auth `GetUser/GetUsersByIds/FindUserByEmail/ListUsers` need `user:manage` (privileged by design) or an allowlisted service; `SetUserRole/SetSystemAdmin/ListRoleChanges` need `role:assign` and take the actor from the token; `GetPublicProfilesByIds` is the no-email projection; r2 `GetFileUrl` is keyed by storage key (no user id); all other writes are `@ServiceOnly`.
 
 | # | Command | Exit | Result |
 |---|---|---|---|
@@ -95,7 +95,7 @@ Finding: finance `GetWallet` (`@RequirePermissionsOrService([])`) returned `data
 
 Same SAFETY rules (complete local env wrapper with DATABASE_URL host guard; local containers p04-pg/p04-redis/p04-rmq re-created and removed afterwards; seed and CLI run with an out-of-repo cwd). Note: Prisma's runtime itself loads the repo-root `.env` for variables that are NOT already set; DATABASE_URL, REDIS_*, RABBITMQ_* are always set explicitly by the wrapper, so every connection stayed local (verified in the local DB contents).
 
-1. HIGH last-admin bypass: `isSystemAdmin` removed from `MUTABLE_FIELDS` and from the (`.strict()`) PATCH body, so PATCH with it is a 400. `grantAdmin`/`revokeAdmin` now call auth `SetSystemAdmin` through a new admin `AuthClient` (`apps/admin-service/src/clients/auth.client.ts`, gRPC via `@examio/grpc`, `AUTH_GRPC_URL`) with the calling admin's token forwarded as metadata (`forwardUser(req)`); no actor in the body. Auth errors map to HTTP (LAST_SYSTEM_ADMIN/ROLE_CHANGE_CONFLICT 409, CANNOT_CHANGE_OWN_ROLE 403, ...). AdminAudit rows are kept. `AUTH_GRPC_URL` added to compose (admin), admin `.env.example`, CI be-boot/be-e2e env; nest-cli proto assets for admin-service; CI runs the new e2e.
+1. HIGH last-admin bypass: `isSystemAdmin` removed from `MUTABLE_FIELDS` and from the (`.strict()`) PATCH body, so PATCH with it is a 400. `grantAdmin`/`revokeAdmin` now call auth `SetSystemAdmin` through a new admin `AuthClient` (`apps/admin-service/src/clients/auth.client.ts`, gRPC via `@kmaedu/grpc`, `AUTH_GRPC_URL`) with the calling admin's token forwarded as metadata (`forwardUser(req)`); no actor in the body. Auth errors map to HTTP (LAST_SYSTEM_ADMIN/ROLE_CHANGE_CONFLICT 409, CANNOT_CHANGE_OWN_ROLE 403, ...). AdminAudit rows are kept. `AUTH_GRPC_URL` added to compose (admin), admin `.env.example`, CI be-boot/be-e2e env; nest-cli proto assets for admin-service; CI runs the new e2e.
 2. r2 `GetFileUrl`: no caller exists in exam/auth/document code, so it is now `@ServiceOnly('exam', 'auth')` (like the other r2 RPCs); rpc-guard-table and r2 guard specs updated (user token, admin user token and svc:finance denied; svc:exam allowed).
 3. `libs/database/prisma/seed-dev.ts`: removed the obsolete raw-SQL/remote-schema fallback that wrote `isAdmin`; admin = `isSystemAdmin: true`, dev users = `role: TEACHER` (they own wallets), no wallet for the admin.
 4. `verify.ts`: `requiredClaims: ['exp', 'iat']`.
@@ -111,7 +111,7 @@ Same SAFETY rules (complete local env wrapper with DATABASE_URL host guard; loca
 | 50 | RED `yarn jest libs/auth-jwt/src/verify` (token signed without exp/iat) | 1 | 1 failed |
 | 51 | GREEN same after `requiredClaims` | 0 | 69 auth-jwt tests |
 | 52 | `yarn jest apps/r2-service apps/auth-service/test/rpc-guard-table` | 0 | 41 tests |
-| 53 | `yarn seed:dev` equivalent (`jiti libs/database/prisma/seed-dev.ts`, out-of-repo cwd) on a fresh migrated local DB examio_seed | 0 | seeded; `togiap.admin` STUDENT + isSystemAdmin, dev users TEACHER, 0 wallets for the admin |
+| 53 | `yarn seed:dev` equivalent (`jiti libs/database/prisma/seed-dev.ts`, out-of-repo cwd) on a fresh migrated local DB kmaedu_seed | 0 | seeded; `togiap.admin` STUDENT + isSystemAdmin, dev users TEACHER, 0 wallets for the admin |
 | 54  yarn proto:lint && yarn proto:gen | 0 |  |
 | 55  yarn typecheck | 0 |  |
 | 56  yarn build:all | 0 |  |

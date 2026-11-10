@@ -1,9 +1,9 @@
 # Phase 1: Prisma Schema + Seed
 
 ## Context
-- Schema: `examio-be/libs/database/src/schema.prisma`
-- Seed entry: `examio-be/libs/database/prisma/seed.ts`
-- Reference pattern: `examio-be/libs/database/src/seed/subject.seed.ts`
+- Schema: `kmaedu-be/libs/database/src/schema.prisma`
+- Seed entry: `kmaedu-be/libs/database/prisma/seed.ts`
+- Reference pattern: `kmaedu-be/libs/database/src/seed/subject.seed.ts`
 
 ## Overview
 Add Word Family tables to Prisma schema and create seed file for 10 default categories.
@@ -109,11 +109,11 @@ model WordFamilyWordToFlashCard {
 Same as `subject.seed.ts`: PrismaClient + upsert on `WordFamilyCategory`.
 
 ## Files to Create
-- `examio-be/libs/database/src/seed/word-family.seed.ts`
+- `kmaedu-be/libs/database/src/seed/word-family.seed.ts`
 
 ## Files to Modify
-- `examio-be/libs/database/src/schema.prisma` — add 5 models
-- `examio-be/libs/database/prisma/seed.ts` — import + call word family seed
+- `kmaedu-be/libs/database/src/schema.prisma` — add 5 models
+- `kmaedu-be/libs/database/prisma/seed.ts` — import + call word family seed
 
 ## Implementation Steps
 

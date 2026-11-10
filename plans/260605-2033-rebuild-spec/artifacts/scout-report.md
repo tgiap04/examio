@@ -10,20 +10,20 @@ TypeScript [MULTI_STACK — all stacks: TypeScript/JS/TS, Python; apply union of
 
 ## Scanned Directories
 
-- examio-be/apps/gateway-service/src/
-- examio-be/apps/auth-service/src/
-- examio-be/apps/exam-service/src/
-- examio-be/apps/finance-service/src/
-- examio-be/apps/r2-service/src/
-- examio-be/apps/ocr-service/src/
-- examio-be/libs/common/src/
-- examio-be/libs/database/src/
-- examio-be/libs/redis/src/
-- examio-fe/src/
+- kmaedu-be/apps/gateway-service/src/
+- kmaedu-be/apps/auth-service/src/
+- kmaedu-be/apps/exam-service/src/
+- kmaedu-be/apps/finance-service/src/
+- kmaedu-be/apps/r2-service/src/
+- kmaedu-be/apps/ocr-service/src/
+- kmaedu-be/libs/common/src/
+- kmaedu-be/libs/database/src/
+- kmaedu-be/libs/redis/src/
+- kmaedu-fe/src/
 
 ## File Inventory
 
-### Backend — examio-be/apps/gateway-service/src/
+### Backend — kmaedu-be/apps/gateway-service/src/
 controllers/auth-proxy.controller.ts	route
 controllers/quizset-proxy.controller.ts	route
 controllers/flashcardset-proxy.controller.ts	route
@@ -41,7 +41,7 @@ services/proxy.service.ts	other
 gateway.module.ts	other
 main.ts	config
 
-### Backend — examio-be/apps/auth-service/src/
+### Backend — kmaedu-be/apps/auth-service/src/
 auth.controller.ts	route
 auth.service.ts	background
 profile.controller.ts	route
@@ -51,7 +51,7 @@ auth.grpc.controller.ts	integration
 google.strategy.ts	permission
 auth.module.ts	other
 
-### Backend — examio-be/apps/exam-service/src/
+### Backend — kmaedu-be/apps/exam-service/src/
 modules/quizset/quizset.controller.ts	route
 modules/quizset/quizset.service.ts	background
 modules/exam-room/exam-room.controller.ts	route
@@ -72,7 +72,7 @@ modules/r2/r2.controller.ts	route
 modules/finance-client/finance-client.service.ts	integration
 modules/r2/r2-client.service.ts	integration
 
-### Backend — examio-be/apps/finance-service/src/
+### Backend — kmaedu-be/apps/finance-service/src/
 wallet.controller.ts	route
 payment.controller.ts	route
 webhook.controller.ts	route
@@ -81,16 +81,16 @@ wallet.service.ts	integration
 subscription.service.ts	integration
 finance.module.ts	other
 
-### Backend — examio-be/apps/r2-service/src/
+### Backend — kmaedu-be/apps/r2-service/src/
 r2.service.ts	integration
 r2.controller.ts	route
 main.ts	config
 
-### Backend — examio-be/apps/ocr-service/src/
+### Backend — kmaedu-be/apps/ocr-service/src/
 ocr.service.ts	integration
 main.ts	config
 
-### Backend — examio-be/libs/common/src/
+### Backend — kmaedu-be/libs/common/src/
 guard/auth.guard.ts	permission
 guard/optional-auth.guard.ts	permission
 guard/google-auth.guard.ts	permission
@@ -111,16 +111,16 @@ grpc/r2-client.service.ts	integration
 repositories/base.repository.ts	other
 constants/cache-keys.ts	other
 
-### Backend — examio-be/libs/database/src/
+### Backend — kmaedu-be/libs/database/src/
 prisma.service.ts	model
 database.module.ts	other
 schema.prisma	model
 
-### Backend — examio-be/libs/redis/src/
+### Backend — kmaedu-be/libs/redis/src/
 redis.service.ts	other
 redis.module.ts	other
 
-### Frontend — examio-fe/src/
+### Frontend — kmaedu-fe/src/
 pages/auth/LoginPage.tsx	screen
 pages/auth/RegisterPage.tsx	screen
 pages/auth/ForgotPasswordPage.tsx	screen
@@ -248,26 +248,26 @@ provider/AppProviders.tsx	other
 ### NestJS (TypeScript)
 
 - custom-command: _(none found)_
-- event-listener: examio-be/apps/finance-service/src/user-event.handler.ts
-- integration: examio-be/apps/auth-service/src/auth.service.ts
-- integration: examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts
-- integration: examio-be/apps/exam-service/src/modules/r2/r2-client.service.ts
-- integration: examio-be/apps/r2-service/src/r2.service.ts
-- integration: examio-be/apps/ocr-service/src/ocr.service.ts
-- mail: examio-be/libs/common/src/services/mail.service.ts
-- middleware: examio-be/libs/common/src/middleware/session-validation.middleware.ts
+- event-listener: kmaedu-be/apps/finance-service/src/user-event.handler.ts
+- integration: kmaedu-be/apps/auth-service/src/auth.service.ts
+- integration: kmaedu-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts
+- integration: kmaedu-be/apps/exam-service/src/modules/r2/r2-client.service.ts
+- integration: kmaedu-be/apps/r2-service/src/r2.service.ts
+- integration: kmaedu-be/apps/ocr-service/src/ocr.service.ts
+- mail: kmaedu-be/libs/common/src/services/mail.service.ts
+- middleware: kmaedu-be/libs/common/src/middleware/session-validation.middleware.ts
 - notification: _(none found)_
 - observer: _(none found)_
 - queue-worker: _(none found)_
-- scheduled-job: examio-be/apps/auth-service/src/session-cleanup.cron.ts
-- webhook: examio-be/apps/finance-service/src/webhook.controller.ts
-- webhook: examio-be/apps/gateway-service/src/controllers/webhook-proxy.controller.ts
+- scheduled-job: kmaedu-be/apps/auth-service/src/session-cleanup.cron.ts
+- webhook: kmaedu-be/apps/finance-service/src/webhook.controller.ts
+- webhook: kmaedu-be/apps/gateway-service/src/controllers/webhook-proxy.controller.ts
 
 ### React/Next.js (TypeScript/JS)
 
 - custom-command: _(none found)_
 - event-listener: _(none found)_
-- integration: examio-fe/src/components/auth/AuthSyncBootstrap.tsx
+- integration: kmaedu-fe/src/components/auth/AuthSyncBootstrap.tsx
 - mail: _(none found)_
 - middleware: _(none found)_
 - notification: _(none found)_
@@ -275,10 +275,10 @@ provider/AppProviders.tsx	other
 - queue-worker: _(none found)_
 - scheduled-job: _(none found)_
 - webhook: _(none found)_
-- background: examio-fe/src/hooks/useCheatingDetection.ts
-- background: examio-fe/src/hooks/useExportPDF.ts
-- background: examio-fe/src/hooks/useGenerationGuard.ts
-- background: examio-fe/src/pages/exam-session/ExamQuizPage.tsx [SIGNAL_INFERRED]
+- background: kmaedu-fe/src/hooks/useCheatingDetection.ts
+- background: kmaedu-fe/src/hooks/useExportPDF.ts
+- background: kmaedu-fe/src/hooks/useGenerationGuard.ts
+- background: kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx [SIGNAL_INFERRED]
   - Intent matched: background — API polling via useEffect for quiz progress
   - No-row reason: stack=React 19 SPA, no row in bl-source-patterns.md
   - Observed pattern: useEffect triggers setInterval polling updateExamAttemptProgressApi; sendBeacon on beforeunload
@@ -298,7 +298,7 @@ provider/AppProviders.tsx	other
 
 ## Notes
 
-**Multi-stack architecture:** examio-be (NestJS + Python) + examio-fe (React 19). Two distinct monorepo workspaces. Gateway binds all HTTP; gRPC inter-service; RabbitMQ topic exchange `examio.events` (durable).
+**Multi-stack architecture:** kmaedu-be (NestJS + Python) + kmaedu-fe (React 19). Two distinct monorepo workspaces. Gateway binds all HTTP; gRPC inter-service; RabbitMQ topic exchange `kmaedu.events` (durable).
 
 **Service topology:**
 - gateway-service: port 3000, HTTP proxy + 100 req/min rate limit
@@ -325,7 +325,7 @@ provider/AppProviders.tsx	other
 
 **Schema source of truth:** `libs/database/src/schema.prisma` (27KB, latest) vs stale `prisma/schema.prisma` (17KB, missing Subject/UserStorageGraph models). Build uses `src/schema.prisma`.
 
-**Path aliases:** frontend uses `@/*` alias from `tsconfig.json`. Backend uses shared libs `@examio/common`, `@examio/database`, `@examio/redis` via tsconfig paths.
+**Path aliases:** frontend uses `@/*` alias from `tsconfig.json`. Backend uses shared libs `@kmaedu/common`, `@kmaedu/database`, `@kmaedu/redis` via tsconfig paths.
 
 **Barrel imports:** `libs/common/src/index.ts`, `libs/database/src/index.ts`, `libs/redis/src/index.ts` re-export all public surface. Frontend API files import from `apis/api.ts` (shared axios instance).
 

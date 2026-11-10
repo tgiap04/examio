@@ -1,6 +1,6 @@
 ---
 title: "i18n Locale Support for Landing & Auth Pages"
-description: "Add internationalization (vi/en/ja) to PublicLayout and AuthLayout routes in examio-fe using react-i18next"
+description: "Add internationalization (vi/en/ja) to PublicLayout and AuthLayout routes in kmaedu-fe using react-i18next"
 status: completed
 priority: P2
 effort: 8h
@@ -13,7 +13,7 @@ created: 2026-06-01
 
 ## Overview
 
-Add full internationalization support to all public-facing pages (landing + auth) in examio-fe. The app currently hardcodes Vietnamese text across ~17 source files with ~200 translatable strings. This plan introduces react-i18next with lazy-loaded JSON locale files for 3 languages: Vietnamese (vi), English (en), Japanese (ja).
+Add full internationalization support to all public-facing pages (landing + auth) in kmaedu-fe. The app currently hardcodes Vietnamese text across ~17 source files with ~200 translatable strings. This plan introduces react-i18next with lazy-loaded JSON locale files for 3 languages: Vietnamese (vi), English (en), Japanese (ja).
 
 ## Scope
 
@@ -35,7 +35,7 @@ Add full internationalization support to all public-facing pages (landing + auth
 ## Key Decisions
 
 - **Library:** react-i18next + i18next + i18next-http-backend + i18next-browser-languagedetector
-- **Locale persistence:** Separate key for i18next (`examio-i18next.locale`), keep `examio.locale` as legacy in HeaderSection
+- **Locale persistence:** Separate key for i18next (`kmaedu-i18next.locale`), keep `kmaedu.locale` as legacy in HeaderSection
 - **Namespace strategy:** 3 namespaces — `common` (nav, footer, shared), `landing` (homepage sections), `auth` (login, register, password reset)
 - **PricingBand:** Pricing tier names/descriptions/feature labels fetched from API with locale-aware fields (e.g., `nameVi`, `nameEn`, `descriptionVi`, `descriptionEn`) — static locale files cover only static UI strings (badge, headline, error message, toggle labels, popular badge, free label, period labels)
 - **Legal pages:** Legal/About content stored in locale files now (interim); CMS integration with locale param deferred to later phase
@@ -47,7 +47,7 @@ Add full internationalization support to all public-facing pages (landing + auth
 |------|-----------|--------|------------|
 | Locale JSON load failure | Low | High | `fallbackLng: 'en'` ensures app never shows keys |
 | Bundle size increase | Low | Medium | HTTP backend lazy-loads only needed namespace+lang (~20KB gzipped total) |
-| localStorage key conflict | Low | Low | Reuse existing `examio.locale` key |
+| localStorage key conflict | Low | Low | Reuse existing `kmaedu.locale` key |
 | Ant Design locale mismatch | Low | Medium | Phase 01 sets AntD locale to match i18next language |
 
 ## Success Criteria

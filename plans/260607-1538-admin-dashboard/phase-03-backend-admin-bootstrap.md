@@ -3,10 +3,10 @@
 - Parent plan: [plan.md](../plan.md)
 - Locked design: [brainstorm session record](../../reports/brainstorm-260607-1517-admin-dashboard.md)
 - Research: [researcher-01-backend.md](../research/researcher-01-backend.md)
-- Auth module: [examio-be/apps/auth-service/src/auth.module.ts](../../../../examio-be/apps/auth-service/src/auth.module.ts)
-- Prisma schema: [examio-be/libs/database/src/schema.prisma](../../../../examio-be/libs/database/src/schema.prisma)
-- PasswordService: [examio-be/libs/common/src/services/password.service.ts](../../../../examio-be/libs/common/src/services/password.service.ts)
-- GenerateIdService: [examio-be/libs/common/src/services/generate-id.service.ts](../../../../examio-be/libs/common/src/services/generate-id.service.ts)
+- Auth module: [kmaedu-be/apps/auth-service/src/auth.module.ts](../../../../kmaedu-be/apps/auth-service/src/auth.module.ts)
+- Prisma schema: [kmaedu-be/libs/database/src/schema.prisma](../../../../kmaedu-be/libs/database/src/schema.prisma)
+- PasswordService: [kmaedu-be/libs/common/src/services/password.service.ts](../../../../kmaedu-be/libs/common/src/services/password.service.ts)
+- GenerateIdService: [kmaedu-be/libs/common/src/services/generate-id.service.ts](../../../../kmaedu-be/libs/common/src/services/generate-id.service.ts)
 - Phase 01: [phase-01-backend-infra-foundation.md](phase-01-backend-infra-foundation.md)
 
 ## Overview
@@ -83,17 +83,17 @@ export class AdminBootstrapService implements OnModuleInit {
 ## Related code files
 
 **New:**
-- `examio-be/apps/auth-service/src/modules/admin-bootstrap/admin-bootstrap.service.ts`
-- `examio-be/apps/auth-service/src/modules/admin-bootstrap/admin-bootstrap.module.ts`
-- `examio-be/apps/auth-service/src/modules/admin-bootstrap/bootstrap.types.ts`
-- `examio-be/apps/auth-service/src/modules/admin-bootstrap/bootstrap.types.spec.ts`
-- `examio-be/apps/auth-service/src/modules/admin-bootstrap/admin-bootstrap.service.spec.ts`
-- `examio-be/apps/auth-service/src/commands/bootstrap-admin.command.ts` (Nest Commander entry)
+- `kmaedu-be/apps/auth-service/src/modules/admin-bootstrap/admin-bootstrap.service.ts`
+- `kmaedu-be/apps/auth-service/src/modules/admin-bootstrap/admin-bootstrap.module.ts`
+- `kmaedu-be/apps/auth-service/src/modules/admin-bootstrap/bootstrap.types.ts`
+- `kmaedu-be/apps/auth-service/src/modules/admin-bootstrap/bootstrap.types.spec.ts`
+- `kmaedu-be/apps/auth-service/src/modules/admin-bootstrap/admin-bootstrap.service.spec.ts`
+- `kmaedu-be/apps/auth-service/src/commands/bootstrap-admin.command.ts` (Nest Commander entry)
 
 **Modify:**
-- `examio-be/apps/auth-service/src/auth.module.ts` (hoặc `auth-service.module.ts`) — import `AdminBootstrapModule`
-- `examio-be/apps/admin-service/src/common/audit-writer.service.ts` (skeleton từ phase 01) — full impl với signature `write(adminId, action, targetId, payload, reason, req)`
-- `examio-be/package.json` — script `bootstrap:admin`
+- `kmaedu-be/apps/auth-service/src/auth.module.ts` (hoặc `auth-service.module.ts`) — import `AdminBootstrapModule`
+- `kmaedu-be/apps/admin-service/src/common/audit-writer.service.ts` (skeleton từ phase 01) — full impl với signature `write(adminId, action, targetId, payload, reason, req)`
+- `kmaedu-be/package.json` — script `bootstrap:admin`
 
 ## Implementation Steps
 

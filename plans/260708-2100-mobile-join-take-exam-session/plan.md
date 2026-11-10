@@ -1,4 +1,4 @@
-# Tham gia & làm bài phiên thi (join/take exam session) — examio-app Android
+# Tham gia & làm bài phiên thi (join/take exam session) — kmaedu-app Android
 
 ## Bối cảnh
 Vòng làm bài (`ExamTakingScreen`: startAttempt → giải mã → autosave → nộp → kết quả) **đã hoàn chỉnh**.
@@ -12,7 +12,7 @@ Thiếu **điểm vào** và **cổng access**:
 - Session phòng mình: thêm nút **"Vào làm bài"** trên SessionCard.
 - Android only (iOS sau). SDD off.
 
-## Contract backend (đã xác minh trong examio-be)
+## Contract backend (đã xác minh trong kmaedu-be)
 - `GET /examsessions/study/:id/access` → `{hasAccess, accessType, requiresCode?}` — accessType: public/owner/whitelist/code_required/denied
 - `GET /examsessions/study/:id/info` → `{id, title, description?, startTime, endTime?, status, isPublic, requiresCode, creator{...}}` (public, no auth)
 - `POST /examsessions/study/:id/verify-code` body `{accessCode}` → `{valid, message}` (403 nếu sai)

@@ -31,7 +31,7 @@ AdminAudit actions written after a successful RPC: `admin.role.set_base` `{from,
 
 ## FE (for P09)
 
-- `examio-fe/src/apis/adminApi.ts`: `UserRow` = `{ id: string, role, isSystemAdmin, ... }` (no `isAdmin`), `ListUsersQuery.isSystemAdmin`, user ids are strings. `AuditRow.actorId`, `ListAuditQuery.actorId`, finance `userId` stay `number` (P10 / audit work).
+- `kmaedu-fe/src/apis/adminApi.ts`: `UserRow` = `{ id: string, role, isSystemAdmin, ... }` (no `isAdmin`), `ListUsersQuery.isSystemAdmin`, user ids are strings. `AuditRow.actorId`, `ListAuditQuery.actorId`, finance `userId` stay `number` (P10 / audit work).
 - New: `apis/adminRolesApi.ts`, `stores/useAdminRolesStore.ts`, `lib/admin-roles/{role-change-rules,permission-groups}.ts`, `components/admin/roles/*`, `pages/admin/AdminRolesPage.tsx`, route `/admin/roles`, nav item `nav.roles` (AdminLayout). Pure rules to test in P09: `canEditRow`, `canToggleAdmin`, `canBanRow`, `consequenceKeys`, `isDestructive`, `errorMessageKey`, `banErrorKey`, `groupPermissions`, `permissionI18nKey`.
 - `AdminRoute.tsx` and `SideBar.tsx` still read `user.isAdmin`, which `/auth/me` and `/auth/login` no longer return: until P09 switches them to `permissions` (`admin:access`), `/admin/*` redirects an admin to `/k` in a real browser. The browser run used a CDP shim to add `isAdmin`.
 - `/admin/users` uses `cache + invalidate` (`invalidateUsers/Audit/AdminList`), `adminCount` = cached admin list length (includes banned admins; the server is authoritative).

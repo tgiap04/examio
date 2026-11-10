@@ -17,7 +17,7 @@ Một trang/layout riêng cho phép **nhiều người học cùng nhau** trong 
 |---|---|
 | Mô hình điều khiển | **Host + co-host được uỷ quyền** điều khiển timer/nhạc/video; thành viên còn lại follow |
 | Nguồn media | **YouTube cho cả nhạc lẫn video** (một tích hợp YouTube IFrame API, không lo bản quyền/OAuth) |
-| Nền tảng | **Chỉ web (examio-fe)** ở bản đầu; mobile để phase sau |
+| Nền tảng | **Chỉ web (kmaedu-fe)** ở bản đầu; mobile để phase sau |
 | Loại phòng | **Phòng riêng tư, join bằng mã mời**; **model `StudyRoom` MỚI**, tách khỏi `ExamRoom` |
 | Lớp social | **Live roster** (avatar + trạng thái học/nghỉ) + **Chat text** + **Thống kê thời gian tập trung / leaderboard** |
 | Vòng đời phòng | **Phòng nhỏ (~10–20), bền theo host**, host đóng/mở lại được |
@@ -73,7 +73,7 @@ Loại: fail yêu cầu sync video/timer (trễ 2–3s, drift), chat như chết
 - (b) Phơi endpoint WS đi thẳng tới exam-service (bypass HTTP gateway), CORS + JWT qua handshake; đơn giản hơn nhưng tách điểm vào.
 - REST của study-room vẫn qua gateway proxy như các domain khác.
 
-**Frontend (examio-fe):**
+**Frontend (kmaedu-fe):**
 - Page + layout `pages/study-room/` (+ route trong `src/routes`).
 - `apis/studyRoomApi.ts` (REST: CRUD, verify mã, chat history, leaderboard).
 - `stores/useStudyRoomStore.ts` (Zustand — room state, roster, chat, timer/media snapshot).

@@ -51,7 +51,7 @@ Replace hardcoded Vietnamese text in the 4 legal pages, AboutPage, ContactPage, 
   "terms.eyebrow": "Pháp lý",
   "terms.title": "Điều khoản sử dụng",
   "terms.s1.title": "1. Giới thiệu",
-  "terms.s1.body": "Chào mừng bạn đến với Examio...",
+  "terms.s1.body": "Chào mừng bạn đến với KMAEdu...",
   ...
 }
 ```
@@ -59,21 +59,21 @@ Replace hardcoded Vietnamese text in the 4 legal pages, AboutPage, ContactPage, 
 ## Related Code Files
 
 ### Files to Modify
-- `examio-fe/src/pages/landing/TermsPage.tsx` (~6 sections)
-- `examio-fe/src/pages/landing/PrivacyPage.tsx` (~6 sections)
-- `examio-fe/src/pages/landing/CookiesPage.tsx` (~4 sections)
-- `examio-fe/src/pages/landing/SecurityPage.tsx` (~5 sections)
-- `examio-fe/src/components/organisms/AboutSection.tsx` (~15 strings)
-- `examio-fe/src/components/organisms/ContactSection.tsx` (~15 strings)
-- `examio-fe/src/routes/index.tsx` (NotFoundPage inline)
+- `kmaedu-fe/src/pages/landing/TermsPage.tsx` (~6 sections)
+- `kmaedu-fe/src/pages/landing/PrivacyPage.tsx` (~6 sections)
+- `kmaedu-fe/src/pages/landing/CookiesPage.tsx` (~4 sections)
+- `kmaedu-fe/src/pages/landing/SecurityPage.tsx` (~5 sections)
+- `kmaedu-fe/src/components/organisms/AboutSection.tsx` (~15 strings)
+- `kmaedu-fe/src/components/organisms/ContactSection.tsx` (~15 strings)
+- `kmaedu-fe/src/routes/index.tsx` (NotFoundPage inline)
 
 ### Files to Read (no modify)
-- `examio-fe/src/components/organisms/landing/LegalPageShell.tsx` — layout wrapper (no changes needed)
+- `kmaedu-fe/src/components/organisms/landing/LegalPageShell.tsx` — layout wrapper (no changes needed)
 
 ### Files to Update (locale JSON)
-- `examio-fe/public/locales/vi/landing.json` — add `legal.*`, `about.*`, `contact.*` keys
-- `examio-fe/public/locales/en/landing.json` — add English translations
-- `examio-fe/public/locales/ja/landing.json` — add Japanese translations
+- `kmaedu-fe/public/locales/vi/landing.json` — add `legal.*`, `about.*`, `contact.*` keys
+- `kmaedu-fe/public/locales/en/landing.json` — add English translations
+- `kmaedu-fe/public/locales/ja/landing.json` — add Japanese translations
 
 ## Todo List
 

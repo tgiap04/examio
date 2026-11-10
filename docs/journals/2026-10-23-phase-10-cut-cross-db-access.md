@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-23 09:00
 **Severity**: high
-**Component**: examio-be finance, auth, admin, exam, gateway (owner RPC cut); libs/redis study-room adapter; examio-fe admin finance modal
+**Component**: kmaedu-be finance, auth, admin, exam, gateway (owner RPC cut); libs/redis study-room adapter; kmaedu-fe admin finance modal
 **Status**: ongoing
 
 ## What Happened

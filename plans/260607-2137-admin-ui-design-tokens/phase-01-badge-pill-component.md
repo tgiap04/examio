@@ -4,7 +4,7 @@
 Replace every antd `<Tag color="geekblue|green|red|blue|volcano|purple|orange|cyan|default">` in the admin with a token-driven `<BadgePill>`.
 
 ## Files
-- **Create** `examio-fe/src/components/admin/BadgePill.tsx`
+- **Create** `kmaedu-fe/src/components/admin/BadgePill.tsx`
 
 ## Spec
 ```tsx
@@ -72,5 +72,5 @@ export function BadgePill({
 | LogStreamPanel: status.closed | — | negative |
 
 ## Success
-- File created at `examio-fe/src/components/admin/BadgePill.tsx`.
+- File created at `kmaedu-fe/src/components/admin/BadgePill.tsx`.
 - `yarn tsc --noEmit` passes.

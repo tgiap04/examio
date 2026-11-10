@@ -18,7 +18,7 @@
   "ts": "2026-10-29T16:00:00+0700"
  },
  {
-  "command": "cd examio-be && yarn gen:permissions-doc (twice) && md5 of docs/system/permissions.md + docs/generated/permissions-matrix.md equal",
+  "command": "cd kmaedu-be && yarn gen:permissions-doc (twice) && md5 of docs/system/permissions.md + docs/generated/permissions-matrix.md equal",
   "exitCode": 0,
   "summary": "stable: second run identical (criterion 4); doc-writer set check STUDENT 6/6, TEACHER 17/17, SYSTEM_ADMIN 9/9 == ROLE_PERMISSIONS",
   "ts": "2026-10-29T16:00:00+0700"
@@ -36,7 +36,7 @@
   "ts": "2026-10-29T16:00:00+0700"
  },
  {
-  "command": "cd examio-be && yarn typecheck && tsc --noEmit scripts/gen-permissions-doc.ts",
+  "command": "cd kmaedu-be && yarn typecheck && tsc --noEmit scripts/gen-permissions-doc.ts",
   "exitCode": 0,
   "summary": "exit 0 (criterion 8)",
   "ts": "2026-10-29T16:00:00+0700"

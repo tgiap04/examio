@@ -7,11 +7,11 @@
     "deferred infra: auth.user.deleted and Grafana appear in ARCHITECTURE.md only on lines marked deferred (phase 17 / roadmap)",
     "permission docs: yarn gen:permissions-doc regenerates docs/system/permissions.md (generated section) and docs/generated/permissions-matrix.md with no git diff; a CI step fails on drift; the role -> permission table equals ROLE_PERMISSIONS in libs/auth-jwt/src/permissions.ts",
     "roadmap and changelog: development-roadmap.md shows milestones A-D with real status (phases 01-16 committed, 17 deferred, 18 pending before first mobile release, 19) and [DEFERRED] items; no committed phase is called uncommitted; project-changelog.md has the cutover release entry with the breaking-change list",
-    "spot-check: 6 ARCHITECTURE.md claims match the code (ts-proto opts in proto/buf.gen.yaml, search_path in deploy/postgres/init/01-service-schemas.sh, nginx upstream gw in examio-fe/nginx.conf, Dockerfile.node base image, ROLE_PERMISSIONS, POST /internal/token)",
+    "spot-check: 6 ARCHITECTURE.md claims match the code (ts-proto opts in proto/buf.gen.yaml, search_path in deploy/postgres/init/01-service-schemas.sh, nginx upstream gw in kmaedu-fe/nginx.conf, Dockerfile.node base image, ROLE_PERMISSIONS, POST /internal/token)",
     "generated tables: route-list/api-map owning-service column matches apps/gateway-service/config/routes.yaml upstreams, and entities.md owner per model matches scripts/check-model-ownership.ts",
-    "hygiene: no secrets or real credentials in the changed docs; relative links in changed docs resolve; examio-be yarn typecheck and the new script run green"
+    "hygiene: no secrets or real credentials in the changed docs; relative links in changed docs resolve; kmaedu-be yarn typecheck and the new script run green"
   ],
-  "touchpoints": ["ARCHITECTURE.md", "CLAUDE.md", "AGENTS.md", "docs/system/**", "docs/generated/**", "docs/flows/**", "docs/features/F009_AITeacherKnowledgeBase/**", "docs/project-changelog.md", "docs/development-roadmap.md", "examio-be/scripts/gen-permissions-doc.ts", "examio-be/package.json", ".github/workflows/ci.yml"],
+  "touchpoints": ["ARCHITECTURE.md", "CLAUDE.md", "AGENTS.md", "docs/system/**", "docs/generated/**", "docs/flows/**", "docs/features/F009_AITeacherKnowledgeBase/**", "docs/project-changelog.md", "docs/development-roadmap.md", "kmaedu-be/scripts/gen-permissions-doc.ts", "kmaedu-be/package.json", ".github/workflows/ci.yml"],
   "blastRadius": ["agent instructions (CLAUDE.md/AGENTS.md)", "CI (new docs drift job)", "developer onboarding docs"],
   "contracts": ["no runtime contract changes; new yarn script gen:permissions-doc and a CI job"]
 }

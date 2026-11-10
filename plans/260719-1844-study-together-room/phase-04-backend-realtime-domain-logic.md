@@ -40,7 +40,7 @@
 
 ## Implementation Steps
 
-1. `study-room-state.service.ts` — đọc/ghi các Redis key trên (get/set timer, media, chat push+range, focus incr/flush); dùng `RedisService` từ `@examio/redis`.
+1. `study-room-state.service.ts` — đọc/ghi các Redis key trên (get/set timer, media, chat push+range, focus incr/flush); dùng `RedisService` từ `@kmaedu/redis`.
 2. Handlers trong `study-room.gateway.ts` (giữ gateway mỏng — logic trong state service + `study-room.service.ts`; mỗi file <200 dòng).
 3. `room:snapshot` (phase 3) fill đủ: room config (DB), roster (members DB + presence Redis), timer (normalized), media, chat 50 tin gần nhất.
 4. Validate YouTube URL: regex bắt `youtube.com/watch?v=`, `youtu.be/`, `youtube.com/playlist?list=` → lưu dạng chuẩn hoá `{videoId | playlistId}`.

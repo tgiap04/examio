@@ -1,6 +1,6 @@
-# Scout 03 — Frontend (examio-fe) wallet/subscription/payment footprint
+# Scout 03 — Frontend (kmaedu-fe) wallet/subscription/payment footprint
 
-Source: Explore agent, 2026-11-10 (read-only; saved by orchestrator). Paths under `examio-fe/` unless prefixed `docs/`.
+Source: Explore agent, 2026-11-10 (read-only; saved by orchestrator). Paths under `kmaedu-fe/` unless prefixed `docs/`.
 
 ## Delete whole file (27)
 - APIs/stores: `src/apis/walletApi.ts`, `src/apis/subscriptionApi.ts`, `src/stores/useWalletStore.ts`, `src/stores/useWalletStore.test.ts`
@@ -38,7 +38,7 @@ Source: Explore agent, 2026-11-10 (read-only; saved by orchestrator). Paths unde
 - No 402/`INSUFFICIENT_BALANCE`/`CHAT_LIMIT_REACHED`/upsell handling in FE; no wallet item in student/teacher sidebar; AI cost labels already commented out.
 - Compile breaks after regenerating permissions without `wallet:use`/`subscription:manage`/`finance:admin`: `routes/index.tsx:133,182`, `nav-items.ts:64`, `PricingBand.tsx:85`, `ProfilePage.tsx:33`.
 - **FE has NO AI chat page**: `aiChatApi` only used as a type in `ChatHistoryCard`, which nothing imports. Student AI chat = new UI work, not a permission flip.
-- `src/types/permissions.generated.ts` must be regenerated via `yarn gen:fe-permissions` in examio-be.
-- examio-app (mobile) out of scope.
+- `src/types/permissions.generated.ts` must be regenerated via `yarn gen:fe-permissions` in kmaedu-be.
+- kmaedu-app (mobile) out of scope.
 
 Estimate: ~56 files (≈63 with optional cleanup).

@@ -2,10 +2,10 @@
 
 ## Context
 
-- [hybrid_retrieval_service.py](../../examio-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py)
-- [ocr_service.py](../../examio-be/apps/ai-service/src/backend/services/ocr_service.py)
-- [graph_builder.py](../../examio-be/apps/ai-service/src/graph_rag/graph_builder.py)
-- Prisma schema: `examio-be/libs/database/src/schema.prisma`
+- [hybrid_retrieval_service.py](../../kmaedu-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py)
+- [ocr_service.py](../../kmaedu-be/apps/ai-service/src/backend/services/ocr_service.py)
+- [graph_builder.py](../../kmaedu-be/apps/ai-service/src/graph_rag/graph_builder.py)
+- Prisma schema: `kmaedu-be/libs/database/src/schema.prisma`
 
 ## Overview
 
@@ -80,16 +80,16 @@ Cost: ~200 input tokens + ~300 output tokens per chunk × 50 chunks = ~25K token
 ## Related Code Files
 
 ### Create
-- `examio-be/apps/ai-service/src/backend/services/entity_extraction_service.py`
+- `kmaedu-be/apps/ai-service/src/backend/services/entity_extraction_service.py`
 
 ### Modify
-- `examio-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py` — entity-aware retrieval
-- `examio-be/apps/ai-service/src/backend/services/ocr_service.py` — trigger extraction after OCR
-- `examio-be/libs/database/src/schema.prisma` — add DocumentEntity model
+- `kmaedu-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py` — entity-aware retrieval
+- `kmaedu-be/apps/ai-service/src/backend/services/ocr_service.py` — trigger extraction after OCR
+- `kmaedu-be/libs/database/src/schema.prisma` — add DocumentEntity model
 
 ### Read (context)
-- `examio-be/apps/ai-service/src/backend/services/generation_service.py`
-- `examio-be/apps/ai-service/src/llm/model_manager.py`
+- `kmaedu-be/apps/ai-service/src/backend/services/generation_service.py`
+- `kmaedu-be/apps/ai-service/src/llm/model_manager.py`
 
 ## Implementation Steps
 

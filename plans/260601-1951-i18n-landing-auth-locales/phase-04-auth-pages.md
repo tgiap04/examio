@@ -62,11 +62,11 @@ PublicRoute
 ## Related Code Files
 
 ### Files to Modify
-- `examio-fe/src/components/organisms/auth/signin-form.tsx` (~10 strings)
-- `examio-fe/src/components/organisms/auth/signup-form.tsx` (~12 strings)
-- `examio-fe/src/pages/auth/ForgotPasswordPage.tsx` (~7 strings)
-- `examio-fe/src/pages/auth/ResetPasswordPage.tsx` (~15 strings)
-- `examio-fe/src/pages/auth/LoginPage.tsx` (~1 string — Suspense fallback)
+- `kmaedu-fe/src/components/organisms/auth/signin-form.tsx` (~10 strings)
+- `kmaedu-fe/src/components/organisms/auth/signup-form.tsx` (~12 strings)
+- `kmaedu-fe/src/pages/auth/ForgotPasswordPage.tsx` (~7 strings)
+- `kmaedu-fe/src/pages/auth/ResetPasswordPage.tsx` (~15 strings)
+- `kmaedu-fe/src/pages/auth/LoginPage.tsx` (~1 string — Suspense fallback)
 
 ## Todo List
 

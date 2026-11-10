@@ -11,9 +11,9 @@ Raw rows: `evidence/phase-12/temper-raw.json` (`temper-1:` static rows, `temper-
 
 ## Method
 
-- Scratch copy of `examio-be` at `scratchpad/p12t/repo` (rsync, excludes node_modules, dist, every real env file; post-copy check: 0 real env files). Dummy `deploy/.env` generated in the copy only, values never printed.
+- Scratch copy of `kmaedu-be` at `scratchpad/p12t/repo` (rsync, excludes node_modules, dist, every real env file; post-copy check: 0 real env files). Dummy `deploy/.env` generated in the copy only, values never printed.
 - Throwaway infra on 127.0.0.1 only, `env -i`, container names `p12t-*`, no volumes for the stage-2 infra.
-- Live stack: compose project `p12t`, empty volume, sequential builds (one `docker compose build` at a time), loopback gateway port 6369, s3proxy plus nginx shim as R2 (`examio-p12t` bucket), Turnstile stand-in on the internal network under the real verify hostname, scratch CA mounted into auth only.
+- Live stack: compose project `p12t`, empty volume, sequential builds (one `docker compose build` at a time), loopback gateway port 6369, s3proxy plus nginx shim as R2 (`kmaedu-p12t` bucket), Turnstile stand-in on the internal network under the real verify hostname, scratch CA mounted into auth only.
 - Each step recorded through `rec12` with the real process exit code. Failed rows are kept; re-runs are new labelled rows.
 - Seed data used by live checks (word family `run`, one foreign card with the identical question) was inserted with the owning service role. These are scratch rows, destroyed with the stack.
 
@@ -54,7 +54,7 @@ Stage 2 totals: 360 tests executed in the e2e folders above (plus one red row th
 | counts after seed | 0 | page_flags 9, subject_categories 4, subjects 15, word_family_categories 10 (vocabulary schema), users 8, wallets 7, admin_audit 20 |
 | plain `up -d --wait` after seed | 0 | seed not started; counts unchanged; ps check 0 violations |
 | isolation probes | see below | |
-| broker bindings (`rabbitmqctl list_bindings`, as `rabbitmq`) | 0 | `examio.events` to `exam.events`: `auth.user.updated` only; to `studyroom.events`: `auth.user.authz_changed` and `auth.user.updated`; `finance.events` and `gateway.events` bind authz_changed |
+| broker bindings (`rabbitmqctl list_bindings`, as `rabbitmq`) | 0 | `kmaedu.events` to `exam.events`: `auth.user.updated` only; to `studyroom.events`: `auth.user.authz_changed` and `auth.user.updated`; `finance.events` and `gateway.events` bind authz_changed |
 
 Isolation: studyroom_svc and vocabulary_svc each get `permission denied for schema` on auth and exam (4 expected denials, recorded as exit 1 rows, see Excluded rows). Own schema reads succeed (studyroom 0, vocabulary 10). exam schema has no `StudyRoom`, `UserSavedWordFamily`, or `WordFamilyCategory` (all `to_regclass` null).
 
@@ -77,9 +77,9 @@ Isolation: studyroom_svc and vocabulary_svc each get `permission denied for sche
 | host and member WS via gateway `/ws/study`, chat both ways (same instance) | PASS |
 | banned member gets `auth:reauth`, disconnected 0.45 s after the admin ban (gateway member) | PASS |
 | reconnect with the old token refused | PASS |
-| second replica (`p12t-study-room-2`, same image and env, `docker run` on examio-internal) healthy | PASS |
+| second replica (`p12t-study-room-2`, same image and env, `docker run` on kmaedu-internal) healthy | PASS |
 | Redis subscriber clients (`CLIENT LIST`, `psub=1`) | 2 (one per replica) |
-| cross-replica chat, host on replica 1 to member on replica 2 and back (`xrep12.cjs`, from inside examio-internal) | 6/6 PASS, both directions via the Redis adapter (`studyroom` key) |
+| cross-replica chat, host on replica 1 to member on replica 2 and back (`xrep12.cjs`, from inside kmaedu-internal) | 6/6 PASS, both directions via the Redis adapter (`studyroom` key) |
 | WS run totals (`ws12.cjs`) | 19 checks, 17 PASS, 2 FAIL (below) |
 
 ### Stage 6: UI browser matrix
@@ -95,7 +95,7 @@ Phase 11 matrix (`ui9.cjs`, Puppeteer, Chrome headless, real FE via Vite on 5273
 | Row | Check | Observed | Expected | Class |
 |---|---|---|---|---|
 | `s5-studyroom-ws-gateway-and-replica` | SYSTEM_ADMIN-only token gets WS connect_error | connected (ok) | connect_error | Test premise mismatch. The admin account is `role=STUDENT` with `isSystemAdmin=true` (checked in `auth."User"`). It holds `study_room:join`, so the connect is correct. No SYSTEM_ADMIN-only account exists in the role model, so this case is NOT VERIFIED. Owner decision needed on whether such a test account should be created. |
-| `s5-studyroom-ws-gateway-and-replica` | member WS direct to replica 2 connects | `websocket error` | connect | Environment. The `-p 127.0.0.1:6401:3000` mapping is in HostConfig but NetworkSettings.Ports is empty on this Docker VM, so nothing listens on the host port. Replica 2 itself is healthy and listening on 3000. The same check from inside examio-internal passes (6/6). |
+| `s5-studyroom-ws-gateway-and-replica` | member WS direct to replica 2 connects | `websocket error` | connect | Environment. The `-p 127.0.0.1:6401:3000` mapping is in HostConfig but NetworkSettings.Ports is empty on this Docker VM, so nothing listens on the host port. Replica 2 itself is healthy and listening on 3000. The same check from inside kmaedu-internal passes (6/6). |
 | `s6-ui9-browser-matrix` | TEACHER exam session: notice 'Tài khoản giáo viên không thể làm bài thi' | not shown | shown | Fixture. The matrix reads `examSessionId` from a Phase 11 seed file (`notes-seed.json`, id `6adace4b...`). That row does not exist in this fresh database (UPDATE 0). The scenario was never seeded in this stack. |
 | `s6-ui9-browser-matrix` | STUDENT (whitelisted) exam session: start button visible | not visible | visible | Same fixture cause. The whitelisted session is absent. The only session here is the smoke-created one (id 6adb2027..., window 09:51 to 10:51 UTC), which is closed by the time the matrix runs. |
 | `s6-ui9-browser-matrix` | script error: detached Frame | puppeteer detached-frame error | none | Harness flake. Puppeteer lost a frame during navigation. Not a product error. |
@@ -107,8 +107,8 @@ A targeted re-run with a reseeded exam session was started and then stopped: the
 
 | # | Where | Finding | Severity | Status |
 |---|---|---|---|---|
-| F1 | `examio-be/apps/auth-service/src/token/service-clients.ts:7-14` (SERVICE_AUDIENCES lacked `vocabulary`) | exam's service-token request for audience `vocabulary` got HTTP 401 from auth (`/internal/token`). TEACHER `POST /api/v1/word-family/:id/to-flashcard` returned 500 `INTERNAL`. Exam log: `Service token request for "vocabulary" failed with HTTP 401`. | High | **Fixed** by coordinator (`'vocabulary'` added; regression spec `test/cross-app/service-audiences.spec.ts` red before, green after). Live re-verified: `f1-recheck-to-flashcard-rt15-after-seed-shape-fix` 9/9, to-flashcard 201, 3 cards, RT-15 holds, STUDENT 403. |
-| F2 | `examio-be/apps/vocabulary-service/src/modules/word-family/word-family-admin.service.ts:167-183` (`imageKeysToDelete`, prefix `word-family/`); upload path `/api/v1/r2/image` writes `images/<userId>/...` | Category image uploaded via `/r2/image` is never deleted when the category image is replaced or deleted. Vocabulary logs `outside word-family/; not deleted`. Observed: old object still present after PUT and DELETE (`img12`, `oldKeyExists=true`). The admin page only takes a free-text image URL, so the app's own uploads orphan objects. | Medium | **By design (coordinator), pending review.** Phase 11 limits deletion to `word-family/` keys to prevent cross-feature and cross-user deletes. The `word-family/` replace and delete path itself works (`img12b` 6/6). |
+| F1 | `kmaedu-be/apps/auth-service/src/token/service-clients.ts:7-14` (SERVICE_AUDIENCES lacked `vocabulary`) | exam's service-token request for audience `vocabulary` got HTTP 401 from auth (`/internal/token`). TEACHER `POST /api/v1/word-family/:id/to-flashcard` returned 500 `INTERNAL`. Exam log: `Service token request for "vocabulary" failed with HTTP 401`. | High | **Fixed** by coordinator (`'vocabulary'` added; regression spec `test/cross-app/service-audiences.spec.ts` red before, green after). Live re-verified: `f1-recheck-to-flashcard-rt15-after-seed-shape-fix` 9/9, to-flashcard 201, 3 cards, RT-15 holds, STUDENT 403. |
+| F2 | `kmaedu-be/apps/vocabulary-service/src/modules/word-family/word-family-admin.service.ts:167-183` (`imageKeysToDelete`, prefix `word-family/`); upload path `/api/v1/r2/image` writes `images/<userId>/...` | Category image uploaded via `/r2/image` is never deleted when the category image is replaced or deleted. Vocabulary logs `outside word-family/; not deleted`. Observed: old object still present after PUT and DELETE (`img12`, `oldKeyExists=true`). The admin page only takes a free-text image URL, so the app's own uploads orphan objects. | Medium | **By design (coordinator), pending review.** Phase 11 limits deletion to `word-family/` keys to prevent cross-feature and cross-user deletes. The `word-family/` replace and delete path itself works (`img12b` 6/6). |
 | F3 | vocabulary `word-family.controller.ts` generate → AI call | TEACHER `POST word-family/generate` reaches vocabulary and returns 400 `Request failed with status code 400` (message from the upstream AI call, surfaced generically). No wallet transaction. | Low | Open, observation. Needs an AI key to judge; not a verified defect. |
 | F4 | Test premise (`ws12.cjs`) | The "SYSTEM_ADMIN-only token gets connect_error" check cannot be built with the current role model (admin has role STUDENT plus isSystemAdmin). | Info | Open: owner to decide whether a non-student admin fixture should exist. |
 | F5 | Docker VM port publish (`p12t-study-room-2`) | Host-side loopback port for the replica is not published at runtime. | Env | Not a product issue. Replica verified from the internal network. |
@@ -187,10 +187,10 @@ Screenshots (scratch, not kept): `ui/shots/` in the tester scratchpad (01 to 11:
 
 | # | Where | Finding | Status |
 |---|---|---|---|
-| F13 | Seed: `auth."User"` for `user2@examio.vn` | The seed gives the STUDENT test account the TEACHER role. Phase 11 smoke demotes it to STUDENT before the matrix (`PUT /api/v1/admin/roles/users/:id/role`). Skipping smoke leaves it TEACHER, and the matrix failed 14 checks (run 9). | Harness ordering. Resolved by running the same demotion (`s6b-demote.cjs`, 200). Owner may want the seed to set STUDENT directly. |
+| F13 | Seed: `auth."User"` for `user2@kmaedu.fayedark.com` | The seed gives the STUDENT test account the TEACHER role. Phase 11 smoke demotes it to STUDENT before the matrix (`PUT /api/v1/admin/roles/users/:id/role`). Skipping smoke leaves it TEACHER, and the matrix failed 14 checks (run 9). | Harness ordering. Resolved by running the same demotion (`s6b-demote.cjs`, 200). Owner may want the seed to set STUDENT directly. |
 | F14 | Create-room modal, Ant Design select (`.ant-select-selector` inside `[role=dialog]`) | UI access-mode selection not automated: the select did not open on real pointer clicks in the attempts made. The API fallback (`accessType=1`) was used. | Open (test automation gap). The `Mã số` selection needs a manual UI check. |
 | F15 | FE word-family pages | No saved-list view and no `Từ đã lưu` label. Only the `Đã lưu` button state uses `savedIds`. The API `GET word-family/saved` works. | Open. Owner to confirm whether a saved-list page is in scope for phase 12. |
-| F16 | `examio-be/apps/vocabulary-service/src/modules/word-family/word-family-admin.service.ts` (delete sets `isActive:false, imageUrl:null`) | Admin delete of a category is a soft delete. The row stays in the admin list. The image object is still drained. This matches the service; the list keeps the row. | Open, pending owner decision (soft delete by design vs. hard delete). |
+| F16 | `kmaedu-be/apps/vocabulary-service/src/modules/word-family/word-family-admin.service.ts` (delete sets `isActive:false, imageUrl:null`) | Admin delete of a category is a soft delete. The row stays in the admin list. The image object is still drained. This matches the service; the list keeps the row. | Open, pending owner decision (soft delete by design vs. hard delete). |
 | F17 | Playlist add | Initial failure was the test's 12-character video ID. The study-room service has no outbound YouTube calls. | Closed (harness). |
 | F18 | Build outage | DNS for `registry.yarnpkg.com` failed for two builds. The retry passed. | Closed (environmental). |
 
@@ -201,16 +201,16 @@ F2 (category image orphaned from `/r2/image` uploads) is unchanged: by design (c
 - `s6b` teardown: `docker rm -f p12t-s3backend p12t-shim p12t-study-room-2` (named, this run's containers). `docker network rm p12t-stubnet`. `docker compose -p p12t ... down -v --rmi local --remove-orphans` in the scratch copy: exit 0.
 - Vite on 5273: stopped by PID after checking the command line (`vite --host 127.0.0.1 --port 5273`). Port closed.
 - Scratch secrets deleted: TLS key and cert, scratch `deploy/.env`, rabbit `definitions.json`, `ui/room.env`, replica env file.
-- Final check: `docker ps -a` lists no containers. No `p12t`/`examio` volumes, no `p12t-*` images, no `p12t` networks. `deploy_default` and `meetio_default` networks remain, not touched.
+- Final check: `docker ps -a` lists no containers. No `p12t`/`kmaedu` volumes, no `p12t-*` images, no `p12t` networks. `deploy_default` and `meetio_default` networks remain, not touched.
 - **Concern (not caused by these commands):** `docker info` reports 0 containers in total. The `meetio-postgres-1` and `meetio-redis-1` containers were up at the start of this stage and are no longer present. The volumes `meetio_postgres-data` and `meetio_redis-data` still exist. None of the commands run in this stage target `meetio-*`. Cause unconfirmed (the daemon may have restarted during the network outage). Not restarted by this run. Owner to check.
 
 ## Teardown (Stage 6, earlier)
 
 - Removed: `p12t-study-room-2`, `p12t-shim`, `p12t-s3backend` (`docker rm -f`), network `p12t-stubnet`.
-- `docker compose -p p12t ... down -v --rmi local --remove-orphans` in the scratch copy: exit 0. Removed compose containers, `p12t_*` volumes, the `examio-*` networks, and the local `p12t-*` images.
+- `docker compose -p p12t ... down -v --rmi local --remove-orphans` in the scratch copy: exit 0. Removed compose containers, `p12t_*` volumes, the `kmaedu-*` networks, and the local `p12t-*` images.
 - Scratch secrets: S3/Turnstile TLS key and cert, scratch `deploy/.env`, generated rabbit `definitions.json`, replica env file: deleted. The Vite dev server on 5273 was stopped.
 - Scratch logs and the repo copy remain in the tester scratchpad (no secrets kept there by design; ci-env values are CI-only dummy strings).
-- Final check: `docker ps -a` shows only `meetio-postgres-1` and `meetio-redis-1` (not touched). No `p12t`/`examio` volumes or networks remain.
+- Final check: `docker ps -a` shows only `meetio-postgres-1` and `meetio-redis-1` (not touched). No `p12t`/`kmaedu` volumes or networks remain.
 - Not touched: network `deploy_default` (id 2a7bee7cbf45) is still present. This run did not create it and did not remove it. Its owner is unknown; flagged for the owner.
 
 ## Final verification set (gate input)
@@ -236,7 +236,7 @@ Excluded rows, each with its reason (detail in the sections above):
   - `s6-ui9-browser-matrix` (58/3/1): fixture and flake, re-verified 64/0/1 by `s6b-ui9-matrix-full-run10`.
 - **Accepted premise/environment gaps:** `s5-studyroom-ws-gateway-and-replica` (17/19).
   - The SYSTEM_ADMIN-only premise cannot be built, because no such account exists in the role model (F4, proven at service level in `ws-auth.e2e-spec.ts`).
-  - The replica host-port publish failed on this VM; the same check passes 6/6 from inside `examio-internal`.
+  - The replica host-port publish failed on this VM; the same check passes 6/6 from inside `kmaedu-internal`.
 - **Partial pass:** `s6b-ui-study-room-2ctx-admin-crud-student-wf-run10` (38 checks, 1 FAIL).
   - Every two-context study-room check, the admin CRUD page and the STUDENT word-family pages pass.
   - The one failure is F14: the Ant Design access-mode select did not open under automation. The FE is unchanged in this phase, room creation is proven with the same payload through the API, and the gap is deferred as Low.

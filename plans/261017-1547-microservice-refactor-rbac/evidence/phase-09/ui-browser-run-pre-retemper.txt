@@ -47,9 +47,9 @@ PASS | 7 restore student role after socket test | ok
 PASS | 8 admin opens /admin | /admin
 PASS | 8 admin opens /admin/roles (Phân quyền)
 PASS | 8 admin: zero 403 on admin screens | 403s=0
-PASS | 9 STUDENT: no permissions/roles arrays in web storage | keys=sidebar_collapsed,auth_return_to,examio-i18next.locale,device_id hits=
-PASS | 9 TEACHER: no permissions/roles arrays in web storage | keys=sidebar_collapsed,examio:tour:ai-tool:v1,examio-i18next.locale,device_id hits=
-PASS | 9 ADMIN: no permissions/roles arrays in web storage | keys=sidebar_collapsed,examio-i18next.locale,device_id hits=
+PASS | 9 STUDENT: no permissions/roles arrays in web storage | keys=sidebar_collapsed,auth_return_to,kmaedu-i18next.locale,device_id hits=
+PASS | 9 TEACHER: no permissions/roles arrays in web storage | keys=sidebar_collapsed,kmaedu:tour:ai-tool:v1,kmaedu-i18next.locale,device_id hits=
+PASS | 9 ADMIN: no permissions/roles arrays in web storage | keys=sidebar_collapsed,kmaedu-i18next.locale,device_id hits=
 PASS | no request left localhost (non-local attempts were CDP-failed, none sent) | blocked_attempts=0 hosts=
 
 SUMMARY pass=50 fail=1 note=2

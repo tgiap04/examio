@@ -1,0 +1,98 @@
+# Auth service: API + its schema migration
+# Included from deploy/docker-compose.yml; paths are relative to deploy/ (project_directory).
+# =============================================================================
+# Shared fragments (YAML anchors are per file, so each file carries its own copy)
+x-logging: &default-logging
+    driver: 'json-file'
+    options:
+        max-size: '10m'
+        max-file: '3'
+
+x-nestjs-healthcheck: &nestjs-healthcheck
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    start_period: 60s
+
+services:
+    auth:
+        image: ghcr.io/tgiap04/kmaedu-auth:${AUTH_TAG:-main}
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile.node
+            args:
+                SERVICE: auth-service
+        container_name: kmaedu-auth
+        environment:
+            - NODE_ENV=production
+            - PORT=3000
+            - FRONTEND_URL=${FRONTEND_URL}
+            - DATABASE_URL=postgresql://auth_svc:${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=auth
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+            - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+            - GRPC_PORT=50051
+            - RABBITMQ_URL=amqp://auth:${RABBITMQ_AUTH_PASS:?RABBITMQ_AUTH_PASS is required}@rabbitmq:5672
+            - ROLE=api,worker
+            - R2_GRPC_URL=r2:50051
+            - JWT_ISSUER=${JWT_ISSUER:-kmaedu-auth}
+            - JWT_AUDIENCE=${JWT_AUDIENCE:-kmaedu}
+            - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY:?JWT_PRIVATE_KEY is required (scripts/gen-jwt-keypair.sh)}
+            - JWT_KID=${JWT_KID:?JWT_KID is required}
+            - JWT_RETIRED_PUBLIC_KEYS=${JWT_RETIRED_PUBLIC_KEYS:-}
+            - SERVICE_CLIENTS=${SERVICE_CLIENTS:?SERVICE_CLIENTS is required (scripts/gen-service-secret.sh)}
+            # Fast-path revoke / invalidate calls into the gateway (phase 05)
+            - GATEWAY_CONTROL_ENABLED=${GATEWAY_CONTROL_ENABLED:-true}
+            - GATEWAY_GRPC_URL=gateway:50051
+            # Boot-time admin bootstrap (ADMIN_EMAILS, ADMIN_DEFAULT_PASSWORD) is read from env/auth.env.
+        env_file:
+            - path: env/auth.env
+              required: true
+        depends_on:
+            auth-migrate:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            r2:
+                condition: service_healthy
+        networks:
+            - internal
+            - egress
+        healthcheck:
+            <<: *nestjs-healthcheck
+            test:
+                [
+                    'CMD',
+                    'wget',
+                    '-q',
+                    '--spider',
+                    'http://localhost:3000/health/ready',
+                ]
+        mem_limit: 512m
+        restart: unless-stopped
+        logging: *default-logging
+
+    # One-shot: `prisma migrate deploy` for the auth schema as auth_svc, then exits.
+    auth-migrate:
+        image: ghcr.io/tgiap04/kmaedu-auth:${AUTH_TAG:-main}
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile.node
+            args:
+                SERVICE: auth-service
+        container_name: kmaedu-auth-migrate
+        environment:
+            - ROLE=migrate
+            - DATABASE_URL=postgresql://auth_svc:${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=auth
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - internal
+        healthcheck:
+            disable: true
+        mem_limit: 512m
+        restart: 'no'
+        logging: *default-logging

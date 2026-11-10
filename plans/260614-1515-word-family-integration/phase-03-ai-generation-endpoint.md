@@ -1,10 +1,10 @@
 # Phase 3: AI Generation Endpoint (Python + NestJS Orchestrator)
 
 ## Context
-- Python AI API: `examio-be/apps/ai-service/src/backend/api/generation.py`
-- Python generation service: `examio-be/apps/ai-service/src/backend/services/generation_service.py`
-- NestJS AI module: `examio-be/apps/exam-service/src/modules/ai/`
-- Prisma schema: `examio-be/libs/database/src/schema.prisma`
+- Python AI API: `kmaedu-be/apps/ai-service/src/backend/api/generation.py`
+- Python generation service: `kmaedu-be/apps/ai-service/src/backend/services/generation_service.py`
+- NestJS AI module: `kmaedu-be/apps/exam-service/src/modules/ai/`
+- Prisma schema: `kmaedu-be/libs/database/src/schema.prisma`
 
 ## Overview
 Add AI-powered Word Family generation: given a category + number of root words, generate root words and their family variations. Two-step process: (1) generate root words, (2) generate family words for each root. Includes JSON normalization and Redis caching.
@@ -101,15 +101,15 @@ def normalize_word_family_response(raw_text: str) -> dict:
 ```
 
 ## Files to Create
-- `examio-be/apps/ai-service/src/backend/api/word_family.py` — Python endpoint
-- `examio-be/apps/ai-service/src/backend/services/word_family_service.py` — generation logic
-- `examio-be/apps/ai-service/src/backend/prompts/word_family_prompt.py` — prompt templates
-- `examio-be/apps/exam-service/src/modules/word-family/dto/generate-word-family.dto.ts`
+- `kmaedu-be/apps/ai-service/src/backend/api/word_family.py` — Python endpoint
+- `kmaedu-be/apps/ai-service/src/backend/services/word_family_service.py` — generation logic
+- `kmaedu-be/apps/ai-service/src/backend/prompts/word_family_prompt.py` — prompt templates
+- `kmaedu-be/apps/exam-service/src/modules/word-family/dto/generate-word-family.dto.ts`
 
 ## Files to Modify
-- `examio-be/apps/ai-service/src/backend/main.py` — register word_family router
-- `examio-be/apps/exam-service/src/modules/word-family/word-family.service.ts` — orchestrator (create in Phase 4)
-- `examio-be/apps/exam-service/src/modules/word-family/word-family.controller.ts` — endpoint (create in Phase 4)
+- `kmaedu-be/apps/ai-service/src/backend/main.py` — register word_family router
+- `kmaedu-be/apps/exam-service/src/modules/word-family/word-family.service.ts` — orchestrator (create in Phase 4)
+- `kmaedu-be/apps/exam-service/src/modules/word-family/word-family.controller.ts` — endpoint (create in Phase 4)
 
 ## Implementation Steps
 

@@ -1,10 +1,10 @@
 # Phase 2: Admin CRUD for Word Family Categories
 
 ## Context
-- Admin service: `examio-be/apps/admin-service/src/`
-- Reference pattern: `examio-be/apps/admin-service/src/modules/admin-users/`
-- Gateway proxy: `examio-be/apps/gateway-service/src/controllers/admin-proxy.controller.ts`
-- Prisma schema: `examio-be/libs/database/src/schema.prisma`
+- Admin service: `kmaedu-be/apps/admin-service/src/`
+- Reference pattern: `kmaedu-be/apps/admin-service/src/modules/admin-users/`
+- Gateway proxy: `kmaedu-be/apps/gateway-service/src/controllers/admin-proxy.controller.ts`
+- Prisma schema: `kmaedu-be/libs/database/src/schema.prisma`
 
 ## Overview
 Add admin CRUD module in admin-service for managing Word Family categories (create/edit/delete/toggle active). Includes R2 upload for AI-generated category thumbnails.
@@ -48,16 +48,16 @@ POST   /api/v1/admin/word-family/categories/:id/image
 - On any CUD: invalidate Redis key `word-family:categories:*`
 
 ## Files to Create
-- `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.module.ts`
-- `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts`
-- `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.service.ts`
-- `examio-be/apps/admin-service/src/modules/admin-word-family/dto/create-category.body.ts`
-- `examio-be/apps/admin-service/src/modules/admin-word-family/dto/update-category.body.ts`
-- `examio-be/apps/admin-service/src/modules/admin-word-family/dto/list-categories.query.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.module.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.service.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-word-family/dto/create-category.body.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-word-family/dto/update-category.body.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-word-family/dto/list-categories.query.ts`
 
 ## Files to Modify
-- `examio-be/apps/admin-service/src/admin-service.module.ts` — register `AdminWordFamilyModule`
-- `examio-be/apps/admin-service/src/main.ts` — import word family module if needed
+- `kmaedu-be/apps/admin-service/src/admin-service.module.ts` — register `AdminWordFamilyModule`
+- `kmaedu-be/apps/admin-service/src/main.ts` — import word family module if needed
 
 ## Implementation Steps
 

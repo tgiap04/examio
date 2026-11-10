@@ -7,7 +7,7 @@ note: "All 3 W7b batches completed with substantive semantic reviews. W7a core i
 
 # Wave 7-merge — Combined Review Report
 
-**Project**: examio
+**Project**: kmaedu
 **Review Date**: 2026-06-05
 **Source reports**: `core-review-report.md` (W7a) + `feature-review-batch-{01,02,03}.md` (W7b)
 

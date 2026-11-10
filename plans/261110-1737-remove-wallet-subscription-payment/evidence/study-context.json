@@ -1,5 +1,5 @@
 {
-  "task": "Remove the wallet / subscription / payment feature (finance-service) from Examio for school use",
+  "task": "Remove the wallet / subscription / payment feature (finance-service) from KMAEdu for school use",
   "mode": "interactive",
   "acceptanceCriteria": [
     "finance-service, finance protos, FinanceClient and permissions wallet:use, subscription:manage, finance:admin are gone",
@@ -11,19 +11,19 @@
     "infra, CI and docs carry no finance references"
   ],
   "touchpoints": [
-    "examio-be/apps/finance-service",
-    "examio-be/apps/content-service/src/modules/ai",
-    "examio-be/apps/document-service/src/modules/upload",
-    "examio-be/apps/ai-chat-service/src/modules/ai-chat",
-    "examio-be/apps/admin-service/src/modules",
-    "examio-be/apps/auth-service/src/grpc/auth.grpc.controller.ts",
-    "examio-be/apps/gateway-service/config/routes.yaml",
-    "examio-be/libs/auth-jwt/src/permissions.ts",
-    "examio-be/libs/grpc/src",
-    "examio-be/proto",
-    "examio-be/deploy",
+    "kmaedu-be/apps/finance-service",
+    "kmaedu-be/apps/content-service/src/modules/ai",
+    "kmaedu-be/apps/document-service/src/modules/upload",
+    "kmaedu-be/apps/ai-chat-service/src/modules/ai-chat",
+    "kmaedu-be/apps/admin-service/src/modules",
+    "kmaedu-be/apps/auth-service/src/grpc/auth.grpc.controller.ts",
+    "kmaedu-be/apps/gateway-service/config/routes.yaml",
+    "kmaedu-be/libs/auth-jwt/src/permissions.ts",
+    "kmaedu-be/libs/grpc/src",
+    "kmaedu-be/proto",
+    "kmaedu-be/deploy",
     ".github/workflows/ci.yml",
-    "examio-fe/src"
+    "kmaedu-fe/src"
   ],
   "blastRadius": ["AI generation flow", "document upload and OCR pipeline", "AI chat send/regenerate", "admin dashboard and user detail", "authz catalog and gateway routing", "service-to-service auth audiences", "compose/broker/postgres provisioning", "frontend routes and nav"],
   "contracts": ["HTTP routes /wallet/*, /payment/*, /webhook, /admin/finance/* removed", "document.proto fields reserved", "finance protos deleted", "GET /ai/* responses lose newBalance/creditCharged", "auth ListUsers user-token only"]

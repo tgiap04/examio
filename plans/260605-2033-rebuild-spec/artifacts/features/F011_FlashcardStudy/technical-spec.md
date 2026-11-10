@@ -24,7 +24,7 @@ N/A — no discriminator fields in Key Entities.
 | FR-004 | Auto-save studied card progress on each "next" navigation | addStudiedCardApi (internal) | yes |
 | FR-005 | Restore study progress on re-entry | getProgressApi | yes |
 
-**Source:** `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:1-562`
+**Source:** `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:1-562`
 
 ### Business Rules
 
@@ -49,7 +49,7 @@ None.
 ### SM-001_FlashcardStudyPageStatus
 **kind:** ui
 **Linked FR:** FR-001, FR-002
-**Source:** `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:56-81`
+**Source:** `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:56-81`
 **States:** isCheckingAccess, isLoadingFlashcards, showAccessModal, hasAccessDenied
 
 ```mermaid
@@ -106,9 +106,9 @@ stateDiagram-v2
 
 **Requirements fulfilled:**
 - **FR-001** Load flashcard set for study after access check passes — `GET /study-flashcard/:id` via `checkFlashcardSetAccess` + `getFlashcardSetForStudy`
-  **Source:** `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:145-171`
+  **Source:** `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:145-171`
 - **FR-002** Enforce Turnstile bot protection on access check — `TurnstileGuard` component
-  **Source:** `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:239-248`
+  **Source:** `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:239-248`
 
 **Rules enforced:** None beyond access check.
 
@@ -132,7 +132,7 @@ stateDiagram-v2
 
 **Requirements fulfilled:**
 - **FR-003** Verify access code before unlocking study interface — client-side in FlashcardStudyPage
-  **Source:** `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:186-200`
+  **Source:** `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:186-200`
 
 **Rules enforced:** None.
 
@@ -159,9 +159,9 @@ stateDiagram-v2
 
 **Requirements fulfilled:**
 - **FR-004** Auto-save studied card progress on each "next" navigation — `addStudiedCardApi`
-  **Source:** `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:215-226`
+  **Source:** `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:215-226`
 - **FR-005** Restore study progress on re-entry — `getProgressApi`
-  **Source:** `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:107-114`
+  **Source:** `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:107-114`
 
 **Rules enforced:** None.
 
@@ -216,12 +216,12 @@ stateDiagram-v2
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| FlashcardStudyPage | `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:1-562` | Study interface page component |
-| checkFlashcardSetAccess | `examio-fe/src/apis/flashcardSetApi.ts` | Access check API call |
-| getFlashcardSetForStudy | `examio-fe/src/apis/flashcardSetApi.ts` | Load flashcards with optional code |
-| getProgressApi | `examio-fe/src/apis/flashcardStudyApi.ts` | Load study progress |
-| addStudiedCardApi | `examio-fe/src/apis/flashcardStudyApi.ts` | Save studied card (fire-and-forget) |
-| TurnstileGuard | `examio-fe/src/components/molecules/TurnstileGuard.tsx` | Bot protection component |
+| FlashcardStudyPage | `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:1-562` | Study interface page component |
+| checkFlashcardSetAccess | `kmaedu-fe/src/apis/flashcardSetApi.ts` | Access check API call |
+| getFlashcardSetForStudy | `kmaedu-fe/src/apis/flashcardSetApi.ts` | Load flashcards with optional code |
+| getProgressApi | `kmaedu-fe/src/apis/flashcardStudyApi.ts` | Load study progress |
+| addStudiedCardApi | `kmaedu-fe/src/apis/flashcardStudyApi.ts` | Save studied card (fire-and-forget) |
+| TurnstileGuard | `kmaedu-fe/src/components/molecules/TurnstileGuard.tsx` | Bot protection component |
 
 ## Unresolved Questions
 

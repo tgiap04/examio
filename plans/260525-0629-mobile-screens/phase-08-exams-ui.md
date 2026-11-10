@@ -19,11 +19,11 @@ Native-mobile UI for: my-exams list, manage-exam as an editable QuizSet manageme
 
 ## Files to modify
 - Android: `androidApp/.../features/exams/MyExamsScreen.kt`, `DeThiScreen.kt` (extend to quizset management; split if >200 lines)
-- iOS: `iosApp/ExamioApp/Views/MyExamsView.swift`, exam management subview
+- iOS: `iosApp/KMAEduApp/Views/MyExamsView.swift`, exam management subview
 
 ## Files to create (MISSING screens)
 - Android: `androidApp/.../features/exams/ExamRoomListScreen.kt`, `ExamRoomDetailScreen.kt`
-- iOS: `iosApp/ExamioApp/Views/ExamRoomListView.swift`, `ExamRoomDetailView.swift`
+- iOS: `iosApp/KMAEduApp/Views/ExamRoomListView.swift`, `ExamRoomDetailView.swift`
 
 ## Out of scope
 - API/VM/CRUD logic (Phase 09/10). Exam-room session analytics / cheating-log (deferred). Exam-taking secure flow (not in this round's scope).

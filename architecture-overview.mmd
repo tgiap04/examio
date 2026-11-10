@@ -1,5 +1,5 @@
 flowchart TB
-    FE["examio-fe<br/>React + Vite + React Router<br/>Zustand + Axios"] -->|HTTP / SSE| GW["gateway-service<br/>Public API / Proxy"]
+    FE["kmaedu-fe<br/>React + Vite + React Router<br/>Zustand + Axios"] -->|HTTP / SSE| GW["gateway-service<br/>Public API / Proxy"]
 
     GW --> AUTH["auth-service<br/>auth / profile / session / OAuth"]
     GW --> CONTENT["content-service<br/>quiz / flashcard / generation jobs"]

@@ -11,8 +11,8 @@ Chuẩn hóa contract evaluation để FE phân biệt điểm testcase thật v
 
 - `src/apis/aiStudentApi.ts`
 - `src/app/k/ai-student/page.tsx`
-- `../examio-be/apps/ai-service/src/backend/services/student_programming_evaluation_service.py`
-- `../examio-be/apps/ai-service/src/backend/services/student_programming_chat_service.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/student_programming_evaluation_service.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/student_programming_chat_service.py`
 
 ## Requirements
 

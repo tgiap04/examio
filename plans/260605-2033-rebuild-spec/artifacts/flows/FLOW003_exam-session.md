@@ -2,7 +2,7 @@
 
 **Entity:** `ExamSession` (MODEL-018)
 **State Field:** `status` (DISC-001) + `assessType` (DISC-002) + `questionSelectionMode` (DISC-007)
-**Source:** `examio-be/libs/database/src/schema.prisma` (ExamSession)
+**Source:** `kmaedu-be/libs/database/src/schema.prisma` (ExamSession)
 **Last Updated:** 2026-06-05
 
 ## State Diagram
@@ -21,12 +21,12 @@ stateDiagram-v2
 
 | ID | From | Trigger | To | Side Effects | Source |
 |----|------|---------|----|--------------|--------|
-| T1 | UPCOMING | scheduled | ONGOING | now >= startTime (cron) | `examio-be/apps/auth-service/src/session-cleanup.cron.ts:91` |
-| T2 | UPCOMING | user-action | ONGOING | First student calls start | `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:85` |
-| T3 | ONGOING | scheduled | ENDED | now >= endTime (cron) | `examio-be/apps/auth-service/src/session-cleanup.cron.ts:104` |
-| T4 | ONGOING | derived | ENDED | All attempts submitted | `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:412` |
-| T5 | UPCOMING | user-action | DELETED | Room deleted (cascade) | `examio-be/apps/exam-service/src/modules/exam-room/exam-room.service.ts:188` |
-| T6 | ONGOING | user-action | DELETED | Room deleted during session | `examio-be/apps/exam-service/src/modules/exam-room/exam-room.service.ts:201` |
+| T1 | UPCOMING | scheduled | ONGOING | now >= startTime (cron) | `kmaedu-be/apps/auth-service/src/session-cleanup.cron.ts:91` |
+| T2 | UPCOMING | user-action | ONGOING | First student calls start | `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:85` |
+| T3 | ONGOING | scheduled | ENDED | now >= endTime (cron) | `kmaedu-be/apps/auth-service/src/session-cleanup.cron.ts:104` |
+| T4 | ONGOING | derived | ENDED | All attempts submitted | `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:412` |
+| T5 | UPCOMING | user-action | DELETED | Room deleted (cascade) | `kmaedu-be/apps/exam-service/src/modules/exam-room/exam-room.service.ts:188` |
+| T6 | ONGOING | user-action | DELETED | Room deleted during session | `kmaedu-be/apps/exam-service/src/modules/exam-room/exam-room.service.ts:201` |
 
 ## Trigger Types (3)
 

@@ -9,9 +9,9 @@ created: 2026-05-31
 
 ## Context Links
 
-- Report: `/Users/tgiap.dev/devs/examio/plans/reports/researcher-260531-1419-auth-redirect-flow.md`
-- Bug location: `examio-fe/src/apis/api.ts:30-44`
-- SignupForm: `examio-fe/src/components/organisms/auth/signup-form.tsx`
+- Report: `/Users/tgiap.dev/devs/kmaedu/plans/reports/researcher-260531-1419-auth-redirect-flow.md`
+- Bug location: `kmaedu-fe/src/apis/api.ts:30-44`
+- SignupForm: `kmaedu-fe/src/components/organisms/auth/signup-form.tsx`
 
 ## Overview
 
@@ -47,14 +47,14 @@ SignupForm (signup-form.tsx)
 
 ## Related Code Files
 
-- `examio-fe/src/apis/api.ts` — lines 30-44 (`handleAuthFailure` function)
-- `examio-fe/src/components/organisms/auth/signup-form.tsx` — lines 34-64 (`SignupForm` handleSubmit)
+- `kmaedu-fe/src/apis/api.ts` — lines 30-44 (`handleAuthFailure` function)
+- `kmaedu-fe/src/components/organisms/auth/signup-form.tsx` — lines 34-64 (`SignupForm` handleSubmit)
 
 ## Implementation Steps
 
 ### Step 1 — Fix `handleAuthFailure` in `api.ts`
 
-**File:** `examio-fe/src/apis/api.ts`
+**File:** `kmaedu-fe/src/apis/api.ts`
 **Lines:** 39-43
 
 Remove the `clearRedirectBackTarget()` call on line 41.
@@ -76,7 +76,7 @@ if (window.location.pathname !== "/login") {
 
 ### Step 2 — Add `useSearchParams` import to `SignupForm`
 
-**File:** `examio-fe/src/components/organisms/auth/signup-form.tsx`
+**File:** `kmaedu-fe/src/components/organisms/auth/signup-form.tsx`
 
 Add `useSearchParams` to the React import from "react-router-dom" (currently imports `Link` only).
 
@@ -86,7 +86,7 @@ import { Link, useSearchParams } from "react-router-dom";
 
 ### Step 3 — Read `?from=` URL param in `SignupForm`
 
-**File:** `examio-fe/src/components/organisms/auth/signup-form.tsx`
+**File:** `kmaedu-fe/src/components/organisms/auth/signup-form.tsx`
 **Location:** inside `SignupForm` function, before `handleSubmit`
 
 Add the hook call and use it in `handleSubmit`:

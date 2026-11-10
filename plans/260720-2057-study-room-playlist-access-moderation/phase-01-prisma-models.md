@@ -2,7 +2,7 @@
 
 ## Context Links
 - Plan: [plan.md](plan.md) · Decisions: [clarifications.md](clarifications.md)
-- Model gốc: `examio-be/libs/database/src/models/study-room.prisma` (StudyRoom, StudyRoomMember)
+- Model gốc: `kmaedu-be/libs/database/src/models/study-room.prisma` (StudyRoom, StudyRoomMember)
 - Mirror access: `ExamSession` (assessType Int, whitelist String[], accessCode)
 - **Model tách file + generate qua prisma-merge** — sửa `models/*.prisma`, KHÔNG sửa schema.prisma trực tiếp.
 

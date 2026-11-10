@@ -3,7 +3,7 @@
 **Priority:** Trung bình · **Status:** ✅ DONE · **Phụ thuộc:** phase-01,02
 
 ## Build
-- ✅ `cd examio-app && ./gradlew :androidApp:compileDebugKotlin` → PASS
+- ✅ `cd kmaedu-app && ./gradlew :androidApp:compileDebugKotlin` → PASS
 - ✅ `./gradlew :androidApp:assembleDebug` → exit 0
 
 ## Review

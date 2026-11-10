@@ -6,7 +6,7 @@ warnings: 3
 
 # Wave 7b batch-03 — F011–F013 Feature Review
 
-**Project**: examio
+**Project**: kmaedu
 **Review Date**: 2026-06-05
 **Reviewer**: reviewer (semantic pass)
 **Scope**: 3 features (F011_FlashcardStudy, F012_ExamTaking, F013_SessionCleanup)

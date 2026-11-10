@@ -3,8 +3,8 @@
   "criticalCount": 0,
   "decision": "SEALED",
   "acceptanceCovered": [
-    "exam-service gone: apps/exam-service does not exist and git grep for exam-service|EXAM_SERVICE_URL in *.ts, *.yaml, *.yml, *.json, *.example under examio-be -> no output; no exam upstream in gateway routes.yaml; exam removed from r2/finance/ai-service allowlists, RabbitMQ users and postgres init list — routes.yaml upstreams content/assessment only; r2-service.controller.ts:19,61,73,101; wallet.grpc.controller.ts:16 MONEY_CALLERS=[content,document]; service_token.py:38; topology.py:23; broker template content/assessment users; 01-service-schemas.sh:17 without exam; git grep row exit 0",
-    "yarn build && yarn typecheck && yarn test && check:deps && check:ownership --strict green; buf lint + breaking (content/v1 is additive) green; content and assessment compose services healthy from an empty volume; examio-fe yarn build && yarn lint && yarn test green — Stage 1/3 rows exit 0 (243 suites/2462 tests, 0 dep and 0 ownership violations, buf breaking clean, compose up --wait healthy, FE 128 tests); check-model-ownership.ts maps content/assessment models",
+    "exam-service gone: apps/exam-service does not exist and git grep for exam-service|EXAM_SERVICE_URL in *.ts, *.yaml, *.yml, *.json, *.example under kmaedu-be -> no output; no exam upstream in gateway routes.yaml; exam removed from r2/finance/ai-service allowlists, RabbitMQ users and postgres init list — routes.yaml upstreams content/assessment only; r2-service.controller.ts:19,61,73,101; wallet.grpc.controller.ts:16 MONEY_CALLERS=[content,document]; service_token.py:38; topology.py:23; broker template content/assessment users; 01-service-schemas.sh:17 without exam; git grep row exit 0",
+    "yarn build && yarn typecheck && yarn test && check:deps && check:ownership --strict green; buf lint + breaking (content/v1 is additive) green; content and assessment compose services healthy from an empty volume; kmaedu-fe yarn build && yarn lint && yarn test green — Stage 1/3 rows exit 0 (243 suites/2462 tests, 0 dep and 0 ownership violations, buf breaking clean, compose up --wait healthy, FE 128 tests); check-model-ownership.ts maps content/assessment models",
     "snapshot: POST /examsessions stores quizSnapshot + quizSnapshotHash (stable content_hash from one content-hash.ts shared with GetQuizSetsByIds); attempt start, GET :id/quiz, secure-quiz, submit/grading and available-labels read only the snapshot; teacher edits a question and deletes the quiz set -> student submit grades with the original answers; room shows sourceDeleted and a new session -> 422 QUIZSET_DELETED; > 1 MB snapshot -> 422 QUIZSET_TOO_LARGE — content-hash.ts:27 used by quiz-set-snapshot.service.ts:108; snapshot.store.ts:26-41 sole reader + prisma.service.ts:15 omit; examattempt.service.ts:283-287,454; examsession.service.ts:596,935-942; quiz-snapshot.ts:92-110; live S4.10-S4.36",
     "drift + refresh: host get-by-id returns snapshotOutdated/canRefreshSnapshot; POST /examsessions/:id/refresh-snapshot changes the hash while UPCOMING with 0 attempts, else 409 SNAPSHOT_LOCKED (row lock shared with attempt start; race never yields a started attempt plus a changed snapshot); PUT never changes the hash; content UNAVAILABLE -> snapshotOutdated null with 200; snapshot LRU keyed <sessionId>:<hash>; list endpoints never select quizSnapshot — session-lock.ts:14-19 FOR UPDATE at examsession.service.ts:972 and examattempt.service.ts:277,1021; snapshot-drift.ts:27-29,58-66; snapshot.cache.ts:26-28; prisma.service.ts:15 omit; live S4.9-S4.25",
     "contracts and privacy: GetQuizSetSnapshot non-owner -> NOT_FOUND, no token -> UNAUTHENTICATED; no pre-submit exam:take/flashcard:study response contains answer, accessCode or whitelist (answers only after submit when the teacher enabled showAnswersAfterSubmit); no content or assessment response contains an email key; profile enrichment uses only GetPublicProfilesByIds; permission matrix (STUDENT/TEACHER/ADMIN) holds in both services incl. refresh-snapshot — content.grpc.controller.ts:17-23,37-85 + content.grpc.contract.e2e-spec.ts:72-140; examattempt.service.ts:449-457; examattempt-view.mapper.ts:71-80; examsession-public.mapper.ts:103-123; live S4.11/S4.12/S4.20, thumb-and-perms 9/9",
@@ -41,35 +41,35 @@
     {
       "severity": "Medium",
       "category": "Deploy/Network",
-      "location": "examio-be/deploy/compose/content.yml:79-82",
+      "location": "kmaedu-be/deploy/compose/content.yml:79-82",
       "summary": "content-service lacked egress while flashcardset.controller.ts:560,604 verify Turnstile tokens. FIXED: egress added, TURNSTILE_SECRET_KEY added to content env examples, infra.yml comment updated; compose config rendered in scratch (content networks egress+internal).",
       "disposition": "Accept"
     },
     {
       "severity": "Low",
       "category": "Performance",
-      "location": "examio-be/apps/assessment-service/src/modules/snapshot/snapshot.cache.ts:3",
+      "location": "kmaedu-be/apps/assessment-service/src/modules/snapshot/snapshot.cache.ts:3",
       "summary": "LRU bounded by count (50), not size; worst case ~100-150 MB per replica.",
       "disposition": "Defer"
     },
     {
       "severity": "Low",
       "category": "Logic",
-      "location": "examio-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts:1020-1031",
+      "location": "kmaedu-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts:1020-1031",
       "summary": "Legacy POST /examattempts has no selectedQuestionIds, RANDOM modes bypassed; pre-existing.",
       "disposition": "Defer"
     },
     {
       "severity": "Low",
       "category": "Concurrency",
-      "location": "examio-be/apps/assessment-service/src/modules/examroom/examroom.service.ts:42-55",
+      "location": "kmaedu-be/apps/assessment-service/src/modules/examroom/examroom.service.ts:42-55",
       "summary": "Room created during quiz-set delete can miss sourceDeleted; session create still 422 QUIZSET_DELETED.",
       "disposition": "Defer"
     },
     {
       "severity": "Low",
       "category": "Docs",
-      "location": "examio-be/deploy/README.md:21",
+      "location": "kmaedu-be/deploy/README.md:21",
       "summary": "Docs still describe exam-service; doc-writer step of this phase.",
       "disposition": "Defer"
     }

@@ -1,6 +1,6 @@
 [
   {
-    "command": "cd examio-be && yarn prisma:generate",
+    "command": "cd kmaedu-be && yarn prisma:generate",
     "exitCode": 0,
     "summary": "prisma client generated",
     "ts": "2026-10-20T01:47:42.734Z"
@@ -12,25 +12,25 @@
     "ts": "2026-10-20T01:47:42.734Z"
   },
   {
-    "command": "cd examio-be && yarn typecheck",
+    "command": "cd kmaedu-be && yarn typecheck",
     "exitCode": 0,
     "summary": "all six services typecheck clean",
     "ts": "2026-10-20T01:47:42.734Z"
   },
   {
-    "command": "cd examio-be && yarn build:all",
+    "command": "cd kmaedu-be && yarn build:all",
     "exitCode": 0,
     "summary": "six services built from source, zero warnings",
     "ts": "2026-10-20T01:47:42.734Z"
   },
   {
-    "command": "cd examio-be && TZ=UTC yarn test",
+    "command": "cd kmaedu-be && TZ=UTC yarn test",
     "exitCode": 0,
     "summary": "1408 tests passed",
     "ts": "2026-10-20T01:47:42.734Z"
   },
   {
-    "command": "cd examio-be && TZ=UTC yarn test test/authz",
+    "command": "cd kmaedu-be && TZ=UTC yarn test test/authz",
     "exitCode": 0,
     "summary": "191 tests passed",
     "ts": "2026-10-20T01:47:42.734Z"

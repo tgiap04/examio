@@ -7,20 +7,20 @@
     "registering a user while RabbitMQ is down still returns 201 and the wallet appears within 5s after RabbitMQ returns (no event loss)",
     "duplicate deliveries are absorbed by processed_events (handler effect applied once)",
     "envelope source/type mismatch goes to the DLQ; transient failures retry via <svc>.retry.30s and land in <svc>.dlq after 5 attempts",
-    "per-service RabbitMQ users exist and finance can only publish ^finance\\. on examio.events",
+    "per-service RabbitMQ users exist and finance can only publish ^finance\\. on kmaedu.events",
     "relay holds no DB lock across the broker call and uses its own small pg pool",
     "state events without a numeric data.version are rejected by createEnvelope",
     "no USER_CREATED, traceparent or amq.default references remain",
     "deploy/rabbitmq/definitions.json is gitignored and never committed"
   ],
   "touchpoints": [
-    "examio-be/libs/messaging",
-    "examio-be/libs/common/src/events",
-    "examio-be/apps/auth-service/src/auth.service.ts",
-    "examio-be/apps/finance-service/src/events",
-    "examio-be/libs/database/src/models",
-    "examio-be/deploy/rabbitmq",
-    "examio-be/deploy/docker-compose.yml"
+    "kmaedu-be/libs/messaging",
+    "kmaedu-be/libs/common/src/events",
+    "kmaedu-be/apps/auth-service/src/auth.service.ts",
+    "kmaedu-be/apps/finance-service/src/events",
+    "kmaedu-be/libs/database/src/models",
+    "kmaedu-be/deploy/rabbitmq",
+    "kmaedu-be/deploy/docker-compose.yml"
   ],
   "blastRadius": [
     "user registration (email + Google OAuth)",

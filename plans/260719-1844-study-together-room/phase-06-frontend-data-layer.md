@@ -3,7 +3,7 @@
 ## Context Links
 
 - Plan: [plan.md](plan.md) · Depends: phase-04 (event contract), phase-05 (gateway URL)
-- Pattern: `examio-fe/src/apis/examRoomApi.ts` (axios wrapper), `src/apis/api.ts` (shared instance + bearer token), `src/stores/useExamSessionStore.ts` (zustand + storeCache)
+- Pattern: `kmaedu-fe/src/apis/examRoomApi.ts` (axios wrapper), `src/apis/api.ts` (shared instance + bearer token), `src/stores/useExamSessionStore.ts` (zustand + storeCache)
 
 ## Overview
 
@@ -13,7 +13,7 @@
 
 ## Implementation Steps
 
-1. Dep: `cd examio-fe && yarn add socket.io-client`.
+1. Dep: `cd kmaedu-fe && yarn add socket.io-client`.
 2. `src/types/studyRoom.ts` — mirror types từ `study-room.events.ts` backend (RoomState, TimerState, MediaState, RosterEntry, ChatMessage, role enum). Ghi comment trỏ về file backend làm nguồn sự thật.
 3. `src/apis/studyRoomApi.ts` — create/mine/detail/update/delete/join(inviteCode)/leave/regenerateCode/leaderboard, qua shared axios instance.
 4. `src/stores/useStudyRoomStore.ts` (zustand):

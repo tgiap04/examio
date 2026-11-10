@@ -1,9 +1,9 @@
 # Phase 02 — Optimize OCR and Embedding Pipeline
 
 ## Context Links
-- `../examio-be/apps/ai-service/src/backend/services/ocr_service.py`
-- `../examio-be/apps/ai-service/src/llm/ollama_embeddings.py`
-- `../examio-be/apps/ai-service/src/rag/vector_store_pg.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/ocr_service.py`
+- `../kmaedu-be/apps/ai-service/src/llm/ollama_embeddings.py`
+- `../kmaedu-be/apps/ai-service/src/rag/vector_store_pg.py`
 
 ## Overview
 Priority: high  
@@ -24,9 +24,9 @@ Reduce chunk embedding latency and avoid unnecessary memory/CPU work during OCR 
 
 ## Related Code Files
 Modify:
-- `../examio-be/apps/ai-service/src/llm/ollama_embeddings.py`
-- `../examio-be/apps/ai-service/src/backend/services/ocr_service.py`
-- `../examio-be/apps/ai-service/src/rag/vector_store_pg.py`
+- `../kmaedu-be/apps/ai-service/src/llm/ollama_embeddings.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/ocr_service.py`
+- `../kmaedu-be/apps/ai-service/src/rag/vector_store_pg.py`
 
 ## Implementation Steps
 1. Introduce explicit env caps such as `OLLAMA_EMBED_MAX_BATCH_SIZE` and `OLLAMA_EMBED_MAX_CONCURRENCY_CAP`, or remove the `3/2` clamp while preserving minimum validation.

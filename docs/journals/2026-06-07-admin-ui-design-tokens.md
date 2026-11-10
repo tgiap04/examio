@@ -11,7 +11,7 @@ status: complete
 
 Surgical design-token realignment of all admin pages and components to comply with `DESIGN.md`. Follow-up to the dashboard implementation session (260607-1538).
 
-## Frontend (examio-fe/src)
+## Frontend (kmaedu-fe/src)
 
 ### New component
 - `components/admin/BadgePill.tsx` — 3 brand variants (`positive` / `negative` / `neutral`) replacing 10 antd `<Tag color="...">` sites in admin.

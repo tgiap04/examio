@@ -1,6 +1,6 @@
 # Screen List
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Analysis Scope**: All 32 frontend page files + 5 layout shells + backend route controllers
 

@@ -12,9 +12,9 @@ sources_consulted: 4
 
 Driver.js is a lightweight MIT-licensed JavaScript library for product tours, guided onboarding, and element highlights. Current npm version checked locally is `1.4.0`. It works with plain JS and bundled apps; in React/Vite, usage is direct: install `driver.js`, import CSS once, then create/destroy driver instances around DOM elements.
 
-For Examio frontend, Driver.js is suitable for short onboarding flows: dashboard first-run tour, exam-room guidance, AI chat/document upload tutorial. Keep tours explicit and small. Avoid overusing tours for core UX issues; if users need many tour steps to understand a page, improve UI copy/layout first.
+For KMAEdu frontend, Driver.js is suitable for short onboarding flows: dashboard first-run tour, exam-room guidance, AI chat/document upload tutorial. Keep tours explicit and small. Avoid overusing tours for core UX issues; if users need many tour steps to understand a page, improve UI copy/layout first.
 
-Recommendation: add a small wrapper hook/service in `examio-fe` to centralize CSS import, default config, localStorage completion state, and cleanup. Use stable selectors via `data-tour="..."`, not brittle Tailwind/class selectors.
+Recommendation: add a small wrapper hook/service in `kmaedu-fe` to centralize CSS import, default config, localStorage completion state, and cleanup. Use stable selectors via `data-tour="..."`, not brittle Tailwind/class selectors.
 
 ## Study Methodology
 
@@ -48,7 +48,7 @@ const driverObj = driver({
       element: "[data-tour='dashboard-upload']",
       popover: {
         title: "Upload tài liệu",
-        description: "Thêm tài liệu để Examio tạo flashcard, quiz và hỗ trợ AI chat.",
+        description: "Thêm tài liệu để KMAEdu tạo flashcard, quiz và hỗ trợ AI chat.",
       },
     },
   ],
@@ -64,7 +64,7 @@ yarn add driver.js
 # or npm install driver.js / pnpm install driver.js
 ```
 
-CDN usage exists, but not recommended for `examio-fe` because the app already uses Vite bundling.
+CDN usage exists, but not recommended for `kmaedu-fe` because the app already uses Vite bundling.
 
 ### 2. Current State & Trends
 
@@ -139,12 +139,12 @@ Important warning: if overriding `onNextClick` or `onPrevClick`, call `driver.mo
 
 ## Recommendations
 
-### Getting Started In `examio-fe`
+### Getting Started In `kmaedu-fe`
 
 1. Install in frontend root:
 
 ```bash
-cd examio-fe
+cd kmaedu-fe
 yarn add driver.js
 ```
 
@@ -168,13 +168,13 @@ const defaultTourConfig: Config = {
   nextBtnText: "Tiếp",
   prevBtnText: "Quay lại",
   doneBtnText: "Xong",
-  popoverClass: "examio-tour-popover",
+  popoverClass: "kmaedu-tour-popover",
   stagePadding: 8,
   stageRadius: 12,
 };
 
 export function startTour(tourKey: string, steps: DriveStep[]) {
-  const storageKey = `examio:tour:${tourKey}:done`;
+  const storageKey = `kmaedu:tour:${tourKey}:done`;
   if (localStorage.getItem(storageKey) === "1") return;
 
   const existingTargets = steps.filter((step) => {
@@ -238,7 +238,7 @@ export const dashboardTourSteps = [
 - Making tours too long or blocking essential actions.
 - Marking tour complete on close when product wants to show it again later. Decide close semantics first.
 
-## Suggested Examio Integration Pattern
+## Suggested KMAEdu Integration Pattern
 
 ```text
 src/lib/tour/
@@ -267,13 +267,13 @@ Keep file sizes small. If only one tour is needed, start with one `tour-runner.t
 
 ## Next Steps
 
-1. If you want onboarding in Examio, choose first target page: dashboard, exam room, or AI chat.
-2. Add Driver.js dependency in `examio-fe`.
+1. If you want onboarding in KMAEdu, choose first target page: dashboard, exam room, or AI chat.
+2. Add Driver.js dependency in `kmaedu-fe`.
 3. Implement a minimal `tour-runner` and one first-run tour.
 4. Validate with `yarn build` and manual browser check.
 
 ## Unresolved Questions
 
-- Which Examio screen needs the first tour?
+- Which KMAEdu screen needs the first tour?
 - Should closing a tour mark it complete, or only pressing `Done`?
 - Should tour completion stay local-only or sync to user profile later?

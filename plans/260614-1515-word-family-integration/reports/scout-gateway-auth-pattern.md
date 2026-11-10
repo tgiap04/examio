@@ -34,18 +34,18 @@ private readonly serviceUrls = {
 ```
 
 ## AuthGuard (libs/common/src/guard/auth.guard.ts)
-- **Import**: `import { AuthGuard } from '@examio/common';`
+- **Import**: `import { AuthGuard } from '@kmaedu/common';`
 - Checks: token valid → DB user exists → not banned/deleted → email verified.
 - Attaches user to `request['user']`.
 - **Usage in downstream**: `@UseGuards(AuthGuard)` on controllers.
 
 ## AdminGuard (libs/common/src/guard/admin.guard.ts)
-- **Import**: `import { AdminGuard } from '@examio/common';`
+- **Import**: `import { AdminGuard } from '@kmaedu/common';`
 - Same logic as AuthGuard + extra check: `if (!user.isAdmin) throw ForbiddenException`.
 - **Usage in downstream**: `@UseGuards(AdminGuard)` on admin-only controllers.
 
 ## Redis Pattern (exam-service)
-- **Import**: `import { RedisService } from '@examio/redis';`
+- **Import**: `import { RedisService } from '@kmaedu/redis';`
 - Direct injection in `providers[]` — no `@InjectRedis()` decorator needed.
 - Used in: `QuizsetModule`, `ExamSessionModule`, and likely others.
 ```typescript
@@ -59,7 +59,7 @@ export class QuizsetModule {}
 
 ## Key Export (libs/common/src/index.ts)
 ```typescript
-export * from './guard/auth.guard';   // → @examio/common
-export * from './guard/admin.guard';  // → @examio/common
+export * from './guard/auth.guard';   // → @kmaedu/common
+export * from './guard/admin.guard';  // → @kmaedu/common
 ```
-Both guards are re-exported via the `@examio/common` barrel. Downstream services import guards from `@examio/common`, not from the guard file directly.
+Both guards are re-exported via the `@kmaedu/common` barrel. Downstream services import guards from `@kmaedu/common`, not from the guard file directly.

@@ -3,7 +3,7 @@
 ## Context Links
 
 - Plan: [plan.md](plan.md) · Depends: phase-02 (REST), phase-03 (WS path)
-- Pattern REST proxy: `examio-be/apps/gateway-service/src/controllers/examroom-proxy.controller.ts` (`forwardWithAuth`, `@TogglePage`)
+- Pattern REST proxy: `kmaedu-be/apps/gateway-service/src/controllers/examroom-proxy.controller.ts` (`forwardWithAuth`, `@TogglePage`)
 - Gateway main/bootstrap: `apps/gateway-service/src/main.ts`
 
 ## Overview
@@ -44,7 +44,7 @@ wsProxy.on('error', (err, req, socket) => { socket?.destroy?.(); /* + log qua lo
 3. **Transport:** để tránh vấn đề sticky-session của polling qua nhiều instance gateway, cấu hình socket.io client (phase 6) `transports: ['websocket']` — bỏ HTTP long-polling. Ghi rõ quyết định này vào study-room.events.ts.
 4. `studyroom-proxy.controller.ts`: mirror các route phase 2 theo đúng pattern examroom-proxy (forwardWithAuth, giữ nguyên path `/api/v1/studyrooms/...` downstream).
 5. Đăng ký toggle page `study-room` (xem cách các page khác đăng ký trong admin page-config để FE flag hoạt động).
-6. Kiểm tra deploy: `examio-be/deploy/docker-compose.yml` — gateway đã expose; xác nhận không cần mở port mới (đó là lý do chọn (a)). Nginx/LB phía trước (nếu có) cần `proxy_set_header Upgrade/Connection` — ghi chú vào README deploy nếu file nginx nằm trong repo.
+6. Kiểm tra deploy: `kmaedu-be/deploy/docker-compose.yml` — gateway đã expose; xác nhận không cần mở port mới (đó là lý do chọn (a)). Nginx/LB phía trước (nếu có) cần `proxy_set_header Upgrade/Connection` — ghi chú vào README deploy nếu file nginx nằm trong repo.
 
 ## Todo
 

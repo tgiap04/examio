@@ -9,11 +9,11 @@ created: 2026-05-31
 
 ## Context Links
 
-- Report: `/Users/tgiap.dev/devs/examio/plans/reports/researcher-260531-1419-auth-coverage-audit.md`
-- ExamSessionPage: `examio-fe/src/pages/exam-session/ExamSessionPage.tsx`
-- ExamQuizPage: `examio-fe/src/pages/exam-session/ExamQuizPage.tsx`
-- Auth store: `examio-fe/src/stores/useAuthStore.ts`
-- Auth redirect: `examio-fe/src/lib/authRedirect.ts`
+- Report: `/Users/tgiap.dev/devs/kmaedu/plans/reports/researcher-260531-1419-auth-coverage-audit.md`
+- ExamSessionPage: `kmaedu-fe/src/pages/exam-session/ExamSessionPage.tsx`
+- ExamQuizPage: `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx`
+- Auth store: `kmaedu-fe/src/stores/useAuthStore.ts`
+- Auth redirect: `kmaedu-fe/src/lib/authRedirect.ts`
 
 ## Overview
 
@@ -79,14 +79,14 @@ ExamQuizPage (useEffect at line 129):
 
 ## Related Code Files
 
-- `examio-fe/src/pages/exam-session/ExamSessionPage.tsx`
+- `kmaedu-fe/src/pages/exam-session/ExamSessionPage.tsx`
   - Lines 1-30: imports — needs `useAuthStore`, `useLocation`, `setRedirectBackTarget`
   - Lines 31-43: component state
   - Lines 44-76: `useEffect` with `loadData` — auth check goes here
-- `examio-fe/src/pages/exam-session/ExamQuizPage.tsx`
+- `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx`
   - Lines 38-70: component state
   - Lines 129-188: `useEffect` with `initExam` — auth check goes here
-- `examio-fe/src/routes/index.tsx` — lines 237-247: route definitions (no changes needed, just for reference)
+- `kmaedu-fe/src/routes/index.tsx` — lines 237-247: route definitions (no changes needed, just for reference)
 
 ## Implementation Steps
 
@@ -94,7 +94,7 @@ ExamQuizPage (useEffect at line 129):
 
 #### Step A1 — Add imports
 
-**File:** `examio-fe/src/pages/exam-session/ExamSessionPage.tsx`
+**File:** `kmaedu-fe/src/pages/exam-session/ExamSessionPage.tsx`
 
 ```ts
 import { useNavigate, useParams, useLocation } from "react-router-dom"; // update useNavigate line
@@ -104,7 +104,7 @@ import { setRedirectBackTarget } from "@/lib/authRedirect";
 
 #### Step A2 — Destructure `isAuthenticated` and add `useLocation`
 
-**File:** `examio-fe/src/pages/exam-session/ExamSessionPage.tsx`
+**File:** `kmaedu-fe/src/pages/exam-session/ExamSessionPage.tsx`
 **Location:** inside `ExamSessionPage` component
 
 ```ts
@@ -116,7 +116,7 @@ const { isAuthenticated } = useAuthStore();  // add
 
 #### Step A3 — Add auth check inside `loadData` BEFORE the API call
 
-**File:** `examio-fe/src/pages/exam-session/ExamSessionPage.tsx`
+**File:** `kmaedu-fe/src/pages/exam-session/ExamSessionPage.tsx`
 **Location:** inside the `useEffect` (lines 44-76), at the beginning of `loadData`
 
 Current code:
@@ -156,7 +156,7 @@ Also update the `useEffect` dependency array (line 76) to include `isAuthenticat
 
 #### Step B1 — Add imports
 
-**File:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx`
+**File:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx`
 
 ```ts
 import { useNavigate, useParams, useLocation } from "react-router-dom"; // update useNavigate line
@@ -166,7 +166,7 @@ import { setRedirectBackTarget } from "@/lib/authRedirect";
 
 #### Step B2 — Destructure `isAuthenticated` and add `useLocation`
 
-**File:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx`
+**File:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx`
 **Location:** inside `ExamQuizPage` component
 
 ```ts
@@ -178,7 +178,7 @@ const { isAuthenticated } = useAuthStore();  // add
 
 #### Step B3 — Add auth check inside `initExam` BEFORE `startExamAttemptApi`
 
-**File:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx`
+**File:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx`
 **Location:** inside the `useEffect` (lines 129-188), at the beginning of `initExam`
 
 Current code:

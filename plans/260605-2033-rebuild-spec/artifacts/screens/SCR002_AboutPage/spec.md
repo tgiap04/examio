@@ -103,5 +103,5 @@ N/A — no auth guards or permission checks detected on this screen.
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/landing/AboutPage.tsx:1-5`
-- AboutSection component: `examio-fe/src/components/organisms/AboutSection.tsx:1-161`
+- Page/View: `kmaedu-fe/src/pages/landing/AboutPage.tsx:1-5`
+- AboutSection component: `kmaedu-fe/src/components/organisms/AboutSection.tsx:1-161`

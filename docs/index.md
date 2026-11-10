@@ -1,4 +1,4 @@
-# Examio Rebuilt Specification Index
+# KMAEdu Rebuilt Specification Index
 
 Generated: 2026-06-06
 Pipeline: rebuild-spec v4.0.0 (full mode, sha5d4bf58, 13 features)

@@ -12,10 +12,10 @@ Surgical token + structural fix of all admin pages and components to comply with
 ## What changed
 
 ### New component
-- `examio-fe/src/components/admin/BadgePill.tsx` — token-driven badge with 3 brand variants (`positive` coral, `negative` error, `neutral` surface-card) replacing 10 antd `<Tag color="...">` sites in admin.
+- `kmaedu-fe/src/components/admin/BadgePill.tsx` — token-driven badge with 3 brand variants (`positive` coral, `negative` error, `neutral` surface-card) replacing 10 antd `<Tag color="...">` sites in admin.
 
 ### Layout
-- `examio-fe/src/routes/layouts/AdminLayout.tsx` — 4× `bg-[#faf9f5]` → `bg-canvas`; brand text + header h1 → `font-display font-normal tracking-tight`; admin chip → `rounded-pill`.
+- `kmaedu-fe/src/routes/layouts/AdminLayout.tsx` — 4× `bg-[#faf9f5]` → `bg-canvas`; brand text + header h1 → `font-display font-normal tracking-tight`; admin chip → `rounded-pill`.
 
 ### Components (9)
 | File | Change |

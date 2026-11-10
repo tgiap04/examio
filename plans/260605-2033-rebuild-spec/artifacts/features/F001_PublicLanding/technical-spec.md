@@ -134,9 +134,9 @@ None.
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| HomePage | `examio-fe/src/pages/HomePage.tsx` | Public landing page |
-| ContactForm | `examio-fe/src/pages/ContactPage.tsx` | Contact form submission |
-| Static pages | `examio-fe/src/pages/{About,Terms,Privacy,Cookies,Security}Page.tsx` | Informational pages |
+| HomePage | `kmaedu-fe/src/pages/HomePage.tsx` | Public landing page |
+| ContactForm | `kmaedu-fe/src/pages/ContactPage.tsx` | Contact form submission |
+| Static pages | `kmaedu-fe/src/pages/{About,Terms,Privacy,Cookies,Security}Page.tsx` | Informational pages |
 
 > Note: Source code paths not yet verified via Read tool. Pending source-code audit phase.
 

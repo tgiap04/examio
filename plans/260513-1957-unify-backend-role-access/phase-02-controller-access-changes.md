@@ -4,12 +4,12 @@
 Priority: high. Status: planned. Convert teacher/student-gated APIs to authenticated-user APIs.
 
 ## Related Code Files
-- `examio-be/apps/exam-service/src/modules/quizset/quizset.controller.ts`
-- `examio-be/apps/exam-service/src/modules/flashcardset/flashcardset.controller.ts`
-- `examio-be/apps/exam-service/src/modules/examroom/examroom.controller.ts`
-- `examio-be/apps/exam-service/src/modules/ai/ai.controller.ts`
-- `examio-be/apps/exam-service/src/modules/ai-chat/ai-chat.controller.ts`
-- `examio-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
+- `kmaedu-be/apps/exam-service/src/modules/quizset/quizset.controller.ts`
+- `kmaedu-be/apps/exam-service/src/modules/flashcardset/flashcardset.controller.ts`
+- `kmaedu-be/apps/exam-service/src/modules/examroom/examroom.controller.ts`
+- `kmaedu-be/apps/exam-service/src/modules/ai/ai.controller.ts`
+- `kmaedu-be/apps/exam-service/src/modules/ai-chat/ai-chat.controller.ts`
+- `kmaedu-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
 
 ## Required Changes
 - Quiz sets: change create/update/delete quiz sets and question CRUD from `@UseGuards(AuthGuard, RolesGuard)` plus `@Roles('teacher')` to `@UseGuards(AuthGuard)`.

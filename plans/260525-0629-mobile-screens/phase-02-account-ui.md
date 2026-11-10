@@ -19,7 +19,7 @@ Native-mobile UI for profile (avatar/banner, name, email, fields) + wallet balan
 
 ## Files to modify
 - Android: `androidApp/.../features/account/AccountScreen.kt` (split sub-composables if >200 lines: `AccountProfileSection.kt`, `AccountWalletSection.kt`)
-- iOS: `iosApp/ExamioApp/Views/AccountView.swift` (split subviews if needed: `AccountProfileSection.swift`, `AccountWalletSection.swift`)
+- iOS: `iosApp/KMAEduApp/Views/AccountView.swift` (split subviews if needed: `AccountProfileSection.swift`, `AccountWalletSection.swift`)
 
 ## Out of scope
 - API calls, ViewModels, multipart upload logic (Phase 03/04). No subscription panel (deferred).

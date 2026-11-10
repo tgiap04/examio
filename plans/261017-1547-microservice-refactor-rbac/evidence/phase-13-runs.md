@@ -12,11 +12,11 @@ Verdict: **not sealed**. Two acceptance criteria fail on the live stack (F1, F2)
 
 ## Method
 
-- Static on the working tree (`examio-be` at `/Users/tgiap.dev/devs/examio/examio-be`), no env files read. `buf` taken from `node_modules/.bin/buf`; breaking check against a `git archive HEAD` snapshot of `examio-be/proto`.
-- E2E: throwaway `pgvector/pgvector:pg16`, `redis:7`, `rabbitmq:3.13` on 127.0.0.1 with the CI env (dummy values, `QUIZ_JWT_SECRET`/`PAYMENT_*` added as the boot env requires). Scratch copy of `examio-be` without real env files (post-copy check: 0 real env files). Ephemeral RS256 key from `scripts/ci-ephemeral-auth-env.sh`.
+- Static on the working tree (`kmaedu-be` at `/Users/tgiap.dev/devs/kmaedu/kmaedu-be`), no env files read. `buf` taken from `node_modules/.bin/buf`; breaking check against a `git archive HEAD` snapshot of `kmaedu-be/proto`.
+- E2E: throwaway `pgvector/pgvector:pg16`, `redis:7`, `rabbitmq:3.13` on 127.0.0.1 with the CI env (dummy values, `QUIZ_JWT_SECRET`/`PAYMENT_*` added as the boot env requires). Scratch copy of `kmaedu-be` without real env files (post-copy check: 0 real env files). Ephemeral RS256 key from `scripts/ci-ephemeral-auth-env.sh`.
 - Live stack: compose project `p13t`, empty volume, images built one at a time (19 builds, one re-run), dummy `deploy/.env` generated from `.env.example` (values never printed), `up -d --wait`, opt-in seed. Ports: gateway on 127.0.0.1:6369 only.
 - Stand-ins: an in-memory S3-compatible mock as R2 (replaced an nginx+s3proxy shim that silently dropped multi-object deletes), a grpc-js fake `AiService` on `ai:50051` that verifies the RS256 service token (aud `ai`, allow-listed `sub`), the real `ai` container stopped for stage 4a.
-- Auth: login needs Turnstile and was not used. Tokens were minted with the stack's RS256 key using the claim shape auth issues (`typ=at+jwt`, `aud=examio`, `iss=examio-auth`, `sub`, `roles`, `sid`, `av`). Users, wallets and subscriptions were inserted as the superuser (scratch fixtures, destroyed with the volume).
+- Auth: login needs Turnstile and was not used. Tokens were minted with the stack's RS256 key using the claim shape auth issues (`typ=at+jwt`, `aud=kmaedu`, `iss=kmaedu-auth`, `sub`, `roles`, `sid`, `av`). Users, wallets and subscriptions were inserted as the superuser (scratch fixtures, destroyed with the volume).
 - Stage 5: Vite dev server on 127.0.0.1:5273 with `VITE_API_URL=/api/v1` and `VITE_BACKEND_URL=http://localhost:6369` (process env overrides the gitignored FE `.env`, which was not read), playwright-core on system Chrome 155, cookie `accessToken` injected, non-local hosts aborted.
 
 ## Stage 1: static (final tree)
@@ -64,7 +64,7 @@ Jest wall time: unit 15 s, db-isolation 25 s, ai-chat 21 s, exam 32 s, finance 9
 - One-shots: auth, finance, admin, exam, study-room, vocabulary, document, ai-chat, ai migrate and `rabbitmq-defs`: exit 0 each.
 - Opt-in seed (`--profile seed run --rm seed`): exit 0. `aichat`: 15 subjects, 4 categories.
 - Isolation (as `aichat_svc`): `exam."Subject"` denied, `auth."User"` denied, `document."UserStorage"` denied (3 rows, exit 1 = the expected denial). Exam has no AIChat or Subject table.
-- Broker: `aichat.events` is bound to `examio.events` with `document.deleted` and `finance.subscription.changed`. Permission probes as user `aichat` (after a settle delay, which fixed an early false positive in my probe): publish `aichat.probe` ALLOWED; publish `document.deleted` and `finance.x` REFUSED (ACCESS_REFUSED); consume own `aichat.events` ALLOWED; consume `document.dlq` REFUSED.
+- Broker: `aichat.events` is bound to `kmaedu.events` with `document.deleted` and `finance.subscription.changed`. Permission probes as user `aichat` (after a settle delay, which fixed an early false positive in my probe): publish `aichat.probe` ALLOWED; publish `document.deleted` and `finance.x` REFUSED (ACCESS_REFUSED); consume own `aichat.events` ALLOWED; consume `document.dlq` REFUSED.
 - ai-service HTTP: GET `/` and `/health` exist (POST gives 405); `POST /api/chat/query`, `/api/chat/stream`, `/chat/query` give 404.
 
 ## Stage 4: live flows through the gateway (fake AiService)
@@ -129,8 +129,8 @@ Jest wall time: unit 15 s, db-isolation 25 s, ai-chat 21 s, exam 32 s, finance 9
 - Vite (PID 78163) stopped by PID after confirming its command line; the Vite and jest processes of this run are gone.
 - Scratch secrets deleted (`deploy/.env`, rendered broker definitions, auth env, public key, tokens); repo copy removed. Only logs, `rows.jsonl`, the UI JSON and the screenshot remain in `scratchpad/p13t`, with no secret values.
 - Earlier e2e infra (`p13t-pg`, `p13t-redis`, `p13t-rabbit`) removed before the live stack.
-- `docker ps -a`: 0 containers. `docker volume ls` for `p13t|examio`: none. `docker network ls` for `examio|p13t`: none. `deploy_default` and `meetio_*` were not touched.
-- The real `examio-be/deploy/.env` and every `apps/*/.env` were never read; no compose command ran in the real `deploy/` directory.
+- `docker ps -a`: 0 containers. `docker volume ls` for `p13t|kmaedu`: none. `docker network ls` for `kmaedu|p13t`: none. `deploy_default` and `meetio_*` were not touched.
+- The real `kmaedu-be/deploy/.env` and every `apps/*/.env` were never read; no compose command ran in the real `deploy/` directory.
 
 ## Re-verification after F1/F2 fixes (2026-10-25)
 
@@ -150,11 +150,11 @@ Scope: gateway proxy abort propagation (F1) and finance subscription expiry flip
 Notes:
 - Harness, not product: the first 4d(ii) probe was invalid. zsh did not word-split a `$PSQL` variable, so the backdate never ran and the poll read a stale row. Its row is kept as `[harness-invalid]` with a superseded summary. The rerun is `sweeper-test.sh`.
 - Harness, not product: the first `psql` migrate loop failed under zsh (`bad substitution`). Those 8 rows (exit 1) are superseded by the bash `migrate.sh` rows (exit 0 x8).
-- Limits: the fake AiService checks the token's `sub`/`aud` claims but not the RS256 signature. Live services ran as host processes from the scratch copy (`dist/apps/*/main.js`), not as compose containers. No compose command ran in `examio-be/deploy`. Stage 3 and the rest of the 19-image stack were not re-run (unchanged since the last run).
+- Limits: the fake AiService checks the token's `sub`/`aud` claims but not the RS256 signature. Live services ran as host processes from the scratch copy (`dist/apps/*/main.js`), not as compose containers. No compose command ran in `kmaedu-be/deploy`. Stage 3 and the rest of the 19-image stack were not re-run (unchanged since the last run).
 - Pre-existing broker DLQ entries (`finance.dlq` 1, `gateway.dlq` 1) came from the e2e suites that ran before the live services started (gateway `SOURCE_MISMATCH` log at 04:14:25, before any live request). Not seen from live traffic.
 - F3 (`exists` 200 vs 404) and F4 (FE chat page not mounted) are unchanged and out of this re-verification.
 
-Teardown: containers `p13r-pg`, `p13r-redis`, `p13r-rabbit` removed with `-v`; all 5 Node processes stopped by PID after command-line check and confirmed dead; scratch secrets (`svc.env.sh`, `auth-env.txt`, minted-token script, rendered definitions) and the repo copy deleted; logs kept under `scratchpad/p13r` without secret values. `docker ps -a` for `p13r|examio`: none. Volumes created today: none. Networks for `p13r|examio`: none. `deploy_default` and `meetio_*` untouched.
+Teardown: containers `p13r-pg`, `p13r-redis`, `p13r-rabbit` removed with `-v`; all 5 Node processes stopped by PID after command-line check and confirmed dead; scratch secrets (`svc.env.sh`, `auth-env.txt`, minted-token script, rendered definitions) and the repo copy deleted; logs kept under `scratchpad/p13r` without secret values. `docker ps -a` for `p13r|kmaedu`: none. Volumes created today: none. Networks for `p13r|kmaedu`: none. `deploy_default` and `meetio_*` untouched.
 
 ## temper-final
 

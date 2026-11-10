@@ -1,25 +1,25 @@
 {
   "commands": [
     {
-      "command": "cd examio-be && yarn test",
+      "command": "cd kmaedu-be && yarn test",
       "exitCode": 0,
       "testCount": 2249,
       "phase": "GREEN"
     },
     {
-      "command": "cd examio-be && yarn test test/authz test/cross-app test/build test/ownership test/db-isolation test/r2-delete",
+      "command": "cd kmaedu-be && yarn test test/authz test/cross-app test/build test/ownership test/db-isolation test/r2-delete",
       "exitCode": 0,
       "testCount": 476,
       "phase": "GREEN"
     },
     {
-      "command": "cd examio-be && node --test deploy/*.spec.cjs deploy/rabbitmq/*.spec.cjs",
+      "command": "cd kmaedu-be && node --test deploy/*.spec.cjs deploy/rabbitmq/*.spec.cjs",
       "exitCode": 0,
       "testCount": 63,
       "phase": "GREEN"
     },
     {
-      "command": "cd examio-fe && yarn test",
+      "command": "cd kmaedu-fe && yarn test",
       "exitCode": 0,
       "testCount": 106,
       "phase": "GREEN"
@@ -109,19 +109,19 @@
       "phase": "GREEN"
     },
     {
-      "command": "cd examio-be && yarn test apps/auth-service test/authz test/cross-app/rpc-guard-table.spec.ts (after review fixes)",
+      "command": "cd kmaedu-be && yarn test apps/auth-service test/authz test/cross-app/rpc-guard-table.spec.ts (after review fixes)",
       "exitCode": 0,
       "testCount": 632,
       "phase": "GREEN"
     },
     {
-      "command": "cd examio-be && yarn test (final tree)",
+      "command": "cd kmaedu-be && yarn test (final tree)",
       "exitCode": 0,
       "testCount": 2249,
       "phase": "GREEN"
     },
     {
-      "command": "cd examio-fe && yarn test (final tree)",
+      "command": "cd kmaedu-fe && yarn test (final tree)",
       "exitCode": 0,
       "testCount": 106,
       "phase": "GREEN"

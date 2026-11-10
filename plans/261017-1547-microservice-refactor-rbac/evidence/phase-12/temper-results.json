@@ -18,7 +18,7 @@
       "command": "temper-2: infra-rabbit-render",
       "exitCode": 0,
       "status": "pass",
-      "summary": "exit 0 in 0s; last: rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/repo/deploy/rabbitmq/definitions.json (7 users)",
+      "summary": "exit 0 in 0s; last: rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/repo/deploy/rabbitmq/definitions.json (7 users)",
       "ts": "2026-10-23T08:28:56.335Z"
     },
     {
@@ -326,7 +326,7 @@
       "command": "temper-2: s3-stubs-mkbucket",
       "exitCode": 0,
       "status": "pass",
-      "summary": "exit 0 in 1s; last: buckets: examio-p12t",
+      "summary": "exit 0 in 1s; last: buckets: kmaedu-p12t",
       "ts": "2026-10-23T08:47:33.060Z"
     },
     {
@@ -340,7 +340,7 @@
       "command": "temper-2: s3-up-wait-empty-volume",
       "exitCode": 0,
       "status": "pass",
-      "summary": "exit 0 in 36s; last:  Container examio-gateway Healthy ",
+      "summary": "exit 0 in 36s; last:  Container kmaedu-gateway Healthy ",
       "ts": "2026-10-23T08:48:06.013Z"
     },
     {
@@ -410,7 +410,7 @@
       "command": "temper-2: s3-up-plain-after-seed",
       "exitCode": 0,
       "status": "pass",
-      "summary": "exit 0 in 4s; last:  Container examio-admin Healthy ",
+      "summary": "exit 0 in 4s; last:  Container kmaedu-admin Healthy ",
       "ts": "2026-10-23T08:48:52.037Z"
     },
     {
@@ -494,7 +494,7 @@
       "command": "temper-2: f1-up-auth-recreate",
       "exitCode": 0,
       "status": "pass",
-      "summary": "exit 0 in 9s; last:  Container examio-auth Healthy ",
+      "summary": "exit 0 in 9s; last:  Container kmaedu-auth Healthy ",
       "ts": "2026-10-23T09:22:18.598Z"
     },
     {
@@ -683,7 +683,7 @@
       "command": "temper-2: s3-stubs-mkbucket",
       "exitCode": 0,
       "status": "pass",
-      "summary": "exit 0 in 1s; last: buckets: examio-p12t",
+      "summary": "exit 0 in 1s; last: buckets: kmaedu-p12t",
       "ts": "2026-10-23T17:56:53.133Z"
     },
     {
@@ -697,7 +697,7 @@
       "command": "temper-2: s6b-up-wait-empty-volume",
       "exitCode": 0,
       "status": "pass",
-      "summary": "exit 0 in 39s; last:  Container examio-gateway Healthy ",
+      "summary": "exit 0 in 39s; last:  Container kmaedu-gateway Healthy ",
       "ts": "2026-10-23T17:57:26.059Z"
     },
     {

@@ -7,7 +7,7 @@ Thêm tổng hợp "đăng ký theo nguồn" vào admin-stats, tái dùng khung 
 sẵn có. Song song được với Phase 2.
 
 ## Related Code Files
-- Modify: `examio-be/apps/admin-service/src/modules/admin-stats/admin-stats.service.ts` — thêm
+- Modify: `kmaedu-be/apps/admin-service/src/modules/admin-stats/admin-stats.service.ts` — thêm
   `getSourceBreakdown(range?)` + cache key + invalidate.
 - Modify: `admin-stats.controller.ts` — route `GET /admin/stats/sources?range=`.
 - Modify: `admin-stats-fe-routes.controller.ts` — alias `GET /admin/sources?range=`.

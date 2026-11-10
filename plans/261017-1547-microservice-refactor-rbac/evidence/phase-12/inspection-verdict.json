@@ -3,8 +3,8 @@
   "criticalCount": 0,
   "decision": "SEALED",
   "acceptanceCovered": [
-    "grep -rn \"StudyRoomModule\\|WordFamilyModule\" examio-be/apps/exam-service/src -> no output — both imports removed from exam-service.module.ts; temper-1 success-criteria grep exit 0",
-    "grep -rn \"question: { in:\" examio-be/apps/exam-service/src/modules/flashcardset -> no output; a pre-existing card of another user with an identical question is not linked into the new set — word-family-to-flashcard.service.ts pre-assigns randomUUID card ids and links exactly those; e2e mutation check (old code: 6 links instead of 2); live tf12 9/9, foreign links 0",
+    "grep -rn \"StudyRoomModule\\|WordFamilyModule\" kmaedu-be/apps/exam-service/src -> no output — both imports removed from exam-service.module.ts; temper-1 success-criteria grep exit 0",
+    "grep -rn \"question: { in:\" kmaedu-be/apps/exam-service/src/modules/flashcardset -> no output; a pre-existing card of another user with an identical question is not linked into the new set — word-family-to-flashcard.service.ts pre-assigns randomUUID card ids and links exactly those; e2e mutation check (old code: 6 links instead of 2); live tf12 9/9, foreign links 0",
     "yarn build && yarn test && check:deps && check:ownership green, incl. the moved study-room specs in apps/study-room-service and the every-handler-declared authz test covering both new apps and @SubscribeMessage handlers — temper-1 rows exit 0 (typecheck, unit, check:deps, check:ownership, build:all); authz-declarations.spec.ts in both apps; compose-topology spec 23/23",
     "WS /ws/study through the gateway to study-room-service: STUDENT/TEACHER connect, join and chat; SYSTEM_ADMIN-only, no token or email_verified=false -> connect_error; auth.user.authz_changed with higher authzVersion -> auth:reauth {AUTHZ_CHANGED} + disconnect, old token -> connect_error TOKEN_STALE; token expiring mid-session -> disconnected at exp — ws-auth.e2e-spec.ts covers every case at service level; live via gateway: chat, ban reauth 0.45 s, old token refused, cross-replica 6/6; gateway upgrade e2e; SYSTEM_ADMIN-only case service-level only (F4 deferred)",
     "study-room HTTP permissions: STUDENT POST /studyrooms -> 403, TEACHER -> 201, non-host PUT -> 404; responses keep their exact shape — 403/201 proven by permissions.e2e-spec.ts and live stage 5; non-host PUT answers 403 by accepted move-only deviation (M1 deferred in the phase file); shapes unchanged (smoke 18/18, UI matrix 64/0)",
@@ -18,7 +18,7 @@
     "public-profile cache: tombstone before DEL, Lua SET-unless-tombstoned, TTL 600/30, exam prefix exam:cache:user: pinned by auth.client.spec.ts",
     "gateway wf-to-flashcard path full-anchored, POST-only, matched before the word-family prefix; study-ws upstream studyroom",
     "auth SERVICE_AUDIENCES includes vocabulary (F1) with static regression spec",
-    "RabbitMQ studyroom user scoped to studyroom.* and write ^studyroom\\. on examio.events",
+    "RabbitMQ studyroom user scoped to studyroom.* and write ^studyroom\\. on kmaedu.events",
     "exam drop migrations vs the new services' init migrations; drift 6/6 exit 0",
     "CI rabbitmq-diagnostics run as -u rabbitmq",
     "category delete soft-delete behaviour identical to HEAD (exam word-family-admin.service.ts:115)",
@@ -33,14 +33,14 @@
     {
       "severity": "Medium",
       "category": "authz-convention",
-      "location": "examio-be/apps/study-room-service/test/permissions.e2e-spec.ts:44-72",
+      "location": "kmaedu-be/apps/study-room-service/test/permissions.e2e-spec.ts:44-72",
       "summary": "Non-host and unknown-room PUT /studyrooms/:id answer 403, not the rule's 404; accepted move-only deviation, recorded as deferred M1",
       "disposition": "Defer"
     },
     {
       "severity": "Medium",
       "category": "storage-leak",
-      "location": "examio-be/apps/vocabulary-service/src/modules/word-family/word-family-admin.service.ts:167-183",
+      "location": "kmaedu-be/apps/vocabulary-service/src/modules/word-family/word-family-admin.service.ts:167-183",
       "summary": "F2: category images outside word-family/ are never reclaimed; by design under phase-11 owner scoping; follow-up admin upload under word-family/",
       "disposition": "Defer"
     },

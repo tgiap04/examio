@@ -1,10 +1,10 @@
 # Phase 1 — Backend trust-score contract
 
 ## Context Links
-- `examio-be/apps/ai-service/src/backend/services/student_programming_evaluation_service.py`
-- `examio-be/apps/ai-service/src/backend/api/tutor.py`
-- `examio-be/apps/exam-service/src/modules/ai/ai.controller.ts`
-- `examio-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
+- `kmaedu-be/apps/ai-service/src/backend/services/student_programming_evaluation_service.py`
+- `kmaedu-be/apps/ai-service/src/backend/api/tutor.py`
+- `kmaedu-be/apps/exam-service/src/modules/ai/ai.controller.ts`
+- `kmaedu-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
 
 ## Overview
 - Priority: High
@@ -34,8 +34,8 @@
 
 ## Related Code Files
 ### Modify
-- `examio-be/apps/ai-service/src/backend/services/student_programming_evaluation_service.py`
-- `examio-be/apps/ai-service/src/backend/api/tutor.py`
+- `kmaedu-be/apps/ai-service/src/backend/services/student_programming_evaluation_service.py`
+- `kmaedu-be/apps/ai-service/src/backend/api/tutor.py`
 - DTO/typing liên quan ở exam-service nếu cần
 
 ### Create

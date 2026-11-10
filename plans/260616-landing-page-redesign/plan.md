@@ -2,14 +2,14 @@
 
 ## Overview
 
-Redesign the Examio home/landing page to match the **layout, structure, and component patterns** of the Optimus reference site, while keeping Examio's **design system** (Anthropic-inspired terracotta palette, cream canvas, grotesk typography).
+Redesign the KMAEdu home/landing page to match the **layout, structure, and component patterns** of the Optimus reference site, while keeping KMAEdu's **design system** (Anthropic-inspired terracotta palette, cream canvas, grotesk typography).
 
 **Reference:** Optimus site copied to `plans/optimus-reference/optimus-the-ai-platform-to-build-and-ship/`
-**Current landing:** `examio-fe/src/pages/landing/HomePage.tsx` + 7 organisms
+**Current landing:** `kmaedu-fe/src/pages/landing/HomePage.tsx` + 7 organisms
 
 ## Key Design Decisions
 
-| Aspect | Optimus | Examio (new) |
+| Aspect | Optimus | KMAEdu (new) |
 |--------|---------|-------------|
 | Background | Light (no dark mode) | Cream canvas #faf9f7, no dark mode |
 | Primary color | Dark navy foreground | Terracotta #c2522d |
@@ -22,9 +22,9 @@ Redesign the Examio home/landing page to match the **layout, structure, and comp
 | Border radius | 24px nav pill, sharp cards | Match |
 | Marquee | Stats + integrations + testimonials | Same pattern for trust/logos |
 
-## Optimus → Examio Section Mapping
+## Optimus → KMAEdu Section Mapping
 
-| # | Optimus Section | Examio Section | Status |
+| # | Optimus Section | KMAEdu Section | Status |
 |---|----------------|----------------|--------|
 | 1 | Navigation | HeaderSection (floating pill) | Redesign |
 | 2 | HeroSection | HeroBand | Redesign |
@@ -52,7 +52,7 @@ Redesign the Examio home/landing page to match the **layout, structure, and comp
 - [ ] Update `HeaderSection.tsx` — floating pill nav that collapses on scroll (Optimus pattern)
 - [ ] Full-screen mobile menu overlay
 - [ ] Remove theme toggle from landing nav
-- [ ] Add Examio branding
+- [ ] Add KMAEdu branding
 
 ### Phase 3: Hero Section Redesign
 - [ ] Rewrite `HeroBand.tsx` — giant headline with rotating words, stat marquee at bottom
@@ -112,31 +112,31 @@ Redesign the Examio home/landing page to match the **layout, structure, and comp
 ## Files to Modify
 
 ### Core
-- `examio-fe/src/pages/landing/HomePage.tsx`
-- `examio-fe/src/app/globals.css` (CSS variables)
-- `examio-fe/tailwind.config.ts`
+- `kmaedu-fe/src/pages/landing/HomePage.tsx`
+- `kmaedu-fe/src/app/globals.css` (CSS variables)
+- `kmaedu-fe/tailwind.config.ts`
 
 ### Landing Sections (modify)
-- `examio-fe/src/components/molecules/HeaderSection.tsx`
-- `examio-fe/src/components/organisms/landing/HeroBand.tsx`
-- `examio-fe/src/components/organisms/landing/ProductShowcase.tsx`
-- `examio-fe/src/components/organisms/landing/WaysToStudy.tsx`
-- `examio-fe/src/components/organisms/landing/PricingBand.tsx`
-- `examio-fe/src/components/organisms/landing/CoralCallout.tsx`
-- `examio-fe/src/components/organisms/landing/TrustStrip.tsx`
-- `examio-fe/src/components/organisms/FooterSection.tsx`
+- `kmaedu-fe/src/components/molecules/HeaderSection.tsx`
+- `kmaedu-fe/src/components/organisms/landing/HeroBand.tsx`
+- `kmaedu-fe/src/components/organisms/landing/ProductShowcase.tsx`
+- `kmaedu-fe/src/components/organisms/landing/WaysToStudy.tsx`
+- `kmaedu-fe/src/components/organisms/landing/PricingBand.tsx`
+- `kmaedu-fe/src/components/organisms/landing/CoralCallout.tsx`
+- `kmaedu-fe/src/components/organisms/landing/TrustStrip.tsx`
+- `kmaedu-fe/src/components/organisms/FooterSection.tsx`
 
 ### Landing Sections (create)
-- `examio-fe/src/components/organisms/landing/FeatureShowcase.tsx`
-- `examio-fe/src/components/organisms/landing/StatsSection.tsx`
-- `examio-fe/src/components/organisms/landing/MetricsSection.tsx`
-- `examio-fe/src/components/organisms/landing/SecuritySection.tsx`
-- `examio-fe/src/components/organisms/landing/TestimonialsSection.tsx`
+- `kmaedu-fe/src/components/organisms/landing/FeatureShowcase.tsx`
+- `kmaedu-fe/src/components/organisms/landing/StatsSection.tsx`
+- `kmaedu-fe/src/components/organisms/landing/MetricsSection.tsx`
+- `kmaedu-fe/src/components/organisms/landing/SecuritySection.tsx`
+- `kmaedu-fe/src/components/organisms/landing/TestimonialsSection.tsx`
 
 ### i18n
-- `examio-fe/public/locales/vi/landing.json`
-- `examio-fe/public/locales/en/landing.json`
-- `examio-fe/public/locales/ja/landing.json`
+- `kmaedu-fe/public/locales/vi/landing.json`
+- `kmaedu-fe/public/locales/en/landing.json`
+- `kmaedu-fe/public/locales/ja/landing.json`
 
 ## Success Criteria
 

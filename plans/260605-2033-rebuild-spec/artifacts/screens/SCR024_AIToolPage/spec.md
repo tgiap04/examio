@@ -54,11 +54,11 @@ KLayout-wrapped page containing 2 tab panels (Test / Flashcard) driven by `useAI
 
 | Decision point | Condition | Outcome on this screen | Source |
 |----------------|-----------|------------------------|--------|
-| Pending job on mount | localStorage has `pending_generation_job` | `PendingJobDialog` shown — "Continue" or "Cancel" | `examio-fe/src/components/organisms/PendingJobDialog.tsx:42` |
-| Switch tab | User clicks Flashcard tab | Render FlashcardGenerator instead of TestGenerator | `examio-fe/src/pages/k/AIToolPage.tsx:88` |
-| File too large | `file.size > MAX_UPLOAD_BYTES` | Inline error "File exceeds 50MB limit" | `examio-fe/src/components/organisms/k/FlashcardGenerator.tsx:152` |
-| Insufficient credits | `balance < requiredCredits` | "Insufficient credits" toast → redirect to /k/subscription | `examio-fe/src/lib/creditUtils.ts:88` |
-| Job failed | API status FAILED | "Regenerate" CTA in preview area | `examio-fe/src/components/organisms/k/FlashcardGenerator.tsx:201` |
+| Pending job on mount | localStorage has `pending_generation_job` | `PendingJobDialog` shown — "Continue" or "Cancel" | `kmaedu-fe/src/components/organisms/PendingJobDialog.tsx:42` |
+| Switch tab | User clicks Flashcard tab | Render FlashcardGenerator instead of TestGenerator | `kmaedu-fe/src/pages/k/AIToolPage.tsx:88` |
+| File too large | `file.size > MAX_UPLOAD_BYTES` | Inline error "File exceeds 50MB limit" | `kmaedu-fe/src/components/organisms/k/FlashcardGenerator.tsx:152` |
+| Insufficient credits | `balance < requiredCredits` | "Insufficient credits" toast → redirect to /k/subscription | `kmaedu-fe/src/lib/creditUtils.ts:88` |
+| Job failed | API status FAILED | "Regenerate" CTA in preview area | `kmaedu-fe/src/components/organisms/k/FlashcardGenerator.tsx:201` |
 
 ## Data Inventory
 
@@ -75,12 +75,12 @@ KLayout-wrapped page containing 2 tab panels (Test / Flashcard) driven by `useAI
 
 | State | Trigger | Visual Behavior | User Action Available | Source |
 |-------|---------|----------------|-----------------------|--------|
-| loading | API in-flight (model list) | skeleton model selector | none | `examio-fe/src/hooks/useAIModelCatalogStore.ts:42` |
-| generating | Job running | "Generating... (X/360)" progress | cancel | `examio-fe/src/stores/useAIGeneratorStore.ts:88` |
-| completed | Job succeeded | Preview card with results | save, regenerate | `examio-fe/src/components/organisms/k/TestGenerator.tsx:142` |
-| failed | Job error | Error card + retry CTA | retry | `examio-fe/src/components/organisms/k/TestGenerator.tsx:165` |
-| empty | No file selected | upload dropzone CTA | drop file | `examio-fe/src/components/atoms/k/RecentFileItem.tsx:31` |
-| error | API error | toast + inline error message | retry | `examio-fe/src/lib/errorHandler.ts:42` |
+| loading | API in-flight (model list) | skeleton model selector | none | `kmaedu-fe/src/hooks/useAIModelCatalogStore.ts:42` |
+| generating | Job running | "Generating... (X/360)" progress | cancel | `kmaedu-fe/src/stores/useAIGeneratorStore.ts:88` |
+| completed | Job succeeded | Preview card with results | save, regenerate | `kmaedu-fe/src/components/organisms/k/TestGenerator.tsx:142` |
+| failed | Job error | Error card + retry CTA | retry | `kmaedu-fe/src/components/organisms/k/TestGenerator.tsx:165` |
+| empty | No file selected | upload dropzone CTA | drop file | `kmaedu-fe/src/components/atoms/k/RecentFileItem.tsx:31` |
+| error | API error | toast + inline error message | retry | `kmaedu-fe/src/lib/errorHandler.ts:42` |
 
 ## Validation & Error Feedback
 
@@ -100,21 +100,21 @@ KLayout-wrapped page containing 2 tab panels (Test / Flashcard) driven by `useAI
 - **Success:** `201` → `{ jobId, expectedResultType }`
 - **Errors:** `400` (validation) | `402` (insufficient credits) | `413` (file too large) | `500` (server error)
 - **Trigger:** "Generate" button click
-- **Source:** `examio-fe/src/apis/examApi.ts:42`
+- **Source:** `kmaedu-fe/src/apis/examApi.ts:42`
 
 #### Poll job status
 - **Endpoint:** `GET /api/v1/ai-study/generate/status/{jobId}`
 - **Success:** `200` → `{ status: 'PENDING'|'PROCESSING'|'COMPLETED'|'FAILED', result?, error? }`
 - **Trigger:** every 10s after job start
-- **Source:** `examio-fe/src/apis/aiApi.ts:88`
+- **Source:** `kmaedu-fe/src/apis/aiApi.ts:88`
 
 ## Interaction Patterns
 
-- **Polling every 10s after job start, max 360 attempts** — source: `examio-fe/src/stores/useAIGeneratorStore.ts:212`
-- **Job state persisted to localStorage for resume on page reload** — source: `examio-fe/src/stores/useAIGeneratorStore.ts:88`
-- **Tab change resets per-tab config** — source: `examio-fe/src/pages/k/AIToolPage.tsx:95`
-- **beforeunload warning while job running** — source: `examio-fe/src/hooks/useGenerationGuard.ts:42`
-- **Recent files modal shows last 20 uploads** — source: `examio-fe/src/components/organisms/RecentFilesModal.tsx:31`
+- **Polling every 10s after job start, max 360 attempts** — source: `kmaedu-fe/src/stores/useAIGeneratorStore.ts:212`
+- **Job state persisted to localStorage for resume on page reload** — source: `kmaedu-fe/src/stores/useAIGeneratorStore.ts:88`
+- **Tab change resets per-tab config** — source: `kmaedu-fe/src/pages/k/AIToolPage.tsx:95`
+- **beforeunload warning while job running** — source: `kmaedu-fe/src/hooks/useGenerationGuard.ts:42`
+- **Recent files modal shows last 20 uploads** — source: `kmaedu-fe/src/components/organisms/RecentFilesModal.tsx:31`
 
 ## Accessibility
 
@@ -147,9 +147,9 @@ KLayout-wrapped page containing 2 tab panels (Test / Flashcard) driven by `useAI
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/k/AIToolPage.tsx:1`
-- TestGenerator: `examio-fe/src/components/organisms/k/TestGenerator.tsx:1`
-- FlashcardGenerator: `examio-fe/src/components/organisms/k/FlashcardGenerator.tsx:1`
-- Store: `examio-fe/src/stores/useAIGeneratorStore.ts:1`
-- API: `examio-fe/src/apis/examApi.ts:42` + `examio-fe/src/apis/aiApi.ts:88`
-- JobGuard: `examio-fe/src/hooks/useGenerationGuard.ts:1`
+- Page/View: `kmaedu-fe/src/pages/k/AIToolPage.tsx:1`
+- TestGenerator: `kmaedu-fe/src/components/organisms/k/TestGenerator.tsx:1`
+- FlashcardGenerator: `kmaedu-fe/src/components/organisms/k/FlashcardGenerator.tsx:1`
+- Store: `kmaedu-fe/src/stores/useAIGeneratorStore.ts:1`
+- API: `kmaedu-fe/src/apis/examApi.ts:42` + `kmaedu-fe/src/apis/aiApi.ts:88`
+- JobGuard: `kmaedu-fe/src/hooks/useGenerationGuard.ts:1`

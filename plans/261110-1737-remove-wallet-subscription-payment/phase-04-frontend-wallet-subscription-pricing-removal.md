@@ -21,7 +21,7 @@
 ## Architecture
 - Store reset: `reset-role-scoped-state.ts` drops `useWalletStore`. Admin overview and stats KPIs show user and content metrics only, and the revenue chart is removed.
 
-## Related Code Files (FE = `/Users/tgiap.dev/devs/examio/examio-fe`)
+## Related Code Files (FE = `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe`)
 - Delete:
   - `FE/src/apis/{walletApi.ts,subscriptionApi.ts}`
   - `FE/src/stores/useWalletStore.ts` (+`.test.ts`)
@@ -64,15 +64,15 @@
    - A `permission-groups` test asserts there is no `wallet` group.
    - A `reset-role-scoped-state` test, if present, no longer resets a wallet store.
 2. Delete the files, fix imports (follow `yarn build` errors), and edit routes, nav and layout.
-3. Remove `useCan('wallet:use' | 'subscription:manage' | 'finance:admin')` everywhere: `git grep -n "wallet:use\|subscription:manage\|finance:admin" -- examio-fe/src ':!examio-fe/src/types/permissions.generated.ts'` should return nothing.
+3. Remove `useCan('wallet:use' | 'subscription:manage' | 'finance:admin')` everywhere: `git grep -n "wallet:use\|subscription:manage\|finance:admin" -- kmaedu-fe/src ':!kmaedu-fe/src/types/permissions.generated.ts'` should return nothing.
 4. Trim the adminApi types and the admin pages. The audit fallback label must show the raw action.
-5. Locales: remove the keys, then check that no `t('pricing.` or `t('wallet` usages remain (`git grep -n "pricing\.\|wallet\." -- examio-fe/src`).
+5. Locales: remove the keys, then check that no `t('pricing.` or `t('wallet` usages remain (`git grep -n "pricing\.\|wallet\." -- kmaedu-fe/src`).
 6. `yarn build && yarn lint && yarn test`.
 
 ## Todo List
 - [ ] RED nav and permission-group tests (tests exist; a red-first run is not recorded)
 - [x] Delete 27 files (spot-checked: walletApi, useWalletStore, SubscriptionPage, AdminFinancePage absent)
-- [x] Routes, nav, layout, stores, APIs (no wallet or subscription symbols in `examio-fe/src`)
+- [x] Routes, nav, layout, stores, APIs (no wallet or subscription symbols in `kmaedu-fe/src`)
 - [x] Profile, landing, admin pages (no PricingBand or PricingSection references)
 - [ ] Locales en, vi, ja (no literal `pricing.`/`wallet.` use left; locale JSON validity not checked)
 - [ ] build, lint, test green (not recorded in any report)
@@ -86,7 +86,7 @@
 - Changed: FE routes, nav, stores, APIs, admin and landing pages, locales.
 - Impacted: route guards (`RequirePermission`), role-scoped reset, admin dashboards.
 - Will verify:
-  - `cd examio-fe && yarn test` (whole vitest suite: `lib/rbac`, `admin-roles`, nav-items)
+  - `cd kmaedu-fe && yarn test` (whole vitest suite: `lib/rbac`, `admin-roles`, nav-items)
   - `yarn build` (strict tsc; catches dangling imports and permission literals)
   - `yarn lint` (unused-imports)
 - Bugs caught: dangling route to a deleted page, a permission literal not in the catalog, a stale store reset import, missing locale keys rendered raw (manual spot-check below).

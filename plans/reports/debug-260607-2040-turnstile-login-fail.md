@@ -22,7 +22,7 @@
 
 ## Fix Applied
 
-`examio-be/libs/common/src/services/turnstile.service.ts`:
+`kmaedu-be/libs/common/src/services/turnstile.service.ts`:
 
 - Bỏ class-field `private readonly secretKey = process.env.TURNSTILE_SECRET_KEY;` — đọc trực tiếp từ `process.env` ở call time để tránh bake env lúc module init.
 - Đảo thứ tự guard: **chỉ verify khi `NODE_ENV=production`** (hoặc `TURNSTILE_ENFORCE=1` cho smoke test). Dev/staging skip.

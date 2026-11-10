@@ -1,12 +1,12 @@
 # Mobile App Codebase Scout Report
 
 **Date:** 2026-05-27
-**Project:** Examio KMP Mobile App
-**Root:** `/Users/tgiap.dev/devs/examio/examio-app/`
+**Project:** KMAEdu KMP Mobile App
+**Root:** `/Users/tgiap.dev/devs/kmaedu/kmaedu-app/`
 
 ## 1. Project Overview
 
-This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetpack Compose)** and **iOS (SwiftUI)** frontends sharing Kotlin common code. It serves as the mobile companion to the Examio exam/learning platform, featuring AI question generation from PDFs, flashcard study, exam rooms, and account/wallet management.
+This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetpack Compose)** and **iOS (SwiftUI)** frontends sharing Kotlin common code. It serves as the mobile companion to the KMAEdu exam/learning platform, featuring AI question generation from PDFs, flashcard study, exam rooms, and account/wallet management.
 
 **Architecture Pattern:** Simple app-level architecture (not full Clean Architecture). Features are organized by domain folders. Data flow is: **View -> UiState (local) -> Repository (shared) -> ApiService (shared Ktor) -> Backend**. There are no ViewModel classes in the shared module -- each platform manages its own UI state locally.
 
@@ -26,7 +26,7 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 - `AuthInterceptor` plugin for automatic bearer token injection
 - `safeApiCall<T>` / `safeUnitApiCall` helper functions wrapping calls in try/catch and returning `ApiResult<T>`
 
-**Backend API Base URL:** `http://10.0.2.2:3000` (Android emulator localhost) / `http://localhost:3000` (iOS simulator), configurable via `BuildConfig` (Android) or `Info.plist` key `ExamioAPIBaseURL`.
+**Backend API Base URL:** `http://10.0.2.2:3000` (Android emulator localhost) / `http://localhost:3000` (iOS simulator), configurable via `BuildConfig` (Android) or `Info.plist` key `KMAEduAPIBaseURL`.
 
 ---
 
@@ -36,7 +36,7 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 - Applies plugins: `android.application`, `android.library`, `kotlin.android`, `kotlin.multiplatform`, `kotlin.compose`, `kotlin.serialization` (all via version catalog `libs`)
 
 ### `settings.gradle.kts`
-- Root project: `ExamioApp`
+- Root project: `KMAEduApp`
 - Modules: `:androidApp`, `:shared`
 - Uses version catalog (`libs`)
 
@@ -47,10 +47,10 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 - Android-specific: `ktor-client-okhttp`
 - iOS-specific: `ktor-client-darwin`
 - Min SDK: from version catalog
-- Namespace: `com.examio.app.shared`
+- Namespace: `com.kmaedu.app.shared`
 
 ### `androidApp/build.gradle.kts`
-- Application ID: `com.examio.app`
+- Application ID: `com.kmaedu.app`
 - Compile SDK: from version catalog, Min SDK: from version catalog, Target SDK: from version catalog
 - Version: `0.1.0` (versionCode 1)
 - `API_BASE_URL` build config field: `"http://10.0.2.2:3000"` (emulator localhost)
@@ -151,7 +151,7 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 
 | File | Description |
 |------|-------------|
-| `core/storage/SecureTokenStorage.android.kt` | `actual fun createSecureTokenStorage()`, uses Android SharedPreferences + AES/GCM encryption via Android KeyStore (key alias `examio_mobile_session`); initialized via `initSecureTokenStorage(context)` |
+| `core/storage/SecureTokenStorage.android.kt` | `actual fun createSecureTokenStorage()`, uses Android SharedPreferences + AES/GCM encryption via Android KeyStore (key alias `kmaedu_mobile_session`); initialized via `initSecureTokenStorage(context)` |
 | `core/network/SSEClient.kt` | `actual fun createSSEClient()`, currently throws `NotImplementedError("SSE streaming is wired in Phase 6")` |
 
 ### 3.3 iOS Main (`shared/src/iosMain/`)
@@ -169,11 +169,11 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 
 | File | Description |
 |------|-------------|
-| `AndroidManifest.xml` | Single activity (`MainActivity`), `launchMode="singleTop"`, deep link intent filter for `examio://auth` |
-| `MainActivity.kt` | Entry point; sets up edge-to-edge, initializes secure token storage, creates `AndroidAppContainer`, handles OAuth callback URI (`examio://auth`), renders `ExamioTheme { ExamioApp(...) }` |
-| `ExamioApp.kt` | Root composable; manages auth state (mut state); shows `AuthNavGraph` when unauthenticated, `Scaffold` + top bar + bottom tab bar + content `when(selectedTab)` when authenticated |
+| `AndroidManifest.xml` | Single activity (`MainActivity`), `launchMode="singleTop"`, deep link intent filter for `kmaedu://auth` |
+| `MainActivity.kt` | Entry point; sets up edge-to-edge, initializes secure token storage, creates `AndroidAppContainer`, handles OAuth callback URI (`kmaedu://auth`), renders `KMAEduTheme { KMAEduApp(...) }` |
+| `KMAEduApp.kt` | Root composable; manages auth state (mut state); shows `AuthNavGraph` when unauthenticated, `Scaffold` + top bar + bottom tab bar + content `when(selectedTab)` when authenticated |
 | `OAuthCallbackHolder.kt` | Singleton `StateFlow<String?>` to pass OAuth callback URIs between Activity and Compose tree |
-| `design/ExamioTheme.kt` | Material 3 `lightColorScheme` with primary `#CC785C` (coral), background `#FAF9F5`, surface variant `#EFE9DE` |
+| `design/KMAEduTheme.kt` | Material 3 `lightColorScheme` with primary `#CC785C` (coral), background `#FAF9F5`, surface variant `#EFE9DE` |
 
 ### 4.2 Backend / DI
 
@@ -181,7 +181,7 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 |------|-------------|
 | `backend/AndroidAppContainer.kt` | Manual DI container: creates `HttpClient` via `HttpClientFactory.create()`, instantiates `AuthRepository` with `AuthApiService` |
 | `backend/AndroidSecureTokenStorage.kt` | Unused? (Duplicates `shared/src/androidMain/` implementation -- also AES/GCM with Android KeyStore) |
-| `core/config/MobileApiConfig.kt` | Builds API base URL from `BuildConfig.API_BASE_URL` + `/api/v1`, provides `googleOAuthUrl()` with `examio://auth/callback` redirect |
+| `core/config/MobileApiConfig.kt` | Builds API base URL from `BuildConfig.API_BASE_URL` + `/api/v1`, provides `googleOAuthUrl()` with `kmaedu://auth/callback` redirect |
 
 ### 4.3 Navigation
 
@@ -205,7 +205,7 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 | `features/auth/AuthCardShell.kt` | Shared card-based layout with gradient background for auth screens |
 | `features/auth/AuthFormComponents.kt` | Reusable `AuthTextField`, `AuthPrimaryButton`, `AuthSocialButton`, `AuthMessage` |
 
-#### Home (Note: HomeScreen is defined but NOT used in ExamioApp.kt -- `selectedTab` defaults to `AiTool`)
+#### Home (Note: HomeScreen is defined but NOT used in KMAEduApp.kt -- `selectedTab` defaults to `AiTool`)
 
 | File | Description |
 |------|-------------|
@@ -266,11 +266,11 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 
 | File | Description |
 |------|-------------|
-| `ExamioApp.swift` | `@main` SwiftUI App struct, renders `ContentView()` in `WindowGroup` |
+| `KMAEduApp.swift` | `@main` SwiftUI App struct, renders `ContentView()` in `WindowGroup` |
 | `ContentView.swift` | Root view: shows `AuthFlowView` if not authenticated, tabbed main content (`TabView` with 5 tabs + `AppHeader` + `ProfileSheet` sheet) if authenticated; handles `onOpenURL` for deep links |
-| `AppConfig.swift` | API config: reads `ExamioAPIBaseURL` from `Info.plist` (default `http://localhost:3000`), builds `apiBaseURL` with `/api/v1` prefix, provides `googleOAuthURL()` |
+| `AppConfig.swift` | API config: reads `KMAEduAPIBaseURL` from `Info.plist` (default `http://localhost:3000`), builds `apiBaseURL` with `/api/v1` prefix, provides `googleOAuthURL()` |
 | `AppRouter.swift` | `AppDeepLink` enum (`examSession`, `flashcard`, `chat`, `profile`) + `AppTab` enum + `parseAppDeepLink()` function |
-| `Info.plist` | App version `0.1.0`, custom URL scheme `examio`, `ExamioAPIBaseURL` default `http://localhost:3000` |
+| `Info.plist` | App version `0.1.0`, custom URL scheme `kmaedu`, `KMAEduAPIBaseURL` default `http://localhost:3000` |
 
 ### 5.2 Auth
 
@@ -301,16 +301,16 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 ## 6. Auth Flow Details
 
 ### Android
-1. `MainActivity.onCreate()` checks `intent.data` for `examio://auth` scheme -- stores in `OAuthCallbackHolder`
-2. `ExamioApp` renders `AuthNavGraph` when `authState == Unauthenticated`
+1. `MainActivity.onCreate()` checks `intent.data` for `kmaedu://auth` scheme -- stores in `OAuthCallbackHolder`
+2. `KMAEduApp` renders `AuthNavGraph` when `authState == Unauthenticated`
 3. `AuthNavGraph` uses `LaunchedEffect` to observe `OAuthCallbackHolder.callback` flow
 4. Login: validates -> calls `authRepository.login(credential, password)` -> Ktor POST `/auth/login` -> `AuthResponse` contains tokens -> `persistTokens()` saves via `AndroidSecureTokenStorage` (AES/GCM/KeyStore) -> `onAuthenticated(user)` -> app switches to main content
-5. Google OAuth: opens URL `{apiBaseUrl}/auth/google?redirect=examio://auth/callback` -> system browser -> callback intercepted by `MainActivity.onNewIntent()` -> `AuthNavGraph` parses `token`/`refreshToken` from callback URI query params -> `authRepository.saveOAuthTokens()`
+5. Google OAuth: opens URL `{apiBaseUrl}/auth/google?redirect=kmaedu://auth/callback` -> system browser -> callback intercepted by `MainActivity.onNewIntent()` -> `AuthNavGraph` parses `token`/`refreshToken` from callback URI query params -> `authRepository.saveOAuthTokens()`
 
 ### iOS
 1. `AuthFlowView` in `ContentView` shows unauthenticated flow
 2. `AuthViewModel` handles all auth logic (private `AuthApiClient` using `URLSession`, private `KeychainTokenStore` for Keychain persistence)
-3. Login/Register call `AuthApiClient` methods -> save tokens via Keychain (service: `examio.session`) -> set `isAuthenticated = true`
+3. Login/Register call `AuthApiClient` methods -> save tokens via Keychain (service: `kmaedu.session`) -> set `isAuthenticated = true`
 4. Google OAuth: `LoginView` calls `openURL(AppConfig.googleOAuthURL())` -> system browser -> callback via `onOpenURL` in `AuthFlowView` -> routes to `AuthViewModel.completeOAuthCallback(url:)` -> parses token from query params -> saves via Keychain
 5. **Keychain token store** stores accessToken, refreshToken, sessionId, deviceId per account
 

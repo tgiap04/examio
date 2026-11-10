@@ -1,10 +1,10 @@
 # Phase 5: Frontend - Category List + Tree/List Toggle UI
 
 ## Context
-- FE routes: `examio-fe/src/routes/index.tsx`
-- Flashcard page reference: `examio-fe/src/pages/k/FlashcardsPage.tsx`
-- Store pattern: `examio-fe/src/stores/useFlashcardSetStore.ts`
-- API pattern: `examio-fe/src/apis/flashcardSetApi.ts`
+- FE routes: `kmaedu-fe/src/routes/index.tsx`
+- Flashcard page reference: `kmaedu-fe/src/pages/k/FlashcardsPage.tsx`
+- Store pattern: `kmaedu-fe/src/stores/useFlashcardSetStore.ts`
+- API pattern: `kmaedu-fe/src/apis/flashcardSetApi.ts`
 - Tree library: `react-d3-tree` (new dependency)
 
 ## Overview
@@ -92,25 +92,25 @@ WordFamilyDetailPage
 ```
 
 ## Files to Create
-- `examio-fe/src/pages/k/WordFamilyPage.tsx`
-- `examio-fe/src/pages/k/WordFamilyDetailPage.tsx`
-- `examio-fe/src/components/organisms/word-family/CategoryGrid.tsx`
-- `examio-fe/src/components/organisms/word-family/CategoryCard.tsx`
-- `examio-fe/src/components/organisms/word-family/WordFamilyTreeView.tsx`
-- `examio-fe/src/components/organisms/word-family/WordFamilyListView.tsx`
-- `examio-fe/src/components/organisms/word-family/WordRow.tsx`
-- `examio-fe/src/components/organisms/word-family/AffixDisplay.tsx`
-- `examio-fe/src/components/organisms/word-family/ViewToggle.tsx`
-- `examio-fe/src/apis/wordFamilyApi.ts`
-- `examio-fe/src/stores/useWordFamilyStore.ts`
-- `examio-fe/src/types/wordFamily.ts`
+- `kmaedu-fe/src/pages/k/WordFamilyPage.tsx`
+- `kmaedu-fe/src/pages/k/WordFamilyDetailPage.tsx`
+- `kmaedu-fe/src/components/organisms/word-family/CategoryGrid.tsx`
+- `kmaedu-fe/src/components/organisms/word-family/CategoryCard.tsx`
+- `kmaedu-fe/src/components/organisms/word-family/WordFamilyTreeView.tsx`
+- `kmaedu-fe/src/components/organisms/word-family/WordFamilyListView.tsx`
+- `kmaedu-fe/src/components/organisms/word-family/WordRow.tsx`
+- `kmaedu-fe/src/components/organisms/word-family/AffixDisplay.tsx`
+- `kmaedu-fe/src/components/organisms/word-family/ViewToggle.tsx`
+- `kmaedu-fe/src/apis/wordFamilyApi.ts`
+- `kmaedu-fe/src/stores/useWordFamilyStore.ts`
+- `kmaedu-fe/src/types/wordFamily.ts`
 
 ## Files to Modify
-- `examio-fe/src/routes/index.tsx` — add 2 new routes
+- `kmaedu-fe/src/routes/index.tsx` — add 2 new routes
 
 ## Implementation Steps
 
-1. Install `react-d3-tree`: `cd examio-fe && yarn add react-d3-tree`
+1. Install `react-d3-tree`: `cd kmaedu-fe && yarn add react-d3-tree`
 2. Create TypeScript types in `types/wordFamily.ts`
 3. Create API client `wordFamilyApi.ts`:
    - `getCategories()` — GET /api/word-family/categories

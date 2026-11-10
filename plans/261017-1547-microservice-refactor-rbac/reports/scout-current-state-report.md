@@ -1,10 +1,10 @@
 # Scout — Current State (2026-10-17)
 
-Condensed from 3 Explore agents + 1 reviewer fact-check. Full narrative: `/ARCHITECTURE.md` §2. Paths relative to `examio-be/`.
+Condensed from 3 Explore agents + 1 reviewer fact-check. Full narrative: `/ARCHITECTURE.md` §2. Paths relative to `kmaedu-be/`.
 
 ## Data (shared DB anti-pattern)
 - 1 `DATABASE_URL` for all services incl. Python ai-service; `yarn prisma:merge` merges `libs/database/src/models/*.prisma` → `schema.prisma` (48 models).
-- Migration: `deploy/entrypoint-migration.sh` = `prisma db push` + `migrate resolve --applied` (3 migration dirs only). One `examio-migration` container gates every service.
+- Migration: `deploy/entrypoint-migration.sh` = `prisma db push` + `migrate resolve --applied` (3 migration dirs only). One `kmaedu-migration` container gates every service.
 - 24 FK → `User`, all `onDelete: Cascade`. `ExamRoom → QuizSet` cascade (`exam.prisma:148,156`).
 - ai-service `asyncpg.create_pool(DATABASE_URL)` ×7; writes `UserStorage` (status, creditCharged), `Document` (pgvector), `DocumentEntity`, `HistoryGenerated*`; runtime `CREATE TABLE` for `UserStorageGraph*`, `BenchmarkItem`. `score/database.py` reads non-Prisma tables.
 - Cross-boundary access:
@@ -32,7 +32,7 @@ Condensed from 3 Explore agents + 1 reviewer fact-check. Full narrative: `/ARCHI
 ## gRPC / events
 - Protos `libs/common/src/protos/{auth,wallet,r2,ocr,subscription}.proto`, runtime proto-loader, hand-written TS interfaces. `admin.proto` referenced (`admin-service/src/main.ts:47`) but missing. ocr + finance both 50053. `registerAuthClient` unused.
 - Only good boundary: exam → finance gRPC (`exam-service/src/modules/finance-client/finance-client.service.ts`).
-- RabbitMQ `libs/common/src/events/`: exchange `examio.events`; only `USER_CREATED` auth→finance (`finance-service/src/events/user-event.handler.ts`); subscriber always acks, no DLQ, no outbox. `ai.ocr.requested` orphaned.
+- RabbitMQ `libs/common/src/events/`: exchange `kmaedu.events`; only `USER_CREATED` auth→finance (`finance-service/src/events/user-event.handler.ts`); subscriber always acks, no DLQ, no outbox. `ai.ocr.requested` orphaned.
 - exam → ai-service HTTP with `x-internal-service-token` (`modules/ai/ai.service.ts`, `modules/ai-chat/ai-chat.service.ts`, `modules/word-family/word-family.service.ts`).
 
 ## exam-service modules (to split)
@@ -47,6 +47,6 @@ Condensed from 3 Explore agents + 1 reviewer fact-check. Full narrative: `/ARCHI
 - Tests: exam 11 specs, admin 5, finance 4, auth 3, r2 1, gateway 0; FE none.
 
 ## Clients
-- FE: axios `baseURL=/api/v1`, `withCredentials`, 401 → `/auth/refresh` retry (`examio-fe/src/apis/api.ts`); socket.io `/ws/study`; SSE via fetch (ai chat) + EventSource (admin logs).
-- FE routes `examio-fe/src/routes/index.tsx`: `/k/*` user area, `/admin/*` (stats, users, finance, logs, audit, word-family, page-config).
-- Mobile `examio-app/` NOT present in this checkout (separate repo/location) — parity work must be planned as cross-repo.
+- FE: axios `baseURL=/api/v1`, `withCredentials`, 401 → `/auth/refresh` retry (`kmaedu-fe/src/apis/api.ts`); socket.io `/ws/study`; SSE via fetch (ai chat) + EventSource (admin logs).
+- FE routes `kmaedu-fe/src/routes/index.tsx`: `/k/*` user area, `/admin/*` (stats, users, finance, logs, audit, word-family, page-config).
+- Mobile `kmaedu-app/` NOT present in this checkout (separate repo/location) — parity work must be planned as cross-repo.

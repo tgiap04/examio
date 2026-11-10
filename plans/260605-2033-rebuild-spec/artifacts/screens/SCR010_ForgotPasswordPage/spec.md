@@ -125,8 +125,8 @@ N/A — screen displays no dynamic data. Email is a writable input (documented i
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/auth/ForgotPasswordPage.tsx:1`
-- Auth store: `examio-fe/src/stores/useAuthStore.ts:172`
-- API client: `examio-fe/src/apis/authApi.ts:71`
-- Route guard: `examio-fe/src/routes/guards/PublicRoute.tsx:1`
-- Router config: `examio-fe/src/routes/index.tsx:133`
+- Page/View: `kmaedu-fe/src/pages/auth/ForgotPasswordPage.tsx:1`
+- Auth store: `kmaedu-fe/src/stores/useAuthStore.ts:172`
+- API client: `kmaedu-fe/src/apis/authApi.ts:71`
+- Route guard: `kmaedu-fe/src/routes/guards/PublicRoute.tsx:1`
+- Router config: `kmaedu-fe/src/routes/index.tsx:133`

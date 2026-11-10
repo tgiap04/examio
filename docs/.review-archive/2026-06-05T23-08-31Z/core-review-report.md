@@ -6,7 +6,7 @@ warnings: 2
 
 # Core Artifacts Review Report
 
-**Project**: examio
+**Project**: kmaedu
 **Review Date**: 2026-06-05
 **Reviewer**: reviewer (Staff Engineer)
 **Scope**: 9 core artifacts — system-overview, route-list, data-model, screen-list, screen-flow, behavior-logic, permissions, user-stories, feature-list

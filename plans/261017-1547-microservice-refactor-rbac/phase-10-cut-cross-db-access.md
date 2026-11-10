@@ -3,7 +3,7 @@
 ## Context Links
 - [plan.md](./plan.md) · [decisions.md](./reports/decisions.md) · [planner-brief.md](./reports/planner-brief.md) · [red-team-changes.md](./reports/red-team-changes.md) (overrides the brief where they conflict)
 - [scout-current-state §Data](./reports/scout-current-state-report.md) · [researcher-02 §3 outbox](./research/researcher-02-migration-mechanics-report.md)
-- `/Users/tgiap.dev/devs/examio/ARCHITECTURE.md` §6.2 (RPC catalog), §7.1, §12 P3
+- `/Users/tgiap.dev/devs/kmaedu/ARCHITECTURE.md` §6.2 (RPC catalog), §7.1, §12 P3
 - Prior phases: [03 messaging](./phase-03-messaging-foundation.md), [04 identity](./phase-04-identity-and-rbac-core.md) (service tokens, `authzVersion`), [08 admin roles](./phase-08-admin-role-management-screen.md)
 
 ## Overview
@@ -18,21 +18,21 @@
 - Page flags: admin writes `PageFeatureFlag` + Redis `config:pages:flags` (`admin-page-config.service.ts:133`, key at `libs/common/src/constants/cache-keys.ts:158`). The gateway read Prisma at `apps/gateway-service/src/services/config.service.ts:64-75`. Phase 05 dropped that DB fallback: admin warms the shared Redis key at boot, and the gateway's `SetPageFlags` server (writes `gw:config:pages`) already exists. study-room reads the shared key at `study-room.gateway.ts:90`. The key is gateway-owned data, so admin writes it through `SetPageFlags`. <!-- Red Team: RT-11 --> (Per-service Redis ACL is deferred to phase 17, but the ownership rule holds now.)
 - exam reads `User` through relation includes in examattempt(10), examsession(9), examroom(5), flashcardset(3), student(2), study-room(5) and whitelist `user.findMany` (`flashcardset.service.ts:1389,1419`, `examsession.service.ts:775,806`). Several of these select `email` (`flashcardset.service.ts:1400,1442`, `examsession.service.ts:98,127,194,391,786,829`, `examsession.repository.ts:72,84`). <!-- Red Team: RT-15 --> After this phase no exam response carries `email`.
 - auth `user.repository.ts:96-121` includes `wallet` + `subscription`. `/auth/me` returns both (scout §3). FE reads `user.wallet.balance` (`ProfilePage.tsx:294`, `useAuthStore.updateWalletBalance`). Mobile is unreleased (validation Q6, RT-13 reversed), so `wallet` and `subscription` leave `/auth/me` outright, with no compat field; the FE reads the balance from finance `GET /wallet/info` (`wallet:use`). <!-- Updated: Validation Session 1 - no /auth/me compat fields -->
-- `WordFamilyCategory` has two writers: admin-word-family and exam `word-family.controller.ts:54-80` (Auth+AdminGuard CUD). The FE only calls `/admin/word-family/categories` (`examio-fe/src/apis/wordFamilyApi.ts:164-190`), so the exam CUD routes are dead.
+- `WordFamilyCategory` has two writers: admin-word-family and exam `word-family.controller.ts:54-80` (Auth+AdminGuard CUD). The FE only calls `/admin/word-family/categories` (`kmaedu-fe/src/apis/wordFamilyApi.ts:164-190`), so the exam CUD routes are dead.
 
 ## Requirements
 Functional — finance (money) <!-- Red Team: RT-1 -->
 - `WalletTransaction.idempotencyKey String?` + `@@unique([walletId, idempotencyKey])`.
-- `examio.finance.v1.WalletService` (proto from P02): `Debit(user_id, amount, reason, idempotency_key)`, `Credit(...)`, `Refund(debit_idempotency_key, reason)`, each returning `{ tx, already_applied }`. One tx: `INSERT WalletTransaction … ON CONFLICT (walletId, idempotencyKey) DO NOTHING RETURNING` → if no row, return the existing tx with `already_applied=true`, else adjust the balance (`UPDATE … SET balance = balance - $amt WHERE balance >= $amt`; 0 rows → `FAILED_PRECONDITION INSUFFICIENT_CREDITS`, tx rolled back). `Refund` of an unknown key → `NOT_FOUND`; a second refund → `already_applied`.
+- `kmaedu.finance.v1.WalletService` (proto from P02): `Debit(user_id, amount, reason, idempotency_key)`, `Credit(...)`, `Refund(debit_idempotency_key, reason)`, each returning `{ tx, already_applied }`. One tx: `INSERT WalletTransaction … ON CONFLICT (walletId, idempotencyKey) DO NOTHING RETURNING` → if no row, return the existing tx with `already_applied=true`, else adjust the balance (`UPDATE … SET balance = balance - $amt WHERE balance >= $amt`; 0 rows → `FAILED_PRECONDITION INSUFFICIENT_CREDITS`, tx rolled back). `Refund` of an unknown key → `NOT_FOUND`; a second refund → `already_applied`.
 - Switch the exam AI callers from `UpdateBalance` to `Debit`, then delete `UpdateBalance` from proto + server. Interim keys until phase 15 replaces them with `doc:`/`gen:`: `<op>:<storageId>` for once-per-file ops (upload, quick-upload), else `<op>:<uuidv7>` created once per HTTP request.
 - `AI_FREE_MODE` (incl. the production force-off) moves into the shared finance client wrapper `libs/grpc/src/clients/finance.client.ts`, so content/document reuse it in 14/15.
-- `examio.finance.v1.FinanceAdminService`: `AdjustBalance(user_id, amount, reason, idempotency_key)`, `Refund(payment_id, reason, idempotency_key)`, `ChangeTier(user_id, tier, idempotency_key)`, `ListPayments(filter, cursor, limit)`, `ListSubscriptions(cursor, limit)`. <!-- Red Team: RT-2 --> No `actor_id` field: the actor is the forwarded admin token `sub`, guarded by `@RequirePermissions('finance:admin')`. Every write writes `WalletTransaction` + outbox in one tx.
+- `kmaedu.finance.v1.FinanceAdminService`: `AdjustBalance(user_id, amount, reason, idempotency_key)`, `Refund(payment_id, reason, idempotency_key)`, `ChangeTier(user_id, tier, idempotency_key)`, `ListPayments(filter, cursor, limit)`, `ListSubscriptions(cursor, limit)`. <!-- Red Team: RT-2 --> No `actor_id` field: the actor is the forwarded admin token `sub`, guarded by `@RequirePermissions('finance:admin')`. Every write writes `WalletTransaction` + outbox in one tx.
 - RPC guards <!-- Red Team: RT-2 -->: `Debit` = `@RequirePermissionsOrService('wallet:use', callers: exam, content, document)`; `Refund`/`Credit` = `@ServiceOnly('exam','content','document')`; `GetWallet`/`GetUserBenefits` = any valid user or service token.
 - Provisioning <!-- Red Team: RT-9 --> <!-- Reconcile: X3 -->: P04 owns it (ON CONFLICT `ensureWallet`, `authz_changed` consumer, re-apply, lazy ensure, `reconcile-teachers`). This phase only (a) sets `idempotencyKey = welcome:<userId>` on the welcome `WalletTransaction` (new column) and (b) calls `ensureWallet(userId)` inside `Debit` before the balance check.
 - `finance.v1.GetRevenueStats(range)` <!-- Red Team: RT-11 -->: pro/vip counts, revenue30d, revenue series — the current queries (`admin-stats.service.ts:62-75`, revenue series `:234-248`) run inside finance. Requires a forwarded `stats:read` token.
 
 Functional — auth
-- `examio.auth.v1` (`SetUserStatus` is phase 08's, not here <!-- Reconcile: X1 -->): `UpdateUserAdmin(user_id, name?, bio?, is_verified?)`, `SearchUsers(query, limit≤20)` (public fields only), extend `ListUsers` with `created_at`, `utm_source`, cursor. <!-- Red Team: RT-2 --> Actor = forwarded admin token `sub` (`user:manage`); no `actor_id` field.
+- `kmaedu.auth.v1` (`SetUserStatus` is phase 08's, not here <!-- Reconcile: X1 -->): `UpdateUserAdmin(user_id, name?, bio?, is_verified?)`, `SearchUsers(query, limit≤20)` (public fields only), extend `ListUsers` with `created_at`, `utm_source`, cursor. <!-- Red Team: RT-2 --> Actor = forwarded admin token `sub` (`user:manage`); no `actor_id` field.
 - `GetPublicProfilesByIds(ids)` → `{id, username, name, avatar}` (any valid token) is already served since phase 04; this phase switches the exam callers to it. <!-- Red Team: RT-15 --> The P02 `GetUsersByIds` becomes privileged: service token + `user:manage`, used by admin only.
 - `GetUserStats(range)` <!-- Red Team: RT-11 -->: totalUsers, activeToday, active30d, signups + traffic series, utm source breakdown — the current SQL (`admin-stats.service.ts:56-60`, utm `:155-175`, series `:208-233`) moved verbatim. Requires `stats:read`.
 - Events: `auth.user.updated {userId, changed[], version}` (`version` = `updatedAt` ms) for profile/admin edits. <!-- Red Team: RT-10 --> <!-- Reconcile: X1 --> Consumers apply only if newer; ban/kick handlers re-read state.
@@ -40,10 +40,10 @@ Functional — auth
 
 Functional — admin, gateway, exam, vocabulary
 - admin-stats <!-- Red Team: RT-11 -->: calls `GetUserStats` + `GetRevenueStats` in parallel and keeps the 5-min Redis cache (`admin:stats:*`). Response shapes unchanged. No read model, no `admin_metrics_*` tables, no rebuild CLI, no `auth.user.logged_in` or `finance.payment.succeeded` events.
-- Page flags: admin PATCH → gateway gRPC `SetPageFlags(flags)`. On boot the gateway pulls `examio.admin.v1.AdminService/GetPageFlags` (retry until available; serve last Redis copy meanwhile). Remove the study-room in-service page-flag read; the gateway checks `pageFlag` at WS upgrade (phase 05).
+- Page flags: admin PATCH → gateway gRPC `SetPageFlags(flags)`. On boot the gateway pulls `kmaedu.admin.v1.AdminService/GetPageFlags` (retry until available; serve last Redis copy meanwhile). Remove the study-room in-service page-flag read; the gateway checks `pageFlag` at WS upgrade (phase 05).
 - finance publishes `finance.subscription.changed {userId, fromTier, toTier, at, version}` (consumer: ai-chat in 13).
 - exam: `clients/auth.client.ts` → `getPublicProfiles(ids)` does a Redis `MGET exam:cache:user:<id>` (public projection only, TTL 600s), batch-fetches only the misses with ONE `GetPublicProfilesByIds`, and keeps result order. The exam worker consumes `auth.user.updated` → `DEL` cache. `users/search` → `SearchUsers`.
-- vocabulary contract `examio.vocabulary.v1.WordFamilyAdminService { ListCategories, UpsertCategory, DeleteCategory }` is served by exam-service now (moves to vocabulary-service in phase 12). admin-word-family calls it with the forwarded admin token (`word_family:admin`). `DeleteCategory` deletes the R2 `imageUrl` object. Delete the exam CUD category routes.
+- vocabulary contract `kmaedu.vocabulary.v1.WordFamilyAdminService { ListCategories, UpsertCategory, DeleteCategory }` is served by exam-service now (moves to vocabulary-service in phase 12). admin-word-family calls it with the forwarded admin token (`word_family:admin`). `DeleteCategory` deletes the R2 `imageUrl` object. Delete the exam CUD category routes.
 - `scripts/check-model-ownership.ts`: an ownership map (model → service) is the source for phase 11. It fails if `prisma.<model>`/`tx.<model>` appears outside the owner app.
 - dependency-cruiser <!-- Red Team: RT-11 -->: `.dependency-cruiser.cjs` moves here from P01, **enforced** in CI: no `apps/A` → `apps/B` import, `libs` → `apps` forbidden, `libs-no-prisma` (warn now, error in 11).
 
@@ -66,15 +66,15 @@ admin-word-family ─gRPC (admin token)─► exam WordFamilyAdminService (→ v
 
 ## Related Code Files
 File ownership (globs). No other phase edits these while 10 runs:
-- `/Users/tgiap.dev/devs/examio/examio-be/apps/admin-service/src/modules/{admin-finance,admin-users,admin-stats,admin-page-config,admin-word-family}/**`, `.../admin-service/src/clients/**`
-- `/Users/tgiap.dev/devs/examio/examio-be/apps/finance-service/src/modules/{finance-admin,stats}/**` (create), `.../finance-service/src/modules/{wallet,sepay}/**` (incl. P04's `ensure-wallet.service.ts`: welcome key only) <!-- Red Team: RT-1, RT-9 --> <!-- Reconcile: X3 -->
-- `/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service/src/{repositories/user.repository.ts,auth.service.ts,auth.controller.ts,grpc/**}`, `.../auth-service/src/modules/stats/**` (create)
-- `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/{services/config.service.ts,grpc/**}`
-- `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/{clients/**,events/**}`, `.../modules/**/*.{service,repository}.ts`, `.../modules/*/dto/sharing.dto.ts`, `.../modules/word-family/**`, `.../modules/finance-client/**`, `.../modules/study-room/study-room.gateway.ts`
-- `/Users/tgiap.dev/devs/examio/examio-be/proto/examio/{auth,finance,admin,gateway,vocabulary,events}/v1/**`
-- `/Users/tgiap.dev/devs/examio/examio-be/libs/database/src/models/payment.prisma` (`idempotencyKey`), `.../libs/grpc/src/clients/finance.client.ts` (create), `.../libs/grpc/src/deadline-retry.ts` (allowlist) <!-- Red Team: RT-1 -->
-- `/Users/tgiap.dev/devs/examio/examio-be/scripts/check-model-ownership.ts` (create), `/Users/tgiap.dev/devs/examio/examio-be/.dependency-cruiser.cjs` (create), `/Users/tgiap.dev/devs/examio/.github/workflows/ci.yml` (append the ownership + depcruise steps) <!-- Red Team: RT-11 -->
-- FE: `/Users/tgiap.dev/devs/examio/examio-fe/src/{stores/useAuthStore.ts,types/user.ts,apis/walletApi.ts}`, `.../pages/**/ProfilePage.tsx`. [CROSS-PHASE] Phase 09 also edits `useAuthStore.ts`/`types/user.ts`, so this step lands after 09 merges.
+- `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/admin-service/src/modules/{admin-finance,admin-users,admin-stats,admin-page-config,admin-word-family}/**`, `.../admin-service/src/clients/**`
+- `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/finance-service/src/modules/{finance-admin,stats}/**` (create), `.../finance-service/src/modules/{wallet,sepay}/**` (incl. P04's `ensure-wallet.service.ts`: welcome key only) <!-- Red Team: RT-1, RT-9 --> <!-- Reconcile: X3 -->
+- `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/auth-service/src/{repositories/user.repository.ts,auth.service.ts,auth.controller.ts,grpc/**}`, `.../auth-service/src/modules/stats/**` (create)
+- `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/{services/config.service.ts,grpc/**}`
+- `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/{clients/**,events/**}`, `.../modules/**/*.{service,repository}.ts`, `.../modules/*/dto/sharing.dto.ts`, `.../modules/word-family/**`, `.../modules/finance-client/**`, `.../modules/study-room/study-room.gateway.ts`
+- `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/proto/kmaedu/{auth,finance,admin,gateway,vocabulary,events}/v1/**`
+- `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/database/src/models/payment.prisma` (`idempotencyKey`), `.../libs/grpc/src/clients/finance.client.ts` (create), `.../libs/grpc/src/deadline-retry.ts` (allowlist) <!-- Red Team: RT-1 -->
+- `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/scripts/check-model-ownership.ts` (create), `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/.dependency-cruiser.cjs` (create), `/Users/tgiap.dev/devs/kmaedu/.github/workflows/ci.yml` (append the ownership + depcruise steps) <!-- Red Team: RT-11 -->
+- FE: `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/{stores/useAuthStore.ts,types/user.ts,apis/walletApi.ts}`, `.../pages/**/ProfilePage.tsx`. [CROSS-PHASE] Phase 09 also edits `useAuthStore.ts`/`types/user.ts`, so this step lands after 09 merges.
 
 Create: the files above marked create, plus `apps/admin-service/src/clients/{auth,finance,gateway,vocabulary}.client.ts`, `apps/exam-service/src/clients/auth.client.ts`, `apps/exam-service/src/modules/word-family/word-family-admin.grpc.controller.ts`.
 Delete: exam category CUD handlers (`word-family.controller.ts:54-80`), `WalletService.UpdateBalance` (proto + finance server), the `deductCredits` body in `finance-client.service.ts` (replaced by the shared wrapper), Prisma imports of foreign models in admin/auth/gateway/exam. <!-- Red Team: RT-1 -->
@@ -93,7 +93,7 @@ Delete: exam category CUD handlers (`word-family.controller.ts:54-80`), `WalletS
 11. exam: add `auth.client.ts` (batch + cache, public projection) and replace every `include: { user|host }` and `user.findMany` with post-query enrichment (collect ids → one call → map). Drop every `email: true` select. `sharing.dto.ts` user fields come from the enrichment. `users/search` → `SearchUsers`. <!-- Red Team: RT-15 -->
 12. exam worker: consume `auth.user.updated` → cache `DEL`.
 13. vocabulary contract: add `word-family-admin.grpc.controller.ts` in exam word-family. admin-word-family → `VocabularyClient`. Delete the exam CUD category routes.
-14. FE <!-- Updated: Validation Session 1 - no /auth/me compat fields -->: remove `wallet` from the `User` type (`types/user.ts`) and from `useAuthStore` (`updateWalletBalance` moves to a wallet slice fed by `walletApi` `GET /wallet/info`, fetched only with `wallet:use`, cached per session, refreshed after payment/debit). Update ProfilePage/SubscriptionPage reads. `grep -rn "user\??\.wallet" examio-fe/src` → none.
+14. FE <!-- Updated: Validation Session 1 - no /auth/me compat fields -->: remove `wallet` from the `User` type (`types/user.ts`) and from `useAuthStore` (`updateWalletBalance` moves to a wallet slice fed by `walletApi` `GET /wallet/info`, fetched only with `wallet:use`, cached per session, refreshed after payment/debit). Update ProfilePage/SubscriptionPage reads. `grep -rn "user\??\.wallet" kmaedu-fe/src` → none.
 15. Run the ownership script in strict mode and depcruise (enforced) in CI.
 
 ## Tests
@@ -128,11 +128,11 @@ Write first (failing → code):
 - [x] Ownership script strict + depcruise enforced in CI — `ci.yml:176-179`, no `continue-on-error`.
 
 ## Success Criteria
-- `cd /Users/tgiap.dev/devs/examio/examio-be && npx ts-node scripts/check-model-ownership.ts --strict` → exit 0. `npx depcruise apps libs --config .dependency-cruiser.cjs` → 0 errors.
+- `cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && npx ts-node scripts/check-model-ownership.ts --strict` → exit 0. `npx depcruise apps libs --config .dependency-cruiser.cjs` → 0 errors.
 - `grep -rnE "(prisma|tx)\.(wallet|walletTransaction|payment|userSubscription|user|userSession)\b" apps/admin-service/src` → no output.
 - `grep -rnE "(prisma|tx)\.(user|userSession)\b" apps/exam-service/src apps/gateway-service/src` → no output. `grep -rn "email: true" apps/exam-service/src` → no output.
-- `grep -nE "wallet|subscription" apps/auth-service/src/repositories/user.repository.ts` → no output. `grep -rnE "user\??\.wallet|isAdmin" examio-fe/src/{types/user.ts,stores/useAuthStore.ts,pages}` → none. <!-- Updated: Validation Session 1 - no /auth/me compat fields --> `grep -rn "UpdateBalance\|updateBalance" apps proto libs` → no output.
-- `yarn build && yarn test` green. `cd ../examio-fe && yarn build && yarn lint` green.
+- `grep -nE "wallet|subscription" apps/auth-service/src/repositories/user.repository.ts` → no output. `grep -rnE "user\??\.wallet|isAdmin" kmaedu-fe/src/{types/user.ts,stores/useAuthStore.ts,pages}` → none. <!-- Updated: Validation Session 1 - no /auth/me compat fields --> `grep -rn "UpdateBalance\|updateBalance" apps proto libs` → no output.
+- `yarn build && yarn test` green. `cd ../kmaedu-fe && yarn build && yarn lint` green.
 - Manual: admin credit with a repeated key → balance changes once; AI generate retried by the client lib → one debit; admin profile edit (name) → exam views show the new name after cache `DEL`. <!-- Reconcile: X1 --> Admin overview numbers equal the pre-phase values on the same DB.
 
 ## Risk Assessment

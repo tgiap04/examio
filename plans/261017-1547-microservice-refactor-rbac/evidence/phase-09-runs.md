@@ -5,7 +5,7 @@ Temper result: **FAIL on acceptance items 5 and 7** (live). Static gates pass. T
 ## Environment and safety
 
 - Local only. Postgres (`pgvector/pgvector:pg16`), Redis (`redis:7-alpine`) and RabbitMQ (`rabbitmq:3.13-management-alpine`) ran in throwaway containers `p09-pg|p09-redis|p09-rmq`, bound to `127.0.0.1` (58641 / 58591 / 58883). All removed at the end.
-- Every BE command ran under `env -i` with a complete local env (`$SCRATCH/p09/p09env.sh`). Every outbound-capable key is pinned to a dummy or `127.0.0.1:9`. `MAIL_TRANSPORT=json`. The guard refuses any non-local `DATABASE_URL`. Prisma printed `127.0.0.1:58641/examio_p09`.
+- Every BE command ran under `env -i` with a complete local env (`$SCRATCH/p09/p09env.sh`). Every outbound-capable key is pinned to a dummy or `127.0.0.1:9`. `MAIL_TRANSPORT=json`. The guard refuses any non-local `DATABASE_URL`. Prisma printed `127.0.0.1:58641/kmaedu_p09`.
 - No `.env` file was read or printed. No `docker compose config` was run. Services ran from an out-of-repo cwd (`$SCRATCH/p09/run`) from `dist/`.
 - Browser: puppeteer-core 24.43.1 + `/Applications/Google Chrome.app`, FE vite on `127.0.0.1:5273` with `VITE_BACKEND_URL` pinned to the gateway (3780), `VITE_API_URL=/api/v1`, all other VITE keys empty in the process env. CDP `Fetch` fails every non-localhost request. Attempts that were blocked: 0 in run6 and run7 (2 in an earlier run, both `accounts.google.com`, blocked and never sent).
 - Accounts (seeded by SQL into the local DB only): STUDENT, TEACHER, STUDENT+SYSTEM_ADMIN. Credentials are in `$SCRATCH/p09/accounts.json` (mode 600), never in the repo or evidence.
@@ -24,7 +24,7 @@ Temper result: **FAIL on acceptance items 5 and 7** (live). Static gates pass. T
 | drift | regenerate + `cmp` against working-tree copy | 0 | byte-identical |
 | drift (git) | `git diff --exit-code <generated file>` | 0 | **vacuous**: file is still untracked (`??`), so git cannot see a diff. Becomes meaningful once committed. |
 | CI yaml | python yaml load of `.github/workflows/ci.yml` | 0 | 8 jobs incl. `fe-permissions-drift`; FE job runs `yarn test` |
-| grep | `user?.isAdmin` / `TeacherRoute` in `examio-fe/src` | 1 | no matches (expected) |
+| grep | `user?.isAdmin` / `TeacherRoute` in `kmaedu-fe/src` | 1 | no matches (expected) |
 | types | `user.ts` | n/a | `id: string`, `isSystemAdmin`, no `isAdmin` |
 | migrate | `prisma migrate deploy` (local) | 0 | applied (first attempt exit 1: Postgres not ready, P1001) |
 | schema drift | `prisma migrate diff --exit-code` | 0 | no drift |
@@ -56,7 +56,7 @@ Pacing: the gateway default is 100 req/min per user or IP. The auth service has 
 ## Findings (product)
 
 **F1. Refresh cookie is never rotated: browser sessions die 60 s after the first refresh. Blocking.**
-- Where: `examio-be/apps/auth-service/src/auth.controller.ts:362` sets only the `accessToken` cookie in `refreshToken()`. The rotated refresh token is returned only in the JSON body. Grace window: `devices/repositories/user-session.repository.ts:99` (`REFRESH_GRACE_MS = 60s`). The FE never calls `POST /auth/sync-refresh-token`: `examio-fe/src/apis/authApi.ts:145` is defined and has no caller.
+- Where: `kmaedu-be/apps/auth-service/src/auth.controller.ts:362` sets only the `accessToken` cookie in `refreshToken()`. The rotated refresh token is returned only in the JSON body. Grace window: `devices/repositories/user-session.repository.ts:99` (`REFRESH_GRACE_MS = 60s`). The FE never calls `POST /auth/sync-refresh-token`: `kmaedu-fe/src/apis/authApi.ts:145` is defined and has no caller.
 - Pre-existing on `main`: `git show main:…/auth.controller.ts` has the same accessToken-only cookie on refresh (line 376), so this is not a regression from this branch. It is still a live defect here.
 - Expected: after `/auth/refresh`, the browser holds the current refresh token, and a later refresh succeeds.
 - Actual, deterministic (`scratchpad/p09/rcr.py`): refresh #1 → 201, refreshToken cookie hash unchanged. Same jar after 65 s → `401 UNAUTHORIZED "Invalid or expired refresh token"`.
@@ -65,8 +65,8 @@ Pacing: the gateway default is 100 req/min per user or IP. The auth service has 
 - Note: `rotateRefreshTokenIfCurrent` and the grace path make concurrent refreshes safe. A promotion inside the grace window does not break it (`grace-authz.py`: 201).
 
 **F2. Duplicate refresh on TOKEN_STALE: `getUser` bypasses single-flight. FE, this phase. Expected exactly 1 refresh (spec).**
-- `examio-fe/src/stores/useAuthStore.ts` `getUser` (≈L256-300): on failure of `/auth/me` it calls `refreshTokenApi()` directly (L280), not `refreshAccessToken()` in `examio-fe/src/apis/api.ts:104`, which is the single-flight path.
-- Triggered by `examio-fe/src/components/organisms/k/SideBar.tsx:105-108` and `examio-fe/src/hooks/useAuthSync.ts:43`, which call `getUser()` on each authenticated mount.
+- `kmaedu-fe/src/stores/useAuthStore.ts` `getUser` (≈L256-300): on failure of `/auth/me` it calls `refreshTokenApi()` directly (L280), not `refreshAccessToken()` in `kmaedu-fe/src/apis/api.ts:104`, which is the single-flight path.
+- Triggered by `kmaedu-fe/src/components/organisms/k/SideBar.tsx:105-108` and `kmaedu-fe/src/hooks/useAuthSync.ts:43`, which call `getUser()` on each authenticated mount.
 - Observed: `GET /auth/me 401 TOKEN_STALE` ×2 then `POST /auth/refresh 201` ×2 in the same window (run6 and run7, step 5b).
 - Fix direction: have `getUser`'s fallback call the shared single-flight refresh, or skip the refresh on `TOKEN_STALE`.
 
@@ -79,7 +79,7 @@ Pacing: the gateway default is 100 req/min per user or IP. The auth service has 
 
 ## Harness problems found and fixed (not product defects)
 
-- RabbitMQ: the first service launcher expanded the password variable name at write time, so services sent a blank password and the broker refused them. Consequence: `auth.user.authz_changed` never flowed, and the outbox relay logged `ALERT outbox: N unpublished`. Fixed; broker shows 5 running connections and `examio.events`. Matrix runs 1–4 are invalid for items 5–7 because of this; run 5 (after the fix) was still throttled, so only runs 6 and 7 count.
+- RabbitMQ: the first service launcher expanded the password variable name at write time, so services sent a blank password and the broker refused them. Consequence: `auth.user.authz_changed` never flowed, and the outbox relay logged `ALERT outbox: N unpublished`. Fixed; broker shows 5 running connections and `kmaedu.events`. Matrix runs 1–4 are invalid for items 5–7 because of this; run 5 (after the fix) was still throttled, so only runs 6 and 7 count.
 - The sign-in button is gated on a Cloudflare Turnstile token (`signin-form.tsx:100,116`). The widget is external and must not be reached. Login was done with `POST /api/v1/auth/login` from the page context (same HttpOnly cookies). The login endpoint does not check Turnstile (only register does). All later navigation is UI-driven.
 - Two containers started with an empty password (`POSTGRES_PASSWORD`, `--requirepass`). Recreated with the real values. The first Prisma attempt exited 1 (P1001) before Postgres was ready; rerun succeeded.
 - Diagnostic probes (`probe-login.cjs`, `probe-refresh.cjs`, `probe-admin-redirect.cjs`, `race-repro.sh`) were used to isolate the causes above. They are not temper rows.
@@ -134,7 +134,7 @@ Scope: coordinator fixes F1 (refresh cookie rotation), F2/F3 (single-flight `get
 | 6 | TEACHER on exam session: notice, no start | **FAIL** (new bug F5 below) |
 | 6 | TEACHER on exam session: no "Bắt đầu làm bài" button | PASS |
 | 6 | STUDENT (whitelisted): no teacher notice, start visible, start → `/exam-session/:id/quiz` | PASS (consent checkbox ticked first, as the UI requires) |
-| 6 | "Từ đã lưu" saved-words view | NOTE: no such label or view in examio-fe src (0 hits). Cannot be verified as written. |
+| 6 | "Từ đã lưu" saved-words view | NOTE: no such label or view in kmaedu-fe src (0 hits). Cannot be verified as written. |
 | 7 | in room: `auth:reauth` → exactly one refresh → reconnect → stays in room | PASS |
 | 7 | demotion while in room: student stays logged in | PASS (sidebar present after `/k/my-materials`) |
 | 8 | admin opens /admin and /admin/roles | PASS |
@@ -150,13 +150,13 @@ Scope: coordinator fixes F1 (refresh cookie rotation), F2/F3 (single-flight `get
 
 - Warm session (client-side navigation, `/auth/me` throttled with 11×429): PASS, user stays in the app.
 - Cold full reload while auth-service is down (502 on `/auth/me`) or throttled (429): **FAIL**. The user is sent to `/login`.
-- Cause: on a cold load `isAuthenticated` starts `false` and `initializing` starts `true` (`examio-fe/src/stores/useAuthStore.ts:92-94`). `runLoadUser` (`useAuthStore.ts` ≈L337-355) calls `probeSession`, and a transient error returns `"keep"`. That leaves `isAuthenticated` false, so `ProtectedRoute` redirects (`examio-fe/src/routes/guards/ProtectedRoute.tsx:18-21`). "Keep" protects only a session already in memory. A reload has none.
+- Cause: on a cold load `isAuthenticated` starts `false` and `initializing` starts `true` (`kmaedu-fe/src/stores/useAuthStore.ts:92-94`). `runLoadUser` (`useAuthStore.ts` ≈L337-355) calls `probeSession`, and a transient error returns `"keep"`. That leaves `isAuthenticated` false, so `ProtectedRoute` redirects (`kmaedu-fe/src/routes/guards/ProtectedRoute.tsx:18-21`). "Keep" protects only a session already in memory. A reload has none.
 - Expected: a transient failure during cold load keeps the user on the page (retry, or a neutral waiting state), not `/login`. Actual: `/login`.
 
 ### New bug F5 (FE + BE mismatch, blocks item 6 teacher notice)
 
-- `examio-fe/src/pages/exam-session/ExamSessionPage.tsx:76` (and `:124`) calls `getExamSessionStatsApi(id)` whenever `access.hasAccess` is true, with no permission gate.
-- The endpoint `GET /examsessions/study/:id/stats` is `@RequirePermissions('exam:take')` (`examio-be/apps/exam-service/src/modules/examsession/examsession.controller.ts:309-311`). TEACHER lacks `exam:take`.
+- `kmaedu-fe/src/pages/exam-session/ExamSessionPage.tsx:76` (and `:124`) calls `getExamSessionStatsApi(id)` whenever `access.hasAccess` is true, with no permission gate.
+- The endpoint `GET /examsessions/study/:id/stats` is `@RequirePermissions('exam:take')` (`kmaedu-be/apps/exam-service/src/modules/examsession/examsession.controller.ts:309-311`). TEACHER lacks `exam:take`.
 - Repro: TEACHER opens `/exam-session/<id>` on a whitelisted session. The request returns `403 PERMISSION_DENIED`, the page never renders, and the spinner stays. The teacher notice ("Tài khoản giáo viên không thể làm bài thi") never appears.
 - Expected: teacher sees the notice and no start. Actual: infinite loader plus a 403 request.
 - Fix direction: skip the stats call when `!canTakeExam`, or render the notice before the stats fetch.
@@ -170,7 +170,7 @@ Scope: coordinator fixes F1 (refresh cookie rotation), F2/F3 (single-flight `get
 
 ### Not verifiable
 
-- "Từ đã lưu" saved-words view: not implemented in examio-fe.
+- "Từ đã lưu" saved-words view: not implemented in kmaedu-fe.
 - The 15-minute token-expiry socket path: not run. The authz_changed path was used.
 - The `git diff` drift check still passes vacuously until `permissions.generated.ts` is committed.
 
@@ -181,7 +181,7 @@ Scope: coordinator fixes F1 (refresh cookie rotation), F2/F3 (single-flight `get
 
 ## Re-temper 3 (F5 teacher exam notice, F3 cold-load SessionUnavailable)
 
-Scope: F5 (`ExamSessionPage` skips the stats call without `exam:take`; load failure shows an error card) and F3 cold load (`probeSession` returns ok|cleared|unavailable; guards render `SessionUnavailable` instead of redirecting on transient failure). FE only, no product code changed here. Auth e2e ran against a dedicated `examio_e2e` DB, never the matrix DB.
+Scope: F5 (`ExamSessionPage` skips the stats call without `exam:take`; load failure shows an error card) and F3 cold load (`probeSession` returns ok|cleared|unavailable; guards render `SessionUnavailable` instead of redirecting on transient failure). FE only, no product code changed here. Auth e2e ran against a dedicated `kmaedu_e2e` DB, never the matrix DB.
 
 ### Static and e2e
 
@@ -190,7 +190,7 @@ Scope: F5 (`ExamSessionPage` skips the stats call without `exam:take`; load fail
 | FE `yarn build` | 0 | built |
 | FE `yarn lint` | 0 | clean |
 | FE `yarn test` | 0 | 8 files, 73 tests pass (was 6 / 62) |
-| auth e2e: app, refresh-cookie, token, role-change, RabbitMQ up, DB `examio_e2e` | 0 | 4 suites, 24 tests pass |
+| auth e2e: app, refresh-cookie, token, role-change, RabbitMQ up, DB `kmaedu_e2e` | 0 | 4 suites, 24 tests pass |
 
 ### Live F5 and F3 (`f5f3-live.cjs`, artifact `f5-f3-live-run.json`): 25/25 PASS
 
@@ -232,7 +232,7 @@ Scope: F5 (`ExamSessionPage` skips the stats call without `exam:take`; load fail
 
 - Two round-3 setup attempts exited 1 and are kept in the record: the quiz seed ran before the services were up, and the word-family fixture had a shell export error. Both were rerun and passed.
 - The `room-seed.sh` script printed stale output from a previous run in its first attempt. Its rerun, with services up, got login 201 and room 201.
-- The earlier e2e-demotes-admin hazard did not recur: the e2e ran against `examio_e2e`, and the matrix DB was seeded afterwards.
+- The earlier e2e-demotes-admin hazard did not recur: the e2e ran against `kmaedu_e2e`, and the matrix DB was seeded afterwards.
 
 ### Status
 
@@ -241,7 +241,7 @@ Scope: F5 (`ExamSessionPage` skips the stats call without `exam:take`; load fail
 
 ## Re-temper 4 (socket SERVICE_UNAVAILABLE backoff, interceptor refresh policy, M2)
 
-Scope: socket recovery moved to `examio-fe/src/hooks/study-room-socket-recovery.ts` (+ `lib/rbac/socket-reconnect.ts`): SERVICE_UNAVAILABLE retries with jittered backoff (1,2,4,8,16 s), `MAX_BACKOFF_ATTEMPTS = 5` (`socket-reconnect.ts:3`), give-up toast `rbac.studyRoomUnavailable`. `api.ts` refresh failure logs out only on 401/403. No product code changed in this pass.
+Scope: socket recovery moved to `kmaedu-fe/src/hooks/study-room-socket-recovery.ts` (+ `lib/rbac/socket-reconnect.ts`): SERVICE_UNAVAILABLE retries with jittered backoff (1,2,4,8,16 s), `MAX_BACKOFF_ATTEMPTS = 5` (`socket-reconnect.ts:3`), give-up toast `rbac.studyRoomUnavailable`. `api.ts` refresh failure logs out only on 401/403. No product code changed in this pass.
 
 ### Static and regression
 
@@ -262,7 +262,7 @@ Matrix items 1, 2, 3, 4, 5a, 5b (refresh=1), 6, 7 (promotion and demotion in roo
 
 ### Socket SERVICE_UNAVAILABLE backoff: mixed result
 
-How the socket was made to fail: the exam-service handshake middleware returns `SERVICE_UNAVAILABLE` when its Redis `av` lookup fails (`examio-be/apps/exam-service/src/modules/study-room/study-room-socket-auth.service.ts:122,147`). Redis was stopped and restarted via docker.
+How the socket was made to fail: the exam-service handshake middleware returns `SERVICE_UNAVAILABLE` when its Redis `av` lookup fails (`kmaedu-be/apps/exam-service/src/modules/study-room/study-room-socket-auth.service.ts:122,147`). Redis was stopped and restarted via docker.
 
 Trigger notes: Chrome offline emulation does not close an established WebSocket, so the first attempt used `setOfflineMode`, which did nothing. The final method is `setOfflineMode(true)` for about 45 s (socket dropped by ping timeout), then Redis stopped while offline, then online again. Reloading the room page is an alternative trigger.
 
@@ -281,14 +281,14 @@ Attempt count: the FE schedules a retry per SU until 5 retries are used, so the 
 ### New finding F6: exam-service process exits when Redis is unavailable (blocks socket recovery)
 
 - In each run, exam-service exited during the Redis outage: `exam.log` shows `[StudyRoom Redis sub] error: connect ECONNREFUSED` followed by an uncaught `MaxRetriesPerRequestError: Reached the max retries per request limit (which is 20)` with `triggerUncaughtException(err, true /* fromPromise */)`.
-- The trigger seen in the first crash: `GET /api/v1/studyrooms/:id/leaderboard`. Path: `examio-be/apps/exam-service/src/modules/study-room/study-room.controller.ts:117-125` → `study-room.service.ts:187-190` (`assertRole` → `repo.findMemberCached`, `:72-80`) → `study-room.repository.ts:70-73` → `libs/redis/src/redis.service.ts:40-43`.
+- The trigger seen in the first crash: `GET /api/v1/studyrooms/:id/leaderboard`. Path: `kmaedu-be/apps/exam-service/src/modules/study-room/study-room.controller.ts:117-125` → `study-room.service.ts:187-190` (`assertRole` → `repo.findMemberCached`, `:72-80`) → `study-room.repository.ts:70-73` → `libs/redis/src/redis.service.ts:40-43`.
 - The exact origin of the unhandled rejection is NOT confirmed. Candidate: the subscriber path (`libs/redis/src/redis.service.ts:118-132`, `subscriber.subscribe` not guarded), given the `[StudyRoom Redis sub]` log line. A targeted repro is still needed.
 - Impact: once exam-service is down, the gateway returns `ECONNREFUSED` (no `SERVICE_UNAVAILABLE` frame), so the FE backoff never sees a SERVICE_UNAVAILABLE and cannot recover. Supervision is required to recover. In this rig the harness restarted exam-service each time.
 
 ### New finding F7: unbounded socket.io reconnect loop after the FE give-up path is skipped
 
 - After exam-service dies, the socket keeps reconnecting on socket.io's built-in loop. In the give-up run, 127 `ECONNREFUSED` upstream errors appeared in about 10 minutes, at roughly 17-25 s intervals, with no toast and no stop.
-- The FE give-up covers only SERVICE_UNAVAILABLE frames (`study-room-socket-recovery.ts:55-66`). Transport-level failures (gateway ECONNREFUSED) are outside it. socket.io's own reconnection is not capped in `examio-fe/src/hooks/useStudyRoomSocket.ts` (socket options at ~L47-50).
+- The FE give-up covers only SERVICE_UNAVAILABLE frames (`study-room-socket-recovery.ts:55-66`). Transport-level failures (gateway ECONNREFUSED) are outside it. socket.io's own reconnection is not capped in `kmaedu-fe/src/hooks/useStudyRoomSocket.ts` (socket options at ~L47-50).
 - Expected: a bounded, quiet retry with a give-up toast for any unreachable-room condition. Actual: unbounded retries until the page is closed.
 
 ### Screenshots and artifacts
@@ -340,7 +340,7 @@ Scope: F6 (`redis-io.adapter.ts`, `study-room.gateway.ts` sweep `.catch`, `libs/
 
 - Evidence: both SU runs: exam-service pid gone, `exam.log` ends with `MaxRetriesPerRequestError: Reached the max retries per request limit (which is 20)` raised from `ioredis/built/event_handler.js:207` (`flushQueue`). Uncaught process exit, as in round 4 F6.
 - Reproduced when the student's socket disconnects while Redis is down (page reload). Not reproduced in the 358 s outage run, where no socket disconnected during the outage.
-- Most probable code path, not confirmed by stack: `examio-be/apps/exam-service/src/modules/study-room/study-room.gateway.ts:182-187`. `handleDisconnect` is `async`, and it awaits `onLeave` (`:230`) for every joined room with no try/catch. `onLeave` (`:230-232`) awaits `flushFocus` and `state.clearPresence`, which hit Redis. An exhausted-retry rejection escapes the disconnect handler.
+- Most probable code path, not confirmed by stack: `kmaedu-be/apps/exam-service/src/modules/study-room/study-room.gateway.ts:182-187`. `handleDisconnect` is `async`, and it awaits `onLeave` (`:230`) for every joined room with no try/catch. `onLeave` (`:230-232`) awaits `flushFocus` and `state.clearPresence`, which hit Redis. An exhausted-retry rejection escapes the disconnect handler.
 - Also unverified: whether other unawaited main-client Redis calls (default `maxRetriesPerRequest` 20 in `libs/redis`) are a second source.
 - Expected: exam-service survives any Redis outage; disconnect cleanup catches and logs. Actual: process exits.
 
@@ -388,7 +388,7 @@ Exam-service log for the round-6 instance window: 0 uncaught or unhandled marker
 ### F8 (new, minor, socket.io transport attempts not capped)
 
 - During the SERVICE_UNAVAILABLE phase the socket made 15 WebSocket attempts in about 5 minutes. Only 6 namespace SERVICE_UNAVAILABLE errors arrived, and the FE gave up at the 6th.
-- The extra transport attempts are socket.io reconnects that open an engine connection and then fail or time out before the namespace answer. Socket.io resets its reconnect counter whenever the engine opens, so `reconnectionAttempts: 5` (`examio-fe/src/lib/rbac/socket-reconnect.ts`, `TRANSPORT_RECONNECT_OPTIONS`) does not cap them.
+- The extra transport attempts are socket.io reconnects that open an engine connection and then fail or time out before the namespace answer. Socket.io resets its reconnect counter whenever the engine opens, so `reconnectionAttempts: 5` (`kmaedu-fe/src/lib/rbac/socket-reconnect.ts`, `TRANSPORT_RECONNECT_OPTIONS`) does not cap them.
 - Expected by the brief: ≤5 retries, then give up. Actual: the give-up is capped at the 6th namespace error, but the transport attempts between errors are not.
 - Impact: noisy and slow but bounded in time (no tight loop, and silent for 60 s after give-up). Not a crash.
 
@@ -403,7 +403,7 @@ Exam-service log for the round-6 instance window: 0 uncaught or unhandled marker
 
 ## Re-temper 7 (socket reauth with auth refresh failing: ghost-join guard, recovery, give-up)
 
-Scope: `examio-fe/src/hooks/study-room-socket-recovery.ts` changes: a reauth refresh failing with 429/5xx/network keeps the session and retries with the capped backoff, then the single give-up toast; `disposed` guard so an in-flight refresh cannot reconnect or re-JOIN after unmount. No product code changed in this pass.
+Scope: `kmaedu-fe/src/hooks/study-room-socket-recovery.ts` changes: a reauth refresh failing with 429/5xx/network keeps the session and retries with the capped backoff, then the single give-up toast; `disposed` guard so an in-flight refresh cannot reconnect or re-JOIN after unmount. No product code changed in this pass.
 
 ### Rig
 
@@ -432,9 +432,9 @@ Scope: `examio-fe/src/hooks/study-room-socket-recovery.ts` changes: a reauth ref
 
 - Verified: the gateway rejects a `/ws/study` upgrade that carries a stale access token with **HTTP 401** before the namespace is reached. socket.io reports it as `connect_error` with message `websocket error` (`stale-upgrade.cjs`: "Unexpected server response: 401"). No namespace error code arrives.
 - The FE only refreshes on namespace token codes. The chain:
-  - `examio-fe/src/hooks/study-room-socket-recovery.ts:81-85`: a transient refresh failure takes `scheduleBackoff()` and clears `reauthTried`.
+  - `kmaedu-fe/src/hooks/study-room-socket-recovery.ts:81-85`: a transient refresh failure takes `scheduleBackoff()` and clears `reauthTried`.
   - `:63-66`: the backoff timer only calls `connect()`. It never refreshes.
-  - `:114-117`: `connect_error` with `websocket error` goes to `onSocketError`. `examio-fe/src/lib/rbac/api-error-policy.ts:73` (default) maps it to no action.
+  - `:114-117`: `connect_error` with `websocket error` goes to `onSocketError`. `kmaedu-fe/src/lib/rbac/api-error-policy.ts:73` (default) maps it to no action.
 - Result: after the proxy is restored the socket keeps reconnecting with the same stale token, the upgrade is rejected each time, and the room stays dead until a page reload. Logged in the run: 3 WebSocket attempts after restore, 0 refresh calls.
 - Expected: a backoff retry after a transient refresh failure refreshes first, then reconnects. Actual: it reconnects with the stale token only.
 - Fix direction: when a retry follows a transient refresh failure, refresh before `connect()` (or map a `websocket error` from a stale upgrade to a refresh).
@@ -449,7 +449,7 @@ Scope: `examio-fe/src/hooks/study-room-socket-recovery.ts` changes: a reauth ref
 
 ## Re-temper 8 (F9 fix: refresh retry on the backoff path; stale-upgrade refresh; offline token aging; genuine network fault)
 
-Scope: `examio-fe/src/hooks/study-room-socket-recovery.ts` after the F9 change (`refreshPending`, backoff retries the refresh, one refresh on a `websocket error` per disconnect cycle). No product code changed in this pass. Rig as round 7: auth proxy (3790) with mode file; gateway upstream pointed at the proxy. Admin role calls go to admin-service directly (`/api/v1/admin/roles/users/:id/role` on 3785) when the gateway is down.
+Scope: `kmaedu-fe/src/hooks/study-room-socket-recovery.ts` after the F9 change (`refreshPending`, backoff retries the refresh, one refresh on a `websocket error` per disconnect cycle). No product code changed in this pass. Rig as round 7: auth proxy (3790) with mode file; gateway upstream pointed at the proxy. Admin role calls go to admin-service directly (`/api/v1/admin/roles/users/:id/role` on 3785) when the gateway is down.
 
 ### Static
 
@@ -471,7 +471,7 @@ Scope: `examio-fe/src/hooks/study-room-socket-recovery.ts` after the F9 change (
 
 ### F10 (new, blocking for the cap): two refreshes per reconnect cycle
 
-- Each socket.io reconnect attempt that fails at the upgrade raises a `connect_error` with `websocket error`. The handler starts a refresh: `examio-fe/src/hooks/study-room-socket-recovery.ts:136-140`.
+- Each socket.io reconnect attempt that fails at the upgrade raises a `connect_error` with `websocket error`. The handler starts a refresh: `kmaedu-fe/src/hooks/study-room-socket-recovery.ts:136-140`.
 - That refresh fails with a network error. The catch clears `reauthTried` (`:98`) and schedules the backoff (`:99-100`). The backoff timer then runs `runRefresh()` again (`:72`).
 - The next socket.io attempt raises another `websocket error`. The guard `!reauthTried && !refreshing` at `:136` is true again, because `:98` cleared `reauthTried`. So a second refresh runs immediately, about one second after the first.
 - Observed: 9 refresh requests against 5 WebSocket attempts while the gateway was down; in round 7 and item 2 the same pairs appear at the start of the cycle.
@@ -493,7 +493,7 @@ Scope: `examio-fe/src/hooks/study-room-socket-recovery.ts` after the F9 change (
 
 ## Re-temper 9 (F10 fix: refresh driven only by the initial trigger and the backoff schedule)
 
-Scope: `examio-fe/src/hooks/study-room-socket-recovery.ts`. The `connect_error` "websocket error" path and the namespace refresh-reconnect path both skip while `refreshPending` is set, so the backoff timer owns the retry. No product code changed in this pass. Rig as rounds 7-8 (auth proxy, gateway upstream through the proxy, admin-service direct when the gateway is down).
+Scope: `kmaedu-fe/src/hooks/study-room-socket-recovery.ts`. The `connect_error` "websocket error" path and the namespace refresh-reconnect path both skip while `refreshPending` is set, so the backoff timer owns the retry. No product code changed in this pass. Rig as rounds 7-8 (auth proxy, gateway upstream through the proxy, admin-service direct when the gateway is down).
 
 ### Static
 

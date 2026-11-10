@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-28
 **Severity**: high (one cutover blocker caught before production)
-**Component**: examio-be/deploy (Dockerfile.node, deploy-service.sh, compose, runbook), .github/workflows, examio-fe nginx, ai-service worker, ai-chat regenerate
+**Component**: kmaedu-be/deploy (Dockerfile.node, deploy-service.sh, compose, runbook), .github/workflows, kmaedu-fe nginx, ai-service worker, ai-chat regenerate
 **Status**: resolved (signed off 2026-10-28)
 
 ## What Happened

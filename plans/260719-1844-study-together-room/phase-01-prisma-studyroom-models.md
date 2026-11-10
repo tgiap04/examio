@@ -3,7 +3,7 @@
 ## Context Links
 
 - Plan: [plan.md](plan.md) · Decisions: [clarifications.md](clarifications.md)
-- Schema: `examio-be/libs/database/src/schema.prisma`
+- Schema: `kmaedu-be/libs/database/src/schema.prisma`
 - Pattern tham chiếu: `ExamRoom` (schema.prisma:250) — hostId + relations; `ExamSession.accessCode` (schema.prisma:280, 6 số, indexed)
 
 ## Overview
@@ -20,7 +20,7 @@
 
 ## Implementation Steps
 
-1. Thêm vào `examio-be/libs/database/src/schema.prisma`:
+1. Thêm vào `kmaedu-be/libs/database/src/schema.prisma`:
 
 ```prisma
 model StudyRoom {
@@ -62,7 +62,7 @@ model StudyRoomMember {
 ```
 
 2. Thêm back-relations vào `model User`: `hostedStudyRooms StudyRoom[] @relation("HostedStudyRooms")` và `studyRoomMemberships StudyRoomMember[]`.
-3. `cd examio-be && yarn prisma:merge && yarn prisma:generate && yarn prisma:migrate` (tên migration: `add_study_room`).
+3. `cd kmaedu-be && yarn prisma:merge && yarn prisma:generate && yarn prisma:migrate` (tên migration: `add_study_room`).
 4. `yarn build` xác nhận không lỗi type.
 
 ## Todo

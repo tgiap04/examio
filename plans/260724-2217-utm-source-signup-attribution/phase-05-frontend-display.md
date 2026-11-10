@@ -6,15 +6,15 @@
 Hiện breakdown "đăng ký theo nguồn" ở `/admin/stats` (đầy đủ) và card "Top nguồn" ở `/admin`.
 
 ## Related Code Files
-- Modify: `examio-fe/src/apis/adminApi.ts` — `getSourcesApi(range?)` → `GET /admin/sources?range=`
+- Modify: `kmaedu-fe/src/apis/adminApi.ts` — `getSourcesApi(range?)` → `GET /admin/sources?range=`
   (mẫu `getSeriesApi`); type `SourceBreakdown = { source: string; count: number }[]`.
-- Modify: `examio-fe/src/stores/useAdminStore.ts` — thêm `sources: ResourceState<SourceBreakdown>`
+- Modify: `kmaedu-fe/src/stores/useAdminStore.ts` — thêm `sources: ResourceState<SourceBreakdown>`
   + `fetchSources(range, force?)` + `invalidateSources()` (mẫu ResourceState + 5' freshness).
-- Create: `examio-fe/src/components/admin/SourceBreakdownChart.tsx` — chart PHÂN LOẠI (bar ngang
+- Create: `kmaedu-fe/src/components/admin/SourceBreakdownChart.tsx` — chart PHÂN LOẠI (bar ngang
   hoặc pie) nhận `{source,count}[]`. KHÔNG dùng `StatChart` (nó date-keyed). Tái dùng Recharts +
   CSS-var theming (`--coral`, `--hairline`, `--muted-text`) + loading/empty/error như StatChart.
-- Modify: `examio-fe/src/pages/admin/AdminStatsPage.tsx` — thêm mục "Nguồn đăng ký" + RangeSelector.
-- Modify: `examio-fe/src/pages/admin/AdminOverviewPage.tsx` — card "Top nguồn" (top 3-5) trong lưới
+- Modify: `kmaedu-fe/src/pages/admin/AdminStatsPage.tsx` — thêm mục "Nguồn đăng ký" + RangeSelector.
+- Modify: `kmaedu-fe/src/pages/admin/AdminOverviewPage.tsx` — card "Top nguồn" (top 3-5) trong lưới
   MiniChart; có thể dùng danh sách gọn hoặc mini bar.
 
 ## Implementation Steps

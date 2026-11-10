@@ -14,8 +14,8 @@
     "admin overview/series numbers equal pre-change output (golden JSON) via GetUserStats + GetRevenueStats; 5-min Redis cache kept \u2014 stats-parity golden e2e is a CI step; live stats-live-parity 14/14",
     "page flags: admin PATCH -> gateway SetPageFlags; gateway boot pulls GetPageFlags when empty; study-room no longer reads the shared key \u2014 page-flags-bootstrap retries on Redis error + 60s watcher; admin pushes serialized with a DB re-read; live: boot pull, admin-down boot, re-pull after flush",
     "WordFamilyAdminService served by exam; admin-word-family calls it; exam category CUD routes deleted; DeleteCategory deletes R2 image \u2014 prefix-gated delete (word-family/), P2002 -> ALREADY_EXISTS -> 409; live n6-wordfamily-r4: replace deletes old word-family/ object, delete removes current, non-prefixed object kept",
-    "FE: User type has no wallet; balance loaded from GET /wallet/info with wallet:use, cached per session; grep user?.wallet in examio-fe/src none; single toast per denied action (D9) \u2014 useWalletStore gated by wallet:use with generation guard and queued forced refresh; live browser-wallet-probe + d9-toast PASS; FE test 125 pass",
-    "yarn build/test green in examio-be; examio-fe build/lint/test green \u2014 final run on the final code: proto:gen 0, typecheck 0, build:all 0, TZ=UTC yarn test 1869 passed (5 skipped), FE build 0, lint 0 errors, test 125 passed"
+    "FE: User type has no wallet; balance loaded from GET /wallet/info with wallet:use, cached per session; grep user?.wallet in kmaedu-fe/src none; single toast per denied action (D9) \u2014 useWalletStore gated by wallet:use with generation guard and queued forced refresh; live browser-wallet-probe + d9-toast PASS; FE test 125 pass",
+    "yarn build/test green in kmaedu-be; kmaedu-fe build/lint/test green \u2014 final run on the final code: proto:gen 0, typecheck 0, build:all 0, TZ=UTC yarn test 1869 passed (5 skipped), FE build 0, lint 0 errors, test 125 passed"
   ],
   "regressionChecked": [
     "finance ChangeTier: same tier+cycle+isActive still a no-op with no publish; reactivation path writes and publishes",
@@ -34,49 +34,49 @@
     {
       "severity": "Medium",
       "category": "Correctness",
-      "location": "examio-be/apps/finance-service/src/modules/finance-admin/finance-admin.service.ts:225",
+      "location": "kmaedu-be/apps/finance-service/src/modules/finance-admin/finance-admin.service.ts:225",
       "summary": "addressed \u2014 ChangeTier no-op ignored isActive (expired same-tier re-save returned alreadyApplied, row stayed inactive); no-op now requires existing.isActive === isActive, e2e finance-admin.e2e-spec.ts:237-243",
       "disposition": "Accept"
     },
     {
       "severity": "Low",
       "category": "Error boundaries",
-      "location": "examio-be/apps/exam-service/src/modules/study-room/study-room.gateway.ts:681",
+      "location": "kmaedu-be/apps/exam-service/src/modules/study-room/study-room.gateway.ts:681",
       "summary": "addressed \u2014 kickUser swallowed a fetchSockets failure so local sockets were not kicked; fetchRoomSockets falls back to server.local (gateway.ts:695-706), kick.spec.ts:18",
       "disposition": "Accept"
     },
     {
       "severity": "Low",
       "category": "Input validation",
-      "location": "examio-fe/src/components/admin/FinanceActionModal.tsx:247",
+      "location": "kmaedu-fe/src/components/admin/FinanceActionModal.tsx:247",
       "summary": "addressed \u2014 reason min-10 checked untrimmed; whitespace:true + isReasonLongEnough trimmed check (FinanceActionModal.tsx:249-256, finance-action-body.ts:12-14)",
       "disposition": "Accept"
     },
     {
       "severity": "Low",
       "category": "Error boundaries",
-      "location": "examio-be/apps/exam-service/src/modules/word-family/word-family-admin.service.ts:18",
+      "location": "kmaedu-be/apps/exam-service/src/modules/word-family/word-family-admin.service.ts:18",
       "summary": "addressed \u2014 duplicate category name returned 500; mapUniqueViolation maps P2002 to ALREADY_EXISTS on create (:136) and update (:169); admin maps to 409 (libs/grpc/src/grpc-error-map.ts:10)",
       "disposition": "Accept"
     },
     {
       "severity": "Medium",
       "category": "API contracts",
-      "location": "examio-be/apps/exam-service/src/modules/ai/ai.service.ts:383",
+      "location": "kmaedu-be/apps/exam-service/src/modules/ai/ai.service.ts:383",
       "summary": "B2/M1 AI debit idempotency keys are the plan line 27 interim: upload:/quick-upload:<UserStorage id created by that call> (:493,:1037), per-request <op>:<uuidv7> for reuse/regenerate (:383,:1165), reuse fail-closed (:388-394). Request-level dedupe deferred to phase 15 pending human sign-off of the interim",
       "disposition": "Defer"
     },
     {
       "severity": "Low",
       "category": "Maintainability",
-      "location": "examio-be/proto/buf.yaml:14",
+      "location": "kmaedu-be/proto/buf.yaml:14",
       "summary": "UpdateBalance breaking-change override must be removed after merge to main (carried to phase 16)",
       "disposition": "Defer"
     },
     {
       "severity": "Low",
       "category": "API contracts",
-      "location": "examio-be/apps/finance-service/src/modules/sepay/subscription-changed.publisher.ts:17",
+      "location": "kmaedu-be/apps/finance-service/src/modules/sepay/subscription-changed.publisher.ts:17",
       "summary": "finance.subscription.changed carries the stored tier and does not fire on expiry or same-tier reactivation; no consumer yet, carried to phase 13 (ai-chat) to publish the effective tier",
       "disposition": "Defer"
     }

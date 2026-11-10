@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-25 11:34
 **Severity**: high
-**Component**: examio-be ai-chat-service (new), gateway-service proxy-factory, finance-service subscription expiry, ai-service HTTP surface, exam-service (modules removed), vocabulary ai client, deploy/compose, RabbitMQ definitions, .github/workflows/ci.yml
+**Component**: kmaedu-be ai-chat-service (new), gateway-service proxy-factory, finance-service subscription expiry, ai-service HTTP surface, exam-service (modules removed), vocabulary ai client, deploy/compose, RabbitMQ definitions, .github/workflows/ci.yml
 **Status**: resolved
 
 ## What Happened
@@ -26,7 +26,7 @@ The phase reports 9/9 criteria, but two were reworded with sign-off, and the FE 
 - **F1** `apps/gateway-service/src/pipeline/proxy-factory.ts:54` and `:104`: `abortOnClientClose(proxyReq, res)` runs on `proxyReq`. Before the fix, http-proxy never destroyed the upstream request when the client socket closed. Live repro: `curl -N --max-time 1.3` against `:6369`. Before the fix the fake ran to `done` at +3.3 s. After: `CANCELLED after 3 chunks` at +1.3 s, partial save `w1 w2 w3 `.
 - **F2** `expireIfLapsed` in `apps/finance-service`: conditional `updateMany` on `isActive AND nextPaymentDate < now`, with the outbox row in the same tx. Live: read path publishes one `toTier 0` event; sweeper (60 s tick) flipped `p13r_t2` in 7 s. No duplicate after a further 75 s.
 - Re-verification: gateway 61/61, finance 73/73.
-- **Secret incident**: a plain `grep -r` over `deploy/` matched the gitignored `examio-be/deploy/.env` and printed a live `INTERNAL_SERVICE_TOKEN` into the transcript. Not in git. Rotation is requested; the record does not confirm it happened.
+- **Secret incident**: a plain `grep -r` over `deploy/` matched the gitignored `kmaedu-be/deploy/.env` and printed a live `INTERNAL_SERVICE_TOKEN` into the transcript. Not in git. Rotation is requested; the record does not confirm it happened.
 
 ## What We Tried
 

@@ -2,7 +2,7 @@
 
 **Entity:** `Payment` (MODEL-038)
 **State Field:** `status` (DISC-003) + `paymentType` (DISC-012)
-**Source:** `examio-be/libs/database/src/schema.prisma` (Payment)
+**Source:** `kmaedu-be/libs/database/src/schema.prisma` (Payment)
 **Last Updated:** 2026-06-05
 
 ## State Diagram
@@ -23,12 +23,12 @@ stateDiagram-v2
 
 | ID | From | Trigger | To | Side Effects | Source |
 |----|------|---------|----|--------------|--------|
-| T1 | UNPAID | event | PAID | SePay webhook callback | `examio-be/apps/finance-service/src/payment.controller.ts:114` |
-| T2 | UNPAID | user-action | CANCELLED | User clicks Cancel | `examio-fe/src/components/organisms/subscription/QRPaymentDialog.tsx:88` |
-| T3 | UNPAID | scheduled | OVERDUE | 24h after creation, unpaid | `examio-be/apps/auth-service/src/session-cleanup.cron.ts:72` |
-| T4 | UNPAID | scheduled | CANCELLED | Auto-timeout after 30min | `examio-be/apps/finance-service/src/payment.service.ts:201` |
-| T5 | OVERDUE | event | PAID | Late SePay webhook | `examio-be/apps/finance-service/src/payment.controller.ts:128` |
-| T6 | OVERDUE | user-action | CANCELLED | User cancels overdue | `examio-fe/src/components/organisms/subscription/QRPaymentDialog.tsx:102` |
+| T1 | UNPAID | event | PAID | SePay webhook callback | `kmaedu-be/apps/finance-service/src/payment.controller.ts:114` |
+| T2 | UNPAID | user-action | CANCELLED | User clicks Cancel | `kmaedu-fe/src/components/organisms/subscription/QRPaymentDialog.tsx:88` |
+| T3 | UNPAID | scheduled | OVERDUE | 24h after creation, unpaid | `kmaedu-be/apps/auth-service/src/session-cleanup.cron.ts:72` |
+| T4 | UNPAID | scheduled | CANCELLED | Auto-timeout after 30min | `kmaedu-be/apps/finance-service/src/payment.service.ts:201` |
+| T5 | OVERDUE | event | PAID | Late SePay webhook | `kmaedu-be/apps/finance-service/src/payment.controller.ts:128` |
+| T6 | OVERDUE | user-action | CANCELLED | User cancels overdue | `kmaedu-fe/src/components/organisms/subscription/QRPaymentDialog.tsx:102` |
 
 ## Trigger Types (3)
 

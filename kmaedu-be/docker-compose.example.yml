@@ -1,0 +1,10 @@
+services:
+  kmaedu-fe:
+    build:
+      - context: .
+    container_name: kmaedu-be
+    ports:
+      - "6369:80"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped

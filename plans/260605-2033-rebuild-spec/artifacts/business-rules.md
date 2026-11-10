@@ -1,6 +1,6 @@
 # Business Rules
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Analysis Scope**: All background logic from Wave 0 scout + client-side logic inventory
 
@@ -97,7 +97,7 @@ When a user initiates a subscription purchase, the system creates a payment reco
 
 When a user is created via any path (direct registration, OAuth), the finance service listens for the `user.created` RabbitMQ event and creates a wallet if one does not already exist. This decoupled approach means the wallet is created regardless of which auth path the user took.
 
-**Applies when:** A `user.created` event is published on the `examio.events` exchange.
+**Applies when:** A `user.created` event is published on the `kmaedu.events` exchange.
 **Says:** A wallet record is created with zero balance. Welcome bonus may be awarded as a separate transaction.
 
 ---

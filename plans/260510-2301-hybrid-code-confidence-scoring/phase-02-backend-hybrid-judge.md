@@ -9,10 +9,10 @@ Thêm fallback chấm điểm không phụ thuộc dataset: static/sandbox signa
 
 ## Context Links
 
-- `../examio-be/apps/ai-service/src/backend/services/student_programming_evaluation_service.py`
-- `../examio-be/apps/ai-service/src/llm/model_manager.py`
-- `../examio-be/apps/ai-service/src/llm/llm_factory.py`
-- `../examio-be/apps/ai-service/src/backend/tests/test_student_programming_evaluation_service.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/student_programming_evaluation_service.py`
+- `../kmaedu-be/apps/ai-service/src/llm/model_manager.py`
+- `../kmaedu-be/apps/ai-service/src/llm/llm_factory.py`
+- `../kmaedu-be/apps/ai-service/src/backend/tests/test_student_programming_evaluation_service.py`
 
 ## Requirements
 

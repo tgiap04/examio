@@ -1,8 +1,8 @@
-# Data Model — examio
+# Data Model — kmaedu
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
-**Source**: per-service Prisma schemas since phase 11 (`libs/database` was removed): `examio-be/apps/auth-service/prisma/schema.prisma`, `apps/admin-service/prisma/schema.prisma`, `apps/content-service/prisma/schema.prisma`, `apps/assessment-service/prisma/schema.prisma`, `apps/ai-chat-service/prisma/schema.prisma`, `apps/study-room-service/prisma/schema.prisma`, `apps/vocabulary-service/prisma/schema.prisma`, `apps/document-service/prisma/schema.prisma`, `apps/ai-service/alembic/versions/0001_init.py` (ai-service, SQL, no Prisma). The model-to-service map enforced in CI is `examio-be/scripts/check-model-ownership.ts`.
+**Source**: per-service Prisma schemas since phase 11 (`libs/database` was removed): `kmaedu-be/apps/auth-service/prisma/schema.prisma`, `apps/admin-service/prisma/schema.prisma`, `apps/content-service/prisma/schema.prisma`, `apps/assessment-service/prisma/schema.prisma`, `apps/ai-chat-service/prisma/schema.prisma`, `apps/study-room-service/prisma/schema.prisma`, `apps/vocabulary-service/prisma/schema.prisma`, `apps/document-service/prisma/schema.prisma`, `apps/ai-service/alembic/versions/0001_init.py` (ai-service, SQL, no Prisma). The model-to-service map enforced in CI is `kmaedu-be/scripts/check-model-ownership.ts`.
 
 > **Per-service placement (phase 11).** Each service owns one Postgres schema; no foreign key crosses a service boundary. `userId`/`adminId`/`hostId` columns outside auth are plain strings (usually with an `@@index`) and no `@relation` to `User`; the ERD edges from `User` below are logical (resolved in the application via auth), not database FKs. Field tables were re-checked against the schema files in phase 19 (field names, nullability, scalar types); index lists and enum values are not re-derived, so the owning schema file wins.
 >

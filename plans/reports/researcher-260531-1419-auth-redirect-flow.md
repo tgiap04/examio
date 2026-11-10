@@ -1,7 +1,7 @@
 # Auth Redirect Flow Research Report
 
 **Date:** 2026-05-31
-**Scope:** examio-fe auth redirect mechanisms (localStorage vs URL params)
+**Scope:** kmaedu-fe auth redirect mechanisms (localStorage vs URL params)
 
 ---
 

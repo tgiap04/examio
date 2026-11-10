@@ -1,9 +1,9 @@
 # Phase 2 — Frontend trust-score UX
 
 ## Context Links
-- `examio-fe/src/apis/aiStudentApi.ts`
-- `examio-fe/src/stores/useAIStudentStore.ts`
-- `examio-fe/src/app/k/ai-student/page.tsx`
+- `kmaedu-fe/src/apis/aiStudentApi.ts`
+- `kmaedu-fe/src/stores/useAIStudentStore.ts`
+- `kmaedu-fe/src/app/k/ai-student/page.tsx`
 
 ## Overview
 - Priority: High
@@ -30,9 +30,9 @@
 
 ## Related Code Files
 ### Modify
-- `examio-fe/src/apis/aiStudentApi.ts`
-- `examio-fe/src/stores/useAIStudentStore.ts`
-- `examio-fe/src/app/k/ai-student/page.tsx`
+- `kmaedu-fe/src/apis/aiStudentApi.ts`
+- `kmaedu-fe/src/stores/useAIStudentStore.ts`
+- `kmaedu-fe/src/app/k/ai-student/page.tsx`
 
 ### Create
 - Không tạo file mới nếu card hiện tại vẫn chịu được.

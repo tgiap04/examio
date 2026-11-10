@@ -54,13 +54,13 @@ created: 2026-06-14
 ### Page Structure
 
 ```
-examio-fe/src/pages/k/
+kmaedu-fe/src/pages/k/
 ├── word-family/
 │   ├── WordFamilyPage.tsx           # Category list
 │   ├── WordFamilyCategoryPage.tsx   # Root words list
 │   └── WordFamilyDetailPage.tsx     # Tree/List view
 
-examio-fe/src/components/k/
+kmaedu-fe/src/components/k/
 ├── word-family/
 │   ├── WordFamilyCategoryCard.tsx
 │   ├── WordFamilyTreeView.tsx        # react-d3-tree wrapper
@@ -92,7 +92,7 @@ const FRESH_MS = 5 * 60 * 1000;
 ### API Client
 
 ```typescript
-// examio-fe/src/apis/wordFamilyApi.ts
+// kmaedu-fe/src/apis/wordFamilyApi.ts
 export const getWordFamilyCategoriesApi = () => ...
 export const getRootWordsApi = (slug: string) => ...
 export const getWordFamilyApi = (rootWord: string) => ...
@@ -105,19 +105,19 @@ export const createFlashcardFromWordFamilyApi = (dto: ToFlashcardDto) => ...
 ## Related Code Files
 
 ### Files to Create
-- `examio-fe/src/pages/k/word-family/` — page components
-- `examio-fe/src/components/k/word-family/` — UI components
-- `examio-fe/src/apis/wordFamilyApi.ts` — API client
-- `examio-fe/src/stores/useWordFamilyStore.ts` — Zustand store
+- `kmaedu-fe/src/pages/k/word-family/` — page components
+- `kmaedu-fe/src/components/k/word-family/` — UI components
+- `kmaedu-fe/src/apis/wordFamilyApi.ts` — API client
+- `kmaedu-fe/src/stores/useWordFamilyStore.ts` — Zustand store
 
 ### Files to Modify
-- `examio-fe/src/routes/index.tsx` — add routes
-- `examio-fe/src/types/` — add Word Family types
+- `kmaedu-fe/src/routes/index.tsx` — add routes
+- `kmaedu-fe/src/types/` — add Word Family types
 
 ## Implementation Steps
 
 1. **Read existing flashcard store** (`useFlashcardSetStore.ts`) — understand TTL pattern
-2. **Create types** in `examio-fe/src/types/word-family.ts`:
+2. **Create types** in `kmaedu-fe/src/types/word-family.ts`:
    - `WordFamilyCategory`, `WordFamilyData`, `WordFamilyWord`, `Affix`
 3. **Create API client** `wordFamilyApi.ts`:
    - All API functions matching backend endpoints

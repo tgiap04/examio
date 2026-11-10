@@ -34,7 +34,7 @@ Active exam-taking interface where students answer encrypted questions fetched v
 | FR-006 | Fire sendBeacon on tab close for final save | beforeunload event | yes |
 | FR-007 | Client-side AES-256-CBC decryption of questions | fetchAndDecryptSecureQuiz in secureQuizHelpers | yes |
 
-**Source:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:1-903`
+**Source:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:1-903`
 
 ### Business Rules
 
@@ -61,7 +61,7 @@ None.
 ### SM-001_ExamQuizPageStatus
 **kind:** ui
 **Linked FR:** FR-001
-**Source:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:42-78`
+**Source:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:42-78`
 **States:** loading, error, isSubmitted, isViewOnly, showDetailedResults
 
 ```mermaid
@@ -91,7 +91,7 @@ stateDiagram-v2
 ### SM-002_AnswerSelectionStatus
 **kind:** ui
 **Linked FR:** FR-002
-**Source:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:82-83`
+**Source:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:82-83`
 **States:** idle → debouncing (1s debounce on answers + current index)
 
 ```mermaid
@@ -133,9 +133,9 @@ stateDiagram-v2
 
 **Requirements fulfilled:**
 - **FR-001** Start or resume an exam attempt — `POST /api/v1/secure-quiz` via `startExamAttemptApi`
-  **Source:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:220-245`
+  **Source:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:220-245`
 - **FR-007** Client-side AES-256-CBC decryption of questions — `fetchAndDecryptSecureQuiz`
-  **Source:** `examio-fe/src/lib/secureQuizHelpers.ts`
+  **Source:** `kmaedu-fe/src/lib/secureQuizHelpers.ts`
 
 **Rules enforced:** BR-001 (attempt limit)
 
@@ -156,9 +156,9 @@ stateDiagram-v2
 
 **Requirements fulfilled:**
 - **FR-001** Resume an exam attempt — `POST /api/v1/secure-quiz` via `startExamAttemptApi`
-  **Source:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:220-245`
+  **Source:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:220-245`
 - **FR-002** Restore saved progress — `fetchAndDecryptSecureQuiz` returns `savedAnswers`, `currentIndex`, `markedQuestions`
-  **Source:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:229-232`
+  **Source:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:229-232`
 
 **State transitions:** SM-001 (see Cross-Cutting Logic)
 
@@ -178,9 +178,9 @@ stateDiagram-v2
 
 **Requirements fulfilled:**
 - **FR-002** Auto-save attempt progress every 30s — `PUT /api/v1/examattempts/:attemptId/progress` via `updateExamAttemptProgressApi`
-  **Source:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:99-116,307-312`
+  **Source:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:99-116,307-312`
 - **FR-004** Log cheating violations — `POST /api/v1/cheatinglogs` via `useCheatingDetection`
-  **Source:** `examio-fe/src/hooks/useCheatingDetection.ts`
+  **Source:** `kmaedu-fe/src/hooks/useCheatingDetection.ts`
 
 **Rules enforced:** BR-003 (cheating detection on tab switch)
 
@@ -203,11 +203,11 @@ stateDiagram-v2
 
 **Requirements fulfilled:**
 - **FR-003** Submit exam with encrypted answers — `POST /api/v1/secure-submit` via `submitSecureQuiz`
-  **Source:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:386-410`
+  **Source:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:386-410`
 - **FR-005** Enforce time limit — auto-submit at expiry — `handleAutoSubmit` callback
-  **Source:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:118-147`
+  **Source:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:118-147`
 - **FR-006** Fire sendBeacon on tab close for final save — `beforeunload` event
-  **Source:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:314-330`
+  **Source:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:314-330`
 
 **Rules enforced:** BR-002 (time expiry auto-submit)
 
@@ -229,7 +229,7 @@ stateDiagram-v2
 
 **Requirements fulfilled:**
 - **FR-001** Load completed attempt detail — `GET /api/v1/examrooms/:id/sessions/:sessionId/attempts/:attemptId` via `getExamAttemptDetailApi`
-  **Source:** `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:172-218`
+  **Source:** `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:172-218`
 
 **State transitions:** SM-001 (see Cross-Cutting Logic)
 
@@ -272,14 +272,14 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| ExamQuizPage | `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:1-903` | Active exam-taking UI |
-| useCheatingDetection | `examio-fe/src/hooks/useCheatingDetection.ts` | Tab/window/blur violation detection |
-| fetchAndDecryptSecureQuiz | `examio-fe/src/lib/secureQuizHelpers.ts` | Encrypted quiz fetch + AES-256-CBC decryption |
-| submitSecureQuiz | `examio-fe/src/lib/secureQuizHelpers.ts` | Encrypted answer submission |
-| startExamAttemptApi | `examio-fe/src/apis/examAttemptApi.ts` | Start/resume attempt API call |
-| updateExamAttemptProgressApi | `examio-fe/src/apis/examAttemptApi.ts` | Auto-save progress |
-| getExamAttemptDetailApi | `examio-fe/src/apis/examAttemptApi.ts` | Load completed attempt results |
-| CheatingWarningModal | `examio-fe/src/components/molecules/CheatingWarningModal.tsx` | Violation warning overlay |
+| ExamQuizPage | `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:1-903` | Active exam-taking UI |
+| useCheatingDetection | `kmaedu-fe/src/hooks/useCheatingDetection.ts` | Tab/window/blur violation detection |
+| fetchAndDecryptSecureQuiz | `kmaedu-fe/src/lib/secureQuizHelpers.ts` | Encrypted quiz fetch + AES-256-CBC decryption |
+| submitSecureQuiz | `kmaedu-fe/src/lib/secureQuizHelpers.ts` | Encrypted answer submission |
+| startExamAttemptApi | `kmaedu-fe/src/apis/examAttemptApi.ts` | Start/resume attempt API call |
+| updateExamAttemptProgressApi | `kmaedu-fe/src/apis/examAttemptApi.ts` | Auto-save progress |
+| getExamAttemptDetailApi | `kmaedu-fe/src/apis/examAttemptApi.ts` | Load completed attempt results |
+| CheatingWarningModal | `kmaedu-fe/src/components/molecules/CheatingWarningModal.tsx` | Violation warning overlay |
 
 ## Unresolved Questions
 

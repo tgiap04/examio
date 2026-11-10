@@ -2,7 +2,7 @@
 
 **Date**: 2026-10-23 11:18
 **Severity**: high
-**Component**: examio-be libs/database (removed), auth, finance, admin, exam, gateway, r2, ai-service; deploy/postgres, deploy/compose; libs/common r2-key-from-url; libs/messaging r2-delete
+**Component**: kmaedu-be libs/database (removed), auth, finance, admin, exam, gateway, r2, ai-service; deploy/postgres, deploy/compose; libs/common r2-key-from-url; libs/messaging r2-delete
 **Status**: resolved
 
 ## What Happened
@@ -27,15 +27,15 @@ The tired truth: four temper rounds, and the last one still found a same-host, d
 
 ## Technical Details
 
-- F4: `getaddrinfo EAI_AGAIN repo.yarnpkg.com`, seed exit 1. The image's `rm -rf /root/.cache` removed corepack's yarn. Seed runs on `examio-internal` with no egress.
+- F4: `getaddrinfo EAI_AGAIN repo.yarnpkg.com`, seed exit 1. The image's `rm -rf /root/.cache` removed corepack's yarn. Seed runs on `kmaedu-internal` with no egress.
 - F1: `command not found: scripts/prisma-generate.sh`, exit 127. The seed image never copied `scripts/`.
 - `.dockerignore` did not exclude nested `apps/*/.env`. Real DB credentials would have entered the image. Fixed with `**/.env`.
-- F9: `container examio-seed exited (0)` from `up -d --wait`. Exit 1, though every service was healthy.
+- F9: `container kmaedu-seed exited (0)` from `up -d --wait`. Exit 1, though every service was healthy.
 - F10: `AdminAudit` 20, then 40, then 60 across three plain `up -d` runs.
 - Pre-existing R2 holes (inspection verdict): avatar `user-update.writer.ts:63` (High), thumbnail `owned-thumbnail.ts:19` (High), AI `keyR2` `ai.service.ts:1010` (High). `createUserStorage` could also overwrite another user's row; it now returns 409.
 - F11: `.../flashcardset-thumbnails/<B>/%2e%2e/<A>/<file>` returned 201. `split('/').includes('..')` saw a literal `%2e%2e`, and the browser normalised it to A's object.
 - F12: the same gap on `keyR2`, with a `UserStorage` row created and 1 credit charged.
-- F16: `http://examio-p11t2.s3stub:80/...` on the same host as `R2_PUBLIC_URL` returned 201. The origin compare treated a different port as external.
+- F16: `http://kmaedu-p11t2.s3stub:80/...` on the same host as `R2_PUBLIC_URL` returned 201. The origin compare treated a different port as external.
 - Round-1 review, worker lease: the lease equalled the R2 call deadline, so a slow call could be re-claimed and sent twice. Now lease 120 s (floor 60 s) against a 10 s deadline, and DONE/FAIL only apply while the lease token still matches.
 - Round-1 review, poison key: one bad key failed the whole `DeleteObjects` batch. r2 now returns per-key `failed_keys`; only the bad key backs off.
 - Round-1 review, ai-service pools: the five pools summed to max 45 against the `ai_svc` `CONNECTION LIMIT 40`. Default sum is now 28.
