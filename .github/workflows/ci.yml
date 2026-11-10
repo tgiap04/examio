@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, develop]
   workflow_call:
 
 concurrency:
@@ -39,7 +39,6 @@ jobs:
 
   # Which services this change touches (examio-be/scripts/changed-services.sh, services.json). Informational:
   # the be-* jobs below still run for every service on every run, so a shared-lib change can never skip one.
-  # deploy.yml runs the same script on the push range to pick the images to build and the deploy waves.
   detect:
     runs-on: ubuntu-latest
     outputs:

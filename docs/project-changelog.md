@@ -1,9 +1,14 @@
 ---
 title: Examio Project Changelog
-last_updated: 2026-10-29
+last_updated: 2026-11-10
 ---
 
 # Examio Project Changelog
+
+## [Unreleased]
+
+- **CD removed**: `.github/workflows/deploy.yml` is deleted (and the workflow disabled on GitHub); a new CD flow will replace it. Pushes to `main` no longer deploy. Deploy scripts under `examio-be/deploy/` are kept for manual use.
+- **Branch flow**: `develop` is the default branch; features branch off `develop`, releases are PRs `develop` → `main`; `main` is protected (PR only). CI also runs on pushes to `develop`.
 
 ## [Release] Microservice refactor + RBAC cutover — at final merge (date set at cutover)
 
