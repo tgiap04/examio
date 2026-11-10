@@ -2,7 +2,6 @@ import { HttpException, Injectable, Logger } from '@nestjs/common';
 import { Metadata } from '@grpc/grpc-js';
 import { AuthClient } from '../../clients/auth.client';
 import { AuthUsersClient } from '../../clients/auth-users.client';
-import { FinanceClient } from '../../clients/finance.client';
 
 import type { AuditContext } from '../admin-roles/audit-context';
 import { AuditWriterService } from '../../common/audit-writer.service';
@@ -22,15 +21,6 @@ export interface ListUsersResult {
 
 export interface UserDetail {
     user: UserSafeRow;
-    /** true when finance could not be reached: `wallet` / `subscription` are then null, not "none". */
-    financeUnavailable: boolean;
-    wallet: { id: string; balance: number } | null;
-    subscription: {
-        id: string;
-        tier: number;
-        billingCycle: string;
-        isActive: boolean;
-    } | null;
     lastSession: {
         id: string;
         deviceName: string | null;
@@ -57,10 +47,9 @@ const epoch = (iso?: string): string | undefined => (iso ? String(Date.parse(iso
 /**
  * AdminUsersService: admin-side view and edits of users, done entirely through
  * RPCs made with the calling admin's own token (`forwardUser(req)`). It never
- * touches the `User`, wallet or subscription tables:
+ * touches the `User` table:
  *  - list/detail/profile edits: auth `ListUsers` / `GetUserAdminDetail` /
  *    `UpdateUserAdmin` (auth writes the row + `auth.user.updated` in one tx);
- *  - wallet + subscription of the detail view: finance `GetUserFinance`;
  *  - role, admin flag and ban: auth `SetUserRole` / `SetSystemAdmin` /
  *    `SetUserStatus` (see AdminRolesService and `banUser`).
  * Admin writes one AdminAudit row per changed field AFTER auth committed
@@ -73,8 +62,7 @@ export class AdminUsersService {
     constructor(
         private readonly auditWriter: AuditWriterService,
         private readonly authClient: AuthClient,
-        private readonly authUsers: AuthUsersClient,
-        private readonly finance: FinanceClient
+        private readonly authUsers: AuthUsersClient
     ) {}
 
     /** Paginated list; `search` matches email, username or name (case-insensitive contains). */
@@ -100,40 +88,12 @@ export class AdminUsersService {
         };
     }
 
-    /**
-     * Profile + wallet + subscription + last session (404 when auth has no such
-     * user). A finance outage (5xx / unreachable) must not hide the profile:
-     * the finance fields come back null with `financeUnavailable: true`.
-     */
+    /** Profile + last session (404 when auth has no such user). */
     async getUserDetail(id: string, metadata: Metadata): Promise<UserDetail> {
-        const [detail, financeResult] = await Promise.all([
-            this.authUsers.getUserAdminDetail(id, metadata),
-            this.finance.getUserFinance(id, metadata).then(
-                (finance) => ({ finance, unavailable: false }),
-                (err: unknown) => {
-                    // 4xx (permission, bad request) is a bug to surface, not an outage to mask.
-                    if (err instanceof HttpException && err.getStatus() < 500) throw err;
-                    this.logger.warn(
-                        `finance unavailable for user detail ${id}: ${err instanceof Error ? err.message : String(err)}`
-                    );
-                    return { finance: {} as Awaited<ReturnType<FinanceClient['getUserFinance']>>, unavailable: true };
-                }
-            ),
-        ]);
-        const { finance, unavailable } = financeResult;
+        const detail = await this.authUsers.getUserAdminDetail(id, metadata);
         const s = detail.lastSession;
         return {
             user: toUserSafeRow(detail.user!),
-            financeUnavailable: unavailable,
-            wallet: finance.wallet ? { id: finance.wallet.id, balance: finance.wallet.balance } : null,
-            subscription: finance.subscription
-                ? {
-                      id: finance.subscription.id,
-                      tier: finance.subscription.tier,
-                      billingCycle: finance.subscription.billingCycle,
-                      isActive: finance.subscription.isActive,
-                  }
-                : null,
             lastSession: s
                 ? {
                       id: s.id,

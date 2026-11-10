@@ -20,7 +20,7 @@ function setup(opts: { existing?: ReturnType<typeof row> | null; after?: ReturnT
         setUserStatus: jest.fn(async () => ({ user: opts.after ?? row({ isBanned: true }) })),
     };
     const audit = { write: jest.fn(async () => undefined) };
-    const service = new AdminUsersService(audit as never, auth as never, {} as never, {} as never);
+    const service = new AdminUsersService(audit as never, auth as never, {} as never);
     return { service, auth, audit };
 }
 const httpErr = (status: number, code: string) =>

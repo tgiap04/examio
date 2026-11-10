@@ -36,11 +36,8 @@ export async function seedPageFlags(prisma: PrismaClient): Promise<number> {
 }
 
 const AUDIT_ACTIONS: Array<{ action: string; payload: Record<string, unknown> & { targetId?: string; userId?: string } }> = [
-    { action: 'admin.finance.refund', payload: { paymentId: 'pay-refund-1', amount: 50000 } },
-    { action: 'admin.finance.credit', payload: { userId: 'user-2', amount: 10000, reason: 'compensation' } },
     { action: 'admin.user.ban', payload: { targetId: 'banned-user', reason: 'spam' } },
     { action: 'admin.user.grant', payload: { targetId: 'new-admin', reason: 'trust' } },
-    { action: 'admin.finance.tier', payload: { userId: 'user-3', tier: 2, reason: 'upgrade' } },
     { action: 'admin.user.update', payload: { targetId: 'user-1', fields: ['name'] } },
 ];
 

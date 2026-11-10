@@ -31,7 +31,7 @@ describe('AdminRolesService', () => {
     it('matrix is the code catalog: three roles, every permission once', () => {
         const m = setup().service.matrix();
         expect(m.roles.map((r) => r.key)).toEqual(['STUDENT', 'TEACHER', 'SYSTEM_ADMIN']);
-        expect(m.permissions).toHaveLength(29);
+        expect(m.permissions).toHaveLength(26);
         expect(m.roles[2].permissions).toContain('admin:access');
     });
 

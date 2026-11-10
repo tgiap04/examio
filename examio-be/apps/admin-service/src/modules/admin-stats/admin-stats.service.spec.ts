@@ -5,57 +5,50 @@ import { fillDateGaps } from './admin-stats.types';
 const md = new Metadata();
 md.set('authorization', 'Bearer admin-token');
 
-describe('AdminStatsService (aggregates come from auth + finance over gRPC)', () => {
+describe('AdminStatsService (aggregates come from auth over gRPC)', () => {
     let service: AdminStatsService;
     let authUsers: { getUserStats: jest.Mock };
-    let finance: { getRevenueStats: jest.Mock };
     let redis: { get: jest.Mock; set: jest.Mock; del: jest.Mock; delPattern: jest.Mock };
 
     const userStats = (over: Record<string, unknown> = {}) => ({
         totalUsers: '10', activeToday: '2', activeLast30d: '7',
         signupsSeries: [], trafficSeries: [], utmSources: [], ...over,
     });
-    const revenueStats = (over: Record<string, unknown> = {}) => ({
-        proUsers: 2, vipUsers: 1, revenueLast30d: '470000', revenueSeries: [], ...over,
-    });
 
     beforeEach(() => {
         authUsers = { getUserStats: jest.fn(async () => userStats()) };
-        finance = { getRevenueStats: jest.fn(async () => revenueStats()) };
         redis = {
             get: jest.fn(async () => null),
             set: jest.fn(async () => undefined),
             del: jest.fn(),
             delPattern: jest.fn(),
         };
-        service = new AdminStatsService(redis as never, authUsers as never, finance as never);
+        service = new AdminStatsService(redis as never, authUsers as never);
         jest.useFakeTimers({ now: new Date('2026-03-15T10:30:00.000Z'), doNotFake: ['nextTick', 'setImmediate', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval', 'clearImmediate', 'hrtime', 'performance', 'queueMicrotask'] });
     });
     afterEach(() => jest.useRealTimers());
 
     describe('getOverview', () => {
-        it('returns the cached value and calls neither owner', async () => {
-            const cached = { totalUsers: 42, activeToday: 1, active30d: 5, proCount: 2, vipCount: 1, revenue30d: 999 };
+        it('returns the cached value and calls no owner', async () => {
+            const cached = { totalUsers: 42, activeToday: 1, active30d: 5 };
             redis.get.mockResolvedValue(cached);
             expect(await service.getOverview(md)).toEqual(cached);
             expect(redis.get).toHaveBeenCalledWith('admin:stats:overview');
             expect(authUsers.getUserStats).not.toHaveBeenCalled();
-            expect(finance.getRevenueStats).not.toHaveBeenCalled();
         });
 
-        it('on a miss calls both owners ONCE in parallel with the admin token, maps and caches for 5 minutes', async () => {
+        it('on a miss calls auth ONCE with the admin token, maps and caches for 5 minutes', async () => {
             const overview = await service.getOverview(md);
-            expect(overview).toEqual({ totalUsers: 10, activeToday: 2, active30d: 7, proCount: 2, vipCount: 1, revenue30d: 470000 });
+            expect(overview).toEqual({ totalUsers: 10, activeToday: 2, active30d: 7 });
+            expect(Object.keys(overview).sort()).toEqual(['active30d', 'activeToday', 'totalUsers']);
             expect(authUsers.getUserStats).toHaveBeenCalledTimes(1);
             expect(authUsers.getUserStats.mock.calls[0][1]).toBe(md);
-            expect(finance.getRevenueStats).toHaveBeenCalledTimes(1);
-            expect(finance.getRevenueStats.mock.calls[0][1]).toBe(md);
             expect(redis.set).toHaveBeenCalledWith('admin:stats:overview', overview, 300);
         });
 
         it('an owner failure surfaces and nothing is cached', async () => {
-            finance.getRevenueStats.mockRejectedValue(new Error('finance down'));
-            await expect(service.getOverview(md)).rejects.toThrow('finance down');
+            authUsers.getUserStats.mockRejectedValue(new Error('auth down'));
+            await expect(service.getOverview(md)).rejects.toThrow('auth down');
             expect(redis.set).not.toHaveBeenCalled();
         });
     });
@@ -84,18 +77,10 @@ describe('AdminStatsService (aggregates come from auth + finance over gRPC)', ()
             expect(redis.set).toHaveBeenCalledWith('admin:stats:series:signups:7d', res, 300);
         });
 
-        it('traffic uses the auth traffic series; revenue uses the finance series (no auth call)', async () => {
+        it('traffic uses the auth traffic series', async () => {
             authUsers.getUserStats.mockResolvedValue(userStats({ trafficSeries: [{ date: '2026-03-15', value: '4' }] }));
             const traffic = await service.getSeries('traffic', '7d', md);
             expect(traffic.points.at(-1)).toEqual({ date: '2026-03-15T00:00:00.000Z', value: 4 });
-
-            authUsers.getUserStats.mockClear();
-            finance.getRevenueStats.mockResolvedValue(revenueStats({ revenueSeries: [{ date: '2026-03-14', revenue: '150000' }] }));
-            const revenue = await service.getSeries('revenue', '30d', md);
-            expect(finance.getRevenueStats).toHaveBeenCalledWith({ days: 30 }, md);
-            expect(authUsers.getUserStats).not.toHaveBeenCalled();
-            expect(revenue.points).toHaveLength(30);
-            expect(revenue.points.find((p) => p.date.startsWith('2026-03-14'))?.value).toBe(150000);
         });
     });
 
