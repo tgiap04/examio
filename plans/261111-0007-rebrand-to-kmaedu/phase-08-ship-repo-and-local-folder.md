@@ -38,11 +38,7 @@ Tên biến cần xem lại trong `kmaedu-be/.env`, `kmaedu-be/apps/*/.env`, `km
 Dev Docker local: `docker compose down -v` một lần (DB, exchange và network đổi tên).
 
 ### C2. Hạ tầng ngoài repo (bạn làm trên Cloudflare / mail)
-- **R2:** giá trị mặc định trong code giờ là bucket `kmaedu` và host công khai `https://kmaedu-r2.fayedark.com`. Content, document và r2-service đã dùng chung một mặc định. Chọn một trong hai:
-  - (a) tạo bucket `kmaedu`, gắn custom domain `kmaedu-r2.fayedark.com`, chép object từ bucket `examio` sang (ví dụ bằng `rclone copy`);
-  - (b) giữ bucket và host cũ bằng cách đặt `R2_BUCKET_NAME` và `R2_PUBLIC_URL` trong env.
-  
-  `R2_PUBLIC_URL` phải giống nhau ở r2, content, document, auth và vocabulary, nếu không việc xóa ảnh sẽ âm thầm bỏ qua.
+- **R2:** giữ hạ tầng cũ, không tạo mới (quyết định 2026-11-11). Mặc định trong code trả về bucket `examio` và host công khai `https://examio-r2.fayedark.com`; content, document và r2-service dùng chung một mặc định. `R2_PUBLIC_URL` vẫn phải giống nhau ở r2, content, document, auth và vocabulary, nếu không việc xóa ảnh sẽ âm thầm bỏ qua.
 - **Email:** template mail ghi địa chỉ hỗ trợ `support@kmaedu.fayedark.com`. Cần tạo hộp thư này hoặc chuyển tiếp nó.
 - **OAuth app redirect:** ví dụ chỉ còn `kmaedu://`; thêm host thật nếu sau này có client native.
 

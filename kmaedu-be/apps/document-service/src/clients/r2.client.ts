@@ -113,7 +113,7 @@ export class R2Client implements OnModuleInit {
     }
 
     getPublicUrl(key: string): string {
-        const base = canonicalR2PublicBase(process.env.R2_PUBLIC_URL || 'https://kmaedu-r2.fayedark.com');
+        const base = canonicalR2PublicBase(process.env.R2_PUBLIC_URL || 'https://examio-r2.fayedark.com');
         return `${base}/${key}`;
     }
 }

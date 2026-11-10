@@ -9,3 +9,4 @@
 - Q: Logo và favicon? → A: Claude vẽ logo chữ tạm "KMAEdu" (sáng/tối) + favicon "K"; giữ tên file để thay logo thật sau.
 - Q: Đổi thư mục máy `/Users/tgiap.dev/devs/examio`? → A: Đổi, làm bước cuối sau merge; chuyển cả thư mục trí nhớ Claude Code.
 - Q: examio-app (mobile, không còn trong repo) được nhắc trong docs? → A: Xoá các chỗ nhắc tới mobile trong tài liệu hiện hành; plan/tài liệu lịch sử chỉ đổi tên như mọi file khác.
+- Q: R2 tạo bucket/host mới `kmaedu` hay giữ cũ? → A: Giữ bucket `examio` và host `https://examio-r2.fayedark.com`; không tạo mới.

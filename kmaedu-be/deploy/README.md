@@ -177,7 +177,7 @@ GEMINI_EMBEDDING_MODEL=models/text-embedding-004
 # env/r2.env (r2 only); R2_ACCOUNT_ID is no longer used
 R2_ACCESS_KEY_ID=your_access_key
 R2_SECRET_ACCESS_KEY=your_secret_key
-R2_BUCKET_NAME=kmaedu
+R2_BUCKET_NAME=examio
 R2_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
 
 # .env (compose-level; env/r2.env also carries it)
