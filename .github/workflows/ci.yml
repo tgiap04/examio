@@ -28,16 +28,18 @@ jobs:
       - uses: bufbuild/buf-action@v1
         with:
           version: 1.74.0
-          input: examio-be/proto
+          input: kmaedu-be/proto
           lint: true
           format: false
-          breaking: ${{ github.event_name == 'pull_request' }}
-          breaking_against: ${{ github.event.repository.clone_url }}#format=git,commit=${{ github.event.pull_request.base.sha }},subdir=examio-be/proto
+          # A PR labelled proto:breaking is a deliberate contract break (e.g. a package
+          # rename): lint still runs, the breaking-change check is skipped.
+          breaking: ${{ github.event_name == 'pull_request' && !contains(github.event.pull_request.labels.*.name, 'proto:breaking') }}
+          breaking_against: ${{ github.event.repository.clone_url }}#format=git,commit=${{ github.event.pull_request.base.sha }},subdir=kmaedu-be/proto
           push: false
           archive: false
           comment: true
 
-  # Which services this change touches (examio-be/scripts/changed-services.sh, services.json). Informational:
+  # Which services this change touches (kmaedu-be/scripts/changed-services.sh, services.json). Informational:
   # the be-* jobs below still run for every service on every run, so a shared-lib change can never skip one.
   detect:
     runs-on: ubuntu-latest
@@ -52,12 +54,12 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
-          services="$(bash examio-be/scripts/changed-services.sh "$BASE" "$GITHUB_SHA")"
+          services="$(bash kmaedu-be/scripts/changed-services.sh "$BASE" "$GITHUB_SHA")"
           echo "services=$services" >> "$GITHUB_OUTPUT"
           echo "changed services: $services" | tee -a "$GITHUB_STEP_SUMMARY"
 
   # Expand/contract guard: a PR that drops/renames/retypes a column fails unless it carries the label
-  # `migration:contract` (second PR of the two-PR flow, examio-be/deploy/README.md). After adding the
+  # `migration:contract` (second PR of the two-PR flow, kmaedu-be/deploy/README.md). After adding the
   # label, re-run this job: label events do not trigger the workflow.
   migrations:
     if: github.event_name == 'pull_request'
@@ -69,7 +71,7 @@ jobs:
       - name: Lint migrations added in the PR
         env:
           MIGRATION_CONTRACT: ${{ contains(github.event.pull_request.labels.*.name, 'migration:contract') && '1' || '' }}
-        run: bash examio-be/scripts/lint-migrations.sh "${{ github.event.pull_request.base.sha }}" "$GITHUB_SHA"
+        run: bash kmaedu-be/scripts/lint-migrations.sh "${{ github.event.pull_request.base.sha }}" "$GITHUB_SHA"
 
   # The deploy tooling itself: changed-services, lint-migrations and deploy-service.sh (fake docker/curl,
   # nothing real is touched) have fixture tests, and the scripts must stay shellcheck clean.
@@ -77,7 +79,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: examio-be
+        working-directory: kmaedu-be
     steps:
       - uses: actions/checkout@v4
       - run: bash scripts/changed-services.test.sh
@@ -96,7 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: examio-be
+        working-directory: kmaedu-be
     strategy:
       fail-fast: false
       matrix:
@@ -110,7 +112,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-          cache-dependency-path: examio-be/yarn.lock
+          cache-dependency-path: kmaedu-be/yarn.lock
       - run: yarn install --immutable
       - run: yarn proto:gen
       - run: yarn prisma:generate
@@ -123,18 +125,18 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: examio-be
+        working-directory: kmaedu-be
     services:
       postgres:
         image: pgvector/pgvector:pg16
         env:
-          POSTGRES_USER: examio
-          POSTGRES_PASSWORD: examio
-          POSTGRES_DB: examio_ci
+          POSTGRES_USER: kmaedu
+          POSTGRES_PASSWORD: kmaedu
+          POSTGRES_DB: kmaedu_ci
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U examio -d examio_ci"
+          --health-cmd "pg_isready -U kmaedu -d kmaedu_ci"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -160,24 +162,24 @@ jobs:
       NODE_ENV: test
       # Database per service: every service connects as its own role to its own schema.
       # The roles/schemas come from deploy/postgres/init/01-service-schemas.sh (same as production).
-      DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/examio_ci?schema=auth
-      AUTH_DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/examio_ci?schema=auth
-      ADMIN_DATABASE_URL: postgresql://admin_svc:ci-admin@localhost:5432/examio_ci?schema=admin
-      STUDYROOM_DATABASE_URL: postgresql://studyroom_svc:ci-studyroom@localhost:5432/examio_ci?schema=studyroom
-      VOCABULARY_DATABASE_URL: postgresql://vocabulary_svc:ci-vocabulary@localhost:5432/examio_ci?schema=vocabulary
-      DOCUMENT_DATABASE_URL: postgresql://document_svc:ci-document@localhost:5432/examio_ci?schema=document
-      AICHAT_DATABASE_URL: postgresql://aichat_svc:ci-aichat@localhost:5432/examio_ci?schema=aichat
-      CONTENT_DATABASE_URL: postgresql://content_svc:ci-content@localhost:5432/examio_ci?schema=content
-      ASSESSMENT_DATABASE_URL: postgresql://assessment_svc:ci-assessment@localhost:5432/examio_ci?schema=assessment
-      AI_DATABASE_URL: postgresql://ai_svc:ci-ai@localhost:5432/examio_ci
-      PRISMA_ADMIN_URL: postgresql://examio:examio@localhost:5432/examio_ci
+      DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/kmaedu_ci?schema=auth
+      AUTH_DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/kmaedu_ci?schema=auth
+      ADMIN_DATABASE_URL: postgresql://admin_svc:ci-admin@localhost:5432/kmaedu_ci?schema=admin
+      STUDYROOM_DATABASE_URL: postgresql://studyroom_svc:ci-studyroom@localhost:5432/kmaedu_ci?schema=studyroom
+      VOCABULARY_DATABASE_URL: postgresql://vocabulary_svc:ci-vocabulary@localhost:5432/kmaedu_ci?schema=vocabulary
+      DOCUMENT_DATABASE_URL: postgresql://document_svc:ci-document@localhost:5432/kmaedu_ci?schema=document
+      AICHAT_DATABASE_URL: postgresql://aichat_svc:ci-aichat@localhost:5432/kmaedu_ci?schema=aichat
+      CONTENT_DATABASE_URL: postgresql://content_svc:ci-content@localhost:5432/kmaedu_ci?schema=content
+      ASSESSMENT_DATABASE_URL: postgresql://assessment_svc:ci-assessment@localhost:5432/kmaedu_ci?schema=assessment
+      AI_DATABASE_URL: postgresql://ai_svc:ci-ai@localhost:5432/kmaedu_ci
+      PRISMA_ADMIN_URL: postgresql://kmaedu:kmaedu@localhost:5432/kmaedu_ci
       REDIS_HOST: localhost
       REDIS_PORT: '6379'
       RABBITMQ_URL: amqp://guest:guest@localhost:5672
       REFRESH_TOKEN_ENC_KEY: ci-only-refresh-key-0123456789abcdef0123456789
       FRONTEND_URL: http://localhost:5173
-      JWT_ISSUER: examio-auth
-      JWT_AUDIENCE: examio
+      JWT_ISSUER: kmaedu-auth
+      JWT_AUDIENCE: kmaedu
       AUTH_JWKS_URL: http://localhost:3000/.well-known/jwks.json
       AUTH_TOKEN_URL: http://localhost:3000/internal/token
       AUTH_GRPC_URL: localhost:50051
@@ -197,7 +199,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-          cache-dependency-path: examio-be/yarn.lock
+          cache-dependency-path: kmaedu-be/yarn.lock
       - run: yarn install --immutable
       - run: yarn prisma:generate
       - run: yarn build:all
@@ -210,9 +212,9 @@ jobs:
         env:
           PGHOST: localhost
           PGPORT: '5432'
-          PGPASSWORD: examio
-          POSTGRES_USER: examio
-          POSTGRES_DB: examio_ci
+          PGPASSWORD: kmaedu
+          POSTGRES_USER: kmaedu
+          POSTGRES_DB: kmaedu_ci
           AUTH_DB_PASSWORD: ci-auth
           ADMIN_DB_PASSWORD: ci-admin
           CONTENT_DB_PASSWORD: ci-content
@@ -240,7 +242,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: examio-be
+        working-directory: kmaedu-be
     steps:
       - uses: actions/checkout@v4
       # corepack must be on before setup-node: its `cache: yarn` step runs
@@ -250,7 +252,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-          cache-dependency-path: examio-be/yarn.lock
+          cache-dependency-path: kmaedu-be/yarn.lock
       - run: yarn install --immutable
       - run: yarn proto:gen
       - run: yarn prisma:generate
@@ -273,18 +275,18 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: examio-be
+        working-directory: kmaedu-be
     services:
       postgres:
         image: pgvector/pgvector:pg16
         env:
-          POSTGRES_USER: examio
-          POSTGRES_PASSWORD: examio
-          POSTGRES_DB: examio_ci
+          POSTGRES_USER: kmaedu
+          POSTGRES_PASSWORD: kmaedu
+          POSTGRES_DB: kmaedu_ci
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U examio -d examio_ci"
+          --health-cmd "pg_isready -U kmaedu -d kmaedu_ci"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -301,17 +303,17 @@ jobs:
       NODE_ENV: test
       # Database per service: every service connects as its own role to its own schema.
       # The roles/schemas come from deploy/postgres/init/01-service-schemas.sh (same as production).
-      DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/examio_ci?schema=auth
-      AUTH_DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/examio_ci?schema=auth
-      ADMIN_DATABASE_URL: postgresql://admin_svc:ci-admin@localhost:5432/examio_ci?schema=admin
-      STUDYROOM_DATABASE_URL: postgresql://studyroom_svc:ci-studyroom@localhost:5432/examio_ci?schema=studyroom
-      VOCABULARY_DATABASE_URL: postgresql://vocabulary_svc:ci-vocabulary@localhost:5432/examio_ci?schema=vocabulary
-      DOCUMENT_DATABASE_URL: postgresql://document_svc:ci-document@localhost:5432/examio_ci?schema=document
-      AICHAT_DATABASE_URL: postgresql://aichat_svc:ci-aichat@localhost:5432/examio_ci?schema=aichat
-      CONTENT_DATABASE_URL: postgresql://content_svc:ci-content@localhost:5432/examio_ci?schema=content
-      ASSESSMENT_DATABASE_URL: postgresql://assessment_svc:ci-assessment@localhost:5432/examio_ci?schema=assessment
-      AI_DATABASE_URL: postgresql://ai_svc:ci-ai@localhost:5432/examio_ci
-      PRISMA_ADMIN_URL: postgresql://examio:examio@localhost:5432/examio_ci
+      DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/kmaedu_ci?schema=auth
+      AUTH_DATABASE_URL: postgresql://auth_svc:ci-auth@localhost:5432/kmaedu_ci?schema=auth
+      ADMIN_DATABASE_URL: postgresql://admin_svc:ci-admin@localhost:5432/kmaedu_ci?schema=admin
+      STUDYROOM_DATABASE_URL: postgresql://studyroom_svc:ci-studyroom@localhost:5432/kmaedu_ci?schema=studyroom
+      VOCABULARY_DATABASE_URL: postgresql://vocabulary_svc:ci-vocabulary@localhost:5432/kmaedu_ci?schema=vocabulary
+      DOCUMENT_DATABASE_URL: postgresql://document_svc:ci-document@localhost:5432/kmaedu_ci?schema=document
+      AICHAT_DATABASE_URL: postgresql://aichat_svc:ci-aichat@localhost:5432/kmaedu_ci?schema=aichat
+      CONTENT_DATABASE_URL: postgresql://content_svc:ci-content@localhost:5432/kmaedu_ci?schema=content
+      ASSESSMENT_DATABASE_URL: postgresql://assessment_svc:ci-assessment@localhost:5432/kmaedu_ci?schema=assessment
+      AI_DATABASE_URL: postgresql://ai_svc:ci-ai@localhost:5432/kmaedu_ci
+      PRISMA_ADMIN_URL: postgresql://kmaedu:kmaedu@localhost:5432/kmaedu_ci
       REDIS_HOST: localhost
       REDIS_PORT: '6379'
       # CI-only broker credentials (the broker runs from the rendered
@@ -330,8 +332,8 @@ jobs:
       QUIZ_JWT_SECRET: ci-dummy-quiz-jwt-secret-0123456789abcdef
       QUIZ_AES_KEY: ci-dummy-quiz-aes-key-0123456789
       FRONTEND_URL: http://localhost:5173
-      JWT_ISSUER: examio-auth
-      JWT_AUDIENCE: examio
+      JWT_ISSUER: kmaedu-auth
+      JWT_AUDIENCE: kmaedu
       AUTH_JWKS_URL: http://localhost:3000/.well-known/jwks.json
       AUTH_TOKEN_URL: http://localhost:3000/internal/token
       AUTH_GRPC_URL: localhost:50051
@@ -347,7 +349,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-          cache-dependency-path: examio-be/yarn.lock
+          cache-dependency-path: kmaedu-be/yarn.lock
       - run: yarn install --immutable
       - run: yarn proto:gen
       - run: yarn prisma:generate
@@ -375,9 +377,9 @@ jobs:
         env:
           PGHOST: localhost
           PGPORT: '5432'
-          PGPASSWORD: examio
-          POSTGRES_USER: examio
-          POSTGRES_DB: examio_ci
+          PGPASSWORD: kmaedu
+          POSTGRES_USER: kmaedu
+          POSTGRES_DB: kmaedu_ci
           AUTH_DB_PASSWORD: ci-auth
           ADMIN_DB_PASSWORD: ci-admin
           CONTENT_DB_PASSWORD: ci-content
@@ -490,18 +492,18 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: examio-be
+        working-directory: kmaedu-be
     services:
       postgres:
         image: pgvector/pgvector:pg16
         env:
-          POSTGRES_USER: examio
-          POSTGRES_PASSWORD: examio
-          POSTGRES_DB: examio_ci
+          POSTGRES_USER: kmaedu
+          POSTGRES_PASSWORD: kmaedu
+          POSTGRES_DB: kmaedu_ci
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U examio -d examio_ci"
+          --health-cmd "pg_isready -U kmaedu -d kmaedu_ci"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -516,7 +518,7 @@ jobs:
       RABBITMQ_AI_PASS: ci-only-ai-pass
       RABBITMQ_GATEWAY_PASS: ci-only-gateway-pass
       RABBITMQ_AICHAT_PASS: ci-only-aichat-pass
-      AI_TEST_DATABASE_URL: postgresql://ai_svc:ci-ai@localhost:5432/examio_ci
+      AI_TEST_DATABASE_URL: postgresql://ai_svc:ci-ai@localhost:5432/kmaedu_ci
       AI_TEST_RABBITMQ_URL: amqp://ci_admin:ci-only-admin-pass@localhost:5672
       REQUIRE_INTEGRATION: '1'
     steps:
@@ -528,16 +530,16 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-          cache-dependency-path: examio-be/yarn.lock
+          cache-dependency-path: kmaedu-be/yarn.lock
       # ts-node + libs/messaging for the Python/Nest queue topology contract test
       - run: yarn install --immutable
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           cache: pip
-          cache-dependency-path: examio-be/apps/ai-service/requirements.txt
+          cache-dependency-path: kmaedu-be/apps/ai-service/requirements.txt
       - name: Install ai-service dependencies
-        working-directory: examio-be/apps/ai-service
+        working-directory: kmaedu-be/apps/ai-service
         run: pip install -r requirements.txt ruff==0.15.22
       - name: RabbitMQ with the rendered per-service users and topic permissions
         run: |
@@ -557,9 +559,9 @@ jobs:
         env:
           PGHOST: localhost
           PGPORT: '5432'
-          PGPASSWORD: examio
-          POSTGRES_USER: examio
-          POSTGRES_DB: examio_ci
+          PGPASSWORD: kmaedu
+          POSTGRES_USER: kmaedu
+          POSTGRES_DB: kmaedu_ci
           AUTH_DB_PASSWORD: ci-auth
           ADMIN_DB_PASSWORD: ci-admin
           CONTENT_DB_PASSWORD: ci-content
@@ -571,17 +573,17 @@ jobs:
           AI_DB_PASSWORD: ci-ai
         run: bash deploy/postgres/init/01-service-schemas.sh
       - name: Alembic on an empty ai schema (ROLE=migrate, as ai_svc)
-        working-directory: examio-be/apps/ai-service
+        working-directory: kmaedu-be/apps/ai-service
         env:
           ROLE: migrate
-          DATABASE_URL: postgresql://ai_svc:ci-ai@localhost:5432/examio_ci
+          DATABASE_URL: postgresql://ai_svc:ci-ai@localhost:5432/kmaedu_ci
           DB_SEARCH_PATH: ai,extensions
         run: python -m src.main
       - name: pytest (integration required)
-        working-directory: examio-be/apps/ai-service
+        working-directory: kmaedu-be/apps/ai-service
         run: python -m pytest -q
       - name: ruff (phase-15+ modules)
-        working-directory: examio-be/apps/ai-service
+        working-directory: kmaedu-be/apps/ai-service
         run: |
           python -m ruff check src/db.py src/main.py src/backend/main.py src/grpc_server.py src/backend/messaging \
             src/backend/auth src/backend/ai_grpc_mapping.py src/backend/services/chat_service.py \
@@ -595,7 +597,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: docker compose config renders (dummy env)
-        working-directory: examio-be/deploy
+        working-directory: kmaedu-be/deploy
         run: |
           # One dummy list for CI and the cutover rehearsal: every KEY= of deploy/.env.example (compose-level)
           # and of each deploy/env/<name>.env.example (per-service runtime env, env_file required: true).
@@ -607,18 +609,18 @@ jobs:
           rm -f .env env/*.env
       - name: nginx accepts the real-ip include and the gateway upstream
         run: |
-          # `resolve` in the upstream needs nginx >= 1.27.3: keep the tag in step with examio-fe/Dockerfile.
+          # `resolve` in the upstream needs nginx >= 1.27.3: keep the tag in step with kmaedu-fe/Dockerfile.
           docker run --rm \
-            -v "$PWD/examio-fe/nginx.conf:/etc/nginx/templates/default.conf.template" \
-            -v "$PWD/examio-fe/nginx/cloudflare-real-ip.conf:/etc/nginx/cloudflare-real-ip.conf" \
-            --add-host examio-gateway-a:127.0.0.1 --add-host examio-gateway-b:127.0.0.1 \
+            -v "$PWD/kmaedu-fe/nginx.conf:/etc/nginx/templates/default.conf.template" \
+            -v "$PWD/kmaedu-fe/nginx/cloudflare-real-ip.conf:/etc/nginx/cloudflare-real-ip.conf" \
+            --add-host kmaedu-gateway-a:127.0.0.1 --add-host kmaedu-gateway-b:127.0.0.1 \
             nginx:1.27-alpine nginx -t
 
   fe:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: examio-fe
+        working-directory: kmaedu-fe
     steps:
       - uses: actions/checkout@v4
       # corepack must be on before setup-node: its `cache: yarn` step runs
@@ -628,7 +630,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-          cache-dependency-path: examio-fe/yarn.lock
+          cache-dependency-path: kmaedu-fe/yarn.lock
       - run: yarn install --immutable
       - run: yarn build
       - run: yarn lint
@@ -639,7 +641,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: examio-be
+        working-directory: kmaedu-be
     steps:
       - uses: actions/checkout@v4
       # corepack must be on before setup-node: its `cache: yarn` step runs
@@ -649,14 +651,14 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-          cache-dependency-path: examio-be/yarn.lock
+          cache-dependency-path: kmaedu-be/yarn.lock
       - run: yarn install --immutable
       - run: yarn gen:fe-permissions
       # Fail if the file is missing or untracked (a bare `git diff` is vacuous
       # for untracked files), then fail on any drift from the committed copy.
       - name: Check generated file is tracked and unchanged
         run: |
-          f=../examio-fe/src/types/permissions.generated.ts
+          f=../kmaedu-fe/src/types/permissions.generated.ts
           test -f "$f"
           git ls-files --error-unmatch "$f"
           git diff --exit-code -- "$f"
@@ -666,7 +668,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: examio-be
+        working-directory: kmaedu-be
     steps:
       - uses: actions/checkout@v4
       # corepack must be on before setup-node: its `cache: yarn` step runs
@@ -676,7 +678,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: yarn
-          cache-dependency-path: examio-be/yarn.lock
+          cache-dependency-path: kmaedu-be/yarn.lock
       - run: yarn install --immutable
       - run: yarn gen:permissions-doc
       - name: Check generated docs are tracked and unchanged
