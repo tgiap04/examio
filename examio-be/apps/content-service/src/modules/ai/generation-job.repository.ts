@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { GenerationJob, Prisma, PrismaService } from '../../prisma';
-import { IN_FLIGHT_STATUSES, JobStatus, JobStatusValue, OPEN_STATUSES, REFUNDABLE_STATUSES } from './generation.constants';
+import { IN_FLIGHT_STATUSES, JobStatus, JobStatusValue, OPEN_STATUSES } from './generation.constants';
 
 type Db = PrismaService | Prisma.TransactionClient;
 
@@ -11,8 +11,6 @@ export interface NewJob {
     filename: string;
     type: string;
     status: JobStatusValue;
-    chargeKey: string;
-    chargedAmount: number;
     options: Prisma.InputJsonValue;
     model?: string;
 }
@@ -28,7 +26,7 @@ export interface HistorySummary {
 
 /**
  * Prisma access for `GenerationJob` and the generated history. Every status change is ONE conditional
- * `updateMany` (`where status in <from>`), so two racing paths (event, cancel, reaper) settle a job once.
+ * `updateMany` (`where status in <from>`), so two racing paths (event, cancel, watchdog) settle a job once.
  */
 @Injectable()
 export class GenerationJobRepository {
@@ -86,45 +84,10 @@ export class GenerationJobRepository {
         return count === 1;
     }
 
-    /**
-     * Records that the refund of a FAILED / CANCELLED job is done (or never needed). `neverCharged` also
-     * zeroes `chargedAmount`: no money ever moved, so the job must not read as "charged, then failed"
-     * (bookkeeping: it must not read as charged).
-     */
-    async markRefunded(db: Db, id: string, at = new Date(), neverCharged = false): Promise<void> {
-        await db.generationJob.updateMany({
-            where: { id, refundedAt: null },
-            data: { refundedAt: at, ...(neverCharged ? { chargedAmount: 0 } : {}) },
-        });
-    }
-
-    /** PENDING_CHARGE jobs older than `before`: their request thread is long gone. */
-    findStuckPending(before: Date, limit: number): Promise<GenerationJob[]> {
-        return this.prisma.generationJob.findMany({
-            where: { status: JobStatus.PENDING_CHARGE, createdAt: { lt: before } },
-            orderBy: { createdAt: 'asc' },
-            take: limit,
-        });
-    }
-
     /** QUEUED / PROCESSING jobs whose last status change is older than `before`: nobody answered them. */
     findStuckInFlight(before: Date, limit: number): Promise<GenerationJob[]> {
         return this.prisma.generationJob.findMany({
             where: { status: { in: [...IN_FLIGHT_STATUSES] }, updatedAt: { lt: before } },
-            orderBy: { updatedAt: 'asc' },
-            take: limit,
-        });
-    }
-
-    /** FAILED / CANCELLED jobs that were charged and whose refund is not confirmed yet. */
-    findUnrefunded(settledBefore: Date, limit: number): Promise<GenerationJob[]> {
-        return this.prisma.generationJob.findMany({
-            where: {
-                status: { in: [...REFUNDABLE_STATUSES] },
-                chargedAmount: { gt: 0 },
-                refundedAt: null,
-                updatedAt: { lt: settledBefore },
-            },
             orderBy: { updatedAt: 'asc' },
             take: limit,
         });

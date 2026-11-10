@@ -4,8 +4,7 @@ package examio.events.v1;
 
 // Payload (`data`) of `document.uploaded`: a file is stored and ready for
 // OCR/embedding. Published by document-service through the outbox in the
-// transaction that makes the row PENDING (after the upload credit, if any, is
-// confirmed). A fact event; consumed by ai-service. The JSON payload uses the
+// transaction that makes the row PENDING. A fact event; consumed by ai-service. The JSON payload uses the
 // camelCase names (`storageId`, `downloadUrl`, ...).
 message DocumentUploaded {
   // `UserStorage.id`.

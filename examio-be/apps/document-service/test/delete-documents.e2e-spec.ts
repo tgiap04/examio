@@ -127,14 +127,20 @@ describe('DeleteDocuments (e2e)', () => {
         expect(await queuedKeys(t.prisma, [foreignKey])).toEqual([]);
     });
 
-    it('a row still waiting for its charge cannot be deleted by id (it is not the owner\'s file yet)', async () => {
+    it('every row of the owner is deletable by id whatever its status (no hidden charge rows any more)', async () => {
         const user = t.teacher();
-        const row = await t.prisma.userStorage.create({
-            data: { id: `pend_${rid()}`, userId: user.id, filename: 'x.pdf', url: 'u', mimetype: 'application/pdf', size: 1, keyR2: `ai-uploads/${user.id}/${rid()}.pdf`, processingStatus: 'PENDING_CHARGE' },
-        });
-        expect(await remove(user, [row.id])).toEqual({ deleted: [], notFoundIds: [row.id] });
-        expect(await t.prisma.userStorage.count({ where: { id: row.id } })).toBe(1);
-        await t.prisma.userStorage.delete({ where: { id: row.id } }); // do not leave work for another suite's reaper
+        const rows = await Promise.all(
+            ['PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'].map((processingStatus) =>
+                t.prisma.userStorage.create({
+                    data: { id: `st_${rid()}`, userId: user.id, filename: 'x.pdf', url: 'u', mimetype: 'application/pdf', size: 1, keyR2: `ai-uploads/${user.id}/${rid()}.pdf`, processingStatus },
+                })
+            )
+        );
+        const ids = rows.map((r) => r.id);
+        const res = await remove(user, ids);
+        expect(res.deleted.map((d) => d.id).sort()).toEqual([...ids].sort());
+        expect(res.notFoundIds).toEqual([]);
+        expect(await t.prisma.userStorage.count({ where: { id: { in: ids } } })).toBe(0);
     });
 
     it('more than 1000 ids is INVALID_ARGUMENT; a STUDENT and a service token are PERMISSION_DENIED', async () => {

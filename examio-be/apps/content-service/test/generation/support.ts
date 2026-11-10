@@ -12,10 +12,9 @@ export interface Teacher extends TestUser {
     token: string;
 }
 
-/** A TEACHER with a wallet of `balance` credits in the fake finance. */
-export async function teacher(t: ContentTestApp, balance = 100): Promise<Teacher> {
+/** A TEACHER (the only role with `ai:generate`) and its bearer token. */
+export async function teacher(t: ContentTestApp): Promise<Teacher> {
     const user = await t.createUser(['TEACHER']);
-    t.finance.fund(user.id, balance);
     return { ...user, token: await t.tokenFor(user) };
 }
 
@@ -59,7 +58,7 @@ export const ageJob = (t: ContentTestApp, id: string, minutes: number) =>
     t.prisma.$executeRaw`UPDATE "GenerationJob" SET "createdAt" = now() - (${minutes}::int * interval '1 minute'),
         "updatedAt" = now() - (${minutes}::int * interval '1 minute') WHERE id = ${id}`;
 
-/** One reaper pass, as the worker role runs it every minute. */
+/** One watchdog pass, as the worker role runs it every minute. */
 export const reap = (t: ContentTestApp) => new GenerationReaper(t.app.get(GenerationJobService)).tick();
 
 export const quizItems = (n = 3) =>

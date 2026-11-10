@@ -18,7 +18,6 @@ const doc = (id: string, processingStatus: documentV1.DocumentProcessingStatus):
     keyR2: `k/${id}`,
     url: '',
     processingStatus,
-    creditCharged: false,
     pageCount: 0,
     createdAt: '0',
     updatedAt: '0',

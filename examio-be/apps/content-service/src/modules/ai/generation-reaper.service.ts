@@ -2,14 +2,13 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { GenerationJobService, ReapResult } from './generation-job.service';
 import { REAPER_INTERVAL_MS } from './generation.constants';
 
-const nothingReaped = (): ReapResult => ({ cancelled: 0, timedOut: 0, refunded: 0 });
+const nothingReaped = (): ReapResult => ({ timedOut: 0 });
 
 /**
- * Worker role. Every minute: PENDING_CHARGE jobs older than 10 minutes (a crash between the debit and
- * the queueing tx) are cancelled and refunded, and FAILED / CANCELLED jobs whose refund never completed
- * are refunded; QUEUED / PROCESSING jobs silent for GENERATION_JOB_TIMEOUT_MINUTES are failed and
- * refunded. Safe on several instances: every step is conditional and the refund is idempotent.
- * It never calls document-service (service tokens are refused there).
+ * Worker role, the generation watchdog. Every minute, QUEUED / PROCESSING jobs silent for
+ * GENERATION_JOB_TIMEOUT_MINUTES are failed (`GENERATION_TIMEOUT`) and their generation lock is freed.
+ * Safe on several instances: every transition is conditional. It never calls document-service
+ * (service tokens are refused there).
  */
 @Injectable()
 export class GenerationReaper implements OnModuleInit, OnModuleDestroy {
@@ -34,11 +33,7 @@ export class GenerationReaper implements OnModuleInit, OnModuleDestroy {
         this.running = true;
         try {
             const result = await this.generation.reap(now);
-            if (result.cancelled > 0 || result.timedOut > 0 || result.refunded > 0) {
-                this.logger.log(
-                    `Reaped ${result.cancelled} stuck job(s), timed out ${result.timedOut} silent job(s), settled ${result.refunded} refund(s)`
-                );
-            }
+            if (result.timedOut > 0) this.logger.log(`Timed out ${result.timedOut} silent generation job(s)`);
             return result;
         } catch (error) {
             this.logger.error(`Generation reaper pass failed: ${(error as Error).message}`);

@@ -9,9 +9,8 @@ import { GenerationModule } from './generation.module';
 import { ModelCatalogService } from './model-catalog.service';
 
 /**
- * Generation: uploads live in document-service
- * (DocumentClient, global), the work runs in ai-service (events), money is the charge flow of
- * GenerationModule.
+ * Generation: uploads live in document-service (DocumentClient, global), the work runs in ai-service
+ * (events), and the job lifecycle is GenerationModule.
  */
 @Module({
     imports: [GenerationModule, GrpcClientModule.register(AI_GRPC_REGISTRATION)],

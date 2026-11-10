@@ -15,7 +15,6 @@ datasource db {
 }
 
 // One uploaded file. `processingStatus`:
-//   PENDING_CHARGE  row inserted, upload credit not confirmed yet (reaped after 10 min)
 //   PENDING         accepted, waiting for ai-service (quick-upload: not processed yet)
 //   PROCESSING | COMPLETED | FAILED
 model UserStorage {
@@ -27,16 +26,6 @@ model UserStorage {
     size             Int
     keyR2            String    @unique
     processingStatus String    @default("PENDING")
-    // True once `Debit(doc:<id>)` succeeded: drives the refund when processing fails.
-    creditCharged    Boolean   @default(false)
-    // Set when the upload credit was refused or the charge timed out: the user never
-    // got the file, so the row is hidden and does not count against the monthly quota.
-    chargeFailedAt   DateTime?
-    // When the compensation for a row settled by chargeFailedAt is done: a Refund applied, a
-    // definitive refusal (nothing was taken) or a Refund NOT_FOUND after the grace period. Null on a
-    // charge-failed row = a refund may still be owed; the reaper retries it (a debit whose answer was
-    // lost can still commit after the row was failed).
-    refundSettledAt  DateTime?
     // When `document.uploaded` was last written to the outbox; null = never queued
     // (quick-upload waits for the first chat message). EnsureProcessed re-emits on this.
     queuedAt         DateTime?
@@ -48,21 +37,6 @@ model UserStorage {
     @@index([userId, createdAt])
     @@index([userId, filename, size])
     @@index([processingStatus, createdAt])
-    @@index([refundSettledAt, chargeFailedAt])
-}
-
-// Reserved by the extraction plan (monthly counters per user). The quota itself is the
-// count of this month's UserStorage rows (behaviour unchanged), so nothing writes here yet.
-model UserMonthlyFileUpload {
-    id        String   @id @default(cuid())
-    userId    String
-    yearMonth String // Format: "2024-12" for efficient monthly grouping
-    count     Int      @default(0)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-
-    @@unique([userId, yearMonth])
-    @@index([userId, yearMonth])
 }
 
 // R2 objects queued for deletion in the same tx as the row delete; the worker role

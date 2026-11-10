@@ -31,7 +31,3 @@ export const queuedKeys = async (prisma: PrismaService, keys: string[]): Promise
         await prisma.$queryRaw<Array<{ key: string }>>`
             SELECT key FROM r2_delete_tasks WHERE key = ANY(${keys}::text[]) ORDER BY key`
     ).map((r) => r.key);
-
-/** Moves a row's creation back in time (the reaper only looks at rows older than 10 minutes). */
-export const age = (prisma: PrismaService, id: string, minutes: number) =>
-    prisma.$executeRaw`UPDATE "UserStorage" SET "createdAt" = now() - (${minutes}::int * interval '1 minute') WHERE id = ${id}`;

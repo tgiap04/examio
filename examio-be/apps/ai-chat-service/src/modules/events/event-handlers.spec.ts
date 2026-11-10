@@ -1,6 +1,5 @@
 import { PermanentEventError, type Envelope } from '@examio/messaging';
 import { DocumentDeletedHandler } from './document-deleted.handler';
-import { SubscriptionChangedHandler } from './subscription-changed.handler';
 
 const envelope = (type: string, data: unknown) => ({ id: 'e1', type, source: type.split('.')[0], version: 1, data }) as unknown as Envelope;
 
@@ -37,32 +36,5 @@ describe('DocumentDeletedHandler', () => {
         await expect(handler.onDocumentDeleted(envelope('document.deleted', { storageIds: 'x' }), tx)).rejects.toBeInstanceOf(
             PermanentEventError
         );
-    });
-});
-
-describe('SubscriptionChangedHandler', () => {
-    it('deletes the benefits cache of that user only', async () => {
-        const limits = { invalidate: jest.fn().mockResolvedValue(undefined) };
-        await new SubscriptionChangedHandler(limits as never).onSubscriptionChanged(
-            envelope('finance.subscription.changed', { userId: 'u9', fromTier: 0, toTier: 2, at: 1, version: 2 })
-        );
-        expect(limits.invalidate).toHaveBeenCalledWith('u9');
-    });
-
-    it('dead-letters a payload without a user', async () => {
-        const limits = { invalidate: jest.fn() };
-        await expect(
-            new SubscriptionChangedHandler(limits as never).onSubscriptionChanged(envelope('finance.subscription.changed', {}))
-        ).rejects.toBeInstanceOf(PermanentEventError);
-        expect(limits.invalidate).not.toHaveBeenCalled();
-    });
-
-    it('lets a Redis failure propagate so the consumer retries (a stale cache would outlive the plan)', async () => {
-        const limits = { invalidate: jest.fn().mockRejectedValue(new Error('redis down')) };
-        await expect(
-            new SubscriptionChangedHandler(limits as never).onSubscriptionChanged(
-                envelope('finance.subscription.changed', { userId: 'u1' })
-            )
-        ).rejects.toThrow('redis down');
     });
 });

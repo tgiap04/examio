@@ -49,16 +49,4 @@ export class AIChatMessageRepository {
         return this.prisma.aIChatMessage.update({ where: { id: messageId }, data: { content } });
     }
 
-    countUserMessagesSince(userId: string, since: Date) {
-        return this.prisma.aIChatMessage.count({
-            where: { role: 'user', createdAt: { gt: since }, chat: { userId } },
-        });
-    }
-
-    /** `before`: count only messages older than it (a regenerate deletes that one and every later message). */
-    countUserMessagesInChat(chatId: string, before?: Date) {
-        return this.prisma.aIChatMessage.count({
-            where: { chatId, role: 'user', ...(before && { createdAt: { lt: before } }) },
-        });
-    }
 }

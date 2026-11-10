@@ -1,4 +1,4 @@
-import { ForbiddenException, HttpException, NotFoundException } from '@nestjs/common';
+import { HttpException, NotFoundException } from '@nestjs/common';
 import { AIChatAnswerService } from './ai-chat-answer.service';
 import { AIChatStreamService } from './ai-chat-stream.service';
 import { AIChatTurnService } from './ai-chat-turn.service';
@@ -16,15 +16,13 @@ const message = {
     createdAt: new Date('2026-01-01T10:00:00Z'),
 };
 
-type Rejects = 'limits' | 'documents';
+type Rejects = 'chat' | 'documents';
 const rejections: Array<[string, Rejects, () => Error]> = [
-    ['429 rate limit', 'limits', () => new HttpException({ code: 'RATE_LIMITED' }, 429)],
-    ['403 chat limit', 'limits', () => new ForbiddenException({ code: 'CHAT_LIMIT_REACHED' })],
+    ['404 chat', 'chat', () => new NotFoundException({ code: 'CHAT_NOT_FOUND' })],
     ['404 document', 'documents', () => new NotFoundException({ code: 'DOCUMENT_NOT_FOUND' })],
 ];
 
 function build() {
-    const limits = { assertCanSend: jest.fn().mockResolvedValue(undefined) };
     const documents = {
         assertOwned: jest.fn().mockResolvedValue(undefined),
         effectiveIds: jest.fn().mockResolvedValue(['d1']),
@@ -52,10 +50,10 @@ function build() {
         order.push(`save:${data.role}`);
         return { ...data };
     });
-    const turn = new AIChatTurnService(access as never, limits as never, documents as never, repo as never, messages as never);
+    const turn = new AIChatTurnService(access as never, documents as never, repo as never, messages as never);
     const answer = new AIChatAnswerService(turn, documents as never, access as never, deletion as never, ai as never);
     const stream = new AIChatStreamService(turn, documents as never, access as never, deletion as never, ai as never);
-    return { limits, documents, repo, messages, deletion, ai, answer, stream, order };
+    return { access, documents, repo, messages, deletion, ai, answer, stream, order };
 }
 
 function fakeSse(aborted = false) {
@@ -85,7 +83,7 @@ describe('regenerate keeps the message until the regenerate is accepted', () => 
     describe.each(rejections)('rejected with %s', (_name, target, make) => {
         it('answer: nothing is deleted or saved', async () => {
             const h = build();
-            (target === 'limits' ? h.limits.assertCanSend : h.documents.assertOwned).mockRejectedValue(make());
+            (target === 'chat' ? h.access.ownedChat : h.documents.assertOwned).mockRejectedValue(make());
             await expect(h.answer.regenerateFromMessage('m2', USER, 'tok')).rejects.toBeInstanceOf(Error);
             expect(h.deletion.deleteFrom).not.toHaveBeenCalled();
             expect(h.messages.create).not.toHaveBeenCalled();
@@ -94,7 +92,7 @@ describe('regenerate keeps the message until the regenerate is accepted', () => 
 
         it('stream: nothing is deleted, saved or sent to ai-service', async () => {
             const h = build();
-            (target === 'limits' ? h.limits.assertCanSend : h.documents.assertOwned).mockRejectedValue(make());
+            (target === 'chat' ? h.access.ownedChat : h.documents.assertOwned).mockRejectedValue(make());
             await expect(h.stream.regenerateStream('m2', USER, 'tok', fakeSse() as never)).rejects.toBeInstanceOf(Error);
             expect(h.deletion.deleteFrom).not.toHaveBeenCalled();
             expect(h.messages.create).not.toHaveBeenCalled();

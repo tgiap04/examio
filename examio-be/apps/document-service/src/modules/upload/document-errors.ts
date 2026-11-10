@@ -4,12 +4,7 @@ import { RpcException } from '@nestjs/microservices';
 
 /** Stable error codes carried in the HTTP body (`code`) and mapped to gRPC statuses. */
 export const DocumentErrorCode = {
-    QUOTA_EXCEEDED: 'QUOTA_EXCEEDED',
-    INSUFFICIENT_CREDITS: 'INSUFFICIENT_CREDITS',
-    WALLET_NOT_FOUND: 'WALLET_NOT_FOUND',
     PERMISSION_DENIED: 'PERMISSION_DENIED',
-    CHARGE_UNAVAILABLE: 'CHARGE_UNAVAILABLE',
-    UPLOAD_EXPIRED: 'UPLOAD_EXPIRED',
     STORAGE_KEY_TAKEN: 'STORAGE_KEY_TAKEN',
     STORAGE_UNAVAILABLE: 'STORAGE_UNAVAILABLE',
     NOT_FOUND: 'NOT_FOUND',
@@ -22,12 +17,7 @@ export function documentError(httpStatus: number, code: DocumentErrorCodeValue, 
 }
 
 const CODE_TO_GRPC: Partial<Record<string, number>> = {
-    [DocumentErrorCode.QUOTA_EXCEEDED]: status.RESOURCE_EXHAUSTED,
-    [DocumentErrorCode.INSUFFICIENT_CREDITS]: status.FAILED_PRECONDITION,
-    [DocumentErrorCode.WALLET_NOT_FOUND]: status.FAILED_PRECONDITION,
-    [DocumentErrorCode.CHARGE_UNAVAILABLE]: status.UNAVAILABLE,
     [DocumentErrorCode.STORAGE_UNAVAILABLE]: status.UNAVAILABLE,
-    [DocumentErrorCode.UPLOAD_EXPIRED]: status.ABORTED,
     [DocumentErrorCode.STORAGE_KEY_TAKEN]: status.ALREADY_EXISTS,
     [DocumentErrorCode.NOT_FOUND]: status.NOT_FOUND,
     [DocumentErrorCode.VALIDATION_FAILED]: status.INVALID_ARGUMENT,

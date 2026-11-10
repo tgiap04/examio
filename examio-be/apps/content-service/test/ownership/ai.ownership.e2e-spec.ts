@@ -55,7 +55,7 @@ describe('ai uploads ownership (e2e)', () => {
         }
     );
 
-    it('DELETE /ai/job/:id and POST /ai/regenerate/:id: other TEACHER 404 and STUDENT 403, nothing is charged', async () => {
+    it('DELETE /ai/job/:id and POST /ai/regenerate/:id: other TEACHER 404 and STUDENT 403, nothing is queued', async () => {
         const job = `nojob_${rid()}`;
         expect(
             (await call(t.server, 'delete', `/ai/job/${job}`, tok.otherTeacher)).status
@@ -67,7 +67,7 @@ describe('ai uploads ownership (e2e)', () => {
         expect(
             (await call(t.server, 'post', `/ai/regenerate/${uploadId}`, tok.student, {})).status
         ).toBe(403);
-        expect(t.finance.calls.filter((c) => c.userId === otherTeacher.id)).toEqual([]);
+        expect(await t.prisma.generationJob.count({ where: { userId: { in: [otherTeacher.id, student.id] } } })).toBe(0);
     });
 
     it('AI tool routes are TEACHER-only: STUDENT gets 403 on generate/models/upload', async () => {

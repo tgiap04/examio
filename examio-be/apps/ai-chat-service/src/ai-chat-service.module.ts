@@ -18,8 +18,8 @@ import { SubjectModule } from './modules/subject/subject.module';
         // Service identity `ai-chat` (token subject `svc:ai-chat`): the caller allow-listed by ai-service,
         // and the name this service asks auth to sign tokens for. User tokens are verified against auth's JWKS.
         AuthJwtModule.forRoot({ serviceName: 'ai-chat', serviceClient: true }),
-        // One consumer for `aichat.events` (`document.deleted`, `finance.subscription.changed`). Its
-        // handlers only touch this service's own database and cache, so it runs in the API process.
+        // One consumer for `aichat.events` (`document.deleted`). Its handler only touches this
+        // service's own database, so it runs in the API process.
         // The service publishes nothing (the broker user has no publish grant either).
         MessagingModule.forRoot({ service: 'aichat', consume: { db: PrismaService } }),
         AIChatModule,

@@ -3,7 +3,6 @@ import { documentV1 } from '@examio/contracts';
 const Status = documentV1.DocumentProcessingStatus;
 
 const STATUS_NAME: Partial<Record<documentV1.DocumentProcessingStatus, string>> = {
-    [Status.DOCUMENT_PROCESSING_STATUS_PENDING_CHARGE]: 'PENDING_CHARGE',
     [Status.DOCUMENT_PROCESSING_STATUS_PENDING]: 'PENDING',
     [Status.DOCUMENT_PROCESSING_STATUS_PROCESSING]: 'PROCESSING',
     [Status.DOCUMENT_PROCESSING_STATUS_COMPLETED]: 'COMPLETED',
@@ -29,7 +28,6 @@ export function toHttpDocument(info: documentV1.DocumentInfo) {
         createdAt: toDate(info.createdAt),
         updatedAt: toDate(info.updatedAt),
         processingStatus: processingStatusName(info),
-        creditCharged: info.creditCharged,
         pageCount: info.pageCount,
     };
 }
