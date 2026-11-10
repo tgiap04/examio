@@ -1,6 +1,6 @@
 # Business Rules
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Analysis Scope**: All background logic from Wave 0 scout + client-side logic inventory
 
@@ -62,7 +62,7 @@ Access tokens are RS256 JWTs signed by auth-service and verified by each service
 
 ### OAuth login sets the session cookies on the callback
 
-When a user completes Google OAuth, auth-service exchanges the code server-side, creates the session, sets the `accessToken` and `refreshToken` cookies and redirects to the frontend. A device fingerprint is assigned via the `X-Device-ID` header. The mobile app (an allowlisted app redirect) never gets tokens in a URL: it receives a one-time code (60 s, single use) and swaps it for the tokens at `POST /auth/exchange`.
+When a user completes Google OAuth, auth-service exchanges the code server-side, creates the session, sets the `accessToken` and `refreshToken` cookies and redirects to the frontend. A device fingerprint is assigned via the `X-Device-ID` header. A native client (an allowlisted app redirect) never gets tokens in a URL: it receives a one-time code (60 s, single use) and swaps it for the tokens at `POST /auth/exchange`.
 
 **Applies when:** The Google OAuth callback (`/auth/google/callback`) succeeds.
 **Says:** The session is linked to the device for later management and revocation. If the frontend still sees `token`, `refreshToken` or `sessionId` in the URL it removes them without reading them.
@@ -82,7 +82,7 @@ A user can view all active sessions across devices and browsers. They can termin
 
 ### AI generation has no charge
 
-Generating quizzes or flashcards from a document, regenerating, and uploading a file cost nothing and have no monthly quota. Examio no longer has wallets, credits, subscriptions or payments. The only things that bound AI use are the TEACHER-only permission (`ai:generate`), the gateway rate limits and the technical limits listed below.
+Generating quizzes or flashcards from a document, regenerating, and uploading a file cost nothing and have no monthly quota. KMAEdu no longer has wallets, credits, subscriptions or payments. The only things that bound AI use are the TEACHER-only permission (`ai:generate`), the gateway rate limits and the technical limits listed below.
 
 **Applies when:** A teacher starts, regenerates or cancels a generation, or uploads a file.
 **Says:** The job (`GenerationJob`) is created as `QUEUED` together with its outbox row in one transaction, then becomes `PROCESSING`, and `COMPLETED` or `FAILED`. Every state change is conditional on the previous state, so a late event or a double click never moves a job twice. A failed job (`ai.generation.failed`) or a failed OCR (`ai.document.failed`) only changes the status; there is nothing to refund, so retrying a failed document is free.
