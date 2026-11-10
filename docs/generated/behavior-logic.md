@@ -11,9 +11,9 @@
 | Code | Name | Type | Trigger |
 |------|------|------|---------|
 | BL001 | SessionCleanupCron | scheduled-job | Cron (daily) |
-| BL002 | UserEventHandler | event-listener | `auth.user.created` RabbitMQ event |
+| BL002 | UserRegisteredHandler | event-listener | `auth.user.registered` RabbitMQ event |
 | BL003 | AuthService | integration | Login, OAuth, token validation |
-| BL004 | FinanceClientService | integration | Credit deduction, wallet check |
+| BL004 | FinanceClient | integration | Credit deduction, wallet check |
 | BL005 | R2ClientService | integration | File upload to R2 |
 | BL006 | R2Service | integration | R2 storage operations |
 | BL007 | OcrService | integration | Document OCR processing |
@@ -54,16 +54,16 @@ Daily cron job that scans all `UserSession` records and deactivates expired sess
 
 ---
 
-## BL002: UserEventHandler
+## BL002: UserRegisteredHandler
 
 **Type**: event-listener
-**Trigger**: RabbitMQ topic `auth.user.created` on `examio.events` durable exchange
-**Source File**: `examio-be/apps/finance-service/src/user-event.handler.ts`
-**Source Symbol**: `UserEventHandler` (class with `@EventHandler()` or equivalent)
+**Trigger**: RabbitMQ topic `auth.user.registered` on `examio.events` durable exchange (queue `finance.events`)
+**Source File**: `examio-be/apps/finance-service/src/events/handlers/user-registered.handler.ts`
+**Source Symbol**: `UserRegisteredHandler` (`@EventHandler('auth.user.registered')` from `@examio/messaging`)
 
 ### Description
 
-Idempotent event listener that handles the `auth.user.created` RabbitMQ event. On user creation, it creates a Wallet record for the new user and optionally awards a welcome bonus (20 credits). Checks if wallet already exists before creation to ensure idempotency.
+Idempotent event listener that handles the `auth.user.registered` RabbitMQ event (published via auth-service transactional outbox). Runs in the consumer's dedupe transaction (`processed_events`), skips if the wallet already exists, otherwise creates a Wallet with a 20-credit welcome transaction.
 
 ### Related Modules
 
@@ -124,16 +124,16 @@ Core authentication service. Handles email/password login, Google OAuth flow (in
 
 ---
 
-## BL004: FinanceClientService
+## BL004: FinanceClient
 
 **Type**: integration
 **Trigger**: Credit-deductor feature (AI generation, document processing)
-**Source File**: `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts`
-**Source Symbol**: `FinanceClientService` (class, gRPC client or HTTP client to finance-service)
+**Source File**: `examio-be/libs/grpc/src/clients/finance.client.ts`
+**Source Symbol**: `FinanceClient` (class, shared gRPC client to finance-service)
 
 ### Description
 
-Finance service client used by exam-service to check user wallet balance and deduct credits before allowing AI generation or document processing. Queries wallet info and emits debit transactions. Note: `FREE_MODE = true` shipped in production code path — credit gating is bypassed.
+Finance service client used by exam-service to check user wallet balance and deduct credits before allowing AI generation or document processing. Charges through the shared `FinanceClient` (`libs/grpc`) with finance `WalletService.Debit` (idempotency key, caller's access token forwarded); benefits fall back to Free-tier defaults when finance is unreachable. `AI_FREE_MODE=true` skips the charge only outside production (forced off when `NODE_ENV=production`).
 
 ### Related Modules
 

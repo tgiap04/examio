@@ -1,0 +1,67 @@
+{
+  "at": "2026-10-21T16:06:40.570Z",
+  "results": [
+    {
+      "name": "F7 setup: student login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F7 setup: in room, socket connected",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F7: exam-service stopped",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F7: give-up toast appears after the capped reconnects",
+      "ok": true,
+      "extra": "after 30 s"
+    },
+    {
+      "name": "F7: reconnect attempts capped (<=5 retries + initial, <=6 WebSocket attempts)",
+      "ok": true,
+      "extra": "attempts up to toast=5 at s=1,2,8,14,30"
+    },
+    {
+      "name": "F7: zero further attempts for 60 s after give-up",
+      "ok": true,
+      "extra": "attempts in 60s after give-up=0"
+    },
+    {
+      "name": "F7: toast visible at give-up (duplicate count reported)",
+      "ok": false,
+      "extra": "elements with toast text=0"
+    },
+    {
+      "name": "F7 recovery: exam-service restarted",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F7 re-enter: leave and join succeed",
+      "ok": true,
+      "extra": "leave=201 join=201"
+    },
+    {
+      "name": "F7 re-enter: socket connects and room snapshot shows",
+      "ok": true,
+      "extra": "pid=94277"
+    }
+  ],
+  "timeline": {
+    "created": [
+      -0.9,
+      -0.4,
+      -0.4,
+      1,
+      2.1,
+      7.9,
+      14.2,
+      29.7
+    ]
+  }
+}

@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Microservice Refactor + RBAC</title>
+<meta name="description" content="Editorial companion to plan.md: refactor examio-be from distributed monolith to real microservices and introduce fixed-role RBAC (Teacher / Student / System Admin).">
+<style>
+:root {
+  --ink: #0a0a0a;
+  --ink-soft: #1a1a1a;
+  --paper: #faf7f2;
+  --paper-warm: #f0ebe1;
+  --accent: #b8232c;
+  --accent-soft: #e8d4d6;
+  --gold: #8a6f2c;
+  --muted: #6b6258;
+  --hairline: rgba(10,10,10,0.12);
+  --serif: 'Fraunces', Georgia, serif;
+  --sans: 'Inter Tight', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.65 var(--sans); overflow-x: hidden; }
+a { color: var(--ink); text-decoration-color: var(--accent); text-underline-offset: 3px; }
+a:hover { color: var(--accent); }
+code { font: 0.86em/1.4 var(--mono); background: rgba(10,10,10,0.05); padding: 1px 4px; overflow-wrap: anywhere; }
+em { color: var(--accent); font-style: italic; }
+h1, h2, h3 { font-family: var(--serif); margin: 0; }
+h2 { font-size: clamp(32px, 4.5vw, 64px); font-weight: 400; line-height: 1.05; letter-spacing: -0.01em; }
+h3 { font-size: 22px; font-weight: 500; line-height: 1.25; margin: 6px 0 12px; }
+h4 { font: 500 11px/1.4 var(--mono); text-transform: uppercase; letter-spacing: 0.16em; color: var(--accent); margin: 0 0 14px; }
+p { margin: 0 0 14px; }
+ul, ol { margin: 0; padding-left: 20px; }
+li { margin-bottom: 6px; }
+
+/* layout */
+.slide { position: relative; min-height: 100vh; padding: 60px 8vw; border-bottom: 1px solid var(--hairline); }
+.container { max-width: 1240px; margin: 0 auto; padding-top: 40px; }
+.slide-tag { position: absolute; top: 28px; left: 8vw; font: 500 11px/1 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+.slide-num { position: absolute; top: 28px; right: 8vw; font: 400 11px/1 var(--mono); letter-spacing: 0.16em; color: var(--muted); }
+.two-col { display: grid; grid-template-columns: 1fr 1.2fr; gap: 80px; align-items: start; }
+.three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.phase-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.mt-l { margin-top: 60px; }
+.mt-m { margin-top: 36px; }
+.label { font: 500 10px/1.4 var(--mono); text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted); }
+.lead { font: 400 clamp(18px, 1.6vw, 22px)/1.5 var(--serif); color: var(--ink-soft); }
+.muted { color: var(--muted); }
+
+/* cover */
+.cover { display: flex; flex-direction: column; justify-content: space-between; }
+.cover .eyebrow { font: 500 12px/1 var(--mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent); }
+.cover h1 { font-size: clamp(60px, 11vw, 180px); font-weight: 300; line-height: 0.92; letter-spacing: -0.02em; margin: 40px 0 24px; }
+.cover .sub { font: 300 italic clamp(22px, 2.6vw, 36px)/1.3 var(--serif); color: var(--ink-soft); max-width: 900px; }
+.folio { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1.5px solid var(--ink); margin-top: 60px; }
+.folio div { padding: 18px 16px 18px 0; border-bottom: 1px solid var(--hairline); }
+.folio .v { display: block; font: 400 18px/1.35 var(--serif); margin-top: 6px; overflow-wrap: anywhere; }
+
+/* components */
+.card { position: relative; background: var(--paper-warm); padding: 36px 32px; border: 1px solid var(--hairline); }
+.card.dark { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.card.dark h4 { color: var(--accent-soft); }
+.card.dark code { background: rgba(250,247,242,0.12); color: var(--paper); }
+.card.dark a { color: var(--paper); }
+.card-mark { position: absolute; top: 18px; right: 20px; font: 400 11px/1 var(--mono); letter-spacing: 0.12em; color: var(--muted); }
+.card.dark .card-mark { color: var(--accent-soft); }
+.card.deferred { border-left: 3px solid var(--gold); }
+.card.deferred h4, .card.deferred .card-mark { color: var(--gold); }
+.track-box { border-left: 3px solid var(--accent); background: var(--paper-warm); padding: 40px 44px; }
+.pull-quote { border-left: 2px solid var(--accent); padding: 12px 0 12px 40px; margin: 0; font: 300 italic clamp(28px, 3.6vw, 48px)/1.25 var(--serif); }
+.pull-quote cite { display: block; margin-top: 18px; font: 400 11px/1.4 var(--mono); font-style: normal; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+.stat { font: 300 clamp(40px, 5vw, 72px)/1 var(--serif); color: var(--accent); display: block; margin: 4px 0 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.chips li { margin: 0; font: 400 11.5px/1.3 var(--mono); padding: 4px 8px; border: 1px solid var(--hairline); background: var(--paper); overflow-wrap: anywhere; }
+.chips li.new { border-color: var(--accent); color: var(--accent); }
+
+/* phase cards */
+.phase h3 a { text-decoration: none; }
+.phase h3 a:hover { text-decoration: underline; }
+.meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font: 400 11px/1.4 var(--mono); letter-spacing: 0.06em; color: var(--muted); margin-bottom: 14px; text-transform: uppercase; }
+.meta b { color: var(--ink); font-weight: 500; }
+.phase ul { font-size: 14px; }
+.done { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--hairline); font-size: 13.5px; }
+.done .label { display: block; color: var(--accent); margin-bottom: 4px; }
+.group-head { display: grid; grid-template-columns: 220px 1fr; gap: 24px; align-items: baseline; border-top: 1.5px solid var(--ink); padding-top: 18px; margin: 70px 0 24px; }
+.group-head .k { font: 500 12px/1.4 var(--mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+.group-head.gold { border-top-color: var(--gold); }
+.group-head.gold .k { color: var(--gold); }
+.group-head p { margin: 0; font: 400 18px/1.45 var(--serif); }
+
+/* tables */
+.table-wrap { width: 100%; max-width: 100%; overflow-x: auto; }
+table.cmp { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.cmp th { font: 500 10px/1.4 var(--mono); text-transform: uppercase; letter-spacing: 0.14em; color: var(--muted); text-align: left; padding: 12px 14px 12px 0; border-bottom: 1.5px solid var(--ink); }
+table.cmp td { padding: 14px 14px 14px 0; border-bottom: 1px solid var(--hairline); vertical-align: top; }
+table.cmp tr:last-child td { border-bottom: 1.5px solid var(--ink); }
+table.cmp td:first-child { font-family: var(--serif); font-weight: 500; font-size: 15.5px; }
+table.cmp .feat { background: rgba(184,35,44,0.04); padding-left: 14px; }
+table.cmp th.feat { padding-left: 14px; }
+table.cmp tr.rejected td { color: var(--muted); }
+table.cmp tr.rejected td:first-child { color: var(--accent); }
+.sev { font: 500 10.5px/1 var(--mono); letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+.sev.crit { color: var(--accent); }
+
+/* graph */
+.fallback { columns: 2; column-gap: 60px; list-style: none; padding: 0; margin: 0; }
+.fallback li { break-inside: avoid; padding: 8px 0; border-bottom: 1px solid var(--hairline); font-size: 14px; }
+.fallback .n { font: 500 12px/1 var(--mono); color: var(--accent); display: inline-block; width: 34px; }
+.fallback .d { font: 400 12px/1.4 var(--mono); color: var(--muted); }
+.fallback li.gold .n { color: var(--gold); }
+#graph-wrap { border: 1px solid var(--hairline); background: var(--paper-warm); padding: 24px; overflow-x: auto; }
+#graph-wrap .mermaid { margin: 0; background: transparent; font-family: var(--mono); font-size: 12px; }
+
+/* runbook */
+ol.steps { list-style: none; padding: 0; margin: 0; counter-reset: s -1; }
+ol.steps li { counter-increment: s; display: grid; grid-template-columns: 44px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--hairline); margin: 0; font-size: 14px; }
+ol.steps li::before { content: counter(s, decimal-leading-zero); font: 500 12px/1.6 var(--mono); color: var(--accent); }
+.cmd { display: block; background: var(--ink); color: var(--paper); font: 400 14px/1.6 var(--mono); padding: 28px 32px; overflow-wrap: anywhere; margin: 24px 0; }
+.cmd .p { color: var(--accent-soft); user-select: none; }
+
+/* motion */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity .9s cubic-bezier(.22,1,.36,1), transform .9s cubic-bezier(.22,1,.36,1); }
+.reveal.visible { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce), print {
+  .reveal { opacity: 1; transform: none; transition: none; }
+}
+
+@media (max-width: 1100px) {
+  .phase-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 900px) {
+  .slide { padding: 60px 6vw; }
+  .slide-tag { left: 6vw; }
+  .slide-num { right: 6vw; }
+  .two-col, .three-col, .phase-grid { grid-template-columns: 1fr; gap: 24px; }
+  .folio { grid-template-columns: 1fr 1fr; }
+  .group-head { grid-template-columns: 1fr; gap: 8px; }
+  .fallback { columns: 1; }
+  .track-box { padding: 28px 24px; }
+  .pull-quote { padding-left: 22px; }
+  .card { padding: 30px 22px; }
+  table.cmp { font-size: 13px; }
+}
+</style>
+<noscript><style>.reveal { opacity: 1; transform: none; }</style></noscript>
+</head>
+<body>
+
+<!-- 01 · Cover -->
+<section class="slide cover" id="cover">
+  <div class="container">
+    <div class="reveal">
+      <span class="eyebrow">Implementation plan · examio · 2026-10-18</span>
+      <h1>Microservice Refactor <em>+ RBAC</em></h1>
+      <p class="sub">Teacher / Student / System Admin — from distributed monolith to real microservices, with fixed roles and an admin role-assignment screen.</p>
+    </div>
+    <div class="folio reveal">
+      <div><span class="label">Date</span><span class="v">2026-10-18</span></div>
+      <div><span class="label">Scope</span><span class="v">examio-be · examio-fe · examio-app</span></div>
+      <div><span class="label">Effort</span><span class="v">56.75d</span></div>
+      <div><span class="label">Phases</span><span class="v">19 (P17 deferred)</span></div>
+      <div><span class="label">Branch</span><span class="v"><code>refactor/microservice-rbac</code></span></div>
+      <div><span class="label">Priority · Status</span><span class="v">P1 · pending</span></div>
+      <div><span class="label">Created</span><span class="v">2026-10-17</span></div>
+      <div><span class="label">Primary artifact</span><span class="v"><a href="./plan.md">plan.md</a></span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 · Goal -->
+<section class="slide" id="goal">
+  <span class="slide-tag">■ 02 · Goal</span>
+  <span class="slide-num">02 / 10</span>
+  <div class="container">
+    <div class="two-col reveal">
+      <div>
+        <h4>Overview</h4>
+        <h2>Split the monolith.<br><em>Put roles on the server.</em></h2>
+      </div>
+      <div>
+        <p class="lead">Refactor examio-be from distributed monolith to real microservices per <code>/ARCHITECTURE.md</code> (P0–P8). RBAC lands early, together with the RS256/JWKS token. Roles: <code>STUDENT</code> | <code>TEACHER</code> (mutually exclusive) + <code>SYSTEM_ADMIN</code> flag. The DB is reset (no real users), so there is no data migration or backfill. Public <code>/api/v1</code> paths are kept.</p>
+        <p class="muted">Decisions (authoritative): <a href="./reports/decisions.md">reports/decisions.md</a>. Inputs: <a href="./reports/scout-current-state-report.md">current state</a> · <a href="./reports/scout-rbac-surface-report.md">RBAC surface</a> · <a href="./research/researcher-01-rbac-report.md">RBAC research</a> · <a href="./research/researcher-02-migration-mechanics-report.md">migration mechanics</a>.</p>
+      </div>
+    </div>
+    <blockquote class="pull-quote reveal mt-l">Refactor examio-be from distributed monolith to real microservices — and introduce fixed-role RBAC with an admin role-assignment screen.<cite>plan.md · description</cite></blockquote>
+    <div class="three-col reveal mt-l">
+      <div class="card"><div class="card-mark">01</div><h4>Data</h4><span class="stat">0</span><h3>Rows migrated</h3><p>The DB is reset locally now and in production at deploy. Columns can be renamed or dropped freely; no backfill anywhere.</p></div>
+      <div class="card"><div class="card-mark">02</div><h4>Contract</h4><span class="stat">/api/v1</span><h3>Public paths kept</h3><p>The gateway is rewritten behind the same public routes; a contract test against the phase-01 route snapshot proves coverage.</p></div>
+      <div class="card dark"><div class="card-mark">03</div><h4>Deploy</h4><span class="stat" style="color:var(--paper)">1×</span><h3>Production deploy</h3><p>One long branch, weekly sync with <code>main</code>, every phase green. Production deploys once, at the final merge, with a DB reset.</p></div>
+    </div>
+    <div class="mt-l reveal">
+      <h4>Key dependencies</h4>
+      <ul class="chips">
+        <li>Node 22 base image</li><li>Prisma 6.19.x (<code>prisma-client</code> + <code>@prisma/adapter-pg</code>)</li><li>jose@5.10 (CJS)</li><li>http-proxy-middleware@3.0.7</li><li>buf v2 + ts-proto</li><li>amqp-connection-manager</li>
+      </ul>
+      <p class="muted mt-m"><code>examio-app</code> (mobile) is not in this checkout. Phase 18 runs in its own repo, iOS + Android parity.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 03 · RBAC model -->
+<section class="slide" id="rbac">
+  <span class="slide-tag">■ 03 · RBAC model</span>
+  <span class="slide-num">03 / 10</span>
+  <div class="container">
+    <div class="reveal">
+      <h4>Roles &amp; permission catalog v1</h4>
+      <h2>Three roles, one catalog.<br><em>Deny by default.</em></h2>
+    </div>
+    <div class="three-col reveal mt-l">
+      <div class="card"><div class="card-mark">STUDENT</div><h4>Default on signup</h4><h3>Learns only what a teacher granted</h3><p>Studies granted flashcard/quiz sets, takes exams in allowed sessions, joins (not creates) study rooms, reads and saves word families. No AI, wallet, or content creation.</p></div>
+      <div class="card"><div class="card-mark">TEACHER</div><h4>Granted by SYSTEM_ADMIN</h4><h3>Creates, shares, generates</h3><p>Mutually exclusive with STUDENT. Previews only own content via owner checks; no <code>flashcard:study</code> / <code>quiz:practice</code> / <code>exam:take</code>. Gets wallet + Free subscription on promotion.</p></div>
+      <div class="card dark"><div class="card-mark">SYSTEM_ADMIN</div><h4>Flag, combinable</h4><h3>Administers — no wildcard</h3><p>Combines with either base role. Only it can assign roles (<code>role:assign</code>); self-change blocked; the last SYSTEM_ADMIN is protected.</p></div>
+    </div>
+    <div class="table-wrap reveal mt-l">
+      <table class="cmp">
+        <thead><tr><th>Role</th><th class="feat">Permissions (exact keys)</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>STUDENT</td><td class="feat"><ul class="chips"><li>flashcard:study</li><li>quiz:practice</li><li>exam:take</li><li>study_room:join</li><li>word_family:read</li><li>word_family:save</li></ul></td><td>6 keys</td></tr>
+          <tr><td>TEACHER</td><td class="feat"><ul class="chips"><li>quizset:manage</li><li>flashcardset:manage</li><li>exam_room:manage</li><li>exam_session:manage</li><li>exam_result:view</li><li>content:share</li><li>user:search</li><li>ai:generate</li><li>ai_chat:use</li><li>document:upload</li><li>study_room:create</li><li>study_room:join</li><li>word_family:read</li><li>word_family:generate</li><li class="new">word_family:save</li><li>wallet:use</li><li>subscription:manage</li></ul></td><td>17 keys. <code>word_family:save</code> added by Validation Session 1 (2026-10-18).</td></tr>
+          <tr><td>SYSTEM_ADMIN</td><td class="feat"><ul class="chips"><li>admin:access</li><li>user:manage</li><li>role:assign</li><li>finance:admin</li><li>stats:read</li><li>logs:read</li><li>audit:read</li><li>page_config:manage</li><li>word_family:admin</li></ul></td><td>9 keys, no wildcard</td></tr>
+          <tr><td>Authenticated</td><td class="feat">No permission — <code>@Authenticated()</code>: profile, devices, logout, me, change-password, verification.</td><td>Any logged-in, verified user</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="track-box reveal mt-l">
+      <h4>How it is enforced</h4>
+      <p>Catalog lives in <code>libs/auth-jwt/src/permissions.ts</code> (<code>as const</code> + <code>ROLE_PERMISSIONS</code>). Global <code>APP_GUARD</code>s <code>JwtAuthGuard</code> → <code>PermissionsGuard</code>, deny by default; opt-outs <code>@Public()</code> and <code>@Authenticated()</code>; <code>@RequirePermissions(...)</code> uses AND semantics. Ownership is a plain service <code>where {id, ownerId}</code> → 404. No CASL. A CI test fails if any handler lacks a declaration.</p>
+      <p style="margin:0">JWT: RS256 via <code>jose@5.10</code>, <code>typ: at+jwt</code>, claims <code>iss, aud, sub, sid, roles, iat, exp</code> (+ <code>av</code>, <code>email_verified</code>). No permissions in the token. Access 15m; refresh reloads the role from DB.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 04 · Decisions -->
+<section class="slide" id="decisions">
+  <span class="slide-tag">■ 04 · Decisions</span>
+  <span class="slide-num">04 / 10</span>
+  <div class="container">
+    <div class="reveal">
+      <h4>Confirmed — do not re-ask</h4>
+      <h2>Settled before planning.<br><em>Authoritative.</em></h2>
+      <p class="muted mt-m">Source: <a href="./reports/decisions.md">reports/decisions.md</a>. Validation answers (2026-10-18) are in section 08.</p>
+    </div>
+    <div class="table-wrap reveal mt-m">
+      <table class="cmp">
+        <thead><tr><th>Question</th><th class="feat">Decision</th><th>Session</th></tr></thead>
+        <tbody>
+          <tr><td>Event broker</td><td class="feat">Keep RabbitMQ; add outbox, DLQ, idempotent consumer, domain-event routing keys.</td><td class="label">2026-10-17 · Arch</td></tr>
+          <tr><td>Deploy target</td><td class="feat">Docker Compose on VPS, K8s-ready (per-service image, GHCR, per-service deploy).</td><td class="label">2026-10-17 · Arch</td></tr>
+          <tr><td>Split exam-service</td><td class="feat">Strong split: content, assessment, study-room, vocabulary, ai-chat.</td><td class="label">2026-10-17 · Arch</td></tr>
+          <tr><td>Document/RAG data owner</td><td class="feat">New document-service (UserStorage, quota); ai-service own DB <code>ai</code> (pgvector, Alembic).</td><td class="label">2026-10-17 · Arch</td></tr>
+          <tr><td>Repo</td><td class="feat">Keep monorepo <code>examio-be</code>, boundaries via dependency-cruiser + per-service image.</td><td class="label">2026-10-17 · Arch</td></tr>
+          <tr><td>Auth</td><td class="feat">RS256 + JWKS, access 15m, revoke at gateway (Redis), public <code>/api/v1</code> paths unchanged.</td><td class="label">2026-10-17 · Arch</td></tr>
+          <tr><td>Plan scope</td><td class="feat">HOLD — full P0–P8 roadmap + RBAC.</td><td class="label">2026-10-17 · RBAC</td></tr>
+          <tr><td>RBAC model</td><td class="feat">Fixed roles + permission catalog in code; admin screen assigns roles, shows role→permission matrix read-only.</td><td class="label">2026-10-17 · RBAC</td></tr>
+          <tr><td>What STUDENT can do</td><td class="feat">Nothing beyond learning: study only flashcard/quiz sets a teacher granted; take exams only in sessions the teacher allows.</td><td class="label">2026-10-17 · RBAC</td></tr>
+          <tr><td>Grey-zone features</td><td class="feat">Allowed: join (not create) study rooms; view/save word families (no AI gen). Forbidden: AI chat/AI teacher, AI generation, wallet/payment/subscription, any content creation.</td><td class="label">2026-10-17 · RBAC</td></tr>
+          <tr><td>Becoming TEACHER</td><td class="feat">Default STUDENT on signup; TEACHER only when SYSTEM_ADMIN grants it (no request flow).</td><td class="label">2026-10-17 · RBAC</td></tr>
+          <tr><td>Teacher → student grant</td><td class="feat">Reuse existing whitelist / invite code / public access (add to QuizSet where missing). No Class concept.</td><td class="label">2026-10-17 · RBAC</td></tr>
+          <tr><td>Existing users/data</td><td class="feat">Reset DB (local now, production at deploy) — web has no real users. No data migration/backfill.</td><td class="label">2026-10-17 · RBAC</td></tr>
+          <tr><td>Multiple roles</td><td class="feat">SYSTEM_ADMIN may combine with TEACHER; TEACHER and STUDENT are mutually exclusive. TEACHER can view/preview content they created.</td><td class="label">2026-10-17 · RBAC</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 05 · Milestones + dependencies -->
+<section class="slide" id="milestones">
+  <span class="slide-tag">■ 05 · Milestones &amp; dependencies</span>
+  <span class="slide-num">05 / 10</span>
+  <div class="container">
+    <div class="reveal">
+      <h4>Execution strategy</h4>
+      <h2>Four milestones, one branch.<br><em>Every phase ends green.</em></h2>
+    </div>
+    <div class="phase-grid reveal mt-l">
+      <div class="card"><div class="card-mark">01–09</div><h4>Milestone A</h4><h3>RBAC end to end</h3><p>RBAC usable end to end on the current topology, with the new auth and gateway. 04 + 05 + 08 are verified together (04 alone has no revoke list).</p></div>
+      <div class="card"><div class="card-mark">10–11</div><h4>Milestone B</h4><h3>Data ownership</h3><p>Each service gets its own schema and role. <code>libs/database</code> is removed. 10's FE edits land after 09 (shared <code>useAuthStore.ts</code>, <code>types/user.ts</code>).</p></div>
+      <div class="card"><div class="card-mark">12–15</div><h4>Milestone C</h4><h3>exam-service split away</h3><p>Order: <b>12 ∥ 15 → 13 → 14</b>. 15 also needs 10's idempotent <code>Debit</code>/<code>Refund</code>; 13 needs 15. Edits to shared files are append-only, merges serialized.</p></div>
+      <div class="card dark"><div class="card-mark">16, 19</div><h4>Milestone D</h4><h3>Independent deploy + docs</h3><p>Per-service deploy, one-time production cutover, docs synced to the system as built.</p></div>
+      <div class="card"><div class="card-mark">18</div><h4>Mobile</h4><h3>Any time after 09</h3><p>Mobile is unreleased, so 18 runs any time after 09 and must finish before the first store release. iOS + Android parity.</p></div>
+      <div class="card deferred"><div class="card-mark">17</div><h4>Deferred</h4><h3>K8s, observability, Redis ACL</h3><p>~3.5d, excluded from the 56.75d total. Adopted later without code changes beyond config and one admin-logs adapter.</p></div>
+    </div>
+
+    <div class="reveal mt-l" id="graph-wrap" hidden>
+<pre class="mermaid">
+flowchart LR
+  classDef deferred fill:#faf7f2,stroke:#8a6f2c,color:#8a6f2c,stroke-dasharray:4 3
+  classDef mobile fill:#faf7f2,stroke:#b8232c,color:#0a0a0a
+  subgraph A["Milestone A"]
+    P01["01 Guardrails"]
+    P02["02 Contracts"]
+    P03["03 Messaging"]
+    P04["04 Identity &amp; RBAC"]
+    P05["05 Gateway"]
+    P06["06 Enforcement"]
+    P07["07 Quiz sharing"]
+    P08["08 Admin roles"]
+    P09["09 FE RBAC"]
+  end
+  subgraph B["Milestone B"]
+    P10["10 Cut cross-DB"]
+    P11["11 DB per service"]
+  end
+  subgraph C["Milestone C"]
+    P12["12 Study-room + Vocab"]
+    P15["15 Document + AI DB"]
+    P13["13 AI-chat"]
+    P14["14 Content + Assessment"]
+  end
+  subgraph D["Milestone D"]
+    P16["16 Deploy independence"]
+    P19["19 Docs sync"]
+  end
+  P18["18 Mobile parity"]:::mobile
+  P17["17 Deferred K8s/obs/ACL"]:::deferred
+  P01 --&gt; P02 --&gt; P03
+  P02 --&gt; P04
+  P03 --&gt; P04
+  P02 --&gt; P05
+  P03 --&gt; P05
+  P04 --&gt; P05
+  P04 --&gt; P06 --&gt; P07
+  P04 --&gt; P08
+  P06 --&gt; P08
+  P04 --&gt; P09
+  P07 --&gt; P09
+  P08 --&gt; P09
+  P03 --&gt; P10
+  P04 --&gt; P10
+  P08 --&gt; P10
+  P09 --&gt; P10
+  P10 --&gt; P11
+  P01 -. spike GO .-&gt; P11
+  P05 --&gt; P12
+  P11 --&gt; P12
+  P03 --&gt; P15
+  P10 --&gt; P15
+  P11 --&gt; P15
+  P11 --&gt; P13
+  P12 --&gt; P13
+  P15 --&gt; P13
+  P07 --&gt; P14
+  P11 --&gt; P14
+  P13 --&gt; P14
+  P15 --&gt; P14
+  P12 --&gt; P16
+  P13 --&gt; P16
+  P14 --&gt; P16
+  P15 --&gt; P16
+  P16 -.-&gt; P17
+  P16 --&gt; P19
+  P09 --&gt; P18
+</pre>
+    </div>
+
+    <div class="reveal mt-l">
+      <h4>Dependency list (from plan.md — reads without the graph)</h4>
+      <ul class="fallback">
+        <li><span class="n">01</span><a href="./phase-01-guardrails-and-cleanup.md">Guardrails &amp; Cleanup</a> <span class="d">· 2.25d · after —</span></li>
+        <li><span class="n">02</span><a href="./phase-02-contracts-and-infra-libs.md">Contracts &amp; Infra Libs</a> <span class="d">· 2.25d · after 01</span></li>
+        <li><span class="n">03</span><a href="./phase-03-messaging-foundation.md">Messaging Foundation</a> <span class="d">· 2.5d · after 02</span></li>
+        <li><span class="n">04</span><a href="./phase-04-identity-and-rbac-core.md">Identity &amp; RBAC Core</a> <span class="d">· 5d · after 02, 03</span></li>
+        <li><span class="n">05</span><a href="./phase-05-gateway-rewrite.md">Gateway Rewrite</a> <span class="d">· 4.25d · after 02, 03, 04</span></li>
+        <li><span class="n">06</span><a href="./phase-06-rbac-enforcement-and-security-fixes.md">RBAC Enforcement &amp; Security Fixes</a> <span class="d">· 4.75d · after 04</span></li>
+        <li><span class="n">07</span><a href="./phase-07-quiz-sharing-and-student-practice.md">Quiz Sharing &amp; Student Practice</a> <span class="d">· 2.75d · after 06</span></li>
+        <li><span class="n">08</span><a href="./phase-08-admin-role-management-screen.md">Admin Role-Management Screen</a> <span class="d">· 2.75d · after 04, 06</span></li>
+        <li><span class="n">09</span><a href="./phase-09-frontend-rbac.md">Frontend RBAC</a> <span class="d">· 3.5d · after 04, 07, 08</span></li>
+        <li><span class="n">10</span><a href="./phase-10-cut-cross-db-access.md">Cut Cross-DB Access</a> <span class="d">· 2.75d · after 03, 04, 08, 09</span></li>
+        <li><span class="n">11</span><a href="./phase-11-database-per-service.md">Database per Service</a> <span class="d">· 3d · after 10 + P01 spike GO</span></li>
+        <li><span class="n">12</span><a href="./phase-12-extract-study-room-and-vocabulary.md">Extract Study-Room &amp; Vocabulary</a> <span class="d">· 3d · after 05, 11</span></li>
+        <li><span class="n">13</span><a href="./phase-13-extract-ai-chat.md">Extract AI-Chat</a> <span class="d">· 2d · after 11, 12, 15</span></li>
+        <li><span class="n">14</span><a href="./phase-14-extract-content-and-assessment.md">Extract Content &amp; Assessment</a> <span class="d">· 4.5d · after 07, 11, 13, 15</span></li>
+        <li><span class="n">15</span><a href="./phase-15-document-service-and-ai-service-db.md">Document Service &amp; AI-Service DB</a> <span class="d">· 5d · after 03, 10, 11</span></li>
+        <li><span class="n">16</span><a href="./phase-16-deploy-independence-and-observability.md">Deploy Independence</a> <span class="d">· 2.5d · after 12–15</span></li>
+        <li class="gold"><span class="n">17</span><a href="./phase-17-k8s-readiness.md">Deferred: K8s + Observability + Redis ACL</a> <span class="d">· ~3.5d (excluded) · after 16</span></li>
+        <li><span class="n">18</span><a href="./phase-18-mobile-rbac-parity.md">Mobile RBAC Parity (examio-app)</a> <span class="d">· 2.75d (provisional) · after 09 · before first store release</span></li>
+        <li><span class="n">19</span><a href="./phase-19-docs-and-architecture-sync.md">Docs &amp; Architecture Sync</a> <span class="d">· 1.25d · after 16</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 06 · Phases -->
+<section class="slide" id="phases">
+  <span class="slide-tag">■ 06 · Phases</span>
+  <span class="slide-num">06 / 10</span>
+  <div class="container">
+    <div class="reveal">
+      <h4>Nineteen phases</h4>
+      <h2>One card per phase.<br><em>Done means observable.</em></h2>
+      <p class="muted mt-m">Each card: priority · effort · dependencies, 3–5 key deliverables, and the success-criteria headline. Full detail lives in the linked phase file.</p>
+    </div>
+
+    <div class="group-head reveal"><span class="k">Milestone A · 01–09</span><p>RBAC usable end to end on the current topology, with the new auth and gateway.</p></div>
+    <div class="phase-grid">
+      <article class="card phase reveal"><div class="card-mark">P01</div>
+        <div class="meta"><b>P1</b><span>2.25d</span><span>after —</span></div>
+        <h3><a href="./phase-01-guardrails-and-cleanup.md">Guardrails &amp; Cleanup</a></h3>
+        <ul>
+          <li>CI gate on PR + push main; blocks deploy on failure.</li>
+          <li><code>/health/live</code> + <code>/health/ready</code>; pino JSON logs with <code>requestId</code> echoed in <code>X-Request-Id</code>.</li>
+          <li>One baseline migration replaces <code>prisma db push</code>; fresh DB via <code>migrate deploy</code>.</li>
+          <li>Dead code removed incl. ai-service <code>score/</code> + <code>BenchmarkItem</code>; unverified-user guard bug fixed.</li>
+          <li>Prisma 6.19.x + 0.5d Prisma/bundling go/no-go spike that gates phase 11.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span>Fresh <code>docker compose up</code> on an empty volume: migration exits 0 and every service reports <code>/health/ready</code> 200.</p>
+      </article>
+      <article class="card phase reveal"><div class="card-mark">P02</div>
+        <div class="meta"><b>P1</b><span>2.25d</span><span>after 01</span></div>
+        <h3><a href="./phase-02-contracts-and-infra-libs.md">Contracts &amp; Infra Libs</a></h3>
+        <ul>
+          <li><code>examio-be/proto/</code> as the single contract source (buf v2, ts-proto + Python stubs), <code>examio.&lt;svc&gt;.v1</code>.</li>
+          <li>Auth proto: <code>GetUsersByIds</code>, <code>ListUsers</code>, <code>SetUserRole</code>, <code>SetSystemAdmin</code>, <code>SetUserStatus</code>; <code>BaseRole</code> enum, no numeric role.</li>
+          <li>Idempotent money contracts <code>Debit</code>/<code>Credit</code>/<code>Refund</code> (server in 10); R2 <code>DeleteObjects</code> implemented.</li>
+          <li>Ports unified HTTP 3000 / gRPC 50051; <code>libs/grpc</code> (3s deadline, retry only idempotent RPCs), <code>libs/http</code> error envelope.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span><code>yarn proto:lint &amp;&amp; yarn proto:gen &amp;&amp; yarn typecheck &amp;&amp; yarn build:all &amp;&amp; yarn test</code> exit 0.</p>
+      </article>
+      <article class="card phase reveal"><div class="card-mark">P03</div>
+        <div class="meta"><b>P1</b><span>2.5d</span><span>after 02</span></div>
+        <h3><a href="./phase-03-messaging-foundation.md">Messaging Foundation</a></h3>
+        <ul>
+          <li><code>libs/messaging</code>: envelope v1, transactional outbox + claim-then-publish relay.</li>
+          <li>Idempotent consumer (<code>processed_events</code>) with source validation.</li>
+          <li>One TTL retry tier (30 s × 5), DLQ, daily purge; <code>ROLE=worker</code>.</li>
+          <li>One RabbitMQ user per service with topic permissions.</li>
+          <li><code>user.created</code> → <code>auth.user.registered</code> via the outbox.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span>Stop RabbitMQ, register a user (201), start RabbitMQ → the wallet appears within 5 s.</p>
+      </article>
+      <article class="card phase reveal"><div class="card-mark">P04</div>
+        <div class="meta"><b>P1</b><span>5d</span><span>after 02, 03</span></div>
+        <h3><a href="./phase-04-identity-and-rbac-core.md">Identity &amp; RBAC Core</a></h3>
+        <ul>
+          <li>Role model: <code>BaseRole</code>, <code>isSystemAdmin</code> (replaces <code>isAdmin</code>), <code>authzVersion</code>, <code>RoleChangeLog</code>.</li>
+          <li>RS256/JWKS tokens with <code>roles</code> + <code>av</code>; <code>/auth/me|login|refresh</code> return roles + permissions.</li>
+          <li><code>libs/auth-jwt</code>: stateless verifier, catalog, global deny-by-default guards, service tokens.</li>
+          <li>Role-change flow over auth gRPC; robust finance teacher provisioning; register defaults to STUDENT.</li>
+          <li>Admin bootstrap CLI → <code>isSystemAdmin</code> (optional <code>--teacher</code>).</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span>Register → <code>/auth/me</code> returns <code>roles:["STUDENT"]</code>, the STUDENT permissions, no wallet and no <code>isAdmin</code> key.</p>
+      </article>
+      <article class="card phase reveal"><div class="card-mark">P05</div>
+        <div class="meta"><b>P1</b><span>4.25d</span><span>after 02, 03, 04</span></div>
+        <h3><a href="./phase-05-gateway-rewrite.md">Gateway Rewrite</a></h3>
+        <ul>
+          <li>17 hand-written proxy controllers (208 handlers) → one YAML-driven streaming proxy.</li>
+          <li>JWT verify, revoke + <code>av</code> staleness checks, coarse prefix permissions.</li>
+          <li>Redis rate limiter carrying every current per-route limit.</li>
+          <li><code>GatewayControl</code> gRPC server, durable <code>authz_changed</code> consumer, authenticated WS upgrade.</li>
+          <li>Helmet, CORS, real client IP; segmented compose networks; gateway stops touching Postgres.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span>After an admin role change, the next request → 401 <code>TOKEN_STALE</code>, then FE refresh succeeds with new roles.</p>
+      </article>
+      <article class="card phase reveal"><div class="card-mark">P06</div>
+        <div class="meta"><b>P1</b><span>4.75d</span><span>after 04</span></div>
+        <h3><a href="./phase-06-rbac-enforcement-and-security-fixes.md">RBAC Enforcement &amp; Security Fixes</a></h3>
+        <ul>
+          <li>Real permission per handler (exam, finance, admin, r2) replaces the mechanical <code>@Authenticated()</code>.</li>
+          <li>The 9 security gaps from scout §7 closed.</li>
+          <li>CI test fails on any undeclared HTTP/WS handler or unapproved <code>@Authenticated()</code>.</li>
+          <li>Code-entry lockout + constant-time compare; WebSocket auth in <code>server.use</code> middleware.</li>
+          <li>Owner-role independence: a demoted teacher's content stays studyable.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span>STUDENT in the browser: AI tool, manage pages, wallet calls → 403; study of a whitelisted flashcard set works.</p>
+      </article>
+      <article class="card phase reveal"><div class="card-mark">P07</div>
+        <div class="meta"><b>P1</b><span>2.75d</span><span>after 06</span></div>
+        <h3><a href="./phase-07-quiz-sharing-and-student-practice.md">Quiz Sharing &amp; Student Practice</a></h3>
+        <ul>
+          <li>QuizSet sharing: public / whitelist / invite code.</li>
+          <li>Student practice: granted list, start/resume, autosave, server-scored submit, history.</li>
+          <li>Valid codes remembered in a code-granted list, evicted when the code rotates or is disabled (flashcard, quiz, exam session).</li>
+          <li>FE: student practice page + teacher share dialog.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span>No response before submit contains correct-answer fields; a student who entered a code once is not prompted again until the teacher regenerates it.</p>
+      </article>
+      <article class="card phase reveal"><div class="card-mark">P08</div>
+        <div class="meta"><b>P1</b><span>2.75d</span><span>after 04, 06</span></div>
+        <h3><a href="./phase-08-admin-role-management-screen.md">Admin Role-Management Screen (&ldquo;Phân quyền&rdquo;)</a></h3>
+        <ul>
+          <li>admin-service <code>admin-roles</code> module over auth gRPC (no DB writes to <code>User</code>).</li>
+          <li>List users, set base role, toggle SYSTEM_ADMIN, read-only matrix, change history; AdminAudit for every change.</li>
+          <li>Ban/unban move onto auth <code>SetUserStatus</code>, bumping <code>authzVersion</code>.</li>
+          <li>FE <code>/admin/roles</code>; <code>UserTable</code> loses grant/revoke-admin; <code>isAdmin</code> → <code>isSystemAdmin</code>.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span>Promoting a user shows a row in &ldquo;Lịch sử thay đổi&rdquo; and <code>/admin/audit</code>; the user's next request gets <code>TOKEN_STALE</code> → teacher sidebar.</p>
+      </article>
+      <article class="card phase reveal"><div class="card-mark">P09</div>
+        <div class="meta"><b>P1</b><span>3.5d</span><span>after 04, 07, 08</span></div>
+        <h3><a href="./phase-09-frontend-rbac.md">Frontend RBAC</a></h3>
+        <ul>
+          <li>Route guards (<code>useCan</code>, <code>&lt;RequirePermission&gt;</code>), 403 page, permission-filtered sidebar and admin nav.</li>
+          <li>Role-based <code>/k</code> landing; creation/AI/wallet UI hidden from students.</li>
+          <li><code>TOKEN_STALE</code>: refresh, apply session, reset role-scoped caches, retry once; study-room socket re-auth.</li>
+          <li>Generated <code>Permission</code> type with CI drift check; <code>User.id: string</code>; vitest introduced.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span>STUDENT browsing <code>/k/ai-tool</code> → <code>/403</code>; zero 403 responses while clicking every visible sidebar item.</p>
+      </article>
+    </div>
+
+    <div class="group-head reveal"><span class="k">Milestone B · 10–11</span><p>Data ownership: each service gets its own schema and role; <code>libs/database</code> is removed.</p></div>
+    <div class="phase-grid">
+      <article class="card phase reveal"><div class="card-mark">P10</div>
+        <div class="meta"><b>P1</b><span>2.75d</span><span>after 03, 04, 08, 09</span></div>
+        <h3><a href="./phase-10-cut-cross-db-access.md">Cut Cross-DB Access</a></h3>
+        <ul>
+          <li>Each Prisma model read/written by exactly one service; cross-service access via gRPC or events.</li>
+          <li>Idempotent <code>Debit</code>/<code>Credit</code>/<code>Refund</code> with <code>idempotencyKey</code>; <code>UpdateBalance</code> deleted.</li>
+          <li><code>FinanceAdminService</code>, auth <code>GetUserStats</code>, finance <code>GetRevenueStats</code> replace admin's direct SQL.</li>
+          <li><code>/auth/me</code> = <code>{ user, roles, permissions }</code>; dependency-cruiser enforced.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span><code>check-model-ownership.ts --strict</code> exit 0 and <code>depcruise apps libs</code> → 0 errors.</p>
+      </article>
+      <article class="card phase reveal"><div class="card-mark">P11</div>
+        <div class="meta"><b>P1</b><span>3d</span><span>after 10 + P01 spike GO</span></div>
+        <h3><a href="./phase-11-database-per-service.md">Database per Service</a></h3>
+        <ul>
+          <li>Own schema + <code>&lt;schema&gt;_svc</code> role for auth, finance, admin, exam (legacy), content, assessment, studyroom, vocabulary, aichat, document, ai.</li>
+          <li>Per-service Prisma schema, client and migrations (<code>prisma-client</code> + <code>PrismaPg</code>).</li>
+          <li>Cross-service FKs dropped; durable <code>r2_delete_tasks</code> for R2 deletion.</li>
+          <li><code>libs/database</code> + <code>prisma:merge</code> deleted; user deletion deferred.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span><code>content_svc</code> selecting from <code>auth."User"</code> → <code>permission denied</code>.</p>
+      </article>
+    </div>
+
+    <div class="group-head reveal"><span class="k">Milestone C · 12–15</span><p>exam-service is split away. Order: 12 ∥ 15 → 13 → 14.</p></div>
+    <div class="phase-grid">
+      <article class="card phase reveal"><div class="card-mark">P12</div>
+        <div class="meta"><b>P1</b><span>3d</span><span>after 05, 11</span></div>
+        <h3><a href="./phase-12-extract-study-room-and-vocabulary.md">Extract Study-Room &amp; Vocabulary</a></h3>
+        <ul>
+          <li><code>study-room-service</code> (HTTP + Socket.io <code>/ws/study</code>) and <code>vocabulary-service</code> (word family + categories).</li>
+          <li>WS auth in <code>server.use</code>; stale sockets disconnected on <code>auth.user.authz_changed</code>.</li>
+          <li><code>word_family:save</code> for STUDENT + TEACHER.</li>
+          <li>Sequential with 13 → 14; parallel with 15 only.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span>No <code>StudyRoomModule|WordFamilyModule</code> left in exam-service; <code>/word-family/categories</code> returns the same JSON as before.</p>
+      </article>
+      <article class="card phase reveal"><div class="card-mark">P15</div>
+        <div class="meta"><b>P1</b><span>5d</span><span>after 03, 10, 11</span></div>
+        <h3><a href="./phase-15-document-service-and-ai-service-db.md">Document Service &amp; AI-Service DB</a></h3>
+        <ul>
+          <li>New <code>document-service</code>: uploaded-file metadata, monthly quota, processing status.</li>
+          <li>ai-service owns schema <code>ai</code> (pgvector, Alembic); runtime DDL dropped.</li>
+          <li>gRPC <code>AiService</code> guarded by service tokens.</li>
+          <li>OCR + generation via events with an idempotent, crash-safe charge (generation stays async).</li>
+          <li>r2 HTTP <code>internal/upload</code> + its <code>INTERNAL_SERVICE_TOKEN</code> deleted.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span><code>ai_svc</code> selecting from <code>exam."UserStorage"</code> → permission denied (or relation missing).</p>
+      </article>
+      <article class="card phase reveal"><div class="card-mark">P13</div>
+        <div class="meta"><b>P1</b><span>2d</span><span>after 11, 12, 15</span></div>
+        <h3><a href="./phase-13-extract-ai-chat.md">Extract AI-Chat (+ Subjects)</a></h3>
+        <ul>
+          <li><code>ai-chat-service</code> owns AI conversations, AI-teacher subjects and chat↔document links.</li>
+          <li>ai-service over gRPC only (<code>AiService.StreamChat</code>) with a service token; manual SSE.</li>
+          <li>Chat deletion with files via <code>DeleteDocuments</code> + <code>r2_delete_tasks</code>.</li>
+          <li>Compat HTTP and the last <code>INTERNAL_SERVICE_TOKEN</code> users removed.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span>No <code>INTERNAL_SERVICE_TOKEN</code> / <code>AI_SERVICE_URL</code> hits remain; <code>ai-chat-service</code> healthy on compose.</p>
+      </article>
+      <article class="card phase reveal"><div class="card-mark">P14</div>
+        <div class="meta"><b>P1</b><span>4.5d</span><span>after 07, 11, 13, 15</span></div>
+        <h3><a href="./phase-14-extract-content-and-assessment.md">Extract Content &amp; Assessment, Delete exam-service</a></h3>
+        <ul>
+          <li><code>content-service</code> (author and self-study) and <code>assessment-service</code> (proctored exams).</li>
+          <li><code>ExamSession.quizSnapshot</code>: content edits and deletes never change running sessions or results.</li>
+          <li>Drift banner + snapshot refresh while still safe; <code>/student/*</code> split.</li>
+          <li>exam-service deleted.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span><code>test ! -d apps/exam-service</code> → ok; no <code>exam-service</code> / <code>EXAM_SERVICE_URL</code> references remain.</p>
+      </article>
+    </div>
+
+    <div class="group-head reveal"><span class="k">Milestone D · 16, 19</span><p>Independent deploy, the one-time production cutover, and docs.</p></div>
+    <div class="phase-grid">
+      <article class="card phase reveal"><div class="card-mark">P16</div>
+        <div class="meta"><b>P1</b><span>2.5d</span><span>after 12–15</span></div>
+        <h3><a href="./phase-16-deploy-independence-and-observability.md">Deploy Independence</a></h3>
+        <ul>
+          <li>Per-service images on GHCR tagged by sha; per-service env; <code>deploy/services.json</code>.</li>
+          <li>CI deploys only changed services, in waves (changed gRPC servers first).</li>
+          <li>Migration lint + two-PR contract flow; P3009 halt.</li>
+          <li>Zero-downtime <code>gateway-a/b</code> for non-streaming requests.</li>
+          <li>One-time production cutover runbook + smoke script + <code>CUTOVER_DONE</code> gate.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span>Runbook steps 0–10 ticked, smoke exit 0 against production, <code>CUTOVER_DONE=true</code>, pre-cutover dump off-host.</p>
+      </article>
+      <article class="card phase reveal"><div class="card-mark">P19</div>
+        <div class="meta"><b>P2</b><span>1.25d</span><span>after 16</span></div>
+        <h3><a href="./phase-19-docs-and-architecture-sync.md">Docs &amp; Architecture Sync</a></h3>
+        <ul>
+          <li>ARCHITECTURE.md corrections: §5.3 gRPC identity, §6.2 ts-proto flags, §7.1 search_path, §10.1 gateway + networks, §10.2 webpack, Node 22, role claims.</li>
+          <li>Permission docs generated from <code>libs/auth-jwt</code> so they cannot drift.</li>
+          <li>Docs link the cutover runbook and the steady-state deploy.</li>
+          <li>Docs only, executed by the <code>doc-writer</code> agent.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span>The CI permission-doc diff step is green; legacy terms appear only inside explicit legacy notes.</p>
+      </article>
+    </div>
+
+    <div class="group-head reveal"><span class="k">Mobile · 18</span><p>Cross-repo (<code>examio-app</code>). Runs any time after 09; must finish before the first store release.</p></div>
+    <div class="phase-grid">
+      <article class="card phase reveal"><div class="card-mark">P18</div>
+        <div class="meta"><b>P2</b><span>2.75d provisional</span><span>after 09</span></div>
+        <h3><a href="./phase-18-mobile-rbac-parity.md">Mobile RBAC Parity (examio-app)</a></h3>
+        <ul>
+          <li>Shared KMP <code>AuthSession { user, roles, permissions }</code> + <code>can(p)</code>.</li>
+          <li><code>TOKEN_STALE</code>: single-flight refresh, refetch me, reset caches; <code>SESSION_REVOKED</code> → login.</li>
+          <li>Navigation by permission; no admin screens on mobile.</li>
+          <li>Android + iOS parity; wallet loads only with <code>wallet:use</code>.</li>
+        </ul>
+        <p class="done"><span class="label">Done when</span>A STUDENT sees no AI/wallet/create entries on either platform; a TEACHER→STUDENT flip applies within 1 request without logout.</p>
+      </article>
+    </div>
+
+    <div class="group-head gold reveal"><span class="k">Deferred · 17</span><p>Excluded from the total. Adopted block by block when needed.</p></div>
+    <div class="phase-grid">
+      <article class="card phase deferred reveal"><div class="card-mark">P17</div>
+        <div class="meta"><b>P3</b><span>~3.5d (excluded)</span><span>after 16</span></div>
+        <h3><a href="./phase-17-k8s-readiness.md">Deferred: K8s + Observability + Redis ACL</a></h3>
+        <ul>
+          <li>A. Prometheus, Loki, Tempo, Grafana + Telegram alerts (~1d).</li>
+          <li>B. Admin logs on Loki (~0.5d).</li>
+          <li>C. Per-service Redis ACL (~0.5d).</li>
+          <li>D. K8s readiness: Helm chart, values per service, NetworkPolicy, migrate Job (~1.5d).</li>
+        </ul>
+        <p class="done"><span class="label">Done when (per block)</span>e.g. D: <code>helm lint</code> 0 failures; C: cross-prefix reads return <code>NOPERM</code>.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- 07 · Red team -->
+<section class="slide" id="red-team">
+  <span class="slide-tag">■ 07 · Red team</span>
+  <span class="slide-num">07 / 10</span>
+  <div class="container">
+    <div class="two-col reveal">
+      <div>
+        <h4>Adversarial review</h4>
+        <h2>37 findings, merged to 15.<br><em>14 accepted.</em></h2>
+      </div>
+      <div>
+        <p class="lead">Four reviewers (Security, Failure Mode, Assumption, Scope). All 15 cited <code>file:line</code>. Applied per phase from <a href="./reports/red-team-changes.md">red-team-changes.md</a>; edits marked <code>&lt;!-- Red Team: RT-n --&gt;</code>.</p>
+        <p class="muted">Reconciliation sweep (2026-10-18): applied X1–X10 (<a href="./reports/reconciliation-decisions.md">decisions</a>, <a href="./reports/reconciliation-sweep-report.md">report</a>) — ban built in P08, one <code>auth.user.authz_changed</code> event, <code>gw:user:&lt;id&gt;:av</code> only, caller allowlists in code. Unresolved contradictions: none.</p>
+      </div>
+    </div>
+    <div class="table-wrap reveal mt-l">
+      <table class="cmp">
+        <thead><tr><th>RT</th><th>Sev</th><th>Finding</th><th class="feat">Disposition</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><span class="sev crit">Critical</span></td><td>No idempotent Debit/Refund; non-atomic generation charge</td><td class="feat">Accept (P02/P10/P15)</td></tr>
+          <tr><td>2</td><td><span class="sev crit">Critical</span></td><td>Money/identity RPCs trust &ldquo;internal network&rdquo;; shared broker creds</td><td class="feat">Accept (S2S tokens P04, RMQ users P03, networks P05)</td></tr>
+          <tr><td>3</td><td><span class="sev">High</span></td><td>Stale-role race, fire-and-forget invalidation</td><td class="feat">Accept (<code>av</code> claim + durable consumer)</td></tr>
+          <tr><td>4</td><td><span class="sev">High</span></td><td>Per-route rate limits lost; code brute force</td><td class="feat">Accept</td></tr>
+          <tr><td>5</td><td><span class="sev">High</span></td><td>WS authz race; global guards vs <code>@SubscribeMessage</code></td><td class="feat">Accept</td></tr>
+          <tr><td>6</td><td><span class="sev">High</span></td><td>Unverified users pass <code>@Authenticated</code>; optional auth forwards revoked tokens</td><td class="feat">Accept</td></tr>
+          <tr><td>7</td><td><span class="sev">High</span></td><td>No IDOR/ownership test dimension</td><td class="feat">Accept</td></tr>
+          <tr><td>8</td><td><span class="sev">High</span></td><td>R2 delete not durable; document delete owner missing</td><td class="feat">Accept (<code>r2_delete_tasks</code>, <code>DeleteDocuments</code>)</td></tr>
+          <tr><td>9</td><td><span class="sev">High</span></td><td>Teacher wallet provisioning unrecoverable</td><td class="feat">Accept</td></tr>
+          <tr><td>10</td><td><span class="sev">High</span></td><td>Outbox growth, relay holds tx; messaging over-built</td><td class="feat">Accept</td></tr>
+          <tr><td>11</td><td><span class="sev">High</span></td><td>Scope: KPI read model, user deletion, K8s/obs/ACL</td><td class="feat">Accept (cut/defer to P17)</td></tr>
+          <tr><td>12</td><td><span class="sev">High</span></td><td>Deploy order, destructive migrations, P3009</td><td class="feat">Accept</td></tr>
+          <tr><td>13</td><td><span class="sev">High</span></td><td>Mobile breaks at Milestone A</td><td class="feat">Accept, then <b>reversed by Validation Q6</b> (mobile unreleased: no compat fields)</td></tr>
+          <tr><td>14</td><td><span class="sev">High</span></td><td>Prisma 6.19/adapter/bundling unspiked</td><td class="feat">Accept (spike gate in P01)</td></tr>
+          <tr><td>15</td><td><span class="sev">Medium</span></td><td>Batch: email leak, CORS/helmet/real-ip, last-admin deadlock, snapshot drift, sharing race, FE gates, r2 token, ordering</td><td class="feat">Accept</td></tr>
+          <tr class="rejected"><td>—</td><td><span class="sev">Medium</span></td><td>Make generation synchronous gRPC</td><td class="feat">Reject: runs minutes, keep job + events</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 08 · Validation -->
+<section class="slide" id="validation">
+  <span class="slide-tag">■ 08 · Validation</span>
+  <span class="slide-num">08 / 10</span>
+  <div class="container">
+    <div class="reveal">
+      <h4>Session 1 · 2026-10-18 · 7 questions</h4>
+      <h2>Seven questions asked.<br><em>One red-team call reversed.</em></h2>
+      <p class="muted mt-m">Full record: <a href="./reports/validation-session-1.md">validation-session-1.md</a>. Propagated to phases: <a href="./reports/validation-propagation-report.md">propagation report</a>.</p>
+    </div>
+    <div class="table-wrap reveal mt-m">
+      <table class="cmp">
+        <thead><tr><th>#</th><th>Question</th><th class="feat">Answer</th><th>Effect</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td><span class="label">Business</span><br>Khi giáo viên dùng AI sinh word family (từ vựng), có trừ credit không?</td><td class="feat">Miễn phí + rate limit</td><td>No new money path in P12; <code>word_family:generate</code> stays TEACHER-only + gateway rate limit.</td></tr>
+          <tr><td>2</td><td><span class="label">Business</span><br>System admin hạ một giáo viên xuống học sinh. Nội dung họ đã tạo xử lý thế nào?</td><td class="feat">Giữ nguyên, khoá quản lý</td><td>Student access checks never depend on the owner's current role; the demoted user gets 403 on management only.</td></tr>
+          <tr><td>3</td><td><span class="label">Business</span><br>Giáo viên có được lưu word family (&ldquo;Từ đã lưu&rdquo;) như học sinh không?</td><td class="feat">Có, thêm cho TEACHER</td><td>Catalog v1: TEACHER += <code>word_family:save</code>.</td></tr>
+          <tr><td>4</td><td><span class="label">Process</span><br>Chiến lược branch khi triển khai 19 phase?</td><td class="feat">Một branch dài</td><td>All work on <code>refactor/microservice-rbac</code>; weekly merge of <code>main</code>; every phase green.</td></tr>
+          <tr><td>5</td><td><span class="label">Process</span><br>Với một branch dài, khi nào deploy production (kèm reset DB)?</td><td class="feat">Chỉ một lần khi merge cuối</td><td>Production keeps the current build until the end; one-time cutover runbook (P16).</td></tr>
+          <tr><td>6</td><td><span class="label">Integration</span><br>App mobile (examio-app) đã phát hành lên store và có người dùng thật chưa?</td><td class="feat">Chưa phát hành</td><td>Reverses RT-13: no <code>isAdmin</code>/<code>wallet</code> compat fields; P18 must reach parity before the first store release.</td></tr>
+          <tr><td>7</td><td><span class="label">Scope</span><br>ai-service còn <code>src/score/</code> … và <code>BenchmarkItem</code> … Sau khi reset DB xử lý thế nào?</td><td class="feat">Xoá cả hai</td><td>P01 deletes <code>src/score/</code>, its dev agent, the benchmark service/routes and the model; P15 no longer migrates them.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="track-box reveal mt-l">
+      <h4>Lead accepted four calls during propagation</h4>
+      <ul>
+        <li>New R2 bucket at cutover; the old one is kept 24h for rollback.</li>
+        <li>P01 also removes the dev-only <code>streamlit_ui/</code> + <code>evaluate_chatbot.py</code>.</li>
+        <li>Seeding via <code>ROLE=seed</code>.</li>
+        <li><code>CUTOVER_DONE</code> deploy gate.</li>
+      </ul>
+      <p class="muted" style="margin:14px 0 0">Unresolved contradictions: none.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 09 · Acceptance and risk -->
+<section class="slide" id="acceptance">
+  <span class="slide-tag">■ 09 · Acceptance &amp; risk</span>
+  <span class="slide-num">09 / 10</span>
+  <div class="container">
+    <div class="reveal">
+      <h4>Definition of done</h4>
+      <h2>Green on every phase.<br><em>Rehearsed before cutover.</em></h2>
+    </div>
+    <div class="three-col reveal mt-l">
+      <div class="card"><div class="card-mark">BE</div><h4>Backend</h4><h3><code>yarn build &amp;&amp; yarn test</code></h3><p>Run in <code>examio-be</code> at the end of every phase.</p></div>
+      <div class="card"><div class="card-mark">FE</div><h4>Frontend</h4><h3><code>yarn build &amp;&amp; yarn lint</code></h3><p>Run in <code>examio-fe</code>; <code>yarn test</code> joins once vitest lands in P09.</p></div>
+      <div class="card dark"><div class="card-mark">APP</div><h4>Runtime</h4><h3>App runs via compose</h3><p>Milestones are verified on local compose only; production sees one deploy at the final merge.</p></div>
+    </div>
+
+    <div class="two-col reveal mt-l">
+      <div>
+        <h4>Production cutover runbook (P16, one-time)</h4>
+        <p>Lives in <code>examio-be/deploy/cutover-runbook.md</code>; smoke script <code>examio-be/scripts/cutover-smoke.ts</code>. Full commands in <a href="./phase-16-deploy-independence-and-observability.md">phase-16</a>.</p>
+        <div class="track-box mt-m">
+          <h4>Rollback</h4>
+          <p style="margin:0">Any failure in steps 4–10, or within the 24 h rollback window: <code>docker compose down</code>, remove the new volumes, checkout <code>pre-cutover</code>, <code>pg_restore</code> the step-1 dump, restore the old <code>R2_BUCKET_NAME</code>, start the <code>:pre-cutover</code> images, smoke login. Data created after cutover is lost (accepted; announced with the window). <code>CUTOVER_DONE</code> stays false.</p>
+        </div>
+      </div>
+      <ol class="steps">
+        <li><span><b>Preconditions</b> — merge commit green; GHCR images for every <code>services.json</code> key; per-service env on the VPS; downtime window announced; deploy job gated by <code>CUTOVER_DONE</code>; runbook rehearsed on an empty local compose host.</span></li>
+        <li><span><b>Backup</b> — <code>pg_dump</code>, verify, copy off-host; tag <code>pre-cutover</code> and every running image <code>:pre-cutover</code>.</span></li>
+        <li><span><b>Drain + stop</b> — no ready RabbitMQ messages, then <code>docker compose down</code>.</span></li>
+        <li><span><b>Drop data volumes</b> — postgres, redis, rabbitmq; point <code>R2_BUCKET_NAME</code> at a new empty bucket (old one kept for rollback).</span></li>
+        <li><span><b>Checkout merge sha</b> — render RabbitMQ definitions; <code>docker compose pull</code>.</span></li>
+        <li><span><b>Infra</b> — postgres, redis, rabbitmq up; init script creates schemas, roles, <code>search_path</code>, pgvector.</span></li>
+        <li><span><b>Migrate</b> per service in wave order; any non-zero exit → rollback.</span></li>
+        <li><span><b>Seed reference data only</b> — admin (PageFeatureFlag), vocabulary (categories), aichat (subjects). No dev seeds.</span></li>
+        <li><span><b>Start in wave order</b> — auth first, <code>gateway-a</code>/<code>gateway-b</code> last, then FE + <code>nginx -s reload</code>.</span></li>
+        <li><span><b>Bootstrap first SYSTEM_ADMIN</b> — register + verify on the web, then the P04 CLI <code>grant &lt;email&gt; --teacher</code>.</span></li>
+        <li><span><b>Smoke</b> — login, teacher creates a quiz set, student studies a granted set, admin role change → <code>TOKEN_STALE</code>, WS join, real client IPs. Green → <code>CUTOVER_DONE=true</code>, watch logs 1 h.</span></li>
+      </ol>
+    </div>
+
+    <div class="reveal mt-l">
+      <h4>Top risks (from phase risk assessments)</h4>
+      <div class="table-wrap">
+        <table class="cmp">
+          <thead><tr><th>Risk</th><th>Phase</th><th>L · I</th><th class="feat">Mitigation</th></tr></thead>
+          <tbody>
+            <tr><td>Stateless guards drop session-active checks before the gateway revoke list exists</td><td class="label">P04</td><td class="label">High / Medium</td><td class="feat">Verify 04 + 05 + 08 together on local compose; logged-out tokens stay valid ≤ 15m meanwhile.</td></tr>
+            <tr><td>Missed route (FE 404)</td><td class="label">P05</td><td class="label">High / Medium</td><td class="feat">Coverage contract vs the route inventory + manual click-through of every sidebar page.</td></tr>
+            <tr><td>Prisma generator/bundling fails in the per-service layout</td><td class="label">P11</td><td class="label">L · H</td><td class="feat">P01 spike gate; NO-GO fallback <code>prisma-client-js</code> per-service output.</td></tr>
+            <tr><td>Raw SQL hits the wrong schema</td><td class="label">P11</td><td class="label">M · H</td><td class="feat">Role <code>search_path</code>; db-isolation test; outbox relay test per service.</td></tr>
+            <tr><td>Behaviour regressions in a large move</td><td class="label">P14</td><td class="label">H · H</td><td class="feat"><code>git mv</code> first (no edits), tests green, then the snapshot refactor in separate commits.</td></tr>
+            <tr><td>Double charge / missed refund across async hops</td><td class="label">P15</td><td class="label">M · H</td><td class="feat">One debit per job/doc with keys <code>doc:</code>/<code>gen:</code>; conditional status updates; reapers; money e2e; DLQ alert.</td></tr>
+            <tr><td>Auto-rollback with a non-backward-compatible migration</td><td class="label">P16</td><td class="label">M · H</td><td class="feat">Migration lint + <code>migration:contract</code> label + two-PR flow; rollback restores the image only.</td></tr>
+            <tr><td>Cutover fails midway (migrate, env, image)</td><td class="label">P16</td><td class="label">M · H</td><td class="feat">Rehearsed runbook; dump + <code>:pre-cutover</code> images + old bucket kept.</td></tr>
+            <tr><td>RAM exhaustion on the VPS (~12 svc × roles)</td><td class="label">P16</td><td class="label">M · H</td><td class="feat"><code>mem_limit</code>, combine api/worker, measure.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · Handoff -->
+<section class="slide" id="handoff">
+  <span class="slide-tag">■ 10 · Handoff</span>
+  <span class="slide-num">10 / 10</span>
+  <div class="container">
+    <div class="reveal">
+      <h4>Next</h4>
+      <h2>Start at phase 01.<br><em>plan.md drives execution.</em></h2>
+    </div>
+    <code class="cmd reveal"><span class="p">$ </span>/tkm:takumi /Users/tgiap.dev/devs/examio/plans/261017-1547-microservice-refactor-rbac/plan.md</code>
+    <div class="three-col reveal mt-m">
+      <div class="card"><div class="card-mark">01</div><h4>Gate</h4><h3>Spike verdict first</h3><p>The P01 Prisma/bundling spike verdict (go | no-go + fallback) is recorded in <a href="./plan.md">plan.md</a> before phase 11 starts.</p></div>
+      <div class="card"><div class="card-mark">02</div><h4>Cross-plan</h4><h3>Supersedes role removal</h3><p>Supersedes the role removal of <code>260513-2045-remove-user-role</code> and <code>260513-1957-unify-backend-role-access</code> (roles re-introduced, new model). Pending mobile plans <code>260525-0629-mobile-screens</code> and <code>260704-1030-ai-flashcard-quiz-generation-app</code> must respect the role gating from phases 09/18.</p></div>
+      <div class="card dark"><div class="card-mark">03</div><h4>Rule</h4><h3>Never commit without approval</h3><p>Plans live only in <code>/plans</code>; deleting DB records with R2 images deletes the R2 objects too; no N+1 (batch <code>GetUsersByIds</code>).</p></div>
+    </div>
+    <p class="muted mt-l">This page is a companion rendering. <a href="./plan.md">plan.md</a> stays the primary artifact.</p>
+  </div>
+</section>
+
+<script>
+(function () {
+  var els = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)) { els.forEach(function (e) { e.classList.add('visible'); }); return; }
+  var io = new IntersectionObserver(function (entries) {
+    entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('visible'); io.unobserve(en.target); } });
+  }, { threshold: 0.08 });
+  els.forEach(function (e) { io.observe(e); });
+})();
+function initGraph() {
+  try {
+    if (!window.mermaid) return;
+    var wrap = document.getElementById('graph-wrap');
+    window.mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'base',
+      themeVariables: { primaryColor: '#f0ebe1', primaryBorderColor: '#0a0a0a', primaryTextColor: '#0a0a0a',
+        lineColor: '#6b6258', clusterBkg: '#faf7f2', clusterBorder: 'rgba(10,10,10,0.25)', fontFamily: 'Georgia, serif' },
+      flowchart: { curve: 'basis' } });
+    wrap.hidden = false;
+    window.mermaid.run({ nodes: wrap.querySelectorAll('.mermaid') }).catch(function () { wrap.hidden = true; });
+  } catch (e) { var w = document.getElementById('graph-wrap'); if (w) w.hidden = true; }
+}
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js" onload="initGraph()" defer></script>
+</body>
+</html>

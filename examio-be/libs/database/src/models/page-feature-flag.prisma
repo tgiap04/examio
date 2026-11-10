@@ -1,8 +1,0 @@
-/// Cờ bật/tắt trang hiển thị cho user (global, do admin điều khiển).
-/// `key` là một trong TOGGLEABLE_PAGE_KEYS (@examio/common). Mặc định bật.
-model PageFeatureFlag {
-    key       String   @id
-    label     String
-    enabled   Boolean  @default(true)
-    updatedAt DateTime @updatedAt
-}

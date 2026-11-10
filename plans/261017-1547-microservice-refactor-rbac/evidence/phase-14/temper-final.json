@@ -1,0 +1,986 @@
+[
+  {
+    "command": "git grep -nE 'exam-service|EXAM_SERVICE_URL' -- '*.ts' '*.yaml' '*.yml' '*.json' '*.example'; test $? -eq 1",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:18:04+0700"
+  },
+  {
+    "command": "test ! -d apps/exam-service",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:18:04+0700"
+  },
+  {
+    "command": "yarn proto:lint",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:18:05+0700"
+  },
+  {
+    "command": "yarn typecheck",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:18:18+0700"
+  },
+  {
+    "command": "yarn check:deps",
+    "exitCode": 0,
+    "summary": "✔ no dependency violations found (1070 modules, 4194 dependencies cruised)",
+    "ts": "2026-10-25T13:18:21+0700"
+  },
+  {
+    "command": "yarn check:ownership",
+    "exitCode": 0,
+    "summary": "Violations: 0",
+    "ts": "2026-10-25T13:18:22+0700"
+  },
+  {
+    "command": "node_modules/.bin/buf --version",
+    "exitCode": 0,
+    "summary": "1.74.0",
+    "ts": "2026-10-25T13:19:22+0700"
+  },
+  {
+    "command": "test $(grep -v -e '^./graphify-out/' -e '^./coverage/' /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/logs/c1-find-hits.txt | wc -l) -eq 0",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:20:11+0700"
+  },
+  {
+    "command": "node_modules/.bin/buf breaking proto --against /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p14t/protohead/examio-be/proto",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:20:17+0700"
+  },
+  {
+    "command": "node --test deploy/rabbitmq/render-definitions.spec.cjs",
+    "exitCode": 0,
+    "summary": "ℹ duration_ms 334.844042",
+    "ts": "2026-10-25T13:20:17+0700"
+  },
+  {
+    "command": "node --test deploy/compose-topology.spec.cjs",
+    "exitCode": 0,
+    "summary": "ℹ duration_ms 246.200291",
+    "ts": "2026-10-25T13:20:18+0700"
+  },
+  {
+    "command": "TZ=UTC node_modules/.bin/jest --forceExit (backend unit, whole repo)",
+    "exitCode": 0,
+    "summary": "243 suites passed 1 skipped; 2462 tests passed 6 skipped 0 failed; forceExit warning logged",
+    "ts": "2026-10-25T13:20:48+0700"
+  },
+  {
+    "command": "perl -e 'alarm 900; exec @ARGV' yarn build:all",
+    "exitCode": 0,
+    "summary": "webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 1995 ms",
+    "ts": "2026-10-25T13:21:36+0700"
+  },
+  {
+    "command": "perl -e 'alarm 900; exec @ARGV' yarn build",
+    "exitCode": 0,
+    "summary": "✓ built in 10.52s",
+    "ts": "2026-10-25T13:21:53+0700"
+  },
+  {
+    "command": "perl -e 'alarm 900; exec @ARGV' yarn lint",
+    "exitCode": 0,
+    "summary": "✖ 29 problems (0 errors, 29 warnings)",
+    "ts": "2026-10-25T13:21:59+0700"
+  },
+  {
+    "command": "perl -e 'alarm 900; exec @ARGV' yarn test",
+    "exitCode": 0,
+    "summary": "   Duration  341ms (transform 40%, import 34%, tests 14%, worker 12%)",
+    "ts": "2026-10-25T13:22:00+0700"
+  },
+  {
+    "command": "./venv/bin/python -m ruff check src/db.py src/main.py src/backend/main.py src/grpc_server.py src/backend/messaging src/backend/auth src/backend/ai_grpc_mapping.py src/backend/services/chat_service.py src/backend/services/sync_stream.py src/backend/tests alembic --extend-exclude src/backend/tests/test_hybrid_retrieval_service.py",
+    "exitCode": 0,
+    "summary": "All checks passed!",
+    "ts": "2026-10-25T13:22:00+0700"
+  },
+  {
+    "command": "./venv/bin/python -m pytest -q",
+    "exitCode": 0,
+    "summary": "89 passed, 58 skipped, 12 warnings in 6.93s",
+    "ts": "2026-10-25T13:22:08+0700"
+  },
+  {
+    "command": "[stage2] yarn prisma:generate (scratch copy, CI parity)",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:24:10+0700"
+  },
+  {
+    "command": "[stage2] bash deploy/postgres/init/01-service-schemas.sh (empty db, 10 roles)",
+    "exitCode": 0,
+    "summary": "postgres init: created schemas and roles for: auth finance admin content assessment studyroom vocabulary aichat document ai",
+    "ts": "2026-10-25T13:24:35+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (auth schema)",
+    "exitCode": 0,
+    "summary": "All migrations have been successfully applied.",
+    "ts": "2026-10-25T13:24:36+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate diff --exit-code (auth, drift)",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:24:37+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (finance schema)",
+    "exitCode": 0,
+    "summary": "All migrations have been successfully applied.",
+    "ts": "2026-10-25T13:24:37+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (admin schema)",
+    "exitCode": 0,
+    "summary": "All migrations have been successfully applied.",
+    "ts": "2026-10-25T13:24:38+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (content schema)",
+    "exitCode": 0,
+    "summary": "All migrations have been successfully applied.",
+    "ts": "2026-10-25T13:24:40+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (assessment schema)",
+    "exitCode": 0,
+    "summary": "All migrations have been successfully applied.",
+    "ts": "2026-10-25T13:24:41+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (studyroom schema)",
+    "exitCode": 0,
+    "summary": "All migrations have been successfully applied.",
+    "ts": "2026-10-25T13:24:42+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (vocabulary schema)",
+    "exitCode": 0,
+    "summary": "All migrations have been successfully applied.",
+    "ts": "2026-10-25T13:24:43+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (document schema)",
+    "exitCode": 0,
+    "summary": "All migrations have been successfully applied.",
+    "ts": "2026-10-25T13:24:44+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (aichat schema)",
+    "exitCode": 0,
+    "summary": "All migrations have been successfully applied.",
+    "ts": "2026-10-25T13:24:45+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (auth schema)",
+    "exitCode": 0,
+    "summary": "No pending migrations to apply.",
+    "ts": "2026-10-25T13:25:25+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate diff --exit-code (auth, drift)",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:25:26+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (finance schema)",
+    "exitCode": 0,
+    "summary": "No pending migrations to apply.",
+    "ts": "2026-10-25T13:25:26+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate diff --exit-code (finance, drift)",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:25:27+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (admin schema)",
+    "exitCode": 0,
+    "summary": "No pending migrations to apply.",
+    "ts": "2026-10-25T13:25:27+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate diff --exit-code (admin, drift)",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:25:28+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (content schema)",
+    "exitCode": 0,
+    "summary": "No pending migrations to apply.",
+    "ts": "2026-10-25T13:25:28+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate diff --exit-code (content, drift)",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:25:29+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (assessment schema)",
+    "exitCode": 0,
+    "summary": "No pending migrations to apply.",
+    "ts": "2026-10-25T13:25:30+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate diff --exit-code (assessment, drift)",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:25:30+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (studyroom schema)",
+    "exitCode": 0,
+    "summary": "No pending migrations to apply.",
+    "ts": "2026-10-25T13:25:31+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate diff --exit-code (studyroom, drift)",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:25:31+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (vocabulary schema)",
+    "exitCode": 0,
+    "summary": "No pending migrations to apply.",
+    "ts": "2026-10-25T13:25:32+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate diff --exit-code (vocabulary, drift)",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:25:33+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (document schema)",
+    "exitCode": 0,
+    "summary": "No pending migrations to apply.",
+    "ts": "2026-10-25T13:25:33+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate diff --exit-code (document, drift)",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:25:34+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate deploy (aichat schema)",
+    "exitCode": 0,
+    "summary": "No pending migrations to apply.",
+    "ts": "2026-10-25T13:25:34+0700"
+  },
+  {
+    "command": "[stage2] prisma migrate diff --exit-code (aichat, drift)",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-25T13:25:35+0700"
+  },
+  {
+    "command": "[stage2] ai-service Alembic ROLE=migrate (ai_svc, empty ai schema)",
+    "exitCode": 0,
+    "summary": "INFO  [alembic.runtime.migration] Running upgrade  -> 0001, Baseline for schema ``ai``: vectors, entities, graph state, outbox, ledger.",
+    "ts": "2026-10-25T13:25:46+0700"
+  },
+  {
+    "command": "[stage3-prep] gen scratch deploy/.env from .env.example-style dummy values (values not recorded)",
+    "exitCode": 0,
+    "summary": "deploy/.env written in scratch copy only",
+    "ts": ""
+  },
+  {
+    "command": "[stage2-e2e] db-isolation (CI=true) :: CI=true RABBITMQ_URL=\"$RABBITMQ_AUTH_URL\" ./node_modules/.bin/jest --config test/db-isolation/jest-e2e.json",
+    "exitCode": 0,
+    "summary": "Test Suites: 5 passed, 5 total Tests:       82 passed, 82 total ",
+    "ts": "2026-10-25T13:28:44+0700"
+  },
+  {
+    "command": "[stage2-e2e] content e2e whole folder :: (cd apps/content-service && DATABASE_URL=\"$CONTENT_DATABASE_URL\" RABBITMQ_URL=\"amqp://content:$RABBITMQ_CONTENT_PASS@localhost:5672\" RABBITMQ_AI_URL=\"amqp://ai:$RABBITMQ_AI_PASS@localhost:5672\" RABBITMQ_DOCUMENT_URL=\"amqp://document:$RABBITMQ_DOCUMENT_PASS@localhost:5672\" SERVICE_NAME=content-service ../../node_modules/.bin/jest --config test/jest-e2e.json)",
+    "exitCode": 0,
+    "summary": "Test Suites: 22 passed, 22 total Tests:       193 passed, 193 total ",
+    "ts": "2026-10-25T13:29:17+0700"
+  },
+  {
+    "command": "[stage2-e2e] assessment e2e whole folder :: (cd apps/assessment-service && DATABASE_URL=\"$ASSESSMENT_DATABASE_URL\" RABBITMQ_URL=\"amqp://assessment:$RABBITMQ_ASSESSMENT_PASS@localhost:5672\" RABBITMQ_CONTENT_URL=\"amqp://content:$RABBITMQ_CONTENT_PASS@localhost:5672\" RABBITMQ_AI_URL=\"amqp://ai:$RABBITMQ_AI_PASS@localhost:5672\" SERVICE_NAME=assessment-service ../../node_modules/.bin/jest --config test/jest-e2e.json)",
+    "exitCode": 0,
+    "summary": "Test Suites: 18 passed, 18 total Tests:       139 passed, 139 total ",
+    "ts": "2026-10-25T13:29:40+0700"
+  },
+  {
+    "command": "[stage2-e2e] ai-chat e2e whole folder :: (cd apps/ai-chat-service && DATABASE_URL=\"$AICHAT_DATABASE_URL\" RABBITMQ_URL=\"amqp://aichat:$RABBITMQ_AICHAT_PASS@localhost:5672\" RABBITMQ_DOCUMENT_URL=\"amqp://document:$RABBITMQ_DOCUMENT_PASS@localhost:5672\" RABBITMQ_FINANCE_URL=\"amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672\" ../../node_modules/.bin/jest --config test/jest-e2e.json)",
+    "exitCode": 0,
+    "summary": "Test Suites: 8 passed, 8 total Tests:       83 passed, 83 total ",
+    "ts": "2026-10-25T13:30:02+0700"
+  },
+  {
+    "command": "[stage2-e2e] document e2e whole folder :: (cd apps/document-service && DATABASE_URL=\"$DOCUMENT_DATABASE_URL\" RABBITMQ_URL=\"amqp://document:$RABBITMQ_DOCUMENT_PASS@localhost:5672\" RABBITMQ_AI_URL=\"amqp://ai:$RABBITMQ_AI_PASS@localhost:5672\" ../../node_modules/.bin/jest --config test/jest-e2e.json)",
+    "exitCode": 0,
+    "summary": "Test Suites: 6 passed, 6 total Tests:       71 passed, 71 total ",
+    "ts": "2026-10-25T13:30:20+0700"
+  },
+  {
+    "command": "[stage2-e2e] finance e2e (CI file list) :: (cd apps/finance-service && DATABASE_URL=\"$FINANCE_DATABASE_URL\" RABBITMQ_URL=\"amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672\" ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-authz-changed.e2e-spec.ts test/wallet-money.e2e-spec.ts test/finance-admin.e2e-spec.ts test/wallet-cache.e2e-spec.ts test/subscription-changed.e2e-spec.ts)",
+    "exitCode": 0,
+    "summary": "Test Suites: 5 passed, 5 total Tests:       70 passed, 70 total ",
+    "ts": "2026-10-25T13:30:31+0700"
+  },
+  {
+    "command": "[stage2-e2e] finance e2e whole folder :: (cd apps/finance-service && DATABASE_URL=\"$FINANCE_DATABASE_URL\" RABBITMQ_URL=\"amqp://finance:$RABBITMQ_FINANCE_PASS@localhost:5672\" ../../node_modules/.bin/jest --config test/jest-e2e.json)",
+    "exitCode": 0,
+    "summary": "Test Suites: 6 passed, 6 total Tests:       73 passed, 73 total ",
+    "ts": "2026-10-25T13:30:44+0700"
+  },
+  {
+    "command": "[stage2-e2e] cross-app demoted-owner + assessment-real-content :: RABBITMQ_URL=\"amqp://assessment:$RABBITMQ_ASSESSMENT_PASS@localhost:5672\" CONTENT_RABBITMQ_URL=\"amqp://content:$RABBITMQ_CONTENT_PASS@localhost:5672\" RABBITMQ_CONTENT_URL=\"amqp://content:$RABBITMQ_CONTENT_PASS@localhost:5672\" SERVICE_NAME=assessment-service ./node_modules/.bin/jest --config test/cross-app/jest-e2e.json test/cross-app/demoted-owner.ownership.e2e-spec.ts test/cross-app/assessment-real-content.e2e-spec.ts",
+    "exitCode": 0,
+    "summary": "Test Suites: 2 passed, 2 total Tests:       6 passed, 6 total ",
+    "ts": "2026-10-25T13:31:19+0700"
+  },
+  {
+    "command": "[stage2-e2e] cross-app gateway-integration (auth + gateway) :: export RABBITMQ_URL=\"$RABBITMQ_AUTH_URL\"; export RABBITMQ_GATEWAY_URL=\"amqp://gateway:$RABBITMQ_GATEWAY_PASS@localhost:5672\"; SERVICE_NAME=auth-service ./node_modules/.bin/jest --config test/cross-app/jest-e2e.json test/cross-app/gateway-integration.e2e-spec.ts",
+    "exitCode": 0,
+    "summary": "Test Suites: 1 passed, 1 total Tests:       9 passed, 9 total ",
+    "ts": "2026-10-25T13:31:27+0700"
+  },
+  {
+    "command": "[stage2-e2e] cross-app admin-roles/ban/users (real auth) :: RABBITMQ_URL=\"$RABBITMQ_AUTH_URL\" ./node_modules/.bin/jest --config test/cross-app/jest-e2e.json test/cross-app/admin-roles.e2e-spec.ts test/cross-app/ban.e2e-spec.ts test/cross-app/admin-users-real-auth.e2e-spec.ts",
+    "exitCode": 0,
+    "summary": "Test Suites: 3 passed, 3 total Tests:       30 passed, 30 total ",
+    "ts": "2026-10-25T13:31:47+0700"
+  },
+  {
+    "command": "[stage2-e2e] gateway e2e (CI file list, CI broker env) run 1",
+    "exitCode": 0,
+    "summary": "Test Suites: 7 passed, 7 total Tests:       62 passed, 62 total ",
+    "ts": "2026-10-25T13:32:35+0700"
+  },
+  {
+    "command": "[stage2-e2e] gateway e2e (CI file list, CI broker env) run 2",
+    "exitCode": 0,
+    "summary": "Test Suites: 7 passed, 7 total Tests:       62 passed, 62 total ",
+    "ts": "2026-10-25T13:33:00+0700"
+  },
+  {
+    "command": "[stage2] ai-service pytest -q (CI step mode)",
+    "exitCode": 0,
+    "summary": "89 passed, 58 skipped, 12 warnings in 6.50s",
+    "ts": "2026-10-25T13:33:30+0700"
+  },
+  {
+    "command": "[stage2-e2e] admin stats parity (CI last step, throwaway DB)",
+    "exitCode": 0,
+    "summary": "Test Suites: 1 passed, 1 total Tests:       2 passed, 2 total ",
+    "ts": "2026-10-25T13:33:42+0700"
+  },
+  {
+    "command": "[stage2] render broker definitions (scratch, ops user ci_admin as in CI)",
+    "exitCode": 0,
+    "summary": "rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/",
+    "ts": "2026-10-25T13:34:46+0700"
+  },
+  {
+    "command": "[stage2] docker run p14t-rabbit with rendered definitions (restart)",
+    "exitCode": 0,
+    "summary": "broker container started",
+    "ts": "2026-10-25T13:34:47+0700"
+  },
+  {
+    "command": "[stage2] rabbitmqctl list_users (after restart)",
+    "exitCode": 0,
+    "summary": "1 lines; ci_admin present: 1",
+    "ts": "2026-10-25T13:34:51+0700"
+  },
+  {
+    "command": "[stage2] ai-service pytest -q with AI_TEST_* set (CI job env)",
+    "exitCode": 0,
+    "summary": "147 passed, 12 warnings in 11.17s",
+    "ts": "2026-10-25T13:35:08+0700"
+  },
+  {
+    "command": "[stage2] ai-service pytest -q REQUIRE_INTEGRATION=1 with AI_TEST_* set",
+    "exitCode": 0,
+    "summary": "147 passed, 12 warnings in 11.01s",
+    "ts": "2026-10-25T13:35:20+0700"
+  },
+  {
+    "command": "[stage3] docker compose -p p14t config --services (scratch deploy, names only)",
+    "exitCode": 0,
+    "summary": "28 services; exam present: 0",
+    "ts": "2026-10-25T13:35:59+0700"
+  },
+  {
+    "command": "[stage3] docker compose build content (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-content Built ",
+    "ts": "2026-10-25T13:36:49+0700"
+  },
+  {
+    "command": "[stage3] docker compose build assessment (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-assessment Built ",
+    "ts": "2026-10-25T13:37:20+0700"
+  },
+  {
+    "command": "[stage3] docker compose build content-migrate (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-content-migrate Built ",
+    "ts": "2026-10-25T13:38:18+0700"
+  },
+  {
+    "command": "[stage3] docker compose build assessment-migrate (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-assessment-migrate Built ",
+    "ts": "2026-10-25T13:39:15+0700"
+  },
+  {
+    "command": "[stage3] docker compose build auth (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-auth Built ",
+    "ts": "2026-10-25T13:39:48+0700"
+  },
+  {
+    "command": "[stage3] docker compose build auth-migrate (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-auth-migrate Built ",
+    "ts": "2026-10-25T13:40:43+0700"
+  },
+  {
+    "command": "[stage3] docker compose build finance (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-finance Built ",
+    "ts": "2026-10-25T13:41:14+0700"
+  },
+  {
+    "command": "[stage3] docker compose build finance-migrate (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-finance-migrate Built ",
+    "ts": "2026-10-25T13:42:11+0700"
+  },
+  {
+    "command": "[stage3] docker compose build admin (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-admin Built ",
+    "ts": "2026-10-25T13:42:43+0700"
+  },
+  {
+    "command": "[stage3] docker compose build admin-migrate (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-admin-migrate Built ",
+    "ts": "2026-10-25T13:43:40+0700"
+  },
+  {
+    "command": "[stage3] docker compose build r2 (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-r2 Built ",
+    "ts": "2026-10-25T13:44:11+0700"
+  },
+  {
+    "command": "[stage3] docker compose build study-room (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-study-room Built ",
+    "ts": "2026-10-25T13:44:43+0700"
+  },
+  {
+    "command": "[stage3] docker compose build study-room-migrate (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-study-room-migrate Built ",
+    "ts": "2026-10-25T13:45:41+0700"
+  },
+  {
+    "command": "[stage3] docker compose build vocabulary (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-vocabulary Built ",
+    "ts": "2026-10-25T13:46:14+0700"
+  },
+  {
+    "command": "[stage3] docker compose build vocabulary-migrate (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-vocabulary-migrate Built ",
+    "ts": "2026-10-25T13:47:10+0700"
+  },
+  {
+    "command": "[stage3] docker compose build document (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-document Built ",
+    "ts": "2026-10-25T13:47:42+0700"
+  },
+  {
+    "command": "[stage3] docker compose build document-migrate (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-document-migrate Built ",
+    "ts": "2026-10-25T13:48:38+0700"
+  },
+  {
+    "command": "[stage3] docker compose build ai-chat (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-ai-chat Built ",
+    "ts": "2026-10-25T13:49:09+0700"
+  },
+  {
+    "command": "[stage3] docker compose build ai-chat-migrate (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-ai-chat-migrate Built ",
+    "ts": "2026-10-25T13:50:05+0700"
+  },
+  {
+    "command": "[stage3] docker compose build gateway (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-gateway Built ",
+    "ts": "2026-10-25T13:50:38+0700"
+  },
+  {
+    "command": "[stage3] docker compose build ai-migrate (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-ai-migrate Built ",
+    "ts": "2026-10-25T13:50:47+0700"
+  },
+  {
+    "command": "[stage3] docker compose build ai (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-ai Built ",
+    "ts": "2026-10-25T13:50:48+0700"
+  },
+  {
+    "command": "[stage3] docker compose build ai-worker (one at a time)",
+    "exitCode": 0,
+    "summary": " Image p14t-ai-worker Built ",
+    "ts": "2026-10-25T13:50:50+0700"
+  },
+  {
+    "command": "[stage3] one-shot content-migrate exit code",
+    "exitCode": 0,
+    "summary": "content-migrate exited  exit=0",
+    "ts": "2026-10-25T13:51:24+0700"
+  },
+  {
+    "command": "[stage3] one-shot assessment-migrate exit code",
+    "exitCode": 0,
+    "summary": "assessment-migrate exited  exit=0",
+    "ts": "2026-10-25T13:51:24+0700"
+  },
+  {
+    "command": "[stage3] one-shot auth-migrate exit code",
+    "exitCode": 0,
+    "summary": "auth-migrate exited  exit=0",
+    "ts": "2026-10-25T13:51:24+0700"
+  },
+  {
+    "command": "[stage3] one-shot finance-migrate exit code",
+    "exitCode": 0,
+    "summary": "finance-migrate exited  exit=0",
+    "ts": "2026-10-25T13:51:24+0700"
+  },
+  {
+    "command": "[stage3] one-shot admin-migrate exit code",
+    "exitCode": 0,
+    "summary": "admin-migrate exited  exit=0",
+    "ts": "2026-10-25T13:51:24+0700"
+  },
+  {
+    "command": "[stage3] one-shot study-room-migrate exit code",
+    "exitCode": 0,
+    "summary": "study-room-migrate exited  exit=0",
+    "ts": "2026-10-25T13:51:24+0700"
+  },
+  {
+    "command": "[stage3] one-shot vocabulary-migrate exit code",
+    "exitCode": 0,
+    "summary": "vocabulary-migrate exited  exit=0",
+    "ts": "2026-10-25T13:51:24+0700"
+  },
+  {
+    "command": "[stage3] one-shot document-migrate exit code",
+    "exitCode": 0,
+    "summary": "document-migrate exited  exit=0",
+    "ts": "2026-10-25T13:51:25+0700"
+  },
+  {
+    "command": "[stage3] one-shot ai-chat-migrate exit code",
+    "exitCode": 0,
+    "summary": "ai-chat-migrate exited  exit=0",
+    "ts": "2026-10-25T13:51:25+0700"
+  },
+  {
+    "command": "[stage3] one-shot ai-migrate exit code",
+    "exitCode": 0,
+    "summary": "ai-migrate exited  exit=0",
+    "ts": "2026-10-25T13:51:25+0700"
+  },
+  {
+    "command": "[stage3] one-shot content-migrate exit code",
+    "exitCode": 0,
+    "summary": "content-migrate exited  exit=0",
+    "ts": "2026-10-25T13:52:08+0700"
+  },
+  {
+    "command": "[stage3] one-shot assessment-migrate exit code",
+    "exitCode": 0,
+    "summary": "assessment-migrate exited  exit=0",
+    "ts": "2026-10-25T13:52:08+0700"
+  },
+  {
+    "command": "[stage3] one-shot auth-migrate exit code",
+    "exitCode": 0,
+    "summary": "auth-migrate exited  exit=0",
+    "ts": "2026-10-25T13:52:08+0700"
+  },
+  {
+    "command": "[stage3] one-shot finance-migrate exit code",
+    "exitCode": 0,
+    "summary": "finance-migrate exited  exit=0",
+    "ts": "2026-10-25T13:52:08+0700"
+  },
+  {
+    "command": "[stage3] one-shot admin-migrate exit code",
+    "exitCode": 0,
+    "summary": "admin-migrate exited  exit=0",
+    "ts": "2026-10-25T13:52:08+0700"
+  },
+  {
+    "command": "[stage3] one-shot study-room-migrate exit code",
+    "exitCode": 0,
+    "summary": "study-room-migrate exited  exit=0",
+    "ts": "2026-10-25T13:52:08+0700"
+  },
+  {
+    "command": "[stage3] one-shot vocabulary-migrate exit code",
+    "exitCode": 0,
+    "summary": "vocabulary-migrate exited  exit=0",
+    "ts": "2026-10-25T13:52:08+0700"
+  },
+  {
+    "command": "[stage3] one-shot document-migrate exit code",
+    "exitCode": 0,
+    "summary": "document-migrate exited  exit=0",
+    "ts": "2026-10-25T13:52:08+0700"
+  },
+  {
+    "command": "[stage3] one-shot ai-chat-migrate exit code",
+    "exitCode": 0,
+    "summary": "ai-chat-migrate exited  exit=0",
+    "ts": "2026-10-25T13:52:08+0700"
+  },
+  {
+    "command": "[stage3] one-shot ai-migrate exit code",
+    "exitCode": 0,
+    "summary": "ai-migrate exited  exit=0",
+    "ts": "2026-10-25T13:52:09+0700"
+  },
+  {
+    "command": "[stage3] docker compose -p p14t down -v --remove-orphans (reset to empty volume)",
+    "exitCode": 0,
+    "summary": " Network examio-internal Removed ",
+    "ts": "2026-10-25T13:53:29+0700"
+  },
+  {
+    "command": "[stage3] volumes for project p14t after reset",
+    "exitCode": 0,
+    "summary": "p14t volumes: 0",
+    "ts": "2026-10-25T13:53:29+0700"
+  },
+  {
+    "command": "[stage3] one-shot content-migrate exit code",
+    "exitCode": 0,
+    "summary": "content-migrate exited  exit=0",
+    "ts": "2026-10-25T13:53:44+0700"
+  },
+  {
+    "command": "[stage3] one-shot assessment-migrate exit code",
+    "exitCode": 0,
+    "summary": "assessment-migrate exited  exit=0",
+    "ts": "2026-10-25T13:53:44+0700"
+  },
+  {
+    "command": "[stage3] one-shot auth-migrate exit code",
+    "exitCode": 0,
+    "summary": "auth-migrate exited  exit=0",
+    "ts": "2026-10-25T13:53:44+0700"
+  },
+  {
+    "command": "[stage3] one-shot finance-migrate exit code",
+    "exitCode": 0,
+    "summary": "finance-migrate exited  exit=0",
+    "ts": "2026-10-25T13:53:44+0700"
+  },
+  {
+    "command": "[stage3] one-shot admin-migrate exit code",
+    "exitCode": 0,
+    "summary": "admin-migrate exited  exit=0",
+    "ts": "2026-10-25T13:53:44+0700"
+  },
+  {
+    "command": "[stage3] one-shot study-room-migrate exit code",
+    "exitCode": 0,
+    "summary": "study-room-migrate exited  exit=0",
+    "ts": "2026-10-25T13:53:44+0700"
+  },
+  {
+    "command": "[stage3] one-shot vocabulary-migrate exit code",
+    "exitCode": 0,
+    "summary": "vocabulary-migrate exited  exit=0",
+    "ts": "2026-10-25T13:53:44+0700"
+  },
+  {
+    "command": "[stage3] one-shot document-migrate exit code",
+    "exitCode": 0,
+    "summary": "document-migrate exited  exit=0",
+    "ts": "2026-10-25T13:53:44+0700"
+  },
+  {
+    "command": "[stage3] one-shot ai-chat-migrate exit code",
+    "exitCode": 0,
+    "summary": "ai-chat-migrate exited  exit=0",
+    "ts": "2026-10-25T13:53:44+0700"
+  },
+  {
+    "command": "[stage3] one-shot ai-migrate exit code",
+    "exitCode": 0,
+    "summary": "ai-migrate exited  exit=0",
+    "ts": "2026-10-25T13:53:44+0700"
+  },
+  {
+    "command": "[stage3] docker compose -p p14t down -v --remove-orphans (reset to empty volume)",
+    "exitCode": 0,
+    "summary": " Network examio-internal Removed ",
+    "ts": "2026-10-25T13:54:21+0700"
+  },
+  {
+    "command": "[stage3] volumes for project p14t after reset",
+    "exitCode": 0,
+    "summary": "p14t volumes: 0",
+    "ts": "2026-10-25T13:54:21+0700"
+  },
+  {
+    "command": "[stage3] docker compose -p p14t up -d --wait (empty volume, no seed profile)",
+    "exitCode": 0,
+    "summary": " Container examio-gateway Healthy ",
+    "ts": "2026-10-25T13:54:52+0700"
+  },
+  {
+    "command": "[stage3] service content healthy (compose state)",
+    "exitCode": 0,
+    "summary": "content running healthy exit=0",
+    "ts": "2026-10-25T13:54:53+0700"
+  },
+  {
+    "command": "[stage3] service assessment healthy (compose state)",
+    "exitCode": 0,
+    "summary": "assessment running healthy exit=0",
+    "ts": "2026-10-25T13:54:53+0700"
+  },
+  {
+    "command": "[stage3] one-shot content-migrate exit code",
+    "exitCode": 0,
+    "summary": "content-migrate exited  exit=0",
+    "ts": "2026-10-25T13:54:53+0700"
+  },
+  {
+    "command": "[stage3] one-shot assessment-migrate exit code",
+    "exitCode": 0,
+    "summary": "assessment-migrate exited  exit=0",
+    "ts": "2026-10-25T13:54:53+0700"
+  },
+  {
+    "command": "[stage3] one-shot auth-migrate exit code",
+    "exitCode": 0,
+    "summary": "auth-migrate exited  exit=0",
+    "ts": "2026-10-25T13:54:53+0700"
+  },
+  {
+    "command": "[stage3] one-shot finance-migrate exit code",
+    "exitCode": 0,
+    "summary": "finance-migrate exited  exit=0",
+    "ts": "2026-10-25T13:54:53+0700"
+  },
+  {
+    "command": "[stage3] one-shot admin-migrate exit code",
+    "exitCode": 0,
+    "summary": "admin-migrate exited  exit=0",
+    "ts": "2026-10-25T13:54:53+0700"
+  },
+  {
+    "command": "[stage3] one-shot study-room-migrate exit code",
+    "exitCode": 0,
+    "summary": "study-room-migrate exited  exit=0",
+    "ts": "2026-10-25T13:54:53+0700"
+  },
+  {
+    "command": "[stage3] one-shot vocabulary-migrate exit code",
+    "exitCode": 0,
+    "summary": "vocabulary-migrate exited  exit=0",
+    "ts": "2026-10-25T13:54:53+0700"
+  },
+  {
+    "command": "[stage3] one-shot document-migrate exit code",
+    "exitCode": 0,
+    "summary": "document-migrate exited  exit=0",
+    "ts": "2026-10-25T13:54:53+0700"
+  },
+  {
+    "command": "[stage3] one-shot ai-chat-migrate exit code",
+    "exitCode": 0,
+    "summary": "ai-chat-migrate exited  exit=0",
+    "ts": "2026-10-25T13:54:53+0700"
+  },
+  {
+    "command": "[stage3] one-shot ai-migrate exit code",
+    "exitCode": 0,
+    "summary": "ai-migrate exited  exit=0",
+    "ts": "2026-10-25T13:54:53+0700"
+  },
+  {
+    "command": "[stage3] broker permission probes content/assessment (one-off container on examio-internal)",
+    "exitCode": 0,
+    "summary": "PROBE_FAILS=0",
+    "ts": "2026-10-25T13:55:51+0700"
+  },
+  {
+    "command": "[stage3] container examio-exam absent (names exactly examio-exam)",
+    "exitCode": 0,
+    "summary": "matches: 0",
+    "ts": "2026-10-25T13:56:14+0700"
+  },
+  {
+    "command": "[stage3] postgres schema exam absent",
+    "exitCode": 0,
+    "summary": "exam schemas: 0",
+    "ts": "2026-10-25T13:56:14+0700"
+  },
+  {
+    "command": "[stage3] positive control: content_svc reads content.QuizSet",
+    "exitCode": 0,
+    "summary": "SET 0 ",
+    "ts": "2026-10-25T13:56:14+0700"
+  },
+  {
+    "command": "[stage3] positive control: assessment_svc reads assessment.ExamRoom",
+    "exitCode": 0,
+    "summary": "SET 0 ",
+    "ts": "2026-10-25T13:56:14+0700"
+  },
+  {
+    "command": "[stage4] live flows through gateway 127.0.0.1:6369 (live/flows.cjs, run 10, final)",
+    "exitCode": 0,
+    "summary": "SUMMARY checks=36 fails=0",
+    "ts": "2026-10-25T14:02:42+0700"
+  },
+  {
+    "command": "[stage4] thumbnail r2 drain + STUDENT/TEACHER permission spot checks (live/thumb-and-perms.cjs)",
+    "exitCode": 0,
+    "summary": "7 pass, 2 fail",
+    "ts": "2026-10-25T14:03:08+0700"
+  },
+  {
+    "command": "[stage4] thumbnail r2 drain + STUDENT/TEACHER permission spot checks (live/thumb-and-perms.cjs, run 2)",
+    "exitCode": 0,
+    "summary": "8 pass, 1 fail",
+    "ts": "2026-10-25T14:05:33+0700"
+  },
+  {
+    "command": "[stage4] thumbnail r2 drain + permission spot checks (live/thumb-and-perms.cjs, clean run 3)",
+    "exitCode": 0,
+    "summary": "9 pass, 0 fail (S4.37-S4.45; S4.39 drained after s3stub swap)",
+    "ts": "2026-10-25T14:07:42+0700"
+  },
+  {
+    "command": "[stage5] FE scenario setup via gateway (live/fe-setup.cjs)",
+    "exitCode": 0,
+    "summary": "SETUP_OK",
+    "ts": "2026-10-25T14:09:05+0700"
+  },
+  {
+    "command": "[stage4] grep deleteFile(|deleteImage( in content-service src outside r2-delete (spec criterion 7)",
+    "exitCode": 0,
+    "summary": "matches=0",
+    "ts": "2026-10-25T14:11:53+0700"
+  },
+  {
+    "command": "[stage4] grep auth.user.deleted in content and assessment src (criterion 7)",
+    "exitCode": 0,
+    "summary": "matches=0",
+    "ts": "2026-10-25T14:11:53+0700"
+  },
+  {
+    "command": "[stage4] routes.yaml has no exam upstream (criterion 1/8)",
+    "exitCode": 0,
+    "summary": "matches=0",
+    "ts": "2026-10-25T14:11:53+0700"
+  },
+  {
+    "command": "[teardown] stop Vite dev server (pid 20191, command line verified)",
+    "exitCode": 0,
+    "summary": "vite stopped=yes",
+    "ts": "2026-10-25T14:12:46+0700"
+  },
+  {
+    "command": "[teardown] docker compose -p p14t down -v --rmi local --remove-orphans",
+    "exitCode": 0,
+    "summary": " Image p14t-ai:latest Removed ",
+    "ts": "2026-10-25T14:13:12+0700"
+  },
+  {
+    "command": "[teardown] docker rm -f p14t-s3stub p14t-s3mock p14t-pg p14t-redis p14t-rabbit",
+    "exitCode": 0,
+    "summary": "removed or absent",
+    "ts": "2026-10-25T14:13:13+0700"
+  },
+  {
+    "command": "[teardown] proof: docker ps -a | grep -E 'p14t|examio' (containers left)",
+    "exitCode": 0,
+    "summary": "containers=0",
+    "ts": "2026-10-25T14:13:13+0700"
+  },
+  {
+    "command": "[teardown] proof: docker volume ls | grep -E 'p14t|examio' (volumes left)",
+    "exitCode": 0,
+    "summary": "volumes=0",
+    "ts": "2026-10-25T14:13:13+0700"
+  },
+  {
+    "command": "[teardown] removed leftover network examio-internal (compose label p14t, 0 containers attached)",
+    "exitCode": 0,
+    "summary": "network removed",
+    "ts": "2026-10-25T14:15:04+0700"
+  },
+  {
+    "command": "[teardown] re-proof after network removal: containers/volumes/networks matching p14t|examio",
+    "exitCode": 0,
+    "summary": "containers=0 volumes=0 networks=0",
+    "ts": "2026-10-25T14:15:04+0700"
+  },
+  {
+    "command": "cd examio-be && git grep -nE \"exam-service|EXAM_SERVICE_URL\" -- \"*.ts\" \"*.yaml\" \"*.yml\" \"*.json\" \"*.example\"; test $? -eq 1 && ! test -d apps/exam-service",
+    "exitCode": 0,
+    "summary": "git grep: 0 tracked hits (exit 1 = no match); apps/exam-service absent. Supersedes the working-tree grep row (its only hits were gitignored coverage/ and graphify-out/ caches)",
+    "ts": "2026-10-25T07:19:30.073Z"
+  },
+  {
+    "command": "[stage5 rerun] D8: Vite 127.0.0.1:5274 (VITE_API_URL to a closed port), every /api/v1/* aborted, open /exam-session/<id> in locales vi-VN and en-US (scratchpad/d8/probe.cjs)",
+    "exitCode": 0,
+    "summary": "vi-VN: SessionUnavailable text \"Không kết nối được máy chủ\"=true; en-US: \"Cannot reach the server\"=true; only /config/pages and /auth/me?_t=... requested, no exam-session API call. Supersedes fe-check S5.9: its glob **/api/v1/auth/me missed the ?_t= query, and fe-d8-probe-2 checked only the vi text while headless Chrome resolved en",
+    "ts": "2026-10-25T07:19:30.073Z"
+  },
+  {
+    "command": "[stage5] FE checks S5.1-S5.8 from live/fe-results.json (Vite 5273 -> live gateway, playwright on system Chrome)",
+    "exitCode": 0,
+    "summary": "S5.1 room renders; S5.2 banners=2 (UPCOMING+ONGOING); S5.3 buttons=1 (UPCOMING only); S5.4 refresh clears banner, api snapshotOutdated=false; S5.5 ONGOING keeps banner, no button; S5.6 sourceDeleted notice after delete; S5.7 0 page errors; S5.8 student session page loads. S5.9 superseded by the stage5 rerun D8 row",
+    "ts": "2026-10-25T07:19:48.551Z"
+  },
+  {
+    "command": "[M1 fix] scratch copy of tracked examio-be/deploy + CI dummy .env: env -i docker compose config --quiet; then config --format json | services.content.networks",
+    "exitCode": 0,
+    "summary": "config exit 0; content networks [egress, internal] (deploy/compose/content.yml egress added for Turnstile; TURNSTILE_SECRET_KEY in content env examples); scratch copy deleted",
+    "ts": "2026-10-25T07:25:53.158Z"
+  }
+]

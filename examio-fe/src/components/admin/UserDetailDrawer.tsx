@@ -3,18 +3,20 @@ import { Drawer, Descriptions, Skeleton, Empty, Alert } from "antd";
 import { useTranslation } from "react-i18next";
 import { getUserApi } from "@/apis/adminApi";
 import { BadgePill } from "@/components/admin/BadgePill";
+import { RoleBadge } from "@/components/admin/roles/RoleBadge";
 
 interface UserDetailDrawerProps {
-  userId: number | null;
+  userId: string | null;
   onClose: () => void;
 }
 
 interface UserDetailResponse {
-  id: number;
+  id: string;
   email: string;
   username: string;
   name: string;
-  isAdmin: boolean;
+  role: "STUDENT" | "TEACHER";
+  isSystemAdmin: boolean;
   isVerified: boolean;
   isBanned: boolean;
   createdAt: string;
@@ -111,10 +113,8 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
               <Descriptions.Item label={t("users.columns.name")}>
                 {data.name}
               </Descriptions.Item>
-              <Descriptions.Item label={t("users.columns.isAdmin")}>
-                <BadgePill variant={data.isAdmin ? "positive" : "neutral"}>
-                  {data.isAdmin ? t("common.yes") : t("common.no")}
-                </BadgePill>
+              <Descriptions.Item label={t("users.columns.role")}>
+                <RoleBadge role={data.role} isSystemAdmin={data.isSystemAdmin} />
               </Descriptions.Item>
               <Descriptions.Item label={t("users.columns.isVerified")}>
                 <BadgePill variant={data.isVerified ? "positive" : "neutral"}>

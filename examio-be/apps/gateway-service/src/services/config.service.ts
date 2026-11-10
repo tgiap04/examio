@@ -5,7 +5,6 @@ import {
     OnModuleInit,
 } from '@nestjs/common';
 import { Subject } from 'rxjs';
-import { PrismaService } from '@examio/database';
 import { RedisService } from '@examio/redis';
 import { CONFIG_PAGES_CHANNEL, CONFIG_PAGES_KEY } from '@examio/common';
 
@@ -14,9 +13,10 @@ export type PageFlagMap = Record<string, boolean>;
 /**
  * Nguồn đọc cấu hình trang bật/tắt cho gateway.
  *
- * - `getPages()` đọc read-through: Redis trước (O(1), 1 string JSON) → miss thì
- *   fallback DB → set lại cache. RedisService tự JSON.stringify/parse nên lưu
- *   thẳng object, không stringify tay (tránh double-encode).
+ * - `getPages()` đọc Redis (O(1), 1 string JSON). Gateway không còn chạm DB:
+ *   admin-service dựng cache lúc boot và mỗi lần toggle. Cache miss = mọi trang
+ *   đều bật (default-on). RedisService tự JSON.stringify/parse nên lưu thẳng
+ *   object, không stringify tay (tránh double-encode).
  * - SSE `/config/stream` lắng nghe `changes$`. Service subscribe Redis channel
  *   `config:pages` MỘT LẦN (onModuleInit) rồi fan-out qua RxJS Subject cho mọi
  *   connection — tránh mỗi connection tự subscribe/unsubscribe trên shared
@@ -27,10 +27,7 @@ export class ConfigService implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(ConfigService.name);
     private readonly changesSubject = new Subject<PageFlagMap>();
 
-    constructor(
-        private readonly prisma: PrismaService,
-        private readonly redis: RedisService
-    ) {}
+    constructor(private readonly redis: RedisService) {}
 
     /** Stream map mới mỗi khi admin toggle (đẩy từ Redis pub/sub). */
     get changes$() {
@@ -59,21 +56,21 @@ export class ConfigService implements OnModuleInit, OnModuleDestroy {
         this.changesSubject.complete();
     }
 
-    /** Đọc map flag (read-through cache). Trả `{ [key]: enabled }`. */
+    /** Đọc map flag từ cache. Trả `{ [key]: enabled }`, `{}` nếu chưa có. */
     async getPages(): Promise<PageFlagMap> {
         const cached = await this.redis.get<PageFlagMap>(CONFIG_PAGES_KEY);
-        if (cached && typeof cached === 'object') {
-            return cached;
-        }
+        return cached && typeof cached === 'object' ? cached : {};
+    }
 
-        const rows = await this.prisma.pageFeatureFlag.findMany();
-        const map: PageFlagMap = {};
-        for (const row of rows) {
-            map[row.key] = row.enabled;
-        }
+    /** True once any flag map is stored (an empty `{}` map counts: it is a deliberate state). */
+    async hasPages(): Promise<boolean> {
+        return (await this.redis.get<PageFlagMap>(CONFIG_PAGES_KEY)) != null;
+    }
 
-        await this.redis.set(CONFIG_PAGES_KEY, map);
-        return map;
+    /** `GatewayControl.SetPageFlags`: ghi cache rồi phát cho mọi SSE client. */
+    async setPages(flags: PageFlagMap): Promise<void> {
+        await this.redis.set(CONFIG_PAGES_KEY, flags);
+        await this.redis.publish(CONFIG_PAGES_CHANNEL, JSON.stringify(flags));
     }
 
     private safeParse(raw: string): PageFlagMap | null {

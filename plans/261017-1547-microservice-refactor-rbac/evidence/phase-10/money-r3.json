@@ -1,0 +1,46 @@
+{
+  "ts": "2026-10-22T20:14:06.921Z",
+  "fails": 1,
+  "results": [
+    {
+      "id": "M0.fe-contract.credit-body-without-direction-and-numeric-userId",
+      "ok": true,
+      "detail": "status 400 BAD_REQUEST {\"statusCode\":400,\"code\":\"BAD_REQUEST\",\"message\":\"Validation failed\",\"requestId\":\"req_01M5JKZQDAS62S7GMX6QDPC2QN\"}"
+    },
+    {
+      "id": "M1.credit.same-key-once",
+      "ok": true,
+      "detail": "credit 200, replay 200; balance 30->35; tx 2->3"
+    },
+    {
+      "id": "M3.credit.same-key-other-amount-409",
+      "ok": true,
+      "detail": "status 409 IDEMPOTENCY_KEY_REUSED; balance still unchanged"
+    },
+    {
+      "id": "M4.subtract.insufficient-400-no-tx",
+      "ok": true,
+      "detail": "status 400 INSUFFICIENT_CREDITS; balance 35->35; tx 3->3"
+    },
+    {
+      "id": "M5.refund.same-key-twice-no-double-effect",
+      "ok": true,
+      "detail": "first 200 second 200 (second body: {\"success\":true,\"data\":{\"paymentId\":\"p10t3pay1792700046810\",\"userId\":\"p10tch6ae327\",\"amount\":100,\"previousStatus\":1,\"new); payment status=4; audit rows for payment=1"
+    },
+    {
+      "id": "M6.teacher-no-wallet.upload-mints-wallet-and-debits-once",
+      "ok": true,
+      "detail": "login true; upload 201 File đã được upload, đang xử lý OCR; wallet balance=18; welcome tx=1; upload debits=1 (amount 2)"
+    },
+    {
+      "id": "M6b.upload.client-retry-debits-once (B2 class)",
+      "ok": false,
+      "detail": "second POST 201; upload debits now=2; balance 18 -> 16"
+    },
+    {
+      "id": "M7.student-upload-refused-no-storage-no-tx",
+      "ok": true,
+      "detail": "status 403 PERMISSION_DENIED; storage rows=0; student wallet tx=0"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+ "task": "Phase 12 Extract Study-Room & Vocabulary: new study-room-service (HTTP + Socket.io /ws/study, Redis adapter key studyroom, P06 WS middleware moved unchanged, auth.user.authz_changed disconnect + auth.user.updated cache DEL) and vocabulary-service (word family + categories, WordFamilyAdminService gRPC server moved, new GetWordFamily RPC, r2_delete_tasks + worker for category images, HTTP ai call kept temporarily); exam keeps POST word-family/:id/to-flashcard via GetWordFamily with pre-assigned card ids (RT-15); exam drops study-room/vocabulary tables; gateway upstreams switched",
+ "mode": "code",
+ "acceptanceCriteria": [
+  "grep -rn \"StudyRoomModule\\|WordFamilyModule\" examio-be/apps/exam-service/src -> no output",
+  "grep -rn \"question: { in:\" examio-be/apps/exam-service/src/modules/flashcardset -> no output; a pre-existing card of another user with an identical question is not linked into the new set",
+  "yarn build && yarn test && check:deps && check:ownership green, incl. the moved study-room specs in apps/study-room-service and the every-handler-declared authz test covering both new apps and @SubscribeMessage handlers",
+  "WS /ws/study through the gateway to study-room-service: STUDENT/TEACHER connect, join and chat; SYSTEM_ADMIN-only, no token or email_verified=false -> connect_error; auth.user.authz_changed with higher authzVersion -> auth:reauth {AUTHZ_CHANGED} + disconnect, old token -> connect_error TOKEN_STALE; token expiring mid-session -> disconnected at exp",
+  "study-room HTTP permissions: STUDENT POST /studyrooms -> 403, TEACHER -> 201, non-host PUT -> 404; responses keep their exact shape",
+  "vocabulary permissions: STUDENT POST generate -> 403, STUDENT/TEACHER POST save -> 201 and GET saved -> 200, TEACHER generate -> 2xx with no wallet transaction, 21st generation in a day -> 429",
+  "admin UpsertCategory via vocabulary gRPC visible in GET categories; call without word_family:admin -> PERMISSION_DENIED; DeleteCategory/UpsertCategory replacing an image enqueue r2_delete_tasks in the same tx and the vocabulary worker calls DeleteObjects (r2 @ServiceOnly includes vocabulary)",
+  "auth.user.updated replayed or out of order -> study-room profile cache ends empty, no error; exam still consumes auth.user.updated for its own cache",
+  "docker compose up -d --wait with study-room-service and vocabulary-service (+ their migrate one-shots) healthy; GET /api/v1/word-family/categories through the gateway returns the same JSON as before; FE study-room create/join/sync and admin word-family CRUD work"
+ ],
+ "touchpoints": [
+  "examio-be/apps/study-room-service",
+  "examio-be/apps/vocabulary-service",
+  "examio-be/apps/exam-service/src",
+  "examio-be/apps/exam-service/prisma/schema",
+  "examio-be/apps/gateway-service/config/routes.yaml",
+  "examio-be/apps/admin-service",
+  "examio-be/apps/r2-service/src/r2-service.controller.ts",
+  "examio-be/proto/examio/vocabulary/v1",
+  "examio-be/libs/grpc",
+  "examio-be/deploy",
+  "examio-be/scripts/check-model-ownership.ts",
+  "examio-be/nest-cli.json",
+  "examio-be/package.json",
+  ".github/workflows/ci.yml"
+ ],
+ "blastRadius": [
+  "study-room HTTP + WS (FE /k/study-room)",
+  "word-family pages and admin word-family CRUD",
+  "exam flashcard set creation from a word family",
+  "gateway routing",
+  "compose topology",
+  "CI"
+ ],
+ "contracts": [
+  "HTTP /api/v1/studyrooms/*, /ws/study, /api/v1/word-family/* unchanged shapes",
+  "gRPC examio.vocabulary.v1 WordFamilyAdminService (moved) + WordFamilyService.GetWordFamily (new)",
+  "events consumed: auth.user.authz_changed, auth.user.updated (studyroom.events)",
+  "env STUDYROOM_SERVICE_URL, VOCABULARY_SERVICE_URL, VOCABULARY_GRPC_URL, service clients studyroom/vocabulary, RABBITMQ_STUDYROOM_PASS"
+ ]
+}

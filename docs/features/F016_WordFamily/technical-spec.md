@@ -6,7 +6,7 @@
 
 ## Overview
 
-AI-assisted vocabulary study grouped by root-word family. Students browse categories (`WordFamilyCategory`), generate new root-word groups via the Python AI service (deduplicated per category, concurrency-locked per user), save families to a personal collection, and can bridge selected words into a new `FlashCardSet` for spaced-repetition study. A read-only generation-status endpoint lets the category page detect an already-running job on load/reload and poll until it clears; a root-scoped counterpart (`GET /generation-status/:slug/:rootWord`) does the same for single-root regeneration, which itself runs as an unawaited background job so the request never blocks on the AI call. Two parallel admin CRUD surfaces exist for category management (admin-service primary, exam-service legacy). Redis caches every read path with a 30-minute TTL.
+AI-assisted vocabulary study grouped by root-word family. Students browse categories (`WordFamilyCategory`), generate new root-word groups via the Python AI service (deduplicated per category, concurrency-locked per user), save families to a personal collection, and can bridge selected words into a new `FlashCardSet` for spaced-repetition study. A read-only generation-status endpoint lets the category page detect an already-running job on load/reload and poll until it clears; a root-scoped counterpart (`GET /generation-status/:slug/:rootWord`) does the same for single-root regeneration, which itself runs as an unawaited background job so the request never blocks on the AI call. Since phase 12 the module runs in vocabulary-service (HTTP + gRPC); only the flashcard conversion stays in exam-service. Category writes have one path: admin-service to vocabulary gRPC. Redis caches every read path with a 30-minute TTL.
 
 ## Polymorphic Behavior
 
@@ -24,18 +24,18 @@ N/A — no discriminator fields in Key Entities. (The AI-returned `data` JSON bl
 | FR-004 | Student can generate new root words via AI, excluding existing ones | `WordFamilyService.generateWordFamily` | yes |
 | FR-005 | Student can save/remove a word family to/from a personal collection | `WordFamilyService.saveToCollection` / `removeFromCollection` | yes |
 | FR-006 | Student can convert selected words into a new flashcard deck | `WordFamilyBridgeService.createFlashcardDeck` | yes |
-| FR-007 | Admin can CRUD categories (create, update, soft-delete) | `AdminWordFamilyController` / `WordFamilyController` category methods | yes |
+| FR-007 | Admin can CRUD categories (create, update, soft-delete) | `AdminWordFamilyController` (admin-service) to vocabulary gRPC `WordFamilyAdminService` | yes |
 | FR-008 | On page load/reload, student sees whether an AI generation job is already running for the category and gets a "generating" state until it finishes | `WordFamilyController` `GET /generation-status/:slug` | yes |
 | FR-009 | A specific root word's family can be (re-)generated on-demand as a background job — the endpoint acquires a root-specific lock and returns immediately (no gateway timeout), and the client polls a root-scoped status endpoint until the AI call completes and the record is overwritten | `WordFamilyController` `POST /word-family/generate-root` → `WordFamilyService.generateWordFamilyForRoot`; status via `GET /word-family/generation-status/:slug/:rootWord` → `getRootGenerationStatus` | yes |
 
-**Source:** `examio-be/apps/exam-service/src/modules/word-family/word-family.controller.ts:33-208`, `examio-be/apps/exam-service/src/modules/word-family/word-family-bridge.service.ts:24-97`, `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts:32-69`
+**Source:** `examio-be/apps/vocabulary-service/src/modules/word-family/word-family.controller.ts`, `examio-be/apps/content-service/src/modules/flashcardset/word-family-to-flashcard.service.ts`, `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts:32-69`
 
 ### Business Rules
 
 - **BR-001**: Dedup is enforced at two layers — app-level (existing root words for the category are merged into the AI request's exclude-list) and DB-level (`@@unique([rootWord, categorySlug])` with `upsert` on write). If the AI still returns a duplicate, the existing row's `data` is silently updated rather than erroring. Source: `word-family.service.ts:114-116`, `word-family.repository.ts:117-131`.
 - **BR-002**: Only one generation job per `userId:categorySlug` may run at a time — enforced by a Redis `SET NX EX` lock with a 30-minute TTL; a concurrent second request gets `ConflictException`; the lock is always released in `finally` even on failure. Source: `word-family.service.ts:119-126,196`.
 - **BR-003**: No credit/quota check exists before AI generation — unlike other AI flows in the codebase (e.g. AI chat, which checks wallet/subscription via gRPC), word-family generation has no wallet gate.
-- **BR-004**: Category deletion is soft-delete only (`isActive: false`) at both admin API surfaces; the Prisma `onDelete: Cascade` relation to `WordFamily`/`UserSavedWordFamily` exists but is unreachable via any exposed hard-delete route. Source: `word-family.prisma:28`, `admin-word-family.service.ts`.
+- **BR-004**: Category deletion is soft-delete only (`isActive: false`) through the admin API (admin-service to vocabulary gRPC `WordFamilyAdminService`; the HTTP category write routes were removed in phase 10); the Prisma `onDelete: Cascade` relation to `WordFamily`/`UserSavedWordFamily` exists but is unreachable via any exposed hard-delete route. Source: `examio-be/apps/vocabulary-service/prisma/schema.prisma` (`onDelete: Cascade`), `admin-word-family.service.ts`.
 - **BR-005**: Saving a word family is idempotent — `@@unique([userId, wordFamilyId])` on `UserSavedWordFamily` makes repeated saves a no-op rather than an error. Source: `word-family.prisma:47`.
 - **BR-006**: Flashcard bridge content is HTML-escaped before being written to `FlashCard.question`/`answer` to prevent XSS from AI-generated text. Source: `word-family-bridge.service.ts:65-69,122-130`.
 - **BR-007**: The flashcard bridge operation is atomic — `FlashCardSet` creation, batch `FlashCard` creation, and batch `DetailsFlashCard` join creation all run inside one `prisma.$transaction`. Source: `word-family-bridge.service.ts:72`.
@@ -61,7 +61,7 @@ None.
 
 ### External Integrations
 
-- **Python AI service** — `POST {AI_SERVICE_URL}/generate/word-family`, 600s timeout, `x-internal-service-token` auth header, body `{categorySlug, categoryName, numRootWords, excludeRootWords, rootWord?}`. The optional `rootWord` field (added for BR-011) switches the prompt to generate variations for that exact root instead of proposing new roots. For `generate-root`, this call now happens inside the unawaited `runRootGeneration` background worker rather than on the request path. Returns 503 with `{code, message}` on `ModelUnavailableError`, 400 on other failures (category-level `generate` path only — the root-specific worker logs and swallows failures instead of propagating an HTTP error). Source: `word-family.service.ts:208-220,325-337`, `generation.py:69,235,263`, `generation_service.py:54,65,871-890,1048`.
+- **Python AI service** — historically `POST {AI_SERVICE_URL}/generate/word-family` (removed in phase 13; now gRPC `AiService.GenerateWordFamily`, 60 s deadline, service token). The request fields below still apply: body `{categorySlug, categoryName, numRootWords, excludeRootWords, rootWord?}`. The optional `rootWord` field (added for BR-011) switches the prompt to generate variations for that exact root instead of proposing new roots. For `generate-root`, this call now happens inside the unawaited `runRootGeneration` background worker rather than on the request path. Returns 503 with `{code, message}` on `ModelUnavailableError`, 400 on other failures (category-level `generate` path only — the root-specific worker logs and swallows failures instead of propagating an HTTP error). Source: `word-family.service.ts:208-220,325-337`, `generation.py:69,235,263`, `generation_service.py:54,65,871-890,1048`.
 
 ### Verification
 
@@ -108,22 +108,22 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 ## Assumptions
 
-- Category CRUD exists as two parallel API surfaces (admin-service + exam-service); the exam-service surface is assumed legacy/backward-compat since the FE admin page calls admin-service exclusively.
+- Category writes have a single path since phase 10: admin-service HTTP (`/admin/word-family/categories*`, `word_family:admin`) calling vocabulary's gRPC `WordFamilyAdminService`. Category images are pasted URLs; replacing or deleting one enqueues the old R2 object in vocabulary's `r2_delete_tasks` (same transaction), and the worker deletes it only when the key is under `word-family/` (a URL pointing at a generic `images/` upload is left alone). Phase 12 also adds `WordFamilyService.GetWordFamily` (vocabulary gRPC), which exam calls for `POST /word-family/:id/to-flashcard`; the family is read over gRPC and the cards get pre-assigned ids so an identical `question` owned by another user is never linked. Since phase 13 AI generation in vocabulary-service calls ai-service gRPC `GenerateWordFamily` (`svc:vocabulary` token, `AI_GRPC_URL`, 60 s deadline); `AI_SERVICE_URL` and `INTERNAL_SERVICE_TOKEN` are gone.
 - No credit/quota enforcement on AI generation is assumed intentional (feature launched without a wallet gate), not an oversight — flagged in Unresolved Questions for confirmation.
 
 ## Source Code References
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| WordFamilyCategory/WordFamily/UserSavedWordFamily (models) | `examio-be/libs/database/src/models/word-family.prisma:2-50` | Data models |
-| WordFamilyController | `examio-be/apps/exam-service/src/modules/word-family/word-family.controller.ts:33-208` | User + legacy admin routes, incl. `GET /generation-status/:slug`, `POST /generate-root`, `GET /generation-status/:slug/:rootWord` |
-| WordFamilyService | `examio-be/apps/exam-service/src/modules/word-family/word-family.service.ts:17-396` | Category CRUD, generation orchestration, collection CRUD, `getGenerationStatus`, `generateWordFamilyForRoot` (fires unawaited background job), `runRootGeneration` worker, `getRootGenerationStatus`, flattened `getWordFamily` response |
-| WordFamilyBridgeService | `examio-be/apps/exam-service/src/modules/word-family/word-family-bridge.service.ts:24-130` | Transactional flashcard conversion |
-| WordFamilyRepository | `examio-be/apps/exam-service/src/modules/word-family/word-family.repository.ts:18-196` | Redis-cached Prisma access, upsert dedup |
-| AdminWordFamilyController | `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts:32-69` | Primary admin category CRUD |
+| WordFamilyCategory/WordFamily/UserSavedWordFamily (models) | `examio-be/apps/vocabulary-service/prisma/schema.prisma` | Data models |
+| WordFamilyController | `examio-be/apps/vocabulary-service/src/modules/word-family/word-family.controller.ts` | User routes (category writes removed), incl. `GET /generation-status/:slug`, `POST /generate-root`, `GET /generation-status/:slug/:rootWord` |
+| WordFamilyService | `examio-be/apps/vocabulary-service/src/modules/word-family/word-family.service.ts` | Category CRUD, generation orchestration, collection CRUD, `getGenerationStatus`, `generateWordFamilyForRoot` (fires unawaited background job), `runRootGeneration` worker, `getRootGenerationStatus`, flattened `getWordFamily` response |
+| WordFamilyToFlashcardService | `examio-be/apps/content-service/src/modules/flashcardset/word-family-to-flashcard.service.ts` | Transactional flashcard conversion (moved from `WordFamilyBridgeService`; reads the family via `GetWordFamily`) |
+| WordFamilyRepository | `examio-be/apps/vocabulary-service/src/modules/word-family/word-family.repository.ts` | Redis-cached Prisma access, upsert dedup |
+| AdminWordFamilyController | `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.controller.ts:32-69` | Admin category CRUD (HTTP edge; forwards to vocabulary gRPC `word-family-admin.grpc.controller.ts`) |
 | AdminWordFamilyService | `examio-be/apps/admin-service/src/modules/admin-word-family/admin-word-family.service.ts:41-179` | Transactional CRUD + audit diff |
-| WordFamilyProxyController | `examio-be/apps/gateway-service/src/controllers/word-family-proxy.controller.ts:24-31,159-172,189-207` | Gateway proxy, `PageEnabledGuard`, incl. `POST generate-root`, `GET generation-status/:slug/:rootWord` |
-| generation.py (AI endpoint) | `examio-be/apps/ai-service/src/backend/api/generation.py:69,235,263` | FastAPI word-family generation endpoint; `rootWord` request field |
+| `word-family` / `wf-to-flashcard` routes | `examio-be/apps/gateway-service/config/routes.yaml` | Gateway routing and `pageFlag: word-family` (replaces the removed proxy controller): `wf-to-flashcard` (POST, path regex) goes to exam and is matched before the `word-family` prefix, which goes to the `vocabulary` upstream |
+| chat.py (AI compat endpoint) | `examio-be/apps/ai-service/src/backend/api/chat.py` (`POST /generate/word-family`, only with `AI_HTTP_COMPAT=true`); gRPC `AiService.GenerateWordFamily` in `src/grpc_server.py` | Word-family generation (the old `api/generation.py` router was deleted in phase 15); `rootWord` request field. vocabulary-service still calls the HTTP compat route until phase 13 |
 | generation_service.py | `examio-be/apps/ai-service/src/backend/services/generation_service.py:862-1031` | Prompt build, parse, normalize; `root_word` param switches to single-root prompt (BR-011) |
 | useWordFamilyStore | `examio-fe/src/stores/useWordFamilyStore.ts` | FE state, cached fetches (30min/5min TTLs); slug-scoped `generatingSlug` + `checkGenerationStatus`/`abandonGeneration` for the category-level resume-on-reload; root-scoped `regeneratingKey` (`categorySlug:rootWord`) + `checkRootGenerationStatus`/`abandonRootGeneration` for the background single-root regenerate flow (FR-009) — `generateWordFamilyForRoot` only fires the request, the poller triggers the refetch once the lock clears. |
 | wordFamilyApi | `examio-fe/src/apis/wordFamilyApi.ts:53-193` | API client (11 user + 4 admin routes), incl. `getWordFamilyGenerationStatusApi`, `generateWordFamilyForRootApi` (now returns a background-job ack `{generating, categorySlug, rootWord, startedAt}`, not the full record), and `getRootWordFamilyGenerationStatusApi` (root-scoped status poll). |
@@ -133,6 +133,5 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 ## Unresolved Questions
 
 1. **Credit/quota gate**: Is the absence of a wallet/credit check on AI generation intentional, or should it be added to match other AI flows?
-2. **Dual admin surface**: Should the legacy exam-service admin category CRUD (`word-family.controller.ts`) be removed now that admin-service is the primary surface?
-3. **Saved collection page**: No dedicated "My Saved Word Families" page/route was found in the frontend — is this planned, or is inline save-state on the detail page the intended final UX?
-4. **Hard delete path**: Is a hard-delete admin action planned for categories, or is soft-delete-only permanent by design?
+2. **Saved collection page**: No dedicated "My Saved Word Families" page/route was found in the frontend — is this planned, or is inline save-state on the detail page the intended final UX?
+3. **Hard delete path**: Is a hard-delete admin action planned for categories, or is soft-delete-only permanent by design?

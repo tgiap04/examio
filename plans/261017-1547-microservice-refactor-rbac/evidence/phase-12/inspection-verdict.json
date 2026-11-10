@@ -1,0 +1,60 @@
+{
+  "score": 9,
+  "criticalCount": 0,
+  "decision": "SEALED",
+  "acceptanceCovered": [
+    "grep -rn \"StudyRoomModule\\|WordFamilyModule\" examio-be/apps/exam-service/src -> no output — both imports removed from exam-service.module.ts; temper-1 success-criteria grep exit 0",
+    "grep -rn \"question: { in:\" examio-be/apps/exam-service/src/modules/flashcardset -> no output; a pre-existing card of another user with an identical question is not linked into the new set — word-family-to-flashcard.service.ts pre-assigns randomUUID card ids and links exactly those; e2e mutation check (old code: 6 links instead of 2); live tf12 9/9, foreign links 0",
+    "yarn build && yarn test && check:deps && check:ownership green, incl. the moved study-room specs in apps/study-room-service and the every-handler-declared authz test covering both new apps and @SubscribeMessage handlers — temper-1 rows exit 0 (typecheck, unit, check:deps, check:ownership, build:all); authz-declarations.spec.ts in both apps; compose-topology spec 23/23",
+    "WS /ws/study through the gateway to study-room-service: STUDENT/TEACHER connect, join and chat; SYSTEM_ADMIN-only, no token or email_verified=false -> connect_error; auth.user.authz_changed with higher authzVersion -> auth:reauth {AUTHZ_CHANGED} + disconnect, old token -> connect_error TOKEN_STALE; token expiring mid-session -> disconnected at exp — ws-auth.e2e-spec.ts covers every case at service level; live via gateway: chat, ban reauth 0.45 s, old token refused, cross-replica 6/6; gateway upgrade e2e; SYSTEM_ADMIN-only case service-level only (F4 deferred)",
+    "study-room HTTP permissions: STUDENT POST /studyrooms -> 403, TEACHER -> 201, non-host PUT -> 404; responses keep their exact shape — 403/201 proven by permissions.e2e-spec.ts and live stage 5; non-host PUT answers 403 by accepted move-only deviation (M1 deferred in the phase file); shapes unchanged (smoke 18/18, UI matrix 64/0)",
+    "vocabulary permissions: STUDENT POST generate -> 403, STUDENT/TEACHER POST save -> 201 and GET saved -> 200, TEACHER generate -> 2xx with no wallet transaction, 21st generation in a day -> 429 — vocabulary test/permissions.e2e-spec.ts; live wallet transactions 5 -> 5; live saved API count 1",
+    "admin UpsertCategory via vocabulary gRPC visible in GET categories; call without word_family:admin -> PERMISSION_DENIED; DeleteCategory/UpsertCategory replacing an image enqueue r2_delete_tasks in the same tx and the vocabulary worker calls DeleteObjects (r2 @ServiceOnly includes vocabulary) — test/grpc.e2e-spec.ts, test/r2-delete.e2e-spec.ts incl. rollback, r2-service.controller.ts:169; live img12b 6/6; s6b admin CRUD page drained keyA and keyB",
+    "auth.user.updated replayed or out of order -> study-room profile cache ends empty, no error; exam still consumes auth.user.updated for its own cache — study-room test/user-updated.e2e-spec.ts; exam user-profile.module.ts registers the consumer; live binding exam.events <- auth.user.updated",
+    "docker compose up -d --wait with study-room-service and vocabulary-service (+ their migrate one-shots) healthy; GET /api/v1/word-family/categories through the gateway returns the same JSON as before; FE study-room create/join/sync and admin word-family CRUD work — s6b-up-wait-empty-volume exit 0 (39 s), ps check 0 violations; smoke 18/18 incl. categories shape; s6b-ui run10: two-context create, join by code, chat, timer start/pause, playlist PASS; admin create/edit/delete with R2 drain PASS; s6b-ui9-matrix-full-run10 64 PASS / 0 FAIL"
+  ],
+  "regressionChecked": [
+    "WS socket-auth middleware moved unchanged (only the injected client type differs)",
+    "public-profile cache: tombstone before DEL, Lua SET-unless-tombstoned, TTL 600/30, exam prefix exam:cache:user: pinned by auth.client.spec.ts",
+    "gateway wf-to-flashcard path full-anchored, POST-only, matched before the word-family prefix; study-ws upstream studyroom",
+    "auth SERVICE_AUDIENCES includes vocabulary (F1) with static regression spec",
+    "RabbitMQ studyroom user scoped to studyroom.* and write ^studyroom\\. on examio.events",
+    "exam drop migrations vs the new services' init migrations; drift 6/6 exit 0",
+    "CI rabbitmq-diagnostics run as -u rabbitmq",
+    "category delete soft-delete behaviour identical to HEAD (exam word-family-admin.service.ts:115)",
+    "exam boots without vocabulary (compose-topology.spec.cjs:229)",
+    "full ui9 browser matrix 64/0 on a rebuilt empty-volume stack"
+  ],
+  "contractStatus": "CHANGED",
+  "refuted": [],
+  "unproven": [],
+  "reachableRegressions": [],
+  "findings": [
+    {
+      "severity": "Medium",
+      "category": "authz-convention",
+      "location": "examio-be/apps/study-room-service/test/permissions.e2e-spec.ts:44-72",
+      "summary": "Non-host and unknown-room PUT /studyrooms/:id answer 403, not the rule's 404; accepted move-only deviation, recorded as deferred M1",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Medium",
+      "category": "storage-leak",
+      "location": "examio-be/apps/vocabulary-service/src/modules/word-family/word-family-admin.service.ts:167-183",
+      "summary": "F2: category images outside word-family/ are never reclaimed; by design under phase-11 owner scoping; follow-up admin upload under word-family/",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "test-gap",
+      "location": "plans/261017-1547-microservice-refactor-rbac/evidence/phase-12-runs.md:1-400",
+      "summary": "F14: create-room access-mode select not clicked in the UI (API fallback with the same payload); FE unchanged in this phase; manual check optional",
+      "disposition": "Defer"
+    }
+  ],
+  "riskGate": {
+    "touchesSensitiveArea": true,
+    "signoffRequired": true,
+    "humanSignedOff": true
+  }
+}

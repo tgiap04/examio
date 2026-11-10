@@ -1,0 +1,44 @@
+{
+  "task": "Phase 04 Identity & RBAC Core: BaseRole STUDENT|TEACHER + isSystemAdmin + authzVersion + RoleChangeLog, RS256 JWT with JWKS (claims sub,sid,roles,email_verified,av), libs/auth-jwt stateless guards and fixed permission catalog replacing DB-querying guards in all services, service tokens via client_credentials with @ServiceOnly, role-change flow with last-admin protection and auth.user.authz_changed outbox event, finance teacher wallet provisioning",
+  "mode": "code",
+  "acceptanceCriteria": [
+    "yarn typecheck, build:all and test exit 0; auth, finance and admin e2e pass",
+    "no AuthGuard/AdminGuard/OptionalAuthGuard/JWT_SECRET left in apps or libs (except GoogleAuthGuard/AuthStrictThrottlerGuard)",
+    "libs/auth-jwt has no userSession or prisma usage",
+    "tokens are RS256 with kid, verified via JWKS, carry sub, sid, roles, email_verified and av; refresh reloads role and authzVersion inside a transaction",
+    "permission catalog matches the plan: STUDENT learning-only, TEACHER content/AI/wallet incl word_family:save, SYSTEM_ADMIN admin-only with no wildcard",
+    "guards deny by default; @Public, @Authenticated (denies unverified) and @AllowUnverified behave as specified; ws contexts are skipped",
+    "every @GrpcMethod declares a guard; a gRPC call without metadata to finance UpdateBalance returns UNAUTHENTICATED",
+    "service tokens are issued via client_credentials and accepted only from allowlisted callers",
+    "role changes: self-change and last SYSTEM_ADMIN removal blocked, serialized, RoleChangeLog written, authzVersion bumped, auth.user.authz_changed emitted via outbox",
+    "register creates STUDENT with no subscription; /auth/me returns roles, permissions and isSystemAdmin with no isAdmin key, and a new STUDENT has no wallet",
+    "promoting to TEACHER provisions exactly one wallet with 20 credits idempotently",
+    "demotion keeps content and ownership untouched"
+  ],
+  "touchpoints": [
+    "examio-be/libs/auth-jwt",
+    "examio-be/libs/common/src/guard",
+    "examio-be/apps/auth-service",
+    "examio-be/apps/finance-service",
+    "examio-be/apps/admin-service",
+    "examio-be/apps/exam-service",
+    "examio-be/apps/gateway-service",
+    "examio-be/apps/r2-service",
+    "examio-be/libs/database/src/models/user.prisma"
+  ],
+  "blastRadius": [
+    "every authenticated HTTP route in all services",
+    "every gRPC call between services",
+    "login, refresh, OAuth and register flows",
+    "admin bootstrap and admin user management",
+    "finance wallet provisioning",
+    "study-room websocket auth",
+    "FE auth store reading /auth/me"
+  ],
+  "contracts": [
+    "JWT algorithm and claims change (HS256 -> RS256 + JWKS)",
+    "/auth/me response shape (roles, permissions, isSystemAdmin; isAdmin removed)",
+    "event auth.user.authz_changed added",
+    "gRPC calls now require authorization metadata"
+  ]
+}

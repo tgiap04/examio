@@ -1,42 +1,14 @@
-import {
-    BadRequestException,
-    ConflictException,
-    Injectable,
-    NotFoundException,
-} from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { GenerateIdService } from '@examio/common';
-import { PrismaService } from '@examio/database';
+import { HttpException, Injectable, Logger } from '@nestjs/common';
+import type { Metadata } from '@grpc/grpc-js';
+import { assertWholeCredits } from '@examio/grpc';
 
 import { AuditWriterService } from '../../common/audit-writer.service';
+import { writeAuditBestEffort } from '../admin-roles/best-effort-audit';
+import { AuthUsersClient } from '../../clients/auth-users.client';
+import { FinanceClient } from '../../clients/finance.client';
 import { CreditBody } from './dto/credit.body';
 import { RefundBody } from './dto/refund.body';
 import { SetTierBody } from './dto/set-tier.body';
-
-/** Payment.status values — see schema.prisma. */
-const PAYMENT_STATUS = {
-    UNPAID: 0,
-    PAID: 1,
-    OVERDUE: 2,
-    CANCELLED: 3,
-    REFUNDED: 4,
-} as const;
-
-/** WalletTransaction.type values — see schema.prisma. */
-const WALLET_TX_TYPE = {
-    BUY_CREDITS: 0,
-    BUY_SUBSCRIPTION: 1,
-    REFUND: 2,
-    ADMIN_ADJUSTMENT: 3,
-    USE_SERVICES: 4,
-} as const;
-
-const WALLET_DIRECTION = {
-    ADD: 'ADD',
-    SUBTRACT: 'SUBTRACT',
-} as const;
-
-const PAYMENT_TYPE_CREDITS = 'credits';
 
 export interface AuditContext {
     adminId: string;
@@ -51,6 +23,8 @@ export interface RefundResult {
     previousStatus: number;
     newStatus: number;
     walletAdjusted: boolean;
+    /** True when the Idempotency-Key was already applied (replay: no new effect, no new audit row). */
+    alreadyApplied: boolean;
 }
 
 export interface CreditResult {
@@ -60,6 +34,7 @@ export interface CreditResult {
     newBalance: number;
     amount: number;
     direction: 'ADD' | 'SUBTRACT';
+    alreadyApplied: boolean;
 }
 
 export interface SetTierResult {
@@ -69,319 +44,202 @@ export interface SetTierResult {
     previousBillingCycle: string | null;
     newBillingCycle: string;
     isActive: boolean;
+    alreadyApplied: boolean;
 }
 
+/** Finance detail code -> the HTTP status/message the endpoints always returned. */
+const LEGACY_ERRORS: Record<string, { status: number; message: string }> = {
+    INSUFFICIENT_CREDITS: { status: 400, message: 'Insufficient balance for SUBTRACT adjustment' },
+    PAYMENT_ALREADY_REFUNDED: { status: 409, message: 'Payment already refunded' },
+    PAYMENT_NOT_PAID: { status: 409, message: 'Payment is not in paid status — cannot refund' },
+    PAYMENT_NOT_FOUND: { status: 404, message: 'Payment not found' },
+    WALLET_NOT_FOUND: { status: 404, message: 'Wallet not found for this user' },
+    USER_NOT_FOUND: { status: 404, message: 'User not found' },
+    IDEMPOTENCY_KEY_REUSED: {
+        status: 409,
+        message: 'Idempotency-Key was already used for a different request',
+    },
+};
+
 /**
- * AdminFinanceService — high-risk admin financial actions.
- *
- * Every mutation:
- *  - runs inside prisma.$transaction with isolationLevel = 'Serializable'
- *  - writes the AdminAudit row inside the same transaction so audit +
- *    mutation either both commit or both roll back
- *  - re-validates the target row inside the tx to defeat concurrent admins
+ * AdminFinanceService: high-risk admin financial actions. The money and tier
+ * writes are owned by finance (FinanceAdminService, one tx + outbox there);
+ * this class forwards the admin's own token, keeps the response shapes and
+ * HTTP errors stable, and records the AdminAudit row (admin-owned) once the
+ * write is committed. A replayed idempotency key is not audited twice.
  */
 @Injectable()
 export class AdminFinanceService {
+    private readonly logger = new Logger(AdminFinanceService.name);
+
     constructor(
-        private readonly prisma: PrismaService,
+        private readonly finance: FinanceClient,
         private readonly auditWriter: AuditWriterService,
-        private readonly generateId: GenerateIdService
+        private readonly authUsers: AuthUsersClient
     ) {}
 
-    /**
-     * Refund a paid payment. Reverses the wallet credit if and only if
-     * the payment was for credits (subscription payments do not touch
-     * the wallet).
-     */
     async refund(
         body: RefundBody,
-        ctx: AuditContext
+        ctx: AuditContext,
+        metadata: Metadata,
+        idempotencyKey: string
     ): Promise<RefundResult> {
-        return this.prisma.$transaction(
-            async (tx) => {
-                const payment = await tx.payment.findUnique({
-                    where: { id: body.paymentId },
-                });
-
-                if (!payment) {
-                    throw new NotFoundException('Payment not found');
-                }
-
-                if (payment.status === PAYMENT_STATUS.REFUNDED) {
-                    throw new ConflictException('Payment already refunded');
-                }
-
-                if (payment.status !== PAYMENT_STATUS.PAID) {
-                    throw new ConflictException(
-                        'Payment is not in paid status — cannot refund'
-                    );
-                }
-
-                const previousStatus = payment.status;
-
-                await tx.payment.update({
-                    where: { id: payment.id },
-                    data: { status: PAYMENT_STATUS.REFUNDED },
-                });
-
-                let walletAdjusted = false;
-
-                if (payment.paymentType === PAYMENT_TYPE_CREDITS) {
-                    const wallet = await tx.wallet.findUnique({
-                        where: { userId: payment.userId },
-                    });
-
-                    if (wallet) {
-                        // Clamp wallet >= 0 so refund never drives the
-                        // balance negative even if the user spent the credits.
-                        const decrement = Math.min(payment.amount, wallet.balance);
-
-                        await tx.wallet.update({
-                            where: { id: wallet.id },
-                            data: {
-                                balance: { decrement },
-                            },
-                        });
-
-                        await tx.walletTransaction.create({
-                            data: {
-                                id: this.generateId.generateId(),
-                                walletId: wallet.id,
-                                amount: payment.amount,
-                                type: WALLET_TX_TYPE.REFUND,
-                                direction: WALLET_DIRECTION.SUBTRACT,
-                                description: `Admin refund: ${body.reason}`,
-                                createdBy: ctx.adminId,
-                                updatedBy: ctx.adminId,
-                            },
-                        });
-
-                        walletAdjusted = true;
-                    }
-                }
-
-                await this.auditWriter.write(
-                    {
-                        adminId: ctx.adminId,
-                        action: 'admin.finance.refund',
-                        targetId: payment.userId,
-                        payload: {
-                            paymentId: payment.id,
-                            userId: payment.userId,
-                            amount: payment.amount,
-                            paymentType: payment.paymentType,
-                            previousStatus,
-                            newStatus: PAYMENT_STATUS.REFUNDED,
-                            walletAdjusted,
-                            reason: body.reason,
-                        },
-                        reason: body.reason,
-                        ipAddress: ctx.ipAddress,
-                        userAgent: ctx.userAgent,
-                    },
-                    { tx }
-                );
-
-                return {
-                    paymentId: payment.id,
-                    userId: payment.userId,
-                    amount: payment.amount,
-                    previousStatus,
-                    newStatus: PAYMENT_STATUS.REFUNDED,
-                    walletAdjusted,
-                };
-            },
-            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+        const res = await this.run(() =>
+            this.finance.refundPayment(
+                { paymentId: body.paymentId, reason: body.reason, idempotencyKey },
+                metadata
+            )
         );
+        const result: RefundResult = {
+            paymentId: res.paymentId,
+            userId: res.userId,
+            amount: res.amount,
+            previousStatus: res.previousStatus,
+            newStatus: res.newStatus,
+            walletAdjusted: res.walletAdjusted,
+            alreadyApplied: res.alreadyApplied,
+        };
+        if (!res.alreadyApplied) {
+            await this.audit(ctx, 'admin.finance.refund', result.userId, body.reason, {
+                paymentId: result.paymentId,
+                userId: result.userId,
+                amount: result.amount,
+                previousStatus: result.previousStatus,
+                newStatus: result.newStatus,
+                walletAdjusted: result.walletAdjusted,
+                reason: body.reason,
+            });
+        }
+        return result;
     }
 
-    /**
-     * Admin wallet adjustment — ADD credits or SUBTRACT credits.
-     * SUBTRACT cannot drive balance negative (400 Bad Request).
-     */
+    /** Admin wallet adjustment: ADD or SUBTRACT whole credits (never below zero). */
     async credit(
         body: CreditBody,
-        ctx: AuditContext
+        ctx: AuditContext,
+        metadata: Metadata,
+        idempotencyKey: string
     ): Promise<CreditResult> {
-        return this.prisma.$transaction(
-            async (tx) => {
-                const user = await tx.user.findUnique({
-                    where: { id: body.userId },
-                    select: { id: true },
-                });
-
-                if (!user) {
-                    throw new NotFoundException('User not found');
-                }
-
-                const wallet = await tx.wallet.findUnique({
-                    where: { userId: body.userId },
-                });
-
-                if (!wallet) {
-                    throw new NotFoundException(
-                        'Wallet not found for this user'
-                    );
-                }
-
-                if (
-                    body.direction === WALLET_DIRECTION.SUBTRACT &&
-                    wallet.balance < body.amount
-                ) {
-                    throw new BadRequestException(
-                        'Insufficient balance for SUBTRACT adjustment'
-                    );
-                }
-
-                const previousBalance = wallet.balance;
-                const delta =
-                    body.direction === WALLET_DIRECTION.ADD
-                        ? body.amount
-                        : -body.amount;
-                const newBalance = previousBalance + delta;
-
-                await tx.wallet.update({
-                    where: { id: wallet.id },
-                    data: { balance: newBalance },
-                });
-
-                await tx.walletTransaction.create({
-                    data: {
-                        id: this.generateId.generateId(),
-                        walletId: wallet.id,
-                        amount: body.amount,
-                        type: WALLET_TX_TYPE.ADMIN_ADJUSTMENT,
-                        direction: body.direction,
-                        description: `Admin adjustment: ${body.reason}`,
-                        createdBy: ctx.adminId,
-                        updatedBy: ctx.adminId,
-                    },
-                });
-
-                await this.auditWriter.write(
-                    {
-                        adminId: ctx.adminId,
-                        action: 'admin.finance.credit',
-                        targetId: body.userId,
-                        payload: {
-                            userId: body.userId,
-                            walletId: wallet.id,
-                            previousBalance,
-                            newBalance,
-                            amount: body.amount,
-                            direction: body.direction,
-                            reason: body.reason,
-                        },
-                        reason: body.reason,
-                        ipAddress: ctx.ipAddress,
-                        userAgent: ctx.userAgent,
-                    },
-                    { tx }
-                );
-
-                return {
+        assertWholeCredits(body.amount);
+        const res = await this.run(() =>
+            this.finance.adjustBalance(
+                {
                     userId: body.userId,
-                    walletId: wallet.id,
-                    previousBalance,
-                    newBalance,
                     amount: body.amount,
                     direction: body.direction,
-                };
-            },
-            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+                    reason: body.reason,
+                    idempotencyKey,
+                },
+                metadata
+            )
         );
+        const result: CreditResult = {
+            userId: res.userId,
+            walletId: res.walletId,
+            previousBalance: res.previousBalance,
+            newBalance: res.newBalance,
+            amount: res.amount,
+            direction: res.direction as 'ADD' | 'SUBTRACT',
+            alreadyApplied: res.alreadyApplied,
+        };
+        if (!res.alreadyApplied) {
+            const { alreadyApplied: _applied, ...effect } = result;
+            await this.audit(ctx, 'admin.finance.credit', body.userId, body.reason, {
+                ...effect,
+                reason: body.reason,
+            });
+        }
+        return result;
     }
 
-    /**
-     * Force-set subscription tier for a user. Upserts UserSubscription
-     * if missing. isActive is set to `tier > 0`.
-     */
+    /** Force-set the subscription tier; `isActive` is `tier > 0`. */
     async setTier(
         body: SetTierBody,
-        ctx: AuditContext
+        ctx: AuditContext,
+        metadata: Metadata,
+        idempotencyKey: string
     ): Promise<SetTierResult> {
-        return this.prisma.$transaction(
-            async (tx) => {
-                const user = await tx.user.findUnique({
-                    where: { id: body.userId },
-                    select: { id: true },
-                });
-
-                if (!user) {
-                    throw new NotFoundException('User not found');
-                }
-
-                const existing = await tx.userSubscription.findUnique({
-                    where: { userId: body.userId },
-                });
-
-                const previousTier = existing?.tier ?? 0;
-                const previousBillingCycle = existing?.billingCycle ?? null;
-                const newBillingCycle =
-                    body.billingCycle ??
-                    existing?.billingCycle ??
-                    'monthly';
-                const isActive = body.tier > 0;
-
-                if (existing) {
-                    await tx.userSubscription.update({
-                        where: { userId: body.userId },
-                        data: {
-                            tier: body.tier,
-                            billingCycle: newBillingCycle,
-                            isActive,
-                            updatedBy: ctx.adminId,
-                        },
-                    });
-                } else {
-                    await tx.userSubscription.create({
-                        data: {
-                            id: this.generateId.generateId(),
-                            userId: body.userId,
-                            tier: body.tier,
-                            billingCycle: newBillingCycle,
-                            isActive,
-                            createdBy: ctx.adminId,
-                            updatedBy: ctx.adminId,
-                        },
-                    });
-                }
-
-                await this.auditWriter.write(
-                    {
-                        adminId: ctx.adminId,
-                        action: 'admin.finance.tier_change',
-                        targetId: body.userId,
-                        payload: {
-                            userId: body.userId,
-                            from: {
-                                tier: previousTier,
-                                billingCycle: previousBillingCycle,
-                            },
-                            to: {
-                                tier: body.tier,
-                                billingCycle: newBillingCycle,
-                            },
-                            isActive,
-                            reason: body.reason,
-                        },
-                        reason: body.reason,
-                        ipAddress: ctx.ipAddress,
-                        userAgent: ctx.userAgent,
-                    },
-                    { tx }
-                );
-
-                return {
+        // Finance keeps no FK to the user (database per service), so it cannot tell
+        // an unknown id from a real one: ask auth first, with the admin's own token.
+        await this.assertUserExists(body.userId, metadata);
+        const res = await this.run(() =>
+            this.finance.changeTier(
+                {
                     userId: body.userId,
-                    previousTier,
-                    newTier: body.tier,
-                    previousBillingCycle,
-                    newBillingCycle,
-                    isActive,
-                };
-            },
-            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+                    tier: body.tier,
+                    billingCycle: body.billingCycle ?? '',
+                    reason: body.reason,
+                    idempotencyKey,
+                },
+                metadata
+            )
         );
+        const result: SetTierResult = {
+            userId: res.userId,
+            previousTier: res.previousTier,
+            newTier: res.newTier,
+            previousBillingCycle: res.previousBillingCycle || null,
+            newBillingCycle: res.newBillingCycle,
+            isActive: res.isActive,
+            alreadyApplied: res.alreadyApplied,
+        };
+        if (!res.alreadyApplied) {
+            await this.audit(ctx, 'admin.finance.tier_change', body.userId, body.reason, {
+                userId: body.userId,
+                from: { tier: result.previousTier, billingCycle: result.previousBillingCycle },
+                to: { tier: result.newTier, billingCycle: result.newBillingCycle },
+                isActive: result.isActive,
+                reason: body.reason,
+            });
+        }
+        return result;
+    }
+
+    private async assertUserExists(userId: string, metadata: Metadata): Promise<void> {
+        try {
+            await this.authUsers.getUserAdminDetail(userId, metadata);
+        } catch (err) {
+            if (err instanceof HttpException && err.getStatus() === 404) {
+                const { status, message } = LEGACY_ERRORS.USER_NOT_FOUND;
+                throw new HttpException({ statusCode: status, code: 'USER_NOT_FOUND', message }, status);
+            }
+            throw err;
+        }
+    }
+
+    private async run<T>(call: () => Promise<T>): Promise<T> {
+        try {
+            return await call();
+        } catch (err) {
+            const legacy =
+                err instanceof HttpException
+                    ? LEGACY_ERRORS[(err.getResponse() as { code?: string }).code ?? '']
+                    : undefined;
+            if (!legacy) throw err;
+            const { code } = err.getResponse() as { code: string };
+            throw new HttpException(
+                { statusCode: legacy.status, code, message: legacy.message },
+                legacy.status
+            );
+        }
+    }
+
+    /** The finance write is committed: an audit failure is logged, never surfaced (a retry must not re-apply). */
+    private audit(
+        ctx: AuditContext,
+        action: string,
+        targetId: string,
+        reason: string,
+        payload: Record<string, unknown>
+    ): Promise<void> {
+        return writeAuditBestEffort(this.auditWriter, this.logger, {
+            adminId: ctx.adminId,
+            action,
+            targetId,
+            payload,
+            reason,
+            ipAddress: ctx.ipAddress,
+            userAgent: ctx.userAgent,
+        });
     }
 }

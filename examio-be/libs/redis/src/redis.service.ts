@@ -19,7 +19,12 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     }
 
     onModuleDestroy() {
-        this.client.quit();
+        // quit() rejects when Redis is unreachable; shutdown must not crash on it.
+        for (const c of [this.client, this.subscriber]) {
+            c?.quit().catch((err: Error) =>
+                console.error('[Redis] quit failed:', err.message)
+            );
+        }
     }
 
     /** Lưu giá trị (với TTL optional) */
@@ -98,6 +103,9 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
                 password: redisConfig.password,
             });
 
+            this.subscriber.on('error', (err) =>
+                console.error('[Redis] Subscriber error:', err.message)
+            );
             this.subscriber.on(
                 'message',
                 (channel: string, message: string) => {

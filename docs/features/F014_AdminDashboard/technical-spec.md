@@ -6,7 +6,7 @@
 
 ## Overview
 
-Full-stack admin operations console backed by a dedicated `admin-service` (port 7006, gRPC 50056). Six modules cover platform-wide KPI/analytics, user management (ban/unban/delete/grant-revoke admin), finance operations (refund/credit-adjust/tier-change), server log viewing with SSE streaming, and audit log query. All admin mutations write one `AdminAudit` row per changed field, and all admin routes are gated by a standalone `AdminGuard`.
+Full-stack admin operations console backed by a dedicated `admin-service` (port 7006, gRPC 50056). Six modules cover platform-wide KPI/analytics, user management (ban/unban) and role management (STUDENT/TEACHER, SYSTEM_ADMIN flag, change history), finance operations (refund/credit-adjust/tier-change), server log viewing with SSE streaming, and audit log query. All admin mutations write one `AdminAudit` row per changed field, and all admin routes are gated by a standalone `AdminGuard`.
 
 ## Polymorphic Behavior
 
@@ -20,10 +20,15 @@ N/A — no discriminator fields in Key Entities.
 |------|-------------|-----------------|------------|
 | FR-001 | Admin can view platform KPI overview and time-series analytics | `admin-stats` module | yes |
 | FR-007 | Admin can view signup breakdown by `utm_source` (null → "direct"), top 20 desc | `GET /admin/stats/sources` (+ alias `GET /admin/sources`) | yes |
-| FR-002 | Admin can list, ban, unban, delete, grant/revoke admin on users | `admin-users` module | yes |
+| FR-002 | Admin can list, view, edit profile fields, ban and unban users; list rows show `role` and `isSystemAdmin` read-only | `admin-users` module (`GET/PATCH /admin/users`, `POST :id/ban|unban`) | yes |
 | FR-003 | Admin can refund a payment, adjust credit balance, or change subscription tier | `admin-finance` module | yes |
 | FR-004 | Admin can view and stream server logs in real time | `admin-logs` module (SSE ticket exchange) | yes |
 | FR-005 | Admin can query the audit log of all admin actions | `admin-audit` module | yes |
+| FR-008 | Admin can view the role to permission matrix | `GET /admin/roles` (`role:assign`) | yes |
+| FR-009 | Admin can list users with role / admin flag (filters `q`, `role`, `isSystemAdmin`, paging) and see `systemAdminCount` | `GET /admin/roles/users` | yes |
+| FR-010 | Admin can set a user's base role STUDENT/TEACHER and grant/revoke SYSTEM_ADMIN, with an optional reason; own row 403, last active admin 409 | `PUT /admin/roles/users/:id/role`, `PUT /admin/roles/users/:id/system-admin` | yes |
+| FR-011 | Admin can read the role change history, newest first, with actor/target emails and source (`admin-ui`, `cli`, `bootstrap`) | `GET /admin/roles/changes` | yes |
+| FR-012 | Ban and unban go through auth `SetUserStatus`: self 403, sessions revoked on ban, `authzVersion` bumped; `PATCH /admin/users/:id` rejects `role`, `isSystemAdmin`, `isBanned` (400 `VALIDATION_ERROR`) | `admin-users` module | yes |
 | FR-006 | New admin accounts are provisioned/synced from an env allowlist on service startup | `admin-bootstrap` module | yes |
 
 **Source:** `examio-be/apps/admin-service/src/admin-service.controller.ts`, `examio-be/apps/admin-service/src/modules/{admin-stats,admin-users,admin-finance,admin-logs,admin-audit,admin-bootstrap}/`
@@ -32,11 +37,12 @@ N/A — no discriminator fields in Key Entities.
 
 - **BR-001**: `AdminGuard` performs its own standalone JWT verification and Prisma user lookup — it does not inherit from `AuthGuard` — specifically to avoid double `canActivate` execution and circular dependencies between guards.
 - **BR-002**: All `/api/v1/admin/*` routes are throttled to 30 requests/minute per admin session (`ThrottlerModule`, `name: 'admin'`).
-- **BR-003**: User "deletion" is soft-delete: `isBanned = true` + `deletedAt = now()`. Hard delete is deferred/not implemented.
+- **BR-003**: There is no user delete route in `AdminUsersController`. Ban sets `isBanned` only (no `deletedAt`) and revokes every session; unban also clears a legacy `deletedAt`.
 - **BR-004**: Every admin mutation writes one `AdminAudit` row per changed field via a shared `AuditWriterService`, capturing admin ID, action, target, payload, IP, and user agent.
-- **BR-005**: Finance operations (refund, credit adjustment, tier change) run inside `$transaction` with `Serializable` isolation to prevent race conditions on wallet/subscription state.
+- **BR-005**: Finance operations (payment refund, credit adjustment, tier change) are finance-service RPCs (`FinanceAdminService`, permission `finance:admin`, actor = the forwarded admin token's subject); admin-service holds no finance models. Each write is idempotent on the `Idempotency-Key` HTTP header (FE sends one per action; 1-200 chars): a replay returns `alreadyApplied` with no new effect or audit row, a reused key with a different request fails. Finance applies the change in its own transaction.
 - **BR-006**: Server log viewing uses a ticket-exchange SSE pattern: `POST /admin/logs/ticket` issues a single-use Redis-backed ticket (300s TTL), then `GET /admin/logs/stream?ticket=` opens the actual stream — avoiding long-lived unauthenticated stream URLs.
 - **BR-007**: Log output passes through a PII redactor before being returned — 4 patterns redacted: email, Bearer token, password JSON, JWT patterns.
+- **BR-009** (phase 08): Role, admin-flag and ban changes are decided by auth (`SetUserRole`, `SetSystemAdmin`, `SetUserStatus`) with the admin's forwarded token; admin-service writes `AdminAudit` (`admin.role.set_base`, `admin.role.set_system_admin`, `admin.user.ban`, `admin.user.unban`) only after the RPC succeeds; a no-op role change writes none. Details: [permissions](../../system/permissions.md) § Role management and ban.
 - **BR-008**: `admin-bootstrap` runs on `OnModuleInit`, reading `ADMIN_EMAILS` env and idempotently syncing: skip existing admins, grant admin to matching non-admins, create new users as needed. A CLI (`yarn bootstrap:admin sync|list|grant|revoke`) exposes the same logic manually.
 
 ### Decision Logic
@@ -49,12 +55,12 @@ None.
 
 ### Algorithms
 
-- **Stats aggregation**: `admin-stats` computes KPI overview (6 metrics) + 3 time-series (signups/traffic/revenue) via raw SQL `date_trunc` queries, cached in Redis for 5 minutes.
+- **Stats aggregation**: `admin-stats` computes KPI overview (6 metrics) + 3 time-series (signups/traffic/revenue) by combining auth `GetUserStats` and finance `GetRevenueStats` (called in parallel; the SQL `date_trunc` queries now live in those services), cached in Redis for 5 minutes; a golden test pins parity with the previous output.
 - **Signup source breakdown**: `getSourceBreakdown` groups `User` rows by `COALESCE(NULLIF("utmSource", ''), 'direct')`, optional date range, top 20 desc.
 
 ### External Integrations
 
-None beyond internal services (finance, exam, auth) via existing Prisma/gRPC wiring.
+Internal gRPC only (forwarded admin token): auth (`AuthUserService`, `ListUsers`, role/status RPCs), finance (`FinanceAdminService`, `FinanceStatsService`), gateway (`SetPageFlags`), vocabulary (`WordFamilyAdminService`). Env: `AUTH_GRPC_URL`, `FINANCE_GRPC_URL`, `GATEWAY_GRPC_URL`, `VOCABULARY_GRPC_URL`, `GRPC_PORT`, `AUTH_TOKEN_URL`, `SERVICE_CLIENT_SECRET`. admin-service owns only `AdminAudit` and `PageFeatureFlag`.
 
 ### Verification
 
@@ -82,7 +88,7 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 | Entity | Table | Key Columns | Purpose |
 |--------|-------|-------------|---------|
-| User | `User` | isBanned, deletedAt, isAdmin, utmSource | Soft-delete + admin-role fields added for this feature; `utmSource` (indexed) backs the signup-source breakdown |
+| User | `User` | isBanned, deletedAt, isSystemAdmin, utmSource | Soft-delete + admin-role fields added for this feature; `utmSource` (indexed) backs the signup-source breakdown |
 | AdminAudit | `AdminAudit` | id, adminId, action, targetId, payload, reason, ipAddress, userAgent, createdAt | One row per changed field per admin mutation |
 
 ## Artifact References
@@ -92,7 +98,7 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 | System Overview | [system-overview.md](../../docs/system/system-overview.md) | — | [x] |
 | Architecture | [architecture.md](../../docs/system/architecture.md) | — | [x] |
 | Feature List | [feature-list.md](../../docs/generated/feature-list.md) | F014 | [x] |
-| Screen List | [screen-list.md](../../docs/generated/screen-list.md) | SCR033–SCR038 | [x] |
+| Screen List | [screen-list.md](../../docs/generated/screen-list.md) | SCR033–SCR038, SCR044 | [x] |
 | Permissions | [permissions.md](../../docs/system/permissions.md) | PERM046–PERM053 | [x] |
 
 ## Assumptions
@@ -104,12 +110,14 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| AdminGuard | `examio-be/libs/common/src/guard/admin.guard.ts` | Standalone JWT + `isAdmin` check |
+| PermissionsGuard | `examio-be/libs/auth-jwt/src/` | Replaces the removed `AdminGuard`; admin controllers declare `@RequirePermissions(...)` (see `system/permissions.md`) |
 | AuditWriterService | `examio-be/apps/admin-service/src/modules/*/audit-writer.service.ts` (shared) | Per-field `AdminAudit` row writer |
-| admin-stats module | `examio-be/apps/admin-service/src/modules/admin-stats/` | KPI + time-series + signup-source breakdown, Redis 5-min cache |
+| admin-stats module | `examio-be/apps/admin-service/src/modules/admin-stats/` | KPI + time-series + signup-source breakdown via auth/finance stats RPCs, Redis 5-min cache |
 | AdminStatsFeRoutesController | `examio-be/apps/admin-service/src/modules/admin-stats/admin-stats-fe-routes.controller.ts` | Top-level `/admin/{overview,series,sources}` alias routes for FE dashboard |
-| admin-users module | `examio-be/apps/admin-service/src/modules/admin-users/` | List/detail/ban/unban/grant/revoke |
-| admin-finance module | `examio-be/apps/admin-service/src/modules/admin-finance/` | Refund/credit/tier, `$transaction` Serializable |
+| admin-users module | `examio-be/apps/admin-service/src/modules/admin-users/` | List/detail/patch/ban/unban |
+| admin-roles module | `examio-be/apps/admin-service/src/modules/admin-roles/` | Role matrix, user list, history, set role / SYSTEM_ADMIN |
+| AdminRolesPage | `examio-fe/src/pages/admin/AdminRolesPage.tsx` | `/admin/roles` (SCR044) |
+| admin-finance module | `examio-be/apps/admin-service/src/modules/admin-finance/` | Refund/credit/tier via finance `FinanceAdminService`; `Idempotency-Key` header |
 | admin-logs module | `examio-be/apps/admin-service/src/modules/admin-logs/` | Redactor, ticket-exchange SSE |
 | admin-audit module | `examio-be/apps/admin-service/src/modules/admin-audit/` | Paginated audit query |
 | admin-bootstrap module | `examio-be/apps/admin-service/src/modules/admin-bootstrap/` | `OnModuleInit` sync + CLI |

@@ -1,0 +1,50 @@
+{
+  "ts": "2026-10-22T20:15:23.199Z",
+  "fails": [
+    "fe.credit.single-click.one-tx-and-balance-moved-once",
+    "fe.credit.double-click.one-tx"
+  ],
+  "checks": [
+    {
+      "id": "fe.login.admin",
+      "ok": true,
+      "d": "status 201"
+    },
+    {
+      "id": "fe.credit.single-click.request-carries-idempotency-key",
+      "ok": true,
+      "d": "credit requests=1 key=present"
+    },
+    {
+      "id": "fe.credit.single-click.one-tx-and-balance-moved-once",
+      "ok": false,
+      "d": "response 400 BAD_REQUEST {\"statusCode\":400,\"code\":\"BAD_REQUEST\",\"message\":\"Validation failed\",\"requestId\":\"req_01M5JM1CW61VP625M1XNB4FFVM\"}; tx 3->3; balance 35->35; toast=[\"Thao tác thất bại: Validation failed\"]"
+    },
+    {
+      "id": "fe.credit.double-click.one-confirm-dialog",
+      "ok": true,
+      "d": "confirm dialogs after double click=1; OK buttons=1; credit requests=1; distinct keys=1"
+    },
+    {
+      "id": "fe.credit.double-click.one-tx",
+      "ok": false,
+      "d": "tx 3->3; balance 35->35 (+3 expected once)"
+    },
+    {
+      "id": "fe.refund.single-click.paid-to-refunded",
+      "ok": true,
+      "d": "payment status=4; response 200; refund request key present"
+    },
+    {
+      "id": "fe.refund.double-click.no-double-effect",
+      "ok": true,
+      "d": "confirm dialogs=1; refund requests=1; distinct keys=1; payment status=4; audit rows=1"
+    }
+  ],
+  "toastsLast": [
+    "Đã hoàn tiền thành công"
+  ],
+  "creditRequests": 1,
+  "refundRequests": 1,
+  "outsideBlocked": 3
+}

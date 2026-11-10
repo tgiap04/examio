@@ -1,0 +1,175 @@
+{
+  "score": 9,
+  "criticalCount": 0,
+  "decision": "SEALED",
+  "acceptanceCovered": [
+    "libs/database removed; grep -rn \"@examio/database|libs/database\" apps libs package.json deploy returns nothing; depcruise libs-no-prisma is error and 0 errors — final run on the final code: grep 0 hits; check:deps 0 errors with libs-no-prisma = error (.dependency-cruiser.cjs); temper-final 'final:' rows",
+    "docker compose -f deploy/docker-compose.yml up -d --wait from an empty volume: every <svc>-migrate exits 0, all APIs healthy; yarn seed:dev exit 0 with counts matching the pre-split seed — Re-temper 4 (phase-11-runs.md:215-260): up -d --wait from an empty volume exit 0, 4 <svc>-migrate + rabbitmq-defs exit 0, seed opt-in (profile seed) not started, all APIs healthy; `--profile seed run --rm seed` exit 0 twice with identical counts (page flags 9, subject categories 4, subjects 15, word-family categories 10, users 8, wallets 7, admin audit 20 = round-1 counts); test/db-isolation/migrations-and-seeds.e2e-spec.ts:98 asserts counts match the pre-split seed (CI db-isolation step)",
+    "as content_svc, select 1 from auth.\"User\" -> permission denied; as auth_svc raw SQL on outbox_events resolves in schema auth (db-isolation e2e) — Re-temper 4 iso.sh: 6 expected 'permission denied for schema' denials (content_svc/exam_svc -> auth, auth_svc -> finance and create in public, ai_svc DDL on exam and read on auth); auth_svc raw outbox_events resolves via role search_path; test/db-isolation/db-isolation.e2e-spec.ts runs in CI (.github/workflows/ci.yml:344, CI=true makes skips fail)",
+    "every service uses its own Prisma client generated from apps/<svc>-service/prisma (exam: prisma/schema multi-file) with its own migrations; prisma migrate status up to date on a fresh DB — per-service generated clients from apps/{auth,finance,admin}-service/prisma/schema.prisma and apps/exam-service/prisma/schema/*.prisma, scripts/prisma-generate.sh; `prisma migrate status` up to date for auth, finance, admin, exam on a fresh volume (Re-temper 4 x4); CI migrate + drift check per service (drift 4/4 no difference in Re-temper 2)",
+    "no FK from any service table to User; userId kept with @@index — final grep: 0 `model User` and 0 User relations outside apps/auth-service/prisma; userId columns keep @@index; isolation probe shows no cross-schema reference",
+    "deleting or replacing a row that owns an R2 object enqueues r2_delete_tasks in the same tx (rollback -> no task); worker calls r2 DeleteObjects once per key with service token, backoff on failure, two workers never double-send; no deleteFile/deleteImage call outside the worker in converted services — libs/messaging/src/r2-delete writer enqueues inside the caller tx; test/db-isolation/r2-delete.e2e-spec.ts:38 (commit/rollback), :81 (two workers, each key once), :99/:123/:143 (lease, no double-send, stale FAIL), :171 (poison key alone), :58 (backoff); live: own thumbnail/avatar delete drained in 1-4 s, r2 stopped -> task persists attempts=1 DEADLINE_EXCEEDED then drains; final grep 0 deleteFile/deleteImage outside the worker, guarded by test/r2-delete/no-direct-r2-delete.spec.ts",
+    "r2 key resolver returns a key only for R2_PUBLIC_URL host URLs — libs/common/src/utils/r2-key-from-url.ts r2KeyFromUrl: href===url, origin compare, canonical segment allowlist; F11/F12/F16 + external/look-alike/no-base specs 26/26; delete path never uses isR2Host; live cross-user %2e%2e and upper-case host rejected 400 (Re-temper 4)",
+    "ai-service connects as ai_svc with DB_SEARCH_PATH=exam,extensions and AI_RUNTIME_DDL=false guards runtime DDL — Re-temper 2/4: ai-service DATABASE_URL as ai_svc, DB_SEARCH_PATH=exam,extensions, AI_RUNTIME_DDL=false, zero CREATE/ALTER lines in logs, pools sum 28 < role limit 40 (src/db_settings.py); isolation shows ai_svc denied DDL on exam",
+    "yarn build/test green; check:ownership and check:deps green; FE unaffected — final: yarn typecheck 0, build:all 0, TZ=UTC yarn test 1964 passed (5 skipped), check:ownership 0 violations, check:deps 0 errors, compose-topology 19/19; examio-fe has 0 changed files; UI matrix 64/64 against the new stack (Re-temper 2)"
+  ],
+  "regressionChecked": [
+    "deletion path unchanged: r2KeyFromUrl/ownedR2KeyFromUrl do not call isR2Host (r2-owned-key.ts:44-47)",
+    "isForeignR2Url callers owned-thumbnail.ts:19 and user-update.writer.ts:63 both gain the F16 host check",
+    "canonicalR2PublicBase with path prefix and IDN round-trips own keys through r2KeyFromUrl (node probe)",
+    "npx jest libs/common/src/utils 26/26 pass; reported full yarn test 1964 pass, typecheck 0",
+    "final full static run on the final code (temper-final 'final:' rows)",
+    "live Re-temper 4 smoke 18/18 through the gateway"
+  ],
+  "contractStatus": "CHANGED",
+  "refuted": [],
+  "unproven": [],
+  "reachableRegressions": [],
+  "findings": [
+    {
+      "severity": "High",
+      "category": "identity and permission",
+      "location": "examio-be/apps/auth-service/src/users-admin/user-update.writer.ts:63",
+      "summary": "addressed — avatar/banner URL accepted another user's R2 key; now rejected via isForeignR2Url",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "High",
+      "category": "identity and permission",
+      "location": "examio-be/apps/exam-service/src/modules/common/owned-thumbnail.ts:19",
+      "summary": "addressed — thumbnail URL could point at another user's R2 object; foreign URLs rejected",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "High",
+      "category": "identity and permission",
+      "location": "examio-be/apps/exam-service/src/modules/ai/ai.service.ts:1010",
+      "summary": "addressed — AI flow owner scoping of storage keys",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Medium",
+      "category": "error boundaries",
+      "location": "examio-be/apps/exam-service/src/modules/ai/ai.repository.ts:50",
+      "summary": "addressed — createUserStorage duplicate maps to 409",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Medium",
+      "category": "identity and permission",
+      "location": "examio-be/apps/exam-service/src/modules/ai-chat/ai-chat.service.ts:718",
+      "summary": "addressed — clearChat filters by owner",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Medium",
+      "category": "API contracts",
+      "location": "examio-be/apps/admin-service/src/modules/admin-finance/admin-finance.service.ts:203",
+      "summary": "addressed — admin set-tier returns 404 USER_NOT_FOUND",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Medium",
+      "category": "data leakage",
+      "location": "examio-be/.dockerignore:49-50",
+      "summary": "addressed — **/.env excluded from build context",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "backwards compatibility",
+      "location": "examio-be/apps/exam-service/src/clients/r2.client.ts:118",
+      "summary": "addressed — M5/F8 dead R2 wrappers removed",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Medium",
+      "category": "API contracts",
+      "location": "examio-be/deploy/compose/seed.yml:28",
+      "summary": "addressed — F9 seed behind compose profile; live up --wait proven (Re-temper 4)",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Medium",
+      "category": "concurrency",
+      "location": "examio-be/apps/admin-service/prisma/seed.ts:47-48",
+      "summary": "addressed — F10 admin seed deterministic upsert; admin_audit stable at 20 across two runs",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "High",
+      "category": "input validation",
+      "location": "examio-be/libs/common/src/utils/r2-key-from-url.ts:31",
+      "summary": "addressed — F11 parse/origin/allowlist/href===url for deletable keys",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "High",
+      "category": "input validation",
+      "location": "examio-be/libs/common/src/utils/r2-owned-key.ts:29",
+      "summary": "addressed — F12 canonical key required for ownership",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Medium",
+      "category": "API contracts",
+      "location": ".github/workflows/ci.yml:344",
+      "summary": "addressed — F5 CI runs db-isolation config",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "API contracts",
+      "location": "examio-be/deploy/README.md:340",
+      "summary": "addressed — F14 README --scale note",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Medium",
+      "category": "error boundaries",
+      "location": "examio-be/apps/exam-service/src/modules/ai/ai.service.ts:1030",
+      "summary": "F13 charge before processing, no refund on failure (phase 15)",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "query efficiency",
+      "location": "examio-be/apps/ai-service/src/backend/db_settings.py:40",
+      "summary": "F15 pool override unbounded (phase 16)",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "input validation",
+      "location": "examio-be/libs/common/src/utils/r2-key-from-url.ts:31",
+      "summary": "host aliases: trailing-dot FQDN now covered by isR2Host (r2-key-from-url.ts:41); a second public hostname for the same bucket is still treated as external",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "backwards compatibility",
+      "location": "examio-be/apps/r2-service/src/config/r2.config.ts:13",
+      "summary": "addressed — non-canonical R2_PUBLIC_URL normalised via canonicalR2PublicBase (r2-key-from-url.ts:22, r2.config.ts:15, r2.client.ts:133)",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Medium",
+      "category": "input validation",
+      "location": "examio-be/libs/common/src/utils/r2-owned-key.ts:62",
+      "summary": "addressed — F16 same R2 hostname on another port/scheme treated as external; now foreign via isR2Host; spec r2-owned-key.spec.ts:45 (live xuser4 (c) re-probe pending)",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "input validation",
+      "location": "examio-be/libs/common/src/utils/r2-key-from-url.ts:41",
+      "summary": "addressed — isR2Host ignores the path, so a shared hostname would reject unrelated images (fails closed); deploy/README.md:158 now requires a hostname dedicated to the bucket for R2_PUBLIC_URL",
+      "disposition": "Accept"
+    }
+  ],
+  "riskGate": {
+    "touchesSensitiveArea": true,
+    "signoffRequired": true,
+    "humanSignedOff": true
+  }
+}

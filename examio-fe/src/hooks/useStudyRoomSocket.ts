@@ -4,6 +4,8 @@ import { env } from "@/lib/env";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useStudyRoomStore } from "@/stores/useStudyRoomStore";
 import { computeTimerView } from "@/lib/pomodoro";
+import { TRANSPORT_RECONNECT_OPTIONS } from "@/lib/rbac/socket-reconnect";
+import { attachSocketRecovery } from "@/hooks/study-room-socket-recovery";
 import {
   ClientEvents,
   ServerEvents,
@@ -47,6 +49,7 @@ export function useStudyRoomSocket(
       path: WS_STUDY_PATH,
       transports: ["websocket"],
       withCredentials: true,
+      ...TRANSPORT_RECONNECT_OPTIONS,
     });
     socketRef.current = socket;
 
@@ -68,6 +71,10 @@ export function useStudyRoomSocket(
       sendHeartbeat();
     });
     socket.on("disconnect", () => store().setConnState("disconnected"));
+    const disposeRecovery = attachSocketRecovery(socket, {
+      onKicked,
+      onGiveUp: () => store().setConnState("disconnected"),
+    });
 
     socket.on(ServerEvents.SNAPSHOT, (s: RoomSnapshot | null) => {
       if (s) store().applySnapshot(s);
@@ -122,6 +129,7 @@ export function useStudyRoomSocket(
 
     return () => {
       clearInterval(hb);
+      disposeRecovery();
       document.removeEventListener("visibilitychange", onVisible);
       socket.emit(ClientEvents.LEAVE, { roomId });
       socket.disconnect();

@@ -2,7 +2,7 @@
     "$schema": "https://json.schemastore.org/nest-cli",
     "collection": "@nestjs/schematics",
     "monorepo": true,
-    "sourceRoot": "apps/exam-service/src",
+    "sourceRoot": "apps/assessment-service/src",
     "entryFile": "main",
     "language": "ts",
     "generateOptions": {
@@ -10,7 +10,7 @@
     },
     "compilerOptions": {
         "manualRestart": true,
-        "tsConfigPath": "apps/exam-service/tsconfig.app.json",
+        "tsConfigPath": "apps/assessment-service/tsconfig.app.json",
         "webpack": true,
         "deleteOutDir": true,
         "assets": [
@@ -46,6 +46,22 @@
                         "include": "../../templates/**/*",
                         "outDir": "dist/apps/auth-service",
                         "watchAssets": true
+                    },
+                    {
+                        "include": "../../../proto/examio/auth/**/*.proto",
+                        "outDir": "dist/apps/auth-service/proto/examio/auth"
+                    },
+                    {
+                        "include": "../../../proto/examio/common/**/*.proto",
+                        "outDir": "dist/apps/auth-service/proto/examio/common"
+                    },
+                    {
+                        "include": "../../../proto/examio/r2/**/*.proto",
+                        "outDir": "dist/apps/auth-service/proto/examio/r2"
+                    },
+                    {
+                        "include": "../../../proto/examio/gateway/**/*.proto",
+                        "outDir": "dist/apps/auth-service/proto/examio/gateway"
                     }
                 ]
             }
@@ -59,27 +75,173 @@
                 "tsConfigPath": "libs/common/tsconfig.lib.json"
             }
         },
-        "database": {
-            "type": "library",
-            "root": "libs/database",
-            "entryFile": "index",
-            "sourceRoot": "libs/database/src",
-            "compilerOptions": {
-                "tsConfigPath": "libs/database/tsconfig.lib.json"
-            }
-        },
-        "exam-service": {
+        "assessment-service": {
             "type": "application",
-            "root": "apps/exam-service",
+            "root": "apps/assessment-service",
             "entryFile": "main",
-            "sourceRoot": "apps/exam-service/src",
+            "sourceRoot": "apps/assessment-service/src",
             "compilerOptions": {
-                "tsConfigPath": "apps/exam-service/tsconfig.app.json",
+                "tsConfigPath": "apps/assessment-service/tsconfig.app.json",
                 "assets": [
                     {
                         "include": "../../templates/**/*",
-                        "outDir": "dist/apps/exam-service",
+                        "outDir": "dist/apps/assessment-service",
                         "watchAssets": true
+                    },
+                    {
+                        "include": "../../../proto/examio/content/**/*.proto",
+                        "outDir": "dist/apps/assessment-service/proto/examio/content"
+                    },
+                    {
+                        "include": "../../../proto/examio/document/**/*.proto",
+                        "outDir": "dist/apps/assessment-service/proto/examio/document"
+                    },
+                    {
+                        "include": "../../../proto/examio/auth/**/*.proto",
+                        "outDir": "dist/apps/assessment-service/proto/examio/auth"
+                    },
+                    {
+                        "include": "../../../proto/examio/common/**/*.proto",
+                        "outDir": "dist/apps/assessment-service/proto/examio/common"
+                    }
+                ]
+            }
+        },
+        "study-room-service": {
+            "type": "application",
+            "root": "apps/study-room-service",
+            "entryFile": "main",
+            "sourceRoot": "apps/study-room-service/src",
+            "compilerOptions": {
+                "tsConfigPath": "apps/study-room-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../../../proto/examio/auth/**/*.proto",
+                        "outDir": "dist/apps/study-room-service/proto/examio/auth"
+                    },
+                    {
+                        "include": "../../../proto/examio/common/**/*.proto",
+                        "outDir": "dist/apps/study-room-service/proto/examio/common"
+                    }
+                ]
+            }
+        },
+        "vocabulary-service": {
+            "type": "application",
+            "root": "apps/vocabulary-service",
+            "entryFile": "main",
+            "sourceRoot": "apps/vocabulary-service/src",
+            "compilerOptions": {
+                "tsConfigPath": "apps/vocabulary-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../../../proto/examio/common/**/*.proto",
+                        "outDir": "dist/apps/vocabulary-service/proto/examio/common"
+                    },
+                    {
+                        "include": "../../../proto/examio/r2/**/*.proto",
+                        "outDir": "dist/apps/vocabulary-service/proto/examio/r2"
+                    },
+                    {
+                        "include": "../../../proto/examio/ai/**/*.proto",
+                        "outDir": "dist/apps/vocabulary-service/proto/examio/ai"
+                    },
+                    {
+                        "include": "../../../proto/examio/vocabulary/**/*.proto",
+                        "outDir": "dist/apps/vocabulary-service/proto/examio/vocabulary"
+                    }
+                ]
+            }
+        },
+        "document-service": {
+            "type": "application",
+            "root": "apps/document-service",
+            "entryFile": "main",
+            "sourceRoot": "apps/document-service/src",
+            "compilerOptions": {
+                "tsConfigPath": "apps/document-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../../../proto/examio/document/**/*.proto",
+                        "outDir": "dist/apps/document-service/proto/examio/document"
+                    },
+                    {
+                        "include": "../../../proto/examio/finance/**/*.proto",
+                        "outDir": "dist/apps/document-service/proto/examio/finance"
+                    },
+                    {
+                        "include": "../../../proto/examio/r2/**/*.proto",
+                        "outDir": "dist/apps/document-service/proto/examio/r2"
+                    }
+                ]
+            }
+        },
+        "ai-chat-service": {
+            "type": "application",
+            "root": "apps/ai-chat-service",
+            "entryFile": "main",
+            "sourceRoot": "apps/ai-chat-service/src",
+            "compilerOptions": {
+                "tsConfigPath": "apps/ai-chat-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../../../proto/examio/ai/**/*.proto",
+                        "outDir": "dist/apps/ai-chat-service/proto/examio/ai"
+                    },
+                    {
+                        "include": "../../../proto/examio/document/**/*.proto",
+                        "outDir": "dist/apps/ai-chat-service/proto/examio/document"
+                    },
+                    {
+                        "include": "../../../proto/examio/finance/**/*.proto",
+                        "outDir": "dist/apps/ai-chat-service/proto/examio/finance"
+                    },
+                    {
+                        "include": "../../../proto/examio/r2/**/*.proto",
+                        "outDir": "dist/apps/ai-chat-service/proto/examio/r2"
+                    }
+                ]
+            }
+        },
+        "content-service": {
+            "type": "application",
+            "root": "apps/content-service",
+            "entryFile": "main",
+            "sourceRoot": "apps/content-service/src",
+            "compilerOptions": {
+                "tsConfigPath": "apps/content-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../../../proto/examio/ai/**/*.proto",
+                        "outDir": "dist/apps/content-service/proto/examio/ai"
+                    },
+                    {
+                        "include": "../../../proto/examio/auth/**/*.proto",
+                        "outDir": "dist/apps/content-service/proto/examio/auth"
+                    },
+                    {
+                        "include": "../../../proto/examio/common/**/*.proto",
+                        "outDir": "dist/apps/content-service/proto/examio/common"
+                    },
+                    {
+                        "include": "../../../proto/examio/content/**/*.proto",
+                        "outDir": "dist/apps/content-service/proto/examio/content"
+                    },
+                    {
+                        "include": "../../../proto/examio/document/**/*.proto",
+                        "outDir": "dist/apps/content-service/proto/examio/document"
+                    },
+                    {
+                        "include": "../../../proto/examio/finance/**/*.proto",
+                        "outDir": "dist/apps/content-service/proto/examio/finance"
+                    },
+                    {
+                        "include": "../../../proto/examio/r2/**/*.proto",
+                        "outDir": "dist/apps/content-service/proto/examio/r2"
+                    },
+                    {
+                        "include": "../../../proto/examio/vocabulary/**/*.proto",
+                        "outDir": "dist/apps/content-service/proto/examio/vocabulary"
                     }
                 ]
             }
@@ -90,7 +252,21 @@
             "entryFile": "main",
             "sourceRoot": "apps/finance-service/src",
             "compilerOptions": {
-                "tsConfigPath": "apps/finance-service/tsconfig.app.json"
+                "tsConfigPath": "apps/finance-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../../../proto/examio/auth/**/*.proto",
+                        "outDir": "dist/apps/finance-service/proto/examio/auth"
+                    },
+                    {
+                        "include": "../../../proto/examio/common/**/*.proto",
+                        "outDir": "dist/apps/finance-service/proto/examio/common"
+                    },
+                    {
+                        "include": "../../../proto/examio/finance/**/*.proto",
+                        "outDir": "dist/apps/finance-service/proto/examio/finance"
+                    }
+                ]
             }
         },
         "admin-service": {
@@ -99,7 +275,33 @@
             "entryFile": "main",
             "sourceRoot": "apps/admin-service/src",
             "compilerOptions": {
-                "tsConfigPath": "apps/admin-service/tsconfig.app.json"
+                "tsConfigPath": "apps/admin-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../../../proto/examio/admin/**/*.proto",
+                        "outDir": "dist/apps/admin-service/proto/examio/admin"
+                    },
+                    {
+                        "include": "../../../proto/examio/auth/**/*.proto",
+                        "outDir": "dist/apps/admin-service/proto/examio/auth"
+                    },
+                    {
+                        "include": "../../../proto/examio/common/**/*.proto",
+                        "outDir": "dist/apps/admin-service/proto/examio/common"
+                    },
+                    {
+                        "include": "../../../proto/examio/finance/**/*.proto",
+                        "outDir": "dist/apps/admin-service/proto/examio/finance"
+                    },
+                    {
+                        "include": "../../../proto/examio/gateway/**/*.proto",
+                        "outDir": "dist/apps/admin-service/proto/examio/gateway"
+                    },
+                    {
+                        "include": "../../../proto/examio/vocabulary/**/*.proto",
+                        "outDir": "dist/apps/admin-service/proto/examio/vocabulary"
+                    }
+                ]
             }
         },
         "r2-service": {
@@ -108,7 +310,13 @@
             "entryFile": "main",
             "sourceRoot": "apps/r2-service/src",
             "compilerOptions": {
-                "tsConfigPath": "apps/r2-service/tsconfig.app.json"
+                "tsConfigPath": "apps/r2-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../../../proto/examio/r2/**/*.proto",
+                        "outDir": "dist/apps/r2-service/proto/examio/r2"
+                    }
+                ]
             }
         },
         "gateway-service": {
@@ -117,16 +325,34 @@
             "entryFile": "main",
             "sourceRoot": "apps/gateway-service/src",
             "compilerOptions": {
-                "tsConfigPath": "apps/gateway-service/tsconfig.app.json"
+                "tsConfigPath": "apps/gateway-service/tsconfig.app.json",
+                "assets": [
+                    {
+                        "include": "../config/*.yaml",
+                        "outDir": "dist/apps/gateway-service/config"
+                    },
+                    {
+                        "include": "pipeline/*.lua",
+                        "outDir": "dist/apps/gateway-service"
+                    },
+                    {
+                        "include": "../../../proto/examio/admin/**/*.proto",
+                        "outDir": "dist/apps/gateway-service/proto/examio/admin"
+                    },
+                    {
+                        "include": "../../../proto/examio/gateway/**/*.proto",
+                        "outDir": "dist/apps/gateway-service/proto/examio/gateway"
+                    }
+                ]
             }
         },
-        "ocr-service": {
-            "type": "application",
-            "root": "apps/ocr-service",
-            "entryFile": "main",
-            "sourceRoot": "apps/ocr-service/src",
+        "observability": {
+            "type": "library",
+            "root": "libs/observability",
+            "entryFile": "index",
+            "sourceRoot": "libs/observability/src",
             "compilerOptions": {
-                "tsConfigPath": "apps/ocr-service/tsconfig.app.json"
+                "tsConfigPath": "libs/observability/tsconfig.lib.json"
             }
         },
         "redis": {
@@ -136,6 +362,33 @@
             "sourceRoot": "libs/redis/src",
             "compilerOptions": {
                 "tsConfigPath": "libs/redis/tsconfig.lib.json"
+            }
+        },
+        "contracts": {
+            "type": "library",
+            "root": "libs/contracts",
+            "entryFile": "index",
+            "sourceRoot": "libs/contracts/src",
+            "compilerOptions": {
+                "tsConfigPath": "libs/contracts/tsconfig.lib.json"
+            }
+        },
+        "grpc": {
+            "type": "library",
+            "root": "libs/grpc",
+            "entryFile": "index",
+            "sourceRoot": "libs/grpc/src",
+            "compilerOptions": {
+                "tsConfigPath": "libs/grpc/tsconfig.lib.json"
+            }
+        },
+        "http": {
+            "type": "library",
+            "root": "libs/http",
+            "entryFile": "index",
+            "sourceRoot": "libs/http/src",
+            "compilerOptions": {
+                "tsConfigPath": "libs/http/tsconfig.lib.json"
             }
         }
     }

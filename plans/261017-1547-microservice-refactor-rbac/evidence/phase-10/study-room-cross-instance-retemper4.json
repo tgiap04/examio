@@ -1,0 +1,22 @@
+{
+  "before-restart": {
+    "ts": "2026-10-22T21:16:31.310Z",
+    "fails": [],
+    "counts": {
+      "presence": 1,
+      "chat": 1,
+      "media": 1
+    },
+    "teacherErrors": []
+  },
+  "after-restart": {
+    "ts": "2026-10-22T21:17:59.631Z",
+    "fails": [],
+    "counts": {
+      "presence": 1,
+      "chat": 1,
+      "media": 1
+    },
+    "teacherErrors": []
+  }
+}

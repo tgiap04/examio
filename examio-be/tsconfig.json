@@ -15,29 +15,53 @@
     "rootDir": "./",
     "baseUrl": "./",
     "paths": {
-      ".prisma/client": [
-        "node_modules/.prisma/client"
-      ],
-      ".prisma/client/*": [
-        "node_modules/.prisma/client/*"
-      ],
       "@examio/common": [
         "libs/common/src"
       ],
       "@examio/common/*": [
         "libs/common/src/*"
       ],
-      "@examio/database": [
-        "libs/database/src"
-      ],
-      "@examio/database/*": [
-        "libs/database/src/*"
-      ],
       "@examio/redis": [
         "libs/redis/src"
       ],
       "@examio/redis/*": [
         "libs/redis/src/*"
+      ],
+      "@examio/observability": [
+        "libs/observability/src"
+      ],
+      "@examio/observability/*": [
+        "libs/observability/src/*"
+      ],
+      "@examio/contracts": [
+        "libs/contracts/src"
+      ],
+      "@examio/contracts/*": [
+        "libs/contracts/src/*"
+      ],
+      "@examio/grpc": [
+        "libs/grpc/src"
+      ],
+      "@examio/grpc/*": [
+        "libs/grpc/src/*"
+      ],
+      "@examio/http": [
+        "libs/http/src"
+      ],
+      "@examio/http/*": [
+        "libs/http/src/*"
+      ],
+      "@examio/auth-jwt": [
+        "libs/auth-jwt/src"
+      ],
+      "@examio/auth-jwt/*": [
+        "libs/auth-jwt/src/*"
+      ],
+      "@examio/messaging": [
+        "libs/messaging/src"
+      ],
+      "@examio/messaging/*": [
+        "libs/messaging/src/*"
       ]
     },
     "skipLibCheck": true,

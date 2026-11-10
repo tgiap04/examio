@@ -1,3 +1,4 @@
+import { displayUserName } from "@/lib/user/display-user-name";
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw, Trophy } from "lucide-react";
 import {
@@ -60,14 +61,14 @@ export function LeaderboardPanel({ roomId }: Props) {
           </p>
         ) : (
           rows.map((row, i) => {
-            const name = row.user.name || "Ẩn danh";
+            const name = displayUserName(row.user);
             return (
               <div key={row.userId} className="flex items-center gap-3 text-sm">
                 <span className="w-5 text-center font-semibold text-muted-foreground">
                   {i + 1}
                 </span>
                 <Avatar size="small">
-                  <AvatarImage src={row.user.avatar ?? undefined} alt={name} />
+                  <AvatarImage src={row.user?.avatar ?? undefined} alt={name} />
                   <AvatarFallback>
                     {name.charAt(0).toUpperCase()}
                   </AvatarFallback>

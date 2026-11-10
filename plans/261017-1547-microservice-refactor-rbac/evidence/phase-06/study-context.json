@@ -1,0 +1,43 @@
+{
+  "task": "Phase 06 RBAC Enforcement & Security Fixes: per-endpoint @RequirePermissions across exam/finance/admin/auth/r2 per the scout inventory, fix the 9 data-leak gaps, per-resource access-code lockout with constant-time compare, WS authz in socket middleware with av/exp re-validation and authz_changed disconnect, actor x resource-relation ownership tests, declaration test covering every HTTP handler and @SubscribeMessage",
+  "mode": "code",
+  "acceptanceCriteria": [
+    "yarn typecheck, build:all and test (incl. test/authz) exit 0",
+    "exam ownership e2e, study-room WS e2e and auth ownership e2e pass",
+    "every handler declares a permission; @Authenticated only on allowlisted handlers each linked to a two-user negative spec",
+    "STUDENT gets 403 on teacher-only routes (AI tool, manage pages, wallet) and can still study a whitelisted flashcard set",
+    "TEACHER lacks study/practice/take permissions and SYSTEM_ADMIN has no content permissions",
+    "GET /quizsets/public/:id no longer leaks answers (removed or answer-free)",
+    "exam study endpoints and flashcard study endpoints no longer leak answers, accessCode or whitelist",
+    "examrooms get-public no longer leaks host email and checks access",
+    "users/search is TEACHER-only, rate-limited and returns no emails",
+    "generate-code no longer wipes the whitelist",
+    "pin and study-progress endpoints check access to the set or room",
+    "ai-chat exists checks ownership",
+    "word-family generation is TEACHER-only and rate-limited",
+    "access codes compared in constant time with per-resource lockout after 5 failures and no @Throttle in exam-service",
+    "study-room WS: auth + study_room:join enforced in socket middleware, sockets disconnected at token exp and on authz_changed via auth:reauth",
+    "access to shared content never depends on the owner's current role (demoted teacher's shared set still studyable; demoted user gets 403 on manage)"
+  ],
+  "touchpoints": [
+    "examio-be/apps/exam-service/src/modules",
+    "examio-be/apps/finance-service/src",
+    "examio-be/apps/admin-service/src",
+    "examio-be/apps/auth-service/src",
+    "examio-be/apps/r2-service/src",
+    "examio-be/libs/auth-jwt",
+    "examio-be/test/authz"
+  ],
+  "blastRadius": [
+    "every exam-service route used by FE (quiz, flashcard, exam room/session/attempt, study room, word family, AI, AI chat, student)",
+    "study-room realtime sockets",
+    "sharing and access codes",
+    "finance wallet/payment routes",
+    "admin routes"
+  ],
+  "contracts": [
+    "STUDENT/TEACHER/SYSTEM_ADMIN permission enforcement on public /api/v1 routes (403 where previously allowed)",
+    "response shapes of study/public endpoints drop answers, accessCode, whitelist, emails",
+    "WS event auth:reauth"
+  ]
+}

@@ -39,7 +39,7 @@
 | F006 | QuizAuthoring | ui | TypeScript | examio-fe | P1 |
 | F007 | FlashcardAuthoring | ui | TypeScript | examio-fe | P1 |
 | F008 | ExamHosting | ui | TypeScript | examio-fe | P1 |
-| F009 | AITeacherKnowledgeBase | ui | TypeScript | examio-fe | P1 |
+| F009 | AITeacherKnowledgeBase (REMOVED 2026-06-14) | ui | TypeScript | examio-fe | P1 |
 | F010 | AITool | ui | TypeScript | examio-fe | P1 |
 | F011 | FlashcardStudy | ui | TypeScript | examio-fe | P1 |
 | F012 | ExamTaking | ui | TypeScript | examio-fe | P0 |
@@ -280,6 +280,8 @@
 - SCR021: ManageExamPage
 - SCR022: ManageQuizSetDetailPage
 - SCR024: AIToolPage (quiz generation portion)
+- QuizPracticePage (`/k/practice-quiz/:id`, phase 07; student practice on shared quiz sets, no SCR code assigned yet)
+- ShareQuizSetModal (phase 07; owner sharing dialog on ManageQuizSetDetailPage)
 - SCR017: FlashcardsPage (FlashcardSetModal for quiz-authoring context)
 
 **Related User Stories**:
@@ -313,6 +315,15 @@
 - (GET) `/api/v1/student/recent-flashcards`
 - (DELETE) `/api/v1/student/recent-flashcards`
 - (GET) `/api/v1/quizsets/stats`
+- (GET) `/api/v1/quizsets/users/search`
+- (GET|PUT) `/api/v1/quizsets/:id/sharing`
+- (POST) `/api/v1/quizsets/:id/generate-code`
+- (GET) `/api/v1/quiz-practice/sets`
+- (GET) `/api/v1/quiz-practice/sets/:id/access`
+- (POST) `/api/v1/quiz-practice/sets/:id/unlock`
+- (POST|GET) `/api/v1/quiz-practice/attempts`
+- (GET|PUT) `/api/v1/quiz-practice/attempts/:id`
+- (POST) `/api/v1/quiz-practice/attempts/:id/submit`
 - (POST) `/api/v1/ai/job`
 - (GET) `/api/v1/ai/job/:jobId`
 - (DELETE) `/api/v1/ai/job/:jobId`
@@ -504,7 +515,9 @@
 
 ---
 
-### F009: AITeacherKnowledgeBase
+### F009: AITeacherKnowledgeBase (REMOVED 2026-06-14)
+
+> **REMOVED 2026-06-14.** Frontend page removed in `f1ed596`, backend `ai-tutor` module in `343fa97`; see `docs/features/F009_AITeacherKnowledgeBase/technical-spec.md`. Retired codes: FR-009_01..11, US038..043, SCR025, REG001..004. Entries below are historical.
 
 **Type**: ui
 **Description**: AI tutor knowledge base management: knowledge folder CRUD, knowledge file upload/processing/reprocessing/delete, dataset import jobs, and knowledge statistics display.
@@ -514,10 +527,10 @@
 **Components**: 10
 
 **Related Screens**:
-- SCR025/REG001: GenAIKnowledgePage / FolderPanel
-- SCR025/REG002: GenAIKnowledgePage / FilePanel
-- SCR025/REG003: GenAIKnowledgePage / DatasetImportPanel
-- SCR025/REG004: GenAIKnowledgePage / StatsPanel
+- SCR025/REG001: GenAIKnowledgePage / FolderPanel (removed)
+- SCR025/REG002: GenAIKnowledgePage / FilePanel (removed)
+- SCR025/REG003: GenAIKnowledgePage / DatasetImportPanel (removed)
+- SCR025/REG004: GenAIKnowledgePage / StatsPanel (removed)
 
 **Related User Stories**:
 - US038: Manage Knowledge Folders
@@ -585,7 +598,7 @@
 - HistoryGeneratedFlashcard
 
 **Related Background Logic**:
-- BL004: FinanceClientService (credit deduction path)
+- BL004: FinanceClient (credit deduction path)
 
 **Related Permissions**:
 - PERM002: AuthenticatedRouteAccess
@@ -712,7 +725,7 @@
 ### F014: AdminDashboard
 
 **Type**: ui
-**Description**: Admin dashboard providing privileged access to platform operations: KPI overview and analytics, user management (ban/unban/delete/grant admin), finance operations (refund/credit adjustment/subscription tier change), server-side log viewing with SSE streaming, and audit log query. Backed by `admin-service` (port 7006) with dedicated `AdminGuard`.
+**Description**: Admin dashboard providing privileged access to platform operations: KPI overview and analytics, user management (ban/unban), role management (`/admin/roles`), finance operations (refund/credit adjustment/subscription tier change), server-side log viewing with SSE streaming, and audit log query. Backed by `admin-service` (port 7006) with dedicated `AdminGuard`.
 
 **Workspace**: examio-fe + examio-be
 **Languages**: TypeScript
@@ -725,6 +738,7 @@
 - SCR036: AdminFinancePage
 - SCR037: AdminLogsPage
 - SCR038: AdminAuditPage
+- SCR044: AdminRolesPage
 
 **Related User Stories**:
 - (none — internal operational tool; no external user stories)
@@ -733,11 +747,13 @@
 - (GET) `/api/v1/admin/bootstrap`
 - (GET) `/api/v1/admin/stats`
 - (GET) `/api/v1/admin/users`
-- (PUT) `/api/v1/admin/users/:id/ban`
-- (PUT) `/api/v1/admin/users/:id/unban`
-- (DELETE) `/api/v1/admin/users/:id`
-- (PUT) `/api/v1/admin/users/:id/grant-admin`
-- (DELETE) `/api/v1/admin/users/:id/revoke-admin`
+- (POST) `/api/v1/admin/users/:id/ban`
+- (POST) `/api/v1/admin/users/:id/unban`
+- (GET) `/api/v1/admin/roles`
+- (GET) `/api/v1/admin/roles/users`
+- (GET) `/api/v1/admin/roles/changes`
+- (PUT) `/api/v1/admin/roles/users/:id/role`
+- (PUT) `/api/v1/admin/roles/users/:id/system-admin`
 - (GET) `/api/v1/admin/finance/refunds`
 - (POST) `/api/v1/admin/finance/refund`
 - (POST) `/api/v1/admin/finance/adjust-credit`
@@ -847,7 +863,7 @@
 
 ## Summary
 
-- **Total Features**: 16
+- **Total Features**: 15 active + 1 removed (F009)
 - **Total Screens**: 43 (with 16 regions across 5 composite screens)
 - **Total User Stories**: 67
 - **Total Routes**: ~118
@@ -869,5 +885,5 @@
 - [x] Every region has a parent feature (F###)
 - [x] Every background logic maps to a feature (F###)
 - [x] Every permission maps to a feature (F###)
-- [x] Composite screen shell SCRs (SCR013, SCR016, SCR018, SCR025, SCR027) have no bare-SCR refs from any feature — all region ownership is explicit via SCR###/REG###
+- [x] Composite screen shell SCRs (SCR013, SCR016, SCR018, SCR027; SCR025 removed 2026-06-14) have no bare-SCR refs from any feature — all region ownership is explicit via SCR###/REG###
 - [x] Static pages (SCR002, SCR004–SCR007, SCR012) are covered by F001 without creating orphaned feature gaps

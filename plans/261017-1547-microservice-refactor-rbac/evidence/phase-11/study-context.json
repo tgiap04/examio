@@ -1,0 +1,18 @@
+{
+  "task": "Phase 11 Database per Service: per-service Postgres role+schema (auth, finance, admin, exam legacy, content, assessment, studyroom, vocabulary, aichat, document, ai) + extensions schema; per-service Prisma schema/client/migrations (prisma-client generator, adapter-pg, ?schema= + role search_path); cross-service FKs to User dropped; exam legacy multi-file schema; durable R2 deletion via r2_delete_tasks outbox + worker; one r2-key-from-url resolver; per-service seeds; compose split with <svc>-migrate containers; ai-service search_path + runtime DDL guard + temporary exam grants; delete libs/database and prisma:merge",
+  "mode": "code",
+  "acceptanceCriteria": [
+    "libs/database removed; grep -rn \"@examio/database|libs/database\" apps libs package.json deploy returns nothing; depcruise libs-no-prisma is error and 0 errors",
+    "docker compose -f deploy/docker-compose.yml up -d --wait from an empty volume: every <svc>-migrate exits 0, all APIs healthy; yarn seed:dev exit 0 with counts matching the pre-split seed",
+    "as content_svc, select 1 from auth.\"User\" -> permission denied; as auth_svc raw SQL on outbox_events resolves in schema auth (db-isolation e2e)",
+    "every service uses its own Prisma client generated from apps/<svc>-service/prisma (exam: prisma/schema multi-file) with its own migrations; prisma migrate status up to date on a fresh DB",
+    "no FK from any service table to User; userId kept with @@index",
+    "deleting or replacing a row that owns an R2 object enqueues r2_delete_tasks in the same tx (rollback -> no task); worker calls r2 DeleteObjects once per key with service token, backoff on failure, two workers never double-send; no deleteFile/deleteImage call outside the worker in converted services",
+    "r2 key resolver returns a key only for R2_PUBLIC_URL host URLs",
+    "ai-service connects as ai_svc with DB_SEARCH_PATH=exam,extensions and AI_RUNTIME_DDL=false guards runtime DDL",
+    "yarn build/test green; check:ownership and check:deps green; FE unaffected"
+  ],
+  "touchpoints": ["examio-be/apps/*/prisma", "examio-be/apps/*/src", "examio-be/libs/database", "examio-be/libs/common", "examio-be/libs/messaging", "examio-be/deploy", "examio-be/apps/ai-service", "examio-be/package.json", ".github/workflows/ci.yml"],
+  "blastRadius": ["every DB access in every service", "migrations and deploy topology", "seeds", "R2 object deletion", "ai-service DB access", "CI"],
+  "contracts": ["DATABASE_URL per service with ?schema=<svc> and role <svc>_svc", "new env <SVC>_DB_PASSWORD, DB_SEARCH_PATH, AI_RUNTIME_DDL", "compose include layout deploy/compose/*.yml", "r2_delete_tasks table in auth and exam schemas"]
+}

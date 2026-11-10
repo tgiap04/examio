@@ -16,7 +16,6 @@ export interface WhitelistUser {
   username: string;
   name: string | null;
   avatar: string | null;
-  email: string;
 }
 
 interface UserSearchInputProps {
@@ -33,7 +32,7 @@ interface UserSearchInputProps {
 export function UserSearchInput({
   selectedUsers,
   onUsersChange,
-  placeholder = "Tìm người dùng theo tên hoặc email...",
+  placeholder = "Tìm người dùng theo tên hoặc username...",
   disabled = false,
 }: UserSearchInputProps) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -175,7 +174,7 @@ export function UserSearchInput({
                           {user.name || user.username}
                         </p>
                         <p className="text-xs text-muted-foreground truncate">
-                          @{user.username} • {user.email}
+                          @{user.username}
                         </p>
                       </div>
                     </button>

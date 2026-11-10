@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package examio.common.v1;
+
+// Pagination metadata returned by every paged list RPC.
+message PageMeta {
+  int32 total = 1;
+  int32 page = 2;
+  int32 limit = 3;
+}

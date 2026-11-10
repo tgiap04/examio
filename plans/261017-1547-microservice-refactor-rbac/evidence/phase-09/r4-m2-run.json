@@ -1,0 +1,60 @@
+{
+  "at": "2026-10-21T15:45:36.270Z",
+  "results": [
+    {
+      "name": "M2 setup: student login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "M2 setup: student sidebar present",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "M2 setup: admin login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "M2: student promoted to TEACHER (next call will be TOKEN_STALE)",
+      "ok": true,
+      "extra": "200"
+    },
+    {
+      "name": "M2: auth-service stopped",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "M2: stale call -> TOKEN_STALE, refresh fails while auth is down",
+      "ok": true,
+      "extra": "GET /word-family/categories 401 TOKEN_STALE | POST /auth/refresh 502 UPSTREAM_UNAVAILABLE"
+    },
+    {
+      "name": "M2: user NOT redirected to /login during the outage",
+      "ok": true,
+      "extra": "/k/word-family"
+    },
+    {
+      "name": "M2: session kept (sidebar still rendered during outage)",
+      "ok": true,
+      "extra": "/k/word-family"
+    },
+    {
+      "name": "M2: auth-service restarted",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "M2: after recovery, next action succeeds (refresh 201, retry 200, room list rendered)",
+      "ok": true,
+      "extra": "GET /studyrooms/mine 401 TOKEN_STALE | GET /studyrooms/mine 401 TOKEN_STALE | POST /auth/refresh 201 | GET /studyrooms/mine 200 | GET /studyrooms/mine 304"
+    },
+    {
+      "name": "M2: never sent to /login",
+      "ok": true,
+      "extra": "/k/study-room"
+    }
+  ]
+}

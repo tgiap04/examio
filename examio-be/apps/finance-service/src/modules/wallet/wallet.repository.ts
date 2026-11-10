@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { BaseRepository } from '@examio/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
-import { Wallet } from '@prisma/client';
+import { Wallet } from '../../prisma';
 
 @Injectable()
 export class WalletRepository extends BaseRepository<Wallet> {
@@ -83,7 +83,7 @@ export class WalletRepository extends BaseRepository<Wallet> {
      * so the balance can never go negative under concurrency, while still
      * throwing the same 'Insufficient balance' error the caller expects.
      */
-    async updateBalance(
+    async applyBalanceDelta(
         userId: string,
         amount: number,
         operation: 'add' | 'subtract' = 'add'

@@ -1,0 +1,39 @@
+{
+  "task": "Phase 02 Contracts & Infra Libs: buf + ts-proto + python codegen, examio.<svc>.v1 protos (auth roles, finance Debit/Credit/Refund contract, r2 DeleteObjects, gateway control), unified ports 3000/50051, libs/contracts, libs/grpc, libs/http",
+  "mode": "code",
+  "acceptanceCriteria": [
+    "yarn proto:lint, proto:gen, typecheck, build:all and test exit 0",
+    "no hand-written gRPC TS interfaces and no runtime protos/ path references remain in apps or libs",
+    "all gRPC servers bind 50051 and HTTP binds 3000; no 50053/50054/50056 in apps or compose",
+    "auth proto exposes BaseRole + is_system_admin with no numeric role and no actor_id in any request",
+    "finance WalletService defines Debit/Credit/Refund with idempotency keys (UNIMPLEMENTED until P10) and keeps deprecated UpdateBalance",
+    "r2 DeleteObjects implemented and idempotent",
+    "libs/grpc retries only IDEMPOTENT_RPCS, explicit metadata param, no AsyncLocalStorage, gRPC status mapped to HTTP",
+    "libs/http error envelope filter built and unit-tested but not registered",
+    "ai-service python stubs generated from the same protos and importable",
+    "exam AI generation still debits credits via gRPC"
+  ],
+  "touchpoints": [
+    "examio-be/proto",
+    "examio-be/libs/contracts",
+    "examio-be/libs/grpc",
+    "examio-be/libs/http",
+    "examio-be/libs/common/src/grpc",
+    "examio-be/apps/*/src/main.ts",
+    "examio-be/deploy/docker-compose.yml",
+    "examio-fe/docker-compose.yml",
+    "examio-be/apps/ai-service/src/backend/grpc_generated"
+  ],
+  "blastRadius": [
+    "exam -> finance credit check and debit",
+    "exam/auth -> r2 upload and delete",
+    "service boot ports and compose wiring",
+    "FE container -> gateway BACKEND_URL",
+    "ai-service import of generated stubs"
+  ],
+  "contracts": [
+    "gRPC package names change to examio.<svc>.v1 (all callers migrated in-phase)",
+    "ports unified to HTTP 3000 / gRPC 50051",
+    "public /api/v1 routes unchanged"
+  ]
+}

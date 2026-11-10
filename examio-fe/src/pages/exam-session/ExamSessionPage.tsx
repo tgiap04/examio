@@ -30,19 +30,26 @@ import { toast } from "@/components/antd/toast";
 import { cn } from "@/lib/utils";
 import { setRedirectBackTarget } from "@/lib/authRedirect";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { useCan } from "@/hooks/useCan";
+import { SessionUnavailable } from "@/components/organisms/SessionUnavailable";
+import { canLoadExamStats } from "@/lib/rbac/exam-stats-gate";
+import { useTranslation } from "react-i18next";
 import { useStudentMaterialsStore } from "@/stores/useStudentMaterialsStore";
 
 export default function ExamSessionPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, initializing } = useAuthStore();
+  const { isAuthenticated, initializing, sessionUnavailable } = useAuthStore();
+  const canTakeExam = useCan("exam:take");
+  const { t } = useTranslation("common");
   const { invalidateExams } = useStudentMaterialsStore();
 
   const [loading, setLoading] = useState(true);
   const [accessInfo, setAccessInfo] = useState<AccessCheckResult | null>(null);
   const [stats, setStats] = useState<ExamSessionStats | null>(null);
   const [sessionNotFound, setSessionNotFound] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [accessCode, setAccessCode] = useState("");
   const [verifying, setVerifying] = useState(false);
@@ -57,6 +64,11 @@ export default function ExamSessionPage() {
       }
 
       if (!isAuthenticated) {
+        // /auth/me unreachable is not "signed out": render the retry state instead of bouncing to login.
+        if (sessionUnavailable) {
+          setLoading(false);
+          return;
+        }
         const returnTo = `${location.pathname}${location.search}${location.hash}`;
         setRedirectBackTarget(returnTo);
         navigate(`/login?from=${encodeURIComponent(returnTo)}`, { replace: true });
@@ -64,11 +76,12 @@ export default function ExamSessionPage() {
       }
 
       setLoading(true);
+      setLoadError(null);
       try {
         const access = await checkExamSessionAccessApi(id);
         setAccessInfo(access);
 
-        if (access.hasAccess) {
+        if (canLoadExamStats(access.hasAccess, canTakeExam)) {
           const sessionStats = await getExamSessionStatsApi(id);
           setStats(sessionStats);
 
@@ -94,6 +107,7 @@ export default function ExamSessionPage() {
             error?.response?.data?.message ||
             error?.message ||
             "Không thể tải thông tin phiên thi";
+          setLoadError(message);
           toast.error(message);
         }
       } finally {
@@ -104,7 +118,7 @@ export default function ExamSessionPage() {
     if (id) {
       loadData();
     }
-  }, [id, initializing, isAuthenticated, location.key, navigate]);
+  }, [id, initializing, isAuthenticated, canTakeExam, sessionUnavailable, location.key, navigate]);
 
   const handleVerifyCode = async () => {
     if (accessCode.length !== 6) {
@@ -117,8 +131,10 @@ export default function ExamSessionPage() {
 
     try {
       await verifyExamSessionAccessCodeApi(id, accessCode);
-      const sessionStats = await getExamSessionStatsApi(id);
-      setStats(sessionStats);
+      if (canLoadExamStats(true, canTakeExam)) {
+        const sessionStats = await getExamSessionStatsApi(id);
+        setStats(sessionStats);
+      }
       setAccessInfo({ hasAccess: true, accessType: "whitelist" });
       // Persist the verified code so the server can re-check access when the
       // attempt is actually started (start endpoint enforces access — C3).
@@ -135,6 +151,10 @@ export default function ExamSessionPage() {
   const handleGoHome = () => {
     navigate("/");
   };
+
+  if (!isAuthenticated && sessionUnavailable) {
+    return <SessionUnavailable />;
+  }
 
   if (loading) {
     return (
@@ -260,6 +280,35 @@ export default function ExamSessionPage() {
     );
   }
 
+  if (!stats && loadError) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-4">
+        <Card className="max-w-md">
+          <CardContent className="flex flex-col items-center py-12 text-center">
+            <XCircle className="h-16 w-16 text-red-500 mb-4" />
+            <p className="text-muted-foreground mb-4">{loadError}</p>
+            <Button variant="outline" onClick={handleGoHome}>
+              Về trang chủ
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!stats && accessInfo?.hasAccess && !canTakeExam) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-4">
+        <div
+          role="status"
+          className="max-w-md rounded-lg border border-hairline bg-surface-soft px-4 py-3 text-center text-sm text-ink"
+        >
+          {t("rbac.teacherCannotTakeExam")}
+        </div>
+      </div>
+    );
+  }
+
   if (!stats) {
     return (
       <div className="flex flex-1 items-center justify-center">
@@ -343,6 +392,10 @@ export default function ExamSessionPage() {
   });
 
   const handleStartExam = () => {
+    if (!canTakeExam) {
+      toast.info(t("rbac.teacherCannotTakeExam"));
+      return;
+    }
     if (stats.startTime > new Date().toISOString()) {
       toast.info("Phiên thi chưa bắt đầu. Vui lòng quay lại đúng giờ.");
       return;
@@ -366,16 +419,26 @@ export default function ExamSessionPage() {
   };
 
   return (
-    <ExamRoomDetailTemplate
-      examInfo={examInfo}
-      progress={stats.progress}
-      timeRemaining={calculateTimeRemaining()}
-      examStartTime={examStartTime}
-      onStartExam={handleStartExam}
-      myAttempts={myAttempts}
-      myAttemptsLoading={myAttemptsLoading}
-      onContinueAttempt={handleContinueAttempt}
-      onViewAttempt={handleViewAttempt}
-    />
+    <>
+      {!canTakeExam && (
+        <div
+          role="status"
+          className="mx-auto mt-4 max-w-4xl rounded-lg border border-hairline bg-surface-soft px-4 py-3 text-sm text-ink"
+        >
+          {t("rbac.teacherCannotTakeExam")}
+        </div>
+      )}
+      <ExamRoomDetailTemplate
+        examInfo={examInfo}
+        progress={stats.progress}
+        timeRemaining={calculateTimeRemaining()}
+        examStartTime={examStartTime}
+        onStartExam={handleStartExam}
+        myAttempts={myAttempts}
+        myAttemptsLoading={myAttemptsLoading}
+        onContinueAttempt={handleContinueAttempt}
+        onViewAttempt={handleViewAttempt}
+      />
+    </>
   );
 }

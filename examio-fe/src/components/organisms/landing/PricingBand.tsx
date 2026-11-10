@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { TFunction } from "i18next";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { api } from "@/apis/api";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { useCan } from "@/hooks/useCan";
 import PricingCards, { type PricingTier } from "@/components/organisms/landing/PricingCards";
 
 interface SubscriptionPlanResponse {
@@ -79,6 +81,20 @@ export default function PricingBand() {
     const [isYearly, setIsYearly] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+    const canSubscribe = useCan("subscription:manage");
+    // Plans are a teacher feature: a signed-in account without it sees text, not a CTA.
+    const displayTiers = useMemo(
+        () =>
+            isAuthenticated && !canSubscribe
+                ? tiers.map((tier) => ({
+                      ...tier,
+                      ctaHref: null,
+                      ctaLabel: t("rbac.plansForTeachers", { ns: "common" }),
+                  }))
+                : tiers,
+        [tiers, isAuthenticated, canSubscribe, t],
+    );
 
     useEffect(() => {
         let cancelled = false;
@@ -130,7 +146,7 @@ export default function PricingBand() {
                     ) : error ? (
                         <p className="text-center text-[14px] text-error">{error}</p>
                     ) : tiers.length === 0 ? null : (
-                        <PricingCards tiers={tiers} isYearly={isYearly} onToggle={setIsYearly} />
+                        <PricingCards tiers={displayTiers} isYearly={isYearly} onToggle={setIsYearly} />
                     )}
                 </div>
 

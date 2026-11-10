@@ -1,6 +1,6 @@
 import { Inject, Injectable, Optional } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '@examio/database';
+import { Prisma } from '../prisma';
+import { PrismaService } from '../prisma';
 
 /**
  * Payload accepted by AuditWriterService.write().

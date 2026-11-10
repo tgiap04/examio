@@ -1,0 +1,111 @@
+{
+  "ts": "2026-10-22T00:30:47.175Z",
+  "fails": 1,
+  "results": [
+    {
+      "id": "C1.login.student",
+      "ok": true,
+      "detail": "status 201"
+    },
+    {
+      "id": "C1.login.teacher",
+      "ok": true,
+      "detail": "status 201"
+    },
+    {
+      "id": "C1.login.admin",
+      "ok": true,
+      "detail": "status 201"
+    },
+    {
+      "id": "C2.me.teacher.shape",
+      "ok": true,
+      "detail": "status 200; top keys=user,roles,permissions; user keys=id,email,username,name,avatar,banner,bio,role,isSystemAdmin,authzVersion,isVerified,isBanned,deletedAt,utmSource,createdAt,updatedAt,createdBy,updatedBy; forbidden present=none; roles=TEACHER"
+    },
+    {
+      "id": "C2.me.student.shape",
+      "ok": true,
+      "detail": "status 200; top keys=user,roles,permissions; user keys=id,email,username,name,avatar,banner,bio,role,isSystemAdmin,authzVersion,isVerified,isBanned,deletedAt,utmSource,createdAt,updatedAt,createdBy,updatedBy; forbidden present=none; roles=STUDENT"
+    },
+    {
+      "id": "C2.me.admin.shape",
+      "ok": true,
+      "detail": "status 200; top keys=user,roles,permissions; user keys=id,email,username,name,avatar,banner,bio,role,isSystemAdmin,authzVersion,isVerified,isBanned,deletedAt,utmSource,createdAt,updatedAt,createdBy,updatedBy; forbidden present=none; roles=STUDENT,SYSTEM_ADMIN"
+    },
+    {
+      "id": "C3.wallet.info.teacher.before",
+      "ok": true,
+      "detail": "status 200; balance=30"
+    },
+    {
+      "id": "C4.wallet.info.student.denied",
+      "ok": true,
+      "detail": "status 403"
+    },
+    {
+      "id": "C5.admin.finance.student.403",
+      "ok": true,
+      "detail": "status 403"
+    },
+    {
+      "id": "C6.admin.credit.idempotent",
+      "ok": true,
+      "detail": "credit1 200, credit2 200; balance 30 -> 35 (expect +5 once)"
+    },
+    {
+      "id": "C7.admin.subtract.insufficient",
+      "ok": true,
+      "detail": "status 400 INSUFFICIENT_CREDITS; balance still 35"
+    },
+    {
+      "id": "C8.admin.refund.unknown",
+      "ok": true,
+      "detail": "status 404 PAYMENT_NOT_FOUND"
+    },
+    {
+      "id": "C9.admin.set-tier",
+      "ok": true,
+      "detail": "status 200 "
+    },
+    {
+      "id": "C10.pagefeature.patch-to-gateway",
+      "ok": true,
+      "detail": "patch 200; /config/pages ai-tool off=true; redis has ai-tool:false=true"
+    },
+    {
+      "id": "C11.user.updated.cache-del",
+      "ok": true,
+      "detail": "seeded=1; admin PATCH 200; cache deleted via event=true"
+    },
+    {
+      "id": "C12.exam.word-family.cud.404",
+      "ok": true,
+      "detail": "POST /word-family/categories status 404"
+    },
+    {
+      "id": "C13.exam.no-email-key",
+      "ok": true,
+      "detail": "examrooms/list 200; email-like keys=none"
+    },
+    {
+      "id": "C14.admin.audit.actor-names",
+      "ok": true,
+      "detail": "audit 200; rows=5; with actor name=5"
+    },
+    {
+      "id": "C14b.admin.audit.actorId-numeric",
+      "ok": false,
+      "detail": "rows with finite numeric actorId=0/5; sample actorId=null"
+    },
+    {
+      "id": "C15.me.finance-down",
+      "ok": true,
+      "detail": "/auth/me with finance stopped: 200"
+    },
+    {
+      "id": "C15b.finance.restarted",
+      "ok": true,
+      "detail": "wallet/info after finance restart: 200"
+    }
+  ]
+}

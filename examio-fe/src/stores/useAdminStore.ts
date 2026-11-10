@@ -79,6 +79,8 @@ interface AdminState {
   invalidateSources: () => void;
   invalidateUsers: () => void;
   invalidateAudit: () => void;
+  /** Drops the cached admin list (an admin was granted/revoked/banned elsewhere). */
+  invalidateAdminList: () => void;
 }
 
 const empty = <T,>(): ResourceState<T> => ({
@@ -272,7 +274,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     if (cached && Date.now() - cached.cachedAt < ADMIN_LIST_CACHE_MS) {
       return cached.data;
     }
-    const res = await listUsersApi({ isAdmin: true, pageSize: 100 });
+    const res = await listUsersApi({ isSystemAdmin: true, pageSize: 100 });
     const list: UserRow[] = res?.rows ?? [];
     set({ adminList: { data: list, cachedAt: Date.now() } });
     return list;
@@ -299,6 +301,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       users: { ...s.users, data: null, lastFetched: null, lastQueryKey: null },
       usersVersion: s.usersVersion + 1,
     })),
+  invalidateAdminList: () => set({ adminList: null }),
   invalidateAudit: () =>
     set((s) => ({
       audit: { ...s.audit, data: null, lastFetched: null, lastQueryKey: null },

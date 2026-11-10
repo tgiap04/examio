@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, Settings, User as PersonIcon } from "lucide-react";
+import { LogOut, User as PersonIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import {
@@ -108,16 +108,6 @@ export default function ProfileDropdown({
             >
               <PersonIcon className="h-4 w-4 text-coral" />
               Hồ sơ
-            </Link>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem asChild>
-            <Link
-              to="/k/settings"
-              className="flex min-h-10 items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-body !text-accent-amber transition-colors hover:bg-surface-soft hover:text-ink focus:bg-surface-soft"
-            >
-              <Settings className="h-4 w-4 text-accent-amber" />
-              Cài đặt
             </Link>
           </DropdownMenuItem>
 

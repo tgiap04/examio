@@ -1,0 +1,746 @@
+[
+  {
+    "command": "temper-2: infra-pg-start",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: f1706c2878ff426bac0c516b89942bd0499bff4b2c712ad81167f4b90533d661",
+    "ts": "2026-10-23T08:28:56.061Z"
+  },
+  {
+    "command": "temper-2: infra-redis-start",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: c0e84575763ebb3ef040dd613d840a061b42a086ec0d47f5c4228636d9d2d0af",
+    "ts": "2026-10-23T08:28:56.252Z"
+  },
+  {
+    "command": "temper-2: infra-rabbit-render",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p12t/repo/deploy/rabbitmq/definitions.json (7 users)",
+    "ts": "2026-10-23T08:28:56.335Z"
+  },
+  {
+    "command": "temper-2: infra-rabbit-start",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: 6c3b5108e87fd0b10a95cc23fcab10c4cbc460d8bc27975417282d874af1166c",
+    "ts": "2026-10-23T08:28:56.528Z"
+  },
+  {
+    "command": "temper-2: wait-pg",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T08:28:56.642Z"
+  },
+  {
+    "command": "temper-2: wait-redis",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T08:28:56.735Z"
+  },
+  {
+    "command": "temper-2: wait-rabbit",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; last: ",
+    "ts": "2026-10-23T08:28:59.631Z"
+  },
+  {
+    "command": "temper-2: init-service-roles-schemas",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: postgres init: created schemas and roles for: auth finance admin exam content assessment studyroom vocabulary aichat document ai",
+    "ts": "2026-10-23T08:29:00.023Z"
+  },
+  {
+    "command": "temper-2: migrate-deploy-auth",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: All migrations have been successfully applied.",
+    "ts": "2026-10-23T08:29:00.981Z"
+  },
+  {
+    "command": "temper-2: migrate-deploy-finance",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: All migrations have been successfully applied.",
+    "ts": "2026-10-23T08:29:01.578Z"
+  },
+  {
+    "command": "temper-2: migrate-deploy-admin",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: All migrations have been successfully applied.",
+    "ts": "2026-10-23T08:29:02.146Z"
+  },
+  {
+    "command": "temper-2: migrate-deploy-exam",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: All migrations have been successfully applied.",
+    "ts": "2026-10-23T08:29:02.886Z"
+  },
+  {
+    "command": "temper-2: migrate-deploy-studyroom",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: All migrations have been successfully applied.",
+    "ts": "2026-10-23T08:29:03.468Z"
+  },
+  {
+    "command": "temper-2: migrate-deploy-vocabulary",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: All migrations have been successfully applied.",
+    "ts": "2026-10-23T08:29:04.046Z"
+  },
+  {
+    "command": "temper-2: migrate-drift-check-auth",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: No difference detected.",
+    "ts": "2026-10-23T08:29:04.586Z"
+  },
+  {
+    "command": "temper-2: migrate-drift-check-finance",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: No difference detected.",
+    "ts": "2026-10-23T08:29:05.127Z"
+  },
+  {
+    "command": "temper-2: migrate-drift-check-admin",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: No difference detected.",
+    "ts": "2026-10-23T08:29:05.659Z"
+  },
+  {
+    "command": "temper-2: migrate-drift-check-exam",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: No difference detected.",
+    "ts": "2026-10-23T08:29:06.215Z"
+  },
+  {
+    "command": "temper-2: migrate-drift-check-studyroom",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: No difference detected.",
+    "ts": "2026-10-23T08:29:06.763Z"
+  },
+  {
+    "command": "temper-2: migrate-drift-check-vocabulary",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: No difference detected.",
+    "ts": "2026-10-23T08:29:07.319Z"
+  },
+  {
+    "command": "temper-2: s2-proto-gen",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T08:29:24.027Z"
+  },
+  {
+    "command": "temper-2: s2-prisma-generate",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; last: \u2714 Generated Prisma Client (6.19.3) to ./apps/vocabulary-service/src/generated/prisma in 27ms",
+    "ts": "2026-10-23T08:29:27.863Z"
+  },
+  {
+    "command": "temper-2: s2-studyroom-e2e-folder",
+    "exitCode": 0,
+    "summary": "exit 0 in 12s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T08:29:39.800Z"
+  },
+  {
+    "command": "temper-2: s2-vocabulary-e2e-folder",
+    "exitCode": 0,
+    "summary": "exit 0 in 6s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T08:29:45.780Z"
+  },
+  {
+    "command": "temper-2: s2-gateway-e2e",
+    "exitCode": 0,
+    "summary": "exit 0 in 25s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T08:30:22.490Z"
+  },
+  {
+    "command": "temper-2: s2-db-isolation-ci-true",
+    "exitCode": 0,
+    "summary": "exit 0 in 23s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T08:30:45.130Z"
+  },
+  {
+    "command": "temper-2: s2-exam-e2e-folder-rerun-with-ci-top-env",
+    "exitCode": 0,
+    "summary": "exit 0 in 14s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T08:31:09.903Z"
+  },
+  {
+    "command": "temper-2: s3-build-auth-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 60s; last:  Image p12t-auth-migrate Built ",
+    "ts": "2026-10-23T08:32:26.348Z"
+  },
+  {
+    "command": "temper-2: s3-build-finance-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 73s; last:  Image p12t-finance-migrate Built ",
+    "ts": "2026-10-23T08:33:39.845Z"
+  },
+  {
+    "command": "temper-2: s3-build-admin-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 72s; last:  Image p12t-admin-migrate Built ",
+    "ts": "2026-10-23T08:34:51.181Z"
+  },
+  {
+    "command": "temper-2: s3-build-exam-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 65s; last:  Image p12t-exam-migrate Built ",
+    "ts": "2026-10-23T08:35:56.323Z"
+  },
+  {
+    "command": "temper-2: s3-build-study-room-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 64s; last:  Image p12t-study-room-migrate Built ",
+    "ts": "2026-10-23T08:37:01.107Z"
+  },
+  {
+    "command": "temper-2: s3-build-vocabulary-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 82s; last:  Image p12t-vocabulary-migrate Built ",
+    "ts": "2026-10-23T08:38:24.057Z"
+  },
+  {
+    "command": "temper-2: s3-build-auth",
+    "exitCode": 0,
+    "summary": "exit 0 in 111s; last:  Image p12t-auth Built ",
+    "ts": "2026-10-23T08:40:15.555Z"
+  },
+  {
+    "command": "temper-2: s3-build-finance",
+    "exitCode": 0,
+    "summary": "exit 0 in 44s; last:  Image p12t-finance Built ",
+    "ts": "2026-10-23T08:40:59.663Z"
+  },
+  {
+    "command": "temper-2: s3-build-admin",
+    "exitCode": 0,
+    "summary": "exit 0 in 39s; last:  Image p12t-admin Built ",
+    "ts": "2026-10-23T08:41:38.909Z"
+  },
+  {
+    "command": "temper-2: s3-build-exam",
+    "exitCode": 0,
+    "summary": "exit 0 in 38s; last:  Image p12t-exam Built ",
+    "ts": "2026-10-23T08:42:16.417Z"
+  },
+  {
+    "command": "temper-2: s3-build-study-room",
+    "exitCode": 0,
+    "summary": "exit 0 in 35s; last:  Image p12t-study-room Built ",
+    "ts": "2026-10-23T08:42:51.386Z"
+  },
+  {
+    "command": "temper-2: s3-build-vocabulary",
+    "exitCode": 0,
+    "summary": "exit 0 in 36s; last:  Image p12t-vocabulary Built ",
+    "ts": "2026-10-23T08:43:27.654Z"
+  },
+  {
+    "command": "temper-2: s3-build-gateway",
+    "exitCode": 0,
+    "summary": "exit 0 in 36s; last:  Image p12t-gateway Built ",
+    "ts": "2026-10-23T08:44:03.680Z"
+  },
+  {
+    "command": "temper-2: s3-build-r2",
+    "exitCode": 0,
+    "summary": "exit 0 in 36s; last:  Image p12t-r2 Built ",
+    "ts": "2026-10-23T08:44:39.973Z"
+  },
+  {
+    "command": "temper-2: s3-build-ai",
+    "exitCode": 0,
+    "summary": "exit 0 in 75s; last:  Image p12t-ai Built ",
+    "ts": "2026-10-23T08:45:54.757Z"
+  },
+  {
+    "command": "temper-2: s3-build-seed",
+    "exitCode": 0,
+    "summary": "exit 0 in 82s; last:  Image p12t-seed Built ",
+    "ts": "2026-10-23T08:47:17.011Z"
+  },
+  {
+    "command": "temper-2: s3-stubs-net",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: bfb1dd1ed6e78a3278689598047b694b35c724412009502f8fca518482b3cd9f",
+    "ts": "2026-10-23T08:47:27.823Z"
+  },
+  {
+    "command": "temper-2: s3-stubs-s3proxy",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: 0b24494912dcd1158cca789e0fbbaeda83d60c73898bf06b7ded2e7840ed7de7",
+    "ts": "2026-10-23T08:47:28.427Z"
+  },
+  {
+    "command": "temper-2: s3-stubs-shim",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: 31e26010be9e610c1d8dc1abec4da8c42b2b6e9286aaa0db442a92f66640f664",
+    "ts": "2026-10-23T08:47:28.631Z"
+  },
+  {
+    "command": "temper-2: s3-stubs-mkbucket",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: buckets: examio-p12t",
+    "ts": "2026-10-23T08:47:33.060Z"
+  },
+  {
+    "command": "temper-2: s3-stubs-attach-shim",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T08:47:33.161Z"
+  },
+  {
+    "command": "temper-2: s3-up-wait-empty-volume",
+    "exitCode": 0,
+    "summary": "exit 0 in 36s; last:  Container examio-gateway Healthy ",
+    "ts": "2026-10-23T08:48:06.013Z"
+  },
+  {
+    "command": "temper-2: s3-ps-check-after-up",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: services=20 oneShots=admin-migrate:0,auth-migrate:0,exam-migrate:0,finance-migrate:0,rabbitmq-defs:0,study-room-migrate:0,vocabulary-migrate:0 violations=0",
+    "ts": "2026-10-23T08:48:34.345Z"
+  },
+  {
+    "command": "temper-2: s3-migrate-status-auth",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: Database schema is up to date!",
+    "ts": "2026-10-23T08:48:35.456Z"
+  },
+  {
+    "command": "temper-2: s3-migrate-status-finance",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: Database schema is up to date!",
+    "ts": "2026-10-23T08:48:36.587Z"
+  },
+  {
+    "command": "temper-2: s3-migrate-status-admin",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: Database schema is up to date!",
+    "ts": "2026-10-23T08:48:37.716Z"
+  },
+  {
+    "command": "temper-2: s3-migrate-status-exam",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: Database schema is up to date!",
+    "ts": "2026-10-23T08:48:38.903Z"
+  },
+  {
+    "command": "temper-2: s3-migrate-status-study-room",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: Database schema is up to date!",
+    "ts": "2026-10-23T08:48:40.020Z"
+  },
+  {
+    "command": "temper-2: s3-migrate-status-vocabulary",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: Database schema is up to date!",
+    "ts": "2026-10-23T08:48:41.102Z"
+  },
+  {
+    "command": "temper-2: s3-seed-opt-in-run",
+    "exitCode": 0,
+    "summary": "exit 0 in 6s; last: ==> Seeds complete.",
+    "ts": "2026-10-23T08:48:47.329Z"
+  },
+  {
+    "command": "temper-2: s3-counts-after-seed",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: admin_audit|20",
+    "ts": "2026-10-23T08:48:47.482Z"
+  },
+  {
+    "command": "temper-2: s3-up-plain-after-seed",
+    "exitCode": 0,
+    "summary": "exit 0 in 4s; last:  Container examio-admin Healthy ",
+    "ts": "2026-10-23T08:48:52.037Z"
+  },
+  {
+    "command": "temper-2: s3-ps-check-after-plain-up",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: services=20 oneShots=admin-migrate:0,auth-migrate:0,exam-migrate:0,finance-migrate:0,rabbitmq-defs:0,study-room-migrate:0,vocabulary-migrate:0 violations=0",
+    "ts": "2026-10-23T08:48:52.265Z"
+  },
+  {
+    "command": "temper-2: s3-counts-after-plain-up",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: admin_audit|20",
+    "ts": "2026-10-23T08:48:52.420Z"
+  },
+  {
+    "command": "temper-2: s3-iso-studyroom-own-table",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: 0",
+    "ts": "2026-10-23T08:48:53.162Z"
+  },
+  {
+    "command": "temper-2: s3-iso-vocabulary-own-table",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: 10",
+    "ts": "2026-10-23T08:48:53.312Z"
+  },
+  {
+    "command": "temper-2: s3-iso-exam-no-studyroom-table",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: t",
+    "ts": "2026-10-23T08:48:53.464Z"
+  },
+  {
+    "command": "temper-2: s3-iso-exam-no-wordfamily-table",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: t",
+    "ts": "2026-10-23T08:48:53.620Z"
+  },
+  {
+    "command": "temper-2: s3-iso-exam-no-wordfamily-category",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: t",
+    "ts": "2026-10-23T08:48:53.776Z"
+  },
+  {
+    "command": "temper-2: s3-broker-bindings",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: studyroom.retry\tstudyroom.retry.30s\t",
+    "ts": "2026-10-23T08:48:54.243Z"
+  },
+  {
+    "command": "temper-2: s4-smoke-prior-set",
+    "exitCode": 0,
+    "summary": "exit 0 in 131s; last: SMOKE checks=18 failed=0",
+    "ts": "2026-10-23T08:52:57.189Z"
+  },
+  {
+    "command": "temper-2: s4-word-family-image-drain-worker",
+    "exitCode": 0,
+    "summary": "exit 0 in 74s; last: IMG12B checks=6 failed=0",
+    "ts": "2026-10-23T09:17:49.341Z"
+  },
+  {
+    "command": "temper-2: f1-build-auth",
+    "exitCode": 0,
+    "summary": "exit 0 in 27s; last:  Image p12t-auth Built ",
+    "ts": "2026-10-23T09:22:09.502Z"
+  },
+  {
+    "command": "temper-2: f1-up-auth-recreate",
+    "exitCode": 0,
+    "summary": "exit 0 in 9s; last:  Container examio-auth Healthy ",
+    "ts": "2026-10-23T09:22:18.598Z"
+  },
+  {
+    "command": "temper-2: f1-ps-check",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: services=20 oneShots=admin-migrate:0,auth-migrate:0,exam-migrate:0,finance-migrate:0,rabbitmq-defs:0,study-room-migrate:0,vocabulary-migrate:0 violations=0",
+    "ts": "2026-10-23T09:22:18.842Z"
+  },
+  {
+    "command": "temper-2: f1-recheck-to-flashcard-rt15-after-seed-shape-fix",
+    "exitCode": 0,
+    "summary": "exit 0 in 131s; last: TF12 checks=9 failed=0",
+    "ts": "2026-10-23T09:27:10.286Z"
+  },
+  {
+    "command": "temper-2: s5-cross-replica-chat-internal-net",
+    "exitCode": 0,
+    "summary": "exit 0 in 133s; last: XREP checks=6 failed=0",
+    "ts": "2026-10-23T09:30:42.303Z"
+  },
+  {
+    "command": "temper-2: s6-ui-fixture-study-room",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: fixture ok room= 6adb29...",
+    "ts": "2026-10-23T09:32:10.640Z"
+  },
+  {
+    "command": "temper-2: s6-vite-up",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: Connection to 127.0.0.1 port 5273 [tcp/*] succeeded!",
+    "ts": "2026-10-23T09:32:11.725Z"
+  },
+  {
+    "command": "temper-2: s6-vite-up-rerun",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: Connection to 127.0.0.1 port 5273 [tcp/*] succeeded!",
+    "ts": "2026-10-23T11:14:14.307Z"
+  },
+  {
+    "command": "temper-2: s6b-build-auth-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 76s; last:  Image p12t-auth-migrate Built ",
+    "ts": "2026-10-23T11:18:51.917Z"
+  },
+  {
+    "command": "temper-2: s6b-build-finance-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 2165s; last:  Image p12t-finance-migrate Built ",
+    "ts": "2026-10-23T11:54:56.374Z"
+  },
+  {
+    "command": "temper-2: s6b-build-study-room-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 65s; last:  Image p12t-study-room-migrate Built ",
+    "ts": "2026-10-23T17:42:54.353Z"
+  },
+  {
+    "command": "temper-2: s6b-build-vocabulary-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 58s; last:  Image p12t-vocabulary-migrate Built ",
+    "ts": "2026-10-23T17:43:53.056Z"
+  },
+  {
+    "command": "temper-2: s6b-build-auth",
+    "exitCode": 0,
+    "summary": "exit 0 in 52s; last:  Image p12t-auth Built ",
+    "ts": "2026-10-23T17:44:45.393Z"
+  },
+  {
+    "command": "temper-2: s6b-build-retry-admin-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 65s; last:  Image p12t-admin-migrate Built ",
+    "ts": "2026-10-23T17:47:26.622Z"
+  },
+  {
+    "command": "temper-2: s6b-build-retry-exam-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 70s; last:  Image p12t-exam-migrate Built ",
+    "ts": "2026-10-23T17:48:36.865Z"
+  },
+  {
+    "command": "temper-2: s6b-build-retry-auth",
+    "exitCode": 0,
+    "summary": "exit 0 in 20s; last:  Image p12t-auth Built ",
+    "ts": "2026-10-23T17:48:56.936Z"
+  },
+  {
+    "command": "temper-2: s6b-build-retry-finance",
+    "exitCode": 0,
+    "summary": "exit 0 in 46s; last:  Image p12t-finance Built ",
+    "ts": "2026-10-23T17:49:42.055Z"
+  },
+  {
+    "command": "temper-2: s6b-build-retry-admin",
+    "exitCode": 0,
+    "summary": "exit 0 in 40s; last:  Image p12t-admin Built ",
+    "ts": "2026-10-23T17:50:22.162Z"
+  },
+  {
+    "command": "temper-2: s6b-build-retry-exam",
+    "exitCode": 0,
+    "summary": "exit 0 in 40s; last:  Image p12t-exam Built ",
+    "ts": "2026-10-23T17:51:02.266Z"
+  },
+  {
+    "command": "temper-2: s6b-build-retry-study-room",
+    "exitCode": 0,
+    "summary": "exit 0 in 35s; last:  Image p12t-study-room Built ",
+    "ts": "2026-10-23T17:51:37.366Z"
+  },
+  {
+    "command": "temper-2: s6b-build-retry-vocabulary",
+    "exitCode": 0,
+    "summary": "exit 0 in 25s; last:  Image p12t-vocabulary Built ",
+    "ts": "2026-10-23T17:52:02.453Z"
+  },
+  {
+    "command": "temper-2: s6b-build-retry-gateway",
+    "exitCode": 0,
+    "summary": "exit 0 in 40s; last:  Image p12t-gateway Built ",
+    "ts": "2026-10-23T17:52:42.564Z"
+  },
+  {
+    "command": "temper-2: s6b-build-retry-r2",
+    "exitCode": 0,
+    "summary": "exit 0 in 35s; last:  Image p12t-r2 Built ",
+    "ts": "2026-10-23T17:53:17.666Z"
+  },
+  {
+    "command": "temper-2: s6b-build-retry-ai",
+    "exitCode": 0,
+    "summary": "exit 0 in 115s; last:  Image p12t-ai Built ",
+    "ts": "2026-10-23T17:55:12.964Z"
+  },
+  {
+    "command": "temper-2: s6b-build-retry-seed",
+    "exitCode": 0,
+    "summary": "exit 0 in 86s; last:  Image p12t-seed Built ",
+    "ts": "2026-10-23T17:56:38.177Z"
+  },
+  {
+    "command": "temper-2: s3-stubs-net",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: 1ee239aeab5fdc690dfdec7a6ae33faea98701f2aaec710fe7b7d35a5f4464ff",
+    "ts": "2026-10-23T17:56:48.082Z"
+  },
+  {
+    "command": "temper-2: s3-stubs-s3proxy",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: 78015962fffdd7e1027028b2c130f4ceecb2044d96a5c293bb1181dda01db228",
+    "ts": "2026-10-23T17:56:48.436Z"
+  },
+  {
+    "command": "temper-2: s3-stubs-shim",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: b573aabebc539a63a9c7e1716db7ee0e8d19f5edae8a0b50163dc52ea4f2481c",
+    "ts": "2026-10-23T17:56:48.702Z"
+  },
+  {
+    "command": "temper-2: s3-stubs-mkbucket",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: buckets: examio-p12t",
+    "ts": "2026-10-23T17:56:53.133Z"
+  },
+  {
+    "command": "temper-2: s3-stubs-attach-shim",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T17:56:53.235Z"
+  },
+  {
+    "command": "temper-2: s6b-up-wait-empty-volume",
+    "exitCode": 0,
+    "summary": "exit 0 in 39s; last:  Container examio-gateway Healthy ",
+    "ts": "2026-10-23T17:57:26.059Z"
+  },
+  {
+    "command": "temper-2: s6b-ps-check",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: services=20 oneShots=admin-migrate:0,auth-migrate:0,exam-migrate:0,finance-migrate:0,rabbitmq-defs:0,study-room-migrate:0,vocabulary-migrate:0 violations=0",
+    "ts": "2026-10-23T17:57:26.304Z"
+  },
+  {
+    "command": "temper-2: s6b-seed-opt-in-run",
+    "exitCode": 0,
+    "summary": "exit 0 in 14s; last: ==> Seeds complete.",
+    "ts": "2026-10-23T17:57:41.056Z"
+  },
+  {
+    "command": "temper-2: s6b-counts-after-seed",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: admin_audit|20",
+    "ts": "2026-10-23T17:57:41.724Z"
+  },
+  {
+    "command": "temper-2: s6b-vite-up",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: Connection to 127.0.0.1 port 5273 [tcp/*] succeeded!",
+    "ts": "2026-10-23T17:57:53.115Z"
+  },
+  {
+    "command": "temper-2: s6b-fixture-open-exam-session-and-p09root-retry",
+    "exitCode": 0,
+    "summary": "exit 0 in 66s; last: notes-seed written; category present: true",
+    "ts": "2026-10-23T18:01:38.266Z"
+  },
+  {
+    "command": "temper-2: s6b-vite-up-run2",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: Connection to 127.0.0.1 port 5273 [tcp/*] succeeded!",
+    "ts": "2026-10-23T18:05:32.631Z"
+  },
+  {
+    "command": "temper-2: s6b-vite-up-run3",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: Connection to 127.0.0.1 port 5273 [tcp/*] succeeded!",
+    "ts": "2026-10-23T18:11:29.582Z"
+  },
+  {
+    "command": "temper-2: s6b-vite-up-run4",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: Connection to 127.0.0.1 port 5273 [tcp/*] succeeded!",
+    "ts": "2026-10-23T18:17:21.939Z"
+  },
+  {
+    "command": "temper-2: s6b-vite-up-run5",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: Connection to 127.0.0.1 port 5273 [tcp/*] succeeded!",
+    "ts": "2026-10-23T18:24:42.668Z"
+  },
+  {
+    "command": "temper-2: s6b-vite-up-run6",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: Connection to 127.0.0.1 port 5273 [tcp/*] succeeded!",
+    "ts": "2026-10-23T18:30:43.922Z"
+  },
+  {
+    "command": "temper-2: s6b-vite-up-run7",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: Connection to 127.0.0.1 port 5273 [tcp/*] succeeded!",
+    "ts": "2026-10-23T18:37:00.526Z"
+  },
+  {
+    "command": "temper-2: s6b-vite-up-run8",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: Connection to 127.0.0.1 port 5273 [tcp/*] succeeded!",
+    "ts": "2026-10-23T18:42:58.036Z"
+  },
+  {
+    "command": "temper-2: s6b-vite-up-run9",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: Connection to 127.0.0.1 port 5273 [tcp/*] succeeded!",
+    "ts": "2026-10-23T18:53:04.790Z"
+  },
+  {
+    "command": "temper-2: s6b-vite-up-run10",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: Connection to 127.0.0.1 port 5273 [tcp/*] succeeded!",
+    "ts": "2026-10-23T19:06:30.035Z"
+  },
+  {
+    "command": "temper-2: s6b-ui9-matrix-full-run10",
+    "exitCode": 0,
+    "summary": "exit 0 in 468s; last: SUMMARY pass=64 fail=0 note=1",
+    "ts": "2026-10-23T19:22:09.847Z"
+  },
+  {
+    "command": "final: be yarn typecheck (final code, after review L1-L3 + F1 fix)",
+    "exitCode": 0,
+    "summary": "all services",
+    "ts": "2026-10-23T19:27:06.972627Z"
+  },
+  {
+    "command": "final: be TZ=UTC yarn test (final code)",
+    "exitCode": 0,
+    "summary": "Test Suites: 207 passed, 1 skipped; Tests: 2019 passed, 6 skipped",
+    "ts": "2026-10-23T19:27:06.972627Z"
+  },
+  {
+    "command": "final: be yarn check:deps (final code)",
+    "exitCode": 0,
+    "summary": "no dependency violations (858 modules)",
+    "ts": "2026-10-23T19:27:06.972627Z"
+  },
+  {
+    "command": "final: be yarn check:ownership (final code)",
+    "exitCode": 0,
+    "summary": "Violations: 0",
+    "ts": "2026-10-23T19:27:06.972627Z"
+  },
+  {
+    "command": "final: be yarn build:all (final code, sequential)",
+    "exitCode": 0,
+    "summary": "all services incl. study-room-service and vocabulary-service built",
+    "ts": "2026-10-23T19:27:06.972627Z"
+  },
+  {
+    "command": "final: node --test deploy/compose-topology.spec.cjs deploy/rabbitmq/render-definitions.spec.cjs",
+    "exitCode": 0,
+    "summary": "32 pass, 0 fail (exam has no depends_on vocabulary)",
+    "ts": "2026-10-23T19:27:06.972627Z"
+  },
+  {
+    "command": "final: grep StudyRoomModule|WordFamilyModule in apps/exam-service/src",
+    "exitCode": 0,
+    "summary": "0 hits",
+    "ts": "2026-10-23T19:27:06.972627Z"
+  },
+  {
+    "command": "final: grep 'question: { in:' in apps/exam-service/src/modules/flashcardset",
+    "exitCode": 0,
+    "summary": "0 hits",
+    "ts": "2026-10-23T19:27:06.972627Z"
+  },
+  {
+    "command": "final: jest test/cross-app/service-audiences.spec.ts (F1 regression)",
+    "exitCode": 0,
+    "summary": "RED before the fix (exam vocabulary.client.ts audience), GREEN after",
+    "ts": "2026-10-23T19:27:06.972627Z"
+  }
+]

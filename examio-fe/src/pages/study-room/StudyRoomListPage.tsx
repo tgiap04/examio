@@ -5,6 +5,7 @@ import { Button } from "@/components/antd/button";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useStudyRoomStore } from "@/stores/useStudyRoomStore";
 import { StudyRoomListItem } from "@/types/studyRoom";
+import { useCan } from "@/hooks/useCan";
 import { CreateRoomModal } from "./components/create-room-modal";
 import { JoinByCodeModal } from "./components/join-by-code-modal";
 import { RoomCard } from "./components/room-card";
@@ -16,6 +17,7 @@ export default function StudyRoomListPage() {
   const loading = useStudyRoomStore((s) => s.loadingMine);
   const fetchMyRooms = useStudyRoomStore((s) => s.fetchMyRooms);
   const myId = useAuthStore((s) => String(s.user?.id ?? ""));
+  const canCreate = useCan("study_room:create");
   const [createOpen, setCreateOpen] = useState(false);
   const [joinOpen, setJoinOpen] = useState(false);
   const [configRoom, setConfigRoom] = useState<StudyRoomListItem | null>(null);
@@ -43,9 +45,11 @@ export default function StudyRoomListPage() {
             <Button variant="outline" onClick={() => setJoinOpen(true)}>
               <LogIn className="mr-1.5 h-4 w-4" /> Nhập mã
             </Button>
-            <Button onClick={() => setCreateOpen(true)}>
-              <Plus className="mr-1.5 h-4 w-4" /> Tạo phòng
-            </Button>
+            {canCreate && (
+              <Button onClick={() => setCreateOpen(true)}>
+                <Plus className="mr-1.5 h-4 w-4" /> Tạo phòng
+              </Button>
+            )}
           </div>
         </div>
 
@@ -69,16 +73,20 @@ export default function StudyRoomListPage() {
                 Chưa có phòng học nào
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
-                Tạo phòng đầu tiên hoặc nhập mã để tham gia phòng của bạn bè
+                {canCreate
+                  ? "Tạo phòng đầu tiên hoặc nhập mã để tham gia phòng của bạn bè"
+                  : "Nhập mã để tham gia phòng của bạn bè"}
               </p>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setJoinOpen(true)}>
                 <LogIn className="mr-1.5 h-4 w-4" /> Nhập mã
               </Button>
-              <Button onClick={() => setCreateOpen(true)}>
-                <Plus className="mr-1.5 h-4 w-4" /> Tạo phòng
-              </Button>
+              {canCreate && (
+                <Button onClick={() => setCreateOpen(true)}>
+                  <Plus className="mr-1.5 h-4 w-4" /> Tạo phòng
+                </Button>
+              )}
             </div>
           </div>
         ) : (
@@ -96,11 +104,13 @@ export default function StudyRoomListPage() {
         )}
       </div>
 
-      <CreateRoomModal
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onCreated={enter}
-      />
+      {canCreate && (
+        <CreateRoomModal
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onCreated={enter}
+        />
+      )}
       <JoinByCodeModal
         open={joinOpen}
         onOpenChange={setJoinOpen}

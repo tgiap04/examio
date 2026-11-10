@@ -5,21 +5,38 @@ import { join } from 'path';
 config({ path: join(process.cwd(), 'apps', 'finance-service', '.env') });
 
 import { NestFactory } from '@nestjs/core';
-import { Transport, MicroserviceOptions } from '@nestjs/microservices';
+import { MicroserviceOptions } from '@nestjs/microservices';
 import { FinanceServiceModule } from './finance-service.module';
+import {
+    HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
+    Logger,
+} from '@examio/observability';
+import { PROTO_FILES } from '@examio/contracts';
+import { grpcServerOptions } from '@examio/grpc';
+import { parseRoles } from '@examio/messaging';
+import { WorkerModule } from './worker.module';
 
-async function bootstrap() {
-    // Fail fast on a missing/weak signing secret instead of degrading into
-    // per-request 401s (or, worse, a guessable key). See security audit H8/H6.
-    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-        throw new Error('JWT_SECRET missing or too short (min 32 chars)');
-    }
+async function startWorker() {
+    // Event consumer (auth.user.registered, ...). No HTTP/gRPC listener.
+    const worker = await NestFactory.createApplicationContext(WorkerModule, {
+        bufferLogs: true,
+    });
+    worker.useLogger(worker.get(Logger));
+    worker.enableShutdownHooks();
+    console.log('📥 Finance Service worker running (event consumer)');
+}
 
+async function startApi() {
     // HTTP server
-    const app = await NestFactory.create(FinanceServiceModule);
+    const app = await NestFactory.create(FinanceServiceModule, {
+        bufferLogs: true,
+    });
+    app.useLogger(app.get(Logger));
 
     // Global prefix to match gateway proxy paths
-    app.setGlobalPrefix('api/v1');
+    app.setGlobalPrefix('api/v1', {
+        exclude: HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
+    });
 
     // Enable CORS
     app.enableCors({
@@ -31,30 +48,32 @@ async function bootstrap() {
         credentials: true,
     });
 
-    // gRPC microservice for WalletService
-    app.connectMicroservice<MicroserviceOptions>({
-        transport: Transport.GRPC,
-        options: {
-            package: ['wallet', 'subscription'],
-            protoPath: [
-                join(__dirname, '../../../libs/common/src/protos/wallet.proto'),
-                join(
-                    __dirname,
-                    '../../../libs/common/src/protos/subscription.proto'
-                ),
-            ],
-            url: `0.0.0.0:${process.env.GRPC_PORT || 50053}`,
-        },
-    });
+    // gRPC microservice (WalletService + SubscriptionService + FinanceAdminService + FinanceStatsService)
+    app.connectMicroservice<MicroserviceOptions>(
+        grpcServerOptions([
+            PROTO_FILES.wallet,
+            PROTO_FILES.subscription,
+            PROTO_FILES.financeAdmin,
+        ]),
+        { inheritAppConfig: true }
+    );
 
     await app.startAllMicroservices();
-    await app.listen(process.env.PORT ?? 3003);
+    const httpPort = process.env.PORT ?? 3000;
+    const grpcPort = process.env.GRPC_PORT || 50051;
+    await app.listen(httpPort);
 
-    console.log(
-        `🚀 Finance Service is running on port ${process.env.PORT ?? 3003}`
-    );
-    console.log(
-        `📡 gRPC server is running on port ${process.env.GRPC_PORT || 50053}`
-    );
+    console.log(`🚀 Finance Service is running on port ${httpPort}`);
+    console.log(`📡 gRPC server is running on port ${grpcPort}`);
 }
-bootstrap();
+
+async function bootstrap() {
+    // ROLE=api | worker | api,worker (default api,worker).
+    const roles = parseRoles();
+    if (roles.has('api')) await startApi();
+    if (roles.has('worker')) await startWorker();
+}
+bootstrap().catch((err) => {
+    console.error(err);
+    process.exit(1);
+});

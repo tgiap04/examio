@@ -44,13 +44,14 @@ out
 *.tsbuildinfo
 
 # Environment & Secrets - Security
-.env
-.env.*
-!.env.example
-.env.local
-.env.*.local
-*.pem
-*.key
+# `**/` is required: a bare `.env` only matches the context root, and the
+# per-service apps/*/.env files hold real credentials.
+**/.env
+**/.env.*
+!**/.env.example
+!**/*.env.example
+**/*.pem
+**/*.key
 *.cert
 
 # Testing - Not needed in production

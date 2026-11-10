@@ -1,16 +1,21 @@
+import { idempotencyConfig } from "@/lib/idempotency-key";
 import { api } from "@/apis/api";
 
 import { env } from "@/lib/env";
+import { unwrap } from "@/lib/quiz-practice/api-failure";
+import { acceptRoleStatuses } from "@/apis/adminRolesApi";
 
 // ==================== Types ====================
 
 export interface UserRow {
-  id: number;
+  /** Backend ids are cuid strings. */
+  id: string;
   email: string;
   username: string;
   name: string;
   avatar: string;
-  isAdmin: boolean;
+  role: "STUDENT" | "TEACHER";
+  isSystemAdmin: boolean;
   isBanned: boolean;
   isVerified: boolean;
   createdAt: string;
@@ -19,7 +24,7 @@ export interface UserRow {
 
 export interface AuditRow {
   id: string;
-  actorId: number;
+  actorId: string;
   actorName: string;
   action: string;
   targetType: string;
@@ -62,14 +67,14 @@ export interface SourceBreakdownResponse {
 
 export interface ListUsersQuery {
   search?: string;
-  isAdmin?: boolean;
+  isSystemAdmin?: boolean;
   isBanned?: boolean;
   page?: number;
   pageSize?: number;
 }
 
 export interface ListAuditQuery {
-  actorId?: number;
+  adminId?: string;
   action?: string;
   from?: string;
   to?: string;
@@ -89,14 +94,17 @@ export interface RefundBody {
 }
 
 export interface CreditBody {
-  userId: number;
+  userId: string;
+  /** Always positive; the sign is carried by `direction`. */
   amount: number;
+  direction: "ADD" | "SUBTRACT";
   reason: string;
 }
 
 export interface SetTierBody {
-  userId: number;
+  userId: string;
   tier: number;
+  billingCycle?: "monthly" | "yearly";
   reason: string;
 }
 
@@ -118,34 +126,32 @@ export async function listUsersApi(query: ListUsersQuery = {}) {
   return response.data;
 }
 
-export async function getUserApi(id: number) {
+export async function getUserApi(id: string) {
   const response = await api.get(`/admin/users/${id}`);
   return response.data;
 }
 
-export async function updateUserApi(id: number, body: UpdateUserBody) {
+export async function updateUserApi(id: string, body: UpdateUserBody) {
   const response = await api.patch(`/admin/users/${id}`, body);
   return response.data;
 }
 
-export async function banUserApi(id: number) {
-  const response = await api.post(`/admin/users/${id}/ban`);
-  return response.data;
+/**
+ * Ban / unban accept every 4xx except 401 so the API `code` (LAST_SYSTEM_ADMIN,
+ * CANNOT_CHANGE_OWN_STATUS) reaches the UI as an `ApiFailure` (the shared
+ * interceptor would reduce it to a bare Error(message)).
+ */
+async function postStatus(path: string) {
+  const response = await api.post(path, undefined, { validateStatus: acceptRoleStatuses });
+  return unwrap(response);
 }
 
-export async function unbanUserApi(id: number) {
-  const response = await api.post(`/admin/users/${id}/unban`);
-  return response.data;
+export function banUserApi(id: string) {
+  return postStatus(`/admin/users/${encodeURIComponent(id)}/ban`);
 }
 
-export async function grantAdminApi(id: number) {
-  const response = await api.post(`/admin/users/${id}/grant-admin`);
-  return response.data;
-}
-
-export async function revokeAdminApi(id: number) {
-  const response = await api.post(`/admin/users/${id}/revoke-admin`);
-  return response.data;
+export function unbanUserApi(id: string) {
+  return postStatus(`/admin/users/${encodeURIComponent(id)}/unban`);
 }
 
 export async function listAuditApi(query: ListAuditQuery = {}) {
@@ -170,18 +176,18 @@ export async function getSourcesApi(range?: "7d" | "30d" | "90d") {
   return response.data as SourceBreakdownResponse;
 }
 
-export async function refundApi(body: RefundBody) {
-  const response = await api.post("/admin/finance/refund", body);
+export async function refundApi(body: RefundBody, idempotencyKey: string) {
+  const response = await api.post("/admin/finance/refund", body, idempotencyConfig(idempotencyKey));
   return response.data;
 }
 
-export async function creditApi(body: CreditBody) {
-  const response = await api.post("/admin/finance/credit", body);
+export async function creditApi(body: CreditBody, idempotencyKey: string) {
+  const response = await api.post("/admin/finance/credit", body, idempotencyConfig(idempotencyKey));
   return response.data;
 }
 
-export async function setTierApi(body: SetTierBody) {
-  const response = await api.post("/admin/finance/tier", body);
+export async function setTierApi(body: SetTierBody, idempotencyKey: string) {
+  const response = await api.post("/admin/finance/tier", body, idempotencyConfig(idempotencyKey));
   return response.data;
 }
 

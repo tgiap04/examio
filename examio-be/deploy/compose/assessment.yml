@@ -1,0 +1,103 @@
+# Assessment service (proctored exams: rooms, sessions with a quiz snapshot, attempts, cheating logs):
+# API + worker (outbox relay), and its schema migration.
+# Included from deploy/docker-compose.yml; paths are relative to deploy/ (project_directory).
+# =============================================================================
+# Shared fragments (YAML anchors are per file, so each file carries its own copy)
+x-logging: &default-logging
+    driver: 'json-file'
+    options:
+        max-size: '10m'
+        max-file: '3'
+
+x-nestjs-healthcheck: &nestjs-healthcheck
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    start_period: 60s
+
+services:
+    assessment:
+        image: ghcr.io/cychipo/examio-assessment:${ASSESSMENT_TAG:-main}
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile.node
+            args:
+                SERVICE: assessment-service
+        container_name: examio-assessment
+        environment:
+            - NODE_ENV=production
+            - PORT=3000
+            - FRONTEND_URL=${FRONTEND_URL:?FRONTEND_URL is required}
+            - DATABASE_URL=postgresql://assessment_svc:${ASSESSMENT_DB_PASSWORD:?ASSESSMENT_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=assessment
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+            - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+            # Consumes assessment.events (content.quizset.deleted, auth.user.updated); publishes only assessment.*
+            - RABBITMQ_URL=amqp://assessment:${RABBITMQ_ASSESSMENT_PASS:?RABBITMQ_ASSESSMENT_PASS is required}@rabbitmq:5672
+            # api + the worker (outbox relay, daily purge; no listener of its own) in this container
+            - ROLE=api,worker
+            # ContentService (snapshots and quiz set titles/counts, as the caller's forwarded user token),
+            # DocumentService (history stats), auth public profiles. All lazy: an exam in progress needs none.
+            - CONTENT_GRPC_URL=content:50051
+            - DOCUMENT_GRPC_URL=document:50051
+            - AUTH_GRPC_URL=auth:50051
+            - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
+            - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
+            - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
+            - AUTH_TOKEN_URL=http://auth:3000/internal/token
+            - SERVICE_CLIENT_SECRET=${ASSESSMENT_SERVICE_CLIENT_SECRET:?ASSESSMENT_SERVICE_CLIENT_SECRET is required}
+        env_file:
+            - path: env/assessment.env
+              required: true
+        depends_on:
+            assessment-migrate:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+            auth:
+                condition: service_healthy
+            # No dependency on content or document: lazy gRPC clients, an exam in progress reads only
+            # its stored snapshot.
+        networks:
+            - internal
+            - egress
+        healthcheck:
+            <<: *nestjs-healthcheck
+            test:
+                [
+                    'CMD',
+                    'wget',
+                    '-q',
+                    '--spider',
+                    'http://localhost:3000/health/ready',
+                ]
+        mem_limit: 512m
+        restart: unless-stopped
+        logging: *default-logging
+
+    # One-shot: `prisma migrate deploy` for the assessment schema as assessment_svc, then exits.
+    assessment-migrate:
+        image: ghcr.io/cychipo/examio-assessment:${ASSESSMENT_TAG:-main}
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile.node
+            args:
+                SERVICE: assessment-service
+        container_name: examio-assessment-migrate
+        environment:
+            - ROLE=migrate
+            - DATABASE_URL=postgresql://assessment_svc:${ASSESSMENT_DB_PASSWORD:?ASSESSMENT_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=assessment
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - internal
+        healthcheck:
+            disable: true
+        mem_limit: 512m
+        restart: 'no'
+        logging: *default-logging

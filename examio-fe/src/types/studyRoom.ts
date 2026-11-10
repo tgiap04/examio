@@ -114,7 +114,7 @@ export interface RoomSnapshot {
 // Phòng trong danh sách "của tôi" (REST /studyrooms/mine)
 export interface StudyRoomListItem extends StudyRoomSummary, PomodoroConfig {
   currentMediaUrl?: string | null;
-  host?: { id: string; name: string | null; avatar: string | null };
+  host?: { id: string; name: string | null; avatar: string | null } | null;
   _count?: { members: number };
   createdAt?: string;
   updatedAt?: string;
@@ -124,7 +124,7 @@ export interface LeaderboardEntry {
   userId: string;
   role: number;
   totalFocusSeconds: number;
-  user: { id: string; name: string | null; avatar: string | null };
+  user: { id: string; name: string | null; avatar: string | null } | null;
 }
 
 // Client → Server

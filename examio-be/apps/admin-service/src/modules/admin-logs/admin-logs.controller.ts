@@ -5,7 +5,6 @@ import {
     Query,
     Sse,
     UnauthorizedException,
-    UseGuards,
     MessageEvent,
     Res,
 } from '@nestjs/common';
@@ -14,17 +13,17 @@ import { ZodValidationPipe } from 'nestjs-zod';
 import { Observable, Subject, takeUntil } from 'rxjs';
 import { Response } from 'express';
 import { randomBytes } from 'crypto';
-import { AdminGuard } from '@examio/common';
 import { RedisService } from '@examio/redis';
 import { AdminLogsService } from './admin-logs.service';
 import { WatchableService } from './redis-log.service';
 import { RecentQuerySchema, RecentQuery } from './dto/recent.query';
+import { RequirePermissions } from '@examio/auth-jwt';
 
 const TICKET_TTL_SECONDS = 300;
 const TICKET_KEY_PREFIX = 'sse:ticket:';
 
 @Controller('admin/logs')
-@UseGuards(AdminGuard)
+@RequirePermissions('logs:read')
 @Throttle({ admin: { ttl: 60000, limit: 30 } })
 export class AdminLogsController {
     constructor(

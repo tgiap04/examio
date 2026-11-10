@@ -1,0 +1,159 @@
+syntax = "proto3";
+
+package examio.document.v1;
+
+// Uploaded-file metadata, monthly upload quota and processing status
+// (schema `document`). User-scoped: the actor is the `sub` of the forwarded
+// user token and every RPC only sees that user's rows. A row that exists but
+// belongs to someone else is indistinguishable from a missing one (NOT_FOUND /
+// listed in not_found_ids), never PERMISSION_DENIED.
+service DocumentService {
+  // Stores the file in R2 and inserts the row. Errors: RESOURCE_EXHAUSTED /
+  // PERMISSION_DENIED when the monthly file quota is spent (same HTTP status as
+  // today's upload), FAILED_PRECONDITION when the debit is refused.
+  rpc CreateUpload(CreateUploadRequest) returns (CreateUploadResponse);
+  // Caller-owned rows only; ids that are missing or foreign are simply absent
+  // from the response (one query for any number of ids).
+  rpc GetDocumentsByIds(GetDocumentsByIdsRequest) returns (GetDocumentsByIdsResponse);
+  // NOT_FOUND if ANY of the ids is not owned by the caller.
+  rpc AssertOwnership(AssertOwnershipRequest) returns (AssertOwnershipResponse);
+  rpc GetQuota(GetQuotaRequest) returns (GetQuotaResponse);
+  // Re-emits `document.uploaded` when the row is FAILED or was never
+  // processed (PENDING); a PROCESSING / COMPLETED row is returned unchanged.
+  // NOT_FOUND when the id is not owned by the caller.
+  rpc EnsureProcessed(EnsureProcessedRequest) returns (EnsureProcessedResponse);
+  // Owner-scoped, idempotent delete. One transaction removes the rows, enqueues
+  // the R2 keys for deletion and writes the `document.deleted` outbox row.
+  // Ids that are gone or not owned are reported in not_found_ids.
+  rpc DeleteDocuments(DeleteDocumentsRequest) returns (DeleteDocumentsResponse);
+  // The caller's own documents, newest first, one page at a time (the data
+  // behind `GET /ai/recent-uploads`; content adds its generated-history summaries).
+  rpc ListDocuments(ListDocumentsRequest) returns (ListDocumentsResponse);
+  // A 1 h presigned GET for the caller's own document (the generation path
+  // hands it to ai-service so it can OCR a document that has no chunks yet).
+  // Read-only. NOT_FOUND when the id is not owned by the caller.
+  rpc GetDownloadUrl(GetDownloadUrlRequest) returns (GetDownloadUrlResponse);
+}
+
+// Mirrors the `UserStorage.processingStatus` column
+// (PENDING | PROCESSING | COMPLETED | FAILED) plus PENDING_CHARGE, the state
+// between "row inserted" and "upload credit debited".
+enum DocumentProcessingStatus {
+  DOCUMENT_PROCESSING_STATUS_UNSPECIFIED = 0;
+  // Row inserted, credit debit not confirmed yet. Reaped to FAILED after 10 min.
+  DOCUMENT_PROCESSING_STATUS_PENDING_CHARGE = 1;
+  // Accepted, waiting for ai-service (or not yet processed: quick-upload).
+  DOCUMENT_PROCESSING_STATUS_PENDING = 2;
+  DOCUMENT_PROCESSING_STATUS_PROCESSING = 3;
+  DOCUMENT_PROCESSING_STATUS_COMPLETED = 4;
+  DOCUMENT_PROCESSING_STATUS_FAILED = 5;
+}
+
+// One uploaded file (`UserStorage`).
+message DocumentInfo {
+  string id = 1;
+  string user_id = 2;
+  string filename = 3;
+  string mimetype = 4;
+  // Bytes.
+  int64 size = 5;
+  // R2 object key (unique).
+  string key_r2 = 6;
+  // Public/stored URL as kept in `UserStorage.url`.
+  string url = 7;
+  DocumentProcessingStatus processing_status = 8;
+  // True once the upload credit was debited (drives the refund on failure).
+  bool credit_charged = 9;
+  // Pages found by OCR, from `ai.document.processed`; 0 while unknown.
+  int32 page_count = 10;
+  // Unix epoch milliseconds.
+  int64 created_at = 11;
+  int64 updated_at = 12;
+}
+
+message CreateUploadRequest {
+  string filename = 1;
+  string mimetype = 2;
+  bytes data = 3;
+  // true: debit ceil(sizeMB/2) credits (`doc:<id>` idempotency key) and queue
+  // OCR (`POST /ai/upload`). false: the caller charges itself (generation
+  // path, one combined debit) or the upload is free (`quick-upload`).
+  bool charge_credits = 4;
+  // true: when the caller already has an upload with the same (filename, size),
+  // return it instead of storing again (generateFromFile reuse branch).
+  bool reuse_duplicate = 5;
+}
+
+message CreateUploadResponse {
+  DocumentInfo document = 1;
+  // True when `document` is an existing duplicate and nothing was stored.
+  bool reused = 2;
+}
+
+message GetDocumentsByIdsRequest {
+  repeated string ids = 1;
+}
+
+message GetDocumentsByIdsResponse {
+  repeated DocumentInfo documents = 1;
+}
+
+message AssertOwnershipRequest {
+  repeated string ids = 1;
+}
+
+message AssertOwnershipResponse {}
+
+message GetQuotaRequest {}
+
+message GetQuotaResponse {
+  // Uploads created since the start of the current calendar month.
+  int32 used_this_month = 1;
+  // Subscription `filesPerMonth`; -1 means unlimited.
+  int32 monthly_limit = 2;
+  // All-time number of files the user has (the dashboard "total PDFs" stat).
+  int32 file_count = 3;
+}
+
+message EnsureProcessedRequest {
+  string id = 1;
+}
+
+message EnsureProcessedResponse {
+  DocumentInfo document = 1;
+}
+
+message DeleteDocumentsRequest {
+  repeated string ids = 1;
+}
+
+message DeletedDocument {
+  string id = 1;
+  string filename = 2;
+}
+
+message DeleteDocumentsResponse {
+  repeated DeletedDocument deleted = 1;
+  repeated string not_found_ids = 2;
+}
+
+message ListDocumentsRequest {
+  // 1-based page number; 0 is treated as 1.
+  int32 page = 1;
+  // Page size, 1..100; 0 is treated as 10.
+  int32 size = 2;
+}
+
+message ListDocumentsResponse {
+  repeated DocumentInfo documents = 1;
+}
+
+message GetDownloadUrlRequest {
+  string id = 1;
+}
+
+message GetDownloadUrlResponse {
+  string download_url = 1;
+  // Unix epoch milliseconds.
+  int64 expires_at = 2;
+}

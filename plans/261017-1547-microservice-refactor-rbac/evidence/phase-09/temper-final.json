@@ -1,0 +1,176 @@
+[
+  {
+    "command": "ci.yml python yaml load :: python3 -c 'import yaml,sys; d=yaml.safe_load(open(\"'/Users/tgiap.dev/devs/examio'/.github/workflows/ci.yml\")); print(sorted(d[\"jobs\"].keys()))'",
+    "exitCode": 0,
+    "summary": "ci.yml loads as YAML; jobs: be-boot, be-check, be-e2e, be-unit, buf, deploy-config, fe, fe-permissions-drift",
+    "ts": "2026-10-21T12:26:02Z"
+  },
+  {
+    "command": "python3 rcr.py (refresh cookie rotation + 65s grace repro)",
+    "exitCode": 0,
+    "summary": "refresh #1 201, cookie hash unchanged; refresh after 65s with same jar -> 401 'Invalid or expired refresh token'",
+    "ts": "2026-10-21T13:35:45Z"
+  },
+  {
+    "command": "re-temper: rcr2.py refresh cookie: refresh #1, +65s, +65s (same jar)",
+    "exitCode": 0,
+    "summary": "refresh 201 at #1, #2 (after 65s) and #3 (after another 65s); cookie hash changes each refresh",
+    "ts": "2026-10-21T14:22:17Z"
+  },
+  {
+    "command": "re-temper-3: auth e2e (dedicated examio_e2e DB, RMQ up): app+refresh-cookie+token+role-change",
+    "exitCode": 0,
+    "summary": "dedicated examio_e2e DB + RabbitMQ up: 4 suites, 24 tests pass",
+    "ts": "2026-10-21T14:26:54Z"
+  },
+  {
+    "command": "re-temper-6: crash repro 270s outage (r6-crash.cjs)",
+    "exitCode": 0,
+    "summary": "run 1: 11/11 PASS. Redis down 276 s, 18 rounds of disconnects and WS messages. Exam pid 4779 unchanged, 0 markers, SERVICE_UNAVAILABLE error frames. Rejoin, presence broadcast, leaderboard 200 after restore",
+    "ts": "2026-10-21T16:59:46Z"
+  },
+  {
+    "command": "re-temper-6: crash repro 270s outage run 2 (r6-crash.cjs)",
+    "exitCode": 0,
+    "summary": "run 2: 11/11 PASS. Same as run 1 (same exam pid 4779, same error frames)",
+    "ts": "2026-10-21T17:04:43Z"
+  },
+  {
+    "command": "re-temper-6: SIGTERM with Redis down (r6-sigterm.cjs)",
+    "exitCode": 0,
+    "summary": "SIGTERM with an open socket and Redis down: process terminated by signal SIGTERM immediately, no unhandled or quit() markers. Documented: default signal termination, no app shutdown hook",
+    "ts": "2026-10-21T17:11:35Z"
+  },
+  {
+    "command": "re-temper-6: full live browser matrix ui9.cjs (regression items 1-10)",
+    "exitCode": 0,
+    "summary": "64 PASS, 0 FAIL, 1 NOTE (T\u1eeb \u0111\u00e3 l\u01b0u). 5b refresh=1, 7 and 10 PASS",
+    "ts": "2026-10-21T17:19:32Z"
+  },
+  {
+    "command": "re-temper-6: exam-service log marker count (round-6 instance window)",
+    "exitCode": 0,
+    "summary": "0 uncaught/unhandled markers; 0 unhandled MaxRetriesPerRequestError; 28 handled av-lookup SU logs; 3 focus-sweep warnings",
+    "ts": "2026-10-21T17:20:04Z"
+  },
+  {
+    "command": "re-temper-9: fe build",
+    "exitCode": 0,
+    "summary": "yarn build exit 0",
+    "ts": "2026-10-21T18:29:28Z"
+  },
+  {
+    "command": "re-temper-9: fe lint",
+    "exitCode": 0,
+    "summary": "yarn lint exit 0",
+    "ts": "2026-10-21T18:29:34Z"
+  },
+  {
+    "command": "re-temper-9: fe test",
+    "exitCode": 0,
+    "summary": "yarn test: Test Files 9 passed (9), Tests 86 passed (86)",
+    "ts": "2026-10-21T18:29:34Z"
+  },
+  {
+    "command": "re-temper-9: migrate deploy examio_p09",
+    "exitCode": 0,
+    "summary": "migrations applied (matrix DB)",
+    "ts": "2026-10-21T18:30:04Z"
+  },
+  {
+    "command": "re-temper-9: seed 3 accounts",
+    "exitCode": 0,
+    "summary": "3 accounts seeded",
+    "ts": "2026-10-21T18:30:04Z"
+  },
+  {
+    "command": "re-temper-9: seed quiz/room/session/category via real APIs",
+    "exitCode": 0,
+    "summary": "quiz, room, whitelisted session, category via real APIs",
+    "ts": "2026-10-21T18:30:33Z"
+  },
+  {
+    "command": "re-temper-9: word-family root fixture",
+    "exitCode": 0,
+    "summary": "1 root fixture row",
+    "ts": "2026-10-21T18:30:33Z"
+  },
+  {
+    "command": "re-temper-9: reauth 502 recovery, no pairs, give-up silence, ghost-join (r7-reauth.cjs)",
+    "exitCode": 0,
+    "summary": "30/30 PASS. Recovery refresh timestamps (s after reauth): 4.1, 5.0, 7.0, 11.1 (502), 18.5 (201). No pairs. Give-up: toast +38 s, 0 refresh and 0 WS in 60 s. Ghost-join 6/6",
+    "ts": "2026-10-21T18:33:07Z"
+  },
+  {
+    "command": "re-temper-9: offline token aging, exactly one refresh (4) (r8-age.cjs)",
+    "exitCode": 0,
+    "summary": "10/10 PASS: exactly one refresh (201) after the gateway returned; no reauth frame; snapshot restored",
+    "ts": "2026-10-21T18:33:22Z"
+  },
+  {
+    "command": "re-temper-9: genuine network fault, gateway down for the cap (5) (r8-net.cjs)",
+    "exitCode": 0,
+    "summary": "6/6 PASS. Refresh timestamps (s after gateway kill): 1.3, 2.1, 4.3, 8.7, 17.8 (5 total). No pairs. WS attempts 1.3, 3.4, 5.7, 10.3, 31. Toast +31 s. 0 refresh and 0 WS in the last 60 s",
+    "ts": "2026-10-21T18:35:30Z"
+  },
+  {
+    "command": "re-temper-9: full live browser matrix ui9.cjs (regression 5b, 7, 10, ghost)",
+    "exitCode": 0,
+    "summary": "64 PASS, 0 FAIL, 1 NOTE. 5b refresh=1; 7 one refresh, one reconnect, stays in room, demotion keeps student logged in; 10 one refresh per flip; ghost-join PASS",
+    "ts": "2026-10-21T18:43:26Z"
+  },
+  {
+    "command": "re-temper-9: cleanup (stop gateway, proxy, vite, services by port; docker rm p09 containers)",
+    "exitCode": 0,
+    "summary": "7 of 7 HTTP ports closed, 0 p09 containers left",
+    "ts": "2026-10-21T18:43:48Z"
+  },
+  {
+    "command": "final: be yarn typecheck (final code)",
+    "exitCode": 0,
+    "summary": "6 services typecheck",
+    "ts": "2026-10-21T18:48:59.016833Z"
+  },
+  {
+    "command": "final: be TZ=UTC yarn test (final code)",
+    "exitCode": 0,
+    "summary": "Tests: 1688 passed, 1688 total",
+    "ts": "2026-10-21T18:48:59.016833Z"
+  },
+  {
+    "command": "final: be yarn build:all (final code)",
+    "exitCode": 0,
+    "summary": "all services built",
+    "ts": "2026-10-21T18:48:59.016833Z"
+  },
+  {
+    "command": "final: be yarn gen:fe-permissions (final code)",
+    "exitCode": 0,
+    "summary": "generator ran; output byte-identical verified by tester cmp (round 1/9)",
+    "ts": "2026-10-21T18:48:59.016833Z"
+  },
+  {
+    "command": "final: fe yarn build (final code)",
+    "exitCode": 0,
+    "summary": "tsc -b + vite build",
+    "ts": "2026-10-21T18:48:59.016833Z"
+  },
+  {
+    "command": "final: fe yarn lint (final code)",
+    "exitCode": 0,
+    "summary": "0 errors, 32 pre-existing warnings",
+    "ts": "2026-10-21T18:48:59.016833Z"
+  },
+  {
+    "command": "final: fe yarn test (final code)",
+    "exitCode": 0,
+    "summary": "9 files, 86 tests passed",
+    "ts": "2026-10-21T18:48:59.016833Z"
+  },
+  {
+    "command": "final: grep user?.isAdmin|TeacherRoute in examio-fe/src; isAdmin in types/user.ts",
+    "exitCode": 0,
+    "summary": "0 matches",
+    "ts": "2026-10-21T18:48:59.016833Z"
+  }
+]

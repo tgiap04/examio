@@ -8,15 +8,14 @@ Features:
 - Tích hợp với GeminiClient để tạo embeddings
 """
 
-import os
 import logging
-import asyncio
 import time
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
 from datetime import datetime
 import asyncpg
 from dotenv import load_dotenv
+from src import db
 
 load_dotenv()
 
@@ -50,25 +49,15 @@ class PgVectorStore:
         "EMBEDDING_MODEL": "models/embedding-001",
     }
 
-    def __init__(self, connection_string: Optional[str] = None):
-        self.connection_string = connection_string or os.getenv("DATABASE_URL")
-        self._pool: Optional[asyncpg.Pool] = None
+    def __init__(self):
+        pass
 
     async def _get_pool(self) -> asyncpg.Pool:
-        """Lấy hoặc tạo connection pool."""
-        if self._pool is None:
-            self._pool = await asyncpg.create_pool(
-                self.connection_string,
-                min_size=2,
-                max_size=10
-            )
-        return self._pool
+        """Return the shared ai-service pool (one pool per process)."""
+        return await db.get_pool()
 
     async def close(self):
-        """Đóng connection pool."""
-        if self._pool:
-            await self._pool.close()
-            self._pool = None
+        """No-op: the shared pool is closed by ``db.close_pools()`` at shutdown."""
 
     async def create_embedding(
         self,

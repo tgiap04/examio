@@ -36,5 +36,19 @@
   "footer.description": "AI-powered online learning platform - Examio. Turn your documents into knowledge you master.",
   "footer.address": "Hanoi, Vietnam",
   "footer.language": "English",
-  "notFound": "Page not found."
+  "notFound": "Page not found.",
+  "forbidden.title": "You don't have access",
+  "forbidden.description": "Your account is not allowed to view this page.",
+  "forbidden.backHome": "Back to home",
+  "roles.student": "Student",
+  "roles.teacher": "Teacher",
+  "roles.systemAdmin": "System admin",
+  "rbac.permissionDenied": "You are not allowed to do this",
+  "rbac.teacherOnly": "This feature is for teachers",
+  "rbac.teacherCannotTakeExam": "Teacher accounts cannot take exams",
+  "session.unavailable.title": "Cannot reach the server",
+  "session.unavailable.retry": "Retry",
+  "rbac.plansForTeachers": "Plans for teachers",
+  "rbac.studyRoomDenied": "You are not allowed to join this study room",
+  "rbac.studyRoomUnavailable": "Study room is temporarily unavailable. Please try again later."
 }

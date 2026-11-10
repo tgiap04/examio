@@ -1,0 +1,26 @@
+version: v2
+modules:
+  - path: .
+lint:
+  use:
+    - STANDARD
+  ignore_only:
+    # Contract name fixed by the architecture (examio.gateway.v1.GatewayControl).
+    SERVICE_SUFFIX:
+      - examio/gateway/v1/gateway_control.proto
+    # The phase 14 contract returns the domain messages themselves (QuizSetSnapshot,
+    # UserContentStats) instead of one-field wrappers, exactly as the plan specifies.
+    RPC_RESPONSE_STANDARD_NAME:
+      - examio/content/v1/content.proto
+breaking:
+  use:
+    - FILE
+  ignore_only:
+    # Phase 10 breaking-change override (RT-1): WalletService.UpdateBalance is
+    # deleted after its only caller (exam AI debits) moved to the idempotent
+    # Debit RPC in the same change set. Remove these entries once phase 10 is on
+    # main so any later deletion in wallet.proto is flagged again.
+    RPC_NO_DELETE:
+      - examio/finance/v1/wallet.proto
+    MESSAGE_NO_DELETE:
+      - examio/finance/v1/wallet.proto

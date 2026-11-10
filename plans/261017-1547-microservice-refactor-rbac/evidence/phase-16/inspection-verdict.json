@@ -1,0 +1,126 @@
+{
+ "score": 9,
+ "criticalCount": 0,
+ "decision": "SEALED",
+ "acceptanceCovered": [
+  "static: changed-services.test.sh, lint-migrations.test.sh, deploy-service.test.sh exit 0; shellcheck clean on new scripts; node --test deploy/compose-topology.spec.cjs green; actionlint clean on deploy.yml and no new findings in ci.yml; examio-be yarn build && typecheck && yarn test && check:deps && check:ownership green; ai-service pytest for touched modules green; examio-fe build && lint && test green — PASS round 1; re-checked after fix round: deploy-service.test.sh exit 0, topology spec 45/0, shellcheck and actionlint clean, yarn typecheck exit 0, ai-chat jest 93/93, test_heartbeat.py 6 passed",
+  "selection: a change only under apps/vocabulary-service -> {wave1:[],wave2:[vocabulary]}; proto/examio/finance + apps/content-service -> finance in wave1 and content in wave2; libs/** -> every Node service; docs-only -> empty — PASS round 1 (changed-services.test.sh, auth-first order verified); not touched by fix round",
+  "migration lint: an added migration with DROP COLUMN fails without MIGRATION_CONTRACT and passes with it; expand-safe DROP INDEX/DEFAULT/CONSTRAINT/NOT NULL pass — PASS round 1 (lint-migrations.test.sh); not touched by fix round",
+  "images: every services.json key builds (Node from deploy/Dockerfile.node, ai from apps/ai-service/Dockerfile, one at a time) and the full compose stack reaches healthy from empty volumes with every <svc>-migrate exit 0; ROLE=seed SEED_PROFILE=prod seeds admin, vocabulary and ai-chat reference data; image sizes recorded — PASS round 1 (phase-16-runs.md stages 2-3; F1 templates + F2 chmod in Dockerfile.node:65,77,108-109, raw row 181)",
+  "deploy-service.sh live: redeploying one service with a new tag recreates only that service (other containers keep their StartedAt); a failing migrate leaves the previous container running and restores the tag; no code path runs migrate resolve, db push or down — PASS; fix round only swapped node for jq in read_meta (deploy-service.sh:68-79) and removed reloads; test still asserts no migrate resolve/db push/down",
+  "gateway rollout: during deploy-service.sh gateway (a, reload, b, reload) a sustained non-streaming request load sees 0 non-2xx caused by the rollout; a connected study-room socket reconnects within 10 s; no backend container publishes a host port — PASS (re-checked): reload deliberately removed as the F4 fix (deploy-service.sh:170-184, deploy-service.test.sh:138); phase-16-runs.md \"F4 re-run (no nginx reload)\" 4/4 runs 0 transport errors, 0 gateway 5xx, 0 nginx 502/503, socket reconnect max 754 ms, 0 SIGHUP; reload-only control reproduces the hang-up; F15 thin 2xx sample ruled residual",
+  "env isolation: on the live stack no container environment holds a secret family of another service (PAYMENT_* finance only, GOOGLE_*/EMAIL_*/REFRESH_TOKEN_ENC_KEY/JWT_PRIVATE_KEY/SERVICE_CLIENTS auth only, R2 keys r2 only, GEMINI_* ai/ai-worker only); a missing env/<name>.env fails compose — PASS round 1 (docker inspect env names per container); README.md:29 states Compose 2.24+ for env_file required",
+  "cutover rehearsal: old stack from main with sample data -> pg_dump + pg_restore --list -> runbook steps 2-10 on the new stack from empty volumes -> cutover-smoke exit 0 -> rollback per runbook restores the dump into the old stack and an old account logs in — PASS round 1 (Stage 7 rehearsal + rollback); runbook F6/F7 fixes and jq .tags.env (cutover-runbook.md:104)",
+  "carried fixes: a rejected ai-chat regenerate (429/403/404) deletes no message (unit + live), non-stream query sends systemPrompt/modelType, OCR private-host switch refuses link-local always, libs/redis has no ioredis deep import, ai-worker heartbeat healthcheck is healthy and turns unhealthy when the broker is stopped — PASS (re-checked): deletion after admission (ai-chat-answer.service.ts:44, ai-chat-stream.service.ts:75); full chat can regenerate (ai-chat-limits.service.ts:64, ai-chat-message.repository.ts:59-62); OCR link-local always refused; heartbeat uses connection.connected (consumer.py:73-81) and is cleared at start (worker.py:48); live broker stop/start probe False/True"
+ ],
+ "regressionChecked": [
+  "production deploy pipeline (deploy.yml gating, waves, rabbitmq render + import_definitions)",
+  "every service image and boot (Dockerfile.node stages, templates, entrypoint ROLE dispatch)",
+  "gateway availability and nginx routing (resolve, next_upstream, no reload, connect timeout)",
+  "secret distribution to containers (env_file map)",
+  "ai-chat regenerate (admission ordering, chat-limit count) — jest 93/93",
+  "OCR downloads (private/link-local/reserved logic)",
+  "Redis-down 503 filter",
+  "ai-worker liveness (heartbeat, is_connected, stale file cleared)"
+ ],
+ "contractStatus": "CHANGED",
+ "refuted": [],
+ "unproven": [],
+ "reachableRegressions": [],
+ "riskGate": {
+  "humanSignedOff": true
+ },
+ "findings": [
+  {
+   "severity": "Medium",
+   "category": "Availability",
+   "location": "examio-be/deploy/deploy-service.sh:170-184",
+   "summary": "F4 addressed in fix round 1: nginx reloads removed, proxy_connect_timeout 3s (nginx.conf:71,97); 4/4 live runs clean",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Medium",
+   "category": "Logic",
+   "location": "examio-be/apps/ai-chat-service/src/modules/ai-chat/ai-chat-limits.service.ts:64",
+   "summary": "M2 addressed in fix round 1: chat limit counts only messages before the replaced one",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Medium",
+   "category": "Deploy",
+   "location": ".github/workflows/deploy.yml:241-247",
+   "summary": "M3 addressed in fix round 1: rabbitmqctl import_definitions before the deploy loop",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Medium",
+   "category": "Deploy",
+   "location": "examio-be/deploy/deploy-service.sh:68-79",
+   "summary": "M4 addressed in fix round 1: jq read_meta + presence check; Compose 2.24+ and jq documented",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Medium",
+   "category": "Evidence",
+   "location": "examio-be/apps/ai-service/src/backend/messaging/consumer.py:73-81",
+   "summary": "M5: F3 red run was against an intermediate is_connected, not BASE; fix verified live",
+   "disposition": "Defer"
+  },
+  {
+   "severity": "Low",
+   "category": "Logic",
+   "location": "examio-be/apps/ai-chat-service/src/modules/ai-chat/ai-chat-answer.service.ts:27-48",
+   "summary": "N1: two concurrent regenerates of one message are both admitted and can leave two pairs (HEAD gave the second a 404); fix with a Redis SET NX claim per message",
+   "disposition": "Defer"
+  },
+  {
+   "severity": "Low",
+   "category": "Security",
+   "location": "examio-fe/docker-compose.yml:21",
+   "summary": "F11 addressed after the user decision (host nginx/Caddy, 2026-10-28): FE bound to 127.0.0.1 via FE_BIND (docker-compose.yml:21-22), real IP trusted from Docker private ranges (nginx/cloudflare-real-ip.conf), live check shows the client address",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Low",
+   "category": "Security",
+   "location": "examio-be/deploy/compose/seed.yml:44-46",
+   "summary": "dev seed one-shot loads all of env/auth.env",
+   "disposition": "Defer"
+  },
+  {
+   "severity": "Low",
+   "category": "Availability",
+   "location": ".github/workflows/deploy.yml:305",
+   "summary": "FE deploy runs down before up (as at HEAD)",
+   "disposition": "Defer"
+  },
+  {
+   "severity": "Low",
+   "category": "Style",
+   "location": ".github/workflows/ci.yml:73",
+   "summary": "base sha interpolated inline in run:",
+   "disposition": "Defer"
+  },
+  {
+   "severity": "Low",
+   "category": "Evidence",
+   "location": "examio-be/apps/gateway-service/config/routes.yaml:262",
+   "summary": "F15: rollout load mostly 429 under the per-IP limit; 2xx path thinly sampled",
+   "disposition": "Defer"
+  },
+  {
+   "severity": "Low",
+   "category": "Observability",
+   "location": "examio-fe/nginx.conf:17-20",
+   "summary": "F14: connect() failed log noise per instance stop; not client-visible",
+   "disposition": "Defer"
+  },
+  {
+   "severity": "Low",
+   "category": "Reliability",
+   "location": "examio-be/apps/ai-service/src/backend/messaging/worker.py:48",
+   "summary": "stale heartbeat addressed in fix round 1: cleared at worker start",
+   "disposition": "Reject"
+  }
+ ]
+}

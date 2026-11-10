@@ -1,201 +1,193 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
-import { Test, TestingModule } from '@nestjs/testing';
-import { GenerateIdService } from '@examio/common';
-import { PrismaService } from '@examio/database';
-
-import { AuditWriterService } from '../../common/audit-writer.service';
+import { HttpException } from '@nestjs/common';
+import { Metadata } from '@grpc/grpc-js';
 import { AdminFinanceService } from './admin-finance.service';
 
-describe('AdminFinanceService.refund', () => {
-    let service: AdminFinanceService;
-    let prisma: { $transaction: jest.Mock };
-    let auditWriter: { write: jest.Mock };
-    let generateId: GenerateIdService;
+const ctx = { adminId: 'admin-1', ipAddress: '127.0.0.1', userAgent: 'jest' };
+const md = new Metadata();
 
-    const adminCtx = {
-        adminId: 'admin-1',
-        ipAddress: '127.0.0.1',
-        userAgent: 'jest',
+function setup() {
+    const finance = {
+        refundPayment: jest.fn(),
+        adjustBalance: jest.fn(),
+        changeTier: jest.fn(),
+    };
+    const audit = { write: jest.fn().mockResolvedValue(undefined) };
+    const authUsers = { getUserAdminDetail: jest.fn().mockResolvedValue({ user: { id: 'u' } }) };
+    const service = new AdminFinanceService(finance as never, audit as never, authUsers as never);
+    return { service, finance, audit, authUsers };
+}
+const legacy = (code: string, statusCode: number) =>
+    new HttpException({ statusCode, code, message: code }, statusCode);
+
+describe('AdminFinanceService.refund', () => {
+    const refunded = {
+        paymentId: 'pay-1', userId: 'user-1', amount: 100, previousStatus: 1, newStatus: 4,
+        walletAdjusted: true, alreadyApplied: false,
     };
 
-    beforeEach(async () => {
-        prisma = { $transaction: jest.fn() };
-        auditWriter = { write: jest.fn().mockResolvedValue(undefined) };
-        generateId = new GenerateIdService();
-
-        const moduleRef: TestingModule = await Test.createTestingModule({
-            providers: [
-                AdminFinanceService,
-                { provide: PrismaService, useValue: prisma },
-                { provide: AuditWriterService, useValue: auditWriter },
-                { provide: GenerateIdService, useValue: generateId },
-            ],
-        }).compile();
-
-        service = moduleRef.get(AdminFinanceService);
-    });
-
-    /**
-     * Build a fake transaction client. prisma.$transaction(cb, opts) will
-     * invoke `cb(txClient)` and forward whatever the callback resolves to.
-     */
-    function buildTxClient(overrides: Record<string, any> = {}) {
-        const tx = {
-            payment: {
-                findUnique: jest.fn(),
-                update: jest.fn().mockResolvedValue({}),
-            },
-            wallet: {
-                findUnique: jest.fn(),
-                update: jest.fn().mockResolvedValue({}),
-            },
-            walletTransaction: {
-                create: jest.fn().mockResolvedValue({}),
-            },
-            adminAudit: {
-                create: jest.fn().mockResolvedValue({}),
-            },
-            ...overrides,
-        };
-        prisma.$transaction.mockImplementation(async (cb: any) => cb(tx));
-        return tx;
-    }
-
-    it('refunds a paid credits payment, reverses wallet and writes audit', async () => {
-        const tx = buildTxClient();
-        tx.payment.findUnique.mockResolvedValue({
-            id: 'pay-1',
-            userId: 'user-1',
-            amount: 100,
-            status: 1, // paid
-            paymentType: 'credits',
+    it('forwards the admin metadata + key, sends NO actor, keeps the response shape, audits once', async () => {
+        const { service, finance, audit } = setup();
+        finance.refundPayment.mockResolvedValue(refunded);
+        const out = await service.refund({ paymentId: 'pay-1', reason: 'duplicate charge' }, ctx, md, 'key-1');
+        expect(out).toEqual({
+            paymentId: 'pay-1', userId: 'user-1', amount: 100, previousStatus: 1, newStatus: 4, walletAdjusted: true, alreadyApplied: false,
         });
-        tx.wallet.findUnique.mockResolvedValue({
-            id: 'wallet-1',
-            userId: 'user-1',
-            balance: 250,
-        });
-
-        const result = await service.refund(
-            { paymentId: 'pay-1', reason: 'duplicate charge refund' },
-            adminCtx
+        expect(finance.refundPayment).toHaveBeenCalledWith(
+            { paymentId: 'pay-1', reason: 'duplicate charge', idempotencyKey: 'key-1' },
+            md
         );
-
-        expect(result).toEqual({
-            paymentId: 'pay-1',
-            userId: 'user-1',
-            amount: 100,
-            previousStatus: 1,
-            newStatus: 4,
-            walletAdjusted: true,
-        });
-        expect(tx.payment.update).toHaveBeenCalledWith({
-            where: { id: 'pay-1' },
-            data: { status: 4 },
-        });
-        expect(tx.wallet.update).toHaveBeenCalledWith({
-            where: { id: 'wallet-1' },
-            data: { balance: { decrement: 100 } },
-        });
-        expect(tx.walletTransaction.create).toHaveBeenCalledTimes(1);
-        const txCreateArg = tx.walletTransaction.create.mock.calls[0][0];
-        expect(txCreateArg.data).toMatchObject({
-            walletId: 'wallet-1',
-            amount: 100,
-            type: 2,
-            direction: 'SUBTRACT',
-        });
-        expect(auditWriter.write).toHaveBeenCalledTimes(1);
-        const auditArg = auditWriter.write.mock.calls[0][0];
-        expect(auditArg.action).toBe('admin.finance.refund');
-        expect(auditArg.payload).toMatchObject({
-            paymentId: 'pay-1',
-            previousStatus: 1,
-            newStatus: 4,
-            walletAdjusted: true,
-        });
-        expect(auditWriter.write.mock.calls[0][1]).toEqual({ tx });
-    });
-
-    it('throws ConflictException when payment is already refunded', async () => {
-        const tx = buildTxClient();
-        tx.payment.findUnique.mockResolvedValue({
-            id: 'pay-1',
-            userId: 'user-1',
-            amount: 100,
-            status: 4, // already refunded
-            paymentType: 'credits',
-        });
-
-        await expect(
-            service.refund(
-                { paymentId: 'pay-1', reason: 'duplicate refund attempt' },
-                adminCtx
-            )
-        ).rejects.toBeInstanceOf(ConflictException);
-
-        expect(tx.payment.update).not.toHaveBeenCalled();
-        expect(tx.wallet.update).not.toHaveBeenCalled();
-        expect(tx.walletTransaction.create).not.toHaveBeenCalled();
-        expect(auditWriter.write).not.toHaveBeenCalled();
-    });
-
-    it('throws ConflictException when payment is not in paid status', async () => {
-        const tx = buildTxClient();
-        tx.payment.findUnique.mockResolvedValue({
-            id: 'pay-1',
-            userId: 'user-1',
-            amount: 100,
-            status: 0, // unpaid
-            paymentType: 'credits',
-        });
-
-        await expect(
-            service.refund(
-                { paymentId: 'pay-1', reason: 'refund of an unpaid record' },
-                adminCtx
-            )
-        ).rejects.toBeInstanceOf(ConflictException);
-    });
-
-    it('throws NotFoundException when payment does not exist', async () => {
-        const tx = buildTxClient();
-        tx.payment.findUnique.mockResolvedValue(null);
-
-        await expect(
-            service.refund(
-                { paymentId: 'missing', reason: 'refund missing payment id' },
-                adminCtx
-            )
-        ).rejects.toBeInstanceOf(NotFoundException);
-    });
-
-    it('does not touch wallet for a subscription payment but still audits', async () => {
-        const tx = buildTxClient();
-        tx.payment.findUnique.mockResolvedValue({
-            id: 'pay-sub',
-            userId: 'user-2',
-            amount: 99,
-            status: 1,
-            paymentType: 'subscription',
-        });
-
-        const result = await service.refund(
-            {
-                paymentId: 'pay-sub',
-                reason: 'subscription refund, wallet untouched',
-            },
-            adminCtx
+        expect(audit.write).toHaveBeenCalledWith(
+            expect.objectContaining({ adminId: 'admin-1', action: 'admin.finance.refund', targetId: 'user-1' })
         );
+    });
 
-        expect(result.walletAdjusted).toBe(false);
-        expect(tx.payment.update).toHaveBeenCalledWith({
-            where: { id: 'pay-sub' },
-            data: { status: 4 },
+    it('a replayed key is not audited twice', async () => {
+        const { service, finance, audit } = setup();
+        finance.refundPayment.mockResolvedValue({ ...refunded, alreadyApplied: true });
+        const out = await service.refund({ paymentId: 'pay-1', reason: 'duplicate charge' }, ctx, md, 'key-1');
+        expect(audit.write).not.toHaveBeenCalled();
+        expect(out.alreadyApplied).toBe(true);
+    });
+
+    it.each([
+        ['PAYMENT_ALREADY_REFUNDED', 422, 409, 'Payment already refunded'],
+        ['PAYMENT_NOT_PAID', 422, 409, 'Payment is not in paid status — cannot refund'],
+        ['PAYMENT_NOT_FOUND', 404, 404, 'Payment not found'],
+    ])('maps %s back to its historical HTTP %i -> %i', async (code, _from, to, message) => {
+        const { service, finance, audit } = setup();
+        finance.refundPayment.mockRejectedValue(legacy(code, _from));
+        const err = await service.refund({ paymentId: 'p', reason: 'duplicate charge' }, ctx, md, 'k').catch((e) => e);
+        expect(err.getStatus()).toBe(to);
+        expect(err.getResponse()).toMatchObject({ code, message });
+        expect(audit.write).not.toHaveBeenCalled();
+    });
+
+    it('maps IDEMPOTENCY_KEY_REUSED to a 409 with a clear message', async () => {
+        const { service, finance } = setup();
+        finance.refundPayment.mockRejectedValue(legacy('IDEMPOTENCY_KEY_REUSED', 422));
+        const err = await service.refund({ paymentId: 'p', reason: 'duplicate charge' }, ctx, md, 'k').catch((e) => e);
+        expect(err.getStatus()).toBe(409);
+        expect(err.getResponse()).toMatchObject({
+            code: 'IDEMPOTENCY_KEY_REUSED',
+            message: expect.stringContaining('Idempotency-Key'),
         });
-        expect(tx.wallet.findUnique).not.toHaveBeenCalled();
-        expect(tx.wallet.update).not.toHaveBeenCalled();
-        expect(tx.walletTransaction.create).not.toHaveBeenCalled();
-        expect(auditWriter.write).toHaveBeenCalledTimes(1);
+    });
+
+    it('an audit failure after the committed write is best-effort: the result is still returned', async () => {
+        const { service, finance, audit } = setup();
+        finance.refundPayment.mockResolvedValue(refunded);
+        audit.write.mockRejectedValue(new Error('db down'));
+        await expect(
+            service.refund({ paymentId: 'pay-1', reason: 'duplicate charge' }, ctx, md, 'k')
+        ).resolves.toMatchObject({ paymentId: 'pay-1', walletAdjusted: true });
+    });
+
+    it('lets other errors (503 UNAVAILABLE, 403) through untouched', async () => {
+        const { service, finance } = setup();
+        const down = legacy('UNAVAILABLE', 503);
+        finance.refundPayment.mockRejectedValue(down);
+        await expect(service.refund({ paymentId: 'p', reason: 'duplicate charge' }, ctx, md, 'k')).rejects.toBe(down);
+    });
+});
+
+describe('AdminFinanceService.credit', () => {
+    const body = { userId: 'user-1', amount: 50, direction: 'ADD' as const, reason: 'goodwill credit' };
+    const res = { userId: 'user-1', walletId: 'w1', previousBalance: 10, newBalance: 60, amount: 50, direction: 'ADD', alreadyApplied: false };
+
+    it('adjusts via finance and returns the historical CreditResult', async () => {
+        const { service, finance, audit } = setup();
+        finance.adjustBalance.mockResolvedValue(res);
+        const out = await service.credit(body, ctx, md, 'k1');
+        expect(out).toEqual({ userId: 'user-1', walletId: 'w1', previousBalance: 10, newBalance: 60, amount: 50, direction: 'ADD', alreadyApplied: false });
+        expect(finance.adjustBalance).toHaveBeenCalledWith({ ...body, idempotencyKey: 'k1' }, md);
+        expect(audit.write).toHaveBeenCalledWith(expect.objectContaining({ action: 'admin.finance.credit' }));
+    });
+
+    it.each([5.5, 0.1])('rejects a fractional amount %p before it can be truncated on the wire', async (amount) => {
+        const { service, finance } = setup();
+        const err = await service.credit({ ...body, amount }, ctx, md, 'k').catch((e) => e);
+        expect(err.getStatus()).toBe(400);
+        expect(finance.adjustBalance).not.toHaveBeenCalled();
+    });
+
+    it('INSUFFICIENT_CREDITS stays a 400 with the historical message', async () => {
+        const { service, finance } = setup();
+        finance.adjustBalance.mockRejectedValue(legacy('INSUFFICIENT_CREDITS', 422));
+        const err = await service.credit({ ...body, direction: 'SUBTRACT' }, ctx, md, 'k').catch((e) => e);
+        expect(err.getStatus()).toBe(400);
+        expect(err.getResponse()).toMatchObject({ message: 'Insufficient balance for SUBTRACT adjustment' });
+    });
+});
+
+describe('AdminFinanceService.setTier', () => {
+    it('maps the response (empty previous cycle -> null) and audits from/to', async () => {
+        const { service, finance, audit } = setup();
+        finance.changeTier.mockResolvedValue({
+            userId: 'u', previousTier: 0, newTier: 2, previousBillingCycle: '', newBillingCycle: 'monthly', isActive: true, alreadyApplied: false,
+        });
+        const out = await service.setTier({ userId: 'u', tier: 2, reason: 'promo upgrade' }, ctx, md, 'k');
+        expect(out).toEqual({ userId: 'u', previousTier: 0, newTier: 2, previousBillingCycle: null, newBillingCycle: 'monthly', isActive: true, alreadyApplied: false });
+        expect(finance.changeTier).toHaveBeenCalledWith(
+            { userId: 'u', tier: 2, billingCycle: '', reason: 'promo upgrade', idempotencyKey: 'k' },
+            md
+        );
+        expect(audit.write).toHaveBeenCalledWith(
+            expect.objectContaining({ action: 'admin.finance.tier_change', payload: expect.objectContaining({ to: { tier: 2, billingCycle: 'monthly' } }) })
+        );
+    });
+
+    it('a replayed key reports alreadyApplied and is not audited again', async () => {
+        const { service, finance, audit } = setup();
+        finance.changeTier.mockResolvedValue({
+            userId: 'u', previousTier: 2, newTier: 2, previousBillingCycle: 'monthly', newBillingCycle: 'monthly', isActive: true, alreadyApplied: true,
+        });
+        const out = await service.setTier({ userId: 'u', tier: 2, reason: 'promo upgrade' }, ctx, md, 'k');
+        expect(out.alreadyApplied).toBe(true);
+        expect(audit.write).not.toHaveBeenCalled();
+    });
+});
+
+describe('AdminFinanceService.setTier user check', () => {
+    const body = { userId: 'ghost', tier: 2 as const, reason: 'promo upgrade' };
+
+    it('verifies the user in auth with the forwarded admin metadata BEFORE finance is called', async () => {
+        const { service, finance, authUsers } = setup();
+        finance.changeTier.mockResolvedValue({
+            userId: 'u', previousTier: 0, newTier: 2, previousBillingCycle: '', newBillingCycle: 'monthly', isActive: true, alreadyApplied: false,
+        });
+        await service.setTier({ ...body, userId: 'u' }, ctx, md, 'k');
+        expect(authUsers.getUserAdminDetail).toHaveBeenCalledWith('u', md);
+        expect(authUsers.getUserAdminDetail.mock.invocationCallOrder[0]).toBeLessThan(finance.changeTier.mock.invocationCallOrder[0]);
+    });
+
+    it('an unknown user is the historical 404 USER_NOT_FOUND and never reaches finance or the audit log', async () => {
+        const { service, finance, audit, authUsers } = setup();
+        authUsers.getUserAdminDetail.mockRejectedValue(legacy('NOT_FOUND', 404));
+        const err = await service.setTier(body, ctx, md, 'k').catch((e) => e);
+        expect(err.getStatus()).toBe(404);
+        expect(err.getResponse()).toEqual({ statusCode: 404, code: 'USER_NOT_FOUND', message: 'User not found' });
+        expect(finance.changeTier).not.toHaveBeenCalled();
+        expect(audit.write).not.toHaveBeenCalled();
+    });
+
+    it('other auth failures (e.g. 503) propagate unchanged and finance is not called', async () => {
+        const { service, finance, authUsers } = setup();
+        authUsers.getUserAdminDetail.mockRejectedValue(legacy('UNAVAILABLE', 503));
+        await expect(service.setTier(body, ctx, md, 'k')).rejects.toMatchObject({ status: 503 });
+        expect(finance.changeTier).not.toHaveBeenCalled();
+    });
+});
+
+describe('AdminFinanceService.credit replay', () => {
+    it('reports alreadyApplied and is not audited again', async () => {
+        const { service, finance, audit } = setup();
+        finance.adjustBalance.mockResolvedValue({
+            userId: 'user-1', walletId: 'w1', previousBalance: 10, newBalance: 60, amount: 50, direction: 'ADD', alreadyApplied: true,
+        });
+        const out = await service.credit(
+            { userId: 'user-1', amount: 50, direction: 'ADD', reason: 'goodwill credit' }, ctx, md, 'k1'
+        );
+        expect(out.alreadyApplied).toBe(true);
+        expect(audit.write).not.toHaveBeenCalled();
     });
 });

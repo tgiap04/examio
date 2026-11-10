@@ -1,216 +1,325 @@
 name: Deploy Examio
 
+# push main -> detect (which services changed) -> build one GHCR image per changed service ->
+# deploy over SSH, one service at a time in waves (changed gRPC servers first), each through
+# examio-be/deploy/deploy-service.sh (migrate gate, --wait, rollback to the previous tag).
+#
+# Production is deployed once, by the runbook, at the final merge of the microservice refactor.
+# Until the repository variable CUTOVER_DONE is 'true' the deploy job is skipped (images are
+# still built, so the merge sha has every GHCR image ready for the runbook).
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
     inputs:
-      target:
-        description: 'What to deploy'
-        type: choice
-        options:
-          - all
-          - backend
-          - frontend
+      services:
+        description: "Services to build and deploy: 'all', or a comma list of services.json keys (plus 'frontend')"
+        type: string
         default: 'all'
       force_rebuild:
-        description: 'Force rebuild without cache'
+        description: 'Build images without the layer cache'
         type: boolean
         default: false
 
 env:
   DOCKER_BUILDKIT: 1
   COMPOSE_DOCKER_CLI_BUILD: 1
+  REGISTRY: ghcr.io
+  REGISTRY_OWNER: cychipo
 
 jobs:
-  detect-changes:
+  # CI gate: typecheck/build/unit/e2e for BE, build/lint for FE. A red check
+  # here blocks every job below.
+  quality:
+    uses: ./.github/workflows/ci.yml
+
+  detect:
     runs-on: ubuntu-latest
     outputs:
+      wave1: ${{ steps.changes.outputs.wave1 }}
+      wave2: ${{ steps.changes.outputs.wave2 }}
+      wave1_list: ${{ steps.changes.outputs.wave1_list }}
+      wave2_list: ${{ steps.changes.outputs.wave2_list }}
+      matrix: ${{ steps.changes.outputs.matrix }}
       backend: ${{ steps.changes.outputs.backend }}
       frontend: ${{ steps.changes.outputs.frontend }}
+      rabbitmq: ${{ steps.changes.outputs.rabbitmq }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Detect changed paths
+      - name: Detect changed services
         id: changes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE: ${{ github.event.before }}
+          SHA: ${{ github.sha }}
+          SERVICES: ${{ github.event.inputs.services }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            TARGET="${{ github.event.inputs.target }}"
-            if [ "$TARGET" = "all" ] || [ "$TARGET" = "backend" ]; then
-              echo "backend=true" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          script=examio-be/scripts/changed-services.sh
+          catalog=examio-be/deploy/services.json
+          frontend=false
+          rabbitmq=false
+
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            SERVICES="${SERVICES:-all}"
+            [[ "$SERVICES" =~ ^[a-z0-9,-]+$ ]] || { echo "::error::services must be 'all' or a comma list of keys"; exit 1; }
+            out="$(FORCE_ALL=1 bash "$script" "" HEAD)"
+            if [ "$SERVICES" = "all" ]; then
+              frontend=true
+              rabbitmq=true
             else
-              echo "backend=false" >> $GITHUB_OUTPUT
-            fi
-            if [ "$TARGET" = "all" ] || [ "$TARGET" = "frontend" ]; then
-              echo "frontend=true" >> $GITHUB_OUTPUT
-            else
-              echo "frontend=false" >> $GITHUB_OUTPUT
+              known="$(jq -c '[.[] | keys[]] + ["frontend"]' "$catalog")"
+              unknown="$(jq -nr --arg list "$SERVICES" --argjson known "$known" \
+                '$list | split(",") | map(select(. as $k | $known | index($k) | not)) | join(",")')"
+              [ -z "$unknown" ] || { echo "::error::unknown service(s): $unknown"; exit 1; }
+              case ",$SERVICES," in *,frontend,*) frontend=true ;; esac
+              # Keep only the requested keys; 'frontend' is not a backend service.
+              out="$(jq -c --arg list "$SERVICES" '
+                ($list | split(",")) as $want
+                | {wave1: [], wave2: (.wave2 | map(select(. as $k | $want | index($k))))}' <<<"$out")"
             fi
           else
-            # Diff the whole push range, not just the tip commit. Pushing
-            # several commits at once (e.g. feat -> docs -> chore) used to
-            # hide changes made in every commit but the last, so a backend
-            # change followed by a docs-only commit skipped the BE deploy.
-            BEFORE="${{ github.event.before }}"
+            # Diff the whole push range, not just the tip commit. Pushing several commits at once
+            # (feat -> docs -> chore) used to hide changes made in every commit but the last.
             if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] \
                || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
-              echo "   No usable base commit - deploying everything"
-              echo "backend=true" >> $GITHUB_OUTPUT
-              echo "frontend=true" >> $GITHUB_OUTPUT
-              exit 0
+              echo "No usable base commit - building everything"
+              out="$(FORCE_ALL=1 bash "$script" "" "$SHA")"
+              frontend=true
+              rabbitmq=true
+            else
+              out="$(bash "$script" "$BEFORE" "$SHA")"
+              changed="$(git diff --name-only "$BEFORE" "$SHA")"
+              if grep -q '^examio-fe/' <<<"$changed"; then frontend=true; fi
+              if grep -q '^examio-be/deploy/rabbitmq/' <<<"$changed"; then rabbitmq=true; fi
             fi
-
-            CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}")
-            echo "$CHANGED" | grep -q "^examio-be/" && echo "backend=true" >> $GITHUB_OUTPUT || echo "backend=false" >> $GITHUB_OUTPUT
-            echo "$CHANGED" | grep -q "^examio-fe/" && echo "frontend=true" >> $GITHUB_OUTPUT || echo "frontend=false" >> $GITHUB_OUTPUT
           fi
 
+          wave1="$(jq -c '.wave1' <<<"$out")"
+          wave2="$(jq -c '.wave2' <<<"$out")"
+          # One build job per changed service, with what the build needs from services.json.
+          matrix="$(jq -nc --argjson keys "$(jq -c '.wave1 + .wave2' <<<"$out")" --slurpfile c "$catalog" '
+            [ $keys[] as $k
+              | ($c[0] | to_entries[] | select(.value[$k]) | {kind: .key, svc: .value[$k]})
+              | {key: $k, kind: .kind, dir: .svc.dir, image: .svc.image} ]')"
+          backend=false
+          if [ "$matrix" != "[]" ]; then backend=true; fi
+
+          {
+            echo "wave1=$wave1"
+            echo "wave2=$wave2"
+            echo "wave1_list=$(jq -r 'join(" ")' <<<"$wave1")"
+            echo "wave2_list=$(jq -r 'join(" ")' <<<"$wave2")"
+            echo "matrix=$matrix"
+            echo "backend=$backend"
+            echo "frontend=$frontend"
+            echo "rabbitmq=$rabbitmq"
+          } >> "$GITHUB_OUTPUT"
+          echo "wave1=$wave1 wave2=$wave2 frontend=$frontend rabbitmq=$rabbitmq"
+
+  build:
+    name: build (${{ matrix.key }})
+    needs: [quality, detect]
+    if: needs.detect.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: true
+      matrix:
+        include: ${{ fromJSON(needs.detect.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Node services share one Dockerfile; SERVICE picks the app (apps/<dir>).
+      - name: Build and push (node)
+        if: matrix.kind == 'node'
+        uses: docker/build-push-action@v6
+        with:
+          context: examio-be
+          file: examio-be/deploy/Dockerfile.node
+          build-args: |
+            SERVICE=${{ matrix.dir }}
+          push: true
+          no-cache: ${{ github.event.inputs.force_rebuild == 'true' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image }}:main
+          cache-from: type=gha,scope=${{ matrix.key }}
+          cache-to: type=gha,scope=${{ matrix.key }},mode=max
+
+      # ai-service (Python): the context is examio-be so the build can regenerate the gRPC stubs from proto/.
+      - name: Build and push (python)
+        if: matrix.kind == 'python'
+        uses: docker/build-push-action@v6
+        with:
+          context: examio-be
+          file: examio-be/apps/${{ matrix.dir }}/Dockerfile
+          push: true
+          no-cache: ${{ github.event.inputs.force_rebuild == 'true' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image }}:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.REGISTRY_OWNER }}/${{ matrix.image }}:main
+          cache-from: type=gha,scope=${{ matrix.key }}
+          cache-to: type=gha,scope=${{ matrix.key }},mode=max
+
+  deploy-gated:
+    name: deploy skipped (CUTOVER_DONE is not true)
+    needs: [detect]
+    if: vars.CUTOVER_DONE != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::notice title=Deploy skipped::Repository variable CUTOVER_DONE is not 'true'. Production runs the pre-cutover build; deploy it with examio-be/deploy/cutover-runbook.md, then set CUTOVER_DONE=true. Images for this sha were built when backend services changed."
+
   deploy:
-    needs: detect-changes
-    if: needs.detect-changes.outputs.backend == 'true' || needs.detect-changes.outputs.frontend == 'true'
+    needs: [quality, detect, build]
+    # build is skipped when no backend service changed; a failed or cancelled build blocks the deploy.
+    if: >-
+      ${{ !cancelled() && vars.CUTOVER_DONE == 'true'
+      && needs.quality.result == 'success'
+      && needs.build.result != 'failure' && needs.build.result != 'cancelled'
+      && (needs.detect.outputs.backend == 'true' || needs.detect.outputs.frontend == 'true' || needs.detect.outputs.rabbitmq == 'true') }}
     runs-on: ubuntu-latest
     concurrency:
       group: deploy-production
       cancel-in-progress: false
 
     steps:
-      - name: Deploy to VPS
+      - name: Deploy backend (waves)
+        if: needs.detect.outputs.backend == 'true' || needs.detect.outputs.rabbitmq == 'true'
         uses: appleboy/ssh-action@v1
+        env:
+          DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
+          SHA: ${{ github.sha }}
+          WAVE1: ${{ needs.detect.outputs.wave1_list }}
+          WAVE2: ${{ needs.detect.outputs.wave2_list }}
+          RABBITMQ_CHANGED: ${{ needs.detect.outputs.rabbitmq }}
+          GHCR_USER: ${{ secrets.GHCR_READ_USER || github.repository_owner }}
+          GHCR_READ_TOKEN: ${{ secrets.GHCR_READ_TOKEN }}
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_TO: ${{ secrets.TELEGRAM_TO }}
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_SSH_PORT }}
+          command_timeout: 30m
+          envs: DEPLOY_DIR,SHA,WAVE1,WAVE2,RABBITMQ_CHANGED,GHCR_USER,GHCR_READ_TOKEN,TELEGRAM_TOKEN,TELEGRAM_TO
+          script: |
+            set -euo pipefail
+            export TELEGRAM_TOKEN TELEGRAM_TO
+
+            echo ">> EXAMIO BACKEND DEPLOY @ ${SHA:0:12}"
+            echo "   wave 1: ${WAVE1:-<none>}"
+            echo "   wave 2: ${WAVE2:-<none>}"
+
+            # Compose files and scripts must match the images being deployed.
+            mkdir -p "$DEPLOY_DIR"
+            cd "$DEPLOY_DIR"
+            if [ ! -d .git ]; then
+              git clone "https://github.com/cychipo/examio.git" .
+            fi
+            git fetch origin main "$SHA" --prune
+            git checkout --detach "$SHA"
+            echo "   commit: $(git rev-parse --short HEAD)"
+
+            cd examio-be/deploy
+            [ -f .env ] || { echo "ERROR: examio-be/deploy/.env not found"; exit 1; }
+
+            if [ "$RABBITMQ_CHANGED" = "true" ]; then
+              echo ">> rendering RabbitMQ definitions"
+              docker compose run --rm rabbitmq-defs
+              # A running broker only reads the file at boot: import it now, before any service needs a new user.
+              if [ -n "$(docker compose ps -q --status running rabbitmq)" ]; then
+                docker compose exec -T -u rabbitmq rabbitmq rabbitmqctl import_definitions /etc/rabbitmq/definitions.json
+              fi
+            fi
+
+            if [ -n "$WAVE1$WAVE2" ]; then
+              # Read-only PAT (read:packages); the login happens here, not in deploy-service.sh.
+              printf '%s' "$GHCR_READ_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
+            fi
+
+            # Sequential, stop at the first failure: set -e ends the script and the job.
+            for svc in $WAVE1 $WAVE2; do
+              echo ">> deploy $svc"
+              ./deploy-service.sh "$svc" "$SHA"
+            done
+
+            touch .tags.env
+            docker compose --env-file .env --env-file .tags.env ps --format "table {{.Name}}\t{{.Status}}"
+            docker image prune -f --filter "until=24h" 2>/dev/null || true
+
+      - name: Deploy frontend (build on the VPS)
+        if: needs.detect.outputs.frontend == 'true'
+        uses: appleboy/ssh-action@v1
+        env:
+          DEPLOY_DIR: ${{ secrets.DEPLOY_DIR }}
+          SHA: ${{ github.sha }}
+          FORCE_REBUILD: ${{ github.event.inputs.force_rebuild }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_SSH_PORT }}
           command_timeout: 20m
+          envs: DEPLOY_DIR,SHA,FORCE_REBUILD
           script: |
-            set -e
+            set -euo pipefail
 
-            DEPLOY_DIR="${{ secrets.DEPLOY_DIR }}"
-            DEPLOY_BE="${{ needs.detect-changes.outputs.backend }}"
-            DEPLOY_FE="${{ needs.detect-changes.outputs.frontend }}"
-            FORCE_REBUILD="${{ github.event.inputs.force_rebuild }}"
-
-            echo "══════════════════════════════════════════════════"
-            echo "  EXAMIO DEPLOYMENT"
-            echo "══════════════════════════════════════════════════"
-            echo "  Backend:  $DEPLOY_BE"
-            echo "  Frontend: $DEPLOY_FE"
-            echo "  Force:    ${FORCE_REBUILD:-false}"
-            echo "══════════════════════════════════════════════════"
-
-            # ── PULL CODE ──
-            echo ""
-            echo ">> PULL CODE"
-
+            echo ">> EXAMIO FRONTEND DEPLOY @ ${SHA:0:12}"
             mkdir -p "$DEPLOY_DIR"
             cd "$DEPLOY_DIR"
-
-            if [ -d .git ]; then
-              git fetch origin main --prune
-              git reset --hard origin/main
-              git clean -fd
-            else
-              git clone -b main "https://github.com/cychipo/examio.git" .
+            if [ ! -d .git ]; then
+              git clone "https://github.com/cychipo/examio.git" .
             fi
+            git fetch origin main "$SHA" --prune
+            git checkout --detach "$SHA"
 
-            echo "   Commit: $(git rev-parse --short HEAD)"
+            cd "$DEPLOY_DIR/examio-fe"
+            [ -f .env ] || { echo "ERROR: examio-fe/.env not found"; exit 1; }
+
+            set -a
+            source .env
+            set +a
 
             BUILD_ARGS=""
-            [ "$FORCE_REBUILD" = "true" ] && BUILD_ARGS="--no-cache"
+            [ "${FORCE_REBUILD:-}" = "true" ] && BUILD_ARGS="--no-cache"
 
-            # ── DEPLOY BACKEND ──
-            if [ "$DEPLOY_BE" = "true" ]; then
-              echo ""
-              echo ">> DEPLOY BACKEND"
+            echo "   Building..."
+            docker compose build $BUILD_ARGS \
+              --build-arg VITE_API_URL="${VITE_API_URL}" \
+              --build-arg VITE_MEASUREMENT_ID="${VITE_MEASUREMENT_ID:-}" \
+              --build-arg VITE_QUIZ_AES_KEY="${VITE_QUIZ_AES_KEY:-}" \
+              --build-arg VITE_RECAPTCHA_SITE_KEY="${VITE_RECAPTCHA_SITE_KEY:-}"
 
-              cd "$DEPLOY_DIR/examio-be/deploy"
+            echo "   Restarting..."
+            docker compose down --remove-orphans 2>/dev/null || true
+            docker compose up -d --force-recreate --remove-orphans
 
-              if [ ! -f .env ]; then
-                echo "   ERROR: examio-be/deploy/.env not found"
-                exit 1
-              fi
+            sleep 5
 
-              echo "   Building..."
-              docker compose build $BUILD_ARGS --parallel
-
-              echo "   Restarting services..."
-              docker compose down --remove-orphans 2>/dev/null || true
-              docker compose up -d --force-recreate --remove-orphans
-
-              echo "   Waiting for services..."
-              sleep 30
-
-              MAX_RETRIES=5
-              HEALTHY=false
-              for i in $(seq 1 $MAX_RETRIES); do
-                if docker compose exec -T gateway wget -q --spider http://localhost:7000/api/v1/health 2>/dev/null; then
-                  HEALTHY=true
-                  break
-                fi
-                [ $i -lt $MAX_RETRIES ] && sleep 10
-              done
-
-              if [ "$HEALTHY" = "true" ]; then
-                echo "   Backend healthy"
-              else
-                echo "   Backend health check FAILED"
-                docker compose logs gateway --tail=50
-                exit 1
-              fi
-
-              docker compose ps --format "table {{.Name}}\t{{.Status}}"
+            if docker compose exec -T frontend curl -fsS http://localhost:80/ -o /dev/null 2>/dev/null; then
+              echo "   Frontend healthy"
+            else
+              echo "   Frontend health check FAILED"
+              docker compose logs frontend --tail=30
+              exit 1
             fi
 
-            # ── DEPLOY FRONTEND ──
-            if [ "$DEPLOY_FE" = "true" ]; then
-              echo ""
-              echo ">> DEPLOY FRONTEND"
-
-              cd "$DEPLOY_DIR/examio-fe"
-
-              if [ ! -f .env ]; then
-                echo "   ERROR: examio-fe/.env not found"
-                exit 1
-              fi
-
-              set -a
-              source .env
-              set +a
-
-              echo "   Building..."
-              docker compose build $BUILD_ARGS \
-                --build-arg VITE_API_URL="${VITE_API_URL}" \
-                --build-arg VITE_MEASUREMENT_ID="${VITE_MEASUREMENT_ID:-}" \
-                --build-arg VITE_QUIZ_AES_KEY="${VITE_QUIZ_AES_KEY:-}" \
-                --build-arg VITE_RECAPTCHA_SITE_KEY="${VITE_RECAPTCHA_SITE_KEY:-}"
-
-              echo "   Restarting..."
-              docker compose down --remove-orphans 2>/dev/null || true
-              docker compose up -d --force-recreate --remove-orphans
-
-              sleep 5
-
-              if docker compose exec -T frontend curl -fsS http://localhost:80/ -o /dev/null 2>/dev/null; then
-                echo "   Frontend healthy"
-              else
-                echo "   Frontend health check FAILED"
-                docker compose logs frontend --tail=30
-                exit 1
-              fi
-            fi
-
-            # ── CLEANUP ──
-            echo ""
-            echo ">> CLEANUP"
-            docker image prune -f --filter "until=1h" 2>/dev/null || true
             docker builder prune -f --filter "until=168h" 2>/dev/null || true
-
-            echo ""
-            echo "══════════════════════════════════════════════════"
-            echo "  DEPLOYMENT COMPLETE - $(date)"
-            echo "══════════════════════════════════════════════════"
 
       - name: Notify Telegram (Success)
         if: success()
@@ -223,6 +332,7 @@ jobs:
             ✅ *Deploy thành công*
             📦 `${{ github.repository }}`
             🌿 `${{ github.ref_name }}`
+            🧩 wave 1: `${{ needs.detect.outputs.wave1_list || '-' }}` · wave 2: `${{ needs.detect.outputs.wave2_list || '-' }}`
             👤 ${{ github.actor }}
             🔗 [Xem commit](https://github.com/${{ github.repository }}/commit/${{ github.sha }})
 

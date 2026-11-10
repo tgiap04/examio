@@ -16,4 +16,13 @@ if (Test-Path $sourceEnv) {
     exit 1
 }
 
+# Per-service runtime env (deploy/env/<name>.env, gitignored): create the missing ones from the templates.
+Get-ChildItem (Join-Path $PSScriptRoot "env") -Filter "*.env.example" | ForEach-Object {
+    $target = $_.FullName -replace '\.example$', ''
+    if (-not (Test-Path $target)) {
+        Copy-Item -Path $_.FullName -Destination $target
+        Write-Host "! Created env/$(Split-Path $target -Leaf) from its template: fill the empty KEY= lines" -ForegroundColor Yellow
+    }
+}
+
 Write-Host "`nYou can now run: docker compose up -d --build" -ForegroundColor Cyan

@@ -2,63 +2,29 @@ import {
     Injectable,
     NotFoundException,
     BadRequestException,
-    Inject,
-    OnModuleInit,
 } from '@nestjs/common';
-import { ClientGrpc } from '@nestjs/microservices';
-import { firstValueFrom, Observable } from 'rxjs';
-import { User } from '@prisma/client';
-import {
-    GenerateIdService,
-    sanitizeFilename,
-    R2_SERVICE,
-} from '@examio/common';
+import { User } from '../prisma';
+import { GenerateIdService, ownerKeyFolder, sanitizeFilename } from '@examio/common';
+import { buildMetadata } from '@examio/grpc';
+import { r2V1 } from '@examio/contracts';
+import { R2Client } from '../clients/r2.client';
 import { UserRepository } from '../repositories/user.repository';
+import { UserProfilePatch, UserUpdateWriter } from '../users-admin/user-update.writer';
 import { UpdateProfileDto, ProfileResponseDto } from './dto/profile.dto';
 
-// gRPC R2 Service interface (NestJS gRPC returns Observable, not Promise)
-interface R2GrpcService {
-    uploadFile(data: {
-        user_id: string;
-        filename: string;
-        mimetype: string;
-        content: Buffer;
-        folder?: string;
-    }): Observable<{
-        success: boolean;
-        file_id: string;
-        url: string;
-        key_r2: string;
-        message: string;
-    }>;
-    getFileUrl(data: {
-        key_r2: string;
-        expires_in_seconds?: number;
-    }): Observable<{ url: string; expires_at: number }>;
-    deleteFile(data: {
-        key_r2: string;
-    }): Observable<{ success: boolean; message: string }>;
-}
-
 @Injectable()
-export class ProfileService implements OnModuleInit {
-    private r2GrpcService: R2GrpcService;
-
+export class ProfileService {
     constructor(
         private readonly userRepository: UserRepository,
         private readonly generateIdService: GenerateIdService,
-        @Inject(R2_SERVICE) private readonly r2Client: ClientGrpc
+        private readonly r2Client: R2Client,
+        private readonly userUpdates: UserUpdateWriter
     ) {}
-
-    onModuleInit() {
-        this.r2GrpcService =
-            this.r2Client.getService<R2GrpcService>('R2Service');
-    }
 
     /**
      * Get user profile - O(1) with cache
      */
-    async getProfile(user: User): Promise<ProfileResponseDto> {
+    async getProfile(user: { id: string }): Promise<ProfileResponseDto> {
         const userData = await this.userRepository.findByIdWithRelations(
             user.id,
             [],
@@ -76,10 +42,10 @@ export class ProfileService implements OnModuleInit {
      * Update user profile - invalidates cache
      */
     async updateProfile(
-        user: User,
+        user: { id: string },
         dto: UpdateProfileDto
     ): Promise<ProfileResponseDto> {
-        const updateData: Partial<User> = {};
+        const updateData: UserProfilePatch = {};
 
         if (dto.name !== undefined) {
             updateData.name = dto.name;
@@ -94,20 +60,21 @@ export class ProfileService implements OnModuleInit {
             updateData.banner = dto.banner;
         }
 
-        const updatedUser = await this.userRepository.update(
+        const result = await this.userUpdates.update(
             user.id,
             updateData,
             user.id
         );
+        if (!result) throw new NotFoundException('Không tìm thấy người dùng');
 
-        return this.sanitizeProfile(updatedUser);
+        return this.sanitizeProfile(result.user);
     }
 
     /**
      * Upload profile image (avatar or banner) via gRPC to R2 Service
      */
     async uploadProfileImage(
-        user: User,
+        user: { id: string },
         file: Express.Multer.File,
         type: 'avatar' | 'banner'
     ): Promise<{ url: string }> {
@@ -132,39 +99,36 @@ export class ProfileService implements OnModuleInit {
             );
         }
 
-        // Get current user to find old image URL
-        const currentUser = await this.userRepository.findByIdWithRelations(
-            user.id,
-            [],
-            false
-        );
-        const oldImageUrl =
-            type === 'avatar' ? currentUser?.avatar : currentUser?.banner;
-
         // Generate unique filename
         const sanitizedName = sanitizeFilename(file.originalname);
         const filename = `${this.generateIdService.generateId()}-${sanitizedName}`;
-        const directory = type === 'avatar' ? 'avatars' : 'banners';
+        // Owner-scoped key `<area>/<userId>/<id>-<name>`: only the key's owner may ever
+        // have it deleted when the image is replaced.
+        const directory = ownerKeyFolder(
+            type === 'avatar' ? 'avatars' : 'banners',
+            user.id
+        );
 
         // Upload via gRPC to R2 Service
-        let uploadResult;
+        let uploadResult: r2V1.UploadFileResponse | undefined;
         try {
             console.log('Calling R2 gRPC uploadFile with:', {
-                user_id: user.id,
+                userId: user.id,
                 filename,
                 mimetype: file.mimetype,
                 contentLength: file.buffer.length,
                 folder: directory,
             });
 
-            uploadResult = await firstValueFrom(
-                this.r2GrpcService.uploadFile({
-                    user_id: user.id,
+            uploadResult = await this.r2Client.uploadFile(
+                {
+                    userId: user.id,
                     filename,
                     mimetype: file.mimetype,
                     content: file.buffer,
                     folder: directory,
-                })
+                },
+                buildMetadata()
             );
 
             console.log('R2 gRPC uploadFile result:', uploadResult);
@@ -190,31 +154,15 @@ export class ProfileService implements OnModuleInit {
         const url = uploadResult.url;
 
         // Update user profile with new URL
-        const updateData: Partial<User> =
+        const updateData: UserProfilePatch =
             type === 'avatar' ? { avatar: url } : { banner: url };
 
-        await this.userRepository.update(user.id, updateData, user.id);
+        await this.userUpdates.update(user.id, updateData, user.id);
 
-        // Delete old image from R2 if it exists
-        if (oldImageUrl) {
-            const oldKey = this.extractR2Key(oldImageUrl);
-            if (oldKey) {
-                await firstValueFrom(
-                    this.r2GrpcService.deleteFile({ key_r2: oldKey })
-                ).catch((err) => {
-                    console.warn(`Failed to delete old ${type} from R2:`, err);
-                });
-            }
-        }
+        // The replaced avatar/banner object was queued for deletion by the
+        // update above, in the same transaction.
 
         return { url };
-    }
-
-    /**
-     * Extract R2 key from public URL
-     */
-    private extractR2Key(url: string): string | null {
-        return url?.replace(/^https?:\/\/[^/]+\//, '') || null;
     }
 
     /**

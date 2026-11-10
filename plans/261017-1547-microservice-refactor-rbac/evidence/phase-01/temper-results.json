@@ -1,0 +1,270 @@
+{
+  "commands": [
+    {
+      "command": "cd examio-be && yarn typecheck",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "yarn typecheck over all 6 services: all pass",
+      "ts": "2026-10-17T23:50:06Z"
+    },
+    {
+      "command": "cd examio-be && yarn build:all",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "yarn build:all: all 6 nest builds compile",
+      "ts": "2026-10-17T23:50:29Z"
+    },
+    {
+      "command": "cd examio-be && TZ=UTC yarn test",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "TZ=UTC yarn test: 34 suites, 283/283 tests pass",
+      "ts": "2026-10-17T23:50:38Z"
+    },
+    {
+      "command": "cd examio-be && TZ=Asia/Ho_Chi_Minh yarn test",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "TZ=Asia/Ho_Chi_Minh yarn test: 34 suites, 283/283 tests pass",
+      "ts": "2026-10-17T23:50:50Z"
+    },
+    {
+      "command": "cd <scratch> && sh <scratch>/seed-check-b.sh",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "seed entrypoint echo check: real entrypoint-seed.sh prints <set>/<unset> only, no dummy secret in output",
+      "ts": "2026-10-17T23:51:00Z"
+    },
+    {
+      "command": "cd . && ! grep -rn 'api/v1/health' . --exclude-dir=node_modules --exclude-dir=venv --exclude-dir=.git --exclude-dir=plans --exclude-dir=docs --exclude-dir=journals --exclude-dir=.claude",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "repo-tree grep for api/v1/health (excl docs, journals, plans, node_modules, venv, .git, .claude worktree): no callers",
+      "ts": "2026-10-17T23:52:02Z"
+    },
+    {
+      "command": "cd examio-be && ! grep -n 'db push' package.json",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "package.json has no db push (prisma:push script removed)",
+      "ts": "2026-10-17T23:52:09Z"
+    },
+    {
+      "command": "cd . && grep -rn 'BenchmarkItem' examio-be/libs/database examio-be/apps --exclude-dir=node_modules --exclude-dir=venv > <scratch>/logs/d-hits.txt 2>&1; rc=$?; echo grep-rc=$rc; test $rc -eq 1",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "literal spec grep for BenchmarkItem in libs/database and apps: no matches (grep rc 1, empty output)",
+      "ts": "2026-10-17T23:52:17Z"
+    },
+    {
+      "command": "cd examio-be && cd apps/admin-service && ../../node_modules/.bin/jest --config test/jest-e2e.json --listTests",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "admin jest-e2e --listTests lists only app.e2e-spec.ts (admin.e2e-spec.ts excluded)",
+      "ts": "2026-10-17T23:52:27Z"
+    },
+    {
+      "command": "cd examio-be && source <scratch>/e2e2.env; npx prisma migrate deploy --schema=libs/database/src/schema.prisma",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "fresh empty pgvector DB: prisma migrate deploy applies baseline",
+      "ts": "2026-10-18T00:06:17Z"
+    },
+    {
+      "command": "cd examio-be && source <scratch>/e2e2.env; npx prisma migrate diff --from-url \"$DATABASE_URL\" --to-schema-datamodel libs/database/src/schema.prisma --exit-code",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "fresh DB: prisma migrate diff --from-url --exit-code: no drift",
+      "ts": "2026-10-18T00:06:17Z"
+    },
+    {
+      "command": "cd examio-be && source <scratch>/e2e2.env; cd apps/auth-service && ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "health e2e CI form, auth-service: 3/3 pass on fresh infra",
+      "ts": "2026-10-18T00:06:26Z"
+    },
+    {
+      "command": "cd examio-be && source <scratch>/e2e2.env; cd apps/exam-service && ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "health e2e CI form, exam-service: 3/3 pass on fresh infra",
+      "ts": "2026-10-18T00:06:35Z"
+    },
+    {
+      "command": "cd examio-be && source <scratch>/e2e2.env; cd apps/finance-service && ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "health e2e CI form, finance-service: 3/3 pass on fresh infra",
+      "ts": "2026-10-18T00:06:38Z"
+    },
+    {
+      "command": "cd examio-be && source <scratch>/e2e2.env; cd apps/admin-service && ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "health e2e CI form, admin-service: 3/3 pass on fresh infra",
+      "ts": "2026-10-18T00:06:41Z"
+    },
+    {
+      "command": "cd examio-be && source <scratch>/e2e2.env; cd apps/r2-service && ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "health e2e CI form, r2-service: 3/3 pass on fresh infra",
+      "ts": "2026-10-18T00:06:44Z"
+    },
+    {
+      "command": "cd examio-be && source <scratch>/e2e2.env; cd apps/gateway-service && ../../node_modules/.bin/jest --config test/jest-e2e.json --testPathPatterns app.e2e-spec",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "health e2e CI form, gateway-service: 3/3 pass on fresh infra",
+      "ts": "2026-10-18T00:06:47Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh start",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "built auth-service started (dist), fresh infra",
+      "ts": "2026-10-18T00:06:59Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh live",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "auth /health/live 200",
+      "ts": "2026-10-18T00:06:59Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh ready 200",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "auth /health/ready 200 baseline",
+      "ts": "2026-10-18T00:06:59Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh stop-redis",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "Redis stopped",
+      "ts": "2026-10-18T00:06:59Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh ready 503",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "auth /health/ready 503 with Redis down",
+      "ts": "2026-10-18T00:07:03Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh noleak",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "503 body has no driver/transport error text (body: status error, checks database up, redis down)",
+      "ts": "2026-10-18T00:07:03Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh start-redis",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "Redis restarted",
+      "ts": "2026-10-18T00:07:07Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh stop-pg",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "Postgres stopped",
+      "ts": "2026-10-18T00:07:13Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh ready 503",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "auth /health/ready 503 with Postgres down",
+      "ts": "2026-10-18T00:07:14Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh noleak",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "503 body has no driver error text (body: status error, checks redis up, database down)",
+      "ts": "2026-10-18T00:07:15Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh start-pg",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "Postgres restarted",
+      "ts": "2026-10-18T00:07:15Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh ready 200",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "auth /health/ready 200 after Postgres restart",
+      "ts": "2026-10-18T00:07:18Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh live",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "auth /health/live 200 throughout",
+      "ts": "2026-10-18T00:07:18Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh stop",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "auth-service stopped",
+      "ts": "2026-10-18T00:07:21Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh start",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "auth-service restarted (dist), fresh infra",
+      "ts": "2026-10-18T00:07:34Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh ready 200",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "auth /health/ready 200 before outage cycle",
+      "ts": "2026-10-18T00:07:34Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh stop-redis",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "Redis stopped (second cycle)",
+      "ts": "2026-10-18T00:07:35Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh ready 503",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "auth /health/ready 503 with Redis down (second cycle)",
+      "ts": "2026-10-18T00:07:38Z"
+    },
+    {
+      "command": "cd examio-be && <scratch>/f-ready.sh noleak",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "503 body has no driver error text (second cycle)",
+      "ts": "2026-10-18T00:07:38Z"
+    },
+    {
+      "command": "cd . && docker build -q -f examio-be/deploy/Dockerfile.seed -t temper-seed-check examio-be",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "seed image built from changed Dockerfile.seed and entrypoint-seed.sh",
+      "ts": "2026-10-18T00:08:52Z"
+    },
+    {
+      "command": "DATABASE_URL='postgresql://u:SECRETDUMMYPW@127.0.0.1:1/x' jiti libs/database/prisma/seed-dev.ts (25s) && ! grep -q SECRETDUMMYPW seed.log",
+      "exitCode": 0,
+      "status": "pass",
+      "summary": "seed-dev.ts prints 'Database URL: <set>'; dummy password absent from output (seed itself exits 1: no DB, expected)",
+      "ts": "2026-10-18T00:11:15.139261Z"
+    }
+  ]
+}

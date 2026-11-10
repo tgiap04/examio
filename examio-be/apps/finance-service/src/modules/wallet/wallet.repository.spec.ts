@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { RedisService } from '@examio/redis';
 import { WalletRepository } from './wallet.repository';
 
@@ -44,7 +44,7 @@ describe('WalletRepository - Atomic Balance Operations', () => {
     jest.clearAllMocks();
   });
 
-  describe('updateBalance - ADD Operation', () => {
+  describe('applyBalanceDelta - ADD Operation', () => {
     it('should successfully add balance using atomic increment', async () => {
       const userId = 'user-123';
       const amount = 100;
@@ -76,7 +76,7 @@ describe('WalletRepository - Atomic Balance Operations', () => {
       jest.spyOn(redisService, 'del').mockResolvedValue(undefined);
       jest.spyOn(redisService, 'delPattern').mockResolvedValue(undefined);
 
-      const result = await repository.updateBalance(userId, amount, 'add');
+      const result = await repository.applyBalanceDelta(userId, amount, 'add');
 
       expect(result.balance).toBe(600);
 
@@ -119,7 +119,7 @@ describe('WalletRepository - Atomic Balance Operations', () => {
       jest.spyOn(redisService, 'del').mockResolvedValue(undefined);
       jest.spyOn(redisService, 'delPattern').mockResolvedValue(undefined);
 
-      const result = await repository.updateBalance(userId, amount, 'add');
+      const result = await repository.applyBalanceDelta(userId, amount, 'add');
 
       expect(result.balance).toBe(250); // Unchanged
       expect(prismaService.wallet.update).toHaveBeenCalledWith({
@@ -135,12 +135,12 @@ describe('WalletRepository - Atomic Balance Operations', () => {
       jest.spyOn(prismaService.wallet, 'findUnique').mockResolvedValue(null);
 
       await expect(
-        repository.updateBalance('user-nonexistent', 100, 'add')
+        repository.applyBalanceDelta('user-nonexistent', 100, 'add')
       ).rejects.toThrow('Wallet not found');
     });
   });
 
-  describe('updateBalance - SUBTRACT Operation (Insufficient Balance Guard)', () => {
+  describe('applyBalanceDelta - SUBTRACT Operation (Insufficient Balance Guard)', () => {
     it('should successfully subtract balance when sufficient funds exist', async () => {
       const userId = 'user-789';
       const amount = 150;
@@ -176,7 +176,7 @@ describe('WalletRepository - Atomic Balance Operations', () => {
       jest.spyOn(redisService, 'del').mockResolvedValue(undefined);
       jest.spyOn(redisService, 'delPattern').mockResolvedValue(undefined);
 
-      const result = await repository.updateBalance(userId, amount, 'subtract');
+      const result = await repository.applyBalanceDelta(userId, amount, 'subtract');
 
       expect(result.balance).toBe(350);
 
@@ -217,7 +217,7 @@ describe('WalletRepository - Atomic Balance Operations', () => {
         .mockResolvedValue({ count: 0 }); // Guard failed: balance < amount
 
       await expect(
-        repository.updateBalance(userId, amount, 'subtract')
+        repository.applyBalanceDelta(userId, amount, 'subtract')
       ).rejects.toThrow('Insufficient balance');
 
       // Verify the guard was checked
@@ -257,7 +257,7 @@ describe('WalletRepository - Atomic Balance Operations', () => {
         .mockResolvedValue({ count: 0 }); // Guard: 0 < 1
 
       await expect(
-        repository.updateBalance(userId, amount, 'subtract')
+        repository.applyBalanceDelta(userId, amount, 'subtract')
       ).rejects.toThrow('Insufficient balance');
     });
 
@@ -285,7 +285,7 @@ describe('WalletRepository - Atomic Balance Operations', () => {
         .mockResolvedValue({ count: 0 }); // Guard: 99 < 100
 
       await expect(
-        repository.updateBalance(userId, amount, 'subtract')
+        repository.applyBalanceDelta(userId, amount, 'subtract')
       ).rejects.toThrow('Insufficient balance');
     });
 
@@ -324,7 +324,7 @@ describe('WalletRepository - Atomic Balance Operations', () => {
       jest.spyOn(redisService, 'del').mockResolvedValue(undefined);
       jest.spyOn(redisService, 'delPattern').mockResolvedValue(undefined);
 
-      const result = await repository.updateBalance(userId, amount, 'subtract');
+      const result = await repository.applyBalanceDelta(userId, amount, 'subtract');
 
       expect(result.balance).toBe(0); // Successfully decremented to 0
     });
@@ -364,13 +364,13 @@ describe('WalletRepository - Atomic Balance Operations', () => {
       jest.spyOn(redisService, 'del').mockResolvedValue(undefined);
       jest.spyOn(redisService, 'delPattern').mockResolvedValue(undefined);
 
-      const result = await repository.updateBalance(userId, amount, 'subtract');
+      const result = await repository.applyBalanceDelta(userId, amount, 'subtract');
 
       expect(result.balance).toBe(5000);
     });
   });
 
-  describe('updateBalance - Atomicity & Concurrency', () => {
+  describe('applyBalanceDelta - Atomicity & Concurrency', () => {
     it('should use atomic increment to prevent lost updates in concurrent ADD', async () => {
       const userId = 'user-555';
       const amount = 50;
@@ -397,7 +397,7 @@ describe('WalletRepository - Atomic Balance Operations', () => {
       jest.spyOn(redisService, 'del').mockResolvedValue(undefined);
       jest.spyOn(redisService, 'delPattern').mockResolvedValue(undefined);
 
-      await repository.updateBalance(userId, amount, 'add');
+      await repository.applyBalanceDelta(userId, amount, 'add');
 
       // Atomic increment prevents lost updates even with concurrent writes
       expect(prismaService.wallet.update).toHaveBeenCalledWith({
@@ -439,7 +439,7 @@ describe('WalletRepository - Atomic Balance Operations', () => {
       jest.spyOn(redisService, 'del').mockResolvedValue(undefined);
       jest.spyOn(redisService, 'delPattern').mockResolvedValue(undefined);
 
-      await repository.updateBalance(userId, amount, 'subtract');
+      await repository.applyBalanceDelta(userId, amount, 'subtract');
 
       // The conditional guard ensures atomicity: if concurrent write reduces balance
       // below the requirement, this decrement will not execute (count=0)
@@ -481,7 +481,7 @@ describe('WalletRepository - Atomic Balance Operations', () => {
         .mockResolvedValue({ count: 0 }); // Guard caught it: 150 < 200
 
       await expect(
-        repository.updateBalance(userId, amount, 'subtract')
+        repository.applyBalanceDelta(userId, amount, 'subtract')
       ).rejects.toThrow('Insufficient balance');
 
       // Race condition was prevented by the guard
@@ -498,7 +498,7 @@ describe('WalletRepository - Atomic Balance Operations', () => {
     });
   });
 
-  describe('updateBalance - Cache Invalidation', () => {
+  describe('applyBalanceDelta - Cache Invalidation', () => {
     it('should invalidate user wallet cache after ADD operation', async () => {
       const userId = 'user-888';
       const walletId = 'wallet-010';
@@ -524,7 +524,7 @@ describe('WalletRepository - Atomic Balance Operations', () => {
       jest.spyOn(redisService, 'del').mockResolvedValue(undefined);
       jest.spyOn(redisService, 'delPattern').mockResolvedValue(undefined);
 
-      await repository.updateBalance(userId, 50, 'add');
+      await repository.applyBalanceDelta(userId, 50, 'add');
 
       // Verify cache was invalidated
       expect(redisService.del).toHaveBeenCalled();
@@ -559,19 +559,19 @@ describe('WalletRepository - Atomic Balance Operations', () => {
       jest.spyOn(redisService, 'del').mockResolvedValue(undefined);
       jest.spyOn(redisService, 'delPattern').mockResolvedValue(undefined);
 
-      await repository.updateBalance(userId, 150, 'subtract');
+      await repository.applyBalanceDelta(userId, 150, 'subtract');
 
       // Verify cache was invalidated
       expect(redisService.del).toHaveBeenCalled();
     });
   });
 
-  describe('updateBalance - Error Handling', () => {
+  describe('applyBalanceDelta - Error Handling', () => {
     it('should throw error when wallet not found for SUBTRACT', async () => {
       jest.spyOn(prismaService.wallet, 'findUnique').mockResolvedValue(null);
 
       await expect(
-        repository.updateBalance('user-nonexistent', 100, 'subtract')
+        repository.applyBalanceDelta('user-nonexistent', 100, 'subtract')
       ).rejects.toThrow('Wallet not found');
     });
 
@@ -605,7 +605,7 @@ describe('WalletRepository - Atomic Balance Operations', () => {
       jest.spyOn(redisService, 'del').mockResolvedValue(undefined);
       jest.spyOn(redisService, 'delPattern').mockResolvedValue(undefined);
 
-      const result = await repository.updateBalance(userId, amount, 'subtract');
+      const result = await repository.applyBalanceDelta(userId, amount, 'subtract');
 
       expect(result.balance).toBeCloseTo(1.49, 2);
     });
@@ -636,13 +636,13 @@ describe('WalletRepository - Atomic Balance Operations', () => {
       jest.spyOn(redisService, 'del').mockResolvedValue(undefined);
       jest.spyOn(redisService, 'delPattern').mockResolvedValue(undefined);
 
-      const result = await repository.updateBalance(userId, amount, 'add');
+      const result = await repository.applyBalanceDelta(userId, amount, 'add');
 
       expect(result.balance).toBe(1000000);
     });
   });
 
-  describe('updateBalance - Default Operation', () => {
+  describe('applyBalanceDelta - Default Operation', () => {
     it('should default to ADD operation when operation parameter not specified', async () => {
       const userId = 'user-ccc';
       const amount = 100;
@@ -670,7 +670,7 @@ describe('WalletRepository - Atomic Balance Operations', () => {
       jest.spyOn(redisService, 'delPattern').mockResolvedValue(undefined);
 
       // Call without operation parameter - should default to 'add'
-      const result = await repository.updateBalance(userId, amount);
+      const result = await repository.applyBalanceDelta(userId, amount);
 
       expect(result.balance).toBe(300);
       expect(prismaService.wallet.update).toHaveBeenCalledWith({

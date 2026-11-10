@@ -5,23 +5,31 @@ import { join } from 'path';
 config({ path: join(process.cwd(), 'apps', 'admin-service', '.env') });
 
 import { NestFactory } from '@nestjs/core';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { MicroserviceOptions } from '@nestjs/microservices';
 import * as cookieParser from 'cookie-parser';
 
+import { PROTO_FILES } from '@examio/contracts';
+import { grpcServerOptions } from '@examio/grpc';
+import { HttpErrorEnvelopeFilter } from '@examio/http';
 import { AdminServiceModule } from './admin-service.module';
+import {
+    HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
+    Logger,
+} from '@examio/observability';
 
 async function bootstrap() {
-    // Fail fast on a missing/weak signing secret instead of degrading into
-    // per-request 401s (or, worse, a guessable key). See security audit H8/H6.
-    if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
-        throw new Error('JWT_SECRET missing or too short (min 32 chars)');
-    }
-
     // HTTP server
-    const app = await NestFactory.create(AdminServiceModule);
+    const app = await NestFactory.create(AdminServiceModule, {
+        bufferLogs: true,
+    });
+    app.useLogger(app.get(Logger));
 
-    app.setGlobalPrefix('api/v1');
+    app.setGlobalPrefix('api/v1', {
+        exclude: HEALTH_ROUTES_EXCLUDED_FROM_PREFIX,
+    });
     app.use(cookieParser());
+    // `{ statusCode, code, message, requestId }`, like gateway + auth.
+    app.useGlobalFilters(new HttpErrorEnvelopeFilter());
 
     // Enable CORS
     app.enableCors({
@@ -33,29 +41,17 @@ async function bootstrap() {
         credentials: true,
     });
 
-    // Optional gRPC microservice - enabled only when ENABLE_ADMIN_GRPC=true.
-    // Phase 01 ships HTTP-only via the gateway; gRPC proto is intentionally
-    // deferred until a real admin RPC contract is defined.
-    if (process.env.ENABLE_ADMIN_GRPC === 'true') {
-        const grpcPort = process.env.GRPC_PORT || '50056';
-        app.connectMicroservice<MicroserviceOptions>({
-            transport: Transport.GRPC,
-            options: {
-                package: 'admin',
-                protoPath: join(
-                    __dirname,
-                    '../../../libs/common/src/protos/admin.proto'
-                ),
-                url: `0.0.0.0:${grpcPort}`,
-            },
-        });
-        await app.startAllMicroservices();
-        console.log(`📡 Admin Service gRPC running on port ${grpcPort}`);
-    }
+    // AdminService.GetPageFlags (the gateway pulls it at boot); inherits the global guards.
+    app.connectMicroservice<MicroserviceOptions>(
+        grpcServerOptions([PROTO_FILES.admin]),
+        { inheritAppConfig: true }
+    );
+    await app.startAllMicroservices();
 
-    const httpPort = process.env.PORT || 7006;
+    const httpPort = process.env.PORT || 3000;
     await app.listen(httpPort);
 
     console.log(`🚀 Admin Service HTTP running on port ${httpPort}`);
+    console.log(`🔌 Admin Service gRPC running on port ${process.env.GRPC_PORT || '50051'}`);
 }
 bootstrap();

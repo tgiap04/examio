@@ -1,0 +1,48 @@
+{
+  "at": "2026-10-21T17:11:35.150Z",
+  "results": [
+    {
+      "name": "SIGTERM setup: exam-service started as child",
+      "ok": true,
+      "extra": "pid=8018"
+    },
+    {
+      "name": "SIGTERM setup: socket connected to exam-service",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "SIGTERM: Redis down before shutdown",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "SIGTERM: exam-service exits after SIGTERM with Redis down (within 45 s)",
+      "ok": true,
+      "extra": "exit={\"code\":null,\"signal\":\"SIGTERM\"} after 0s"
+    },
+    {
+      "name": "SIGTERM: exit code 0 (clean) or SIGTERM",
+      "ok": true,
+      "extra": "code=null signal=SIGTERM"
+    },
+    {
+      "name": "SIGTERM: no unhandled rejection / uncaught markers during shutdown",
+      "ok": true,
+      "extra": "markers=0"
+    },
+    {
+      "name": "SIGTERM: no quit() rejection surfaced (Redis quit while down)",
+      "ok": true,
+      "extra": "quit mentions=false"
+    }
+  ],
+  "info": {
+    "exit": {
+      "code": null,
+      "signal": "SIGTERM"
+    },
+    "secs": 0,
+    "hasQuitError": false
+  }
+}

@@ -1,0 +1,482 @@
+[
+  {
+    "command": "cd examio-be && env -i PATH HOME yarn install --immutable",
+    "exitCode": 0,
+    "summary": "lockfile immutable; install ok",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "cd examio-be && env -i PATH HOME yarn typecheck",
+    "exitCode": 0,
+    "summary": "six service typechecks clean",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "cd examio-be && env -i PATH HOME yarn build:all",
+    "exitCode": 0,
+    "summary": "six services built from the round-4 tree",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "cd examio-be && env -i PATH HOME TZ=UTC NODE_ENV=test yarn test",
+    "exitCode": 0,
+    "summary": "115/115 suites, 1117/1117 tests",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "cd apps/gateway-service && ../../node_modules/.bin/jest --config test/jest-e2e.json (final run 1 of 3)",
+    "exitCode": 0,
+    "summary": "61/61 tests",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "cd apps/gateway-service && ../../node_modules/.bin/jest --config test/jest-e2e.json (final run 2 of 3)",
+    "exitCode": 0,
+    "summary": "61/61 tests",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "cd apps/gateway-service && ../../node_modules/.bin/jest --config test/jest-e2e.json (final run 3 of 3)",
+    "exitCode": 0,
+    "summary": "61/61 tests",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "cd apps/gateway-service && jest --config test/jest-e2e.json test/gateway-expect.e2e-spec.ts",
+    "exitCode": 0,
+    "summary": "14/14 tests (Expect: spoofed identity headers, XFF, cookie injection, 413 with Expect)",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "cd apps/auth-service && ../../node_modules/.bin/jest --config test/jest-e2e.json (full auth e2e dir)",
+    "exitCode": 0,
+    "summary": "48/48 tests",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "cd apps/finance-service && ../../node_modules/.bin/jest --config test/jest-e2e.json",
+    "exitCode": 0,
+    "summary": "14/14 tests",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "cd apps/admin-service && ../../node_modules/.bin/jest --config test/jest-e2e.json",
+    "exitCode": 0,
+    "summary": "20/20 tests",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "cd apps/exam-service && ../../node_modules/.bin/jest --config test/jest-e2e.json",
+    "exitCode": 0,
+    "summary": "3/3 tests",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "cd apps/r2-service && ../../node_modules/.bin/jest --config test/jest-e2e.json",
+    "exitCode": 0,
+    "summary": "3/3 tests",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "cd libs/messaging && ../../node_modules/.bin/jest --config test/jest-e2e.json",
+    "exitCode": 0,
+    "summary": "1/1 test",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "prisma migrate deploy (fresh examio_ci, cwd outside repo) + migrate diff --exit-code",
+    "exitCode": 0,
+    "summary": "migrations applied; no schema drift",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "scripts/boot-built-services.sh (env -i, CI-style env, BOOT_CWD outside repo)",
+    "exitCode": 0,
+    "summary": "six services answer /health/live; gRPC up on auth, finance, r2, gateway",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "COMPOSE_DEFAULTS=1 scripts/boot-built-services.sh (env -i)",
+    "exitCode": 0,
+    "summary": "six services answer /health/live with compose flags on",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "node --test deploy/rabbitmq/render-definitions.spec.cjs",
+    "exitCode": 0,
+    "summary": "7/7 tests",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "node --test deploy/compose-topology.spec.cjs",
+    "exitCode": 0,
+    "summary": "10/10 tests",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "cd examio-fe && yarn build",
+    "exitCode": 0,
+    "summary": "vite build ok",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "cd examio-fe && yarn lint",
+    "exitCode": 0,
+    "summary": "0 errors, 32 warnings (pre-existing)",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "docker run nginx:1.27-alpine nginx -t (CI form, BACKEND_URL=http://127.0.0.1:3000, real cloudflare-real-ip include)",
+    "exitCode": 0,
+    "summary": "syntax ok; test successful",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live: node live/live-checks.mjs (61-check regression, incl. 108-row internal exposure probe)",
+    "exitCode": 0,
+    "summary": "61/61 checks; probe 108 rows, 0 tokens issued, 0 5xx",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live: node live/live-fix.mjs (F2 /ws/ via nginx, F3, F4 Set-Cookie, F5, 504 envelope, mid-body cut)",
+    "exitCode": 0,
+    "summary": "12/12 checks",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: setup: teacher token",
+    "exitCode": 0,
+    "summary": "",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [direct] spoofed x-user-roles/x-user-id/x-internal-service-token/Forwarded never reach upstream",
+    "exitCode": 0,
+    "summary": "status=200 upstreamHeaders={}",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [direct] direct port (loopback caller): XFF chain residual, upstream sees the rightmost client value",
+    "exitCode": 0,
+    "summary": "upstreamXFF=6.6.6.6 fwdHost=127.0.0.1:3480 (residual, local callers only)",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [direct] safe client X-Request-Id reused (spec: reuse or new)",
+    "exitCode": 0,
+    "summary": "upstreamRequestId=spoofed-request-id",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [direct] unsafe client X-Request-Id replaced by a gateway id (req_)",
+    "exitCode": 0,
+    "summary": "upstreamRequestId=req_01M5AWCJ8ANRP5XTFMSQVF7M54",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [direct] accessToken cookie becomes Authorization upstream",
+    "exitCode": 0,
+    "summary": "status=200 upstreamAuthorization=present",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [direct] optional route with bad token: Authorization stripped, answered 200",
+    "exitCode": 0,
+    "summary": "status=200 upstreamAuthorization=absent",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [direct] WS upgrade with spoofed x-user-* / service token / Forwarded: proxied (101) and headers stripped",
+    "exitCode": 0,
+    "summary": "status=101 upstreamRoles=undefined upstreamSvc=undefined",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [direct+Expect] spoofed x-user-roles/x-user-id/x-internal-service-token/Forwarded never reach upstream",
+    "exitCode": 0,
+    "summary": "status=200 upstreamHeaders={}",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [direct+Expect] direct port (loopback caller): XFF chain residual, upstream sees the rightmost client value",
+    "exitCode": 0,
+    "summary": "upstreamXFF=6.6.6.6 fwdHost=127.0.0.1:3480 (residual, local callers only)",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [direct+Expect] safe client X-Request-Id reused (spec: reuse or new)",
+    "exitCode": 0,
+    "summary": "upstreamRequestId=spoofed-request-id",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [direct+Expect] unsafe client X-Request-Id replaced by a gateway id (req_)",
+    "exitCode": 0,
+    "summary": "upstreamRequestId=req_01M5AWCK30VC6RHMMEG164C7AH",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [direct+Expect] accessToken cookie becomes Authorization upstream",
+    "exitCode": 0,
+    "summary": "status=200 upstreamAuthorization=present",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [direct+Expect] optional route with bad token: Authorization stripped, answered 200",
+    "exitCode": 0,
+    "summary": "status=200 upstreamAuthorization=absent",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [direct+Expect] WS upgrade with spoofed x-user-* / service token / Forwarded: proxied (101) and headers stripped",
+    "exitCode": 0,
+    "summary": "status=101 upstreamRoles=undefined upstreamSvc=undefined",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [nginx] spoofed x-user-roles/x-user-id/x-internal-service-token/Forwarded never reach upstream",
+    "exitCode": 0,
+    "summary": "status=200 upstreamHeaders={}",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [nginx] spoofed XFF / X-Real-IP / X-Forwarded-Host overwritten by the gateway",
+    "exitCode": 0,
+    "summary": "upstreamXFF=172.17.0.1 realIP=172.17.0.1 fwdHost=127.0.0.1 expectedClient=172.17.0.1",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [nginx] safe client X-Request-Id reused (spec: reuse or new)",
+    "exitCode": 0,
+    "summary": "upstreamRequestId=spoofed-request-id",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [nginx] unsafe client X-Request-Id replaced by a gateway id (req_)",
+    "exitCode": 0,
+    "summary": "upstreamRequestId=req_01M5AWCKXYEPTQ4AMD03CHSA05",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [nginx] accessToken cookie becomes Authorization upstream",
+    "exitCode": 0,
+    "summary": "status=200 upstreamAuthorization=present",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [nginx] optional route with bad token: Authorization stripped, answered 200",
+    "exitCode": 0,
+    "summary": "status=200 upstreamAuthorization=absent",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [nginx] WS upgrade with spoofed x-user-* / service token / Forwarded: proxied (101) and headers stripped",
+    "exitCode": 0,
+    "summary": "status=101 upstreamRoles=undefined upstreamSvc=undefined",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [nginx+Expect] spoofed x-user-roles/x-user-id/x-internal-service-token/Forwarded never reach upstream",
+    "exitCode": 0,
+    "summary": "status=200 upstreamHeaders={}",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [nginx+Expect] spoofed XFF / X-Real-IP / X-Forwarded-Host overwritten by the gateway",
+    "exitCode": 0,
+    "summary": "upstreamXFF=172.17.0.1 realIP=172.17.0.1 fwdHost=127.0.0.1 expectedClient=172.17.0.1",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [nginx+Expect] safe client X-Request-Id reused (spec: reuse or new)",
+    "exitCode": 0,
+    "summary": "upstreamRequestId=spoofed-request-id",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [nginx+Expect] unsafe client X-Request-Id replaced by a gateway id (req_)",
+    "exitCode": 0,
+    "summary": "upstreamRequestId=req_01M5AWCMRP5WY15ZS6GRJKACHB",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [nginx+Expect] accessToken cookie becomes Authorization upstream",
+    "exitCode": 0,
+    "summary": "status=200 upstreamAuthorization=present",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [nginx+Expect] optional route with bad token: Authorization stripped, answered 200",
+    "exitCode": 0,
+    "summary": "status=200 upstreamAuthorization=absent",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: [nginx+Expect] WS upgrade with spoofed x-user-* / service token / Forwarded: proxied (101) and headers stripped",
+    "exitCode": 0,
+    "summary": "status=101 upstreamRoles=undefined upstreamSvc=undefined",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: chunked 5MB over 3mb cap, node direct (no Expect): 20/20 clean 413 PAYLOAD_TOO_LARGE, 0 resets, upstream <= 3 MB",
+    "exitCode": 0,
+    "summary": "resets=0 notClean413=0 upstreamOverCap=0 maxUpstreamBytes=3145728 cap=3145728",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: chunked 5MB over 3mb cap, node direct (Expect 100-continue): 20/20 clean 413 PAYLOAD_TOO_LARGE, 0 resets, upstream <= 3 MB",
+    "exitCode": 0,
+    "summary": "resets=0 notClean413=0 upstreamOverCap=0 maxUpstreamBytes=3145728 cap=3145728",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: chunked 5MB over 3mb cap, curl direct (curl default Expect): 20/20 clean 413 PAYLOAD_TOO_LARGE, 0 resets, upstream <= 3 MB",
+    "exitCode": 0,
+    "summary": "resets=0 notClean413=0 upstreamOverCap=0 maxUpstreamBytes=3145567 cap=3145728",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: chunked 5MB over 3mb cap, curl via nginx (curl default Expect): 20/20 clean 413 PAYLOAD_TOO_LARGE, 0 resets, upstream <= 3 MB",
+    "exitCode": 0,
+    "summary": "resets=0 notClean413=0 upstreamOverCap=0 maxUpstreamBytes=0 cap=3145728",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: 2MB chunked intact, node direct (no Expect): 200 and upstream got exactly 2097152 bytes",
+    "exitCode": 0,
+    "summary": "status=200 upstreamBytes=2097152",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: 2MB chunked intact, node direct (Expect): 200 and upstream got exactly 2097152 bytes",
+    "exitCode": 0,
+    "summary": "status=200 upstreamBytes=2097152",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: 2MB chunked intact, curl direct: 200 and upstream got exactly 2097152 bytes",
+    "exitCode": 0,
+    "summary": "status=200 upstreamBytes=2097152",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r4: 2MB chunked intact, curl via nginx: 200 and upstream got exactly 2097152 bytes",
+    "exitCode": 0,
+    "summary": "status=200 upstreamBytes=2097152",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: setup: teacher logs in",
+    "exitCode": 0,
+    "summary": "status=201",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: direct chunked 5MB to 3mb route -> 413 PAYLOAD_TOO_LARGE envelope; curl exit 0 (no reset)",
+    "exitCode": 0,
+    "summary": "curlExit=0 status=413 body={\"statusCode\":413,\"code\":\"PAYLOAD_TOO_LARGE\",\"message\":\"Request body is too large\",\"requestId\":\"req_01M5AWFB5R29RR2J6AQA5M6865\"} stde",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: direct chunked 5MB: upstream received <= 3 MB (capped; request destroyed mid-stream)",
+    "exitCode": 0,
+    "summary": "upstreamBytes=3145310 cap=3145728",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: direct chunked 2MB to 3mb route passes intact (status 200, upstream got exactly 2097152 bytes)",
+    "exitCode": 0,
+    "summary": "curlExit=0 status=200 upstreamBytes=2097152",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: nginx chunked 5MB to 3mb route -> 413 envelope; curl exit 0 (no reset)",
+    "exitCode": 0,
+    "summary": "curlExit=0 status=413 body={\"statusCode\":413,\"code\":\"PAYLOAD_TOO_LARGE\",\"message\":\"Request body is too large\",\"requestId\":\"req_01M5AWFB8WF6DB29HVYF stderr=",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: nginx chunked 5MB: upstream received <= 3 MB",
+    "exitCode": 0,
+    "summary": "upstreamBytes=none recorded",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: nginx chunked 2MB passes intact (status 200, upstream got exactly 2097152 bytes)",
+    "exitCode": 0,
+    "summary": "curlExit=0 status=200 upstreamBytes=2097152",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: durable setup: student login with GatewayControl blocked",
+    "exitCode": 0,
+    "summary": "status=201",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: logout (GatewayControl blocked) returns success",
+    "exitCode": 0,
+    "summary": "status=201",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: logout with GatewayControl blocked: old token -> 401 SESSION_REVOKED within 2 s (durable path)",
+    "exitCode": 0,
+    "summary": "code=SESSION_REVOKED afterMs=121",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: change-password setup: student login",
+    "exitCode": 0,
+    "summary": "status=201",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: change-password accepted (2xx)",
+    "exitCode": 0,
+    "summary": "status=201 body={\"message\":\"Mật khẩu đã được đổi thành công\"}",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: change-password: old token -> 401 SESSION_REVOKED",
+    "exitCode": 0,
+    "summary": "code=SESSION_REVOKED afterMs=4",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: device setup: two sessions (A, B) log in with the new password",
+    "exitCode": 0,
+    "summary": "A=201 B=201",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: device list (caller B) includes session A",
+    "exitCode": 0,
+    "summary": "status=200 count=2 id=6ad678ceb0b1d959b07862ae",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: device delete of session A by session B (2xx)",
+    "exitCode": 0,
+    "summary": "status=200 body={\"success\":true,\"message\":\"Đã logout khỏi thiết bị thành công\"}",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: deleted device: session A token -> 401 SESSION_REVOKED",
+    "exitCode": 0,
+    "summary": "code=SESSION_REVOKED afterMs=3",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "live-r3: caller session B stays valid (200)",
+    "exitCode": 0,
+    "summary": "status=200",
+    "ts": "2026-10-19T20:13:06.921Z"
+  },
+  {
+    "command": "node live/live-r4 summary",
+    "exitCode": 0,
+    "summary": "round-4 matrix 37/37 (direct and nginx, with and without Expect; 20-rep chunked cap per variant)",
+    "ts": "2026-10-19T20:13:06.921Z"
+  }
+]

@@ -1,7 +1,6 @@
-import { Controller, Get, Query, UseGuards, UsePipes } from '@nestjs/common';
+import { Controller, Get, Query, Req, UsePipes } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ZodValidationPipe } from 'nestjs-zod';
-import { AdminGuard } from '@examio/common';
 import {
     ApiBearerAuth,
     ApiOperation,
@@ -10,11 +9,13 @@ import {
 
 import { AdminStatsService } from './admin-stats.service';
 import { SeriesQueryDto } from './dto/series.query';
+import { RequirePermissions, forwardUser } from '@examio/auth-jwt';
+import type { AuthedAdminRequest } from '../admin-roles/audit-context';
 
 @ApiTags('Admin / Stats')
 @ApiBearerAuth()
 @Controller('admin/stats')
-@UseGuards(AdminGuard)
+@RequirePermissions('stats:read')
 @UsePipes(ZodValidationPipe)
 @Throttle({ admin: { ttl: 60000, limit: 30 } })
 export class AdminStatsController {
@@ -22,8 +23,8 @@ export class AdminStatsController {
 
     @Get('overview')
     @ApiOperation({ summary: 'Top-level KPI tiles for the admin dashboard' })
-    async getOverview() {
-        return this.adminStatsService.getOverview();
+    async getOverview(@Req() req: AuthedAdminRequest) {
+        return this.adminStatsService.getOverview(forwardUser(req));
     }
 
     @Get('series')
@@ -31,8 +32,8 @@ export class AdminStatsController {
         summary:
             'Time-series points for signups / traffic / revenue charts, bucketed by day with gaps filled to zero.',
     })
-    async getSeries(@Query() query: SeriesQueryDto) {
-        return this.adminStatsService.getSeries(query.name, query.range);
+    async getSeries(@Query() query: SeriesQueryDto, @Req() req: AuthedAdminRequest) {
+        return this.adminStatsService.getSeries(query.name, query.range, forwardUser(req));
     }
 
     @Get('sources')
@@ -40,8 +41,12 @@ export class AdminStatsController {
         summary:
             'Signup attribution: user counts grouped by utm_source (null → "direct"), top 20 desc.',
     })
-    async getSources(@Query('range') range?: '7d' | '30d' | '90d') {
+    async getSources(
+        @Req() req: AuthedAdminRequest,
+        @Query('range') range?: '7d' | '30d' | '90d'
+    ) {
         return this.adminStatsService.getSourceBreakdown(
+            forwardUser(req),
             range && ['7d', '30d', '90d'].includes(range) ? range : undefined
         );
     }

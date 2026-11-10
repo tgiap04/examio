@@ -1,0 +1,41 @@
+{
+  "ts": "2026-10-22T19:06:17.043Z",
+  "fails": 0,
+  "results": [
+    {
+      "id": "W.TEACHER.login",
+      "ok": true,
+      "detail": "status 201"
+    },
+    {
+      "id": "W.TEACHER.profile-balance-from-wallet-info",
+      "ok": true,
+      "detail": "label=true; shown=25; GET /wallet/info balance=25"
+    },
+    {
+      "id": "W.TEACHER.wallet-info-call",
+      "ok": true,
+      "detail": "GET /wallet/info calls=2"
+    },
+    {
+      "id": "W.STUDENT.login",
+      "ok": true,
+      "detail": "status 201"
+    },
+    {
+      "id": "W.STUDENT.profile-no-balance",
+      "ok": true,
+      "detail": "label present=false"
+    },
+    {
+      "id": "W.STUDENT.wallet-info-call",
+      "ok": true,
+      "detail": "GET /wallet/info calls=0"
+    }
+  ],
+  "blockedOutsideRequests": 6,
+  "outsideHosts": [
+    "www.googletagmanager.com",
+    "challenges.cloudflare.com"
+  ]
+}

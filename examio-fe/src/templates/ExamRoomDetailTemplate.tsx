@@ -78,8 +78,8 @@ export function ExamRoomDetailTemplate({
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const formatDuration = (seconds: number | null | undefined) => {
-    if (seconds === null || seconds === undefined || isNaN(seconds as number)) return "-";
-    const n = seconds as number;
+    if (seconds === null || seconds === undefined || Number.isNaN(seconds)) return "-";
+    const n = seconds;
     const h = Math.floor(n / 3600);
     const m = Math.floor((n % 3600) / 60);
     const s = n % 60;

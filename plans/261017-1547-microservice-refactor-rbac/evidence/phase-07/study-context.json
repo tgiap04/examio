@@ -1,0 +1,35 @@
+{
+  "task": "Phase 07 Quiz Sharing & Student Practice: QuizSet sharing (isPublic, accessCode, whitelist, codeGrantedIds) with delta PUT sharing API on quiz and flashcard sets, code unlock remembered and evicted on code rotate/disable, student quiz practice backend (list granted sets, start, progress, submit, history) without answer leaks before submit, FE practice page and teacher quiz sharing dialog",
+  "mode": "code",
+  "acceptanceCriteria": [
+    "yarn typecheck, build:all and test exit 0; quiz-practice and ownership e2e pass",
+    "examio-fe build and lint exit 0",
+    "no practice response before submit contains isCorrect or correct-answer fields",
+    "a student who entered a code once is not prompted again; after the teacher regenerates or disables the code the student is prompted again",
+    "PUT sharing takes deltas (addUserIds, removeUserIds, isPublic, codeEnabled) applied atomically, single cap 2000 per list (409 SHARE_LIST_FULL)",
+    "only STUDENT with quiz:practice can practice granted quiz sets; TEACHER and non-granted users are refused; cross-user attempt/history access returns 404",
+    "unlock and with-code reuse the access-code lockout and require auth",
+    "no Math.random in flashcardset, examsession or quizset modules",
+    "handler-declarations spec passes with the new controllers and allowlist entries"
+  ],
+  "touchpoints": [
+    "examio-be/libs/database/src/models/exam.prisma",
+    "examio-be/apps/exam-service/src/modules/quizset",
+    "examio-be/apps/exam-service/src/modules/quiz-practice",
+    "examio-be/apps/exam-service/src/modules/flashcardset",
+    "examio-be/apps/exam-service/src/modules/examsession",
+    "examio-be/apps/gateway-service/config/routes.yaml",
+    "examio-fe/src"
+  ],
+  "blastRadius": [
+    "teacher sharing flows for quiz sets, flashcard sets and exam sessions",
+    "student study via code/whitelist/public",
+    "existing flashcard sharing PUT callers in FE",
+    "DB schema for QuizSet/FlashCardSet/ExamSession sharing fields"
+  ],
+  "contracts": [
+    "PUT sharing body changes to deltas",
+    "new /api/v1/quiz-practice routes",
+    "new QuizSet sharing endpoints"
+  ]
+}

@@ -1,211 +1,125 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { PrismaService } from '@examio/database';
-import { RedisService } from '@examio/redis';
-
+import { Metadata } from '@grpc/grpc-js';
 import { AdminStatsService } from './admin-stats.service';
 import { fillDateGaps } from './admin-stats.types';
 
-describe('AdminStatsService', () => {
-    let service: AdminStatsService;
-    let prisma: {
-        user: { count: jest.Mock };
-        userSession: { count: jest.Mock };
-        userSubscription: { count: jest.Mock };
-        payment: { aggregate: jest.Mock };
-        $queryRaw: jest.Mock;
-    };
-    let redis: {
-        get: jest.Mock;
-        set: jest.Mock;
-        del: jest.Mock;
-        delPattern: jest.Mock;
-    };
+const md = new Metadata();
+md.set('authorization', 'Bearer admin-token');
 
-    beforeEach(async () => {
-        prisma = {
-            user: { count: jest.fn() },
-            userSession: { count: jest.fn() },
-            userSubscription: { count: jest.fn() },
-            payment: { aggregate: jest.fn() },
-            $queryRaw: jest.fn(),
-        };
+describe('AdminStatsService (aggregates come from auth + finance over gRPC)', () => {
+    let service: AdminStatsService;
+    let authUsers: { getUserStats: jest.Mock };
+    let finance: { getRevenueStats: jest.Mock };
+    let redis: { get: jest.Mock; set: jest.Mock; del: jest.Mock; delPattern: jest.Mock };
+
+    const userStats = (over: Record<string, unknown> = {}) => ({
+        totalUsers: '10', activeToday: '2', activeLast30d: '7',
+        signupsSeries: [], trafficSeries: [], utmSources: [], ...over,
+    });
+    const revenueStats = (over: Record<string, unknown> = {}) => ({
+        proUsers: 2, vipUsers: 1, revenueLast30d: '470000', revenueSeries: [], ...over,
+    });
+
+    beforeEach(() => {
+        authUsers = { getUserStats: jest.fn(async () => userStats()) };
+        finance = { getRevenueStats: jest.fn(async () => revenueStats()) };
         redis = {
-            get: jest.fn(),
-            set: jest.fn(),
+            get: jest.fn(async () => null),
+            set: jest.fn(async () => undefined),
             del: jest.fn(),
             delPattern: jest.fn(),
         };
-
-        const module: TestingModule = await Test.createTestingModule({
-            providers: [
-                AdminStatsService,
-                { provide: PrismaService, useValue: prisma },
-                { provide: RedisService, useValue: redis },
-            ],
-        }).compile();
-
-        service = module.get<AdminStatsService>(AdminStatsService);
+        service = new AdminStatsService(redis as never, authUsers as never, finance as never);
+        jest.useFakeTimers({ now: new Date('2026-03-15T10:30:00.000Z'), doNotFake: ['nextTick', 'setImmediate', 'setTimeout', 'setInterval', 'clearTimeout', 'clearInterval', 'clearImmediate', 'hrtime', 'performance', 'queueMicrotask'] });
     });
+    afterEach(() => jest.useRealTimers());
 
     describe('getOverview', () => {
-        it('returns cached value when present and skips the database', async () => {
-            const cached = {
-                totalUsers: 42,
-                activeToday: 1,
-                active30d: 5,
-                proCount: 2,
-                vipCount: 1,
-                revenue30d: 999,
-            };
+        it('returns the cached value and calls neither owner', async () => {
+            const cached = { totalUsers: 42, activeToday: 1, active30d: 5, proCount: 2, vipCount: 1, revenue30d: 999 };
             redis.get.mockResolvedValue(cached);
+            expect(await service.getOverview(md)).toEqual(cached);
+            expect(redis.get).toHaveBeenCalledWith('admin:stats:overview');
+            expect(authUsers.getUserStats).not.toHaveBeenCalled();
+            expect(finance.getRevenueStats).not.toHaveBeenCalled();
+        });
 
-            const result = await service.getOverview();
+        it('on a miss calls both owners ONCE in parallel with the admin token, maps and caches for 5 minutes', async () => {
+            const overview = await service.getOverview(md);
+            expect(overview).toEqual({ totalUsers: 10, activeToday: 2, active30d: 7, proCount: 2, vipCount: 1, revenue30d: 470000 });
+            expect(authUsers.getUserStats).toHaveBeenCalledTimes(1);
+            expect(authUsers.getUserStats.mock.calls[0][1]).toBe(md);
+            expect(finance.getRevenueStats).toHaveBeenCalledTimes(1);
+            expect(finance.getRevenueStats.mock.calls[0][1]).toBe(md);
+            expect(redis.set).toHaveBeenCalledWith('admin:stats:overview', overview, 300);
+        });
 
-            expect(result).toEqual(cached);
-            expect(prisma.user.count).not.toHaveBeenCalled();
+        it('an owner failure surfaces and nothing is cached', async () => {
+            finance.getRevenueStats.mockRejectedValue(new Error('finance down'));
+            await expect(service.getOverview(md)).rejects.toThrow('finance down');
             expect(redis.set).not.toHaveBeenCalled();
-        });
-
-        it('aggregates from Prisma + caches on cache miss', async () => {
-            redis.get.mockResolvedValue(null);
-            prisma.user.count.mockResolvedValue(10);
-            prisma.userSession.count
-                .mockResolvedValueOnce(3) // activeToday
-                .mockResolvedValueOnce(7); // active30d
-            prisma.userSubscription.count
-                .mockResolvedValueOnce(4) // pro
-                .mockResolvedValueOnce(1); // vip
-            prisma.payment.aggregate.mockResolvedValue({
-                _sum: { amount: 1234.5 },
-            });
-
-            const result = await service.getOverview();
-
-            expect(result).toEqual({
-                totalUsers: 10,
-                activeToday: 3,
-                active30d: 7,
-                proCount: 4,
-                vipCount: 1,
-                revenue30d: 1234.5,
-            });
-            expect(redis.set).toHaveBeenCalledWith(
-                'admin:stats:overview',
-                result,
-                300
-            );
-        });
-
-        it('treats null sum as 0', async () => {
-            redis.get.mockResolvedValue(null);
-            prisma.user.count.mockResolvedValue(0);
-            prisma.userSession.count.mockResolvedValue(0);
-            prisma.userSubscription.count.mockResolvedValue(0);
-            prisma.payment.aggregate.mockResolvedValue({
-                _sum: { amount: null },
-            });
-
-            const result = await service.getOverview();
-
-            expect(result.revenue30d).toBe(0);
         });
     });
 
     describe('getSeries', () => {
-        it('returns cached series when present', async () => {
-            const cached = {
-                name: 'signups' as const,
-                range: '7d' as const,
-                bucket: 'day' as const,
-                points: [],
-            };
+        it('returns the cached series without any RPC', async () => {
+            const cached = { name: 'signups', range: '7d', bucket: 'day', points: [] };
             redis.get.mockResolvedValue(cached);
-
-            const result = await service.getSeries('signups', '7d');
-
-            expect(result).toEqual(cached);
-            expect(prisma.$queryRaw).not.toHaveBeenCalled();
+            expect(await service.getSeries('signups', '7d', md)).toBe(cached);
+            expect(redis.get).toHaveBeenCalledWith('admin:stats:series:signups:7d');
+            expect(authUsers.getUserStats).not.toHaveBeenCalled();
         });
 
-        it('queries raw SQL and caches the filled series', async () => {
-            redis.get.mockResolvedValue(null);
-            const today = new Date();
-            const yesterday = new Date(
-                Date.UTC(
-                    today.getUTCFullYear(),
-                    today.getUTCMonth(),
-                    today.getUTCDate() - 1
-                )
+        it('signups: auth series for the window, gaps filled with zeros as UTC-midnight ISO dates, cached under its key', async () => {
+            authUsers.getUserStats.mockResolvedValue(
+                userStats({ signupsSeries: [{ date: '2026-03-09', value: '2' }, { date: '2026-03-15', value: '2' }] })
             );
-            prisma.$queryRaw.mockResolvedValue([
-                { date: yesterday, value: BigInt(5) },
+            const res = await service.getSeries('signups', '7d', md);
+            expect(authUsers.getUserStats).toHaveBeenCalledWith({ days: 7, includeUtmSources: false }, md);
+            expect(res.points.map((p) => [p.date, p.value])).toEqual([
+                ['2026-03-09T00:00:00.000Z', 2], ['2026-03-10T00:00:00.000Z', 0], ['2026-03-11T00:00:00.000Z', 0],
+                ['2026-03-12T00:00:00.000Z', 0], ['2026-03-13T00:00:00.000Z', 0], ['2026-03-14T00:00:00.000Z', 0],
+                ['2026-03-15T00:00:00.000Z', 2],
             ]);
+            expect(res).toMatchObject({ name: 'signups', range: '7d', bucket: 'day' });
+            expect(redis.set).toHaveBeenCalledWith('admin:stats:series:signups:7d', res, 300);
+        });
 
-            const result = await service.getSeries('signups', '7d');
+        it('traffic uses the auth traffic series; revenue uses the finance series (no auth call)', async () => {
+            authUsers.getUserStats.mockResolvedValue(userStats({ trafficSeries: [{ date: '2026-03-15', value: '4' }] }));
+            const traffic = await service.getSeries('traffic', '7d', md);
+            expect(traffic.points.at(-1)).toEqual({ date: '2026-03-15T00:00:00.000Z', value: 4 });
 
-            expect(prisma.$queryRaw).toHaveBeenCalled();
-            expect(result.points).toHaveLength(7);
-            expect(result.points[6].value).toBe(5);
-            expect(
-                result.points
-                    .slice(0, 6)
-                    .every((p) => p.value === 0)
-            ).toBe(true);
-            expect(redis.set).toHaveBeenCalledWith(
-                'admin:stats:series:signups:7d',
-                result,
-                300
-            );
+            authUsers.getUserStats.mockClear();
+            finance.getRevenueStats.mockResolvedValue(revenueStats({ revenueSeries: [{ date: '2026-03-14', revenue: '150000' }] }));
+            const revenue = await service.getSeries('revenue', '30d', md);
+            expect(finance.getRevenueStats).toHaveBeenCalledWith({ days: 30 }, md);
+            expect(authUsers.getUserStats).not.toHaveBeenCalled();
+            expect(revenue.points).toHaveLength(30);
+            expect(revenue.points.find((p) => p.date.startsWith('2026-03-14'))?.value).toBe(150000);
         });
     });
 
     describe('getSourceBreakdown', () => {
-        it('returns cached breakdown and skips the database', async () => {
-            const cached = {
-                range: 'all' as const,
-                rows: [{ source: 'unikorn', count: 3 }],
-            };
+        it('returns the cached breakdown without any RPC', async () => {
+            const cached = { range: 'all', rows: [{ source: 'direct', count: 5 }] };
             redis.get.mockResolvedValue(cached);
-
-            const result = await service.getSourceBreakdown();
-
-            expect(result).toEqual(cached);
-            expect(prisma.$queryRaw).not.toHaveBeenCalled();
+            expect(await service.getSourceBreakdown(md)).toBe(cached);
+            expect(redis.get).toHaveBeenCalledWith('admin:stats:sources:all');
+            expect(authUsers.getUserStats).not.toHaveBeenCalled();
         });
 
-        it('maps bigint counts + caches all-time breakdown on miss', async () => {
-            redis.get.mockResolvedValue(null);
-            prisma.$queryRaw.mockResolvedValue([
-                { source: 'unikorn', count: BigInt(7) },
-                { source: 'direct', count: BigInt(4) },
-            ]);
-
-            const result = await service.getSourceBreakdown();
-
-            expect(result.range).toBe('all');
-            expect(result.rows).toEqual([
-                { source: 'unikorn', count: 7 },
-                { source: 'direct', count: 4 },
-            ]);
-            expect(redis.set).toHaveBeenCalledWith(
-                'admin:stats:sources:all',
-                result,
-                300
-            );
+        it('all time: no utm window, counts become numbers, cached under :all', async () => {
+            authUsers.getUserStats.mockResolvedValue(userStats({ utmSources: [{ source: 'google', count: '3' }, { source: 'direct', count: '1' }] }));
+            const res = await service.getSourceBreakdown(md);
+            expect(authUsers.getUserStats).toHaveBeenCalledWith({ days: 1, includeUtmSources: true, utmDays: undefined }, md);
+            expect(res).toEqual({ range: 'all', rows: [{ source: 'google', count: 3 }, { source: 'direct', count: 1 }] });
+            expect(redis.set).toHaveBeenCalledWith('admin:stats:sources:all', res, 300);
         });
 
-        it('keys cache by range when a window is given', async () => {
-            redis.get.mockResolvedValue(null);
-            prisma.$queryRaw.mockResolvedValue([]);
-
-            const result = await service.getSourceBreakdown('30d');
-
-            expect(result.range).toBe('30d');
-            expect(redis.set).toHaveBeenCalledWith(
-                'admin:stats:sources:30d',
-                result,
-                300
-            );
+        it('keys the cache by range and asks auth for that window', async () => {
+            await service.getSourceBreakdown(md, '30d');
+            expect(authUsers.getUserStats).toHaveBeenCalledWith({ days: 1, includeUtmSources: true, utmDays: 30 }, md);
+            expect(redis.get).toHaveBeenCalledWith('admin:stats:sources:30d');
         });
     });
 

@@ -8,7 +8,7 @@ const BooleanEnum = z.enum(['true', 'false']).transform((v) => v === 'true');
  * Zod schema for `GET /admin/users` query string.
  *
  * - `search` is capped at 20 chars to limit email/username enumeration.
- * - `isAdmin` / `isVerified` / `isBanned` accept the string form
+ * - `isSystemAdmin` / `isVerified` / `isBanned` accept the string form
  *   `true` | `false` (querystring cannot carry booleans natively) and
  *   are coerced into a boolean via the `BooleanEnum` helper.
  * - `createdFrom` / `createdTo` are ISO 8601 timestamps.
@@ -20,7 +20,7 @@ export const ListUsersQuerySchema = z
             .string()
             .max(20, { message: 'search must not exceed 20 characters' })
             .optional(),
-        isAdmin: BooleanEnum.optional(),
+        isSystemAdmin: BooleanEnum.optional(),
         isVerified: BooleanEnum.optional(),
         isBanned: BooleanEnum.optional(),
         createdFrom: z
@@ -55,7 +55,7 @@ export class ListUsersQueryDto extends createZodDto(ListUsersQuerySchema) {
     search?: string;
 
     @ApiProperty({ required: false, enum: ['true', 'false'] })
-    isAdmin?: boolean;
+    isSystemAdmin?: boolean;
 
     @ApiProperty({ required: false, enum: ['true', 'false'] })
     isVerified?: boolean;

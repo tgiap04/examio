@@ -36,5 +36,19 @@
   "footer.description": "AI搭載オンライン学習プラットフォーム - Examio。ドキュメントを確かな知識に変えます。",
   "footer.address": "ベトナム、ハノイ",
   "footer.language": "日本語",
-  "notFound": "ページが見つかりません。"
+  "notFound": "ページが見つかりません。",
+  "forbidden.title": "アクセス権がありません",
+  "forbidden.description": "このアカウントではこのページを表示できません。",
+  "forbidden.backHome": "ホームへ戻る",
+  "roles.student": "生徒",
+  "roles.teacher": "教師",
+  "roles.systemAdmin": "システム管理者",
+  "rbac.permissionDenied": "この操作を行う権限がありません",
+  "rbac.teacherOnly": "この機能は教師向けです",
+  "rbac.teacherCannotTakeExam": "教師アカウントは試験を受けられません",
+  "session.unavailable.title": "サーバーに接続できません",
+  "session.unavailable.retry": "再試行",
+  "rbac.plansForTeachers": "教師向けプラン",
+  "rbac.studyRoomDenied": "この学習ルームに入る権限がありません",
+  "rbac.studyRoomUnavailable": "学習ルームは一時的に利用できません。後でもう一度お試しください。"
 }

@@ -1,17 +1,17 @@
-import { Controller, Get, Req, Res, UseGuards } from '@nestjs/common';
+import { Controller, Get, Req, Res } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Request, Response } from 'express';
 import { Subscription, map, merge, timer } from 'rxjs';
-import { AuthGuard, OptionalAuthGuard } from '@examio/common';
+import { AllowUnverified, Authenticated, Public } from '@examio/auth-jwt';
 import { ConfigService } from '../services/config.service';
 
 /**
  * Public config surface cho page-toggle feature.
  *
  * - `GET /config/pages`: FE gọi 1 lần lúc bootstrap để dựng map bật/tắt.
- *   OptionalAuthGuard — dùng được cả khi chưa đăng nhập (guest cũng cần ẩn UI).
+ *   @Public — dùng được cả khi chưa đăng nhập (guest cũng cần ẩn UI).
  * - `GET /config/stream` (SSE): đẩy realtime map mới mỗi khi admin toggle.
- *   Yêu cầu đăng nhập. Fan-out từ ConfigService.changes$ + heartbeat để giữ
+ *   Yêu cầu đăng nhập (mọi user đã xác thực, kể cả email chưa xác minh). Fan-out từ ConfigService.changes$ + heartbeat để giữ
  *   kết nối sống qua proxy/nginx.
  */
 @ApiTags('Config')
@@ -20,7 +20,7 @@ export class ConfigController {
     constructor(private readonly config: ConfigService) {}
 
     @Get('pages')
-    @UseGuards(OptionalAuthGuard)
+    @Public()
     @ApiOperation({ summary: 'Lấy map bật/tắt trang hiển thị (global)' })
     async getPages(): Promise<{ pages: { key: string; enabled: boolean }[] }> {
         const map = await this.config.getPages();
@@ -43,7 +43,8 @@ export class ConfigController {
      *  3. Heartbeat bắt đầu tại t=0 rồi mỗi 15s → giữ kết nối dưới ngưỡng idle.
      */
     @Get('stream')
-    @UseGuards(AuthGuard)
+    @Authenticated()
+    @AllowUnverified()
     @ApiOperation({ summary: 'SSE stream trạng thái trang realtime' })
     stream(@Req() req: Request, @Res() res: Response): void {
         res.setHeader('Content-Type', 'text/event-stream');

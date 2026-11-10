@@ -223,12 +223,12 @@ None.
 | User attempts to generate with 0 credits (FREE_MODE=false) | API returns 402; subscription page link shown |
 | User navigates away during active polling and returns later | `useGenerationGuard` resumes polling from localStorage; PendingJobDialog reappears |
 | Job exceeds 60-minute polling timeout (360 attempts) | Polling stops; job may still complete server-side; user shown timeout message |
-| User cancels a job while it is PROCESSING on the server | Job is terminated server-side; partial content discarded |
+| User cancels a job while it is QUEUED or PROCESSING on the server | Job becomes CANCELLED and the charge is refunded once (`Refund` key `gen:<jobId>`); a late AI result is ignored; the processed document stays reusable. Cancelling a COMPLETED or FAILED job answers 409 `JOB_NOT_CANCELLABLE` (phase 15) |
 | User attempts to generate from a FAILED document | "Retry processing" button shown instead of Generate |
-| User retries a FAILED job with the same source document | New job created; old failed job record remains in history |
-| Concurrent generation requests for the same document | Both jobs are created independently; last to complete wins (no locking) |
+| User retries a FAILED job with the same source document | New job created and charged again (5 credits; there is no free retry since a failed job is refunded); old failed job record remains in history |
+| Concurrent generation requests by the same user and type | One at a time: a Redis lock (`content:gen:lock:<userId>:<type>`) makes the second request answer 409 until the first job reaches a terminal state (phase 15) |
 | User has no source documents uploaded | Empty state shown with "Upload a document first" prompt |
-| Credit deduction succeeds but AI service returns an error | Job status set to FAILED; credit refund policy is unverified |
+| Credit deduction succeeds but AI service returns an error | Job status set to FAILED and the credits are refunded once (phase 15). A job with no progress for `GENERATION_JOB_TIMEOUT_MINUTES` (default 60, min 10) fails with `GENERATION_TIMEOUT` and is refunded |
 
 ## Key Entities
 
@@ -254,10 +254,10 @@ None.
 
 ## Assumptions
 
-- `FREE_MODE = true` shipped in production code path — credit gating is bypassed for all users.
+- `AI_FREE_MODE` skips the charge only outside production; the shared finance client forces it off when `NODE_ENV=production`.
 - AI job status polling is client-driven (recursive GET) rather than server-sent events or WebSocket.
 - Maximum polling duration is 60 minutes (360 attempts at 10-second intervals) before the client stops.
-- Generated content (quiz questions or flashcards) is written to the database by the AI service, not by exam-service. exam-service only tracks job metadata and links to generated records.
+- Since phase 15 ai-service no longer writes generated history or checks ownership: it answers `ai.generation.completed` (items inline up to 512 KB) and exam-service writes `HistoryGenerated*` and marks the `GenerationJob` COMPLETED. The source file is stored by document-service; exam asks it over gRPC (`CreateUpload`, `AssertOwnership`, `EnsureProcessed`).
 - Credit cost per generation is fixed regardless of document size or number of questions generated.
 
 ## Source Code References
@@ -275,8 +275,8 @@ None.
 
 ## Unresolved Questions
 
-1. **Credit refund on job failure**: If a job fails after credits were deducted, are credits restored? Does this depend on whether failure occurred before or after the AI service started processing?
-2. **Credit cost model**: Is the credit cost per job fixed, or does it vary by document size or number of generated items? Where is this cost defined?
+1. ~~**Credit refund on job failure**~~ — resolved in phase 15: failed, cancelled and timed-out charged jobs are refunded once, whenever they fail (see `docs/system/business-rules.md` § AI credits: charge and refund).
+2. ~~**Credit cost model**~~ — resolved: new file = 1 credit per started 2 MB + 5; reused file = 5; regenerate = 1 per started 10 items (`apps/content-service/src/modules/ai/generation.constants.ts`).
 3. **Generated content destination**: When AI generates quiz questions, which quiz set do they go into — a new auto-created set, or does the user select an existing set?
 4. **Job history retention**: How long are completed/failed job records kept? Is there a purge policy?
 5. **Concurrent job limits**: Can a user have multiple jobs in PROCESSING state simultaneously, or is there a per-user concurrency limit?

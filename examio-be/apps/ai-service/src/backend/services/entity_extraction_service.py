@@ -8,7 +8,6 @@ Runs as a background task after OCR completion.
 import asyncio
 import json
 import logging
-import os
 import time
 import uuid
 from dataclasses import dataclass
@@ -17,6 +16,7 @@ from typing import Any, Dict, List, Optional
 import asyncpg
 
 from src.backend.services.ocr_service import DocumentChunk, ocr_service
+from src import db
 from src.llm.model_manager import model_manager
 
 logger = logging.getLogger(__name__)
@@ -60,17 +60,8 @@ class ExtractedEntity:
 class EntityExtractionService:
     """Extracts and persists educational entities from document chunks."""
 
-    _pool: Optional[asyncpg.Pool] = None
-
     async def _get_pool(self) -> asyncpg.Pool:
-        if self._pool is None or self._pool._closed:
-            postgres_uri = os.environ.get("DATABASE_URL")
-            if not postgres_uri:
-                raise ValueError("DATABASE_URL environment variable not set")
-            self._pool = await asyncpg.create_pool(
-                postgres_uri, min_size=2, max_size=5, command_timeout=60
-            )
-        return self._pool
+        return await db.get_pool()
 
     async def extract_and_persist(self, user_storage_id: str) -> Dict[str, Any]:
         """Extract entities from all chunks of a document and save to DB.

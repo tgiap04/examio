@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { AdminServiceService } from './admin-service.service';
+import { Public } from '@examio/auth-jwt';
 
 @Controller()
 export class AdminServiceController {
@@ -7,11 +8,7 @@ export class AdminServiceController {
         private readonly adminServiceService: AdminServiceService
     ) {}
 
-    @Get('health')
-    health() {
-        return { status: 'ok', service: 'admin-service' };
-    }
-
+    @Public()
     @Get()
     getHello(): string {
         return this.adminServiceService.getHello();

@@ -1,6 +1,14 @@
 import { api } from "./api";
 import type { AxiosRequestConfig } from "axios";
 import { User } from "@/types/user";
+import type { Permission, Role } from "@/types/permissions.generated";
+
+/** What login, register, refresh and /auth/me return about the session. */
+export interface SessionPayload {
+  user: User;
+  roles: Role[];
+  permissions: Permission[];
+}
 
 export interface CredentialsLogin {
   credential: string; // can be email or username or phone
@@ -20,6 +28,8 @@ export interface LoginResponse {
   success: boolean;
   message?: string;
   user?: User;
+  roles?: Role[];
+  permissions?: Permission[];
   token?: string;
   refreshToken?: string;
   sessionId?: string;
@@ -35,6 +45,8 @@ export interface SignupResponse {
   sessionId?: string;
   deviceId?: string;
   user?: User;
+  roles?: Role[];
+  permissions?: Permission[];
   redirectTo?: string;
 }
 
@@ -90,7 +102,7 @@ export async function resetPasswordApi(
 export async function getUserApi(
   forceRefresh = false,
   options: { skipAuthRefresh?: boolean } = {}
-): Promise<{ user: User }> {
+): Promise<SessionPayload> {
   const params = forceRefresh ? `?_t=${Date.now()}` : "";
   const response = await api.get(`/auth/me${params}`, {
     skipAuthRefresh: options.skipAuthRefresh,
@@ -127,11 +139,6 @@ export async function refreshTokenApi(): Promise<LoginResponse> {
   const response = await api.post("/auth/refresh", undefined, {
     skipAuthRefresh: true,
   } as AxiosRequestConfig & { skipAuthRefresh?: boolean });
-  return response.data;
-}
-
-export async function syncRefreshTokenApi(sessionId?: string): Promise<{ success: boolean; refreshToken?: string }> {
-  const response = await api.post("/auth/sync-refresh-token", sessionId ? { sessionId } : undefined);
   return response.data;
 }
 

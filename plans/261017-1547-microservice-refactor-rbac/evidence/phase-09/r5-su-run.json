@@ -1,0 +1,87 @@
+{
+  "at": "2026-10-21T17:10:53.268Z",
+  "results": [
+    {
+      "name": "SU setup: student login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "SU setup: in room, socket connected",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "SU: SERVICE_UNAVAILABLE handshake errors observed",
+      "ok": true,
+      "extra": "SU at s=43.1,127.3,169.4,211.6,253.7,295.8"
+    },
+    {
+      "name": "SU: retries capped: <=6 handshakes (1 + 5 retries) before give-up",
+      "ok": false,
+      "extra": "handshake attempts at s=0,0.5,0.5,44.1,65,87.7,111.7,129.1,150.4,173.4,194.5,219,240.2,272.4,293.4"
+    },
+    {
+      "name": "SU: give-up toast appears",
+      "ok": true,
+      "extra": "first at s=296"
+    },
+    {
+      "name": "SU: zero further attempts for 60 s after give-up",
+      "ok": true,
+      "extra": "attempts in 60s=0"
+    },
+    {
+      "name": "SU: exam-service alive throughout (pid unchanged)",
+      "ok": true,
+      "extra": "pid=4779 expected=4779"
+    },
+    {
+      "name": "SU: redis restored",
+      "ok": true,
+      "extra": ""
+    }
+  ],
+  "timeline": {
+    "su": [
+      43.1,
+      127.3,
+      169.4,
+      211.6,
+      253.7,
+      295.8
+    ],
+    "attempts": [
+      0,
+      0.5,
+      0.5,
+      44.1,
+      65,
+      87.7,
+      111.7,
+      129.1,
+      150.4,
+      173.4,
+      194.5,
+      219,
+      240.2,
+      272.4,
+      293.4
+    ],
+    "toastSeen": [
+      296,
+      296.2,
+      296.5,
+      296.7,
+      297,
+      297.2,
+      297.5,
+      297.7,
+      298,
+      298.2,
+      298.5,
+      298.7,
+      299
+    ]
+  }
+}

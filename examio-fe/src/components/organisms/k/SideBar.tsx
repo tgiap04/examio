@@ -19,7 +19,8 @@ import { FloatingDock } from "@/components/atoms/k/FloatingDock";
 import ProfileDropdown from "@/components/atoms/ProfileDropdown";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { usePageConfigStore } from "@/stores/usePageConfigStore";
-import type { PageKey } from "@/lib/page-keys";
+import { useCanFn } from "@/hooks/useCan";
+import { filterNav } from "@/lib/rbac/nav-items";
 import { useEffect } from "react";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { Button } from "@/components/antd/button";
@@ -34,14 +35,48 @@ interface Profile {
 }
 
 interface SidebarItem {
-  name: string;
+  id: string;
   href: string;
   icon: React.ReactNode;
   label: string;
   shortLabel?: string;
   active: boolean;
-  adminOnly?: boolean;
-  pageKey?: PageKey;
+}
+
+const ICON_CLASS = "w-5 h-5";
+const NAV_ICONS: Record<string, React.ReactNode> = {
+  "ai-tool": <RocketIcon className={ICON_CLASS} />,
+  "word-family": <Network className={ICON_CLASS} />,
+  "my-materials": <BookOpen className={ICON_CLASS} />,
+  "my-exams": <GraduationCap className={ICON_CLASS} />,
+  "manage-exam": <ReaderIcon className={ICON_CLASS} />,
+  "flash-card": <CardStackIcon className={ICON_CLASS} />,
+  "manage-exam-room": <TokensIcon className={ICON_CLASS} />,
+  "study-room": <StudyRoomIcon className={ICON_CLASS} />,
+  history: <ClockIcon className={ICON_CLASS} />,
+  admin: <AdminIcon className={ICON_CLASS} />,
+};
+
+// Which routes light up an item (an item owns its detail pages too).
+function isActive(id: string, path: string): boolean {
+  switch (id) {
+    case "word-family":
+      return path.startsWith("/k/word-family");
+    case "manage-exam":
+      return path === "/k/manage-exam" || path.startsWith("/k/manage-quiz-set") || path.startsWith("/k/practice-quiz");
+    case "flash-card":
+      return path === "/k/flash-card" || path.startsWith("/k/manage-flashcard-set");
+    case "manage-exam-room":
+      return path.startsWith("/k/manage-exam-room");
+    case "study-room":
+      return path.startsWith("/k/study-room");
+    case "history":
+      return path === "/k/history" || path.startsWith("/k/history/");
+    case "admin":
+      return path === "/admin";
+    default:
+      return path === `/k/${id}`;
+  }
 }
 
 interface SidebarKitProps {
@@ -84,118 +119,13 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
     }
   }, [user]);
 
-  const itemSiderbar: SidebarItem[] = [
-    {
-      name: "Ai Tool",
-      pageKey: "ai-tool",
-      href: "/k/ai-tool",
-      icon: <RocketIcon className="w-5 h-5" />,
-      label: "Công cụ AI",
-      shortLabel: "AI",
-      active: currentPath === "/k/ai-tool",
-    },
-    {
-      name: "Word Family",
-      pageKey: "word-family",
-      href: "/k/word-family",
-      icon: <Network className="w-5 h-5" />,
-      label: "Từ vựng tiếng Anh",
-      shortLabel: "Từ vựng",
-      active: currentPath.startsWith("/k/word-family"),
-    },
-    {
-      name: "My Materials",
-      pageKey: "my-materials",
-      href: "/k/my-materials",
-      icon: <BookOpen className="w-5 h-5" />,
-      label: "Tài liệu của tôi",
-      shortLabel: "Tài liệu",
-      active: currentPath === "/k/my-materials",
-    },
-    {
-      name: "My Exams",
-      pageKey: "my-exams",
-      href: "/k/my-exams",
-      icon: <GraduationCap className="w-5 h-5" />,
-      label: "Bài thi của tôi",
-      shortLabel: "Bài thi",
-      active: currentPath === "/k/my-exams",
-    },
-    {
-      name: "Manage Exam",
-      pageKey: "manage-exam",
-      href: "/k/manage-exam",
-      icon: <ReaderIcon className="w-5 h-5" />,
-      label: "Quản lý Đề thi",
-      shortLabel: "Đề thi",
-      active:
-        currentPath === "/k/manage-exam" ||
-        currentPath.startsWith("/k/manage-quiz-set") ||
-        currentPath.startsWith("/k/practice-quiz"),
-    },
-    {
-      name: "Flash Card",
-      pageKey: "flash-card",
-      href: "/k/flash-card",
-      icon: <CardStackIcon className="w-5 h-5" />,
-      label: "Quản lý Flashcard",
-      shortLabel: "Flashcard",
-      active:
-        currentPath === "/k/flash-card" ||
-        currentPath.startsWith("/k/manage-flashcard-set"),
-    },
-    {
-      name: "Manage Exam Room",
-      pageKey: "manage-exam-room",
-      href: "/k/manage-exam-room",
-      icon: <TokensIcon className="w-5 h-5" />,
-      label: "Quản lý Phòng thi",
-      shortLabel: "Phòng thi",
-      active:
-        currentPath === "/k/manage-exam-room" ||
-        currentPath.startsWith("/k/manage-exam-room"),
-    },
-    {
-      name: "Study Room",
-      pageKey: "study-room",
-      href: "/k/study-room",
-      icon: <StudyRoomIcon className="w-5 h-5" />,
-      label: "Phòng học chung",
-      shortLabel: "Học chung",
-      active: currentPath.startsWith("/k/study-room"),
-    },
-    {
-      name: "History",
-      pageKey: "history",
-      href: "/k/history",
-      icon: <ClockIcon className="w-5 h-5" />,
-      label: "Lịch sử",
-      shortLabel: "Lịch sử",
-      active: currentPath === "/k/history",
-    },
-    {
-      name: "Admin Dashboard",
-      href: "/admin",
-      icon: <AdminIcon className="w-5 h-5" />,
-      label: "Trang quản trị",
-      shortLabel: "Admin",
-      active: currentPath === "/admin",
-      adminOnly: true,
-    },
-  ];
-
-  const filteredSidebarItems = itemSiderbar.filter((item) => {
-    if (item.adminOnly) {
-      return user?.isAdmin === true;
-    }
-
-    // Ẩn trang admin đã tắt (default-on: chỉ ẩn khi === false).
-    if (item.pageKey && pageMap[item.pageKey] === false) {
-      return false;
-    }
-
-    return true;
-  });
+  const can = useCanFn();
+  // Permission AND page flag (config + filter in lib/rbac/nav-items.ts).
+  const filteredSidebarItems: SidebarItem[] = filterNav(can, pageMap).map((item) => ({
+    ...item,
+    icon: NAV_ICONS[item.id],
+    active: isActive(item.id, currentPath),
+  }));
 
   const handleLogout = async () => {
     await logout();
@@ -205,19 +135,19 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
   // For mobile FloatingDock
   const primaryDockItems = filteredSidebarItems
     .slice(0, 5)
-    .map(({ name, href, icon, shortLabel, active }) => ({
-      name,
+    .map(({ id, href, icon, shortLabel, label, active }) => ({
+      name: id,
       href,
       icon,
-      label: shortLabel || name,
+      label: shortLabel || label,
       active,
     }));
 
   const secondaryDockItems = [
     ...filteredSidebarItems
       .slice(5)
-      .map(({ name, href, icon, label, active }) => ({
-        name,
+      .map(({ id, href, icon, label, active }) => ({
+        name: id,
         href,
         icon,
         label,

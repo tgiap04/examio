@@ -7,13 +7,14 @@ import {
     Logger,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { SepayWebhook } from '../../types/webhook';
 import { getPaymentIdFromWebhook } from '../../utils/handleWebhook';
 import { PAYMENT_STATUS } from '../../types/payment';
 import { WalletRepository } from '../wallet/wallet.repository';
 import { WalletTransactionRepository } from '../wallet/wallettransaction.repository';
-import { GenerateIdService } from '@examio/common';
+import { GenerateIdService, invalidateWalletCachesBestEffort } from '@examio/common';
+import { RedisService } from '@examio/redis';
 import { WALLET_TRANSACTION_TYPE } from '../wallet/dto/wallet-details-response.dto';
 import { SubscriptionService } from './subscription.service';
 import {
@@ -31,9 +32,19 @@ export class WebhookService {
         private readonly walletRepository: WalletRepository,
         private readonly walletTransactionRepository: WalletTransactionRepository,
         private readonly generateIdService: GenerateIdService,
-        private readonly subscriptionService: SubscriptionService
+        private readonly subscriptionService: SubscriptionService,
+        private readonly redis: RedisService
     ) {}
 
+
+    /** A cache problem must never turn a committed payment into a failed webhook (SePay would retry). */
+    private async invalidateAfterCommit(userId: string): Promise<void> {
+        const walletId = await this.walletRepository
+            .findByUserId(userId, false)
+            .then((w) => w?.id)
+            .catch(() => undefined);
+        await invalidateWalletCachesBestEffort(this.redis, userId, walletId);
+    }
 
     private isValidApiKey(apiKey?: string): boolean {
         if (!this.webhookSecretKey || !apiKey) {
@@ -211,20 +222,8 @@ export class WebhookService {
             return;
         }
 
-        if (result.hasWallet) {
-            // Invalidate wallet cache (sau khi transaction đã commit)
-            await this.walletRepository.invalidateUserCache(payment.userId);
-            // Invalidate wallet transaction stats cache
-            const wallet = await this.walletRepository.findByUserId(
-                payment.userId,
-                false
-            );
-            if (wallet) {
-                await this.walletTransactionRepository.invalidateWalletCache(
-                    wallet.id
-                );
-            }
-        }
+        // After commit, best effort: wallet, wallet transactions and payment caches
+        await this.invalidateAfterCommit(payment.userId);
 
         this.logger.log(
             `Credit payment ${paymentId} processed: +${creditsToAdd} credits for user ${payment.userId}`
@@ -288,18 +287,8 @@ export class WebhookService {
             return;
         }
 
-        // Invalidate wallet cache (sau khi transaction đã commit)
-        await this.walletRepository.invalidateUserCache(payment.userId);
-
-        const wallet = await this.walletRepository.findByUserId(
-            payment.userId,
-            false
-        );
-        if (wallet) {
-            await this.walletTransactionRepository.invalidateWalletCache(
-                wallet.id
-            );
-        }
+        // After commit, best effort: wallet, wallet transactions and payment caches
+        await this.invalidateAfterCommit(payment.userId);
 
         this.logger.log(
             `Subscription payment ${paymentId} processed: tier ${tier}, cycle ${billingCycle} for user ${payment.userId}`

@@ -1,271 +1,148 @@
 import { Controller } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
-import { PrismaService } from '@examio/database';
-import * as jwt from 'jsonwebtoken';
+import { Metadata, status } from '@grpc/grpc-js';
+import { authV1 } from '@examio/contracts';
+import {
+    RequirePermissions,
+    RequirePermissionsOrService,
+    principalOfMetadata,
+} from '@examio/auth-jwt';
+import { RoleChangeService } from '../roles/role-change.service';
+import { fail, toRpcError } from './auth.grpc.errors';
+import { USER_SELECT, fromProtoRole, toUser } from './auth.grpc.mapper';
+import { UsersQueryService } from './users-query.service';
+import { UserStatusService } from '../user-status/user-status.service';
+import { PrismaService } from '../prisma';
 
-// ==================== Request/Response Interfaces ====================
-
-interface ValidateTokenRequest {
-    token: string;
-}
-
-interface ValidateTokenResponse {
-    valid: boolean;
-    userId: string;
-    email: string;
-    username: string;
-    role: number;
-    message: string;
-}
-
-interface GetUserInfoRequest {
-    userId: string;
-}
-
-interface GetUserInfoResponse {
-    success: boolean;
-    userId: string;
-    email: string;
-    username: string;
-    avatar: string;
-    role: number;
-    isVerified: boolean;
-    createdAt: number;
-    message: string;
-}
-
-interface CheckPermissionRequest {
-    userId: string;
-    resource: string;
-    action: string;
-}
-
-interface CheckPermissionResponse {
-    allowed: boolean;
-    message: string;
-}
-
-// ==================== Controller ====================
-
+/**
+ * Auth gRPC surface. Every handler carries a guard declaration (a unit test
+ * scans for it): the actor of a write is always the verified token `sub`
+ * (forwarded user token), never a request field.
+ */
 @Controller()
-export class AuthGrpcController {
-    private readonly jwtSecret: string;
+@authV1.AuthServiceControllerMethods()
+export class AuthGrpcController implements authV1.AuthServiceController {
+    constructor(
+        private readonly users: UsersQueryService,
+        private readonly roles: RoleChangeService,
+        private readonly userStatus: UserStatusService,
+        private readonly prisma: PrismaService
+    ) {}
 
-    constructor(private readonly prisma: PrismaService) {
-        const secret = process.env.JWT_SECRET;
-        if (!secret) {
-            throw new Error(
-                'JWT_SECRET environment variable is required to start AuthGrpcController'
-            );
-        }
-        this.jwtSecret = secret;
+    @RequirePermissionsOrService([])
+    async getPublicProfilesByIds(
+        data: authV1.GetPublicProfilesByIdsRequest
+    ): Promise<authV1.GetPublicProfilesByIdsResponse> {
+        return { profiles: await this.users.getPublicProfiles(data.userIds) };
     }
 
-    /**
-     * Validate JWT token và trả về user info
-     * Được gọi từ Exam Service, Finance Service để xác thực request
-     */
-    @GrpcMethod('AuthService', 'ValidateToken')
-    async validateToken(
-        request: ValidateTokenRequest
-    ): Promise<ValidateTokenResponse> {
-        try {
-            const { token } = request;
-
-            if (!token) {
-                return {
-                    valid: false,
-                    userId: '',
-                    email: '',
-                    username: '',
-                    role: 0,
-                    message: 'Token is required',
-                };
-            }
-
-            // Verify JWT
-            const decoded = jwt.verify(token, this.jwtSecret, {
-                algorithms: ['HS256'],
-            }) as any;
-
-            // Fetch user from database
-            const user = await this.prisma.user.findUnique({
-                where: { id: decoded.sub || decoded.userId },
-                select: {
-                    id: true,
-                    email: true,
-                    username: true,
-                    isAdmin: true,
-                    isBanned: true,
-                    deletedAt: true,
-                    isVerified: true,
-                },
-            });
-
-            if (!user) {
-                return {
-                    valid: false,
-                    userId: '',
-                    email: '',
-                    username: '',
-                    role: 0,
-                    message: 'User not found',
-                };
-            }
-
-            if (user.isBanned || user.deletedAt) {
-                return {
-                    valid: false,
-                    userId: '',
-                    email: '',
-                    username: '',
-                    role: 0,
-                    message: 'Account is disabled',
-                };
-            }
-
-            return {
-                valid: true,
-                userId: user.id,
-                email: user.email,
-                username: user.username || '',
-                role: user.isAdmin ? 1 : 0,
-                message: 'Token is valid',
-            };
-        } catch (error) {
-            return {
-                valid: false,
-                userId: '',
-                email: '',
-                username: '',
-                role: 0,
-                message: error.message || 'Invalid token',
-            };
-        }
+    @RequirePermissionsOrService(['user:manage'], { callers: ['admin', 'finance'] })
+    async getUser(data: authV1.GetUserRequest): Promise<authV1.GetUserResponse> {
+        return { user: await this.users.getUser(data.userId) };
     }
 
-    /**
-     * Lấy thông tin user theo ID
-     */
-    @GrpcMethod('AuthService', 'GetUserInfo')
-    async getUserInfo(
-        request: GetUserInfoRequest
-    ): Promise<GetUserInfoResponse> {
-        try {
-            const { userId } = request;
-
-            const user = await this.prisma.user.findUnique({
-                where: { id: userId },
-                select: {
-                    id: true,
-                    email: true,
-                    username: true,
-                    avatar: true,
-                    isAdmin: true,
-                    isVerified: true,
-                    createdAt: true,
-                },
-            });
-
-            if (!user) {
-                return {
-                    success: false,
-                    userId: '',
-                    email: '',
-                    username: '',
-                    avatar: '',
-                    role: 0,
-                    isVerified: false,
-                    createdAt: 0,
-                    message: 'User not found',
-                };
-            }
-
-            return {
-                success: true,
-                userId: user.id,
-                email: user.email,
-                username: user.username || '',
-                avatar: user.avatar || '',
-                role: user.isAdmin ? 1 : 0,
-                isVerified: user.isVerified,
-                createdAt: user.createdAt.getTime(),
-                message: 'Success',
-            };
-        } catch (error) {
-            return {
-                success: false,
-                userId: '',
-                email: '',
-                username: '',
-                avatar: '',
-                role: 0,
-                isVerified: false,
-                createdAt: 0,
-                message: error.message || 'Error fetching user',
-            };
-        }
+    // Returns emails: admin only (service token + user:manage), never exam/finance.
+    @RequirePermissionsOrService(['user:manage'], { callers: ['admin'] })
+    async getUsersByIds(
+        data: authV1.GetUsersByIdsRequest
+    ): Promise<authV1.GetUsersByIdsResponse> {
+        return { users: await this.users.getUsersByIds(data.userIds) };
     }
 
-    /**
-     * Kiểm tra quyền của user
-     */
-    @GrpcMethod('AuthService', 'CheckPermission')
-    async checkPermission(
-        request: CheckPermissionRequest
-    ): Promise<CheckPermissionResponse> {
-        try {
-            const { userId, resource, action } = request;
+    @RequirePermissionsOrService(['user:manage'], { callers: ['admin', 'finance'] })
+    async findUserByEmail(
+        data: authV1.FindUserByEmailRequest
+    ): Promise<authV1.FindUserByEmailResponse> {
+        return { user: await this.users.findByEmail(data.email) };
+    }
 
-            const user = await this.prisma.user.findUnique({
-                where: { id: userId },
-                select: { isAdmin: true, isBanned: true, deletedAt: true },
-            });
+    @RequirePermissionsOrService(['user:manage'], { callers: ['finance'] })
+    listUsers(data: authV1.ListUsersRequest): Promise<authV1.ListUsersResponse> {
+        return this.users.listUsers(data);
+    }
 
-            if (!user) {
-                return {
-                    allowed: false,
-                    message: 'User not found',
-                };
-            }
+    @RequirePermissions('role:assign')
+    async setUserRole(
+        data: authV1.SetUserRoleRequest,
+        metadata: Metadata
+    ): Promise<authV1.SetUserRoleResponse> {
+        const role = fromProtoRole(data.role);
+        if (!role) fail(status.INVALID_ARGUMENT, 'role must be STUDENT or TEACHER');
+        return this.applyChange(metadata, data.userId, { role }, data.reason);
+    }
 
-            if (user.isBanned || user.deletedAt) {
-                return {
-                    allowed: false,
-                    message: 'Account is disabled',
-                };
-            }
+    @RequirePermissions('role:assign')
+    async setSystemAdmin(
+        data: authV1.SetSystemAdminRequest,
+        metadata: Metadata
+    ): Promise<authV1.SetSystemAdminResponse> {
+        return this.applyChange(
+            metadata,
+            data.userId,
+            { isSystemAdmin: data.isSystemAdmin },
+            data.reason
+        );
+    }
 
-            // Role-based permission check. Deny by default.
-            // isAdmin = true means admin access.
-            let allowed = false;
-
-            if (user.isAdmin) {
-                // Admin có quyền mọi thứ
-                allowed = true;
-            } else {
-                // SECURITY: this RPC cannot verify per-resource ownership, so it
-                // must NOT blanket-authorize read/write/delete for normal users
-                // (that was a fail-open bug). Resource ownership is enforced at
-                // the owning service layer (e.g. `where: { id, userId }`), which
-                // is the source of truth. Deny here by default.
-                allowed = false;
-            }
-
-            // `resource`/`action` intentionally unused: ownership lives at the
-            // service layer, so this RPC only distinguishes admin vs non-admin.
-            void resource;
-            void action;
-
-            return {
-                allowed,
-                message: allowed ? 'Permission granted' : 'Permission denied',
-            };
-        } catch (error) {
-            return {
-                allowed: false,
-                message: error.message || 'Error checking permission',
-            };
+    @RequirePermissions('role:assign')
+    async setUserStatus(
+        data: authV1.SetUserStatusRequest,
+        metadata: Metadata
+    ): Promise<authV1.SetUserStatusResponse> {
+        if (!data.userId) fail(status.INVALID_ARGUMENT, 'user_id is required');
+        const principal = principalOfMetadata(metadata);
+        if (principal?.kind !== 'user') {
+            return fail(status.PERMISSION_DENIED, 'PERMISSION_DENIED');
         }
+        try {
+            await this.userStatus.setStatus({
+                actorUserId: principal.id,
+                targetUserId: data.userId,
+                isBanned: data.isBanned,
+                reason: data.reason?.trim() || undefined,
+            });
+        } catch (err) {
+            return toRpcError(err);
+        }
+        return this.readUser(data.userId);
+    }
+
+    @RequirePermissions('role:assign')
+    listRoleChanges(
+        data: authV1.ListRoleChangesRequest
+    ): Promise<authV1.ListRoleChangesResponse> {
+        return this.users.listRoleChanges(data);
+    }
+
+    private async applyChange(
+        metadata: Metadata,
+        targetUserId: string,
+        change: { role?: 'STUDENT' | 'TEACHER'; isSystemAdmin?: boolean },
+        reason: string
+    ): Promise<{ user: authV1.User }> {
+        if (!targetUserId) fail(status.INVALID_ARGUMENT, 'user_id is required');
+        const principal = principalOfMetadata(metadata);
+        if (principal?.kind !== 'user') {
+            return fail(status.PERMISSION_DENIED, 'PERMISSION_DENIED');
+        }
+        try {
+            await this.roles.change({
+                actor: { kind: 'user', userId: principal.id },
+                targetUserId,
+                ...change,
+                reason: reason?.trim() || undefined,
+                source: 'admin-ui',
+            });
+        } catch (err) {
+            return toRpcError(err);
+        }
+        return this.readUser(targetUserId);
+    }
+
+    private async readUser(id: string): Promise<{ user: authV1.User }> {
+        const row = await this.prisma.user.findUniqueOrThrow({
+            where: { id },
+            select: USER_SELECT,
+        });
+        return { user: toUser(row) };
     }
 }

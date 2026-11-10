@@ -231,7 +231,7 @@ class PdfOcrService:
             preprocessing_service = None
             if use_preprocessing:
                 try:
-                    from backend.services.image_preprocessing_service import get_image_preprocessing_service
+                    from src.backend.services.image_preprocessing_service import get_image_preprocessing_service
                     preprocessing_service = get_image_preprocessing_service()
                 except Exception as e:
                     logger.warning(f"⚠️ Image preprocessing not available: {e}")

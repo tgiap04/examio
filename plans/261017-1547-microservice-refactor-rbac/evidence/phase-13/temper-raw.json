@@ -1,0 +1,800 @@
+[
+  {
+    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && yarn proto:lint",
+    "exitCode": 0,
+    "summary": "exit=0 ",
+    "ts": "2026-10-24T15:01:52Z"
+  },
+  {
+    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && bash -c cd proto && buf breaking --against '/Users/tgiap.dev/devs/examio/.git#branch=HEAD,subdir=examio-be/proto' 2>&1 || buf breaking --against '.git#ref=HEAD,subdir=examio-be/proto'",
+    "exitCode": 127,
+    "summary": "exit=127 bash: buf: command not found bash: buf: command not found ",
+    "ts": "2026-10-24T15:01:52Z"
+  },
+  {
+    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && yarn typecheck",
+    "exitCode": 0,
+    "summary": "exit=0 ",
+    "ts": "2026-10-24T15:02:07Z"
+  },
+  {
+    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && yarn check:deps",
+    "exitCode": 0,
+    "summary": "exit=0  ✔ no dependency violations found (987 modules, 3846 dependencies cruised)  ",
+    "ts": "2026-10-24T15:02:09Z"
+  },
+  {
+    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && yarn check:ownership",
+    "exitCode": 0,
+    "summary": "exit=0  Violations: 0 ",
+    "ts": "2026-10-24T15:02:10Z"
+  },
+  {
+    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && bash -c PATH=$PWD/node_modules/.bin:$PATH; cd proto && buf breaking --against '.git#ref=HEAD,subdir=examio-be/proto'",
+    "exitCode": 1,
+    "summary": "exit=1 Please make sure you have the correct access rights and the repository exists.  ",
+    "ts": "2026-10-24T15:02:20Z"
+  },
+  {
+    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && bash -c PATH=$PWD/node_modules/.bin:$PATH; cd proto && buf breaking --against /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/headproto/examio-be/proto",
+    "exitCode": 0,
+    "summary": "exit=0 ",
+    "ts": "2026-10-24T15:02:24Z"
+  },
+  {
+    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && bash -c TZ=UTC yarn test",
+    "exitCode": 0,
+    "summary": "exit=0 Snapshots:   0 total Time:        15.242 s, estimated 16 s Ran all test suites. ",
+    "ts": "2026-10-24T15:02:44Z"
+  },
+  {
+    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && yarn build:all",
+    "exitCode": 0,
+    "summary": "exit=0 webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 2147 ms webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 2270 ms webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m ",
+    "ts": "2026-10-24T15:03:35Z"
+  },
+  {
+    "command": "cd /Users/tgiap.dev/devs/examio/examio-be/apps/ai-service && ./venv/bin/ruff check src/backend/main.py src",
+    "exitCode": 1,
+    "summary": "exit=1  Found 1197 errors. [*] 411 fixable with the `--fix` option (488 hidden fixes can be enabled with the `--unsafe-fixes` option). ",
+    "ts": "2026-10-24T15:03:44Z"
+  },
+  {
+    "command": "cd /Users/tgiap.dev/devs/examio/examio-be/apps/ai-service && ./venv/bin/pytest -q",
+    "exitCode": 0,
+    "summary": "exit=0  -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html 88 passed, 59 skipped, 12 warnings in 7.31s ",
+    "ts": "2026-10-24T15:03:52Z"
+  },
+  {
+    "command": "cd /Users/tgiap.dev/devs/examio/examio-be/apps/ai-service && bash -c ./venv/bin/python -m ruff check src/db.py src/main.py src/backend/main.py src/grpc_server.py src/backend/messaging src/backend/auth src/backend/ai_grpc_mapping.py src/backend/services/chat_service.py src/backend/services/sync_stream.py src/backend/tests alembic --extend-exclude src/backend/tests/test_hybrid_retrieval_service.py",
+    "exitCode": 0,
+    "summary": "exit=0 All checks passed! ",
+    "ts": "2026-10-24T15:04:01Z"
+  },
+  {
+    "command": "cd /Users/tgiap.dev/devs/examio/examio-be/apps/ai-service && ./venv/bin/ruff check src/backend/main.py",
+    "exitCode": 0,
+    "summary": "exit=0 All checks passed! ",
+    "ts": "2026-10-24T15:04:01Z"
+  },
+  {
+    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && node --test deploy/rabbitmq/render-definitions.spec.cjs",
+    "exitCode": 0,
+    "summary": "exit=0 ℹ skipped 0 ℹ todo 0 ℹ duration_ms 189.528542 ",
+    "ts": "2026-10-24T15:04:09Z"
+  },
+  {
+    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && node --test deploy/compose-topology.spec.cjs",
+    "exitCode": 0,
+    "summary": "exit=0 ℹ skipped 0 ℹ todo 0 ℹ duration_ms 106.2855 ",
+    "ts": "2026-10-24T15:04:09Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t && bash -c docker run -d --name p13t-pg -p 127.0.0.1:15432:5432 -e POSTGRES_USER=examio -e POSTGRES_PASSWORD=examio -e POSTGRES_DB=examio_ci pgvector/pgvector:pg16",
+    "exitCode": 0,
+    "summary": "exit=0 e70e6d1cc94bbd75cf5cb729851c9d397e90c49eda9f0c49ec2b48818f212153 ",
+    "ts": "2026-10-24T15:05:52Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t && bash -c docker run -d --name p13t-redis -p 127.0.0.1:16379:6379 redis:7",
+    "exitCode": 0,
+    "summary": "exit=0 0f78c9feeb2511b25b1100599a592742903fdd37a62367bb1dae349071f7450a ",
+    "ts": "2026-10-24T15:05:52Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t && bash -c docker run -d --name p13t-rabbit -p 127.0.0.1:15672:5672 -v /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy/rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/20-definitions.conf:ro rabbitmq:3.13",
+    "exitCode": 0,
+    "summary": "exit=0 d55e3a24c2a703f66b1edec4a4b44df5ba5c6521e39ac824762dcbfa24e06d15 ",
+    "ts": "2026-10-24T15:05:53Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c RABBITMQ_ADMIN_PASS=x true; node deploy/rabbitmq/render-definitions.cjs --help >/dev/null 2>&1; echo render-help-noop",
+    "exitCode": 0,
+    "summary": "exit=0 render-help-noop ",
+    "ts": "2026-10-24T15:05:56Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c set -a; . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; set +a; node deploy/rabbitmq/render-definitions.cjs --out /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy/rabbitmq/definitions.json",
+    "exitCode": 0,
+    "summary": "exit=0 /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/auth-env.txt: line 2: PRIVATE: command not found rendered /private/tmp/claude",
+    "ts": "2026-10-24T15:06:17Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; node deploy/rabbitmq/render-definitions.cjs --out /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy/rabbitmq/definitions.json",
+    "exitCode": 0,
+    "summary": "exit=0 rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy/rabbitmq/definitions.json (9 users) ",
+    "ts": "2026-10-24T15:06:42Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker run -d --name p13t-rabbit -p 127.0.0.1:15672:5672 -v /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro -v /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy/rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/20-definitions.conf:ro rabbitmq:3.13",
+    "exitCode": 0,
+    "summary": "exit=0 6412ff5e1b0fa5e5226d0c33516a3556051fe4ba2009094941ede5ed83622f13 ",
+    "ts": "2026-10-24T15:06:42Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t && bash -c docker exec -u rabbitmq p13t-rabbit rabbitmq-diagnostics -q ping",
+    "exitCode": 0,
+    "summary": "exit=0 Ping succeeded ",
+    "ts": "2026-10-24T15:06:45Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; env -i PATH=$PATH PGHOST=127.0.0.1 PGPORT=15432 PGPASSWORD=examio POSTGRES_USER=examio POSTGRES_DB=examio_ci AUTH_DB_PASSWORD=ci-auth FINANCE_DB_PASSWORD=ci-finance ADMIN_DB_PASSWORD=ci-admin EXAM_DB_PASSWORD=ci-exam CONTENT_DB_PASSWORD=ci-content ASSESSMENT_DB_PASSWORD=ci-assessment STUDYROOM_DB_PASSWORD=ci-studyroom VOCABULARY_DB_PASSWORD=ci-vocabulary AICHAT_DB_PASSWORD=ci-aichat DOCUMENT_DB_PASSWORD=ci-document AI_DB_PASSWORD=ci-ai bash deploy/postgres/init/01-service-schemas.sh",
+    "exitCode": 0,
+    "summary": "exit=0 CREATE SCHEMA ALTER ROLE postgres init: created schemas and roles for: auth finance admin exam content assessment studyroom vocabulary aichat document ai ",
+    "ts": "2026-10-24T15:06:59Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${AUTH_DATABASE_URL}' npx prisma migrate deploy --schema '$(scripts/prisma-schema-path.sh auth)'",
+    "exitCode": 0,
+    "summary": "exit=0     └─ migration.sql        All migrations have been successfully applied. ",
+    "ts": "2026-10-24T15:07:06Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${FINANCE_DATABASE_URL}' npx prisma migrate deploy --schema '$(scripts/prisma-schema-path.sh finance)'",
+    "exitCode": 0,
+    "summary": "exit=0     └─ migration.sql        All migrations have been successfully applied. ",
+    "ts": "2026-10-24T15:07:07Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${ADMIN_DATABASE_URL}' npx prisma migrate deploy --schema '$(scripts/prisma-schema-path.sh admin)'",
+    "exitCode": 0,
+    "summary": "exit=0     └─ migration.sql        All migrations have been successfully applied. ",
+    "ts": "2026-10-24T15:07:07Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${EXAM_DATABASE_URL}' npx prisma migrate deploy --schema '$(scripts/prisma-schema-path.sh exam)'",
+    "exitCode": 0,
+    "summary": "exit=0     └─ migration.sql        All migrations have been successfully applied. ",
+    "ts": "2026-10-24T15:07:08Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${STUDYROOM_DATABASE_URL}' npx prisma migrate deploy --schema '$(scripts/prisma-schema-path.sh studyroom)'",
+    "exitCode": 0,
+    "summary": "exit=0     └─ migration.sql        All migrations have been successfully applied. ",
+    "ts": "2026-10-24T15:07:09Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${VOCABULARY_DATABASE_URL}' npx prisma migrate deploy --schema '$(scripts/prisma-schema-path.sh vocabulary)'",
+    "exitCode": 0,
+    "summary": "exit=0     └─ migration.sql        All migrations have been successfully applied. ",
+    "ts": "2026-10-24T15:07:10Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${DOCUMENT_DATABASE_URL}' npx prisma migrate deploy --schema '$(scripts/prisma-schema-path.sh document)'",
+    "exitCode": 0,
+    "summary": "exit=0     └─ migration.sql        All migrations have been successfully applied. ",
+    "ts": "2026-10-24T15:07:11Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${AICHAT_DATABASE_URL}' npx prisma migrate deploy --schema '$(scripts/prisma-schema-path.sh aichat)'",
+    "exitCode": 0,
+    "summary": "exit=0     └─ migration.sql        All migrations have been successfully applied. ",
+    "ts": "2026-10-24T15:07:12Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${AUTH_DATABASE_URL}' npx prisma migrate diff --from-url '${AUTH_DATABASE_URL}' --to-schema-datamodel '$(scripts/prisma-schema-path.sh auth)' --exit-code",
+    "exitCode": 0,
+    "summary": "exit=0 npm warn Unknown user config 'python'. This will stop working in the next major version of npm. See `npm help npmrc` for supported config options. No difference detected.  ",
+    "ts": "2026-10-24T15:07:16Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${FINANCE_DATABASE_URL}' npx prisma migrate diff --from-url '${FINANCE_DATABASE_URL}' --to-schema-datamodel '$(scripts/prisma-schema-path.sh finance)' --exit-code",
+    "exitCode": 0,
+    "summary": "exit=0 npm warn Unknown user config 'python'. This will stop working in the next major version of npm. See `npm help npmrc` for supported config options. No difference detected.  ",
+    "ts": "2026-10-24T15:07:17Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${ADMIN_DATABASE_URL}' npx prisma migrate diff --from-url '${ADMIN_DATABASE_URL}' --to-schema-datamodel '$(scripts/prisma-schema-path.sh admin)' --exit-code",
+    "exitCode": 0,
+    "summary": "exit=0 npm warn Unknown user config 'python'. This will stop working in the next major version of npm. See `npm help npmrc` for supported config options. No difference detected.  ",
+    "ts": "2026-10-24T15:07:17Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${EXAM_DATABASE_URL}' npx prisma migrate diff --from-url '${EXAM_DATABASE_URL}' --to-schema-datamodel '$(scripts/prisma-schema-path.sh exam)' --exit-code",
+    "exitCode": 0,
+    "summary": "exit=0 npm warn Unknown user config 'python'. This will stop working in the next major version of npm. See `npm help npmrc` for supported config options. No difference detected.  ",
+    "ts": "2026-10-24T15:07:18Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${STUDYROOM_DATABASE_URL}' npx prisma migrate diff --from-url '${STUDYROOM_DATABASE_URL}' --to-schema-datamodel '$(scripts/prisma-schema-path.sh studyroom)' --exit-code",
+    "exitCode": 0,
+    "summary": "exit=0 npm warn Unknown user config 'python'. This will stop working in the next major version of npm. See `npm help npmrc` for supported config options. No difference detected.  ",
+    "ts": "2026-10-24T15:07:19Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${VOCABULARY_DATABASE_URL}' npx prisma migrate diff --from-url '${VOCABULARY_DATABASE_URL}' --to-schema-datamodel '$(scripts/prisma-schema-path.sh vocabulary)' --exit-code",
+    "exitCode": 0,
+    "summary": "exit=0 npm warn Unknown user config 'python'. This will stop working in the next major version of npm. See `npm help npmrc` for supported config options. No difference detected.  ",
+    "ts": "2026-10-24T15:07:20Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${DOCUMENT_DATABASE_URL}' npx prisma migrate diff --from-url '${DOCUMENT_DATABASE_URL}' --to-schema-datamodel '$(scripts/prisma-schema-path.sh document)' --exit-code",
+    "exitCode": 0,
+    "summary": "exit=0 npm warn Unknown user config 'python'. This will stop working in the next major version of npm. See `npm help npmrc` for supported config options. No difference detected.  ",
+    "ts": "2026-10-24T15:07:20Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; DATABASE_URL='${AICHAT_DATABASE_URL}' npx prisma migrate diff --from-url '${AICHAT_DATABASE_URL}' --to-schema-datamodel '$(scripts/prisma-schema-path.sh aichat)' --exit-code",
+    "exitCode": 0,
+    "summary": "exit=0 npm warn Unknown user config 'python'. This will stop working in the next major version of npm. See `npm help npmrc` for supported config options. No difference detected.  ",
+    "ts": "2026-10-24T15:07:21Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; CI=true RABBITMQ_URL='amqp://auth:$RABBITMQ_AUTH_PASS@127.0.0.1:15672' ./node_modules/.bin/jest --config test/db-isolation/jest-e2e.json",
+    "exitCode": 0,
+    "summary": "exit=0 Time:        25.478 s Ran all test suites. Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-24T15:07:53Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; cd apps/ai-chat-service && DATABASE_URL='$AICHAT_DATABASE_URL' RABBITMQ_URL='amqp://aichat:$RABBITMQ_AICHAT_PASS@127.0.0.1:15672' RABBITMQ_DOCUMENT_URL='amqp://document:$RABBITMQ_DOCUMENT_PASS@127.0.0.1:15672' RABBITMQ_FINANCE_URL='amqp://finance:$RABBITMQ_FINANCE_PASS@127.0.0.1:15672' ../../node_modules/.bin/jest --config test/jest-e2e.json",
+    "exitCode": 0,
+    "summary": "exit=0 Time:        20.818 s Ran all test suites. Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-24T15:08:19Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; cd apps/exam-service && DATABASE_URL='$EXAM_DATABASE_URL' RABBITMQ_URL='amqp://exam:$RABBITMQ_EXAM_PASS@127.0.0.1:15672' RABBITMQ_AI_URL='amqp://ai:$RABBITMQ_AI_PASS@127.0.0.1:15672' RABBITMQ_DOCUMENT_URL='amqp://document:$RABBITMQ_DOCUMENT_PASS@127.0.0.1:15672' SERVICE_NAME=exam-service ../../node_modules/.bin/jest --config test/jest-e2e.json",
+    "exitCode": 1,
+    "summary": "exit=1 Time:        14.672 s Ran all test suites. Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-24T15:08:39Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; cd apps/exam-service && DATABASE_URL='$EXAM_DATABASE_URL' RABBITMQ_URL='amqp://exam:$RABBITMQ_EXAM_PASS@127.0.0.1:15672' RABBITMQ_AI_URL='amqp://ai:$RABBITMQ_AI_PASS@127.0.0.1:15672' RABBITMQ_DOCUMENT_URL='amqp://document:$RABBITMQ_DOCUMENT_PASS@127.0.0.1:15672' SERVICE_NAME=exam-service ../../node_modules/.bin/jest --config test/jest-e2e.json",
+    "exitCode": 0,
+    "summary": "exit=0 Time:        32.175 s Ran all test suites. Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-24T15:09:39Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; cd apps/finance-service && DATABASE_URL='$FINANCE_DATABASE_URL' RABBITMQ_URL='amqp://finance:$RABBITMQ_FINANCE_PASS@127.0.0.1:15672' ../../node_modules/.bin/jest --config test/jest-e2e.json",
+    "exitCode": 1,
+    "summary": "exit=1 Time:        7.706 s Ran all test suites. Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-24T15:09:56Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; cd apps/vocabulary-service && DATABASE_URL='$VOCABULARY_DATABASE_URL' ../../node_modules/.bin/jest --config test/jest-e2e.json",
+    "exitCode": 0,
+    "summary": "exit=0 Time:        5.717 s Ran all test suites. Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-24T15:10:02Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; cd apps/document-service && DATABASE_URL='$DOCUMENT_DATABASE_URL' RABBITMQ_URL='amqp://document:$RABBITMQ_DOCUMENT_PASS@127.0.0.1:15672' RABBITMQ_AI_URL='amqp://ai:$RABBITMQ_AI_PASS@127.0.0.1:15672' ../../node_modules/.bin/jest --config test/jest-e2e.json",
+    "exitCode": 0,
+    "summary": "exit=0 Time:        17.204 s Ran all test suites. Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-24T15:10:20Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; cd apps/finance-service && DATABASE_URL='$FINANCE_DATABASE_URL' RABBITMQ_URL='amqp://finance:$RABBITMQ_FINANCE_PASS@127.0.0.1:15672' ../../node_modules/.bin/jest --config test/jest-e2e.json",
+    "exitCode": 0,
+    "summary": "exit=0 Time:        9.335 s Ran all test suites. Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
+    "ts": "2026-10-24T15:10:47Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; export RABBITMQ_URL='amqp://gateway:$RABBITMQ_GATEWAY_PASS@127.0.0.1:15672'; cd apps/gateway-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/gateway.e2e-spec.ts test/gateway-streaming.e2e-spec.ts test/gateway-expect.e2e-spec.ts test/gateway-authz.e2e-spec.ts test/gateway-control.e2e-spec.ts test/gateway-edge.e2e-spec.ts test/redis-scripts.e2e-spec.ts",
+    "exitCode": 0,
+    "summary": "exit=0 Time:        22.939 s Ran all test suites matching test/gateway.e2e-spec.ts|test/gateway-streaming.e2e-spec.ts|test/gateway-expect.e2e-spec.ts|test/gateway-authz.e2e-spec.ts|test/gateway-contro",
+    "ts": "2026-10-24T15:11:16Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/apps/ai-service && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; ROLE=migrate DATABASE_URL=postgresql://ai_svc:ci-ai@127.0.0.1:15432/examio_ci DB_SEARCH_PATH=ai,extensions /Users/tgiap.dev/devs/examio/examio-be/apps/ai-service/venv/bin/python -m src.main",
+    "exitCode": 0,
+    "summary": "exit=0 INFO  [alembic.runtime.migration] Context impl PostgresqlImpl. INFO  [alembic.runtime.migration] Will assume transactional DDL. INFO  [alembic.runtime.migration] Running upgrade  -> 0001, Basel",
+    "ts": "2026-10-24T15:11:24Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/apps/ai-service && bash -c . /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/env.sh; export REQUIRE_INTEGRATION=1 AI_TEST_DATABASE_URL=postgresql://ai_svc:ci-ai@127.0.0.1:15432/examio_ci AI_TEST_RABBITMQ_URL=amqp://ci_admin:ci-only-admin-pass@127.0.0.1:15672; /Users/tgiap.dev/devs/examio/examio-be/apps/ai-service/venv/bin/python -m pytest -q",
+    "exitCode": 0,
+    "summary": "exit=0  -- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html 147 passed, 12 warnings in 14.66s ",
+    "ts": "2026-10-24T15:11:43Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build gateway",
+    "exitCode": 0,
+    "summary": "exit=0 #23 resolving provenance for metadata file #23 DONE 0.0s  Image p13t-gateway Built  ",
+    "ts": "2026-10-24T15:13:26Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build auth-migrate",
+    "exitCode": 0,
+    "summary": "exit=0 #14 resolving provenance for metadata file #14 DONE 0.0s  Image p13t-auth-migrate Built  ",
+    "ts": "2026-10-24T15:14:25Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build auth",
+    "exitCode": 0,
+    "summary": "exit=0 #23 resolving provenance for metadata file #23 DONE 0.0s  Image p13t-auth Built  ",
+    "ts": "2026-10-24T15:15:00Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build finance-migrate",
+    "exitCode": 0,
+    "summary": "exit=0 #14 resolving provenance for metadata file #14 DONE 0.0s  Image p13t-finance-migrate Built  ",
+    "ts": "2026-10-24T15:15:58Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build finance",
+    "exitCode": 0,
+    "summary": "exit=0 #23 resolving provenance for metadata file #23 DONE 0.1s  Image p13t-finance Built  ",
+    "ts": "2026-10-24T15:16:36Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build admin-migrate",
+    "exitCode": 0,
+    "summary": "exit=0 #14 resolving provenance for metadata file #14 DONE 0.0s  Image p13t-admin-migrate Built  ",
+    "ts": "2026-10-24T15:17:33Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build admin",
+    "exitCode": 0,
+    "summary": "exit=0 #23 resolving provenance for metadata file #23 DONE 0.0s  Image p13t-admin Built  ",
+    "ts": "2026-10-24T15:18:06Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build exam-migrate",
+    "exitCode": 0,
+    "summary": "exit=0 #14 resolving provenance for metadata file #14 DONE 0.1s  Image p13t-exam-migrate Built  ",
+    "ts": "2026-10-24T15:19:04Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build exam",
+    "exitCode": 0,
+    "summary": "exit=0 #23 resolving provenance for metadata file #23 DONE 0.0s  Image p13t-exam Built  ",
+    "ts": "2026-10-24T15:19:39Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build study-room",
+    "exitCode": 0,
+    "summary": "[s3-build-study-room] exit=0 #23 resolving provenance for metadata file #23 DONE 0.0s  Image p13t-study-room Built  ",
+    "ts": "2026-10-24T15:21:09Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build vocabulary-migrate",
+    "exitCode": 0,
+    "summary": "[s3-build-vocabulary-migrate] exit=0 #14 resolving provenance for metadata file #14 DONE 0.0s  Image p13t-vocabulary-migrate Built  ",
+    "ts": "2026-10-24T15:22:05Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build vocabulary",
+    "exitCode": 0,
+    "summary": "[s3-build-vocabulary] exit=0 #23 resolving provenance for metadata file #23 DONE 0.0s  Image p13t-vocabulary Built  ",
+    "ts": "2026-10-24T15:22:39Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build document-migrate",
+    "exitCode": 0,
+    "summary": "[s3-build-document-migrate] exit=0 #14 resolving provenance for metadata file #14 DONE 0.0s  Image p13t-document-migrate Built  ",
+    "ts": "2026-10-24T15:23:39Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build document",
+    "exitCode": 0,
+    "summary": "[s3-build-document] exit=0 #23 resolving provenance for metadata file #23 DONE 0.0s  Image p13t-document Built  ",
+    "ts": "2026-10-24T15:24:13Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build ai-chat-migrate",
+    "exitCode": 0,
+    "summary": "[s3-build-ai-chat-migrate] exit=0 #14 resolving provenance for metadata file #14 DONE 0.1s  Image p13t-ai-chat-migrate Built  ",
+    "ts": "2026-10-24T15:25:13Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build ai-chat",
+    "exitCode": 0,
+    "summary": "[s3-build-ai-chat] exit=0 #23 resolving provenance for metadata file #23 DONE 0.0s  Image p13t-ai-chat Built  ",
+    "ts": "2026-10-24T15:25:47Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build r2",
+    "exitCode": 0,
+    "summary": "[s3-build-r2] exit=0 #23 resolving provenance for metadata file #23 DONE 0.0s  Image p13t-r2 Built  ",
+    "ts": "2026-10-24T15:26:19Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build ai",
+    "exitCode": 0,
+    "summary": "[s3-build-ai] exit=0 #20 resolving provenance for metadata file #20 DONE 0.0s  Image p13t-ai Built  ",
+    "ts": "2026-10-24T15:26:31Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build ai-migrate",
+    "exitCode": 0,
+    "summary": "[s3-build-ai-migrate] exit=0 #20 resolving provenance for metadata file #20 DONE 0.0s  Image p13t-ai-migrate Built  ",
+    "ts": "2026-10-24T15:26:32Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build ai-worker",
+    "exitCode": 0,
+    "summary": "[s3-build-ai-worker] exit=0 #20 resolving provenance for metadata file #20 DONE 0.0s  Image p13t-ai-worker Built  ",
+    "ts": "2026-10-24T15:26:33Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build seed",
+    "exitCode": 0,
+    "summary": "[s3-build-seed] exit=0 #20 resolving provenance for metadata file #20 DONE 0.1s  Image p13t-seed Built  ",
+    "ts": "2026-10-24T15:27:41Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t build study-room-migrate",
+    "exitCode": 0,
+    "summary": "[s3-build-study-room-migrate-rerun] exit=0 #14 resolving provenance for metadata file #14 DONE 0.0s  Image p13t-study-room-migrate Built  ",
+    "ts": "2026-10-24T15:27:58Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t up -d --wait",
+    "exitCode": 0,
+    "summary": "[s3-up-wait-1] exit=0  Container examio-admin-migrate Exited   Container examio-ai Healthy   Container examio-gateway Healthy  ",
+    "ts": "2026-10-24T15:28:28Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t --profile seed run --rm seed",
+    "exitCode": 0,
+    "summary": "[s3-seed-opt-in] exit=0 🎉 Word Family Categories seeded: 10 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ ==> Seeds complete. ",
+    "ts": "2026-10-24T15:28:55Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec -e PGPASSWORD=ci-aichat examio-postgres psql -h 127.0.0.1 -U aichat_svc -d examio -v ON_ERROR_STOP=1 -c 'SELECT count(*) FROM exam.\"Subject\"'",
+    "exitCode": 1,
+    "summary": "[s3-iso-aichat-denied-exam] exit=1 ERROR:  permission denied for schema exam LINE 1: SELECT count(*) FROM exam.\"Subject\"                              ^ ",
+    "ts": "2026-10-24T15:31:25Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec -e PGPASSWORD=ci-aichat examio-postgres psql -h 127.0.0.1 -U aichat_svc -d examio -v ON_ERROR_STOP=1 -c 'SELECT count(*) FROM auth.\"User\"'",
+    "exitCode": 1,
+    "summary": "[s3-iso-aichat-denied-auth] exit=1 ERROR:  permission denied for schema auth LINE 1: SELECT count(*) FROM auth.\"User\"                              ^ ",
+    "ts": "2026-10-24T15:31:25Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec -e PGPASSWORD=ci-aichat examio-postgres psql -h 127.0.0.1 -U aichat_svc -d examio -v ON_ERROR_STOP=1 -c 'SELECT count(*) FROM document.\"UserStorage\"'",
+    "exitCode": 1,
+    "summary": "[s3-iso-aichat-denied-document] exit=1 ERROR:  permission denied for schema document LINE 1: SELECT count(*) FROM document.\"UserStorage\"                              ^ ",
+    "ts": "2026-10-24T15:31:25Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec -e PGPASSWORD=ci-aichat examio-postgres psql -h 127.0.0.1 -U aichat_svc -d examio -v ON_ERROR_STOP=1 -c 'SELECT count(*) AS subjects FROM aichat.\"Subject\"' -c 'SELECT count(*) AS categories FROM aichat.\"SubjectCategory\"'",
+    "exitCode": 0,
+    "summary": "[s3-iso-aichat-own-schema] exit=0           4 (1 row)  ",
+    "ts": "2026-10-24T15:31:26Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec -u rabbitmq examio-rabbitmq rabbitmqctl list_bindings source_name destination_name routing_key 2>&1 | grep -E \"aichat|document.deleted|subscription\" ",
+    "exitCode": 0,
+    "summary": "[s3-broker-bindings] exit=0 examio.events\taichat.events\tdocument.deleted examio.events\texam.events\tdocument.deleted examio.events\taichat.events\tfinance.subscription.changed ",
+    "ts": "2026-10-24T15:31:32Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec -u rabbitmq examio-rabbitmq rabbitmqctl list_queues name messages 2>&1 | grep -i -E \"aichat|dlq|retry\" ",
+    "exitCode": 0,
+    "summary": "[s3-broker-queues] exit=0 studyroom.retry.30s\t0 gateway.dlq\t0 ai.dlq\t0 ",
+    "ts": "2026-10-24T15:31:32Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec -u rabbitmq examio-rabbitmq rabbitmqctl list_user_permissions aichat 2>&1",
+    "exitCode": 0,
+    "summary": "[s3-broker-perms] exit=0 Listing permissions for user \"aichat\" ... vhost\tconfigure\twrite\tread /\t^(examio\\.events|aichat\\..*)$\t^(examio\\.events|aichat\\..*)$\t^(examio\\.events|aichat\\..*)$ ",
+    "ts": "2026-10-24T15:31:33Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec examio-ai-chat sh -c 'wget -S -O /dev/null --post-data=\"{}\" --header=Content-Type:application/json http://ai:8000/ 2>&1 | grep -m1 -E \"HTTP/\"'",
+    "exitCode": 1,
+    "summary": "[s3-ai-http-_] exit=1 ",
+    "ts": "2026-10-24T15:32:04Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec examio-ai-chat sh -c 'wget -S -O /dev/null --post-data=\"{}\" --header=Content-Type:application/json http://ai:8000/health 2>&1 | grep -m1 -E \"HTTP/\"'",
+    "exitCode": 1,
+    "summary": "[s3-ai-http-_health] exit=1 ",
+    "ts": "2026-10-24T15:32:04Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec examio-ai-chat sh -c 'wget -S -O /dev/null --post-data=\"{}\" --header=Content-Type:application/json http://ai:8000/api/chat/query 2>&1 | grep -m1 -E \"HTTP/\"'",
+    "exitCode": 1,
+    "summary": "[s3-ai-http-_api_chat_query] exit=1 ",
+    "ts": "2026-10-24T15:32:04Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec examio-ai-chat sh -c 'wget -S -O /dev/null --post-data=\"{}\" --header=Content-Type:application/json http://ai:8000/chat/query 2>&1 | grep -m1 -E \"HTTP/\"'",
+    "exitCode": 1,
+    "summary": "[s3-ai-http-_chat_query] exit=1 ",
+    "ts": "2026-10-24T15:32:04Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec examio-ai-chat node -e \"require('http').request({host:'ai',port:3000,path:'/',method:'POST',headers:{'content-type':'application/json'}},r=>{let b='';r.on('data',d=>b+=d);r.on('end',()=>console.log(r.statusCode,'/',b.slice(0,60)))}).on('error',e=>console.log('ERR',e.message)).end('{}')\"",
+    "exitCode": 0,
+    "summary": "[s3-ai-http-_] exit=0 405 / {\"detail\":\"Method Not Allowed\"} ",
+    "ts": "2026-10-24T15:32:15Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec examio-ai-chat node -e \"require('http').request({host:'ai',port:3000,path:'/health',method:'POST',headers:{'content-type':'application/json'}},r=>{let b='';r.on('data',d=>b+=d);r.on('end',()=>console.log(r.statusCode,'/health',b.slice(0,60)))}).on('error',e=>console.log('ERR',e.message)).end('{}')\"",
+    "exitCode": 0,
+    "summary": "[s3-ai-http-_health] exit=0 405 /health {\"detail\":\"Method Not Allowed\"} ",
+    "ts": "2026-10-24T15:32:15Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec examio-ai-chat node -e \"require('http').request({host:'ai',port:3000,path:'/api/chat/query',method:'POST',headers:{'content-type':'application/json'}},r=>{let b='';r.on('data',d=>b+=d);r.on('end',()=>console.log(r.statusCode,'/api/chat/query',b.slice(0,60)))}).on('error',e=>console.log('ERR',e.message)).end('{}')\"",
+    "exitCode": 0,
+    "summary": "[s3-ai-http-_api_chat_query] exit=0 404 /api/chat/query {\"detail\":\"Not Found\"} ",
+    "ts": "2026-10-24T15:32:15Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec examio-ai-chat node -e \"require('http').request({host:'ai',port:3000,path:'/api/chat/stream',method:'POST',headers:{'content-type':'application/json'}},r=>{let b='';r.on('data',d=>b+=d);r.on('end',()=>console.log(r.statusCode,'/api/chat/stream',b.slice(0,60)))}).on('error',e=>console.log('ERR',e.message)).end('{}')\"",
+    "exitCode": 0,
+    "summary": "[s3-ai-http-_api_chat_stream] exit=0 404 /api/chat/stream {\"detail\":\"Not Found\"} ",
+    "ts": "2026-10-24T15:32:15Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec examio-ai-chat node -e \"require('http').request({host:'ai',port:3000,path:'/chat/query',method:'POST',headers:{'content-type':'application/json'}},r=>{let b='';r.on('data',d=>b+=d);r.on('end',()=>console.log(r.statusCode,'/chat/query',b.slice(0,60)))}).on('error',e=>console.log('ERR',e.message)).end('{}')\"",
+    "exitCode": 0,
+    "summary": "[s3-ai-http-_chat_query] exit=0 404 /chat/query {\"detail\":\"Not Found\"} ",
+    "ts": "2026-10-24T15:32:15Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker exec -i -e PGPASSWORD=examio examio-postgres psql -h 127.0.0.1 -U examio -d examio -v ON_ERROR_STOP=1 < /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/tools/seed-users.sql",
+    "exitCode": 0,
+    "summary": "[s4-seed-users] exit=0 INSERT 0 4 INSERT 0 4 ",
+    "ts": "2026-10-24T15:32:24Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo && bash -c docker stop examio-ai",
+    "exitCode": 0,
+    "summary": "[s4a-stop-real-ai] exit=0 examio-ai ",
+    "ts": "2026-10-24T15:32:29Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c for c in examio-auth-migrate examio-finance-migrate examio-admin-migrate examio-exam-migrate examio-study-room-migrate examio-vocabulary-migrate examio-document-migrate examio-ai-chat-migrate examio-ai-migrate examio-rabbitmq-defs; do echo \"$c exit=$(docker inspect -f \"{{.State.ExitCode}}\" $c)\"; done; for c in examio-postgres examio-redis examio-rabbitmq examio-r2 examio-auth examio-finance examio-admin examio-exam examio-study-room examio-vocabulary exa",
+    "exitCode": 0,
+    "summary": "[s3-migrate-oneshots-exit] exit=0 examio-gateway healthy examio-ai-worker  running-no-healthcheck ",
+    "ts": "2026-10-24T16:01:26Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/ui && bash -c S=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t perl -e 'alarm 170; exec @ARGV' node ui-check.cjs",
+    "exitCode": 0,
+    "summary": "[s4-ui-reachable-checks] exit=0 PASS student no uncaught page errors  PASS student external hosts blocked blocked=www.googletagmanager.com   api(student): 200 /api/v1/config/pages ; 200 /api/v1/config/pages ; 200 /api/v1/auth",
+    "ts": "2026-10-24T16:01:43Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/tools && bash -c curl -s -o /dev/null -w '%{http_code}' -H \"Authorization: Bearer $(cat t1.tok)\" http://127.0.0.1:6369/api/v1/ai/models",
+    "exitCode": 0,
+    "summary": "[s3-gateway-ai-models-check] exit=0 200",
+    "ts": "2026-10-24T16:01:43Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t && bash -c docker rm -f p13t-fake-ai p13t-r2mock p13t-s3proxy p13t-s3shim 2>&1; docker volume rm p13t-s3data 2>&1",
+    "exitCode": 0,
+    "summary": "[s5-teardown-fake-and-mock] exit=0 p13t-fake-ai p13t-r2mock p13t-s3data ",
+    "ts": "2026-10-24T16:01:51Z"
+  },
+  {
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/25efe17b-2eb8-47f4-b981-71eb3ddf375b/scratchpad/p13t/repo/deploy && bash -c docker compose -p p13t down -v --rmi local --remove-orphans",
+    "exitCode": 0,
+    "summary": "[s5-teardown-compose-down-v] exit=0  Image p13t-finance:latest Removed   Image p13t-finance-migrate:latest Removed   Image p13t-admin:latest Removed  ",
+    "ts": "2026-10-24T16:02:21Z"
+  },
+  {
+    "command": "bash deploy/postgres/init/01-service-schemas.sh (per-service roles, scratch DB)",
+    "exitCode": 0,
+    "summary": "[p13r-init] exit=0",
+    "ts": "2026-10-25T04:12:32Z"
+  },
+  {
+    "command": "prisma migrate deploy (auth) on scratch DB",
+    "exitCode": 1,
+    "summary": "[p13r-migrate-auth] exit=1",
+    "ts": "2026-10-25T04:12:32Z"
+  },
+  {
+    "command": "prisma migrate deploy (finance) on scratch DB",
+    "exitCode": 1,
+    "summary": "[p13r-migrate-finance] exit=1",
+    "ts": "2026-10-25T04:12:32Z"
+  },
+  {
+    "command": "prisma migrate deploy (admin) on scratch DB",
+    "exitCode": 1,
+    "summary": "[p13r-migrate-admin] exit=1",
+    "ts": "2026-10-25T04:12:32Z"
+  },
+  {
+    "command": "prisma migrate deploy (exam) on scratch DB",
+    "exitCode": 1,
+    "summary": "[p13r-migrate-exam] exit=1",
+    "ts": "2026-10-25T04:12:32Z"
+  },
+  {
+    "command": "prisma migrate deploy (studyroom) on scratch DB",
+    "exitCode": 1,
+    "summary": "[p13r-migrate-studyroom] exit=1",
+    "ts": "2026-10-25T04:12:32Z"
+  },
+  {
+    "command": "prisma migrate deploy (vocabulary) on scratch DB",
+    "exitCode": 1,
+    "summary": "[p13r-migrate-vocabulary] exit=1",
+    "ts": "2026-10-25T04:12:32Z"
+  },
+  {
+    "command": "prisma migrate deploy (document) on scratch DB",
+    "exitCode": 1,
+    "summary": "[p13r-migrate-document] exit=1",
+    "ts": "2026-10-25T04:12:33Z"
+  },
+  {
+    "command": "prisma migrate deploy (aichat) on scratch DB",
+    "exitCode": 1,
+    "summary": "[p13r-migrate-aichat] exit=1",
+    "ts": "2026-10-25T04:12:33Z"
+  },
+  {
+    "command": "prisma migrate deploy (auth) on scratch DB",
+    "exitCode": 0,
+    "summary": "[p13r-migrate-auth] exit=0",
+    "ts": "2026-10-25T04:12:40Z"
+  },
+  {
+    "command": "prisma migrate deploy (finance) on scratch DB",
+    "exitCode": 0,
+    "summary": "[p13r-migrate-finance] exit=0",
+    "ts": "2026-10-25T04:12:41Z"
+  },
+  {
+    "command": "prisma migrate deploy (admin) on scratch DB",
+    "exitCode": 0,
+    "summary": "[p13r-migrate-admin] exit=0",
+    "ts": "2026-10-25T04:12:42Z"
+  },
+  {
+    "command": "prisma migrate deploy (exam) on scratch DB",
+    "exitCode": 0,
+    "summary": "[p13r-migrate-exam] exit=0",
+    "ts": "2026-10-25T04:12:42Z"
+  },
+  {
+    "command": "prisma migrate deploy (studyroom) on scratch DB",
+    "exitCode": 0,
+    "summary": "[p13r-migrate-studyroom] exit=0",
+    "ts": "2026-10-25T04:12:43Z"
+  },
+  {
+    "command": "prisma migrate deploy (vocabulary) on scratch DB",
+    "exitCode": 0,
+    "summary": "[p13r-migrate-vocabulary] exit=0",
+    "ts": "2026-10-25T04:12:44Z"
+  },
+  {
+    "command": "prisma migrate deploy (document) on scratch DB",
+    "exitCode": 0,
+    "summary": "[p13r-migrate-document] exit=0",
+    "ts": "2026-10-25T04:12:44Z"
+  },
+  {
+    "command": "prisma migrate deploy (aichat) on scratch DB",
+    "exitCode": 0,
+    "summary": "[p13r-migrate-aichat] exit=0",
+    "ts": "2026-10-25T04:12:45Z"
+  },
+  {
+    "command": "jest --config test/jest-e2e.json (gateway e2e, 7 CI files, forceExit, watchdog 900s)",
+    "exitCode": 0,
+    "summary": "[p13r-e2e-gateway] Tests: 61 passed, 61 total Test Suites: 7 passed, 7 total",
+    "ts": "2026-10-25T04:13:17Z"
+  },
+  {
+    "command": "jest --config test/jest-e2e.json (finance e2e whole folder incl subscription-changed, forceExit, watchdog 900s)",
+    "exitCode": 0,
+    "summary": "[p13r-e2e-finance] Tests: 73 passed, 73 total Test Suites: 6 passed, 6 total",
+    "ts": "2026-10-25T04:13:33Z"
+  },
+  {
+    "command": "psql seed-fixtures.sql (2 TEACHER users, wallets, paid subscriptions, scratch DB)",
+    "exitCode": 0,
+    "summary": "[p13r-seed] fixtures inserted",
+    "ts": "2026-10-25T04:14:50Z"
+  },
+  {
+    "command": "curl -N POST /api/v1/ai-chat/<chat>/stream (4a normal, through gateway, timed)",
+    "exitCode": 0,
+    "summary": "[p13r-4a-normal] stream run finished, see transcript",
+    "ts": "2026-10-25T04:15:13Z"
+  },
+  {
+    "command": "curl -N --max-time 1.3 POST /api/v1/ai-chat/<chat>/stream (4a client abort, through gateway)",
+    "exitCode": 0,
+    "summary": "[p13r-4a-abort] curl client exit 28 expected by --max-time; fake-ai log in transcript",
+    "ts": "2026-10-25T04:15:19Z"
+  },
+  {
+    "command": "POST /api/v1/ai-chat/<chat>/message after backdating t1 and dropping cache (4d-i read path)",
+    "exitCode": 0,
+    "summary": "[p13r-4d-i-read] message request sent",
+    "ts": "2026-10-25T04:15:43Z"
+  },
+  {
+    "command": "POST /ai-chat/<chat>/message second read after event (duplicate check)",
+    "exitCode": 0,
+    "summary": "[p13r-4d-i-dup] second read sent",
+    "ts": "2026-10-25T04:15:54Z"
+  },
+  {
+    "command": "[harness-invalid] zsh \\$PSQL word-split probe for p13r_t2 sweeper (backdate never ran)",
+    "exitCode": 0,
+    "summary": "INVALID harness run: zsh did not word-split the psql variable, so the backdate never applied and the poll read a stale row. Superseded by the sweeper-test.sh row.",
+    "ts": "2026-10-25T04:18:37Z"
+  },
+  {
+    "command": "sweeper-test.sh (4d-ii): backdate p13r_t2, no read, poll isActive, second 75 s window",
+    "exitCode": 0,
+    "summary": "[p13r-4d-ii-sweeper] flip_seconds=7 isActive=f outbox_rows=1 published=1 toTier=0 sentinel_deleted=yes second_sweep_rows=1",
+    "ts": "2026-10-25T04:20:53Z"
+  },
+  {
+    "command": "docker exec psql check: t1 isActive=false, outbox subscription rows=1 after second read",
+    "exitCode": 0,
+    "summary": "[p13r-4d-i-check] no duplicate event",
+    "ts": "2026-10-25T04:20:53Z"
+  },
+  {
+    "command": "redis-cli GET aichat:benefits:p13r_t2 after finance event",
+    "exitCode": 0,
+    "summary": "[p13r-4d-ii-key] key absent (deleted by ai-chat handler)",
+    "ts": "2026-10-25T04:20:53Z"
+  },
+  {
+    "command": "jest apps/gateway-service/src/pipeline/proxy-factory.spec.ts -t \"disconnects mid-stream\" with abortOnClientClose disabled (RED proof)",
+    "exitCode": 1,
+    "summary": "[f1-red] 1 failed (Expected true, Received false): the upstream keeps running without the fix; file restored",
+    "ts": "2026-10-25T04:22:13.903Z"
+  },
+  {
+    "command": "TZ=UTC jest apps/gateway-service/src --forceExit",
+    "exitCode": 0,
+    "summary": "[f1-unit] 20 suites, 202/202 passed with the F1 fix",
+    "ts": "2026-10-25T04:22:13.903Z"
+  },
+  {
+    "command": "yarn typecheck (examio-be, final tree)",
+    "exitCode": 0,
+    "summary": "[final-typecheck] 10 apps clean",
+    "ts": "2026-10-25T04:22:13.903Z"
+  },
+  {
+    "command": "TZ=UTC yarn test --forceExit (examio-be, final tree)",
+    "exitCode": 0,
+    "summary": "[final-unit] 225 suites passed, 1 skipped; 2314 tests passed, 6 skipped",
+    "ts": "2026-10-25T04:22:13.903Z"
+  },
+  {
+    "command": "yarn typecheck:gateway && yarn typecheck:ai-chat (after review fixes)",
+    "exitCode": 0,
+    "summary": "[review-fix-tsc] both clean",
+    "ts": "2026-10-25T04:27:56.758Z"
+  },
+  {
+    "command": "TZ=UTC jest apps/gateway-service/src apps/ai-chat-service/src --forceExit (after review fixes)",
+    "exitCode": 0,
+    "summary": "[review-fix-unit] 30 suites, 272/272 passed",
+    "ts": "2026-10-25T04:27:56.758Z"
+  },
+  {
+    "command": "node --test deploy/compose-topology.spec.cjs (after review fixes)",
+    "exitCode": 0,
+    "summary": "[review-fix-topology] 30/30 pass",
+    "ts": "2026-10-25T04:27:56.758Z"
+  }
+]

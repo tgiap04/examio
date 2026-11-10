@@ -4,6 +4,8 @@ export interface ExamRoom {
   description?: string;
   quizSetId: string;
   hostId: string;
+  /** Quiz set deleted in content: no new session can be created. */
+  sourceDeleted?: boolean;
   createdAt: string;
   updatedAt: string;
   // Relations (optional, có thể có khi fetch detail)
@@ -20,8 +22,7 @@ export interface ExamRoom {
     id: string;
     username: string;
     name?: string;
-    email?: string;
-  };
+  } | null;
   _count?: {
     examSessions?: number;
   };
@@ -46,6 +47,9 @@ export interface ExamSessionBasic {
   labelQuestionConfig?: any[] | null;
   shuffleQuestions?: boolean;
   distinctUserCount?: number;
+  // Snapshot drift (host views). snapshotOutdated null = content unavailable
+  snapshotOutdated?: boolean | null;
+  canRefreshSnapshot?: boolean;
   _count?: {
     participants?: number;
     examAttempts?: number;

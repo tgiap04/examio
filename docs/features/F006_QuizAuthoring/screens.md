@@ -5,6 +5,8 @@
 | Screen Name | What User Sees | What User Can Do |
 |-------------|----------------|------------------|
 | MyMaterialsPage / QuizSetGrid (SCR016/REG001) | Grid of user's quiz sets with title, question count, visibility badge, and last-modified date | Create new quiz set (opens modal), edit existing set (navigates to detail), delete set (confirmation dialog) |
+| ManageQuizSetDetailPage / ShareQuizSetModal (SCR022) | Sharing dialog: visibility, 6-digit code on/off and rotate, whitelist and code-unlocked user lists | Search and add users, remove users, remove a code-unlocked user, toggle public, enable/rotate/disable code |
+| QuizPracticePage (`/k/practice-quiz/:id`) | Code gate when the set needs a code; question navigator; after submit the score and per-question key and verdicts | Enter code, answer and mark questions (autosaved), submit, review result |
 | ManageExamPage (SCR021) | List of teacher's exam rooms and quiz sets | Create quiz set via modal (secondary path to quiz authoring) |
 | ManageQuizSetDetailPage (SCR022) | Quiz set header (title/description/visibility), LabelManager, QuestionList with inline editors | Edit set metadata, add/edit/delete labels, add/edit/delete questions, save changes |
 | HistoryPage / PDFHistoryList (SCR018/REG001) | Left panel listing AI-processed PDF uploads with status badges | View status, click to navigate to PDF history page |

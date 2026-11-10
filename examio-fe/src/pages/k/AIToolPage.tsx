@@ -7,7 +7,6 @@ import "driver.js/dist/driver.css";
 import type { RecentUpload } from "@/apis/aiApi";
 import { FlashcardGenerator } from "@/components/organisms/k/FlashcardGenerator";
 import { TestGenerator } from "@/components/organisms/k/TestGenerator";
-import { TeacherRoute } from "@/components/organisms/TeacherRoute";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -357,10 +356,8 @@ function AIGeneratorContent() {
 
 export default function AIToolPage() {
   return (
-    <TeacherRoute>
-      <Suspense fallback={<div>Loading...</div>}>
-        <AIGeneratorContent />
-      </Suspense>
-    </TeacherRoute>
+    <Suspense fallback={<div>Loading...</div>}>
+      <AIGeneratorContent />
+    </Suspense>
   );
 }

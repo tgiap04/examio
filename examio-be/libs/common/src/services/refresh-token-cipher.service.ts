@@ -27,9 +27,8 @@ const AUTH_TAG_LENGTH = 16;
  * needs anyway, and never anything about the plaintext's content.
  *
  * Shared via @examio/common (rather than living only in apps/auth-service)
- * because libs/common's SessionValidationMiddleware also needs to seal the
- * incoming cookie token before querying — and libs must not depend on app
- * code.
+ * so any service that needs to seal an incoming cookie token before querying
+ * can do so — libs must not depend on app code.
  */
 @Injectable()
 export class RefreshTokenCipherService {

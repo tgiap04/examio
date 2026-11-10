@@ -7,12 +7,15 @@ import {
   createExamSessionApi,
   updateExamSessionApi,
   deleteExamSessionApi,
+  refreshSnapshotApi,
   type CredentialsCreateExamSession,
   type CredentialsUpdateExamSession,
 } from "@/apis/examSessionApi";
 import { ExamSessionBasic } from "@/types/examRoom";
 import { storeCache, CacheTTL } from "@/lib/storeCache";
 import { toast } from "@/components/antd/toast";
+import { ApiRequestError } from "@/apis/api";
+import { createSessionErrorMessage } from "@/lib/exam-session/snapshot-banner";
 
 interface ExamRoomDetailStore {
   // Sessions data
@@ -40,6 +43,8 @@ interface ExamRoomDetailStore {
     credentials: CredentialsUpdateExamSession
   ) => Promise<boolean>;
   deleteSession: (id: string, examRoomId: string) => Promise<boolean>;
+  /** "locked" = 409 SNAPSHOT_LOCKED: the caller should refetch so the button disappears. */
+  refreshSnapshot: (id: string) => Promise<"ok" | "locked" | "error">;
   invalidateSessionsCache: (examRoomId: string) => void;
   reset: () => void;
 }
@@ -132,7 +137,8 @@ export const useExamRoomDetailStore = create<ExamRoomDetailStore>((set) => ({
       return true;
     } catch (error) {
       console.error("Error creating session:", error);
-      toast.error("Tạo phiên thi thất bại");
+      const code = error instanceof ApiRequestError ? error.code : undefined;
+      toast.error(createSessionErrorMessage(code) ?? "Tạo phiên thi thất bại");
       set({ mutationLoading: false });
       return false;
     }
@@ -209,6 +215,36 @@ export const useExamRoomDetailStore = create<ExamRoomDetailStore>((set) => ({
       toast.error("Xóa phiên thi thất bại");
       set({ mutationLoading: false });
       return false;
+    }
+  },
+
+  refreshSnapshot: async (id) => {
+    try {
+      set({ mutationLoading: true });
+      await refreshSnapshotApi(id);
+      storeCache.invalidate("examroom-sessions:");
+      storeCache.invalidate("examsessions:");
+      // The banner disappears locally; the next fetch confirms it from the server.
+      set((state) => ({
+        sessions: state.sessions.map((session) =>
+          session.id === id
+            ? { ...session, snapshotOutdated: false, canRefreshSnapshot: true }
+            : session
+        ),
+        mutationLoading: false,
+      }));
+      toast.success("Đã cập nhật đề cho phiên thi");
+      return "ok";
+    } catch (error) {
+      console.error("Error refreshing snapshot:", error);
+      set({ mutationLoading: false });
+      if (error instanceof ApiRequestError && error.status === 409) {
+        toast.error("Không thể cập nhật đề: phiên thi đã bắt đầu hoặc đã có bài làm");
+        storeCache.invalidate("examroom-sessions:");
+        return "locked";
+      }
+      toast.error("Cập nhật đề thất bại");
+      return "error";
     }
   },
 

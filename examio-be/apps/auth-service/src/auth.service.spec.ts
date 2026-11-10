@@ -1,5 +1,6 @@
 import { NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { AccountDisabledException } from './token/access-token.service';
 
 describe('AuthService refresh token flow', () => {
     const mockPrisma = {};
@@ -8,8 +9,8 @@ describe('AuthService refresh token flow', () => {
         comparePasswords: jest.fn(),
         hashPassword: jest.fn(),
     };
-    const mockEventPublisher = {
-        publishAuthEvent: jest.fn(),
+    const mockOutbox = {
+        add: jest.fn(),
     };
     // Refresh tokens are sealed at rest; the mock mirrors real seal/open
     // behavior deterministically enough for these tests, which assert on
@@ -30,14 +31,36 @@ describe('AuthService refresh token flow', () => {
         findBySessionId: jest.Mock;
         updateLastActivity: jest.Mock;
     };
-    let jwtService: {
-        sign: jest.Mock;
+    let accessTokens: {
+        issue: jest.Mock;
     };
     let generateIdService: {
         generateId: jest.Mock;
         generateSecureToken: jest.Mock;
     };
     let authService: AuthService;
+
+    const issued = (token = 'new-access-token') => ({
+        token,
+        user: {
+            id: 'user-123',
+            email: 'student@example.com',
+            username: 'student',
+            password: 'hashed-password',
+            role: 'STUDENT',
+            isSystemAdmin: false,
+        },
+        roles: ['STUDENT'],
+        permissions: ['flashcard:study'],
+    });
+
+    const liveSession = () => ({
+        id: 'session-row-id',
+        sessionId: 'session-123',
+        userId: 'user-123',
+        isActive: true,
+        expiresAt: new Date(Date.now() + 60_000),
+    });
 
     beforeEach(() => {
         userRepository = {
@@ -53,8 +76,8 @@ describe('AuthService refresh token flow', () => {
             updateLastActivity: jest.fn(),
         };
 
-        jwtService = {
-            sign: jest.fn(),
+        accessTokens = {
+            issue: jest.fn(),
         };
 
         generateIdService = {
@@ -69,12 +92,15 @@ describe('AuthService refresh token flow', () => {
             mockPrisma as any,
             userRepository as any,
             userSessionRepository as any,
-            jwtService as any,
+            accessTokens as any,
             mockMailService as any,
             mockPasswordService as any,
             generateIdService as any,
-            mockEventPublisher as any,
-            mockRefreshTokenCipher as any
+            mockOutbox as any,
+            mockRefreshTokenCipher as any,
+            { publish: jest.fn() } as any,
+            { invalidateUser: jest.fn(), revokeSession: jest.fn() } as any,
+            {} as any
         );
     });
 
@@ -86,14 +112,7 @@ describe('AuthService refresh token flow', () => {
             isActive: true,
             expiresAt: new Date(Date.now() + 60_000),
         });
-        userRepository.findByIdWithRelations.mockResolvedValue({
-            id: 'user-123',
-            email: 'student@example.com',
-            username: 'student',
-            password: 'hashed-password',
-            isAdmin: false,
-        });
-        jwtService.sign.mockReturnValue('new-access-token');
+        accessTokens.issue.mockResolvedValue(issued());
         generateIdService.generateSecureToken.mockReturnValue(
             'refresh-part-1_refresh-part-2'
         );
@@ -104,10 +123,11 @@ describe('AuthService refresh token flow', () => {
 
         const result = await authService.refreshAccessToken('old-refresh-token');
 
-        expect(jwtService.sign).toHaveBeenCalledWith({
-            userId: 'user-123',
-            sessionId: 'session-123',
-        });
+        expect(accessTokens.issue).toHaveBeenCalledWith(
+            'user-123',
+            'session-123',
+            undefined
+        );
         expect(
             userSessionRepository.rotateRefreshTokenIfCurrent
         ).toHaveBeenCalledWith(
@@ -123,6 +143,8 @@ describe('AuthService refresh token flow', () => {
                 email: 'student@example.com',
                 username: 'student',
             }),
+            roles: ['STUDENT'],
+            permissions: ['flashcard:study'],
         });
         expect(result.user.password).toBeUndefined();
     });
@@ -135,14 +157,7 @@ describe('AuthService refresh token flow', () => {
             isActive: true,
             expiresAt: new Date(Date.now() + 60_000),
         });
-        userRepository.findByIdWithRelations.mockResolvedValue({
-            id: 'user-123',
-            email: 'student@example.com',
-            username: 'student',
-            password: 'hashed-password',
-            isAdmin: false,
-        });
-        jwtService.sign.mockReturnValue('new-access-token');
+        accessTokens.issue.mockResolvedValue(issued());
         generateIdService.generateSecureToken.mockReturnValue(
             'refresh-part-1_refresh-part-2'
         );
@@ -166,14 +181,7 @@ describe('AuthService refresh token flow', () => {
             isActive: true,
             expiresAt: new Date(Date.now() + 60_000),
         });
-        userRepository.findByIdWithRelations.mockResolvedValue({
-            id: 'user-123',
-            email: 'student@example.com',
-            username: 'student',
-            password: 'hashed-password',
-            isAdmin: false,
-        });
-        jwtService.sign.mockReturnValue('new-access-token');
+        accessTokens.issue.mockResolvedValue(issued());
         generateIdService.generateSecureToken.mockReturnValue(
             'refresh-part-1_refresh-part-2'
         );
@@ -215,11 +223,53 @@ describe('AuthService refresh token flow', () => {
             isActive: true,
             expiresAt: new Date(Date.now() + 60_000),
         });
-        userRepository.findByIdWithRelations.mockResolvedValue(null);
+        accessTokens.issue.mockRejectedValue(
+            new NotFoundException('User not found')
+        );
 
         await expect(
             authService.refreshAccessToken('refresh-token')
         ).rejects.toThrow(new NotFoundException('User not found'));
+    });
+
+    it('refuses to refresh a banned or deleted account: 401 ACCOUNT_DISABLED, session deactivated, no rotation', async () => {
+        userSessionRepository.findByRefreshToken.mockResolvedValue(liveSession());
+        userSessionRepository.findBySessionId.mockResolvedValue({
+            id: 'session-row-id',
+        });
+        accessTokens.issue.mockRejectedValue(new AccountDisabledException());
+
+        const error = await authService
+            .refreshAccessToken('refresh-token')
+            .catch((e) => e);
+
+        expect(error).toBeInstanceOf(UnauthorizedException);
+        expect(error.getResponse()).toMatchObject({ code: 'ACCOUNT_DISABLED' });
+        expect(userSessionRepository.findBySessionId).toHaveBeenCalledWith(
+            'session-123'
+        );
+        expect(userSessionRepository.deactivateSession).toHaveBeenCalledWith(
+            'session-row-id'
+        );
+        expect(
+            userSessionRepository.rotateRefreshTokenIfCurrent
+        ).not.toHaveBeenCalled();
+    });
+
+    it('reloads the account on every refresh (role/av come from the DB, not the old token)', async () => {
+        userSessionRepository.findByRefreshToken.mockResolvedValue(liveSession());
+        accessTokens.issue
+            .mockResolvedValueOnce({ ...issued('t1'), roles: ['STUDENT'] })
+            .mockResolvedValueOnce({ ...issued('t2'), roles: ['TEACHER'] });
+        generateIdService.generateSecureToken.mockReturnValue('next');
+        userSessionRepository.rotateRefreshTokenIfCurrent.mockResolvedValue('next');
+
+        const first = await authService.refreshAccessToken('r');
+        const second = await authService.refreshAccessToken('r');
+
+        expect(accessTokens.issue).toHaveBeenCalledTimes(2);
+        expect(first.roles).toEqual(['STUDENT']);
+        expect(second.roles).toEqual(['TEACHER']);
     });
 
     describe('syncRefreshTokenBySession', () => {

@@ -1,0 +1,55 @@
+PASS | 1 landing T -> /k/ai-tool | /k/ai-tool
+PASS | 1 landing S -> /k/my-materials | /k/my-materials
+PASS | 1 landing A -> /admin | /admin
+PASS | 2 sidebar S exact set | got=["/k/word-family","/k/my-materials","/k/my-exams","/k/study-room","/k/history/exam"]
+PASS | 2 sidebar S has no admin item
+PASS | 2 sidebar T exact set | got=["/k/ai-tool","/k/word-family","/k/manage-exam","/k/flash-card","/k/manage-exam-room","/k/study-room","/k/history"]
+PASS | 2 sidebar T has no admin item
+PASS | 2 sidebar A exact set | got=["/k/word-family","/k/my-materials","/k/my-exams","/k/study-room","/k/history/exam","/admin"]
+PASS | 3 forbidden STUDENT /k/ai-tool -> /403 | /403
+PASS | 3 forbidden STUDENT /k/manage-exam -> /403 | /403
+PASS | 3 forbidden STUDENT /k/manage-exam-room -> /403 | /403
+PASS | 3 forbidden STUDENT /admin -> /403 | /403
+PASS | 3 forbidden STUDENT /admin/roles -> /403 | /403
+PASS | 3 forbidden TEACHER /k/my-exams -> /403 | /403
+PASS | 3 forbidden TEACHER /k/history/exam -> /403 | /403
+PASS | 3 forbidden TEACHER /admin -> /403 | /403
+PASS | 3 forbidden ADMIN /k/ai-tool -> /403 | /403
+PASS | 4 click-all S: zero 403 in network log | clicked=/k/word-family:/k/word-family | /k/my-materials:/k/my-materials | /k/my-exams:/k/my-exams | /k/study-room:/k/study-room | /k/history/exam:/k/history/exam 403s=0
+PASS | 4 STUDENT /k/history never calls PDF history (/ai/recent-uploads)
+PASS | 4 click-all T: zero 403 in network log | clicked=/k/ai-tool:/k/ai-tool | /k/word-family:/k/word-family | /k/manage-exam:/k/manage-exam | /k/flash-card:/k/flash-card | /k/manage-exam-room:/k/manage-exam-room | /k/study-room:/k/study-room | /k/history:/k/history 403s=0
+PASS | 4 click-all A: zero 403 in network log | clicked=/k/word-family:/k/word-family | /k/my-materials:/k/my-materials | /k/my-exams:/k/my-exams | /k/study-room:/k/study-room | /k/history/exam:/k/history/exam | /admin:/admin 403s=0
+PASS | 6 student: no 'Tạo phòng' on study-room
+PASS | 6 teacher: 'Tạo phòng' visible
+PASS | 6 student: no wallet balance on profile
+PASS | 6 student landing pricing CTA 'Gói dành cho giáo viên'
+PASS | 6 teacher landing pricing: no 'Gói dành cho giáo viên'
+NOTE | 6 word-family 'Sinh bằng AI' hidden for STUDENT | no word-family data seeded: not live-verified (static + unit test cover it)
+NOTE | 6 TEACHER exam session start notice | needs a seeded exam session: not live-verified in this run (static guard + unit coverage only)
+PASS | 5 admin promotes STUDENT via /admin/roles | ok
+PASS | 5 promoted STUDENT sidebar becomes teacher set | ["/k/ai-tool","/k/word-family","/k/manage-exam","/k/flash-card","/k/manage-exam-room","/k/study-room","/k/history"]
+PASS | 5 first stale call is 401 TOKEN_STALE | GET /word-family/categories 401 TOKEN_STALE | POST /auth/refresh 201 | GET /word-family/categories 304
+PASS | 5 exactly one /auth/refresh after promotion | refresh=1
+PASS | 5 no 401 after the refresh
+PASS | 5 no 403 during promotion flow
+PASS | 5 no full page reload (marker unchanged)
+PASS | 5 admin demotes back to STUDENT | ok
+PASS | 5 demoted sidebar back to STUDENT set (no teacher items) | ["/k/word-family","/k/my-materials","/k/my-exams","/k/study-room","/k/history/exam"]
+FAIL | 5 demotion: exactly one refresh, TOKEN_STALE seen | refresh=2
+PASS | 7 student is in the study room page | /k/study-room/6ad8b13a5d17e8ec4bd2077a
+PASS | 7 socket connected (WebSocket created) | ws.created=18
+PASS | 7 admin promotes the in-room student | ok
+PASS | 7 server emitted auth:reauth on the socket | 42["auth:reauth",{"reason":"AUTHZ_CHANGED"}] | 41 | 0{"sid":"HCtoO4ZL-dRJWaqaAAAD","upgrades":[],"pingInterval":25000,"pingTimeout":20000,"maxPayload":1000000} | 40{"sid":"2v1InGWBWB9jo8VoAAAE"} | 42[
+PASS | 7 exactly one refresh for the socket re-auth | refresh=1 reconnects=1
+PASS | 7 socket reconnected once | new=1
+PASS | 7 still in the room (no navigation away) | /k/study-room/6ad8b13a5d17e8ec4bd2077a
+PASS | 7 restore student role after socket test | ok
+PASS | 8 admin opens /admin | /admin
+PASS | 8 admin opens /admin/roles (Phân quyền)
+PASS | 8 admin: zero 403 on admin screens | 403s=0
+PASS | 9 STUDENT: no permissions/roles arrays in web storage | keys=sidebar_collapsed,auth_return_to,examio-i18next.locale,device_id hits=
+PASS | 9 TEACHER: no permissions/roles arrays in web storage | keys=sidebar_collapsed,examio:tour:ai-tool:v1,examio-i18next.locale,device_id hits=
+PASS | 9 ADMIN: no permissions/roles arrays in web storage | keys=sidebar_collapsed,examio-i18next.locale,device_id hits=
+PASS | no request left localhost (non-local attempts were CDP-failed, none sent) | blocked_attempts=0 hosts=
+
+SUMMARY pass=50 fail=1 note=2

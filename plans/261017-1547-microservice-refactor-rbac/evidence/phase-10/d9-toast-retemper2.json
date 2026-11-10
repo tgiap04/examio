@@ -1,0 +1,11 @@
+{
+  "ts": "2026-10-22T18:39:33.278Z",
+  "fails": [],
+  "afterSixSeconds": 0,
+  "toastNodes": 1,
+  "texts": [
+    "Bạn không có quyền thực hiện thao tác này"
+  ],
+  "denied": "rejected status=403 msg=Bạn không có quyền thực hiện thao tác này",
+  "blockedOutside": 3
+}

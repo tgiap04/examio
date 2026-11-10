@@ -8,24 +8,22 @@ import {
     Inject,
     OnModuleInit,
 } from '@nestjs/common';
-import { ClientGrpc } from '@nestjs/microservices';
-import { JwtService } from '@nestjs/jwt';
-import { User } from '@prisma/client';
+import { Prisma, User } from './prisma';
 import * as crypto from 'crypto';
 
 // Shared libs imports
-import { PrismaService } from '@examio/database';
+import { PrismaService } from './prisma';
 import {
     MailService,
     PasswordService,
     GenerateIdService,
-    sanitizeUser,
     generateCode,
-    WALLET_SERVICE,
-    EventPublisherService,
-    EventType,
     RefreshTokenCipherService,
 } from '@examio/common';
+import { OutboxService } from '@examio/messaging';
+import { sanitizeUser } from './utils/sanitize-user';
+import { permissionsOf, type Permission, type Role } from '@examio/auth-jwt';
+import type { UserRegistered } from '@examio/contracts/generated/examio/events/v1/auth_events';
 
 // Local imports
 import { LoginDto } from './dto/login.dto';
@@ -33,6 +31,25 @@ import { RegisterDto } from './dto/register.dto';
 import { sanitizeUtmSource } from './utils/utm-source.util';
 import { UserRepository } from './repositories/user.repository';
 import { UserSessionRepository } from './devices/repositories/user-session.repository';
+import {
+    AccessTokenService,
+    AccountDisabledException,
+} from './token/access-token.service';
+import { GatewayControlClient, sessionRevokeExp } from './clients/gateway-control.client';
+import { SessionRevoker } from './devices/session-revoker.service';
+import { AuthzChangedPublisher } from './roles/authz-changed.publisher';
+
+/** Result of an OAuth login; without device info no session (and no token) exists yet. */
+export interface OAuthLoginResult {
+    token?: string;
+    user: ReturnType<typeof sanitizeUser>;
+    roles?: Role[];
+    permissions?: Permission[];
+    success: boolean;
+    sessionId?: string;
+    refreshToken?: string;
+    deviceId?: string;
+}
 
 export interface DeviceInfo {
     deviceId: string;
@@ -48,25 +65,45 @@ export class AuthService {
         private readonly prisma: PrismaService,
         private readonly userRepository: UserRepository,
         private readonly userSessionRepository: UserSessionRepository,
-        private readonly jwtService: JwtService,
+        private readonly accessTokens: AccessTokenService,
         private readonly mailService: MailService,
         private readonly passwordService: PasswordService,
         private readonly generateIdService: GenerateIdService,
-        private readonly eventPublisher: EventPublisherService,
-        private readonly refreshTokenCipher: RefreshTokenCipherService
+        private readonly outbox: OutboxService,
+        private readonly refreshTokenCipher: RefreshTokenCipherService,
+        private readonly authzPublisher: AuthzChangedPublisher,
+        private readonly gatewayControl: GatewayControlClient,
+        private readonly sessionRevoker: SessionRevoker
     ) {}
 
     /**
-     * Sign an access token. When `sessionId` is known, it is embedded as a
-     * claim so AuthGuard/AdminGuard can look up the UserSession and reject
-     * the token immediately once that session is deactivated (logout,
-     * "logout other devices", password reset) instead of waiting for the
-     * JWT to expire naturally.
+     * Issues the RS256 access token for an existing session (roles + `av` read
+     * under `FOR SHARE`, see AccessTokenService). A banned/deleted account is
+     * rejected with 401 ACCOUNT_DISABLED and the session it came with is
+     * deactivated, so the refresh token cannot be replayed.
      */
-    signAccessToken(userId: string, sessionId?: string): string {
-        return this.jwtService.sign(
-            sessionId ? { userId, sessionId } : { userId }
-        );
+    async issueAccess(
+        userId: string,
+        sessionId: string,
+        include?: Prisma.UserInclude
+    ): Promise<{ token: string; user: User; roles: Role[]; permissions: Permission[] }> {
+        try {
+            return await this.accessTokens.issue(userId, sessionId, include);
+        } catch (error) {
+            if (error instanceof AccountDisabledException) {
+                await this.deactivateBySessionId(sessionId);
+            }
+            throw error;
+        }
+    }
+
+    private async deactivateBySessionId(sessionId: string): Promise<void> {
+        try {
+            const session = await this.userSessionRepository.findBySessionId(sessionId);
+            if (session) await this.userSessionRepository.deactivateSession(session.id);
+        } catch (error) {
+            console.error('Error deactivating session of a disabled account:', error);
+        }
     }
 
     /**
@@ -82,7 +119,7 @@ export class AuthService {
         return crypto.timingSafeEqual(expectedBuf, providedBuf);
     }
 
-    async login(loginDto: LoginDto, deviceInfo?: DeviceInfo) {
+    async login(loginDto: LoginDto, deviceInfo: DeviceInfo) {
         const { credential, password } = loginDto;
         if (!credential || !password) {
             throw new BadRequestException('Thông tin đăng nhập không hợp lệ');
@@ -105,31 +142,7 @@ export class AuthService {
                     'Thông tin đăng nhập không hợp lệ'
                 );
             }
-            try {
-                // Extract device info from request if available
-                let sessionId: string | undefined;
-                let refreshToken: string | undefined;
-                if (deviceInfo) {
-                    const session = await this.createSession(
-                        user.id,
-                        deviceInfo
-                    );
-                    sessionId = session.sessionId;
-                    refreshToken = session.refreshToken;
-                }
-                const token = this.signAccessToken(user.id, sessionId);
-
-                return {
-                    token,
-                    user: sanitizeUser(user),
-                    success: true,
-                    sessionId,
-                    refreshToken,
-                    deviceId: deviceInfo?.deviceId,
-                };
-            } catch (error) {
-                throw error;
-            }
+            return await this.startSession(user.id, deviceInfo);
         } catch (error) {
             if (
                 error instanceof NotFoundException ||
@@ -144,7 +157,19 @@ export class AuthService {
         }
     }
 
-    async register(registerDto: RegisterDto, deviceInfo?: DeviceInfo) {
+    /** Payload of `auth.user.registered` (proto `examio.events.v1.UserRegistered`). */
+    private userRegisteredData(
+        user: User
+    ): Omit<UserRegistered, 'utmSource'> & { utmSource: string | null } {
+        return {
+            userId: user.id,
+            email: user.email,
+            username: user.username,
+            utmSource: user.utmSource ?? null,
+        };
+    }
+
+    async register(registerDto: RegisterDto, deviceInfo: DeviceInfo) {
         const { username, email, password } = registerDto;
         const utmSource = sanitizeUtmSource(registerDto.utmSource);
         if (!username || !email || !password) {
@@ -179,33 +204,16 @@ export class AuthService {
                     },
                 });
 
-                // Create default subscription
-                await tx.userSubscription.create({
-                    data: {
-                        id: this.generateIdService.generateId(),
-                        userId: user.id,
-                        tier: 0,
-                        billingCycle: 'monthly',
-                        isActive: false,
-                    },
-                });
+                // STUDENT by DB default. No wallet/subscription here: finance
+                // provisions those only when the user becomes a TEACHER.
+                await this.outbox.add(
+                    tx,
+                    'auth.user.registered',
+                    this.userRegisteredData(user)
+                );
 
                 return user;
             });
-
-            // Publish USER_CREATED event for other services (fire-and-forget to avoid timeout)
-            this.eventPublisher
-                .publishAuthEvent(EventType.USER_CREATED, {
-                    userId: newUser.id,
-                    email: newUser.email,
-                    username: newUser.username,
-                })
-                .catch((error) => {
-                    console.error(
-                        `Failed to publish USER_CREATED event for user ${newUser.id}:`,
-                        error
-                    );
-                });
 
             // Send welcome email
             this.mailService
@@ -226,29 +234,10 @@ export class AuthService {
                     );
                 });
 
-            // Auto-login: create session first, then sign the token so it
-            // can carry the sessionId claim.
-            let sessionId: string | undefined;
-            let refreshToken: string | undefined;
-
-            if (deviceInfo) {
-                const session = await this.createSession(
-                    newUser.id,
-                    deviceInfo
-                );
-                sessionId = session.sessionId;
-                refreshToken = session.refreshToken;
-            }
-            const token = this.signAccessToken(newUser.id, sessionId);
-
+            // Auto-login: the session exists first so the token carries its sid.
             return {
                 message: 'Đăng ký thành công',
-                token,
-                user: sanitizeUser(newUser),
-                success: true,
-                sessionId,
-                refreshToken,
-                deviceId: deviceInfo?.deviceId,
+                ...(await this.startSession(newUser.id, deviceInfo)),
             };
         } catch (error) {
             if (error instanceof ConflictException) {
@@ -259,8 +248,20 @@ export class AuthService {
         }
     }
 
-    async sendVerificationEmail(user: User) {
+    /** Loads the full account of a token principal (claims carry only id/roles/sid). */
+    private async loadUser(userId: string): Promise<User> {
+        const user = await this.userRepository.findByIdWithRelations(
+            userId,
+            [],
+            false
+        );
+        if (!user) throw new NotFoundException('Người dùng không tồn tại');
+        return user;
+    }
+
+    async sendVerificationEmail(userId: string) {
         try {
+            const user = await this.loadUser(userId);
             if (user.isVerified) {
                 return { message: 'Tài khoản đã được xác minh' };
             }
@@ -300,6 +301,7 @@ export class AuthService {
 
             return { message: 'Email xác minh đã được gửi' };
         } catch (error) {
+            if (error instanceof NotFoundException) throw error;
             console.log(error.message);
             throw new InternalServerErrorException(
                 'Gửi email không thành công'
@@ -307,7 +309,11 @@ export class AuthService {
         }
     }
 
-    async verifyAccount(userId: string, code: string) {
+    /**
+     * Verifies the email, then re-issues the access token for the SAME session
+     * with `email_verified=true` (the old token still says false).
+     */
+    async verifyAccount(userId: string, code: string, sessionId: string) {
         try {
             const verificationCode =
                 await this.prisma.verifyAccountCode.findUnique({
@@ -336,7 +342,8 @@ export class AuthService {
                 where: { userId },
             });
 
-            return { message: 'Tài khoản đã được xác minh thành công' };
+            const { token } = await this.issueAccess(userId, sessionId);
+            return { message: 'Tài khoản đã được xác minh thành công', token };
         } catch (error) {
             if (
                 error instanceof NotFoundException ||
@@ -431,22 +438,11 @@ export class AuthService {
                 throw new BadRequestException('Mã đặt lại mật khẩu đã hết hạn');
             }
 
-            await this.userRepository.update(
-                user.id,
-                {
-                    password:
-                        await this.passwordService.hashPassword(newPassword),
-                },
-                user.id
-            );
-
-            await this.prisma.resetPasswordCode.delete({
-                where: { userId: user.id },
-            });
+            await this.rotatePassword(user, newPassword);
 
             // Invalidate all existing sessions so a session hijacked before
             // the reset cannot survive the credential rotation.
-            await this.userSessionRepository.deactivateAllSessions(user.id);
+            await this.sessionRevoker.revokeAll(user.id);
 
             return { message: 'Mật khẩu đã được đặt lại thành công' };
         } catch (error) {
@@ -462,8 +458,9 @@ export class AuthService {
         }
     }
 
-    async sendCodeToChangePassword(user: User) {
+    async sendCodeToChangePassword(userId: string) {
         try {
+            const user = await this.loadUser(userId);
             const code = generateCode(6);
 
             await this.prisma.resetPasswordCode.upsert({
@@ -499,6 +496,7 @@ export class AuthService {
 
             return { message: 'Mã xác minh đã được gửi đến email của bạn' };
         } catch (error) {
+            if (error instanceof NotFoundException) throw error;
             console.log(error.message);
             throw new InternalServerErrorException(
                 'Gửi mã xác minh không thành công'
@@ -507,12 +505,13 @@ export class AuthService {
     }
 
     async changePassword(
-        user: User,
+        userId: string,
         code: string,
         currentPassword: string,
         newPassword: string
     ) {
         try {
+            const user = await this.loadUser(userId);
             if (user.password) {
                 const isPasswordValid =
                     await this.passwordService.comparePasswords(
@@ -542,22 +541,11 @@ export class AuthService {
                 throw new BadRequestException('Mã xác minh đã hết hạn');
             }
 
-            await this.userRepository.update(
-                user.id,
-                {
-                    password:
-                        await this.passwordService.hashPassword(newPassword),
-                },
-                user.id
-            );
-
-            await this.prisma.resetPasswordCode.delete({
-                where: { userId: user.id },
-            });
+            await this.rotatePassword(user, newPassword);
 
             // Invalidate all existing sessions so a session hijacked before
             // the change cannot survive the credential rotation.
-            await this.userSessionRepository.deactivateAllSessions(user.id);
+            await this.sessionRevoker.revokeAll(user.id);
 
             return { message: 'Mật khẩu đã được đổi thành công' };
         } catch (error) {
@@ -573,13 +561,45 @@ export class AuthService {
         }
     }
 
+    /**
+     * Password update + reset-code delete + `authzVersion` bump + outbox
+     * `authz_changed(reason:'password')` in ONE transaction, so every token
+     * signed before the change is detectably stale.
+     */
+    private async rotatePassword(user: User, newPassword: string): Promise<void> {
+        const password = await this.passwordService.hashPassword(newPassword);
+        const authzVersion = await this.prisma.$transaction(async (tx) => {
+            const updated = await tx.user.update({
+                where: { id: user.id },
+                data: {
+                    password,
+                    authzVersion: { increment: 1 },
+                    updatedBy: user.id,
+                },
+                select: {
+                    id: true,
+                    authzVersion: true,
+                    role: true,
+                    isSystemAdmin: true,
+                    isBanned: true,
+                },
+            });
+            await tx.resetPasswordCode.delete({ where: { userId: user.id } });
+            await this.authzPublisher.publish(tx, updated, 'password');
+            return updated.authzVersion;
+        });
+        await this.userRepository.invalidateCaches(user);
+        // Fast path; the committed authz_changed(reason:'password') event is the durable one.
+        await this.gatewayControl.invalidateUser(user.id, authzVersion);
+    }
+
     private async handleOAuthLogin(
         email: string,
         username: string,
         avatar?: string,
         deviceInfo?: DeviceInfo,
         utmSource?: string | null
-    ) {
+    ): Promise<OAuthLoginResult> {
         let existingUser = await this.userRepository.findByEmail(email, false);
 
         if (!existingUser) {
@@ -597,57 +617,42 @@ export class AuthService {
                     },
                 });
 
-                await tx.userSubscription.create({
-                    data: {
-                        id: this.generateIdService.generateId(),
-                        userId: user.id,
-                        tier: 0,
-                        billingCycle: 'monthly',
-                        isActive: false,
-                    },
-                });
+                await this.outbox.add(
+                    tx,
+                    'auth.user.registered',
+                    this.userRegisteredData(user)
+                );
 
                 return user;
             });
-
-            // Publish USER_CREATED event for wallet creation and other services (fire-and-forget to avoid timeout)
-            this.eventPublisher
-                .publishAuthEvent(EventType.USER_CREATED, {
-                    userId: existingUser.id,
-                    email: existingUser.email,
-                    username: existingUser.username,
-                })
-                .catch((error) => {
-                    console.error(
-                        `Failed to publish USER_CREATED event for user ${existingUser?.id}:`,
-                        error
-                    );
-                });
         }
 
-        // Create session for OAuth login first so the access token can carry
-        // the sessionId claim. When deviceInfo is unavailable at this call
-        // site (e.g. the passport Google strategy), the session is created
-        // later by the controller, which re-signs the token at that point.
-        let sessionId: string | undefined;
-        let refreshToken: string | undefined;
-        if (deviceInfo) {
-            const session = await this.createSession(
-                existingUser.id,
-                deviceInfo
-            );
-            sessionId = session.sessionId;
-            refreshToken = session.refreshToken;
+        // The access token needs a session id. Without deviceInfo (the
+        // passport Google strategy) the controller creates the session and
+        // calls issueAccess() itself.
+        if (!deviceInfo) {
+            return { user: sanitizeUser(existingUser), success: true };
         }
-        const token = this.signAccessToken(existingUser.id, sessionId);
+        return this.startSession(existingUser.id, deviceInfo);
+    }
 
+    /**
+     * Creates the session, then issues the access token for it. Shared by
+     * login, register and OAuth; the response carries `roles`/`permissions`
+     * next to `user`.
+     */
+    private async startSession(userId: string, deviceInfo: DeviceInfo) {
+        const session = await this.createSession(userId, deviceInfo);
+        const issued = await this.issueAccess(userId, session.sessionId);
         return {
-            token,
-            user: sanitizeUser(existingUser),
+            token: issued.token,
+            user: sanitizeUser(issued.user),
+            roles: issued.roles,
+            permissions: issued.permissions,
             success: true,
-            sessionId,
-            refreshToken,
-            deviceId: deviceInfo?.deviceId,
+            sessionId: session.sessionId,
+            refreshToken: session.refreshToken,
+            deviceId: deviceInfo.deviceId,
         };
     }
 
@@ -655,7 +660,7 @@ export class AuthService {
         user: any,
         deviceInfo?: DeviceInfo,
         utmSource?: string | null
-    ) {
+    ): Promise<OAuthLoginResult> {
         const { email, picture } = user;
         const username = email.split('@')[0];
         return this.handleOAuthLogin(
@@ -671,7 +676,7 @@ export class AuthService {
         credential: string,
         deviceInfo?: DeviceInfo,
         utmSource?: string | null
-    ) {
+    ): Promise<OAuthLoginResult> {
         const { OAuth2Client } = await import('google-auth-library');
         const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
         const ticket = await client.verifyIdToken({
@@ -694,34 +699,43 @@ export class AuthService {
     }
 
 
-    async getUser(user: User) {
+    /** `roles`/`permissions` mirror the verified token, i.e. what the APIs will enforce. */
+    async getUser(userId: string, roles: Role[]) {
+        // Fresh read: the account only. Wallet and subscription are finance's
+        // data (GET /wallet/info); /auth/me never depends on finance.
         const foundUser = await this.userRepository.findByIdWithRelations(
-            user.id,
-            ['wallet', 'subscription'],
-            false // Always get fresh data - wallet balance may change from other services
+            userId,
+            [],
+            false
         );
         if (!foundUser) {
             throw new NotFoundException('Người dùng không tồn tại');
         }
-        return { user: sanitizeUser(foundUser) };
+        return {
+            user: sanitizeUser(foundUser),
+            roles,
+            permissions: permissionsOf(roles),
+        };
     }
 
     async logout(sessionId: string): Promise<void> {
         try {
-            const session =
-                await this.userSessionRepository.findBySessionId(sessionId);
-            if (session) {
-                await this.userSessionRepository.deactivateSession(session.id);
-            }
+            // Deactivation + auth.session.revoked event in one transaction, then the gRPC fast path.
+            await this.sessionRevoker.revokeBySid(sessionId);
         } catch (error) {
-            console.error('Error deactivating session:', error);
-            // Don't throw error - allow logout to proceed even if session cleanup fails
+            console.error('Error revoking session:', error);
+            // Logout must still succeed; the token must still stop working at the edge.
+            await this.gatewayControl.revokeSession(sessionId, sessionRevokeExp());
         }
     }
 
-    async refreshAccessToken(
-        refreshToken: string
-    ): Promise<{ token: string; refreshToken: string; user: any }> {
+    async refreshAccessToken(refreshToken: string): Promise<{
+        token: string;
+        refreshToken: string;
+        user: any;
+        roles: Role[];
+        permissions: Permission[];
+    }> {
         // Find session by refresh token
         const session =
             await this.userSessionRepository.findByRefreshToken(refreshToken);
@@ -736,19 +750,17 @@ export class AuthService {
             throw new UnauthorizedException('Session expired');
         }
 
-        // Get user
-        const user = await this.userRepository.findByIdWithRelations(
+        // Reload the account and sign in one FOR SHARE transaction: the token
+        // carries the CURRENT role/admin flag/av, and a banned or deleted
+        // account is refused (401 ACCOUNT_DISABLED) with its session revoked.
+        const { token, user, roles, permissions } = await this.issueAccess(
             session.userId,
-            []
+            session.sessionId
         );
-        if (!user) {
-            throw new NotFoundException('User not found');
-        }
 
-        // Generate new access token. rotateRefreshTokenIfCurrent trả về refresh
+        // rotateRefreshTokenIfCurrent trả về refresh
         // token hợp lệ để cấp lại: token mới nếu rotate thành công, hoặc token
         // hiện hành nếu request đến trong grace window (tab khác đã rotate).
-        const token = this.signAccessToken(user.id, session.sessionId);
         const nextRefreshToken = this.generateRefreshToken();
         const effectiveRefreshToken =
             await this.userSessionRepository.rotateRefreshTokenIfCurrent(
@@ -765,6 +777,8 @@ export class AuthService {
             token,
             refreshToken: effectiveRefreshToken,
             user: sanitizeUser(user),
+            roles,
+            permissions,
         };
     }
 

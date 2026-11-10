@@ -12,27 +12,17 @@ export * from './services/image-preprocessing.service';
 export * from './services/turnstile.service';
 export * from './services/refresh-token-cipher.service';
 
-// Guards
-export * from './guard/auth.guard';
-export * from './guard/admin.guard';
-export * from './guard/optional-auth.guard';
+// Guards (authn/authz guards live in @examio/auth-jwt)
 export * from './guard/google-auth.guard';
 
-// Auth Module (includes JwtModule + Guards)
-export * from './auth/auth.module';
-
-// gRPC Clients
-export * from './grpc/grpc-clients.module';
-export * from './grpc/r2-client.service';
-
-// Events (Pub/Sub)
-export * from './events';
-
 // Utils
+export * from './utils/access-ttl';
 export * from './utils/cookie-config';
 export * from './utils/generate-code';
 export * from './utils/sanitize-filename';
-export * from './utils/sanitize-user';
+export * from './utils/r2-key-from-url';
+export * from './utils/r2-owned-key';
+export * from './utils/wallet-cache';
 
 // DTOs
 export * from './dto/authenticated-request.dto';

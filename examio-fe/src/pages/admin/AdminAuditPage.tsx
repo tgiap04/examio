@@ -19,12 +19,15 @@ const ACTION_LABELS: Record<string, string> = {
   "admin.user.update": "Cập nhật thông tin",
 };
 
-const ACTION_OPTIONS = Object.keys(ACTION_LABELS);
+// grant/revoke are no longer emitted: admin-flag changes live in the role-change log (/admin/roles).
+// Their labels stay so historical rows still read well, but they are not offered as filters.
+const LEGACY_ACTIONS = new Set(["admin.user.grant", "admin.user.revoke"]);
+const ACTION_OPTIONS = Object.keys(ACTION_LABELS).filter((a) => !LEGACY_ACTIONS.has(a));
 
 export default function AdminAuditPage() {
   const { t } = useTranslation("admin");
   const [adminOptions, setAdminOptions] = useState<UserRow[]>([]);
-  const [adminId, setAdminId] = useState<number | undefined>(undefined);
+  const [adminId, setAdminId] = useState<string | undefined>(undefined);
   const [action, setAction] = useState<string | undefined>(undefined);
   const [dateRange, setDateRange] = useState<[string, string] | null>(null);
   const [filterToken, setFilterToken] = useState(0);

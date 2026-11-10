@@ -1,0 +1,68 @@
+{
+  "at": "2026-10-21T18:14:31.133Z",
+  "results": [
+    {
+      "name": "R8 setup: student login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R8 setup: admin login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R8-4 setup: in room, socket connected",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R8-4: socket dropped while offline (no auth:reauth sent)",
+      "ok": false,
+      "extra": ""
+    },
+    {
+      "name": "R8-4: student promoted while disconnected (token ages)",
+      "ok": true,
+      "extra": "200"
+    },
+    {
+      "name": "R8-4: socket reconnects after going online (namespace connect)",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R8-4: exactly one refresh after reconnect (the stale-upgrade recovery)",
+      "ok": true,
+      "extra": "refresh=201"
+    },
+    {
+      "name": "R8-4: room snapshot restored, same URL, no /login, no page reload",
+      "ok": true,
+      "extra": "path=/k/study-room/6ad8fed2644bc93e6064f77f ws errors=0"
+    },
+    {
+      "name": "R8-5: transport give-up toast appears after the capped retries",
+      "ok": false,
+      "extra": "no toast in 300 s"
+    },
+    {
+      "name": "R8-5: at most one refresh attempt for the reconnect cycle (no refresh storm)",
+      "ok": true,
+      "extra": "refresh requests during outage=0 failed=0"
+    },
+    {
+      "name": "R8-5: silence for 60 s after the toast (zero refresh, zero socket attempts)",
+      "ok": true,
+      "extra": "refresh=0 ws=0"
+    },
+    {
+      "name": "R8-5: still on the room URL, not /login",
+      "ok": true,
+      "extra": "/k/study-room/6ad8fed2644bc93e6064f77f"
+    }
+  ],
+  "refreshReq": 1,
+  "refreshFailed": 0,
+  "toasts": 0
+}

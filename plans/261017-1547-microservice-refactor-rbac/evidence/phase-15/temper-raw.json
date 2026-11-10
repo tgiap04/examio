@@ -1,0 +1,2606 @@
+[
+  {
+    "command": "temper-1: venv-clone-ai-service",
+    "exitCode": 0,
+    "summary": "exit 0 in 6s; last: ",
+    "ts": "2026-10-23T21:21:51.220Z"
+  },
+  {
+    "command": "temper-1: proto-lint",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: ",
+    "ts": "2026-10-23T21:21:52.590Z"
+  },
+  {
+    "command": "temper-1: buf-breaking-vs-head",
+    "exitCode": 0,
+    "summary": "exit 0 in 2s; last: ",
+    "ts": "2026-10-23T21:21:54.482Z"
+  },
+  {
+    "command": "temper-1: proto-gen",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: ",
+    "ts": "2026-10-23T21:21:55.107Z"
+  },
+  {
+    "command": "temper-1: prisma-generate-all",
+    "exitCode": 0,
+    "summary": "exit 0 in 4s; last: \u2714 Generated Prisma Client (6.19.3) to ./apps/vocabulary-service/src/generated/prisma in 25ms",
+    "ts": "2026-10-23T21:21:59.608Z"
+  },
+  {
+    "command": "temper-1: typecheck",
+    "exitCode": 0,
+    "summary": "exit 0 in 18s; last: ",
+    "ts": "2026-10-23T21:22:17.820Z"
+  },
+  {
+    "command": "temper-1: unit-test-full",
+    "exitCode": 0,
+    "summary": "exit 0 in 20s; last: Ran all test suites.",
+    "ts": "2026-10-23T21:22:37.500Z"
+  },
+  {
+    "command": "temper-1: check-deps",
+    "exitCode": 0,
+    "summary": "exit 0 in 2s; last: \u2714 no dependency violations found (929 modules, 3543 dependencies cruised)",
+    "ts": "2026-10-23T21:22:39.866Z"
+  },
+  {
+    "command": "temper-1: check-ownership",
+    "exitCode": 0,
+    "summary": "exit 0 in 2s; last: Violations: 0",
+    "ts": "2026-10-23T21:22:41.421Z"
+  },
+  {
+    "command": "temper-1: build-all-sequential",
+    "exitCode": 0,
+    "summary": "exit 0 in 36s; last: webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 2190 ms",
+    "ts": "2026-10-23T21:23:17.678Z"
+  },
+  {
+    "command": "temper-1: node-spec-compose-topology-and-render",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: \u2139 duration_ms 160.231292",
+    "ts": "2026-10-23T21:23:17.910Z"
+  },
+  {
+    "command": "temper-1: ai-service-pytest",
+    "exitCode": 1,
+    "summary": "exit 1 in 27s; last: 3 failed, 79 passed, 13 warnings, 49 errors in 24.06s",
+    "ts": "2026-10-23T21:23:44.140Z"
+  },
+  {
+    "command": "temper-1: ai-service-ruff-ci-gate",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: All checks passed!",
+    "ts": "2026-10-23T21:23:44.592Z"
+  },
+  {
+    "command": "temper-1: grep-no-foreign-sql-ai-service",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:23:44.702Z"
+  },
+  {
+    "command": "temper-1: grep-no-internal-token-r2-exam-document",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:23:44.768Z"
+  },
+  {
+    "command": "temper-1: grep-no-updatebalance-document-exam-ai",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:23:44.826Z"
+  },
+  {
+    "command": "temper-2: infra-pg-start",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: c7fdaff095833c9b60e23242953cb37f77e616c8b342b4c1d1dcee9a2febc155",
+    "ts": "2026-10-23T21:24:13.666Z"
+  },
+  {
+    "command": "temper-2: infra-redis-start",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: 91f46fca4c7d1742474f40fbca724bb2686f0d55377d9d3f5af1d9f5e3f0d504",
+    "ts": "2026-10-23T21:24:13.867Z"
+  },
+  {
+    "command": "temper-2: infra-rabbit-render",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/repo/deploy/rabbitmq/definitions.json (8 users)",
+    "ts": "2026-10-23T21:24:13.950Z"
+  },
+  {
+    "command": "temper-2: infra-rabbit-start",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: f2bd4d2e95bc258c236f4044a9304e357dd0130887deadf6af32790f7f2915ca",
+    "ts": "2026-10-23T21:24:14.178Z"
+  },
+  {
+    "command": "temper-2: wait-pg",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:24:14.303Z"
+  },
+  {
+    "command": "temper-2: wait-redis",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:24:14.413Z"
+  },
+  {
+    "command": "temper-2: wait-rabbit",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; last: ",
+    "ts": "2026-10-23T21:24:17.367Z"
+  },
+  {
+    "command": "temper-2: init-service-roles-schemas",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: postgres init: created schemas and roles for: auth finance admin exam content assessment studyroom vocabulary aichat document ai",
+    "ts": "2026-10-23T21:24:17.759Z"
+  },
+  {
+    "command": "temper-2: migrate-deploy-auth",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: All migrations have been successfully applied.",
+    "ts": "2026-10-23T21:24:18.705Z"
+  },
+  {
+    "command": "temper-2: migrate-deploy-finance",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: All migrations have been successfully applied.",
+    "ts": "2026-10-23T21:24:19.279Z"
+  },
+  {
+    "command": "temper-2: migrate-deploy-admin",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: All migrations have been successfully applied.",
+    "ts": "2026-10-23T21:24:19.842Z"
+  },
+  {
+    "command": "temper-2: migrate-deploy-exam",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: All migrations have been successfully applied.",
+    "ts": "2026-10-23T21:24:20.516Z"
+  },
+  {
+    "command": "temper-2: migrate-deploy-studyroom",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: All migrations have been successfully applied.",
+    "ts": "2026-10-23T21:24:21.072Z"
+  },
+  {
+    "command": "temper-2: migrate-deploy-vocabulary",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: All migrations have been successfully applied.",
+    "ts": "2026-10-23T21:24:21.625Z"
+  },
+  {
+    "command": "temper-2: migrate-deploy-document",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: All migrations have been successfully applied.",
+    "ts": "2026-10-23T21:24:22.193Z"
+  },
+  {
+    "command": "temper-2: migrate-drift-check-auth",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: No difference detected.",
+    "ts": "2026-10-23T21:24:22.741Z"
+  },
+  {
+    "command": "temper-2: migrate-drift-check-finance",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: No difference detected.",
+    "ts": "2026-10-23T21:24:23.259Z"
+  },
+  {
+    "command": "temper-2: migrate-drift-check-admin",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: No difference detected.",
+    "ts": "2026-10-23T21:24:23.779Z"
+  },
+  {
+    "command": "temper-2: migrate-drift-check-exam",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: No difference detected.",
+    "ts": "2026-10-23T21:24:24.312Z"
+  },
+  {
+    "command": "temper-2: migrate-drift-check-studyroom",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: No difference detected.",
+    "ts": "2026-10-23T21:24:24.834Z"
+  },
+  {
+    "command": "temper-2: migrate-drift-check-vocabulary",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: No difference detected.",
+    "ts": "2026-10-23T21:24:25.359Z"
+  },
+  {
+    "command": "temper-2: migrate-drift-check-document",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: No difference detected.",
+    "ts": "2026-10-23T21:24:25.885Z"
+  },
+  {
+    "command": "temper-2: ai-alembic-migrate-empty-schema",
+    "exitCode": 0,
+    "summary": "exit 0 in 2s; last: INFO  [alembic.runtime.migration] Running upgrade  -> 0001, Baseline for schema ``ai``: vectors, entities, graph state, outbox, ledger.",
+    "ts": "2026-10-23T21:24:27.351Z"
+  },
+  {
+    "command": "temper-2: ai-alembic-current-head",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: 0001 (head)",
+    "ts": "2026-10-23T21:24:27.722Z"
+  },
+  {
+    "command": "temper-2: s2-exam-e2e-folder-whole",
+    "exitCode": 1,
+    "summary": "exit 1 in 15s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T21:24:42.539Z"
+  },
+  {
+    "command": "temper-2: s2-exam-generation-only",
+    "exitCode": 1,
+    "summary": "exit 1 in 5s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T21:24:47.797Z"
+  },
+  {
+    "command": "temper-2: s2-document-e2e-folder",
+    "exitCode": 0,
+    "summary": "exit 0 in 17s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T21:25:04.245Z"
+  },
+  {
+    "command": "temper-2: s2-studyroom-e2e-folder",
+    "exitCode": 0,
+    "summary": "exit 0 in 11s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T21:25:16.032Z"
+  },
+  {
+    "command": "temper-2: s2-vocabulary-e2e-folder",
+    "exitCode": 0,
+    "summary": "exit 0 in 5s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T21:25:22.006Z"
+  },
+  {
+    "command": "temper-2: s2-gateway-e2e",
+    "exitCode": 0,
+    "summary": "exit 0 in 30s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T21:25:52.338Z"
+  },
+  {
+    "command": "temper-2: s2-messaging-libs-e2e",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T21:25:55.510Z"
+  },
+  {
+    "command": "temper-2: s2-db-isolation-ci-true",
+    "exitCode": 0,
+    "summary": "exit 0 in 23s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T21:26:19.012Z"
+  },
+  {
+    "command": "temper-2: s2-ai-service-pytest-integration",
+    "exitCode": 1,
+    "summary": "exit 1 in 12s; last: 1 failed, 130 passed, 13 warnings in 11.05s",
+    "ts": "2026-10-23T21:26:31.072Z"
+  },
+  {
+    "command": "temper-2: s2b-exam-e2e-folder-whole-rerun",
+    "exitCode": 0,
+    "summary": "exit 0 in 32s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T21:27:52.616Z"
+  },
+  {
+    "command": "temper-2: s2b-exam-generation-only-rerun",
+    "exitCode": 0,
+    "summary": "exit 0 in 21s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T21:28:13.779Z"
+  },
+  {
+    "command": "temper-2: s2b-ai-service-pytest-integration-rerun",
+    "exitCode": 0,
+    "summary": "exit 0 in 12s; last: 131 passed, 12 warnings in 10.95s",
+    "ts": "2026-10-23T21:28:25.546Z"
+  },
+  {
+    "command": "temper-2: s2b-db-isolation-ci-true-with-ai-url",
+    "exitCode": 0,
+    "summary": "exit 0 in 22s; last: Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished?",
+    "ts": "2026-10-23T21:29:18.376Z"
+  },
+  {
+    "command": "temper-3: build-auth-migrate",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.131Z"
+  },
+  {
+    "command": "temper-3: build-auth",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.174Z"
+  },
+  {
+    "command": "temper-3: build-finance-migrate",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.216Z"
+  },
+  {
+    "command": "temper-3: build-finance",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.256Z"
+  },
+  {
+    "command": "temper-3: build-admin-migrate",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.295Z"
+  },
+  {
+    "command": "temper-3: build-admin",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.335Z"
+  },
+  {
+    "command": "temper-3: build-exam-migrate",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.375Z"
+  },
+  {
+    "command": "temper-3: build-exam",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.416Z"
+  },
+  {
+    "command": "temper-3: build-study-room-migrate",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.458Z"
+  },
+  {
+    "command": "temper-3: build-study-room",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.500Z"
+  },
+  {
+    "command": "temper-3: build-vocabulary-migrate",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.543Z"
+  },
+  {
+    "command": "temper-3: build-vocabulary",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.584Z"
+  },
+  {
+    "command": "temper-3: build-r2",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.625Z"
+  },
+  {
+    "command": "temper-3: build-document-migrate",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.666Z"
+  },
+  {
+    "command": "temper-3: build-document",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.705Z"
+  },
+  {
+    "command": "temper-3: build-gateway",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.745Z"
+  },
+  {
+    "command": "temper-3: build-rabbitmq-defs",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.784Z"
+  },
+  {
+    "command": "temper-3: build-ai-migrate",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.824Z"
+  },
+  {
+    "command": "temper-3: build-ai",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "ts": "2026-10-23T21:29:41.865Z"
+  },
+  {
+    "command": "temper-3: build-auth-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 58s; last:  Image p15t-auth-migrate Built ",
+    "ts": "2026-10-23T21:31:04.120Z"
+  },
+  {
+    "command": "temper-3: build-auth",
+    "exitCode": 0,
+    "summary": "exit 0 in 69s; last:  Image p15t-auth Built ",
+    "ts": "2026-10-23T21:32:13.946Z"
+  },
+  {
+    "command": "temper-3: build-finance-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 57s; last:  Image p15t-finance-migrate Built ",
+    "ts": "2026-10-23T21:33:10.726Z"
+  },
+  {
+    "command": "temper-3: build-finance",
+    "exitCode": 0,
+    "summary": "exit 0 in 48s; last:  Image p15t-finance Built ",
+    "ts": "2026-10-23T21:33:58.904Z"
+  },
+  {
+    "command": "temper-3: build-admin-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 58s; last:  Image p15t-admin-migrate Built ",
+    "ts": "2026-10-23T21:34:56.491Z"
+  },
+  {
+    "command": "temper-3: build-admin",
+    "exitCode": 0,
+    "summary": "exit 0 in 41s; last:  Image p15t-admin Built ",
+    "ts": "2026-10-23T21:35:37.856Z"
+  },
+  {
+    "command": "temper-3: build-exam-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 58s; last:  Image p15t-exam-migrate Built ",
+    "ts": "2026-10-23T21:36:35.280Z"
+  },
+  {
+    "command": "temper-3: build-exam",
+    "exitCode": 0,
+    "summary": "exit 0 in 45s; last:  Image p15t-exam Built ",
+    "ts": "2026-10-23T21:37:20.501Z"
+  },
+  {
+    "command": "temper-3: build-study-room-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 57s; last:  Image p15t-study-room-migrate Built ",
+    "ts": "2026-10-23T21:38:18.041Z"
+  },
+  {
+    "command": "temper-3: build-study-room",
+    "exitCode": 0,
+    "summary": "exit 0 in 43s; last:  Image p15t-study-room Built ",
+    "ts": "2026-10-23T21:39:01.564Z"
+  },
+  {
+    "command": "temper-3: build-vocabulary-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 58s; last:  Image p15t-vocabulary-migrate Built ",
+    "ts": "2026-10-23T21:40:00.092Z"
+  },
+  {
+    "command": "temper-3: build-vocabulary",
+    "exitCode": 0,
+    "summary": "exit 0 in 43s; last:  Image p15t-vocabulary Built ",
+    "ts": "2026-10-23T21:40:43.477Z"
+  },
+  {
+    "command": "temper-3: build-r2",
+    "exitCode": 0,
+    "summary": "exit 0 in 34s; last:  Image p15t-r2 Built ",
+    "ts": "2026-10-23T21:41:17.405Z"
+  },
+  {
+    "command": "temper-3: build-document-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 58s; last:  Image p15t-document-migrate Built ",
+    "ts": "2026-10-23T21:42:15.561Z"
+  },
+  {
+    "command": "temper-3: build-document",
+    "exitCode": 0,
+    "summary": "exit 0 in 44s; last:  Image p15t-document Built ",
+    "ts": "2026-10-23T21:42:59.844Z"
+  },
+  {
+    "command": "temper-3: build-gateway",
+    "exitCode": 0,
+    "summary": "exit 0 in 36s; last:  Image p15t-gateway Built ",
+    "ts": "2026-10-23T21:43:35.631Z"
+  },
+  {
+    "command": "temper-3: build-rabbitmq-defs",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: time=2026-10-24T04:43:35+07:00 level=warning msg=No services to build",
+    "ts": "2026-10-23T21:43:35.796Z"
+  },
+  {
+    "command": "temper-3: build-ai-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 98s; last:  Image p15t-ai-migrate Built ",
+    "ts": "2026-10-23T21:45:13.541Z"
+  },
+  {
+    "command": "temper-3: build-ai",
+    "exitCode": 0,
+    "summary": "exit 0 in 2s; last:  Image p15t-ai Built ",
+    "ts": "2026-10-23T21:45:15.072Z"
+  },
+  {
+    "command": "temper-3: s3-stubs-net",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: 889dceb8cb475538e98e07a32acc5ee72d56200ef1015bc11ecec34230e3c9a5",
+    "ts": "2026-10-23T21:45:26.447Z"
+  },
+  {
+    "command": "temper-3: s3-stubs-s3proxy",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: 6a7aa1d369487f1c6cb99150d95e4265425e604501a60bea364d6454da08dc6d",
+    "ts": "2026-10-23T21:45:26.930Z"
+  },
+  {
+    "command": "temper-3: s3-stubs-shim",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: aef33b9e9c7776a9e7a3b1eec57f50abe5675a40825a16ae6baa226959fe2f1d",
+    "ts": "2026-10-23T21:45:27.150Z"
+  },
+  {
+    "command": "temper-3: s3-stubs-mkbucket",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: buckets: examio-p15t",
+    "ts": "2026-10-23T21:45:31.535Z"
+  },
+  {
+    "command": "temper-3: s3-up-wait-empty-volume",
+    "exitCode": 0,
+    "summary": "exit 0 in 33s; last:  Container examio-gateway Healthy ",
+    "ts": "2026-10-23T21:46:04.534Z"
+  },
+  {
+    "command": "temper-3: s3-shim-attach-examio-internal",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:46:04.641Z"
+  },
+  {
+    "command": "temper-3: migrate-status-auth",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: Database schema is up to date!",
+    "ts": "2026-10-23T21:47:07.831Z"
+  },
+  {
+    "command": "temper-3: migrate-status-finance",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: Database schema is up to date!",
+    "ts": "2026-10-23T21:47:08.786Z"
+  },
+  {
+    "command": "temper-3: migrate-status-admin",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: Database schema is up to date!",
+    "ts": "2026-10-23T21:47:09.983Z"
+  },
+  {
+    "command": "temper-3: migrate-status-exam",
+    "exitCode": 0,
+    "summary": "exit 0 in 2s; last: Database schema is up to date!",
+    "ts": "2026-10-23T21:47:11.476Z"
+  },
+  {
+    "command": "temper-3: migrate-status-study-room",
+    "exitCode": 1,
+    "summary": "exit 1 in 1s; last: Error: Could not load `--schema` from provided path `apps/study-room-service/prisma/schema`: file or directory not found",
+    "ts": "2026-10-23T21:47:12.952Z"
+  },
+  {
+    "command": "temper-3: migrate-status-vocabulary",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: Database schema is up to date!",
+    "ts": "2026-10-23T21:47:14.030Z"
+  },
+  {
+    "command": "temper-3: migrate-status-document",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: Database schema is up to date!",
+    "ts": "2026-10-23T21:47:15.100Z"
+  },
+  {
+    "command": "temper-3: alembic-current-ai-live",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: 0001 (head)",
+    "ts": "2026-10-23T21:47:16.674Z"
+  },
+  {
+    "command": "temper-3: iso-ai-svc-denied-exam-UserStorage",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:47:16.909Z"
+  },
+  {
+    "command": "temper-3: iso-ai-svc-denied-auth-User",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: ",
+    "ts": "2026-10-23T21:47:17.119Z"
+  },
+  {
+    "command": "temper-3: iso-ai-svc-denied-exam-HistoryGeneratedQuizz",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:47:17.341Z"
+  },
+  {
+    "command": "temper-3: iso-document-svc-denied-auth-User",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:47:17.593Z"
+  },
+  {
+    "command": "temper-3: iso-document-svc-denied-exam-schema",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:47:17.801Z"
+  },
+  {
+    "command": "temper-3: iso-document-svc-denied-ai-schema",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:47:18.010Z"
+  },
+  {
+    "command": "temper-3: iso-exam-no-UserStorage-or-Document-tables",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:47:18.179Z"
+  },
+  {
+    "command": "temper-3: iso-ai-schema-no-exam-history-tables",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:47:18.337Z"
+  },
+  {
+    "command": "temper-3: grants-ai-svc-on-exam-zero",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:47:18.520Z"
+  },
+  {
+    "command": "temper-3: default-privileges-ai-svc-on-exam-zero",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:47:18.728Z"
+  },
+  {
+    "command": "temper-3: schema-usage-ai-svc-on-exam-revoked",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:47:18.965Z"
+  },
+  {
+    "command": "temper-3: migrate-status-study-room-rerun",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: ",
+    "ts": "2026-10-23T21:47:27.571Z"
+  },
+  {
+    "command": "temper-3: seed-opt-in-run",
+    "exitCode": 0,
+    "summary": "exit 0 in 91s; last: ==> Seeds complete.",
+    "ts": "2026-10-23T21:49:07.545Z"
+  },
+  {
+    "command": "temper-3: seed-counts-after",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: users=8 wallets=7 subjects=15 word_family_categories=10",
+    "ts": "2026-10-23T21:49:07.677Z"
+  },
+  {
+    "command": "temper-3: seed-no-seed-container-running",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:49:07.821Z"
+  },
+  {
+    "command": "temper-3: broker-ai-publish-document-uploaded-refused",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: ai publish document.uploaded -> REFUSED code=403 Channel closed by server: 403 (ACCESS-REFUSED) with message ACCESS_REFUSED - write access to topic 'document.uploaded'  (expected refused)",
+    "ts": "2026-10-23T21:49:36.276Z"
+  },
+  {
+    "command": "temper-3: broker-ai-publish-ai-document-processed-ok",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ai publish ai.document.processed -> OK (expected ok)",
+    "ts": "2026-10-23T21:49:37.019Z"
+  },
+  {
+    "command": "temper-3: broker-exam-publish-content-generation-requested-ok",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: exam publish content.generation.requested -> OK (expected ok)",
+    "ts": "2026-10-23T21:49:37.748Z"
+  },
+  {
+    "command": "temper-3: broker-exam-publish-ai-x-refused",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: exam publish ai.x -> REFUSED code=403 Channel closed by server: 403 (ACCESS-REFUSED) with message ACCESS_REFUSED - write access to topic 'ai.x' in exchange ' (expected refused)",
+    "ts": "2026-10-23T21:49:38.463Z"
+  },
+  {
+    "command": "temper-3: broker-document-read-ai-events-refused",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: document read ai.events -> REFUSED code=403 Channel closed by server: 403 (ACCESS-REFUSED) with message ACCESS_REFUSED - read access to queue 'ai.events' in vhost  (expected refused)",
+    "ts": "2026-10-23T21:49:39.238Z"
+  },
+  {
+    "command": "temper-3: grpc-mint-svc-document-token",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: ",
+    "ts": "2026-10-23T21:51:07.493Z"
+  },
+  {
+    "command": "temper-3: grpc-mint-svc-exam-token-aud-ai",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last: ",
+    "ts": "2026-10-23T21:51:07.903Z"
+  },
+  {
+    "command": "temper-3: grpc-mint-svc-exam-token-aud-exam",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last: ",
+    "ts": "2026-10-23T21:51:08.310Z"
+  },
+  {
+    "command": "temper-3: grpc-mint-alg-none-token",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/stage3-grpc.sh: line 14: !sec: unbound variable",
+    "ts": "2026-10-23T21:51:08.359Z"
+  },
+  {
+    "command": "temper-3: grpc-no-token-unauthenticated",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/stage3-grpc.sh: line 20: hdr[@]: unbound variable",
+    "ts": "2026-10-23T21:51:08.415Z"
+  },
+  {
+    "command": "temper-3: grpc-alg-none-unauthenticated",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last:   Message: UNAUTHENTICATED",
+    "ts": "2026-10-23T21:51:08.731Z"
+  },
+  {
+    "command": "temper-3: grpc-svc-document-permission-denied-unknown-caller",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last:   Message: PERMISSION_DENIED",
+    "ts": "2026-10-23T21:51:09.276Z"
+  },
+  {
+    "command": "temper-3: grpc-svc-exam-aud-exam-unauthenticated",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last:   Message: UNAUTHENTICATED",
+    "ts": "2026-10-23T21:51:09.571Z"
+  },
+  {
+    "command": "temper-3: grpc-svc-exam-aud-ai-listmodels-ok",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last:         label:",
+    "ts": "2026-10-23T21:51:09.941Z"
+  },
+  {
+    "command": "temper-3: grpc-no-token-unauthenticated-rerun",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; last:   Message: UNAUTHENTICATED",
+    "ts": "2026-10-23T21:51:43.815Z"
+  },
+  {
+    "command": "temper-3: grpc-alg-none-unauthenticated-rerun",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last:   Message: UNAUTHENTICATED",
+    "ts": "2026-10-23T21:51:44.125Z"
+  },
+  {
+    "command": "temper-3: grpc-user-token-observed-expect-permission-denied",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; last:   Message: UNAUTHENTICATED",
+    "ts": "2026-10-23T21:51:44.484Z"
+  },
+  {
+    "command": "temper-4: stage4 scenario a (charged upload failing in the real ai-worker), bash stage4.sh a",
+    "exitCode": 1,
+    "summary": "not executed: the shell could not fork (fork failed: resource temporarily unavailable). The per-user process table is full of zombie children of PID 38282 (the main claude process), which does not reap them. Harness money15.cjs is written and untested against the live stack. Blocked until the process table is cleared; PID 38282 was not touched.",
+    "ts": "2026-10-24T05:00:00Z (approximate; no clock read possible while the shell was blocked)"
+  },
+  {
+    "command": "temper-4: fork check (/bin/echo) after the blocked stage4 attempt",
+    "exitCode": 1,
+    "summary": "fork failed: resource temporarily unavailable. Same cause as the row above. Retried several times over the session, still failing at the last check.",
+    "ts": "2026-10-24T05:00:00Z (approximate; no clock read possible while the shell was blocked)"
+  },
+  {
+    "command": "temper-2: stage3b-build-auth",
+    "exitCode": 0,
+    "summary": "exit 0 in 39s; last:  Image p15t2-auth Built",
+    "ts": "2026-10-24T06:35:38.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-auth-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 57s; last:  Image p15t2-auth-migrate Built",
+    "ts": "2026-10-24T06:36:35.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-finance",
+    "exitCode": 0,
+    "summary": "exit 0 in 31s; last:  Image p15t2-finance Built",
+    "ts": "2026-10-24T06:37:06.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-finance-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 55s; last:  Image p15t2-finance-migrate Built",
+    "ts": "2026-10-24T06:38:01.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-admin",
+    "exitCode": 0,
+    "summary": "exit 0 in 32s; last:  Image p15t2-admin Built",
+    "ts": "2026-10-24T06:38:33.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-admin-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 58s; last:  Image p15t2-admin-migrate Built",
+    "ts": "2026-10-24T06:39:31.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-exam",
+    "exitCode": 0,
+    "summary": "exit 0 in 34s; last:  Image p15t2-exam Built",
+    "ts": "2026-10-24T06:40:05.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-exam-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 56s; last:  Image p15t2-exam-migrate Built",
+    "ts": "2026-10-24T06:41:01.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-study-room",
+    "exitCode": 0,
+    "summary": "exit 0 in 33s; last:  Image p15t2-study-room Built",
+    "ts": "2026-10-24T06:41:34.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-study-room-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 60s; last:  Image p15t2-study-room-migrate Built",
+    "ts": "2026-10-24T06:42:34.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-vocabulary",
+    "exitCode": 0,
+    "summary": "exit 0 in 32s; last:  Image p15t2-vocabulary Built",
+    "ts": "2026-10-24T06:43:06.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-vocabulary-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 58s; last:  Image p15t2-vocabulary-migrate Built",
+    "ts": "2026-10-24T06:44:04.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-r2",
+    "exitCode": 0,
+    "summary": "exit 0 in 31s; last:  Image p15t2-r2 Built",
+    "ts": "2026-10-24T06:44:35.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-document",
+    "exitCode": 0,
+    "summary": "exit 0 in 30s; last:  Image p15t2-document Built",
+    "ts": "2026-10-24T06:45:05.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-document-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 58s; last:  Image p15t2-document-migrate Built",
+    "ts": "2026-10-24T06:46:03.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-gateway",
+    "exitCode": 0,
+    "summary": "exit 0 in 32s; last:  Image p15t2-gateway Built",
+    "ts": "2026-10-24T06:46:35.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-ai",
+    "exitCode": 0,
+    "summary": "exit 0 in 10s; last:  Image p15t2-ai Built",
+    "ts": "2026-10-24T06:46:45.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-ai-migrate",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last:  Image p15t2-ai-migrate Built",
+    "ts": "2026-10-24T06:46:46.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-ai-worker",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; last:  Image p15t2-ai-worker Built",
+    "ts": "2026-10-24T06:46:47.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-build-seed",
+    "exitCode": 0,
+    "summary": "exit 0 in 16s; last:  Image p15t2-seed Built",
+    "ts": "2026-10-24T06:47:03.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-up-wait-empty-volume",
+    "exitCode": 1,
+    "summary": "exit 1 in 12s; dependency failed to start: container examio-finance is unhealthy",
+    "ts": "2026-10-24T06:47:27.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-up-wait-empty-volume-attempt1",
+    "exitCode": 1,
+    "summary": "exit 1 after 36s: examio-finance unhealthy: SePay configuration not set (scratch .env gap, fixed by adding dummy PAYMENT_* vars)",
+    "ts": "2026-10-24T06:47:40.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-up-wait-empty-volume",
+    "exitCode": 1,
+    "summary": "exit 1 in 14s; dependency failed to start: container examio-auth is unhealthy",
+    "ts": "2026-10-24T06:47:54.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-up-wait-empty-volume-attempt2",
+    "exitCode": 1,
+    "summary": "exit 1: examio-auth unhealthy: OAuth2Strategy requires clientID (scratch .env gap, fixed by adding dummy OAuth settings)",
+    "ts": "2026-10-24T06:48:01.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-up-wait-empty-volume",
+    "exitCode": 0,
+    "summary": "exit 0 in 32s;  Container examio-gateway Healthy",
+    "ts": "2026-10-24T06:48:33.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-oneshot-examio-auth-migrate",
+    "exitCode": 0,
+    "summary": "exit 0, state exited",
+    "ts": "2026-10-24T06:48:39.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-oneshot-examio-finance-migrate",
+    "exitCode": 0,
+    "summary": "exit 0, state exited",
+    "ts": "2026-10-24T06:48:39.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-oneshot-examio-admin-migrate",
+    "exitCode": 0,
+    "summary": "exit 0, state exited",
+    "ts": "2026-10-24T06:48:39.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-oneshot-examio-exam-migrate",
+    "exitCode": 0,
+    "summary": "exit 0, state exited",
+    "ts": "2026-10-24T06:48:39.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-oneshot-examio-study-room-migrate",
+    "exitCode": 0,
+    "summary": "exit 0, state exited",
+    "ts": "2026-10-24T06:48:39.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-oneshot-examio-vocabulary-migrate",
+    "exitCode": 0,
+    "summary": "exit 0, state exited",
+    "ts": "2026-10-24T06:48:39.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-oneshot-examio-document-migrate",
+    "exitCode": 0,
+    "summary": "exit 0, state exited",
+    "ts": "2026-10-24T06:48:39.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-oneshot-examio-ai-migrate",
+    "exitCode": 0,
+    "summary": "exit 0, state exited",
+    "ts": "2026-10-24T06:48:39.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-oneshot-examio-rabbitmq-defs",
+    "exitCode": 0,
+    "summary": "exit 0, state exited",
+    "ts": "2026-10-24T06:48:39.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-s3-mkbucket",
+    "exitCode": 0,
+    "summary": "curl exit 0 (bucket examio-p15t on s3proxy stub)",
+    "ts": "2026-10-24T06:48:39.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-shim-alias-resolves",
+    "exitCode": 0,
+    "summary": "virtual-host alias examio-p15t.s3shim on examio-internal",
+    "ts": "2026-10-24T06:48:40.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-seed-opt-in-run",
+    "exitCode": 0,
+    "summary": "exit 0 in 6s; ==> Seeds complete.",
+    "ts": "2026-10-24T06:48:51.000Z"
+  },
+  {
+    "command": "temper-2: stage3b-seed-counts-after",
+    "exitCode": 0,
+    "summary": "users=8 wallets=7 subjects=15 word_family_categories=10",
+    "ts": "2026-10-24T06:48:51.000Z"
+  },
+  {
+    "command": "temper-2: stage4-setup-turnstile-scratch-ca",
+    "exitCode": 1,
+    "summary": "exit 1: scratch CA and challenges.cloudflare.com server cert (scratch only)",
+    "ts": "2026-10-24T06:49:45.000Z"
+  },
+  {
+    "command": "temper-2: stage4-setup-turnstile-scratch-ca-retry",
+    "exitCode": 0,
+    "summary": "exit 0: scratch CA and challenges.cloudflare.com server cert (scratch only)",
+    "ts": "2026-10-24T06:49:52.000Z"
+  },
+  {
+    "command": "temper-2: stage4-up-turnstile-standin-auth-ca",
+    "exitCode": 0,
+    "summary": "exit 0 in 13s;  Container examio-vocabulary Healthy",
+    "ts": "2026-10-24T06:50:05.000Z"
+  },
+  {
+    "command": "temper-2: stage4-setup-s3-tls-standin-cert",
+    "exitCode": 0,
+    "summary": "exit 0: TLS cert for R2 stand-in (scratch CA)",
+    "ts": "2026-10-24T06:52:05.000Z"
+  },
+  {
+    "command": "temper-2: stage4-up-s3-tls-standin",
+    "exitCode": 0,
+    "summary": "exit 0 in 46s;  Container examio-gateway Healthy",
+    "ts": "2026-10-24T06:52:58.000Z"
+  },
+  {
+    "command": "temper-2: stage4-ai-worker-restart",
+    "exitCode": 0,
+    "summary": "exit 0: docker start examio-ai-worker (real worker resumes)",
+    "ts": "2026-10-24T06:59:53.000Z"
+  },
+  {
+    "command": "temper-2: stage4f-ai-worker-stop-for-watchdog",
+    "exitCode": 0,
+    "summary": "docker stop examio-ai-worker (keep job QUEUED)",
+    "ts": "2026-10-24T07:00:53.000Z"
+  },
+  {
+    "command": "temper-2: stage4f-exam-recreate-timeout-10",
+    "exitCode": 0,
+    "summary": "exit 0 in 11s: exam GENERATION_JOB_TIMEOUT_MINUTES=10 (scratch override)",
+    "ts": "2026-10-24T07:01:04.000Z"
+  },
+  {
+    "command": "temper-2: stage4f-exam-revert-default-timeout",
+    "exitCode": 0,
+    "summary": "exit 0: exam back to default GENERATION_JOB_TIMEOUT_MINUTES",
+    "ts": "2026-10-24T07:02:32.000Z"
+  },
+  {
+    "command": "temper-2: stage4h-ai-worker-restart",
+    "exitCode": 0,
+    "summary": "docker start examio-ai-worker",
+    "ts": "2026-10-24T07:03:13.000Z"
+  },
+  {
+    "command": "temper-2: stage4-shim-query-key-fix-restart",
+    "exitCode": 0,
+    "summary": "exit 0: shim forwards query as args (fix: query was stored inside object keys)",
+    "ts": "2026-10-24T07:04:19.000Z"
+  },
+  {
+    "command": "temper-2: stage4-shim-resolver-restart",
+    "exitCode": 0,
+    "summary": "exit 0: nginx resolver for variable proxy_pass",
+    "ts": "2026-10-24T07:04:33.000Z"
+  },
+  {
+    "command": "temper-2: stage4h2-ai-worker-stop",
+    "exitCode": 0,
+    "summary": "docker stop examio-ai-worker (keep generation QUEUED for fake completion)",
+    "ts": "2026-10-24T07:04:50.000Z"
+  },
+  {
+    "command": "temper-2: ai-service-pytest-unit-final-code",
+    "exitCode": 0,
+    "summary": "exit 0 in 11s; 80 passed, 51 skipped, 12 warnings in 9.05s",
+    "ts": "2026-10-24T07:14:46.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#001 4a.put-object-200",
+    "exitCode": 0,
+    "summary": "PASS put=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#002 4a.upload-accepted",
+    "exitCode": 0,
+    "summary": "PASS status=201 body={\"id\":\"6adc55728c97dca26e1dc563\",\"status\":\"PENDING\",\"newBalance\":149999,\"message\":\"File \u0111\u00e3 \u0111\u01b0\u1ee3c upload, \u0111ang x\u1eed l\u00fd OCR\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#003 4a.debit-once-on-upload",
+    "exitCode": 1,
+    "summary": "FAIL []",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#004 4a.balance-debited-by-charge",
+    "exitCode": 1,
+    "summary": "FAIL before=150000 after=149999 charge=0",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#005 4a.document-failed-by-real-worker",
+    "exitCode": 0,
+    "summary": "PASS final status=FAILED",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#006 4a.exactly-one-refund",
+    "exitCode": 1,
+    "summary": "FAIL []",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#007 4a.balance-restored",
+    "exitCode": 0,
+    "summary": "PASS before=150000 after=150000",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#008 4a.reason-recorded",
+    "exitCode": 0,
+    "summary": "PASS {\"level\":30,\"time\":1792824691498,\"service\":\"document-service\",\"context\":\"DocumentProcessingService\",\"msg\":\"Document 6adc55728c97dca26e1dc563 failed (DOWNLOAD_REJECTED); refund applied\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#009 4a.put-object-200",
+    "exitCode": 0,
+    "summary": "PASS put=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#010 4a.upload-accepted",
+    "exitCode": 0,
+    "summary": "PASS status=201 body={\"id\":\"6adc55d0124630b6f28187cc\",\"status\":\"PENDING\",\"newBalance\":149999,\"message\":\"File \u0111\u00e3 \u0111\u01b0\u1ee3c upload, \u0111ang x\u1eed l\u00fd OCR\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#011 4a.debit-once-on-upload",
+    "exitCode": 0,
+    "summary": "PASS [[\"debit:doc:6adc55d0124630b6f28187cc\",\"SUBTRACT\",1]]",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#012 4a.balance-debited-by-charge",
+    "exitCode": 0,
+    "summary": "PASS before=150000 after=149999 charge=1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#013 4a.document-failed-by-real-worker",
+    "exitCode": 0,
+    "summary": "PASS final status=FAILED",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#014 4a.exactly-one-refund",
+    "exitCode": 0,
+    "summary": "PASS [[\"debit:doc:6adc55d0124630b6f28187cc\",\"SUBTRACT\",1,4],[\"refund:doc:6adc55d0124630b6f28187cc\",\"ADD\",1,2]]",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#015 4a.balance-restored",
+    "exitCode": 0,
+    "summary": "PASS before=150000 after=150000",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#016 4a.reason-recorded",
+    "exitCode": 0,
+    "summary": "PASS {\"level\":30,\"time\":1792824785079,\"service\":\"document-service\",\"context\":\"DocumentProcessingService\",\"msg\":\"Document 6adc55d0124630b6f28187cc failed (DOWNLOAD_REJECTED); refund applied\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#017 4b.ai-worker-stopped",
+    "exitCode": 0,
+    "summary": "PASS docker stop exit 0",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#018 4b.upload-accepted",
+    "exitCode": 0,
+    "summary": "PASS status=201 {\"id\":\"6adc56019005f21a77c6fd9e\",\"status\":\"PENDING\",\"newBalance\":149999,\"message\":\"File \u0111\u00e3 \u0111\u01b0\u1ee3c upload, \u0111ang x\u1eed l\u00fd OCR\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#019 4b.debit-once-on-upload",
+    "exitCode": 0,
+    "summary": "PASS debit:doc:6adc56019005f21a77c6fd9e:SUBTRACT:1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#020 4b.fake-ai-publish-processed",
+    "exitCode": 0,
+    "summary": "PASS published ai.document.processed evt_971374dac5fa49bc89cd101899",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#021 4b.document-completed",
+    "exitCode": 0,
+    "summary": "PASS status=COMPLETED",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#022 4b.debited-once-no-refund",
+    "exitCode": 0,
+    "summary": "PASS debit:doc:6adc56019005f21a77c6fd9e:SUBTRACT:1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#023 4b.balance-after-debit",
+    "exitCode": 0,
+    "summary": "PASS before=150000 after=149999 charge=1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#024 4c.capture-queue-bound",
+    "exitCode": 0,
+    "summary": "PASS bound p15t.capture content.generation.requested",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#025 4c.generate-accepted",
+    "exitCode": 0,
+    "summary": "PASS status=201 {\"jobId\":\"6adc5603acee0f3f79977ca7\",\"status\":\"PENDING\",\"message\":\"File \u0111\u00e3 \u0111\u01b0\u1ee3c upload, \u0111ang x\u1eed l\u00fd OCR v\u00e0 t\u1ea1o n\u1ed9i dung\",\"newBalance\":149993}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#026 4c.one-combined-debit-gen-key",
+    "exitCode": 0,
+    "summary": "PASS debit:gen:6adc5603acee0f3f79977ca7:SUBTRACT:6",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#027 4c.no-separate-upload-debit",
+    "exitCode": 0,
+    "summary": "PASS doc-key rows:",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#028 4c.balance-debited-combined",
+    "exitCode": 0,
+    "summary": "PASS before=149999 after=149993 gen=6",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#029 4c.request-envelope-captured",
+    "exitCode": 0,
+    "summary": "PASS captured 1 messages",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#030 4c.request-source-content",
+    "exitCode": 0,
+    "summary": "PASS {\"src\":\"content\",\"type\":\"content.generation.requested\",\"id\":\"evt_01M5\",\"v\":1}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#031 4c.fake-ai-publish-completed",
+    "exitCode": 0,
+    "summary": "PASS published ai.generation.completed evt_48ba08a2745b4227a58528724d",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#032 4c.job-completed",
+    "exitCode": 0,
+    "summary": "PASS COMPLETED\t6\t\t\t6adc560351f79364a49b5938",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#033 4c.history-written",
+    "exitCode": 0,
+    "summary": "PASS HistoryGeneratedQuizz rows=1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#034 4c.debited-once-no-refund",
+    "exitCode": 0,
+    "summary": "PASS debit:gen:6adc5603acee0f3f79977ca7:SUBTRACT:6",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#035 4c.reuse-completed-accepted",
+    "exitCode": 0,
+    "summary": "PASS status=201 {\"jobId\":\"6adc5604a2888ac559c39d0c\",\"status\":\"processing\",\"message\":\"File \u0111\u00e3 t\u1ed3n t\u1ea1i, \u0111ang t\u1ea1o n\u1ed9i dung m\u1edbi...\",\"newBalance\":149988}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#036 4c.reuse-completed-debit-5",
+    "exitCode": 0,
+    "summary": "PASS debit:gen:6adc5604a2888ac559c39d0c:SUBTRACT:5",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#037 4c.reuse-completed-no-doc-debit",
+    "exitCode": 0,
+    "summary": "PASS doc B debits=1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#038 4c.reuse-completed-balance",
+    "exitCode": 0,
+    "summary": "PASS before=149993 after=149988",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#039 4c.reuse-failed-accepted",
+    "exitCode": 1,
+    "summary": "FAIL status=409 {\"message\":\"B\u1ea1n \u0111ang c\u00f3 job sinh quiz ch\u01b0a ho\u00e0n t\u1ea5t. Vui l\u00f2ng \u0111\u1ee3i job hi\u1ec7n t\u1ea1i k\u1ebft th\u00fac.\",\"error\":\"Conflict\",\"statusCode\":409}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#040 4d.cancel-queued-200",
+    "exitCode": 0,
+    "summary": "PASS status=200 {\"success\":true,\"message\":\"\u0110\u00e3 h\u1ee7y t\u00e1c v\u1ee5\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#041 4d.cancel-queued-row-cancelled",
+    "exitCode": 0,
+    "summary": "PASS CANCELLED\t5\t2026-10-24 06:53:57.586\t\t6adc56019005f21a77c6fd9e",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#042 4d.cancel-queued-one-refund",
+    "exitCode": 0,
+    "summary": "PASS debit:gen:6adc5604a2888ac559c39d0c:SUBTRACT:5 | refund:gen:6adc5604a2888ac559c39d0c:ADD:5",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#043 4d.cancel-queued-balance-restored",
+    "exitCode": 0,
+    "summary": "PASS before=149988 after=149993",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#044 4d.cancel-again-200",
+    "exitCode": 0,
+    "summary": "PASS status=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#045 4d.cancel-again-no-second-refund",
+    "exitCode": 0,
+    "summary": "PASS debit:gen:6adc5604a2888ac559c39d0c:SUBTRACT:5 | refund:gen:6adc5604a2888ac559c39d0c:ADD:5",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#046 4d.cancel-completed-409",
+    "exitCode": 0,
+    "summary": "PASS status=409 {\"statusCode\":409,\"code\":\"JOB_NOT_CANCELLABLE\",\"message\":\"Kh\u00f4ng th\u1ec3 h\u1ee7y job \u0111\u00e3 ho\u00e0n th\u00e0nh ho\u1eb7c th\u1ea5t b\u1ea1i\"} row=COMPLETED\t6\t\t\t6adc560351f79364a49b5938",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4e-check#047 4e.generate-accepted",
+    "exitCode": 0,
+    "summary": "PASS status=201",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4e-check#048 4e.fake-ai-publish-failed",
+    "exitCode": 0,
+    "summary": "PASS published ai.generation.failed evt_abbfd92a6494434e92ea30710b",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4e-check#049 4e.job-failed",
+    "exitCode": 0,
+    "summary": "PASS FAILED\t6\t2026-10-24 06:53:58.822\tOCR_FAILED\t6adc5606d812fd74b3f442e6",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4e-check#050 4e.one-refund",
+    "exitCode": 0,
+    "summary": "PASS debit:gen:6adc5606ce6ac4865f1669ff:SUBTRACT:6 | refund:gen:6adc5606ce6ac4865f1669ff:ADD:6",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4e-check#051 4e.balance-restored",
+    "exitCode": 0,
+    "summary": "PASS before=149993 after=149993 charge=6",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#052 4b.ai-worker-stopped",
+    "exitCode": 0,
+    "summary": "PASS docker stop exit 0",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#053 4b.upload-accepted",
+    "exitCode": 1,
+    "summary": "FAIL status=403 {\"statusCode\":403,\"code\":\"QUOTA_EXCEEDED\",\"message\":\"B\u1ea1n \u0111\u00e3 \u0111\u1ea1t gi\u1edbi h\u1ea1n 5 file/th\u00e1ng. Vui l\u00f2ng n\u00e2ng c\u1ea5p g\u00f3i ho\u1eb7c th\u1eed l\u1ea1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#054 4b.debit-once-on-upload",
+    "exitCode": 1,
+    "summary": "FAIL",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#055 4b.fake-ai-publish-processed",
+    "exitCode": 0,
+    "summary": "PASS published ai.document.processed evt_ef4125c845f047bdb8c4605a8b",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#056 4b.document-completed",
+    "exitCode": 1,
+    "summary": "FAIL status=undefined",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#057 4b.debited-once-no-refund",
+    "exitCode": 1,
+    "summary": "FAIL",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#058 4b.balance-after-debit",
+    "exitCode": 0,
+    "summary": "PASS before=149993 after=149993 charge=0",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#059 4c.capture-queue-bound",
+    "exitCode": 0,
+    "summary": "PASS bound p15t.capture content.generation.requested",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#060 4c.generate-accepted",
+    "exitCode": 1,
+    "summary": "FAIL status=403 {\"statusCode\":403,\"code\":\"QUOTA_EXCEEDED\",\"message\":\"B\u1ea1n \u0111\u00e3 \u0111\u1ea1t gi\u1edbi h\u1ea1n file/th\u00e1ng. Vui l\u00f2ng n\u00e2ng c\u1ea5p g\u00f3i ho\u1eb7c th\u1eed l\u1ea1i v\u00e0o th\u00e1ng sau.\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#061 4a.put-object-200",
+    "exitCode": 0,
+    "summary": "PASS put=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#062 4a.upload-accepted",
+    "exitCode": 0,
+    "summary": "PASS status=201 body={\"id\":\"6adc5689bec3a656e6395bb4\",\"status\":\"PENDING\",\"newBalance\":49999,\"message\":\"File \u0111\u00e3 \u0111\u01b0\u1ee3c upload, \u0111ang x\u1eed l\u00fd OCR\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#063 4a.debit-once-on-upload",
+    "exitCode": 0,
+    "summary": "PASS [[\"debit:doc:6adc5689bec3a656e6395bb4\",\"SUBTRACT\",1]]",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#064 4a.balance-debited-by-charge",
+    "exitCode": 0,
+    "summary": "PASS before=50000 after=49999 charge=1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#065 4a.document-failed-by-real-worker",
+    "exitCode": 1,
+    "summary": "FAIL final status=PENDING",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#066 4a.exactly-one-refund",
+    "exitCode": 1,
+    "summary": "FAIL [[\"debit:doc:6adc5689bec3a656e6395bb4\",\"SUBTRACT\",1,4]]",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#067 4a.balance-restored",
+    "exitCode": 1,
+    "summary": "FAIL before=50000 after=49999",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#068 4a.reason-recorded",
+    "exitCode": 1,
+    "summary": "FAIL",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#069 4b.ai-worker-stopped",
+    "exitCode": 0,
+    "summary": "PASS docker stop exit 0",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#070 4b.upload-accepted",
+    "exitCode": 0,
+    "summary": "PASS status=201 {\"id\":\"6adc573f58fa5c3654ffd9d8\",\"status\":\"PENDING\",\"newBalance\":49998,\"message\":\"File \u0111\u00e3 \u0111\u01b0\u1ee3c upload, \u0111ang x\u1eed l\u00fd OCR\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#071 4b.debit-once-on-upload",
+    "exitCode": 0,
+    "summary": "PASS debit:doc:6adc573f58fa5c3654ffd9d8:SUBTRACT:1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#072 4b.fake-ai-publish-processed",
+    "exitCode": 0,
+    "summary": "PASS published ai.document.processed evt_8206b9bbcc3b4a3c863b06f51a",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#073 4b.document-completed",
+    "exitCode": 0,
+    "summary": "PASS status=COMPLETED",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#074 4b.debited-once-no-refund",
+    "exitCode": 0,
+    "summary": "PASS debit:doc:6adc573f58fa5c3654ffd9d8:SUBTRACT:1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4b-check#075 4b.balance-after-debit",
+    "exitCode": 0,
+    "summary": "PASS before=49999 after=49998 charge=1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#076 4c.capture-queue-bound",
+    "exitCode": 0,
+    "summary": "PASS bound p15t.capture content.generation.requested",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#077 4c.generate-accepted",
+    "exitCode": 0,
+    "summary": "PASS status=201 {\"jobId\":\"6adc5741ac8dfd352ce0ca2f\",\"status\":\"PENDING\",\"message\":\"File \u0111\u00e3 \u0111\u01b0\u1ee3c upload, \u0111ang x\u1eed l\u00fd OCR v\u00e0 t\u1ea1o n\u1ed9i dung\",\"newBalance\":49992}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#078 4c.one-combined-debit-gen-key",
+    "exitCode": 0,
+    "summary": "PASS debit:gen:6adc5741ac8dfd352ce0ca2f:SUBTRACT:6",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#079 4c.no-separate-upload-debit",
+    "exitCode": 0,
+    "summary": "PASS doc-key rows:",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#080 4c.balance-debited-combined",
+    "exitCode": 0,
+    "summary": "PASS before=49998 after=49992 gen=6",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#081 4c.request-envelope-captured",
+    "exitCode": 0,
+    "summary": "PASS captured 1 messages",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#082 4c.request-source-content",
+    "exitCode": 0,
+    "summary": "PASS {\"src\":\"content\",\"type\":\"content.generation.requested\",\"id\":\"evt_01M5\",\"v\":1}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#083 4c.fake-ai-publish-completed",
+    "exitCode": 0,
+    "summary": "PASS published ai.generation.completed evt_158f240d30cb4b5984f0c5138c",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#084 4c.job-completed",
+    "exitCode": 0,
+    "summary": "PASS COMPLETED\t6\t\t\t6adc574149cdd6ada39de929",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#085 4c.history-written",
+    "exitCode": 0,
+    "summary": "PASS HistoryGeneratedQuizz rows=1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#086 4c.debited-once-no-refund",
+    "exitCode": 0,
+    "summary": "PASS debit:gen:6adc5741ac8dfd352ce0ca2f:SUBTRACT:6",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#087 4c.reuse-completed-accepted",
+    "exitCode": 0,
+    "summary": "PASS status=201 {\"jobId\":\"6adc574368aa204874b27bd5\",\"status\":\"processing\",\"message\":\"File \u0111\u00e3 t\u1ed3n t\u1ea1i, \u0111ang t\u1ea1o n\u1ed9i dung m\u1edbi...\",\"newBalance\":49987}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#088 4c.reuse-completed-debit-5",
+    "exitCode": 0,
+    "summary": "PASS debit:gen:6adc574368aa204874b27bd5:SUBTRACT:5",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#089 4c.reuse-completed-no-doc-debit",
+    "exitCode": 0,
+    "summary": "PASS doc B debits=1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#090 4c.reuse-completed-balance",
+    "exitCode": 0,
+    "summary": "PASS before=49992 after=49987",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#091 4d.cancel-queued-200",
+    "exitCode": 0,
+    "summary": "PASS status=200 {\"success\":true,\"message\":\"\u0110\u00e3 h\u1ee7y t\u00e1c v\u1ee5\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#092 4d.cancel-queued-row-cancelled",
+    "exitCode": 0,
+    "summary": "PASS CANCELLED\t5\t2026-10-24 06:59:15.778\t\t6adc573f58fa5c3654ffd9d8",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#093 4d.cancel-queued-one-refund",
+    "exitCode": 0,
+    "summary": "PASS debit:gen:6adc574368aa204874b27bd5:SUBTRACT:5 | refund:gen:6adc574368aa204874b27bd5:ADD:5",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#094 4d.cancel-queued-balance-restored",
+    "exitCode": 0,
+    "summary": "PASS before=49987 after=49992",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#095 4d.cancel-again-200",
+    "exitCode": 0,
+    "summary": "PASS status=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#096 4d.cancel-again-no-second-refund",
+    "exitCode": 0,
+    "summary": "PASS debit:gen:6adc574368aa204874b27bd5:SUBTRACT:5 | refund:gen:6adc574368aa204874b27bd5:ADD:5",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#097 4d.cancel-completed-409",
+    "exitCode": 0,
+    "summary": "PASS status=409 {\"statusCode\":409,\"code\":\"JOB_NOT_CANCELLABLE\",\"message\":\"Kh\u00f4ng th\u1ec3 h\u1ee7y job \u0111\u00e3 ho\u00e0n th\u00e0nh ho\u1eb7c th\u1ea5t b\u1ea1i\"} row=COMPLETED\t6\t\t\t6adc574149cdd6ada39de929",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#098 4c.reuse-failed-accepted",
+    "exitCode": 0,
+    "summary": "PASS status=201 {\"jobId\":\"6adc57445bc76ce45d24fd91\",\"status\":\"processing\",\"message\":\"\u0110ang x\u1eed l\u00fd l\u1ea1i file c\u0169...\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#099 4c.reuse-failed-no-debit",
+    "exitCode": 0,
+    "summary": "PASS gen debits=0 job=QUEUED\t0\t\t\t6adc5689bec3a656e6395bb4",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4c-check#100 4c.reuse-failed-balance-unchanged",
+    "exitCode": 0,
+    "summary": "PASS before=49992 after=49992",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#101 4d.cancel-reuse-failed-job-200",
+    "exitCode": 0,
+    "summary": "PASS status=200 row=CANCELLED\t0\t2026-10-24 06:59:16.912\t\t6adc5689bec3a656e6395bb4",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4d-check#102 4d.cancel-reuse-failed-no-refund",
+    "exitCode": 0,
+    "summary": "PASS gen rows=0",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4e-check#103 4e.generate-accepted",
+    "exitCode": 0,
+    "summary": "PASS status=201",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4e-check#104 4e.fake-ai-publish-failed",
+    "exitCode": 0,
+    "summary": "PASS published ai.generation.failed evt_c69b15baec164e18933bb96e8f",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4e-check#105 4e.job-failed",
+    "exitCode": 0,
+    "summary": "PASS FAILED\t6\t2026-10-24 06:59:17.896\tOCR_FAILED\t6adc57451ee74cd751275242",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4e-check#106 4e.one-refund",
+    "exitCode": 0,
+    "summary": "PASS debit:gen:6adc57455836f173abb50eb0:SUBTRACT:6 | refund:gen:6adc57455836f173abb50eb0:ADD:6",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4e-check#107 4e.balance-restored",
+    "exitCode": 0,
+    "summary": "PASS before=49992 after=49992 charge=6",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#108 4a.put-object-200",
+    "exitCode": 0,
+    "summary": "PASS put=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#109 4a.upload-accepted",
+    "exitCode": 0,
+    "summary": "PASS status=201 body={\"id\":\"6adc57821687559227a97b9e\",\"status\":\"PENDING\",\"newBalance\":49992,\"message\":\"File \u0111\u00e3 \u0111\u01b0\u1ee3c upload, \u0111ang x\u1eed l\u00fd OCR\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#110 4a.debit-once-on-upload",
+    "exitCode": 0,
+    "summary": "PASS [[\"debit:doc:6adc57821687559227a97b9e\",\"SUBTRACT\",1]]",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#111 4a.balance-debited-by-charge",
+    "exitCode": 0,
+    "summary": "PASS before=49993 after=49992 charge=1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#112 4a.document-failed-by-real-worker",
+    "exitCode": 0,
+    "summary": "PASS final status=FAILED",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#113 4a.exactly-one-refund",
+    "exitCode": 0,
+    "summary": "PASS [[\"debit:doc:6adc57821687559227a97b9e\",\"SUBTRACT\",1,4],[\"refund:doc:6adc57821687559227a97b9e\",\"ADD\",1,2]]",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#114 4a.balance-restored",
+    "exitCode": 0,
+    "summary": "PASS before=49993 after=49993",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4a-check#115 4a.reason-recorded",
+    "exitCode": 0,
+    "summary": "PASS {\"level\":30,\"time\":1792825219254,\"service\":\"document-service\",\"context\":\"DocumentProcessingService\",\"msg\":\"Document 6adc57821687559227a97b9e failed (DOWNLOAD_REJECTED); refund applied\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4f-check#116 4f.job-queued-accepted",
+    "exitCode": 1,
+    "summary": "FAIL status=403 {\"statusCode\":403,\"code\":\"QUOTA_EXCEEDED\",\"message\":\"B\u1ea1n \u0111\u00e3 \u0111\u1ea1t gi\u1edbi h\u1ea1n file/th\u00e1ng. Vui l\u00f2ng n\u00e2ng c\u1ea5p g\u00f3i ho\u1eb7c th\u1eed l\u1ea1i",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4f-check#117 4f.job-queued-accepted",
+    "exitCode": 0,
+    "summary": "PASS status=201 {\"jobId\":\"6adc57b57a0fd5b880a721c6\",\"status\":\"PENDING\",\"message\":\"File \u0111\u00e3 \u0111\u01b0\u1ee3c upload, \u0111ang x\u1eed l\u00fd OCR v\u00e0 t\u1ea1o n\u1ed9i dung\",\"",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4f-check#118 4f.queued-with-debit",
+    "exitCode": 0,
+    "summary": "PASS charge=6",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4f-check#119 4f.watchdog-failed-timeout",
+    "exitCode": 0,
+    "summary": "PASS FAILED\t6\t2026-10-24 07:01:59.979\tGENERATION_TIMEOUT\t6adc57b5268b008c435b03b8",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4f-check#120 4f.one-refund",
+    "exitCode": 0,
+    "summary": "PASS debit:gen:6adc57b57a0fd5b880a721c6:SUBTRACT:6 | refund:gen:6adc57b57a0fd5b880a721c6:ADD:6",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4f-check#121 4f.balance-restored-after-timeout",
+    "exitCode": 0,
+    "summary": "PASS before=300000 after=300000",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4f-check#122 4f.late-completed-published",
+    "exitCode": 0,
+    "summary": "PASS published ai.generation.completed evt_60d88639c60c45c68128d8f2f4",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4f-check#123 4f.late-event-no-history",
+    "exitCode": 0,
+    "summary": "PASS history rows=0 job=FAILED\t6\t2026-10-24 07:01:59.979\tGENERATION_TIMEOUT\t6adc57b5268b008c435b03b8",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4f-check#124 4f.refund-still-one-after-late",
+    "exitCode": 0,
+    "summary": "PASS",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4g-check#125 4g.backdated-pending-charge-inserted",
+    "exitCode": 0,
+    "summary": "PASS c82976c8bb612959d8880f12",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4g-check#126 4g.reaped-to-failed",
+    "exitCode": 0,
+    "summary": "PASS status=FAILED",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4g-check#127 4g.r2-key-enqueued",
+    "exitCode": 1,
+    "summary": "FAIL r2_delete_tasks rows=0",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4g-check#128 4g.no-ledger-rows-never-charged",
+    "exitCode": 0,
+    "summary": "PASS rows=0 before=300000 after=300000",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4g-check#129 4g.reaper-log-recorded",
+    "exitCode": 1,
+    "summary": "FAIL",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h-check#130 4h.target-owned-by-user",
+    "exitCode": 0,
+    "summary": "PASS storage=6adc574149cdd6ada39de929 file=p15t-c-zck7b.pdf",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h-check#131 4h.object-present-before",
+    "exitCode": 1,
+    "summary": "FAIL http=404",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h-check#132 4h.history-rows-before",
+    "exitCode": 0,
+    "summary": "PASS rows=1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h-check#133 4h.fixture-vector-inserted",
+    "exitCode": 0,
+    "summary": "PASS p15t-vec-12zb1fu8",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h-check#134 4h.delete-200",
+    "exitCode": 0,
+    "summary": "PASS status=200 {\"success\":true,\"message\":\"X\u00f3a th\u00e0nh c\u00f4ng\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h-check#135 4h.vectors-gone",
+    "exitCode": 0,
+    "summary": "PASS vector rows=0",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h-check#136 4h.r2-object-gone-within-1min",
+    "exitCode": 0,
+    "summary": "PASS object http=404",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h-check#137 4h.storage-row-deleted",
+    "exitCode": 0,
+    "summary": "PASS rows=0",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h-check#138 4h.history-storage-id-nulled",
+    "exitCode": 0,
+    "summary": "PASS still-linked=0 null-rows=1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h-check#139 4h.no-refund-on-delete",
+    "exitCode": 0,
+    "summary": "PASS before=49993 after=49993",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h2-check#140 4h2.job-accepted",
+    "exitCode": 0,
+    "summary": "PASS status=201",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h2-check#141 4h2.fake-completed-published",
+    "exitCode": 0,
+    "summary": "PASS published ai.generation.completed evt_8898908ce3474d3493c35ec856",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h2-check#142 4h2.job-completed-with-history",
+    "exitCode": 0,
+    "summary": "PASS COMPLETED\t6\t\t\t6adc5893c241494324f0d623",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h2-check#143 4h2.object-present-before-delete",
+    "exitCode": 0,
+    "summary": "PASS http=200 key=ai-uploads/daa9a67ec5c6a1b218b2d75c/1792",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h2-check#144 4h2.ai-worker-restarted",
+    "exitCode": 0,
+    "summary": "PASS exit 0",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h2-check#145 4h2.delete-200",
+    "exitCode": 0,
+    "summary": "PASS status=200 {\"success\":true,\"message\":\"X\u00f3a th\u00e0nh c\u00f4ng\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h2-check#146 4h2.vectors-gone-within-1min",
+    "exitCode": 0,
+    "summary": "PASS vector rows=0",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h2-check#147 4h2.r2-object-gone-within-1min",
+    "exitCode": 0,
+    "summary": "PASS object http=404",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h2-check#148 4h2.storage-row-deleted",
+    "exitCode": 0,
+    "summary": "PASS",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h2-check#149 4h2.history-link-nulled",
+    "exitCode": 0,
+    "summary": "PASS linked=0 null=2",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h2-check#150 4h2.no-refund-on-delete",
+    "exitCode": 0,
+    "summary": "PASS before=299994 after=299994",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4h2-check#151 4h2.balance-sanity",
+    "exitCode": 0,
+    "summary": "PASS bal0=300000",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#152 4i.completed-doc-found",
+    "exitCode": 0,
+    "summary": "PASS doc=6adc573f58fa5c3654ffd9d8",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#153 4i.object-present-before",
+    "exitCode": 0,
+    "summary": "PASS http=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#154 4i.chat-created",
+    "exitCode": 0,
+    "summary": "PASS status=201 {\"id\":\"mvm215fsv4nko1x\",\"userId\":\"d5ed0c5256fea92f8ba9a991\",\"subjectId\":null,\"title\":\"p15t-i-1\",\"cre",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#155 4i.attach-ok",
+    "exitCode": 0,
+    "summary": "PASS status=201 {\"id\":\"cmvm215gw000001mmmh6bf6fj\",\"chatId\":\"mvm215fsv4nko1x\",\"documentId\":\"6adc573f58fa5c3654ffd9d8\",\"documentName\":\"p15",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#156 4i.list-contains-doc",
+    "exitCode": 0,
+    "summary": "PASS status=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#157 4i.clear-with-files-ok",
+    "exitCode": 0,
+    "summary": "PASS status=201 {\"success\":true,\"message\":\"Chat v\u00e0 files \u0111\u00e3 \u0111\u01b0\u1ee3c x\u00f3a\",\"deletedFiles\":[\"p15t-b-zck7b.pdf\"]}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#158 4i.document-row-deleted",
+    "exitCode": 0,
+    "summary": "PASS",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#159 4i.r2-object-gone-within-1min",
+    "exitCode": 0,
+    "summary": "PASS object http=404",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#160 4i.chat2-created",
+    "exitCode": 0,
+    "summary": "PASS status=201",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#161 4i.attach2-ok",
+    "exitCode": 0,
+    "summary": "PASS status=201",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#162 4i.document-service-stopped",
+    "exitCode": 0,
+    "summary": "PASS exit 0",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#163 4i.clear-with-doc-down-503",
+    "exitCode": 0,
+    "summary": "PASS status=503 {\"statusCode\":503,\"code\":\"SERVICE_UNAVAILABLE\",\"message\":\"Kh\u00f4ng th\u1ec3 x\u00f3a file l\u00fac n\u00e0y, chat \u0111\u01b0\u1ee3c gi\u1eef l\u1ea1i. Vui l\u00f2ng th\u1eed l\u1ea1i sau.\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#164 4i.chat-kept-after-503",
+    "exitCode": 0,
+    "summary": "PASS exists={\"exists\":true}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#165 4i.attachment-kept-after-503",
+    "exitCode": 0,
+    "summary": "PASS attachments before=1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#166 4i.document-service-restarted",
+    "exitCode": 0,
+    "summary": "PASS exit 0",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4i-check#167 4i.retry-after-document-up-200",
+    "exitCode": 0,
+    "summary": "PASS status=201",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4j-check#168 4j.recent-uploads-200",
+    "exitCode": 0,
+    "summary": "PASS status=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4j-check#169 4j.generation-badge-present",
+    "exitCode": 0,
+    "summary": "PASS items with quizHistory/flashcardHistory=1",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4j-check#170 4j.shape-keys-stable",
+    "exitCode": 0,
+    "summary": "PASS createdAt,creditCharged,filename,flashcardHistory,id,keyR2,mimetype,pageCount,processingStatus,quizHistory,size,updatedAt,url,userId",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#171 4k.auth-me-teacher",
+    "exitCode": 0,
+    "summary": "PASS status=200 role=TEACHER",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#172 4k.wallet-info",
+    "exitCode": 0,
+    "summary": "PASS status=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#173 4k.anon-recent-uploads-401",
+    "exitCode": 0,
+    "summary": "PASS",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#174 4k.anon-upload-401",
+    "exitCode": 0,
+    "summary": "PASS",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#175 4k.anon-r2-image-401",
+    "exitCode": 0,
+    "summary": "PASS",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#176 4k.foreign-doc-get-404",
+    "exitCode": 0,
+    "summary": "PASS status=404",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#177 4k.foreign-doc-delete-404-and-kept",
+    "exitCode": 0,
+    "summary": "PASS status=404",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#178 4k.foreign-keyR2-400",
+    "exitCode": 0,
+    "summary": "PASS status=400 {\"statusCode\":400,\"code\":\"VALIDATION_FAILED\",\"message\":\"keyR2 kh\u00f4ng h\u1ee3p l\u1ec7\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#179 4k.quota-gate-403-when-exhausted",
+    "exitCode": 0,
+    "summary": "PASS status=403 code=QUOTA_EXCEEDED",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#180 4k.ai-models-200",
+    "exitCode": 0,
+    "summary": "PASS status=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#181 4k.vocabulary-categories-200",
+    "exitCode": 0,
+    "summary": "PASS status=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#182 4k.studyroom-list-200",
+    "exitCode": 1,
+    "summary": "FAIL status=404",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#183 4k.ai-chat-list-200",
+    "exitCode": 0,
+    "summary": "PASS status=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#184 4k.unknown-job-404",
+    "exitCode": 0,
+    "summary": "PASS status=404",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#185 4k.r2-image-upload-201",
+    "exitCode": 0,
+    "summary": "PASS status=201 {\"url\":\"https://examio-p15t.s3shim:8443/images/81ae44047473791f52a4a657/1792825592565-p15t.png\"}",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#186 4k.r2-image-object-present",
+    "exitCode": 0,
+    "summary": "PASS head=200 (public URL host is not resolvable from the host; object checked by key)",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s4k-check#187 4k.studyroom-mine-200 (path fixed: GET /studyrooms has no route)",
+    "exitCode": 0,
+    "summary": "PASS status=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#188 5.teacher-ai-tool-page-renders",
+    "exitCode": 0,
+    "summary": "PASS http://127.0.0.1:5273/k/ai-tool?tab=test",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#189 5.teacher-history-not-403",
+    "exitCode": 0,
+    "summary": "PASS http://127.0.0.1:5273/k/history",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#190 5.teacher-flashcard-page-not-403",
+    "exitCode": 0,
+    "summary": "PASS http://127.0.0.1:5273/k/flash-card",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#191 5.file-selected-shown",
+    "exitCode": 0,
+    "summary": "PASS p15-ui-fixture.pdf",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#192 5.generate-click",
+    "exitCode": 1,
+    "summary": "FAIL locator.click: Timeout 30000ms exceeded. Call log:   - waiting for getByRole('button', { name: /T\u1ea1o \u0111\u1ec1 ki\u1ec3m tra/ }).first()     - locator resolved",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#193 5.generate-request-sent",
+    "exitCode": 1,
+    "summary": "FAIL no response",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#194 5.job-created-queued",
+    "exitCode": 1,
+    "summary": "FAIL 6adc5893913bc182f2438f20",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#195 5.fake-ai-completed-published",
+    "exitCode": 0,
+    "summary": "PASS published ai.generation.completed evt_900fead2806745fa9ccd26b988",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#196 5.job-completed-in-db",
+    "exitCode": 0,
+    "summary": "PASS COMPLETED",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#197 5.result-visible-in-ui",
+    "exitCode": 1,
+    "summary": "FAIL question text visible",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#198 5.recent-upload-listed",
+    "exitCode": 1,
+    "summary": "FAIL File g\u1ea7n \u0111\u00e2y Ch\u1ecdn l\u1ea1i t\u00e0i li\u1ec7u \u0111\u00e3 t\u1ea3i l\u00ean ho\u1eb7c x\u00f3a kh\u1ecfi l\u1ecbch s\u1eed. 1 file p15t-f-1zd19.pdf 1 KB",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#199 5.recent-upload-quiz-badge",
+    "exitCode": 1,
+    "summary": "FAIL badge text found=false",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#200 5.object-present-before-delete",
+    "exitCode": 1,
+    "summary": "FAIL http=404",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#201 5.delete-open",
+    "exitCode": 1,
+    "summary": "FAIL locator.click: Timeout 20000ms exceeded. Call log:   - waiting for getByRole('button', { name: 'X\u00f3a p15-ui-fixture.p",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#202 5.delete-confirm",
+    "exitCode": 1,
+    "summary": "FAIL locator.click: Timeout 20000ms exceeded. Call log:   - waiting for getByRole('button', { name: 'X\u00f3a file' }).first()",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#203 5.delete-request-200",
+    "exitCode": 1,
+    "summary": "FAIL none",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#204 5.row-and-object-gone-within-1min",
+    "exitCode": 0,
+    "summary": "PASS row=0 object=404",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#205 5.no-refund-on-delete",
+    "exitCode": 0,
+    "summary": "PASS before=299994 after=299994",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#206 5.file-removed-from-recents",
+    "exitCode": 0,
+    "summary": "PASS",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#207 5.teacher-page-js-errors-none",
+    "exitCode": 0,
+    "summary": "PASS",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#208 5.admin-login",
+    "exitCode": 0,
+    "summary": "PASS",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#209 5.teacher-ai-tool-page-renders",
+    "exitCode": 0,
+    "summary": "PASS http://127.0.0.1:5273/k/ai-tool?tab=test",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#210 5.teacher-history-not-refused",
+    "exitCode": 0,
+    "summary": "PASS http://127.0.0.1:5273/k/history",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#211 5.teacher-flashcard-not-refused",
+    "exitCode": 0,
+    "summary": "PASS http://127.0.0.1:5273/k/flash-card",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#212 5.file-selected-shown",
+    "exitCode": 0,
+    "summary": "PASS p15-ui-fixture.pdf",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#213 5.generate-request-sent",
+    "exitCode": 0,
+    "summary": "PASS status=201",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#214 5.new-job-created-and-queued",
+    "exitCode": 0,
+    "summary": "PASS job=6adc5a66c9a7676c4fb29d98 status=QUEUED",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#215 5.fake-ai-completed-published",
+    "exitCode": 0,
+    "summary": "PASS published ai.generation.completed evt_ff15797584764f91ad0f0158cb",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#216 5.job-completed-in-db",
+    "exitCode": 0,
+    "summary": "PASS COMPLETED",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#217 5.result-visible-in-ui",
+    "exitCode": 0,
+    "summary": "PASS question text visible on page",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#218 5.recent-upload-listed",
+    "exitCode": 0,
+    "summary": "PASS File g\u1ea7n \u0111\u00e2y Ch\u1ecdn l\u1ea1i t\u00e0i li\u1ec7u \u0111\u00e3 t\u1ea3i l\u00ean ho\u1eb7c x\u00f3a kh\u1ecfi l\u1ecbch s\u1eed. 2 file p15-ui-fixture.pdf 1 KB 1Q p15t-f-1zd19.pdf 1 KB",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#219 5.recent-upload-quiz-badge",
+    "exitCode": 0,
+    "summary": "PASS badge 1Q found=true",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#220 5.object-present-before-delete",
+    "exitCode": 0,
+    "summary": "PASS http=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#221 5.delete-request-200",
+    "exitCode": 0,
+    "summary": "PASS status=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#222 5.row-and-object-gone-within-1min",
+    "exitCode": 0,
+    "summary": "PASS row=0 object=404",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#223 5.no-refund-on-delete",
+    "exitCode": 0,
+    "summary": "PASS before=299988 after=299988",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#224 5.file-removed-from-recents",
+    "exitCode": 0,
+    "summary": "PASS",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#225 5.teacher-page-no-js-errors",
+    "exitCode": 0,
+    "summary": "PASS",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#226 5.student-demotion-fixture",
+    "exitCode": 0,
+    "summary": "PASS status=200 {\"user\":{\"id\":\"1979300aa29eb142c9d9a5ae\",\"email\":\"user5@examio.vn\",\"username\":\"user5\",\"name\":\"Ho\u00e0ng",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#227 5.student-ai-tool-refused-403",
+    "exitCode": 0,
+    "summary": "PASS http://127.0.0.1:5273/403",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: s5-check#228 5.restore-teacher-user5",
+    "exitCode": 0,
+    "summary": "PASS status=200",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "temper-2: ai-service-pytest-unit-final-code",
+    "exitCode": 0,
+    "summary": "80 passed, 51 skipped (integration tests need REQUIRE_INTEGRATION)",
+    "ts": "2026-10-24T07:14:54.000Z"
+  },
+  {
+    "command": "final: proto:lint + buf breaking vs HEAD (final code)",
+    "exitCode": 0,
+    "summary": "0 / 0",
+    "ts": "2026-10-24T13:31:58.645534Z"
+  },
+  {
+    "command": "final: yarn typecheck (final code)",
+    "exitCode": 0,
+    "summary": "all services",
+    "ts": "2026-10-24T13:31:58.645534Z"
+  },
+  {
+    "command": "final: TZ=UTC yarn test (final code)",
+    "exitCode": 0,
+    "summary": "214 suites passed, 1 skipped; 2179 tests passed, 6 skipped",
+    "ts": "2026-10-24T13:31:58.645534Z"
+  },
+  {
+    "command": "final: yarn check:deps",
+    "exitCode": 0,
+    "summary": "no violations",
+    "ts": "2026-10-24T13:31:58.645534Z"
+  },
+  {
+    "command": "final: yarn check:ownership",
+    "exitCode": 0,
+    "summary": "Violations: 0",
+    "ts": "2026-10-24T13:31:58.645534Z"
+  },
+  {
+    "command": "final: yarn build:all (sequential)",
+    "exitCode": 0,
+    "summary": "all services incl. document-service",
+    "ts": "2026-10-24T13:31:58.645534Z"
+  },
+  {
+    "command": "final: node --test compose-topology + render-definitions",
+    "exitCode": 0,
+    "summary": "40 pass, 0 fail",
+    "ts": "2026-10-24T13:31:58.645534Z"
+  },
+  {
+    "command": "final: ai-service pytest (unit, no infra, env -i)",
+    "exitCode": 0,
+    "summary": "80 passed, 59 skipped (integration skips without containers)",
+    "ts": "2026-10-24T13:31:58.645534Z"
+  },
+  {
+    "command": "final: ai-service ruff gate (CI ai-service job file list, ruff 0.15.22)",
+    "exitCode": 0,
+    "summary": "All checks passed",
+    "ts": "2026-10-24T13:31:58.645534Z"
+  },
+  {
+    "command": "final: success-criteria greps (ai foreign SQL/DDL; INTERNAL_SERVICE_TOKEN/internal/upload; UpdateBalance/deductCredits)",
+    "exitCode": 0,
+    "summary": "0 / 0 / 0 hits",
+    "ts": "2026-10-24T13:31:58.645534Z"
+  },
+  {
+    "command": "fix-round (implementer, final code, throwaway infra): ai-service REQUIRE_INTEGRATION=1 pytest",
+    "exitCode": 0,
+    "summary": "139 passed",
+    "ts": "2026-10-24T13:31:58.645534Z"
+  },
+  {
+    "command": "fix-round (implementer, final code, throwaway infra): document e2e folder",
+    "exitCode": 0,
+    "summary": "6 suites, 71 tests",
+    "ts": "2026-10-24T13:31:58.645534Z"
+  },
+  {
+    "command": "fix-round (implementer, final code, throwaway infra): exam e2e folder as exam_svc incl. test/generation",
+    "exitCode": 0,
+    "summary": "24 suites, 269 tests; generation 63",
+    "ts": "2026-10-24T13:31:58.645534Z"
+  },
+  {
+    "command": "fix-round (implementer, final code, throwaway infra): test/db-isolation CI=true",
+    "exitCode": 0,
+    "summary": "5 suites, 57 tests",
+    "ts": "2026-10-24T13:31:58.645534Z"
+  }
+]

@@ -1,0 +1,25 @@
+quiz 6ad760f096e5c87d08a04acf
+PASS | teacher: share dialog opens with practice link | http://localhost:5273/k/practice-quiz/6ad760f096e5c87d08a04acf
+PASS | teacher: dialog has public + code switches | count=2
+PASS | teacher: picker never shows an email
+PASS | teacher: code on -> 6-digit code shown after save | 422106
+PASS | student: no grant -> code form (no questions shown)
+PASS | student: wrong code -> inline error
+PASS | student: right code -> intro (remembered after reload below)
+PASS | student: reload does not ask for the code again
+PASS | network: start response has no answer/isCorrect/score fields
+PASS | autosave: PUT sent ~2s after the last change
+PASS | resume: reload continues at question 2
+PASS | submit: server score shown (1 of 2 correct = 5/10) | 5/10
+PASS | network: submit response reveals the key only now
+PASS | my materials: shared quiz section lists the set with a practice button
+PASS | whitelisted student: no code prompt
+PASS | teacher: "Đã mở bằng mã" lists the student by username/name (no email)
+PASS | teacher: regenerate -> new code | 069294
+PASS | student: after rotation the code is asked again
+PASS | whitelisted student keeps access after rotation
+flashcard set 6ad76143e6087eb00d4e940d
+PASS | no uncaught page errors
+PASS | external requests were blocked, none leaked | blocked=13
+summary: 21/21 checks passed
+

@@ -1,0 +1,44 @@
+{
+  "score": 9,
+  "criticalCount": 0,
+  "decision": "SEALED",
+  "acceptanceCovered": [
+    "yarn typecheck, build:all and test exit 0 and gateway e2e passes (temper 80/80 pass, 0 fail; not re-run)",
+    "gateway has no prisma/@examio/database usage and only config.controller.ts remains under controllers",
+    "every route in the phase 01 route inventory is covered by routes.yaml",
+    "SSE responses stream incrementally and uploads stream without buffering; status codes and headers are preserved (body-cap Transform is pass-through under cap; live 2MB chunked intact, mid-body cut per temper)",
+    "only auth sets accessToken/refreshToken cookies with SameSite=Lax",
+    "replaying a token after logout returns 401 SESSION_REVOKED (now durable via auth.session.revoked outbox; live r3 with GatewayControl blocked per temper)",
+    "after a role change the next request returns 401 TOKEN_STALE and refresh succeeds, also when the GatewayControl call is blocked (durable path)",
+    "Redis down: admin and non-GET routes fail closed with 503, non-admin GET passes",
+    "per-route rate limits are ported and a spoofed X-Forwarded-For does not change the limiter key",
+    "optional-auth routes strip invalid tokens before forwarding (sanitised on the incoming request in prepare-request.ts)",
+    "helmet, CORS allowlist and OPTIONS short-circuit are in place",
+    "compose exposes no host ports for postgres, redis or rabbitmq and only edge-facing services have egress",
+    "WebSocket upgrade verifies the token and page flag before proxying (prepareUpgradeRequest then guarded proxy.upgrade)",
+    "examio-fe build and lint still pass"
+  ],
+  "regressionChecked": [
+    "every path into http-proxy: only dispatcher (after prepareProxiedRequest) and ws-upgrade (after prepareUpgradeRequest); sole createProxyMiddleware call; guarded wrapper 500s requests with no forward context; forwardContexts.set only in prepare-request.ts",
+    "http-proxy 1.18.1 builds outgoing headers from req.headers (not rawHeaders), so sanitising req.headers is effective; Expect removed; connection forced to close unless upgrade",
+    "header case/duplicate/array tricks: removeAnyCase, node lowercases and joins duplicates, applyForwardHeaders drops every x-user-* key and overwrites x-forwarded-*, x-real-ip, authorization",
+    "Connection-listed header smuggling: connection header is rewritten to close, upstreams are direct (no intermediary honouring it), x-user-* already removed",
+    "Expect: 100-continue bypass closed on HTTP and WS (live spoof matrix direct and nginx, with and without Expect per temper)",
+    "body-cap: counts bytes on the incoming stream via req.pipe, destroys upstream at cap, 413 keep-alive, drain bounded by cap+8MB and 5s timer unref'd and cleared on close; onProxyError suppressed for over-cap",
+    "SessionRevoker: deactivation and outbox event in one transaction, gRPC fast path after commit, logout fallback on tx failure; gateway SessionRevokedHandler idempotent, dedupe:false, skips expired exp, malformed payload permanent error",
+    "auth_events.proto SessionRevoked additive (int64 as string); rabbitmq gateway user permissions",
+    "revoke hooks: logout, device delete, logout-all-others, change and reset password"
+  ],
+  "contractStatus": "CHANGED",
+  "refuted": [],
+  "unproven": [],
+  "reachableRegressions": [],
+  "findings": [
+    { "severity": "Medium", "category": "Security", "location": "examio-be/apps/gateway-service/src/pipeline/dispatcher.middleware.ts:57", "summary": "413 from the Content-Length guard path has no bounded drain: Node dumps the declared body on a keep-alive socket until requestTimeout. Only the streamed-cap path has the 8MB/5s bound. Reuse capRequestBody's drain bound or set Connection: close after the response. Mitigated by nginx 100M cap, rate limiter and loopback-only port", "disposition": "Defer" },
+    { "severity": "Low", "category": "Security", "location": "examio-be/apps/gateway-service/src/pipeline/forward-headers.ts:46", "summary": "Denylist scrubs only x-user-*, forwarded, x-real-ip, x-internal-service-token; x-forwarded-port/prefix/server and x-original-url from clients still reach upstreams. Harmless today; consider removing or an allowlist", "disposition": "Defer" },
+    { "severity": "Low", "category": "Performance", "location": "examio-be/apps/auth-service/src/devices/session-revoker.service.ts:60", "summary": "One outbox insert per session in a loop inside the transaction (password reset with many sessions); batch with createMany if OutboxService allows", "disposition": "Defer" },
+    { "severity": "Low", "category": "Contract", "location": "examio-be/apps/auth-service/src/auth.controller.ts:688", "summary": "POST /auth/exchange is @Public in auth but routed under required auth; never proxied before, no client uses it", "disposition": "Defer" },
+    { "severity": "Low", "category": "Security", "location": "examio-be/apps/gateway-service/src/ws/ws-upgrade.handler.ts:35", "summary": "No Origin check on WS upgrade; SameSite=Lax mitigates today", "disposition": "Defer" },
+    { "severity": "Low", "category": "Infra", "location": "examio-be/deploy/docker-compose.yml:76", "summary": "gateway on non-internal edge network has outbound internet it does not need", "disposition": "Defer" }
+  ]
+}

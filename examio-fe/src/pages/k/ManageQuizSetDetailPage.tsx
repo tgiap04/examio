@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Search, X,
   Plus,
+  Share2,
   Trash2,
   FileText,
   Edit,
@@ -16,6 +17,7 @@ import { isCorrectAnswer, quizOptionToText } from "@/lib/quizAnswerUtils";
 import { cn } from "@/lib/utils";
 import type { Quizz } from "@/types/quizset";
 import { DeleteConfirmDialog } from "@/components/organisms/DeleteConfirmDialog";
+import { ShareQuizSetModal } from "@/components/organisms/ShareQuizSetModal";
 import { InlineQuestionEditor, type InlineQuestionFormData } from "@/components/organisms/InlineQuestionEditor";
 import { LabelManager } from "@/components/organisms/LabelManager";
 import { RichTextViewer } from "@/components/molecules/RichTextViewer";
@@ -46,6 +48,7 @@ export default function ManageQuizSetDetailPage() {
   const [selectedQuestion, setSelectedQuestion] = useState<Quizz | null>(null);
   const [showQuestionForm, setShowQuestionForm] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isShareOpen, setIsShareOpen] = useState(false);
   const [questionToDelete, setQuestionToDelete] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [paginatedQuestions, setPaginatedQuestions] = useState<Quizz[]>([]);
@@ -205,7 +208,12 @@ export default function ManageQuizSetDetailPage() {
                 </BreadcrumbList>
               </Breadcrumb>
             </div>
-            <div className="flex items-center gap-2" />
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setIsShareOpen(true)}>
+                <Share2 className="mr-2 h-4 w-4" />
+                Chia sẻ
+              </Button>
+            </div>
           </div>
 
           {currentQuizSet.tags && currentQuizSet.tags.length > 0 && (
@@ -479,6 +487,8 @@ export default function ManageQuizSetDetailPage() {
           )}
         </Card>
       </div>
+
+      <ShareQuizSetModal open={isShareOpen} onOpenChange={setIsShareOpen} quizSetId={id} />
 
       <DeleteConfirmDialog
         open={isDeleteDialogOpen}

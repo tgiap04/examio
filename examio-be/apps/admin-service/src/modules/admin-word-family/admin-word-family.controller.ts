@@ -9,18 +9,17 @@ import {
     Post,
     Put,
     Req,
-    UseGuards,
     UsePipes,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { Request } from 'express';
-import { AdminGuard } from '@examio/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
 import { AdminWordFamilyService, AuditContext } from './admin-word-family.service';
 import { CreateCategoryBodyDto } from './dto/create-category.body';
 import { UpdateCategoryBodyDto } from './dto/update-category.body';
+import { RequirePermissions, forwardUser } from '@examio/auth-jwt';
 
 interface AuthedAdminRequest extends Request {
     user?: { id: string };
@@ -29,7 +28,7 @@ interface AuthedAdminRequest extends Request {
 @ApiTags('Admin / Word Family')
 @ApiBearerAuth()
 @Controller('admin/word-family')
-@UseGuards(AdminGuard)
+@RequirePermissions('word_family:admin')
 @Throttle({ admin: { ttl: 60000, limit: 30 } })
 @UsePipes(ZodValidationPipe)
 export class AdminWordFamilyController {
@@ -37,8 +36,8 @@ export class AdminWordFamilyController {
 
     @Get('categories')
     @ApiOperation({ summary: 'List all word family categories (admin view)' })
-    async listCategories() {
-        return this.wfService.listCategories();
+    async listCategories(@Req() req: AuthedAdminRequest) {
+        return this.wfService.listCategories(forwardUser(req));
     }
 
     @Post('categories')
@@ -48,7 +47,7 @@ export class AdminWordFamilyController {
         @Body() body: CreateCategoryBodyDto,
         @Req() req: AuthedAdminRequest,
     ) {
-        return this.wfService.createCategory(body, this.buildAuditContext(req));
+        return this.wfService.createCategory(body, this.buildAuditContext(req), forwardUser(req));
     }
 
     @Put('categories/:id')
@@ -63,6 +62,7 @@ export class AdminWordFamilyController {
             id,
             body,
             this.buildAuditContext(req),
+            forwardUser(req),
         );
     }
 
@@ -74,13 +74,13 @@ export class AdminWordFamilyController {
         @Param('id') id: string,
         @Req() req: AuthedAdminRequest,
     ) {
-        return this.wfService.deleteCategory(id, this.buildAuditContext(req));
+        return this.wfService.deleteCategory(id, this.buildAuditContext(req), forwardUser(req));
     }
 
     private buildAuditContext(req: AuthedAdminRequest): AuditContext {
         const adminId = req.user?.id;
         if (!adminId) {
-            throw new Error('AdminGuard did not attach req.user');
+            throw new Error('admin principal missing on request.user');
         }
 
         const headers = req.headers ?? {};

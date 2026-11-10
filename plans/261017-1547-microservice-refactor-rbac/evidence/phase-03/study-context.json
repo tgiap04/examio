@@ -1,0 +1,37 @@
+{
+  "task": "Phase 03 Messaging Foundation: libs/messaging (envelope v1, transactional outbox + claim-then-publish relay, idempotent consumer with source validation, one 30s retry tier + DLQ, daily purge), per-service RabbitMQ users with topic permissions, ROLE worker, auth.user.registered via outbox consumed by finance",
+  "mode": "code",
+  "acceptanceCriteria": [
+    "yarn typecheck, build:all and test exit 0",
+    "finance user-registered e2e passes",
+    "registering a user while RabbitMQ is down still returns 201 and the wallet appears within 5s after RabbitMQ returns (no event loss)",
+    "duplicate deliveries are absorbed by processed_events (handler effect applied once)",
+    "envelope source/type mismatch goes to the DLQ; transient failures retry via <svc>.retry.30s and land in <svc>.dlq after 5 attempts",
+    "per-service RabbitMQ users exist and finance can only publish ^finance\\. on examio.events",
+    "relay holds no DB lock across the broker call and uses its own small pg pool",
+    "state events without a numeric data.version are rejected by createEnvelope",
+    "no USER_CREATED, traceparent or amq.default references remain",
+    "deploy/rabbitmq/definitions.json is gitignored and never committed"
+  ],
+  "touchpoints": [
+    "examio-be/libs/messaging",
+    "examio-be/libs/common/src/events",
+    "examio-be/apps/auth-service/src/auth.service.ts",
+    "examio-be/apps/finance-service/src/events",
+    "examio-be/libs/database/src/models",
+    "examio-be/deploy/rabbitmq",
+    "examio-be/deploy/docker-compose.yml"
+  ],
+  "blastRadius": [
+    "user registration (email + Google OAuth)",
+    "finance wallet bootstrap on signup",
+    "service boot (worker role, topology declaration)",
+    "RabbitMQ broker auth for every service incl. ai-service legacy queue",
+    "DB schema (outbox_events, processed_events)"
+  ],
+  "contracts": [
+    "event routing key auth.user.registered replaces auth.user.created",
+    "RABBITMQ_URL per-service credentials",
+    "public /api/v1 routes unchanged"
+  ]
+}

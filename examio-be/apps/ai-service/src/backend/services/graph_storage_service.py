@@ -1,11 +1,12 @@
 import logging
 import json
-import os
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
 import asyncpg
+
+from src import db
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,6 @@ class PersistedGraphGroup:
 
 class GraphStorageService:
     _instance = None
-    _pool: Optional[asyncpg.Pool] = None
 
     def __new__(cls):
         if cls._instance is None:
@@ -35,20 +35,7 @@ class GraphStorageService:
         return cls._instance
 
     async def _get_pool(self) -> asyncpg.Pool:
-        if self._pool is None or self._pool._closed:
-            postgres_uri = os.environ.get('DATABASE_URL')
-            if not postgres_uri:
-                raise ValueError('DATABASE_URL environment variable not set')
-
-            self._pool = await asyncpg.create_pool(
-                postgres_uri,
-                min_size=2,
-                max_size=10,
-                command_timeout=60,
-            )
-            logger.info('PostgreSQL connection pool created for GraphStorageService')
-
-        return self._pool
+        return await db.get_pool()
 
     async def load_graph_state(self, user_storage_id: str) -> Optional[Dict[str, Any]]:
         pool = await self._get_pool()
@@ -213,55 +200,6 @@ class GraphStorageService:
                 user_storage_id,
             )
 
-    async def ensure_graph_schema(self) -> None:
-        pool = await self._get_pool()
-        statements = [
-            """
-            CREATE TABLE IF NOT EXISTS "UserStorageGraph" (
-                id TEXT PRIMARY KEY,
-                "userStorageId" TEXT UNIQUE NOT NULL REFERENCES "UserStorage"(id) ON DELETE CASCADE,
-                "graphVersion" INTEGER NOT NULL DEFAULT 1,
-                "chunkSignature" TEXT NOT NULL,
-                status TEXT NOT NULL DEFAULT 'READY',
-                "totalChunks" INTEGER NOT NULL DEFAULT 0,
-                "totalEdges" INTEGER NOT NULL DEFAULT 0,
-                "totalCommunities" INTEGER NOT NULL DEFAULT 0,
-                "totalGroups" INTEGER NOT NULL DEFAULT 0,
-                metadata JSONB,
-                "builtAt" TIMESTAMP NOT NULL DEFAULT NOW(),
-                "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
-            )
-            """,
-            """
-            CREATE TABLE IF NOT EXISTS "UserStorageGraphGroup" (
-                id TEXT PRIMARY KEY,
-                "graphId" TEXT NOT NULL REFERENCES "UserStorageGraph"(id) ON DELETE CASCADE,
-                "userStorageId" TEXT NOT NULL REFERENCES "UserStorage"(id) ON DELETE CASCADE,
-                "groupIndex" INTEGER NOT NULL,
-                "communityId" INTEGER,
-                "pageStart" INTEGER,
-                "pageEnd" INTEGER,
-                "pageRanges" JSONB NOT NULL,
-                "chunkIds" JSONB NOT NULL,
-                "estimatedTokens" INTEGER NOT NULL DEFAULT 0,
-                "charCount" INTEGER NOT NULL DEFAULT 0,
-                weight DOUBLE PRECISION NOT NULL DEFAULT 1,
-                summary TEXT,
-                metadata JSONB,
-                "createdAt" TIMESTAMP NOT NULL DEFAULT NOW(),
-                "updatedAt" TIMESTAMP NOT NULL DEFAULT NOW()
-            )
-            """,
-            'CREATE UNIQUE INDEX IF NOT EXISTS "UserStorageGraphGroup_graphId_groupIndex_key" ON "UserStorageGraphGroup"("graphId", "groupIndex")',
-            'CREATE INDEX IF NOT EXISTS "UserStorageGraphGroup_userStorageId_groupIndex_idx" ON "UserStorageGraphGroup"("userStorageId", "groupIndex")',
-            'CREATE INDEX IF NOT EXISTS "UserStorageGraph_status_idx" ON "UserStorageGraph"(status)',
-        ]
-
-        async with pool.acquire() as conn:
-            for statement in statements:
-                await conn.execute(statement)
-
-        logger.info('Ensured UserStorageGraph and UserStorageGraphGroup tables exist')
 
 
 graph_storage_service = GraphStorageService()
