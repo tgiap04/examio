@@ -119,6 +119,30 @@ else
     fail=1
 fi
 
+# A huge diff (repo-wide rename touched ~2.5k files; 7000 here also beats macOS ARG_MAX) must not hit the per-argument/env size limit
+# (Linux MAX_ARG_STRLEN = 128 KiB): the file list never travels through argv or one env var.
+big_repo="$(mktemp -d)"
+(
+    set -e
+    mkdir -p "$big_repo/kmaedu-be/scripts" "$big_repo/kmaedu-be/deploy"
+    cp "$script" "$big_repo/kmaedu-be/scripts/"
+    cp "$here/../deploy/services.json" "$big_repo/kmaedu-be/deploy/"
+    cd "$big_repo"
+    git init -q && git -c user.email=t@t -c user.name=t commit -q --allow-empty -m base
+    dir="kmaedu-be/apps/content-service/src/$(printf 'x%.0s' {1..120})"
+    mkdir -p "$dir"
+    for i in $(seq 1 7000); do : > "$dir/file-$i.ts"; done
+    git add -A && git -c user.email=t@t -c user.name=t commit -q -m big
+) >/dev/null 2>&1
+got="$(bash "$big_repo/kmaedu-be/scripts/changed-services.sh" HEAD~1 HEAD 2>&1)"
+rm -rf "$big_repo"
+if [ "$got" = '{"wave1":[],"wave2":["content"]}' ]; then
+    echo "ok   - a 7000-file diff does not overflow the argument size limit"
+else
+    echo "FAIL - 7000-file diff: $got"
+    fail=1
+fi
+
 # Every service key must be a compose service name and have a compose file.
 for k in $(node -e 'const c=require(process.argv[1]);for(const g of Object.values(c))for(const k of Object.keys(g))console.log(k)' "$here/../deploy/services.json"); do
     if [ ! -f "$here/../deploy/compose/$k.yml" ]; then

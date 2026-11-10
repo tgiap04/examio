@@ -47,8 +47,14 @@ fi
 
 command -v node >/dev/null 2>&1 || { echo "changed-services.sh: node is required" >&2; exit 2; }
 
+# The file list goes through a temp file, not argv or one env var: a repo-wide change lists
+# thousands of paths and exceeds the per-string limit (Linux MAX_ARG_STRLEN, 128 KiB).
+list_file="$(mktemp)"
+trap 'rm -f "$list_file"' EXIT
+printf '%s\n' "$files" > "$list_file"
+
 SERVICES_JSON="${SERVICES_JSON:-$here/../deploy/services.json}" \
-USE_ALL="$use_all" CHANGED_LIST="$files" node - <<'NODE'
+USE_ALL="$use_all" CHANGED_LIST_FILE="$list_file" node - <<'NODE'
 const fs = require('node:fs');
 
 const catalog = JSON.parse(fs.readFileSync(process.env.SERVICES_JSON, 'utf8'));
@@ -61,7 +67,7 @@ for (const [lang, group] of Object.entries(catalog)) {
 const nodeKeys = entries.filter((e) => e.lang === 'node').map((e) => e.key);
 const allKeys = entries.map((e) => e.key);
 
-const files = process.env.CHANGED_LIST.split('\n')
+const files = fs.readFileSync(process.env.CHANGED_LIST_FILE, 'utf8').split('\n')
     .map((f) => f.trim().replace(/^kmaedu-be\//, ''))
     .filter((f) => f !== '');
 
