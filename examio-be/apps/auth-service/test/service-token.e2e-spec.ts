@@ -19,12 +19,12 @@ describe('service tokens: POST /internal/token (e2e)', () => {
     const issue = (body: Record<string, unknown>) =>
         request(ctx.url).post('/internal/token').send(body);
 
-    it('a valid client_credentials request yields svc:exam for aud finance, roles [SERVICE], <= 5 min', async () => {
-        const res = await issue({ client_id: 'exam', client_secret: SERVICE_SECRETS.exam, audience: 'finance' });
+    it('a valid client_credentials request yields svc:exam for aud admin, roles [SERVICE], <= 5 min', async () => {
+        const res = await issue({ client_id: 'exam', client_secret: SERVICE_SECRETS.exam, audience: 'admin' });
         expect(res.status).toBe(200);
         expect(res.body).toMatchObject({ token_type: 'Bearer', expires_in: 300 });
         const claims = decodeClaims(res.body.access_token);
-        expect(claims).toMatchObject({ sub: 'svc:exam', aud: 'finance', roles: ['SERVICE'], iss: 'examio-auth' });
+        expect(claims).toMatchObject({ sub: 'svc:exam', aud: 'admin', roles: ['SERVICE'], iss: 'examio-auth' });
         expect(claims).not.toHaveProperty('sid');
         expect(claims).not.toHaveProperty('av');
         expect(claims).not.toHaveProperty('email_verified');
@@ -32,13 +32,13 @@ describe('service tokens: POST /internal/token (e2e)', () => {
     });
 
     it('is verifiable by another service through the published JWKS, only for its own audience', async () => {
-        const res = await issue({ client_id: 'exam', client_secret: SERVICE_SECRETS.exam, audience: 'finance' });
-        const finance = createTokenVerifier({
+        const res = await issue({ client_id: 'exam', client_secret: SERVICE_SECRETS.exam, audience: 'admin' });
+        const admin = createTokenVerifier({
             jwksUrl: `${ctx.url}/.well-known/jwks.json`,
             issuer: 'examio-auth',
-            audiences: ['examio', 'finance'],
+            audiences: ['examio', 'admin'],
         });
-        await expect(finance(res.body.access_token)).resolves.toEqual({ kind: 'service', name: 'exam' });
+        await expect(admin(res.body.access_token)).resolves.toEqual({ kind: 'service', name: 'exam' });
         const r2 = createTokenVerifier({
             jwksUrl: `${ctx.url}/.well-known/jwks.json`,
             issuer: 'examio-auth',
@@ -47,12 +47,14 @@ describe('service tokens: POST /internal/token (e2e)', () => {
         await expect(r2(res.body.access_token)).rejects.toMatchObject({ code: 'TOKEN_INVALID' });
     });
 
-    it('rejects a wrong secret, another client\'s secret, an unknown client and an unknown audience with 401', async () => {
+    it('rejects a wrong secret, another client\'s secret, an unknown client and an unknown (or removed) audience with 401', async () => {
         for (const body of [
-            { client_id: 'exam', client_secret: 'wrong', audience: 'finance' },
-            { client_id: 'exam', client_secret: SERVICE_SECRETS.finance, audience: 'finance' },
-            { client_id: 'ghost', client_secret: SERVICE_SECRETS.exam, audience: 'finance' },
+            { client_id: 'exam', client_secret: 'wrong', audience: 'admin' },
+            { client_id: 'exam', client_secret: SERVICE_SECRETS.content, audience: 'admin' },
+            { client_id: 'ghost', client_secret: SERVICE_SECRETS.exam, audience: 'admin' },
             { client_id: 'exam', client_secret: SERVICE_SECRETS.exam, audience: 'nowhere' },
+            // finance-service was removed: its audience no longer exists.
+            { client_id: 'exam', client_secret: SERVICE_SECRETS.exam, audience: 'finance' },
         ]) {
             const res = await issue(body);
             expect(res.status).toBe(401);
@@ -64,7 +66,7 @@ describe('service tokens: POST /internal/token (e2e)', () => {
 
     it('a malformed body is 400', async () => {
         expect((await issue({ client_id: 'exam' })).status).toBe(400);
-        expect((await issue({ client_id: 'exam', client_secret: 'x', audience: 'finance', extra: 1 })).status).toBe(400);
+        expect((await issue({ client_id: 'exam', client_secret: 'x', audience: 'admin', extra: 1 })).status).toBe(400);
     });
 
     it('a service token is rejected by an HTTP @Authenticated route with 403 PERMISSION_DENIED', async () => {

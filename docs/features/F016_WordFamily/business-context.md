@@ -20,5 +20,4 @@ Learning vocabulary in isolated word lists is inefficient — students forget wo
 
 ## Unresolved Questions
 
-- Should AI generation consume credits/quota like other AI features on the platform, or remain free to encourage adoption?
 - Is a "My Saved Word Families" browsing page needed, or is inline saved-state on the detail page sufficient?

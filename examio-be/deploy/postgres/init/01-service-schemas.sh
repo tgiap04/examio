@@ -8,13 +8,13 @@
 # privilege on the database and on `public`, so `content_svc` selecting from
 # auth."User" fails with "permission denied".
 #
-# All ten schemas/roles exist from day one so later phases add Prisma
+# All nine schemas/roles exist from day one so later phases add Prisma
 # schema files, never init SQL (the former `exam` schema was split into
 # `content` and `assessment`). Passwords are passed to psql as variables, never
 # spliced into SQL text, and are not echoed.
 set -euo pipefail
 
-SVCS="auth finance admin content assessment studyroom vocabulary aichat document ai"
+SVCS="auth admin content assessment studyroom vocabulary aichat document ai"
 
 # Fail fast, before creating anything, if any password is missing.
 missing=""

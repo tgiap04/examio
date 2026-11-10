@@ -28,7 +28,7 @@ class CliModule {}
  *   bootstrap:admin revoke <email>
  *
  * Re-running `grant` with the same values re-emits `auth.user.authz_changed`
- * (forced re-apply): the recovery path when a downstream (finance wallet) missed it.
+ * (forced re-apply): the recovery path when a downstream consumer (e.g. the gateway) missed it.
  */
 async function withService<T>(
     run: (service: AdminBootstrapService) => Promise<T>

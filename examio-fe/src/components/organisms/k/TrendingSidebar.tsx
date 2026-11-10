@@ -7,7 +7,6 @@ import {
   UpcomingSessionCard,
   type StudySession,
 } from "@/components/molecules/UpcomingSessionCard";
-import { Button } from "@/components/antd/button";
 
 interface TrendingSidebarProps {
   trendingTopics: TrendingTopic[];
@@ -57,19 +56,6 @@ export function TrendingSidebar({
               onJoin={() => onSessionJoin?.(session.id)}
             />
           ))}
-        </CardContent>
-      </Card>
-
-      {/* Premium Features */}
-      <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
-        <CardContent className="p-6 space-y-3">
-          <h3 className="text-lg font-semibold text-foreground">
-            Tính năng Premium
-          </h3>
-          <p className="text-sm text-muted-foreground">
-            Mở khóa các công cụ học tập nâng cao và nội dung độc quyền
-          </p>
-          <Button className="w-full">Nâng cấp ngay</Button>
         </CardContent>
       </Card>
     </div>

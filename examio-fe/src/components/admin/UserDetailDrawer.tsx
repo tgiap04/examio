@@ -20,13 +20,6 @@ interface UserDetailResponse {
   isVerified: boolean;
   isBanned: boolean;
   createdAt: string;
-  wallet?: { balance: number };
-  subscription?: {
-    tier: number;
-    billingCycle: "monthly" | "yearly";
-    isActive: boolean;
-    nextPaymentDate?: string;
-  };
   lastSession?: {
     device?: string;
     ip?: string;
@@ -49,12 +42,10 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
     getUserApi(userId)
       .then((res: any) => {
         if (mounted) {
-          // Backend returns { user, wallet, subscription, lastSession }
+          // Backend returns { user, lastSession }
           // Flatten into a single object for the UI
           setData({
             ...res.user,
-            wallet: res.wallet ?? undefined,
-            subscription: res.subscription ?? undefined,
             lastSession: res.lastSession
               ? {
                 device: [res.lastSession.browser, res.lastSession.os].filter(Boolean).join(" / "),
@@ -130,49 +121,6 @@ export function UserDetailDrawer({ userId, onClose }: UserDetailDrawerProps) {
                 {new Date(data.createdAt).toLocaleString()}
               </Descriptions.Item>
             </Descriptions>
-          </section>
-
-          <section>
-            <h3 className="mb-3 font-display text-sm font-normal tracking-tight text-ink/70">
-              {t("users.detail.wallet")}
-            </h3>
-            <Descriptions column={1} size="small" bordered>
-              <Descriptions.Item label={t("users.detail.balance")}>
-                {data.wallet?.balance?.toLocaleString() ?? "0"}
-              </Descriptions.Item>
-            </Descriptions>
-          </section>
-
-          <section>
-            <h3 className="mb-3 font-display text-sm font-normal tracking-tight text-ink/70">
-              {t("users.detail.subscription")}
-            </h3>
-            {data.subscription
-              ? (
-                <Descriptions column={1} size="small" bordered>
-                  <Descriptions.Item label={t("users.detail.tier")}>
-                    {data.subscription.tier}
-                  </Descriptions.Item>
-                  <Descriptions.Item label={t("users.detail.billingCycle")}>
-                    {data.subscription.billingCycle}
-                  </Descriptions.Item>
-                  <Descriptions.Item label={t("users.detail.active")}>
-                    <BadgePill variant={data.subscription.isActive ? "positive" : "neutral"}>
-                      {data.subscription.isActive
-                        ? t("common.yes")
-                        : t("common.no")}
-                    </BadgePill>
-                  </Descriptions.Item>
-                  {data.subscription.nextPaymentDate && (
-                    <Descriptions.Item
-                      label={t("users.detail.nextPaymentDate")}
-                    >
-                      {new Date(data.subscription.nextPaymentDate).toLocaleString()}
-                    </Descriptions.Item>
-                  )}
-                </Descriptions>
-              )
-              : <Empty description={t("users.detail.noSubscription")} />}
           </section>
 
           <section>

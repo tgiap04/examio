@@ -16,11 +16,19 @@ breaking:
   use:
     - FILE
   ignore_only:
-    # Phase 10 breaking-change override (RT-1): WalletService.UpdateBalance is
-    # deleted after its only caller (exam AI debits) moved to the idempotent
-    # Debit RPC in the same change set. Remove these entries once phase 10 is on
-    # main so any later deletion in wallet.proto is flagged again.
-    RPC_NO_DELETE:
-      - examio/finance/v1/wallet.proto
-    MESSAGE_NO_DELETE:
-      - examio/finance/v1/wallet.proto
+    # Remove-finance change: finance-service and its contracts are deleted
+    # (wallet, subscription, finance_admin and the finance events). buf's FILE
+    # category flags a deleted file. Remove these entries once the change is
+    # merged so any later file deletion is flagged again.
+    FILE_NO_DELETE:
+      - examio/finance
+      - examio/events/v1/finance_events.proto
+    # Remove-finance change: document.proto reserves the dropped money fields
+    # (credit_charged, charge_credits, monthly_limit) and the PENDING_CHARGE
+    # enum value. buf's FILE category flags a deletion even when it is reserved.
+    # Remove these entries once the change is merged so any later deletion in
+    # document.proto is flagged again.
+    FIELD_NO_DELETE:
+      - examio/document/v1/document.proto
+    ENUM_VALUE_NO_DELETE:
+      - examio/document/v1/document.proto

@@ -26,7 +26,7 @@ if _version_not_supported:
 
 
 class DocumentServiceStub(object):
-    """Uploaded-file metadata, monthly upload quota and processing status
+    """Uploaded-file metadata, upload counts and processing status
     (schema `document`). User-scoped: the actor is the `sub` of the forwarded
     user token and every RPC only sees that user's rows. A row that exists but
     belongs to someone else is indistinguishable from a missing one (NOT_FOUND /
@@ -82,7 +82,7 @@ class DocumentServiceStub(object):
 
 
 class DocumentServiceServicer(object):
-    """Uploaded-file metadata, monthly upload quota and processing status
+    """Uploaded-file metadata, upload counts and processing status
     (schema `document`). User-scoped: the actor is the `sub` of the forwarded
     user token and every RPC only sees that user's rows. A row that exists but
     belongs to someone else is indistinguishable from a missing one (NOT_FOUND /
@@ -90,9 +90,9 @@ class DocumentServiceServicer(object):
     """
 
     def CreateUpload(self, request, context):
-        """Stores the file in R2 and inserts the row. Errors: RESOURCE_EXHAUSTED /
-        PERMISSION_DENIED when the monthly file quota is spent (same HTTP status as
-        today's upload), FAILED_PRECONDITION when the debit is refused.
+        """Stores the file in R2 and inserts the row PENDING with its `document.uploaded`
+        event (one transaction). No charge and no quota. Errors: INVALID_ARGUMENT for
+        an empty or oversized file, UNAVAILABLE when storage cannot be reached.
         """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -114,7 +114,8 @@ class DocumentServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def GetQuota(self, request, context):
-        """Missing associated documentation comment in .proto file."""
+        """Upload counts of the caller (dashboard stats). There is no monthly limit.
+        """
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
@@ -206,7 +207,7 @@ def add_DocumentServiceServicer_to_server(servicer, server):
 
  # This class is part of an EXPERIMENTAL API.
 class DocumentService(object):
-    """Uploaded-file metadata, monthly upload quota and processing status
+    """Uploaded-file metadata, upload counts and processing status
     (schema `document`). User-scoped: the actor is the `sub` of the forwarded
     user token and every RPC only sees that user's rows. A row that exists but
     belongs to someone else is indistinguishable from a missing one (NOT_FOUND /

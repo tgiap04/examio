@@ -16,7 +16,7 @@ x-nestjs-healthcheck: &nestjs-healthcheck
 
 services:
     # ==================== SEED ====================
-    # Runs the per-service dev seeds once (auth -> finance -> admin -> ai-chat -> vocabulary), each as its own
+    # Runs the per-service dev seeds once (auth -> admin -> ai-chat -> vocabulary), each as its own
     # role/schema, and exits. Idempotent — safe to re-run.
     # Opt-in (profile `seed`): a plain `docker compose up` never runs it, so production never
     # gets dev users/passwords and `up --wait` does not trip over a one-shot that exits.
@@ -37,7 +37,6 @@ services:
             - ROLE=seed
             - SEED_PROFILE=dev
             - AUTH_DATABASE_URL=postgresql://auth_svc:${AUTH_DB_PASSWORD:?AUTH_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=auth
-            - FINANCE_DATABASE_URL=postgresql://finance_svc:${FINANCE_DB_PASSWORD:?FINANCE_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=finance
             - ADMIN_DATABASE_URL=postgresql://admin_svc:${ADMIN_DB_PASSWORD:?ADMIN_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=admin
             - AICHAT_DATABASE_URL=postgresql://aichat_svc:${AICHAT_DB_PASSWORD:?AICHAT_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=aichat
             - VOCABULARY_DATABASE_URL=postgresql://vocabulary_svc:${VOCABULARY_DB_PASSWORD:?VOCABULARY_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=vocabulary
@@ -46,8 +45,6 @@ services:
               required: true
         depends_on:
             auth-migrate:
-                condition: service_completed_successfully
-            finance-migrate:
                 condition: service_completed_successfully
             admin-migrate:
                 condition: service_completed_successfully

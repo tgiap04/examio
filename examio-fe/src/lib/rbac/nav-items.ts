@@ -61,7 +61,6 @@ export const ADMIN_NAV_PERMISSIONS: Readonly<Record<string, Permission>> = {
   "/admin/stats": "stats:read",
   "/admin/users": "user:manage",
   "/admin/roles": "role:assign",
-  "/admin/finance": "finance:admin",
   "/admin/logs": "logs:read",
   "/admin/audit": "audit:read",
   "/admin/word-family": "word_family:admin",

@@ -27,8 +27,8 @@ export interface AuditWriteOptions {
 /**
  * AuditWriterService — single entry point for writing AdminAudit rows.
  *
- * Built in Phase 04 (admin-users-and-audit). Phase 06 (admin-finance)
- * reuses it for refund / credit / tier-change actions. Audit row is
+ * Built in Phase 04 (admin-users-and-audit). Other admin
+ * features reuse it for their mutations. Audit row is
  * mandatory for every admin mutation: any failure to write MUST surface
  * to the caller so the controller returns 500 (and the surrounding tx
  * rolls back).

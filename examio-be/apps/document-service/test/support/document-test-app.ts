@@ -17,7 +17,6 @@ import {
 } from '@examio/auth-jwt/testing';
 import { HEALTH_ROUTES_EXCLUDED_FROM_PREFIX } from '@examio/observability';
 import { PrismaService } from '../../src/prisma';
-import { startFakeFinance, type FakeFinance } from './fake-finance';
 import { startFakeR2, type FakeR2 } from './fake-r2';
 
 export type TestRole = 'STUDENT' | 'TEACHER' | 'SYSTEM_ADMIN';
@@ -35,12 +34,11 @@ export interface DocumentTestApp {
     server: Server;
     prisma: PrismaService;
     keys: TestKeyPair;
-    finance: FakeFinance;
     r2: FakeR2;
     /** Real gRPC client of the app's own DocumentService server. */
     grpc: documentV1.DocumentServiceClient;
-    /** A teacher (document:upload, wallet:use) with `balance` credits in the fake finance. */
-    teacher(balance?: number): TestUser;
+    /** A teacher (document:upload). */
+    teacher(): TestUser;
     user(roles: TestRole[]): TestUser;
     tokenFor(user: TestUser): Promise<string>;
     serviceToken(name: string, audience?: string): Promise<string>;
@@ -51,19 +49,18 @@ export interface DocumentTestApp {
 
 /**
  * Boots the real DocumentServiceModule (real Postgres) as main.ts wires it: `/api/v1` prefix and
- * its gRPC server on a free port. finance and r2 are REAL gRPC servers (fakes with the same
- * contracts) so the shared clients, retries and token forwarding are exercised; only the JWKS
+ * its gRPC server on a free port. r2 is a REAL gRPC server (a fake with the same contract) so
+ * the shared client, retries and the service token are exercised; only the JWKS
  * fetch and the service token are replaced by a local key pair.
  */
 export async function bootDocumentApp(): Promise<DocumentTestApp> {
     const originalCwd = process.cwd();
     // Proto paths resolve against the repo root (examio-be/).
     process.chdir(join(__dirname, '..', '..', '..', '..'));
-    const [finance, r2] = await Promise.all([startFakeFinance(), startFakeR2()]);
-    process.env.FINANCE_GRPC_URL = finance.server.url;
+    const r2 = await startFakeR2();
+    // Nothing in document-service may need finance-service any more: boot without it.
     process.env.R2_GRPC_URL = r2.server.url;
     process.env.R2_PUBLIC_URL = 'https://r2.test';
-    delete process.env.AI_FREE_MODE;
 
     const { DocumentServiceModule } = await import('../../src/document-service.module');
     const keys = await createTestKeyPair('doc-kid');
@@ -98,15 +95,10 @@ export async function bootDocumentApp(): Promise<DocumentTestApp> {
         server: app.getHttpServer() as Server,
         prisma: app.get(PrismaService),
         keys,
-        finance,
         r2,
         grpc: grpcClient.getService<documentV1.DocumentServiceClient>(documentV1.DOCUMENT_SERVICE_NAME),
         user,
-        teacher(balance = 100) {
-            const teacher = user(['TEACHER']);
-            finance.balances.set(teacher.id, balance);
-            return teacher;
-        },
+        teacher: () => user(['TEACHER']),
         tokenFor,
         serviceToken,
         async md(u) {
@@ -117,7 +109,7 @@ export async function bootDocumentApp(): Promise<DocumentTestApp> {
         async close() {
             await grpcServer.close();
             await Promise.race([app.close(), new Promise((resolve) => setTimeout(resolve, 5000))]);
-            await Promise.all([finance.close(), r2.close()]);
+            await r2.close();
             process.chdir(originalCwd);
         },
     };

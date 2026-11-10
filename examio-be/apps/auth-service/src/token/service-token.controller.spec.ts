@@ -10,7 +10,7 @@ describe('ServiceTokenController', () => {
     let controller: ServiceTokenController;
 
     beforeEach(() => {
-        process.env.SERVICE_CLIENTS = JSON.stringify({ exam: sha('exam-secret'), finance: sha('fin-secret') });
+        process.env.SERVICE_CLIENTS = JSON.stringify({ exam: sha('exam-secret'), admin: sha('admin-secret') });
         tokens = { signServiceToken: jest.fn(async () => ({ token: 'signed.jwt', expiresInSeconds: 300 })) };
         controller = new ServiceTokenController(tokens as never);
     });
@@ -19,7 +19,7 @@ describe('ServiceTokenController', () => {
         else process.env.SERVICE_CLIENTS = saved;
     });
 
-    const ok = { client_id: 'exam', client_secret: 'exam-secret', audience: 'finance' };
+    const ok = { client_id: 'exam', client_secret: 'exam-secret', audience: 'admin' };
 
     it('issues a Bearer token for valid credentials and a known audience', async () => {
         await expect(controller.issue(ok)).resolves.toEqual({
@@ -27,12 +27,12 @@ describe('ServiceTokenController', () => {
             token_type: 'Bearer',
             expires_in: 300,
         });
-        expect(tokens.signServiceToken).toHaveBeenCalledWith('exam', 'finance');
+        expect(tokens.signServiceToken).toHaveBeenCalledWith('exam', 'admin');
     });
 
     it('wrong secret -> 401 without signing anything', async () => {
         await expect(controller.issue({ ...ok, client_secret: 'nope' })).rejects.toBeInstanceOf(UnauthorizedException);
-        await expect(controller.issue({ ...ok, client_secret: 'fin-secret' })).rejects.toBeInstanceOf(UnauthorizedException);
+        await expect(controller.issue({ ...ok, client_secret: 'admin-secret' })).rejects.toBeInstanceOf(UnauthorizedException);
         expect(tokens.signServiceToken).not.toHaveBeenCalled();
     });
 

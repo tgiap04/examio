@@ -47,7 +47,7 @@ KLayout-wrapped page containing 2 tab panels (Test / Flashcard) driven by `useAI
 4. User clicks "Generate" → POST `/ai-study/generate` (multipart) → returns `{ jobId }`
 5. `useJobStore.setCurrentJobId(jobId, expectedResultType)` → persists to localStorage `pending_generation_job`
 6. Frontend polls `GET /ai-study/generate/status/{jobId}` every 10s (max 360 attempts / 60min)
-7. On COMPLETED: `generatedTest` / `generatedCards` stored, wallet balance refreshed, recent uploads refreshed
+7. On COMPLETED: `generatedTest` / `generatedCards` stored, recent uploads refreshed
 8. User reviews preview → clicks "Save" → creates QuizSet/FlashCardSet
 
 ### Branches
@@ -57,7 +57,6 @@ KLayout-wrapped page containing 2 tab panels (Test / Flashcard) driven by `useAI
 | Pending job on mount | localStorage has `pending_generation_job` | `PendingJobDialog` shown — "Continue" or "Cancel" | `examio-fe/src/components/organisms/PendingJobDialog.tsx:42` |
 | Switch tab | User clicks Flashcard tab | Render FlashcardGenerator instead of TestGenerator | `examio-fe/src/pages/k/AIToolPage.tsx:88` |
 | File too large | `file.size > MAX_UPLOAD_BYTES` | Inline error "File exceeds 50MB limit" | `examio-fe/src/components/organisms/k/FlashcardGenerator.tsx:152` |
-| Insufficient credits | `balance < requiredCredits` | "Insufficient credits" toast → redirect to /k/subscription | `examio-fe/src/lib/creditUtils.ts:88` |
 | Job failed | API status FAILED | "Regenerate" CTA in preview area | `examio-fe/src/components/organisms/k/FlashcardGenerator.tsx:201` |
 
 ## Data Inventory
@@ -98,7 +97,7 @@ KLayout-wrapped page containing 2 tab panels (Test / Flashcard) driven by `useAI
 - **Endpoint:** `POST /api/v1/ai-study/generate` (multipart)
 - **Request:** `{ file, modelId, count, isNarrow, keyword, typeResult }`
 - **Success:** `201` → `{ jobId, expectedResultType }`
-- **Errors:** `400` (validation) | `402` (insufficient credits) | `413` (file too large) | `500` (server error)
+- **Errors:** `400` (validation) | `413` (file too large) | `500` (server error)
 - **Trigger:** "Generate" button click
 - **Source:** `examio-fe/src/apis/examApi.ts:42`
 
@@ -132,7 +131,6 @@ KLayout-wrapped page containing 2 tab panels (Test / Flashcard) driven by `useAI
 | Condition | Type | Renders | Hidden | Notes |
 |-----------|------|---------|--------|-------|
 | activeTab === 'test' | feature-flag | TestGenerator | FlashcardGenerator | swap on tab change |
-| `balance < required` | feature-flag | "Insufficient credits" CTA | "Generate" button | pre-check before generate |
 | `pendingJob !== null` | feature-flag | PendingJobDialog | (modal overlay) | shown on mount if job in progress |
 
 ## Security Surface
@@ -142,7 +140,6 @@ KLayout-wrapped page containing 2 tab panels (Test / Flashcard) driven by `useAI
 | `ProtectedRoute` (parent) | auth | redirect to /login |
 | TurnstileGuard on /ai-tool | auth (bot) | bypass bot detection |
 | `SessionValidationMiddleware` (server) | auth | 401 SESSION_INVALIDATED |
-| `FinanceClientService.deductCredits` | permission | FREE_MODE bypass = no credit deduction |
 | R2 multipart upload size cap (50MB) | permission | server OOM |
 
 ## Source References

@@ -1,0 +1,120 @@
+{
+  "score": 9,
+  "criticalCount": 0,
+  "decision": "SEALED",
+  "acceptanceCovered": [
+    "finance-service, finance protos, FinanceClient and permissions wallet:use, subscription:manage, finance:admin are gone \u2014 apps/finance-service, proto/examio/finance and events/v1/finance_events.proto deleted; libs/grpc finance.client removed from the index; the 3 permissions dropped from libs/auth-jwt/src/permissions.ts; no remaining code reference (git grep)",
+    "content generation and document upload no longer charge or refund \u2014 GenerationJobService.submit inserts QUEUED plus the outbox row in one tx; document register and createFromBytes insert PENDING plus document.uploaded in one tx; markFailed only sets FAILED; no Debit or Refund call remains",
+    "no subscription-derived limits remain in ai-chat and document-service \u2014 AIChatLimitsService and the benefits cache are gone, admit() keeps only the ownership checks; enforceQuota is removed and getQuota returns counts only",
+    "student permissions unchanged and AI generation stays TEACHER-only \u2014 the STUDENT role list is untouched; ai:generate stays TEACHER; the e2e 'a STUDENT cannot generate' is green",
+    "contract migrations apply cleanly on a fresh database \u2014 both migrations match schema.prisma; the defensive UPDATE/DELETE run before the drops; the DELETE of chargeFailedAt rows orphans no R2 object (on develop the R2 key was enqueued in the same tx); a fresh-DB migrate deploy and the drift check are clean per the tester report",
+    "admin and frontend no longer expose finance, wallet, subscription or pricing UI \u2014 admin-finance module, revenue series and the finance fields of overview and user detail are removed; FE wallet/subscription/pricing pages, components, routes, nav and admin finance page are deleted; removed locale keys are unused; FE build and tests are green",
+    "infra, CI and docs carry no finance references \u2014 compose include, postgres init SVCS, rabbitmq users/permissions, services.json, ci.yml matrix/env/steps, package.json, nest-cli.json, scripts, gateway routes and upstreams are clean; docs keep only intentional historical/removal notes (ARCHITECTURE.md sections 2/12/appendix C marked historical, the deploy/README removal runbook, journals and the changelog)"
+  ],
+  "regressionChecked": [
+    "AI generation flow: lock acquire/release on every path, cancel/watchdog/event transitions conditional, generation-query status mapping",
+    "document upload and OCR pipeline: atomic insert plus outbox, VISIBLE filter removal safe, ensureProcessed requeue, deleteVisible still enqueues R2 deletes",
+    "AI chat send/regenerate: admit() signature updated at both call sites; deletion still only after the answer is in hand",
+    "admin dashboard and user detail: overview/series/detail shapes match the FE types",
+    "authz catalog and gateway routing: ListUsers now @RequirePermissions('user:manage'); the guard 'permissions' kind denies every service token and accepts a verified user token holding user:manage (admin forwards the admin's token via forwardUser); rpc-guard-table and the auth contract/e2e tests cover svc:finance/exam/admin/content refused and the admin user token accepted",
+    "service-to-service auth audiences: finance removed from SERVICE_AUDIENCES and from every callers allowlist",
+    "compose/broker/postgres provisioning: no finance container, role, broker user or binding",
+    "frontend routes and nav: no dead link to /k/subscription, /pricing or /admin/finance",
+    "assessment history-stats: reads GetQuota.fileCount only, which is unaffected by reserved field 2",
+    "ai-service Python stubs: the document_pb2 descriptor carries reserved 1/9/4/2"
+  ],
+  "contractStatus": "CHANGED",
+  "refuted": [],
+  "unproven": [],
+  "reachableRegressions": [],
+  "findings": [
+    {
+      "severity": "Medium",
+      "category": "Authz",
+      "location": "examio-be/apps/auth-service/src/grpc/auth.grpc.controller.ts:58-62",
+      "summary": "M1 fixed: ListUsers is @RequirePermissions('user:manage') (user token only); rpc-guard-table.spec.ts expectation updated; re-verified against the guard semantics",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "Dead code",
+      "location": "examio-be/apps/ai-chat-service/test/support/ai-chat-test-app.ts:74",
+      "summary": "S3 fixed: the dead FINANCE_GRPC_URL delete was removed from the ai-chat and document test apps (only a comment remains); the content worker guard is kept on purpose",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "High",
+      "category": "Process",
+      "location": "examio-be/apps/document-service/src/modules/upload/document-register.service.ts:7",
+      "summary": "W1: document-queue.service.ts, both contract migrations and the new specs are untracked; they must be staged explicitly at commit or the build and migrations break",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Medium",
+      "category": "Resource cleanup",
+      "location": "examio-be/apps/content-service/src/modules/ai/ai.service.ts:103-106",
+      "summary": "M2: a failed submit leaves a just-created free upload in document-service (reused on retry); a best-effort delete is optional",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Resource cleanup",
+      "location": "examio-be/apps/document-service/src/modules/upload/document-register.service.ts:30",
+      "summary": "S1: POST /ai/upload no longer enqueues the client's R2 object for deletion when signing fails (the route is unused by the FE)",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Availability",
+      "location": "examio-be/apps/ai-chat-service/src/ai-chat-service.module.ts:5-17",
+      "summary": "S2: ai-chat keeps RedisModule and RedisReadinessCheck with no remaining Redis use, so a Redis outage makes it unready",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Dead code",
+      "location": "examio-fe/src/components/admin/KpiCard.tsx:4-26",
+      "summary": "S4: the currency-vnd format and its VND formatters (KpiCard, MiniChartCard, StatChart) are unused",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Dead code",
+      "location": "examio-be/apps/auth-service/src/auth.service.register-outbox.spec.ts:17-147",
+      "summary": "S5: a dead userSubscription mock with vacuous not-called assertions",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Contract tooling",
+      "location": "examio-be/proto/buf.yaml:19-34",
+      "summary": "S6: the temporary buf ignore_only entries must be removed after merge",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Security hardening",
+      "location": "examio-be/apps/auth-service/src/token/service-clients.ts:39-60",
+      "summary": "S7: a stale finance entry in an operator's SERVICE_CLIENTS would still let auth mint svc:finance tokens; deploy/README.md documents the removal",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Docs",
+      "location": "docs/system/overview.md:11",
+      "summary": "says '11 services' but lists 10 after finance was dropped from the list",
+      "disposition": "Defer"
+    },
+    {
+      "severity": "Low",
+      "category": "Verification gap",
+      "summary": "browser/UI pass for the admin overview, user drawer and profile is owed; ai-service pytest was not run against the regenerated stubs; the PR needs the migration:contract label",
+      "disposition": "Defer"
+    }
+  ],
+  "riskGate": {
+    "touchesSensitiveArea": true,
+    "signoffRequired": true,
+    "humanSignedOff": true
+  }
+}

@@ -38,8 +38,6 @@ describe('permission catalog', () => {
                 'word_family:read',
                 'word_family:generate',
                 'word_family:save',
-                'wallet:use',
-                'subscription:manage',
             ].sort()
         );
     });
@@ -50,7 +48,6 @@ describe('permission catalog', () => {
                 'admin:access',
                 'user:manage',
                 'role:assign',
-                'finance:admin',
                 'stats:read',
                 'logs:read',
                 'audit:read',
@@ -59,6 +56,20 @@ describe('permission catalog', () => {
             ].sort()
         );
         expect(ROLE_PERMISSIONS.SYSTEM_ADMIN).not.toContain('*');
+    });
+
+    it('has no wallet, subscription or finance permission (school edition)', () => {
+        const catalog = new Set<string>(Object.values(PERMISSIONS));
+        for (const p of [
+            'wallet:use',
+            'subscription:manage',
+            'finance:admin',
+        ]) {
+            expect(catalog.has(p)).toBe(false);
+            for (const perms of Object.values(ROLE_PERMISSIONS)) {
+                expect(perms).not.toContain(p);
+            }
+        }
     });
 
     it('TEACHER lacks the student-only learning permissions', () => {

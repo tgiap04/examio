@@ -12,7 +12,6 @@ import {
   Loader2,
   CheckCircle2,
   CalendarDays,
-  Wallet,
   Mail,
 } from "lucide-react";
 import {
@@ -24,15 +23,10 @@ import {
 } from "@/apis/profileApi";
 import { useToast } from "@/components/antd/toast";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useCan } from "@/hooks/useCan";
-import { useWalletStore } from "@/stores/useWalletStore";
 import { cn } from "@/lib/utils";
 
 export default function ProfilePage() {
   const { getUser } = useAuthStore();
-  const canUseWallet = useCan("wallet:use");
-  const walletBalance = useWalletStore((s) => s.balance);
-  const loadWalletBalance = useWalletStore((s) => s.loadBalance);
   const { toast } = useToast();
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -67,11 +61,6 @@ export default function ProfilePage() {
     fetchProfile();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Balance comes from GET /wallet/info (wallet:use only), cached per session.
-  useEffect(() => {
-    if (canUseWallet) void loadWalletBalance();
-  }, [canUseWallet, loadWalletBalance]);
 
   const refreshUserData = useCallback(async () => {
     try {
@@ -285,29 +274,6 @@ export default function ProfilePage() {
                       : "Thêm ảnh, viết giới thiệu & xác thực email để đạt 100%."}
                   </p>
                 </div>
-
-                {/* Wallet Balance Highlight */}
-                {canUseWallet && (
-                  <div className="rounded-xl border border-hairline/60 bg-gradient-to-br from-surface-card to-surface-soft p-4 shadow-sm relative overflow-hidden group">
-                    <div className="absolute -right-6 -bottom-6 opacity-[0.03] text-ink transition-transform duration-500 group-hover:scale-110">
-                      <Wallet className="h-24 w-24" />
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-coral/10 text-coral">
-                        <Wallet className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-xxs font-semibold uppercase tracking-wider text-muted-soft">Số dư trong ví</span>
-                        <p className="font-mono text-lg font-bold text-ink tracking-tight mt-0.5">
-                          {new Intl.NumberFormat("vi-VN", {
-                            style: "currency",
-                            currency: "VND",
-                          }).format(walletBalance ?? 0)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {/* Email and Join Date Footer details */}
                 <div className="space-y-3 pt-4 border-t border-hairline/60 text-xs text-muted-text">

@@ -10,9 +10,10 @@ import { call } from './ownership/support/http';
 const BASE = 'https://cdn.examio.test';
 
 /**
- * The real worker role of content (outbox relay + generation reaper + r2_delete_tasks drain) against real
- * Postgres and RabbitMQ: a deleted set's thumbnail leaves through r2 `DeleteObjects` exactly once, as the
- * service token `svc:content`, and the `content.quizset.deleted` outbox row is relayed and marked published.
+ * The real worker role of content (outbox relay + generation watchdog + r2_delete_tasks drain) against real
+ * Postgres and RabbitMQ (it boots with no finance-service configured): a deleted set's thumbnail leaves
+ * through r2 `DeleteObjects` exactly once, as the service token `svc:content`, and the
+ * `content.quizset.deleted` outbox row is relayed and marked published.
  */
 describe('content worker role (e2e)', () => {
     let t: ContentTestApp;
@@ -28,6 +29,7 @@ describe('content worker role (e2e)', () => {
         t = await bootContentApp();
         r2 = await startFakeR2();
         process.env.R2_GRPC_URL = r2.server.url;
+        delete process.env.FINANCE_GRPC_URL; // nothing in content may need finance-service any more
         process.chdir(join(__dirname, '..', '..', '..'));
         keys = await createTestKeyPair('worker-kid');
         const { WorkerModule } = await import('../src/worker.module');

@@ -9,7 +9,6 @@ import IntegrationsMarquee from "@/components/organisms/landing/IntegrationsMarq
 import SecuritySection from "@/components/organisms/landing/SecuritySection";
 import WaysToStudy from "@/components/organisms/landing/WaysToStudy";
 import TestimonialsSection from "@/components/organisms/landing/TestimonialsSection";
-import PricingBand from "@/components/organisms/landing/PricingBand";
 import CoralCallout from "@/components/organisms/landing/CoralCallout";
 
 export default function HomePage() {
@@ -35,7 +34,6 @@ export default function HomePage() {
             <SecuritySection />
             <WaysToStudy />
             <TestimonialsSection />
-            <PricingBand />
             <CoralCallout />
         </div>
     );

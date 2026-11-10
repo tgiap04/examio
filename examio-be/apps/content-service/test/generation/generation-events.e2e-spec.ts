@@ -20,7 +20,7 @@ describe('generation events on the broker (e2e)', () => {
     afterAll(() => t?.close());
 
     it('the relay (worker role, broker user content) publishes content.generation.requested with source=content', async () => {
-        const user = await teacher(t, 100);
+        const user = await teacher(t);
         const { jobId } = (await generate(t, user, { keyword: 'k' })).body;
         const [row] = await outboxFor(t, 'content.generation.requested', jobId);
         expect(row).toMatchObject({ source: 'content', publishedAt: null });
@@ -166,7 +166,7 @@ describe('generation events on the broker (e2e)', () => {
     });
 
     it('jobRow helper stays tied to the shared app (smoke)', async () => {
-        const user = await teacher(t, 100);
+        const user = await teacher(t);
         const { jobId } = (await generate(t, user)).body;
         expect((await jobRow(t, jobId)).status).toBe('QUEUED');
     });

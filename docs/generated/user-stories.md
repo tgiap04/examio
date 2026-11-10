@@ -34,8 +34,6 @@
 | SCR013 | ChangePasswordSection | primary-action | Change account password | POST /api/v1/auth/change-password |
 | SCR013 | DeviceList delete button | destructive-action | Terminate a session/device | DELETE /api/v1/devices/:deviceId |
 | SCR014 | VerifyForm | primary-action | Verify account with OTP | POST /api/v1/auth/verifyAccount |
-| SCR015 | SubscriptionTemplate | primary-action | Select plan and initiate payment | POST /api/v1/payment/subscription |
-| SCR015 | QRPaymentDialog | system-action | Display SePay QR for payment | webhook (SePay callback) |
 | SCR016/REG001 | QuizSetGrid create button | primary-action | Create new quiz set | POST /api/v1/quizsets |
 | SCR016/REG001 | QuizSetGrid edit button (per row) | secondary-action | Edit quiz set | PUT /api/v1/quizsets/:id |
 | SCR016/REG001 | QuizSetGrid delete button (per row) | destructive-action | Delete quiz set | DELETE /api/v1/quizsets/:id |
@@ -133,7 +131,6 @@
 | US009 | Change Account Password | ui | medium | SCR013 |
 | US010 | Terminate Session | ui | medium | SCR013/REG002 |
 | US011 | Verify Account | ui | high | SCR014 |
-| US012 | Purchase Subscription | ui | high | SCR015 |
 | US013 | Create Quiz Set | ui | high | SCR016/REG001, SCR021 |
 | US014 | Edit Quiz Set | ui | high | SCR016/REG001, SCR022 |
 | US015 | Delete Quiz Set | ui | medium | SCR016/REG001 |
@@ -517,37 +514,6 @@ As a **student**, I want to **verify** my account with an OTP code so that I can
 
 ---
 
-## US012: Purchase Subscription
-
-**Type**: ui
-**Interaction**: primary-action
-**Priority**: high
-**Estimate**: 3
-
-### User Story
-
-As a **student**, I want to **purchase** a subscription plan so that I can access premium features and AI generation credits.
-
-### Acceptance Criteria
-
-- [ ] AC1: SubscriptionPage displays available plans with pricing
-- [ ] AC2: Plan selection initiates SePay virtual account creation
-- [ ] AC3: QR code is displayed for bank transfer payment
-- [ ] AC4: Payment webhook marks subscription as paid on successful transfer
-- [ ] AC5: User is redirected to ProfilePage after activation
-
-### Technical Notes
-
-- **Endpoint**: POST /api/v1/payment/subscription, webhook (SePay callback)
-- **Data Required**: planId, payment method
-- **Dependencies**: PERM002, PERM003, PERM012, PERM013
-
-### Screens
-
-- SCR015: SubscriptionPage
-
----
-
 ## US013: Create Quiz Set
 
 **Type**: ui
@@ -869,16 +835,16 @@ As a **student**, I want to **generate** flashcards from my uploaded documents u
 ### Acceptance Criteria
 
 - [ ] AC1: FlashcardGenerator accepts a source document and generation parameters
-- [ ] AC2: Credit balance is checked before generation starts (or FREE_MODE bypass)
+- [ ] AC2: Generation is not charged (no credit or subscription check)
 - [ ] AC3: Generation job is created and status is pollable
 - [ ] AC4: Generated flashcards are associated with the source document
-- [ ] AC5: Insufficient credits show error with link to subscription page
+- [ ] AC5: A failed or timed-out job shows its error and can be retried at no cost
 
 ### Technical Notes
 
 - **Endpoint**: POST /api/v1/ai/job
 - **Data Required**: sourceFileId, generationType, parameters
-- **Dependencies**: PERM002, PERM003, PERM035, PERM036, PERM041
+- **Dependencies**: PERM002, PERM003, PERM035
 
 ### Screens
 
@@ -1257,16 +1223,16 @@ As a **student**, I want to **generate** a quiz from my uploaded documents using
 ### Acceptance Criteria
 
 - [ ] AC1: TestGenerator accepts a source document and quiz parameters
-- [ ] AC2: Credit balance is checked before generation (or FREE_MODE bypass)
+- [ ] AC2: Generation is not charged (no credit or subscription check)
 - [ ] AC3: Generation job is created and status is pollable
 - [ ] AC4: Generated quiz is associated with the source document
-- [ ] AC5: Insufficient credits show error with link to subscription page
+- [ ] AC5: A failed or timed-out job shows its error and can be retried at no cost
 
 ### Technical Notes
 
 - **Endpoint**: POST /api/v1/ai/job
 - **Data Required**: sourceFileId, generationType, parameters
-- **Dependencies**: PERM002, PERM003, PERM035, PERM036, PERM041
+- **Dependencies**: PERM002, PERM003, PERM035
 
 ### Screens
 
@@ -2227,7 +2193,6 @@ As a **student**, I want to **convert** selected words from a word family into a
 | SCR012 | `[IPE_ZERO]` — passive system redirect |
 | SCR013 | US008, US009, US010 |
 | SCR014 | US011 |
-| SCR015 | US012 |
 | SCR016 | US013, US014, US015, US016, US017, US018, US019 |
 | SCR017 | US016, US022, US023 |
 | SCR018 | US024, US025, US026, US027 |

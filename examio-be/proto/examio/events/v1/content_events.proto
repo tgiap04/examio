@@ -14,9 +14,9 @@ message GenerationOptions {
 }
 
 // Payload (`data`) of `content.generation.requested`: a generation job was
-// charged and queued. Published through the outbox by the generation owner
-// (content-service) in the transaction that moves
-// the job PENDING_CHARGE -> QUEUED. Consumed by ai-service, which processes the
+// queued. Published through the outbox by the generation owner
+// (content-service) in the transaction that inserts
+// the job as QUEUED. Consumed by ai-service, which processes the
 // document inline (from `download_url`) when it has no chunks yet and answers with
 // `ai.generation.completed|failed`.
 message ContentGenerationRequested {

@@ -3,7 +3,7 @@ import { SERVICES, assertLocal, describeWhenEnabled, urlOf } from './db-env';
 
 /** A service role sees only its own schema (phase 11). Needs the migrations applied. */
 const enabled = SERVICES.every((s) => urlOf(s));
-const describeDb = describeWhenEnabled(Boolean(enabled), 'AUTH/FINANCE/ADMIN/CONTENT/ASSESSMENT/VOCABULARY/AICHAT_DATABASE_URL');
+const describeDb = describeWhenEnabled(Boolean(enabled), 'AUTH/ADMIN/CONTENT/ASSESSMENT/VOCABULARY/AICHAT_DATABASE_URL');
 
 /** Plain connection string: node-postgres must not see Prisma's `?schema=`. */
 const pgUrl = (svc: string): string => {
@@ -44,7 +44,6 @@ describeDb('database-per-service isolation (e2e)', () => {
     it.each(pairs)('%s_svc cannot read the %s schema', async (from, to) => {
         const table = {
             auth: '"User"',
-            finance: '"Wallet"',
             admin: '"AdminAudit"',
             content: '"QuizSet"',
             assessment: '"ExamRoom"',

@@ -26,19 +26,18 @@ describe('IDEMPOTENT_RPCS', () => {
         expect(missing).toEqual([]);
     });
 
+    it('lists no finance RPC (finance-service was removed)', () => {
+        expect([...IDEMPOTENT_RPCS].filter((r) => r.startsWith('examio.finance.'))).toEqual([]);
+    });
+
     it('contains every Get*/List*/Find* RPC', () => {
         const reads = all.filter((r) => /\/(Get|List|Find)/.test(r));
         expect(reads.length).toBeGreaterThan(0);
         expect(reads.filter((r) => !isIdempotentRpc(r))).toEqual([]);
     });
 
-    it('contains key-guarded money RPCs, DeleteObjects and GatewayControl/*', () => {
+    it('contains DeleteObjects and GatewayControl/*', () => {
         for (const r of [
-            'examio.finance.v1.WalletService/Debit',
-            'examio.finance.v1.WalletService/Credit',
-            'examio.finance.v1.WalletService/Refund',
-            'examio.finance.v1.FinanceAdminService/AdjustBalance',
-            'examio.finance.v1.FinanceAdminService/ChangeTier',
             'examio.r2.v1.R2Service/DeleteObjects',
             'examio.gateway.v1.GatewayControl/RevokeSession',
             'examio.gateway.v1.GatewayControl/InvalidateUser',
@@ -48,9 +47,8 @@ describe('IDEMPOTENT_RPCS', () => {
         }
     });
 
-    it('excludes UploadFile, un-keyed wallet creation and every other mutation', () => {
+    it('excludes UploadFile and every other mutation', () => {
         for (const r of [
-            'examio.finance.v1.WalletService/CreateWallet',
             'examio.r2.v1.R2Service/UploadFile',
             'examio.vocabulary.v1.WordFamilyAdminService/UpsertCategory',
             'examio.vocabulary.v1.WordFamilyAdminService/DeleteCategory',

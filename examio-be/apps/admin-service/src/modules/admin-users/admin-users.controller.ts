@@ -46,7 +46,7 @@ export class AdminUsersController {
     @Get(':id')
     @ApiOperation({
         summary:
-            'User detail (profile + wallet + subscription + last session).',
+            'User detail (profile + last session).',
     })
     async detail(@Param('id') id: string, @Req() req: AuthedAdminRequest) {
         return this.adminUsers.getUserDetail(id, forwardUser(req));

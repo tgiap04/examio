@@ -44,8 +44,6 @@ export function NotificationTemplate({
         return "Thông báo tài khoản";
       case "security":
         return "Thông báo bảo mật";
-      case "billing":
-        return "Thông báo thanh toán";
       case "system":
         return "Thông báo hệ thống";
       default:

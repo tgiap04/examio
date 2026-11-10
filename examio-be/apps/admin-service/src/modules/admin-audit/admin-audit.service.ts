@@ -28,17 +28,13 @@ export interface ListAuditResult {
 /** Derive a human-readable target type from the action code. */
 function deriveTargetType(action: string): string | null {
     // e.g. "admin.user.grant" → "user"
-    // e.g. "admin.finance.refund" → "payment"
     const parts = action.split('.');
     // parts = ["admin", "user", "grant"] → "user"
-    // parts = ["admin", "finance", "refund"] → "finance"
     const domain = parts[1] ?? null;
     // Map domain to a user-facing target type
     switch (domain) {
         case 'user':
             return 'user';
-        case 'finance':
-            return 'payment';
         default:
             return domain;
     }

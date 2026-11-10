@@ -1,14 +1,13 @@
 import { Card } from "@/components/antd/card";
 import { NotificationFilterButton } from "@/components/molecules/NotificationFilterButton";
 import { NotificationActions } from "@/components/molecules/NotificationActions";
-import { Bell, Circle, User, Shield, CreditCard, Settings } from "lucide-react";
+import { Bell, Circle, User, Shield, Settings } from "lucide-react";
 
 export type NotificationFilter =
   | "all"
   | "unread"
   | "account"
   | "security"
-  | "billing"
   | "system";
 
 interface NotificationFilterSidebarProps {
@@ -63,14 +62,6 @@ export function NotificationFilterSidebar({
           count={counts.security}
           isActive={activeFilter === "security"}
           onClick={() => onFilterChange("security")}
-        />
-
-        <NotificationFilterButton
-          icon={CreditCard}
-          label="Thanh toán"
-          count={counts.billing}
-          isActive={activeFilter === "billing"}
-          onClick={() => onFilterChange("billing")}
         />
 
         <NotificationFilterButton

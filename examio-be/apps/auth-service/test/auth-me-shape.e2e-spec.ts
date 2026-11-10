@@ -10,12 +10,10 @@ function expectShape(body: Record<string, unknown>) {
     for (const key of FORBIDDEN_USER_KEYS) expect(user).not.toHaveProperty(key);
 }
 
-describe('/auth/me, login, refresh response shape (e2e, finance unreachable)', () => {
+describe('/auth/me, login, refresh response shape (e2e)', () => {
     let ctx: AuthApp;
 
     beforeAll(async () => {
-        // Nothing listens here: any finance call from auth would fail the request.
-        process.env.FINANCE_GRPC_URL = '127.0.0.1:9';
         ctx = await bootAuthApp();
     });
     afterAll(() => ctx.close());

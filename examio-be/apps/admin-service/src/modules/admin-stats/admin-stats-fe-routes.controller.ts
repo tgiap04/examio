@@ -14,7 +14,7 @@ import { AdminStatsService } from './admin-stats.service';
 import { RequirePermissions, forwardUser } from '@examio/auth-jwt';
 import type { AuthedAdminRequest } from '../admin-roles/audit-context';
 
-const ALLOWED_SERIES = ['signups', 'traffic', 'revenue'] as const;
+const ALLOWED_SERIES = ['signups', 'traffic'] as const;
 type AllowedSeries = (typeof ALLOWED_SERIES)[number];
 
 /**

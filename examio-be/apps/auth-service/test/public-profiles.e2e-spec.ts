@@ -76,19 +76,24 @@ describe('auth gRPC identity RPCs behind the real guards (e2e)', () => {
         await expect(lastValueFrom(client.getUser({ userId: a.id }, md()))).rejects.toMatchObject({ code: 16 });
     });
 
-    it('ListUsers: svc:finance can page TEACHERs; svc:exam cannot', async () => {
+    it('ListUsers: a SYSTEM_ADMIN user token can page TEACHERs; no service token can', async () => {
         const t = await registerUser(ctx);
         await ctx.prisma.user.update({ where: { id: t.id }, data: { role: 'TEACHER' } });
+        const admin = await registerUser(ctx);
+        await ctx.prisma.user.update({ where: { id: admin.id }, data: { isSystemAdmin: true, isVerified: true } });
+        const adminLogin = await loginVerified(ctx, admin.email);
         const res = await lastValueFrom(
             client.listUsers(
                 { query: t.username, role: authV1.BaseRole.BASE_ROLE_TEACHER, page: 1, limit: 10 },
-                md(await serviceToken('finance'))
+                md(adminLogin.body.token)
             )
         );
         expect(res.users.map((u) => u.id)).toEqual([t.id]);
-        await expect(
-            lastValueFrom(client.listUsers({ query: '', page: 1, limit: 10 }, md(await serviceToken('exam'))))
-        ).rejects.toMatchObject({ code: 7 });
+        for (const svc of ['exam', 'admin', 'content'] as const) {
+            await expect(
+                lastValueFrom(client.listUsers({ query: '', page: 1, limit: 10 }, md(await serviceToken(svc))))
+            ).rejects.toMatchObject({ code: 7 });
+        }
     });
 
     it('SetUserRole by a STUDENT token or a service token is PERMISSION_DENIED and changes nothing', async () => {

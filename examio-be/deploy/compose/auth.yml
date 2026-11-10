@@ -55,8 +55,6 @@ services:
                 condition: service_healthy
             redis:
                 condition: service_healthy
-            finance:
-                condition: service_healthy
             r2:
                 condition: service_healthy
         networks:

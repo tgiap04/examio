@@ -45,7 +45,7 @@ alias dc='docker compose --env-file .env --env-file .tags.env'   # or define a f
       Required values: `JWT_PRIVATE_KEY` + `JWT_KID` (`scripts/gen-jwt-keypair.sh`), `SERVICE_CLIENTS` and every
       `<SVC>_SERVICE_CLIENT_SECRET` (`scripts/gen-service-secret.sh <name>`; the hashes go into `SERVICE_CLIENTS`),
       all `*_DB_PASSWORD` and `RABBITMQ_*_PASS` (URL-safe: hex or base64url), `REDIS_PASSWORD`, `FRONTEND_URL`,
-      `TURNSTILE_SECRET_KEY` (content, assessment), `PAYMENT_*` (finance), `GOOGLE_*` and `EMAIL_*` (auth),
+      `TURNSTILE_SECRET_KEY` (content, assessment), `GOOGLE_*` and `EMAIL_*` (auth),
       `R2_*` (r2, new bucket, step 3), `GEMINI_*` (ai). Copy values from the old `.env` where they carry over, but
       **do not reuse the old `JWT_SECRET`** (it is gone) and remember `ADMIN_EMAILS` / `ADMIN_DEFAULT_PASSWORD` in
       `env/auth.env` (step 9).
@@ -128,11 +128,11 @@ repo, or read `deploy/services.json`):
 ( cd "$DEPLOY_DIR/examio-be" && scripts/changed-services.sh "" "$MERGE_SHA" )   # {"wave1":[...],"wave2":[...]}
 ```
 
-- [ ] For every key with `"db": true` (admin, ai, ai-chat, assessment, auth, content, document, finance, study-room, vocabulary):
+- [ ] For every key with `"db": true` (admin, ai, ai-chat, assessment, auth, content, document, study-room, vocabulary):
       `dc run --rm --no-deps <svc>-migrate` exits 0. Prisma services run `migrate deploy`; `ai` runs Alembic.
       Any non-zero exit means stop and go to Rollback. A `P3009` in the output is not expected on a fresh database.
       ```bash
-      for s in auth finance admin content assessment study-room vocabulary document ai-chat ai; do
+      for s in auth admin content assessment study-room vocabulary document ai-chat ai; do
         echo ">> $s-migrate"; dc run --rm --no-deps "$s-migrate" || { echo "MIGRATE FAILED: $s"; break; }
       done
       ```
@@ -201,7 +201,7 @@ accepts. Decided 2026-10-28: **A**. (B stays as the fallback.)
       Exit 0 and every line `PASS` (login cookies, `/auth/me` roles, quiz + flashcard creation, whitelisted study read,
       student 403, page flags, study room over `/ws/study`, role flip to `TOKEN_STALE` then refresh, cleanup).
 - [ ] Not covered by the script, check by hand in a browser through the real Cloudflare + nginx path:
-      Google login; SePay plan list; AI chat token streaming; a 20 MB PDF upload and an AI generation; admin log SSE; a
+      Google login; AI chat token streaming; a 20 MB PDF upload and an AI generation; admin log SSE; a
       page-flag toggle reaching an open tab; gateway logs show real client IPs, not Cloudflare ranges
       (`docker logs examio-gateway-a --tail 50`).
 - [ ] D12: keep a browser tab inside a study room for 16 minutes (access token lifetime is 15): the socket receives
@@ -265,7 +265,7 @@ and a separate compose project name so nothing touches a real stack: `export COM
    Register a user and create a row on the old web, then take the step-1 dump into a temp dir. This is your "production".
 2. **New stack, throwaway env**: in the branch checkout, `cd examio-be/deploy`, `bash ci-dummy.env.sh > .env && bash ci-dummy.env.sh --service-envs`
    (dummy values; replace `RABBITMQ_*` and DB passwords only if you want realistic ones, keep them URL-safe). Real third parties
-   (Google, SePay, R2, Gemini) are not available: the checks that need them are skipped in the rehearsal and done in step 10 live.
+   (Google, R2, Gemini) are not available: the checks that need them are skipped in the rehearsal and done in step 10 live.
    Set `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA` in `env/content.env`, `env/assessment.env` and `env/auth.env`, and
    `ADMIN_EMAILS=admin@rehearsal.test`, `ADMIN_DEFAULT_PASSWORD=<12+ chars>` in `env/auth.env`.
 3. **Images**: the compose files have `build:`, so build locally instead of pulling: `docker compose build <svc>` per service (one at a time),

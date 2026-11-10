@@ -23,7 +23,6 @@ import { PrismaService } from '../../../src/prisma';
 import { HEALTH_ROUTES_EXCLUDED_FROM_PREFIX } from '@examio/observability';
 import { startFakeAuth, type FakeAuth } from './fake-auth';
 import { startFakeVocabulary, type FakeVocabulary } from './fake-vocabulary';
-import { startFakeFinance, type FakeFinance } from './fake-finance';
 import { startFakeDocument, type FakeDocument } from './fake-document';
 import { startFakeAi, type FakeAi } from './fake-ai';
 
@@ -45,8 +44,6 @@ export interface ContentTestApp {
     auth: FakeAuth;
     /** The fake vocabulary-service (`GetWordFamily` over real gRPC). */
     vocabulary: FakeVocabulary;
-    /** The fake finance-service (idempotent Debit / Refund over real gRPC, with call log). */
-    finance: FakeFinance;
     /** The fake document-service (user-token only, owner-scoped, over real gRPC, with call log). */
     document: FakeDocument;
     /** The fake ai-service (`ListModels`, service token only). */
@@ -74,7 +71,7 @@ export const rid = (): string => randomBytes(6).toString('hex');
 
 /** Throwaway ids: every spec run owns its own rows (no per-test reset needed). */
 export async function bootContentApp(
-    options: { listen?: boolean; freeMode?: boolean } = {}
+    options: { listen?: boolean } = {}
 ): Promise<ContentTestApp> {
     const originalCwd = process.cwd();
     // Proto/template paths resolve against the repo root (examio-be/).
@@ -86,14 +83,10 @@ export async function bootContentApp(
     // Word families come from vocabulary-service over gRPC (the to-flashcard bridge).
     const vocabulary = await startFakeVocabulary();
     process.env.VOCABULARY_GRPC_URL = vocabulary.server.url;
-    // Credits, uploads and models: real gRPC fakes, so the shared clients, retries and token forwarding run.
-    const [finance, document, ai] = await Promise.all([startFakeFinance(), startFakeDocument(), startFakeAi()]);
-    process.env.FINANCE_GRPC_URL = finance.server.url;
+    // Uploads and models: real gRPC fakes, so the shared clients, retries and token forwarding run.
+    const [document, ai] = await Promise.all([startFakeDocument(), startFakeAi()]);
     process.env.DOCUMENT_GRPC_URL = document.server.url;
     process.env.AI_GRPC_URL = ai.server.url;
-    // AI_FREE_MODE is read when the finance client is built (never honoured in production).
-    if (options.freeMode) process.env.AI_FREE_MODE = 'true';
-    else delete process.env.AI_FREE_MODE;
     const { ContentServiceModule } =
         await import('../../../src/content-service.module');
     const keys = await createTestKeyPair('own-kid');
@@ -136,7 +129,6 @@ export async function bootContentApp(
         keys,
         auth,
         vocabulary,
-        finance,
         document,
         ai,
         contentGrpc: grpcClient.getService<contentV1.ContentServiceClient>(contentV1.CONTENT_SERVICE_NAME),
@@ -179,8 +171,7 @@ export async function bootContentApp(
             ]);
             await auth.server.close();
             await vocabulary.server.close();
-            await Promise.all([finance.close(), document.close(), ai.close()]);
-            delete process.env.AI_FREE_MODE;
+            await Promise.all([document.close(), ai.close()]);
             process.chdir(originalCwd);
         },
     };

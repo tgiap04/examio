@@ -4,13 +4,12 @@ flowchart TB
     GW --> AUTH["auth-service<br/>auth / profile / session / OAuth"]
     GW --> CONTENT["content-service<br/>quiz / flashcard / generation jobs"]
     GW --> ASSESS["assessment-service<br/>exam room / session / attempt"]
-    GW --> FIN["finance-service<br/>wallet / payment / subscription"]
     GW --> R2S["r2-service<br/>file / storage API"]
     GW --> AI["ai-service<br/>FastAPI / RAG / generation / chat"]
     GW --> OCR["ocr-service<br/>OCR processing"]
 
-    AUTH -->|USER_CREATED event| MQ[(RabbitMQ)]
-    MQ -->|consume event| FIN
+    AUTH -->|auth.user.authz_changed event| MQ[(RabbitMQ)]
+    MQ -->|consume event| GW
 
     CONTENT <-->|events / gRPC ListModels| AI
     CONTENT -->|storage integration| R2S
@@ -24,20 +23,17 @@ flowchart TB
     COMMON -. shared .-> AUTH
     COMMON -. shared .-> CONTENT
     COMMON -. shared .-> ASSESS
-    COMMON -. shared .-> FIN
     COMMON -. shared .-> R2S
     COMMON -. shared .-> GW
 
     DBLIB -. shared .-> AUTH
     DBLIB -. shared .-> CONTENT
     DBLIB -. shared .-> ASSESS
-    DBLIB -. shared .-> FIN
     DBLIB -. shared .-> GW
 
     REDISLIB -. shared .-> AUTH
     REDISLIB -. shared .-> CONTENT
     REDISLIB -. shared .-> ASSESS
-    REDISLIB -. shared .-> FIN
     REDISLIB -. shared .-> GW
 
     DBLIB --> PG[(Prisma / Postgres)]
@@ -47,6 +43,6 @@ flowchart TB
     classDef infra fill:#eefbf3,stroke:#22a06b,color:#0f172a
     classDef shared fill:#fff7e6,stroke:#d97706,color:#0f172a
 
-    class FE,GW,AUTH,CONTENT,ASSESS,FIN,R2S,AI,OCR app
+    class FE,GW,AUTH,CONTENT,ASSESS,R2S,AI,OCR app
     class MQ,R2,PG,REDIS infra
     class COMMON,DBLIB,REDISLIB shared

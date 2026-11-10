@@ -32,15 +32,14 @@ services:
             - REDIS_HOST=redis
             - REDIS_PORT=6379
             - REDIS_PASSWORD=${REDIS_PASSWORD:-}
-            # Consumes aichat.events (document.deleted, finance.subscription.changed); publishes nothing
+            # Consumes aichat.events (document.deleted); publishes nothing
             - RABBITMQ_URL=amqp://aichat:${RABBITMQ_AICHAT_PASS:?RABBITMQ_AICHAT_PASS is required}@rabbitmq:5672
             # api + the r2_delete_tasks worker (no listener of its own) in this container
             - ROLE=api,worker
-            # AiService (Query, StreamChat) as svc:ai-chat; DocumentService and finance GetUserBenefits as
-            # the caller (forwarded user token); r2 DeleteObjects as svc:ai-chat (worker)
+            # AiService (Query, StreamChat) as svc:ai-chat; DocumentService as the caller (forwarded
+            # user token); r2 DeleteObjects as svc:ai-chat (worker)
             - AI_GRPC_URL=ai:50051
             - DOCUMENT_GRPC_URL=document:50051
-            - FINANCE_GRPC_URL=finance:50051
             - R2_GRPC_URL=r2:50051
             # Public base of R2 objects: tells an R2-hosted message image from an external URL
             - R2_PUBLIC_URL=${R2_PUBLIC_URL:-}
@@ -54,7 +53,7 @@ services:
         env_file:
             - path: env/aichat.env
               required: true
-        # ai, document, finance and r2 are reached through lazy gRPC clients: a chat boots (and lists
+        # ai, document and r2 are reached through lazy gRPC clients: a chat boots (and lists
         # its history) while one of them is down.
         depends_on:
             ai-chat-migrate:

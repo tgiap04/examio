@@ -9,8 +9,8 @@ Sources: `examio-be/libs/auth-jwt/src/permissions.ts` (`PERMISSIONS`, `ROLE_PERM
 | Role | Count | Permissions |
 |---|--:|---|
 | `STUDENT` | 6 | `exam:take`, `flashcard:study`, `quiz:practice`, `study_room:join`, `word_family:read`, `word_family:save` |
-| `TEACHER` | 17 | `ai:generate`, `ai_chat:use`, `content:share`, `document:upload`, `exam_result:view`, `exam_room:manage`, `exam_session:manage`, `flashcardset:manage`, `quizset:manage`, `study_room:create`, `study_room:join`, `subscription:manage`, `user:search`, `wallet:use`, `word_family:generate`, `word_family:read`, `word_family:save` |
-| `SYSTEM_ADMIN` | 9 | `admin:access`, `audit:read`, `finance:admin`, `logs:read`, `page_config:manage`, `role:assign`, `stats:read`, `user:manage`, `word_family:admin` |
+| `TEACHER` | 15 | `ai:generate`, `ai_chat:use`, `content:share`, `document:upload`, `exam_result:view`, `exam_room:manage`, `exam_session:manage`, `flashcardset:manage`, `quizset:manage`, `study_room:create`, `study_room:join`, `user:search`, `word_family:generate`, `word_family:read`, `word_family:save` |
+| `SYSTEM_ADMIN` | 8 | `admin:access`, `audit:read`, `logs:read`, `page_config:manage`, `role:assign`, `stats:read`, `user:manage`, `word_family:admin` |
 
 ## Permission by role
 
@@ -26,7 +26,6 @@ Sources: `examio-be/libs/auth-jwt/src/permissions.ts` (`PERMISSIONS`, `ROLE_PERM
 | `exam_result:view` |  | x |  |
 | `exam_room:manage` |  | x |  |
 | `exam_session:manage` |  | x |  |
-| `finance:admin` |  |  | x |
 | `flashcard:study` | x |  |  |
 | `flashcardset:manage` |  | x |  |
 | `logs:read` |  |  | x |
@@ -37,10 +36,8 @@ Sources: `examio-be/libs/auth-jwt/src/permissions.ts` (`PERMISSIONS`, `ROLE_PERM
 | `stats:read` |  |  | x |
 | `study_room:create` |  | x |  |
 | `study_room:join` | x | x |  |
-| `subscription:manage` |  | x |  |
 | `user:manage` |  |  | x |
 | `user:search` |  | x |  |
-| `wallet:use` |  | x |  |
 | `word_family:admin` |  |  | x |
 | `word_family:generate` |  | x |  |
 | `word_family:read` | x | x |  |
@@ -78,13 +75,6 @@ Routes whose `permissions` list names the permission (the gateway requires ALL l
 | `ai-upload` | document | required | `/api/v1/ai/(upload(/[^/]+)?\|quick-upload\|upload-image)` | all |
 | `r2-image` | document | required | `/api/v1/r2/image` | POST |
 
-### `wallet:use`
-
-| Route id | Upstream | Auth | Path | Methods |
-|---|---|---|---|---|
-| `payment` | finance | required | `/api/v1/payment*` | all |
-| `wallet` | finance | required | `/api/v1/wallet*` | all |
-
 ### No gateway permission
 
 The gateway only checks the token (`auth`); the service decides authorization with its own decorator.
@@ -112,7 +102,6 @@ The gateway only checks the token (`auth`); the service decides authorization wi
 | `study-ws` | studyroom | required | `/ws/study*` | all |
 | `studyrooms` | studyroom | required | `/api/v1/studyrooms*` | all |
 | `subjects` | aichat | optional | `/api/v1/subjects*` | all |
-| `webhook-sepay` | finance | none | `/api/v1/webhook/sepay` | POST |
 | `wf-to-flashcard` | content | required | `/api/v1/word-family/[^/]+/to-flashcard` | POST |
 | `word-family` | vocabulary | required | `/api/v1/word-family*` | all |
 
@@ -123,12 +112,12 @@ Every Nest gRPC handler and its guard decorator (`ServiceOnly` lists the allowed
 | Service | RPC | Guard | Source |
 |---|---|---|---|
 | AdminService | GetPageFlags | `@ServiceOnly('gateway')` | `apps/admin-service/src/modules/admin-page-config/admin-page-flags.grpc.controller.ts` |
-| AuthService | FindUserByEmail | `@RequirePermissionsOrService(['user:manage'], { callers: ['admin', 'finance'] })` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
+| AuthService | FindUserByEmail | `@RequirePermissionsOrService(['user:manage'], { callers: ['admin'] })` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
 | AuthService | GetPublicProfilesByIds | `@RequirePermissionsOrService([])` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
-| AuthService | GetUser | `@RequirePermissionsOrService(['user:manage'], { callers: ['admin', 'finance'] })` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
+| AuthService | GetUser | `@RequirePermissionsOrService(['user:manage'], { callers: ['admin'] })` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
 | AuthService | GetUsersByIds | `@RequirePermissionsOrService(['user:manage'], { callers: ['admin'] })` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
 | AuthService | ListRoleChanges | `@RequirePermissions('role:assign')` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
-| AuthService | ListUsers | `@RequirePermissionsOrService(['user:manage'], { callers: ['finance'] })` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
+| AuthService | ListUsers | `@RequirePermissions('user:manage')` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
 | AuthService | SetSystemAdmin | `@RequirePermissions('role:assign')` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
 | AuthService | SetUserRole | `@RequirePermissions('role:assign')` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
 | AuthService | SetUserStatus | `@RequirePermissions('role:assign')` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
@@ -147,13 +136,6 @@ Every Nest gRPC handler and its guard decorator (`ServiceOnly` lists the allowed
 | DocumentService | GetDownloadUrl | `@RequirePermissions('document:upload')` | `apps/document-service/src/modules/upload/document.grpc.controller.ts` |
 | DocumentService | GetQuota | `@RequirePermissionsOrService([], { callers: [] })` | `apps/document-service/src/modules/upload/document.grpc.controller.ts` |
 | DocumentService | ListDocuments | `@RequirePermissions('document:upload')` | `apps/document-service/src/modules/upload/document.grpc.controller.ts` |
-| FinanceAdminService | AdjustBalance | `@RequirePermissions('finance:admin')` | `apps/finance-service/src/modules/finance-admin/finance-admin.grpc.controller.ts` |
-| FinanceAdminService | ChangeTier | `@RequirePermissions('finance:admin')` | `apps/finance-service/src/modules/finance-admin/finance-admin.grpc.controller.ts` |
-| FinanceAdminService | GetUserFinance | `@RequirePermissions('finance:admin')` | `apps/finance-service/src/modules/finance-admin/finance-admin.grpc.controller.ts` |
-| FinanceAdminService | ListPayments | `@RequirePermissions('finance:admin')` | `apps/finance-service/src/modules/finance-admin/finance-admin.grpc.controller.ts` |
-| FinanceAdminService | ListSubscriptions | `@RequirePermissions('finance:admin')` | `apps/finance-service/src/modules/finance-admin/finance-admin.grpc.controller.ts` |
-| FinanceAdminService | RefundPayment | `@RequirePermissions('finance:admin')` | `apps/finance-service/src/modules/finance-admin/finance-admin.grpc.controller.ts` |
-| FinanceStatsService | GetRevenueStats | `@RequirePermissions('stats:read')` | `apps/finance-service/src/modules/stats/finance-stats.grpc.controller.ts` |
 | GatewayControl | InvalidateUser | `@ServiceOnly('auth')` | `apps/gateway-service/src/control/gateway-control.grpc.controller.ts` |
 | GatewayControl | RevokeSession | `@ServiceOnly('auth')` | `apps/gateway-service/src/control/gateway-control.grpc.controller.ts` |
 | GatewayControl | SetPageFlags | `@ServiceOnly('admin')` | `apps/gateway-service/src/control/gateway-control.grpc.controller.ts` |
@@ -163,12 +145,6 @@ Every Nest gRPC handler and its guard decorator (`ServiceOnly` lists the allowed
 | R2Service | GetFileUrl | `@ServiceOnly('auth')` | `apps/r2-service/src/r2-service.controller.ts` |
 | R2Service | ListUserFiles | `@RequirePermissionsOrService([])` | `apps/r2-service/src/r2-service.controller.ts` |
 | R2Service | UploadFile | `@ServiceOnly('auth', 'document', 'content')` | `apps/r2-service/src/r2-service.controller.ts` |
-| SubscriptionService | GetUserBenefits | `@RequirePermissionsOrService([])` | `apps/finance-service/src/modules/sepay/subscription.grpc.controller.ts` |
-| WalletService | CreateWallet | `@ServiceOnly('auth')` | `apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts` |
-| WalletService | Credit | `@ServiceOnly('content', 'document')` | `apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts` |
-| WalletService | Debit | `@RequirePermissionsOrService(['wallet:use'], { callers: ['content', 'document'] })` | `apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts` |
-| WalletService | GetWallet | `@RequirePermissionsOrService([])` | `apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts` |
-| WalletService | Refund | `@ServiceOnly('content', 'document')` | `apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts` |
 | WordFamilyAdminService | DeleteCategory | `@RequirePermissions('word_family:admin')` | `apps/vocabulary-service/src/modules/word-family/word-family-admin.grpc.controller.ts` |
 | WordFamilyAdminService | ListCategories | `@RequirePermissions('word_family:admin')` | `apps/vocabulary-service/src/modules/word-family/word-family-admin.grpc.controller.ts` |
 | WordFamilyAdminService | UpsertCategory | `@RequirePermissions('word_family:admin')` | `apps/vocabulary-service/src/modules/word-family/word-family-admin.grpc.controller.ts` |

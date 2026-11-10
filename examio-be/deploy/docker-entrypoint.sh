@@ -39,8 +39,8 @@ run_seed() {
     case "$profile" in
         # prod: reference data only (admin page flags, word-family categories, ai-chat subjects)
         prod) flag=""; seeds="admin-service ai-chat-service vocabulary-service" ;;
-        # dev: users, wallets and sample rows on top; auth before finance (wallets need users)
-        dev) flag="--dev"; seeds="auth-service finance-service admin-service ai-chat-service vocabulary-service" ;;
+        # dev: users and sample rows on top; auth first (the dev accounts)
+        dev) flag="--dev"; seeds="auth-service admin-service ai-chat-service vocabulary-service" ;;
         *) die "ROLE=seed: SEED_PROFILE must be prod or dev (got '$profile')" ;;
     esac
     ran=0

@@ -23,17 +23,14 @@ Plan: `plans/260605-2033-rebuild-spec/`
 - `generated/feature-list.md` — 13 features (F001–F013)
 - `generated/screen-list.md` — 32 screens (SCR001–SCR032, 16 REG###)
 - `generated/screen-flow.md` — Cross-screen navigation map
-- `generated/behavior-logic.md` — 16 BL### items (NestJS + React)
+- `generated/behavior-logic.md` — 12 BL### items (NestJS + React)
 - `generated/permissions-matrix.md` — 45-item PERM### matrix
 
 ## Flows (AI-drafted, per-entity)
 
-- `flows/FLOW001_user-subscription.md` — UserSubscription tier transitions
-- `flows/FLOW002_payment.md` — Payment status lifecycle
 - `flows/FLOW003_exam-session.md` — ExamSession status lifecycle
 - `flows/FLOW004_exam-attempt.md` — ExamAttempt status lifecycle
 - `flows/FLOW005_user-storage.md` — UserStorage processing lifecycle
-- `flows/FLOW006_wallet-transaction.md` — WalletTransaction ledger
 - `flows/FLOW007_quiz-practice-attempt.md` — Practice attempt lifecycle
 
 ## Features (13 features, 4 files each = 52 files)
@@ -46,7 +43,7 @@ Each feature: `technical-spec.md`, `business-context.md`, `screens.md`, `edge-ca
 | F002 | `F002_Authentication` | Login, signup, reset, OAuth |
 | F003 | `F003_AccountManagement` | Verification, sessions, devices |
 | F004 | `F004_ProfileManagement` | Profile CRUD, avatar/banner |
-| F005 | `F005_Finance` | Wallet, payment, subscription |
+| F005 | (removed 2026-11-10) | Finance feature removed; code retired, not reused |
 | F006 | `F006_QuizAuthoring` | Quiz set + question CRUD |
 | F007 | `F007_FlashcardAuthoring` | Flashcard set + card CRUD |
 | F008 | `F008_ExamHosting` | ExamRoom + session management |
@@ -76,7 +73,6 @@ See `screens/SCR###_Name/spec.md`. Each screen has Purpose, Layout, User Flow, D
 | SCR012 | KRootRedirect | `/k` |
 | SCR013 | ProfilePage | `/k/profile` |
 | SCR014 | VerifyPage | `/k/verify` |
-| SCR015 | SubscriptionPage | `/k/subscription` |
 | SCR016 | MyMaterialsPage | `/k/my-materials` |
 | SCR017 | FlashcardsPage | `/k/flash-card` |
 | SCR018 | HistoryPage | `/k/history` |

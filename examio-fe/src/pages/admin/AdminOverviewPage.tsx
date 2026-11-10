@@ -49,7 +49,6 @@ export default function AdminOverviewPage() {
   // ranges never overwrite each other.
   const signups = useAdminStore((s) => s.series["signups:7d"] ?? EMPTY_SERIES);
   const traffic = useAdminStore((s) => s.series["traffic:7d"] ?? EMPTY_SERIES);
-  const revenue = useAdminStore((s) => s.series["revenue:7d"] ?? EMPTY_SERIES);
   // Nguồn đăng ký toàn thời gian (key 'all').
   const sources = useAdminStore((s) => s.sources.all ?? EMPTY_SOURCES);
 
@@ -57,7 +56,6 @@ export default function AdminOverviewPage() {
     void useAdminStore.getState().fetchOverview();
     void useAdminStore.getState().fetchSeries("signups", "7d");
     void useAdminStore.getState().fetchSeries("traffic", "7d");
-    void useAdminStore.getState().fetchSeries("revenue", "7d");
     void useAdminStore.getState().fetchSources();
   }, []);
 
@@ -69,9 +67,6 @@ export default function AdminOverviewPage() {
   };
   const handleRetryTraffic = () => {
     void useAdminStore.getState().fetchSeries("traffic", "7d", true);
-  };
-  const handleRetryRevenue = () => {
-    void useAdminStore.getState().fetchSeries("revenue", "7d", true);
   };
   const handleRetrySources = () => {
     void useAdminStore.getState().fetchSources(undefined, true);
@@ -91,7 +86,7 @@ export default function AdminOverviewPage() {
       {overview.error && !overview.loading ? (
         <ErrorBlock message={overview.error} onRetry={handleRetryOverview} />
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <KpiCard
             label={t("kpi.totalUsers")}
             value={overview.data?.totalUsers ?? null}
@@ -103,19 +98,14 @@ export default function AdminOverviewPage() {
             loading={overview.loading}
           />
           <KpiCard
-            label={t("kpi.proCount")}
-            value={overview.data?.proCount ?? null}
-            loading={overview.loading}
-          />
-          <KpiCard
-            label={t("kpi.vipCount")}
-            value={overview.data?.vipCount ?? null}
+            label={t("kpi.active30d")}
+            value={overview.data?.active30d ?? null}
             loading={overview.loading}
           />
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <MiniChartCard
           title={t("overview.charts.signups7d")}
           data={signups.data?.points ?? []}
@@ -131,15 +121,6 @@ export default function AdminOverviewPage() {
           loading={traffic.loading}
           error={traffic.error}
           onRetry={handleRetryTraffic}
-        />
-        <MiniChartCard
-          title={t("overview.charts.revenue30d")}
-          data={revenue.data?.points ?? []}
-          kind="bar"
-          format="currency-vnd"
-          loading={revenue.loading}
-          error={revenue.error}
-          onRetry={handleRetryRevenue}
         />
       </div>
 

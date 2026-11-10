@@ -18,10 +18,9 @@ function setup() {
         getUser: jest.fn(async () => ({ user: protoUser() })),
     };
     const authUsers = { getUserAdminDetail: jest.fn(), updateUserAdmin: jest.fn() };
-    const finance = { getUserFinance: jest.fn() };
     const audit = { write: jest.fn(async () => undefined) };
-    const service = new AdminUsersService(audit as never, auth as never, authUsers as never, finance as never);
-    return { service, auth, authUsers, finance, audit };
+    const service = new AdminUsersService(audit as never, auth as never, authUsers as never);
+    return { service, auth, authUsers, audit };
 }
 
 describe('AdminUsersService.listUsers (auth ListUsers with the admin token)', () => {
@@ -57,70 +56,24 @@ describe('AdminUsersService.listUsers (auth ListUsers with the admin token)', ()
 });
 
 describe('AdminUsersService.getUserDetail', () => {
-    it('combines auth detail (user + last session) with finance wallet + subscription, one RPC each', async () => {
-        const { service, authUsers, finance } = setup();
+    it('returns auth detail (user + last session) in one RPC with no finance fields', async () => {
+        const { service, authUsers } = setup();
         authUsers.getUserAdminDetail.mockResolvedValue({
             user: protoUser(),
             lastSession: { id: 'ses', ipAddress: '1.1.1.1', browser: 'b', lastActivity: '0', isActive: true },
         });
-        finance.getUserFinance.mockResolvedValue({
-            wallet: { id: 'w', balance: 5 },
-            subscription: { id: 's', tier: 1, billingCycle: 'monthly', isActive: true },
-        });
         const res = await service.getUserDetail('u1', md);
         expect(authUsers.getUserAdminDetail).toHaveBeenCalledWith('u1', md);
-        expect(finance.getUserFinance).toHaveBeenCalledWith('u1', md);
-        expect(res.wallet).toEqual({ id: 'w', balance: 5 });
-        expect(res.subscription).toMatchObject({ tier: 1, isActive: true });
+        expect(Object.keys(res).sort()).toEqual(['lastSession', 'user']);
         expect(res.lastSession).toMatchObject({ id: 'ses', ipAddress: '1.1.1.1', deviceName: null, lastActivity: new Date(0) });
     });
 
-    it('nulls for a user without wallet/subscription/session; an auth 404 propagates', async () => {
-        const { service, authUsers, finance } = setup();
+    it('null lastSession for a user without a session; an auth 404 propagates', async () => {
+        const { service, authUsers } = setup();
         authUsers.getUserAdminDetail.mockResolvedValueOnce({ user: protoUser(), lastSession: undefined });
-        finance.getUserFinance.mockResolvedValueOnce({});
-        expect(await service.getUserDetail('u1', md)).toMatchObject({ wallet: null, subscription: null, lastSession: null });
+        expect(await service.getUserDetail('u1', md)).toMatchObject({ lastSession: null });
         authUsers.getUserAdminDetail.mockRejectedValueOnce(new HttpException({ statusCode: 404, code: 'NOT_FOUND' }, 404));
-        finance.getUserFinance.mockResolvedValueOnce({});
         await expect(service.getUserDetail('nope', md)).rejects.toMatchObject({ status: 404 });
-    });
-});
-
-describe('AdminUsersService.getUserDetail when finance is down', () => {
-    const detail = () => ({ user: protoUser(), lastSession: undefined });
-
-    it.each([503, 500, 504])('finance %i: the auth part is served, finance fields are null and flagged', async (status) => {
-        const { service, authUsers, finance } = setup();
-        authUsers.getUserAdminDetail.mockResolvedValue(detail());
-        finance.getUserFinance.mockRejectedValue(new HttpException({ statusCode: status, code: 'UNAVAILABLE' }, status));
-        const res = await service.getUserDetail('u1', md);
-        expect(res).toMatchObject({
-            user: { id: 'u1' },
-            wallet: null,
-            subscription: null,
-            financeUnavailable: true,
-        });
-    });
-
-    it('a healthy finance is flagged financeUnavailable=false (additive field)', async () => {
-        const { service, authUsers, finance } = setup();
-        authUsers.getUserAdminDetail.mockResolvedValue(detail());
-        finance.getUserFinance.mockResolvedValue({});
-        expect(await service.getUserDetail('u1', md)).toMatchObject({ financeUnavailable: false });
-    });
-
-    it('a finance 403 is NOT swallowed (a permission/config error must be seen)', async () => {
-        const { service, authUsers, finance } = setup();
-        authUsers.getUserAdminDetail.mockResolvedValue(detail());
-        finance.getUserFinance.mockRejectedValue(new HttpException({ statusCode: 403, code: 'PERMISSION_DENIED' }, 403));
-        await expect(service.getUserDetail('u1', md)).rejects.toMatchObject({ status: 403 });
-    });
-
-    it('an auth failure still wins when finance is down too', async () => {
-        const { service, authUsers, finance } = setup();
-        authUsers.getUserAdminDetail.mockRejectedValue(new HttpException({ statusCode: 404, code: 'NOT_FOUND' }, 404));
-        finance.getUserFinance.mockRejectedValue(new HttpException({ statusCode: 503, code: 'UNAVAILABLE' }, 503));
-        await expect(service.getUserDetail('u1', md)).rejects.toMatchObject({ status: 404 });
     });
 });
 

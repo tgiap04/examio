@@ -1,8 +1,7 @@
 /**
  * RPCs that are safe to retry on UNAVAILABLE. Explicit `"<pkg>.<Service>/<Method>"`
  * names: anything not listed (UploadFile, every other mutation)
- * is never retried. Money RPCs are only listed because the server de-duplicates
- * on `idempotency_key`. A spec asserts every entry exists in the protos.
+ * is never retried. A spec asserts every entry exists in the protos.
  */
 export const IDEMPOTENT_RPCS: ReadonlySet<string> = new Set([
     // auth reads
@@ -15,20 +14,6 @@ export const IDEMPOTENT_RPCS: ReadonlySet<string> = new Set([
     'examio.auth.v1.AuthUserService/SearchUsers',
     'examio.auth.v1.AuthUserService/GetUserStats',
     'examio.auth.v1.AuthUserService/GetUserAdminDetail',
-    // finance reads + key-guarded money movement
-    'examio.finance.v1.WalletService/GetWallet',
-    'examio.finance.v1.SubscriptionService/GetUserBenefits',
-    'examio.finance.v1.WalletService/Debit',
-    'examio.finance.v1.WalletService/Credit',
-    'examio.finance.v1.WalletService/Refund',
-    // finance admin: writes carry an idempotency_key the server de-duplicates on
-    'examio.finance.v1.FinanceAdminService/AdjustBalance',
-    'examio.finance.v1.FinanceAdminService/RefundPayment',
-    'examio.finance.v1.FinanceAdminService/ChangeTier',
-    'examio.finance.v1.FinanceAdminService/ListPayments',
-    'examio.finance.v1.FinanceAdminService/ListSubscriptions',
-    'examio.finance.v1.FinanceAdminService/GetUserFinance',
-    'examio.finance.v1.FinanceStatsService/GetRevenueStats',
     // admin + vocabulary reads
     'examio.admin.v1.AdminService/GetPageFlags',
     'examio.vocabulary.v1.WordFamilyAdminService/ListCategories',

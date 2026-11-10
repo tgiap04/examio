@@ -14,7 +14,6 @@ import {
 import { join } from 'path';
 import { AuthClient } from '../src/clients/auth.client';
 import { AuthUsersClient } from '../src/clients/auth-users.client';
-import { FinanceClient } from '../src/clients/finance.client';
 import { GatewayClient } from '../src/clients/gateway.client';
 import { VocabularyClient } from '../src/clients/vocabulary.client';
 
@@ -26,7 +25,7 @@ const ADMIN_ID = 'admin-1';
 
 function fakePrisma() {
     const prisma: Record<string, unknown> = {
-        // admin owns no `User`/wallet table: any access here would be a regression.
+        // admin owns no `User` table: any access here would be a regression.
         user: { findUnique: jest.fn(), findMany: jest.fn(), count: jest.fn(), update: jest.fn() },
         pageFeatureFlag: { findMany: jest.fn().mockResolvedValue([]), upsert: jest.fn() },
         adminAudit: {
@@ -59,7 +58,6 @@ describe('AdminService (e2e, real guards)', () => {
         getUserStats: jest.fn(async () => ({ totalUsers: '1', activeToday: '1', activeLast30d: '1', signupsSeries: [], trafficSeries: [], utmSources: [] })),
         updateUserAdmin: jest.fn(),
     };
-    const financeClient = { getRevenueStats: jest.fn(async () => ({ proUsers: 0, vipUsers: 0, revenueLast30d: '0', revenueSeries: [] })) };
     const gatewayClient = { setPageFlags: jest.fn(async () => undefined) };
 
     beforeAll(async () => {
@@ -75,8 +73,6 @@ describe('AdminService (e2e, real guards)', () => {
             .useValue(authClient)
             .overrideProvider(AuthUsersClient)
             .useValue(authUsers)
-            .overrideProvider(FinanceClient)
-            .useValue(financeClient)
             .overrideProvider(GatewayClient)
             .useValue(gatewayClient)
             .overrideProvider(VocabularyClient)
@@ -196,6 +192,14 @@ describe('AdminService (e2e, real guards)', () => {
             expect(results.map((r) => [r.status, r.body.code])).toEqual(Array(5).fill([403, 'PERMISSION_DENIED']));
         });
 
+        it('finance admin routes are gone (404) and the revenue series is rejected (400)', async () => {
+            const headers = await admin();
+            const credit = await request(app.getHttpServer()).post('/admin/finance/credit').set(headers).send({});
+            expect(credit.status).toBe(404);
+            const series = await request(app.getHttpServer()).get('/admin/stats/series?name=revenue').set(headers);
+            expect(series.status).toBe(400);
+        });
+
         it('GET /admin/audit is served; /admin/stats/overview passes the guards (its queries are not faked here)', async () => {
             await request(app.getHttpServer()).get('/admin/audit?action=admin.user.grant').set(await admin()).expect(200);
             const stats = await request(app.getHttpServer()).get('/admin/stats/overview').set(await admin());
@@ -234,7 +238,7 @@ describe('AdminService (e2e, real guards)', () => {
             expect([none.status, none.body.code]).toEqual([401, 'TOKEN_MISSING']);
             const wrongAud = await request(app.getHttpServer())
                 .get('/admin/users')
-                .set(await admin().then(async () => as({ sub: ADMIN_ID, roles: ['SYSTEM_ADMIN'] }, { audience: 'finance' })));
+                .set(await admin().then(async () => as({ sub: ADMIN_ID, roles: ['SYSTEM_ADMIN'] }, { audience: 'content' })));
             expect([wrongAud.status, wrongAud.body.code]).toEqual([401, 'TOKEN_INVALID']);
         });
     });

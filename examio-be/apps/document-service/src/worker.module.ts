@@ -7,12 +7,11 @@ import { R2_GRPC_REGISTRATION, R2Client } from './clients/r2.client';
 import { R2DeleteObjectsSender } from './clients/r2-delete.sender';
 import { DocumentEventsHandler } from './modules/events/document-events.handler';
 import { DocumentDomainModule } from './modules/upload/document-domain.module';
-import { DocumentReaper } from './modules/upload/document-reaper.service';
 import { PrismaModule, PrismaService } from './prisma';
 
 /**
  * Worker-role module (`ROLE=worker`): relays the document outbox, consumes `document.events`
- * (`ai.document.processed|failed`), settles stuck PENDING_CHARGE uploads, and drains
+ * (`ai.document.processed|failed`) and drains
  * `r2_delete_tasks` through its own small pg pool, deleting through r2-service as `svc:document`.
  * No HTTP/gRPC listener.
  */
@@ -29,6 +28,6 @@ import { PrismaModule, PrismaService } from './prisma';
         }),
         DocumentDomainModule,
     ],
-    providers: [DocumentEventsHandler, DocumentReaper],
+    providers: [DocumentEventsHandler],
 })
 export class WorkerModule {}

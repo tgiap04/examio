@@ -26,8 +26,8 @@ Role -> permissions (generated from `ROLE_PERMISSIONS`):
 | Role | Count | Permissions |
 |---|--:|---|
 | `STUDENT` | 6 | `exam:take`, `flashcard:study`, `quiz:practice`, `study_room:join`, `word_family:read`, `word_family:save` |
-| `TEACHER` | 17 | `ai:generate`, `ai_chat:use`, `content:share`, `document:upload`, `exam_result:view`, `exam_room:manage`, `exam_session:manage`, `flashcardset:manage`, `quizset:manage`, `study_room:create`, `study_room:join`, `subscription:manage`, `user:search`, `wallet:use`, `word_family:generate`, `word_family:read`, `word_family:save` |
-| `SYSTEM_ADMIN` | 9 | `admin:access`, `audit:read`, `finance:admin`, `logs:read`, `page_config:manage`, `role:assign`, `stats:read`, `user:manage`, `word_family:admin` |
+| `TEACHER` | 15 | `ai:generate`, `ai_chat:use`, `content:share`, `document:upload`, `exam_result:view`, `exam_room:manage`, `exam_session:manage`, `flashcardset:manage`, `quizset:manage`, `study_room:create`, `study_room:join`, `user:search`, `word_family:generate`, `word_family:read`, `word_family:save` |
+| `SYSTEM_ADMIN` | 8 | `admin:access`, `audit:read`, `logs:read`, `page_config:manage`, `role:assign`, `stats:read`, `user:manage`, `word_family:admin` |
 
 <!-- END GENERATED -->
 
@@ -35,7 +35,7 @@ Role -> permissions (generated from `ROLE_PERMISSIONS`):
 
 Access token: RS256, 15 minutes, `typ=at+jwt`, issuer and audience pinned, `exp` and `iat` required. Verified statelessly via auth's JWKS (`createTokenVerifier`), no DB per request. User claims: `sub`, `sid` (session), `roles`, `email_verified`, `av` (authz version, an integer >= 0). A malformed or inconsistent claim set is `TOKEN_INVALID`.
 
-`av` is `User.authzVersion`. Every role, flag or ban change bumps it and emits `auth.user.authz_changed` in the same transaction; the gateway compares the token's `av` against Redis (`gw:user:<id>:av`) and answers 401 `TOKEN_STALE` for a lower one, so the client refreshes and gets the new role. `GET /auth/me`, login and refresh return `{ user, roles, permissions }` (`user.isSystemAdmin`; no wallet, balance is `GET /wallet/info`). Refresh reloads the role in a transaction and refuses banned or deleted accounts (401 `ACCOUNT_DISABLED`).
+`av` is `User.authzVersion`. Every role, flag or ban change bumps it and emits `auth.user.authz_changed` in the same transaction; the gateway compares the token's `av` against Redis (`gw:user:<id>:av`) and answers 401 `TOKEN_STALE` for a lower one, so the client refreshes and gets the new role. `GET /auth/me`, login and refresh return `{ user, roles, permissions }` (`user.isSystemAdmin`; no wallet or subscription, the feature was removed). Refresh reloads the role in a transaction and refuses banned or deleted accounts (401 `ACCOUNT_DISABLED`).
 
 | HTTP | Code | Raised when |
 |---|---|---|
@@ -88,7 +88,7 @@ IDOR rule for gRPC RPCs taking a `user_id`: `assertSelfOrService(metadata, userI
 
 Service-to-service calls carry a service token in gRPC metadata `authorization`: RS256, `sub = svc:<name>`, `roles = ["SERVICE"]` only (any other combination is `TOKEN_INVALID`). A caller obtains one per audience from auth (`POST /internal/token`, env `AUTH_TOKEN_URL` + `SERVICE_CLIENT_SECRET`) via `ServiceTokenClient`: cached per audience, refreshed 60 s before `exp`, one in-flight fetch, up to 3 attempts, falling back to a still-valid cached token. Auth's `SERVICE_CLIENTS` lists the clients and `SERVICE_AUDIENCES` the audiences. Where the actor is a user (state-changing RPCs on their behalf), the caller forwards the user's token instead, so the callee authorizes the real person.
 
-Admin-service calls auth, finance, gateway and vocabulary with the acting admin's forwarded token. The Python ai-service accepts service tokens only (see § Python ai-service below).
+Admin-service calls auth, gateway and vocabulary with the acting admin's forwarded token. The Python ai-service accepts service tokens only (see § Python ai-service below).
 
 ## Role management and stale tokens
 
@@ -103,12 +103,12 @@ Every Nest gRPC handler carries a guard declaration (`handler-declarations.spec.
 | Service | RPC | Guard | Source |
 |---|---|---|---|
 | AdminService | GetPageFlags | `@ServiceOnly('gateway')` | `apps/admin-service/src/modules/admin-page-config/admin-page-flags.grpc.controller.ts` |
-| AuthService | FindUserByEmail | `@RequirePermissionsOrService(['user:manage'], { callers: ['admin', 'finance'] })` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
+| AuthService | FindUserByEmail | `@RequirePermissionsOrService(['user:manage'], { callers: ['admin'] })` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
 | AuthService | GetPublicProfilesByIds | `@RequirePermissionsOrService([])` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
-| AuthService | GetUser | `@RequirePermissionsOrService(['user:manage'], { callers: ['admin', 'finance'] })` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
+| AuthService | GetUser | `@RequirePermissionsOrService(['user:manage'], { callers: ['admin'] })` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
 | AuthService | GetUsersByIds | `@RequirePermissionsOrService(['user:manage'], { callers: ['admin'] })` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
 | AuthService | ListRoleChanges | `@RequirePermissions('role:assign')` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
-| AuthService | ListUsers | `@RequirePermissionsOrService(['user:manage'], { callers: ['finance'] })` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
+| AuthService | ListUsers | `@RequirePermissions('user:manage')` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
 | AuthService | SetSystemAdmin | `@RequirePermissions('role:assign')` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
 | AuthService | SetUserRole | `@RequirePermissions('role:assign')` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
 | AuthService | SetUserStatus | `@RequirePermissions('role:assign')` | `apps/auth-service/src/grpc/auth.grpc.controller.ts` |
@@ -127,13 +127,6 @@ Every Nest gRPC handler carries a guard declaration (`handler-declarations.spec.
 | DocumentService | GetDownloadUrl | `@RequirePermissions('document:upload')` | `apps/document-service/src/modules/upload/document.grpc.controller.ts` |
 | DocumentService | GetQuota | `@RequirePermissionsOrService([], { callers: [] })` | `apps/document-service/src/modules/upload/document.grpc.controller.ts` |
 | DocumentService | ListDocuments | `@RequirePermissions('document:upload')` | `apps/document-service/src/modules/upload/document.grpc.controller.ts` |
-| FinanceAdminService | AdjustBalance | `@RequirePermissions('finance:admin')` | `apps/finance-service/src/modules/finance-admin/finance-admin.grpc.controller.ts` |
-| FinanceAdminService | ChangeTier | `@RequirePermissions('finance:admin')` | `apps/finance-service/src/modules/finance-admin/finance-admin.grpc.controller.ts` |
-| FinanceAdminService | GetUserFinance | `@RequirePermissions('finance:admin')` | `apps/finance-service/src/modules/finance-admin/finance-admin.grpc.controller.ts` |
-| FinanceAdminService | ListPayments | `@RequirePermissions('finance:admin')` | `apps/finance-service/src/modules/finance-admin/finance-admin.grpc.controller.ts` |
-| FinanceAdminService | ListSubscriptions | `@RequirePermissions('finance:admin')` | `apps/finance-service/src/modules/finance-admin/finance-admin.grpc.controller.ts` |
-| FinanceAdminService | RefundPayment | `@RequirePermissions('finance:admin')` | `apps/finance-service/src/modules/finance-admin/finance-admin.grpc.controller.ts` |
-| FinanceStatsService | GetRevenueStats | `@RequirePermissions('stats:read')` | `apps/finance-service/src/modules/stats/finance-stats.grpc.controller.ts` |
 | GatewayControl | InvalidateUser | `@ServiceOnly('auth')` | `apps/gateway-service/src/control/gateway-control.grpc.controller.ts` |
 | GatewayControl | RevokeSession | `@ServiceOnly('auth')` | `apps/gateway-service/src/control/gateway-control.grpc.controller.ts` |
 | GatewayControl | SetPageFlags | `@ServiceOnly('admin')` | `apps/gateway-service/src/control/gateway-control.grpc.controller.ts` |
@@ -143,12 +136,6 @@ Every Nest gRPC handler carries a guard declaration (`handler-declarations.spec.
 | R2Service | GetFileUrl | `@ServiceOnly('auth')` | `apps/r2-service/src/r2-service.controller.ts` |
 | R2Service | ListUserFiles | `@RequirePermissionsOrService([])` | `apps/r2-service/src/r2-service.controller.ts` |
 | R2Service | UploadFile | `@ServiceOnly('auth', 'document', 'content')` | `apps/r2-service/src/r2-service.controller.ts` |
-| SubscriptionService | GetUserBenefits | `@RequirePermissionsOrService([])` | `apps/finance-service/src/modules/sepay/subscription.grpc.controller.ts` |
-| WalletService | CreateWallet | `@ServiceOnly('auth')` | `apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts` |
-| WalletService | Credit | `@ServiceOnly('content', 'document')` | `apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts` |
-| WalletService | Debit | `@RequirePermissionsOrService(['wallet:use'], { callers: ['content', 'document'] })` | `apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts` |
-| WalletService | GetWallet | `@RequirePermissionsOrService([])` | `apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts` |
-| WalletService | Refund | `@ServiceOnly('content', 'document')` | `apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts` |
 | WordFamilyAdminService | DeleteCategory | `@RequirePermissions('word_family:admin')` | `apps/vocabulary-service/src/modules/word-family/word-family-admin.grpc.controller.ts` |
 | WordFamilyAdminService | ListCategories | `@RequirePermissions('word_family:admin')` | `apps/vocabulary-service/src/modules/word-family/word-family-admin.grpc.controller.ts` |
 | WordFamilyAdminService | UpsertCategory | `@RequirePermissions('word_family:admin')` | `apps/vocabulary-service/src/modules/word-family/word-family-admin.grpc.controller.ts` |
@@ -162,18 +149,19 @@ Reading the table:
 - `RequirePermissionsOrService(perms, { callers })` accepts a user token holding `perms`, or a service token from `callers`. With no `callers` option any service token is accepted; `callers: []` means no service caller. An empty `perms` list means any verified user.
 - Auth `SetUserStatus` is `role:assign` over gRPC; the HTTP routes `POST /admin/users/:id/ban|unban` need `user:manage` and forward the admin token to it, so a caller needs both.
 - r2 `ListUserFiles` is declared but answers `UNIMPLEMENTED`.
-- finance `Debit`: only a TEACHER user token may mint the welcome wallet. Actor of a write is always the verified token `sub`; rows of other users are not found.
+- Actor of a write is always the verified token `sub`; rows of other users are not found.
+- auth `ListUsers` accepts only a forwarded user token with `user:manage` (no service caller; the `finance` caller was removed with finance-service).
 - document `GetQuota` and the other document RPCs take the forwarded user token (content, assessment and ai-chat forward it); there is no service caller.
 
 ### Python ai-service (phase 15)
 
 Source: `apps/ai-service/src/backend/auth/service_token.py`. `AiService.StreamChat`, `Query`, `GenerateWordFamily` and `ListModels` use a Python interceptor, not a Nest decorator: service token only. RS256, `iss`, `aud=ai`, `exp`, `roles` exactly SERVICE, `sub` in `svc:ai-chat`, `svc:vocabulary`, `svc:content` (constant `ALLOWED_CALLERS`, not env). A user token (`aud=examio`) answers `UNAUTHENTICATED` because the audience check runs first; a valid `aud=ai` token from another service (e.g. `svc:document`) answers `PERMISSION_DENIED`.
 
-Auth `SERVICE_AUDIENCES` includes `document` and `ai`; auth `SERVICE_CLIENTS` needs an entry for `document`. finance `Debit` / `Credit` / `Refund` callers include `document`. The RabbitMQ users `document` and `ai` may publish only `^document\.` and `^ai\.`; user `content` may publish `^content\.` and user `assessment` `^assessment\.`.
+Auth `SERVICE_AUDIENCES` includes `document` and `ai`; auth `SERVICE_CLIENTS` needs an entry for `document`. There is no `finance` audience or client any more. The RabbitMQ users `document` and `ai` may publish only `^document\.` and `^ai\.`; user `content` may publish `^content\.` and user `assessment` `^assessment\.`.
 
 ## Per-endpoint enforcement (phase 06, 2026-10-20)
 
-> Source: `@RequirePermissions` / `@RequireOwnerOrPermission` / `@Authenticated()` / `@Public()` on the content, assessment, finance, admin and r2 controllers; `examio-be/test/authz/` (`handler-declarations.spec.ts` fails on an undeclared HTTP handler or WS gateway class, on an `@Authenticated()` handler missing from `authenticated-allowlist.ts`, or an entry without a two-user spec; `authz-matrix.spec.ts` proves STUDENT / TEACHER / admin-only per row).
+> Source: `@RequirePermissions` / `@RequireOwnerOrPermission` / `@Authenticated()` / `@Public()` on the content, assessment, admin and r2 controllers; `examio-be/test/authz/` (`handler-declarations.spec.ts` fails on an undeclared HTTP handler or WS gateway class, on an `@Authenticated()` handler missing from `authenticated-allowlist.ts`, or an entry without a two-user spec; `authz-matrix.spec.ts` proves STUDENT / TEACHER / admin-only per row).
 
 | Area (controller) | Routes | Declaration |
 |---|---|---|
@@ -218,11 +206,9 @@ Auth `SERVICE_AUDIENCES` includes `document` and `ai`; auth `SERVICE_CLIENTS` ne
 | ai-chat-service (own service since phase 13; `subjects` controller is `@Public`) | all ai-chat handlers (class-level) | `ai_chat:use` (own); `:chatId/exists` is `true` only for the caller's own chat |
 | subject | 4 GETs | `@Public()` |
 | r2 (document-service since phase 15) | `POST /r2/image` (gateway route `r2-image`) | `document:upload`. r2-service's HTTP `internal/upload` and its `INTERNAL_SERVICE_TOKEN` were removed |
-| finance | `payment/create`, `status/:id`, `history`, `cancel/:id`; `wallet/info`, `wallet/details` | `wallet:use` |
-| | `payment/subscription` / `subscription/plans` / `POST /webhook` | `subscription:manage` / `@Public()` / `@Public()` (SePay key) |
 | admin | users (list, `:id`, PATCH, ban, unban) | `user:manage`; PATCH rejects `isAdmin`, `isSystemAdmin`, `role`, `isBanned` (400 `VALIDATION_ERROR`) |
 | | `admin/roles` (matrix, `users`, `changes`), `PUT roles/users/:id/role`, `PUT roles/users/:id/system-admin` | `role:assign` (phase 08; `grant-admin` / `revoke-admin` removed) |
-| | finance actions accept an `Idempotency-Key` header and answer `alreadyApplied`; finance / logs / page-config / stats (`admin/stats/*`, `admin/overview`, `admin/series/:name`, `admin/sources`) / audit / word-family | `finance:admin` / `logs:read` / `page_config:manage` / `stats:read` / `audit:read` / `word_family:admin` (replaces the class-level `admin:access`) |
+| | logs / page-config / stats (`admin/stats/*`, `admin/overview`, `admin/series/:name`, `admin/sources`) / audit / word-family | `logs:read` / `page_config:manage` / `stats:read` / `audit:read` / `word_family:admin` (replaces the class-level `admin:access`) |
 
 Plain `@Authenticated()` handlers (allowlist, each with a two-user negative spec or `selfScoped: true`): examattempt `detail` / `get-by-id` / `update`; auth `logout`, `me`-style and profile handlers (self-scoped); `DevicesController` list/logout (two-user spec).
 
@@ -275,7 +261,6 @@ UX gating only; the backend decisions above are authoritative. Source: `examio-f
 | Route | Permission (any-of where listed) | Page flag |
 |---|---|---|
 | `/k`, `/k/profile`, `/k/verify` | login only | - |
-| `/k/subscription` | `subscription:manage` | - |
 | `/k/my-materials` | `flashcard:study` | `my-materials` |
 | `/k/flash-card`, `/k/manage-flashcard-set/:id` | `flashcardset:manage` | `flash-card` |
 | `/k/history` | `ai:generate` or `exam:take` | `history` |
@@ -300,7 +285,6 @@ UX gating only; the backend decisions above are authoritative. Source: `examio-f
 | `/admin`, `/admin/stats` | `stats:read` |
 | `/admin/users` | `user:manage` |
 | `/admin/roles` | `role:assign` |
-| `/admin/finance` | `finance:admin` |
 | `/admin/logs` | `logs:read` |
 | `/admin/audit` | `audit:read` |
 | `/admin/word-family` | `word_family:admin` |

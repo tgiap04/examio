@@ -3,10 +3,6 @@ import { declarationOf, type Declaration } from '@examio/auth-jwt';
 import { collectControllers, routeHandlers, undeclaredHandlers } from '@examio/auth-jwt/testing';
 import { AuthUsersGrpcController } from '../../apps/auth-service/src/grpc/auth-users.grpc.controller';
 import { AuthGrpcController } from '../../apps/auth-service/src/grpc/auth.grpc.controller';
-import { WalletGrpcController } from '../../apps/finance-service/src/modules/wallet/wallet.grpc.controller';
-import { FinanceAdminGrpcController } from '../../apps/finance-service/src/modules/finance-admin/finance-admin.grpc.controller';
-import { SubscriptionGrpcController } from '../../apps/finance-service/src/modules/sepay/subscription.grpc.controller';
-import { FinanceStatsGrpcController } from '../../apps/finance-service/src/modules/stats/finance-stats.grpc.controller';
 import { DocumentGrpcController } from '../../apps/document-service/src/modules/upload/document.grpc.controller';
 import { R2ServiceController } from '../../apps/r2-service/src/r2-service.controller';
 import { ContentGrpcController } from '../../apps/content-service/src/grpc/content.grpc.controller';
@@ -25,10 +21,10 @@ const anyUserOrService: Declaration = { kind: 'permissions-or-service', permissi
 /** The RPC guard table of phase 04 (network placement is not the trust boundary). */
 const TABLE: Array<[Ctor, string, Declaration]> = [
     [AuthGrpcController, 'getPublicProfilesByIds', anyUserOrService],
-    [AuthGrpcController, 'getUser', { kind: 'permissions-or-service', permissions: ['user:manage'], callers: ['admin', 'finance'] }],
+    [AuthGrpcController, 'getUser', { kind: 'permissions-or-service', permissions: ['user:manage'], callers: ['admin'] }],
     [AuthGrpcController, 'getUsersByIds', { kind: 'permissions-or-service', permissions: ['user:manage'], callers: ['admin'] }],
-    [AuthGrpcController, 'findUserByEmail', { kind: 'permissions-or-service', permissions: ['user:manage'], callers: ['admin', 'finance'] }],
-    [AuthGrpcController, 'listUsers', { kind: 'permissions-or-service', permissions: ['user:manage'], callers: ['finance'] }],
+    [AuthGrpcController, 'findUserByEmail', { kind: 'permissions-or-service', permissions: ['user:manage'], callers: ['admin'] }],
+    [AuthGrpcController, 'listUsers', { kind: 'permissions', permissions: ['user:manage'] }],
     [AuthGrpcController, 'setUserRole', { kind: 'permissions', permissions: ['role:assign'] }],
     [AuthGrpcController, 'setSystemAdmin', { kind: 'permissions', permissions: ['role:assign'] }],
     [AuthGrpcController, 'setUserStatus', { kind: 'permissions', permissions: ['role:assign'] }],
@@ -37,19 +33,6 @@ const TABLE: Array<[Ctor, string, Declaration]> = [
     [AuthUsersGrpcController, 'searchUsers', { kind: 'permissions', permissions: ['user:search'] }],
     [AuthUsersGrpcController, 'getUserStats', { kind: 'permissions', permissions: ['stats:read'] }],
     [AuthUsersGrpcController, 'getUserAdminDetail', { kind: 'permissions', permissions: ['user:manage'] }],
-    [WalletGrpcController, 'getWallet', anyUserOrService],
-    [SubscriptionGrpcController, 'getUserBenefits', anyUserOrService],
-    [WalletGrpcController, 'createWallet', { kind: 'service-only', callers: ['auth'] }],
-    [WalletGrpcController, 'debit', { kind: 'permissions-or-service', permissions: ['wallet:use'], callers: ['content', 'document'] }],
-    [WalletGrpcController, 'credit', { kind: 'service-only', callers: ['content', 'document'] }],
-    [WalletGrpcController, 'refund', { kind: 'service-only', callers: ['content', 'document'] }],
-    [FinanceAdminGrpcController, 'adjustBalance', { kind: 'permissions', permissions: ['finance:admin'] }],
-    [FinanceAdminGrpcController, 'refundPayment', { kind: 'permissions', permissions: ['finance:admin'] }],
-    [FinanceAdminGrpcController, 'changeTier', { kind: 'permissions', permissions: ['finance:admin'] }],
-    [FinanceAdminGrpcController, 'listPayments', { kind: 'permissions', permissions: ['finance:admin'] }],
-    [FinanceAdminGrpcController, 'listSubscriptions', { kind: 'permissions', permissions: ['finance:admin'] }],
-    [FinanceAdminGrpcController, 'getUserFinance', { kind: 'permissions', permissions: ['finance:admin'] }],
-    [FinanceStatsGrpcController, 'getRevenueStats', { kind: 'permissions', permissions: ['stats:read'] }],
     [R2ServiceController, 'getFileUrl', { kind: 'service-only', callers: ['auth'] }],
     [R2ServiceController, 'listUserFiles', anyUserOrService],
     [R2ServiceController, 'uploadFile', { kind: 'service-only', callers: ['auth', 'document', 'content'] }],
@@ -82,7 +65,7 @@ describe('gRPC guard declarations', () => {
     });
 
     it('every @GrpcMethod handler of every gRPC controller carries SOME declaration', () => {
-        const controllers = [AuthGrpcController, AuthUsersGrpcController, FinanceStatsGrpcController, WalletGrpcController, SubscriptionGrpcController, FinanceAdminGrpcController, R2ServiceController, WordFamilyAdminGrpcController, WordFamilyGrpcController, DocumentGrpcController];
+        const controllers = [AuthGrpcController, AuthUsersGrpcController, R2ServiceController, WordFamilyAdminGrpcController, WordFamilyGrpcController, DocumentGrpcController, ContentGrpcController];
         const rpcHandlers = controllers.flatMap((c) => routeHandlers(c as never).filter((h) => h.kind === 'rpc'));
         expect(rpcHandlers.length).toBeGreaterThanOrEqual(34);
         expect(undeclaredHandlers(controllers as never)).toEqual([]);
@@ -94,13 +77,6 @@ describe('gRPC guard declarations', () => {
             [AuthGrpcController, 'setSystemAdmin'],
             [AuthGrpcController, 'setUserStatus'],
             [AuthUsersGrpcController, 'updateUserAdmin'],
-            [WalletGrpcController, 'createWallet'],
-            [WalletGrpcController, 'debit'],
-            [WalletGrpcController, 'credit'],
-            [WalletGrpcController, 'refund'],
-            [FinanceAdminGrpcController, 'adjustBalance'],
-            [FinanceAdminGrpcController, 'refundPayment'],
-            [FinanceAdminGrpcController, 'changeTier'],
             [R2ServiceController, 'uploadFile'],
             [R2ServiceController, 'deleteFile'],
             [R2ServiceController, 'deleteObjects'],
@@ -126,8 +102,6 @@ describe('gRPC guard declarations', () => {
      * (user:manage / role:assign) and service-only RPCs are not user-scoped.
      */
     const OPEN_TO_ANY_USER: Array<[Ctor, string, 'self-check' | 'no-user-id-in-body', string]> = [
-        [WalletGrpcController, 'getWallet', 'self-check', 'GetWalletRequest.user_id'],
-        [SubscriptionGrpcController, 'getUserBenefits', 'self-check', 'GetUserBenefitsRequest.user_id'],
         [R2ServiceController, 'listUserFiles', 'self-check', 'ListUserFilesRequest.user_id'],
         [AuthGrpcController, 'getPublicProfilesByIds', 'no-user-id-in-body', 'public projection (no email), batch lookup by design'],
         [WordFamilyGrpcController, 'getWordFamily', 'no-user-id-in-body', 'shared catalog row (no owner), looked up by word-family id'],
@@ -135,7 +109,7 @@ describe('gRPC guard declarations', () => {
     ];
 
     it('the open-to-any-user list is exactly the set of "any user or service" declarations', () => {
-        const controllers = [AuthGrpcController, AuthUsersGrpcController, FinanceStatsGrpcController, WalletGrpcController, SubscriptionGrpcController, FinanceAdminGrpcController, R2ServiceController, WordFamilyAdminGrpcController, WordFamilyGrpcController, DocumentGrpcController];
+        const controllers = [AuthGrpcController, AuthUsersGrpcController, R2ServiceController, WordFamilyAdminGrpcController, WordFamilyGrpcController, DocumentGrpcController];
         const open = controllers.flatMap((c) =>
             routeHandlers(c as never)
                 .filter((h) => h.kind === 'rpc')

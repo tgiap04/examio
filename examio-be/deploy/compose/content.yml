@@ -35,15 +35,13 @@ services:
             # Publishes content.* (generation requests, quiz set deletions) through the outbox;
             # consumes content.events (ai.generation.*, auth.user.updated, document.deleted)
             - RABBITMQ_URL=amqp://content:${RABBITMQ_CONTENT_PASS:?RABBITMQ_CONTENT_PASS is required}@rabbitmq:5672
-            # api + the worker (outbox relay, generation reaper / refund sweeper / watchdog,
+            # api + the worker (outbox relay, generation reaper / watchdog,
             # r2_delete_tasks) in this container
             - ROLE=api,worker
             # ContentService for assessment-service (the caller's forwarded user token)
             - GRPC_PORT=50051
-            # finance Debit / Refund; document uploads and ownership; r2 UploadFile + DeleteObjects
-            # as svc:content; vocabulary word families (to-flashcard bridge); auth public profiles;
-            # ai-service ListModels
-            - FINANCE_GRPC_URL=finance:50051
+            # document uploads and ownership; r2 UploadFile + DeleteObjects as svc:content;
+            # vocabulary word families (to-flashcard bridge); auth public profiles; ai-service ListModels
             - DOCUMENT_GRPC_URL=document:50051
             - R2_GRPC_URL=r2:50051
             - VOCABULARY_GRPC_URL=vocabulary:50051
@@ -72,8 +70,6 @@ services:
             rabbitmq:
                 condition: service_healthy
             r2:
-                condition: service_healthy
-            finance:
                 condition: service_healthy
             # No dependency on vocabulary, document, auth-grpc or ai: lazy gRPC clients
             # (a request that needs one answers 503 while it is down).

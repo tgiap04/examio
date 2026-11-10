@@ -11,9 +11,8 @@ import { ClientGrpc } from '@nestjs/microservices';
 import { Metadata, status } from '@grpc/grpc-js';
 import { PROTO_FILES, authV1 } from '@examio/contracts';
 import { invokeRpc } from '../deadline-retry';
-import { buildMetadata } from '../metadata';
+import { GRPC_METADATA_ATTACHER, GrpcMetadataAttacher, buildMetadata } from '../metadata';
 import { GrpcClientRegistration } from '../grpc-client.module';
-import { GRPC_METADATA_ATTACHER, GrpcMetadataAttacher } from './finance.client';
 import { ProfileCacheRedis, PublicProfileCache } from './public-profile-cache';
 import { PublicUser, toPublicUser } from './public-user';
 

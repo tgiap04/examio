@@ -171,7 +171,7 @@ describe('AuthService gRPC contract (handlers behind the real guards)', () => {
 
         it('FindUserByEmail lower-cases the email', async () => {
             prisma.user.findUnique.mockResolvedValue(row('e'));
-            await lastValueFrom(auth.findUserByEmail({ email: 'E@X.dev' }, await asService('finance')));
+            await lastValueFrom(auth.findUserByEmail({ email: 'E@X.dev' }, await asService('admin')));
             expect(prisma.user.findUnique.mock.calls[0][0].where).toEqual({ email: 'e@x.dev' });
         });
 
@@ -203,7 +203,7 @@ describe('AuthService gRPC contract (handlers behind the real guards)', () => {
             const res = await lastValueFrom(
                 auth.listUsers(
                     { query: 'a', role: authV1.BaseRole.BASE_ROLE_TEACHER, isSystemAdmin: false, isBanned: false, page: 2, limit: 2 },
-                    await asService('finance')
+                    await asAdmin()
                 )
             );
             expect(res.users).toHaveLength(2);
@@ -211,6 +211,17 @@ describe('AuthService gRPC contract (handlers behind the real guards)', () => {
             const args = prisma.user.findMany.mock.calls[0][0];
             expect(args).toMatchObject({ skip: 2, take: 2 });
             expect(args.where).toMatchObject({ deletedAt: null, role: 'TEACHER', isSystemAdmin: false, isBanned: false });
+        });
+
+        it('ListUsers and GetUser refuse a svc:finance token (finance-service was removed)', async () => {
+            await expect(
+                lastValueFrom(auth.listUsers({ query: '', page: 1, limit: 1 }, await asService('finance')))
+            ).rejects.toMatchObject({ code: 7 });
+            await expect(
+                lastValueFrom(auth.getUser({ userId: 'u1' }, await asService('finance')))
+            ).rejects.toMatchObject({ code: 7 });
+            expect(prisma.user.findMany).not.toHaveBeenCalled();
+            expect(prisma.user.findUnique).not.toHaveBeenCalled();
         });
 
         it('ListRoleChanges (role:assign) pages the audit log newest first', async () => {

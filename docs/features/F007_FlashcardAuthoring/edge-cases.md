@@ -6,7 +6,6 @@
 | User creates a flashcard with empty front text | API validation rejects with 400; field highlighted | "Front text cannot be empty." |
 | User creates a flashcard with empty back text | API validation rejects with 400; field highlighted | "Back text cannot be empty." |
 | Generate flashcards from a PROCESSING document | UI disables generate button; tooltip shown | "This document is still being processed. Please wait until it is ready." |
-| Generate flashcards with insufficient credits (FREE_MODE=false) | API returns 402 or 403; subscription link shown | "You don't have enough credits. Purchase a subscription to continue." |
 | Delete a flashcard set that has active study sessions | API returns 409 or cascades deletion | "This flashcard set cannot be deleted while students are studying it." |
 | Delete a label that has tagged flashcards | Label tag removed from cards (SetNull); cards remain | None — silent; cards stay intact |
 | User cancels an in-progress AI flashcard generation job | Job terminated server-side; no cards are generated | "Generation cancelled." |

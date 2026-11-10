@@ -57,7 +57,7 @@ export class AIChatStreamService {
         options: { announceStart: boolean; replaces?: ReplacedMessage }
     ): Promise<void> {
         const commit = () => sse.commit({ started: options.announceStart });
-        const { chat, requestedIds } = await this.turn.admit(chatId, user, input, userToken, options.replaces?.createdAt);
+        const { chat, requestedIds } = await this.turn.admit(chatId, user, input, userToken);
         const documentIds = await this.documents.effectiveIds(chat.id, requestedIds);
         // A wait for OCR can take minutes: start the stream (and its heartbeat) first so no proxy gives up.
         await this.documents.ensureReady(documentIds, userToken, commit, sse.signal);

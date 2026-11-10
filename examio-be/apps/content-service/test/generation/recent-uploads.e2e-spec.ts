@@ -53,7 +53,7 @@ describe('recent-uploads (e2e)', () => {
         const first = res.body[0];
         expect(Object.keys(first).sort()).toEqual(
             [
-                'createdAt', 'creditCharged', 'filename', 'flashcardHistory', 'id', 'keyR2', 'mimetype',
+                'createdAt', 'filename', 'flashcardHistory', 'id', 'keyR2', 'mimetype',
                 'pageCount', 'processingStatus', 'quizHistory', 'size', 'updatedAt', 'url', 'userId',
             ].sort()
         );

@@ -204,8 +204,7 @@ export class AuthService {
                     },
                 });
 
-                // STUDENT by DB default. No wallet/subscription here: finance
-                // provisions those only when the user becomes a TEACHER.
+                // STUDENT by DB default.
                 await this.outbox.add(
                     tx,
                     'auth.user.registered',
@@ -701,8 +700,7 @@ export class AuthService {
 
     /** `roles`/`permissions` mirror the verified token, i.e. what the APIs will enforce. */
     async getUser(userId: string, roles: Role[]) {
-        // Fresh read: the account only. Wallet and subscription are finance's
-        // data (GET /wallet/info); /auth/me never depends on finance.
+        // Fresh read: the account only; /auth/me never depends on another service.
         const foundUser = await this.userRepository.findByIdWithRelations(
             userId,
             [],

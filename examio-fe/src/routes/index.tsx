@@ -13,7 +13,6 @@ import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
 import KRootRedirect from "@/pages/k/KRootRedirect";
 import ProfilePage from "@/pages/k/ProfilePage";
 import VerifyPage from "@/pages/k/VerifyPage";
-import SubscriptionPage from "@/pages/k/SubscriptionPage";
 import MyMaterialsPage from "@/pages/k/MyMaterialsPage";
 import FlashcardsPage from "@/pages/k/FlashcardsPage";
 import HistoryPage from "@/pages/k/HistoryPage";
@@ -52,7 +51,6 @@ import type { ReactNode } from "react";
 import AdminOverviewPage from "@/pages/admin/AdminOverviewPage";
 import AdminUsersPage from "@/pages/admin/AdminUsersPage";
 import AdminRolesPage from "@/pages/admin/AdminRolesPage";
-import AdminFinancePage from "@/pages/admin/AdminFinancePage";
 import AdminLogsPage from "@/pages/admin/AdminLogsPage";
 import AdminAuditPage from "@/pages/admin/AdminAuditPage";
 import AdminStatsPage from "@/pages/admin/AdminStatsPage";
@@ -130,7 +128,6 @@ export const router = createBrowserRouter([
   { path: "/k", element: guarded(<KRootRedirect />) },
   { path: "/k/profile", element: guarded(<ProfilePage />) },
   { path: "/k/verify", element: guarded(<VerifyPage />) },
-  { path: "/k/subscription", element: guarded(<SubscriptionPage />, { permission: "subscription:manage" }) },
   { path: "/k/my-materials", element: guarded(<MyMaterialsPage />, { permission: "flashcard:study", pageKey: "my-materials" }) },
   { path: "/k/flash-card", element: guarded(<FlashcardsPage />, { permission: "flashcardset:manage", pageKey: "flash-card" }) },
   { path: "/k/history", element: guarded(<HistoryPage />, { anyOf: ["ai:generate", "exam:take"], pageKey: "history" }) },
@@ -179,7 +176,6 @@ export const router = createBrowserRouter([
       { path: "stats", element: adminPage(<AdminStatsPage />, "stats:read") },
       { path: "users", element: adminPage(<AdminUsersPage />, "user:manage") },
       { path: "roles", element: adminPage(<AdminRolesPage />, "role:assign") },
-      { path: "finance", element: adminPage(<AdminFinancePage />, "finance:admin") },
       { path: "logs", element: adminPage(<AdminLogsPage />, "logs:read") },
       { path: "audit", element: adminPage(<AdminAuditPage />, "audit:read") },
       { path: "word-family", element: adminPage(<AdminWordFamilyPage />, "word_family:admin") },

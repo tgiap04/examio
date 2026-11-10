@@ -2,7 +2,7 @@
 
 **Project**: examio
 **Generated**: 2026-06-05
-**Sources**: `route-list.md` (gateway routes, authoritative), `behavior-logic.md` (BL handlers). Gateway routing since 2026-10-20 is defined in `examio-be/apps/gateway-service/config/routes.yaml` (no proxy controllers; `BL` names such as `GatewayWebhookProxy` refer to the downstream handler behind the YAML entry)
+**Sources**: `route-list.md` (gateway routes, authoritative), `behavior-logic.md` (BL handlers). Gateway routing since 2026-10-20 is defined in `examio-be/apps/gateway-service/config/routes.yaml` (no proxy controllers; `BL` names refer to the downstream handler behind the YAML entry)
 
 Groups backend routes by domain. Each route maps to a BL handler (from `behavior-logic.md § Source Symbol`) or is marked `[UNMAPPED]`. Auth column uses `PERM###` where defined, otherwise `Bearer` / `public` / `ApiKey`.
 
@@ -189,26 +189,6 @@ Groups backend routes by domain. Each route maps to a BL handler (from `behavior
 
 ---
 
-## Wallet
-
-| Method | Path | Handler BL### | Auth | Owner |
-|--------|------|---------------|------|-------|
-| GET | /api/v1/wallet/details | BL004 | Bearer | finance |
-
----
-
-## Payment
-
-| Method | Path | Handler BL### | Auth | Owner |
-|--------|------|---------------|------|-------|
-| POST | /api/v1/payment/create | [UNMAPPED] | Bearer | finance |
-| GET | /api/v1/payment/status/:paymentId | [UNMAPPED] | Bearer | finance |
-| GET | /api/v1/payment/subscription | [UNMAPPED] | Bearer | finance |
-| GET | /api/v1/payment/subscription/plans | [UNMAPPED] | Bearer | finance |
-| DELETE | /api/v1/payment/cancel/:paymentId | [UNMAPPED] | Bearer | finance |
-
----
-
 ## Student
 
 | Method | Path | Handler BL### | Auth | Owner |
@@ -312,26 +292,15 @@ Phase 07 (2026-10-20). Detail: `route-list.md` § Quiz Practice.
 
 ---
 
-## Webhook
-
-| Method | Path | Handler BL### | Auth | Owner |
-|--------|------|---------------|------|-------|
-| POST | /api/v1/webhook/sepay | BL010, BL011 | ApiKey | finance |
-
----
-
 ## BL Handler Index
 
 | BL### | Handler | Type | Mapped Routes |
 |-------|---------|------|---------------|
 | BL003 | AuthService | integration | Auth routes (login, register, OAuth, token, logout, me, exchange) |
-| BL004 | FinanceClientService | integration | GET /api/v1/wallet/details |
 | BL005 | R2ClientService | integration | POST /api/v1/profile/upload-avatar, POST /api/v1/profile/upload-banner |
 | BL006 | R2Service | integration | POST /api/v1/r2/image |
 | BL008 | MailService | mail | sendVerificationEmail, verifyAccount, send-code-reset-password, reset-password, send-code-change-password, change-password |
 | BL009 | SessionValidationMiddleware | middleware | All Bearer-authenticated routes (global) |
-| BL010 | SePayWebhook | webhook | POST /api/v1/webhook/sepay (finance-service) |
-| BL011 | GatewayWebhookProxy | webhook | POST /api/v1/webhook/sepay (gateway proxy) |
 | BL013 | CheatingDetectionHook | background | POST /api/v1/cheatinglogs |
 | BL015 | GenerationGuardHook | background | GET /api/v1/ai/job/:jobId, DELETE /api/v1/ai/job/:jobId |
 | BL016 | ExamQuizPagePolling | background | PUT /api/v1/examattempts/:attemptId/progress |
@@ -351,8 +320,6 @@ Phase 07 (2026-10-20). Detail: `route-list.md` § Quiz Practice.
 | Exam Sessions | 17 | 0 | 17 |
 | Exam Attempts | 11 | 1 | 10 |
 | Subjects | 4 | 0 | 4 |
-| Wallet | 1 | 1 | 0 |
-| Payment | 5 | 0 | 5 |
 | Student | 3 | 0 | 3 |
 | AI Study | 12 | 2 | 10 |
 | AI Chat | 14 | 0 | 14 |
@@ -360,15 +327,14 @@ Phase 07 (2026-10-20). Detail: `route-list.md` § Quiz Practice.
 | Quiz Practice | 8 | 0 | 8 |
 | Cheating Logs | 4 | 1 | 3 |
 | R2 Storage | 1 | 1 | 0 |
-| Webhook | 1 | 1 | 0 |
-| **Total** | **173** | **25** | **148** |
+| **Total** | **166** | **23** | **143** |
 
-Owner column (phase 19): the service behind each route, from the `upstream` of its `routes.yaml` entry. Rows by owner: content 79, assessment 41, auth 23, ai-chat 18, finance 7, document 5. Study-room, vocabulary and admin routes are not inventoried in this map.
+Owner column (phase 19): the service behind each route, from the `upstream` of its `routes.yaml` entry. Rows by owner: content 79, assessment 41, auth 23, ai-chat 18, document 5. Study-room, vocabulary and admin routes are not inventoried in this map.
 
 ## Unresolved
 
-- `BL004` (named `FinanceClientService` in `behavior-logic.md`) maps only to `/wallet/details`. That class no longer exists: finance calls go through the shared `FinanceClient` in `libs/grpc` (`libs/grpc/src/clients/finance.client.ts`) and the `FREE_MODE = true` constant it described is replaced by the dev-only `AI_FREE_MODE` flag. Other finance/payment routes are unmapped.
+- `BL004`, `BL010` and `BL011` (finance client, SePay webhook and its gateway proxy) were removed with the wallet/subscription/payment feature; the `/wallet/*`, `/payment/*` and `/webhook/sepay` routes no longer exist.
 - `BL005` (R2ClientService) covers avatar/banner upload but no other R2 operations (`BL005` names the pre-split exam-service client; the clients now live in auth, content and ai-chat `src/clients/r2.client.ts`).
-- BL inventory covers 16 behavior logic items; 148 routes lack explicit BL mapping. These routes are handled by NestJS controllers/services scanned in Wave 0 but not yet attributed to a named BL entry.
+- BL inventory covers 12 behavior logic items; 143 routes lack explicit BL mapping. These routes are handled by NestJS controllers/services scanned in Wave 0 but not yet attributed to a named BL entry.
 - `BL001` (SessionCleanupCron) and `BL002` (UserRegisteredHandler) have no HTTP route — internal/scheduled/event-driven only.
 - `BL007` (OcrService; OCR now runs in ai-service on `document.uploaded`), `BL012` (AuthSyncBootstrap), `BL014` (ExportPDFHook) — no HTTP route mapping.

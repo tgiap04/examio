@@ -15,7 +15,7 @@ export type Row = {
 };
 
 const SID = 'ses_1';
-export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' | 'document' | 'aichat' | 'finance' | 'admin', Row[]> = {
+export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' | 'document' | 'aichat' | 'admin', Row[]> = {
     content: [
         {
             name: 'POST /quizsets',
@@ -469,52 +469,6 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
         { name: 'GET /subjects/slug/:slug (public)', method: 'get', path: '/subjects/slug/math', expect: { STUDENT: 200, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 } },
         { name: 'GET /subjects/:id (public)', method: 'get', path: '/subjects/s1', expect: { STUDENT: 200, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 } },
     ],
-    finance: [
-        {
-            name: 'GET /wallet/info',
-            method: 'get',
-            path: '/wallet/info',
-            expect: {
-                STUDENT: 403,
-                TEACHER: 200,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 200,
-            },
-        },
-        {
-            name: 'GET /payment/history',
-            method: 'get',
-            path: '/payment/history',
-            expect: {
-                STUDENT: 403,
-                TEACHER: 200,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 200,
-            },
-        },
-        {
-            name: 'GET /payment/subscription',
-            method: 'get',
-            path: '/payment/subscription',
-            expect: {
-                STUDENT: 403,
-                TEACHER: 200,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 200,
-            },
-        },
-        {
-            name: 'GET /payment/subscription/plans (public)',
-            method: 'get',
-            path: '/payment/subscription/plans',
-            expect: {
-                STUDENT: 200,
-                TEACHER: 200,
-                ADMIN_ONLY: 200,
-                TEACHER_ADMIN: 200,
-            },
-        },
-    ],
     admin: [
         {
             name: 'GET /admin/users',
@@ -599,18 +553,6 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             method: 'put',
             path: '/admin/roles/users/u1/system-admin',
             body: { isSystemAdmin: true },
-            expect: {
-                STUDENT: 403,
-                TEACHER: 403,
-                ADMIN_ONLY: 'gate',
-                TEACHER_ADMIN: 'gate',
-            },
-        },
-        {
-            name: 'POST /admin/finance/credit',
-            method: 'post',
-            path: '/admin/finance/credit',
-            body: {},
             expect: {
                 STUDENT: 403,
                 TEACHER: 403,

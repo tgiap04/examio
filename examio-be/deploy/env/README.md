@@ -12,7 +12,6 @@ for f in env/*.env.example; do cp -n "$f" "${f%.example}"; done   # then fill th
 | File | Service(s) | Holds (examples) |
 |---|---|---|
 | `auth.env` | auth, `seed` one-shot | `ADMIN_*`, `REFRESH_TOKEN_ENC_KEY`, `EMAIL_*`, `GOOGLE_*` |
-| `finance.env` | finance | `PAYMENT_*` (SePay) |
 | `r2.env` | r2 | `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_ENDPOINT` |
 | `ai.env` | ai, ai-worker | `GEMINI_*`, `AI2_API_KEY` |
 | `assessment.env` | assessment | `QUIZ_*`, `TURNSTILE_SECRET_KEY` |
@@ -26,8 +25,7 @@ Postgres superuser, Redis password, JWT keypair, service-token secrets). A key s
 the same key in the file, so do not repeat those here.
 
 Empty `KEY=` lines are required; commented lines are optional tunables with their default. A service
-only sees its own file: `content` has no `PAYMENT_*` and no `GOOGLE_CLIENT_SECRET`, `finance` has no
-R2 keys. To run one service outside compose, `set -a; . env/<name>.env; set +a` plus the inline
+only sees its own file: `content` has no `GOOGLE_CLIENT_SECRET` and no R2 keys. To run one service outside compose, `set -a; . env/<name>.env; set +a` plus the inline
 variables listed in its compose file.
 
 Variable lists were derived from what each service reads at boot (`process.env`, `ConfigService`,

@@ -25,7 +25,7 @@ export class AIChatAnswerService {
 
     /** `replaces` (regenerate): that message and everything after it is deleted once the answer is in hand. */
     async sendMessage(chatId: string, user: AuthUser, input: MessageInput, userToken: string, replaces?: ReplacedMessage) {
-        const { chat, requestedIds } = await this.turn.admit(chatId, user, input, userToken, replaces?.createdAt);
+        const { chat, requestedIds } = await this.turn.admit(chatId, user, input, userToken);
         const documentIds = await this.documents.effectiveIds(chat.id, requestedIds);
         await this.documents.ensureReady(documentIds, userToken);
         const { history, isFirstMessage } = await this.turn.history(chat.id, input.message, replaces?.createdAt);

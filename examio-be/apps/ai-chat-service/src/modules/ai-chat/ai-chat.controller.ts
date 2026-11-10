@@ -21,7 +21,7 @@ import { AIChatDocumentsService } from './ai-chat-documents.service';
 import { AIChatStreamService } from './ai-chat-stream.service';
 import { SseResponse } from './sse-response';
 
-/** The caller's access token (cookie or bearer): forwarded to document-service and finance, which act as the caller. */
+/** The caller's access token (cookie or bearer): forwarded to document-service, which acts as the caller. */
 const tokenOf = (req: AuthenticatedRequest): string => requireUserToken(extractHttpToken(req));
 
 /**

@@ -1,4 +1,3 @@
-import { idempotencyConfig } from "@/lib/idempotency-key";
 import { api } from "@/apis/api";
 
 import { env } from "@/lib/env";
@@ -19,7 +18,6 @@ export interface UserRow {
   isBanned: boolean;
   isVerified: boolean;
   createdAt: string;
-  walletBalance: number;
 }
 
 export interface AuditRow {
@@ -38,9 +36,6 @@ export interface OverviewKpi {
   totalUsers: number;
   activeToday: number;
   active30d: number;
-  proCount: number;
-  vipCount: number;
-  revenue30d: number;
 }
 
 export interface SeriesPoint {
@@ -86,26 +81,6 @@ export interface UpdateUserBody {
   name?: string;
   bio?: string;
   isVerified?: boolean;
-}
-
-export interface RefundBody {
-  paymentId: string;
-  reason: string;
-}
-
-export interface CreditBody {
-  userId: string;
-  /** Always positive; the sign is carried by `direction`. */
-  amount: number;
-  direction: "ADD" | "SUBTRACT";
-  reason: string;
-}
-
-export interface SetTierBody {
-  userId: string;
-  tier: number;
-  billingCycle?: "monthly" | "yearly";
-  reason: string;
 }
 
 export interface LogTicketResponse {
@@ -174,21 +149,6 @@ export async function getSourcesApi(range?: "7d" | "30d" | "90d") {
     params: range ? { range } : {},
   });
   return response.data as SourceBreakdownResponse;
-}
-
-export async function refundApi(body: RefundBody, idempotencyKey: string) {
-  const response = await api.post("/admin/finance/refund", body, idempotencyConfig(idempotencyKey));
-  return response.data;
-}
-
-export async function creditApi(body: CreditBody, idempotencyKey: string) {
-  const response = await api.post("/admin/finance/credit", body, idempotencyConfig(idempotencyKey));
-  return response.data;
-}
-
-export async function setTierApi(body: SetTierBody, idempotencyKey: string) {
-  const response = await api.post("/admin/finance/tier", body, idempotencyConfig(idempotencyKey));
-  return response.data;
 }
 
 export async function getRecentLogsApi(

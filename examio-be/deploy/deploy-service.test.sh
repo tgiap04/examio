@@ -83,11 +83,11 @@ calls() { grep -c -- "$1" "$LOG"; }
 
 # 1. success: pull, migrate, up; tag moves to the new sha; no alert
 echo 'AUTH_TAG=oldsha' >"$work/tags.env"
-echo 'FINANCE_TAG=keepme' >>"$work/tags.env"
+echo 'ADMIN_TAG=keepme' >>"$work/tags.env"
 run auth newsha
 check "success exits 0" "$rc"
 expect_ok "success pins the new sha" has 'AUTH_TAG=newsha' "$TAGS"
-expect_ok "success leaves other tags alone" has 'FINANCE_TAG=keepme' "$TAGS"
+expect_ok "success leaves other tags alone" has 'ADMIN_TAG=keepme' "$TAGS"
 expect_no "success drops the old line" has 'AUTH_TAG=oldsha' "$TAGS"
 expect_ok "success runs the migrate one-shot" has 'run --rm --no-deps auth-migrate' "$LOG"
 expect_ok "success recreates only auth with --wait" has 'up -d --no-deps --wait --wait-timeout 90 auth' "$LOG"

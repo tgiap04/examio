@@ -35,7 +35,6 @@ export default function AdminStatsPage() {
   // separate slots — switching between 7d/30d/90d never overwrites another.
   const signups = useAdminStore((s) => s.series[`signups:${range}`] ?? EMPTY_SERIES);
   const traffic = useAdminStore((s) => s.series[`traffic:${range}`] ?? EMPTY_SERIES);
-  const revenue = useAdminStore((s) => s.series[`revenue:${range}`] ?? EMPTY_SERIES);
   const sources = useAdminStore((s) => s.sources[range] ?? EMPTY_SOURCES);
 
   useEffect(() => {
@@ -43,7 +42,6 @@ export default function AdminStatsPage() {
     // for this name+range was already fetched in this session.
     void useAdminStore.getState().fetchSeries("signups", range);
     void useAdminStore.getState().fetchSeries("traffic", range);
-    void useAdminStore.getState().fetchSeries("revenue", range);
     void useAdminStore.getState().fetchSources(range);
   }, [range]);
 
@@ -52,9 +50,6 @@ export default function AdminStatsPage() {
   };
   const handleRetryTraffic = () => {
     void useAdminStore.getState().fetchSeries("traffic", range, true);
-  };
-  const handleRetryRevenue = () => {
-    void useAdminStore.getState().fetchSeries("revenue", range, true);
   };
   const handleRetrySources = () => {
     void useAdminStore.getState().fetchSources(range, true);
@@ -90,15 +85,6 @@ export default function AdminStatsPage() {
           loading={traffic.loading}
           error={traffic.error}
           onRetry={handleRetryTraffic}
-        />
-        <StatChart
-          title={t("stats.charts.revenue")}
-          data={revenue.data?.points ?? []}
-          kind="bar"
-          format="currency-vnd"
-          loading={revenue.loading}
-          error={revenue.error}
-          onRetry={handleRetryRevenue}
         />
         <SourceBreakdownChart
           title="Nguồn đăng ký (utm_source)"

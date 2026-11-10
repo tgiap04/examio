@@ -2,21 +2,22 @@ syntax = "proto3";
 
 package examio.document.v1;
 
-// Uploaded-file metadata, monthly upload quota and processing status
+// Uploaded-file metadata, upload counts and processing status
 // (schema `document`). User-scoped: the actor is the `sub` of the forwarded
 // user token and every RPC only sees that user's rows. A row that exists but
 // belongs to someone else is indistinguishable from a missing one (NOT_FOUND /
 // listed in not_found_ids), never PERMISSION_DENIED.
 service DocumentService {
-  // Stores the file in R2 and inserts the row. Errors: RESOURCE_EXHAUSTED /
-  // PERMISSION_DENIED when the monthly file quota is spent (same HTTP status as
-  // today's upload), FAILED_PRECONDITION when the debit is refused.
+  // Stores the file in R2 and inserts the row PENDING with its `document.uploaded`
+  // event (one transaction). No charge and no quota. Errors: INVALID_ARGUMENT for
+  // an empty or oversized file, UNAVAILABLE when storage cannot be reached.
   rpc CreateUpload(CreateUploadRequest) returns (CreateUploadResponse);
   // Caller-owned rows only; ids that are missing or foreign are simply absent
   // from the response (one query for any number of ids).
   rpc GetDocumentsByIds(GetDocumentsByIdsRequest) returns (GetDocumentsByIdsResponse);
   // NOT_FOUND if ANY of the ids is not owned by the caller.
   rpc AssertOwnership(AssertOwnershipRequest) returns (AssertOwnershipResponse);
+  // Upload counts of the caller (dashboard stats). There is no monthly limit.
   rpc GetQuota(GetQuotaRequest) returns (GetQuotaResponse);
   // Re-emits `document.uploaded` when the row is FAILED or was never
   // processed (PENDING); a PROCESSING / COMPLETED row is returned unchanged.
@@ -36,12 +37,13 @@ service DocumentService {
 }
 
 // Mirrors the `UserStorage.processingStatus` column
-// (PENDING | PROCESSING | COMPLETED | FAILED) plus PENDING_CHARGE, the state
-// between "row inserted" and "upload credit debited".
+// (PENDING | PROCESSING | COMPLETED | FAILED).
 enum DocumentProcessingStatus {
+  // 1 was PENDING_CHARGE (row inserted, upload credit not debited yet); uploads
+  // are no longer charged.
+  reserved 1;
+  reserved "DOCUMENT_PROCESSING_STATUS_PENDING_CHARGE";
   DOCUMENT_PROCESSING_STATUS_UNSPECIFIED = 0;
-  // Row inserted, credit debit not confirmed yet. Reaped to FAILED after 10 min.
-  DOCUMENT_PROCESSING_STATUS_PENDING_CHARGE = 1;
   // Accepted, waiting for ai-service (or not yet processed: quick-upload).
   DOCUMENT_PROCESSING_STATUS_PENDING = 2;
   DOCUMENT_PROCESSING_STATUS_PROCESSING = 3;
@@ -51,6 +53,9 @@ enum DocumentProcessingStatus {
 
 // One uploaded file (`UserStorage`).
 message DocumentInfo {
+  // 9 was credit_charged (the upload credit was debited); uploads are no longer charged.
+  reserved 9;
+  reserved "credit_charged";
   string id = 1;
   string user_id = 2;
   string filename = 3;
@@ -62,8 +67,6 @@ message DocumentInfo {
   // Public/stored URL as kept in `UserStorage.url`.
   string url = 7;
   DocumentProcessingStatus processing_status = 8;
-  // True once the upload credit was debited (drives the refund on failure).
-  bool credit_charged = 9;
   // Pages found by OCR, from `ai.document.processed`; 0 while unknown.
   int32 page_count = 10;
   // Unix epoch milliseconds.
@@ -72,13 +75,12 @@ message DocumentInfo {
 }
 
 message CreateUploadRequest {
+  // 4 was charge_credits (debit the upload credit); uploads are no longer charged.
+  reserved 4;
+  reserved "charge_credits";
   string filename = 1;
   string mimetype = 2;
   bytes data = 3;
-  // true: debit ceil(sizeMB/2) credits (`doc:<id>` idempotency key) and queue
-  // OCR (`POST /ai/upload`). false: the caller charges itself (generation
-  // path, one combined debit) or the upload is free (`quick-upload`).
-  bool charge_credits = 4;
   // true: when the caller already has an upload with the same (filename, size),
   // return it instead of storing again (generateFromFile reuse branch).
   bool reuse_duplicate = 5;
@@ -107,10 +109,11 @@ message AssertOwnershipResponse {}
 message GetQuotaRequest {}
 
 message GetQuotaResponse {
+  // 2 was monthly_limit (the subscription's files per month); there is no limit.
+  reserved 2;
+  reserved "monthly_limit";
   // Uploads created since the start of the current calendar month.
   int32 used_this_month = 1;
-  // Subscription `filesPerMonth`; -1 means unlimited.
-  int32 monthly_limit = 2;
   // All-time number of files the user has (the dashboard "total PDFs" stat).
   int32 file_count = 3;
 }

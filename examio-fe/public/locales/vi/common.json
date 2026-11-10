@@ -22,7 +22,6 @@
   "footer.group.resources": "Tài nguyên",
   "footer.group.legal": "Pháp lý",
   "footer.link.features": "Tính năng",
-  "footer.link.pricing": "Bảng giá",
   "footer.link.examRoom": "Phòng thi",
   "footer.link.aiTool": "AI Tool",
   "footer.link.about": "Giới thiệu",
@@ -48,7 +47,6 @@
   "rbac.teacherCannotTakeExam": "Tài khoản giáo viên không thể làm bài thi",
   "session.unavailable.title": "Không kết nối được máy chủ",
   "session.unavailable.retry": "Thử lại",
-  "rbac.plansForTeachers": "Gói dành cho giáo viên",
   "rbac.studyRoomDenied": "Bạn không có quyền vào phòng học chung",
   "rbac.studyRoomUnavailable": "Phòng học chung tạm thời không khả dụng. Vui lòng thử lại sau."
 }

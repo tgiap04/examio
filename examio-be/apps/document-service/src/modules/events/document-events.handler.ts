@@ -26,8 +26,7 @@ function parse<T>(schema: z.ZodType<T, z.ZodTypeDef, unknown>, envelope: Envelop
 
 /**
  * ai-service's verdicts on a document (queue `document.events`). Each runs in the consumer's
- * idempotency transaction: a replayed event id changes nothing, a finance outage on the refund
- * rolls the event back for the retry tier.
+ * idempotency transaction: a replayed event id changes nothing.
  */
 @Injectable()
 export class DocumentEventsHandler {

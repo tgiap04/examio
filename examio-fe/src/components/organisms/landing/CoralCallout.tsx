@@ -50,16 +50,16 @@ export default function CoralCallout() {
                             <div className="flex-1">
                                 <span className="inline-flex items-center gap-3 text-sm font-mono text-coral mb-6">
                                     <span className="w-8 h-px bg-coral/30" />
-                                    {t("pricingCta.eyebrow")}
+                                    {t("startCta.eyebrow")}
                                 </span>
                                 <h2 className="text-4xl lg:text-7xl font-display tracking-tight mb-8 leading-[0.95] text-ink">
-                                    {t("pricingCta.headline")}
+                                    {t("startCta.headline")}
                                     <br />
-                                    <span className="text-coral">{t("pricingCta.headlineAccent")}</span>
+                                    <span className="text-coral">{t("startCta.headlineAccent")}</span>
                                 </h2>
 
                                 <p className="text-xl text-muted-foreground mb-12 leading-relaxed max-w-xl">
-                                    {t("pricingCta.description")}
+                                    {t("startCta.description")}
                                 </p>
 
                                 <div className="flex flex-col sm:flex-row items-start gap-4">
@@ -67,20 +67,16 @@ export default function CoralCallout() {
                                         to="/register"
                                         className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-coral px-8 text-base font-medium text-white transition-colors hover:bg-coral-active group"
                                     >
-                                        {t("pricingCta.primary")}
+                                        {t("startCta.primary")}
                                         <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
                                     </Link>
                                     <Link
                                         to="/contact"
                                         className="inline-flex h-14 items-center justify-center rounded-full border border-foreground/20 px-8 text-base font-medium text-ink hover:bg-foreground/5 transition-colors"
                                     >
-                                        {t("pricingCta.secondary")}
+                                        {t("startCta.secondary")}
                                     </Link>
                                 </div>
-
-                                <p className="text-sm text-muted-foreground !mt-8 font-mono">
-                                    {t("pricingCta.note")}
-                                </p>
                             </div>
                         </div>
                     </div>

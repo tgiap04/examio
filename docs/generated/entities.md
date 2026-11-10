@@ -2,26 +2,25 @@
 
 **Project**: examio
 **Generated**: 2026-06-05
-**Source**: per-service Prisma schemas since phase 11 (`libs/database` was removed): `examio-be/apps/auth-service/prisma/schema.prisma`, `apps/finance-service/prisma/schema.prisma`, `apps/admin-service/prisma/schema.prisma`, `apps/content-service/prisma/schema.prisma`, `apps/assessment-service/prisma/schema.prisma`, `apps/ai-chat-service/prisma/schema.prisma`, `apps/study-room-service/prisma/schema.prisma`, `apps/vocabulary-service/prisma/schema.prisma`, `apps/document-service/prisma/schema.prisma`, `apps/ai-service/alembic/versions/0001_init.py` (ai-service, SQL, no Prisma). The model-to-service map enforced in CI is `examio-be/scripts/check-model-ownership.ts`.
+**Source**: per-service Prisma schemas since phase 11 (`libs/database` was removed): `examio-be/apps/auth-service/prisma/schema.prisma`, `apps/admin-service/prisma/schema.prisma`, `apps/content-service/prisma/schema.prisma`, `apps/assessment-service/prisma/schema.prisma`, `apps/ai-chat-service/prisma/schema.prisma`, `apps/study-room-service/prisma/schema.prisma`, `apps/vocabulary-service/prisma/schema.prisma`, `apps/document-service/prisma/schema.prisma`, `apps/ai-service/alembic/versions/0001_init.py` (ai-service, SQL, no Prisma). The model-to-service map enforced in CI is `examio-be/scripts/check-model-ownership.ts`.
 
 > **Per-service placement (phase 11).** Each service owns one Postgres schema; no foreign key crosses a service boundary. `userId`/`adminId`/`hostId` columns outside auth are plain strings (usually with an `@@index`) and no `@relation` to `User`; the ERD edges from `User` below are logical (resolved in the application via auth), not database FKs. Field tables were re-checked against the schema files in phase 19 (field names, nullability, scalar types); index lists and enum values are not re-derived, so the owning schema file wins.
 >
 > | Owner service (PG schema) | Models |
 > |---|---|
 > | auth (`auth`) | User, UserSession, VerifyAccountCode, ResetPasswordCode, RoleChangeLog, OutboxEvent, ProcessedEvent, R2DeleteTask (`r2_delete_tasks`) |
-> | finance (`finance`) | UserSubscription, Payment, Wallet, WalletTransaction, OutboxEvent, ProcessedEvent |
 > | admin (`admin`) | AdminAudit, PageFeatureFlag, OutboxEvent, ProcessedEvent |
 > | content (`content`, phase 14) | QuizSet, QuizSetLabel, QuizQuestion, DetailsQuizQuestion, FlashCardSet, FlashCardSetLabel, FlashCard, DetailsFlashCard, HistoryGeneratedQuizz, HistoryGeneratedFlashcard, QuizPracticeAttempt, FlashCardViewHistory, UserPinnedFlashcard, FlashcardStudyProgress, GenerationJob (phase 15), OutboxEvent, ProcessedEvent, R2DeleteTask |
 > | assessment (`assessment`, phase 14) | ExamRoom, ExamSession (with its quiz snapshot), ExamAttempt, CheatingLog, UserPinnedExamRoom, OutboxEvent, ProcessedEvent |
 > | ai-chat (`aichat`, phase 13) | AIChat, AIChatMessage, AIChatDocument, SubjectCategory, Subject, ProcessedEvent (no outbox), R2DeleteTask |
 > | study-room (`studyroom`, phase 12) | StudyRoom, StudyRoomMember, StudyRoomPlaylistItem, StudyRoomChatBlock, ProcessedEvent (no outbox) |
 > | vocabulary (`vocabulary`, phase 12) | WordFamilyCategory, WordFamily, UserSavedWordFamily, R2DeleteTask (`r2_delete_tasks`); no OutboxEvent/ProcessedEvent (no RabbitMQ) |
-> | document (`document`, phase 15) | UserStorage, UserMonthlyFileUpload, OutboxEvent, ProcessedEvent, R2DeleteTask (`r2_delete_tasks`) |
+> | document (`document`, phase 15) | UserStorage, OutboxEvent, ProcessedEvent, R2DeleteTask (`r2_delete_tasks`) |
 > | ai-service (`ai`, phase 15; Alembic) | Document, DocumentEntity, UserStorageGraph, UserStorageGraphGroup, `outbox_events`, `processed_events` |
 >
-> The exam schema no longer exists (exam-service was split into content, assessment, ai-chat, study-room, vocabulary and document). The tables below carry 41 detailed entities; PageFeatureFlag, the four StudyRoom* models and the three word-family models are not detailed here (see their feature specs and schema files).
+> The exam schema no longer exists (exam-service was split into content, assessment, ai-chat, study-room, vocabulary and document). The tables below carry 36 detailed entities; PageFeatureFlag, the four StudyRoom* models and the three word-family models are not detailed here (see their feature specs and schema files).
 >
-> Only auth's own child tables (UserSession, VerifyAccountCode, ResetPasswordCode) still have a real FK to `User`. `UserSubscription` and `Payment` moved to finance. Phase 15: `UserStorage` and `UserMonthlyFileUpload` moved to document-service; `Document`, `DocumentEntity`, `UserStorageGraph`, `UserStorageGraphGroup` moved to ai-service (schema `ai`). Every `userStorageId` / `documentId` outside document-service is now a plain column (no FK, no cascade): `HistoryGenerated*` in content, `AIChatDocument` in ai-chat, and the four ai tables. Cleanup runs on the `document.deleted` event, not by cascade. Where a relationship line or the ERD below still shows a UserStorage edge, read it as logical. `ExamRoom.quizSetId` (assessment) is likewise a plain string pointing at a content QuizSet, not an FK (deleting the set sets `sourceDeleted`, it does not cascade).
+> Only auth's own child tables (UserSession, VerifyAccountCode, ResetPasswordCode) still have a real FK to `User`. The finance schema and its models (`UserSubscription`, `Payment`, `Wallet`, `WalletTransaction`) and document's `UserMonthlyFileUpload` were removed with the wallet/subscription/payment feature. Phase 15: `UserStorage` moved to document-service; `Document`, `DocumentEntity`, `UserStorageGraph`, `UserStorageGraphGroup` moved to ai-service (schema `ai`). Every `userStorageId` / `documentId` outside document-service is now a plain column (no FK, no cascade): `HistoryGenerated*` in content, `AIChatDocument` in ai-chat, and the four ai tables. Cleanup runs on the `document.deleted` event, not by cascade. Where a relationship line or the ERD below still shows a UserStorage edge, read it as logical. `ExamRoom.quizSetId` (assessment) is likewise a plain string pointing at a content QuizSet, not an FK (deleting the set sets `sourceDeleted`, it does not cascade).
 
 ---
 
@@ -46,9 +45,6 @@ erDiagram
     UserSession ||--o| User : "belongs to"
     VerifyAccountCode ||--o| User : "belongs to"
     ResetPasswordCode ||--o| User : "belongs to"
-    UserSubscription ||..o| User : "belongs to"
-    UserMonthlyFileUpload ||..o| User : "belongs to"
-    Wallet ||..|| User : "has one"
 
     QuizSet ||--o{ QuizSetLabel : "has"
     QuizSet ||--o{ DetailsQuizQuestion : "contains"
@@ -73,9 +69,6 @@ erDiagram
     FlashcardStudyProgress ||--o| FlashCardSet : "tracks"
     QuizPracticeAttempt }o..|| User : "belongs to"
 
-    Payment ||..o| User : "belongs to"
-    Wallet ||--o{ WalletTransaction : "has"
-    UserSubscription }o..|| User : "has"
 
     UserStorage ||..o{ Document : "indexed as"
     UserStorage ||..o{ DocumentEntity : "chunked as"
@@ -96,7 +89,6 @@ erDiagram
     User ||..o{ HistoryGeneratedQuizz : "generates"
     User ||..o{ HistoryGeneratedFlashcard : "generates"
     User ||..o{ QuizPracticeAttempt : "practices"
-    User ||..o{ Payment : "pays"
     User ||..o{ FlashCardViewHistory : "views"
     User ||..o{ UserPinnedFlashcard : "pins"
     User ||..o{ UserPinnedExamRoom : "pins"
@@ -138,7 +130,7 @@ erDiagram
 - One-to-One with VerifyAccountCode via `userId` (FK, auth schema)
 - One-to-One with ResetPasswordCode via `userId` (FK, auth schema)
 - One-to-Many with UserSession via `userId` (FK, auth schema)
-- Logical (no FK, other services keep `userId` and resolve the user over auth gRPC): Wallet, UserSubscription, Payment (finance); QuizSet, FlashCardSet, HistoryGenerated*, QuizPracticeAttempt, FlashCardViewHistory, UserPinnedFlashcard, FlashcardStudyProgress, GenerationJob (content); ExamRoom (`hostId`), ExamAttempt, UserPinnedExamRoom (assessment); AIChat (ai-chat); UserStorage, UserMonthlyFileUpload (document); AdminAudit (`adminId`, admin)
+- Logical (no FK, other services keep `userId` and resolve the user over auth gRPC): QuizSet, FlashCardSet, HistoryGenerated*, QuizPracticeAttempt, FlashCardViewHistory, UserPinnedFlashcard, FlashcardStudyProgress, GenerationJob (content); ExamRoom (`hostId`), ExamAttempt, UserPinnedExamRoom (assessment); AIChat (ai-chat); UserStorage (document); AdminAudit (`adminId`, admin)
 
 **Discriminator Fields**: None.
 
@@ -157,8 +149,8 @@ erDiagram
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Audit record ID |
 | adminId | String | NOT NULL, INDEX | Auth-owned user id (no FK since phase 11) (the admin who performed the action) |
-| targetId | String | NULL | ID of the entity being acted on (user ID, wallet ID, etc.) |
-| action | String | NOT NULL | Action name (e.g. `user.ban`, `finance.refund`, `user.grant_admin`) |
+| targetId | String | NULL | ID of the entity being acted on (user ID, etc.) |
+| action | String | NOT NULL | Action name (e.g. `user.ban`, `admin.role.set_base`) |
 | payload | JSON | NULL | JSON diff of changed fields (before/after) |
 | reason | String | NULL | Optional free-text reason given by the admin |
 | ipAddress | String | NULL | Admin's client IP |
@@ -257,63 +249,6 @@ erDiagram
 - `MODEL-004-UK-01`: `id` (primary key)
 - `MODEL-004-UK-02`: `userId` (unique)
 - `MODEL-004-UK-03`: `code` (unique)
-
----
-
-### MODEL-005 UserSubscription
-
-**Owner**: finance-service. **Description**: User subscription tier and billing state. Controls feature access and upload quotas.
-
-| Attribute | Type | Constraints | Description |
-|-----------|------|-------------|-------------|
-| id | String | PK, UNIQUE, NOT NULL | Subscription ID |
-| userId | String | UNIQUE, NOT NULL | Auth-owned user id (no FK since phase 11) |
-| tier | Int | NOT NULL, DEFAULT 0 | Subscription level |
-| billingCycle | String | NOT NULL, DEFAULT "monthly" | monthly \| yearly |
-| lastPaymentDate | DateTime | NULL | Last successful payment |
-| nextPaymentDate | DateTime | NULL | Next scheduled charge |
-| isActive | Boolean | NOT NULL, DEFAULT false | Active flag |
-| createdAt | DateTime | NOT NULL | Creation time |
-| updatedAt | DateTime | NOT NULL | Last update |
-| createdBy | String | NULL | Creator ID |
-| updatedBy | String | NULL | Updater ID |
-
-**Relationships**:
-- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
-
-**Discriminator Fields**:
-
-| Field | DISC-### | Values | Description |
-|-------|----------|--------|-------------|
-| tier | DISC-004 | 0, 1, 2, 3 | Tier level at domain level: 0=none, 1=basic, 2=advanced, 3=vip |
-| billingCycle | DISC-006 | monthly, yearly | Billing frequency for the subscription |
-
-**Unique Codes**:
-- `MODEL-005-UK-01`: `id` (primary key)
-- `MODEL-005-UK-02`: `userId` (unique)
-
----
-
-### MODEL-006 UserMonthlyFileUpload
-
-**Owner**: document-service. **Description**: Per-user monthly file upload counter, now in document-service (schema `document`). Reserved: the monthly quota is currently the count of that month's `UserStorage` rows (charge-failed rows excluded), so nothing writes this table yet.
-
-| Attribute | Type | Constraints | Description |
-|-----------|------|-------------|-------------|
-| id | String | PK, NOT NULL | Record ID |
-| userId | String | NOT NULL, INDEX | Auth-owned user id (no FK since phase 11) |
-| yearMonth | String | NOT NULL | "YYYY-MM" grouping key |
-| count | Int | NOT NULL, DEFAULT 0 | Upload count this month |
-| createdAt | DateTime | NOT NULL | Creation |
-| updatedAt | DateTime | NOT NULL | Last update |
-
-**Relationships**:
-- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
-
-**Discriminator Fields**: None.
-
-**Unique Codes**:
-- `MODEL-006-UK-01`: `userId + yearMonth` (composite unique)
 
 ---
 
@@ -864,106 +799,7 @@ erDiagram
 
 ---
 
-## Domain 4: Finance
-
-### MODEL-026 Payment
-
-**Owner**: finance-service. **Description**: A payment intent/order. Tracks payment status and links to SePay VA (virtual account) for bank transfer flows.
-
-| Attribute | Type | Constraints | Description |
-|-----------|------|-------------|-------------|
-| id | String | PK, UNIQUE, NOT NULL | Payment ID |
-| userId | String | NOT NULL, INDEX | Payer User ID |
-| amount | Int | NOT NULL | Payment amount |
-| currency | String | NOT NULL | Currency code (e.g., "VND") |
-| status | Int | NOT NULL | Payment lifecycle state |
-| paymentType | String | NOT NULL, DEFAULT "credits" | credits \| subscription |
-| expiresAt | DateTime | NULL | VA expiry (10 min window; null for legacy) |
-| orderId | String | NULL | SePay order ID for VA management |
-| vaNumber | String | NULL | Virtual account number for cleanup |
-| createdAt | DateTime | NOT NULL | Creation |
-| updatedAt | DateTime | NOT NULL | Last update |
-| createdBy | String | NULL | Creator ID |
-| updatedBy | String | NULL | Updater ID |
-| refundIdempotencyKey | String | NULL, UNIQUE | Admin refund de-duplication key (finance `RefundPayment`); a replay answers `alreadyApplied` |
-
-**Relationships**:
-- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
-
-**Discriminator Fields**:
-
-| Field | DISC-### | Values | Description |
-|-------|----------|--------|-------------|
-| status | DISC-003 | 0, 1, 2, 3 | Payment lifecycle: 0=unpaid, 1=paid, 2=overdue, 3=cancelled |
-| paymentType | DISC-013 | credits, subscription | Purchase type: credits wallet top-up or subscription renewal |
-
-**Unique Codes**:
-- `MODEL-026-UK-01`: `id` (primary key, also explicit unique)
-
----
-
-### MODEL-027 Wallet
-
-**Owner**: finance-service. **Description**: User's credit wallet. One wallet per user with a running balance.
-
-| Attribute | Type | Constraints | Description |
-|-----------|------|-------------|-------------|
-| id | String | PK, UNIQUE, NOT NULL | Wallet ID |
-| userId | String | UNIQUE, NOT NULL | Owner User ID |
-| balance | Int | NOT NULL, DEFAULT 0 | Current credit balance (whole credits) |
-| createdBy | String | NULL | Creator ID |
-| updatedBy | String | NULL | Updater ID |
-| createdAt | DateTime | NOT NULL | Creation |
-| updatedAt | DateTime | NOT NULL | Last update |
-
-**Relationships**:
-- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
-- One-to-Many with WalletTransaction via `walletId`
-
-**Discriminator Fields**: None.
-
-**Unique Codes**:
-- `MODEL-027-UK-01`: `id` (primary key, explicit unique)
-- `MODEL-027-UK-02`: `userId` (unique, one wallet per user)
-
----
-
-### MODEL-028 WalletTransaction
-
-**Owner**: finance-service. **Description**: Immutable ledger entry for wallet balance changes. Balance is computed from the running sum of transactions (not stored as a snapshot).
-
-| Attribute | Type | Constraints | Description |
-|-----------|------|-------------|-------------|
-| id | String | PK, UNIQUE, NOT NULL | Transaction ID |
-| walletId | String | FK, NOT NULL | Parent Wallet ID |
-| updatedAt | DateTime | NOT NULL | Last update |
-| createdBy | String | NULL | Creator ID |
-| updatedBy | String | NULL | Updater ID |
-| amount | Int | NOT NULL | Transaction amount (absolute value, whole credits) |
-| type | Int | NOT NULL | Transaction category |
-| direction | String | NOT NULL, DEFAULT "SUBTRACT" | ADD \| SUBTRACT |
-| description | String | NULL | Human-readable transaction description |
-| createdAt | DateTime | NOT NULL | Transaction time |
-| idempotencyKey | String | NULL | Money RPC de-duplication key, namespaced `debit:` `credit:` `refund:` `adjust:` `refund-payment:` `welcome:`; NULL on legacy rows |
-| balanceAfter | Int | NULL | Wallet balance right after this transaction |
-
-**Relationships**:
-- Many-to-One with Wallet via `walletId` (Cascade delete)
-
-**Discriminator Fields**:
-
-| Field | DISC-### | Values | Description |
-|---------|----------|--------|-------------|
-| type | DISC-011 | 0, 1, 2, 3, 4 | Transaction category: 0=buy credits, 1=buy subscription, 2=refund, 3=admin adjustment, 4=use services |
-| direction | DISC-012 | ADD, SUBTRACT | Balance movement direction: ADD=credit, SUBTRACT=debit |
-
-**Unique Codes**:
-- `MODEL-028-UK-01`: `id` (primary key, explicit unique)
-- Composite unique on `(walletId, idempotencyKey)` (Prisma `@@unique`)
-
----
-
-## Domain 5: AI / Storage / RAG
+## Domain 4: AI / Storage / RAG
 
 ### MODEL-029 UserStorage
 
@@ -980,10 +816,7 @@ erDiagram
 | keyR2 | String | UNIQUE, NOT NULL | R2 storage key |
 | createdAt | DateTime | NOT NULL | Upload time |
 | updatedAt | DateTime | NOT NULL | Last update |
-| processingStatus | String | NOT NULL, DEFAULT "PENDING" | Processing pipeline state (`PENDING_CHARGE` only between insert and debit) |
-| creditCharged | Boolean | NOT NULL, DEFAULT false | True once `Debit(doc:<id>)` succeeded; drives the refund when processing fails (cleared by that refund) |
-| chargeFailedAt | DateTime | NULL | Set when the upload credit was refused or timed out: the row is hidden and not counted in the quota |
-| refundSettledAt | DateTime | NULL | When the compensation of a charge-failed row is done; null on such a row = a refund may still be owed |
+| processingStatus | String | NOT NULL, DEFAULT "PENDING" | Processing pipeline state (no charge step; uploads are free) |
 | queuedAt | DateTime | NULL | When `document.uploaded` was last written to the outbox; null = never queued (quick-upload) |
 | pageCount | Int | NOT NULL, DEFAULT 0 | Pages found by OCR (`ai.document.processed`) |
 
@@ -996,7 +829,7 @@ erDiagram
 
 | Field | DISC-### | Values | Description |
 |-------|----------|--------|-------------|
-| processingStatus | DISC-014 | PENDING_CHARGE, PENDING, PROCESSING, COMPLETED, FAILED | Document processing pipeline state |
+| processingStatus | DISC-014 | PENDING, PROCESSING, COMPLETED, FAILED | Document processing pipeline state |
 
 **Unique Codes**:
 - `MODEL-029-UK-01`: `id` (primary key, explicit unique)
@@ -1242,7 +1075,7 @@ erDiagram
 
 ### GenerationJob (content, phase 15; no MODEL code assigned yet, run `/tkm:rebuild-spec` to allocate one)
 
-**Owner**: content-service. **Description**: One quiz/flashcard generation request and the money behind it. Source: `apps/content-service/prisma/schema.prisma`.
+**Owner**: content-service. **Description**: One quiz/flashcard generation request (no charge; created `QUEUED` with its outbox row in one transaction). Source: `apps/content-service/prisma/schema.prisma`.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -1251,10 +1084,7 @@ erDiagram
 | storageId | String | NOT NULL | Source document (`UserStorage.id` in document-service, no FK) |
 | filename | String | NOT NULL | Source file name |
 | type | String | NOT NULL | `quiz` or `flashcard` |
-| status | String | NOT NULL, DEFAULT "PENDING_CHARGE" | `PENDING_CHARGE`, `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`, `CANCELLED` |
-| chargeKey | String | UNIQUE, NOT NULL | Finance idempotency key `gen:<id>` |
-| chargedAmount | Int | NOT NULL, DEFAULT 0 | Credits debited under `chargeKey` (0 = nothing to refund) |
-| refundedAt | DateTime | NULL | Set once the refund of a FAILED/CANCELLED job is settled |
+| status | String | NOT NULL, DEFAULT "QUEUED" | `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`, `CANCELLED` |
 | options | Json | NOT NULL | `numItems`, `isNarrowSearch`, `keyword?` |
 | model | String | NULL | Model name |
 | error | String | NULL | Failure reason (e.g. `GENERATION_TIMEOUT`) |
@@ -1368,23 +1198,17 @@ erDiagram
 |------|--------|-------|--------|-------------------|
 | DISC-001 | ExamSession | status | 0=UPCOMING, 1=ONGOING, 2=ENDED | Controls joinability, timer visibility, and submission behavior |
 | DISC-002 | ExamSession | assessType | 0=PUBLIC, 1=PRIVATE | Controls whether access code/whitelist is required |
-| DISC-003 | Payment | status | 0=unpaid, 1=paid, 2=overdue, 3=cancelled, 4=refunded | Gates credit/subscription activation and VA cleanup |
-| DISC-004 | UserSubscription | tier | 0=none, 1=basic, 2=advanced, 3=vip | Controls feature access, upload limits, and AI quota |
-| DISC-006 | UserSubscription | billingCycle | monthly, yearly | Determines renewal interval and next payment calculation |
 | DISC-007 | ExamSession | questionSelectionMode | 0=ALL, 1=RANDOM_TOTAL, 2=RANDOM_BY_LABEL | Determines how selectedQuestionIds are populated on ExamAttempt |
 | DISC-008 | ExamAttempt | status | 0=IN_PROGRESS, 1=COMPLETED, 2=CANCELLED | Controls answer editability and whether results are shown |
 | DISC-009 | QuizPracticeAttempt | type | 0=PRACTICE, 1=REAL | Affects score display, retake rules, and analytics categorization |
-| DISC-010 | WalletTransaction | type | 0=buy credits, 1=buy subscription, 2=refund, 3=admin adjustment, 4=use services | Determines transaction description, ledger category, and side effects |
-| DISC-011 | WalletTransaction | direction | ADD, SUBTRACT | Determines whether amount is added to or subtracted from wallet balance |
-| DISC-012 | Payment | paymentType | credits, subscription | Determines whether payment activates wallet credits or extends subscription |
-| DISC-013 | UserStorage | processingStatus | PENDING_CHARGE, PENDING, PROCESSING, COMPLETED, FAILED | Controls whether document is available for AI chat and generation |
+| DISC-013 | UserStorage | processingStatus | PENDING, PROCESSING, COMPLETED, FAILED | Controls whether document is available for AI chat and generation |
 
 ---
 
 ## Summary
 
-- **Total Entities**: 49 across 10 schemas (45 Prisma models + 4 ai-service tables, excluding the per-service `OutboxEvent` / `ProcessedEvent` / `R2DeleteTask` infrastructure tables); 41 are detailed above
-- **Total Domains**: 5
-- **Total Unique Constraints**: 24 (composite + scalar)
-- **Total Discriminator Fields**: 14 (DISC-001 through DISC-014)
+- **Total Entities**: 44 across 9 schemas (40 Prisma models + 4 ai-service tables, excluding the per-service `OutboxEvent` / `ProcessedEvent` / `R2DeleteTask` infrastructure tables); 36 are detailed above
+- **Total Domains**: 4
+- **Total Unique Constraints**: 16 (composite + scalar)
+- **Total Discriminator Fields**: 8 (codes DISC-003, 004, 006, 010, 011 and 012 were removed with the finance models and are not reused)
 - **Polymorphic / Junction Tables**: DetailsQuizQuestion, DetailsFlashCard, AIChatDocument, UserStorageGraphGroup (junction between graph and userStorage)

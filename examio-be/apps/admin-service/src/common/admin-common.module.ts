@@ -6,7 +6,7 @@ import { AuditWriterService } from './audit-writer.service';
 /**
  * AdminCommonModule — shared providers used across admin-service modules
  * (audit writer, future helpers). Exports AuditWriterService so any
- * feature module (admin-finance, admin-users, ...) can inject it.
+ * feature module (admin-users, ...) can inject it.
  */
 @Module({
     imports: [PrismaModule],

@@ -9,20 +9,18 @@ DESCRIPTOR: _descriptor.FileDescriptor
 class DocumentProcessingStatus(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
     DOCUMENT_PROCESSING_STATUS_UNSPECIFIED: _ClassVar[DocumentProcessingStatus]
-    DOCUMENT_PROCESSING_STATUS_PENDING_CHARGE: _ClassVar[DocumentProcessingStatus]
     DOCUMENT_PROCESSING_STATUS_PENDING: _ClassVar[DocumentProcessingStatus]
     DOCUMENT_PROCESSING_STATUS_PROCESSING: _ClassVar[DocumentProcessingStatus]
     DOCUMENT_PROCESSING_STATUS_COMPLETED: _ClassVar[DocumentProcessingStatus]
     DOCUMENT_PROCESSING_STATUS_FAILED: _ClassVar[DocumentProcessingStatus]
 DOCUMENT_PROCESSING_STATUS_UNSPECIFIED: DocumentProcessingStatus
-DOCUMENT_PROCESSING_STATUS_PENDING_CHARGE: DocumentProcessingStatus
 DOCUMENT_PROCESSING_STATUS_PENDING: DocumentProcessingStatus
 DOCUMENT_PROCESSING_STATUS_PROCESSING: DocumentProcessingStatus
 DOCUMENT_PROCESSING_STATUS_COMPLETED: DocumentProcessingStatus
 DOCUMENT_PROCESSING_STATUS_FAILED: DocumentProcessingStatus
 
 class DocumentInfo(_message.Message):
-    __slots__ = ("id", "user_id", "filename", "mimetype", "size", "key_r2", "url", "processing_status", "credit_charged", "page_count", "created_at", "updated_at")
+    __slots__ = ("id", "user_id", "filename", "mimetype", "size", "key_r2", "url", "processing_status", "page_count", "created_at", "updated_at")
     ID_FIELD_NUMBER: _ClassVar[int]
     USER_ID_FIELD_NUMBER: _ClassVar[int]
     FILENAME_FIELD_NUMBER: _ClassVar[int]
@@ -31,7 +29,6 @@ class DocumentInfo(_message.Message):
     KEY_R2_FIELD_NUMBER: _ClassVar[int]
     URL_FIELD_NUMBER: _ClassVar[int]
     PROCESSING_STATUS_FIELD_NUMBER: _ClassVar[int]
-    CREDIT_CHARGED_FIELD_NUMBER: _ClassVar[int]
     PAGE_COUNT_FIELD_NUMBER: _ClassVar[int]
     CREATED_AT_FIELD_NUMBER: _ClassVar[int]
     UPDATED_AT_FIELD_NUMBER: _ClassVar[int]
@@ -43,25 +40,22 @@ class DocumentInfo(_message.Message):
     key_r2: str
     url: str
     processing_status: DocumentProcessingStatus
-    credit_charged: bool
     page_count: int
     created_at: int
     updated_at: int
-    def __init__(self, id: _Optional[str] = ..., user_id: _Optional[str] = ..., filename: _Optional[str] = ..., mimetype: _Optional[str] = ..., size: _Optional[int] = ..., key_r2: _Optional[str] = ..., url: _Optional[str] = ..., processing_status: _Optional[_Union[DocumentProcessingStatus, str]] = ..., credit_charged: bool = ..., page_count: _Optional[int] = ..., created_at: _Optional[int] = ..., updated_at: _Optional[int] = ...) -> None: ...
+    def __init__(self, id: _Optional[str] = ..., user_id: _Optional[str] = ..., filename: _Optional[str] = ..., mimetype: _Optional[str] = ..., size: _Optional[int] = ..., key_r2: _Optional[str] = ..., url: _Optional[str] = ..., processing_status: _Optional[_Union[DocumentProcessingStatus, str]] = ..., page_count: _Optional[int] = ..., created_at: _Optional[int] = ..., updated_at: _Optional[int] = ...) -> None: ...
 
 class CreateUploadRequest(_message.Message):
-    __slots__ = ("filename", "mimetype", "data", "charge_credits", "reuse_duplicate")
+    __slots__ = ("filename", "mimetype", "data", "reuse_duplicate")
     FILENAME_FIELD_NUMBER: _ClassVar[int]
     MIMETYPE_FIELD_NUMBER: _ClassVar[int]
     DATA_FIELD_NUMBER: _ClassVar[int]
-    CHARGE_CREDITS_FIELD_NUMBER: _ClassVar[int]
     REUSE_DUPLICATE_FIELD_NUMBER: _ClassVar[int]
     filename: str
     mimetype: str
     data: bytes
-    charge_credits: bool
     reuse_duplicate: bool
-    def __init__(self, filename: _Optional[str] = ..., mimetype: _Optional[str] = ..., data: _Optional[bytes] = ..., charge_credits: bool = ..., reuse_duplicate: bool = ...) -> None: ...
+    def __init__(self, filename: _Optional[str] = ..., mimetype: _Optional[str] = ..., data: _Optional[bytes] = ..., reuse_duplicate: bool = ...) -> None: ...
 
 class CreateUploadResponse(_message.Message):
     __slots__ = ("document", "reused")
@@ -98,14 +92,12 @@ class GetQuotaRequest(_message.Message):
     def __init__(self) -> None: ...
 
 class GetQuotaResponse(_message.Message):
-    __slots__ = ("used_this_month", "monthly_limit", "file_count")
+    __slots__ = ("used_this_month", "file_count")
     USED_THIS_MONTH_FIELD_NUMBER: _ClassVar[int]
-    MONTHLY_LIMIT_FIELD_NUMBER: _ClassVar[int]
     FILE_COUNT_FIELD_NUMBER: _ClassVar[int]
     used_this_month: int
-    monthly_limit: int
     file_count: int
-    def __init__(self, used_this_month: _Optional[int] = ..., monthly_limit: _Optional[int] = ..., file_count: _Optional[int] = ...) -> None: ...
+    def __init__(self, used_this_month: _Optional[int] = ..., file_count: _Optional[int] = ...) -> None: ...
 
 class EnsureProcessedRequest(_message.Message):
     __slots__ = ("id",)

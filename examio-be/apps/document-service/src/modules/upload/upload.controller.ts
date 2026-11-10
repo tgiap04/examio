@@ -16,7 +16,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiConsumes, ApiCookieAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { ZodValidationPipe } from 'nestjs-zod';
 import { AuthenticatedRequest } from '@examio/common';
-import { extractHttpToken, RequirePermissions } from '@examio/auth-jwt';
+import { RequirePermissions } from '@examio/auth-jwt';
 import { MAX_QUICK_UPLOAD_BYTES, MAX_UPLOAD_BYTES } from '../../config/document.constants';
 import { toHttpDocument } from './document-mapper';
 import { DocumentErrorCode, documentError } from './document-errors';
@@ -47,7 +47,7 @@ export class UploadController {
     @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES } }))
     @ApiCookieAuth('cookie-auth')
     @ApiConsumes('multipart/form-data')
-    @ApiOperation({ summary: 'Quick upload file cho AI Teacher (khong tinh credit, khong OCR ngay)' })
+    @ApiOperation({ summary: 'Quick upload file cho AI Teacher (khong OCR ngay)' })
     async quickUpload(@Req() req: AuthenticatedRequest, @UploadedFile() file: Express.Multer.File) {
         if (!file || !file.buffer) throw new BadRequestException('No file uploaded');
         if (file.size > MAX_QUICK_UPLOAD_BYTES) {
@@ -86,9 +86,9 @@ export class UploadController {
     @Post('upload')
     @RequirePermissions('document:upload')
     @ApiCookieAuth('cookie-auth')
-    @ApiOperation({ summary: 'Đăng ký upload (trừ credit, queue OCR)' })
+    @ApiOperation({ summary: 'Đăng ký upload (queue OCR)' })
     async createUpload(@Req() req: AuthenticatedRequest, @Body() dto: RegisterUploadDto) {
-        return this.registrations.register(req.user.id, dto, extractHttpToken(req));
+        return this.registrations.register(req.user.id, dto);
     }
 
     @Post('upload-image')

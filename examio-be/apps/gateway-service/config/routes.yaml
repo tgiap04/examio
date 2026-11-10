@@ -13,7 +13,6 @@ upstreams:
   vocabulary: ${VOCABULARY_SERVICE_URL:-http://localhost:3010}
   document: ${DOCUMENT_SERVICE_URL:-http://localhost:3011}
   aichat: ${AICHAT_SERVICE_URL:-http://localhost:3012}
-  finance: ${FINANCE_SERVICE_URL:-http://localhost:3003}
   admin: ${ADMIN_SERVICE_URL:-http://localhost:7006}
 
 routes:
@@ -50,26 +49,6 @@ routes:
     upstream: auth
     match: { prefix: /api/v1/devices }
     auth: required
-
-  # ---- finance-service -------------------------------------------------------
-  - id: wallet
-    upstream: finance
-    match: { prefix: /api/v1/wallet }
-    auth: required
-    permissions: [wallet:use]
-  - id: payment
-    upstream: finance
-    match: { prefix: /api/v1/payment }
-    auth: required
-    permissions: [wallet:use]
-    public:
-      - { method: GET, path: '/api/v1/payment/subscription/plans' }
-  - id: webhook-sepay
-    upstream: finance
-    match: { path: '/api/v1/webhook/sepay' }
-    methods: [POST]
-    auth: none
-    pathRewrite: { from: '^/api/v1/webhook/sepay', to: /api/v1/webhook }
 
   # ---- admin-service ---------------------------------------------------------
   # EventSource cannot send headers: admin-service authenticates this one with

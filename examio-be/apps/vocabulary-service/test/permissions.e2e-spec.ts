@@ -1,4 +1,3 @@
-import { FinanceClient } from '@examio/grpc';
 import {
     bootVocabularyApp,
     rid,
@@ -8,8 +7,8 @@ import { call } from './support/http';
 
 /**
  * HTTP authorization of the word-family routes with the real guards (RBAC
- * catalog), real Postgres and Redis. Generation is free for TEACHERs: no wallet
- * is touched, the per-user daily cap (20) and the permission are the only brakes.
+ * catalog), real Postgres and Redis. Generation is free for TEACHERs: the
+ * per-user daily cap (20) and the permission are the only brakes.
  */
 describe('vocabulary permissions (e2e)', () => {
     let t: VocabularyTestApp;
@@ -75,7 +74,7 @@ describe('vocabulary permissions (e2e)', () => {
         expect((await call(t.server, 'get', '/word-family/categories')).status).toBe(401);
     });
 
-    it('TEACHER generate is 2xx, calls ai-service over gRPC with a service token, and touches no wallet', async () => {
+    it('TEACHER generate is 2xx, calls ai-service over gRPC with a service token', async () => {
         const res = await call(t.server, 'post', '/word-family/generate', tok.teacher, {
             categorySlug: slug,
             numRootWords: 1,
@@ -88,8 +87,6 @@ describe('vocabulary permissions (e2e)', () => {
             authorization: 'Bearer e2e-service-token',
             body: { categorySlug: slug, numRootWords: 1 },
         });
-        // vocabulary has no finance client at all: there is nothing that could debit a wallet
-        expect(() => t.app.get(FinanceClient, { strict: false })).toThrow();
     });
 
     it('the 21st generation of a user in one day is 429 and never reaches ai-service', async () => {
