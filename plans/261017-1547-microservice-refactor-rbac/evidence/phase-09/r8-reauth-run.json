@@ -1,0 +1,154 @@
+{
+  "at": "2026-10-21T18:07:36.197Z",
+  "results": [
+    {
+      "name": "R7 setup: student login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R7 setup: admin login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R7 setup: student in room, socket connected",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R7-C: admin promotes student (authz change)",
+      "ok": true,
+      "extra": "200"
+    },
+    {
+      "name": "R7-C: auth:reauth received on the room socket",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R7-C: the in-flight reauth refresh completed AFTER leaving the room (201)",
+      "ok": true,
+      "extra": "refresh after nav=201"
+    },
+    {
+      "name": "R7-C: no new socket connection after the refresh completed",
+      "ok": true,
+      "extra": "WS created after nav=0"
+    },
+    {
+      "name": "R7-C: no room:join sent for the old room after nav (no ghost JOIN)",
+      "ok": true,
+      "extra": "room:join frames after nav=0"
+    },
+    {
+      "name": "R7-C: no namespace connect after nav",
+      "ok": true,
+      "extra": "connect frames after nav=0"
+    },
+    {
+      "name": "R7-C: user stays in the app (not /login), on the destination page",
+      "ok": true,
+      "extra": "/k/word-family"
+    },
+    {
+      "name": "R7-C cleanup: student demoted back to STUDENT",
+      "ok": true,
+      "extra": "200"
+    },
+    {
+      "name": "R7-A setup: room socket connected (fresh token)",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R7-A: admin promotes student (authz change)",
+      "ok": true,
+      "extra": "200"
+    },
+    {
+      "name": "R7-A: auth:reauth received",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R7-A: reauth refresh failed with 502 (upstream unavailable)",
+      "ok": true,
+      "extra": "502 count=4"
+    },
+    {
+      "name": "R7-A: while auth is down the user is NOT sent to /login (stays on the room URL)",
+      "ok": true,
+      "extra": "/k/study-room/6ad8fed2644bc93e6064f77f"
+    },
+    {
+      "name": "R7-A: room still rendered during the outage",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R7-A: after restore, a retry refresh succeeds (201) without a page reload",
+      "ok": true,
+      "extra": "refresh after restore=201"
+    },
+    {
+      "name": "R7-A: socket reconnects after restore WITHOUT a page reload (namespace connect)",
+      "ok": true,
+      "extra": "ws created after restore=1"
+    },
+    {
+      "name": "R7-A: still on the room URL, not /login",
+      "ok": true,
+      "extra": "/k/study-room/6ad8fed2644bc93e6064f77f"
+    },
+    {
+      "name": "R7-A reload: a page reload restores the socket and room snapshot",
+      "ok": true,
+      "extra": "connected=true path=/k/study-room/6ad8fed2644bc93e6064f77f"
+    },
+    {
+      "name": "R7-B setup: room socket connected",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R7-B: admin demotes student (authz change)",
+      "ok": true,
+      "extra": "200"
+    },
+    {
+      "name": "R7-B: auth:reauth received",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R7-B: capped retries then the single give-up toast",
+      "ok": true,
+      "extra": "toast at +35 s"
+    },
+    {
+      "name": "R7-B: toast shown once (no repeat within the first 60 s)",
+      "ok": true,
+      "extra": "toast polls=1"
+    },
+    {
+      "name": "R7-B: still on the room URL, not /login",
+      "ok": true,
+      "extra": "/k/study-room/6ad8fed2644bc93e6064f77f"
+    },
+    {
+      "name": "R7-B: zero refresh attempts and zero socket attempts for 60 s after give-up",
+      "ok": true,
+      "extra": "refresh=0 ws=0"
+    },
+    {
+      "name": "R7-B: still not /login after 60 s",
+      "ok": true,
+      "extra": "/k/study-room/6ad8fed2644bc93e6064f77f"
+    }
+  ],
+  "cdp": {
+    "created": 13
+  },
+  "toastTimes": 13
+}

@@ -1,0 +1,159 @@
+{
+ "score": 9,
+ "criticalCount": 0,
+ "decision": "SEALED",
+ "acceptanceCovered": [
+  "stale terms: git grep for libs/database|prisma:merge|x-user-roles|invalid_before|outputServices|node:20|6369:|HS256 in ARCHITECTURE.md, CLAUDE.md, AGENTS.md and docs/system returns only lines inside explicit legacy/trước đây notes — re-checked fix round 2: every hit (ARCHITECTURE.md:21,27,90,94,339,383,741,1007,1041,1145; CLAUDE.md:224; AGENTS.md:221; docs/system/architecture.md:472,648; overview.md:222) is marked trước đây/legacy/đã bỏ/removed",
+  "cutover: cutover-runbook.md is linked at least once from docs/system/architecture.md and from ARCHITECTURE.md, and no runbook command block is duplicated in those docs — ARCHITECTURE.md links it (3-4 hits), docs/system/architecture.md 2 hits (summary steps 587-598), no fenced command blocks",
+  "deferred infra: auth.user.deleted and Grafana appear in ARCHITECTURE.md only on lines marked deferred (phase 17 / roadmap) — every hit (ARCHITECTURE.md lines 29,249,313,575,608,1031,1055,1082) carries [DEFERRED]",
+  "permission docs: yarn gen:permissions-doc regenerates docs/system/permissions.md (generated section) and docs/generated/permissions-matrix.md with no git diff; a CI step fails on drift; the role -> permission table equals ROLE_PERMISSIONS in libs/auth-jwt/src/permissions.ts — md5 identical before/after a real run (rounds 1-3, incl. LC_ALL=C); ci.yml:667-686 permissions-doc-drift runs ls-files --error-unmatch + git diff --exit-code; role table built from ROLE_PERMISSIONS (STUDENT 6, TEACHER 17, SYSTEM_ADMIN 9); generated gRPC block 51 rows = 55 proto rpcs - 4 Python AiService, throws file:line on an unguarded handler (scratch test)",
+  "roadmap and changelog: development-roadmap.md shows milestones A-D with real status (phases 01-16 committed, 17 deferred, 18 pending before first mobile release, 19) and [DEFERRED] items; no committed phase is called uncommitted; project-changelog.md has the cutover release entry with the breaking-change list — roadmap milestone table + [DEFERRED] items, 0 \"uncommitted\"; changelog release entry breaking-change table 18 rows (project-changelog.md:35-53)",
+  "spot-check: 6 ARCHITECTURE.md claims match the code (ts-proto opts in proto/buf.gen.yaml, search_path in deploy/postgres/init/01-service-schemas.sh, nginx upstream gw in examio-fe/nginx.conf, Dockerfile.node base image, ROLE_PERMISSIONS, POST /internal/token) — buf.gen.yaml:7-13; 01-service-schemas.sh:48; nginx.conf:17-21; Dockerfile.node:20; permissions.ts ROLE_PERMISSIONS; service-token.controller.ts:29/39; upstream sample ARCHITECTURE.md:176-182 matches routes.yaml:9-17",
+  "generated tables: route-list/api-map owning-service column matches apps/gateway-service/config/routes.yaml upstreams, and entities.md owner per model matches scripts/check-model-ownership.ts — route-list 364 / api-map 173 rows: 0 owner mismatches vs routes.yaml (POST /api/v1/webhook is the finance-internal target of the /webhook/sepay rewrite); entities.md owners equal check-model-ownership.ts and every schema.prisma",
+  "hygiene: no secrets or real credentials in the changed docs; relative links in changed docs resolve; examio-be yarn typecheck and the new script run green — 0 secret-pattern hits in added lines; 26 changed docs, 0 broken relative links (pre-existing http://CLAUDE.md header excepted); yarn typecheck exit 0; tsc --noEmit on the script exit 0; generator green"
+ ],
+ "regressionChecked": [
+  "permissions-doc-drift CI job vs fe-permissions-drift pattern",
+  "generator determinism (default and LC_ALL=C) and fail-loud paths (missing routes.yaml, unguarded handler)",
+  "~40 per-endpoint HTTP rows and 51 gRPC handlers vs decorators",
+  "study-room socket auth and gateway WS upgrade/guard chain",
+  "FLOW003 and FLOW005 against assessment and document services",
+  "business rules: snapshot, ai-chat limits, GenerationJob, r2_delete_tasks",
+  "agent rules in CLAUDE.md/AGENTS.md vs auth-jwt guard semantics"
+ ],
+ "contractStatus": "OK",
+ "refuted": [],
+ "unproven": [],
+ "reachableRegressions": [],
+ "riskGate": {
+  "humanSignedOff": true
+ },
+ "findings": [
+  {
+   "severity": "High",
+   "category": "Docs",
+   "location": "CLAUDE.md:174",
+   "summary": "addressed in fix round 1: read-RPC rule now requires the least sufficient guard (CLAUDE.md:174, AGENTS.md:171, ARCHITECTURE.md:382)",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Medium",
+   "category": "Docs",
+   "location": "docs/system/permissions.md:163",
+   "summary": "addressed in fix round 1: SetUserStatus is role:assign over gRPC, HTTP ban/unban is user:manage",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Medium",
+   "category": "Docs",
+   "location": "docs/system/permissions.md:101-157",
+   "summary": "addressed in fix round 1: gRPC guard table generated from the controllers (51 rows)",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Medium",
+   "category": "Docs",
+   "location": "docs/system/permissions.md:264-265",
+   "summary": "addressed in fix round 1: WS steps match study-room-socket-auth.service.ts; page flag at gateway upgrade",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Medium",
+   "category": "Docs",
+   "location": "ARCHITECTURE.md:235-236",
+   "summary": "addressed in fix round 1: TOKEN_INVALID for a bad signature, gateway reads bearer/cookie only",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Medium",
+   "category": "Docs",
+   "location": "ARCHITECTURE.md:183-214",
+   "summary": "addressed in fix round 1: addressed in fix round 2: route entries and upstreams copied from routes.yaml; Appendix B recent-uploads -> content",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Low",
+   "category": "Docs",
+   "location": "ARCHITECTURE.md:369-370",
+   "summary": "addressed in fix round 1: host-only cookie, deleted file marked legacy",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Low",
+   "category": "Docs",
+   "location": "ARCHITECTURE.md:166",
+   "summary": "addressed in fix round 1: Redis-outage fail-open lists GET/HEAD/UPGRADE",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Low",
+   "category": "Docs",
+   "location": "docs/flows/FLOW003_exam-session.md:29",
+   "summary": "addressed in fix round 1: SnapshotTaker file added",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Low",
+   "category": "Docs",
+   "location": "docs/flows/FLOW005_user-storage.md:13-14",
+   "summary": "addressed in fix round 1: gRPC CreateUpload paths added",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Low",
+   "category": "Docs",
+   "location": "docs/project-changelog.md:35-53",
+   "summary": "addressed in fix round 1: five breaking-change rows added",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Low",
+   "category": "Script",
+   "location": "examio-be/scripts/gen-permissions-doc.ts:37",
+   "summary": "addressed in fix round 1: code-point sort and Methods column",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Medium",
+   "category": "Docs",
+   "location": "docs/system/permissions.md:162",
+   "summary": "addressed in fix round 2: omitted callers = any service token, callers: [] = none (also generator intro, regenerated)",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Low",
+   "category": "Docs",
+   "location": "CLAUDE.md:174",
+   "summary": "addressed in fix round 2: RequirePermissionsOrService([]) also for own data with assertSelfOrService",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Low",
+   "category": "Script",
+   "location": "examio-be/scripts/gen-permissions-doc.ts:146",
+   "summary": "addressed in fix round 2: handler regex accepts public/async*/generator handlers; still 51 rows",
+   "disposition": "Reject"
+  },
+  {
+   "severity": "Low",
+   "category": "Docs",
+   "location": "docs/generated/entities.md:1",
+   "summary": "DISC code numbering inconsistent between model sections (011-014) and summary table (010-013); pre-existing",
+   "disposition": "Defer"
+  },
+  {
+   "severity": "Low",
+   "category": "Docs",
+   "location": "docs/generated/route-list.md:1",
+   "summary": "study-room and word-family endpoints not inventoried in route-list/api-map; pre-existing gap, noted in the files",
+   "disposition": "Defer"
+  },
+  {
+   "severity": "Low",
+   "category": "Docs",
+   "location": "ARCHITECTURE.md:1",
+   "summary": "ARCHITECTURE.md (1145 lines) and entities.md (1389) exceed the 800-line guideline; split later",
+   "disposition": "Defer"
+  }
+ ]
+}

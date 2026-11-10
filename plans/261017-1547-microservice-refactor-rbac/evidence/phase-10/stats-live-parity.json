@@ -1,0 +1,66 @@
+{
+  "ts": "2026-10-22T18:31:33.389Z",
+  "overviewHttp": 200,
+  "compared": 14,
+  "equal": 14,
+  "mismatches": [],
+  "results": [
+    {
+      "key": "overview",
+      "equal": true
+    },
+    {
+      "key": "series:signups:7d",
+      "equal": true
+    },
+    {
+      "key": "series:signups:30d",
+      "equal": true
+    },
+    {
+      "key": "series:signups:90d",
+      "equal": true
+    },
+    {
+      "key": "series:traffic:7d",
+      "equal": true
+    },
+    {
+      "key": "series:traffic:30d",
+      "equal": true
+    },
+    {
+      "key": "series:traffic:90d",
+      "equal": true
+    },
+    {
+      "key": "series:revenue:7d",
+      "equal": true
+    },
+    {
+      "key": "series:revenue:30d",
+      "equal": true
+    },
+    {
+      "key": "series:revenue:90d",
+      "equal": true
+    },
+    {
+      "key": "sources:all",
+      "equal": true
+    },
+    {
+      "key": "sources:7d",
+      "equal": true
+    },
+    {
+      "key": "sources:30d",
+      "equal": true
+    },
+    {
+      "key": "sources:90d",
+      "equal": true
+    }
+  ],
+  "diffSample": {}
+}

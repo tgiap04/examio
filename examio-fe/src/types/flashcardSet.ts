@@ -11,20 +11,6 @@ export interface Flashcard {
   };
 }
 
-export interface FlashcardStudySession {
-  id: string;
-  flashCardSetId: string;
-  userId: string;
-  studyMode: number;
-  cardsStudied: number;
-  correctCount: number;
-  incorrectCount: number;
-  timeSpentSeconds: number;
-  isCompleted: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface FlashcardSetProgress {
   totalCards: number;
   studiedCards: number;
@@ -57,7 +43,7 @@ export interface FlashcardSet {
   updatedAt: string;
   flashCards?: Flashcard[];
   cardCount?: number;
-  creator?: FlashcardSetCreator;
+  creator?: FlashcardSetCreator | null;
   _count?: {
     detailsFlashCard: number;
   };
@@ -70,7 +56,7 @@ export interface FlashcardSetPublicInfo {
   thumbnail?: string;
   viewCount: number;
   cardCount: number;
-  creator: FlashcardSetCreator;
+  creator: FlashcardSetCreator | null;
   createdAt: string;
   isPublic: boolean;
   requiresCode: boolean;

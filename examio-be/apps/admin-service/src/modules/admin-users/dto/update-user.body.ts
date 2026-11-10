@@ -8,12 +8,15 @@ import { ApiProperty } from '@nestjs/swagger';
  * All fields are optional. The service diffs the incoming payload
  * against the persisted record and writes one audit row per changed
  * field.
+ *
+ * `isSystemAdmin`, `role` and `isBanned` are deliberately NOT patchable: they
+ * go through auth (`/admin/roles/*`, `POST /admin/users/:id/ban|unban`) so the
+ * last-admin guard, audit log and authzVersion bump cannot be bypassed.
+ * The schema is `.strict()`, so sending any of them is a 400.
  */
 export const UpdateUserBodySchema = z
     .object({
-        isAdmin: z.boolean().optional(),
         isVerified: z.boolean().optional(),
-        isBanned: z.boolean().optional(),
         name: z.string().min(1).max(100).optional(),
         bio: z.string().max(500).optional(),
     })
@@ -23,13 +26,7 @@ export type UpdateUserBody = z.infer<typeof UpdateUserBodySchema>;
 
 export class UpdateUserBodyDto extends createZodDto(UpdateUserBodySchema) {
     @ApiProperty({ required: false })
-    isAdmin?: boolean;
-
-    @ApiProperty({ required: false })
     isVerified?: boolean;
-
-    @ApiProperty({ required: false })
-    isBanned?: boolean;
 
     @ApiProperty({ required: false, maxLength: 100 })
     name?: string;

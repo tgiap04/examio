@@ -2,6 +2,10 @@
 
 | Scenario | What Happens | User-Facing Message |
 |----------|--------------|---------------------|
+| Student opens a private quiz set with no grant | 404 (existence not revealed) | Not-found state |
+| Student submits or saves an attempt already submitted | 409 `ALREADY_SUBMITTED` | Error state (wording set by the page) |
+| Owner revokes access (whitelist removal, code rotation) during an open attempt | Open attempt answers 404; submitted attempts stay readable | Not-found state; unlock again to continue |
+| Sharing list would exceed 2000 users | 409 `SHARE_LIST_FULL` | Server message: "A sharing list holds at most 2000 users" |
 | User without ownership attempts to edit a quiz set | Backend rejects with 403 Forbidden; UI shows error toast | "You do not have permission to edit this quiz set." |
 | User creates a question with fewer than 2 answer options | API validation rejects with 400; inline field error shown | "At least 2 answer options are required." |
 | User attempts to generate a quiz from a document still in PROCESSING state | UI disables the generate button; tooltip explains document is not ready | "This document is still being processed. Please wait until processing is complete." |

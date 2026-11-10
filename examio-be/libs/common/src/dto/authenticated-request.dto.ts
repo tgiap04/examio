@@ -1,20 +1,12 @@
 import { Request } from 'express';
-import { User } from '@prisma/client';
+import type { AuthUser } from '@examio/auth-jwt';
 
 /**
- * Request object with authenticated user
- * Dùng trong các controller khi có @UseGuards(AuthGuard)
+ * Request object with the verified access-token principal (set by the global
+ * `JwtAuthGuard` from `@examio/auth-jwt`). It carries the token claims only
+ * (`id`, `sid`, `roles`, `emailVerified`, `av`): load anything else from the
+ * database by `id`.
  */
 export interface AuthenticatedRequest extends Request {
-    user: User;
-}
-
-/**
- * Request object for OAuth callbacks
- */
-export interface AuthenticatedOauthRequest extends Request {
-    user: {
-        token: string;
-        user: User;
-    };
+    user: AuthUser;
 }

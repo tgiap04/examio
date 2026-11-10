@@ -1,0 +1,60 @@
+{
+  "at": "2026-10-21T14:21:48.566Z",
+  "results": [
+    {
+      "name": "F3 setup: student logged in via API",
+      "ok": true,
+      "extra": "201"
+    },
+    {
+      "name": "F3 setup: sidebar present before the outage",
+      "ok": true,
+      "extra": "/k/word-family,/k/my-materials,/k/my-exams,/k/study-room,/k/history/exam"
+    },
+    {
+      "name": "F3-5xx: auth-service stopped",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F3-5xx: /auth/me failed with a 5xx/network error during the outage",
+      "ok": true,
+      "extra": "statuses=502"
+    },
+    {
+      "name": "F3-5xx: user NOT sent to /login during the outage",
+      "ok": false,
+      "extra": "/login"
+    },
+    {
+      "name": "F3-5xx: auth-service restarted",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F3-5xx: after recovery the session works (sidebar present, path kept)",
+      "ok": true,
+      "extra": "path=/k/my-materials n=5"
+    },
+    {
+      "name": "F3-429: throttle engaged (429 seen)",
+      "ok": true,
+      "extra": "429s=11/40"
+    },
+    {
+      "name": "F3-429 warm: client-side navigation while throttled keeps the user in the app",
+      "ok": true,
+      "extra": "path=/k/word-family /auth/me during nav=429,429,429,429,429,429,429,429,429,429,429"
+    },
+    {
+      "name": "F3-429: user NOT sent to /login while /auth/me is throttled",
+      "ok": false,
+      "extra": "/login"
+    },
+    {
+      "name": "F3-429: after the throttle window, navigation works (sidebar present)",
+      "ok": true,
+      "extra": "path=/k/my-materials n=5"
+    }
+  ]
+}

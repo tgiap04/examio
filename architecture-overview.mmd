@@ -2,7 +2,8 @@ flowchart TB
     FE["examio-fe<br/>React + Vite + React Router<br/>Zustand + Axios"] -->|HTTP / SSE| GW["gateway-service<br/>Public API / Proxy"]
 
     GW --> AUTH["auth-service<br/>auth / profile / session / OAuth"]
-    GW --> EXAM["exam-service<br/>quiz / flashcard / exam / ai-chat"]
+    GW --> CONTENT["content-service<br/>quiz / flashcard / generation jobs"]
+    GW --> ASSESS["assessment-service<br/>exam room / session / attempt"]
     GW --> FIN["finance-service<br/>wallet / payment / subscription"]
     GW --> R2S["r2-service<br/>file / storage API"]
     GW --> AI["ai-service<br/>FastAPI / RAG / generation / chat"]
@@ -11,8 +12,9 @@ flowchart TB
     AUTH -->|USER_CREATED event| MQ[(RabbitMQ)]
     MQ -->|consume event| FIN
 
-    EXAM <-->|HTTP / internal integration| AI
-    EXAM -->|storage integration| R2S
+    CONTENT <-->|events / gRPC ListModels| AI
+    CONTENT -->|storage integration| R2S
+    ASSESS -->|gRPC quiz snapshot| CONTENT
     R2S --> R2[(Cloudflare R2)]
 
     COMMON["libs/common<br/>guards / events / grpc / utils"]
@@ -20,18 +22,21 @@ flowchart TB
     REDISLIB["libs/redis<br/>shared Redis module"]
 
     COMMON -. shared .-> AUTH
-    COMMON -. shared .-> EXAM
+    COMMON -. shared .-> CONTENT
+    COMMON -. shared .-> ASSESS
     COMMON -. shared .-> FIN
     COMMON -. shared .-> R2S
     COMMON -. shared .-> GW
 
     DBLIB -. shared .-> AUTH
-    DBLIB -. shared .-> EXAM
+    DBLIB -. shared .-> CONTENT
+    DBLIB -. shared .-> ASSESS
     DBLIB -. shared .-> FIN
     DBLIB -. shared .-> GW
 
     REDISLIB -. shared .-> AUTH
-    REDISLIB -. shared .-> EXAM
+    REDISLIB -. shared .-> CONTENT
+    REDISLIB -. shared .-> ASSESS
     REDISLIB -. shared .-> FIN
     REDISLIB -. shared .-> GW
 
@@ -42,6 +47,6 @@ flowchart TB
     classDef infra fill:#eefbf3,stroke:#22a06b,color:#0f172a
     classDef shared fill:#fff7e6,stroke:#d97706,color:#0f172a
 
-    class FE,GW,AUTH,EXAM,FIN,R2S,AI,OCR app
+    class FE,GW,AUTH,CONTENT,ASSESS,FIN,R2S,AI,OCR app
     class MQ,R2,PG,REDIS infra
     class COMMON,DBLIB,REDISLIB shared

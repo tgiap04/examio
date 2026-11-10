@@ -1,0 +1,98 @@
+# Admin service: API + its schema migration
+# Included from deploy/docker-compose.yml; paths are relative to deploy/ (project_directory).
+# =============================================================================
+# Shared fragments (YAML anchors are per file, so each file carries its own copy)
+x-logging: &default-logging
+    driver: 'json-file'
+    options:
+        max-size: '10m'
+        max-file: '3'
+
+x-nestjs-healthcheck: &nestjs-healthcheck
+    interval: 30s
+    timeout: 10s
+    retries: 5
+    start_period: 60s
+
+services:
+    admin:
+        image: ghcr.io/cychipo/examio-admin:${ADMIN_TAG:-main}
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile.node
+            args:
+                SERVICE: admin-service
+        container_name: examio-admin
+        environment:
+            - NODE_ENV=production
+            - PORT=3000
+            - FRONTEND_URL=${FRONTEND_URL}
+            - DATABASE_URL=postgresql://admin_svc:${ADMIN_DB_PASSWORD:?ADMIN_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=admin
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
+            - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+            - ADMIN_SERVICE_URL=http://admin:3000
+            - THROTTLE_ADMIN_LIMIT=30
+            - JWT_ISSUER=${JWT_ISSUER:-examio-auth}
+            - JWT_AUDIENCE=${JWT_AUDIENCE:-examio}
+            - AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
+            - AUTH_TOKEN_URL=http://auth:3000/internal/token
+            - SERVICE_CLIENT_SECRET=${ADMIN_SERVICE_CLIENT_SECRET:?ADMIN_SERVICE_CLIENT_SECRET is required}
+            # Admin privilege changes go through auth SetSystemAdmin (caller's token forwarded)
+            - AUTH_GRPC_URL=auth:50051
+            # AdminService.GetPageFlags is served here for the gateway
+            - GRPC_PORT=50051
+            # Phase 10: finance admin/stats, gateway SetPageFlags, word-family admin (vocabulary)
+            - FINANCE_GRPC_URL=finance:50051
+            - GATEWAY_GRPC_URL=gateway:50051
+            - VOCABULARY_GRPC_URL=vocabulary:50051
+        env_file:
+            - path: env/admin.env
+              required: true
+        depends_on:
+            admin-migrate:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            auth:
+                condition: service_healthy
+        networks:
+            - internal
+        healthcheck:
+            <<: *nestjs-healthcheck
+            test:
+                [
+                    'CMD',
+                    'wget',
+                    '-q',
+                    '--spider',
+                    'http://localhost:3000/health/ready',
+                ]
+        mem_limit: 384m
+        restart: unless-stopped
+        logging: *default-logging
+
+    # One-shot: `prisma migrate deploy` for the admin schema as admin_svc, then exits.
+    admin-migrate:
+        image: ghcr.io/cychipo/examio-admin:${ADMIN_TAG:-main}
+        build:
+            context: ..
+            dockerfile: deploy/Dockerfile.node
+            args:
+                SERVICE: admin-service
+        container_name: examio-admin-migrate
+        environment:
+            - ROLE=migrate
+            - DATABASE_URL=postgresql://admin_svc:${ADMIN_DB_PASSWORD:?ADMIN_DB_PASSWORD is required}@postgres:5432/${POSTGRES_DB:?POSTGRES_DB is required}?schema=admin
+        depends_on:
+            postgres:
+                condition: service_healthy
+        networks:
+            - internal
+        healthcheck:
+            disable: true
+        mem_limit: 512m
+        restart: 'no'
+        logging: *default-logging

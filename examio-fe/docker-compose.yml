@@ -17,13 +17,12 @@ services:
                 VITE_TURNSTILE_SITE_KEY: ${VITE_TURNSTILE_SITE_KEY:-}
                 VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
         container_name: examio-frontend
-        environment:
-            - BACKEND_URL=${BACKEND_URL:-http://examio-gateway:7000}
         ports:
-            - '${FE_PORT:-6368}:80'
+            # Loopback only: the host reverse proxy (nginx/Caddy) is the way in. FE_BIND=0.0.0.0 to expose it.
+            - '${FE_BIND:-127.0.0.1}:${FE_PORT:-6368}:80'
         restart: unless-stopped
         networks:
-            - examio-network
+            - edge
         healthcheck:
             test: ['CMD', 'curl', '-f', 'http://localhost:80/']
             interval: 30s
@@ -36,7 +35,8 @@ services:
                 max-size: '5m'
                 max-file: '3'
 
+# Created by the backend compose (examio-be/deploy): bring that stack up first.
 networks:
-    examio-network:
+    edge:
         external: true
-        name: examio-network
+        name: examio-edge

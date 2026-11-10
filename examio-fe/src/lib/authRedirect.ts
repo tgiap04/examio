@@ -3,13 +3,22 @@ const RETURN_TO_KEY = "auth_return_to";
 const DEFAULT_RETURN_PATH = "/k";
 const AUTH_PATHS = ["/login", "/register", "/forgot-password", "/reset-password"];
 
+/** True when the string contains an ASCII control character (C0 range or DEL). */
+function hasControlCharacter(value: string) {
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i);
+    if (code <= 0x1F || code === 0x7F) return true;
+  }
+  return false;
+}
+
 export function normalizeReturnPath(path?: string | null) {
   if (!path) {
     return DEFAULT_RETURN_PATH;
   }
 
   const trimmed = path.trim();
-  if (!trimmed || trimmed.includes("\\") || /[\x00-\x1f\x7f]/.test(trimmed)) {
+  if (!trimmed || trimmed.includes("\\") || hasControlCharacter(trimmed)) {
     return DEFAULT_RETURN_PATH;
   }
 

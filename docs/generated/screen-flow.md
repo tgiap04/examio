@@ -41,7 +41,7 @@ graph TD
     KROOT --> MANAGE_QS[SCR022_ManageQuizSetDetailPage<br/>/k/manage-quiz-set/:id]
     KROOT --> MANAGE_FS[SCR023_ManageFlashcardSetDetailPage<br/>/k/manage-flashcard-set/:id]
     KROOT --> AI_TOOL[SCR024_AIToolPage<br/>/k/ai-tool]
-    KROOT --> AI_KB[SCR025_GenAIKnowledgePage<br/>/k/genai-knowledge]
+    %% SCR025 GenAIKnowledgePage removed 2026-06-14 (route /k/genai-knowledge deleted)
     KROOT --> MANAGE_ER[SCR026_ManageExamRoomPage<br/>/k/manage-exam-room]
     KROOT --> MANAGE_ERD[SCR027_ManageExamRoomDetailPage<br/>/k/manage-exam-room/:id]
     KROOT --> MY_EXAMS[SCR029_MyExamsPage<br/>/k/my-exams]
@@ -368,7 +368,7 @@ graph TD
 - From SCR016 nav
 
 **Exit Points**:
-- To SCR025: Click "Kiến thức AI"
+- To SCR025: (removed 2026-06-14; link no longer exists)
 - To SCR016: Back navigation
 
 **Decision Points**:
@@ -377,7 +377,9 @@ graph TD
 
 ---
 
-### SCR025 (GenAIKnowledgePage)
+### SCR025 (GenAIKnowledgePage) - REMOVED 2026-06-14
+
+> Page removed in `f1ed596` (backend `ai-tutor` in `343fa97`); see `docs/features/F009_AITeacherKnowledgeBase/screens.md`. Flow below is historical.
 
 **Entry Points**:
 - Direct URL access `/k/genai-knowledge`
@@ -537,7 +539,7 @@ graph TD
 | SCR016/REG003 (ExamRoomGrid) | SCR027 (ManageExamRoomDetailPage) | Click exam room card | No (URL changes) |
 | SCR018/REG001 (PDFHistoryList) | SCR020 (PDFHistoryPage) | Click PDF history item | No (URL changes) |
 | SCR018/REG002 (ExamHistoryList) | SCR019 (ExamHistoryPage) | Click exam history item | No (URL changes) |
-| SCR025/REG001 (FolderPanel) | SCR025/REG002 (FilePanel) | Click folder to expand | Yes |
+| SCR025/REG001 (FolderPanel) | SCR025/REG002 (FilePanel) | (removed 2026-06-14) | n/a |
 | SCR027/REG003 (SessionTable) | SCR028 (ExamRoomSessionAnalyticsPage) | Click "Xem thống kê" | No (URL changes) |
 | SCR029/REG001 (SessionCard) | SCR029/REG002 (SessionHistoryDialog) | Click "Lịch sử" on card | Yes (dialog) |
 
@@ -577,7 +579,7 @@ graph LR
 | SCR027 | Yes | Teacher/host role (`TeacherRoute`) |
 | SCR021, SCR026 | Yes | Teacher/host role (`TeacherRoute`) |
 | SCR022, SCR023 | Yes | Owner of quiz/flashcard set |
-| SCR024, SCR025 | Yes | Authenticated user (AI features gated by subscription) |
+| SCR024 (SCR025 removed 2026-06-14) | Yes | Authenticated user (AI features gated by subscription) |
 
 ---
 
@@ -603,7 +605,7 @@ graph LR
 | SCR022 | Quiz set not found | Redirect to SCR016 with error | screen |
 | SCR023 | Flashcard set not found | Redirect to SCR016 with error | screen |
 | SCR024 | Job status poll failed | Silent retry, show pending | screen |
-| SCR025 | Folder/file load failed | Show inline error in respective region | region:REG001–REG004 |
+| SCR025 (removed 2026-06-14) | Folder/file load failed | n/a (screen removed) | region:REG001–REG004 |
 | SCR027 | Exam room not found | Redirect to SCR026 with error | screen |
 | SCR027 | Session load failed | Show inline error in REG003 | region:REG003 |
 | SCR028 | Session data load failed | Show error + retry button | screen |

@@ -1,3 +1,1 @@
-from . import r2_pb2, r2_pb2_grpc
-
-__all__ = ['r2_pb2', 'r2_pb2_grpc']
+"""Generated gRPC stubs. Regenerate with ``scripts/gen_grpc.sh`` (source: examio-be/proto)."""

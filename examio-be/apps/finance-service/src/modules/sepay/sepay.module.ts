@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
-import { GenerateIdService, AuthModule } from '@examio/common';
+import { PrismaService } from '../../prisma';
+import { GenerateIdService } from '@examio/common';
 import { RedisService } from '@examio/redis';
 import { SePayService } from './sepay.service';
 import { WebhookService } from './webhook.service';
@@ -11,9 +11,12 @@ import { SubscriptionService } from './subscription.service';
 import { SubscriptionGrpcController } from './subscription.grpc.controller';
 import { PaymentRepository } from './payment.repository';
 import { WalletModule } from '../wallet/wallet.module';
+import { FINANCE_MESSAGING } from '../../finance-messaging';
+import { SubscriptionExpiryService } from './subscription-expiry.service';
+import { SubscriptionChangedPublisher } from './subscription-changed.publisher';
 
 @Module({
-    imports: [WalletModule, AuthModule],
+    imports: [WalletModule, FINANCE_MESSAGING],
     providers: [
         PrismaService,
         RedisService,
@@ -21,6 +24,8 @@ import { WalletModule } from '../wallet/wallet.module';
         WebhookService,
         PaymentService,
         SubscriptionService,
+        SubscriptionChangedPublisher,
+        SubscriptionExpiryService,
         PaymentRepository,
         GenerateIdService,
     ],
@@ -34,6 +39,7 @@ import { WalletModule } from '../wallet/wallet.module';
         WebhookService,
         PaymentService,
         SubscriptionService,
+        SubscriptionChangedPublisher,
         PaymentRepository,
     ],
 })

@@ -4,19 +4,17 @@ export enum USER_STATUS {
 }
 
 export interface User {
-  id: number;
+  id: string;
   username: string;
   email: string;
   name: string;
   avatar: string;
   banner: string;
   bio: string;
-  isAdmin: boolean;
+  role: "STUDENT" | "TEACHER";
+  isSystemAdmin: boolean;
   isVerified: boolean;
   password?: string;
   createdAt: Date;
   updatedAt: Date;
-  wallet: {
-    balance: number;
-  };
 }

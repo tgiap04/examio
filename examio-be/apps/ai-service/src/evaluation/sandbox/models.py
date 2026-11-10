@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 
 SandboxLanguage = Literal['python', 'c', 'cpp']
-ExecutionStatus = Literal['passed', 'failed', 'compile_error', 'runtime_error', 'timeout']
+ExecutionStatus = Literal['passed', 'failed', 'compile_error', 'runtime_error', 'timeout', 'disabled']
 
 
 class SandboxExecutionRequest(BaseModel):

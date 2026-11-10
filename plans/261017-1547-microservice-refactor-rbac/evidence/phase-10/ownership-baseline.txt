@@ -1,0 +1,36 @@
+apps/finance-service/src/modules/sepay/subscription.service.ts:311  UserMonthlyFileUpload is owned by exam, accessed from finance
+apps/finance-service/src/modules/sepay/subscription.service.ts:323  UserMonthlyFileUpload is owned by exam, accessed from finance
+apps/exam-service/src/modules/common/sharing-view.util.ts:25  User is owned by auth, accessed from exam
+apps/exam-service/src/modules/common/sharing-view.util.ts:50  User is owned by auth, accessed from exam
+apps/exam-service/src/modules/common/user-search.service.ts:45  User is owned by auth, accessed from exam
+apps/exam-service/src/modules/examsession/examsession.service.ts:779  User is owned by auth, accessed from exam
+apps/exam-service/src/modules/study-room/study-room-socket-auth.service.ts:133  User is owned by auth, accessed from exam
+apps/admin-service/src/modules/admin-stats/admin-stats.service.ts:55  User is owned by auth, accessed from admin
+apps/admin-service/src/modules/admin-stats/admin-stats.service.ts:56  UserSession is owned by auth, accessed from admin
+apps/admin-service/src/modules/admin-stats/admin-stats.service.ts:59  UserSession is owned by auth, accessed from admin
+apps/admin-service/src/modules/admin-stats/admin-stats.service.ts:62  UserSubscription is owned by finance, accessed from admin
+apps/admin-service/src/modules/admin-stats/admin-stats.service.ts:65  UserSubscription is owned by finance, accessed from admin
+apps/admin-service/src/modules/admin-stats/admin-stats.service.ts:68  Payment is owned by finance, accessed from admin
+apps/admin-service/src/modules/admin-users/admin-users.service.ts:110  User is owned by auth, accessed from admin
+apps/admin-service/src/modules/admin-users/admin-users.service.ts:117  User is owned by auth, accessed from admin
+apps/admin-service/src/modules/admin-users/admin-users.service.ts:133  User is owned by auth, accessed from admin
+apps/admin-service/src/modules/admin-users/admin-users.service.ts:201  User is owned by auth, accessed from admin
+apps/admin-service/src/modules/admin-users/admin-users.service.ts:220  User is owned by auth, accessed from admin
+apps/admin-service/src/modules/admin-users/admin-users.service.ts:266  User is owned by auth, accessed from admin
+apps/admin-service/src/modules/admin-word-family/admin-word-family.service.ts:24  WordFamilyCategory is owned by exam, accessed from admin
+apps/admin-service/src/modules/admin-word-family/admin-word-family.service.ts:32  WordFamilyCategory is owned by exam, accessed from admin
+apps/admin-service/src/modules/admin-word-family/admin-word-family.service.ts:43  WordFamilyCategory is owned by exam, accessed from admin
+apps/admin-service/src/modules/admin-word-family/admin-word-family.service.ts:78  WordFamilyCategory is owned by exam, accessed from admin
+apps/admin-service/src/modules/admin-word-family/admin-word-family.service.ts:113  WordFamilyCategory is owned by exam, accessed from admin
+apps/admin-service/src/modules/admin-word-family/admin-word-family.service.ts:147  WordFamilyCategory is owned by exam, accessed from admin
+apps/admin-service/src/modules/admin-word-family/admin-word-family.service.ts:154  WordFamilyCategory is owned by exam, accessed from admin
+
+Violations: 26
+By app -> model:
+     1  admin -> Payment (owner finance)
+     7  admin -> User (owner auth)
+     2  admin -> UserSession (owner auth)
+     2  admin -> UserSubscription (owner finance)
+     7  admin -> WordFamilyCategory (owner exam)
+     5  exam -> User (owner auth)
+     2  finance -> UserMonthlyFileUpload (owner exam)

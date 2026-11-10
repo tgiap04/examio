@@ -1,6 +1,7 @@
 import * as React from "react";
 import { message } from "antd";
 import type { MessageType } from "antd/es/message/interface";
+import { createToastDeduper } from "@/lib/toast-dedupe";
 
 type ToastVariant = "default" | "destructive" | "warning";
 type ToastOptions = {
@@ -28,17 +29,35 @@ function renderContent(title: React.ReactNode, options?: Omit<ToastOptions, "tit
   return <span>{title ? <strong>{title}</strong> : null}{title ? " " : null}{options.description}</span>;
 }
 
+// Identical toasts inside the antd display window collapse into one (a denied
+// action is toasted by the axios interceptor AND by the caller's catch block).
+const dedupe = createToastDeduper<MessageType>();
+const once = (variant: string, content: React.ReactNode, show: () => MessageType): MessageType =>
+  typeof content === "string" ? dedupe(`${variant}:${content}`, show) : show();
+
 const toast = ((title: React.ReactNode, options?: Omit<ToastOptions, "title">) => {
   const content = renderContent(title, options);
-  if (options?.variant === "destructive") return message.error(content);
-  if (options?.variant === "warning") return message.warning(content);
-  return message.info(content);
+  if (options?.variant === "destructive") return once("error", content, () => message.error(content));
+  if (options?.variant === "warning") return once("warning", content, () => message.warning(content));
+  return once("info", content, () => message.info(content));
 }) as ToastFn;
 
-toast.success = (content: React.ReactNode, options?: Omit<ToastOptions, "title">) => message.success(renderContent(content, options));
-toast.error = (content: React.ReactNode, options?: Omit<ToastOptions, "title">) => message.error(renderContent(content, options));
-toast.info = (content: React.ReactNode, options?: Omit<ToastOptions, "title">) => message.info(renderContent(content, options));
-toast.warning = (content: React.ReactNode, options?: Omit<ToastOptions, "title">) => message.warning(renderContent(content, options));
+toast.success = (content: React.ReactNode, options?: Omit<ToastOptions, "title">) => {
+  const rendered = renderContent(content, options);
+  return once("success", rendered, () => message.success(rendered));
+};
+toast.error = (content: React.ReactNode, options?: Omit<ToastOptions, "title">) => {
+  const rendered = renderContent(content, options);
+  return once("error", rendered, () => message.error(rendered));
+};
+toast.info = (content: React.ReactNode, options?: Omit<ToastOptions, "title">) => {
+  const rendered = renderContent(content, options);
+  return once("info", rendered, () => message.info(rendered));
+};
+toast.warning = (content: React.ReactNode, options?: Omit<ToastOptions, "title">) => {
+  const rendered = renderContent(content, options);
+  return once("warning", rendered, () => message.warning(rendered));
+};
 
 const legacyToast = ((options: ToastOptions) => toast(options.title, { description: options.description, variant: options.variant })) as LegacyToastFn;
 legacyToast.success = toast.success;

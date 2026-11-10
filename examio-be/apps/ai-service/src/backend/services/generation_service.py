@@ -9,21 +9,18 @@ import asyncio
 import logging
 import re
 import time
-import uuid
 from typing import List, Dict, Any, Optional
-from datetime import datetime
 from dataclasses import dataclass
 
-import asyncpg
 from pydantic import BaseModel, Field
 
 from src.backend.utils.prompt_utils import prompt_utils
-from src.backend.services.ocr_service import ocr_service, DocumentChunk
+from src.backend.services.ocr_service import DocumentChunk
 from src.backend.services.hybrid_retrieval_service import (
     hybrid_retrieval_service,
     GenerationGroup,
 )
-from src.llm.model_manager import model_manager
+from src.llm.model_manager import ModelUnavailableError, model_manager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -62,6 +59,10 @@ class WordFamilyRequest(BaseModel):
     category_name: str = Field(..., description="Category display name")
     num_root_words: int = Field(default=10, ge=1, le=20, description="Number of root words to generate")
     exclude_root_words: List[str] = Field(default_factory=list, description="Root words to exclude (already generated)")
+    root_word: Optional[str] = Field(
+        default=None,
+        description="When set, generate the word family for THIS specific root word instead of AI-picked ones",
+    )
     model_type: Optional[str] = Field(default=None, description="Model id from registry")
 
 
@@ -95,9 +96,8 @@ class FlashcardList(BaseModel):
 
 class GenerateQuizRequest(BaseModel):
     """Request to generate quiz from file"""
-    user_storage_id: str = Field(..., description="ID của UserStorage")
-    user_id: str = Field(..., description="ID của user")
-    num_questions: int = Field(default=10, ge=1, le=100, description="Số câu hỏi cần tạo (max 100)")
+    user_storage_id: str = Field(..., description="ID tài liệu (document-service UserStorage.id); caller đã kiểm tra quyền")
+    num_questions: int = Field(default=10, ge=1, le=50, description="Số câu hỏi cần tạo (max 50)")
     is_narrow_search: bool = Field(default=False, description="Chế độ tìm kiếm hẹp")
     keyword: Optional[str] = Field(None, description="Từ khóa cho tìm kiếm hẹp")
     model_type: Optional[str] = Field(default=None, description='Model id tu registry')
@@ -105,9 +105,8 @@ class GenerateQuizRequest(BaseModel):
 
 class GenerateFlashcardRequest(BaseModel):
     """Request to generate flashcards from file"""
-    user_storage_id: str = Field(..., description="ID của UserStorage")
-    user_id: str = Field(..., description="ID của user")
-    num_flashcards: int = Field(default=10, ge=1, le=100, description="Số flashcard cần tạo (max 100)")
+    user_storage_id: str = Field(..., description="ID tài liệu (document-service UserStorage.id); caller đã kiểm tra quyền")
+    num_flashcards: int = Field(default=10, ge=1, le=50, description="Số flashcard cần tạo (max 50)")
     is_narrow_search: bool = Field(default=False, description="Chế độ tìm kiếm hẹp")
     keyword: Optional[str] = Field(None, description="Từ khóa cho tìm kiếm hẹp")
     model_type: Optional[str] = Field(default=None, description='Model id tu registry')
@@ -134,11 +133,10 @@ class ContentGenerationService:
     """Service for generating quiz and flashcard content using LLM"""
 
     _instance = None
-    _pool: Optional[asyncpg.Pool] = None
     MAX_SOURCE_CHUNKS = 10
     MAX_ITEMS_PER_CALL = 12
-    DEFAULT_GENERATION_MAX_CONCURRENCY = 3
-    DEFAULT_GENERATION_MAX_CONCURRENCY_CAP = 5
+    DEFAULT_GENERATION_MAX_CONCURRENCY = 6
+    DEFAULT_GENERATION_MAX_CONCURRENCY_CAP = 10
     MAX_META_OUTPUT_RETRIES = 1
 
     def _describe_group(self, group: GenerationGroup) -> Dict[str, Any]:
@@ -303,23 +301,6 @@ class ContentGenerationService:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
-
-    async def _get_pool(self) -> asyncpg.Pool:
-        """Get or create connection pool"""
-        if self._pool is None or self._pool._closed:
-            postgres_uri = os.environ.get("DATABASE_URL")
-            if not postgres_uri:
-                raise ValueError("DATABASE_URL environment variable not set")
-
-            self._pool = await asyncpg.create_pool(
-                postgres_uri,
-                min_size=2,
-                max_size=10,
-                command_timeout=60
-            )
-            logger.info("PostgreSQL connection pool created for ContentGenerationService")
-
-        return self._pool
 
     def _get_generation_max_concurrency(self) -> int:
         raw = os.getenv("GENERATION_MAX_CONCURRENCY")
@@ -510,19 +491,10 @@ class ContentGenerationService:
 
         Returns dict with:
         - success: bool
-        - history_id: str (ID of HistoryGeneratedQuizz)
         - quizzes: list of generated questions
         - error: str (if failed)
         """
         try:
-            # Check if file is processed
-            file_info = await ocr_service.get_file_info(request.user_storage_id)
-            if not file_info:
-                return {"success": False, "error": "File not found"}
-
-            if file_info.processing_status not in ["COMPLETED", "PROCESSING"]:
-                return {"success": False, "error": f"File not processed yet. Status: {file_info.processing_status}"}
-
             final_model = model_manager.resolve_model(request.model_type)
             logger.info(f"Using AI model for quiz: {final_model.id} (Request: {request.model_type})")
             model_type_str = final_model.id
@@ -655,25 +627,11 @@ class ContentGenerationService:
                 f"[AI_TIMING] stage=quiz_total user_storage_id={request.user_storage_id} total_ms={total_ms} generated={len(all_questions)} actual_batches={actual_batches} expected_batches={expected_batches} groups_used={selected_chunk_count}"
             )
 
-            # Save to HistoryGeneratedQuizz
-            try:
-                history_id = await self._save_quiz_history(
-                    user_id=request.user_id,
-                    user_storage_id=request.user_storage_id,
-                    quizzes=all_questions
-                )
-
-                return {
-                    "success": True,
-                    "history_id": history_id,
-                    "quizzes": all_questions,
-                    "count": len(all_questions)
-                }
-            except Exception as e:
-                logger.error(f"Failed to save quiz history: {e}")
-                if "violates foreign key constraint" in str(e):
-                    return {"success": False, "error": "Job cancelled or UserStorage not found"}
-                raise e
+            return {
+                "success": True,
+                "quizzes": all_questions,
+                "count": len(all_questions),
+            }
 
         except Exception as e:
             logger.exception(f"Error generating quiz: {e}")
@@ -688,19 +646,10 @@ class ContentGenerationService:
 
         Returns dict with:
         - success: bool
-        - history_id: str (ID of HistoryGeneratedFlashcard)
         - flashcards: list of generated flashcards
         - error: str (if failed)
         """
         try:
-            # Check if file is processed
-            file_info = await ocr_service.get_file_info(request.user_storage_id)
-            if not file_info:
-                return {"success": False, "error": "File not found"}
-
-            if file_info.processing_status not in ["COMPLETED", "PROCESSING"]:
-                return {"success": False, "error": f"File not processed yet. Status: {file_info.processing_status}"}
-
             final_model = model_manager.resolve_model(request.model_type)
             logger.info(f"Using AI model for flashcards: {final_model.id} (Request: {request.model_type})")
             model_type_str = final_model.id
@@ -833,25 +782,11 @@ class ContentGenerationService:
                 f"[AI_TIMING] stage=flashcard_total user_storage_id={request.user_storage_id} total_ms={total_ms} generated={len(all_flashcards)} actual_batches={actual_batches} expected_batches={expected_batches} groups_used={selected_chunk_count}"
             )
 
-            # Save to HistoryGeneratedFlashcard
-            try:
-                history_id = await self._save_flashcard_history(
-                    user_id=request.user_id,
-                    user_storage_id=request.user_storage_id,
-                    flashcards=all_flashcards
-                )
-
-                return {
-                    "success": True,
-                    "history_id": history_id,
-                    "flashcards": all_flashcards,
-                    "count": len(all_flashcards)
-                }
-            except Exception as e:
-                logger.error(f"Failed to save flashcard history: {e}")
-                if "violates foreign key constraint" in str(e):
-                    return {"success": False, "error": "Job cancelled or UserStorage not found"}
-                raise e
+            return {
+                "success": True,
+                "flashcards": all_flashcards,
+                "count": len(all_flashcards),
+            }
 
         except Exception as e:
             logger.exception(f"Error generating flashcards: {e}")
@@ -865,23 +800,42 @@ class ContentGenerationService:
         category_slug: str,
         num_words: int,
         exclude_root_words: List[str],
+        root_word: Optional[str] = None,
     ) -> str:
-        """Build prompt for word family generation"""
-        exclude_clause = ""
-        if exclude_root_words:
-            exclude_clause = (
-                "\nExclude these root words that have already been generated: "
-                + ", ".join(exclude_root_words)
+        """Build prompt for word family generation.
+
+        When ``root_word`` is provided, generate the word family for THAT specific
+        root word; otherwise let the model pick a category-relevant root word.
+        """
+        if root_word:
+            root_clause = (
+                f"Generate the complete word family for the specific root word "
+                f"\"{root_word}\" in the context of the category "
+                f"\"{category_name}\" (slug: {category_slug}).\n"
+                f'The "rootWord" field in the JSON MUST be exactly "{root_word}".\n'
+                "Provide 5-8 word family variations "
+                "(noun, verb, adjective, adverb forms) derived from this root."
+            )
+        else:
+            exclude_clause = ""
+            if exclude_root_words:
+                exclude_clause = (
+                    "\nExclude these root words that have already been generated: "
+                    + ", ".join(exclude_root_words)
+                )
+            root_clause = (
+                f"Generate {num_words} root words and their word family "
+                f"variations.{exclude_clause}\n"
+                "- Each root word must be common and relevant to the category\n"
+                "- For each root word, provide 3-5 word family variations "
+                "(noun, verb, adjective, adverb forms)"
             )
 
         return (
             f"You are an English vocabulary expert specializing in Word Family analysis.\n\n"
             f"Given the category \"{category_name}\" (slug: {category_slug}), "
-            f"generate {num_words} root words and their word family variations.{exclude_clause}\n\n"
+            f"{root_clause}\n\n"
             "Requirements:\n"
-            "- Each root word must be common and relevant to the category\n"
-            "- For each root word, provide 3-5 word family variations "
-            "(noun, verb, adjective, adverb forms)\n"
             "- Each variation must include:\n"
             "  - word: the derived word\n"
             "  - pos: part of speech (noun/verb/adjective/adverb)\n"
@@ -1022,6 +976,7 @@ class ContentGenerationService:
             category_slug=request.category_slug,
             num_words=request.num_root_words,
             exclude_root_words=request.exclude_root_words,
+            root_word=request.root_word,
         )
 
         generation_start = time.perf_counter()
@@ -1047,6 +1002,16 @@ class ContentGenerationService:
                             f"Word family parse failed on attempt {attempt + 1}"
                         )
                         continue
+
+                    # When a specific root word was requested, force it verbatim so
+                    # the persisted record matches the unique (rootWord, categorySlug)
+                    # key the caller expects to overwrite.
+                    if request.root_word and parsed.rootWord != request.root_word:
+                        parsed = WordFamilyData(
+                            rootWord=request.root_word,
+                            categorySlug=parsed.categorySlug,
+                            words=parsed.words,
+                        )
 
                     normalized = self._normalize_word_family(parsed)
 
@@ -1331,113 +1296,6 @@ class ContentGenerationService:
             "sourcePageRange": item.sourcePageRange or page_range
         }
 
-    async def _save_quiz_history(
-        self,
-        user_id: str,
-        user_storage_id: str,
-        quizzes: List[Dict]
-    ) -> str:
-        """Save generated quizzes to HistoryGeneratedQuizz table"""
-        pool = await self._get_pool()
-        history_id = str(uuid.uuid4()).replace("-", "")[:25]  # cuid-like
-
-        query = """
-            INSERT INTO "HistoryGeneratedQuizz" (id, "userId", "userStorageId", quizzes, "createdAt", "updatedAt")
-            VALUES ($1, $2, $3, $4, NOW(), NOW())
-            RETURNING id
-        """
-
-        start_time = time.perf_counter()
-        async with pool.acquire() as conn:
-            await conn.execute(
-                query,
-                history_id,
-                user_id,
-                user_storage_id,
-                json.dumps(quizzes)
-            )
-
-        elapsed_ms = int((time.perf_counter() - start_time) * 1000)
-        logger.info(
-            f"[AI_TIMING] stage=quiz_history_save user_storage_id={user_storage_id} history_id={history_id} items={len(quizzes)} elapsed_ms={elapsed_ms}"
-        )
-        return history_id
-
-    async def _save_flashcard_history(
-        self,
-        user_id: str,
-        user_storage_id: str,
-        flashcards: List[Dict]
-    ) -> str:
-        """Save generated flashcards to HistoryGeneratedFlashcard table"""
-        pool = await self._get_pool()
-        history_id = str(uuid.uuid4()).replace("-", "")[:25]  # cuid-like
-
-        query = """
-            INSERT INTO "HistoryGeneratedFlashcard" (id, "userId", "userStorageId", flashcards, "createdAt", "updatedAt")
-            VALUES ($1, $2, $3, $4, NOW(), NOW())
-            RETURNING id
-        """
-
-        start_time = time.perf_counter()
-        async with pool.acquire() as conn:
-            await conn.execute(
-                query,
-                history_id,
-                user_id,
-                user_storage_id,
-                json.dumps(flashcards)
-            )
-
-        elapsed_ms = int((time.perf_counter() - start_time) * 1000)
-        logger.info(
-            f"[AI_TIMING] stage=flashcard_history_save user_storage_id={user_storage_id} history_id={history_id} items={len(flashcards)} elapsed_ms={elapsed_ms}"
-        )
-        return history_id
-
-    async def get_quiz_history(self, history_id: str) -> Optional[Dict]:
-        """Get quiz history by ID"""
-        pool = await self._get_pool()
-
-        query = """
-            SELECT id, "userId", "userStorageId", quizzes, "createdAt"
-            FROM "HistoryGeneratedQuizz"
-            WHERE id = $1
-        """
-
-        async with pool.acquire() as conn:
-            row = await conn.fetchrow(query, history_id)
-            if row:
-                return {
-                    "id": row["id"],
-                    "userId": row["userId"],
-                    "userStorageId": row["userStorageId"],
-                    "quizzes": json.loads(row["quizzes"]) if isinstance(row["quizzes"], str) else row["quizzes"],
-                    "createdAt": row["createdAt"].isoformat()
-                }
-        return None
-
-    async def get_flashcard_history(self, history_id: str) -> Optional[Dict]:
-        """Get flashcard history by ID"""
-        pool = await self._get_pool()
-
-        query = """
-            SELECT id, "userId", "userStorageId", flashcards, "createdAt"
-            FROM "HistoryGeneratedFlashcard"
-            WHERE id = $1
-        """
-
-        async with pool.acquire() as conn:
-            row = await conn.fetchrow(query, history_id)
-            if row:
-                return {
-                    "id": row["id"],
-                    "userId": row["userId"],
-                    "userStorageId": row["userStorageId"],
-                    "flashcards": json.loads(row["flashcards"]) if isinstance(row["flashcards"], str) else row["flashcards"],
-                    "createdAt": row["createdAt"].isoformat()
-                }
-        return None
 
 
 # Singleton instance

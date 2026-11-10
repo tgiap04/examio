@@ -10,7 +10,7 @@ import { BadgePill, type BadgeVariant } from "@/components/admin/BadgePill";
 
 interface AuditTableProps {
   defaultAction?: string | string[];
-  defaultAdminId?: number;
+  defaultAdminId?: string;
   defaultDateRange?: [string, string];
   defaultPageSize?: number;
   embedded?: boolean;
@@ -83,11 +83,11 @@ export function AuditTable({
   const query = useMemo<ListAuditQuery>(
     () => ({
       action: toAuditAction(defaultAction),
-      actorId: defaultAdminId,
+      adminId: defaultAdminId,
       from: defaultDateRange?.[0],
       to: defaultDateRange?.[1],
       page,
-      pageSize: pageSize,
+      pageSize,
     }),
     [defaultAction, defaultAdminId, defaultDateRange, page, pageSize],
   );

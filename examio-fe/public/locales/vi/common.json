@@ -36,5 +36,19 @@
   "footer.description": "Nền tảng học tập trực tuyến hỗ trợ bởi AI - Examio. Biến tài liệu của bạn thành kiến thức nắm chắc.",
   "footer.address": "Hà Nội, Việt Nam",
   "footer.language": "Tiếng Việt",
-  "notFound": "Không tìm thấy trang."
+  "notFound": "Không tìm thấy trang.",
+  "forbidden.title": "Bạn không có quyền truy cập",
+  "forbidden.description": "Tài khoản của bạn không có quyền xem trang này.",
+  "forbidden.backHome": "Về trang chính",
+  "roles.student": "Học sinh",
+  "roles.teacher": "Giáo viên",
+  "roles.systemAdmin": "Quản trị viên hệ thống",
+  "rbac.permissionDenied": "Bạn không có quyền thực hiện thao tác này",
+  "rbac.teacherOnly": "Tính năng dành cho giáo viên",
+  "rbac.teacherCannotTakeExam": "Tài khoản giáo viên không thể làm bài thi",
+  "session.unavailable.title": "Không kết nối được máy chủ",
+  "session.unavailable.retry": "Thử lại",
+  "rbac.plansForTeachers": "Gói dành cho giáo viên",
+  "rbac.studyRoomDenied": "Bạn không có quyền vào phòng học chung",
+  "rbac.studyRoomUnavailable": "Phòng học chung tạm thời không khả dụng. Vui lòng thử lại sau."
 }

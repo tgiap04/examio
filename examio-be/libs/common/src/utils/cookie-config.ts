@@ -1,44 +1,55 @@
-import { CookieOptions } from 'express';
+import type { CookieOptions, Response } from 'express';
+import { accessTtlSeconds } from './access-ttl';
 
-interface CookieConfigOptions {
-    feOrigin?: string;
-    isProductionBE: boolean;
+/** Browser session lifetime (matches `AuthService.sessionTtlMs`). */
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const REFRESH_COOKIE_PATH = '/api/v1/auth';
+
+export const authCookieNames = {
+    access: 'accessToken',
+    refresh: 'refreshToken',
+    /** Pre-rewrite cookies (set by the old gateway/auth); only ever cleared. */
+    legacy: ['token', 'session_id', 'refreshToken'],
+} as const;
+
+/**
+ * Only auth sets cookies. Host-only (no Domain), HttpOnly, SameSite=Lax, and
+ * Secure in production: a top-level OAuth callback navigation still carries
+ * them, a cross-site request does not.
+ */
+function base(path: string, maxAge: number): CookieOptions {
+    return {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        path,
+        maxAge,
+    };
+}
+
+/** `accessToken`: Path=/, lives as long as the token. */
+export function accessTokenCookie(): CookieOptions {
+    return base('/', accessTtlSeconds() * 1000);
+}
+
+/** `refreshToken`: only sent to `/api/v1/auth/*`, lives as long as the session. */
+export function refreshTokenCookie(): CookieOptions {
+    return base(REFRESH_COOKIE_PATH, SESSION_TTL_MS);
 }
 
 /**
- * Tạo cookie configuration phù hợp với môi trường FE và BE
- *
- * Logic:
- * - FE local + BE production: secure=false, sameSite=lax (để FE local nhận cookie qua HTTPS)
- * - FE production + BE production: secure=true, sameSite=none (cross-domain)
- * - FE local + BE local: secure=false, sameSite=lax (development)
- *
- * COOKIE_DOMAIN env variable controls the cookie domain for production.
- * Example: COOKIE_DOMAIN=.examio.top
+ * Logout: clears the current cookies and every legacy name, including the
+ * production `COOKIE_DOMAIN` variants the pre-rewrite code set.
  */
-export function getCookieConfig(options: CookieConfigOptions): CookieOptions {
-    const { feOrigin, isProductionBE } = options;
+export function clearAuthCookies(res: Pick<Response, 'clearCookie'>): void {
+    const { maxAge: _a, ...access } = accessTokenCookie();
+    const { maxAge: _r, ...refresh } = refreshTokenCookie();
+    res.clearCookie(authCookieNames.access, access);
+    res.clearCookie(authCookieNames.refresh, refresh);
 
-    const isLocalFE =
-        feOrigin?.includes('localhost') || feOrigin?.includes('127.0.0.1');
-
-    const cookieConfig: CookieOptions = {
-        httpOnly: true,
-        // Nếu FE local + BE production: không set secure (để FE local nhận được)
-        // Nếu cả 2 production: bắt buộc secure
-        secure: isProductionBE && !isLocalFE,
-        // Nếu FE local: dùng lax để dễ test
-        // Nếu production: dùng none để support cross-origin
-        sameSite: isProductionBE && !isLocalFE ? 'none' : 'lax',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        path: '/',
-    };
-
-    // Chỉ set domain khi cả FE và BE đều production
-    if (isProductionBE && !isLocalFE) {
-        const cookieDomain = process.env.COOKIE_DOMAIN || '.examio.top';
-        cookieConfig.domain = cookieDomain;
+    const legacyDomain = process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN || '.examio.top' : undefined;
+    for (const name of authCookieNames.legacy) {
+        res.clearCookie(name, { ...access });
+        if (legacyDomain) res.clearCookie(name, { ...access, domain: legacyDomain });
     }
-
-    return cookieConfig;
 }

@@ -8,15 +8,14 @@ Features:
 - Tích hợp với GeminiClient để tạo embeddings
 """
 
-import os
 import logging
-import asyncio
 import time
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
 from datetime import datetime
 import asyncpg
 from dotenv import load_dotenv
+from src import db
 
 load_dotenv()
 
@@ -50,25 +49,15 @@ class PgVectorStore:
         "EMBEDDING_MODEL": "models/embedding-001",
     }
 
-    def __init__(self, connection_string: Optional[str] = None):
-        self.connection_string = connection_string or os.getenv("DATABASE_URL")
-        self._pool: Optional[asyncpg.Pool] = None
+    def __init__(self):
+        pass
 
     async def _get_pool(self) -> asyncpg.Pool:
-        """Lấy hoặc tạo connection pool."""
-        if self._pool is None:
-            self._pool = await asyncpg.create_pool(
-                self.connection_string,
-                min_size=2,
-                max_size=10
-            )
-        return self._pool
+        """Return the shared ai-service pool (one pool per process)."""
+        return await db.get_pool()
 
     async def close(self):
-        """Đóng connection pool."""
-        if self._pool:
-            await self._pool.close()
-            self._pool = None
+        """No-op: the shared pool is closed by ``db.close_pools()`` at shutdown."""
 
     async def create_embedding(
         self,
@@ -370,6 +359,46 @@ class PgVectorStore:
             combined_content += chunk
 
         return combined_content.strip() or None
+
+    async def get_embeddings_by_user_storage(
+        self, user_storage_id: str
+    ) -> Dict[str, List[float]]:
+        """Load stored chunk embeddings for a file, keyed by Document id.
+
+        Lets the graph builder reuse the vectors produced during OCR instead of
+        re-calling the embedding API for every chunk.
+
+        Returns:
+            Mapping of chunk id -> embedding vector. Empty on error/no rows.
+        """
+        try:
+            pool = await self._get_pool()
+            rows = await pool.fetch(
+                """
+                SELECT id, embeddings::text AS embeddings
+                FROM "Document"
+                WHERE "userStorageId" = $1 AND embeddings IS NOT NULL
+                """,
+                user_storage_id,
+            )
+            result: Dict[str, List[float]] = {}
+            for row in rows:
+                raw = row["embeddings"]
+                if not raw:
+                    continue
+                # pgvector text form: "[0.1,0.2,...]"
+                try:
+                    result[row["id"]] = [
+                        float(v) for v in raw.strip()[1:-1].split(",") if v
+                    ]
+                except (ValueError, AttributeError):
+                    continue
+            return result
+        except Exception as e:
+            logger.warning(
+                f"Failed to load embeddings for {user_storage_id}: {e}"
+            )
+            return {}
 
     async def delete_by_user_storage(self, user_storage_id: str) -> int:
         """Xóa tất cả documents của một UserStorage."""

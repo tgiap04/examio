@@ -1,0 +1,18 @@
+{
+    "node": {
+        "admin": { "dir": "admin-service", "image": "examio-admin", "db": true, "worker": false },
+        "ai-chat": { "dir": "ai-chat-service", "image": "examio-ai-chat", "env": "aichat", "db": true, "worker": true },
+        "assessment": { "dir": "assessment-service", "image": "examio-assessment", "db": true, "worker": true },
+        "auth": { "dir": "auth-service", "image": "examio-auth", "db": true, "worker": true },
+        "content": { "dir": "content-service", "image": "examio-content", "db": true, "worker": true },
+        "document": { "dir": "document-service", "image": "examio-document", "db": true, "worker": true },
+        "finance": { "dir": "finance-service", "image": "examio-finance", "db": true, "worker": true },
+        "gateway": { "dir": "gateway-service", "image": "examio-gateway", "db": false, "worker": false, "instances": ["gateway-a", "gateway-b"] },
+        "r2": { "dir": "r2-service", "image": "examio-r2", "db": false, "worker": false },
+        "study-room": { "dir": "study-room-service", "image": "examio-study-room", "env": "studyroom", "db": true, "worker": false },
+        "vocabulary": { "dir": "vocabulary-service", "image": "examio-vocabulary", "db": true, "worker": true }
+    },
+    "python": {
+        "ai": { "dir": "ai-service", "image": "examio-ai", "db": true, "worker": true, "workerService": "ai-worker" }
+    }
+}

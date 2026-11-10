@@ -6,6 +6,8 @@
 
 ---
 
+> **Phase 09 (2026-10-22)**: all non-public screens are now gated by `RequirePermission` (login, then permission; otherwise `/403`). Two non-SCR shells exist without a screen code: `/403` (`ForbiddenPage`, link back to the role landing) and `SessionUnavailable` (full-page retry notice when `/auth/me` is unreachable). `/study-flashcard/:id` (SCR030) now requires login plus `flashcard:study` or `flashcardset:manage`. Per-screen guards: `system/permissions.md` § Frontend route guards.
+
 ## Screen Index
 
 | Code | Name | Type | Components | Data Displayed |
@@ -34,7 +36,7 @@
 | SCR022 | ManageQuizSetDetailPage | atomic | ~4 | QuizSet, Label, Question |
 | SCR023 | ManageFlashcardSetDetailPage | atomic | ~4 | FlashCardSet, Label, Flashcard |
 | SCR024 | AIToolPage | atomic | ~3 | AI generation, job status |
-| SCR025 | GenAIKnowledgePage | composite | 5 | Knowledge files, folders, graphs |
+| SCR025 | GenAIKnowledgePage (REMOVED 2026-06-14) | composite | 5 | Removed: page and `ai-tutor` backend deleted |
 | SCR026 | ManageExamRoomPage | atomic | ~2 | ExamRoom list + create |
 | SCR027 | ManageExamRoomDetailPage | composite | 8 | ExamRoom, Session, Stats, Sharing |
 | SCR028 | ExamRoomSessionAnalyticsPage | atomic | ~4 | Attempt leaderboard, cheating stats, charts |
@@ -43,11 +45,17 @@
 | SCR031 | ExamSessionPage | atomic | ~1 | ExamRoomDetailTemplate |
 | SCR032 | ExamQuizPage | atomic | ~3 | Exam attempt, questions, cheating detection |
 | SCR033 | AdminOverviewPage | atomic | ~2 | KPI cards, quick stats, recent activity |
-| SCR034 | AdminStatsPage | atomic | ~4 | Time-series charts, user/exam/finance metrics |
-| SCR035 | AdminUsersPage | atomic | ~3 | User table with ban/unban/delete/grant actions |
+| SCR034 | AdminStatsPage | atomic | ~5 | Time-series charts, user/exam/finance metrics, signup-source breakdown |
+| SCR035 | AdminUsersPage | atomic | ~3 | User table (role, admin flag) with ban/unban actions |
 | SCR036 | AdminFinancePage | atomic | ~3 | Refund history, credit adjustments, tier changes |
 | SCR037 | AdminLogsPage | atomic | ~2 | Log viewer with SSE stream + polling fallback |
 | SCR038 | AdminAuditPage | atomic | ~2 | Audit log table with filters + export |
+| SCR039 | AdminPageConfigPage | atomic | ~2 | PageFeatureFlag list + toggle switches |
+| SCR040 | WordFamilyPage | atomic | ~2 | WordFamilyCategory grid |
+| SCR041 | WordFamilyCategoryPage | atomic | ~2 | Root word chips + generate action |
+| SCR042 | WordFamilyDetailPage | atomic | ~5 | Word family tree/list, save, flashcard bridge |
+| SCR043 | AdminWordFamilyPage | atomic | ~3 | WordFamilyCategory CRUD table |
+| SCR044 | AdminRolesPage | atomic | ~7 | Role assignment table, read-only permission matrix, role change history |
 
 ---
 
@@ -776,11 +784,13 @@ AI generation tool for creating quizzes and flashcards from uploaded documents. 
 
 ### Related Screens
 
-- SCR025: GenAIKnowledgePage (knowledge base management)
+- SCR025: GenAIKnowledgePage (removed 2026-06-14)
 
 ---
 
-## SCR025: GenAIKnowledgePage
+## SCR025: GenAIKnowledgePage (REMOVED 2026-06-14)
+
+> **REMOVED 2026-06-14.** Page removed in `f1ed596`, backend `ai-tutor` in `343fa97`; no `/k/genai-knowledge` route remains. See `docs/features/F009_AITeacherKnowledgeBase/screens.md`. Retired codes: SCR025, REG001..004. The text below is historical.
 
 **Type**: composite
 
@@ -812,10 +822,10 @@ AI knowledge base management with four independent regions: knowledge folders, k
 
 | Code | Label | Owner | Independence Signals |
 |------|-------|-------|---------------------|
-| REG001 | FolderPanel | F009_AITeacherKnowledgeBase | Own endpoints `GET/POST/PUT/DELETE /api/v1/ai/tutor/knowledge-folders`; independent loading state |
-| REG002 | FilePanel | F009_AITeacherKnowledgeBase | Own endpoints `GET/POST/DELETE /api/v1/ai/tutor/knowledge-files`; independent reprocess/bulk operations; own pagination |
-| REG003 | DatasetImportPanel | F009_AITeacherKnowledgeBase | Own endpoints `GET/POST /api/v1/ai/tutor/dataset-imports`; independent job polling |
-| REG004 | StatsPanel | F009_AITeacherKnowledgeBase | Own endpoint `GET /api/v1/ai/tutor/knowledge-stats`; independent refresh |
+| REG001 | FolderPanel (removed) | F009_AITeacherKnowledgeBase (removed) | Own endpoints `GET/POST/PUT/DELETE /api/v1/ai/tutor/knowledge-folders`; independent loading state |
+| REG002 | FilePanel (removed) | F009_AITeacherKnowledgeBase (removed) | Own endpoints `GET/POST/DELETE /api/v1/ai/tutor/knowledge-files`; independent reprocess/bulk operations; own pagination |
+| REG003 | DatasetImportPanel (removed) | F009_AITeacherKnowledgeBase (removed) | Own endpoints `GET/POST /api/v1/ai/tutor/dataset-imports`; independent job polling |
+| REG004 | StatsPanel (removed) | F009_AITeacherKnowledgeBase (removed) | Own endpoint `GET /api/v1/ai/tutor/knowledge-stats`; independent refresh |
 
 ---
 
@@ -1091,7 +1101,7 @@ Admin dashboard home page. Displays KPI cards (total users, active sessions, rev
 
 ### Auth
 
-- `AdminGuard` — `User.isAdmin = true` required. Non-admins receive 403.
+- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required. Non-admins receive 403.
 
 ---
 
@@ -1101,7 +1111,7 @@ Admin dashboard home page. Displays KPI cards (total users, active sessions, rev
 
 ### Description
 
-Detailed analytics page with time-series charts for user growth, exam sessions, revenue, and AI usage. Date range picker and export functionality.
+Detailed analytics page with time-series charts for user growth, exam sessions, revenue, and AI usage. Date range picker, export functionality, and a signup-source ("Top nguồn") breakdown card.
 
 ### Components
 
@@ -1110,14 +1120,16 @@ Detailed analytics page with time-series charts for user growth, exam sessions, 
 | AdminTimeSeriesChart | atomic | Recharts time-series chart |
 | AdminDateRangePicker | atomic | Date range filter |
 | AdminStatsExport | atomic | CSV/JSON export |
+| SourceBreakdownChart | atomic | Signup breakdown by `utm_source` (null → "direct") |
 
 ### Routes
 
 - `GET /api/v1/admin/stats`
+- `GET /api/v1/admin/stats/sources` (+ alias `GET /api/v1/admin/sources`)
 
 ### Auth
 
-- `AdminGuard` — `User.isAdmin = true` required.
+- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required.
 
 ---
 
@@ -1127,28 +1139,25 @@ Detailed analytics page with time-series charts for user growth, exam sessions, 
 
 ### Description
 
-User management page with paginated antd Table. Columns: avatar, name, email, role, status, created date. Row actions: ban, unban, soft-delete, grant admin, revoke admin. Search and filter by status/role.
+User management page with paginated antd Table. Columns: avatar, name, email, role, status, created date. Row actions: ban, unban (role and admin flag are shown read-only; they are changed on SCR044). Search and filter by status/admin flag.
 
 ### Components
 
 | Component | Type | Purpose |
 |-----------|------|---------|
 | AdminUserTable | atomic | antd Table with pagination + filters |
-| AdminUserActions | atomic | Row action buttons (ban/unban/delete/grant) |
+| AdminUserActions | atomic | Row action buttons (ban/unban) |
 | AdminBanDialog | atomic | Confirmation dialog for ban/unban |
 
 ### Routes
 
 - `GET /api/v1/admin/users`
-- `PUT /api/v1/admin/users/:id/ban`
-- `PUT /api/v1/admin/users/:id/unban`
-- `DELETE /api/v1/admin/users/:id`
-- `PUT /api/v1/admin/users/:id/grant-admin`
-- `DELETE /api/v1/admin/users/:id/revoke-admin`
+- `POST /api/v1/admin/users/:id/ban`
+- `POST /api/v1/admin/users/:id/unban`
 
 ### Auth
 
-- `AdminGuard` — `User.isAdmin = true` required.
+- `@RequirePermissions('user:manage')` — `SYSTEM_ADMIN` role required.
 
 ---
 
@@ -1178,7 +1187,7 @@ Finance management page with tabs: Refund History, Credit Adjustments, Subscript
 
 ### Auth
 
-- `AdminGuard` — `User.isAdmin = true` required.
+- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required.
 
 ---
 
@@ -1205,7 +1214,7 @@ Server-side log viewer with real-time SSE streaming (ticket exchange) and pollin
 
 ### Auth
 
-- `AdminGuard` — `User.isAdmin = true` required.
+- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required.
 
 ---
 
@@ -1231,22 +1240,189 @@ Audit log query page. Paginated antd Table showing `AdminAudit` rows: admin user
 
 ### Auth
 
-- `AdminGuard` — `User.isAdmin = true` required.
+- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required.
+
+---
+
+## SCR039: AdminPageConfigPage
+
+**Type**: atomic
+
+### Description
+
+Admin screen listing every togglable page (`PageFeatureFlag` rows) with a `Switch` per row. Toggling calls the admin API with optimistic update + rollback on failure. Source: `examio-fe/src/pages/admin/AdminPageConfigPage.tsx`.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| PageConfigTable | atomic | antd Table listing key/label/enabled |
+| PageConfigSwitch | atomic | Per-row toggle with optimistic update + rollback |
+
+### Routes
+
+- `GET /api/v1/admin/page-config`
+- `PATCH /api/v1/admin/page-config/:key`
+
+### Auth
+
+- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required.
+
+---
+
+## SCR040: WordFamilyPage
+
+**Type**: atomic
+
+### Description
+
+Category browse page — grid of `WordFamilyCategory` cards (image, name, description), filtered to `isActive = true`. Each card links to `SCR041`. Source: `examio-fe/src/pages/k/WordFamilyPage.tsx`.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| WordFamilyCategoryCard | atomic | Category image/name/description card |
+
+### Routes
+
+- `GET /api/v1/word-family/categories`
+
+### Auth
+
+- `AuthGuard` + `PageEnabledGuard` (`@TogglePage('word-family')`) — Bearer session required; hidden via 404 if the `word-family` page flag is disabled.
+
+---
+
+## SCR041: WordFamilyCategoryPage
+
+**Type**: atomic
+
+### Description
+
+Root-word list within one category, shown as chips. "Tạo thêm từ gốc" button triggers AI generation (`POST /generate`) then refetches with `forceRefresh`. Source: `examio-fe/src/pages/k/WordFamilyCategoryPage.tsx`.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| RootWordChipList | atomic | Chips for each root word, links to SCR042 |
+| GenerateWordFamilyButton | atomic | Triggers AI batch generation, shows loading state |
+
+### Routes
+
+- `GET /api/v1/word-family/categories/:slug/roots`
+- `POST /api/v1/word-family/generate`
+
+### Auth
+
+- `AuthGuard` + `PageEnabledGuard` (`@TogglePage('word-family')`).
+
+---
+
+## SCR042: WordFamilyDetailPage
+
+**Type**: atomic
+
+### Description
+
+Word family detail with Tree/List view toggle, word selection checkboxes, save-to-collection action, and "Tạo Flashcard (N)" bridge to a new `FlashCardSet`. Source: `examio-fe/src/pages/k/WordFamilyDetailPage.tsx`.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| TreeView | atomic | Word family as expandable tree (`components/k/word-family/TreeView.tsx`) |
+| ListView | atomic | Word family as flat list (`ListView.tsx`) |
+| WordFamilyNode | atomic | Single word node with affix breakdown |
+| CreateFlashcardModal | atomic | Confirms selected words → `POST /:id/to-flashcard` |
+
+### Routes
+
+- `GET /api/v1/word-family/category/:categorySlug/:rootWord`
+- `POST /api/v1/word-family/save`
+- `DELETE /api/v1/word-family/saved/:wordFamilyId`
+- `POST /api/v1/word-family/:id/to-flashcard`
+
+### Auth
+
+- `AuthGuard` + `PageEnabledGuard` (`@TogglePage('word-family')`).
+
+---
+
+## SCR043: AdminWordFamilyPage
+
+**Type**: atomic
+
+### Description
+
+Admin CRUD for `WordFamilyCategory` — antd Table + Modal, auto-slug generator from Vietnamese name. Calls admin-service endpoints (`/admin/word-family/*`), distinct from the exam-service admin category routes. Source: `examio-fe/src/pages/admin/AdminWordFamilyPage.tsx`.
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| WordFamilyCategoryTable | atomic | Paginated category list |
+| WordFamilyCategoryModal | atomic | Create/edit form with auto-slug |
+
+### Routes
+
+- `GET /api/v1/admin/word-family/categories`
+- `POST /api/v1/admin/word-family/categories`
+- `PUT /api/v1/admin/word-family/categories/:id`
+- `DELETE /api/v1/admin/word-family/categories/:id` (soft-delete)
+
+### Auth
+
+- `@RequirePermissions('admin:access')` — `SYSTEM_ADMIN` role required.
+
+---
+
+## SCR044: AdminRolesPage
+
+**Type**: atomic
+
+### Description
+
+Route `/admin/roles`, sidebar item "Phân quyền" (`nav.roles`, `AdminLayout`). Three tabs kept in the URL (`?tab=users|matrix|history`, filters `q`, `role`, `admin`, `page`; history `user`, `hpage`). Users tab: table with a STUDENT/TEACHER select and a SYSTEM_ADMIN switch per row, ban/unban actions, confirm dialog that lists the consequences. Own row is locked; the last active admin cannot be demoted. Matrix tab: read-only role to permission grid. History tab: `RoleChangeLog` rows (who, from/to, reason, source). Source: `examio-fe/src/pages/admin/AdminRolesPage.tsx`; the client rules mirror auth (server answers are authoritative).
+
+### Components
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| RoleUserFilters / RoleUserTable | atomic | Search, role and admin filters; paginated rows |
+| RoleChangeDialog | atomic | Confirmation with consequences and optional reason |
+| UserBanActions | atomic | Ban / unban with confirmation |
+| PermissionMatrix | atomic | Read-only matrix grouped by permission group |
+| RoleChangeHistory / RoleBadge | atomic | History list, role chip |
+
+### Routes
+
+- `GET /api/v1/admin/roles`
+- `GET /api/v1/admin/roles/users`
+- `GET /api/v1/admin/roles/changes`
+- `PUT /api/v1/admin/roles/users/:id/role`
+- `PUT /api/v1/admin/roles/users/:id/system-admin`
+- `POST /api/v1/admin/users/:id/ban`, `POST /api/v1/admin/users/:id/unban`
+
+### Auth
+
+- `@RequirePermissions('role:assign')` (`user:manage` for ban/unban). Gap closed in phase 09: `AdminRoute` requires `admin:access` and each admin route its own permission (see [permissions](../system/permissions.md) § Frontend route guards).
 
 ---
 
 ## Summary
 
-- **Total Screens**: 38
-- **Atomic**: 32 (SCR001–SCR012, SCR014–SCR015, SCR017, SCR019–SCR024, SCR026, SCR028–SCR038)
-- **Composite**: 6 (SCR013, SCR016, SCR018, SCR025, SCR027)
+- **Total Screens**: 43 active + 1 removed (SCR025)
+- **Atomic**: 39 (SCR001–SCR012, SCR014–SCR015, SCR017, SCR019–SCR024, SCR026, SCR028–SCR038, SCR039–SCR044)
+- **Composite**: 4 active (SCR013, SCR016, SCR018, SCR027) + 1 removed (SCR025)
 - **Total Regions**: 16 across composite screens
 
 ---
 
 ## Cross-Reference Validation
 
-- [x] All SCR### codes are unique (SCR001–SCR038)
+- [x] All SCR### codes are unique (SCR001–SCR044)
 - [x] All SCR### codes are referenced in ScreenFlow.md
 - [x] All route URLs are properly formatted
 - [x] All SCR### codes are referenced in FeatureList.md

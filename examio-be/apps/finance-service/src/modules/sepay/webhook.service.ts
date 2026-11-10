@@ -2,19 +2,19 @@ import {
     BadRequestException,
     Injectable,
     NotFoundException,
-    ConflictException,
     ForbiddenException,
     UnauthorizedException,
     Logger,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { SepayWebhook } from '../../types/webhook';
 import { getPaymentIdFromWebhook } from '../../utils/handleWebhook';
 import { PAYMENT_STATUS } from '../../types/payment';
 import { WalletRepository } from '../wallet/wallet.repository';
 import { WalletTransactionRepository } from '../wallet/wallettransaction.repository';
-import { GenerateIdService } from '@examio/common';
+import { GenerateIdService, invalidateWalletCachesBestEffort } from '@examio/common';
+import { RedisService } from '@examio/redis';
 import { WALLET_TRANSACTION_TYPE } from '../wallet/dto/wallet-details-response.dto';
 import { SubscriptionService } from './subscription.service';
 import {
@@ -32,9 +32,19 @@ export class WebhookService {
         private readonly walletRepository: WalletRepository,
         private readonly walletTransactionRepository: WalletTransactionRepository,
         private readonly generateIdService: GenerateIdService,
-        private readonly subscriptionService: SubscriptionService
+        private readonly subscriptionService: SubscriptionService,
+        private readonly redis: RedisService
     ) {}
 
+
+    /** A cache problem must never turn a committed payment into a failed webhook (SePay would retry). */
+    private async invalidateAfterCommit(userId: string): Promise<void> {
+        const walletId = await this.walletRepository
+            .findByUserId(userId, false)
+            .then((w) => w?.id)
+            .catch(() => undefined);
+        await invalidateWalletCachesBestEffort(this.redis, userId, walletId);
+    }
 
     private isValidApiKey(apiKey?: string): boolean {
         if (!this.webhookSecretKey || !apiKey) {
@@ -99,13 +109,12 @@ export class WebhookService {
         }
 
         // Kiểm tra trạng thái
-        if (payment.status === PAYMENT_STATUS.PAID) {
-            this.logger.warn(`Payment already processed: ${paymentId}`);
-            throw new ConflictException(
-                'This payment has already been processed'
-            );
-        }
-
+        // Lưu ý: không throw ConflictException ở đây khi status đã là PAID.
+        // Việc chuyển trạng thái PENDING -> PAID được xử lý atomic + idempotent
+        // bên trong transaction (processCreditPayment / processSubscriptionPayment)
+        // để tránh race condition (TOCTOU) khi SePay gửi webhook trùng lặp/đồng thời:
+        // nếu payment đã được xử lý bởi một lần gọi khác, ta trả về idempotent no-op
+        // thay vì double-credit ví.
         if (payment.status === PAYMENT_STATUS.CANCELED) {
             this.logger.warn(`Payment was cancelled: ${paymentId}`);
             throw new ForbiddenException(
@@ -154,11 +163,16 @@ export class WebhookService {
         // Tính số credits dựa trên số tiền (1000 VND = 1 credit)
         const creditsToAdd = Math.floor(amountReceived / 1000);
 
-        // Sử dụng transaction để đảm bảo tính nhất quán
-        await this.prisma.$transaction(async (tx) => {
-            // 1. Cập nhật payment status
-            await tx.payment.update({
-                where: { id: paymentId },
+        // Sử dụng transaction để đảm bảo tính nhất quán và chống double-credit
+        const result = await this.prisma.$transaction(async (tx) => {
+            // 1. Chuyển trạng thái payment PENDING -> PAID một cách atomic + idempotent.
+            // Nếu payment đã được xử lý bởi một lần gọi webhook khác (đồng thời hoặc
+            // gửi lại), count sẽ là 0 và ta bỏ qua bước cộng credits để tránh double-credit.
+            const updateResult = await tx.payment.updateMany({
+                where: {
+                    id: paymentId,
+                    status: { not: PAYMENT_STATUS.PAID },
+                },
                 data: {
                     status: PAYMENT_STATUS.PAID,
                     amount: amountReceived,
@@ -166,17 +180,20 @@ export class WebhookService {
                 },
             });
 
-            // 2. Cộng credits vào wallet
-            const wallet = await this.walletRepository.findByUserId(
-                payment.userId,
-                false
-            );
+            if (updateResult.count === 0) {
+                return { credited: false, hasWallet: false };
+            }
+
+            // 2. Cộng credits vào wallet (đọc trong transaction để tránh lost update)
+            const wallet = await tx.wallet.findUnique({
+                where: { userId: payment.userId },
+            });
 
             if (wallet) {
                 await tx.wallet.update({
                     where: { id: wallet.id },
                     data: {
-                        balance: wallet.balance + creditsToAdd,
+                        balance: { increment: creditsToAdd },
                         updatedBy: 'SEPAY_WEBHOOK',
                     },
                 });
@@ -193,15 +210,20 @@ export class WebhookService {
                         createdBy: 'SEPAY_WEBHOOK',
                     },
                 });
-
-                // Invalidate wallet cache
-                await this.walletRepository.invalidateUserCache(payment.userId);
-                // Invalidate wallet transaction stats cache
-                await this.walletTransactionRepository.invalidateWalletCache(
-                    wallet.id
-                );
             }
+
+            return { credited: true, hasWallet: !!wallet };
         });
+
+        if (!result.credited) {
+            this.logger.warn(
+                `Payment ${paymentId} already processed by another webhook delivery; skipping duplicate credit`
+            );
+            return;
+        }
+
+        // After commit, best effort: wallet, wallet transactions and payment caches
+        await this.invalidateAfterCommit(payment.userId);
 
         this.logger.log(
             `Credit payment ${paymentId} processed: +${creditsToAdd} credits for user ${payment.userId}`
@@ -227,35 +249,46 @@ export class WebhookService {
             throw new BadRequestException('Invalid subscription payment amount');
         }
 
-        // Cập nhật payment status
-        await this.prisma.payment.update({
-            where: { id: paymentId },
-            data: {
-                status: PAYMENT_STATUS.PAID,
-                amount: amountReceived,
-                updatedBy: 'SEPAY_WEBHOOK',
-            },
+        // Cập nhật payment status PENDING -> PAID (atomic + idempotent) và kích hoạt
+        // subscription trong cùng một transaction để tránh double-activation khi có
+        // nhiều webhook delivery đồng thời cho cùng một paymentId.
+        const processed = await this.prisma.$transaction(async (tx) => {
+            const updateResult = await tx.payment.updateMany({
+                where: {
+                    id: paymentId,
+                    status: { not: PAYMENT_STATUS.PAID },
+                },
+                data: {
+                    status: PAYMENT_STATUS.PAID,
+                    amount: amountReceived,
+                    updatedBy: 'SEPAY_WEBHOOK',
+                },
+            });
+
+            if (updateResult.count === 0) {
+                return false;
+            }
+
+            // Kích hoạt subscription (bao gồm cả việc cộng credits hàng tháng)
+            await this.subscriptionService.activateSubscription(
+                payment.userId,
+                tier,
+                billingCycle,
+                tx
+            );
+
+            return true;
         });
 
-        // Kích hoạt subscription (bao gồm cả việc cộng credits hàng tháng)
-        await this.subscriptionService.activateSubscription(
-            payment.userId,
-            tier,
-            billingCycle
-        );
-
-        // Invalidate wallet cache
-        await this.walletRepository.invalidateUserCache(payment.userId);
-
-        const wallet = await this.walletRepository.findByUserId(
-            payment.userId,
-            false
-        );
-        if (wallet) {
-            await this.walletTransactionRepository.invalidateWalletCache(
-                wallet.id
+        if (!processed) {
+            this.logger.warn(
+                `Payment ${paymentId} already processed by another webhook delivery; skipping duplicate subscription activation`
             );
+            return;
         }
+
+        // After commit, best effort: wallet, wallet transactions and payment caches
+        await this.invalidateAfterCommit(payment.userId);
 
         this.logger.log(
             `Subscription payment ${paymentId} processed: tier ${tier}, cycle ${billingCycle} for user ${payment.userId}`

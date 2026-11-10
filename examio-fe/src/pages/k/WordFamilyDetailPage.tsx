@@ -7,11 +7,14 @@ import {
 } from "@/components/k/word-family";
 import { useWordFamilyStore } from "@/stores/useWordFamilyStore";
 import { toast } from "@/components/antd/toast";
-import { Button, Skeleton } from "antd";
+import { useCan } from "@/hooks/useCan";
+import { WORD_FAMILY_ACTION_PERMISSIONS } from "@/lib/rbac/nav-items";
+import { Button, Skeleton, Spin } from "antd";
 import {
   SaveOutlined,
   ApartmentOutlined,
   UnorderedListOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 import {
   Breadcrumb,
@@ -32,10 +35,18 @@ export default function WordFamilyDetailPage() {
     loadingDetail,
     error,
     savedIds,
+    regeneratingKey,
     fetchWordFamily,
     fetchSaved,
     saveWordFamily,
+    generateWordFamilyForRoot,
+    checkRootGenerationStatus,
+    abandonRootGeneration,
   } = useWordFamilyStore();
+
+  // Root-scoped: only this exact root's regenerate job drives the UI.
+  const generating =
+    !!slug && !!rootWord && regeneratingKey === `${slug}:${rootWord}`;
 
   const [viewMode, setViewMode] = useState<"tree" | "list">("tree");
   const [expandedWords, setExpandedWords] = useState<Set<number>>(() => new Set());
@@ -43,14 +54,55 @@ export default function WordFamilyDetailPage() {
     () => new Set(),
   );
   const [showFlashcardModal, setShowFlashcardModal] = useState(false);
+  const canGenerate = useCan(WORD_FAMILY_ACTION_PERMISSIONS.generate);
+  const canSave = useCan(WORD_FAMILY_ACTION_PERMISSIONS.save);
+  const canToFlashcard = useCan(WORD_FAMILY_ACTION_PERMISSIONS.toFlashcard);
 
   useEffect(() => {
     if (slug && rootWord) {
       void fetchWordFamily(slug, rootWord);
-      void fetchSaved();
+      if (canSave) void fetchSaved();
+      // Resume the generating UI if a job for THIS root is already running
+      // (e.g. after a page reload).
+      void checkRootGenerationStatus(slug, rootWord);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Zustand selectors return stable refs
   }, [slug, rootWord]);
+
+  // While a generation job runs, poll its status; when it clears, refetch the
+  // detail so the freshly generated words appear. Self-rescheduling timeout
+  // (not setInterval) so a slow response can never overlap the next tick.
+  useEffect(() => {
+    if (!slug || !rootWord || !generating) return;
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    let elapsedMs = 0;
+    const POLL_INTERVAL_MS = 5000;
+    const MAX_WAIT_MS = 11 * 60 * 1000; // AI times out server-side at ~10 min
+
+    const tick = async () => {
+      const stillGenerating = await checkRootGenerationStatus(slug, rootWord);
+      if (cancelled) return;
+      if (!stillGenerating) {
+        await fetchWordFamily(slug, rootWord, true);
+        if (!cancelled) toast.success(`Đã sinh từ con cho "${rootWord}"!`);
+        return;
+      }
+      elapsedMs += POLL_INTERVAL_MS;
+      if (elapsedMs >= MAX_WAIT_MS) {
+        abandonRootGeneration(slug, rootWord);
+        return;
+      }
+      timeoutId = setTimeout(tick, POLL_INTERVAL_MS);
+    };
+
+    timeoutId = setTimeout(tick, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Zustand selectors return stable refs
+  }, [slug, rootWord, generating]);
 
   const toggleExpand = (idx: number) => {
     setExpandedWords((prev) => {
@@ -88,15 +140,22 @@ export default function WordFamilyDetailPage() {
     else toast.error("Lưu thất bại");
   };
 
+  const handleGenerate = async () => {
+    if (!slug || !rootWord || generating) return;
+    const ok = await generateWordFamilyForRoot(slug, rootWord);
+    if (!ok) toast.error("Không thể bắt đầu sinh từ con. Vui lòng thử lại.");
+    // On success, the polling effect refetches + toasts when the job completes.
+  };
+
   const words = currentWordFamily?.words ?? [];
   const isSaved = currentWordFamily
     ? savedIds.has(currentWordFamily.id)
     : false;
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground">
-      <section className="relative mx-auto max-w-7xl space-y-4 px-4 py-6 md:py-8">
-        <Breadcrumb className="mb-2">
+    <div className="relative min-h-screen bg-canvas text-ink">
+      <section className="relative mx-auto max-w-7xl space-y-6 px-4 py-6 md:py-10">
+        <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbLink asChild>
@@ -123,91 +182,126 @@ export default function WordFamilyDetailPage() {
         </Breadcrumb>
 
         {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-normal tracking-tight text-ink">
-            {rootWord}
-          </h1>
-          <p className="text-sm text-ink/60">
-            {words.length} từ vựng &middot; {slug}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* View toggle */}
-          <div className="flex rounded-lg border border-hairline">
-            <button
-              type="button"
-              onClick={() => setViewMode("tree")}
-              className={`rounded-l-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                viewMode === "tree"
-                  ? "bg-coral/10 text-coral"
-                  : "text-ink/60 hover:text-ink"
-              }`}
-            >
-              <ApartmentOutlined className="mr-1" />
-              Tree
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode("list")}
-              className={`rounded-r-lg border-l border-hairline px-3 py-1.5 text-xs font-medium transition-colors ${
-                viewMode === "list"
-                  ? "bg-coral/10 text-coral"
-                  : "text-ink/60 hover:text-ink"
-              }`}
-            >
-              <UnorderedListOutlined className="mr-1" />
-              List
-            </button>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-coral/10 font-display text-lg font-semibold text-coral">
+              {rootWord?.charAt(0).toUpperCase()}
+            </span>
+            <div>
+              <h1 className="font-display text-2xl font-medium tracking-tight text-ink md:text-3xl">
+                {rootWord}
+              </h1>
+              <p className="text-sm text-ink/55">
+                {words.length} từ vựng &middot; {slug}
+              </p>
+            </div>
           </div>
 
-          <Button
-            size="small"
-            icon={<SaveOutlined />}
-            onClick={handleSave}
-            disabled={isSaved}
-          >
-            {isSaved ? "Đã lưu" : "Lưu"}
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* View toggle — cream segmented control */}
+            <div className="flex rounded-lg bg-surface-card p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode("tree")}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors duration-150 ${
+                  viewMode === "tree"
+                    ? "bg-canvas text-ink shadow-sm"
+                    : "text-ink/50 hover:text-ink"
+                }`}
+              >
+                <ApartmentOutlined className="mr-1" />
+                Tree
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("list")}
+                className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors duration-150 ${
+                  viewMode === "list"
+                    ? "bg-canvas text-ink shadow-sm"
+                    : "text-ink/50 hover:text-ink"
+                }`}
+              >
+                <UnorderedListOutlined className="mr-1" />
+                List
+              </button>
+            </div>
 
-          {viewMode === "list" && selectedIndices.size > 0 && (
-            <Button
-              type="primary"
-              size="small"
-              onClick={() => setShowFlashcardModal(true)}
-            >
-              Tạo Flashcard ({selectedIndices.size})
-            </Button>
-          )}
+            {canGenerate && (
+              <Button
+                icon={<ThunderboltOutlined />}
+                onClick={handleGenerate}
+                loading={generating}
+              >
+                {generating ? "Đang sinh..." : "Sinh lại từ con"}
+              </Button>
+            )}
+
+            {canSave && (
+              <Button
+                icon={<SaveOutlined />}
+                onClick={handleSave}
+                disabled={isSaved || generating}
+              >
+                {isSaved ? "Đã lưu" : "Lưu"}
+              </Button>
+            )}
+
+            {canToFlashcard && viewMode === "list" && selectedIndices.size > 0 && (
+              <Button
+                type="primary"
+                onClick={() => setShowFlashcardModal(true)}
+              >
+                Tạo Flashcard ({selectedIndices.size})
+              </Button>
+            )}
+          </div>
         </div>
-      </div>
 
-      {error && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
-          {error}
-        </div>
-      )}
+        {error && !generating && (
+          <div className="rounded-lg border border-hairline bg-surface-soft px-4 py-3 text-sm text-[#c64545]">
+            {error}
+          </div>
+        )}
 
-      {loadingDetail && (
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} active paragraph={{ rows: 1 }} />
-          ))}
-        </div>
-      )}
+        {generating && (
+          <div className="flex items-center gap-3 rounded-lg border border-coral/30 bg-coral/5 px-4 py-3.5 text-sm text-ink">
+            <Spin size="small" />
+            <span>
+              Đang sinh từ con cho &ldquo;{rootWord}&rdquo;, vui lòng đợi trong
+              giây lát...
+            </span>
+          </div>
+        )}
 
-      {!loadingDetail && words.length === 0 && !error && (
-        <p className="text-sm text-ink/50">Không có dữ liệu từ vựng.</p>
-      )}
+        {loadingDetail && (
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} active paragraph={{ rows: 1 }} />
+            ))}
+          </div>
+        )}
+
+        {!loadingDetail && !generating && words.length === 0 && !error && (
+          <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-hairline bg-surface-soft/60 px-6 py-14 text-center">
+            <p className="text-sm text-ink/55">
+              Chưa có từ con cho từ gốc &ldquo;{rootWord}&rdquo;.
+            </p>
+            {canGenerate && (
+              <Button
+                type="primary"
+                size="large"
+                icon={<ThunderboltOutlined />}
+                onClick={handleGenerate}
+                loading={generating}
+              >
+                {generating ? "Đang sinh..." : `Sinh từ con cho "${rootWord}"`}
+              </Button>
+            )}
+          </div>
+        )}
 
       {!loadingDetail && words.length > 0 && viewMode === "tree" && (
-        <TreeView
-          rootWord={rootWord!}
-          words={words}
-          expandedWords={expandedWords}
-          onToggleExpand={toggleExpand}
-        />
+        <TreeView rootWord={rootWord!} words={words} />
       )}
 
       {!loadingDetail && words.length > 0 && viewMode === "list" && (

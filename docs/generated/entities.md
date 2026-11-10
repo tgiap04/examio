@@ -2,7 +2,26 @@
 
 **Project**: examio
 **Generated**: 2026-06-05
-**Source**: `examio-be/libs/database/src/schema.prisma` (38 models, ~735 lines)
+**Source**: per-service Prisma schemas since phase 11 (`libs/database` was removed): `examio-be/apps/auth-service/prisma/schema.prisma`, `apps/finance-service/prisma/schema.prisma`, `apps/admin-service/prisma/schema.prisma`, `apps/content-service/prisma/schema.prisma`, `apps/assessment-service/prisma/schema.prisma`, `apps/ai-chat-service/prisma/schema.prisma`, `apps/study-room-service/prisma/schema.prisma`, `apps/vocabulary-service/prisma/schema.prisma`, `apps/document-service/prisma/schema.prisma`, `apps/ai-service/alembic/versions/0001_init.py` (ai-service, SQL, no Prisma). The model-to-service map enforced in CI is `examio-be/scripts/check-model-ownership.ts`.
+
+> **Per-service placement (phase 11).** Each service owns one Postgres schema; no foreign key crosses a service boundary. `userId`/`adminId`/`hostId` columns outside auth are plain strings (usually with an `@@index`) and no `@relation` to `User`; the ERD edges from `User` below are logical (resolved in the application via auth), not database FKs. Field tables were re-checked against the schema files in phase 19 (field names, nullability, scalar types); index lists and enum values are not re-derived, so the owning schema file wins.
+>
+> | Owner service (PG schema) | Models |
+> |---|---|
+> | auth (`auth`) | User, UserSession, VerifyAccountCode, ResetPasswordCode, RoleChangeLog, OutboxEvent, ProcessedEvent, R2DeleteTask (`r2_delete_tasks`) |
+> | finance (`finance`) | UserSubscription, Payment, Wallet, WalletTransaction, OutboxEvent, ProcessedEvent |
+> | admin (`admin`) | AdminAudit, PageFeatureFlag, OutboxEvent, ProcessedEvent |
+> | content (`content`, phase 14) | QuizSet, QuizSetLabel, QuizQuestion, DetailsQuizQuestion, FlashCardSet, FlashCardSetLabel, FlashCard, DetailsFlashCard, HistoryGeneratedQuizz, HistoryGeneratedFlashcard, QuizPracticeAttempt, FlashCardViewHistory, UserPinnedFlashcard, FlashcardStudyProgress, GenerationJob (phase 15), OutboxEvent, ProcessedEvent, R2DeleteTask |
+> | assessment (`assessment`, phase 14) | ExamRoom, ExamSession (with its quiz snapshot), ExamAttempt, CheatingLog, UserPinnedExamRoom, OutboxEvent, ProcessedEvent |
+> | ai-chat (`aichat`, phase 13) | AIChat, AIChatMessage, AIChatDocument, SubjectCategory, Subject, ProcessedEvent (no outbox), R2DeleteTask |
+> | study-room (`studyroom`, phase 12) | StudyRoom, StudyRoomMember, StudyRoomPlaylistItem, StudyRoomChatBlock, ProcessedEvent (no outbox) |
+> | vocabulary (`vocabulary`, phase 12) | WordFamilyCategory, WordFamily, UserSavedWordFamily, R2DeleteTask (`r2_delete_tasks`); no OutboxEvent/ProcessedEvent (no RabbitMQ) |
+> | document (`document`, phase 15) | UserStorage, UserMonthlyFileUpload, OutboxEvent, ProcessedEvent, R2DeleteTask (`r2_delete_tasks`) |
+> | ai-service (`ai`, phase 15; Alembic) | Document, DocumentEntity, UserStorageGraph, UserStorageGraphGroup, `outbox_events`, `processed_events` |
+>
+> The exam schema no longer exists (exam-service was split into content, assessment, ai-chat, study-room, vocabulary and document). The tables below carry 41 detailed entities; PageFeatureFlag, the four StudyRoom* models and the three word-family models are not detailed here (see their feature specs and schema files).
+>
+> Only auth's own child tables (UserSession, VerifyAccountCode, ResetPasswordCode) still have a real FK to `User`. `UserSubscription` and `Payment` moved to finance. Phase 15: `UserStorage` and `UserMonthlyFileUpload` moved to document-service; `Document`, `DocumentEntity`, `UserStorageGraph`, `UserStorageGraphGroup` moved to ai-service (schema `ai`). Every `userStorageId` / `documentId` outside document-service is now a plain column (no FK, no cascade): `HistoryGenerated*` in content, `AIChatDocument` in ai-chat, and the four ai tables. Cleanup runs on the `document.deleted` event, not by cascade. Where a relationship line or the ERD below still shows a UserStorage edge, read it as logical. `ExamRoom.quizSetId` (assessment) is likewise a plain string pointing at a content QuizSet, not an FK (deleting the set sets `sourceDeleted`, it does not cascade).
 
 ---
 
@@ -16,7 +35,9 @@ erDiagram
         string username UK
         string name
         string avatar
-        boolean isAdmin
+        string role
+        boolean isSystemAdmin
+        int authzVersion
         boolean isBanned
         boolean isVerified
         datetime deletedAt
@@ -25,13 +46,13 @@ erDiagram
     UserSession ||--o| User : "belongs to"
     VerifyAccountCode ||--o| User : "belongs to"
     ResetPasswordCode ||--o| User : "belongs to"
-    UserSubscription ||--o| User : "belongs to"
-    UserMonthlyFileUpload ||--o| User : "belongs to"
-    Wallet ||--|| User : "has one"
+    UserSubscription ||..o| User : "belongs to"
+    UserMonthlyFileUpload ||..o| User : "belongs to"
+    Wallet ||..|| User : "has one"
 
     QuizSet ||--o{ QuizSetLabel : "has"
     QuizSet ||--o{ DetailsQuizQuestion : "contains"
-    QuizSet ||--o{ ExamRoom : "used by"
+    QuizSet ||..o{ ExamRoom : "used by (id only, no FK)"
     QuizSet ||--o{ QuizPracticeAttempt : "practiced via"
     QuizQuestion ||--o{ DetailsQuizQuestion : "instantiated in"
     HistoryGeneratedQuizz ||--o{ DetailsQuizQuestion : "sourced"
@@ -50,37 +71,37 @@ erDiagram
     UserPinnedFlashcard ||--o| FlashCardSet : "pins"
     FlashCardViewHistory ||--o| FlashCardSet : "views"
     FlashcardStudyProgress ||--o| FlashCardSet : "tracks"
-    QuizPracticeAttempt }o--|| User : "belongs to"
+    QuizPracticeAttempt }o..|| User : "belongs to"
 
-    Payment ||--o| User : "belongs to"
+    Payment ||..o| User : "belongs to"
     Wallet ||--o{ WalletTransaction : "has"
-    UserSubscription }o--|| User : "has"
+    UserSubscription }o..|| User : "has"
 
-    UserStorage ||--o{ Document : "indexed as"
-    UserStorage ||--o{ DocumentEntity : "chunked as"
-    UserStorage ||--|| UserStorageGraph : "built into"
+    UserStorage ||..o{ Document : "indexed as"
+    UserStorage ||..o{ DocumentEntity : "chunked as"
+    UserStorage ||..|| UserStorageGraph : "built into"
     UserStorageGraph ||--o{ UserStorageGraphGroup : "groups"
-    UserStorage ||--o{ AIChatDocument : "attached to"
+    UserStorage ||..o{ AIChatDocument : "attached to"
     AIChat ||--o{ AIChatMessage : "contains"
     AIChat ||--o{ AIChatDocument : "documents"
     AIChat }o--|| Subject : "teaches"
     Subject ||--o| SubjectCategory : "belongs to"
 
-    User ||--o{ AIChat : "owns"
-    User ||--o{ UserStorage : "owns"
-    User ||--o{ QuizSet : "authored"
-    User ||--o{ FlashCardSet : "authored"
-    User ||--o{ ExamRoom : "hosts"
-    User ||--o{ ExamAttempt : "takes"
-    User ||--o{ HistoryGeneratedQuizz : "generates"
-    User ||--o{ HistoryGeneratedFlashcard : "generates"
-    User ||--o{ QuizPracticeAttempt : "practices"
-    User ||--o{ Payment : "pays"
-    User ||--o{ FlashCardViewHistory : "views"
-    User ||--o{ UserPinnedFlashcard : "pins"
-    User ||--o{ UserPinnedExamRoom : "pins"
-    User ||--o{ FlashcardStudyProgress : "tracks"
-    AdminAudit ||--o| User : "performed by"
+    User ||..o{ AIChat : "owns"
+    User ||..o{ UserStorage : "owns"
+    User ||..o{ QuizSet : "authored"
+    User ||..o{ FlashCardSet : "authored"
+    User ||..o{ ExamRoom : "hosts"
+    User ||..o{ ExamAttempt : "takes"
+    User ||..o{ HistoryGeneratedQuizz : "generates"
+    User ||..o{ HistoryGeneratedFlashcard : "generates"
+    User ||..o{ QuizPracticeAttempt : "practices"
+    User ||..o{ Payment : "pays"
+    User ||..o{ FlashCardViewHistory : "views"
+    User ||..o{ UserPinnedFlashcard : "pins"
+    User ||..o{ UserPinnedExamRoom : "pins"
+    User ||..o{ FlashcardStudyProgress : "tracks"
+    AdminAudit }o..|| User : "performed by"
 ```
 
 ---
@@ -89,7 +110,7 @@ erDiagram
 
 ### MODEL-001 User
 
-**Description**: Primary user account. Password optional (OAuth-only accounts have null password).
+**Owner**: auth-service. **Description**: Primary user account. Password optional (OAuth-only accounts have null password).
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -100,36 +121,24 @@ erDiagram
 | avatar | String | NULL | Avatar URL |
 | banner | String | NULL | Banner image URL |
 | bio | String | NULL | Short bio |
-| isAdmin | Boolean | NOT NULL, DEFAULT false | Admin flag |
+| role | BaseRole | NOT NULL, DEFAULT STUDENT, INDEX | Base role: `STUDENT` or `TEACHER` (mutually exclusive) |
+| isSystemAdmin | Boolean | NOT NULL, DEFAULT false, INDEX | SYSTEM_ADMIN flag; combines with either base role. Replaces `isAdmin` |
+| authzVersion | Int | NOT NULL, DEFAULT 0 | JWT claim `av`; bumped in the same tx as every role / admin / ban / password change |
 | isBanned | Boolean | NOT NULL, DEFAULT false | Soft-ban flag; banned users see 403 "Account suspended" |
 | isVerified | Boolean | NOT NULL, DEFAULT false | Email verified flag |
 | deletedAt | DateTime | NULL | Soft-delete timestamp; null = active |
 | password | String | NULL | Bcrypt hash (null for OAuth-only) |
+| utmSource | String(64) | NULL, INDEX | First-touch signup attribution source (`utm_source`); null = direct |
 | createdAt | DateTime | NOT NULL | Account creation |
 | updatedAt | DateTime | NOT NULL | Last update |
+| createdBy | String | NULL | Creator ID (audit) |
+| updatedBy | String | NULL | Updater ID (audit) |
 
 **Relationships**:
-- One-to-One with Wallet via `id`
-- One-to-One with UserSubscription via `id`
-- One-to-One with VerifyAccountCode via `id`
-- One-to-One with ResetPasswordCode via `id`
-- One-to-Many with UserSession via `userId`
-- One-to-Many with UserStorage via `userId`
-- One-to-Many with QuizSet via `userId`
-- One-to-Many with FlashCardSet via `userId`
-- One-to-Many with ExamRoom via `hostId`
-- One-to-Many with ExamAttempt via `userId`
-- One-to-Many with HistoryGeneratedQuizz via `userId`
-- One-to-Many with HistoryGeneratedFlashcard via `userId`
-- One-to-Many with QuizPracticeAttempt via `userId`
-- One-to-Many with AIChat via `userId`
-- One-to-Many with Payment via `userId`
-- One-to-Many with UserMonthlyFileUpload via `userId`
-- One-to-Many with FlashCardViewHistory via `userId`
-- One-to-Many with UserPinnedFlashcard via `userId`
-- One-to-Many with UserPinnedExamRoom via `userId`
-- One-to-Many with FlashcardStudyProgress via `userId`
-- One-to-Many with AdminAudit via `adminId`
+- One-to-One with VerifyAccountCode via `userId` (FK, auth schema)
+- One-to-One with ResetPasswordCode via `userId` (FK, auth schema)
+- One-to-Many with UserSession via `userId` (FK, auth schema)
+- Logical (no FK, other services keep `userId` and resolve the user over auth gRPC): Wallet, UserSubscription, Payment (finance); QuizSet, FlashCardSet, HistoryGenerated*, QuizPracticeAttempt, FlashCardViewHistory, UserPinnedFlashcard, FlashcardStudyProgress, GenerationJob (content); ExamRoom (`hostId`), ExamAttempt, UserPinnedExamRoom (assessment); AIChat (ai-chat); UserStorage, UserMonthlyFileUpload (document); AdminAudit (`adminId`, admin)
 
 **Discriminator Fields**: None.
 
@@ -142,21 +151,22 @@ erDiagram
 
 ### MODEL-001b AdminAudit
 
-**Description**: Audit log entry written by `AuditWriterService` on every admin mutation. One row per changed field per action. Used for accountability and compliance.
+**Owner**: admin-service. **Description**: Audit log entry written by `AuditWriterService` on every admin mutation. One row per changed field per action. Used for accountability and compliance.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Audit record ID |
-| adminId | String | FK, NOT NULL, INDEX | References User.id (the admin who performed the action) |
-| targetId | String | NOT NULL, INDEX | ID of the entity being acted on (user ID, wallet ID, etc.) |
+| adminId | String | NOT NULL, INDEX | Auth-owned user id (no FK since phase 11) (the admin who performed the action) |
+| targetId | String | NULL | ID of the entity being acted on (user ID, wallet ID, etc.) |
 | action | String | NOT NULL | Action name (e.g. `user.ban`, `finance.refund`, `user.grant_admin`) |
 | payload | JSON | NULL | JSON diff of changed fields (before/after) |
+| reason | String | NULL | Optional free-text reason given by the admin |
 | ipAddress | String | NULL | Admin's client IP |
 | userAgent | String | NULL | Admin's client user agent |
 | createdAt | DateTime | NOT NULL | Timestamp of action |
 
 **Relationships**:
-- Many-to-One with User via `adminId`
+- Logical link to User (auth-service) via `adminId` (plain column, no FK since phase 11). Indexes: `(adminId, createdAt DESC)` and `(action, createdAt DESC)`. The audit screen shows the actor as `name`, else `username` (resolved from auth), else `#<adminId>`
 
 **Discriminator Fields**: None.
 
@@ -166,7 +176,7 @@ erDiagram
 
 ### MODEL-002 UserSession
 
-**Description**: Active login session, tied to a device. Tracks device/browser/OS for security and audit.
+**Owner**: auth-service. **Description**: Active login session, tied to a device. Tracks device/browser/OS for security and audit.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -174,6 +184,8 @@ erDiagram
 | userId | String | FK, NOT NULL | References User.id |
 | sessionId | String | UNIQUE, NOT NULL | Opaque session token |
 | refreshToken | String | UNIQUE, NOT NULL | JWT refresh token |
+| previousRefreshToken | String | NULL, UNIQUE | Token before the latest rotation, still accepted during the short grace window so parallel tabs do not log the user out |
+| previousTokenExpiresAt | DateTime | NULL | End of that grace window |
 | deviceId | String | NOT NULL | Device fingerprint |
 | deviceName | String | NULL | Friendly device label |
 | browser | String | NULL | Detected browser |
@@ -200,7 +212,7 @@ erDiagram
 
 ### MODEL-003 VerifyAccountCode
 
-**Description**: One-time email verification code for new account activation.
+**Owner**: auth-service. **Description**: One-time email verification code for new account activation.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -225,7 +237,7 @@ erDiagram
 
 ### MODEL-004 ResetPasswordCode
 
-**Description**: One-time password reset code, sent to user email on request.
+**Owner**: auth-service. **Description**: One-time password reset code, sent to user email on request.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -250,12 +262,12 @@ erDiagram
 
 ### MODEL-005 UserSubscription
 
-**Description**: User subscription tier and billing state. Controls feature access and upload quotas.
+**Owner**: finance-service. **Description**: User subscription tier and billing state. Controls feature access and upload quotas.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, UNIQUE, NOT NULL | Subscription ID |
-| userId | String | FK, UNIQUE, NOT NULL | References User.id |
+| userId | String | UNIQUE, NOT NULL | Auth-owned user id (no FK since phase 11) |
 | tier | Int | NOT NULL, DEFAULT 0 | Subscription level |
 | billingCycle | String | NOT NULL, DEFAULT "monthly" | monthly \| yearly |
 | lastPaymentDate | DateTime | NULL | Last successful payment |
@@ -267,7 +279,7 @@ erDiagram
 | updatedBy | String | NULL | Updater ID |
 
 **Relationships**:
-- One-to-One with User via `userId` (Cascade delete on user delete)
+- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
 
 **Discriminator Fields**:
 
@@ -284,19 +296,19 @@ erDiagram
 
 ### MODEL-006 UserMonthlyFileUpload
 
-**Description**: Per-user monthly file upload counter for enforcing subscription upload limits.
+**Owner**: document-service. **Description**: Per-user monthly file upload counter, now in document-service (schema `document`). Reserved: the monthly quota is currently the count of that month's `UserStorage` rows (charge-failed rows excluded), so nothing writes this table yet.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Record ID |
-| userId | String | FK, NOT NULL | References User.id |
+| userId | String | NOT NULL, INDEX | Auth-owned user id (no FK since phase 11) |
 | yearMonth | String | NOT NULL | "YYYY-MM" grouping key |
 | count | Int | NOT NULL, DEFAULT 0 | Upload count this month |
 | createdAt | DateTime | NOT NULL | Creation |
 | updatedAt | DateTime | NOT NULL | Last update |
 
 **Relationships**:
-- Many-to-One with User via `userId`
+- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
 
 **Discriminator Fields**: None.
 
@@ -305,29 +317,50 @@ erDiagram
 
 ---
 
+### RoleChangeLog (phase 04)
+
+**Owner**: auth-service. Audit trail of every role / admin-flag change. No foreign keys (rows outlive accounts; emails are snapshotted). Source: `apps/auth-service/prisma/schema.prisma`.
+
+| Field | Type | Constraints | Description |
+|---|---|---|---|
+| id | String | PK | |
+| targetUserId / targetEmail | String | NOT NULL | Account changed |
+| actorUserId | String | NULL | Null for CLI / bootstrap |
+| actorEmail | String | NOT NULL | |
+| fromRole / toRole | BaseRole | NOT NULL | |
+| fromAdmin / toAdmin | Boolean | NOT NULL | |
+| reason | String | NULL | |
+| source | String | NOT NULL | `admin-ui`, `cli` or `bootstrap` |
+| createdAt | DateTime | DEFAULT now(), INDEX (targetUserId, createdAt DESC) and (createdAt DESC) | |
+
+---
+
 ## Domain 2: Quiz / Flashcard Authoring
 
 ### MODEL-007 QuizSet
 
-**Description**: A authored quiz (collection of questions). Can be public or private, and is the source for ExamRooms and practice attempts.
+**Owner**: content-service. **Description**: A authored quiz (collection of questions). Can be public or private, and is the source for ExamRooms and practice attempts.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | QuizSet ID (cuid) |
 | title | String | NOT NULL | Quiz title |
 | description | String | NULL | Optional description |
-| userId | String | FK, NOT NULL | Author user ID |
+| userId | String | NOT NULL, INDEX | Author user ID |
 | thumbnail | String | NULL | Cover image URL |
 | isPublic | Boolean | NOT NULL, DEFAULT false | Public visibility flag |
 | isPinned | Boolean | NOT NULL, DEFAULT false | Pinned in author UI |
 | tags | String[] | NOT NULL, DEFAULT [] | Tag list for search/filter |
+| accessCode | String | NULL | 6-digit invite code (phase 07); null = code sharing off |
+| whitelist | String[] | NOT NULL, DEFAULT [], GIN index | User IDs granted by the owner (max 2000) |
+| codeGrantedIds | String[] | NOT NULL, DEFAULT [], GIN index | User IDs who unlocked with the code; emptied on code rotate/disable (max 2000) |
 | createdAt | DateTime | NOT NULL | Creation time |
 | updatedAt | DateTime | NOT NULL | Last update |
 | createdBy | String | NULL | Creator ID |
 | updatedBy | String | NULL | Updater ID |
 
 **Relationships**:
-- Many-to-One with User via `userId` (Cascade delete)
+- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
 - One-to-Many with QuizSetLabel via `quizSetId`
 - One-to-Many with DetailsQuizQuestion via `quizSetId`
 - One-to-Many with ExamRoom via `quizSetId`
@@ -339,7 +372,7 @@ erDiagram
 
 ### MODEL-008 QuizSetLabel
 
-**Description**: Chapter/section label within a QuizSet, used to organize and optionally select questions by category.
+**Owner**: content-service. **Description**: Chapter/section label within a QuizSet, used to organize and optionally select questions by category.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -365,7 +398,7 @@ erDiagram
 
 ### MODEL-009 QuizQuestion
 
-**Description**: A reusable question item. The same question can be instantiated in multiple QuizSets via DetailsQuizQuestion.
+**Owner**: content-service. **Description**: A reusable question item. The same question can be instantiated in multiple QuizSets via DetailsQuizQuestion.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -385,7 +418,7 @@ erDiagram
 
 ### MODEL-010 DetailsQuizQuestion
 
-**Description**: Join table that places a QuizQuestion into a specific QuizSet, optionally tagging it with a label. Enables many-to-many relationship with per-instance metadata.
+**Owner**: content-service. **Description**: Join table that places a QuizQuestion into a specific QuizSet, optionally tagging it with a label. Enables many-to-many relationship with per-instance metadata.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -410,20 +443,20 @@ erDiagram
 
 ### MODEL-011 HistoryGeneratedQuizz
 
-**Description**: Record of an AI-generated batch of quiz questions from a source document (UserStorage). Links back to the generated DetailsQuizQuestion instances.
+**Owner**: content-service. **Description**: Record of an AI-generated batch of quiz questions from a source document (UserStorage). Links back to the generated DetailsQuizQuestion instances.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Batch ID |
-| userId | String | FK, NOT NULL | User who triggered generation |
-| userStorageId | String | FK, NULL | Source document (UserStorage) |
+| userId | String | NOT NULL, INDEX | User who triggered generation |
+| userStorageId | String | NULL, INDEX | Source document (`UserStorage.id` in document-service, no FK; nulled on `document.deleted`) |
 | quizzes | Json | NOT NULL | Serialized quiz data (question objects) |
 | createdAt | DateTime | NOT NULL | Generation time |
 | updatedAt | DateTime | NOT NULL | Last update |
 
 **Relationships**:
-- Many-to-One with User via `userId` (Cascade delete)
-- Many-to-One with UserStorage via `userStorageId` (SetNull on delete)
+- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
+- Logical link to UserStorage via `userStorageId` (plain column since phase 15; set to null on `document.deleted`)
 - One-to-Many with DetailsQuizQuestion via `historyGeneratedQuizzId`
 
 **Discriminator Fields**: None.
@@ -432,13 +465,13 @@ erDiagram
 
 ### MODEL-012 FlashCardSet
 
-**Description**: A authored flashcard deck. Supports public/private visibility and optional 6-digit access code for private sharing.
+**Owner**: content-service. **Description**: A authored flashcard deck. Supports public/private visibility and optional 6-digit access code for private sharing.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | FlashCardSet ID |
 | title | String | NOT NULL | Deck title |
-| userId | String | FK, NOT NULL | Author user ID |
+| userId | String | NOT NULL, INDEX | Author user ID |
 | thumbnail | String | NULL | Cover image URL |
 | description | String | NULL | Optional description |
 | tag | String[] | NOT NULL, DEFAULT [] | Tag list |
@@ -446,14 +479,15 @@ erDiagram
 | isPinned | Boolean | NOT NULL, DEFAULT false | Pinned in author UI |
 | viewCount | Int | NOT NULL, DEFAULT 0 | Public view counter |
 | accessCode | String | NULL, INDEXED | 6-digit private access code |
-| whitelist | String[] | NOT NULL, DEFAULT [] | User IDs with explicit access |
+| whitelist | String[] | NOT NULL, DEFAULT [] | User IDs with explicit access (max 2000) |
+| codeGrantedIds | String[] | NOT NULL, DEFAULT [] | User IDs who unlocked with the code (phase 07); emptied on code rotate/disable |
 | createdAt | DateTime | NOT NULL | Creation time |
 | updatedBy | String | NULL | Updater ID |
 | createdBy | String | NULL | Creator ID |
 | updatedAt | DateTime | NOT NULL | Last update |
 
 **Relationships**:
-- Many-to-One with User via `userId` (Cascade delete)
+- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
 - One-to-Many with FlashCardSetLabel via `flashCardSetId`
 - One-to-Many with DetailsFlashCard via `flashCardSetId`
 - One-to-Many with FlashCardViewHistory via `flashCardSetId`
@@ -466,7 +500,7 @@ erDiagram
 
 ### MODEL-013 FlashCardSetLabel
 
-**Description**: Chapter/section label within a FlashCardSet, used to organize and optionally select cards by category.
+**Owner**: content-service. **Description**: Chapter/section label within a FlashCardSet, used to organize and optionally select cards by category.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -492,7 +526,7 @@ erDiagram
 
 ### MODEL-014 FlashCard
 
-**Description**: A reusable flashcard item (question/answer pair). Can be instantiated in multiple FlashCardSets.
+**Owner**: content-service. **Description**: A reusable flashcard item (question/answer pair). Can be instantiated in multiple FlashCardSets.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -511,7 +545,7 @@ erDiagram
 
 ### MODEL-015 DetailsFlashCard
 
-**Description**: Join table that places a FlashCard into a specific FlashCardSet, optionally tagging it with a label. Many-to-many with per-instance metadata.
+**Owner**: content-service. **Description**: Join table that places a FlashCard into a specific FlashCardSet, optionally tagging it with a label. Many-to-many with per-instance metadata.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -536,20 +570,20 @@ erDiagram
 
 ### MODEL-016 HistoryGeneratedFlashcard
 
-**Description**: Record of an AI-generated batch of flashcards from a source document (UserStorage). Links back to the generated DetailsFlashCard instances.
+**Owner**: content-service. **Description**: Record of an AI-generated batch of flashcards from a source document (UserStorage). Links back to the generated DetailsFlashCard instances.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Batch ID |
-| userId | String | FK, NOT NULL | User who triggered generation |
-| userStorageId | String | FK, NULL | Source document (UserStorage) |
+| userId | String | NOT NULL, INDEX | User who triggered generation |
+| userStorageId | String | NULL, INDEX | Source document (`UserStorage.id` in document-service, no FK; nulled on `document.deleted`) |
 | flashcards | Json | NOT NULL | Serialized flashcard data |
 | createdAt | DateTime | NOT NULL | Generation time |
 | updatedAt | DateTime | NOT NULL | Last update |
 
 **Relationships**:
-- Many-to-One with User via `userId` (Cascade delete)
-- Many-to-One with UserStorage via `userStorageId` (SetNull on delete)
+- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
+- Logical link to UserStorage via `userStorageId` (plain column since phase 15; set to null on `document.deleted`)
 - One-to-Many with DetailsFlashCard via `historyGeneratedFlashcardId`
 
 **Discriminator Fields**: None.
@@ -560,23 +594,25 @@ erDiagram
 
 ### MODEL-017 ExamRoom
 
-**Description**: A hosted exam event. References a QuizSet as content source and has a host (User). One ExamRoom can have multiple ExamSessions (e.g., scheduled re-runs).
+**Owner**: assessment-service. **Description**: A hosted exam event. References a QuizSet as content source and has a host (User). One ExamRoom can have multiple ExamSessions (e.g., scheduled re-runs).
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | ExamRoom ID |
 | title | String | NOT NULL | Room title |
 | description | String | NULL | Room description |
-| quizSetId | String | FK, NOT NULL | Source QuizSet ID |
-| hostId | String | FK, NOT NULL | Host User ID |
+| quizSetId | String | NOT NULL, INDEX | Source QuizSet ID (content-service, no FK) |
+| quizSetTitle | String | NOT NULL, DEFAULT "" | Title of the set when the room was created or re-pointed; student views read this and never call content |
+| sourceDeleted | Boolean | NOT NULL, DEFAULT false | Set by `content.quizset.deleted`: no new session can be created, existing sessions keep their snapshot |
+| hostId | String | NOT NULL, INDEX | Host User ID |
 | createdAt | DateTime | NOT NULL | Creation |
 | updatedAt | DateTime | NOT NULL | Last update |
 | createdBy | String | NULL | Creator ID |
 | updatedBy | String | NULL | Updater ID |
 
 **Relationships**:
-- Many-to-One with User (host) via `hostId` (Cascade delete)
-- Many-to-One with QuizSet via `quizSetId` (Cascade delete)
+- Logical link to User (auth-service) via `hostId` (plain column, no FK since phase 11)
+- Logical link to QuizSet (content-service) via `quizSetId` (plain column, no FK; `sourceDeleted` is set on `content.quizset.deleted`)
 - One-to-Many with ExamSession via `examRoomId`
 - One-to-Many with UserPinnedExamRoom via `examRoomId`
 
@@ -586,7 +622,7 @@ erDiagram
 
 ### MODEL-018 ExamSession
 
-**Description**: A specific scheduled instance of an ExamRoom. Holds scheduling, access control, question selection, and timing configuration. Students attempt via ExamAttempt.
+**Owner**: assessment-service. **Description**: A specific scheduled instance of an ExamRoom. Holds scheduling, access control, question selection, and timing configuration. Students attempt via ExamAttempt.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -601,11 +637,14 @@ erDiagram
 | allowRetake | Boolean | NOT NULL, DEFAULT false | Allow multiple attempts |
 | maxAttempts | Int | NOT NULL, DEFAULT 1 | Max allowed attempts |
 | accessCode | String | NULL, INDEXED | 6-digit private code |
-| whitelist | String[] | NOT NULL, DEFAULT [] | User IDs with explicit access |
+| whitelist | String[] | NOT NULL, DEFAULT [] | User IDs with explicit access (max 2000 on write) |
+| codeGrantedIds | String[] | NOT NULL, DEFAULT [] | User IDs who unlocked with the code (phase 07); emptied when the code changes or is cleared |
 | showAnswersAfterSubmit | Boolean | NOT NULL, DEFAULT true | Show answer details on submit |
 | passingScore | Float | NOT NULL, DEFAULT 0 | Min score % to pass (0 = no min) |
 | questionCount | Int | NULL | Total questions to select (null = all) |
 | questionSelectionMode | Int | NOT NULL, DEFAULT 0 | Question selection strategy |
+| quizSnapshot | Json | NOT NULL | Immutable copy of the quiz set taken at creation (`QuizSnapshotV1`: `v`, `quizSetId`, `title`, `takenAt`, `contentHash`, `labels`, `questions`); validated with zod on every read, hidden from default Prisma selects; rewritten only by `refresh-snapshot` |
+| quizSnapshotHash | String | NOT NULL | `contentHash` of the snapshot: in-process cache key and the drift check against content |
 | labelQuestionConfig | Json | NULL | Array of { labelId, count } for RANDOM_BY_LABEL |
 | shuffleQuestions | Boolean | NOT NULL, DEFAULT false | Shuffle question order per attempt |
 | createdAt | DateTime | NOT NULL | Creation |
@@ -616,6 +655,7 @@ erDiagram
 **Relationships**:
 - Many-to-One with ExamRoom via `examRoomId` (Cascade delete)
 - One-to-Many with ExamAttempt via `examSessionId`
+- The quiz is read only from `quizSnapshot`; `POST /examsessions/:id/refresh-snapshot` re-takes it while the session is `UPCOMING` and has 0 attempts (else 409 `SNAPSHOT_LOCKED`); snapshots over 1 MB are refused (422 `QUIZSET_TOO_LARGE`)
 
 **Discriminator Fields**:
 
@@ -631,13 +671,13 @@ erDiagram
 
 ### MODEL-019 ExamAttempt
 
-**Description**: A single student's attempt at an ExamSession. Tracks answers, score, violation count, and attempt lifecycle. Answers stored as JSON map (questionId -> selectedAnswer).
+**Owner**: assessment-service. **Description**: A single student's attempt at an ExamSession. Tracks answers, score, violation count, and attempt lifecycle. Answers stored as JSON map (questionId -> selectedAnswer).
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Attempt ID |
 | examSessionId | String | FK, NOT NULL | Session being attempted |
-| userId | String | FK, NOT NULL | Student User ID |
+| userId | String | NOT NULL, INDEX | Student User ID |
 | score | Float | NOT NULL | Calculated score |
 | violationCount | Int | NOT NULL, DEFAULT 0 | Total cheating violations |
 | startedAt | DateTime | NOT NULL | Attempt start time |
@@ -656,7 +696,7 @@ erDiagram
 
 **Relationships**:
 - Many-to-One with ExamSession via `examSessionId` (Cascade delete)
-- Many-to-One with User via `userId` (Cascade delete)
+- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
 - One-to-Many with CheatingLog via `examAttemptId`
 
 **Discriminator Fields**:
@@ -669,7 +709,7 @@ erDiagram
 
 ### MODEL-020 CheatingLog
 
-**Description**: Per-attempt, per-type violation counter. One record per violation type (upserted by type). Tab switch, window blur, devtools open, copy-paste, right-click, fullscreen exit, print screen.
+**Owner**: assessment-service. **Description**: Per-attempt, per-type violation counter. One record per violation type (upserted by type). Tab switch, window blur, devtools open, copy-paste, right-click, fullscreen exit, print screen.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -694,13 +734,13 @@ erDiagram
 
 ### MODEL-021 QuizPracticeAttempt
 
-**Description**: A student's practice or real exam attempt on a QuizSet (outside of a scheduled ExamSession). Tracks answers, time, and score. One record per user per quizSet per type.
+**Owner**: content-service. **Description**: A student's practice or real exam attempt on a QuizSet (outside of a scheduled ExamSession). Tracks answers, time, and score. Since phase 07 a user may hold many records per quizSet (history); at most one open (`isSubmitted=false`) attempt is resumed.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Attempt ID |
 | quizSetId | String | FK, NOT NULL | Target QuizSet ID |
-| userId | String | FK, NOT NULL | Student User ID |
+| userId | String | NOT NULL, INDEX | Student User ID |
 | type | Int | NOT NULL, DEFAULT 0 | Attempt type |
 | answers | Json | NOT NULL, DEFAULT "{}" | Map of questionId -> selectedAnswer |
 | currentIndex | Int | NOT NULL, DEFAULT 0 | Current question navigator index |
@@ -709,6 +749,7 @@ erDiagram
 | timeLimitMinutes | Int | NULL | Time limit in minutes (null = unlimited) |
 | isSubmitted | Boolean | NOT NULL, DEFAULT false | Submission flag |
 | score | Float | NULL | Calculated score (null until submitted) |
+| resultSnapshot | Json | NULL | Frozen per-question result (`id, question, options, selectedAnswer, correctAnswer, isCorrect`) written at submit; later edits to the set do not change it |
 | totalQuestions | Int | NOT NULL, DEFAULT 0 | Total questions |
 | correctAnswers | Int | NOT NULL, DEFAULT 0 | Correct answer count |
 | startedAt | DateTime | NOT NULL | Attempt start |
@@ -720,7 +761,7 @@ erDiagram
 
 **Relationships**:
 - Many-to-One with QuizSet via `quizSetId` (Cascade delete)
-- Many-to-One with User via `userId` (Cascade delete)
+- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
 
 **Discriminator Fields**:
 
@@ -735,19 +776,19 @@ erDiagram
 
 ### MODEL-022 FlashCardViewHistory
 
-**Description**: Denormalized view event log for a user viewing a flashcard deck. Used for "recently viewed" and analytics.
+**Owner**: content-service. **Description**: Denormalized view event log for a user viewing a flashcard deck. Used for "recently viewed" and analytics.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Record ID |
-| userId | String | FK, NOT NULL | Viewer User ID |
+| userId | String | NOT NULL, INDEX | Viewer User ID |
 | flashCardSetId | String | FK, NOT NULL | Viewed FlashCardSet ID |
 | viewedAt | DateTime | NOT NULL | View timestamp |
 | createdAt | DateTime | NOT NULL | Creation |
 | updatedAt | DateTime | NOT NULL | Last update |
 
 **Relationships**:
-- Many-to-One with User via `userId` (Cascade delete)
+- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
 - Many-to-One with FlashCardSet via `flashCardSetId` (Cascade delete)
 
 **Discriminator Fields**: None.
@@ -756,12 +797,12 @@ erDiagram
 
 ### MODEL-023 FlashcardStudyProgress
 
-**Description**: Per-user, per-deck study progress tracker. Stores which cards have been studied.
+**Owner**: content-service. **Description**: Per-user, per-deck study progress tracker. Stores which cards have been studied.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Progress ID |
-| userId | String | FK, NOT NULL | Student User ID |
+| userId | String | NOT NULL, INDEX | Student User ID |
 | flashCardSetId | String | FK, NOT NULL | Target deck ID |
 | studiedCardIds | String[] | NOT NULL, DEFAULT [] | IDs of cards the user has studied |
 | totalCards | Int | NOT NULL, DEFAULT 0 | Total cards in the deck |
@@ -769,7 +810,7 @@ erDiagram
 | updatedAt | DateTime | NOT NULL | Last update |
 
 **Relationships**:
-- Many-to-One with User via `userId` (Cascade delete)
+- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
 - Many-to-One with FlashCardSet via `flashCardSetId` (Cascade delete)
 
 **Discriminator Fields**: None.
@@ -781,17 +822,17 @@ erDiagram
 
 ### MODEL-024 UserPinnedFlashcard
 
-**Description**: User's pinned flashcard deck (for quick access). One pin per user per deck.
+**Owner**: content-service. **Description**: User's pinned flashcard deck (for quick access). One pin per user per deck.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Pin record ID |
-| userId | String | FK, NOT NULL | User ID |
+| userId | String | NOT NULL, INDEX | User ID |
 | flashcardSetId | String | FK, NOT NULL | Pinned FlashCardSet ID |
 | pinnedAt | DateTime | NOT NULL | Pin timestamp |
 
 **Relationships**:
-- Many-to-One with User via `userId` (Cascade delete)
+- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
 - Many-to-One with FlashCardSet via `flashcardSetId` (Cascade delete)
 
 **Discriminator Fields**: None.
@@ -803,17 +844,17 @@ erDiagram
 
 ### MODEL-025 UserPinnedExamRoom
 
-**Description**: User's pinned exam room (for quick access). One pin per user per room.
+**Owner**: assessment-service. **Description**: User's pinned exam room (for quick access). One pin per user per room.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Pin record ID |
-| userId | String | FK, NOT NULL | User ID |
+| userId | String | NOT NULL, INDEX | User ID |
 | examRoomId | String | FK, NOT NULL | Pinned ExamRoom ID |
 | pinnedAt | DateTime | NOT NULL | Pin timestamp |
 
 **Relationships**:
-- Many-to-One with User via `userId` (Cascade delete)
+- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
 - Many-to-One with ExamRoom via `examRoomId` (Cascade delete)
 
 **Discriminator Fields**: None.
@@ -827,13 +868,13 @@ erDiagram
 
 ### MODEL-026 Payment
 
-**Description**: A payment intent/order. Tracks payment status and links to SePay VA (virtual account) for bank transfer flows.
+**Owner**: finance-service. **Description**: A payment intent/order. Tracks payment status and links to SePay VA (virtual account) for bank transfer flows.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, UNIQUE, NOT NULL | Payment ID |
-| userId | String | FK, NOT NULL | Payer User ID |
-| amount | Float | NOT NULL | Payment amount |
+| userId | String | NOT NULL, INDEX | Payer User ID |
+| amount | Int | NOT NULL | Payment amount |
 | currency | String | NOT NULL | Currency code (e.g., "VND") |
 | status | Int | NOT NULL | Payment lifecycle state |
 | paymentType | String | NOT NULL, DEFAULT "credits" | credits \| subscription |
@@ -844,9 +885,10 @@ erDiagram
 | updatedAt | DateTime | NOT NULL | Last update |
 | createdBy | String | NULL | Creator ID |
 | updatedBy | String | NULL | Updater ID |
+| refundIdempotencyKey | String | NULL, UNIQUE | Admin refund de-duplication key (finance `RefundPayment`); a replay answers `alreadyApplied` |
 
 **Relationships**:
-- Many-to-One with User via `userId` (Cascade delete)
+- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
 
 **Discriminator Fields**:
 
@@ -862,20 +904,20 @@ erDiagram
 
 ### MODEL-027 Wallet
 
-**Description**: User's credit wallet. One wallet per user with a running balance.
+**Owner**: finance-service. **Description**: User's credit wallet. One wallet per user with a running balance.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, UNIQUE, NOT NULL | Wallet ID |
-| userId | String | FK, UNIQUE, NOT NULL | Owner User ID |
-| balance | Float | NOT NULL, DEFAULT 0 | Current credit balance |
+| userId | String | UNIQUE, NOT NULL | Owner User ID |
+| balance | Int | NOT NULL, DEFAULT 0 | Current credit balance (whole credits) |
 | createdBy | String | NULL | Creator ID |
 | updatedBy | String | NULL | Updater ID |
 | createdAt | DateTime | NOT NULL | Creation |
 | updatedAt | DateTime | NOT NULL | Last update |
 
 **Relationships**:
-- One-to-One with User via `userId` (Cascade delete)
+- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
 - One-to-Many with WalletTransaction via `walletId`
 
 **Discriminator Fields**: None.
@@ -888,7 +930,7 @@ erDiagram
 
 ### MODEL-028 WalletTransaction
 
-**Description**: Immutable ledger entry for wallet balance changes. Balance is computed from the running sum of transactions (not stored as a snapshot).
+**Owner**: finance-service. **Description**: Immutable ledger entry for wallet balance changes. Balance is computed from the running sum of transactions (not stored as a snapshot).
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -897,11 +939,13 @@ erDiagram
 | updatedAt | DateTime | NOT NULL | Last update |
 | createdBy | String | NULL | Creator ID |
 | updatedBy | String | NULL | Updater ID |
-| amount | Float | NOT NULL | Transaction amount (absolute value) |
+| amount | Int | NOT NULL | Transaction amount (absolute value, whole credits) |
 | type | Int | NOT NULL | Transaction category |
 | direction | String | NOT NULL, DEFAULT "SUBTRACT" | ADD \| SUBTRACT |
 | description | String | NULL | Human-readable transaction description |
 | createdAt | DateTime | NOT NULL | Transaction time |
+| idempotencyKey | String | NULL | Money RPC de-duplication key, namespaced `debit:` `credit:` `refund:` `adjust:` `refund-payment:` `welcome:`; NULL on legacy rows |
+| balanceAfter | Int | NULL | Wallet balance right after this transaction |
 
 **Relationships**:
 - Many-to-One with Wallet via `walletId` (Cascade delete)
@@ -915,6 +959,7 @@ erDiagram
 
 **Unique Codes**:
 - `MODEL-028-UK-01`: `id` (primary key, explicit unique)
+- Composite unique on `(walletId, idempotencyKey)` (Prisma `@@unique`)
 
 ---
 
@@ -922,12 +967,12 @@ erDiagram
 
 ### MODEL-029 UserStorage
 
-**Description**: User-uploaded file record. Stores metadata and R2/CDN URL. Also the anchor for document processing pipeline (OCR, chunking, graph building).
+**Owner**: document-service. **Description**: User-uploaded file record, owned by document-service (schema `document`, phase 15). Stores metadata and R2/CDN URL. Also the anchor for document processing pipeline (OCR, chunking, graph building, done by ai-service).
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, UNIQUE, NOT NULL | Storage record ID |
-| userId | String | FK, NOT NULL | Owner User ID |
+| userId | String | NOT NULL, INDEX | Owner User ID |
 | filename | String | NOT NULL | Original filename |
 | url | String | NOT NULL | CDN/R2 public URL |
 | mimetype | String | NOT NULL | MIME type |
@@ -935,24 +980,23 @@ erDiagram
 | keyR2 | String | UNIQUE, NOT NULL | R2 storage key |
 | createdAt | DateTime | NOT NULL | Upload time |
 | updatedAt | DateTime | NOT NULL | Last update |
-| processingStatus | String | NOT NULL, DEFAULT "COMPLETED" | Processing pipeline state |
-| creditCharged | Boolean | NOT NULL, DEFAULT false | OCR credit deduction flag |
+| processingStatus | String | NOT NULL, DEFAULT "PENDING" | Processing pipeline state (`PENDING_CHARGE` only between insert and debit) |
+| creditCharged | Boolean | NOT NULL, DEFAULT false | True once `Debit(doc:<id>)` succeeded; drives the refund when processing fails (cleared by that refund) |
+| chargeFailedAt | DateTime | NULL | Set when the upload credit was refused or timed out: the row is hidden and not counted in the quota |
+| refundSettledAt | DateTime | NULL | When the compensation of a charge-failed row is done; null on such a row = a refund may still be owed |
+| queuedAt | DateTime | NULL | When `document.uploaded` was last written to the outbox; null = never queued (quick-upload) |
+| pageCount | Int | NOT NULL, DEFAULT 0 | Pages found by OCR (`ai.document.processed`) |
 
 **Relationships**:
-- Many-to-One with User via `userId` (Cascade delete)
-- One-to-Many with Document via `userStorageId`
-- One-to-Many with DocumentEntity via `userStorageId`
-- One-to-One with UserStorageGraph via `userStorageId`
-- One-to-Many with UserStorageGraphGroup via `userStorageId`
-- One-to-Many with HistoryGeneratedQuizz via `userStorageId`
-- One-to-Many with HistoryGeneratedFlashcard via `userStorageId`
-- One-to-Many with AIChatDocument via `documentId`
+- Logical link to User via `userId` (no FK since phase 11)
+- Logical links from ai-service `Document`, `DocumentEntity`, `UserStorageGraph`, `UserStorageGraphGroup` via `userStorageId` (no FK since phase 15)
+- Logical links from content `HistoryGeneratedQuizz`, `HistoryGeneratedFlashcard` via `userStorageId` and `GenerationJob` via `storageId`, and from ai-chat `AIChatDocument` via `documentId` (no FK since phase 15)
 
 **Discriminator Fields**:
 
 | Field | DISC-### | Values | Description |
 |-------|----------|--------|-------------|
-| processingStatus | DISC-014 | PENDING, PROCESSING, COMPLETED, FAILED | Document processing pipeline state |
+| processingStatus | DISC-014 | PENDING_CHARGE, PENDING, PROCESSING, COMPLETED, FAILED | Document processing pipeline state |
 
 **Unique Codes**:
 - `MODEL-029-UK-01`: `id` (primary key, explicit unique)
@@ -962,12 +1006,12 @@ erDiagram
 
 ### MODEL-030 Document
 
-**Description**: Chunked and embedded content from a UserStorage file. One Document per file (1:1 with UserStorage). Content is stored alongside a vector embedding for semantic search.
+**Owner**: ai-service (schema `ai`). **Description**: Chunked and embedded content from a UserStorage file. One Document per file (1:1 with UserStorage). Content is stored alongside a vector embedding for semantic search.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, UNIQUE, NOT NULL | Document ID |
-| userStorageId | String | FK, NOT NULL | Source UserStorage ID |
+| userStorageId | String | NOT NULL, INDEX | Source UserStorage ID (document-service, no FK) |
 | pageRange | String | NOT NULL | Pages included (e.g., "1-10") |
 | title | String | NULL | Document title |
 | content | String | NOT NULL | Extracted text content |
@@ -976,7 +1020,7 @@ erDiagram
 | updatedAt | DateTime | NOT NULL | Last update |
 
 **Relationships**:
-- Many-to-One with UserStorage via `userStorageId` (Cascade delete)
+- Logical link to UserStorage via `userStorageId` (no FK since phase 15; ai-service deletes these rows on `document.deleted`)
 
 **Discriminator Fields**: None.
 
@@ -987,12 +1031,12 @@ erDiagram
 
 ### MODEL-031 DocumentEntity
 
-**Description**: Named entity extracted from a document (person, concept, formula, etc.). Used for knowledge graph and entity-based retrieval.
+**Owner**: ai-service (schema `ai`). **Description**: Named entity extracted from a document (person, concept, formula, etc.). Used for knowledge graph and entity-based retrieval.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Entity ID |
-| userStorageId | String | FK, NOT NULL | Source UserStorage ID |
+| userStorageId | String | NOT NULL, INDEX | Source UserStorage ID (document-service, no FK) |
 | chunkId | String | NULL | Source chunk ID |
 | name | String | NOT NULL | Entity name |
 | type | String | NOT NULL | Entity type (e.g., "person", "formula") |
@@ -1001,7 +1045,7 @@ erDiagram
 | createdAt | DateTime | NOT NULL | Creation |
 
 **Relationships**:
-- Many-to-One with UserStorage via `userStorageId` (Cascade delete)
+- Logical link to UserStorage via `userStorageId` (no FK since phase 15; ai-service deletes these rows on `document.deleted`)
 
 **Discriminator Fields**: None.
 
@@ -1009,12 +1053,12 @@ erDiagram
 
 ### MODEL-032 UserStorageGraph
 
-**Description**: Community detection graph built from a UserStorage document. One graph per file. Stores graph metadata, version, and community statistics.
+**Owner**: ai-service (schema `ai`). **Description**: Community detection graph built from a UserStorage document. One graph per file. Stores graph metadata, version, and community statistics.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Graph ID |
-| userStorageId | String | FK, UNIQUE, NOT NULL | Source UserStorage ID |
+| userStorageId | String | UNIQUE, NOT NULL | Source UserStorage ID (document-service, no FK) |
 | graphVersion | Int | NOT NULL, DEFAULT 1 | Graph build version |
 | chunkSignature | String | NOT NULL | Hash of chunks used (for invalidation) |
 | status | String | NOT NULL, DEFAULT "READY" | Graph readiness state |
@@ -1027,7 +1071,7 @@ erDiagram
 | updatedAt | DateTime | NOT NULL | Last update |
 
 **Relationships**:
-- Many-to-One with UserStorage via `userStorageId` (Cascade delete)
+- Logical link to UserStorage via `userStorageId` (no FK since phase 15; ai-service deletes these rows on `document.deleted`)
 - One-to-Many with UserStorageGraphGroup via `graphId`
 
 **Discriminator Fields**: None.
@@ -1039,13 +1083,13 @@ erDiagram
 
 ### MODEL-033 UserStorageGraphGroup
 
-**Description**: A community/group of chunks within a UserStorageGraph. Groups represent semantically coherent sections used for selective RAG retrieval.
+**Owner**: ai-service (schema `ai`). **Description**: A community/group of chunks within a UserStorageGraph. Groups represent semantically coherent sections used for selective RAG retrieval.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Group ID |
 | graphId | String | FK, NOT NULL | Parent UserStorageGraph ID |
-| userStorageId | String | FK, NOT NULL | Source UserStorage ID |
+| userStorageId | String | NOT NULL, INDEX | Source UserStorage ID (document-service, no FK) |
 | groupIndex | Int | NOT NULL | Group index within the graph |
 | communityId | Int | NULL | Louvain community ID |
 | pageStart | Int | NULL | Start page number |
@@ -1062,7 +1106,7 @@ erDiagram
 
 **Relationships**:
 - Many-to-One with UserStorageGraph via `graphId` (Cascade delete)
-- Many-to-One with UserStorage via `userStorageId` (Cascade delete)
+- Logical link to UserStorage via `userStorageId` (no FK since phase 15; ai-service deletes these rows on `document.deleted`)
 
 **Discriminator Fields**: None.
 
@@ -1073,19 +1117,19 @@ erDiagram
 
 ### MODEL-034 AIChat
 
-**Description**: An AI chat session. Can optionally be tied to a Subject (AI teacher). Supports multi-document context via AIChatDocument.
+**Owner**: ai-chat-service. **Description**: An AI chat session. Can optionally be tied to a Subject (AI teacher). Supports multi-document context via AIChatDocument.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Chat ID |
-| userId | String | FK, NOT NULL | Owner User ID |
+| userId | String | NOT NULL, INDEX | Owner User ID |
 | subjectId | String | FK, NULL | AI teacher Subject ID |
 | title | String | NOT NULL, DEFAULT "" | Chat title |
 | createdAt | DateTime | NOT NULL | Creation |
 | updatedAt | DateTime | NOT NULL | Last update |
 
 **Relationships**:
-- Many-to-One with User via `userId` (Cascade delete)
+- Logical link to User (auth-service) via `userId` (plain column, no FK since phase 11)
 - Many-to-One with Subject via `subjectId` (SetNull on delete)
 - One-to-Many with AIChatMessage via `chatId`
 - One-to-Many with AIChatDocument via `chatId`
@@ -1096,7 +1140,7 @@ erDiagram
 
 ### MODEL-035 AIChatMessage
 
-**Description**: A single message in an AIChat session. Stores role, content, and optional image/document attachment.
+**Owner**: ai-chat-service. **Description**: A single message in an AIChat session. Stores role, content, and optional image/document attachment.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -1118,19 +1162,19 @@ erDiagram
 
 ### MODEL-036 AIChatDocument
 
-**Description**: Junction table linking AIChat sessions to UserStorage documents. Enables multi-document chat context. Composite unique prevents duplicate documents per chat.
+**Owner**: ai-chat-service. **Description**: Junction table linking AIChat sessions to UserStorage documents. Enables multi-document chat context. Composite unique prevents duplicate documents per chat.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
 | id | String | PK, NOT NULL | Record ID |
 | chatId | String | FK, NOT NULL | Parent AIChat ID |
-| documentId | String | FK, NOT NULL | UserStorage document ID |
+| documentId | String | NOT NULL, INDEX | UserStorage document ID (document-service, no FK) |
 | documentName | String | NOT NULL | File name for display |
 | createdAt | DateTime | NOT NULL | Attachment time |
 
 **Relationships**:
 - Many-to-One with AIChat via `chatId` (Cascade delete)
-- Many-to-One with UserStorage via `documentId` (Cascade delete)
+- Logical link to UserStorage via `documentId` (no FK since phase 15; the link is removed on `document.deleted`)
 
 **Discriminator Fields**: None.
 
@@ -1141,7 +1185,7 @@ erDiagram
 
 ### MODEL-037 SubjectCategory
 
-**Description**: Top-level category grouping for AI teacher Subjects (e.g., "Mathematics", "Natural Sciences"). Used for UI navigation.
+**Owner**: ai-chat-service. **Description**: Top-level category grouping for AI teacher Subjects (e.g., "Mathematics", "Natural Sciences"). Used for UI navigation.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -1169,7 +1213,7 @@ erDiagram
 
 ### MODEL-038 Subject
 
-**Description**: An AI teacher subject. Each Subject has a system prompt that defines the AI's persona and behavior. Chats link to a Subject.
+**Owner**: ai-chat-service. **Description**: An AI teacher subject. Each Subject has a system prompt that defines the AI's persona and behavior. Chats link to a Subject.
 
 | Attribute | Type | Constraints | Description |
 |-----------|------|-------------|-------------|
@@ -1196,11 +1240,32 @@ erDiagram
 - `MODEL-038-UK-01`: `name` (unique)
 - `MODEL-038-UK-02`: `slug` (unique)
 
+### GenerationJob (content, phase 15; no MODEL code assigned yet, run `/tkm:rebuild-spec` to allocate one)
+
+**Owner**: content-service. **Description**: One quiz/flashcard generation request and the money behind it. Source: `apps/content-service/prisma/schema.prisma`.
+
+| Attribute | Type | Constraints | Description |
+|-----------|------|-------------|-------------|
+| id | String | PK | Job ID (also the `jobId` returned to the client) |
+| userId | String | NOT NULL | Owner (auth user id, no FK) |
+| storageId | String | NOT NULL | Source document (`UserStorage.id` in document-service, no FK) |
+| filename | String | NOT NULL | Source file name |
+| type | String | NOT NULL | `quiz` or `flashcard` |
+| status | String | NOT NULL, DEFAULT "PENDING_CHARGE" | `PENDING_CHARGE`, `QUEUED`, `PROCESSING`, `COMPLETED`, `FAILED`, `CANCELLED` |
+| chargeKey | String | UNIQUE, NOT NULL | Finance idempotency key `gen:<id>` |
+| chargedAmount | Int | NOT NULL, DEFAULT 0 | Credits debited under `chargeKey` (0 = nothing to refund) |
+| refundedAt | DateTime | NULL | Set once the refund of a FAILED/CANCELLED job is settled |
+| options | Json | NOT NULL | `numItems`, `isNarrowSearch`, `keyword?` |
+| model | String | NULL | Model name |
+| error | String | NULL | Failure reason (e.g. `GENERATION_TIMEOUT`) |
+| historyId | String | NULL | `HistoryGeneratedQuizz` / `HistoryGeneratedFlashcard` row of a COMPLETED job |
+| createdAt, updatedAt | DateTime | NOT NULL | Timestamps |
+
 ---
 
 ## Validation Rules
 
-> Derived from NOT NULL, UNIQUE, and CHECK constraints in schema.prisma. Cross-field business rules (e.g., score bounds, expiry validation) must be confirmed against implementation.
+> Derived from NOT NULL, UNIQUE, and CHECK constraints in the per-service Prisma schemas. Cross-field business rules (e.g., score bounds, expiry validation) must be confirmed against implementation.
 
 ### MODEL-001 User
 
@@ -1255,7 +1320,7 @@ erDiagram
 
 | Rule | Field | Constraint | Error Message |
 |------|-------|------------|---------------|
-| VR-010 | quizSetId + userId + type | UNIQUE | One practice/real attempt per user per quizSet per type |
+| VR-010 | quizSetId + userId + type | ~~UNIQUE~~ removed (migration `20261020132225_quiz_sharing`) | Replaced by non-unique index `(quizSetId, userId, isSubmitted)`; attempt history is kept |
 
 ### MODEL-023 FlashcardStudyProgress
 
@@ -1303,7 +1368,7 @@ erDiagram
 |------|--------|-------|--------|-------------------|
 | DISC-001 | ExamSession | status | 0=UPCOMING, 1=ONGOING, 2=ENDED | Controls joinability, timer visibility, and submission behavior |
 | DISC-002 | ExamSession | assessType | 0=PUBLIC, 1=PRIVATE | Controls whether access code/whitelist is required |
-| DISC-003 | Payment | status | 0=unpaid, 1=paid, 2=overdue, 3=cancelled | Gates credit/subscription activation and VA cleanup |
+| DISC-003 | Payment | status | 0=unpaid, 1=paid, 2=overdue, 3=cancelled, 4=refunded | Gates credit/subscription activation and VA cleanup |
 | DISC-004 | UserSubscription | tier | 0=none, 1=basic, 2=advanced, 3=vip | Controls feature access, upload limits, and AI quota |
 | DISC-006 | UserSubscription | billingCycle | monthly, yearly | Determines renewal interval and next payment calculation |
 | DISC-007 | ExamSession | questionSelectionMode | 0=ALL, 1=RANDOM_TOTAL, 2=RANDOM_BY_LABEL | Determines how selectedQuestionIds are populated on ExamAttempt |
@@ -1312,13 +1377,13 @@ erDiagram
 | DISC-010 | WalletTransaction | type | 0=buy credits, 1=buy subscription, 2=refund, 3=admin adjustment, 4=use services | Determines transaction description, ledger category, and side effects |
 | DISC-011 | WalletTransaction | direction | ADD, SUBTRACT | Determines whether amount is added to or subtracted from wallet balance |
 | DISC-012 | Payment | paymentType | credits, subscription | Determines whether payment activates wallet credits or extends subscription |
-| DISC-013 | UserStorage | processingStatus | PENDING, PROCESSING, COMPLETED, FAILED | Controls whether document is available for AI chat and generation |
+| DISC-013 | UserStorage | processingStatus | PENDING_CHARGE, PENDING, PROCESSING, COMPLETED, FAILED | Controls whether document is available for AI chat and generation |
 
 ---
 
 ## Summary
 
-- **Total Entities**: 39
+- **Total Entities**: 49 across 10 schemas (45 Prisma models + 4 ai-service tables, excluding the per-service `OutboxEvent` / `ProcessedEvent` / `R2DeleteTask` infrastructure tables); 41 are detailed above
 - **Total Domains**: 5
 - **Total Unique Constraints**: 24 (composite + scalar)
 - **Total Discriminator Fields**: 14 (DISC-001 through DISC-014)

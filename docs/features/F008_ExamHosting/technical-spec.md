@@ -6,7 +6,7 @@
 
 ## Overview
 
-ExamHosting enables authenticated teachers to create and manage exam rooms, schedule exam sessions within those rooms, configure access control (public/whitelist/access code), and view analytics on student attempts (leaderboard, score distribution, cheating stats). Students can browse available sessions, enter with or without an access code, and attempt exams. The feature spans `SCR016/REG003` (exam room grid on MyMaterialsPage), `SCR018/REG002` and `SCR018/REG003` (exam history and stats on HistoryPage), `SCR019` (exam history page), `SCR021` (manage exam page), `SCR026` (manage exam room page), `SCR027/REG001–REG004` (exam room detail with stats, info, sessions, sharing), `SCR028` (session analytics page), `SCR029` (my exams page), and `SCR031` (exam session entry page). Backend lives in `examio-be/apps/exam-service/src/modules/exam-room/` and `examio-be/apps/exam-service/src/modules/exam-session/`.
+ExamHosting enables authenticated teachers to create and manage exam rooms, schedule exam sessions within those rooms, configure access control (public/whitelist/access code), and view analytics on student attempts (leaderboard, score distribution, cheating stats). Students can browse available sessions, enter with or without an access code, and attempt exams. The feature spans `SCR016/REG003` (exam room grid on MyMaterialsPage), `SCR018/REG002` and `SCR018/REG003` (exam history and stats on HistoryPage), `SCR019` (exam history page), `SCR021` (manage exam page), `SCR026` (manage exam room page), `SCR027/REG001–REG004` (exam room detail with stats, info, sessions, sharing), `SCR028` (session analytics page), `SCR029` (my exams page), and `SCR031` (exam session entry page). Backend lives in `examio-be/apps/assessment-service/src/modules/examroom/` and `examio-be/apps/assessment-service/src/modules/examsession/`.
 
 ## Polymorphic Behavior
 
@@ -151,7 +151,7 @@ None.
 
 **INT-008_01 — Secure Quiz Fetch (Encrypted Questions)**
 **Linked FR:** FR-008_14
-**Source:** `examio-be/apps/exam-service/src/modules/exam-session/exam-session.service.ts` (inferred)
+**Source:** `examio-be/apps/assessment-service/src/modules/examsession/examsession.service.ts` (inferred)
 **Type:** api-call
 **Target:** exam-service
 **Trigger:** `POST /api/v1/secure-quiz`
@@ -160,7 +160,7 @@ None.
 
 **INT-008_02 — Secure Submit (JWT-wrapped Answer Submission)**
 **Linked FR:** FR-008_15
-**Source:** `examio-be/apps/exam-service/src/modules/exam-session/exam-session.service.ts` (inferred)
+**Source:** `examio-be/apps/assessment-service/src/modules/examsession/examsession.service.ts` (inferred)
 **Type:** api-call
 **Target:** exam-service
 **Trigger:** Student clicks Submit or timer expires
@@ -544,11 +544,11 @@ None.
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| ExamRoomController | `examio-be/apps/exam-service/src/modules/exam-room/exam-room.controller.ts` | REST endpoints for exam room CRUD |
-| ExamRoomService | `examio-be/apps/exam-service/src/modules/exam-room/exam-room.service.ts` | Business logic for room operations |
-| ExamSessionController | `examio-be/apps/exam-service/src/modules/exam-session/exam-session.controller.ts` | REST endpoints for session CRUD and sharing |
-| ExamSessionService | `examio-be/apps/exam-service/src/modules/exam-session/exam-session.service.ts` | Business logic for session lifecycle |
-| ExamAttemptService | `examio-be/apps/exam-service/src/modules/exam-attempt/exam-attempt.service.ts` | Attempt creation, submission, grading |
+| ExamRoomController | `examio-be/apps/assessment-service/src/modules/examroom/examroom.controller.ts` | REST endpoints for exam room CRUD |
+| ExamRoomService | `examio-be/apps/assessment-service/src/modules/examroom/examroom.service.ts` | Business logic for room operations |
+| ExamSessionController | `examio-be/apps/assessment-service/src/modules/examsession/examsession.controller.ts` | REST endpoints for session CRUD and sharing |
+| ExamSessionService | `examio-be/apps/assessment-service/src/modules/examsession/examsession.service.ts` | Business logic for session lifecycle |
+| ExamAttemptService | `examio-be/apps/assessment-service/src/modules/examattempt/examattempt.service.ts` | Attempt creation, submission, grading |
 | useCheatingDetection | `examio-fe/src/hooks/useCheatingDetection.ts` | Browser event listeners for integrity violations (BL013) |
 | ExamQuizPage | `examio-fe/src/pages/exam-session/ExamQuizPage.tsx` | Active exam UI with auto-save polling (BL016) |
 | ExamRoomDetailTemplate | `examio-fe/src/pages/k/ExamSessionPage.tsx` | Session entry page with access check |

@@ -6,7 +6,7 @@
 
 ## Overview
 
-FlashcardAuthoring enables authenticated teachers to create, edit, and delete flashcard sets; manage labels and flashcards within each set; control visibility (public/private with optional 6-digit access code); and generate flashcards from uploaded documents via AI. The feature spans `SCR016/REG002` (flashcard set grid on MyMaterialsPage), `SCR017` (flashcard browsing and AI generation), and `SCR023` (flashcard set detail page). Backend lives in `examio-be/apps/exam-service/src/modules/flashcardset/` and the AI generation pipeline in `examio-be/apps/exam-service/src/modules/ai/`.
+FlashcardAuthoring enables authenticated teachers to create, edit, and delete flashcard sets; manage labels and flashcards within each set; control visibility (public/private with optional 6-digit access code); and generate flashcards from uploaded documents via AI. The feature spans `SCR016/REG002` (flashcard set grid on MyMaterialsPage), `SCR017` (flashcard browsing and AI generation), and `SCR023` (flashcard set detail page). Backend lives in `examio-be/apps/content-service/src/modules/flashcardset/` and the AI generation pipeline in `examio-be/apps/content-service/src/modules/ai/`.
 
 ## Polymorphic Behavior
 
@@ -319,8 +319,8 @@ None.
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| FlashcardSetController | `examio-be/apps/exam-service/src/modules/flashcardset/flashcardset.controller.ts` | REST endpoints for flashcard set CRUD |
-| FlashcardSetService | `examio-be/apps/exam-service/src/modules/flashcardset/flashcardset.service.ts` | Business logic for flashcard set operations |
+| FlashcardSetController | `examio-be/apps/content-service/src/modules/flashcardset/flashcardset.controller.ts` | REST endpoints for flashcard set CRUD |
+| FlashcardSetService | `examio-be/apps/content-service/src/modules/flashcardset/flashcardset.service.ts` | Business logic for flashcard set operations |
 | FlashcardController | `examio-be/apps/exam-service/src/modules/flashcardset/flashcard.controller.ts` | Flashcard CRUD within sets |
 | AIJobController | `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` | AI job create/poll/cancel |
 | FinanceClientService | `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` | Credit check (BL004) |
@@ -331,7 +331,7 @@ None.
 
 ## Unresolved Questions
 
-1. **Credit refund policy on failed jobs**: Are credits automatically restored if a flashcard generation job fails after deduction?
+1. ~~**Credit refund policy on failed jobs**~~ — resolved in phase 15: a failed, cancelled or timed-out charged job is refunded once (`Refund` key `gen:<jobId>`).
 2. **Access code enforcement**: Is the 6-digit access code validated server-side on every study session access, or only on initial entry?
 3. **Cascade delete scope**: Does deleting a FlashCardSet also delete the associated `FlashcardStudyProgress` records for students who studied the set?
 4. **DetailsFlashCard usage**: Is the join table populated for all cards, or only when a label is assigned? If label assignment is optional, how does the system handle cards without a DetailsFlashCard row?

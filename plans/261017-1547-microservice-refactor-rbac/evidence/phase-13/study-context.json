@@ -1,0 +1,45 @@
+{
+ "task": "Phase 13 Extract AI-Chat: new ai-chat-service (ai-chat + subjects, schema aichat, AiService Query/StreamChat over gRPC with svc:ai-chat token, manual SSE, document RPCs, clear/delete chat with DeleteDocuments + r2_delete_tasks for message images, consumes document.deleted + finance.subscription.changed); finance.subscription.changed carries the effective tier and fires on expiry/reactivation; vocabulary ai.client -> gRPC GenerateWordFamily (svc:vocabulary); ai-service HTTP compat and every INTERNAL_SERVICE_TOKEN removed; exam drops ai-chat/subject",
+ "mode": "code",
+ "acceptanceCriteria": [
+  "grep -rn \"AIChatModule\\|SubjectModule\" examio-be/apps/exam-service/src -> no output",
+  "grep -rn \"INTERNAL_SERVICE_TOKEN\\|x-internal-service-token\\|AI_SERVICE_URL\" over examio-be apps, libs, deploy (*.ts, *.py, *.example, *.yml; excluding node_modules, venv) -> no output; ai-service serves only /health over HTTP",
+  "grep -rn \"deleteImage(\\|deleteFile(\" examio-be/apps/ai-chat-service/src -> no output; message image R2 keys deleted only via r2_delete_tasks + worker (svc:ai-chat)",
+  "yarn build && yarn test && check:deps && check:ownership green; ai-service pytest green; ai-chat-service compose healthy",
+  "stream: POST /api/v1/ai-chat/:id/stream through the gateway prints incremental data: frames (not one burst); client abort cancels the gRPC call; upstream error -> event: error frame; regenerate-stream works",
+  "permissions/ownership: STUDENT -> 403 on /ai-chat/*; another user's chatId on messages/stream/DELETE -> 404 and on exists -> 200 {exists:false} (same body as a missing chat, no existence leak; F3 accepted); anonymous GET /subjects -> 200; no email and no systemPrompt in responses",
+  "clear chat with files: exactly one DeleteDocuments with the user token, deletedFiles = filenames, chat/messages/links gone, only R2 image keys enqueued (external URLs skipped), worker DeleteObjects once as svc:ai-chat; document UNAVAILABLE -> 503 and chat kept; deleteChat without deleteFiles -> no DeleteDocuments, image keys still enqueued",
+  "limits and events: GetUserBenefits cached aichat:benefits:<id> and the 6th free-tier message within a minute -> 429; finance.subscription.changed carries the effective tier (inactive -> 0) and fires on expiry and reactivation, ai-chat invalidates its cache; document.deleted removes links idempotently",
+  "vocabulary GenerateWordFamily over gRPC with svc:vocabulary works (TEACHER generate 2xx, no wallet tx), a call without a service token -> UNAUTHENTICATED; FE AI chat page: deferred, not mounted on any route at HEAD (F4, pre-existing); /k/ai-tool loads for TEACHER and redirects STUDENT to /403"
+ ],
+ "touchpoints": [
+  "examio-be/apps/ai-chat-service",
+  "examio-be/apps/exam-service/src",
+  "examio-be/apps/exam-service/prisma/schema",
+  "examio-be/apps/vocabulary-service/src/clients",
+  "examio-be/apps/finance-service/src/modules/sepay",
+  "examio-be/apps/ai-service",
+  "examio-be/apps/gateway-service",
+  "examio-be/apps/r2-service",
+  "examio-be/libs",
+  "examio-be/deploy",
+  ".github/workflows/ci.yml"
+ ],
+ "blastRadius": [
+  "AI chat + AI teacher (FE)",
+  "subjects (public)",
+  "word-family generation",
+  "subscription limits",
+  "ai-service HTTP surface",
+  "R2 deletion",
+  "broker users",
+  "CI"
+ ],
+ "contracts": [
+  "HTTP /api/v1/ai-chat/* and /api/v1/subjects/* unchanged shapes, now served by ai-chat-service",
+  "SSE frames unchanged",
+  "event finance.subscription.changed payload (effective tier) + new firing points",
+  "ai-service HTTP compat removed",
+  "env AICHAT_SERVICE_URL, AICHAT_DB_PASSWORD, AICHAT_SERVICE_CLIENT_SECRET, RABBITMQ_AICHAT_PASS; INTERNAL_SERVICE_TOKEN, AI_SERVICE_URL, AI_HTTP_COMPAT removed"
+ ]
+}

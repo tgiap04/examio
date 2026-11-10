@@ -1,0 +1,15 @@
+{
+  "ts": "2026-10-22T18:38:07.959Z",
+  "fails": [],
+  "steps": {
+    "uploadA": 201,
+    "create": 201,
+    "uploadB": 201,
+    "replace": 200,
+    "delete": 200
+  },
+  "keysChecked": {
+    "createdA": true,
+    "createdB": true
+  }
+}

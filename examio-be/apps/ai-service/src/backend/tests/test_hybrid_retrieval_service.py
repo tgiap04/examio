@@ -305,17 +305,25 @@ def test_graph_builder_uses_bruteforce_when_faiss_disabled() -> None:
     user_storage_id = 'hybrid-test-no-faiss'
     chunks = make_chunks()
     original_persist = graph_storage_module.graph_storage_service.persist_graph_state
+    original_vector_store = hybrid_module.get_pg_vector_store
+
+    class FakeVectorStore:
+        # Precomputed vectors keep the builder off the embedding API and the DB.
+        async def get_embeddings_by_user_storage(self, _user_storage_id: str):
+            return {chunk.id: [1.0, 0.1 * index, 0.0] for index, chunk in enumerate(chunks)}
 
     try:
         async def fake_persist_graph_state(user_storage_id: str, **kwargs):
             return None
 
         graph_storage_module.graph_storage_service.persist_graph_state = fake_persist_graph_state
+        hybrid_module.get_pg_vector_store = FakeVectorStore
         entry = asyncio.run(service._build_graph_cache_entry(user_storage_id, chunks))  # noqa: SLF001
         assert entry.graph.number_of_nodes() == len(chunks)
         assert entry.graph.number_of_edges() >= len(chunks) - 1
     finally:
         graph_storage_module.graph_storage_service.persist_graph_state = original_persist
+        hybrid_module.get_pg_vector_store = original_vector_store
         if os_value is None:
             os.environ.pop('AI_GRAPH_USE_FAISS', None)
         else:

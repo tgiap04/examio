@@ -1,0 +1,7 @@
+PASS | flashcards page: share button found
+PASS | flashcard dialog shows the study link | http://localhost:5273/study-flashcard/6ad761b1d78dc36c970de28d
+PASS | flashcard dialog: delta PUT sent with only changed fields | {"codeEnabled":true,"addUserIds":["6ad760efee0ec540fe54e4a1"]}
+PASS | flashcard sharing persisted (code + whitelist + codeGranted list) | ["isPublic","accessCode","whitelist","codeGranted"]
+PASS | no uncaught page errors
+summary: 5/5 checks passed
+finished

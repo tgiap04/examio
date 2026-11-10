@@ -1,0 +1,177 @@
+[
+  {
+    "command": "cd examio-be && yarn install --immutable",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "lockfile immutable (earlier this phase, not changed since)",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "cd examio-be && yarn proto:lint",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "buf lint STANDARD clean",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "cd examio-be && yarn proto:gen",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "ts-proto generated",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "cd examio-be && yarn typecheck",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "six service tsconfig.app.json pass",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "cd examio-be && yarn build:all",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "proto:gen plus six nest builds",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "cd examio-be && TZ=UTC yarn test --verbose",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "47 suites, 379 tests pass, 0 fail",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "cd examio-be && npx prisma migrate deploy --schema=libs/database/src/schema.prisma (fresh pgvector pg16)",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "baseline migration applied to empty DB",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "cd examio-be && npx prisma migrate diff --from-url $DATABASE_URL --to-schema-datamodel libs/database/src/schema.prisma --exit-code",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "no drift",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "money probe via exam FinanceClient/FinanceClientService over live finance gRPC (temp spec, removed after run)",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "updateBalance(5.5) -> 400 INVALID_AMOUNT locally; deductCredits(5.5) rejected 403 with no debit; deductCredits(5) -> success newBalance 15; DB balance 20 to 15, one SUBTRACT ledger row (amount 5)",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "env -i <CI be-boot env + local infra URLs> bash scripts/boot-built-services.sh (isolated copy, zero .env files)",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "all 6 boot from dist: auth/finance/r2 HTTP 3000 + gRPC 50051 up; exam/admin/gateway HTTP 3000",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "cd examio-be/apps/auth-service && jest-e2e app.e2e-spec (CI env)",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "3/3 pass",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "cd examio-be/apps/exam-service && jest-e2e app.e2e-spec (CI env)",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "3/3 pass",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "cd examio-be/apps/finance-service && jest-e2e app.e2e-spec (CI env)",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "3/3 pass",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "cd examio-be/apps/admin-service && jest-e2e app.e2e-spec (CI env)",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "3/3 pass",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "cd examio-be/apps/r2-service && jest-e2e app.e2e-spec (CI env)",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "3/3 pass",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "cd examio-be/apps/gateway-service && jest-e2e app.e2e-spec (CI env)",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "3/3 pass",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "cd examio-be/apps/ai-service && ./scripts/gen_grpc.sh (earlier round; proto unchanged for r2/common)",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "stubs regenerated",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "docker run pgvector/pgvector:pg16 (55433), redis:7 (56380), rabbitmq:3.13 (55673); readiness probes",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "all three healthy",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "docker rm -f -v temper-p02c-pg temper-p02c-redis temper-p02c-rmq",
+    "exitCode": 0,
+    "status": "pass",
+    "summary": "temporary containers and anonymous volumes removed",
+    "ts": "2026-10-18T06:34:44.189Z"
+  },
+  {
+    "command": "! grep -rn --include=*.ts 'protos/' apps libs",
+    "exitCode": 0,
+    "summary": "no runtime protos/ path refs in apps/libs",
+    "ts": "2026-10-18T06:37:32.324786Z"
+  },
+  {
+    "command": "! grep -rnE '50053|50054|50056' apps/auth-service/src apps/exam-service/src apps/finance-service/src apps/admin-service/src apps/r2-service/src apps/gateway-service/src deploy/docker-compose.yml",
+    "exitCode": 0,
+    "summary": "no legacy gRPC ports in service src or compose",
+    "ts": "2026-10-18T06:37:32.370088Z"
+  },
+  {
+    "command": "! grep -rn 'AsyncLocalStorage' libs/grpc",
+    "exitCode": 0,
+    "summary": "no AsyncLocalStorage in libs/grpc",
+    "ts": "2026-10-18T06:37:32.377179Z"
+  },
+  {
+    "command": "! grep -rn 'actor_id' proto",
+    "exitCode": 0,
+    "summary": "no actor_id in any proto",
+    "ts": "2026-10-18T06:37:32.384640Z"
+  },
+  {
+    "command": "! grep -rnE --include=*.ts 'interface \\w*(Service|Client)\\b' apps/exam-service/src/clients apps/auth-service/src/clients libs/grpc/src",
+    "exitCode": 0,
+    "summary": "no hand-written gRPC service/client interfaces",
+    "ts": "2026-10-18T06:37:32.391776Z"
+  },
+  {
+    "command": "yarn typecheck",
+    "exitCode": 0,
+    "summary": "typecheck all services after deductCredits 400 passthrough fix",
+    "ts": "2026-10-18T06:37:42.849732Z"
+  },
+  {
+    "command": "TZ=UTC yarn test",
+    "exitCode": 0,
+    "summary": "full unit suite after deductCredits 400 passthrough fix \u2014 Tests:       379 passed, 379 total",
+    "ts": "2026-10-18T06:37:51.466688Z"
+  }
+]

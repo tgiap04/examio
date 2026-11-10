@@ -1,0 +1,12 @@
+{
+  "ts": "2026-10-22T20:16:30.701Z",
+  "fails": [],
+  "detailKeys": [
+    "user",
+    "financeUnavailable",
+    "wallet",
+    "subscription",
+    "lastSession"
+  ],
+  "l2Seconds": 21
+}

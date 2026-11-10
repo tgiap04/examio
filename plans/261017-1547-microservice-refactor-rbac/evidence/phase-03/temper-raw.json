@@ -1,0 +1,164 @@
+[
+  {
+    "command": "cd examio-be && yarn prisma:merge",
+    "exitCode": 0,
+    "summary": "schema merged including messaging.prisma",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "cd examio-be && yarn prisma:generate",
+    "exitCode": 0,
+    "summary": "Prisma client generated",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "cd examio-be && yarn typecheck",
+    "exitCode": 0,
+    "summary": "typecheck clean across services (rerun after e2e edit: also 0)",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "cd examio-be && yarn build:all",
+    "exitCode": 0,
+    "summary": "6 webpack builds clean",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "cd examio-be && TZ=UTC yarn test",
+    "exitCode": 0,
+    "summary": "62 suites, 450 tests passed, 0 failed",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "cd examio-be && yarn test:cov --collectCoverageFrom='libs/messaging/src/**/*.ts' (unit)",
+    "exitCode": 0,
+    "summary": "libs/messaging/src: lines 99.38% (324/326), statements 99.45% (365/367), branches 94.39% (101/107), functions 98.43% (63/64); unit-only, mocks in several specs",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "fresh pgvector DB + fresh rabbitmq:3.13-management-alpine: jest --config test/jest-e2e.json test/user-registered.e2e-spec.ts (apps/finance-service)",
+    "exitCode": 0,
+    "summary": "4/4 passed on fresh broker and DB",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "fresh broker + DB: jest --config test/jest-e2e.json test/register-outbox.e2e-spec.ts (apps/auth-service)",
+    "exitCode": 0,
+    "summary": "2/2 passed",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "fresh broker + DB: jest --config test/jest-e2e.json (libs/messaging outbox-purge e2e)",
+    "exitCode": 0,
+    "summary": "1/1 passed",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "graceful shutdown: finance dist ROLE=api,worker, SIGTERM, pg session count",
+    "exitCode": 0,
+    "summary": "boot 0 -> 7 Postgres sessions -> 0 after exit; exited in 149 ms; process status 143 = SIGTERM re-raised by Nest after close",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "graceful shutdown: auth dist ROLE=api,worker (has relay pool), SIGTERM, pool.end trace",
+    "exitCode": 0,
+    "summary": "pool.end called and resolved; 0 Postgres sessions after exit; exited in 159 ms; status 143 = SIGTERM re-raised; no 'did not close' warning",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "jest libs/messaging/src/envelope.spec.ts -t authz",
+    "exitCode": 0,
+    "summary": "auth.user.authz_changed without data.authzVersion throws /data\\.authzVersion/; positive case passes",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "! grep -rn USER_CREATED apps libs",
+    "exitCode": 0,
+    "summary": "no hits",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "! grep -rnE \"traceparent|amq.default\" libs/messaging/src",
+    "exitCode": 0,
+    "summary": "no hits",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "! grep -rn \"traceparent\" libs/messaging/src apps/auth-service/src apps/finance-service/src/events",
+    "exitCode": 0,
+    "summary": "no hits",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "git check-ignore deploy/rabbitmq/definitions.json",
+    "exitCode": 0,
+    "summary": "path printed (ignored)",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "! git ls-files deploy/rabbitmq | grep -E '(^|/)definitions\\.json$'",
+    "exitCode": 0,
+    "summary": "no tracked definitions.json",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "test ! -e deploy/rabbitmq/definitions.json",
+    "exitCode": 0,
+    "summary": "no rendered secrets file in repo",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "! grep -nE '\"(password_hash|password)\" *: *\"[^{]' deploy/rabbitmq/definitions.template.json",
+    "exitCode": 0,
+    "summary": "template holds placeholders only",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "! grep -nE '[A-Za-z0-9]{24,}' deploy/rabbitmq/definitions.template.json",
+    "exitCode": 0,
+    "summary": "no long literal tokens in template",
+    "ts": "2026-10-18T09:22:40Z"
+  },
+  {
+    "command": "outage drill (dist auth+finance, ROLE default): docker stop rabbitmq; POST /api/v1/auth/register; docker start rabbitmq; poll wallet",
+    "exitCode": 0,
+    "summary": "register 201 with broker down; outbox row unpublished; after restart wallet balance 20 + 1 welcome tx; outbox published. Timings: start->broker ready 5363 ms; start->wallet 5620 ms; ready->wallet 257 ms",
+    "ts": "2026-10-18T09:24:36Z"
+  },
+  {
+    "command": "live checks (finance worker dist, ROLE=worker): same envelope published twice as auth; wallet/tx count",
+    "exitCode": 0,
+    "summary": "1 wallet, 20 credits, 1 welcome tx; processed once",
+    "ts": "2026-10-18T09:24:36Z"
+  },
+  {
+    "command": "live checks: forged envelope source=exam on routing key auth.user.registered -> finance.dlq",
+    "exitCode": 0,
+    "summary": "finance.dlq messageCount 0 -> 1",
+    "ts": "2026-10-18T09:24:36Z"
+  },
+  {
+    "command": "live checks: finance credentials publish auth.x to examio.events",
+    "exitCode": 0,
+    "summary": "refused: 403 ACCESS_REFUSED (write to auth.x denied for user finance)",
+    "ts": "2026-10-18T09:24:36Z"
+  },
+  {
+    "command": "docker exec p3r-rmq rabbitmqctl -q list_users",
+    "exitCode": 0,
+    "summary": "users admin, auth, finance, exam, ai",
+    "ts": "2026-10-18T09:24:36Z"
+  },
+  {
+    "command": "docker exec p3r-rmq rabbitmqctl -q list_topic_permissions",
+    "exitCode": 0,
+    "summary": "finance examio.events write ^finance\\\\. read .*",
+    "ts": "2026-10-18T09:24:36Z"
+  },
+  {
+    "command": "ai-service-queue probe as user ai (assertExchange, assertQueue ai-service-queue, bind ai.ocr.requested, publish, consume, deleteQueue)",
+    "exitCode": 0,
+    "summary": "message delivered on ai-service-queue; queue removed afterwards",
+    "ts": "2026-10-18T09:24:36Z"
+  }
+]

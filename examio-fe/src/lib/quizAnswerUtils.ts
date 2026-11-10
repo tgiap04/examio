@@ -8,8 +8,8 @@ export function quizOptionToText(option: QuizOptionLike): string {
     : option?.text ?? option?.content ?? option?.value ?? "";
 
   return text
-    .replace(/^<p>([A-D][.)\:\s]+)/i, "<p>")
-    .replace(/^([A-D][.)\:\s]+)/i, "");
+    .replace(/^<p>([A-D][.):\s]+)/i, "<p>")
+    .replace(/^([A-D][.):\s]+)/i, "");
 }
 
 /**
@@ -25,21 +25,21 @@ export function resolveAnswerIndex(answer: string | number, options: QuizOptionL
   if (letterIdx !== -1 && letterIdx < options.length) return letterIdx;
 
   if (/^\d+$/.test(trimmed)) {
-    const numIdx = parseInt(trimmed, 10);
+    const numIdx = Number.parseInt(trimmed, 10);
     if (numIdx >= 0 && numIdx < options.length) return numIdx;
   }
 
   const lowerAnswer = trimmed.toLowerCase();
   for (let i = 0; i < options.length; i++) {
     const optionText = quizOptionToText(options[i]).trim();
-    const cleanOpt = optionText.replace(/^[A-D]\s*[.):\s]+/, "").trim();
+    const cleanOpt = optionText.replace(/^[A-D][.):\s]+/, "").trim();
     if (cleanOpt.toLowerCase() === lowerAnswer || optionText.toLowerCase() === lowerAnswer) {
       return i;
     }
   }
 
   for (let i = 0; i < options.length; i++) {
-    const cleanOpt = quizOptionToText(options[i]).replace(/^[A-D]\s*[.):\s]+/, "").trim();
+    const cleanOpt = quizOptionToText(options[i]).replace(/^[A-D][.):\s]+/, "").trim();
     if (cleanOpt.toLowerCase().includes(lowerAnswer) || lowerAnswer.includes(cleanOpt.toLowerCase())) {
       return i;
     }

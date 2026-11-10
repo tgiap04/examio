@@ -64,3 +64,19 @@ tenacity>=8.1.0
 
 # Message Queue
 aio-pika>=9.0.0,<10.0.0
+
+# Schema migrations (ROLE=migrate runs `alembic upgrade head`; async driver is asyncpg)
+alembic>=1.13,<2.0
+sqlalchemy[asyncio]>=2.0,<3.0
+
+# Service-token verification (RS256 via the auth JWKS)
+python-jose[cryptography]>=3.5.0,<4.0.0
+
+# gRPC stubs (src/backend/grpc_generated). Keep in sync with pyproject.toml.
+grpcio==1.71.2
+grpcio-status==1.71.2
+protobuf==5.29.6
+
+# Tests (pytest -q from apps/ai-service)
+pytest>=8,<10
+pytest-asyncio>=0.24,<2

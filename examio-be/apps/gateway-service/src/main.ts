@@ -5,110 +5,40 @@ import { join } from 'path';
 config({ path: join(process.cwd(), 'apps', 'gateway-service', '.env') });
 
 import { NestFactory } from '@nestjs/core';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { MicroserviceOptions } from '@nestjs/microservices';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { Logger } from '@examio/observability';
+import { PROTO_FILES } from '@examio/contracts';
+import { grpcServerOptions } from '@examio/grpc';
 import { GatewayModule } from './gateway.module';
-import * as cookieParser from 'cookie-parser';
+import { configureGatewayApp } from './app-setup';
 
 async function bootstrap() {
-    const app = await NestFactory.create(GatewayModule);
-
-    // Cookie parser
-    app.use(cookieParser());
-
-    // Global prefix
-    app.setGlobalPrefix('api/v1');
-
-    const configuredOrigins = (process.env.CORS_ORIGINS || process.env.FRONTEND_URL || '')
-        .split(',')
-        .map((origin) => origin.trim())
-        .filter(Boolean);
-    const allowedOrigins =
-        process.env.NODE_ENV === 'production'
-            ? configuredOrigins
-            : [
-                  ...configuredOrigins,
-                  'http://localhost:5173',
-                  'http://localhost:3001',
-                  'http://127.0.0.1:5173',
-              ];
-
-    if (process.env.NODE_ENV === 'production' && allowedOrigins.length === 0) {
-        throw new Error('CORS_ORIGINS or FRONTEND_URL must be configured in production');
-    }
-
-    app.enableCors({
-        origin: allowedOrigins,
-        credentials: true,
-        allowedHeaders: [
-            'Content-Type',
-            'Authorization',
-            'Cookie',
-            'X-Requested-With',
-            'X-Device-ID',
-        ],
+    const app = await NestFactory.create<NestExpressApplication>(GatewayModule, {
+        bufferLogs: true,
+        // Bodies are streamed to the upstream, never parsed here.
+        bodyParser: false,
     });
+    app.useLogger(app.get(Logger));
+    app.enableShutdownHooks();
 
-    // Swagger Configuration
-    const config = new DocumentBuilder()
-        .setTitle('ExamIO API')
-        .setDescription(
-            `
-## ExamIO - Nền tảng Học tập Trực tuyến
+    const onUpgrade = configureGatewayApp(app);
 
-### Các Service:
-- **Auth**: Đăng ký, đăng nhập, OAuth
-- **Exam**: Quiz, Flashcard, Phòng thi
-- **Finance**: Wallet, Thanh toán, Subscription
-
-### Authentication:
-Sử dụng JWT Bearer token hoặc Cookie-based auth.
-        `
-        )
-        .setVersion('1.0')
-        .addBearerAuth(
-            {
-                type: 'http',
-                scheme: 'bearer',
-                bearerFormat: 'JWT',
-            },
-            'access-token'
-        )
-        .addApiKey(
-            {
-                type: 'apiKey',
-                in: 'header',
-                name: 'Authorization',
-                description: 'Sepay API Key (format: Apikey <key>)',
-            },
-            'sepay-apikey'
-        )
-        .addCookieAuth('accessToken')
-        .addTag('Auth', 'Authentication & User Management')
-        .addTag('Exam', 'Quiz, Flashcard, Exam Room')
-        .addTag('Finance', 'Wallet, Payment, Subscription')
-        .addTag('Webhook', 'External webhook callbacks (Sepay)')
-        .addTag('Gateway', 'Health Check & Status')
-        .build();
-
-    if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
-        const document = SwaggerModule.createDocument(app, config);
-        SwaggerModule.setup('api', app, document, {
-            customSiteTitle: 'ExamIO API Documentation',
-            customCss: '.swagger-ui .topbar { display: none }',
-            swaggerOptions: {
-                persistAuthorization: true,
-                tagsSorter: 'alpha',
-                operationsSorter: 'alpha',
-            },
-        });
-    }
+    // GatewayControl (auth/admin -> gateway) on GRPC_PORT, internal network only.
+    app.connectMicroservice<MicroserviceOptions>(
+        grpcServerOptions([PROTO_FILES.gatewayControl]),
+        { inheritAppConfig: true }
+    );
+    await app.startAllMicroservices();
 
     const port = process.env.PORT || 3000;
     await app.listen(port);
+    app.getHttpServer().on('upgrade', onUpgrade);
 
-    console.log(`🚀 Gateway running on http://localhost:${port}`);
-    if (process.env.NODE_ENV !== 'production' || process.env.ENABLE_SWAGGER === 'true') {
-        console.log(`📚 Swagger docs: http://localhost:${port}/api`);
-    }
+    console.log(`🚀 Gateway running on port ${port}`);
+    console.log(`🔌 GatewayControl gRPC on port ${process.env.GRPC_PORT || '50051'}`);
 }
-bootstrap();
+bootstrap().catch((err) => {
+    console.error(err);
+    process.exit(1);
+});

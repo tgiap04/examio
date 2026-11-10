@@ -5,9 +5,10 @@ import {
     Logger,
     ForbiddenException,
 } from '@nestjs/common';
-import { PrismaService } from '@examio/database';
-import { User } from '@prisma/client';
-import { GenerateIdService } from '@examio/common';
+import { PrismaService } from '../../prisma';
+import { RedisService } from '@examio/redis';
+
+import { GenerateIdService, invalidateWalletCachesBestEffort } from '@examio/common';
 import { SePayService } from './sepay.service';
 import { PAYMENT_STATUS } from '../../types/payment';
 import {
@@ -16,6 +17,7 @@ import {
     getSubscriptionPrice,
     calculateCreditsPrice,
 } from '../../types/subscription';
+import type { AuthUser } from '@examio/auth-jwt';
 
 export interface CreatePaymentDto {
     type: 'credits' | 'subscription';
@@ -42,7 +44,8 @@ export class PaymentService {
     constructor(
         private readonly prisma: PrismaService,
         private readonly generateIdService: GenerateIdService,
-        private readonly sePayService: SePayService
+        private readonly sePayService: SePayService,
+        private readonly redis: RedisService
     ) {}
 
     /**
@@ -53,7 +56,7 @@ export class PaymentService {
      * - Otherwise: create new payment
      */
     async createPayment(
-        user: User,
+        user: AuthUser,
         dto: CreatePaymentDto
     ): Promise<PaymentWithQR> {
         try {
@@ -126,6 +129,7 @@ export class PaymentService {
                             updatedBy: user.id,
                         },
                     });
+                    await invalidateWalletCachesBestEffort(this.redis, user.id);
                     paymentId = existingPayment.id;
                     this.logger.log(
                         `Payment updated: ${paymentId} - ${amount.toLocaleString('vi-VN')} VND (${isExpired ? 'expired' : 'amount changed'})`
@@ -153,6 +157,7 @@ export class PaymentService {
                         createdBy: user.id,
                     },
                 });
+                await invalidateWalletCachesBestEffort(this.redis, user.id);
 
                 this.logger.log(
                     `Payment created: ${paymentId} - ${amount.toLocaleString('vi-VN')} VND for ${description}`
@@ -207,6 +212,7 @@ export class PaymentService {
         await this.prisma.payment.delete({
             where: { id: paymentId },
         });
+        await invalidateWalletCachesBestEffort(this.redis, payment.userId);
 
         this.logger.log(`Payment cancelled by user: ${paymentId}`);
     }

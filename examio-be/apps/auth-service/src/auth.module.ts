@@ -1,22 +1,19 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 // Shared libs
-import { DatabaseModule, PrismaService } from '@examio/database';
+import { PrismaModule, PrismaService } from './prisma';
 import {
     MailService,
     PasswordService,
     GenerateIdService,
-    AuthGuard,
-    GrpcClientsModule,
-    EventsModule,
-    EventPublisherService,
     TurnstileService,
+    RefreshTokenCipherService,
 } from '@examio/common';
 import { RedisModule, RedisService } from '@examio/redis';
+import { MessagingModule } from '@examio/messaging';
 
 // Local imports
 import { AuthService } from './auth.service';
@@ -25,20 +22,20 @@ import { GoogleStrategy } from './strategies/google.strategy';
 import { UserRepository } from './repositories/user.repository';
 import { DevicesModule } from './devices/devices.module';
 import { ProfileModule } from './profile/profile.module';
+import { RolesModule } from './roles/roles.module';
+import { UserStatusModule } from './user-status/user-status.module';
+import { TokenModule } from './token/token.module';
+import { AccessTokenService } from './token/access-token.service';
+import { HttpThrottlerGuard } from './auth/guards/http-throttler.guard';
 
 @Module({
     imports: [
-        DatabaseModule,
+        PrismaModule,
         RedisModule,
-        EventsModule,
-        GrpcClientsModule.registerWalletClient(),
-        JwtModule.register({
-            secret: process.env.JWT_SECRET,
-            signOptions: {
-                expiresIn: (process.env.ACCESS_TOKEN_EXPIRATION ||
-                    '15m') as any,
-            },
-        }),
+        MessagingModule.forRoot({ service: 'auth' }),
+        TokenModule,
+        RolesModule,
+        UserStatusModule,
         PassportModule.register({ session: true }),
         DevicesModule,
         ProfileModule,
@@ -57,14 +54,15 @@ import { ProfileModule } from './profile/profile.module';
         GenerateIdService,
         GoogleStrategy,
         AuthService,
+        AccessTokenService,
         MailService,
-        AuthGuard,
         UserRepository,
         TurnstileService,
+        RefreshTokenCipherService,
         // Global rate limiting applied to all auth endpoints
-        { provide: APP_GUARD, useClass: ThrottlerGuard },
+        { provide: APP_GUARD, useClass: HttpThrottlerGuard },
     ],
     controllers: [AuthController],
-    exports: [AuthService, JwtModule, AuthGuard, UserRepository],
+    exports: [AuthService, UserRepository, UserStatusModule],
 })
 export class AuthModule {}

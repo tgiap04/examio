@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { SepayWebhook } from '../../types/webhook';
 import { WebhookService } from './webhook.service';
 import { UnauthorizedException } from '@nestjs/common';
+import { Public } from '@examio/auth-jwt';
 
 @ApiTags('Webhook')
 @Controller('webhook')
@@ -15,6 +16,7 @@ export class WebhookController {
      * Endpoint nhận webhook từ SePay
      * Không cần authentication vì được gọi từ SePay server
      */
+    @Public()
     @Post('')
     @ApiOperation({ summary: 'Nhận webhook thanh toán từ SePay' })
     @ApiResponse({ status: 200, description: 'Webhook xử lý thành công' })

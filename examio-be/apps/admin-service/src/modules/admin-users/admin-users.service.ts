@@ -1,18 +1,18 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '@examio/database';
+import { HttpException, Injectable, Logger } from '@nestjs/common';
+import { Metadata } from '@grpc/grpc-js';
+import { AuthClient } from '../../clients/auth.client';
+import { AuthUsersClient } from '../../clients/auth-users.client';
+import { FinanceClient } from '../../clients/finance.client';
 
+import type { AuditContext } from '../admin-roles/audit-context';
 import { AuditWriterService } from '../../common/audit-writer.service';
+import { writeAuditBestEffort } from '../admin-roles/best-effort-audit';
 import { ListUsersQuery } from './dto/list-users.query';
 import { UpdateUserBody } from './dto/update-user.body';
-import { userSelectSafe, UserSafeRow } from './user-select.safe';
+import { UserSafeRow } from './user-select.safe';
+import { toUserSafeRow } from './user-safe.mapper';
 
-export interface AuditContext {
-    adminId: string;
-    ipAddress?: string | null;
-    userAgent?: string | null;
-}
-
+export type { AuditContext } from '../admin-roles/audit-context';
 export interface ListUsersResult {
     rows: UserSafeRow[];
     total: number;
@@ -22,6 +22,8 @@ export interface ListUsersResult {
 
 export interface UserDetail {
     user: UserSafeRow;
+    /** true when finance could not be reached: `wallet` / `subscription` are then null, not "none". */
+    financeUnavailable: boolean;
     wallet: { id: string; balance: number } | null;
     subscription: {
         id: string;
@@ -47,402 +49,200 @@ export interface UpdateUserResult {
     changedFields: string[];
 }
 
-const MUTABLE_FIELDS = ['isAdmin', 'isVerified', 'isBanned', 'name', 'bio'] as const;
+const MUTABLE_FIELDS = ['isVerified', 'name', 'bio'] as const;
 type MutableField = (typeof MUTABLE_FIELDS)[number];
 
+const epoch = (iso?: string): string | undefined => (iso ? String(Date.parse(iso)) : undefined);
+
 /**
- * AdminUsersService — admin-side CRUD over the `User` table.
- *
- * Every mutation:
- *  - runs inside prisma.$transaction with isolation = Serializable
- *  - writes one AdminAudit row per changed field via AuditWriter
- *  - explicitly excludes `password` from every select (`userSelectSafe`)
- *
- * Safety guards:
- *  - `revokeAdmin` blocks the request when the target is the caller
- *    (defends against self-lockout)
- *  - `banUser` is also blocked on self (defends against self-ban)
+ * AdminUsersService: admin-side view and edits of users, done entirely through
+ * RPCs made with the calling admin's own token (`forwardUser(req)`). It never
+ * touches the `User`, wallet or subscription tables:
+ *  - list/detail/profile edits: auth `ListUsers` / `GetUserAdminDetail` /
+ *    `UpdateUserAdmin` (auth writes the row + `auth.user.updated` in one tx);
+ *  - wallet + subscription of the detail view: finance `GetUserFinance`;
+ *  - role, admin flag and ban: auth `SetUserRole` / `SetSystemAdmin` /
+ *    `SetUserStatus` (see AdminRolesService and `banUser`).
+ * Admin writes one AdminAudit row per changed field AFTER auth committed
+ * (best effort: auth's own records are the durable ones).
  */
 @Injectable()
 export class AdminUsersService {
+    private readonly logger = new Logger(AdminUsersService.name);
+
     constructor(
-        private readonly prisma: PrismaService,
-        private readonly auditWriter: AuditWriterService
+        private readonly auditWriter: AuditWriterService,
+        private readonly authClient: AuthClient,
+        private readonly authUsers: AuthUsersClient,
+        private readonly finance: FinanceClient
     ) {}
 
-    /**
-     * Paginated list of users with optional filters. `search` matches
-     * `email` or `username` via case-insensitive `contains`.
-     */
-    async listUsers(query: ListUsersQuery): Promise<ListUsersResult> {
-        const where: Prisma.UserWhereInput = {};
-
-        if (query.search) {
-            where.OR = [
-                { email: { contains: query.search, mode: 'insensitive' } },
-                { username: { contains: query.search, mode: 'insensitive' } },
-            ];
-        }
-        if (query.isAdmin !== undefined) {
-            where.isAdmin = query.isAdmin;
-        }
-        if (query.isVerified !== undefined) {
-            where.isVerified = query.isVerified;
-        }
-        if (query.isBanned !== undefined) {
-            where.isBanned = query.isBanned;
-        }
-        if (query.createdFrom || query.createdTo) {
-            where.createdAt = {};
-            if (query.createdFrom) {
-                where.createdAt.gte = new Date(query.createdFrom);
-            }
-            if (query.createdTo) {
-                where.createdAt.lte = new Date(query.createdTo);
-            }
-        }
-
-        const skip = (query.page - 1) * query.pageSize;
-
-        const [rows, total] = await this.prisma.$transaction([
-            this.prisma.user.findMany({
-                where,
-                select: userSelectSafe,
-                orderBy: { createdAt: 'desc' },
-                skip,
-                take: query.pageSize,
-            }),
-            this.prisma.user.count({ where }),
-        ]);
-
+    /** Paginated list; `search` matches email, username or name (case-insensitive contains). */
+    async listUsers(query: ListUsersQuery, metadata: Metadata): Promise<ListUsersResult> {
+        const res = await this.authClient.listUsers(
+            {
+                query: query.search ?? '',
+                isSystemAdmin: query.isSystemAdmin,
+                isBanned: query.isBanned,
+                isVerified: query.isVerified,
+                createdFrom: epoch(query.createdFrom),
+                createdTo: epoch(query.createdTo),
+                page: query.page,
+                limit: query.pageSize,
+            },
+            metadata
+        );
         return {
-            rows,
-            total,
+            rows: res.users.map(toUserSafeRow),
+            total: res.page?.total ?? 0,
             page: query.page,
             pageSize: query.pageSize,
         };
     }
 
     /**
-     * Full user profile + wallet + subscription + last session.
-     * Throws 404 when the user does not exist. Never returns `password`.
+     * Profile + wallet + subscription + last session (404 when auth has no such
+     * user). A finance outage (5xx / unreachable) must not hide the profile:
+     * the finance fields come back null with `financeUnavailable: true`.
      */
-    async getUserDetail(id: string): Promise<UserDetail> {
-        const user = await this.prisma.user.findUnique({
-            where: { id },
-            select: {
-                ...userSelectSafe,
-                wallet: {
-                    select: { id: true, balance: true },
-                },
-                subscription: {
-                    select: {
-                        id: true,
-                        tier: true,
-                        billingCycle: true,
-                        isActive: true,
-                    },
-                },
-                sessions: {
-                    orderBy: { lastActivity: 'desc' },
-                    take: 1,
-                    select: {
-                        id: true,
-                        deviceName: true,
-                        browser: true,
-                        os: true,
-                        ipAddress: true,
-                        country: true,
-                        city: true,
-                        lastActivity: true,
-                        isActive: true,
-                    },
-                },
-            },
-        });
-
-        if (!user) {
-            throw new NotFoundException('User not found');
-        }
-
-        const { wallet, subscription, sessions, ...rest } = user;
-
+    async getUserDetail(id: string, metadata: Metadata): Promise<UserDetail> {
+        const [detail, financeResult] = await Promise.all([
+            this.authUsers.getUserAdminDetail(id, metadata),
+            this.finance.getUserFinance(id, metadata).then(
+                (finance) => ({ finance, unavailable: false }),
+                (err: unknown) => {
+                    // 4xx (permission, bad request) is a bug to surface, not an outage to mask.
+                    if (err instanceof HttpException && err.getStatus() < 500) throw err;
+                    this.logger.warn(
+                        `finance unavailable for user detail ${id}: ${err instanceof Error ? err.message : String(err)}`
+                    );
+                    return { finance: {} as Awaited<ReturnType<FinanceClient['getUserFinance']>>, unavailable: true };
+                }
+            ),
+        ]);
+        const { finance, unavailable } = financeResult;
+        const s = detail.lastSession;
         return {
-            user: rest,
-            wallet: wallet
-                ? { id: wallet.id, balance: wallet.balance }
-                : null,
-            subscription: subscription
+            user: toUserSafeRow(detail.user!),
+            financeUnavailable: unavailable,
+            wallet: finance.wallet ? { id: finance.wallet.id, balance: finance.wallet.balance } : null,
+            subscription: finance.subscription
                 ? {
-                      id: subscription.id,
-                      tier: subscription.tier,
-                      billingCycle: subscription.billingCycle,
-                      isActive: subscription.isActive,
+                      id: finance.subscription.id,
+                      tier: finance.subscription.tier,
+                      billingCycle: finance.subscription.billingCycle,
+                      isActive: finance.subscription.isActive,
                   }
                 : null,
-            lastSession: sessions[0] ?? null,
+            lastSession: s
+                ? {
+                      id: s.id,
+                      deviceName: s.deviceName ?? null,
+                      browser: s.browser ?? null,
+                      os: s.os ?? null,
+                      ipAddress: s.ipAddress ?? null,
+                      country: s.country ?? null,
+                      city: s.city ?? null,
+                      lastActivity: new Date(Number(s.lastActivity)),
+                      isActive: s.isActive,
+                  }
+                : null,
         };
     }
 
     /**
-     * Patch a user. Diffs incoming body against the persisted record
-     * and writes one audit row per changed field with
-     * payload `{ field, from, to }`.
+     * Patch a user: diff the body against auth's current record, send only the
+     * changed fields to `UpdateUserAdmin`, then audit `{ field, from, to }` per field.
      */
     async updateUser(
         id: string,
         body: UpdateUserBody,
-        ctx: AuditContext
+        ctx: AuditContext,
+        metadata: Metadata
     ): Promise<UpdateUserResult> {
-        return this.prisma.$transaction(
-            async (tx) => {
-                const existing = await tx.user.findUnique({
-                    where: { id },
-                    select: userSelectSafe,
-                });
+        const existing = await this.findSafe(id, metadata);
+        const diff = this.diffUser(existing, body);
+        if (diff.length === 0) return { user: existing, changedFields: [] };
 
-                if (!existing) {
-                    throw new NotFoundException('User not found');
-                }
+        const patch: Record<string, unknown> = {};
+        for (const field of diff) patch[field] = body[field];
+        const { user } = await this.authUsers.updateUserAdmin({ userId: id, ...patch }, metadata);
+        const updated = toUserSafeRow(user!);
 
-                const diff = this.diffUser(existing, body);
-                if (diff.length === 0) {
-                    return { user: existing, changedFields: [] };
-                }
-
-                const data: Prisma.UserUpdateInput = { updatedBy: ctx.adminId };
-                for (const field of diff) {
-                    (data as Record<string, unknown>)[field] = body[field];
-                }
-
-                const updated = await tx.user.update({
-                    where: { id },
-                    select: userSelectSafe,
-                    data,
-                });
-
-                for (const field of diff) {
-                    const from = existing[field] as unknown;
-                    const to = updated[field] as unknown;
-                    await this.auditWriter.write(
-                        {
-                            adminId: ctx.adminId,
-                            action: 'admin.user.update',
-                            targetId: id,
-                            payload: { field, from, to },
-                            ipAddress: ctx.ipAddress,
-                            userAgent: ctx.userAgent,
-                        },
-                        { tx }
-                    );
-                }
-
-                return { user: updated, changedFields: diff };
-            },
-            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-        );
-    }
-
-    /**
-     * Soft-ban a user: `isBanned = true`, `deletedAt = now()`. The
-     * `User` row is preserved so all FK relationships (payments,
-     * sessions, audit) keep their referential integrity.
-     */
-    async banUser(id: string, ctx: AuditContext): Promise<UserSafeRow> {
-        if (id === ctx.adminId) {
-            throw new NotFoundException('Cannot ban own account');
+        for (const field of diff) {
+            await writeAuditBestEffort(this.auditWriter, this.logger, {
+                adminId: ctx.adminId,
+                action: 'admin.user.update',
+                targetId: id,
+                payload: { field, from: existing[field] as unknown, to: updated[field] as unknown },
+                ipAddress: ctx.ipAddress,
+                userAgent: ctx.userAgent,
+            });
         }
-
-        return this.prisma.$transaction(
-            async (tx) => {
-                const existing = await tx.user.findUnique({
-                    where: { id },
-                    select: userSelectSafe,
-                });
-                if (!existing) {
-                    throw new NotFoundException('User not found');
-                }
-
-                const updated = await tx.user.update({
-                    where: { id },
-                    select: userSelectSafe,
-                    data: {
-                        isBanned: true,
-                        deletedAt: new Date(),
-                        updatedBy: ctx.adminId,
-                    },
-                });
-
-                await this.auditWriter.write(
-                    {
-                        adminId: ctx.adminId,
-                        action: 'admin.user.ban',
-                        targetId: id,
-                        payload: {
-                            previousIsBanned: existing.isBanned,
-                            previousDeletedAt: existing.deletedAt,
-                        },
-                        ipAddress: ctx.ipAddress,
-                        userAgent: ctx.userAgent,
-                    },
-                    { tx }
-                );
-
-                return updated;
-            },
-            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-        );
+        return { user: updated, changedFields: diff };
     }
 
     /**
-     * Lift a soft-ban. Sets `isBanned = false, deletedAt = null`.
+     * Ban through auth `SetUserStatus` (advisory lock, last-admin and self
+     * guards, authzVersion bump, sessions revoked, outbox) acting as the
+     * calling admin via their forwarded token. This service never writes
+     * `User` for a ban and never signals the gateway: auth does both.
      */
-    async unbanUser(id: string, ctx: AuditContext): Promise<UserSafeRow> {
-        return this.prisma.$transaction(
-            async (tx) => {
-                const existing = await tx.user.findUnique({
-                    where: { id },
-                    select: userSelectSafe,
-                });
-                if (!existing) {
-                    throw new NotFoundException('User not found');
-                }
+    banUser(id: string, ctx: AuditContext, metadata: Metadata): Promise<UserSafeRow> {
+        return this.setBanned(id, true, 'admin.user.ban', ctx, metadata);
+    }
 
-                const updated = await tx.user.update({
-                    where: { id },
-                    select: userSelectSafe,
-                    data: {
-                        isBanned: false,
-                        deletedAt: null,
-                        updatedBy: ctx.adminId,
-                    },
-                });
+    /** Lift a ban through auth `SetUserStatus` (see `banUser`). */
+    unbanUser(id: string, ctx: AuditContext, metadata: Metadata): Promise<UserSafeRow> {
+        return this.setBanned(id, false, 'admin.user.unban', ctx, metadata);
+    }
 
-                await this.auditWriter.write(
-                    {
-                        adminId: ctx.adminId,
-                        action: 'admin.user.unban',
-                        targetId: id,
-                        payload: {
-                            previousIsBanned: existing.isBanned,
-                            previousDeletedAt: existing.deletedAt,
-                        },
-                        ipAddress: ctx.ipAddress,
-                        userAgent: ctx.userAgent,
-                    },
-                    { tx }
-                );
+    private async findSafe(id: string, metadata: Metadata): Promise<UserSafeRow> {
+        const { user } = await this.authClient.getUser(id, metadata);
+        return toUserSafeRow(user!);
+    }
 
-                return updated;
-            },
-            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-        );
+    private async setBanned(
+        id: string,
+        isBanned: boolean,
+        action: 'admin.user.ban' | 'admin.user.unban',
+        ctx: AuditContext,
+        metadata: Metadata
+    ): Promise<UserSafeRow> {
+        // Best-effort read of the previous state for the audit row: auth's GetUser hides
+        // soft-deleted legacy accounts, which SetUserStatus can still (un)ban. The RPC
+        // itself is the authority on "unknown user" (404).
+        const previous = await this.findSafe(id, metadata).catch((err: unknown) => {
+            if (err instanceof HttpException && err.getStatus() === 404) return null;
+            throw err;
+        });
+        const { user } = await this.authClient.setUserStatus(id, isBanned, metadata);
+        // Auth committed (its errors, e.g. 409 LAST_SYSTEM_ADMIN, were thrown
+        // above). Record the admin-side audit row, best-effort (auth's
+        // RoleChangeLog is the durable record).
+        const updated = toUserSafeRow(user!);
+        await writeAuditBestEffort(this.auditWriter, this.logger, {
+            adminId: ctx.adminId,
+            action,
+            targetId: id,
+            payload: { previousIsBanned: previous?.isBanned ?? !isBanned },
+            ipAddress: ctx.ipAddress,
+            userAgent: ctx.userAgent,
+        });
+        return updated;
     }
 
     /**
-     * Grant admin privileges. Refuses to grant to a banned user.
+     * Pure diff: returns the subset of mutable fields whose incoming value
+     * differs from the persisted record. `undefined` means "not present in
+     * body" and is ignored.
      */
-    async grantAdmin(id: string, ctx: AuditContext): Promise<UserSafeRow> {
-        return this.prisma.$transaction(
-            async (tx) => {
-                const existing = await tx.user.findUnique({
-                    where: { id },
-                    select: userSelectSafe,
-                });
-                if (!existing) {
-                    throw new NotFoundException('User not found');
-                }
-                if (existing.isBanned) {
-                    throw new NotFoundException(
-                        'Cannot grant admin to a banned user'
-                    );
-                }
-
-                const updated = await tx.user.update({
-                    where: { id },
-                    select: userSelectSafe,
-                    data: { isAdmin: true, updatedBy: ctx.adminId },
-                });
-
-                await this.auditWriter.write(
-                    {
-                        adminId: ctx.adminId,
-                        action: 'admin.user.grant',
-                        targetId: id,
-                        payload: { from: existing.isAdmin, to: true },
-                        ipAddress: ctx.ipAddress,
-                        userAgent: ctx.userAgent,
-                    },
-                    { tx }
-                );
-
-                return updated;
-            },
-            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-        );
-    }
-
-    /**
-     * Revoke admin privileges. Refuses to revoke the calling admin's
-     * own privileges — that would lock the system out of all admin
-     * operations if it were the only admin.
-     */
-    async revokeAdmin(id: string, ctx: AuditContext): Promise<UserSafeRow> {
-        if (id === ctx.adminId) {
-            throw new NotFoundException('Cannot revoke own admin');
-        }
-
-        return this.prisma.$transaction(
-            async (tx) => {
-                const existing = await tx.user.findUnique({
-                    where: { id },
-                    select: userSelectSafe,
-                });
-                if (!existing) {
-                    throw new NotFoundException('User not found');
-                }
-
-                const updated = await tx.user.update({
-                    where: { id },
-                    select: userSelectSafe,
-                    data: { isAdmin: false, updatedBy: ctx.adminId },
-                });
-
-                await this.auditWriter.write(
-                    {
-                        adminId: ctx.adminId,
-                        action: 'admin.user.revoke',
-                        targetId: id,
-                        payload: { from: existing.isAdmin, to: false },
-                        ipAddress: ctx.ipAddress,
-                        userAgent: ctx.userAgent,
-                    },
-                    { tx }
-                );
-
-                return updated;
-            },
-            { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
-        );
-    }
-
-    /**
-     * Pure diff: returns the subset of mutable fields whose incoming
-     * value differs from the persisted record. `undefined` means
-     * "not present in body" and is ignored.
-     */
-    private diffUser(
-        existing: UserSafeRow,
-        body: UpdateUserBody
-    ): MutableField[] {
+    private diffUser(existing: UserSafeRow, body: UpdateUserBody): MutableField[] {
         const changed: MutableField[] = [];
         for (const field of MUTABLE_FIELDS) {
             const incoming = body[field];
             if (incoming === undefined) continue;
-            const current = existing[field] as unknown;
-            if (current !== incoming) {
-                changed.push(field);
-            }
+            if ((existing[field] as unknown) !== incoming) changed.push(field);
         }
         return changed;
     }

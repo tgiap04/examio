@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package examio.events.v1;
+
+// Payload (`data`) of the `auth.user.registered` event. Published through the
+// outbox in the registration transaction (email and Google OAuth paths).
+// A fact event: it carries no aggregate version.
+message UserRegistered {
+  string user_id = 1;
+  string email = 2;
+  string username = 3;
+  // First-touch attribution; absent when the signup had no utm_source.
+  optional string utm_source = 4;
+}
+
+// Payload (`data`) of `auth.user.authz_changed`: the ONLY identity-authz event.
+// Published through the outbox in the same transaction as the change (role,
+// admin flag, password, ban/unban), or re-emitted unchanged on a forced
+// re-apply. A state event: `authz_version` is the aggregate version, consumers
+// apply it only if it is newer than what they hold.
+message UserAuthzChanged {
+  string user_id = 1;
+  int32 authz_version = 2;
+  // BaseRole name: "STUDENT" or "TEACHER".
+  string role = 3;
+  bool is_system_admin = 4;
+  bool is_banned = 5;
+  // One of: role, admin, password, ban, unban, reapply.
+  string reason = 6;
+  // Same value as authz_version (the envelope-level ordering key).
+  int32 version = 7;
+}
+
+// Payload (`data`) of `auth.session.revoked`: a session was deactivated (logout,
+// device logout, logout-all-others, password change/reset). Published through
+// the outbox in the SAME transaction as the deactivation, so a lost
+// `GatewayControl.RevokeSession` call cannot leave the session's access token
+// usable. A fact event (idempotent per `sid`; re-delivery just re-sets the key).
+message SessionRevoked {
+  string user_id = 1;
+  string sid = 2;
+  // Epoch seconds until which tokens of this session must be denied (the
+  // longest-lived access token it could hold); the gateway key expires then.
+  int64 exp = 3;
+  // Epoch seconds at which the revocation was committed.
+  int64 version = 4;
+}
+
+// Payload (`data`) of `auth.user.updated`: profile or admin edit of a user
+// (name, bio, avatar, verification). A state event: `version` is the user's
+// `updatedAt` in epoch milliseconds; consumers apply it only if newer.
+message UserUpdated {
+  string user_id = 1;
+  // Names of the changed fields, e.g. "name", "bio", "is_verified".
+  repeated string changed = 2;
+  // `double` keeps it a JSON number (the envelope requires a numeric `version`).
+  double version = 3;
+}

@@ -1,116 +1,88 @@
-import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
-import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
-import { APP_GUARD } from '@nestjs/core';
-import { HttpModule } from '@nestjs/axios';
-import { AuthModule } from '@examio/common';
-import { RedisModule } from '@examio/redis';
+import { Module } from '@nestjs/common';
+import { AuthJwtModule, type TokenVerifier } from '@examio/auth-jwt';
+import { GrpcClientModule } from '@examio/grpc';
+import { MessagingModule } from '@examio/messaging';
+import { RedisModule, RedisReadinessCheck } from '@examio/redis';
+import { HealthModule, LoggerModule } from '@examio/observability';
 
 import { GatewayController } from './gateway.controller';
-import { ProxyMiddleware } from './middleware/proxy.middleware';
-import { ProxyService } from './services/proxy.service';
+import { ConfigController } from './controllers/config.controller';
+import { GatewayControlGrpcController } from './control/gateway-control.grpc.controller';
+import { AuthzChangedHandler } from './events/authz-changed.handler';
+import { SessionRevokedHandler } from './events/session-revoked.handler';
+import { GATEWAY_NO_DB, GatewayNoDbModule } from './gateway-no-db.module';
 import { LogPublisherService } from './common/log-publisher.service';
-
-// Auth
-import { AuthProxyController } from './controllers/auth-proxy.controller';
-
-// Exam Service
-import { QuizsetProxyController } from './controllers/quizset-proxy.controller';
-import { FlashcardsetProxyController } from './controllers/flashcardset-proxy.controller';
-import { ExamRoomProxyController } from './controllers/examroom-proxy.controller';
-import { ExamSessionProxyController } from './controllers/examsession-proxy.controller';
-import { ExamAttemptProxyController } from './controllers/examattempt-proxy.controller';
-import { SubjectProxyController } from './controllers/subject-proxy.controller';
-
-// Finance & Profile
+import { AuthStateService } from './pipeline/auth-state.service';
+import { EDGE_VERIFIER, createEdgeVerifier } from './pipeline/edge-verifier';
+import { GatewayRedis } from './pipeline/gateway-redis';
+import { GuardChain } from './pipeline/guard-chain';
+import { PageFlagCheck } from './pipeline/page-flag.check';
+import { RateLimiterService } from './pipeline/rate-limiter.service';
+import { RequestLog } from './pipeline/request-log';
+import { RouteTable, loadRouteTable } from './routing/route-table';
+import { ConfigService } from './services/config.service';
 import {
-    WalletProxyController,
-    PaymentProxyController,
-    ProfileProxyController,
-    DevicesProxyController,
-} from './controllers/wallet-profile-proxy.controller';
+    ADMIN_GRPC_REGISTRATION,
+    DEFAULT_PAGE_FLAGS_BACKOFF,
+    PAGE_FLAGS_BACKOFF,
+    PageFlagsBootstrap,
+    pageFlagsPullEnabled,
+} from './services/page-flags-bootstrap.service';
 
-// AI & Study
-import {
-    AIProxyController,
-    AIChatProxyController,
-    FlashcardStudyProxyController,
-    QuizPracticeProxyController,
-    CheatingLogProxyController,
-} from './controllers/ai-study-proxy.controller';
-
-// R2 Storage
-import { R2ProxyController } from './controllers/r2-proxy.controller';
-
-// Webhook (external callbacks)
-import { WebhookProxyController } from './controllers/webhook-proxy.controller';
-import { StudentProxyController } from './controllers/student-proxy.controller';
-
-// Word Family
-import { WordFamilyProxyController } from './controllers/word-family-proxy.controller';
-
-// Admin
-import { AdminProxyController } from './controllers/admin-proxy.controller';
-
+/**
+ * The gateway is a router, not a service: no Prisma, no outbound HTTP client.
+ * Requests are handled by the dispatcher middleware (`app-setup.ts`); Nest
+ * serves only `/health/*`, `/api/v1/{status,config/*}` and the GatewayControl
+ * gRPC server. Global guards are on: `@ServiceOnly` protects the RPCs.
+ */
 @Module({
     imports: [
-        AuthModule,
+        LoggerModule.forRoot('gateway-service'),
+        HealthModule.forRoot({ checks: [RedisReadinessCheck] }),
+        // Service token (aud = admin) for the boot-time GetPageFlags pull.
+        AuthJwtModule.forRoot({ serviceName: 'gateway', serviceClient: pageFlagsPullEnabled() }),
+        ...(pageFlagsPullEnabled() ? [GrpcClientModule.register(ADMIN_GRPC_REGISTRATION)] : []),
         RedisModule,
-        // Rate limiting: 100 requests per minute
-        ThrottlerModule.forRoot([
-            {
-                ttl: 60000, // 1 minute
-                limit: 100,
-            },
-        ]),
-        HttpModule.register({
-            timeout: 30000,
-            maxRedirects: 5,
-        }),
+        GatewayNoDbModule,
+        MessagingModule.forRoot({ service: 'gateway', consume: { db: GATEWAY_NO_DB } }),
     ],
-    controllers: [
-        GatewayController,
-        // Auth
-        AuthProxyController,
-        // Exam
-        QuizsetProxyController,
-        FlashcardsetProxyController,
-        ExamRoomProxyController,
-        ExamSessionProxyController,
-        ExamAttemptProxyController,
-        SubjectProxyController,
-        // Finance & Profile
-        WalletProxyController,
-        PaymentProxyController,
-        ProfileProxyController,
-        DevicesProxyController,
-        // AI & Study
-        AIProxyController,
-        AIChatProxyController,
-        FlashcardStudyProxyController,
-        QuizPracticeProxyController,
-        CheatingLogProxyController,
-        // R2 Storage
-        R2ProxyController,
-        // Webhook (external callbacks)
-        WebhookProxyController,
-        // Student
-        StudentProxyController,
-        // Word Family
-        WordFamilyProxyController,
-        // Admin
-        AdminProxyController,
-    ],
+    controllers: [GatewayController, ConfigController, GatewayControlGrpcController],
     providers: [
-        {
-            provide: APP_GUARD,
-            useClass: ThrottlerGuard,
-        },
-        ProxyService,
+        ConfigService,
+        { provide: PAGE_FLAGS_BACKOFF, useValue: DEFAULT_PAGE_FLAGS_BACKOFF },
+        PageFlagsBootstrap,
         LogPublisherService,
+        RequestLog,
+        GatewayRedis,
+        PageFlagCheck,
+        AuthzChangedHandler,
+        SessionRevokedHandler,
+        { provide: RouteTable, useFactory: () => loadRouteTable() },
+        { provide: EDGE_VERIFIER, useFactory: createEdgeVerifier },
+        {
+            provide: AuthStateService,
+            useFactory: (redis: GatewayRedis) =>
+                new AuthStateService(redis, {
+                    timeoutMs: Number(process.env.AUTH_STATE_TIMEOUT_MS) || undefined,
+                }),
+            inject: [GatewayRedis],
+        },
+        {
+            provide: RateLimiterService,
+            useFactory: (redis: GatewayRedis) => new RateLimiterService(redis),
+            inject: [GatewayRedis],
+        },
+        {
+            provide: GuardChain,
+            useFactory: (
+                table: RouteTable,
+                verify: TokenVerifier,
+                state: AuthStateService,
+                limiter: RateLimiterService,
+                pages: PageFlagCheck
+            ) => new GuardChain({ table, verify, state, limiter, pages }),
+            inject: [RouteTable, EDGE_VERIFIER, AuthStateService, RateLimiterService, PageFlagCheck],
+        },
     ],
 })
-export class GatewayModule implements NestModule {
-    configure(consumer: MiddlewareConsumer) {
-        consumer.apply(ProxyMiddleware).forRoutes('*');
-    }
-}
+export class GatewayModule {}

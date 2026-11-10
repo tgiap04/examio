@@ -1,0 +1,127 @@
+// ai-chat-service schema (database-per-service, phase 13). Postgres schema `aichat`,
+// role `aichat_svc`. No relation or FK may point at a model owned by another service:
+// `userId String` and `documentId String` plus an `@@index` instead.
+generator client {
+    provider     = "prisma-client"
+    output       = "../src/generated/prisma"
+    engineType   = "client"
+    moduleFormat = "cjs"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// Idempotency record of the `aichat.events` consumer (libs/messaging).
+model ProcessedEvent {
+    consumer    String
+    eventId     String   @map("event_id")
+    processedAt DateTime @default(now()) @map("processed_at")
+
+    @@id([consumer, eventId])
+    @@index([processedAt])
+    @@map("processed_events")
+}
+
+// R2 objects (chat message images) queued for deletion in the same tx as the row change;
+// the worker role (libs/messaging r2-delete) drains it. Raw SQL: `r2_delete_tasks`.
+model R2DeleteTask {
+    id            String   @id @default(uuid()) @db.Uuid
+    key           String
+    attempts      Int      @default(0)
+    nextAttemptAt DateTime @default(now()) @map("next_attempt_at") @db.Timestamptz(6)
+    lastError     String?  @map("last_error")
+    createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+    @@index([nextAttemptAt])
+    @@map("r2_delete_tasks")
+}
+
+// AI conversation of one user, optionally with an AI teacher (Subject).
+model AIChat {
+    id        String   @id
+    userId    String
+    subjectId String? // AI teacher (subject); nullable for a plain chat
+    title     String   @default("")
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now()) @updatedAt
+
+    subject   Subject?         @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+    messages  AIChatMessage[]
+    documents AIChatDocument[]
+
+    @@index([userId, updatedAt(sort: Desc)])
+    @@index([subjectId])
+}
+
+model AIChatMessage {
+    id           String   @id
+    chatId       String
+    role         String // "user" | "assistant"
+    content      String
+    imageUrl     String? // image URL of the message, if any (an R2 key is queued for deletion with the row)
+    documentId   String? // document-service id when a document was used as context
+    documentName String? // file name for display
+    createdAt    DateTime @default(now())
+
+    chat AIChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+    @@index([chatId, createdAt])
+}
+
+// Documents attached to a chat. `documentId` is a document-service id (no FK): the link is
+// removed by the `document.deleted` event.
+model AIChatDocument {
+    id           String   @id @default(cuid())
+    chatId       String
+    documentId   String
+    documentName String
+    createdAt    DateTime @default(now())
+
+    chat AIChat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+    @@unique([chatId, documentId])
+    @@index([chatId])
+    @@index([documentId])
+}
+
+// Subject category: a group of AI teachers (e.g. natural sciences).
+model SubjectCategory {
+    id          String   @id @default(cuid())
+    name        String   @unique
+    slug        String   @unique
+    description String?
+    icon        String?
+    color       String? // hex or token name
+    order       Int      @default(0)
+    isActive    Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @default(now()) @updatedAt
+
+    subjects Subject[]
+
+    @@index([isActive, order])
+}
+
+// Subject: one AI teacher. `systemPrompt` is proprietary and never leaves this service.
+model Subject {
+    id           String   @id @default(cuid())
+    categoryId   String
+    name         String   @unique
+    slug         String   @unique
+    description  String?
+    icon         String?
+    color        String?
+    systemPrompt String   @db.Text
+    order        Int      @default(0)
+    isActive     Boolean  @default(true)
+    createdAt    DateTime @default(now())
+    updatedAt    DateTime @default(now()) @updatedAt
+
+    category SubjectCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+    aiChats  AIChat[]
+
+    @@index([categoryId, isActive, order])
+    @@index([isActive, order])
+}

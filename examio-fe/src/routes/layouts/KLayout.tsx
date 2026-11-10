@@ -1,6 +1,6 @@
 import { type FormEvent, type PropsWithChildren, useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { AlertTriangle, Languages, Mail, Moon, PanelLeft, Search, Sun, X } from "lucide-react";
+import { AlertTriangle, Mail, Moon, PanelLeft, Search, Sun, X } from "lucide-react";
 import ProfileDropdown from "@/components/atoms/ProfileDropdown";
 import { SidebarKit } from "@/components/organisms/k/SideBar";
 import { PendingJobDialog } from "@/components/organisms/PendingJobDialog";
@@ -8,13 +8,16 @@ import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useJobStore } from "@/stores/useAIGeneratorStore";
 import { useThemeContext } from "@/provider/ThemeProvider";
-import { useIsDesktop } from "@/hooks/useMediaQuery";
-import { useIsMobile } from "@/hooks/useMediaQuery";
+import { useIsDesktop, useIsMobile } from "@/hooks/useMediaQuery";
+import { usePageConfigSse } from "@/hooks/usePageConfigSse";
 import Logo from "@/components/atoms/Logo";
 
 export function KLayout({ children }: PropsWithChildren) {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Kết nối SSE realtime cho page-toggle (1 connection suốt vòng đời layout).
+  usePageConfigSse();
   const { user, sendVerificationEmail, loading } = useAuthStore();
   const isDesktop = useIsDesktop();
   const isMobile = useIsMobile();
@@ -111,8 +114,14 @@ export function KLayout({ children }: PropsWithChildren) {
       <SidebarKit collapsed={sidebarCollapsed} />
 
       <main
-        className="m-0 w-full overflow-x-clip pb-5 pt-10 xl:pb-0"
-        style={{ marginLeft: isDesktop ? sidebarWidth : 0 }}
+        className="m-0 overflow-x-clip pb-5 pt-10 xl:pb-0"
+        style={{
+          marginLeft: isDesktop ? sidebarWidth : 0,
+          // Width must exclude the sidebar gutter — using w-full (100%) together
+          // with marginLeft pushed main's box past the viewport by sidebarWidth,
+          // creating a phantom horizontal overflow on every desktop page.
+          width: isDesktop ? `calc(100% - ${sidebarWidth}px)` : "100%",
+        }}
       >
         {showVerificationBanner && (
           <div className="mx-4 mt-4 flex w-auto flex-col items-start justify-between gap-2 rounded-lg border border-warning/25 bg-warning/10 px-3 py-2 text-body shadow-[0_1px_3px_rgba(20,20,19,0.08)] sm:flex-row sm:items-center sm:gap-4 sm:px-4 sm:py-2.5">

@@ -1,0 +1,38 @@
+{
+  "at": "2026-10-21T18:35:30.138Z",
+  "results": [
+    {
+      "name": "R8-5 setup: student login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R8-5 setup: in room, socket connected",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R8-5 (F10): no pairs: no two refreshes within 0.5 s of each other",
+      "ok": true,
+      "extra": "pairs=0 at s=none"
+    },
+    {
+      "name": "R8-5 (F10): total refreshes <= 1 + backoff ticks before give-up (<= 6)",
+      "ok": true,
+      "extra": "refresh requests=5 at s=1.3,2.1,4.3,8.7,17.8"
+    },
+    {
+      "name": "R8-5: transport give-up toast shown once after the capped reconnects",
+      "ok": true,
+      "extra": "toast first at +31 s"
+    },
+    {
+      "name": "R8-5: silence after the cap: zero refresh and zero socket attempts in the last 60 s",
+      "ok": true,
+      "extra": "late refresh=0 late ws=0"
+    }
+  ],
+  "refresh": 6,
+  "ws": 9,
+  "toasts": 14
+}

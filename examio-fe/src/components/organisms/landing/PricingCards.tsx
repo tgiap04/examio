@@ -2,7 +2,6 @@ import NumberFlow from "@number-flow/react";
 import { Check, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { cn } from "@/lib/utils";
 
 export interface PricingTierFeature {
     label: string;
@@ -17,7 +16,8 @@ export interface PricingTier {
     description: string;
     features: PricingTierFeature[];
     ctaLabel: string;
-    ctaHref: string;
+    /** null renders the label as plain text (no link). */
+    ctaHref: string | null;
     popular?: boolean;
 }
 
@@ -122,17 +122,23 @@ function TierCard({ tier, isYearly, idx }: { tier: PricingTier; isYearly: boolea
             </ul>
 
             {/* CTA */}
-            <Link
-                to={tier.ctaHref}
-                className={`w-full py-4 flex items-center justify-center gap-2 text-sm font-medium transition-all group ${
-                    isFeatured
-                        ? "bg-foreground text-canvas hover:bg-foreground/90"
-                        : "border border-foreground/20 text-ink hover:border-foreground hover:bg-foreground/5"
-                }`}
-            >
-                {tier.ctaLabel}
-                <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-            </Link>
+            {tier.ctaHref === null ? (
+                <p className="w-full py-4 text-center text-sm font-medium text-muted-foreground border border-foreground/10">
+                    {tier.ctaLabel}
+                </p>
+            ) : (
+                <Link
+                    to={tier.ctaHref}
+                    className={`w-full py-4 flex items-center justify-center gap-2 text-sm font-medium transition-all group ${
+                        isFeatured
+                            ? "bg-foreground text-canvas hover:bg-foreground/90"
+                            : "border border-foreground/20 text-ink hover:border-foreground hover:bg-foreground/5"
+                    }`}
+                >
+                    {tier.ctaLabel}
+                    <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                </Link>
+            )}
         </article>
     );
 }

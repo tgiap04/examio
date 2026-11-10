@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { BaseRepository } from '@examio/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
-import { Payment } from '@prisma/client';
+import { Payment } from '../../prisma';
 
 @Injectable()
 export class PaymentRepository extends BaseRepository<Payment> {
@@ -90,16 +90,42 @@ export class PaymentRepository extends BaseRepository<Payment> {
         const cached = await this.redis.get<any>(cacheKey);
         if (cached) return cached;
 
-        const [paid, pending] = await Promise.all([
-            this.findPaidByUser(userId, false),
-            this.findPendingByUser(userId, false),
-        ]);
+        // Sum paid/pending amounts in the database instead of loading
+        // every payment row to reduce it in JS
+        const grouped = await this.model.groupBy({
+            by: ['status'],
+            where: { userId },
+            _sum: { amount: true },
+            _count: true,
+        });
 
-        const stats = {
-            totalPaid: paid.reduce((sum, p) => sum + p.amount, 0),
-            totalPending: pending.reduce((sum, p) => sum + p.amount, 0),
-            paymentCount: paid.length + pending.length,
-        };
+        const stats = grouped.reduce(
+            (
+                acc: {
+                    totalPaid: number;
+                    totalPending: number;
+                    paymentCount: number;
+                },
+                row: {
+                    status: number;
+                    _sum: { amount: number | null };
+                    _count: number;
+                }
+            ) => {
+                const sum = row._sum.amount || 0;
+                if (row.status === 1) {
+                    // 1: paid
+                    acc.totalPaid += sum;
+                    acc.paymentCount += row._count;
+                } else if (row.status === 0) {
+                    // 0: unpaid (pending)
+                    acc.totalPending += sum;
+                    acc.paymentCount += row._count;
+                }
+                return acc;
+            },
+            { totalPaid: 0, totalPending: 0, paymentCount: 0 }
+        );
 
         await this.redis.set(cacheKey, stats, EXPIRED_TIME.TEN_MINUTES);
 

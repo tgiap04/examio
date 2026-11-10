@@ -1,5 +1,11 @@
 import { api } from "./api";
 import { QuizSet, Quizz } from "@/types/quizset";
+import { acceptDomainStatuses, unwrap } from "@/lib/quiz-practice/api-failure";
+import type {
+  SharingDelta,
+  SharingSearchUser,
+  SharingView,
+} from "@/lib/quiz-practice/sharing-types";
 
 export type CredentialsQuizSet = Omit<
   QuizSet,
@@ -371,5 +377,43 @@ export async function getQuestionsByLabelApi(
       params: { page, limit },
     }
   );
+  return response.data;
+}
+
+// ==================== Sharing (owner only) ====================
+
+export async function getQuizSetSharingApi(id: string): Promise<SharingView> {
+  const response = await api.get(`/quizsets/${id}/sharing`);
+  return response.data;
+}
+
+/** Deltas applied atomically; 409 SHARE_LIST_FULL arrives as an `ApiFailure`. */
+export async function updateQuizSetSharingApi(
+  id: string,
+  delta: SharingDelta
+): Promise<SharingView> {
+  return unwrap(
+    await api.put(`/quizsets/${id}/sharing`, delta, {
+      validateStatus: acceptDomainStatuses,
+    })
+  );
+}
+
+/** Rotates the code: everyone who unlocked the old one is asked again. */
+export async function generateQuizSetCodeApi(
+  id: string
+): Promise<{ accessCode: string }> {
+  const response = await api.post(`/quizsets/${id}/generate-code`);
+  return response.data;
+}
+
+/** At least 3 characters; no email is returned. */
+export async function searchQuizSetUsersApi(
+  query: string
+): Promise<SharingSearchUser[]> {
+  if (query.trim().length < 3) return [];
+  const response = await api.get("/quizsets/users/search", {
+    params: { q: query.trim() },
+  });
   return response.data;
 }

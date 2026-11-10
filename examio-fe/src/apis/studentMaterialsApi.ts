@@ -16,7 +16,7 @@ export interface RecentFlashcardSet {
     username: string;
     name: string | null;
     avatar: string | null;
-  };
+  } | null;
   isPublic: boolean;
   isPinned: boolean;
   progress?: number;
@@ -83,13 +83,6 @@ export async function getRecentExamAttemptsApi(
   const response = await api.get("/student/recent-exams", {
     params: { limit, page },
   });
-  return response.data;
-}
-
-export async function generateShareLinkApi(
-  flashcardSetId: string
-): Promise<{ shareUrl: string; accessCode: string }> {
-  const response = await api.post(`/flashcardsets/${flashcardSetId}/share`);
   return response.data;
 }
 

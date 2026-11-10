@@ -1,10 +1,7 @@
 """
-KMA Chat Agent - Intelligent assistant for Academy of Cryptographic Techniques students.
-
-This package provides chatbot functionality for answering student queries about 
-regulations, student information, and academic scores.
+Examio AI service - RAG, document processing and AI generation for Examio.
 """
 
-from . import agent, rag, score, llm
+from . import rag, llm
 
 __version__ = "0.1.0"

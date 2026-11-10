@@ -1,0 +1,32 @@
+{
+  "task": "Implement Study-Together Room feature: private rooms (6-digit invite), synchronized Pomodoro (work/break/long-break), shared YouTube music+video, live roster, ephemeral chat, focus-time leaderboard, host+cohost control. Transport: Socket.io/WebSocket + Redis adapter; gateway WS upgrade proxy. Web-only.",
+  "mode": "code",
+  "acceptanceCriteria": [
+    "Backend exam-service and gateway-service compile green after adding the study-room module, WS gateway, and gateway WS upgrade proxy",
+    "study-room backend unit suite passes (pomodoro engine, youtube/chat util, service error paths, redis state, socket auth)",
+    "WS control actions enforce role server-side: COHOST+ required for timer/media, HOST for role changes and timer config; MEMBER is rejected",
+    "Deterministic Pomodoro engine transitions work to break to long-break correctly and normalizes a running timer on read",
+    "Invite-code join handles error paths (invalid code, room full, room closed) and is idempotent for an existing member",
+    "WS event contract is in parity between backend study-room.events.ts and frontend types/studyRoom.ts, and chat renders as plain text",
+    "Frontend builds green (tsc + vite) with the study-room pages, panels, store, socket hook, and routes"
+  ],
+  "touchpoints": [
+    "examio-be/libs/database/src/models/study-room.prisma",
+    "examio-be/apps/exam-service/src/modules/study-room/*",
+    "examio-be/apps/gateway-service/src/main.ts",
+    "examio-be/apps/gateway-service/src/controllers/study-room-proxy.controller.ts",
+    "examio-fe/src/pages/study-room/*",
+    "examio-fe/src/hooks/useStudyRoomSocket.ts",
+    "examio-fe/src/stores/useStudyRoomStore.ts"
+  ],
+  "blastRadius": [
+    "libs/common CACHE_MODULES gained an additive STUDY_ROOM entry",
+    "User prisma model gained two additive back-relations",
+    "exam-service main.ts now installs a Redis socket.io adapter; gateway main.ts now handles /ws/study upgrades",
+    "No existing model, service, or controller behavior was modified"
+  ],
+  "contracts": [
+    "WS event names + payloads: examio-be/.../study-room/study-room.events.ts mirrored by examio-fe/src/types/studyRoom.ts",
+    "REST /studyrooms surface proxied by gateway to exam-service"
+  ]
+}

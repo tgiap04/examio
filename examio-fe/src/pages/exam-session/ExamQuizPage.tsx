@@ -1,10 +1,9 @@
-/* eslint-disable react-dom/no-dangerously-set-innerhtml */
+ 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/antd/button";
 import { Card, CardContent } from "@/components/antd/card";
 import { Progress } from "@/components/antd/progress";
-import { ScrollArea } from "@/components/antd/scroll-area";
 import {
   AlertTriangle,
   BarChart3,
@@ -115,8 +114,15 @@ export default function ExamQuizPage() {
     [attemptId, answers, currentQuestionIndex, markedForReview, isSubmitted],
   );
 
+  const autoSubmittingRef = useRef(false);
+  const [autoSubmitFailed, setAutoSubmitFailed] = useState(false);
+
   const handleAutoSubmit = useCallback(async () => {
     if (!attemptId || tokenMap.size === 0) return;
+    // Re-entry guard: the time-up effect re-fires every second; don't stack
+    // overlapping auto-submits.
+    if (autoSubmittingRef.current) return;
+    autoSubmittingRef.current = true;
 
     try {
       await updateExamAttemptProgressApi(attemptId, {
@@ -141,8 +147,19 @@ export default function ExamQuizPage() {
       toast.info("Đã hết thời gian", {
         description: "Bài thi đã được tự động nộp",
       });
-    } catch (err) {
+    } catch (err: any) {
+      // Stop the per-second retry loop and surface the reason, so the user
+      // isn't stuck on the quiz with no feedback (e.g. stale tokens after a
+      // secret rotation, or timer drift past JWT expiry). Answers stay saved.
       console.error("Failed to auto-submit:", err);
+      setAutoSubmitFailed(true);
+      const message =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Không thể tự động nộp bài. Vui lòng tải lại trang rồi nộp lại — câu trả lời của bạn vẫn được lưu.";
+      toast.error(message);
+    } finally {
+      autoSubmittingRef.current = false;
     }
   }, [attemptId, answers, currentQuestionIndex, markedForReview, tokenMap]);
 
@@ -217,8 +234,16 @@ export default function ExamQuizPage() {
           return;
         }
 
-        // Case 2 & 3: normal flow (new or resume)
-        const startResult = await startExamAttemptApi(examSessionId);
+        // Case 2 & 3: normal flow (new or resume). Forward the verified access
+        // code (if any) so the server can enforce access for code-gated
+        // sessions when the attempt is created (C3).
+        const storedAccessCode =
+          sessionStorage.getItem(`examio:exam-code:${examSessionId}`) ?? undefined;
+        const startResult = await startExamAttemptApi(
+          examSessionId,
+          undefined,
+          storedAccessCode,
+        );
         setAttemptId(startResult.examAttempt.id);
 
         const secureQuizData = await fetchAndDecryptSecureQuiz(startResult.examAttempt.id);
@@ -262,6 +287,14 @@ export default function ExamQuizPage() {
         }
       } catch (err: any) {
         const message = err?.response?.data?.message || err?.message || "Không thể bắt đầu bài thi";
+        // Access denied (e.g. code-gated session opened without a verified
+        // code) — send the user to the session page to enter the access code
+        // instead of dead-ending here.
+        if (err?.response?.status === 403) {
+          toast.error(message);
+          navigate(`/exam-session/${examSessionId}`, { replace: true });
+          return;
+        }
         setError(message);
         toast.error(message);
       } finally {
@@ -298,11 +331,13 @@ export default function ExamQuizPage() {
         });
       }
 
-      if (remainingSeconds <= 0) {
+      // Stop retrying once an auto-submit has failed — otherwise this effect
+      // re-fires every second and loops the same error forever.
+      if (remainingSeconds <= 0 && !autoSubmitFailed) {
         handleAutoSubmit();
       }
     }
-  }, [timeSpentSeconds, timeLimitMinutes, loading, isSubmitted, hasWarned30s, handleAutoSubmit]);
+  }, [timeSpentSeconds, timeLimitMinutes, loading, isSubmitted, hasWarned30s, handleAutoSubmit, autoSubmitFailed]);
 
   useEffect(() => {
     if (attemptId && !loading && !isSubmitted) {

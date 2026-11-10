@@ -1,14 +1,16 @@
 import { Module } from '@nestjs/common';
-import { AdminGuard, AuthModule } from '@examio/common';
+
+import { GrpcClientModule } from '@examio/grpc';
 
 import { AdminCommonModule } from '../../common/admin-common.module';
+import { VOCABULARY_GRPC_REGISTRATION, VocabularyClient } from '../../clients/vocabulary.client';
 import { AdminWordFamilyController } from './admin-word-family.controller';
 import { AdminWordFamilyService } from './admin-word-family.service';
 
 @Module({
-    imports: [AdminCommonModule, AuthModule],
+    imports: [AdminCommonModule, GrpcClientModule.register(VOCABULARY_GRPC_REGISTRATION)],
     controllers: [AdminWordFamilyController],
-    providers: [AdminWordFamilyService, AdminGuard],
+    providers: [AdminWordFamilyService, VocabularyClient],
     exports: [AdminWordFamilyService],
 })
 export class AdminWordFamilyModule {}

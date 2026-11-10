@@ -19,12 +19,10 @@ WORKDIR /app
 COPY . .
 ARG VITE_API_URL
 ARG VITE_MEASUREMENT_ID
-ARG VITE_QUIZ_AES_KEY
 ARG VITE_TURNSTILE_SITE_KEY
 ARG VITE_GOOGLE_CLIENT_ID
 ENV VITE_API_URL=${VITE_API_URL} \
     VITE_MEASUREMENT_ID=${VITE_MEASUREMENT_ID} \
-    VITE_QUIZ_AES_KEY=${VITE_QUIZ_AES_KEY} \
     VITE_TURNSTILE_SITE_KEY=${VITE_TURNSTILE_SITE_KEY} \
     VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
 RUN yarn build
@@ -36,6 +34,7 @@ RUN apk add --no-cache curl
 
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/templates/default.conf.template
+COPY nginx/cloudflare-real-ip.conf /etc/nginx/cloudflare-real-ip.conf
 
 EXPOSE 80
 

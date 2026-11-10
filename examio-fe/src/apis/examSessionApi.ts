@@ -198,7 +198,6 @@ export async function searchUsersForWhitelistApi(query: string): Promise<
     username: string;
     name: string | null;
     avatar: string | null;
-    email: string;
   }[]
 > {
   const response = await api.get("/examsessions/users/search", {
@@ -235,5 +234,12 @@ export async function getExamSessionStatsApi(
   id: string
 ): Promise<ExamSessionStats> {
   const response = await api.get(`/examsessions/study/${id}/stats`);
+  return response.data;
+}
+
+export async function refreshSnapshotApi(
+  id: string
+): Promise<{ quizSnapshotHash: string }> {
+  const response = await api.post(`/examsessions/${id}/refresh-snapshot`);
   return response.data;
 }

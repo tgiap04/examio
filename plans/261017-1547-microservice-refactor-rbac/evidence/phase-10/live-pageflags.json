@@ -1,0 +1,26 @@
+{
+  "ts": "2026-10-22T00:31:18.213Z",
+  "fails": 0,
+  "results": [
+    {
+      "id": "PF.setup.admin-disable",
+      "ok": true,
+      "detail": "admin set ai-tool=false"
+    },
+    {
+      "id": "PF.a.boot-pull-from-admin",
+      "ok": true,
+      "detail": "gateway up=true; key after boot={\"ai-tool\":false}"
+    },
+    {
+      "id": "PF.b.admin-down-gateway-serves-default",
+      "ok": true,
+      "detail": "gateway up=true; key while admin down=''; /config/pages status ok, pages=0"
+    },
+    {
+      "id": "PF.b.retry-after-admin-up",
+      "ok": true,
+      "detail": "admin up=true; gateway pulled flags after admin returned=true (2s)"
+    }
+  ]
+}

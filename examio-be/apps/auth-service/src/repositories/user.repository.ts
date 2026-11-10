@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { User } from '@prisma/client';
-import { PrismaService } from '@examio/database';
+import { User } from '../prisma';
+import { PrismaService } from '../prisma';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
 
 @Injectable()
@@ -93,14 +93,6 @@ export class UserRepository {
                     { username: credential.toLowerCase() },
                 ],
             },
-            include: {
-                wallet: {
-                    select: {
-                        balance: true,
-                    },
-                },
-                subscription: true,
-            },
         });
     }
 
@@ -115,11 +107,7 @@ export class UserRepository {
     ): Promise<User | null> {
         const include: any = {};
         relations.forEach((rel) => {
-            if (rel === 'wallet') {
-                include.wallet = { select: { balance: true } };
-            } else {
-                include[rel] = true;
-            }
+            include[rel] = true;
         });
 
         const relationKey =
@@ -166,16 +154,24 @@ export class UserRepository {
             data,
         });
 
-        // Invalidate caches
-        await this.redis.delPattern(`${this.cachePrefix}:*${id}*`);
-        await this.redis.del(
-            this.getCacheKey(`email:${result.email.toLowerCase()}`)
-        );
-        await this.redis.del(
-            this.getCacheKey(`username:${result.username.toLowerCase()}`)
-        );
+        await this.invalidateCaches(result);
 
         return result;
+    }
+
+    /** Drops every cached view of a user (by id, email and username). */
+    async invalidateCaches(user: {
+        id: string;
+        email: string;
+        username: string;
+    }): Promise<void> {
+        await this.redis.delPattern(`${this.cachePrefix}:*${user.id}*`);
+        await this.redis.del(
+            this.getCacheKey(`email:${user.email.toLowerCase()}`)
+        );
+        await this.redis.del(
+            this.getCacheKey(`username:${user.username.toLowerCase()}`)
+        );
     }
 
     /**

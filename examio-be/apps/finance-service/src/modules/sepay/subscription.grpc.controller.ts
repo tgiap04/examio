@@ -1,13 +1,23 @@
 import { Controller } from '@nestjs/common';
-import { GrpcMethod } from '@nestjs/microservices';
+import { Metadata } from '@grpc/grpc-js';
+import { subscriptionV1 } from '@examio/contracts';
 import { SubscriptionService } from './subscription.service';
+import { RequirePermissionsOrService, assertSelfOrService } from '@examio/auth-jwt';
 
 @Controller()
-export class SubscriptionGrpcController {
+@subscriptionV1.SubscriptionServiceControllerMethods()
+export class SubscriptionGrpcController
+    implements subscriptionV1.SubscriptionServiceController
+{
     constructor(private readonly subscriptionService: SubscriptionService) {}
 
-    @GrpcMethod('SubscriptionService', 'GetUserBenefits')
-    async getUserBenefits(data: { userId: string }) {
+    @RequirePermissionsOrService([])
+    async getUserBenefits(
+        data: subscriptionV1.GetUserBenefitsRequest,
+        metadata: Metadata
+    ): Promise<subscriptionV1.GetUserBenefitsResponse> {
+        // A user token may only read its OWN benefits; allowlisted services any.
+        assertSelfOrService(metadata, data.userId);
         const benefits =
             await this.subscriptionService.getUserSubscriptionBenefits(
                 data.userId
@@ -21,10 +31,10 @@ export class SubscriptionGrpcController {
 
         return {
             tier,
-            tier_name: benefits.nameVi,
-            files_per_month: benefits.filesPerMonth,
-            messages_per_minute: benefits.messagesPerMinute,
-            chat_messages_limit: benefits.chatMessagesLimit,
+            tierName: benefits.nameVi,
+            filesPerMonth: benefits.filesPerMonth,
+            messagesPerMinute: benefits.messagesPerMinute,
+            chatMessagesLimit: benefits.chatMessagesLimit,
         };
     }
 }

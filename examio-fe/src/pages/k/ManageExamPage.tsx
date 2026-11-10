@@ -11,7 +11,6 @@ import { QuizSetModal } from "@/components/organisms/QuizSetModal";
 import { DeleteConfirmDialog } from "@/components/organisms/DeleteConfirmDialog";
 import type { QuizSetFormData } from "@/components/molecules/QuizSetForm";
 import { TableSkeletonLoader } from "@/components/organisms/TableSkeletonLoader";
-import { TeacherRoute } from "@/components/organisms/TeacherRoute";
 
 export default function ManageExamPage() {
   const navigate = useNavigate();
@@ -233,7 +232,7 @@ export default function ManageExamPage() {
   }
 
   return (
-    <TeacherRoute>
+    <>
       <ExamManagementTemplate
         stats={stats}
         exams={transformedExams}
@@ -277,6 +276,6 @@ export default function ManageExamPage() {
         isLoading={loading}
         onConfirm={handleConfirmDelete}
       />
-    </TeacherRoute>
+    </>
   );
 }

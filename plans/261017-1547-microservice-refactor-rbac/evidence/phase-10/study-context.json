@@ -1,0 +1,22 @@
+{
+  "task": "Phase 10 Cut Cross-DB Access: every Prisma model read/written by exactly one service in code; cross-service access via gRPC/events; idempotent money RPCs (Debit/Credit/Refund with idempotencyKey), FinanceAdminService, auth UpdateUserAdmin/SearchUsers/GetUserStats, finance GetRevenueStats, admin-stats via RPCs, page flags via gateway SetPageFlags/GetPageFlags, exam user enrichment via GetPublicProfilesByIds with Redis cache and no email, WordFamilyAdminService in exam, /auth/me without wallet/subscription, FE wallet via GET /wallet/info, model-ownership script + dependency-cruiser enforced in CI",
+  "mode": "code",
+  "acceptanceCriteria": [
+    "npx ts-node scripts/check-model-ownership.ts --strict exit 0; npx depcruise apps libs --config .dependency-cruiser.cjs 0 errors; both enforced in CI",
+    "no prisma/tx access to wallet|walletTransaction|payment|userSubscription|user|userSession in admin-service; no prisma/tx user|userSession in exam-service or gateway-service; no `email: true` in exam-service",
+    "auth user.repository has no wallet/subscription; /auth/me, login, refresh return { user, roles, permissions } with no user.wallet, user.subscription, user.isAdmin; /auth/me works with finance stopped",
+    "no UpdateBalance/updateBalance in apps, proto, libs; exam AI debits go through Debit with an idempotency key via the shared libs/grpc finance client (AI_FREE_MODE moved there, forced off in production)",
+    "Debit same key twice (incl. concurrent) -> one tx, second already_applied; insufficient -> FAILED_PRECONDITION and no tx row; Refund twice -> one credit; unknown key -> NOT_FOUND; libs/grpc retries only allowlisted idempotent RPCs",
+    "FinanceAdminService writes with idempotency key apply once; actor = forwarded token sub; without finance:admin -> PERMISSION_DENIED; admin-finance HTTP shapes unchanged; finance UNAVAILABLE -> 503",
+    "welcome wallet tx has idempotencyKey welcome:<userId>; Debit by TEACHER without wallet creates wallet then debits",
+    "auth UpdateUserAdmin writes outbox auth.user.updated in the same tx; GetUsersByIds requires service token + user:manage; exam enrichment N ids -> 1 RPC, cached -> 0 RPC, order kept, unknown -> null; exam worker DELs cache on auth.user.updated; no email key in exam responses",
+    "admin overview/series numbers equal pre-change output (golden JSON) via GetUserStats + GetRevenueStats; 5-min Redis cache kept",
+    "page flags: admin PATCH -> gateway SetPageFlags; gateway boot pulls GetPageFlags when empty; study-room no longer reads the shared key",
+    "WordFamilyAdminService served by exam; admin-word-family calls it; exam category CUD routes deleted; DeleteCategory deletes R2 image",
+    "FE: User type has no wallet; balance loaded from GET /wallet/info with wallet:use, cached per session; grep user?.wallet in examio-fe/src none; single toast per denied action (D9)",
+    "yarn build/test green in examio-be; examio-fe build/lint/test green"
+  ],
+  "touchpoints": ["examio-be/apps/admin-service", "examio-be/apps/finance-service", "examio-be/apps/auth-service", "examio-be/apps/gateway-service", "examio-be/apps/exam-service", "examio-be/proto", "examio-be/libs/grpc", "examio-be/libs/database", "examio-be/scripts", ".github/workflows/ci.yml", "examio-fe/src"],
+  "blastRadius": ["all money flows (AI debit, admin credit/refund/tier)", "/auth/me consumers (FE, mobile unreleased)", "admin dashboard stats", "page flags", "every exam view that shows user info", "word-family admin"],
+  "contracts": ["finance.v1 WalletService Debit/Credit/Refund (UpdateBalance removed, breaking)", "finance.v1 FinanceAdminService, GetRevenueStats", "auth.v1 UpdateUserAdmin, SearchUsers, GetUserStats, GetUsersByIds privileged", "admin.v1 GetPageFlags", "vocabulary.v1 WordFamilyAdminService", "events auth.user.updated, finance.subscription.changed", "/auth/me response shape (wallet/subscription removed)"]
+}

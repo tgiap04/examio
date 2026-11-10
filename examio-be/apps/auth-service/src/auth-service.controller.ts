@@ -1,15 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
 import { AuthServiceService } from './auth-service.service';
+import { Public } from '@examio/auth-jwt';
 
 @Controller()
 export class AuthServiceController {
   constructor(private readonly authServiceService: AuthServiceService) {}
 
-  @Get('health')
-  health() {
-    return { status: 'ok', service: 'auth-service' };
-  }
-
+  @Public()
   @Get()
   getHello(): string {
     return this.authServiceService.getHello();

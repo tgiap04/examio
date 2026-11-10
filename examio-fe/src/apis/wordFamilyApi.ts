@@ -14,6 +14,18 @@ export interface GenerateWordFamilyBody {
   excludeRootWords?: string[];
 }
 
+export interface GenerateRootWordFamilyBody {
+  categorySlug: string;
+  rootWord: string;
+}
+
+export interface GenerateRootWordFamilyResponse {
+  generating: boolean;
+  categorySlug: string;
+  rootWord: string;
+  startedAt: string;
+}
+
 export interface CreateCategoryBody {
   name: string;
   slug: string;
@@ -48,6 +60,12 @@ export interface CreateFlashcardResponse {
   cardCount: number;
 }
 
+export interface GenerationStatusResponse {
+  categorySlug: string;
+  generating: boolean;
+  startedAt: string | null;
+}
+
 // ==================== User Endpoints ====================
 
 export async function getWordFamilyCategoriesApi(): Promise<WordFamilyCategory[]> {
@@ -76,6 +94,37 @@ export async function generateWordFamilyApi(
   body: GenerateWordFamilyBody,
 ): Promise<WordFamilyRecord> {
   const response = await api.post("/word-family/generate", body);
+  return response.data;
+}
+
+export async function generateWordFamilyForRootApi(
+  body: GenerateRootWordFamilyBody,
+): Promise<GenerateRootWordFamilyResponse> {
+  const response = await api.post("/word-family/generate-root", body);
+  return response.data;
+}
+
+export async function getWordFamilyGenerationStatusApi(
+  slug: string,
+): Promise<GenerationStatusResponse> {
+  const response = await api.get(`/word-family/generation-status/${slug}`);
+  return response.data;
+}
+
+export interface RootGenerationStatusResponse {
+  categorySlug: string;
+  rootWord: string;
+  generating: boolean;
+  startedAt: string | null;
+}
+
+export async function getRootWordFamilyGenerationStatusApi(
+  categorySlug: string,
+  rootWord: string,
+): Promise<RootGenerationStatusResponse> {
+  const response = await api.get(
+    `/word-family/generation-status/${categorySlug}/${encodeURIComponent(rootWord)}`,
+  );
   return response.data;
 }
 

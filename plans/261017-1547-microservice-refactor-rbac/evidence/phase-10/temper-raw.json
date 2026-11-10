@@ -1,0 +1,1604 @@
+[
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: yarn proto:gen",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/be-proto-gen.log)",
+    "ts": "2026-10-22T00:12:00Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: yarn proto:lint",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/be-proto-lint.log)",
+    "ts": "2026-10-22T00:12:00Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: yarn typecheck",
+    "exitCode": 0,
+    "summary": "exit 0 in 13s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/be-typecheck.log)",
+    "ts": "2026-10-22T00:12:13Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: yarn check:ownership",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; Violations: 0 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/be-check-ownership.log)",
+    "ts": "2026-10-22T00:12:14Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: yarn check:deps",
+    "exitCode": 0,
+    "summary": "exit 0 in 2s; x 8 dependency violations (0 errors, 8 warnings). 753 modules, 2855 dependencies cruised.  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/be-check-deps.log)",
+    "ts": "2026-10-22T00:12:16Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-fe :: yarn build",
+    "exitCode": 0,
+    "summary": "exit 0 in 12s; \u2713 built in 9.84s (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/fe-build.log)",
+    "ts": "2026-10-22T00:12:34Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-fe :: yarn lint",
+    "exitCode": 0,
+    "summary": "exit 0 in 6s; \u2716 32 problems (0 errors, 32 warnings)  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/fe-lint.log)",
+    "ts": "2026-10-22T00:12:40Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-fe :: yarn test",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s;    Duration  305ms (transform 40%, import 34%, tests 15%, worker 11%, environment 1%) (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/fe-test.log)",
+    "ts": "2026-10-22T00:12:41Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: yarn build:all",
+    "exitCode": 0,
+    "summary": "exit 0 in 25s; webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 2273 ms (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/be-build-all.log)",
+    "ts": "2026-10-22T00:12:46Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: TZ=UTC yarn test",
+    "exitCode": 0,
+    "summary": "exit 0 in 13s; \u001b[33m[Nest] 73627  - \u001b[39m10/22/2026, 12:12:59 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[AmqpConnection] \u001b[39m\u001b[33mAMQP consumer1 channel error: Channel ended, no reply will be forthcoming\u001b[39m Test Suites: 169 passed, 169 total Tests:       1804 passed, 1804 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/be-unit-jest-utc.log)",
+    "ts": "2026-10-22T00:12:59Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/proto :: buf breaking . --against '../../.git#branch=main,subdir=examio-be/proto'",
+    "exitCode": 127,
+    "summary": "exit 127 in 0s; bash: buf: command not found (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/buf-breaking.log)",
+    "ts": "2026-10-22T00:13:03Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/proto :: /Users/tgiap.dev/devs/examio/examio-be/node_modules/.bin/buf lint",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/buf-lint-direct.log)",
+    "ts": "2026-10-22T00:13:10Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/proto :: /Users/tgiap.dev/devs/examio/examio-be/node_modules/.bin/buf breaking --against '/Users/tgiap.dev/devs/examio/.git#branch=main,subdir=examio-be/proto'",
+    "exitCode": 1,
+    "summary": "exit 1 in 1s; Failure: Module \"path: \"examio-be/proto\"\" had no .proto files (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/buf-breaking-main.log)",
+    "ts": "2026-10-22T00:13:11Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/proto :: /Users/tgiap.dev/devs/examio/examio-be/node_modules/.bin/buf breaking --against '/Users/tgiap.dev/devs/examio/.git#branch=main,subdir=examio-be/proto' --config '{\"version\":\"v2\",\"breaking\":{\"use\":[\"FILE\"]}}'",
+    "exitCode": 1,
+    "summary": "exit 1 in 1s; Failure: Module \"path: \"examio-be/proto\"\" had no .proto files (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/buf-breaking-no-override.log)",
+    "ts": "2026-10-22T00:13:12Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/proto :: /Users/tgiap.dev/devs/examio/examio-be/node_modules/.bin/buf breaking --against '/Users/tgiap.dev/devs/examio/.git#ref=HEAD,subdir=examio-be/proto'",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/buf-breaking-vs-HEAD.log)",
+    "ts": "2026-10-22T00:13:20Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/proto :: /Users/tgiap.dev/devs/examio/examio-be/node_modules/.bin/buf breaking --against '/Users/tgiap.dev/devs/examio/.git#ref=HEAD,subdir=examio-be/proto' --config /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/buf-noov.yaml",
+    "exitCode": 100,
+    "summary": "exit 100 in 2s; examio/finance/v1/wallet.proto:5:1:Previously present RPC \"UpdateBalance\" on service \"WalletService\" was deleted. (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/buf-breaking-no-override.log)",
+    "ts": "2026-10-22T00:13:25Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: ! grep -rn 'UpdateBalance\\|updateBalance' apps proto libs --include=*.ts --include=*.proto --include=*.py | grep -v generated",
+    "exitCode": 0,
+    "summary": "exit 0 in 5s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/grep-updatebalance.log)",
+    "ts": "2026-10-22T00:13:34Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: ! grep -rnE '(prisma|tx)\\.(wallet|walletTransaction|payment|userSubscription|user|userSession)\\b' apps/admin-service/src",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/grep-admin-foreign-prisma.log)",
+    "ts": "2026-10-22T00:13:34Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: ! grep -rnE '(prisma|tx)\\.(user|userSession)\\b' apps/exam-service/src apps/gateway-service/src",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/grep-exam-gw-user-prisma.log)",
+    "ts": "2026-10-22T00:13:34Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: ! grep -rn 'email: true' apps/exam-service/src",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/grep-exam-email-true.log)",
+    "ts": "2026-10-22T00:13:34Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: ! grep -nE 'wallet|subscription' apps/auth-service/src/repositories/user.repository.ts",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/grep-auth-repo-wallet.log)",
+    "ts": "2026-10-22T00:13:34Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-fe :: ! grep -rnE 'user\\??\\.wallet|isAdmin' src/types/user.ts src/stores/useAuthStore.ts src/pages",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/grep-fe-wallet-isadmin.log)",
+    "ts": "2026-10-22T00:13:34Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-fe :: ! grep -rnE 'user\\??\\.wallet' src",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/grep-fe-user-wallet-all.log)",
+    "ts": "2026-10-22T00:13:34Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/infra-up.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 6s; rmq check_running exit: 0 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/infra-up.log)",
+    "ts": "2026-10-22T00:14:15Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh auth './node_modules/.bin/prisma migrate deploy --schema=libs/database/src/schema.prisma'",
+    "exitCode": 1,
+    "summary": "exit 1 in 1s; Error: P1000: Authentication failed against database server, the provided database credentials for `examio` are not valid.  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/migrate-deploy-auth.log)",
+    "ts": "2026-10-22T00:14:33Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh finance './node_modules/.bin/prisma migrate deploy --schema=libs/database/src/schema.prisma'",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; Error: P1000: Authentication failed against database server, the provided database credentials for `examio` are not valid.  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/migrate-deploy-finance.log)",
+    "ts": "2026-10-22T00:14:33Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh admin './node_modules/.bin/prisma migrate deploy --schema=libs/database/src/schema.prisma'",
+    "exitCode": 1,
+    "summary": "exit 1 in 1s; Error: P1000: Authentication failed against database server, the provided database credentials for `examio` are not valid.  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/migrate-deploy-admin.log)",
+    "ts": "2026-10-22T00:14:34Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh exam './node_modules/.bin/prisma migrate deploy --schema=libs/database/src/schema.prisma'",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; Error: P1000: Authentication failed against database server, the provided database credentials for `examio` are not valid.  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/migrate-deploy-exam.log)",
+    "ts": "2026-10-22T00:14:34Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/infra-up.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 6s; rmq check_running exit: 0 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/infra-up-2.log)",
+    "ts": "2026-10-22T00:14:49Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh auth './node_modules/.bin/prisma migrate deploy --schema=libs/database/src/schema.prisma'",
+    "exitCode": 1,
+    "summary": "exit 1 in 1s; Error: P1000: Authentication failed against database server, the provided database credentials for `examio` are not valid.  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/migrate-deploy-auth.log)",
+    "ts": "2026-10-22T00:14:50Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh finance './node_modules/.bin/prisma migrate deploy --schema=libs/database/src/schema.prisma'",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; Error: P1000: Authentication failed against database server, the provided database credentials for `examio` are not valid.  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/migrate-deploy-finance.log)",
+    "ts": "2026-10-22T00:14:50Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh admin './node_modules/.bin/prisma migrate deploy --schema=libs/database/src/schema.prisma'",
+    "exitCode": 1,
+    "summary": "exit 1 in 1s; Error: P1000: Authentication failed against database server, the provided database credentials for `examio` are not valid.  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/migrate-deploy-admin.log)",
+    "ts": "2026-10-22T00:14:51Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh exam './node_modules/.bin/prisma migrate deploy --schema=libs/database/src/schema.prisma'",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; Error: P1000: Authentication failed against database server, the provided database credentials for `examio` are not valid.  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/migrate-deploy-exam.log)",
+    "ts": "2026-10-22T00:14:51Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/infra-up.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 7s; rmq check_running exit: 0 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/infra-up-3.log)",
+    "ts": "2026-10-22T00:15:04Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh auth './node_modules/.bin/prisma migrate deploy --schema=libs/database/src/schema.prisma'",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; All migrations have been successfully applied. (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/migrate-deploy-auth.log)",
+    "ts": "2026-10-22T00:15:05Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh finance './node_modules/.bin/prisma migrate deploy --schema=libs/database/src/schema.prisma'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; All migrations have been successfully applied. (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/migrate-deploy-finance.log)",
+    "ts": "2026-10-22T00:15:05Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh admin './node_modules/.bin/prisma migrate deploy --schema=libs/database/src/schema.prisma'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; All migrations have been successfully applied. (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/migrate-deploy-admin.log)",
+    "ts": "2026-10-22T00:15:06Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh exam './node_modules/.bin/prisma migrate deploy --schema=libs/database/src/schema.prisma'",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; All migrations have been successfully applied. (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/migrate-deploy-exam.log)",
+    "ts": "2026-10-22T00:15:07Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/apps/finance-service :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh finance '../../node_modules/.bin/jest --config test/jest-e2e.json --runInBand'",
+    "exitCode": 0,
+    "summary": "exit 0 in 10s; PASS test/wallet-money.e2e-spec.ts Test Suites: 5 passed, 5 total Tests:       52 passed, 52 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-finance.log)",
+    "ts": "2026-10-22T00:15:21Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh auth '../../node_modules/.bin/jest --config test/jest-e2e.json --runInBand'",
+    "exitCode": 1,
+    "summary": "exit 1 in 17s; PASS test/login-throttle.e2e-spec.ts Test Suites: 2 failed, 9 passed, 11 total Tests:       5 failed, 56 passed, 61 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-auth.log)",
+    "ts": "2026-10-22T00:15:51Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh auth '../../node_modules/.bin/jest --config test/jest-e2e.json --runInBand'",
+    "exitCode": 1,
+    "summary": "exit 1 in 17s; PASS test/login-throttle.e2e-spec.ts Test Suites: 3 failed, 8 passed, 11 total Tests:       6 failed, 55 passed, 61 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-auth.log)",
+    "ts": "2026-10-22T00:16:26Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/reset-db.sh auth",
+    "exitCode": 0,
+    "summary": "exit 0 in 2s; reset+migrate auth exit=0 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/reset-db-auth-1.log)",
+    "ts": "2026-10-22T00:16:57Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh auth '../../node_modules/.bin/jest --config test/jest-e2e.json --runInBand'",
+    "exitCode": 1,
+    "summary": "exit 1 in 17s; PASS test/login-throttle.e2e-spec.ts Test Suites: 1 failed, 10 passed, 11 total Tests:       1 failed, 60 passed, 61 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-auth-clean-run1.log)",
+    "ts": "2026-10-22T00:17:14Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh auth '../../node_modules/.bin/jest --config test/jest-e2e.json --runInBand'",
+    "exitCode": 0,
+    "summary": "exit 0 in 20s; PASS test/login-throttle.e2e-spec.ts Test Suites: 11 passed, 11 total Tests:       61 passed, 61 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-auth-clean-run2.log)",
+    "ts": "2026-10-22T00:17:45Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh auth '../../node_modules/.bin/jest --config test/jest-e2e.json --runInBand'",
+    "exitCode": 1,
+    "summary": "exit 1 in 20s; PASS test/app.e2e-spec.ts Test Suites: 1 failed, 10 passed, 11 total Tests:       1 failed, 60 passed, 61 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-auth-rerun-no-reset.log)",
+    "ts": "2026-10-22T00:18:08Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh exam '../../node_modules/.bin/jest --config test/jest-e2e.json --runInBand'",
+    "exitCode": 1,
+    "summary": "exit 1 in 27s; PASS test/app.e2e-spec.ts Test Suites: 1 failed, 17 passed, 18 total Tests:       3 failed, 206 passed, 209 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-exam.log)",
+    "ts": "2026-10-22T00:18:40Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh exam 'REDIS_PORT=58792 REDIS_PASSWORD= ../../node_modules/.bin/jest --config test/jest-e2e.json --runInBand test/study-room-ws'",
+    "exitCode": 1,
+    "summary": "exit 1 in 16s; FAIL test/study-room-ws.e2e-spec.ts (15.02 s) Test Suites: 1 failed, 1 total Tests:       2 failed, 6 passed, 8 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-exam-studyroom-passwordless.log)",
+    "ts": "2026-10-22T00:19:09Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh exam '../../node_modules/.bin/jest --config test/jest-e2e.json --runInBand'",
+    "exitCode": 1,
+    "summary": "exit 1 in 20s; PASS test/app.e2e-spec.ts Test Suites: 1 failed, 17 passed, 18 total Tests:       1 failed, 208 passed, 209 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-exam-run2.log)",
+    "ts": "2026-10-22T00:19:41Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/apps/admin-service :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh admin '../../node_modules/.bin/jest --config test/jest-e2e.json --runInBand'",
+    "exitCode": 0,
+    "summary": "exit 0 in 5s; PASS test/admin-finance.e2e-spec.ts Test Suites: 3 passed, 3 total Tests:       27 passed, 27 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-admin.log)",
+    "ts": "2026-10-22T00:20:03Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh admin './node_modules/.bin/jest --config test/cross-app/jest-e2e.json --runInBand'",
+    "exitCode": 1,
+    "summary": "exit 1 in 18s; PASS test/cross-app/admin-users-real-auth.e2e-spec.ts Test Suites: 1 failed, 3 passed, 4 total Tests:       9 failed, 30 passed, 39 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-cross-app.log)",
+    "ts": "2026-10-22T00:20:25Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh admin './node_modules/.bin/jest --config test/cross-app/jest-e2e.json --runInBand'",
+    "exitCode": 0,
+    "summary": "exit 0 in 21s; PASS test/cross-app/admin-users-real-auth.e2e-spec.ts Test Suites: 4 passed, 4 total Tests:       39 passed, 39 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-cross-app-run2.log)",
+    "ts": "2026-10-22T00:20:58Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh stats './node_modules/.bin/jest --config test/stats-parity/jest-e2e.json --runInBand'",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; PASS test/stats-parity/stats-parity.e2e-spec.ts Test Suites: 1 passed, 1 total Tests:       2 passed, 2 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-stats-parity.log)",
+    "ts": "2026-10-22T00:21:06Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/apps/finance-service :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh finance '../../node_modules/.bin/jest --config test/jest-e2e.json --runInBand'",
+    "exitCode": 0,
+    "summary": "exit 0 in 9s; PASS test/app.e2e-spec.ts Test Suites: 5 passed, 5 total Tests:       52 passed, 52 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-finance-final.log)",
+    "ts": "2026-10-22T00:21:24Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh auth '../../node_modules/.bin/jest --config test/jest-e2e.json --runInBand'",
+    "exitCode": 0,
+    "summary": "exit 0 in 20s; PASS test/app.e2e-spec.ts Test Suites: 11 passed, 11 total Tests:       61 passed, 61 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-auth-final.log)",
+    "ts": "2026-10-22T00:21:44Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/apps/admin-service :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh admin '../../node_modules/.bin/jest --config test/jest-e2e.json --runInBand'",
+    "exitCode": 0,
+    "summary": "exit 0 in 5s; PASS test/admin-finance.e2e-spec.ts Test Suites: 3 passed, 3 total Tests:       27 passed, 27 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-admin-final.log)",
+    "ts": "2026-10-22T00:21:49Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh exam 'SERVICE_NAME=exam-service ../../node_modules/.bin/jest --config test/jest-e2e.json --runInBand'",
+    "exitCode": 1,
+    "summary": "exit 1 in 19s; PASS test/app.e2e-spec.ts Test Suites: 1 failed, 17 passed, 18 total Tests:       1 failed, 208 passed, 209 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-exam-final.log)",
+    "ts": "2026-10-22T00:22:13Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh exam 'SERVICE_NAME=exam-service REDIS_PORT=58792 REDIS_PASSWORD= ../../node_modules/.bin/jest --config test/jest-e2e.json --runInBand test/study-room-ws'",
+    "exitCode": 0,
+    "summary": "exit 0 in 8s; PASS test/study-room-ws.e2e-spec.ts (7.186 s) Test Suites: 1 passed, 1 total Tests:       8 passed, 8 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/e2e-exam-studyroom-passwordless.log)",
+    "ts": "2026-10-22T00:22:21Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/reset-db.sh live",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; reset+migrate live exit=0 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/reset-db-live.log)",
+    "ts": "2026-10-22T00:23:14Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh live 'SEED_OUT=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/live-accounts.json node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/seed-live.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; seeded 3 accounts (creds in SEED_OUT, not printed) (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/seed-live.log)",
+    "ts": "2026-10-22T00:23:14Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/live-checks.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 16s; FAIL | C14.admin.audit.actor-names | audit 400; rows=0; with actor name=0 PASS | C15.me.finance-down | /auth/me with finance stopped: 200 PASS | C15b.finance.restarted | wallet/info after finance restart: 200  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/live-api-checks.log)",
+    "ts": "2026-10-22T00:26:40Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/probe3.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; PATCH-FLAG-restore 200 {\"key\":\"ai-tool\",\"label\":\"C\u00f4ng c\u1ee5 AI\",\"enabled\":true,\"updatedAt\":\"2026-10-22T00:26:50.139Z\"} (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/probe3.log)",
+    "ts": "2026-10-22T00:26:50Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/live-checks.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 28s; FAIL | C14b.admin.audit.actorId-numeric | rows with finite numeric actorId=0/0; sample actorId=undefined FAIL | C15.me.finance-down | /auth/me with finance stopped: 401 FAIL | C15b.finance.restarted | wallet/info after finance restart: 401  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/live-api-checks-2.log)",
+    "ts": "2026-10-22T00:27:39Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/live-checks.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 27s; FAIL | C14b.admin.audit.actorId-numeric | rows with finite numeric actorId=0/5; sample actorId=null PASS | C15.me.finance-down | /auth/me with finance stopped: 200 PASS | C15b.finance.restarted | wallet/info after finance restart: 200  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/live-api-checks-3.log)",
+    "ts": "2026-10-22T00:29:20Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/live-checks.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 16s; FAIL | C14b.admin.audit.actorId-numeric | rows with finite numeric actorId=0/5; sample actorId=null PASS | C15.me.finance-down | /auth/me with finance stopped: 200 PASS | C15b.finance.restarted | wallet/info after finance restart: 200  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/live-api-checks-4.log)",
+    "ts": "2026-10-22T00:30:47Z"
+  },
+  {
+    "command": "/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/pageflags-live.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 18s; PASS | PF.a.boot-pull-from-admin | gateway up=true; key after boot={\"ai-tool\":false} PASS | PF.b.admin-down-gateway-serves-default | gateway up=true; key while admin down=''; /config/pages status ok, pages=0 PASS | PF.b.retry-after-admin-up | admin up=true; gateway pulled flags after admin returned= (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/live-pageflags.log)",
+    "ts": "2026-10-22T00:31:18Z"
+  },
+  {
+    "command": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/ui10 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/ui10/ui10.cjs",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; Error: Cannot find module '/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/ui10/ui9-lib.cjs'  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/ui10-browser-matrix.log)",
+    "ts": "2026-10-22T00:32:09Z"
+  },
+  {
+    "command": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/ui10 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/ui10/ui10.cjs",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; Error: Cannot find module '/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/ui10/ui9-lib.cjs'  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/ui10-browser-matrix.log)",
+    "ts": "2026-10-22T00:32:17Z"
+  },
+  {
+    "command": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/ui10 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/ui10/ui10.cjs",
+    "exitCode": 1,
+    "summary": "exit 1 in 502s; PASS | 10 long session: exactly one refresh per flip | 1,1,1,1 PASS | 10 long session: spans >=2 refreshes over >120 s (F1 end-to-end) | refresh=4 elapsed=213s PASS | no request left localhost (non-local attempts were CDP-failed, none sent) | blocked_attempts=48 hosts=www.googletagmanager.com,challe (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/ui10-browser-matrix.log)",
+    "ts": "2026-10-22T00:40:46Z"
+  },
+  {
+    "command": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/ui10 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/ui10/probe-wallet.cjs",
+    "exitCode": 1,
+    "summary": "exit 1 in 10s; PASS | W.STUDENT.login | status 201 PASS | W.STUDENT.profile-no-balance | label present=false PASS | W.STUDENT.wallet-info-call | GET /wallet/info calls=0  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/browser-wallet-probe.log)",
+    "ts": "2026-10-22T00:41:18Z"
+  },
+  {
+    "command": "/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/ui10 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/ui10/probe-wallet.cjs",
+    "exitCode": 0,
+    "summary": "exit 0 in 10s; PASS | W.STUDENT.login | status 201 PASS | W.STUDENT.profile-no-balance | label present=false PASS | W.STUDENT.wallet-info-call | GET /wallet/info calls=0  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/browser-wallet-probe-2.log)",
+    "ts": "2026-10-22T00:41:41Z"
+  },
+  {
+    "command": "re-temper-2: /Users/tgiap.dev/devs/examio/examio-be :: yarn proto:gen",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/rt2-proto-gen.log)",
+    "ts": "2026-10-22T00:57:30Z"
+  },
+  {
+    "command": "re-temper-2: /Users/tgiap.dev/devs/examio/examio-be :: yarn typecheck",
+    "exitCode": 0,
+    "summary": "exit 0 in 13s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/rt2-typecheck.log)",
+    "ts": "2026-10-22T00:57:43Z"
+  },
+  {
+    "command": "re-temper-2: /Users/tgiap.dev/devs/examio/examio-be :: yarn build:all",
+    "exitCode": 0,
+    "summary": "exit 0 in 25s; webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 2307 ms (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/rt2-build-all.log)",
+    "ts": "2026-10-22T00:58:08Z"
+  },
+  {
+    "command": "re-temper-2: /Users/tgiap.dev/devs/examio/examio-be :: yarn check:ownership",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; Violations: 0 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/rt2-check-ownership.log)",
+    "ts": "2026-10-22T00:58:09Z"
+  },
+  {
+    "command": "re-temper-2: /Users/tgiap.dev/devs/examio/examio-be :: yarn check:deps",
+    "exitCode": 0,
+    "summary": "exit 0 in 2s; x 2 dependency violations (0 errors, 2 warnings). 753 modules, 2837 dependencies cruised.  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/rt2-check-deps.log)",
+    "ts": "2026-10-22T00:58:11Z"
+  },
+  {
+    "command": "re-temper-2: /Users/tgiap.dev/devs/examio/examio-be :: TZ=UTC node_modules/.bin/jest test/build/proto-assets.spec.ts",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; Test Suites: 1 passed, 1 total Tests:       7 passed, 7 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/rt2-proto-assets-spec.log)",
+    "ts": "2026-10-22T00:58:14Z"
+  },
+  {
+    "command": "re-temper-2: /Users/tgiap.dev/devs/examio/examio-be :: TZ=UTC yarn test",
+    "exitCode": 0,
+    "summary": "exit 0 in 14s; \u001b[33m[Nest] 91310  - \u001b[39m10/22/2026, 12:58:28 AM \u001b[33m   WARN\u001b[39m \u001b[38;5;3m[AmqpConnection] \u001b[39m\u001b[33mAMQP consumer1 channel error: Channel ended, no reply will be forthcoming\u001b[39m Test Suites: 172 passed, 172 total Tests:       1817 passed, 1817 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/rt2-be-unit.log)",
+    "ts": "2026-10-22T00:58:28Z"
+  },
+  {
+    "command": "re-temper-2: /Users/tgiap.dev/devs/examio/examio-fe :: yarn build",
+    "exitCode": 0,
+    "summary": "exit 0 in 11s; \u2713 built in 9.62s (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/rt2-fe-build.log)",
+    "ts": "2026-10-22T00:58:39Z"
+  },
+  {
+    "command": "re-temper-2: /Users/tgiap.dev/devs/examio/examio-fe :: yarn lint",
+    "exitCode": 0,
+    "summary": "exit 0 in 6s; \u2716 32 problems (0 errors, 32 warnings)  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/rt2-fe-lint.log)",
+    "ts": "2026-10-22T00:58:45Z"
+  },
+  {
+    "command": "re-temper-2: /Users/tgiap.dev/devs/examio/examio-fe :: yarn test",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s;    Duration  273ms (transform 37%, import 36%, tests 14%, worker 13%) (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/rt2-fe-test.log)",
+    "ts": "2026-10-22T00:58:46Z"
+  },
+  {
+    "command": "re-temper-2: /Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/infra-up.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 8s; rmq check_running exit: 0 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/rt2-infra-up.log)",
+    "ts": "2026-10-22T00:59:02Z"
+  },
+  {
+    "command": "re-temper-2: /Users/tgiap.dev/devs/examio/examio-be :: for d in auth finance admin exam stats live; do /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/reset-db.sh $d; done",
+    "exitCode": 0,
+    "summary": "exit 0 in 5s; reset+migrate live exit=0 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/rt2-reset-dbs.log)",
+    "ts": "2026-10-22T00:59:13Z"
+  },
+  {
+    "command": "re-temper-2: /Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/with-env.sh live 'SEED_OUT=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/live-accounts.json node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/seed-live.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; seeded 3 accounts (creds in SEED_OUT, not printed) (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/rt2-seed-live.log)",
+    "ts": "2026-10-22T00:59:13Z"
+  },
+  {
+    "command": "re-temper-2:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/infra-up.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 6s; s3 http status (root): 403 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t/logs/infra-up.log)",
+    "ts": "2026-10-22T18:29:11Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: for d in auth finance admin exam stats live; do ./reset-db.sh $d || exit 1; done",
+    "exitCode": 0,
+    "summary": "exit 0 in 5s; reset+migrate live exit=0 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-reset-all.log)",
+    "ts": "2026-10-22T18:29:51Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/seed-stats.sh",
+    "exitCode": 1,
+    "summary": "exit 1 in 1s; error TS5109: Option 'moduleResolution' must be set to 'NodeNext' (or left unspecified) when option 'module' is set to 'NodeNext'.  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-seed-stats.log)",
+    "ts": "2026-10-22T18:30:18Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/seed-stats.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 2s; stats fixture seeded in 4 DBs (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-seed-stats.log)",
+    "ts": "2026-10-22T18:30:26Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/start-all.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 8s; gateway port 3780 open=1 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-start-all.log)",
+    "ts": "2026-10-22T18:30:40Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/seed-stats.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; stats fixture seeded into live (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-seed-stats-live.log)",
+    "ts": "2026-10-22T18:31:04Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/seed-live.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; SEED FAILED The \"path\" argument must be of type string or an instance of Buffer or URL. Received undefined (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-seed-live-accounts.log)",
+    "ts": "2026-10-22T18:31:04Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'SEED_OUT=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/live-accounts.json node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/seed-live.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; seeded 3 accounts (creds in SEED_OUT, not printed) (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-seed-live-accounts.log)",
+    "ts": "2026-10-22T18:31:09Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/stats-live-compare.cjs",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; stats live vs oracle: compared 14, equal 14, mismatches 0 (none) (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-stats-live-parity.log)",
+    "ts": "2026-10-22T18:31:33Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/live-checks.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 16s; PASS | C15.me.finance-down | /auth/me with finance stopped: 200 PASS | C15b.finance.restarted | wallet/info after finance restart: 200 TOTAL 21 checks, 20 pass, 1 fail  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-live-checks.log)",
+    "ts": "2026-10-22T18:32:00Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/pageflags-live.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 18s; PASS | PF.b.admin-down-gateway-serves-default | gateway up=true; key while admin down=''; /config/pages status ok, pages=0 PASS | PF.b.retry-after-admin-up | admin up=true; gateway pulled flags after admin returned=true (2s) TOTAL 4, fails 0  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-pageflags-live.log)",
+    "ts": "2026-10-22T18:32:25Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/vite-start.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; vite up on 5273 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-vite-start.log)",
+    "ts": "2026-10-22T18:32:48Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: python3 -I /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/seed-exam.py",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; seeded: quiz, 2 questions, exam room, whitelisted session, study room, word-family category (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-seed-exam.log)",
+    "ts": "2026-10-22T18:33:22Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/rename-views.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 4s; PASS | b.room-detail.shows-new-name | newName=P10 Renamed T2 1792694028075 shown=true PASS | b.session-get.shows-new-name | shown=true TOTAL fails=3 b.roomDetail.no-email,b.roomSessions.no-email,b.sessionGet.no-email  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-rename-views.log)",
+    "ts": "2026-10-22T18:33:51Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/set-whitelist-id.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; PUT whitelist(student user id) 401 {\"statusCode\":401,\"code\":\"TOKEN_MISSING\",\"message\":\"Authentication token is required\",\"requestId\":\"req_01M5JE926RBVPRYDQDT3YVE4C5\"} (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-whitelist-userid.log)",
+    "ts": "2026-10-22T18:34:21Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/set-whitelist-id.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 65s; PUT whitelist(student user id) 200 {\"message\":\"C\u1eadp nh\u1eadt phi\u00ean thi th\u00e0nh c\u00f4ng\",\"examSession\":{\"id\":\"6ada56f299c8f0e10ccd586e\",\"examRoomId\":\"6ada56f294b68a691e9c3f62\",\"status\":0,\"startTime\":\"2026-1 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-whitelist-userid.log)",
+    "ts": "2026-10-22T18:35:34Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/rename-views.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 4s; PASS | b.room-detail.shows-new-name | newName=P10 Renamed T2 1792694139342 shown=true PASS | b.session-get.shows-new-name | shown=true TOTAL fails=1 b.roomDetail.no-email  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-rename-views-2.log)",
+    "ts": "2026-10-22T18:35:42Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/wf-image.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; PASS | c.delete.category | status 200  PASS | c.delete.object-B-deleted | B deleted=true TOTAL fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-wf-image.log)",
+    "ts": "2026-10-22T18:38:07Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/d9-toast.cjs",
+    "exitCode": 1,
+    "summary": "exit 1 in 14s; FAIL | d.denied-call-rejected-403 | rejected status=n/a msg=B\u1ea1n kh\u00f4ng c\u00f3 quy\u1ec1n th\u1ef1c hi\u1ec7n thao t\u00e1c n\u00e0y PASS | d.exactly-one-toast | toast nodes=1 before=0 texts=[\"B\u1ea1n kh\u00f4ng c\u00f3 quy\u1ec1n th\u1ef1c hi\u1ec7n thao t\u00e1c n\u00e0y\"] TOTAL fails=1 d.denied-call-rejected-403 blockedOutside=2  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-d9-toast.log)",
+    "ts": "2026-10-22T18:39:02Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/d9-toast.cjs",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; Node.js v24.14.1 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-d9-toast.log)",
+    "ts": "2026-10-22T18:39:06Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/d9-toast.cjs",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; Node.js v24.14.1 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-d9-toast.log)",
+    "ts": "2026-10-22T18:39:17Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/d9-toast.cjs",
+    "exitCode": 0,
+    "summary": "exit 0 in 12s; PASS | d.denied-call-rejected-403 | rejected status=403 msg=B\u1ea1n kh\u00f4ng c\u00f3 quy\u1ec1n th\u1ef1c hi\u1ec7n thao t\u00e1c n\u00e0y PASS | d.exactly-one-toast | toast nodes=1 before=0 texts=[\"B\u1ea1n kh\u00f4ng c\u00f3 quy\u1ec1n th\u1ef1c hi\u1ec7n thao t\u00e1c n\u00e0y\"] TOTAL fails=0  blockedOutside=3  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-d9-toast.log)",
+    "ts": "2026-10-22T18:39:33Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'SEED_OUT=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/accounts2.json node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/seed-live.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; seeded 3 accounts (creds in SEED_OUT, not printed) (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-seed-admin2.log)",
+    "ts": "2026-10-22T18:39:55Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/audit-check.cjs",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; PASS | f.filter.admin2-only | rows=1 foreign=0 FAIL | f.filter.admin2-name | names=p10admf39779 TOTAL fails=1 f.filter.admin2-name  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-audit-filter.log)",
+    "ts": "2026-10-22T18:39:59Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/audit-check.cjs",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; PASS | f.filter.admin2-only | rows=2 foreign=0 PASS | f.filter.admin2-label-is-username | labels=p10admf39779 (seed username == id); display name \"P10 Admin Two\" shown=false TOTAL fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-audit-filter.log)",
+    "ts": "2026-10-22T18:40:12Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/f-audit-page.cjs",
+    "exitCode": 0,
+    "summary": "exit 0 in 10s; PASS | f.browser.filter-control-present | selects=3 PASS | f.browser.filter-admin2-only | rows=2 withA2=2 withA1=0 TOTAL fails=0  blockedOutside=3  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-f-audit-page.log)",
+    "ts": "2026-10-22T18:40:39Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/ui9.cjs",
+    "exitCode": 1,
+    "summary": "exit 1 in 482s; PASS | 10 long session: spans >=2 refreshes over >120 s (F1 end-to-end) | refresh=4 elapsed=213s PASS | no request left localhost (non-local attempts were CDP-failed, none sent) | blocked_attempts=47 hosts=www.googletagmanager.com,challenges.cloudflare.com SUMMARY pass=62 fail=2 note=1  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-ui9-matrix.log)",
+    "ts": "2026-10-22T18:48:52Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/fix-room-name.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; study room recreated with the matrix name; room.env rewritten (id not printed) (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-fix-room-name.log)",
+    "ts": "2026-10-22T18:49:08Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/ui9.cjs",
+    "exitCode": 0,
+    "summary": "exit 0 in 468s; PASS | 10 long session: spans >=2 refreshes over >120 s (F1 end-to-end) | refresh=4 elapsed=214s PASS | no request left localhost (non-local attempts were CDP-failed, none sent) | blocked_attempts=48 hosts=www.googletagmanager.com,challenges.cloudflare.com SUMMARY pass=64 fail=0 note=1  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-ui9-matrix-2.log)",
+    "ts": "2026-10-22T18:57:00Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/sub-trace.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; commands on sub after 3s: psubscribe(socket.io#/#*) subscribe(socket.io-request#/#) auth(38f352eceed10e45158c5508) client(SETINFO) client(SETINFO) info() psubscribe(socket.io#/#*) subscribe(socket.io-request#/#) (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-sub-trace.log)",
+    "ts": "2026-10-22T18:57:44Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/svc-trace.sh start exam && sleep 12 && grep -c IOREDIS-TRACE /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/live-logs/exam.log",
+    "exitCode": 1,
+    "summary": "exit 1 in 13s; 0 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-exam-traced-boot.log)",
+    "ts": "2026-10-22T18:58:30Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/svc-trace.sh start exam; sleep 14; nc -z 127.0.0.1 3782 && echo exam-up",
+    "exitCode": 0,
+    "summary": "exit 0 in 14s; exam-up (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-exam-traced-boot.log)",
+    "ts": "2026-10-22T18:59:02Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/two-exam-start.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; exam port 3788 open=1 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-two-exam-start.log)",
+    "ts": "2026-10-22T18:59:48Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/xi-test.cjs before-restart'",
+    "exitCode": 1,
+    "summary": "exit 1 in 24s; FAIL | before-restart | xi.chat.student@exam2-reaches-teacher@exam1 | teacher chat events=0 errors=[] FAIL | before-restart | xi.media.teacher@exam1-reaches-student@exam2 | student media events=0 errors=[] TOTAL before-restart fails=3 xi.join.teacher-gets-presence-of-student-on-other-instance,xi.cha (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-xi-before.log)",
+    "ts": "2026-10-22T19:00:25Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: XI_SAME=1 /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'XI_SAME=1 node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/xi-test.cjs control-same-instance'",
+    "exitCode": 1,
+    "summary": "exit 1 in 11s; PASS | control-same-instance | xi.chat.student@exam2-reaches-teacher@exam1 | teacher chat events=1 errors=[] FAIL | control-same-instance | xi.media.teacher@exam1-reaches-student@exam2 | student media events=0 errors=[] TOTAL control-same-instance fails=1 xi.media.teacher@exam1-reaches-student@exam2 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-xi-control-same.log)",
+    "ts": "2026-10-22T19:00:46Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: XI_SAME=1 /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'XI_SAME=1 node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/xi-test.cjs control-same-instance-3'",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; media:set emitted; teacher errors so far: [] PASS | control-same-instance-3 | xi.media.teacher@exam1-reaches-student@exam2 | student media events=1 teacherErrors=[] TOTAL control-same-instance-3 fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-xi-control-same-3.log)",
+    "ts": "2026-10-22T19:02:17Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/xi-test.cjs before-restart'",
+    "exitCode": 1,
+    "summary": "exit 1 in 25s; media:set emitted; teacher errors so far: [] FAIL | before-restart | xi.media.teacher@exam1-reaches-student@exam2 | student media events=0 teacherErrors=[] TOTAL before-restart fails=3 xi.join.teacher-gets-presence-of-student-on-other-instance,xi.chat.student@exam2-reaches-teacher@exam1,xi.media.tea (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-xi-before-2.log)",
+    "ts": "2026-10-22T19:02:46Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/redis-pubsub.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; subscriber clients (cmd=sub|psub): 1 ; total clients:       34 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-redis-pubsub.log)",
+    "ts": "2026-10-22T19:02:55Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/redis-clients.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; flags=P sub=1 psub=0 cmd=subscribe addr=172.17.0.1:57728 name=  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-redis-clients.log)",
+    "ts": "2026-10-22T19:03:03Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/svc-trace.sh start exam; sleep 12; nc -z 127.0.0.1 3782 && echo exam-up",
+    "exitCode": 0,
+    "summary": "exit 0 in 12s; exam-up (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-exam-life-trace.log)",
+    "ts": "2026-10-22T19:03:40Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/two-exam-start.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 4s; exam port 3788 open=1 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-two-exam-restore.log)",
+    "ts": "2026-10-22T19:03:59Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/redis-pubsub.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; subscriber clients (cmd=sub|psub): 1 ; total clients:       34 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-redis-pubsub-pre-restart.log)",
+    "ts": "2026-10-22T19:04:00Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: docker restart p10t2-redis >/dev/null && for i in $(seq 1 30); do docker exec p10t2-redis redis-cli -a \"$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' p10t2-redis | sed -n 's/^REDIS_PASSWORD=//p')\" --no-auth-warning ping 2>/dev/null | grep -q PONG && echo redis-back && break; sleep 1; done",
+    "exitCode": 0,
+    "summary": "exit 0 in 35s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-redis-restart.log)",
+    "ts": "2026-10-22T19:04:35Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/redis-pubsub.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; subscriber clients (cmd=sub|psub): 1 ; total clients:       34 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-redis-pubsub-post-restart.log)",
+    "ts": "2026-10-22T19:04:44Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/xi-test.cjs after-restart'",
+    "exitCode": 1,
+    "summary": "exit 1 in 25s; media:set emitted; teacher errors so far: [] FAIL | after-restart | xi.media.teacher@exam1-reaches-student@exam2 | student media events=0 teacherErrors=[] TOTAL after-restart fails=3 xi.join.teacher-gets-presence-of-student-on-other-instance,xi.chat.student@exam2-reaches-teacher@exam1,xi.media.teach (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-xi-after-restart.log)",
+    "ts": "2026-10-22T19:05:19Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'XI_SAME=1 node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/xi-test.cjs control-same-after-restart'",
+    "exitCode": 0,
+    "summary": "exit 0 in 2s; media:set emitted; teacher errors so far: [] PASS | control-same-after-restart | xi.media.teacher@exam1-reaches-student@exam2 | student media events=1 teacherErrors=[] TOTAL control-same-after-restart fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-xi-control-after-restart.log)",
+    "ts": "2026-10-22T19:05:22Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/email-paths.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; sessionGet 200 [] (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-stale-roomdetail-recheck.log)",
+    "ts": "2026-10-22T19:05:39Z"
+  },
+  {
+    "command": "re-temper-2: /Users/tgiap.dev/devs/examio/examio-be :: TZ=UTC node_modules/.bin/jest libs/grpc/src/deadline-retry.spec.ts libs/grpc/src/idempotent-rpcs.spec.ts 2>&1 | tail -6",
+    "exitCode": 0,
+    "summary": "exit 0 in 8s; Test Suites: 2 passed, 2 total Tests:       18 passed, 18 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-b2-grpc-retry-specs.log)",
+    "ts": "2026-10-22T19:05:47Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/probe-wallet.cjs",
+    "exitCode": 0,
+    "summary": "exit 0 in 17s; PASS | W.STUDENT.profile-no-balance | label present=false PASS | W.STUDENT.wallet-info-call | GET /wallet/info calls=0 TOTAL 6 fails 0 blockedOutside=6  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-wallet-probe.log)",
+    "ts": "2026-10-22T19:06:17Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/email-paths.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; sessionGet 200 [] (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-email-paths-final.log)",
+    "ts": "2026-10-22T19:07:07Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: docker exec p10t2-rmq rabbitmqctl -q list_connections user state && docker exec p10t2-rmq rabbitmqctl -q list_consumers queue_name",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; exam.events (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-rabbit-broker.log)",
+    "ts": "2026-10-22T19:07:08Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: grep -c IOREDIS-TRACE /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/live-logs/exam.log",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; 2 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-ioredis-trace-cleanup.log)",
+    "ts": "2026-10-22T19:07:08Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/teardown.sh",
+    "exitCode": 1,
+    "summary": "exit 1 in 4s; processes left: 1 ; p10t2 containers left: 0 ; ports still open: 3788 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-teardown.log)",
+    "ts": "2026-10-22T19:07:18Z"
+  },
+  {
+    "command": "re-temper-2: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/teardown.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; processes left: 0 ; p10t2 containers left: 0 ; ports still open: none (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t2/logs/t2-teardown-2.log)",
+    "ts": "2026-10-22T19:07:49Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh exam 'yarn proto:gen'",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-proto-gen.log)",
+    "ts": "2026-10-22T20:02:29Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh exam 'yarn typecheck'",
+    "exitCode": 0,
+    "summary": "exit 0 in 13s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-typecheck.log)",
+    "ts": "2026-10-22T20:02:42Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh exam 'yarn build:all'",
+    "exitCode": 0,
+    "summary": "exit 0 in 25s; webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 2297 ms (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-build-all.log)",
+    "ts": "2026-10-22T20:03:07Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh exam 'TZ=UTC yarn test'",
+    "exitCode": 0,
+    "summary": "exit 0 in 18s; PASS apps/auth-service/src/token/keys.spec.ts Test Suites: 1 skipped, 173 passed, 173 of 174 total Tests:       4 skipped, 1858 passed, 1862 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-be-unit.log)",
+    "ts": "2026-10-22T20:03:25Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh exam 'yarn check:ownership'",
+    "exitCode": 0,
+    "summary": "exit 0 in 2s; Violations: 0 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-check-ownership.log)",
+    "ts": "2026-10-22T20:03:27Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh exam 'yarn check:deps'",
+    "exitCode": 0,
+    "summary": "exit 0 in 2s; x 2 dependency violations (0 errors, 2 warnings). 755 modules, 2846 dependencies cruised.  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-check-deps.log)",
+    "ts": "2026-10-22T20:03:29Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh auth './node_modules/.bin/prisma migrate diff --from-url \"$DATABASE_URL\" --to-schema-datamodel libs/database/src/schema.prisma --exit-code'",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; No difference detected. (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-drift-auth.log)",
+    "ts": "2026-10-22T20:03:30Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh finance './node_modules/.bin/prisma migrate diff --from-url \"$DATABASE_URL\" --to-schema-datamodel libs/database/src/schema.prisma --exit-code'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; No difference detected. (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-drift-finance.log)",
+    "ts": "2026-10-22T20:03:30Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh admin './node_modules/.bin/prisma migrate diff --from-url \"$DATABASE_URL\" --to-schema-datamodel libs/database/src/schema.prisma --exit-code'",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; No difference detected. (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-drift-admin.log)",
+    "ts": "2026-10-22T20:03:31Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh exam './node_modules/.bin/prisma migrate diff --from-url \"$DATABASE_URL\" --to-schema-datamodel libs/database/src/schema.prisma --exit-code'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; No difference detected. (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-drift-exam.log)",
+    "ts": "2026-10-22T20:03:31Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh live './node_modules/.bin/prisma migrate diff --from-url \"$DATABASE_URL\" --to-schema-datamodel libs/database/src/schema.prisma --exit-code'",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; No difference detected. (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-drift-live.log)",
+    "ts": "2026-10-22T20:03:32Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-fe :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh exam 'yarn build'",
+    "exitCode": 0,
+    "summary": "exit 0 in 11s; \u2713 built in 10.06s (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-fe-build.log)",
+    "ts": "2026-10-22T20:03:43Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-fe :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh exam 'yarn lint'",
+    "exitCode": 0,
+    "summary": "exit 0 in 6s; \u2716 32 problems (0 errors, 32 warnings)  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-fe-lint.log)",
+    "ts": "2026-10-22T20:03:49Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-fe :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh exam 'yarn test'",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s;  \u001b[32m\u2713\u001b[39m src/lib/rbac/api-error-policy.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-fe-test.log)",
+    "ts": "2026-10-22T20:03:50Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: docker exec p10t3-rmq rabbitmq-diagnostics -q check_running",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; RabbitMQ on node rabbit@42ff92ae7a1e is fully booted and running (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-infra-rmq-check.log)",
+    "ts": "2026-10-22T20:04:13Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'docker exec p10t3-redis redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning ping'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; PONG (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/s-infra-redis-ping.log)",
+    "ts": "2026-10-22T20:04:18Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: SEED_OUT=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/accounts.json ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/seed-live.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; SEED FAILED The \"path\" argument must be of type string or an instance of Buffer or URL. Received undefined (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/seed-live-accounts.log)",
+    "ts": "2026-10-22T20:04:24Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./svc.sh start auth",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started auth pid 72755 port 3781 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/boot-auth.log)",
+    "ts": "2026-10-22T20:04:24Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./svc.sh start finance",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started finance pid 72775 port 3783 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/boot-finance.log)",
+    "ts": "2026-10-22T20:04:24Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./svc.sh start r2",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started r2 pid 72798 port 3786 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/boot-r2.log)",
+    "ts": "2026-10-22T20:04:24Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./svc.sh start admin",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started admin pid 72821 port 3785 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/boot-admin.log)",
+    "ts": "2026-10-22T20:04:24Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./svc.sh start exam",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started exam pid 72844 port 3782 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/boot-exam.log)",
+    "ts": "2026-10-22T20:04:25Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./svc.sh start exam2",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started exam2 pid 72867 port 3788 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/boot-exam2.log)",
+    "ts": "2026-10-22T20:04:25Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./svc.sh start gateway",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started gateway pid 72890 port 3780 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/boot-gateway.log)",
+    "ts": "2026-10-22T20:04:25Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'SEED_OUT=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/accounts.json node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/seed-live.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; seeded 3 accounts (creds in SEED_OUT, not printed) (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/seed-live-accounts.log)",
+    "ts": "2026-10-22T20:04:33Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./vite-start.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; vite up on 5273 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/boot-vite.log)",
+    "ts": "2026-10-22T20:04:39Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: python3 /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/seed-exam.py",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; seeded: quiz, 2 questions, exam room, whitelisted session, study room, word-family category (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/seed-exam-fixtures.log)",
+    "ts": "2026-10-22T20:04:40Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: bash /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/redis-pubsub.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; subscriber clients (cmd=sub|psub): 3 ; total clients:       34 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/n1-pubsub-before.log)",
+    "ts": "2026-10-22T20:04:44Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/xi-test.cjs before-restart'",
+    "exitCode": 1,
+    "summary": "exit 1 in 25s; media:set emitted; teacher errors so far: [] FAIL | before-restart | xi.media.teacher@exam1-reaches-student@exam2 | student media events=0 teacherErrors=[] TOTAL before-restart fails=3 xi.join.teacher-gets-presence-of-student-on-other-instance,xi.chat.student@exam2-reaches-teacher@exam1,xi.media.tea (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/n1-xi-before-restart.log)",
+    "ts": "2026-10-22T20:05:15Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'XI_SAME=1 node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/xi-test.cjs control-same'",
+    "exitCode": 1,
+    "summary": "exit 1 in 89s; media:set emitted; teacher errors so far: [] FAIL | control-same | xi.media.teacher@exam1-reaches-student@exam2 | student media events=0 teacherErrors=[] TOTAL control-same fails=3 xi.join.teacher-gets-presence-of-student-on-other-instance,xi.chat.student@exam2-reaches-teacher@exam1,xi.media.teacher (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/n1-xi-control-same.log)",
+    "ts": "2026-10-22T20:06:51Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/room-join.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; POST studyrooms/:id/join status 201 {\"id\":\"6ada6c5738ff532c0923a7a3\",\"name\":\"P10 socket room\",\"description\":null,\"hostId\":\"p10tch6ae327\",\"accessType\":0,\"playlistAddPermission\":1,\"workMinutes\":30,\" (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/n1-student-room-join.log)",
+    "ts": "2026-10-22T20:07:22Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/xi-test.cjs before-restart'",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; media:set emitted; teacher errors so far: [] PASS | before-restart | xi.media.teacher@exam1-reaches-student@exam2 | student media events=1 teacherErrors=[] TOTAL before-restart fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/n1-xi-before-restart-2.log)",
+    "ts": "2026-10-22T20:07:29Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'XI_SAME=1 node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/xi-test.cjs control-same'",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; media:set emitted; teacher errors so far: [] PASS | control-same | xi.media.teacher@exam1-reaches-student@exam2 | student media events=1 teacherErrors=[] TOTAL control-same fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/n1-xi-control-same-2.log)",
+    "ts": "2026-10-22T20:07:35Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: grep -c 'StudyRoom Redis sub' live-logs/exam.log live-logs/exam2.log",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; live-logs/exam2.log:0 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/n1-sub-error-grep-before.log)",
+    "ts": "2026-10-22T20:07:35Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: docker restart p10t3-redis",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; p10t3-redis (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/n1-redis-restart.log)",
+    "ts": "2026-10-22T20:07:40Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: bash /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/redis-pubsub.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; subscriber clients (cmd=sub|psub): 3 ; total clients:       34 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/n1-pubsub-after-restart.log)",
+    "ts": "2026-10-22T20:08:01Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/xi-test.cjs after-restart'",
+    "exitCode": 0,
+    "summary": "exit 0 in 67s; media:set emitted; teacher errors so far: [] PASS | after-restart | xi.media.teacher@exam1-reaches-student@exam2 | student media events=1 teacherErrors=[] TOTAL after-restart fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/n1-xi-after-restart.log)",
+    "ts": "2026-10-22T20:09:08Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/n2-check.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; PASS | n2 | n2.set-student.put-200 | PUT status 200 PASS | n2 | n2.set-student.detail-reflects-write-immediately | wanted 1 entr(ies), detail has 1 TOTAL n2 fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/n2-session-whitelist-live.log)",
+    "ts": "2026-10-22T20:09:27Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/money-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; PASS | M6b.upload.client-retry-debits-once (B2 class) | second POST 401; upload debits now=0; balance null -> null FAIL | M7.student-no-wallet.upload-403-no-storage | status 403; msg=You do not have permission to perform this action TOTAL 8 checks, 5 pass, 3 fail  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/money-r3-api.log)",
+    "ts": "2026-10-22T20:11:21Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/money-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 66s; PASS | M6b.upload.client-retry-debits-once (B2 class) | second POST 201; upload debits now=0; balance 18 -> 16 PASS | M7.student-upload-refused-no-storage-no-tx | status 403 PERMISSION_DENIED; storage rows=0; student wallet tx=0 TOTAL 8 checks, 7 pass, 1 fail  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/money-r3-api-2.log)",
+    "ts": "2026-10-22T20:12:53Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/money-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 65s; FAIL | M6b.upload.client-retry-debits-once (B2 class) | second POST 201; upload debits now=2; balance 18 -> 16 PASS | M7.student-upload-refused-no-storage-no-tx | status 403 PERMISSION_DENIED; storage rows=0; student wallet tx=0 TOTAL 8 checks, 7 pass, 1 fail  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/money-r3-api-3.log)",
+    "ts": "2026-10-22T20:14:06Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/fe-finance-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 30s; PASS | fe.refund.single-click.paid-to-refunded | payment status=4; response 200; refund request key present PASS | fe.refund.double-click.no-double-effect | confirm dialogs=1; refund requests=1; distinct keys=1; payment status=4; audit rows=1 TOTAL fails=2 fe.credit.single-click.one-tx-and-balance-m (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/fe-finance-r3.log)",
+    "ts": "2026-10-22T20:15:23Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/cors-r3.cjs",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; FAIL | cors.preflight.idempotency-key | origin=http://127.0.0.1:5273 status=204 allow-origin=null allow-headers=Content-Type,Authorization,Cookie,X-Requested-With,X-Device-ID,Idempotency-Key  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/m2-cors-preflight.log)",
+    "ts": "2026-10-22T20:15:30Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/cors-r3.cjs",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; PASS | cors.preflight.idempotency-key | origin=http://localhost:5173 status=204 allow-origin=http://localhost:5173 allow-headers=Content-Type,Authorization,Cookie,X-Requested-With,X-Device-ID,Idempotency-Key  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/m2-cors-preflight-localhost5173.log)",
+    "ts": "2026-10-22T20:15:36Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/l8-l2-r3.cjs'",
+    "exitCode": 2,
+    "summary": "exit 2 in 3s; PASS | l8.login.admin | status 201  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/l8-l2-r3.log)",
+    "ts": "2026-10-22T20:15:55Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/l8-l2-r3.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 31s; PASS | l2.gateway-repulls-after-flush-within-90s | key after DEL=0; re-pulled=true after 21s PASS | l2.config-pages-reflects-admin-value | /config/pages 200 TOTAL fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/l8-l2-r3-2.log)",
+    "ts": "2026-10-22T20:16:30Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/h1-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; FAIL | h1.chunks.count-2-for-520 | chunks observed=0 (expect 2: 500 + 20) PASS | h1.cleanup.users-removed | left=0 TOTAL fails=2 h1.chunks.each-<=500-ids,h1.chunks.count-2-for-520  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/h1-sharing-520.log)",
+    "ts": "2026-10-22T20:17:34Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/h1-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 1s; FAIL | h1.chunks.count-2-for-520 | chunks observed=0 (expect 2: 500 + 20) PASS | h1.cleanup.users-removed | left=0 TOTAL fails=2 h1.chunks.each-<=500-ids,h1.chunks.count-2-for-520  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/h1-sharing-520-cold.log)",
+    "ts": "2026-10-22T20:17:52Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/h1-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 1s; FAIL | h1.chunks.count-2-for-520 | chunks observed=0 (expect 2: 500 + 20) PASS | h1.cleanup.users-removed | left=0 TOTAL fails=2 h1.chunks.each-<=500-ids,h1.chunks.count-2-for-520  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/h1-sharing-520-cold2.log)",
+    "ts": "2026-10-22T20:18:16Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/h1-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; FAIL | h1.chunks.count-2-for-520 | chunks observed=6 (expect 2: 500 + 20) PASS | h1.cleanup.users-removed | left=0 TOTAL fails=2 h1.chunks.each-<=500-ids,h1.chunks.count-2-for-520  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/h1-sharing-520-cold3.log)",
+    "ts": "2026-10-22T20:18:23Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/h1-r3.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; PASS | h1.chunks.count-2-for-520 | chunks observed=2 (expect 2: 500 + 20) PASS | h1.cleanup.users-removed | left=0 TOTAL fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/h1-sharing-520-final.log)",
+    "ts": "2026-10-22T20:18:32Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/h2-browser-r3.cjs'",
+    "exitCode": 2,
+    "summary": "exit 2 in 1s; PASS | h2.seed.soft-deleted | user p10h2stu9... deletedAt set PASS | h2.fe.login.teacher | status 201 CRASH Protocol error (Page.navigate): Cannot navigate to invalid URL  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/h2-browser-r3.log)",
+    "ts": "2026-10-22T20:19:09Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/h2-browser-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 80s; PASS | h2.study-room.no-email-or-id | email/id in text=false PASS | h2.study-room.no-crash | crash text=false; TypeError console errors=0 TOTAL fails=5 h2.analytics.deleted-label-shown,h2.analytics.no-email-or-id,h2.manage-room-detail.deleted-label-shown,h2.manage-room-detail.no-email-or-id,h2.study (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/h2-browser-r3-2.log)",
+    "ts": "2026-10-22T20:20:35Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/h2-browser-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 16s; PASS | h2.study-room.no-email-or-id | email/id in text=false; snippets=[] PASS | h2.study-room.no-crash | crash text=false; TypeError console errors=0 TOTAL fails=5 h2.analytics.deleted-label-shown,h2.analytics.no-email-or-id,h2.manage-room-detail.deleted-label-shown,h2.manage-room-detail.no-email-o (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/h2-browser-r3-3.log)",
+    "ts": "2026-10-22T20:20:59Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/h2-browser-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 16s; PASS | h2.study-room.no-deleted-user-email-or-id | deleted user email in text=false; id in text=false; snippets=[] PASS | h2.study-room.no-crash | crash text=false; TypeError console errors=0 TOTAL fails=2 h2.manage-room-detail.deleted-label-shown,h2.study-room.deleted-label-shown blockedOutside=4  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/h2-browser-r3-4.log)",
+    "ts": "2026-10-22T20:21:51Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/h2-browser-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 22s; PASS | h2.study-room.no-deleted-user-email-or-id | deleted user email in text=false; id in text=false; snippets=[] PASS | h2.study-room.no-crash | crash text=false; TypeError console errors=0 TOTAL fails=1 h2.manage-room-detail.deleted-label-shown blockedOutside=5  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/h2-browser-r3-5.log)",
+    "ts": "2026-10-22T20:22:28Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/fix-room-name.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; study room recreated with the matrix name; room.env rewritten (id not printed) (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/fixture-matrix-room.log)",
+    "ts": "2026-10-22T20:22:45Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/ui9-r3.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 468s; PASS | 10 long session: spans >=2 refreshes over >120 s (F1 end-to-end) | refresh=4 elapsed=215s PASS | no request left localhost (non-local attempts were CDP-failed, none sent) | blocked_attempts=48 hosts=www.googletagmanager.com,challenges.cloudflare.com SUMMARY pass=64 fail=0 note=1  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/ui9-matrix-r3.log)",
+    "ts": "2026-10-22T20:30:33Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'REDIS_PASSWORD=\"$REDIS_PASSWORD\" node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/live-checks-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 16s; PASS | C15.me.finance-down | /auth/me with finance stopped: 200 PASS | C15b.finance.restarted | wallet/info after finance restart: 200 TOTAL 21 checks, 18 pass, 3 fail  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/regress-live-api-c1-c15.log)",
+    "ts": "2026-10-22T20:30:56Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./svc.sh start exam",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started exam pid 82636 port 3782 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/restart-exam-after-crash.log)",
+    "ts": "2026-10-22T20:31:57Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/room-join.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; POST studyrooms/:id/join status 502 {\"statusCode\":502,\"code\":\"UPSTREAM_UNAVAILABLE\",\"message\":\"Service unavailable\",\"requestId\":\"req_01M5JN1B5QJP83W5R41A9VP4CZ\"} (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/n-room-join-new-room.log)",
+    "ts": "2026-10-22T20:32:28Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh exam './node_modules/.bin/nest build exam-service'",
+    "exitCode": 0,
+    "summary": "exit 0 in 5s; webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 3389 ms (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/b-nest-build-exam-only.log)",
+    "ts": "2026-10-22T20:33:32Z"
+  },
+  {
+    "command": "re-temper-3:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/with-env.sh exam 'yarn build:all'",
+    "exitCode": 0,
+    "summary": "exit 0 in 26s; webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 2303 ms (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/b-build-all-2.log)",
+    "ts": "2026-10-22T20:34:02Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/svc.sh start exam",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started exam pid 83564 port 3782 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/restart-exam-after-rebuild.log)",
+    "ts": "2026-10-22T20:34:08Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/room-join.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; POST studyrooms/:id/join status 201 {\"id\":\"6ada709581d39a9c79079fd5\",\"name\":\"P09 socket room\",\"description\":null,\"hostId\":\"p10tch6ae327\",\"accessType\":0,\"playlistAddPermission\":1,\"workMinutes\":30,\" (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/n-room-join-new-room.log)",
+    "ts": "2026-10-22T20:34:10Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/crash-repro-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 8s; PASS | post.instance-A-3782-alive | 3782 open=true PASS | post.instance-B-3788-alive | 3788 open=true TOTAL fails=1 admin.ban-student  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/crash-repro-r3-run1.log)",
+    "ts": "2026-10-22T20:34:22Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/probe-ban.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; ban status 200 {\"user\":{\"id\":\"p10stu6ae327\",\"email\":\"p10stu6ae327@p10.test\",\"username\":\"p10stu6ae327\",\"name\":\"P10 student\",\"bio\":null,\"avatar\":null,\"banner\":null,\"role\":\"STUDE (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/probe-ban-route.log)",
+    "ts": "2026-10-22T20:34:33Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/probe-unban.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; ban status 200 {\"user\":{\"id\":\"p10stu6ae327\",\"email\":\"p10stu6ae327@p10.test\",\"username\":\"p10stu6ae327\",\"name\":\"P10 student\",\"bio\":null,\"avatar\":null,\"banner\":null,\"role\":\"STUDE (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/probe-unban-student.log)",
+    "ts": "2026-10-22T20:34:39Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/crash-repro-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 73s; PASS | post.instance-A-3782-alive | 3782 open=true PASS | post.instance-B-3788-alive | 3788 open=true TOTAL fails=1 admin.ban-student  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/crash-repro-r3-run2.log)",
+    "ts": "2026-10-22T20:35:55Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/crash-repro-r3.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 8s; PASS | post.instance-A-3782-alive | 3782 open=true PASS | post.instance-B-3788-alive | 3788 open=true TOTAL fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/crash-repro-r3-run3.log)",
+    "ts": "2026-10-22T20:36:08Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/crash-repro-r3.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 73s; PASS | post.instance-A-3782-alive | 3782 open=true PASS | post.instance-B-3788-alive | 3788 open=true TOTAL fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/crash-repro-r3-run4.log)",
+    "ts": "2026-10-22T20:37:26Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/crash-repro-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 8s; PASS | post.instance-A-3782-alive | 3782 open=true FAIL | post.instance-B-3788-alive | 3788 open=false TOTAL fails=1 post.instance-B-3788-alive  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/crash-repro-r3-run5.log)",
+    "ts": "2026-10-22T20:37:34Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/svc.sh start exam2",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started exam2 pid 84470 port 3788 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/restart-exam2-after-crash.log)",
+    "ts": "2026-10-22T20:37:37Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/live-checks-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 28s; PASS | C15.me.finance-down | /auth/me with finance stopped: 200 PASS | C15b.finance.restarted | wallet/info after finance restart: 200 TOTAL 21 checks, 12 pass, 9 fail  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/regress-live-api-c1-c15-rerun.log)",
+    "ts": "2026-10-22T20:38:19Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/l8-detail-shape.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 0s; login 429 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/l8-detail-shape.log)",
+    "ts": "2026-10-22T20:38:19Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/l8-detail-shape.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 4s; finance restarted (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/l8-detail-shape-2.log)",
+    "ts": "2026-10-22T20:39:42Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/live-checks-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 16s; PASS | C15.me.finance-down | /auth/me with finance stopped: 200 PASS | C15b.finance.restarted | wallet/info after finance restart: 200 TOTAL 21 checks, 20 pass, 1 fail  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/regress-live-api-c1-c15-rerun2.log)",
+    "ts": "2026-10-22T20:41:12Z"
+  },
+  {
+    "command": "re-temper-3:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/teardown.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 4s; processes left: 0 ; p10t3 containers left: 0 ; ports still open: none (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t3/logs/teardown-r3.log)",
+    "ts": "2026-10-22T20:41:37Z"
+  },
+  {
+    "command": "re-temper-4:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/with-env.sh exam 'yarn typecheck'",
+    "exitCode": 0,
+    "summary": "exit 0 in 14s;  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/s4-typecheck.log)",
+    "ts": "2026-10-22T20:58:08Z"
+  },
+  {
+    "command": "re-temper-4:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/with-env.sh exam 'yarn build:all'",
+    "exitCode": 0,
+    "summary": "exit 0 in 25s; webpack 5.106.0 compiled \u001b[1m\u001b[32msuccessfully\u001b[39m\u001b[22m in 2285 ms (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/s4-build-all.log)",
+    "ts": "2026-10-22T20:58:33Z"
+  },
+  {
+    "command": "re-temper-4:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/with-env.sh exam 'TZ=UTC yarn test'",
+    "exitCode": 0,
+    "summary": "exit 0 in 15s; PASS apps/exam-service/src/modules/study-room/study-room.util.spec.ts Test Suites: 1 skipped, 174 passed, 174 of 175 total Tests:       5 skipped, 1864 passed, 1869 total  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/s4-be-unit.log)",
+    "ts": "2026-10-22T20:58:48Z"
+  },
+  {
+    "command": "re-temper-4:/Users/tgiap.dev/devs/examio/examio-be :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/with-env.sh exam 'yarn check:ownership'",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; Violations: 0 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/s4-check-ownership.log)",
+    "ts": "2026-10-22T20:58:49Z"
+  },
+  {
+    "command": "re-temper-4:/Users/tgiap.dev/devs/examio/examio-fe :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/with-env.sh exam 'yarn build'",
+    "exitCode": 0,
+    "summary": "exit 0 in 12s; \u2713 built in 9.85s (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/s4-fe-build.log)",
+    "ts": "2026-10-22T20:59:01Z"
+  },
+  {
+    "command": "re-temper-4:/Users/tgiap.dev/devs/examio/examio-fe :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/with-env.sh exam 'yarn lint'",
+    "exitCode": 0,
+    "summary": "exit 0 in 6s; \u2716 29 problems (0 errors, 29 warnings)  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/s4-fe-lint.log)",
+    "ts": "2026-10-22T20:59:07Z"
+  },
+  {
+    "command": "re-temper-4:/Users/tgiap.dev/devs/examio/examio-fe :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/with-env.sh exam 'yarn test'",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s;  \u001b[32m\u2713\u001b[39m src/lib/rbac/api-error-policy.test.ts \u001b[2m(\u001b[22m\u001b[2m20 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 4\u001b[2mms\u001b[22m\u001b[39m  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/s4-fe-test.log)",
+    "ts": "2026-10-22T20:59:08Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'SEED_OUT=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/accounts.json node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/seed-live.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; seeded 3 accounts (creds in SEED_OUT, not printed) (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/seed-live-accounts-r4.log)",
+    "ts": "2026-10-22T20:59:23Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'SEED_OUT=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/accounts.json node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/seed-live.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; seeded 3 accounts (creds in SEED_OUT, not printed) (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/seed-live-accounts-r4b.log)",
+    "ts": "2026-10-22T20:59:23Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./svc.sh start auth",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started auth pid 95079 port 3781 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/boot-auth-r4.log)",
+    "ts": "2026-10-22T20:59:23Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./svc.sh start finance",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started finance pid 95099 port 3783 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/boot-finance-r4.log)",
+    "ts": "2026-10-22T20:59:23Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./svc.sh start r2",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started r2 pid 95119 port 3786 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/boot-r2-r4.log)",
+    "ts": "2026-10-22T20:59:23Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./svc.sh start admin",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started admin pid 95142 port 3785 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/boot-admin-r4.log)",
+    "ts": "2026-10-22T20:59:23Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./svc.sh start exam",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started exam pid 95165 port 3782 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/boot-exam-r4.log)",
+    "ts": "2026-10-22T20:59:23Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./svc.sh start exam2",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started exam2 pid 95188 port 3788 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/boot-exam2-r4.log)",
+    "ts": "2026-10-22T20:59:23Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./svc.sh start gateway",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; started gateway pid 95211 port 3780 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/boot-gateway-r4.log)",
+    "ts": "2026-10-22T20:59:24Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./vite-start.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; vite up on 5273 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/boot-vite-r4.log)",
+    "ts": "2026-10-22T20:59:26Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: python3 /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/seed-exam.py",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; seeded: quiz, 2 questions, exam room, whitelisted session, study room, word-family category (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/seed-exam-fixtures-r4.log)",
+    "ts": "2026-10-22T20:59:27Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/fix-room-name.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; study room recreated with the matrix name; room.env rewritten (id not printed) (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/fixture-matrix-room-r4.log)",
+    "ts": "2026-10-22T20:59:27Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/room-join.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; POST studyrooms/:id/join status 201 {\"id\":\"6ada792f161fe315249d6dcf\",\"name\":\"P09 socket room\",\"description\":null,\"hostId\":\"p10tchabf830\",\"accessType\":0,\"playlistAddPermission\":1,\"workMinutes\":30,\" (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/n-room-join-r4.log)",
+    "ts": "2026-10-22T20:59:27Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/adapter-control.cjs old'",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; [B] mode=old exit=1 circularTypeError=true alive-line=false (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/c1-control-old.log)",
+    "ts": "2026-10-22T21:00:02Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/adapter-control.cjs new'",
+    "exitCode": 0,
+    "summary": "exit 0 in 10s; [B] mode=new exit=0 circularTypeError=false alive-line=true (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/c1-control-new.log)",
+    "ts": "2026-10-22T21:00:12Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/adapter-control.cjs old'",
+    "exitCode": 0,
+    "summary": "exit 0 in 4s; [B] mode=old exit=1 circularTypeError=true alive-line=false (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/c1-control-old-r4.log)",
+    "ts": "2026-10-22T21:00:50Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: bash /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/c1-loop.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 338s; SUMMARY iterations=10 crashes=0 reauthDeliveredRuns=10 runsWithoutReauth=0  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/c1-authz-loop-10x-r4.log)",
+    "ts": "2026-10-22T21:11:09Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/kick-r4.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 79s; PASS | post.instance-A-up | 3782 PASS | post.instance-B-up | 3788 TOTAL fails=1 connected.teacher-A.student-B  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/c1-kick-cross-instance-r4.log)",
+    "ts": "2026-10-22T21:12:28Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/kick-r4.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 15s; PASS | post.instance-A-up | 3782 PASS | post.instance-B-up | 3788 TOTAL fails=1 connected.teacher-A.student-B  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/c1-kick-cross-instance-r4b.log)",
+    "ts": "2026-10-22T21:13:52Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/kick-r4.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 7s; PASS | post.instance-A-up | 3782 PASS | post.instance-B-up | 3788 TOTAL fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/c1-kick-cross-instance-r4c.log)",
+    "ts": "2026-10-22T21:14:05Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/fe-finance-r4.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 75s; PASS | fe.refund.once.paid-to-refunded | payment status=4; response 200 PASS | fe.refund.twice.no-double-effect | refund responses=200,409 ({\"success\":true,\"data\":{\"paymentId\":\"p10t4fe17927036492951\", | {\"statusCode\":409,\"code\":\"PAYMENT_ALREADY_REFUNDED\",\"message); payment status=4; audit rows for p (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/fe-finance-r4.log)",
+    "ts": "2026-10-22T21:15:24Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/n6-r4.cjs'",
+    "exitCode": 2,
+    "summary": "exit 2 in 0s; CRASH Forbidden (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/n6-wordfamily-r4.log)",
+    "ts": "2026-10-22T21:15:29Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/n6-r4.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 3s; PASS | n6.outside-prefix.object-kept | delete 200; O present=true PASS | n6.outside-prefix.log-line | matching log lines=1 TOTAL fails=2 n6.replace.old-word-family-A-deleted,n6.delete.word-family-B-deleted  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/n6-wordfamily-r4.log)",
+    "ts": "2026-10-22T21:15:45Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./svc.sh stop exam && ./svc.sh stop exam2 && ./svc.sh stop r2 && sleep 3 && ./svc.sh start r2 && ./svc.sh start exam && ./svc.sh start exam2 && for p in 3782 3788; do for i in $(seq 1 60); do nc -z 127.0.0.1 $p 2>/dev/null && break; sleep 1; done; done",
+    "exitCode": 0,
+    "summary": "exit 0 in 4s; started exam2 pid 99558 port 3788 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/restart-r2-exam-r4.log)",
+    "ts": "2026-10-22T21:16:00Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/n6-r4.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 3s; FAIL | n6.outside-prefix.object-kept | delete 404; O present=true PASS | n6.outside-prefix.log-line | matching log lines=1 TOTAL fails=7 n6.create.category-with-image-A,n6.replace.image-A-to-B-200,n6.replace.old-word-family-A-deleted,n6.delete.category-200,n6.delete.word-family-B-deleted,n6.create.c (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/n6-wordfamily-r4b.log)",
+    "ts": "2026-10-22T21:16:03Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/n6-r4.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; PASS | n6.outside-prefix.object-kept | delete 200; O present=true PASS | n6.outside-prefix.log-line | matching log lines=2 TOTAL fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/n6-wordfamily-r4c.log)",
+    "ts": "2026-10-22T21:16:21Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: bash /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/redis-pubsub.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; subscriber clients (cmd=sub|psub): 3 ; total clients:       34 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/n1-pubsub-before-r4.log)",
+    "ts": "2026-10-22T21:16:28Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/xi-test.cjs before-restart'",
+    "exitCode": 0,
+    "summary": "exit 0 in 3s; media:set emitted; teacher errors so far: [] PASS | before-restart | xi.media.teacher@exam1-reaches-student@exam2 | student media events=1 teacherErrors=[] TOTAL before-restart fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/n1-xi-before-restart-r4.log)",
+    "ts": "2026-10-22T21:16:31Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: docker restart p10t4-redis",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; p10t4-redis (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/n1-redis-restart-r4.log)",
+    "ts": "2026-10-22T21:16:31Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: bash /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/redis-pubsub.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 0s; subscriber clients (cmd=sub|psub): 3 ; total clients:       34 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/n1-pubsub-after-restart-r4.log)",
+    "ts": "2026-10-22T21:16:52Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/xi-test.cjs after-restart'",
+    "exitCode": 0,
+    "summary": "exit 0 in 67s; media:set emitted; teacher errors so far: [] PASS | after-restart | xi.media.teacher@exam1-reaches-student@exam2 | student media events=1 teacherErrors=[] TOTAL after-restart fails=0   (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/n1-xi-after-restart-r4.log)",
+    "ts": "2026-10-22T21:17:59Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: sh -c 'a=$(grep -c \"StudyRoom Redis sub\\] error\" live-logs/exam.log); b=$(grep -c \"StudyRoom Redis sub\\] error\" live-logs/exam2.log); echo \"exam=$a exam2=$b\"; test $((a+b)) -eq 0'",
+    "exitCode": 0,
+    "summary": "exit 0 in 1s; exam=0 exam2=0 (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/n1-sub-error-grep-r4.log)",
+    "ts": "2026-10-22T21:18:00Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/ui9-r3.cjs'",
+    "exitCode": 0,
+    "summary": "exit 0 in 467s; PASS | 10 long session: spans >=2 refreshes over >120 s (F1 end-to-end) | refresh=4 elapsed=215s PASS | no request left localhost (non-local attempts were CDP-failed, none sent) | blocked_attempts=47 hosts=www.googletagmanager.com,challenges.cloudflare.com SUMMARY pass=64 fail=0 note=1  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/ui9-matrix-r4.log)",
+    "ts": "2026-10-22T21:25:51Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: ./with-env.sh live 'node /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/live-checks-r3.cjs'",
+    "exitCode": 1,
+    "summary": "exit 1 in 16s; PASS | C15.me.finance-down | /auth/me with finance stopped: 200 PASS | C15b.finance.restarted | wallet/info after finance restart: 200 TOTAL 21 checks, 20 pass, 1 fail  (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/regress-live-api-c1-c15-r4.log)",
+    "ts": "2026-10-22T21:27:16Z"
+  },
+  {
+    "command": "re-temper-4:/private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4 :: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/teardown.sh",
+    "exitCode": 0,
+    "summary": "exit 0 in 4s; processes left: 0 ; p10t4 containers left: 0 ; ports still open: none (log: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p10t4/logs/teardown-r4.log)",
+    "ts": "2026-10-22T21:27:32Z"
+  },
+  {
+    "command": "final: be yarn proto:gen (final code)",
+    "exitCode": 0,
+    "summary": "generated",
+    "ts": "2026-10-22T21:37:08.231505Z"
+  },
+  {
+    "command": "final: be yarn typecheck (final code)",
+    "exitCode": 0,
+    "summary": "6 services",
+    "ts": "2026-10-22T21:37:08.231505Z"
+  },
+  {
+    "command": "final: be yarn build:all (final code)",
+    "exitCode": 0,
+    "summary": "all services built",
+    "ts": "2026-10-22T21:37:08.231505Z"
+  },
+  {
+    "command": "final: be TZ=UTC yarn test (final code)",
+    "exitCode": 0,
+    "summary": "Tests: 5 skipped, 1869 passed, 1874 total",
+    "ts": "2026-10-22T21:37:08.231505Z"
+  },
+  {
+    "command": "final: be yarn check:ownership --strict (final code)",
+    "exitCode": 0,
+    "summary": "Violations: 0",
+    "ts": "2026-10-22T21:37:08.231505Z"
+  },
+  {
+    "command": "final: be yarn check:deps (final code)",
+    "exitCode": 0,
+    "summary": "0 errors, 2 warnings (libs-no-prisma until phase 11)",
+    "ts": "2026-10-22T21:37:08.231505Z"
+  },
+  {
+    "command": "final: fe yarn build (final code)",
+    "exitCode": 0,
+    "summary": "tsc -b + vite build",
+    "ts": "2026-10-22T21:37:08.231505Z"
+  },
+  {
+    "command": "final: fe yarn lint (final code)",
+    "exitCode": 0,
+    "summary": "0 errors",
+    "ts": "2026-10-22T21:37:08.231505Z"
+  },
+  {
+    "command": "final: fe yarn test (final code)",
+    "exitCode": 0,
+    "summary": "125 passed",
+    "ts": "2026-10-22T21:37:08.231505Z"
+  },
+  {
+    "command": "final: ci.yml yaml load",
+    "exitCode": 0,
+    "summary": "ok",
+    "ts": "2026-10-22T21:37:08.231505Z"
+  }
+]

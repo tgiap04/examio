@@ -18,10 +18,30 @@ import io
 import tempfile
 import logging
 import requests
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Tuple, Optional
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+# Hard ceilings applied regardless of env overrides, so a misconfigured env
+# var can't reopen the DoS window these caps are meant to close.
+_MAX_PDF_PAGES_CEILING = 1000
+_MAX_PDF_DPI_CEILING = 400
+
+
+def _get_bounded_int_env(name: str, default: int, min_value: int, max_value: int) -> int:
+    """Read an int env var, clamped to [min_value, max_value]."""
+    raw = os.getenv(name)
+    value = default
+    if raw is not None:
+        try:
+            value = int(raw)
+        except ValueError:
+            logger.warning(f"Invalid {name}={raw!r}, using default={default}")
+            value = default
+    return max(min_value, min(value, max_value))
+
 
 # Check available libraries
 try:
@@ -64,7 +84,12 @@ class PdfOcrService:
     """
 
     CHUNK_SIZE = 10  # pages per chunk, giống be-main
-    DPI = 300  # Higher DPI = better OCR quality
+    DPI = _get_bounded_int_env(
+        "PDF_OCR_DPI", default=300, min_value=72, max_value=_MAX_PDF_DPI_CEILING
+    )  # Higher DPI = better OCR quality, capped to avoid unbounded memory/CPU use
+    MAX_PAGES = _get_bounded_int_env(
+        "MAX_PDF_PAGES", default=100, min_value=1, max_value=_MAX_PDF_PAGES_CEILING
+    )  # Cap pages rendered per convert_from_bytes() call (resource-exhaustion guard)
 
     def __init__(self):
         self._check_dependencies()
@@ -185,12 +210,20 @@ class PdfOcrService:
 
         try:
             logger.info("📷 Converting PDF to images for Tesseract...")
-            # Convert PDF pages to images at high DPI
+            # Convert PDF pages to images at high DPI, capped to MAX_PAGES to
+            # bound memory/CPU use against pathologically large PDFs.
             images = convert_from_bytes(
                 pdf_bytes,
                 dpi=self.DPI,
-                fmt='png'
+                fmt='png',
+                first_page=1,
+                last_page=self.MAX_PAGES,
             )
+
+            if len(images) >= self.MAX_PAGES:
+                logger.warning(
+                    f"⚠️ PDF chunk reached MAX_PDF_PAGES={self.MAX_PAGES}; rendering was truncated"
+                )
 
             logger.info(f"📄 Converted {len(images)} pages to images")
 
@@ -198,16 +231,19 @@ class PdfOcrService:
             preprocessing_service = None
             if use_preprocessing:
                 try:
-                    from backend.services.image_preprocessing_service import get_image_preprocessing_service
+                    from src.backend.services.image_preprocessing_service import get_image_preprocessing_service
                     preprocessing_service = get_image_preprocessing_service()
                 except Exception as e:
                     logger.warning(f"⚠️ Image preprocessing not available: {e}")
 
-            full_text = []
             import numpy as np
             import cv2
 
-            for i, pil_image in enumerate(images):
+            max_workers = min(4, os.cpu_count() or 4)
+
+            def _ocr_single_page(args: Tuple[int, object]) -> Tuple[int, str]:
+                """OCR one page; returns (page_index, text) for ordered reassembly."""
+                page_idx, pil_image = args
                 try:
                     image_np = np.array(pil_image)
                     if len(image_np.shape) == 3:
@@ -228,12 +264,25 @@ class PdfOcrService:
                         lang=language,
                         config='--psm 6 --oem 3'
                     )
-
-                    if text.strip():
-                        full_text.append(text.strip())
+                    return page_idx, text.strip() if text.strip() else ""
                 except Exception as e:
-                    logger.error(f"❌ Error Tesseract page {i+1}: {e}")
-                    continue
+                    logger.error(f"❌ Error Tesseract page {page_idx + 1}: {e}")
+                    return page_idx, ""
+
+            # Run pages concurrently; Tesseract spawns subprocesses (releases GIL),
+            # OpenCV also releases the GIL — a bounded pool avoids CPU oversubscription.
+            page_results: List[Tuple[int, str]] = [None] * len(images)  # type: ignore[list-item]
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                futures = {
+                    executor.submit(_ocr_single_page, (i, img)): i
+                    for i, img in enumerate(images)
+                }
+                for future in as_completed(futures):
+                    page_idx, text = future.result()
+                    page_results[page_idx] = (page_idx, text)
+
+            # Reassemble in page order, dropping empty pages
+            full_text = [text for _, text in page_results if text]
 
             result = '\n'.join(full_text)
             logger.info(f"✅ Tesseract OCR completed: {len(result)} characters")

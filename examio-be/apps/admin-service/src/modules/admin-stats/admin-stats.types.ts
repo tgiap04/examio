@@ -28,6 +28,17 @@ export interface SeriesResponse {
     points: SeriesPoint[];
 }
 
+/** Quy kết nguồn đăng ký theo utm_source (null → 'direct'). */
+export interface SourceBreakdownRow {
+    source: string;
+    count: number;
+}
+
+export interface SourceBreakdownResponse {
+    range: SeriesRange | 'all';
+    rows: SourceBreakdownRow[];
+}
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /** Returns the start of the current day in UTC (00:00:00.000). */

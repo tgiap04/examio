@@ -1,0 +1,68 @@
+{
+  "score": 9,
+  "criticalCount": 0,
+  "decision": "SEALED",
+  "acceptanceCovered": [
+    "yarn typecheck, build:all and test exit 0; auth, finance and admin e2e pass",
+    "no AuthGuard/AdminGuard/OptionalAuthGuard/JWT_SECRET left in apps or libs (except GoogleAuthGuard/AuthStrictThrottlerGuard)",
+    "libs/auth-jwt has no userSession or prisma usage",
+    "tokens are RS256 with kid, verified via JWKS, carry sub, sid, roles, email_verified and av; refresh reloads role and authzVersion inside a transaction",
+    "permission catalog matches the plan: STUDENT learning-only, TEACHER content/AI/wallet incl word_family:save, SYSTEM_ADMIN admin-only with no wildcard",
+    "guards deny by default; @Public, @Authenticated (denies unverified) and @AllowUnverified behave as specified; ws contexts are skipped",
+    "every @GrpcMethod declares a guard; a gRPC call without metadata to finance UpdateBalance returns UNAUTHENTICATED",
+    "service tokens are issued via client_credentials and accepted only from allowlisted callers",
+    "role changes: self-change and last SYSTEM_ADMIN removal blocked, serialized, RoleChangeLog written, authzVersion bumped, auth.user.authz_changed emitted via outbox",
+    "register creates STUDENT with no subscription; /auth/me returns roles, permissions and isSystemAdmin with no isAdmin key, and a new STUDENT has no wallet",
+    "promoting to TEACHER provisions exactly one wallet with 20 credits idempotently",
+    "demotion keeps content and ownership untouched"
+  ],
+  "regressionChecked": [
+    "admin-service PATCH isSystemAdmin now 400 (strict body); grant/revoke go through auth SetSystemAdmin with forwarded admin token (admin-roles.e2e on real auth+admin apps)",
+    "r2 GetFileUrl now @ServiceOnly('exam','auth'); rpc-guard-table and r2 specs re-run green",
+    "verify.ts requiredClaims exp/iat with test; seed-dev free of isAdmin; orphan sanitize-user removed",
+    "focused re-run: libs/auth-jwt, apps/admin-service, apps/r2-service, rpc-guard-table = 20 suites / 154 tests green",
+    "fresh temper 43/43 and runs rows 46-61: typecheck, build:all, unit 669/669, auth e2e 38, finance 14, admin 20, boot of all services",
+    "every authenticated HTTP route and gRPC method (authz-declarations specs), login/refresh/register, finance provisioning, study-room socket auth, CI ephemeral keys"
+  ],
+  "contractStatus": "CHANGED",
+  "refuted": [],
+  "unproven": [],
+  "reachableRegressions": [],
+  "findings": [
+    {
+      "severity": "High",
+      "category": "Authorization",
+      "location": "examio-be/apps/admin-service/src/modules/admin-users/admin-users.service.ts:50",
+      "summary": "isSystemAdmin removed from MUTABLE_FIELDS and strict PATCH body; grant/revoke via auth SetSystemAdmin (last-admin guard, log, av bump)",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Medium",
+      "category": "Authorization",
+      "location": "examio-be/apps/r2-service/src/r2-service.controller.ts:129",
+      "summary": "GetFileUrl now service-only exam/auth",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Medium",
+      "category": "Build",
+      "location": "examio-be/libs/database/prisma/seed-dev.ts:85",
+      "summary": "seed-dev uses role/isSystemAdmin",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "Hardening",
+      "location": "examio-be/libs/auth-jwt/src/verify.ts:57",
+      "summary": "requiredClaims exp/iat added",
+      "disposition": "Accept"
+    },
+    {
+      "severity": "Low",
+      "category": "Authorization",
+      "location": "examio-be/apps/admin-service/src/modules/admin-users/admin-users.service.ts:50",
+      "summary": "PATCH isBanned can still ban the last admin; ban path owned by P08 SetUserStatus (X1)",
+      "disposition": "Defer"
+    }
+  ]
+}

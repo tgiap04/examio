@@ -30,7 +30,7 @@ Finance feature covering wallet balance display, transaction history, subscripti
 | 2 (advanced) | Advanced features enabled | Higher limits than basic | UserSubscription record with tier = 2 |
 | 3 (vip) | All features enabled | Highest limits | UserSubscription record with tier = 3 |
 
-**Source:** `examio-be/apps/finance-service/src/wallet.service.ts`
+**Source:** `examio-be/apps/finance-service/src/modules/wallet/wallet.service.ts`
 
 ---
 
@@ -69,7 +69,7 @@ if signature valid → process payment update
 
 ### BR-003_WalletCreditOnPayment
 **Linked FR:** FR-004
-**Source:** `examio-be/apps/finance-service/src/wallet.service.ts`
+**Source:** `examio-be/apps/finance-service/src/modules/wallet/wallet.service.ts`
 **Applies to:** Payment marked as paid
 **Rule:** When a payment with `paymentType = credits` is confirmed, the corresponding amount is added to the user's wallet balance via a WalletTransaction with `direction = ADD`. Subscription payments activate or extend the UserSubscription.
 
@@ -77,7 +77,7 @@ if signature valid → process payment update
 **Linked FR:** FR-002
 **Source:** `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts`
 **Applies to:** AI generation endpoints
-**Rule:** AI generation requires sufficient wallet credits or an active subscription tier (PERM036). However, FREE_MODE = true bypasses this check in production.
+**Rule:** AI generation requires sufficient wallet credits or an active subscription tier (PERM036). The charge is a finance `WalletService.Debit` with an idempotency key (a retry never double-charges; replays return `alreadyApplied`). `AI_FREE_MODE=true` bypasses the charge only outside production (forced off when `NODE_ENV=production`).
 
 ### Decision Logic
 
@@ -141,7 +141,7 @@ None.
 - **FR-004** SePay webhook — `POST /api/v1/webhook/sepay` via `WebhookController.handleSepay`
   **Source:** `examio-be/apps/finance-service/src/webhook.controller.ts`
 - **FR-001** View wallet — `GET /api/v1/wallet/details` via `WalletController.getWallet`
-  **Source:** `examio-be/apps/finance-service/src/wallet.controller.ts`
+  **Source:** `examio-be/apps/finance-service/src/modules/wallet/wallet.controller.ts`
 
 **Rules enforced:** BR-001, BR-002, BR-003, BR-004
 
@@ -185,10 +185,12 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 |--------|------|---------|
 | WebhookController | `examio-be/apps/finance-service/src/webhook.controller.ts` | Receives and processes SePay payment webhook |
 | PaymentService | `examio-be/apps/finance-service/src/payment.service.ts` | Payment creation and status management |
-| WalletService | `examio-be/apps/finance-service/src/wallet.service.ts` | Wallet balance and transaction ledger |
-| FinanceClientService | `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` | Credit deduction for AI generation |
+| WalletService / WalletMoneyService | `examio-be/apps/finance-service/src/modules/wallet/wallet.service.ts`, `wallet-money.service.ts` | Wallet balance and ledger; `Debit`/`Credit`/`Refund` idempotent on `(walletId, idempotencyKey)` (`WalletTransaction.idempotencyKey`, `balanceAfter`) |
+| FinanceAdminService | `examio-be/apps/finance-service/src/modules/finance-admin/finance-admin.service.ts` | Admin credit adjustment, payment refund (`Payment.refundIdempotencyKey`), tier change; `finance:admin` |
+| FinanceClient | `examio-be/libs/grpc/src/clients/finance.client.ts` | Shared gRPC client (Debit/Credit/Refund, benefits); `AI_FREE_MODE` handling |
+| FinanceClientService | `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` | Exam-side policy over `FinanceClient`: charge for AI generation (forwards the caller's access token), Free-tier fallback for benefits |
 | SubscriptionPage | `examio-fe/src/pages/k/SubscriptionPage.tsx` | Subscription plan selection and QR payment |
-| WalletSection | `examio-fe/src/components/k/WalletSection.tsx` | Wallet balance and transaction history display |
+| useWalletStore | `examio-fe/src/stores/useWalletStore.ts` | Wallet balance, loaded once per session from `GET /api/v1/wallet/info` (not from `/auth/me`) |
 
 ## Unresolved Questions
 

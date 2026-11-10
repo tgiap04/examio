@@ -10,11 +10,11 @@ import {
   submitSecureQuizApi,
   SecureSubmitResponse,
 } from "@/apis/examAttemptApi";
-import { decryptQuizContent, decryptQuizOptions } from "@/lib/crypto";
 
 /**
- * Decrypted question with original content
- * Same structure as the old Question interface for backwards compatibility
+ * Secure question mapped to the shape the quiz UI expects.
+ * Content now arrives as plaintext over TLS (auth-scoped, no answers) — the
+ * old client-side AES decryption is removed (its key shipped in the bundle).
  */
 export interface DecryptedQuestion {
   id: string; // We don't have real ID, use index as ID
@@ -31,22 +31,22 @@ export interface DecryptedQuestion {
 export type QuestionTokenMap = Map<number, string>;
 
 /**
- * Decrypt a secure question
+ * Map a secure question to the UI shape (content is already plaintext)
  */
 export function decryptSecureQuestion(
   secureQuestion: SecureQuestion,
 ): DecryptedQuestion {
   return {
     id: `q_${secureQuestion.index}`, // Use index as ID since we don't expose real ID
-    question: decryptQuizContent(secureQuestion.question_encrypted),
-    options: decryptQuizOptions(secureQuestion.options_encrypted),
+    question: secureQuestion.question,
+    options: secureQuestion.options,
     token: secureQuestion.token,
     index: secureQuestion.index,
   };
 }
 
 /**
- * Decrypt all questions from secure quiz response
+ * Map all questions from the secure quiz response
  */
 export function decryptAllQuestions(
   secureQuestions: SecureQuestion[],

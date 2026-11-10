@@ -1,39 +1,5 @@
 import { cn } from "@/lib/utils";
-
-function ExamioIcon({ size = 40, className }: { size?: number; className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 100 100"
-      fill="none"
-      width={size}
-      height={size}
-      className={cn("shrink-0 text-ink", className)}
-    >
-      {/* Outer ring */}
-      <circle cx="50" cy="50" r="48" stroke="currentColor" strokeWidth="3.5" />
-
-      {/* Middle dashed ring — trống đồng pattern */}
-      <circle cx="50" cy="50" r="36" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 3" />
-
-      {/* Inner ring */}
-      <circle cx="50" cy="50" r="26" stroke="currentColor" strokeWidth="2" />
-
-      {/* Center dot */}
-      <circle cx="50" cy="50" r="10" fill="currentColor" />
-
-      {/* 8 radiating spokes */}
-      <line x1="50" y1="24" x2="50" y2="14" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="50" y1="76" x2="50" y2="86" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="24" y1="50" x2="14" y2="50" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="76" y1="50" x2="86" y2="50" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="32.3" y1="32.3" x2="25.6" y2="25.6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="67.7" y1="67.7" x2="74.4" y2="74.4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="67.7" y1="32.3" x2="74.4" y2="25.6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-      <line x1="32.3" y1="67.7" x2="25.6" y2="74.4" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-    </svg>
-  );
-}
+import { useThemeContext } from "@/provider/ThemeProvider";
 
 interface LogoProps {
   className?: string;
@@ -42,23 +8,49 @@ interface LogoProps {
   showText?: boolean;
 }
 
+// The icon reads as the dominant element in the lockup, so render it a bit
+// larger than the passed size (keeps callers' relative sizing intact).
+const ICON_SCALE = 1.25;
+
+/** Theme-aware logo source: dark-background mark for dark mode, cream for light. */
+function useLogoSrc() {
+  const { isDarkMode } = useThemeContext();
+  return isDarkMode ? "/logo_dark.png" : "/logo_light.png";
+}
+
+/**
+ * The "examio" wordmark: "exam" in coral, "io" in the foreground ink token —
+ * which resolves to cream in dark mode (matching the brand lockup) and to dark
+ * ink in light mode so it stays legible on the cream canvas.
+ */
+function Wordmark({ fontSize }: { fontSize: number }) {
+  return (
+    <span
+      className="lowercase leading-none tracking-tight text-ink"
+      style={{
+        fontSize,
+        fontFamily: '"Fredoka", var(--font-display)',
+        fontWeight: 600,
+      }}
+    >
+      <span className="text-coral">exam</span>io
+    </span>
+  );
+}
+
 export default function Logo({
   className,
   sizeLogo = 40,
   sizeText,
   showText = true,
 }: LogoProps) {
+  const logoSrc = useLogoSrc();
+  const iconSize = Math.round(sizeLogo * ICON_SCALE);
+
   return (
-    <div className={cn("flex items-center gap-3 cursor-pointer", className)}>
-      <ExamioIcon size={sizeLogo} />
-      {showText && (
-        <span
-          className="font-display font-semibold leading-none tracking-tight text-ink"
-          style={{ fontSize: sizeText ?? 20 }}
-        >
-          Examio
-        </span>
-      )}
+    <div className={cn("flex items-center gap-2.5 cursor-pointer", className)}>
+      <img src={logoSrc} alt="Examio Logo" width={iconSize} height={iconSize} />
+      {showText && <Wordmark fontSize={sizeText ?? 20} />}
     </div>
   );
 }
@@ -70,9 +62,12 @@ export function LogoOnly({
   className?: string;
   sizeIcon: number;
 }) {
+  const logoSrc = useLogoSrc();
+  const iconSize = Math.round(sizeIcon * ICON_SCALE);
+
   return (
     <div className={cn("flex items-center cursor-pointer", className)}>
-      <ExamioIcon size={sizeIcon} className={className} />
+      <img src={logoSrc} alt="Examio Logo" width={iconSize} height={iconSize} className={className} />
     </div>
   );
 }

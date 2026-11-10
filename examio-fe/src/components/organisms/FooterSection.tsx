@@ -110,7 +110,7 @@ export default function FooterSection() {
             {/* Brand Column */}
             <div className="col-span-2">
               <a href="/" className="inline-flex items-center gap-2 mb-6">
-                <Logo sizeLogo={32} sizeText={20} />
+                <Logo sizeLogo={48} sizeText={28} />
                 <span className="text-xs text-muted-foreground font-mono">TM</span>
               </a>
 

@@ -1,0 +1,73 @@
+{
+  "ts": "2026-10-22T20:22:28.585Z",
+  "fails": [
+    "h2.manage-room-detail.deleted-label-shown"
+  ],
+  "checks": {
+    "h2.seed.student-login": {
+      "ok": true,
+      "d": "login 201"
+    },
+    "h2.seed.study-room-join": {
+      "ok": true,
+      "d": "join 201"
+    },
+    "h2.seed.soft-deleted": {
+      "ok": true,
+      "d": "user p10h2stub... deletedAt set"
+    },
+    "h2.fe.login.teacher": {
+      "ok": true,
+      "d": "status 201"
+    },
+    "h2.analytics.deleted-label-shown": {
+      "ok": true,
+      "d": "label=true; url=/k/manage-exam-room/6ada6c57d9b98878c37de9a5/session/6ada6c57d6ed117f4b83e1dc"
+    },
+    "h2.analytics.no-deleted-user-email-or-id": {
+      "ok": true,
+      "d": "deleted user email in text=false; id in text=false; snippets=[\"p10tch6ae327@p10.test\"]"
+    },
+    "h2.analytics.no-crash": {
+      "ok": true,
+      "d": "crash text=false; TypeError console errors=0"
+    },
+    "h2.manage-room-list.deleted-label-shown": {
+      "ok": true,
+      "d": "label=true; url=/k/manage-exam-room"
+    },
+    "h2.manage-room-list.no-deleted-user-email-or-id": {
+      "ok": true,
+      "d": "deleted user email in text=false; id in text=false; snippets=[\"p10tch6ae327@p10.test\"]"
+    },
+    "h2.manage-room-list.no-crash": {
+      "ok": true,
+      "d": "crash text=false; TypeError console errors=0"
+    },
+    "h2.manage-room-detail.deleted-label-shown": {
+      "ok": false,
+      "d": "label=false; url=/k/manage-exam-room/6ada6c57d9b98878c37de9a5"
+    },
+    "h2.manage-room-detail.no-deleted-user-email-or-id": {
+      "ok": true,
+      "d": "deleted user email in text=false; id in text=false; snippets=[\"p10tch6ae327@p10.test\"]"
+    },
+    "h2.manage-room-detail.no-crash": {
+      "ok": true,
+      "d": "crash text=false; TypeError console errors=0"
+    },
+    "h2.study-room.deleted-label-shown": {
+      "ok": true,
+      "d": "label=true; url=/k/study-room/6ada6c5738ff532c0923a7a3"
+    },
+    "h2.study-room.no-deleted-user-email-or-id": {
+      "ok": true,
+      "d": "deleted user email in text=false; id in text=false; snippets=[]"
+    },
+    "h2.study-room.no-crash": {
+      "ok": true,
+      "d": "crash text=false; TypeError console errors=0"
+    },
+    "blockedOutside": 5
+  }
+}

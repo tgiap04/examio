@@ -4,6 +4,7 @@ Xây dựng graph từ documents với các loại edges khác nhau
 """
 import os
 import logging
+from pathlib import Path
 from typing import List, Dict, Any, Tuple, Optional
 import networkx as nx
 from langchain_core.documents import Document
@@ -21,6 +22,26 @@ logger = logging.getLogger(__name__)
 def _use_faiss_for_graph() -> bool:
     raw = os.getenv('AI_GRAPH_USE_FAISS', 'false').strip().lower()
     return raw in {'1', 'true', 'yes', 'on'}
+
+
+def _assert_trusted_cache_path(filepath: str) -> None:
+    """Guard graph cache loads against path traversal.
+
+    SECURITY: ``load_graph`` deserializes with ``pickle.load()``, which can
+    execute arbitrary code if the file contents are attacker-controlled.
+    This path is only meant to reload developer-generated graph caches
+    produced by ``save_graph()`` in the same trusted environment -- never a
+    path derived from external/user input.
+    TODO: migrate the cache format away from pickle (e.g. GraphML for the
+    graph plus a JSON sidecar for community metadata) to remove this trust
+    boundary entirely; until then this check only bounds *where* we load from.
+    """
+    allowed_root = Path(os.getenv('AI_GRAPH_CACHE_ROOT', os.getcwd())).resolve()
+    resolved = Path(filepath).resolve()
+    if not (resolved == allowed_root or allowed_root in resolved.parents):
+        raise ValueError(
+            f"Refusing to load graph cache outside trusted root {allowed_root}: {resolved}"
+        )
 
 
 class DocumentGraph:
@@ -175,22 +196,39 @@ class DocumentGraph:
         
         logger.info(f"Added {edge_count} metadata edges")
     
-    def _add_semantic_edges(self, documents: List[Document]):
-        """Add edges between semantically similar documents using ANN for speed"""
+    def _add_semantic_edges(
+        self,
+        documents: List[Document],
+        precomputed_embeddings: Optional[List[List[float]]] = None,
+    ):
+        """Add edges between semantically similar documents using ANN for speed.
+
+        Args:
+            documents: Document nodes to connect.
+            precomputed_embeddings: Vectors aligned to ``documents`` order. When
+                supplied (one per document), the embedding API is skipped
+                entirely — these are reused from the OCR/pgvector step.
+        """
         logger.info("Adding semantic edges with ANN optimization...")
-        
-        # Compute embeddings for all documents
-        texts = [doc.page_content for doc in documents]
-        logger.info(f"Computing embeddings for {len(texts)} documents...")
-        
-        # Batch embed để tăng tốc
-        batch_size = 50
-        all_embeddings = []
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
-            embeddings_batch = self.embeddings.embed_documents(batch)
-            all_embeddings.extend(embeddings_batch)
-            logger.info(f"Embedded {min(i + batch_size, len(texts))}/{len(texts)} documents")
+
+        if precomputed_embeddings is not None and len(precomputed_embeddings) == len(documents):
+            logger.info(
+                f"Reusing {len(precomputed_embeddings)} precomputed embeddings (no API call)"
+            )
+            all_embeddings = precomputed_embeddings
+        else:
+            # Compute embeddings for all documents
+            texts = [doc.page_content for doc in documents]
+            logger.info(f"Computing embeddings for {len(texts)} documents...")
+
+            # Batch embed để tăng tốc
+            batch_size = 50
+            all_embeddings = []
+            for i in range(0, len(texts), batch_size):
+                batch = texts[i:i + batch_size]
+                embeddings_batch = self.embeddings.embed_documents(batch)
+                all_embeddings.extend(embeddings_batch)
+                logger.info(f"Embedded {min(i + batch_size, len(texts))}/{len(texts)} documents")
         
         # Cache embeddings in dict AND in graph nodes
         for i, emb in enumerate(all_embeddings):
@@ -351,6 +389,7 @@ class DocumentGraph:
     def load_graph(self, filepath: str):
         """Load graph from file with community metadata"""
         import pickle
+        _assert_trusted_cache_path(filepath)
         with open(filepath, 'rb') as f:
             data = pickle.load(f)
             self.graph = data['graph']

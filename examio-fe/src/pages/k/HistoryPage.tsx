@@ -16,6 +16,7 @@ import {
 } from "@/apis/historyApi";
 import { storeCache, CacheTTL } from "@/lib/storeCache";
 import { useToast } from "@/components/antd/toast";
+import { useCan } from "@/hooks/useCan";
 
 function transformPDFHistory(items: PDFHistoryItem[]): PDFHistoryListItemData[] {
   return items.map((item) => {
@@ -153,6 +154,11 @@ export default function HistoryPage() {
   const [activities, setActivities] = useState<RecentActivityItemData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Only call the APIs the account may use: PDF history is a teacher feature,
+  // exam history + stats are student features (the backend answers 403 otherwise).
+  const canPdf = useCan("ai:generate");
+  const canExam = useCan("exam:take");
+
   const pdfDataMapRef = useRef<Map<string, PDFHistoryItem>>(new Map());
   const { toast } = useToast();
 
@@ -160,23 +166,29 @@ export default function HistoryPage() {
     try {
       setIsLoading(true);
 
-      const statsPromise = storeCache.fetchWithCache(
-        storeCache.createKey("history-stats", {}),
-        () => getHistoryStatsApi(),
-        { ttl: CacheTTL.FIVE_MINUTES },
-      );
+      const statsPromise = canExam
+        ? storeCache.fetchWithCache(
+            storeCache.createKey("history-stats", {}),
+            () => getHistoryStatsApi(),
+            { ttl: CacheTTL.FIVE_MINUTES },
+          )
+        : Promise.resolve(null);
 
-      const pdfPromise = storeCache.fetchWithCache(
-        storeCache.createKey("history-pdf", { limit: 10 }),
-        () => getPDFHistoryApi(10),
-        { ttl: CacheTTL.FIVE_MINUTES },
-      );
+      const pdfPromise = canPdf
+        ? storeCache.fetchWithCache(
+            storeCache.createKey("history-pdf", { limit: 10 }),
+            () => getPDFHistoryApi(10),
+            { ttl: CacheTTL.FIVE_MINUTES },
+          )
+        : Promise.resolve(null);
 
-      const examPromise = storeCache.fetchWithCache(
-        storeCache.createKey("history-exam", { page: 1, limit: 10 }),
-        () => getExamHistoryApi(1, 10),
-        { ttl: CacheTTL.FIVE_MINUTES },
-      );
+      const examPromise = canExam
+        ? storeCache.fetchWithCache(
+            storeCache.createKey("history-exam", { page: 1, limit: 10 }),
+            () => getExamHistoryApi(1, 10),
+            { ttl: CacheTTL.FIVE_MINUTES },
+          )
+        : Promise.resolve(null);
 
       const [statsData, pdfData, examData] = await Promise.all([
         statsPromise,
@@ -184,7 +196,7 @@ export default function HistoryPage() {
         examPromise,
       ]);
 
-      setStats(statsData);
+      if (statsData) setStats(statsData);
 
       if (Array.isArray(pdfData)) {
         setPdfItems(transformPDFHistory(pdfData));
@@ -194,7 +206,7 @@ export default function HistoryPage() {
         pdfDataMapRef.current = newMap;
       }
 
-      if (examData.examAttempts) {
+      if (examData?.examAttempts) {
         setExamItems(transformExamHistory(examData.examAttempts));
       }
 
@@ -206,7 +218,7 @@ export default function HistoryPage() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [canPdf, canExam]);
 
   useEffect(() => {
     fetchData();
@@ -257,9 +269,9 @@ export default function HistoryPage() {
       onPdfDownload={handlePdfDownload}
       onPdfDelete={handlePdfDelete}
       onExamClick={handleExamClick}
-      showPdfHistory
-      showExamHistory
-      showStats
+      showPdfHistory={canPdf}
+      showExamHistory={canExam}
+      showStats={canExam}
     />
   );
 }

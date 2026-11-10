@@ -1,0 +1,47 @@
+{
+ "task": "Phase 15 Document Service & AI-Service DB: new document-service (uploads, quota, processing status, DocumentService gRPC incl. DeleteDocuments/reuse_duplicate, 3-step crash-safe upload charge + reaper, document.uploaded/deleted outbox, r2 via gRPC service token, r2_delete_tasks worker); ai-service owns schema ai (Alembic, single pool, no runtime DDL, no foreign SQL), gRPC AiService with RS256 service-token interceptor, Python messaging (envelope, consumer 1 retry tier + DLQ, relay, purge) replacing rabbitmq_consumer.py; exam modules/ai generation -> GenerationJob (PENDING_CHARGE -> Debit gen:<jobId> -> QUEUED + outbox), cancel/refund, reaper, ai.generation.* consumers; carve-outs (ai-chat -> document RPCs incl. clearChat DeleteDocuments, examattempt GetQuota); r2 internal/upload + INTERNAL_SERVICE_TOKEN removed; temporary ai_svc exam grants revoked",
+ "mode": "code",
+ "acceptanceCriteria": [
+  "grep -rnE '\"(UserStorage|HistoryGenerated[A-Za-z]*)\"|CREATE TABLE|CREATE INDEX' examio-be/apps/ai-service/src -> no output; ai_svc reading exam.\"UserStorage\" -> permission denied or relation missing; temporary ai_svc exam grants revoked",
+  "grep -rn \"INTERNAL_SERVICE_TOKEN\\|x-internal-service-token\\|internal/upload\" in r2-service, exam modules/ai and document-service -> no output; grep UpdateBalance|deductCredits in document-service and exam modules/ai -> no output",
+  "ai-service pytest green and alembic upgrade head green on an empty ai schema; yarn build && yarn test && check:deps && check:ownership green",
+  "AiService gRPC on :50051 lists examio.ai.v1.AiService; a call without a token -> UNAUTHENTICATED; user token -> PERMISSION_DENIED; aud mismatch, HS256/none -> UNAUTHENTICATED; unknown caller -> PERMISSION_DENIED; unknown kid -> one JWKS refetch",
+  "document money: POST /ai/upload -> exactly one Debit(doc:<id>) even when retried; fault after the debit -> reaper -> one Refund(doc:<id>), row FAILED, R2 key enqueued; ai.document.failed for a charged doc -> one Refund (replay -> still one); quick-upload -> no Debit; quota and owner checks unchanged (others -> 404)",
+  "generation money: new file -> one Debit(gen:<jobId>) for upload + generation with CreateUpload(charge_credits=false); reused COMPLETED -> Debit 5; reused FAILED -> no Debit; insufficient -> FAILED, no outbox, same HTTP status; crash between debit and QUEUED -> reaper -> CANCELLED + one Refund; failed -> one Refund; cancel QUEUED -> one Refund; cancel COMPLETED -> 409; cancel twice -> 200 one Refund; AI_FREE_MODE -> no finance call",
+  "DeleteDocuments and HTTP DELETE /ai/upload/:id: owned ids -> rows gone + r2_delete_tasks + one document.deleted outbox row in the same tx; foreign ids -> not_found_ids untouched; second call -> no new outbox row; document worker -> DeleteObjects with svc:document; ai-service deletes vectors on document.deleted",
+  "Python messaging: envelope shape/version, idempotent consumer, retry 30s then DLQ after 5, source mismatch -> DLQ, relay publishes after the claim tx, purge; queue topology identical to libs/messaging (no PRECONDITION_FAILED); RabbitMQ users ai/document limited to their prefixes (ACCESS_REFUSED otherwise)",
+  "live compose from an empty volume: document-service + ai-service (api/worker/migrate) healthy; upload a PDF -> PENDING -> COMPLETED, balance debited once; generate-from-file -> quiz history, debited once; cancel a queued job -> balance restored; delete upload -> vectors gone and R2 object gone within 1 min; ai-chat carve-out (attach doc, list, clear chat with files) and FE upload/generation pages work"
+ ],
+ "touchpoints": [
+  "examio-be/apps/document-service",
+  "examio-be/apps/ai-service",
+  "examio-be/apps/exam-service/src/modules/{ai,r2,ai-chat,examattempt}",
+  "examio-be/apps/exam-service/prisma/schema",
+  "examio-be/apps/r2-service",
+  "examio-be/apps/finance-service (caller lists)",
+  "examio-be/proto/examio/{document,ai,r2,events}",
+  "examio-be/libs/contracts",
+  "examio-be/apps/gateway-service/config/routes.yaml",
+  "examio-be/deploy",
+  "examio-be/scripts",
+  ".github/workflows/ci.yml"
+ ],
+ "blastRadius": [
+  "every upload and AI generation flow (money)",
+  "document OCR/embedding pipeline",
+  "ai-chat document links",
+  "exam history stats quota",
+  "r2 uploads",
+  "RabbitMQ topology and users",
+  "DB grants",
+  "CI"
+ ],
+ "contracts": [
+  "gRPC examio.document.v1.DocumentService (new)",
+  "gRPC examio.ai.v1.AiService (new)",
+  "r2.v1 CreatePresignedDownload (additive)",
+  "events document.uploaded/deleted, ai.document.processed/failed, content.generation.requested, ai.generation.completed/failed",
+  "HTTP /api/v1/ai/upload* and /api/v1/r2/image move to document (paths/shapes unchanged); new refund behaviour on cancel/failure",
+  "env DOCUMENT_SERVICE_URL, DOCUMENT_GRPC_URL, AI_GRPC_URL, AI_HTTP_COMPAT, RABBITMQ_DOCUMENT_PASS, RABBITMQ_AI_PASS; INTERNAL_SERVICE_TOKEN removed from r2"
+ ]
+}

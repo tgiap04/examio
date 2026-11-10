@@ -25,9 +25,9 @@ export function ListView({
   allSelected,
 }: ListViewProps) {
   return (
-    <div className="rounded-lg border border-hairline bg-surface-card">
+    <div className="overflow-hidden rounded-lg border border-hairline bg-surface-card">
       {/* Select all header */}
-      <div className="flex items-center gap-3 border-b border-hairline px-4 py-2">
+      <div className="flex items-center gap-3 border-b border-hairline bg-surface-soft/60 px-4 py-2.5">
         <Checkbox checked={allSelected} onChange={onSelectAll} />
         <span className="text-xs font-medium text-ink/60">
           {selectedIndices.size}/{words.length} đã chọn
@@ -37,7 +37,7 @@ export function ListView({
       {/* Word rows */}
       <div className="divide-y divide-hairline">
         {words.map((word, idx) => (
-          <div key={idx} className="px-4 py-2">
+          <div key={idx} className="px-4 py-2.5">
             <div className="flex items-center gap-3">
               <Checkbox
                 checked={selectedIndices.has(idx)}
@@ -46,31 +46,42 @@ export function ListView({
               <button
                 type="button"
                 onClick={() => onToggleExpand(idx)}
-                className="flex flex-1 items-center gap-2 text-left text-sm"
+                className="flex flex-1 items-center gap-2.5 text-left text-[15px]"
               >
                 {expandedWords.has(idx) ? (
-                  <CaretDownOutlined className="text-ink/40" />
+                  <CaretDownOutlined className="text-ink/30" />
                 ) : (
-                  <CaretRightOutlined className="text-ink/40" />
+                  <CaretRightOutlined className="text-ink/30" />
                 )}
                 <span className="font-medium text-ink">{word.word}</span>
-                <span className="text-xs text-ink/40">{word.pos}</span>
+                {word.pos && (
+                  <span className="rounded-pill bg-surface-cream-strong px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink/50">
+                    {word.pos}
+                  </span>
+                )}
               </button>
             </div>
 
             {expandedWords.has(idx) && (
-              <div className="ml-9 mt-1 rounded-md bg-canvas px-3 py-2 text-xs text-ink/70">
-                <p>
-                  <strong className="text-ink">Nghĩa:</strong> {word.meaningVi}
+              <div className="ml-9 mt-1.5 space-y-2 rounded-md border border-hairline bg-canvas px-3.5 py-3 text-[13px] leading-relaxed">
+                <p className="flex gap-2">
+                  <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-ink/40">
+                    Nghĩa
+                  </span>
+                  <span className="text-ink/80">{word.meaningVi}</span>
                 </p>
                 {word.meaningEn && (
-                  <p>
-                    <strong className="text-ink">English:</strong>{" "}
-                    {word.meaningEn}
+                  <p className="flex gap-2">
+                    <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-ink/40">
+                      EN
+                    </span>
+                    <span className="text-ink/70">{word.meaningEn}</span>
                   </p>
                 )}
                 {word.example && (
-                  <p className="mt-1 italic text-ink/50">"{word.example}"</p>
+                  <p className="border-l-2 border-coral/30 pl-2.5 italic text-ink/55">
+                    "{word.example}"
+                  </p>
                 )}
               </div>
             )}

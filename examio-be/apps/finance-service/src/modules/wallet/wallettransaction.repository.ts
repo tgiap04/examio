@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { BaseRepository, PaginationResult } from '@examio/common';
-import { PrismaService } from '@examio/database';
+import { PrismaService } from '../../prisma';
 import { RedisService, EXPIRED_TIME } from '@examio/redis';
-import { WalletTransaction } from '@prisma/client';
+import { WalletTransaction } from '../../prisma';
 
 @Injectable()
 export class WalletTransactionRepository extends BaseRepository<WalletTransaction> {
@@ -118,16 +118,35 @@ export class WalletTransactionRepository extends BaseRepository<WalletTransactio
         const cached = await this.redis.get<any>(cacheKey);
         if (cached) return cached;
 
-        const transactions = await this.findByWalletId(walletId, 1000, false);
+        // Aggregate income/expense totals in the database instead of
+        // loading (and capping) transactions to sum them in JS
+        const grouped = await this.model.groupBy({
+            by: ['direction'],
+            where: { walletId },
+            _sum: { amount: true },
+            _count: true,
+        });
 
-        const stats = transactions.reduce(
-            (acc, tx) => {
-                if (tx.direction === 'ADD') {
-                    acc.totalIncome += tx.amount;
-                } else {
-                    acc.totalExpense += tx.amount;
+        const stats = grouped.reduce(
+            (
+                acc: {
+                    totalIncome: number;
+                    totalExpense: number;
+                    transactionCount: number;
+                },
+                row: {
+                    direction: string;
+                    _sum: { amount: number | null };
+                    _count: number;
                 }
-                acc.transactionCount++;
+            ) => {
+                const sum = row._sum.amount || 0;
+                if (row.direction === 'ADD') {
+                    acc.totalIncome += sum;
+                } else {
+                    acc.totalExpense += sum;
+                }
+                acc.transactionCount += row._count;
                 return acc;
             },
             { totalIncome: 0, totalExpense: 0, transactionCount: 0 }
@@ -151,18 +170,23 @@ export class WalletTransactionRepository extends BaseRepository<WalletTransactio
         );
         if (cached) return cached;
 
-        // Get all SUBTRACT transactions
-        const transactions = await this.model.findMany({
+        // Sum SUBTRACT transactions per type in the database
+        const grouped = await this.model.groupBy({
+            by: ['type'],
             where: {
                 walletId,
                 direction: 'SUBTRACT',
             },
+            _sum: { amount: true },
         });
 
-        // Group by type
-        const breakdown = transactions.reduce(
-            (acc, tx) => {
-                acc[tx.type] = (acc[tx.type] || 0) + tx.amount;
+        // Build the type -> total-used map
+        const breakdown = grouped.reduce(
+            (
+                acc: { [type: number]: number },
+                row: { type: number; _sum: { amount: number | null } }
+            ) => {
+                acc[row.type] = row._sum.amount || 0;
                 return acc;
             },
             {} as { [type: number]: number }

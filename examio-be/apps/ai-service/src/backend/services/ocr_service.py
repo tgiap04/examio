@@ -1,41 +1,176 @@
 """
 OCR Processing Service - Xử lý OCR và embeddings cho files
 
-Service này CHỈ xử lý AI tasks:
-1. Nhận file info từ NestJS (userStorageId + R2 URL)
-2. Download file từ R2
+Service này CHỈ xử lý AI tasks, từ event ``document.uploaded``:
+1. Nhận storageId + presigned download URL
+2. Download file (SSRF-validated)
 3. OCR và chunk content
-4. Tạo embeddings và lưu vào Document table
-5. Update processingStatus
+4. Tạo embeddings và lưu vào Document table (schema ai)
 
-KHÔNG xử lý: Upload file, tạo UserStorage record (NestJS làm)
+KHÔNG xử lý: upload file, trạng thái xử lý (document-service giữ trạng thái,
+ai-service báo kết quả qua event ai.document.processed|failed).
 """
 
+import asyncio
+import ipaddress
 import os
 import logging
+import socket
 import tempfile
 import time
 import httpx
 from typing import Optional, List, Tuple, Any, Dict
 from datetime import datetime
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 import asyncpg
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
+from src import db
 from src.llm.gemini_embeddings import get_embedding_text_limit
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_OCR_TEXT_CHUNK_OVERLAP = 200
+DEFAULT_MAX_DOWNLOAD_BYTES = 50 * 1024 * 1024  # 50MB
 
 
 class FileExtractionError(Exception):
     """Raised when a file cannot be parsed into text."""
 
 
+class DownloadValidationError(FileExtractionError):
+    """Raised when a stored-file URL fails SSRF/security validation."""
+
+
 class NoContentExtractedError(Exception):
     """Raised when OCR/text extraction returns no usable content."""
+
+
+def _get_max_download_bytes() -> int:
+    return _get_int_env("MAX_DOWNLOAD_BYTES", DEFAULT_MAX_DOWNLOAD_BYTES)
+
+
+def _get_explicit_allowed_hosts() -> set[str]:
+    """Return the hostnames listed in ``R2_ALLOWED_HOSTS`` (no fallback)."""
+    raw = os.getenv("R2_ALLOWED_HOSTS", "")
+    return {host.strip().lower() for host in raw.split(",") if host.strip()}
+
+
+def _private_hosts_allowed(hostname: str) -> bool:
+    """Tell whether ``hostname`` may resolve to a private address.
+
+    Only when ``R2_ALLOW_PRIVATE_HOSTS`` is true (default false) AND the host
+    is listed in ``R2_ALLOWED_HOSTS`` itself; the ``R2_PUBLIC_URL`` fallback
+    never qualifies. Meant for private-network stacks (a local S3 stub, a
+    self-hosted object store).
+    """
+    flag = os.getenv("R2_ALLOW_PRIVATE_HOSTS", "").strip().lower()
+    if flag not in {"1", "true", "yes", "on"}:
+        return False
+    return hostname.lower() in _get_explicit_allowed_hosts()
+
+
+def _get_allowed_download_hosts() -> set[str]:
+    """Resolve the allow-listed hostnames for outbound file downloads.
+
+    Prefers the explicit ``R2_ALLOWED_HOSTS`` allowlist; falls back to the
+    hostname of the existing R2 public/CDN base URL (``R2_PUBLIC_URL``) used
+    elsewhere in the repo. Returns an empty set if neither is configured.
+
+    An empty set means the allowlist is NOT configured. Callers must treat
+    that as fail-closed (reject the download) rather than "any public host
+    is allowed" -- see ``_validate_download_url``.
+    """
+    hosts = _get_explicit_allowed_hosts()
+    if hosts:
+        return hosts
+
+    r2_public_url = os.getenv("R2_PUBLIC_URL")
+    if r2_public_url:
+        hostname = urlparse(r2_public_url).hostname
+        if hostname:
+            return {hostname.lower()}
+
+    return set()
+
+
+def _validate_download_url(url: str) -> str:
+    """Validate a stored file URL before fetching it (SSRF hardening).
+
+    Requires an https scheme, a configured and allow-listed host, and a
+    resolved address that is not private/loopback/link-local/reserved.
+    ``R2_ALLOW_PRIVATE_HOSTS=true`` lifts the private/loopback refusal for
+    hosts listed in ``R2_ALLOWED_HOSTS`` only (link-local and reserved
+    addresses stay refused).
+    Redirects are kept disabled by the caller (httpx follow_redirects=False).
+
+    The allowlist is fail-closed: if neither ``R2_ALLOWED_HOSTS`` nor
+    ``R2_PUBLIC_URL`` is configured, downloads are refused entirely instead
+    of silently permitting any public host.
+
+    Returns:
+        The single validated IP address the caller must connect to. Returning
+        it (rather than just validating and letting the caller re-resolve
+        the hostname) closes the DNS-rebinding TOCTOU window where the name
+        could resolve to a different (internal) address between validation
+        time and connect time.
+    """
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        raise DownloadValidationError(
+            f"Refusing to download from non-https URL scheme: {parsed.scheme!r}"
+        )
+
+    hostname = parsed.hostname
+    if not hostname:
+        raise DownloadValidationError("Download URL has no hostname")
+
+    allowed_hosts = _get_allowed_download_hosts()
+    if not allowed_hosts:
+        raise DownloadValidationError(
+            "Download host allowlist is not configured (set R2_ALLOWED_HOSTS "
+            "or R2_PUBLIC_URL); refusing to download to fail closed"
+        )
+    if hostname.lower() not in allowed_hosts:
+        raise DownloadValidationError(
+            f"Host {hostname!r} is not in the allowed download host list"
+        )
+
+    try:
+        addr_infos = socket.getaddrinfo(hostname, None)
+    except socket.gaierror as exc:
+        raise DownloadValidationError(
+            f"Could not resolve download host {hostname!r}: {exc}"
+        ) from exc
+
+    link_local_v4 = ipaddress.ip_network("169.254.0.0/16")
+    private_ok = _private_hosts_allowed(hostname)
+    validated_ip: Optional[str] = None
+    for _family, _type, _proto, _canonname, sockaddr in addr_infos:
+        ip = ipaddress.ip_address(sockaddr[0])
+        # Link-local (incl. the 169.254.169.254 metadata endpoint) is never allowed.
+        link_local = ip.is_link_local or (ip.version == 4 and ip in link_local_v4)
+        internal = ip.is_private or ip.is_loopback
+        # ::1 is also in the IPv6 reserved block: loopback is judged as internal, not reserved.
+        if (
+            link_local
+            or (ip.is_reserved and not ip.is_loopback)
+            or (internal and not private_ok)
+        ):
+            raise DownloadValidationError(
+                f"Refusing to download from {hostname!r}: resolves to disallowed address {ip}"
+            )
+        if validated_ip is None:
+            validated_ip = str(ip)
+
+    if validated_ip is None:
+        raise DownloadValidationError(
+            f"Could not resolve any address for download host {hostname!r}"
+        )
+
+    return validated_ip
 
 
 def _get_int_env(name: str, default: int, min_value: int = 1) -> int:
@@ -74,13 +209,11 @@ def _resolve_text_splitter_config() -> tuple[int, int, int]:
 
 @dataclass
 class FileInfo:
-    """File info from UserStorage (created by NestJS)"""
+    """What the OCR pipeline needs to know about a stored file (from document.uploaded)."""
     id: str
-    user_id: str
     filename: str
-    url: str  # R2 public URL
+    url: str  # presigned download URL
     mimetype: str
-    processing_status: str
 
 
 @dataclass
@@ -95,18 +228,9 @@ class DocumentChunk:
 
 
 class OCRProcessingService:
-    """
-    Service xử lý OCR và embeddings
-
-    Luồng:
-    1. NestJS upload file lên R2, tạo UserStorage với status=PENDING
-    2. NestJS gọi API này với userStorageId
-    3. Service download từ R2 URL, OCR, lưu embeddings
-    4. Update status = COMPLETED
-    """
+    """Service xử lý OCR và embeddings (stateless, lưu vào Document trong schema ai)."""
 
     _instance = None
-    _pool: Optional[asyncpg.Pool] = None
 
     def __new__(cls):
         if cls._instance is None:
@@ -114,51 +238,8 @@ class OCRProcessingService:
         return cls._instance
 
     async def _get_pool(self) -> asyncpg.Pool:
-        """Get or create connection pool"""
-        if self._pool is None or self._pool._closed:
-            postgres_uri = os.environ.get("DATABASE_URL")
-            if not postgres_uri:
-                raise ValueError("DATABASE_URL environment variable not set")
-
-            self._pool = await asyncpg.create_pool(
-                postgres_uri,
-                min_size=2,
-                max_size=10,
-                command_timeout=60
-            )
-            logger.info("PostgreSQL connection pool created for OCRProcessingService")
-
-        return self._pool
-
-    async def get_file_info(self, user_storage_id: str) -> Optional[FileInfo]:
-        """Get file info from UserStorage (created by NestJS)"""
-        pool = await self._get_pool()
-
-        query = """
-            SELECT id, "userId", filename, url, mimetype, "processingStatus"
-            FROM "UserStorage"
-            WHERE id = $1
-        """
-
-        async with pool.acquire() as conn:
-            row = await conn.fetchrow(query, user_storage_id)
-
-            if row:
-                return FileInfo(
-                    id=row['id'],
-                    user_id=row['userId'],
-                    filename=row['filename'],
-                    url=row['url'],
-                    mimetype=row['mimetype'],
-                    processing_status=row['processingStatus']
-                )
-
-        return None
-
-    async def is_already_processed(self, user_storage_id: str) -> bool:
-        """Check if file already processed (OCR cached)"""
-        file_info = await self.get_file_info(user_storage_id)
-        return file_info is not None and file_info.processing_status == "COMPLETED"
+        """Return the shared ai-service pool."""
+        return await db.get_pool()
 
     async def get_document_chunks(self, user_storage_id: str) -> List[DocumentChunk]:
         """Get all OCR'd chunks for a file"""
@@ -191,25 +272,6 @@ class OCRProcessingService:
             f"[AI_TIMING] stage=document_chunks_load user_storage_id={user_storage_id} chunks={len(chunks)} elapsed_ms={elapsed_ms}"
         )
         return chunks
-
-    async def update_processing_status(
-        self,
-        user_storage_id: str,
-        status: str,
-        credit_charged: bool = False
-    ):
-        """Update file processing status"""
-        pool = await self._get_pool()
-
-        query = """
-            UPDATE "UserStorage"
-            SET "processingStatus" = $2, "creditCharged" = $3, "updatedAt" = NOW()
-            WHERE id = $1
-        """
-
-        async with pool.acquire() as conn:
-            await conn.execute(query, user_storage_id, status, credit_charged)
-            logger.info(f"Updated file {user_storage_id} status to {status}")
 
     async def store_document_chunk(
         self,
@@ -245,19 +307,73 @@ class OCRProcessingService:
         Download file from R2 public URL
         Returns: (file_content, temp_file_path)
         """
-        from urllib.parse import quote, urlparse, urlunparse
+        from urllib.parse import quote, urlunparse
+
+        # SSRF hardening: only fetch https URLs pointing at an allow-listed,
+        # non-private/loopback/link-local/reserved host. The returned IP is
+        # the exact address we connect to below -- pinning it here closes
+        # the DNS-rebinding TOCTOU window between validation and connect
+        # (otherwise httpx/the OS resolver could re-resolve the hostname to
+        # a different, internal address at connect time).
+        validated_ip = _validate_download_url(url)
 
         # Encode URL path to handle spaces and special characters
         parsed = urlparse(url)
+        original_hostname = parsed.hostname
         encoded_path = quote(parsed.path, safe='/')
-        encoded_url = urlunparse(parsed._replace(path=encoded_path))
 
-        logger.info(f"Downloading from encoded URL: {encoded_url}")
+        # Rebuild the URL with the host swapped for the pinned IP, keeping
+        # the original Host header + TLS SNI so vhost routing and
+        # certificate verification still work correctly.
+        ip_obj = ipaddress.ip_address(validated_ip)
+        host_for_netloc = f"[{validated_ip}]" if ip_obj.version == 6 else validated_ip
+        userinfo = ""
+        if parsed.username:
+            userinfo = parsed.username
+            if parsed.password:
+                userinfo += f":{parsed.password}"
+            userinfo += "@"
+        netloc = f"{userinfo}{host_for_netloc}"
+        if parsed.port:
+            netloc += f":{parsed.port}"
+        pinned_url = urlunparse(parsed._replace(netloc=netloc, path=encoded_path))
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            response = await client.get(encoded_url)
-            response.raise_for_status()
-            content = response.content
+        logger.info(f"Downloading from {original_hostname!r} pinned to resolved address {validated_ip}")
+
+        max_bytes = _get_max_download_bytes()
+
+        # Redirects stay disabled (httpx default / explicit below) so a
+        # validated host can't redirect us to an internal address.
+        async with httpx.AsyncClient(timeout=60.0, follow_redirects=False) as client:
+            async with client.stream(
+                "GET",
+                pinned_url,
+                headers={"Host": original_hostname},
+                extensions={"sni_hostname": original_hostname},
+            ) as response:
+                response.raise_for_status()
+
+                content_length = response.headers.get("content-length")
+                if content_length is not None:
+                    try:
+                        if int(content_length) > max_bytes:
+                            raise FileExtractionError(
+                                f"File too large: Content-Length={content_length} "
+                                f"exceeds limit of {max_bytes} bytes"
+                            )
+                    except ValueError:
+                        logger.warning(f"Invalid Content-Length header: {content_length!r}")
+
+                # Stream with a hard byte cap so a missing/lying Content-Length
+                # can't be used to exhaust memory.
+                buffer = bytearray()
+                async for chunk in response.aiter_bytes():
+                    buffer.extend(chunk)
+                    if len(buffer) > max_bytes:
+                        raise FileExtractionError(
+                            f"File exceeds maximum allowed download size of {max_bytes} bytes"
+                        )
+                content = bytes(buffer)
 
         # Determine file extension from URL
         ext = os.path.splitext(url.split('?')[0])[1] or '.pdf'
@@ -362,13 +478,17 @@ class OCRProcessingService:
             prepare_start = time.perf_counter()
             if self._is_pdf_file(file_info):
                 logger.info("📄 Processing PDF with local Tesseract/PyPDF...")
-                from backend.services.pdf_ocr_service import pdf_ocr_service
+                from src.backend.services.pdf_ocr_service import pdf_ocr_service
 
                 ocr_start = time.perf_counter()
-                chunk_results = pdf_ocr_service.process_pdf_with_chunks(file_bytes)
+                chunk_results = await asyncio.to_thread(
+                    pdf_ocr_service.process_pdf_with_chunks, file_bytes
+                )
                 ocr_ms = int((time.perf_counter() - ocr_start) * 1000)
                 split_start = time.perf_counter()
-                documents_to_store = self._build_pdf_documents_to_store(user_storage_id, chunk_results)
+                documents_to_store = await asyncio.to_thread(
+                    self._build_pdf_documents_to_store, user_storage_id, chunk_results
+                )
                 split_ms = int((time.perf_counter() - split_start) * 1000)
                 logger.info(
                     f"[AI_TIMING] stage=ocr_pdf_prepare user_storage_id={user_storage_id} page_chunks={len(chunk_results)} documents={len(documents_to_store)} ocr_ms={ocr_ms} split_ms={split_ms}"
@@ -378,7 +498,9 @@ class OCRProcessingService:
                 from src.rag.retriever import extract_text_from_file
 
                 extract_start = time.perf_counter()
-                extracted_text = extract_text_from_file(temp_path, file_info.mimetype)
+                extracted_text = await asyncio.to_thread(
+                    extract_text_from_file, temp_path, file_info.mimetype
+                )
                 extract_ms = int((time.perf_counter() - extract_start) * 1000)
                 if (
                     extracted_text.startswith("Error")
@@ -389,7 +511,9 @@ class OCRProcessingService:
                     raise FileExtractionError(extracted_text)
 
                 split_start = time.perf_counter()
-                documents_to_store = self._build_text_documents_to_store(user_storage_id, extracted_text)
+                documents_to_store = await asyncio.to_thread(
+                    self._build_text_documents_to_store, user_storage_id, extracted_text
+                )
                 split_ms = int((time.perf_counter() - split_start) * 1000)
                 logger.info(
                     f"[AI_TIMING] stage=ocr_text_prepare user_storage_id={user_storage_id} chars={len(extracted_text)} documents={len(documents_to_store)} extract_ms={extract_ms} split_ms={split_ms}"
@@ -459,57 +583,14 @@ class OCRProcessingService:
 
         return results
 
-    async def update_file_status(self, user_storage_id: str, status: str):
-        """Convenience method to update file status (for RabbitMQ consumer)"""
-        await self.update_processing_status(user_storage_id, status)
 
-    async def process_file(self, user_storage_id: str, model_type: str = "gemini") -> dict:
-        """
-        Process a file for OCR (for RabbitMQ consumer)
 
-        Returns:
-            dict with success, chunks_count, or error
-        """
-        process_start = time.perf_counter()
-        try:
-            file_info = await self.get_file_info(user_storage_id)
-            if not file_info:
-                return {"success": False, "error": "File not found"}
-
-            from src.rag.vector_store_pg import get_pg_vector_store
-
-            documents_to_store = await self.prepare_documents_to_store(
-                user_storage_id=user_storage_id,
-                file_info=file_info,
-            )
-
-            logger.info(f"📦 Storing {len(documents_to_store)} text chunks...")
-            vector_store = get_pg_vector_store()
-            chunks_saved = await vector_store.store_documents_batch(
-                documents_to_store,
-                model_type=model_type,
-            )
-
-            if chunks_saved == 0:
-                raise NoContentExtractedError("No content could be extracted from file")
-
-            await self.update_processing_status(user_storage_id, "COMPLETED", credit_charged=True)
-            total_ms = int((time.perf_counter() - process_start) * 1000)
-            logger.info(
-                f"[AI_TIMING] stage=ocr_process_total user_storage_id={user_storage_id} chunks_saved={chunks_saved} elapsed_ms={total_ms}"
-            )
-            return {"success": True, "chunks_count": chunks_saved}
-
-        except Exception as e:
-            logger.exception(f"Error processing file {user_storage_id}: {e}")
-            await self.update_processing_status(user_storage_id, "FAILED")
-            return {"success": False, "error": str(e)}
-
-    async def close(self):
-        """Close connection pool"""
-        if self._pool:
-            await self._pool.close()
-            self._pool = None
+def page_count_of(chunks) -> int:
+    """Number of distinct page ranges across chunks (dicts or DocumentChunk rows)."""
+    ranges = {
+        (c["page_range"] if isinstance(c, dict) else c.page_range) for c in chunks
+    }
+    return len(ranges)
 
 
 # Singleton instance

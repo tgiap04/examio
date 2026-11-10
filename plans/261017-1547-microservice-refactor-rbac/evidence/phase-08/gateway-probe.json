@@ -1,0 +1,85 @@
+{
+  "at": "2026-10-20T14:13:50.768Z",
+  "results": [
+    {
+      "name": "admin login",
+      "ok": true,
+      "detail": "STUDENT,SYSTEM_ADMIN"
+    },
+    {
+      "name": "matrix 3 roles/29 perms",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "list filter by email",
+      "ok": true,
+      "detail": "200 count=3"
+    },
+    {
+      "name": "student 403 on /admin/roles via gateway",
+      "ok": true,
+      "detail": "403 PERMISSION_DENIED"
+    },
+    {
+      "name": "promote to TEACHER",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "promoted user's old token -> 401 TOKEN_STALE",
+      "ok": true,
+      "detail": "401 TOKEN_STALE"
+    },
+    {
+      "name": "refresh returns TEACHER",
+      "ok": true,
+      "detail": "201 TEACHER"
+    },
+    {
+      "name": "history row (admin-ui, emails)",
+      "ok": true,
+      "detail": "200 total=1"
+    },
+    {
+      "name": "audit lists admin.role.set_base",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "self role change 403 CANNOT_CHANGE_OWN_ROLE",
+      "ok": true,
+      "detail": "403 CANNOT_CHANGE_OWN_ROLE"
+    },
+    {
+      "name": "self ban 403 CANNOT_CHANGE_OWN_STATUS",
+      "ok": true,
+      "detail": "403 CANNOT_CHANGE_OWN_STATUS"
+    },
+    {
+      "name": "no-op admin revoke 200",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "ban 200",
+      "ok": true,
+      "detail": "200"
+    },
+    {
+      "name": "banned user's next request 401",
+      "ok": true,
+      "detail": "401 SESSION_REVOKED"
+    },
+    {
+      "name": "banned user's refresh fails",
+      "ok": true,
+      "detail": "401 UNAUTHORIZED"
+    },
+    {
+      "name": "unban 200",
+      "ok": true,
+      "detail": "200"
+    }
+  ]
+}

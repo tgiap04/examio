@@ -13,10 +13,14 @@ import {
   Rocket as RocketIcon,
   ScrollText as ReaderIcon,
   Shield as AdminIcon,
+  DoorOpen as StudyRoomIcon,
 } from "lucide-react";
 import { FloatingDock } from "@/components/atoms/k/FloatingDock";
 import ProfileDropdown from "@/components/atoms/ProfileDropdown";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { usePageConfigStore } from "@/stores/usePageConfigStore";
+import { useCanFn } from "@/hooks/useCan";
+import { filterNav } from "@/lib/rbac/nav-items";
 import { useEffect } from "react";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { Button } from "@/components/antd/button";
@@ -31,13 +35,48 @@ interface Profile {
 }
 
 interface SidebarItem {
-  name: string;
+  id: string;
   href: string;
   icon: React.ReactNode;
   label: string;
   shortLabel?: string;
   active: boolean;
-  adminOnly?: boolean;
+}
+
+const ICON_CLASS = "w-5 h-5";
+const NAV_ICONS: Record<string, React.ReactNode> = {
+  "ai-tool": <RocketIcon className={ICON_CLASS} />,
+  "word-family": <Network className={ICON_CLASS} />,
+  "my-materials": <BookOpen className={ICON_CLASS} />,
+  "my-exams": <GraduationCap className={ICON_CLASS} />,
+  "manage-exam": <ReaderIcon className={ICON_CLASS} />,
+  "flash-card": <CardStackIcon className={ICON_CLASS} />,
+  "manage-exam-room": <TokensIcon className={ICON_CLASS} />,
+  "study-room": <StudyRoomIcon className={ICON_CLASS} />,
+  history: <ClockIcon className={ICON_CLASS} />,
+  admin: <AdminIcon className={ICON_CLASS} />,
+};
+
+// Which routes light up an item (an item owns its detail pages too).
+function isActive(id: string, path: string): boolean {
+  switch (id) {
+    case "word-family":
+      return path.startsWith("/k/word-family");
+    case "manage-exam":
+      return path === "/k/manage-exam" || path.startsWith("/k/manage-quiz-set") || path.startsWith("/k/practice-quiz");
+    case "flash-card":
+      return path === "/k/flash-card" || path.startsWith("/k/manage-flashcard-set");
+    case "manage-exam-room":
+      return path.startsWith("/k/manage-exam-room");
+    case "study-room":
+      return path.startsWith("/k/study-room");
+    case "history":
+      return path === "/k/history" || path.startsWith("/k/history/");
+    case "admin":
+      return path === "/admin";
+    default:
+      return path === `/k/${id}`;
+  }
 }
 
 interface SidebarKitProps {
@@ -45,7 +84,7 @@ interface SidebarKitProps {
 }
 
 export function SidebarKit({ collapsed = false }: SidebarKitProps) {
-  const { user, getUser, logout } = useAuthStore();
+  const { user, isAuthenticated, getUser, logout } = useAuthStore();
   const [profile, setProfile] = React.useState<Profile>({
     name: "",
     email: "",
@@ -54,17 +93,21 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
   const { pathname: currentPath } = useLocation();
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
+  // Subscribe vào map bật/tắt để sidebar tự ẩn/hiện realtime khi admin toggle.
+  const pageMap = usePageConfigStore((s) => s.pages);
   const [mounted, setMounted] = React.useState(false);
   React.useEffect(() => {
     setMounted(true);
   }, []);
 
   useEffect(() => {
-    if (typeof window !== "undefined" && localStorage.getItem("auth_token")) {
+    // SECURITY: "already logged in?" comes from the auth store (hydrated via
+    // the httpOnly cookie), never from a localStorage token.
+    if (isAuthenticated) {
       getUser();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (user) {
@@ -76,96 +119,13 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
     }
   }, [user]);
 
-  const itemSiderbar: SidebarItem[] = [
-    {
-      name: "Ai Tool",
-      href: "/k/ai-tool",
-      icon: <RocketIcon className="w-5 h-5" />,
-      label: "Công cụ AI",
-      shortLabel: "AI",
-      active: currentPath === "/k/ai-tool",
-    },
-    {
-      name: "Word Family",
-      href: "/k/word-family",
-      icon: <Network className="w-5 h-5" />,
-      label: "Từ vựng tiếng Anh",
-      shortLabel: "Từ vựng",
-      active: currentPath.startsWith("/k/word-family"),
-    },
-    {
-      name: "My Materials",
-      href: "/k/my-materials",
-      icon: <BookOpen className="w-5 h-5" />,
-      label: "Tài liệu của tôi",
-      shortLabel: "Tài liệu",
-      active: currentPath === "/k/my-materials",
-    },
-    {
-      name: "My Exams",
-      href: "/k/my-exams",
-      icon: <GraduationCap className="w-5 h-5" />,
-      label: "Bài thi của tôi",
-      shortLabel: "Bài thi",
-      active: currentPath === "/k/my-exams",
-    },
-    {
-      name: "Manage Exam",
-      href: "/k/manage-exam",
-      icon: <ReaderIcon className="w-5 h-5" />,
-      label: "Quản lý Đề thi",
-      shortLabel: "Đề thi",
-      active:
-        currentPath === "/k/manage-exam" ||
-        currentPath.startsWith("/k/manage-quiz-set") ||
-        currentPath.startsWith("/k/practice-quiz"),
-    },
-    {
-      name: "Flash Card",
-      href: "/k/flash-card",
-      icon: <CardStackIcon className="w-5 h-5" />,
-      label: "Quản lý Flashcard",
-      shortLabel: "Flashcard",
-      active:
-        currentPath === "/k/flash-card" ||
-        currentPath.startsWith("/k/manage-flashcard-set"),
-    },
-    {
-      name: "Manage Exam Room",
-      href: "/k/manage-exam-room",
-      icon: <TokensIcon className="w-5 h-5" />,
-      label: "Quản lý Phòng thi",
-      shortLabel: "Phòng thi",
-      active:
-        currentPath === "/k/manage-exam-room" ||
-        currentPath.startsWith("/k/manage-exam-room"),
-    },
-    {
-      name: "History",
-      href: "/k/history",
-      icon: <ClockIcon className="w-5 h-5" />,
-      label: "Lịch sử",
-      shortLabel: "Lịch sử",
-      active: currentPath === "/k/history",
-    },
-    {
-      name: "Admin Dashboard",
-      href: "/admin",
-      icon: <AdminIcon className="w-5 h-5" />,
-      label: "Trang quản trị",
-      shortLabel: "Admin",
-      active: currentPath === "/admin",
-      adminOnly: true,
-    },
-  ];
-
-  const filteredSidebarItems = itemSiderbar.filter((item) => {
-    if (item.adminOnly) {
-      return user?.isAdmin === true;
-    }
-
-    return true;
-  });
+  const can = useCanFn();
+  // Permission AND page flag (config + filter in lib/rbac/nav-items.ts).
+  const filteredSidebarItems: SidebarItem[] = filterNav(can, pageMap).map((item) => ({
+    ...item,
+    icon: NAV_ICONS[item.id],
+    active: isActive(item.id, currentPath),
+  }));
 
   const handleLogout = async () => {
     await logout();
@@ -175,19 +135,19 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
   // For mobile FloatingDock
   const primaryDockItems = filteredSidebarItems
     .slice(0, 5)
-    .map(({ name, href, icon, shortLabel, active }) => ({
-      name,
+    .map(({ id, href, icon, shortLabel, label, active }) => ({
+      name: id,
       href,
       icon,
-      label: shortLabel || name,
+      label: shortLabel || label,
       active,
     }));
 
   const secondaryDockItems = [
     ...filteredSidebarItems
       .slice(5)
-      .map(({ name, href, icon, label, active }) => ({
-        name,
+      .map(({ id, href, icon, label, active }) => ({
+        name: id,
         href,
         icon,
         label,
@@ -225,7 +185,9 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
             "flex items-center border-b border-hairline px-3 py-4",
             collapsed ? "justify-center" : "justify-start"
           )}>
-            <Logo sizeLogo={collapsed ? 40 : 34} sizeText={22} showText={!collapsed} />
+            <Link to="/k" aria-label="Examio" className="flex items-center">
+              <Logo sizeLogo={collapsed ? 40 : 34} sizeText={22} showText={!collapsed} />
+            </Link>
           </div>
 
           <nav

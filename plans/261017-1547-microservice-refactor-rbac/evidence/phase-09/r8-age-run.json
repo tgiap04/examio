@@ -1,0 +1,56 @@
+{
+  "at": "2026-10-21T18:33:22.474Z",
+  "results": [
+    {
+      "name": "R8-4 setup: student login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R8-4 setup: admin token obtained",
+      "ok": true,
+      "extra": "201"
+    },
+    {
+      "name": "R8-4 setup: in room, socket connected",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R8-4: socket closed when the gateway went down",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R8-4: student promoted while the socket is down (admin-service direct, gateway still down)",
+      "ok": true,
+      "extra": "200"
+    },
+    {
+      "name": "R8-4: gateway back (within the first reconnect window)",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R8-4: socket reconnects after the gateway returns (namespace connect)",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "R8-4: exactly one refresh for the reconnect cycle (stale upgrade -> refresh)",
+      "ok": true,
+      "extra": "refresh requests after gateway up=1 (failed=0)"
+    },
+    {
+      "name": "R8-4: no auth:reauth frame needed (token aged while disconnected)",
+      "ok": true,
+      "extra": "reauth frames after up=0"
+    },
+    {
+      "name": "R8-4: room snapshot restored on the same URL, no /login",
+      "ok": true,
+      "extra": "/k/study-room/6ad904c9f51865109f4f4886"
+    }
+  ],
+  "refresh": 4
+}

@@ -5,7 +5,7 @@ import {
     ForbiddenException,
 } from '@nestjs/common';
 import { GenerateIdService } from '@examio/common';
-import { User } from '@prisma/client';
+
 import { WalletRepository } from './wallet.repository';
 import { WalletTransactionRepository } from './wallettransaction.repository';
 import {
@@ -13,16 +13,30 @@ import {
     WALLET_TRANSACTION_TYPE,
     TRANSACTION_TYPE_LABELS,
 } from './dto/wallet-details-response.dto';
+import { hasPermission, type AuthUser } from '@examio/auth-jwt';
+import { EnsureWalletService } from './ensure-wallet.service';
 
 @Injectable()
 export class WalletService {
     constructor(
         private readonly walletRepository: WalletRepository,
         private readonly walletTransactionRepository: WalletTransactionRepository,
-        private readonly generateIdService: GenerateIdService
+        private readonly generateIdService: GenerateIdService,
+        private readonly ensureWalletService: EnsureWalletService
     ) {}
 
-    async createWallet(user: User) {
+    /**
+     * Reads the wallet; a caller whose token holds `wallet:use` (a TEACHER)
+     * gets it provisioned on first read, so a lost provisioning event heals.
+     */
+    private async findOrProvision(user: AuthUser) {
+        const wallet = await this.walletRepository.findByUserId(user.id, true);
+        if (wallet || !hasPermission(user.roles, 'wallet:use')) return wallet;
+        await this.ensureWalletService.ensure(user.id);
+        return this.walletRepository.findByUserId(user.id, false);
+    }
+
+    async createWallet(user: AuthUser) {
         // Check if wallet already exists
         const existingWallet = await this.walletRepository.findByUserId(
             user.id,
@@ -41,8 +55,8 @@ export class WalletService {
         );
     }
 
-    async getWallet(user: User) {
-        const wallet = await this.walletRepository.findByUserId(user.id, true);
+    async getWallet(user: AuthUser) {
+        const wallet = await this.findOrProvision(user);
 
         if (!wallet) {
             throw new NotFoundException('Không tìm thấy ví của người dùng này');
@@ -56,12 +70,12 @@ export class WalletService {
      * Uses cached data from repository for O(1) lookups
      */
     async getWalletDetails(
-        user: User,
+        user: AuthUser,
         page = 1,
         size = 10
     ): Promise<WalletDetailsDto> {
-        // Get wallet info (cached)
-        const wallet = await this.walletRepository.findByUserId(user.id, true);
+        // Get wallet info (cached; provisioned lazily for wallet:use callers)
+        const wallet = await this.findOrProvision(user);
 
         if (!wallet) {
             throw new NotFoundException('Không tìm thấy ví của người dùng này');
@@ -154,16 +168,16 @@ export class WalletService {
         };
     }
 
-    async deposit(user: User, amount: number) {
+    async deposit(user: AuthUser, amount: number) {
         if (amount <= 0) {
             throw new ForbiddenException('Số tiền nạp phải là số dương');
         }
 
-        // Use repository's updateBalance method
-        return this.walletRepository.updateBalance(user.id, amount, 'add');
+        // Use the repository balance delta
+        return this.walletRepository.applyBalanceDelta(user.id, amount, 'add');
     }
 
-    async deduct(user: User, amount: number) {
+    async deduct(user: AuthUser, amount: number) {
         if (amount <= 0) {
             throw new ForbiddenException('Số tiền trừ phải là số dương');
         }
@@ -174,7 +188,7 @@ export class WalletService {
             throw new ForbiddenException('Số dư trong ví không đủ');
         }
 
-        // Use repository's updateBalance method
-        return this.walletRepository.updateBalance(user.id, amount, 'subtract');
+        // Use the repository balance delta
+        return this.walletRepository.applyBalanceDelta(user.id, amount, 'subtract');
     }
 }

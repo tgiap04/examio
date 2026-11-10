@@ -1,0 +1,130 @@
+{
+  "at": "2026-10-21T14:32:55.038Z",
+  "results": [
+    {
+      "name": "F5 setup: teacher login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F5 teacher: notice visible on whitelisted session",
+      "ok": true,
+      "extra": "/exam-session/6ad8cbe03aa8f6cb748799b8"
+    },
+    {
+      "name": "F5 teacher: no stats request / no 403 on the exam session",
+      "ok": true,
+      "extra": "[]"
+    },
+    {
+      "name": "F5 teacher: no 'Bắt đầu làm bài' start button",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F5 setup: student login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F5 whitelisted student: start button visible",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F5 whitelisted student: start -> /exam-session/:id/quiz",
+      "ok": true,
+      "extra": "/exam-session/6ad8cbe03aa8f6cb748799b8/quiz"
+    },
+    {
+      "name": "F3 setup: student login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F3 setup: sidebar present",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F3-502: auth-service stopped",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F3-502 cold reload: SessionUnavailable shown",
+      "ok": true,
+      "extra": "/k/my-materials"
+    },
+    {
+      "name": "F3-502 cold reload: URL is NOT /login",
+      "ok": true,
+      "extra": "/k/my-materials"
+    },
+    {
+      "name": "F3-502: auth-service restarted",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F3-502: 'Thử lại' clicked",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F3-502: after restore, 'Thử lại' lands on /k/my-materials",
+      "ok": true,
+      "extra": "/k/my-materials"
+    },
+    {
+      "name": "F3-429: throttle engaged",
+      "ok": true,
+      "extra": "429s=10/40"
+    },
+    {
+      "name": "F3-429 warm: client-side navigation during throttle stays in app",
+      "ok": true,
+      "extra": "path=/k/word-family auth/me=429,429,429,429,429,429,429,429,429,429"
+    },
+    {
+      "name": "F3-429 cold reload: SessionUnavailable shown",
+      "ok": true,
+      "extra": "/k/my-materials"
+    },
+    {
+      "name": "F3-429 cold reload: URL is NOT /login",
+      "ok": true,
+      "extra": "/k/my-materials"
+    },
+    {
+      "name": "F3-429: 'Thử lại' after throttle window",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F3-429: after window, navigation works",
+      "ok": true,
+      "extra": "/k/my-materials"
+    },
+    {
+      "name": "F3-rev setup: login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F3-rev: session revoked via logout",
+      "ok": true,
+      "extra": "201"
+    },
+    {
+      "name": "F3-rev cold reload: revoked session -> /login (unchanged)",
+      "ok": true,
+      "extra": "/login"
+    },
+    {
+      "name": "F3-none cold load with no cookies -> /login (unchanged)",
+      "ok": true,
+      "extra": "/login"
+    }
+  ]
+}

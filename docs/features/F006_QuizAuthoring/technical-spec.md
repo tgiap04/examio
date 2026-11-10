@@ -6,7 +6,7 @@
 
 ## Overview
 
-QuizAuthoring enables authenticated teachers to create, edit, and delete quiz sets; manage labels (chapters/sections) and questions within each set; control visibility (public/private); and generate quizzes from uploaded documents via AI. Students can view their own AI-processed PDF history and delete records. The feature spans `SCR016/REG001` (quiz set grid on MyMaterialsPage), `SCR018/REG001` (PDF history list), `SCR020` (PDF history page), `SCR021` (manage exam page), `SCR022` (quiz set detail), `SCR024` (AI tool, quiz portion), and `SCR017` (flashcard page, modal trigger). Backend lives in `examio-be/apps/exam-service/src/modules/quizset/` and the AI job pipeline in `examio-be/apps/exam-service/src/modules/ai/`.
+QuizAuthoring enables authenticated teachers to create, edit, and delete quiz sets; manage labels (chapters/sections) and questions within each set; control visibility (public/private); and generate quizzes from uploaded documents via AI. Students can view their own AI-processed PDF history and delete records. The feature spans `SCR016/REG001` (quiz set grid on MyMaterialsPage), `SCR018/REG001` (PDF history list), `SCR020` (PDF history page), `SCR021` (manage exam page), `SCR022` (quiz set detail), `SCR024` (AI tool, quiz portion), and `SCR017` (flashcard page, modal trigger). Backend lives in `examio-be/apps/content-service/src/modules/quizset/` and the AI job pipeline in `examio-be/apps/content-service/src/modules/ai/`.
 
 ## Polymorphic Behavior
 
@@ -40,6 +40,14 @@ N/A — no other discriminator fields in QuizAuthoring Key Entities.
 | FR-006_09 | Users initiate AI quiz generation job | `POST /api/v1/ai/job` | yes |
 | FR-006_10 | Users poll AI job status | `GET /api/v1/ai/job/:jobId` | yes |
 | FR-006_11 | Users cancel AI generation job | `DELETE /api/v1/ai/job/:jobId` | yes |
+| FR-006_12 | Quiz set owners (`content:share`) read and change sharing by delta (`addUserIds`, `removeUserIds`, `removeCodeGrantedIds`, `isPublic`, `codeEnabled`); lists capped at 2000 (409 `SHARE_LIST_FULL`); non-owner gets 404 | `GET/PUT /api/v1/quizsets/:id/sharing` | yes |
+| FR-006_13 | Owners rotate the 6-digit code; everyone who unlocked with the old code is evicted, whitelist kept | `POST /api/v1/quizsets/:id/generate-code` | yes |
+| FR-006_14 | Students (`quiz:practice`) list granted sets (whitelist, code-unlocked, or public with an attempt) | `GET /api/v1/quiz-practice/sets` | yes |
+| FR-006_15 | Anyone checks whether a set needs a code; anonymous on a code-protected set learns only `requiresCode` | `GET /api/v1/quiz-practice/sets/:id/access` | yes |
+| FR-006_16 | Students unlock a set with its code (5 wrong in 15 min = 429 `CODE_LOCKED`); the unlock is remembered until the code changes | `POST /api/v1/quiz-practice/sets/:id/unlock` | yes |
+| FR-006_17 | Owner or student starts or resumes a practice attempt; questions carry no answer fields | `POST /api/v1/quiz-practice/attempts` | yes |
+| FR-006_18 | Students autosave answers, then submit; the server scores 0-10 from stored answers and freezes `resultSnapshot`; resubmit or late save = 409 `ALREADY_SUBMITTED` | `PUT /api/v1/quiz-practice/attempts/:id`, `POST .../submit` | yes |
+| FR-006_19 | Students read an open attempt only while they still have access to the set (else 404); a submitted attempt stays readable; history lists submitted attempts newest first | `GET /api/v1/quiz-practice/attempts[/:id]` | yes |
 
 ### Business Rules
 
@@ -337,6 +345,7 @@ None.
 | QuizSet | `QuizSet` | id, userId, title, description, isPublic | Core quiz authoring entity; owner = teacher |
 | QuizSetLabel | `QuizSetLabel` | id, quizSetId, name | Chapter/section labels for organizing questions |
 | QuizQuestion | `QuizQuestion` | id, questionText, options, correctAnswer | Reusable question; instantiated via DetailsQuizQuestion |
+| QuizPracticeAttempt | `QuizPracticeAttempt` | id, quizSetId, userId, answers, isSubmitted, score, resultSnapshot | Student practice attempt; many per user and set (history) |
 | DetailsQuizQuestion | `DetailsQuizQuestion` | quizSetId, quizQuestionId, labelId | Join table placing question into a set with optional label |
 | HistoryGeneratedQuizz | `HistoryGeneratedQuizz` | id, userId, userStorageId | AI-generated batch linked to source document |
 | HistoryGeneratedFlashcard | `HistoryGeneratedFlashcard` | id, userId, userStorageId | AI-generated flashcards linked to source document |
@@ -356,7 +365,7 @@ None.
 
 ## Assumptions
 
-- Cascade delete behavior on QuizSet deletion (questions and labels) is enforced at the Prisma schema level — confirm via `schema.prisma` `onDelete: Cascade`.
+- Cascade delete behavior on QuizSet deletion (questions and labels) is enforced at the Prisma schema level — confirm via `apps/content-service/prisma/schema.prisma` `onDelete: Cascade`.
 - AI job polling interval is 10 seconds up to 360 attempts (60 minutes) per `useGenerationGuard` hook.
 - `isPublic` flag defaults to `false` on quiz set creation.
 - Ownership check for quiz set edit/delete is enforced at the repository layer (service throws `ForbiddenException` on mismatch).
@@ -365,8 +374,8 @@ None.
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| QuizSetController | `examio-be/apps/exam-service/src/modules/quizset/quizset.controller.ts` | REST endpoints for quiz set CRUD |
-| QuizSetService | `examio-be/apps/exam-service/src/modules/quizset/quizset.service.ts` | Business logic for quiz set operations |
+| QuizSetController | `examio-be/apps/content-service/src/modules/quizset/quizset.controller.ts` | REST endpoints for quiz set CRUD |
+| QuizSetService | `examio-be/apps/content-service/src/modules/quizset/quizset.service.ts` | Business logic for quiz set operations |
 | QuizQuestionRepository | `examio-be/apps/exam-service/src/modules/quizset/quiz-question.repository.ts` | Question CRUD via Prisma |
 | AIJobController | `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` | AI job create/poll/cancel endpoints |
 | FinanceClientService | `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` | Credit check before AI generation (BL004) |

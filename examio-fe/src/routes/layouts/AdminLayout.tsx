@@ -1,18 +1,22 @@
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   BarChart3,
   Users,
+  ShieldCheck,
   Wallet,
   ScrollText,
   History,
   BookOpen,
+  ToggleLeft,
   LogOut,
 } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { cn } from "@/lib/utils";
 import Logo from "@/components/atoms/Logo";
+import { useCanFn } from "@/hooks/useCan";
+import { filterAdminNav } from "@/lib/rbac/nav-items";
 
 interface NavItem {
   to: string;
@@ -25,19 +29,25 @@ const NAV_ITEMS: NavItem[] = [
   { to: "/admin", labelKey: "nav.overview", icon: <LayoutDashboard className="h-4 w-4" />, end: true },
   { to: "/admin/stats", labelKey: "nav.stats", icon: <BarChart3 className="h-4 w-4" /> },
   { to: "/admin/users", labelKey: "nav.users", icon: <Users className="h-4 w-4" /> },
+  { to: "/admin/roles", labelKey: "nav.roles", icon: <ShieldCheck className="h-4 w-4" /> },
   { to: "/admin/finance", labelKey: "nav.finance", icon: <Wallet className="h-4 w-4" /> },
   { to: "/admin/logs", labelKey: "nav.logs", icon: <ScrollText className="h-4 w-4" /> },
   { to: "/admin/audit", labelKey: "nav.audit", icon: <History className="h-4 w-4" /> },
   { to: "/admin/word-family", labelKey: "nav.wordFamily", icon: <BookOpen className="h-4 w-4" /> },
+  { to: "/admin/page-config", labelKey: "nav.pageConfig", icon: <ToggleLeft className="h-4 w-4" /> },
 ];
 
 export function AdminLayout() {
   const { t } = useTranslation("admin");
   const { user, logout } = useAuthStore();
   const location = useLocation();
+  const can = useCanFn();
+  // Same permission table as the route guards: only links the user can open.
+  const allowed = new Set(filterAdminNav(can));
+  const navItems = NAV_ITEMS.filter((item) => allowed.has(item.to));
 
   const currentTitle = (() => {
-    const match = NAV_ITEMS.find((item) =>
+    const match = navItems.find((item) =>
       item.end
         ? location.pathname === item.to
         : location.pathname.startsWith(item.to),
@@ -53,10 +63,12 @@ export function AdminLayout() {
     <div className="flex min-h-screen w-full bg-canvas text-ink">
       <aside className="hidden w-64 shrink-0 border-r border-hairline bg-canvas md:flex md:flex-col">
         <div className="flex h-16 items-center gap-2 border-b border-hairline px-5">
-          <Logo sizeLogo={28} sizeText={18} showText />
+          <Link to="/k" aria-label="Examio" className="flex items-center">
+            <Logo sizeLogo={28} sizeText={18} showText />
+          </Link>
         </div>
         <nav className="flex-1 space-y-1 px-3 py-4">
-          {NAV_ITEMS.map((item) => (
+          {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

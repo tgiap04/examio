@@ -1,0 +1,101 @@
+{
+  "at": "2026-10-21T16:04:42.317Z",
+  "results": [
+    {
+      "name": "F6 setup: student login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F6 setup: teacher login",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F6 setup: student in room, socket connected",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F6 setup: exam-service pid before outage",
+      "ok": true,
+      "extra": "pid=92844"
+    },
+    {
+      "name": "F6 outage: exam-service pid unchanged through the whole outage (no crash)",
+      "ok": true,
+      "extra": "pid=92844 now=92844 outage_s=358"
+    },
+    {
+      "name": "F6 outage: Redis-dependent room routes answer 503 SERVICE_UNAVAILABLE (no 500/crash)",
+      "ok": false,
+      "extra": "status codes seen=504,503,200"
+    },
+    {
+      "name": "F6 outage: no uncaught exceptions in exam.log during outage",
+      "ok": true,
+      "extra": "uncaught markers=0"
+    },
+    {
+      "name": "F6 outage: 5-min focus sweep ran during outage and failed as a warning (not a crash)",
+      "ok": true,
+      "extra": "focus sweep warnings=1 (outage 358 s)"
+    },
+    {
+      "name": "F6 outage: teacher handshake during outage did not crash exam-service",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F6 recovery: redis back up",
+      "ok": true,
+      "extra": ""
+    },
+    {
+      "name": "F6 recovery: teacher socket reconnects with the same exam-service pid",
+      "ok": true,
+      "extra": "pid=92844"
+    },
+    {
+      "name": "F6 recovery: broadcast flows teacher -> student (presence:updated on student socket)",
+      "ok": true,
+      "extra": "student presence frames after restore=2"
+    },
+    {
+      "name": "F6 recovery: student still in room, room visible without navigation",
+      "ok": true,
+      "extra": "/k/study-room/6ad8e10cc48ef145fec46b4c"
+    },
+    {
+      "name": "F6 recovery: Redis-dependent route answers again (leaderboard 200)",
+      "ok": true,
+      "extra": "status=200"
+    }
+  ],
+  "outage": {
+    "statuses": [
+      {
+        "t": 85,
+        "label": "poll",
+        "leaderboard": 504,
+        "room": 503,
+        "mine": 200
+      },
+      {
+        "t": 211,
+        "label": "poll",
+        "leaderboard": 503,
+        "room": 503,
+        "mine": 200
+      },
+      {
+        "t": 338,
+        "label": "poll",
+        "leaderboard": 503,
+        "room": 503,
+        "mine": 200
+      }
+    ],
+    "pidSame": true
+  }
+}

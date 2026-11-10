@@ -1,0 +1,43 @@
+{
+  "task": "Phase 05 Gateway Rewrite: YAML route table + http-proxy-middleware streaming dispatcher replacing 208 hand-written handlers, JWKS verify, Redis revoke + authzVersion (av) stale checks with durable authz_changed consumer and GatewayControl gRPC, per-route rate limits, WS upgrade auth, helmet/CORS/real-ip hardening, compose network segmentation, cookies set only by auth, gateway has no DB",
+  "mode": "code",
+  "acceptanceCriteria": [
+    "yarn typecheck, build:all and test exit 0 and gateway e2e passes",
+    "gateway has no prisma/@examio/database usage and only config.controller.ts remains under controllers",
+    "every route in the phase 01 route inventory is covered by routes.yaml",
+    "SSE responses stream incrementally and uploads stream without buffering; status codes and headers are preserved",
+    "only auth sets accessToken/refreshToken cookies with SameSite=Lax",
+    "replaying a token after logout returns 401 SESSION_REVOKED",
+    "after a role change the next request returns 401 TOKEN_STALE and refresh succeeds, also when the GatewayControl call is blocked (durable path)",
+    "Redis down: admin and non-GET routes fail closed with 503, non-admin GET passes",
+    "per-route rate limits are ported and a spoofed X-Forwarded-For does not change the limiter key",
+    "optional-auth routes strip invalid tokens before forwarding",
+    "helmet, CORS allowlist and OPTIONS short-circuit are in place",
+    "compose exposes no host ports for postgres, redis or rabbitmq and only edge-facing services have egress",
+    "WebSocket upgrade verifies the token and page flag before proxying",
+    "examio-fe build and lint still pass"
+  ],
+  "touchpoints": [
+    "examio-be/apps/gateway-service",
+    "examio-be/deploy/docker-compose.yml",
+    "examio-fe/nginx.conf",
+    "examio-be/apps/auth-service (cookie + GatewayControl client enable)",
+    "examio-be/deploy/rabbitmq/definitions.template.json"
+  ],
+  "blastRadius": [
+    "every public request from FE and mobile",
+    "login, refresh, logout cookies",
+    "AI chat SSE streaming and file uploads",
+    "study-room WebSocket",
+    "page feature flags config stream",
+    "admin log stream",
+    "rate limiting",
+    "compose networking between services"
+  ],
+  "contracts": [
+    "public /api/v1 paths unchanged",
+    "new 401 codes TOKEN_EXPIRED, SESSION_REVOKED, TOKEN_STALE",
+    "error envelope {statusCode, code, message, requestId} on gateway and auth",
+    "cookies only accessToken/refreshToken"
+  ]
+}

@@ -3,6 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, VerifyCallback, StrategyOptionsWithRequest } from 'passport-google-oauth20';
 import { Request } from 'express';
 import { AuthService } from '../auth.service';
+import { extractUtmSourceFromState } from '../utils/utm-source.util';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
@@ -32,7 +33,14 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
             accessToken,
         };
 
-        const result = await this.authService.googleLogin(user);
+        // utm_source đi kèm trong OAuth `state` (base64url JSON) mà Google trả về
+        // — rút ra để quy kết nguồn khi tạo user mới (first-touch).
+        const utmSource = extractUtmSourceFromState(req.query?.state);
+        const result = await this.authService.googleLogin(
+            user,
+            undefined,
+            utmSource
+        );
         done(null, result);
     }
 }
