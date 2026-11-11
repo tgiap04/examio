@@ -1,0 +1,46 @@
+{
+  "commands": [
+    {
+      "command": "cd docker-development && ./test/run-tests.sh test/host-env-masks.bats",
+      "exitCode": 1,
+      "testCount": 6,
+      "phase": "RED",
+      "summary": "definitions.json not masked before the fix"
+    },
+    {
+      "command": "cd docker-development && ./test/run-tests.sh test/project-ownership.bats",
+      "exitCode": 1,
+      "testCount": 1,
+      "phase": "RED",
+      "summary": "sh not guarded (guard removed to prove the test)"
+    },
+    {
+      "command": "cd docker-development && ./test/run-tests.sh",
+      "exitCode": 0,
+      "testCount": 100,
+      "phase": "GREEN",
+      "summary": "shellcheck + 100/100 bats in bash 3.2"
+    },
+    {
+      "command": "cd kmaedu-be/deploy && node --test compose-topology.spec.cjs",
+      "exitCode": 0,
+      "testCount": 46,
+      "phase": "GREEN",
+      "summary": "deploy topology unchanged"
+    },
+    {
+      "command": "cd docker-development && ./test/smoke-up.sh",
+      "exitCode": 0,
+      "testCount": 12,
+      "phase": "GREEN",
+      "summary": "real stack gateway+auth+fe through Traefik, 12 checks (implementer fix-round run)"
+    },
+    {
+      "command": "cd docker-development && ./test/run-tests.sh",
+      "exitCode": 0,
+      "testCount": 100,
+      "phase": "GREEN",
+      "summary": "after adding sh to the ownership test: 100/100"
+    }
+  ]
+}
