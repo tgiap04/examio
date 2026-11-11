@@ -1,0 +1,6 @@
+# Machine-generated files and local secrets (./project up writes them)
+.generated/
+# Per-developer copies of services.example / .env.example
+services
+.env*
+!.env.example

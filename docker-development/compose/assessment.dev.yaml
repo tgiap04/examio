@@ -1,0 +1,62 @@
+# Dev overlay for kmaedu-be/deploy/compose/assessment.yml, merged by .generated/compose.yaml (Compose >= 2.24).
+# Runs the app from source (`yarn dev:assessment`, Nest watch) in the dev image; paths are absolute
+# (${KMAEDU_*} from .generated/compose.env) because relative ones resolve against deploy/.
+services:
+    assessment:
+        image: kmaedu-dev-node:local
+        build: !reset null
+        pull_policy: never
+        container_name: !reset null
+        working_dir: /workspace
+        volumes:
+            - ${KMAEDU_BE_DIR}:/workspace
+            - be_node_modules:/workspace/node_modules
+            # per-container webpack output: never written into the host tree, never wiped by a sibling
+            - /workspace/dist
+        command: ['yarn', 'dev:assessment']
+        environment:
+            NODE_ENV: development
+            MAIL_TRANSPORT: json
+            CHOKIDAR_USEPOLLING: ${KMAEDU_WATCH_POLL}
+            WATCHPACK_POLLING: ${KMAEDU_WATCH_POLL}
+            YARN_INSTALL_STATE_PATH: /workspace/node_modules/.yarn-install-state.gz
+        env_file: !override
+            - path: ${KMAEDU_DEV_GEN_DIR}/env/assessment.env
+              required: true
+        mem_limit: !reset null
+        # other apps are reached through lazy clients: only the services file decides what runs
+        depends_on: !override
+            deps:
+                condition: service_completed_successfully
+            assessment-migrate:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+        healthcheck:
+            interval: 10s
+            start_period: 180s
+
+    # `prisma migrate deploy` from the source tree (no image build)
+    assessment-migrate:
+        image: kmaedu-dev-node:local
+        build: !reset null
+        pull_policy: never
+        container_name: !reset null
+        working_dir: /workspace
+        volumes:
+            - ${KMAEDU_BE_DIR}:/workspace
+            - be_node_modules:/workspace/node_modules
+            # per-container webpack output: never written into the host tree, never wiped by a sibling
+            - /workspace/dist
+        command: ['sh', '-c', 'yarn prisma:deploy assessment']
+        environment:
+            YARN_INSTALL_STATE_PATH: /workspace/node_modules/.yarn-install-state.gz
+        depends_on: !override
+            deps:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy

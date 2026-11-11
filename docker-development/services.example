@@ -1,0 +1,19 @@
+# Apps that ./project up runs from source (one key per line; # starts a comment).
+# Copied to ./services on the first `./project up` (gitignored): edit that copy, not this file.
+# Infrastructure (Postgres, Redis, RabbitMQ, Traefik), the deps job and the <svc>-migrate jobs start
+# on their own; an app that is not listed does not run (requests that need it answer 502/503).
+#
+# The full stack needs about 10-12 GB of RAM for Docker Desktop. On a smaller machine keep only:
+#   gateway auth content assessment fe
+gateway
+auth
+admin
+content
+assessment
+study-room
+vocabulary
+document
+ai-chat
+r2
+ai
+fe

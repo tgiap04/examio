@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# docker-development control script: the whole kmaedu stack from source with `./project up`.
+# Requires only bash 3.2+ (macOS default) and Docker with Compose >= 2.24.
+set -euo pipefail
+umask 077
+
+# Resolve the real location even when invoked through a symlink.
+SOURCE="${BASH_SOURCE[0]}"
+while [ -L "$SOURCE" ]; do
+  DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
+  SOURCE="$(readlink "$SOURCE")"
+  case "$SOURCE" in /*) ;; *) SOURCE="$DIR/$SOURCE" ;; esac
+done
+SELF_DIR="$(cd "$(dirname "$SOURCE")" && pwd)"
+export SELF_DIR
+
+# shellcheck source=lib/common.sh
+. "$SELF_DIR/lib/common.sh"
+# shellcheck source=lib/services-file.sh
+. "$SELF_DIR/lib/services-file.sh"
+# shellcheck source=lib/dotenv-reader.sh
+. "$SELF_DIR/lib/dotenv-reader.sh"
+# shellcheck source=lib/local-secrets.sh
+. "$SELF_DIR/lib/local-secrets.sh"
+# shellcheck source=lib/render-env-files.sh
+. "$SELF_DIR/lib/render-env-files.sh"
+# shellcheck source=lib/render-host-env-masks.sh
+. "$SELF_DIR/lib/render-host-env-masks.sh"
+# shellcheck source=lib/render-compose-include.sh
+. "$SELF_DIR/lib/render-compose-include.sh"
+# shellcheck source=lib/project-ownership.sh
+. "$SELF_DIR/lib/project-ownership.sh"
+# shellcheck source=lib/prerequisites.sh
+. "$SELF_DIR/lib/prerequisites.sh"
+# shellcheck source=lib/commands-lifecycle.sh
+. "$SELF_DIR/lib/commands-lifecycle.sh"
+# shellcheck source=lib/commands-inspect.sh
+. "$SELF_DIR/lib/commands-inspect.sh"
+# shellcheck source=lib/commands-database.sh
+. "$SELF_DIR/lib/commands-database.sh"
+
+usage() {
+  cat <<USAGE
+Usage: ./project <command> [args]
+
+Commands:
+  up              Build the dev image, generate local secrets and env, start Postgres/Redis/RabbitMQ/Traefik,
+                  then the apps listed in ./services from source (hot reload). First run copies
+                  services.example -> services and .env.example -> .env.
+                  Browser: http://localhost:\${KMAEDU_WEB_PORT:-5173}   API: http://localhost:\${KMAEDU_HTTP_PORT:-8000}/api/v1
+  down            Stop and remove containers and networks (volumes are kept)
+  ps              SERVICE STATE STATUS of every container, then the URLs
+  logs [name...]  Follow logs (all when no name; flags such as -t pass through)
+  sh <name>       Shell in a container (bash, falling back to sh)
+  seed            Run the dev seed (auth, admin, ai-chat, vocabulary) and name the admin accounts
+  db:reset [-y]   Delete the dev Postgres volume (all local data), then up again
+  help            Show this help
+
+<name>: a services key or a compose service (postgres, redis, rabbitmq, traefik, deps, auth-migrate, ...).
+services keys: $SERVICE_KEYS
+  (gateway runs gateway-a; ai runs ai + ai-worker; fe is the Vite dev server)
+
+Env: KMAEDU_DEV_PROJECT (default kmaedu-dev; refused when another compose file owns that project), KMAEDU_WEB_PORT (5173), KMAEDU_HTTP_PORT (8000, must differ),
+     KMAEDU_PG_PORT (5432), KMAEDU_REDIS_PORT (6379), KMAEDU_RABBITMQ_PORT (5672), all bound to 127.0.0.1;
+     KMAEDU_WATCH_POLL=true when hot reload misses changes (polling); KMAEDU_DEPS_FORCE=1 reinstalls node_modules
+     and regenerates proto/prisma code even when nothing changed; KMAEDU_SERVICES_FILE (./services),
+     KMAEDU_DEV_ENV_FILE (./.env), KMAEDU_DEV_GEN_DIR (./.generated: secrets, rendered env and compose)
+USAGE
+}
+
+usage_error() {
+  printf 'error: %s\n\n' "$1" >&2
+  usage >&2
+  exit 2
+}
+
+main() {
+  local cmd="${1:-help}"
+  [ "$#" -eq 0 ] || shift
+  case "$cmd" in
+    up) cmd_up "$@" ;;
+    down) cmd_down "$@" ;;
+    ps) cmd_ps "$@" ;;
+    logs) cmd_logs "$@" ;;
+    sh) cmd_sh "$@" ;;
+    seed) cmd_seed "$@" ;;
+    db:reset) cmd_db_reset "$@" ;;
+    render) check_port_knobs; render_all ;; # hidden: write .generated/ only (debugging, tests)
+    help | -h | --help) usage ;;
+    *) usage_error "unknown command: $cmd" ;;
+  esac
+}
+
+main "$@"
