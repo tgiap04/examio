@@ -73,7 +73,7 @@ export function HeroSection() {
                   <div className="text-center mx-auto mt-6 sm:mt-8 max-w-2xl text-balance text-base text-body sm:text-lg px-2 sm:px-0">
                     <p className="leading-relaxed">
                       Nền tảng của chúng tôi mang sức mạnh{" "}
-                      <Highlighter action="underline" color="#cc785c">
+                      <Highlighter action="underline" color="#ee2f2b">
                         trí tuệ nhân tạo
                       </Highlighter>{" "}
                       để biến tài liệu thành{" "}

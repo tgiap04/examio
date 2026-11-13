@@ -24,7 +24,7 @@ export function HistoryStatCard({
         <div
           className={cn(
             "flex h-11 w-11 items-center justify-center rounded-lg",
-            iconClassName || "bg-coral/10 text-coral",
+            iconClassName || "bg-coral/10 text-brand-strong",
           )}>
           <Icon className="h-5 w-5" />
         </div>

@@ -120,7 +120,7 @@ function Pagination({
             onClick={() => onPageChange(p)}
             className={`grid h-9 w-9 place-items-center rounded-md text-sm font-medium transition-colors ${
               p === page
-                ? "bg-coral text-on-primary"
+                ? "bg-brand-soft text-brand-strong"
                 : "border border-hairline text-body hover:bg-surface-card hover:text-ink"
             }`}
             aria-current={p === page ? "page" : undefined}

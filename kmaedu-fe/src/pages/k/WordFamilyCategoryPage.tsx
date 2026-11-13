@@ -180,7 +180,7 @@ export default function WordFamilyCategoryPage() {
                 to={`/k/word-family/${slug}/${rw.rootWord}`}
                 className="group flex items-center gap-3 rounded-lg border border-hairline bg-surface-card px-4 py-3.5 transition-colors duration-150 hover:border-coral/40"
               >
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-coral/10 font-display text-sm font-semibold text-coral">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-coral/10 font-display text-sm font-semibold text-brand-strong">
                   {rw.rootWord.charAt(0).toUpperCase()}
                 </span>
                 <span className="min-w-0 flex-1 truncate font-display text-[15px] font-medium text-ink">

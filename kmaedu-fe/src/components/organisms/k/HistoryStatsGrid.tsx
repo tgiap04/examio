@@ -20,7 +20,7 @@ const HistoryStatsGridComponent = ({ stats }: HistoryStatsGridProps) => {
         title="Tổng PDF đã xử lý"
         value={stats.totalPDFs}
         icon={FileText}
-        iconClassName="bg-coral/10 text-coral"
+        iconClassName="bg-coral/10 text-brand-strong"
       />
       <HistoryStatCard
         title="Đề thi đã tạo"

@@ -13,7 +13,7 @@ function RootNode({ rootWord, total }: { rootWord: string; total: number }) {
   return (
     <div className="wft-node">
       <div className="flex items-center gap-3 rounded-2xl border border-hairline bg-canvas px-4 py-3 shadow-sm">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-coral text-base font-semibold text-white ring-4 ring-coral/15">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-sm font-semibold text-brand-strong ring-4 ring-coral/15">
           {rootWord.charAt(0).toUpperCase()}
         </div>
         <div className="min-w-0 pr-1">

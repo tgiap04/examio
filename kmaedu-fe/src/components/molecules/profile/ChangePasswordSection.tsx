@@ -107,7 +107,7 @@ export function ChangePasswordSection() {
             <Button
               onClick={handleSendCode}
               disabled={isSendingCode}
-              className="gap-2 bg-coral text-white hover:bg-coral-active disabled:opacity-50 shrink-0"
+              className="gap-2 bg-brand-soft text-brand-strong hover:bg-brand-soft-hover disabled:opacity-50 shrink-0"
             >
               {isSendingCode ? (
                 <>
@@ -233,7 +233,7 @@ export function ChangePasswordSection() {
               <Button
                 type="submit"
                 disabled={isSubmitting || !passwordsMatch || !passwordMinLength}
-                className="gap-2 bg-coral text-white hover:bg-coral-active disabled:opacity-50"
+                className="gap-2 bg-brand-soft text-brand-strong hover:bg-brand-soft-hover disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <>

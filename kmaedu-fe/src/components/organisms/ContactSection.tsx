@@ -181,7 +181,7 @@ export default function ContactSection() {
 
                   <button
                     type="submit"
-                    className="inline-flex h-11 items-center gap-2 rounded-[8px] bg-coral px-5 text-[14px] font-medium text-white transition-colors hover:bg-coral-active"
+                    className="inline-flex h-9 items-center gap-2 rounded-[8px] bg-brand-soft px-5 text-[14px] font-medium text-brand-strong transition-colors hover:bg-brand-soft-hover"
                   >
                     {submitted ? t("contact.form.submitted") : t("contact.form.submit")}
                     {!submitted && <Send className="h-4 w-4" />}

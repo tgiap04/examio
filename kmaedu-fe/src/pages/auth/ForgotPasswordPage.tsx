@@ -73,7 +73,7 @@ export default function ForgotPasswordPage() {
               <button
                 type="submit"
                 disabled={loading || !email.trim()}
-                className="flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-coral px-4 text-[14px] font-medium text-white transition-colors hover:bg-coral-active disabled:bg-coral/50 disabled:cursor-not-allowed"
+                className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] bg-brand-soft px-4 text-[14px] font-medium text-brand-strong transition-colors hover:bg-brand-soft-hover disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>

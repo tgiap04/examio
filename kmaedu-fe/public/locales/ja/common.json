@@ -9,8 +9,6 @@
   "nav.profile": "プロフィール",
   "nav.logout": "ログアウト",
   "nav.language": "言語",
-  "nav.themeLight": "ライトモードに切り替え",
-  "nav.themeDark": "ダークモードに切り替え",
   "nav.menuOpen": "メニューを開く",
   "nav.menuClose": "メニューを閉じる",
   "footer.newsletter.heading": "AI学習のヒントを毎週配信。",

@@ -27,7 +27,7 @@ export default function ForbiddenPage() {
         <p className="mt-2 text-muted-foreground">{t("forbidden.description")}</p>
         <Link
           to={home}
-          className="mt-6 inline-flex rounded-md bg-coral px-4 py-2 text-sm font-medium text-primary-foreground"
+          className="mt-6 inline-flex rounded-md bg-brand-soft px-4 py-2 text-sm font-medium text-brand-strong"
         >
           {t("forbidden.backHome")}
         </Link>

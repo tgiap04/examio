@@ -71,7 +71,7 @@ export function SignupForm() {
                 name="username"
                 placeholder={t("signup.username.placeholder")}
                 type="text"
-                className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
+                className="h-10 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
               />
             </div>
 
@@ -84,7 +84,7 @@ export function SignupForm() {
                 name="email"
                 placeholder={t("signup.email.placeholder")}
                 type="email"
-                className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
+                className="h-10 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
               />
             </div>
 
@@ -97,7 +97,7 @@ export function SignupForm() {
                 name="password"
                 placeholder={t("signup.password.placeholder")}
                 type="password"
-                className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
+                className="h-10 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
               />
             </div>
 
@@ -110,12 +110,12 @@ export function SignupForm() {
                 name="confirmPassword"
                 placeholder={t("signup.confirmPassword.placeholder")}
                 type="password"
-                className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
+                className="h-10 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
               />
             </div>
 
             <button
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-coral px-4 text-[14px] font-medium text-white transition-colors hover:bg-coral-active disabled:bg-coral/50 disabled:cursor-not-allowed"
+              className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] bg-brand-soft px-4 text-[14px] font-medium text-brand-strong transition-colors hover:bg-brand-soft-hover disabled:opacity-50 disabled:cursor-not-allowed"
               type="submit"
             >
               {t("signup.submit")}
@@ -130,7 +130,7 @@ export function SignupForm() {
             </div>
 
             <button
-              className="flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border border-hairline bg-canvas text-[14px] font-medium text-body transition-colors hover:bg-surface-soft disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] border border-hairline bg-canvas text-[14px] font-medium text-body transition-colors hover:bg-surface-soft disabled:opacity-50 disabled:cursor-not-allowed"
               type="button"
               onClick={() => loginWithGoogle?.()}
             >

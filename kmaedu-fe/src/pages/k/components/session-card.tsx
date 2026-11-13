@@ -36,7 +36,7 @@ export function SessionCard({
   return (
     <article className="group relative flex h-[260px] flex-col rounded-lg border border-hairline bg-canvas p-5 transition-all duration-200 hover:border-coral/30 hover:shadow-[0_4px_16px_rgba(20,20,19,0.06)]">
       {session.isPinned && (
-        <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-coral/10 text-coral">
+        <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-coral/10 text-brand-strong">
           <Pin className="h-3 w-3" />
         </span>
       )}
@@ -65,7 +65,7 @@ export function SessionCard({
           </div>
         </div>
         {session.hasInProgress ? (
-          <div className="inline-flex items-center rounded-pill bg-coral/10 px-2.5 font-medium text-coral w-fit flex items-center gap-x-2">
+          <div className="inline-flex items-center rounded-pill bg-coral/10 px-2.5 font-medium text-brand-strong w-fit flex items-center gap-x-2">
             <PlayCircle className="h-3 w-3" />
             <p className="whitespace-nowrap text-xs !mt-2.5">Đang làm</p>
           </div>
@@ -111,7 +111,7 @@ export function SessionCard({
           className={cn(
             "grid h-8 w-8 place-items-center rounded-md transition-colors",
             session.isPinned
-              ? "bg-coral/10 text-coral hover:bg-coral/20"
+              ? "bg-coral/10 text-brand-strong hover:bg-coral/20"
               : "text-muted-foreground hover:bg-surface-card hover:text-ink",
           )}
           aria-label={session.isPinned ? "Bỏ ghim" : "Ghim"}

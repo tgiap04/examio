@@ -34,7 +34,7 @@ export function QuizOptionRow({ optionLetter, content, state, onClick, disabled 
 
   const letterClass = cn(
     "flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border-2 font-mono text-[11px] font-semibold",
-    state === "selected" && "border-coral bg-coral/10 text-coral",
+    state === "selected" && "border-coral bg-coral/10 text-brand-strong",
     state === "default" && "border-border text-muted-foreground",
     state === "correct" && "border-success bg-success/10 text-success",
     state === "wrong" && "border-destructive bg-destructive/10 text-destructive",

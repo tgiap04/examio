@@ -302,7 +302,7 @@ export default function ProfilePage() {
               className={cn(
                 "inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer whitespace-nowrap flex-1 sm:flex-initial",
                 activeTab === "profile"
-                  ? "bg-coral text-white shadow-sm font-semibold animate-none"
+                  ? "bg-brand-soft text-brand-strong shadow-sm font-semibold animate-none"
                   : "text-muted-text hover:bg-surface-card hover:text-ink"
               )}
             >
@@ -314,7 +314,7 @@ export default function ProfilePage() {
               className={cn(
                 "inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer whitespace-nowrap flex-1 sm:flex-initial",
                 activeTab === "security"
-                  ? "bg-coral text-white shadow-sm font-semibold animate-none"
+                  ? "bg-brand-soft text-brand-strong shadow-sm font-semibold animate-none"
                   : "text-muted-text hover:bg-surface-card hover:text-ink"
               )}
             >
@@ -326,7 +326,7 @@ export default function ProfilePage() {
               className={cn(
                 "inline-flex items-center justify-center gap-2 rounded-lg px-5 py-2.5 text-sm font-medium transition-all duration-200 cursor-pointer whitespace-nowrap flex-1 sm:flex-initial",
                 activeTab === "devices"
-                  ? "bg-coral text-white shadow-sm font-semibold animate-none"
+                  ? "bg-brand-soft text-brand-strong shadow-sm font-semibold animate-none"
                   : "text-muted-text hover:bg-surface-card hover:text-ink"
               )}
             >

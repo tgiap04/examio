@@ -170,13 +170,13 @@ export function DeviceList() {
             {/* Current device */}
             {currentDevice && (
               <div className="flex items-start gap-4 rounded-xl border-2 border-coral/30 bg-coral/5 p-4 transition-all">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-coral/10 text-coral">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-coral/10 text-brand-strong">
                   {getDeviceIcon(currentDevice.deviceName, currentDevice.os)}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium text-ink">{currentDevice.deviceName || "Thiết bị hiện tại"}</span>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-coral/10 px-2 py-0.5 text-xs font-medium text-coral">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-coral/10 px-2 py-0.5 text-xs font-medium text-brand-strong">
                       <CheckCircle2 className="h-3 w-3" />
                       Thiết bị này
                     </span>

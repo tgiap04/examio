@@ -1,4 +1,9 @@
 {
+  "nav.workspace": "Learning workspace",
+  "nav.workspaceShort": "Workspace",
+  "nav.consoleCaption": "Admin console",
+  "nav.consoleSection": "System",
+  "nav.workspaceHint": "Learn and teach",
   "nav.overview": "Overview",
   "nav.users": "Users",
   "nav.roles": "Roles",

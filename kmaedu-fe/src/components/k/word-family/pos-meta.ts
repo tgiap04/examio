@@ -14,7 +14,7 @@ export interface PosMeta {
 }
 
 const POS_META: Record<string, PosMeta> = {
-  noun: { label: "Danh từ", color: "#c2522d" }, // coral (theme accent)
+  noun: { label: "Danh từ", color: "#d92d29" }, // brand red (theme primary)
   verb: { label: "Động từ", color: "#c17d3a" }, // amber-terracotta
   adjective: { label: "Tính từ", color: "#6d8a5a" }, // sage
   adverb: { label: "Trạng từ", color: "#9c6079" }, // dusty plum

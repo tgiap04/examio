@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 export type BadgeVariant = "positive" | "negative" | "neutral";
 
 const variantClasses: Record<BadgeVariant, string> = {
-  positive: "bg-coral/10 text-coral",
+  positive: "bg-coral/10 text-brand-strong",
   negative: "bg-error/10 text-error",
   neutral: "bg-surface-card text-ink/70",
 };

@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import { useThemeContext } from "@/provider/ThemeProvider";
 
 interface LogoProps {
   className?: string;
@@ -8,21 +7,14 @@ interface LogoProps {
   showText?: boolean;
 }
 
-// The icon reads as the dominant element in the lockup, so render it a bit
+// The seal reads as the dominant element in the lockup, so render it a bit
 // larger than the passed size (keeps callers' relative sizing intact).
-const ICON_SCALE = 1.25;
+const ICON_SCALE = 1.2;
 
-/** Theme-aware logo source: dark-background mark for dark mode, cream for light. */
-function useLogoSrc() {
-  const { isDarkMode } = useThemeContext();
-  return isDarkMode ? "/logo_dark.png" : "/logo_light.png";
-}
+/** The KMA seal (Học viện Kỹ thuật Mật mã); transparent PNG, light theme only. */
+const LOGO_SRC = "/logo.png";
 
-/**
- * The "KMAEdu" wordmark: "KMA" in coral, "Edu" in the foreground ink token —
- * which resolves to cream in dark mode (matching the brand lockup) and to dark
- * ink in light mode so it stays legible on the cream canvas.
- */
+/** The "KMAEdu" wordmark: "KMA" in the brand red of the seal, "Edu" in ink. */
 function Wordmark({ fontSize }: { fontSize: number }) {
   return (
     <span
@@ -33,7 +25,7 @@ function Wordmark({ fontSize }: { fontSize: number }) {
         fontWeight: 600,
       }}
     >
-      <span className="text-coral">KMA</span>Edu
+      <span className="text-brand">KMA</span>Edu
     </span>
   );
 }
@@ -44,12 +36,11 @@ export default function Logo({
   sizeText,
   showText = true,
 }: LogoProps) {
-  const logoSrc = useLogoSrc();
   const iconSize = Math.round(sizeLogo * ICON_SCALE);
 
   return (
     <div className={cn("flex items-center gap-2.5 cursor-pointer", className)}>
-      <img src={logoSrc} alt="KMAEdu Logo" width={iconSize} height={iconSize} />
+      <img src={LOGO_SRC} alt="KMAEdu Logo" width={iconSize} height={iconSize} />
       {showText && <Wordmark fontSize={sizeText ?? 20} />}
     </div>
   );
@@ -62,12 +53,11 @@ export function LogoOnly({
   className?: string;
   sizeIcon: number;
 }) {
-  const logoSrc = useLogoSrc();
   const iconSize = Math.round(sizeIcon * ICON_SCALE);
 
   return (
     <div className={cn("flex items-center cursor-pointer", className)}>
-      <img src={logoSrc} alt="KMAEdu Logo" width={iconSize} height={iconSize} className={className} />
+      <img src={LOGO_SRC} alt="KMAEdu Logo" width={iconSize} height={iconSize} className={className} />
     </div>
   );
 }

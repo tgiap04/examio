@@ -36,7 +36,7 @@ function MaterialCard({
       className="group relative flex h-[220px] flex-col rounded-lg justify-between border border-hairline bg-canvas p-5 transition-all duration-200 hover:border-coral/30 hover:shadow-[0_4px_16px_rgba(20,20,19,0.06)]"
     >
       {material.isPinned && (
-        <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-coral/10 text-coral">
+        <span className="absolute right-3 top-3 flex h-5 w-5 items-center justify-center rounded-full bg-coral/10 text-brand-strong">
           <Pin className="h-3 w-3" />
         </span>
       )}
@@ -109,7 +109,7 @@ function MaterialCard({
             <button
               onClick={() => onTogglePin(material.id)}
               className={`grid h-8 w-8 place-items-center rounded-md transition-colors ${material.isPinned
-                ? "bg-coral/10 text-coral hover:bg-coral/20"
+                ? "bg-coral/10 text-brand-strong hover:bg-coral/20"
                 : "text-muted-foreground hover:bg-surface-card hover:text-ink"
                 }`}
               aria-label={material.isPinned ? "Bỏ ghim" : "Ghim"}
@@ -203,7 +203,7 @@ function Pagination({
             key={p}
             onClick={() => onPageChange(p)}
             className={`grid h-9 w-9 place-items-center rounded-md text-sm font-medium transition-colors ${p === page
-              ? "bg-coral text-on-primary"
+              ? "bg-brand-soft text-brand-strong"
               : "border border-hairline text-body hover:bg-surface-card hover:text-ink"
               }`}
             aria-current={p === page ? "page" : undefined}

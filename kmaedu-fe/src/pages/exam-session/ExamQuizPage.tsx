@@ -13,14 +13,11 @@ import {
   Clock,
   Flag,
   Loader2,
-  Moon,
-  Sun,
   XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { setRedirectBackTarget } from "@/lib/authRedirect";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useThemeContext } from "@/provider/ThemeProvider";
 import { resolveAnswerIndex } from "@/lib/quizAnswerUtils";
 import { ConfirmDialog } from "@/components/organisms/ConfirmDialog";
 import { toast } from "@/components/antd/toast";
@@ -43,8 +40,6 @@ export default function ExamQuizPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, initializing } = useAuthStore();
-  const { isDarkMode, setTheme } = useThemeContext();
-  const toggleTheme = () => setTheme(isDarkMode ? "light" : "dark");
 
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [isViewOnly, setIsViewOnly] = useState(false);
@@ -523,9 +518,6 @@ export default function ExamQuizPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Button variant="ghost" size="icon" onClick={toggleTheme} className="!p-2">
-                    {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                  </Button>
                   {/* Score count — mirrors answered-count pill from quiz mode */}
                   <div className="flex items-center gap-2 text-sm">
                     <div className="w-4 h-4 rounded bg-success" />
@@ -762,9 +754,6 @@ export default function ExamQuizPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <Button variant="ghost" size="icon" onClick={toggleTheme} className="!p-2">
-                  {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-                </Button>
                 <div className="flex items-center gap-2 text-sm">
                   <div className="w-4 h-4 rounded bg-primary" />
                   <span className="text-muted-foreground">{answeredCount}/{totalQuestions}</span>

@@ -59,7 +59,7 @@ export function SigninForm() {
               </label>
               <input
                 name="credential"
-                className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
+                className="h-10 w-full rounded-[8px] border border-hairline bg-canvas px-3 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
                 placeholder={t("login.credential.placeholder")}
               />
             </div>
@@ -80,7 +80,7 @@ export function SigninForm() {
                 <input
                   name="password"
                   type={showPassword ? "text" : "password"}
-                  className="h-11 w-full rounded-[8px] border border-hairline bg-canvas px-3 pr-12 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
+                  className="h-10 w-full rounded-[8px] border border-hairline bg-canvas px-3 pr-12 text-[14px] text-ink placeholder:text-muted-foreground focus:border-coral focus:outline-none focus:ring-2 focus:ring-coral/15"
                   placeholder={t("login.password.placeholder")}
                 />
                 <button
@@ -95,7 +95,7 @@ export function SigninForm() {
 
             <button
               type="submit"
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-coral px-4 text-[14px] font-medium text-white transition-colors hover:bg-coral-active disabled:bg-coral/50 disabled:cursor-not-allowed"
+              className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] bg-brand-soft px-4 text-[14px] font-medium text-brand-strong transition-colors hover:bg-brand-soft-hover disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {t("login.submit")}
             </button>
@@ -110,7 +110,7 @@ export function SigninForm() {
           </div>
 
           <button
-            className="flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border border-hairline bg-canvas text-[14px] font-medium text-body transition-colors hover:bg-surface-soft disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex h-9 w-full items-center justify-center gap-2 rounded-[8px] border border-hairline bg-canvas text-[14px] font-medium text-body transition-colors hover:bg-surface-soft disabled:opacity-50 disabled:cursor-not-allowed"
             type="button"
             onClick={() => loginWithGoogle?.()}
           >

@@ -625,7 +625,7 @@ export function LabelManager({ quizSetId, onLabelChange }: LabelManagerProps) {
                     className="rounded-[8px] border border-hairline p-3 space-y-2 mt-4"
                   >
                     <div className="flex items-start gap-2">
-                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-coral/15 font-mono text-[11px] font-semibold text-coral">
+                      <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded bg-coral/15 font-mono text-[11px] font-semibold text-brand-strong">
                         {index + 1}
                       </span>
                       <div className="text-[13px] leading-[1.55] flex-1">

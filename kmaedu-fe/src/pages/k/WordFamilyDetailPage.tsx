@@ -184,7 +184,7 @@ export default function WordFamilyDetailPage() {
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-coral/10 font-display text-lg font-semibold text-coral">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-coral/10 font-display text-lg font-semibold text-brand-strong">
               {rootWord?.charAt(0).toUpperCase()}
             </span>
             <div>

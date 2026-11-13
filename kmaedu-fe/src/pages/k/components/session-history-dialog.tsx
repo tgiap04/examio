@@ -18,7 +18,7 @@ function formatDuration(seconds: number | null): string {
 function AttemptStatusBadge({ status }: { status: number }) {
   if (status === 0) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-pill bg-coral/10 px-2 py-0.5 text-xs font-medium text-coral">
+      <span className="inline-flex items-center gap-1 rounded-pill bg-coral/10 px-2 py-0.5 text-xs font-medium text-brand-strong">
         <Clock className="h-3 w-3" />
         Đang làm
       </span>

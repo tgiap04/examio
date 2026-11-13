@@ -1,4 +1,9 @@
 {
+  "nav.workspace": "Không gian học tập",
+  "nav.workspaceShort": "Không gian học",
+  "nav.consoleCaption": "Bảng quản trị",
+  "nav.consoleSection": "Quản trị hệ thống",
+  "nav.workspaceHint": "Quay lại học và giảng dạy",
   "nav.overview": "Tổng quan",
   "nav.users": "Người dùng",
   "nav.roles": "Phân quyền",

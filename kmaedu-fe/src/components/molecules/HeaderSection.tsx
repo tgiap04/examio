@@ -3,7 +3,7 @@ import * as React from "react";
 import { useLayoutEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { LogOut, Menu, Moon, Sun, User, X } from "lucide-react";
+import { LogOut, Menu, User, X } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,7 +13,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/antd/dropdown-menu";
-import { useThemeContext } from "@/provider/ThemeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { cn } from "@/lib/utils";
 import Logo from "../atoms/Logo";
@@ -32,7 +31,6 @@ export default function HeaderSection() {
   const [menuState, setMenuState] = React.useState(false);
   const [isScrolled, setIsScrolled] = React.useState(false);
   const navigate = useNavigate();
-  const { isDarkMode, setTheme } = useThemeContext();
   const { user, isAuthenticated, initializing, getUser, logout } =
     useAuthStore();
 
@@ -47,7 +45,6 @@ export default function HeaderSection() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const toggleTheme = () => setTheme(isDarkMode ? "light" : "dark");
 
   const handleLogout = async () => {
     await logout();
@@ -94,17 +91,6 @@ export default function HeaderSection() {
           </ul>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            <IconButton
-              onClick={toggleTheme}
-              ariaLabel={isDarkMode ? t("nav.themeLight") : t("nav.themeDark")}
-            >
-              {isDarkMode ? (
-                <Sun className="h-4 w-4" strokeWidth={1.75} />
-              ) : (
-                <Moon className="h-4 w-4" strokeWidth={1.75} />
-              )}
-            </IconButton>
-
             <LanguageSwitcher />
 
             <span className="mx-1 hidden h-5 w-px bg-hairline lg:inline-block" />
@@ -223,26 +209,5 @@ export default function HeaderSection() {
         )}
       </div>
     </header>
-  );
-}
-
-function IconButton({
-  onClick,
-  ariaLabel,
-  children,
-}: {
-  onClick: () => void;
-  ariaLabel: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={ariaLabel}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-[9999px] border border-hairline bg-canvas text-ink transition-colors hover:border-coral/40 hover:bg-surface-card"
-    >
-      {children}
-    </button>
   );
 }

@@ -353,7 +353,7 @@ export function TestGenerator() {
                       className="rounded-[12px] border border-border p-4"
                     >
                       <div className="flex items-start gap-3">
-                        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-coral/15 font-mono text-xs font-semibold text-coral">
+                        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-coral/15 font-mono text-xs font-semibold text-brand-strong">
                           {idx + 1}
                         </span>
                         <div className="min-w-0 flex-1 space-y-3">

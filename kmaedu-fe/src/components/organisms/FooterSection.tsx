@@ -93,7 +93,7 @@ export default function FooterSection() {
                 />
                 <Button
                   type="submit"
-                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-coral px-4 text-xs font-medium text-white transition-colors hover:bg-coral-active"
+                  className="inline-flex h-9 items-center gap-2 rounded-lg bg-brand-soft px-4 text-xs font-medium text-brand-strong transition-colors hover:bg-brand-soft-hover"
                 >
                   {subscribed ? t("footer.newsletter.subscribed") : t("footer.newsletter.subscribe")}
                   {!subscribed && <ArrowRight className="h-4 w-4" />}

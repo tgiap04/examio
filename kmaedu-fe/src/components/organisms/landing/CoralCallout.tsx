@@ -65,14 +65,14 @@ export default function CoralCallout() {
                                 <div className="flex flex-col sm:flex-row items-start gap-4">
                                     <Link
                                         to="/register"
-                                        className="inline-flex h-14 items-center justify-center gap-2 rounded-full bg-coral px-8 text-base font-medium text-white transition-colors hover:bg-coral-active group"
+                                        className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-coral px-6 text-sm font-medium text-white shadow-[0_6px_16px_rgba(217,45,41,0.25)] transition-colors hover:bg-coral-active group"
                                     >
                                         {t("startCta.primary")}
                                         <ArrowRight className="w-4 h-4 ml-1 transition-transform group-hover:translate-x-1" />
                                     </Link>
                                     <Link
                                         to="/contact"
-                                        className="inline-flex h-14 items-center justify-center rounded-full border border-foreground/20 px-8 text-base font-medium text-ink hover:bg-foreground/5 transition-colors"
+                                        className="inline-flex h-11 items-center justify-center rounded-full border border-hairline bg-canvas/80 px-6 text-sm font-medium text-ink backdrop-blur hover:bg-surface-soft transition-colors"
                                     >
                                         {t("startCta.secondary")}
                                     </Link>

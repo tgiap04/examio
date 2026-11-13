@@ -281,7 +281,7 @@ export default function ManageExamRoomDetailPage() {
                 <p className="text-sm font-medium text-muted-foreground">Tổng phiên thi</p>
                 <p className="mt-2 text-3xl font-bold text-ink">{stats.total}</p>
               </div>
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-coral/10 text-coral">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-coral/10 text-brand-strong">
                 <Calendar className="h-5 w-5" />
               </div>
             </div>

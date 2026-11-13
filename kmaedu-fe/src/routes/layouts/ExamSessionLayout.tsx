@@ -1,11 +1,10 @@
 import type { PropsWithChildren } from "react";
 import { useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, Moon, Sun } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Logo from "@/components/atoms/Logo";
 import ProfileDropdown from "@/components/atoms/ProfileDropdown";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useThemeContext } from "@/provider/ThemeProvider";
 
 /**
  * Layout for exam session pages — minimal chrome:
@@ -17,7 +16,6 @@ export function ExamSessionLayout({ children }: PropsWithChildren) {
   const { pathname, hash } = useLocation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { isDarkMode, setTheme } = useThemeContext();
 
   useEffect(() => {
     if (!hash) {
@@ -50,14 +48,6 @@ export function ExamSessionLayout({ children }: PropsWithChildren) {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setTheme(isDarkMode ? "light" : "dark")}
-              className="grid h-10 w-10 place-items-center rounded-lg border border-hairline bg-surface-soft text-body transition-colors hover:bg-surface-card hover:text-ink"
-              aria-label={isDarkMode ? "Bật giao diện sáng" : "Bật giao diện tối"}
-            >
-              {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
             <ProfileDropdown data={profile} variant="header" />
           </div>
         </div>

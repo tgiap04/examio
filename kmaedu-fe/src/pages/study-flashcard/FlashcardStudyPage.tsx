@@ -402,7 +402,7 @@ export default function FlashcardStudyPage() {
               className={cn(
                 "grid h-9 w-9 place-items-center rounded-md border border-hairline transition-colors",
                 settings.soundEffects
-                  ? "border-coral/30 bg-coral/10 text-coral"
+                  ? "border-coral/30 bg-coral/10 text-brand-strong"
                   : "text-muted-foreground hover:bg-surface-card hover:text-ink"
               )}
               aria-label={settings.soundEffects ? "Tắt âm thanh" : "Bật âm thanh"}
@@ -473,7 +473,7 @@ export default function FlashcardStudyPage() {
                   transform: "rotateY(180deg)",
                 }}
               >
-                <span className="mb-6 inline-flex items-center gap-1.5 rounded-pill bg-coral/10 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-coral">
+                <span className="mb-6 inline-flex items-center gap-1.5 rounded-pill bg-coral/10 px-3 py-1 text-[11px] font-medium uppercase tracking-wider text-brand-strong">
                   Câu trả lời
                 </span>
                 <StandardMarkdownRenderer

@@ -1,13 +1,14 @@
-import { type FormEvent, type PropsWithChildren, useEffect, useState } from "react";
+import { type FormEvent, type PropsWithChildren, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { AlertTriangle, Mail, Moon, PanelLeft, Search, Sun, X } from "lucide-react";
+import { AlertTriangle, Mail, PanelLeft, Search, X } from "lucide-react";
+import { NAV_ITEMS } from "@/lib/rbac/nav-items";
+import { SIDEBAR_WIDTH, SIDEBAR_WIDTH_COLLAPSED } from "@/components/organisms/nav/sidebar-styles";
 import ProfileDropdown from "@/components/atoms/ProfileDropdown";
 import { SidebarKit } from "@/components/organisms/k/SideBar";
 import { PendingJobDialog } from "@/components/organisms/PendingJobDialog";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useJobStore } from "@/stores/useAIGeneratorStore";
-import { useThemeContext } from "@/provider/ThemeProvider";
 import { useIsDesktop, useIsMobile } from "@/hooks/useMediaQuery";
 import { usePageConfigSse } from "@/hooks/usePageConfigSse";
 import Logo from "@/components/atoms/Logo";
@@ -30,7 +31,32 @@ export function KLayout({ children }: PropsWithChildren) {
     localStorage.setItem("sidebar_collapsed", String(sidebarCollapsed));
   }, [sidebarCollapsed]);
 
-  const sidebarWidth = isDesktop ? (sidebarCollapsed ? 72 : 272) : 0;
+  const sidebarWidth = isDesktop ? (sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH) : 0;
+
+  // Page title in the header: the nav item that owns the current path (longest href match).
+  const pageTitle =
+    [...NAV_ITEMS]
+      .filter((item) => location.pathname === item.href || location.pathname.startsWith(`${item.href}/`))
+      .sort((a, b) => b.href.length - a.href.length)[0]?.label ?? "Tổng quan";
+
+  // ⌘K / Ctrl+K focuses the workspace search.
+  const searchRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    // The sidebar's "Tìm nhanh" card asks for the same focus.
+    const onFocusSearch = () => searchRef.current?.focus();
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("kmaedu:focus-search", onFocusSearch);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("kmaedu:focus-search", onFocusSearch);
+    };
+  }, []);
 
   const profile = {
     name: user?.name || user?.username || "Người dùng",
@@ -48,7 +74,6 @@ export function KLayout({ children }: PropsWithChildren) {
   const [isCancelingJob, setIsCancelingJob] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [language, setLanguage] = useState<"VI" | "EN">("VI");
-  const { isDarkMode, setTheme } = useThemeContext();
 
   const handleResendVerification = async () => {
     setSendingEmail(true);
@@ -108,7 +133,7 @@ export function KLayout({ children }: PropsWithChildren) {
   return (
     <div
       className={cn(
-        "mx-auto flex min-h-screen w-full flex-1 flex-col bg-canvas text-ink md:flex-row",
+        "mx-auto flex min-h-screen w-full flex-1 flex-col bg-page text-ink md:flex-row",
       )}
     >
       <SidebarKit collapsed={sidebarCollapsed} />
@@ -143,7 +168,7 @@ export function KLayout({ children }: PropsWithChildren) {
               <Link
                 to="/k/verify"
                 state={{ from: location.pathname }}
-                className="flex min-h-9 items-center rounded-md bg-coral px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-coral-active"
+                className="flex min-h-9 items-center rounded-md bg-brand-soft px-3 py-1.5 text-xs font-medium text-brand-strong transition-colors hover:bg-brand-soft-hover"
               >
                 Xác minh ngay
               </Link>
@@ -160,47 +185,43 @@ export function KLayout({ children }: PropsWithChildren) {
         )}
 
         <header
-          className="fixed right-0 top-0 z-50 border-b border-hairline bg-canvas/95 backdrop-blur-md"
+          className="fixed right-0 top-0 z-50 border-b border-hairline bg-canvas/80 backdrop-blur-xl"
           style={{ left: isDesktop ? sidebarWidth : 0, width: isDesktop ? `calc(100% - ${sidebarWidth}px)` : "100%" }}
         >
-          <div className="flex min-h-16.5 w-full items-center justify-between gap-3 px-4 xl:px-6 2xl:px-8">
-            <div className="flex min-w-0 items-center gap-3">
-              {isMobile && <Logo sizeLogo={40} sizeText={0} />}
+          <div className="flex h-16 w-full items-center gap-3 px-4 xl:px-6 2xl:px-8">
+            <div className="flex min-w-0 items-center gap-2.5">
+              {isMobile && <Logo sizeLogo={32} sizeText={0} />}
               {isDesktop && (
                 <button
                   type="button"
                   onClick={() => setSidebarCollapsed((current) => !current)}
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-hairline bg-surface-soft text-muted-foreground transition-colors hover:bg-surface-card hover:text-ink"
+                  className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-soft hover:text-ink"
                   aria-label={sidebarCollapsed ? "Mở rộng sidebar" : "Thu nhỏ sidebar"}
                 >
-                  <PanelLeft className={cn("h-5 w-5 transition-transform", sidebarCollapsed && "rotate-180")} />
+                  <PanelLeft className={cn("h-[18px] w-[18px] transition-transform", sidebarCollapsed && "rotate-180")} />
                 </button>
               )}
+              {isDesktop && <span aria-hidden className="h-5 w-px bg-hairline" />}
+              <h2 className="truncate text-sm font-semibold text-ink">{pageTitle}</h2>
             </div>
 
             <form
               onSubmit={handleSearch}
-              className="hidden min-h-11 w-full max-w-sm items-center gap-2 rounded-lg border border-hairline bg-surface-soft px-3 text-sm text-muted-foreground transition-colors focus-within:border-coral focus-within:bg-canvas lg:flex"
+              className="ml-auto hidden h-9 w-full max-w-xs items-center gap-2 rounded-lg border border-hairline bg-surface-soft px-2.5 text-[13px] text-muted-foreground transition-colors focus-within:border-brand-border focus-within:bg-canvas focus-within:ring-2 focus-within:ring-coral/15 lg:flex xl:max-w-sm"
             >
-              <Search className="h-4 w-4" />
+              <Search className="h-4 w-4 shrink-0" />
               <input
+                ref={searchRef}
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 className="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-muted-foreground"
                 placeholder="Tìm tài liệu, đề thi, phòng thi..."
                 aria-label="Tìm kiếm trong workspace"
               />
+              <kbd className="hidden shrink-0 rounded border border-hairline bg-canvas px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground xl:inline">⌘K</kbd>
             </form>
 
-            <div className="ml-auto flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => setTheme(isDarkMode ? "light" : "dark")}
-                className="grid h-10 w-10 place-items-center rounded-lg border border-hairline bg-surface-soft text-body transition-colors hover:bg-surface-card hover:text-ink"
-                aria-label={isDarkMode ? "Bật giao diện sáng" : "Bật giao diện tối"}
-              >
-                {isDarkMode ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-              </button>
+            <div className="ml-auto flex items-center gap-2 lg:ml-0">
               <ProfileDropdown data={profile} variant="header" />
             </div>
           </div>

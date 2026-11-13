@@ -1,12 +1,12 @@
 "use client";
 import * as React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import Logo from "@/components/atoms/Logo";
 import {
   BookOpen,
   Clock as ClockIcon,
   Coins as TokensIcon,
   GraduationCap,
+  ArrowRight,
   LogOut,
   Network,
   PanelsTopLeft as CardStackIcon,
@@ -25,6 +25,16 @@ import { useEffect } from "react";
 import { useIsDesktop } from "@/hooks/useMediaQuery";
 import { Button } from "@/components/antd/button";
 import { cn } from "@/lib/utils";
+import {
+  SIDEBAR_WIDTH,
+  SIDEBAR_WIDTH_COLLAPSED,
+  promoCardClass,
+  sidebarCardClass,
+  sidebarIconClass,
+  sidebarItemClass,
+  sidebarShellClass,
+} from "@/components/organisms/nav/sidebar-styles";
+import { PromoIllustration, SidebarBrandCard, SidebarSectionLabel } from "@/components/organisms/nav/sidebar-parts";
 
 interface Profile {
   name: string;
@@ -42,7 +52,7 @@ interface SidebarItem {
   active: boolean;
 }
 
-const ICON_CLASS = "w-5 h-5";
+const ICON_CLASS = "h-[22px] w-[22px]";
 const NAV_ICONS: Record<string, React.ReactNode> = {
   "ai-tool": <RocketIcon className={ICON_CLASS} />,
   "word-family": <Network className={ICON_CLASS} />,
@@ -159,7 +169,31 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
     return null;
   }
 
-  const sidebarWidth = collapsed ? "w-[72px]" : "w-[272px]";
+  const sidebarWidth = collapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH;
+  const learnItems = filteredSidebarItems.filter((item) => item.id !== "admin");
+  const adminItems = filteredSidebarItems.filter((item) => item.id === "admin");
+
+  const renderItem = (item: SidebarItem) => (
+    <li key={item.id} className="relative">
+      <Link
+        to={item.href}
+        aria-current={item.active ? "page" : undefined}
+        aria-label={collapsed ? item.label : undefined}
+        className={sidebarItemClass(item.active, collapsed)}
+      >
+        <span className={sidebarIconClass(item.active)}>{item.icon}</span>
+        {!collapsed && <span className="truncate">{item.label}</span>}
+        {collapsed && (
+          <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-3 -translate-y-1/2 whitespace-nowrap rounded-md bg-surface-dark px-2 py-1 text-xs font-medium text-on-dark opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+            {item.label}
+          </span>
+        )}
+      </Link>
+    </li>
+  );
+
+  const sectionLabel = (text: string) => <SidebarSectionLabel text={text} collapsed={collapsed} />;
+  const focusSearch = () => window.dispatchEvent(new CustomEvent("kmaedu:focus-search"));
 
   return (
     <>
@@ -175,82 +209,70 @@ export function SidebarKit({ collapsed = false }: SidebarKitProps) {
       {/* Desktop: Sidebar */}
       {isDesktop && (
         <aside
-          className={cn(
-            "fixed inset-y-0 left-0 z-50 flex flex-col overflow-visible border-r border-hairline bg-canvas text-ink transition-[width] duration-200",
-            sidebarWidth
-          )}
+          className={cn("fixed inset-y-0 left-0 z-50 flex flex-col text-ink transition-[width] duration-200", sidebarShellClass)}
+          style={{ width: sidebarWidth }}
         >
-          <div className={cn(
-            "flex items-center border-b border-hairline px-3 py-4",
-            collapsed ? "justify-center" : "justify-start"
-          )}>
-            <Link to="/k" aria-label="KMAEdu" className="flex items-center">
-              <Logo sizeLogo={collapsed ? 40 : 34} sizeText={22} showText={!collapsed} />
-            </Link>
+          <div className={cn("shrink-0 pt-4", collapsed ? "flex justify-center px-2" : "px-4")}>
+            <SidebarBrandCard to="/k" caption="Học viện Kỹ thuật Mật mã" collapsed={collapsed} />
           </div>
 
-          <nav
-            className="flex-1 space-y-1.5 overflow-visible px-2 py-4"
-            aria-label="Dashboard navigation"
-          >
-            {filteredSidebarItems.map((item, index) => (
-              <div key={index} className="relative group">
-                <Link
-                  to={item.href}
-                  aria-current={item.active ? "page" : undefined}
-                  className={cn(
-                    "flex min-h-11 w-full items-center rounded-lg border px-2 py-2.5 text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral",
-                    collapsed ? "justify-center" : "gap-x-3 px-3",
-                    item.active
-                      ? "border-hairline bg-surface-card text-ink shadow-[0_1px_3px_rgba(20,20,19,0.08)]"
-                      : "border-transparent text-muted-foreground hover:bg-surface-soft hover:text-ink"
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex h-9 w-9 shrink-0 items-center justify-center rounded-md transition-colors",
-                      item.active
-                        ? "bg-coral text-primary-foreground"
-                        : "bg-surface-soft text-muted-foreground group-hover:bg-surface-card group-hover:text-coral"
-                    )}
-                  >
-                    {item.icon}
-                  </span>
-                  {!collapsed && <span className="truncate">{item.label}</span>}
-                </Link>
-                {collapsed && (
-                  <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-surface-dark px-2.5 py-1.5 text-xs font-medium text-on-dark opacity-0 shadow-md transition-opacity group-hover:opacity-100">
-                    {item.label}
-                  </span>
-                )}
-              </div>
-            ))}
+          <nav className={cn("flex-1 pb-3 pt-1", collapsed ? "overflow-visible px-3" : "overflow-y-auto overflow-x-hidden px-4")} aria-label="Dashboard navigation">
+            {sectionLabel("Học tập")}
+            <ul className="space-y-1">{learnItems.map(renderItem)}</ul>
+            {adminItems.length > 0 && (
+              <>
+                {sectionLabel("Quản trị")}
+                <ul className="space-y-1">{adminItems.map(renderItem)}</ul>
+              </>
+            )}
           </nav>
 
-          <div className={cn("border-t border-hairline bg-surface-soft/70 px-2 py-4", collapsed && "px-1.5")}>
+          <div className={cn("shrink-0 space-y-3 pb-4", collapsed ? "px-2" : "px-4")}>
             {!collapsed && (
-              <div className="rounded-lg border border-hairline bg-canvas mb-2">
-                <ProfileDropdown data={profile} className="p-2" />
-              </div>
+              <>
+                <Link to={learnItems[0]?.href ?? "/k/my-materials"} className={promoCardClass}>
+                  <PromoIllustration />
+                  <span className="min-w-0 flex-1 leading-snug">
+                    <span className="block whitespace-nowrap text-[14px] text-ink">
+                      Cùng <span className="font-bold text-coral">KMAEdu</span>
+                    </span>
+                    <span className="block whitespace-nowrap text-[11.5px] text-body">kiến tạo tương lai tri thức</span>
+                  </span>
+                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-canvas text-coral shadow-[0_2px_8px_rgba(15,23,42,0.08)] transition-transform duration-200 group-hover:translate-x-0.5">
+                    <ArrowRight className="h-4 w-4" strokeWidth={2.4} />
+                  </span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={focusSearch}
+                  className={cn(sidebarCardClass, "flex h-11 w-full items-center justify-between gap-2 whitespace-nowrap px-4 text-[13px] text-muted-foreground transition-colors hover:border-brand-border hover:text-body focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral")}
+                >
+                  <span>Tìm nhanh tài liệu, đề thi</span>
+                  <kbd className="rounded-lg bg-surface-card px-2 py-0.5 font-sans text-[12px] font-medium text-body">⌘K</kbd>
+                </button>
+              </>
             )}
-            <div className="group relative">
-              <Button
-                type="button"
-                onClick={handleLogout}
-                variant="link"
-                className={cn(
-                  "flex min-h-11 w-full items-center justify-center gap-2 rounded-lg border border-surface-dark bg-surface-dark text-sm font-medium text-on-dark transition-colors hover:bg-surface-dark-elevated focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral",
-                  collapsed ? "px-2 py-2.5" : "px-3 py-2.5"
-                )}
-              >
-                <LogOut className="h-4 w-4 shrink-0" />
-                {!collapsed && "Đăng xuất"}
-              </Button>
-              {collapsed && (
-                <span className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-surface-dark px-2.5 py-1.5 text-xs font-medium text-on-dark opacity-0 shadow-md transition-opacity group-hover:opacity-100">
+            <div className={cn("flex items-center gap-2", collapsed ? "flex-col" : "px-1 pt-1")}>
+              {!collapsed && (
+                <div className="min-w-0 flex-1">
+                  <ProfileDropdown data={profile} />
+                </div>
+              )}
+              <div className="group relative">
+                <Button
+                  type="button"
+                  onClick={handleLogout}
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Đăng xuất"
+                  className="!h-10 !w-10 !text-body hover:!bg-red-50 hover:!text-red-700 [&>svg]:!size-5"
+                >
+                  <LogOut />
+                </Button>
+                <span className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-surface-dark px-2 py-1 text-xs font-medium text-on-dark opacity-0 shadow-md transition-opacity group-hover:opacity-100">
                   Đăng xuất
                 </span>
-              )}
+              </div>
             </div>
           </div>
         </aside>

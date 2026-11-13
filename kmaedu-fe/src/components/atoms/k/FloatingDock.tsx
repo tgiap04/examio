@@ -147,7 +147,7 @@ export function FloatingDock({
                   className={cn(
                     "flex items-center gap-3 p-3 rounded-xl transition-colors",
                     item.active
-                      ? "bg-coral/10 text-coral"
+                      ? "bg-coral/10 text-brand-strong"
                       : "text-ink hover:bg-surface-soft"
                   )}>
                   <span className="h-5 w-5 shrink-0 !text-coral">{item.icon}</span>

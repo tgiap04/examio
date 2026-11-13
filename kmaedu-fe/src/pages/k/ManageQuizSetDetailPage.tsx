@@ -373,7 +373,7 @@ export default function ManageQuizSetDetailPage() {
                   return (
                     <div key={question.id} className="rounded-[12px] border border-hairline p-4 transition-shadow hover:shadow-[0_1px_3px_rgba(20,20,19,0.08)]">
                       <div className="flex items-start gap-3">
-                        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-coral/15 font-mono text-xs font-semibold text-coral">
+                        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-coral/15 font-mono text-xs font-semibold text-brand-strong">
                           {actualIndex + 1}
                         </span>
                         <div className="min-w-0 flex-1 space-y-3">
