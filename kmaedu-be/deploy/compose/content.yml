@@ -49,8 +49,6 @@ services:
             - AI_GRPC_URL=ai:50051
             # Public base of R2 objects: tells an R2-hosted image from an external URL
             - R2_PUBLIC_URL=${R2_PUBLIC_URL:-}
-            # Free AI generation: ignored in production
-            - AI_FREE_MODE=${AI_FREE_MODE:-false}
             - GENERATION_JOB_TIMEOUT_MINUTES=${GENERATION_JOB_TIMEOUT_MINUTES:-60}
             - JWT_ISSUER=${JWT_ISSUER:-kmaedu-auth}
             - JWT_AUDIENCE=${JWT_AUDIENCE:-kmaedu}

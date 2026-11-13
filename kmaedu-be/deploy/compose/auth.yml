@@ -35,6 +35,9 @@ services:
             - RABBITMQ_URL=amqp://auth:${RABBITMQ_AUTH_PASS:?RABBITMQ_AUTH_PASS is required}@rabbitmq:5672
             - ROLE=api,worker
             - R2_GRPC_URL=r2:50051
+            # Public base of R2 objects: finds the key of a replaced avatar/banner to delete and
+            # refuses a client-supplied URL to another user's R2 object
+            - R2_PUBLIC_URL=${R2_PUBLIC_URL:-}
             - JWT_ISSUER=${JWT_ISSUER:-kmaedu-auth}
             - JWT_AUDIENCE=${JWT_AUDIENCE:-kmaedu}
             - JWT_PRIVATE_KEY=${JWT_PRIVATE_KEY:?JWT_PRIVATE_KEY is required (scripts/gen-jwt-keypair.sh)}

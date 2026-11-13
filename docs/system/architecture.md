@@ -270,7 +270,7 @@ graph LR
 
 **Audit**: every admin mutation writes an `AdminAudit` row via `AuditWriterService` (shared, `@kmaedu/common`). Fields captured: `adminId`, `targetId`, `action`, `payload` (JSON diff of changed fields), `ipAddress`, `userAgent`.
 
-**Rate limiting**: `ThrottlerModule` 30 req/min per admin (configured via `THROTTLE_ADMIN_LIMIT`).
+**Rate limiting**: `ThrottlerModule` 30 req/min per admin (fixed in the `@Throttle` decorator of each admin controller).
 
 ### 5. AI generation and document processing (gRPC + events)
 

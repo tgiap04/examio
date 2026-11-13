@@ -117,6 +117,18 @@ test('auth reaches the gateway control plane by default', () => {
     assert.match(env, /GATEWAY_GRPC_URL=gateway:50051/);
 });
 
+test('auth knows R2_PUBLIC_URL: a replaced avatar/banner is queued for deletion and a foreign R2 URL is refused', () => {
+    // Without it ownedR2KeyFromUrl / isForeignR2Url see no R2 host: old images stay in R2 forever.
+    assert.strictEqual(envValue('auth', 'R2_PUBLIC_URL'), '${R2_PUBLIC_URL:-}');
+});
+
+test('no service sets an env var that no code reads', () => {
+    const dead = ['AI_FREE_MODE', 'THROTTLE_ADMIN_LIMIT', 'TUTOR_FAST_RETRIEVAL_TIMEOUT_SECONDS'];
+    for (const name of Object.keys(services)) {
+        for (const key of dead) assert.strictEqual(envValue(name, key), undefined, `${name} sets ${key}`);
+    }
+});
+
 test('every compose file is included and defines at least one service', () => {
     assert.ok(includedPaths.length >= 8, 'docker-compose.yml must include the per-service files');
     for (const rel of includedPaths) {
