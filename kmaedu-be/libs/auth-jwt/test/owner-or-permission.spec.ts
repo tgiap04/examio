@@ -111,10 +111,8 @@ describe('@RequireOwnerOrPermission', () => {
         );
     });
 
-    it('SYSTEM_ADMIN-only token owning nothing is denied', async () => {
-        expect(await outcome(ctx(user(['SYSTEM_ADMIN']), 'theirs'))).toBe(
-            '403 PERMISSION_DENIED'
-        );
+    it('SYSTEM_ADMIN holds every learner permission, so the guard lets it through like a student (the service still checks access)', async () => {
+        expect(await outcome(ctx(user(['SYSTEM_ADMIN']), 'theirs'))).toBe('pass');
     });
 
     it('denies a non-user principal and a missing principal', async () => {

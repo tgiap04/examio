@@ -42,19 +42,24 @@ describe('permission catalog', () => {
         );
     });
 
-    it('matches the v1 catalog exactly (SYSTEM_ADMIN, no wildcard)', () => {
-        expect([...ROLE_PERMISSIONS.SYSTEM_ADMIN].sort()).toEqual(
-            [
-                'admin:access',
-                'user:manage',
-                'role:assign',
-                'stats:read',
-                'logs:read',
-                'audit:read',
-                'page_config:manage',
-                'word_family:admin',
-            ].sort()
-        );
+    it('SYSTEM_ADMIN = its admin permissions plus every STUDENT and TEACHER permission, no wildcard', () => {
+        const adminOnly = [
+            'admin:access',
+            'user:manage',
+            'role:assign',
+            'stats:read',
+            'logs:read',
+            'audit:read',
+            'page_config:manage',
+            'word_family:admin',
+        ];
+        const expected = new Set<string>([
+            ...adminOnly,
+            ...ROLE_PERMISSIONS.STUDENT,
+            ...ROLE_PERMISSIONS.TEACHER,
+        ]);
+        expect([...ROLE_PERMISSIONS.SYSTEM_ADMIN].sort()).toEqual([...expected].sort());
+        expect(new Set(ROLE_PERMISSIONS.SYSTEM_ADMIN).size).toBe(ROLE_PERMISSIONS.SYSTEM_ADMIN.length);
         expect(ROLE_PERMISSIONS.SYSTEM_ADMIN).not.toContain('*');
     });
 
@@ -78,14 +83,18 @@ describe('permission catalog', () => {
         }
     });
 
-    it('SYSTEM_ADMIN holds no TEACHER or STUDENT permission', () => {
-        const admin = new Set<string>(ROLE_PERMISSIONS.SYSTEM_ADMIN);
-        for (const p of [
-            ...ROLE_PERMISSIONS.TEACHER,
-            ...ROLE_PERMISSIONS.STUDENT,
-        ]) {
-            expect(admin.has(p)).toBe(false);
+    it('admin-only permissions stay off STUDENT and TEACHER', () => {
+        for (const p of ['admin:access', 'user:manage', 'role:assign', 'page_config:manage', 'word_family:admin']) {
+            expect(ROLE_PERMISSIONS.STUDENT).not.toContain(p);
+            expect(ROLE_PERMISSIONS.TEACHER).not.toContain(p);
         }
+    });
+
+    it('a SYSTEM_ADMIN account reaches every learner and teacher feature whatever its base role', () => {
+        for (const roles of [rolesFor('STUDENT', true), rolesFor('TEACHER', true)]) {
+            expect(hasPermission(roles, ...ROLE_PERMISSIONS.STUDENT, ...ROLE_PERMISSIONS.TEACHER)).toBe(true);
+        }
+        expect(hasPermission(rolesFor('STUDENT', false), 'quizset:manage')).toBe(false);
     });
 
     it('every role permission is a catalog key', () => {

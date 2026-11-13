@@ -7,6 +7,7 @@ last_updated: 2026-11-13
 
 ## [Unreleased]
 
+- **Changed: a system admin can use every learner and teacher feature**. `ROLE_PERMISSIONS.SYSTEM_ADMIN` now holds every STUDENT and TEACHER permission besides the admin-only ones, so an admin sees every `/k` sidebar item and the matching API routes let it through, whatever its base role. Ownership and access rules are unchanged: an admin manages its own quiz sets, flashcard sets and exam rooms, and studies another user's set only when it is public, whitelisted or unlocked by code. Tests (permission catalog, guards, authz matrix, study-room socket) and the generated FE permission file follow.
 - **Removed: Cloudflare Turnstile (bot check)**. Login, register, starting an exam attempt and studying a flashcard set by code no longer ask for or verify a Turnstile token. Plan `plans/261113-1600-remove-cloudflare-turnstile/`.
   - **API**: `turnstileToken` is gone from `POST /auth/login`, `POST /auth/register` (both schemas are strict, so sending it is now a 400), `POST /examattempts/start`, `POST /flashcardsets/study/:id/with-code` and the `GET /flashcardsets/study/:id` query. Ship FE and BE together: an old FE bundle still sends the field to login/register.
   - **Env**: `TURNSTILE_SECRET_KEY`, `TURNSTILE_ENFORCE` and `VITE_TURNSTILE_SITE_KEY` no longer exist (deploy env templates, FE Dockerfile/compose, docker-development). content and assessment leave the `egress` network: Turnstile was their only internet call.

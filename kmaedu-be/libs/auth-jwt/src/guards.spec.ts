@@ -200,7 +200,8 @@ describe('JwtAuthGuard + PermissionsGuard', () => {
         expect(await outcome(fakeCtx(Sample, 'manage', { headers: teacher }))).toBe('pass');
         expect(await outcome(fakeCtx(Sample, 'both', { headers: teacher }))).toBe('pass');
         expect(await outcome(fakeCtx(Sample, 'manage', { headers: student }))).toBe('403 PERMISSION_DENIED');
-        expect(await outcome(fakeCtx(Sample, 'manage', { headers: admin }))).toBe('403 PERMISSION_DENIED');
+        // SYSTEM_ADMIN carries every TEACHER permission too.
+        expect(await outcome(fakeCtx(Sample, 'manage', { headers: admin }))).toBe('pass');
         const both = await asUser({ roles: ['TEACHER', 'SYSTEM_ADMIN'] });
         expect(await outcome(fakeCtx(Sample, 'manage', { headers: both }))).toBe('pass');
     });

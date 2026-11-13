@@ -25,7 +25,7 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 403,
                 TEACHER: '2xx',
-                ADMIN_ONLY: 403,
+                ADMIN_ONLY: '2xx',
                 TEACHER_ADMIN: '2xx',
             },
         },
@@ -36,8 +36,8 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 200,
                 TEACHER: 403,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 403,
+                ADMIN_ONLY: 200,
+                TEACHER_ADMIN: 200,
             },
         },
         {
@@ -60,8 +60,8 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: '2xx',
                 TEACHER: 403,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 403,
+                ADMIN_ONLY: '2xx',
+                TEACHER_ADMIN: '2xx',
             },
         },
         {
@@ -72,8 +72,8 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: '2xx',
                 TEACHER: 403,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 403,
+                ADMIN_ONLY: '2xx',
+                TEACHER_ADMIN: '2xx',
             },
         },
         {
@@ -84,7 +84,7 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 403,
                 TEACHER: 'gate',
-                ADMIN_ONLY: 403,
+                ADMIN_ONLY: 'gate',
                 TEACHER_ADMIN: 'gate',
             },
         },
@@ -92,38 +92,38 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             name: 'GET /ai/recent-uploads (documents over gRPC + generated history)',
             method: 'get',
             path: '/ai/recent-uploads',
-            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 },
+            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 },
         },
         {
             name: 'GET /ai/models',
             method: 'get',
             path: '/ai/models',
-            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 },
+            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 },
         },
         {
             name: 'POST /ai/regenerate/:id',
             method: 'post',
             path: '/ai/regenerate/u1',
             body: {},
-            expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: 403, TEACHER_ADMIN: '2xx' },
+            expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: '2xx', TEACHER_ADMIN: '2xx' },
         },
         {
             name: 'GET /ai/job/:id',
             method: 'get',
             path: '/ai/job/j1',
-            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 },
+            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 },
         },
         {
             name: 'DELETE /ai/job/:id',
             method: 'delete',
             path: '/ai/job/j1',
-            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 },
+            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 },
         },
         {
             name: 'GET /ai/upload/:id/history',
             method: 'get',
             path: '/ai/upload/u1/history',
-            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 },
+            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 },
         },
         {
             name: 'POST /word-family/:id/to-flashcard',
@@ -133,7 +133,7 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 403,
                 TEACHER: 'gate',
-                ADMIN_ONLY: 403,
+                ADMIN_ONLY: 'gate',
                 TEACHER_ADMIN: 'gate',
             },
         },
@@ -144,7 +144,7 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 403,
                 TEACHER: 200,
-                ADMIN_ONLY: 403,
+                ADMIN_ONLY: 200,
                 TEACHER_ADMIN: 200,
             },
         },
@@ -155,8 +155,8 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 200,
                 TEACHER: 403,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 403,
+                ADMIN_ONLY: 200,
+                TEACHER_ADMIN: 200,
             },
         },
         {
@@ -178,8 +178,8 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: '2xx',
                 TEACHER: 403,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 403,
+                ADMIN_ONLY: '2xx',
+                TEACHER_ADMIN: '2xx',
             },
         },
         {
@@ -190,8 +190,8 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: '2xx',
                 TEACHER: 403,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 403,
+                ADMIN_ONLY: '2xx',
+                TEACHER_ADMIN: '2xx',
             },
         },
         {
@@ -236,7 +236,7 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 403,
                 TEACHER: 200,
-                ADMIN_ONLY: 403,
+                ADMIN_ONLY: 200,
                 TEACHER_ADMIN: 200,
             },
         },
@@ -248,7 +248,7 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 403,
                 TEACHER: '2xx',
-                ADMIN_ONLY: 403,
+                ADMIN_ONLY: '2xx',
                 TEACHER_ADMIN: '2xx',
             },
         },
@@ -259,7 +259,7 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 403,
                 TEACHER: '2xx',
-                ADMIN_ONLY: 403,
+                ADMIN_ONLY: '2xx',
                 TEACHER_ADMIN: '2xx',
             },
         },
@@ -270,7 +270,7 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 403,
                 TEACHER: 200,
-                ADMIN_ONLY: 403,
+                ADMIN_ONLY: 200,
                 TEACHER_ADMIN: 200,
             },
         },
@@ -281,8 +281,8 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 200,
                 TEACHER: 403,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 403,
+                ADMIN_ONLY: 200,
+                TEACHER_ADMIN: 200,
             },
         },
         {
@@ -292,8 +292,8 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: '2xx',
                 TEACHER: 403,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 403,
+                ADMIN_ONLY: '2xx',
+                TEACHER_ADMIN: '2xx',
             },
         },
     ],
@@ -306,8 +306,8 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: '2xx',
                 TEACHER: 403,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 403,
+                ADMIN_ONLY: '2xx',
+                TEACHER_ADMIN: '2xx',
             },
         },
         {
@@ -317,8 +317,8 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 200,
                 TEACHER: 403,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 403,
+                ADMIN_ONLY: 200,
+                TEACHER_ADMIN: 200,
             },
         },
         {
@@ -328,7 +328,7 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 403,
                 TEACHER: 200,
-                ADMIN_ONLY: 403,
+                ADMIN_ONLY: 200,
                 TEACHER_ADMIN: 200,
             },
         },
@@ -339,7 +339,7 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 403,
                 TEACHER: 400,
-                ADMIN_ONLY: 403,
+                ADMIN_ONLY: 400,
                 TEACHER_ADMIN: 400,
             },
         },
@@ -350,7 +350,7 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 403,
                 TEACHER: 200,
-                ADMIN_ONLY: 403,
+                ADMIN_ONLY: 200,
                 TEACHER_ADMIN: 200,
             },
         },
@@ -361,8 +361,8 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 200,
                 TEACHER: 403,
-                ADMIN_ONLY: 403,
-                TEACHER_ADMIN: 403,
+                ADMIN_ONLY: 200,
+                TEACHER_ADMIN: 200,
             },
         },
     ],
@@ -375,7 +375,7 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 403,
                 TEACHER: '2xx',
-                ADMIN_ONLY: 403,
+                ADMIN_ONLY: '2xx',
                 TEACHER_ADMIN: '2xx',
             },
         },
@@ -387,7 +387,7 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: '2xx',
                 TEACHER: '2xx',
-                ADMIN_ONLY: 403,
+                ADMIN_ONLY: '2xx',
                 TEACHER_ADMIN: '2xx',
             },
         },
@@ -400,7 +400,7 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 200,
                 TEACHER: 200,
-                ADMIN_ONLY: 403,
+                ADMIN_ONLY: 200,
                 TEACHER_ADMIN: 200,
             },
         },
@@ -412,7 +412,7 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             expect: {
                 STUDENT: 403,
                 TEACHER: 'gate',
-                ADMIN_ONLY: 403,
+                ADMIN_ONLY: 'gate',
                 TEACHER_ADMIN: 'gate',
             },
         },
@@ -423,47 +423,47 @@ export const rows: Record<'content' | 'assessment' | 'studyroom' | 'vocabulary' 
             name: 'GET /ai/upload/:id',
             method: 'get',
             path: '/ai/upload/u1',
-            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 },
+            expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 },
         },
         {
             name: 'POST /ai/upload',
             method: 'post',
             path: '/ai/upload',
             body: { filename: 'a.pdf', url: 'https://r2/x', mimetype: 'application/pdf', size: 1024, keyR2: 'ai-uploads/u1/a.pdf' },
-            expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: 403, TEACHER_ADMIN: '2xx' },
+            expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: '2xx', TEACHER_ADMIN: '2xx' },
         },
         {
             name: 'POST /ai/upload-image',
             method: 'post',
             path: '/ai/upload-image',
             body: { image: 'data' },
-            expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: 403, TEACHER_ADMIN: '2xx' },
+            expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: '2xx', TEACHER_ADMIN: '2xx' },
         },
         {
             name: 'POST /ai/quick-upload',
             method: 'post',
             path: '/ai/quick-upload',
-            expect: { STUDENT: 403, TEACHER: 'gate', ADMIN_ONLY: 403, TEACHER_ADMIN: 'gate' },
+            expect: { STUDENT: 403, TEACHER: 'gate', ADMIN_ONLY: 'gate', TEACHER_ADMIN: 'gate' },
         },
         {
             name: 'POST /r2/image',
             method: 'post',
             path: '/r2/image',
-            expect: { STUDENT: 403, TEACHER: 'gate', ADMIN_ONLY: 403, TEACHER_ADMIN: 'gate' },
+            expect: { STUDENT: 403, TEACHER: 'gate', ADMIN_ONLY: 'gate', TEACHER_ADMIN: 'gate' },
         },
     ],
     // ai-chat-service: every chat route needs `ai_chat:use` (TEACHER only today); subjects are public.
     // The stream routes are not listed: their stubbed service never writes to the response.
     aichat: [
-        { name: 'POST /ai-chat', method: 'post', path: '/ai-chat', body: {}, expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: 403, TEACHER_ADMIN: '2xx' } },
-        { name: 'GET /ai-chat', method: 'get', path: '/ai-chat', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 } },
-        { name: 'GET /ai-chat/:chatId/exists', method: 'get', path: '/ai-chat/c1/exists', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 } },
-        { name: 'GET /ai-chat/:chatId/messages', method: 'get', path: '/ai-chat/c1/messages', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 } },
-        { name: 'POST /ai-chat/:chatId/message', method: 'post', path: '/ai-chat/c1/message', body: { message: 'hi' }, expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: 403, TEACHER_ADMIN: '2xx' } },
-        { name: 'DELETE /ai-chat/:chatId', method: 'delete', path: '/ai-chat/c1', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 } },
-        { name: 'DELETE /ai-chat/message/:messageId', method: 'delete', path: '/ai-chat/message/m1', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 } },
-        { name: 'GET /ai-chat/:chatId/documents', method: 'get', path: '/ai-chat/c1/documents', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 403, TEACHER_ADMIN: 200 } },
-        { name: 'POST /ai-chat/:chatId/documents', method: 'post', path: '/ai-chat/c1/documents', body: { documentId: 'd1', documentName: 'a.pdf' }, expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: 403, TEACHER_ADMIN: '2xx' } },
+        { name: 'POST /ai-chat', method: 'post', path: '/ai-chat', body: {}, expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: '2xx', TEACHER_ADMIN: '2xx' } },
+        { name: 'GET /ai-chat', method: 'get', path: '/ai-chat', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 } },
+        { name: 'GET /ai-chat/:chatId/exists', method: 'get', path: '/ai-chat/c1/exists', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 } },
+        { name: 'GET /ai-chat/:chatId/messages', method: 'get', path: '/ai-chat/c1/messages', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 } },
+        { name: 'POST /ai-chat/:chatId/message', method: 'post', path: '/ai-chat/c1/message', body: { message: 'hi' }, expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: '2xx', TEACHER_ADMIN: '2xx' } },
+        { name: 'DELETE /ai-chat/:chatId', method: 'delete', path: '/ai-chat/c1', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 } },
+        { name: 'DELETE /ai-chat/message/:messageId', method: 'delete', path: '/ai-chat/message/m1', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 } },
+        { name: 'GET /ai-chat/:chatId/documents', method: 'get', path: '/ai-chat/c1/documents', expect: { STUDENT: 403, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 } },
+        { name: 'POST /ai-chat/:chatId/documents', method: 'post', path: '/ai-chat/c1/documents', body: { documentId: 'd1', documentName: 'a.pdf' }, expect: { STUDENT: 403, TEACHER: '2xx', ADMIN_ONLY: '2xx', TEACHER_ADMIN: '2xx' } },
         { name: 'GET /subjects (public)', method: 'get', path: '/subjects', expect: { STUDENT: 200, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 } },
         { name: 'GET /subjects/categories (public)', method: 'get', path: '/subjects/categories', expect: { STUDENT: 200, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 } },
         { name: 'GET /subjects/slug/:slug (public)', method: 'get', path: '/subjects/slug/math', expect: { STUDENT: 200, TEACHER: 200, ADMIN_ONLY: 200, TEACHER_ADMIN: 200 } },

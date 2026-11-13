@@ -40,42 +40,55 @@ export type Role = 'STUDENT' | 'TEACHER' | 'SYSTEM_ADMIN';
 
 const P = PERMISSIONS;
 
+const STUDENT_PERMISSIONS = [
+    P.FLASHCARD_STUDY,
+    P.QUIZ_PRACTICE,
+    P.EXAM_TAKE,
+    P.STUDY_ROOM_JOIN,
+    P.WORD_FAMILY_READ,
+    P.WORD_FAMILY_SAVE,
+] as const;
+
+const TEACHER_PERMISSIONS = [
+    P.QUIZSET_MANAGE,
+    P.FLASHCARDSET_MANAGE,
+    P.EXAM_ROOM_MANAGE,
+    P.EXAM_SESSION_MANAGE,
+    P.EXAM_RESULT_VIEW,
+    P.CONTENT_SHARE,
+    P.USER_SEARCH,
+    P.AI_GENERATE,
+    P.AI_CHAT_USE,
+    P.DOCUMENT_UPLOAD,
+    P.STUDY_ROOM_CREATE,
+    P.STUDY_ROOM_JOIN,
+    P.WORD_FAMILY_READ,
+    P.WORD_FAMILY_GENERATE,
+    P.WORD_FAMILY_SAVE,
+] as const;
+
+const ADMIN_ONLY_PERMISSIONS = [
+    P.ADMIN_ACCESS,
+    P.USER_MANAGE,
+    P.ROLE_ASSIGN,
+    P.STATS_READ,
+    P.LOGS_READ,
+    P.AUDIT_READ,
+    P.PAGE_CONFIG_MANAGE,
+    P.WORD_FAMILY_ADMIN,
+] as const;
+
+/** Distinct permissions of several lists, first occurrence order (still an explicit set: no wildcard). */
+function union(...lists: ReadonlyArray<readonly Permission[]>): readonly Permission[] {
+    return [...new Set(lists.flat())];
+}
+
 export const ROLE_PERMISSIONS = {
-    STUDENT: [
-        P.FLASHCARD_STUDY,
-        P.QUIZ_PRACTICE,
-        P.EXAM_TAKE,
-        P.STUDY_ROOM_JOIN,
-        P.WORD_FAMILY_READ,
-        P.WORD_FAMILY_SAVE,
-    ],
-    TEACHER: [
-        P.QUIZSET_MANAGE,
-        P.FLASHCARDSET_MANAGE,
-        P.EXAM_ROOM_MANAGE,
-        P.EXAM_SESSION_MANAGE,
-        P.EXAM_RESULT_VIEW,
-        P.CONTENT_SHARE,
-        P.USER_SEARCH,
-        P.AI_GENERATE,
-        P.AI_CHAT_USE,
-        P.DOCUMENT_UPLOAD,
-        P.STUDY_ROOM_CREATE,
-        P.STUDY_ROOM_JOIN,
-        P.WORD_FAMILY_READ,
-        P.WORD_FAMILY_GENERATE,
-        P.WORD_FAMILY_SAVE,
-    ],
-    SYSTEM_ADMIN: [
-        P.ADMIN_ACCESS,
-        P.USER_MANAGE,
-        P.ROLE_ASSIGN,
-        P.STATS_READ,
-        P.LOGS_READ,
-        P.AUDIT_READ,
-        P.PAGE_CONFIG_MANAGE,
-        P.WORD_FAMILY_ADMIN,
-    ],
+    STUDENT: STUDENT_PERMISSIONS,
+    TEACHER: TEACHER_PERMISSIONS,
+    // A system admin can use every learner and teacher feature (sidebar and API alike), on top of the console.
+    // Ownership rules still apply: an admin manages its own quiz sets, rooms and flashcards, not other users'.
+    SYSTEM_ADMIN: union(ADMIN_ONLY_PERMISSIONS, STUDENT_PERMISSIONS, TEACHER_PERMISSIONS),
 } as const satisfies Record<Role, readonly Permission[]>;
 
 export function isRole(value: string): value is Role {

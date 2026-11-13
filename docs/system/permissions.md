@@ -14,10 +14,10 @@ Contents: [Roles](#roles) · [Token and error codes](#token-and-error-codes) · 
 |---|---|---|
 | `STUDENT` | `User.role = STUDENT` (default on register) | Exclusive with `TEACHER`. |
 | `TEACHER` | `User.role = TEACHER` | Exclusive with `STUDENT`. Only a SYSTEM_ADMIN can grant it (admin UI `/admin/roles` or `yarn bootstrap:admin:grant <email> --teacher`). |
-| `SYSTEM_ADMIN` | `User.isSystemAdmin = true` | Flag that combines with either base role (replaces `User.isAdmin`). |
+| `SYSTEM_ADMIN` | `User.isSystemAdmin = true` | Flag that combines with either base role (replaces `User.isAdmin`). Holds every STUDENT and TEACHER permission plus the admin-only ones. |
 | `SERVICE` | Service token (`sub = svc:<name>`) | A token kind, not a user role; no entry in `ROLE_PERMISSIONS`. |
 
-Token `roles` = `[baseRole]`, plus `SYSTEM_ADMIN` when flagged (`rolesFor`). Permissions never travel in the token; they are derived from `roles` at check time (`permissionsOf`: union, AND semantics for several required, no wildcard). A SYSTEM_ADMIN who is also a STUDENT/TEACHER holds the union; a bare admin (`STUDENT` + flag) gets no teacher permissions, and admin permissions do not imply teacher ones.
+Token `roles` = `[baseRole]`, plus `SYSTEM_ADMIN` when flagged (`rolesFor`). Permissions never travel in the token; they are derived from `roles` at check time (`permissionsOf`: union, AND semantics for several required, no wildcard). `SYSTEM_ADMIN` itself holds every STUDENT and TEACHER permission plus the admin-only ones (changed 2026-11-13), so an admin sees every sidebar item and can use every learner and teacher feature whatever its base role. Ownership and access rules still apply: an admin manages its own quiz sets, rooms and flashcards, and studies another user's set only when it is public, whitelisted or unlocked by code, like any student.
 
 Role -> permissions (generated from `ROLE_PERMISSIONS`):
 
@@ -27,7 +27,7 @@ Role -> permissions (generated from `ROLE_PERMISSIONS`):
 |---|--:|---|
 | `STUDENT` | 6 | `exam:take`, `flashcard:study`, `quiz:practice`, `study_room:join`, `word_family:read`, `word_family:save` |
 | `TEACHER` | 15 | `ai:generate`, `ai_chat:use`, `content:share`, `document:upload`, `exam_result:view`, `exam_room:manage`, `exam_session:manage`, `flashcardset:manage`, `quizset:manage`, `study_room:create`, `study_room:join`, `user:search`, `word_family:generate`, `word_family:read`, `word_family:save` |
-| `SYSTEM_ADMIN` | 8 | `admin:access`, `audit:read`, `logs:read`, `page_config:manage`, `role:assign`, `stats:read`, `user:manage`, `word_family:admin` |
+| `SYSTEM_ADMIN` | 26 | `admin:access`, `ai:generate`, `ai_chat:use`, `audit:read`, `content:share`, `document:upload`, `exam:take`, `exam_result:view`, `exam_room:manage`, `exam_session:manage`, `flashcard:study`, `flashcardset:manage`, `logs:read`, `page_config:manage`, `quiz:practice`, `quizset:manage`, `role:assign`, `stats:read`, `study_room:create`, `study_room:join`, `user:manage`, `user:search`, `word_family:admin`, `word_family:generate`, `word_family:read`, `word_family:save` |
 
 <!-- END GENERATED -->
 

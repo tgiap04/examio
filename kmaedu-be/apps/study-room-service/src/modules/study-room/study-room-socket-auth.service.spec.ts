@@ -123,10 +123,12 @@ describe('StudyRoomSocketAuth', () => {
         expect(profiles).not.toHaveBeenCalled();
     });
 
-    it('requires study_room:join (SYSTEM_ADMIN-only is refused, STUDENT and TEACHER pass)', async () => {
+    it('requires study_room:join (a token without it is refused; STUDENT, TEACHER and SYSTEM_ADMIN pass)', async () => {
         const t = await jwt();
-        verify.mockResolvedValueOnce(user({ roles: ['SYSTEM_ADMIN'] }));
+        verify.mockResolvedValueOnce(user({ roles: ['NOPE'] }));
         expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('PERMISSION_DENIED');
+        verify.mockResolvedValueOnce(user({ roles: ['SYSTEM_ADMIN'] }));
+        expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('ok');
         verify.mockResolvedValueOnce(user({ roles: ['TEACHER'] }));
         expect(await codeOf(service.authenticate(mockSocket(t)))).toBe('ok');
         verify.mockResolvedValueOnce(user({ roles: ['STUDENT'] }));
