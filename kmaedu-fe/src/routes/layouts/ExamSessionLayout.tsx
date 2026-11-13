@@ -10,7 +10,7 @@ import { useThemeContext } from "@/provider/ThemeProvider";
 /**
  * Layout for exam session pages — minimal chrome:
  * - Header: logo + back-to-workspace + theme toggle + profile dropdown
- * - Footer: reCAPTCHA notice + copyright
+ * - Footer: copyright
  * - No sidebar, no marketing nav
  */
 export function ExamSessionLayout({ children }: PropsWithChildren) {
@@ -67,27 +67,6 @@ export function ExamSessionLayout({ children }: PropsWithChildren) {
 
       <footer className="mt-auto border-t border-hairline py-4 text-center text-xs text-muted-foreground">
         <p>
-          This site is protected by Cloudflare Turnstile. See{" "}
-          <a
-            href="https://www.cloudflare.com/privacypolicy/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-body"
-          >
-            Privacy Policy
-          </a>{" "}
-          and{" "}
-          <a
-            href="https://www.cloudflare.com/website-terms-of-use/"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline hover:text-body"
-          >
-            Terms of Service
-          </a>{" "}
-          apply.
-        </p>
-        <p className="mt-2">
           © {new Date().getFullYear()} KMAEdu. All rights reserved. Made with love in Vietnam.
         </p>
       </footer>

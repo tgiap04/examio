@@ -85,12 +85,10 @@ export interface SubmitExamAttemptResponse {
  */
 export async function startExamAttemptApi(
   examSessionId: string,
-  turnstileToken?: string,
   accessCode?: string
 ): Promise<StartExamAttemptResponse> {
   const response = await api.post("/examattempts/start", {
     examSessionId,
-    ...(turnstileToken ? { turnstileToken } : {}),
     ...(accessCode ? { accessCode } : {}),
   });
   return response.data;

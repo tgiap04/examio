@@ -6,13 +6,11 @@ import { IconBrandGoogle } from "@tabler/icons-react";
 import { Eye, EyeOff } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/stores/useAuthStore";
-import { TurnstileGuard } from "@/components/molecules/TurnstileGuard";
 import Logo from "@/components/atoms/Logo";
 
 export function SigninForm() {
   const { t } = useTranslation("auth");
   const [showPassword, setShowPassword] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState<string>("");
   const { loginWithGoogle, login } =
     useAuthStore();
   const [searchParams] = useSearchParams();
@@ -26,7 +24,7 @@ export function SigninForm() {
     const from = searchParams.get("from");
 
     try {
-      const response = await login({ credential, password, turnstileToken });
+      const response = await login({ credential, password });
       if (response && response.user) {
         const targetPath = response.redirectTo || from || "/k";
         window.location.href = targetPath;
@@ -97,7 +95,6 @@ export function SigninForm() {
 
             <button
               type="submit"
-              disabled={!turnstileToken}
               className="flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-coral px-4 text-[14px] font-medium text-white transition-colors hover:bg-coral-active disabled:bg-coral/50 disabled:cursor-not-allowed"
             >
               {t("login.submit")}
@@ -113,7 +110,6 @@ export function SigninForm() {
           </div>
 
           <button
-            disabled={!turnstileToken}
             className="flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border border-hairline bg-canvas text-[14px] font-medium text-body transition-colors hover:bg-surface-soft disabled:opacity-50 disabled:cursor-not-allowed"
             type="button"
             onClick={() => loginWithGoogle?.()}
@@ -127,10 +123,6 @@ export function SigninForm() {
             <Link to="/register" className="font-medium text-coral hover:text-coral-active">
               {t("login.signupLink")}
             </Link>
-          </div>
-
-          <div className="mt-4 flex justify-center">
-            <TurnstileGuard onTokenReady={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
           </div>
         </div>
       </div>

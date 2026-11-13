@@ -13,14 +13,12 @@ export interface SessionPayload {
 export interface CredentialsLogin {
   credential: string; // can be email or username or phone
   password: string;
-  turnstileToken?: string;
 }
 
 export interface CredentialsSignup {
   username: string;
   password: string;
   email: string;
-  turnstileToken?: string;
   utmSource?: string;
 }
 

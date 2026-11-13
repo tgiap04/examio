@@ -18,7 +18,6 @@ const readEnv = (key: string): string | undefined => {
 
 export const env = {
   apiUrl: trimTrailingSlash(readEnv("VITE_API_URL") ?? readEnv("NEXT_PUBLIC_API_URL") ?? ""),
-  turnstileSiteKey: readEnv("VITE_TURNSTILE_SITE_KEY") ?? "",
   measurementId: readEnv("VITE_MEASUREMENT_ID") ?? readEnv("NEXT_PUBLIC_MEASUREMENT_ID") ?? "",
   genAITutorAllowedEmails: readEnv("VITE_GENAI_TUTOR_ALLOWED_EMAILS") ?? readEnv("NEXT_PUBLIC_GENAI_TUTOR_ALLOWED_EMAILS") ?? "",
   /** e.g. ".kmaedu.fayedark.com" — used for cookie domain. Omit/empty = no domain attribute */

@@ -241,7 +241,6 @@ export default function ExamQuizPage() {
           sessionStorage.getItem(`kmaedu:exam-code:${examSessionId}`) ?? undefined;
         const startResult = await startExamAttemptApi(
           examSessionId,
-          undefined,
           storedAccessCode,
         );
         setAttemptId(startResult.examAttempt.id);

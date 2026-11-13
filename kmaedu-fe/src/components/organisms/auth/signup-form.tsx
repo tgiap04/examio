@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { normalizeReturnPath } from "@/lib/authRedirect";
 import { Input } from "@/components/antd/input";
@@ -7,12 +7,10 @@ import { IconBrandGoogle } from "@tabler/icons-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { toast } from "@/components/antd/toast";
 import { useTranslation } from "react-i18next";
-import { TurnstileGuard } from "@/components/molecules/TurnstileGuard";
 import Logo from "@/components/atoms/Logo";
 
 export function SignupForm() {
   const { t } = useTranslation("auth");
-  const [turnstileToken, setTurnstileToken] = useState<string>("");
   const { signup, loginWithGoogle } =
     useAuthStore();
   const [searchParams] = useSearchParams();
@@ -35,7 +33,6 @@ export function SignupForm() {
         username,
         email,
         password,
-        turnstileToken,
       });
       const from = normalizeReturnPath(searchParams.get("from"));
       if (response && response.user) {
@@ -118,7 +115,6 @@ export function SignupForm() {
             </div>
 
             <button
-              disabled={!turnstileToken}
               className="flex h-11 w-full items-center justify-center gap-2 rounded-[8px] bg-coral px-4 text-[14px] font-medium text-white transition-colors hover:bg-coral-active disabled:bg-coral/50 disabled:cursor-not-allowed"
               type="submit"
             >
@@ -134,7 +130,6 @@ export function SignupForm() {
             </div>
 
             <button
-              disabled={!turnstileToken}
               className="flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border border-hairline bg-canvas text-[14px] font-medium text-body transition-colors hover:bg-surface-soft disabled:opacity-50 disabled:cursor-not-allowed"
               type="button"
               onClick={() => loginWithGoogle?.()}
@@ -148,10 +143,6 @@ export function SignupForm() {
               <Link to="/login" className="font-medium text-coral hover:text-coral-active">
                 {t("signup.loginLink")}
               </Link>
-            </div>
-
-            <div className="flex justify-center mt-2">
-              <TurnstileGuard onTokenReady={setTurnstileToken} onExpire={() => setTurnstileToken("")} />
             </div>
           </form>
         </div>
