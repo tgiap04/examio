@@ -6,7 +6,6 @@ export const CreateExamAttemptSchema = z.object({
     examSessionId: z
         .string()
         .min(1, { message: 'Exam session ID is required' }),
-    turnstileToken: z.string().optional(),
     accessCode: z.string().optional(),
 });
 
@@ -18,9 +17,4 @@ export class CreateExamAttemptDto extends createZodDto(
         example: 'examsession_123456',
     })
     examSessionId: string;
-
-    @ApiProperty({
-        description: 'Cloudflare Turnstile token for bot protection',
-    })
-    turnstileToken: string;
 }

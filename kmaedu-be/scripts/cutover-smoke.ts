@@ -9,8 +9,6 @@
  * BASE_URL is the origin that serves `/api/v1` and `/ws/study` (no path).
  * Accounts: a TEACHER, a STUDENT, a SYSTEM_ADMIN, and a TARGET account (a second
  * STUDENT or TEACHER that the admin flips and flips back). Optional:
- *   TURNSTILE_TOKEN  sent on every login (production enforces the captcha; a Cloudflare
- *                    test secret accepts `XXXX.DUMMY.TOKEN.XXXX`, see cutover-runbook.md)
  *   STALE_WAIT_MS    how long a role change may take to reach the gateway (default 15000)
  *
  * Four logins per run: the gateway allows 5 per minute per client IP, so wait a minute
@@ -50,7 +48,6 @@ if (missing.length > 0) {
 const env = (name: (typeof REQUIRED)[number]): string => process.env[name] as string;
 const BASE_URL = env('BASE_URL').replace(/\/+$/, '');
 const API = `${BASE_URL}/api/v1`;
-const TURNSTILE_TOKEN = process.env.TURNSTILE_TOKEN;
 const STALE_WAIT_MS = Number(process.env.STALE_WAIT_MS) || 15_000;
 const SESSION_COOKIES = ['accessToken', 'refreshToken'];
 /** Sent on every request, as the TLS-terminating proxy in front of the stack would. */
@@ -128,7 +125,7 @@ const expectStatus = (res: AxiosResponse, wanted: number | number[], what: strin
 async function login(who: Account): Promise<void> {
     const res = await http.post<Json>(
         `${API}/auth/login`,
-        { credential: who.credential, password: who.password, ...(TURNSTILE_TOKEN ? { turnstileToken: TURNSTILE_TOKEN } : {}) },
+        { credential: who.credential, password: who.password },
         { headers: FORWARDED_HTTPS }
     );
     expectStatus(res, [200, 201], `login ${who.label}`);

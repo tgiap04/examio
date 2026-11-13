@@ -45,7 +45,7 @@ alias dc='docker compose --env-file .env --env-file .tags.env'   # or define a f
       Required values: `JWT_PRIVATE_KEY` + `JWT_KID` (`scripts/gen-jwt-keypair.sh`), `SERVICE_CLIENTS` and every
       `<SVC>_SERVICE_CLIENT_SECRET` (`scripts/gen-service-secret.sh <name>`; the hashes go into `SERVICE_CLIENTS`),
       all `*_DB_PASSWORD` and `RABBITMQ_*_PASS` (URL-safe: hex or base64url), `REDIS_PASSWORD`, `FRONTEND_URL`,
-      `TURNSTILE_SECRET_KEY` (content, assessment), `GOOGLE_*` and `EMAIL_*` (auth),
+      `GOOGLE_*` and `EMAIL_*` (auth),
       `R2_*` (r2, new bucket, step 3), `GEMINI_*` (ai). Copy values from the old `.env` where they carry over, but
       **do not reuse the old `JWT_SECRET`** (it is gone) and remember `ADMIN_EMAILS` / `ADMIN_DEFAULT_PASSWORD` in
       `env/auth.env` (step 9).
@@ -182,21 +182,14 @@ SYSTEM_ADMIN to an existing account:
 
 ## 10. Smoke
 
-Production enforces Cloudflare Turnstile on login (`NODE_ENV=production`), so the script needs a token the verifier
-accepts. Decided 2026-10-28: **A**. (B stays as the fallback.)
-
-- A: temporarily set `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA` (Cloudflare's always-pass test secret) in
-  `env/auth.env` and recreate auth (`dc up -d --no-deps --force-recreate auth`), run the smoke with
-  `TURNSTILE_TOKEN=XXXX.DUMMY.TOKEN.XXXX`, then **restore the real secret and recreate auth again** before announcing.
-  Do this inside the downtime window, never while users are on the site.
-- B: skip the script's login with a manual browser pass of the same checks (login, quiz set, shared set, role change, room).
+Login needs no captcha (Cloudflare Turnstile was removed 2026-11-13), so the script logs in directly.
 
 - [ ] Run from a machine with the repo (4 logins per run; the gateway allows 5 per minute per IP, so wait a minute before a re-run):
       ```bash
       cd kmaedu-be && BASE_URL=https://<prod-origin> \
         TEACHER_EMAIL=... TEACHER_PASSWORD=... STUDENT_EMAIL=... STUDENT_PASSWORD=... \
         ADMIN_EMAIL=... ADMIN_PASSWORD=... TARGET_EMAIL=... TARGET_PASSWORD=... \
-        TURNSTILE_TOKEN=XXXX.DUMMY.TOKEN.XXXX yarn smoke:cutover
+        yarn smoke:cutover
       ```
       Exit 0 and every line `PASS` (login cookies, `/auth/me` roles, quiz + flashcard creation, whitelisted study read,
       student 403, page flags, study room over `/ws/study`, role flip to `TOKEN_STALE` then refresh, cleanup).
@@ -266,15 +259,14 @@ and a separate compose project name so nothing touches a real stack: `export COM
 2. **New stack, throwaway env**: in the branch checkout, `cd kmaedu-be/deploy`, `bash ci-dummy.env.sh > .env && bash ci-dummy.env.sh --service-envs`
    (dummy values; replace `RABBITMQ_*` and DB passwords only if you want realistic ones, keep them URL-safe). Real third parties
    (Google, R2, Gemini) are not available: the checks that need them are skipped in the rehearsal and done in step 10 live.
-   Set `TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA` in `env/content.env`, `env/assessment.env` and `env/auth.env`, and
-   `ADMIN_EMAILS=admin@rehearsal.test`, `ADMIN_DEFAULT_PASSWORD=<12+ chars>` in `env/auth.env`.
+   Set `ADMIN_EMAILS=admin@rehearsal.test`, `ADMIN_DEFAULT_PASSWORD=<12+ chars>` in `env/auth.env`.
 3. **Images**: the compose files have `build:`, so build locally instead of pulling: `docker compose build <svc>` per service (one at a time),
    and use `docker compose` without `pull`; or build once with `GATEWAY_TAG=local` etc. If you want to rehearse the GHCR path, push the images
    to a scratch registry and set `<SVC>_TAG` in `.tags.env`.
 4. Walk steps 1 to 9 literally (paths: `$DEPLOY` is your checkout's `kmaedu-be/deploy`; skip the GHCR login and the off-host copy).
    Step 2 of the old stack: `cd /tmp/kmaedu-old/kmaedu-be/deploy && docker compose down` (no `-v` until step 3).
-5. **Step 10**: `BASE_URL=http://localhost:6368` (the FE container, host port `FE_PORT`) with `TURNSTILE_TOKEN=XXXX.DUMMY.TOKEN.XXXX`
-   and accounts registered through the API or the dev seed. Then run the browser matrix (F10) by hand.
+5. **Step 10**: `BASE_URL=http://localhost:6368` (the FE container, host port `FE_PORT`)
+   with accounts registered through the API or the dev seed. Then run the browser matrix (F10) by hand.
 6. **Rollback rehearsal**: follow the Rollback section against the old worktree: `down`, remove the `rehearsal_*` volumes, start the old
    postgres on an empty volume, `pg_restore` the dump, `docker compose up -d --no-build`, log in with the old user. That user working is the pass criterion.
 7. **Gateway rollout under load** (phase 16 acceptance): while the stack is up, run a k6 smoke at 50 rps against `/api/v1/status`

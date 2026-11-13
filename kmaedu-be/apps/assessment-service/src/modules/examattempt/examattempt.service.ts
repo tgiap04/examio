@@ -8,11 +8,7 @@ import {
     ForbiddenException,
     BadRequestException,
 } from '@nestjs/common';
-import {
-    GenerateIdService,
-    CryptoService,
-    TurnstileService,
-} from '@kmaedu/common';
+import { GenerateIdService, CryptoService } from '@kmaedu/common';
 import {
     EXAM_SESSION_STATUS,
     EXAM_ATTEMPT_STATUS,
@@ -69,7 +65,6 @@ export class ExamAttemptService {
         private readonly generateIdService: GenerateIdService,
         private readonly redisService: RedisService,
         private readonly cryptoService: CryptoService,
-        private readonly turnstileService: TurnstileService,
         private readonly users: UserEnricher,
         private readonly documents: DocumentClient,
         private readonly content: ContentClient,
@@ -167,9 +162,6 @@ export class ExamAttemptService {
      * Checks retry limits based on ExamSession settings
      */
     async startExamAttempt(user: AuthUser, dto: CreateExamAttemptDto) {
-        if (dto.turnstileToken) {
-            await this.turnstileService.verify(dto.turnstileToken);
-        }
         // The session, without its snapshot (that column is read only under the lock below).
         const examSession = await this.prisma.examSession.findUnique({
             where: { id: dto.examSessionId },

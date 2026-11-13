@@ -7,7 +7,6 @@ import {
     Get,
     Res,
     UnauthorizedException,
-    BadRequestException,
     HttpCode,
     HttpStatus,
     Param,
@@ -30,7 +29,6 @@ import {
     accessTokenCookie,
     clearAuthCookies,
     refreshTokenCookie,
-    TurnstileService,
 } from '@kmaedu/common';
 import {
     AllowUnverified,
@@ -71,8 +69,7 @@ export class AuthController {
 
     constructor(
         private readonly authService: AuthService,
-        private readonly redisService: RedisService,
-        private readonly turnstileService: TurnstileService
+        private readonly redisService: RedisService
     ) {}
 
     private async ensureOauthSession(
@@ -201,18 +198,6 @@ export class AuthController {
         @Res({ passthrough: true }) res: ExpressResponse,
         @Req() request: Request
     ) {
-        // Verify Turnstile token. Mandatory in production — a missing token
-        // must not silently skip the captcha check.
-        if (
-            process.env.NODE_ENV === 'production' &&
-            !registerDto.turnstileToken
-        ) {
-            throw new BadRequestException('Captcha verification required');
-        }
-        if (registerDto.turnstileToken) {
-            await this.turnstileService.verify(registerDto.turnstileToken);
-        }
-
         // Extract device info from request
         const deviceInfo = this.extractDeviceInfo(request);
 
@@ -266,18 +251,6 @@ export class AuthController {
         @Res({ passthrough: true }) res: ExpressResponse,
         @Req() request: Request
     ): Promise<LoginResponse> {
-        // Verify Turnstile token. Mandatory in production — a missing token
-        // must not silently skip the captcha check.
-        if (
-            process.env.NODE_ENV === 'production' &&
-            !loginDto.turnstileToken
-        ) {
-            throw new BadRequestException('Captcha verification required');
-        }
-        if (loginDto.turnstileToken) {
-            await this.turnstileService.verify(loginDto.turnstileToken);
-        }
-
         // Extract device info from request
         const deviceInfo = this.extractDeviceInfo(request);
 

@@ -11,7 +11,6 @@ export const LoginSchema = z
         password: z
             .string()
             .min(6, { message: 'Password must be at least 6 characters long' }),
-        turnstileToken: z.string().optional(),
     })
     // Unknown keys (e.g. an injected `role` / `isSystemAdmin`) are a 400, never ignored.
     .strict();
@@ -27,12 +26,6 @@ export class LoginDto extends createZodDto(LoginSchema) {
         example: 'password123',
     })
     password: string;
-
-    @ApiProperty({
-        description: 'Cloudflare Turnstile token for bot protection',
-        required: false,
-    })
-    turnstileToken?: string;
 }
 
 export class LoginResponse {

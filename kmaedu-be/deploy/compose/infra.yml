@@ -135,7 +135,7 @@ services:
 #   edge     gateway + the FE nginx only (the only way in)
 #   internal no route out: every service, Postgres, Redis, RabbitMQ
 #   egress   services that really call the internet: auth (Google OAuth, SMTP),
-#            content + assessment (Turnstile), r2 (Cloudflare R2), ai (Gemini)
+#            r2 (Cloudflare R2), ai (Gemini)
 # Data stores publish no host ports. Ops reach Postgres with
 #   docker compose exec postgres psql -U <svc>_svc -d $POSTGRES_DB   (e.g. auth_svc)
 # The superuser ($POSTGRES_USER) is for ops/break-glass only; no service uses it.

@@ -3,7 +3,7 @@ import { R2DeleteTaskWriter } from '@kmaedu/messaging';
 import { FlashcardsetService } from './flashcardset.service';
 import { FlashcardsetController } from './flashcardset.controller';
 import { PrismaService } from '../../prisma';
-import { GenerateIdService, TurnstileService } from '@kmaedu/common';
+import { GenerateIdService } from '@kmaedu/common';
 import { GrpcClientModule } from '@kmaedu/grpc';
 import { RedisService } from '@kmaedu/redis';
 import { R2_GRPC_REGISTRATION, R2Client } from '../../clients/r2.client';
@@ -26,7 +26,6 @@ import { WordFamilyToFlashcardService } from './word-family-to-flashcard.service
         R2Client,
         R2DeleteTaskWriter,
         FlashCardSetRepository,
-        TurnstileService,
         FlashcardSetOwnerResolver,
         UserSearchService,
         VocabularyClient,

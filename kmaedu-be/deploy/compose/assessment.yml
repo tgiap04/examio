@@ -64,7 +64,6 @@ services:
             # its stored snapshot.
         networks:
             - internal
-            - egress
         healthcheck:
             <<: *nestjs-healthcheck
             test:

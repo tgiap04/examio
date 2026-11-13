@@ -6,7 +6,6 @@ import { GenerateIdService } from './services/generate-id.service';
 import { CryptoService } from './services/crypto.service';
 import { PdfService } from './services/pdf.service';
 import { ImagePreprocessingService } from './services/image-preprocessing.service';
-import { TurnstileService } from './services/turnstile.service';
 import { RefreshTokenCipherService } from './services/refresh-token-cipher.service';
 
 const services = [
@@ -17,7 +16,6 @@ const services = [
     CryptoService,
     PdfService,
     ImagePreprocessingService,
-    TurnstileService,
     RefreshTokenCipherService,
 ];
 

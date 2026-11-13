@@ -71,10 +71,8 @@ services:
                 condition: service_healthy
             # No dependency on vocabulary, document, auth-grpc or ai: lazy gRPC clients
             # (a request that needs one answers 503 while it is down).
-        # egress: flashcard study/with-code verify a Turnstile token with Cloudflare.
         networks:
             - internal
-            - egress
         healthcheck:
             <<: *nestjs-healthcheck
             test:

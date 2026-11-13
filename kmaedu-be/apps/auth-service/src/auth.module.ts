@@ -9,7 +9,6 @@ import {
     MailService,
     PasswordService,
     GenerateIdService,
-    TurnstileService,
     RefreshTokenCipherService,
 } from '@kmaedu/common';
 import { RedisModule, RedisService } from '@kmaedu/redis';
@@ -57,7 +56,6 @@ import { HttpThrottlerGuard } from './auth/guards/http-throttler.guard';
         AccessTokenService,
         MailService,
         UserRepository,
-        TurnstileService,
         RefreshTokenCipherService,
         // Global rate limiting applied to all auth endpoints
         { provide: APP_GUARD, useClass: HttpThrottlerGuard },

@@ -10,7 +10,7 @@ The deployment consists of the following containers:
 - **RabbitMQ** (Message Queue)
 - **Gateway Service** (YAML-routed streaming proxy; JWT verify, revoke/stale checks, rate limits; no database)
 - **Auth Service** (Authentication)
-- **Content Service** (quiz sets, flashcard sets, quiz/flashcard generation jobs, `/student/*` content routes: HTTP + gRPC `kmaedu.content.v1.ContentService` on 50051; `ROLE=api,worker`: outbox relay and the R2 delete worker; calls Cloudflare Turnstile, so it joins `egress`)
+- **Content Service** (quiz sets, flashcard sets, quiz/flashcard generation jobs, `/student/*` content routes: HTTP + gRPC `kmaedu.content.v1.ContentService` on 50051; `ROLE=api,worker`: outbox relay and the R2 delete worker; no internet access)
 - **Assessment Service** (exam rooms, sessions, attempts, cheating log, `/student/*` exam routes; no gRPC server; `ROLE=api,worker`: outbox relay and purge; reads quizzes only from the snapshot frozen in each session, fetched from content over gRPC at session create)
 - **Study-room Service** (study rooms: HTTP + Socket.io `/ws/study`; consumes `auth.user.authz_changed` and `auth.user.updated` inside the API process)
 - **Vocabulary Service** (word families + categories: HTTP + gRPC `WordFamilyAdminService`/`WordFamilyService`, plus an R2 delete worker for category images in the same container; calls ai-service for generation)
@@ -69,7 +69,7 @@ Postgres superuser, Redis password, JWT keypair, service-token secrets, `FRONTEN
 interpolate the `${VAR}` in `compose/*.yml` and does not hand it to the containers. Each container gets one file
 `env/<name>.env` through `env_file` (`required: true`, so a missing file stops `up` before anything starts), with
 the secrets only that service reads (`GOOGLE_*`/`EMAIL_*`/`REFRESH_TOKEN_ENC_KEY`
-in `auth.env`, `R2_*` keys in `r2.env`, `GEMINI_*` in `ai.env`, `QUIZ_*`/`TURNSTILE_*` in `assessment.env`).
+in `auth.env`, `R2_*` keys in `r2.env`, `GEMINI_*` in `ai.env`, `QUIZ_*` in `assessment.env`).
 A compromised container sees its own file only. Real `*.env` files and `.tags.env` are gitignored; the
 templates are `env/*.env.example` (see `env/README.md`).
 
@@ -400,16 +400,10 @@ Networks (`docker-compose.yml`):
 |---|---|---|---|
 | `edge` | `kmaedu-edge` | gateway-a, gateway-b, FE nginx (joins from `kmaedu-fe/docker-compose.yml`) | the only way in |
 | `internal` (`internal: true`, no route out) | `kmaedu-internal` | every service, Postgres, Redis, RabbitMQ, `*-migrate`, seed | service-to-service traffic |
-| `egress` | `kmaedu-egress` | auth (Google OAuth, SMTP), content and assessment (Turnstile), r2 (Cloudflare R2), ai and ai-worker (Gemini; the worker also downloads presigned R2 URLs) | the only services with a real internet dependency |
+| `egress` | `kmaedu-egress` | auth (Google OAuth, SMTP), r2 (Cloudflare R2), ai and ai-worker (Gemini; the worker also downloads presigned R2 URLs) | the only services with a real internet dependency |
 
 `admin` is on `internal` only. If a service gains an internet dependency, add it
 to `egress` and to the list in `compose-topology.spec.cjs`.
-
-With `NODE_ENV=production`, auth also verifies Cloudflare Turnstile on login and
-register (`apps/auth-service/src/auth.controller.ts`): requests without a
-`turnstileToken` are rejected and each token is checked against
-`challenges.cloudflare.com`. An offline production-mode stack therefore cannot
-log in unless Turnstile is reachable.
 
 Building images: on a Docker VM with 8 GB or less, build the images one service
 at a time (`docker compose build <svc>`). Building them all in parallel runs

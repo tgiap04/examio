@@ -24,7 +24,7 @@ import {
     ApiParam,
     ApiHeader,
 } from '@nestjs/swagger';
-import { AuthenticatedRequest, TurnstileService } from '@kmaedu/common';
+import { AuthenticatedRequest } from '@kmaedu/common';
 import { FlashcardsetService } from './flashcardset.service';
 import { CreateFlashcardsetDto } from './dto/create-flashcardset.dto';
 import { UpdateFlashcardSetDto } from './dto/update-flashcardset.dto';
@@ -82,7 +82,6 @@ import { SearchQueryPipe, UserSearchService } from '../common/user-search.servic
 export class FlashcardsetController {
     constructor(
         private readonly flashcardsetService: FlashcardsetService,
-        private readonly turnstileService: TurnstileService,
         private readonly userSearch: UserSearchService
     ) {}
 
@@ -553,12 +552,8 @@ export class FlashcardsetController {
     })
     async getForStudy(
         @Param('id') id: string,
-        @Req() req: AuthenticatedRequest,
-        @Query('turnstileToken') turnstileToken?: string
+        @Req() req: AuthenticatedRequest
     ) {
-        if (turnstileToken) {
-            await this.turnstileService.verify(turnstileToken);
-        }
         return this.flashcardsetService.getFlashcardSetForStudy(
             id,
             req.user.id
@@ -600,9 +595,6 @@ export class FlashcardsetController {
         @Body() dto: FlashcardSetVerifyAccessCodeDto,
         @Req() req: AuthenticatedRequest
     ) {
-        if (dto.turnstileToken) {
-            await this.turnstileService.verify(dto.turnstileToken);
-        }
         return this.flashcardsetService.getFlashcardSetWithCode(
             id,
             dto.accessCode,

@@ -9,7 +9,6 @@ export * from './services/generate-id.service';
 export * from './services/crypto.service';
 export * from './services/pdf.service';
 export * from './services/image-preprocessing.service';
-export * from './services/turnstile.service';
 export * from './services/refresh-token-cipher.service';
 
 // Guards (authn/authz guards live in @kmaedu/auth-jwt)

@@ -84,7 +84,7 @@ test('finance-service is gone: no finance container, migrate one-shot, gateway u
 });
 
 test('egress is exactly the services with a real internet dependency', () => {
-    assert.deepStrictEqual(members('egress'), ['ai', 'ai-worker', 'assessment', 'auth', 'content', 'r2']);
+    assert.deepStrictEqual(members('egress'), ['ai', 'ai-worker', 'auth', 'r2']);
 });
 
 test('every networked service is on internal, and admin has no way out', () => {
@@ -120,6 +120,16 @@ test('auth reaches the gateway control plane by default', () => {
 test('auth knows R2_PUBLIC_URL: a replaced avatar/banner is queued for deletion and a foreign R2 URL is refused', () => {
     // Without it ownedR2KeyFromUrl / isForeignR2Url see no R2 host: old images stay in R2 forever.
     assert.strictEqual(envValue('auth', 'R2_PUBLIC_URL'), '${R2_PUBLIC_URL:-}');
+});
+
+test('Cloudflare Turnstile is gone: no TURNSTILE_* in compose or any env template', () => {
+    for (const name of Object.keys(services)) {
+        assert.ok(!envList(name).some((e) => e.startsWith('TURNSTILE_')), `${name} still sets a TURNSTILE_* variable`);
+    }
+    const templates = ['.env.example', ...fs.readdirSync(path.join(__dirname, 'env')).filter((f) => f.endsWith('.env.example')).map((f) => `env/${f}`)];
+    for (const rel of templates) {
+        assert.ok(!/^#?\s*TURNSTILE_/m.test(fs.readFileSync(path.join(__dirname, rel), 'utf8')), `${rel} still lists TURNSTILE_*`);
+    }
 });
 
 test('no service sets an env var that no code reads', () => {
@@ -237,7 +247,7 @@ test('the exam service is gone from the stack: no service, no migrate, no broker
     assert.ok(!/^(EXAM_|RABBITMQ_EXAM_)/m.test(example), 'deploy/.env.example still lists exam variables');
 });
 
-test('content runs api+worker: it relays the outbox (content.*), settles generation jobs, serves ContentService on gRPC, egress for Turnstile', () => {
+test('content runs api+worker: it relays the outbox (content.*), settles generation jobs, serves ContentService on gRPC, no egress', () => {
     const svc = services.content;
     assert.strictEqual(svc.build.args.SERVICE, 'content-service');
     assert.strictEqual(envValue('content', 'ROLE'), 'api,worker');
@@ -252,7 +262,7 @@ test('content runs api+worker: it relays the outbox (content.*), settles generat
     assert.strictEqual(envValue('content', 'AI_GRPC_URL'), 'ai:50051');
     assert.ok(envValue('content', 'R2_PUBLIC_URL') !== undefined);
     assert.ok(envValue('content', 'SERVICE_CLIENT_SECRET').includes('${CONTENT_SERVICE_CLIENT_SECRET:?'));
-    assert.deepStrictEqual(networksOf('content'), ['internal', 'egress']);
+    assert.deepStrictEqual(networksOf('content'), ['internal']);
     for (const dep of ['content-migrate', 'postgres', 'redis', 'rabbitmq', 'r2']) {
         assert.ok(svc.depends_on[dep], `content waits for ${dep}`);
     }
@@ -261,7 +271,7 @@ test('content runs api+worker: it relays the outbox (content.*), settles generat
     }
 });
 
-test('assessment runs api+worker with no gRPC server; it reaches content, document and auth lazily; egress for Turnstile', () => {
+test('assessment runs api+worker with no gRPC server; it reaches content, document and auth lazily; no egress', () => {
     const svc = services.assessment;
     assert.strictEqual(svc.build.args.SERVICE, 'assessment-service');
     assert.strictEqual(envValue('assessment', 'ROLE'), 'api,worker');
@@ -272,7 +282,7 @@ test('assessment runs api+worker with no gRPC server; it reaches content, docume
     assert.ok(envValue('assessment', 'RABBITMQ_URL').startsWith('amqp://assessment:${RABBITMQ_ASSESSMENT_PASS:?'));
     assert.ok(envList('rabbitmq-defs').some((e) => e.startsWith('RABBITMQ_ASSESSMENT_PASS=')), 'the broker definitions need the assessment password');
     assert.ok(envValue('assessment', 'SERVICE_CLIENT_SECRET').includes('${ASSESSMENT_SERVICE_CLIENT_SECRET:?'));
-    assert.deepStrictEqual(networksOf('assessment'), ['internal', 'egress']);
+    assert.deepStrictEqual(networksOf('assessment'), ['internal']);
     assert.strictEqual(svc.depends_on.content, undefined, 'an exam in progress needs no content: assessment boots without it');
     assert.strictEqual(svc.depends_on.document, undefined);
     assert.strictEqual(svc.depends_on['content-migrate'], undefined, 'assessment never reads content tables');

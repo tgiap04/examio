@@ -26,7 +26,6 @@ export class FlashcardSetUpdateSharingSettingsDto extends createZodDto(
 // DTO for verifying access code
 export const FlashcardSetVerifyAccessCodeSchema = z.object({
     accessCode: z.string().regex(/^\d{6}$/),
-    turnstileToken: z.string().optional(),
 });
 
 export class FlashcardSetVerifyAccessCodeDto extends createZodDto(FlashcardSetVerifyAccessCodeSchema) {
@@ -35,12 +34,6 @@ export class FlashcardSetVerifyAccessCodeDto extends createZodDto(FlashcardSetVe
         example: '123456',
     })
     accessCode: string;
-
-    @ApiProperty({
-        description: 'Cloudflare Turnstile token for bot protection',
-        required: false,
-    })
-    turnstileToken?: string;
 }
 
 // Response DTOs

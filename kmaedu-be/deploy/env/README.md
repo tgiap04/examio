@@ -14,9 +14,8 @@ for f in env/*.env.example; do cp -n "$f" "${f%.example}"; done   # then fill th
 | `auth.env` | auth, `seed` one-shot | `ADMIN_*`, `REFRESH_TOKEN_ENC_KEY`, `EMAIL_*`, `GOOGLE_*` |
 | `r2.env` | r2 | `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_NAME`, `R2_ENDPOINT` |
 | `ai.env` | ai, ai-worker | `GEMINI_*`, `AI2_API_KEY` |
-| `assessment.env` | assessment | `QUIZ_*`, `TURNSTILE_SECRET_KEY` |
-| `content.env` | content | `TURNSTILE_SECRET_KEY` |
-| `admin` / `aichat` / `document` / `gateway` / `studyroom` / `vocabulary` | the matching service | optional tunables only |
+| `assessment.env` | assessment | `QUIZ_*` |
+| `admin` / `aichat` / `content` / `document` / `gateway` / `studyroom` / `vocabulary` | the matching service | optional tunables only |
 
 What does NOT go here: anything compose interpolates. Ports, `DATABASE_URL`, `REDIS_*`,
 `RABBITMQ_URL`, `*_GRPC_URL`, `JWT_*`, `SERVICE_CLIENT_SECRET` and `FRONTEND_URL` are set inline in

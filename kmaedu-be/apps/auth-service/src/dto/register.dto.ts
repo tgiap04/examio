@@ -16,7 +16,6 @@ export const RegisterSchema = z
             .string()
             .min(8, { message: 'Password must be at least 8 characters long' })
             .max(100, { message: 'Password must not exceed 100 characters' }),
-        turnstileToken: z.string().optional(),
         utmSource: z
             .string()
             .trim()
@@ -45,12 +44,6 @@ export class RegisterDto extends createZodDto(RegisterSchema) {
         example: 'password123',
     })
     password: string;
-
-    @ApiProperty({
-        description: 'Cloudflare Turnstile token for bot protection',
-        required: false,
-    })
-    turnstileToken?: string;
 
     @ApiProperty({
         description: 'utm_source first-touch để quy kết nguồn đăng ký',
