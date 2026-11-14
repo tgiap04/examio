@@ -11,6 +11,7 @@
 #   Alembic op.drop_* (except drop_index / drop_constraint), op.rename_*,
 #           op.alter_column(.. type_= | nullable=False | new_column_name=),
 #           op.add_column(.. nullable=False) without server_default, plus the SQL rules on any raw SQL
+#           (the body of a top-level `def downgrade()` is skipped: it only runs on a rollback)
 # DROP INDEX|DEFAULT|NOT NULL|CONSTRAINT are expand-safe and pass.
 #
 # Env
@@ -60,6 +61,11 @@ const blank = (m) => m.replace(/[^\n]/g, ' ');
 const stripSql = (t) =>
     t.replace(/\/\*[\s\S]*?\*\//g, blank).replace(/--[^\n]*/g, blank).replace(/'(?:[^']|'')*'/g, blank);
 const stripPy = (t) => t.replace(/#[^\n]*/g, blank);
+// A top-level `def downgrade()` only runs on a manual rollback, never during a rolling
+// deploy, so dropping what upgrade() created there is expected: blank its body (to the next
+// top-level line) so only upgrade() and module-level code are checked.
+const stripDowngrade = (t) =>
+    t.replace(/^def downgrade\b[\s\S]*?(?=^\S|(?![\s\S]))/m, blank);
 
 const lineOf = (text, index) => text.slice(0, index).split('\n').length;
 
@@ -135,7 +141,7 @@ for (const f of files) {
     }
     const found = [];
     if (isSql(f)) lintSql(stripSql(raw), found);
-    else lintAlembic(stripPy(raw), found);
+    else lintAlembic(stripDowngrade(stripPy(raw)), found);
     const seen = new Set();
     for (const [line, label] of found.sort((a, b) => a[0] - b[0])) {
         const key = `${line}:${label}`;

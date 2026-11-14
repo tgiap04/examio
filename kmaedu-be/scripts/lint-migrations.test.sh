@@ -46,6 +46,9 @@ check "alembic alter_column nullable=False fails" 1 "$py/0005_nullable_false.py"
 check "alembic op.rename_table fails" 1 "$py/0006_rename.py"
 check "alembic add_column nullable=False without server_default fails" 1 "$py/0007_add_not_null.py"
 check "alembic raw SQL drop table (lowercase) fails" 1 "$py/0008_drop_table_raw_sql.py"
+check "alembic drops inside downgrade() (rollback only) pass" 0 "$py/0009_downgrade_drops_new_table.py"
+check "alembic drop in upgrade() still fails when a downgrade() follows" 1 "$py/0010_upgrade_drop_with_downgrade.py"
+check "alembic drop in upgrade() fails when downgrade() comes first" 1 "$py/0011_downgrade_before_upgrade.py"
 check "files that are not migrations are ignored" 0 $'apps/auth-service/src/a.ts\ndocs/x.md'
 check "no changed files passes" 0 ''
 check "a missing file is an error, not a pass" 2 "$sql/20990101000000_missing/migration.sql"
