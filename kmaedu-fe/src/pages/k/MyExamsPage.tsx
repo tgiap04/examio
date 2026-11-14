@@ -211,8 +211,8 @@ export default function MyExamsPage() {
 
   if (loading) {
     return (
-      <div className="relative min-h-screen bg-background text-foreground">
-        <section className="relative mx-auto max-w-7xl px-4 py-6 md:py-8">
+      <div className="relative text-foreground">
+        <section className="relative">
           <div className="space-y-2">
             <Skeleton className="h-9 w-56" />
             <Skeleton className="h-4 w-80" />
@@ -228,8 +228,8 @@ export default function MyExamsPage() {
   }
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground">
-      <section className="relative mx-auto max-w-7xl px-4 py-6 md:py-8 mt-4">
+    <div className="relative text-foreground">
+      <section className="relative">
         <header className="mb-8">
           <h1 className="text-3xl tracking-tight text-ink lg:text-4xl">Bài thi của tôi</h1>
           <p className="mt-2 font-body text-base text-muted-foreground">

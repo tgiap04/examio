@@ -151,7 +151,7 @@ export default function ProfilePage() {
   const completeness = getCompleteness();
 
   return (
-    <div className="space-y-6 p-4 pb-20 sm:p-6 xl:p-8 max-w-7xl mx-auto mt-4">
+    <div className="space-y-6">
       {/* Page Header */}
       <div className="pb-2">
         <h1

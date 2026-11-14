@@ -39,8 +39,8 @@ export function HistoryTemplate({
   showStats = true,
 }: HistoryTemplateProps) {
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div>
+      <div>
         <div className="mb-8 mt-4">
           <h1 className="font-display text-2xl tracking-tight text-ink">Quản lý lịch sử</h1>
           <p className="text-xs text-muted-foreground md:text-sm">

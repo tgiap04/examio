@@ -201,8 +201,8 @@ export default function ManageFlashcardSetDetailPage() {
 
   if (loading || !currentFlashcardSet) {
     return (
-      <div className="min-h-screen">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div>
+        <div>
           <Skeleton className="mb-6 h-10 w-full" />
           <div className="mb-8 grid gap-6 md:grid-cols-3">
             <Skeleton className="h-32" />
@@ -216,8 +216,8 @@ export default function ManageFlashcardSetDetailPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+    <div>
+      <div className="space-y-8">
         <div className="mb-8">
           <div className="mb-4 flex items-center gap-4">
             <div className="flex-1">

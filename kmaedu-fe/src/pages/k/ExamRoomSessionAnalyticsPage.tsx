@@ -170,7 +170,7 @@ export default function ExamRoomSessionAnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="space-y-6">
         <Skeleton className="h-8 w-64" />
         <div className="grid grid-cols-4 gap-4">{[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-24" />)}</div>
         <Skeleton className="h-96" />
@@ -179,7 +179,7 @@ export default function ExamRoomSessionAnalyticsPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="space-y-6">
       <Breadcrumb>
         <BreadcrumbList>
           <BreadcrumbItem><BreadcrumbLink asChild><Link to="/k/manage-exam-room">Quản lý Phòng thi</Link></BreadcrumbLink></BreadcrumbItem>

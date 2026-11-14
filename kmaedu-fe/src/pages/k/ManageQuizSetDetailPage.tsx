@@ -174,8 +174,8 @@ export default function ManageQuizSetDetailPage() {
 
   if (loading || !currentQuizSet) {
     return (
-      <div className="min-h-screen">
-        <div className="mx-auto max-w-7xl px-2 py-6 sm:px-6 lg:px-8">
+      <div>
+        <div>
           <Skeleton className="mb-6 h-10 w-full" />
           <div className="mb-8 grid gap-6 md:grid-cols-3">
             <Skeleton className="h-32" />
@@ -189,8 +189,8 @@ export default function ManageQuizSetDetailPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-2 py-6 sm:px-6 lg:px-8">
+    <div>
+      <div>
         <div className="mb-8">
           <div className="mb-4 flex items-center justify-between gap-4">
             <div className="flex-1">

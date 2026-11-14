@@ -116,7 +116,7 @@ export default function StudyRoomPage() {
 
       {/* Bố cục xem chung: video là trung tâm (cột trái lớn), cột phải gọn cho
           hẹn giờ + trò chuyện/thành viên/xếp hạng để người dùng tập trung. */}
-      <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-4 overflow-y-auto p-4 lg:flex-row lg:overflow-hidden">
+      <main className="flex w-full flex-1 flex-col gap-4 overflow-y-auto p-4 lg:flex-row lg:overflow-hidden">
         <section className="flex min-w-0 flex-1 flex-col gap-4 lg:overflow-y-auto lg:pr-1">
           <YouTubeSyncPlayer actions={actions} myRole={myRole} />
           <PlaylistPanel actions={actions} myRole={myRole} />

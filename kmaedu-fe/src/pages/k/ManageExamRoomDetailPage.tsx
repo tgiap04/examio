@@ -223,7 +223,7 @@ export default function ManageExamRoomDetailPage() {
 
   if (loading) {
     return (
-      <div className="container mx-auto p-6 space-y-6">
+      <div className="space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-4 w-96" />
         <Skeleton className="h-[400px] w-full" />
@@ -233,7 +233,7 @@ export default function ManageExamRoomDetailPage() {
 
   if (!currentExamRoom) {
     return (
-      <div className="container mx-auto p-6">
+      <div>
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <p className="text-muted-foreground">Không tìm thấy phòng thi</p>
@@ -248,8 +248,8 @@ export default function ManageExamRoomDetailPage() {
   }
 
   return (
-    <div className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div>
+      <div>
         <div className="mb-8 mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div>
               <Breadcrumb className="mb-3">

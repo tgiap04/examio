@@ -36,7 +36,7 @@ export default function QuizPracticePage() {
   const current = s.questions[s.progress.currentIndex];
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-6 md:py-8">
+    <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-2xl tracking-tight text-ink md:text-3xl">{title}</h1>
         <Button variant="outline" size="sm" asChild>

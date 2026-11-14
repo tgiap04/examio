@@ -84,8 +84,8 @@ export default function WordFamilyCategoryPage() {
     !loadingRootWords && !generating && rootWords.length === 0;
 
   return (
-    <div className="relative min-h-screen bg-canvas text-ink">
-      <section className="relative mx-auto max-w-7xl space-y-8 px-4 py-6 md:py-10">
+    <div className="relative text-ink">
+      <section className="relative space-y-8">
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>

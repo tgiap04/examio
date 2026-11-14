@@ -12,8 +12,8 @@ export default function WordFamilyPage() {
   }, [fetchCategories]);
 
   return (
-    <div className="relative min-h-screen bg-background text-foreground p-3">
-      <section className="relative mx-auto max-w-7xl space-y-6 px-4 py-6 md:py-8">
+    <div className="relative text-foreground">
+      <section className="relative space-y-6">
         <div>
           <h1 className="font-display text-3xl font-normal tracking-tight text-ink">
             Từ vựng tiếng Anh

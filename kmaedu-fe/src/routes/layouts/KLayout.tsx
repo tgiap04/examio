@@ -13,6 +13,9 @@ import { useIsDesktop, useIsMobile } from "@/hooks/useMediaQuery";
 import { usePageConfigSse } from "@/hooks/usePageConfigSse";
 import Logo from "@/components/atoms/Logo";
 
+/** Spacing around every /k page; horizontal gutter matches the fixed header so content lines up under it. */
+const kPageGutterClass = "px-4 py-6 md:py-8 xl:px-6 2xl:px-8";
+
 export function KLayout({ children }: PropsWithChildren) {
   const location = useLocation();
   const navigate = useNavigate();
@@ -133,7 +136,7 @@ export function KLayout({ children }: PropsWithChildren) {
       <SidebarKit collapsed={sidebarCollapsed} />
 
       <main
-        className="m-0 overflow-x-clip pb-5 pt-[52px] xl:pb-0"
+        className="m-0 overflow-x-clip pt-[76px]"
         style={{
           marginLeft: isDesktop ? sidebarWidth : 0,
           // Width must exclude the sidebar gutter — using w-full (100%) together
@@ -221,9 +224,10 @@ export function KLayout({ children }: PropsWithChildren) {
           </div>
         </header>
 
-        {children}
+        {/* The only place that sets /k page spacing: pages render edge to edge inside this gutter (same as the header). */}
+        <div className={kPageGutterClass}>{children}</div>
 
-        <footer className="mx-4 mt-12 border-t border-hairline pb-6 pt-4 text-center text-xs text-muted-foreground xl:mx-6 2xl:mx-8">
+        <footer className="mx-4 border-t border-hairline pb-6 pt-4 text-center text-xs text-muted-foreground xl:mx-6 2xl:mx-8">
           <p>
             © {new Date().getFullYear()} KMAEdu. All rights reserved. Made with love in Vietnam.
           </p>
