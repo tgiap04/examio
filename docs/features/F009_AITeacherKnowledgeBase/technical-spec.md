@@ -15,7 +15,7 @@ This feature no longer exists. The GenAI Knowledge page (`/k/genai-knowledge`) w
 |---|---|
 | Upload a file, OCR, chunk, embed | document-service (`POST /api/v1/ai/upload`, `quick-upload`) publishes `document.uploaded`; ai-service processes it. See [FLOW005](../../flows/FLOW005_user-storage.md) and [F010_AITool](../F010_AITool/technical-spec.md) |
 | Delete a file and its vectors | `DELETE /api/v1/ai/upload/:id` or gRPC `DeleteDocuments`; `document.deleted` cleans ai-service, content and ai-chat |
-| Ground an AI chat in the user's documents | ai-chat-service attaches documents (`AIChatDocument`) and reads them over document gRPC; ai-service retrieves from the `Document` / `DocumentEntity` / `UserStorageGraph` tables in schema `ai` |
+| Ground an AI chat in the user's documents | ai-chat-service attaches documents (`AIChatDocument`) and reads them over document gRPC; ai-service retrieves through the per-document GraphRAG index (`Document` chunks plus `GraphEntity` / `GraphRelationship` / `GraphCommunity` in schema `ai`), with plain vector search until the index is READY |
 | Folders, dataset imports, knowledge statistics | none (dropped) |
 
 ## Retired codes

@@ -274,7 +274,7 @@ Chi tiết token, cookie và thu hồi ở mục 5.
 | `document-service` | File người dùng tải lên (metadata), số lượt upload (chỉ thống kê, không giới hạn), trạng thái xử lý | `UserStorage` | r2 | Pub: `document.uploaded`, `document.deleted`. Sub: `ai.document.processed`, `ai.document.failed` |
 | `r2-service` | Hạ tầng blob: presigned URL, xoá object, ảnh public/private | — (bucket R2) | — | — |
 | `admin-service` | Dashboard admin, audit, page feature flags, KPI | `AdminAudit`, `PageFeatureFlag` | auth, vocabulary, gateway (RPC, token admin được chuyển tiếp) | — (KPI lấy qua RPC tổng hợp `GetUserStats`, cache Redis 5 phút; KPI tổng quan là `totalUsers`/`activeToday`/`active30d`; không có read model) |
-| `ai-service` (Python) | RAG, OCR/parse tài liệu, embedding, knowledge graph, sinh nội dung, LLM streaming | `Document` (chunk + `vector`), `DocumentEntity`, `UserStorageGraph`, `UserStorageGraphGroup` | — | Sub: `document.uploaded`, `document.deleted`, `content.generation.requested`. Pub: `ai.document.processed/failed`, `ai.generation.completed/failed` |
+| `ai-service` (Python) | RAG, OCR/parse tài liệu, embedding, knowledge graph, sinh nội dung, LLM streaming | `Document` (chunk + `vector`), `GraphIndex`, `GraphEntity`, `GraphRelationship`, `GraphTextUnitEntity`, `GraphCommunity` | — | Sub: `document.uploaded`, `document.deleted`, `content.generation.requested`. Pub: `ai.document.processed/failed`, `ai.generation.completed/failed` |
 
 **Đã bỏ:**
 - `ocr-service` (NestJS). OCR nằm trong ai-service.
@@ -1078,7 +1078,7 @@ Thứ tự thực tế: **P6 (document + ai-service DB, phase 15) đi trước v
 |---|---|---|
 | `User`, `UserSession`, `VerifyAccountCode`, `ResetPasswordCode` | auth | — |
 | `UserStorage` | document | `userId` |
-| `Document` (vector), `DocumentEntity`, `UserStorageGraph`, `UserStorageGraphGroup` | ai-service | `storageId`, `userId` |
+| `Document` (vector), `GraphIndex`, `GraphEntity`, `GraphRelationship`, `GraphTextUnitEntity`, `GraphCommunity` | ai-service | `storageId`, `userId` |
 | `QuizSet`, `QuizSetLabel`, `QuizQuestion`, `DetailsQuizQuestion`, `FlashCardSet`, `FlashCardSetLabel`, `FlashCard`, `DetailsFlashCard`, `HistoryGeneratedQuizz`, `HistoryGeneratedFlashcard`, `QuizPracticeAttempt`, `FlashCardViewHistory`, `UserPinnedFlashcard`, `FlashcardStudyProgress` | content | `userId`, `storageId` |
 | `ExamRoom`, `ExamSession`, `ExamAttempt`, `CheatingLog`, `UserPinnedExamRoom` | assessment | `userId`/`hostId`, `quizSetId` (+ snapshot) |
 | `StudyRoom`, `StudyRoomMember`, `StudyRoomPlaylistItem`, `StudyRoomChatBlock` | study-room | `hostId`, `userId` |
@@ -1120,6 +1120,6 @@ Thứ tự thực tế: **P6 (document + ai-service DB, phase 15) đi trước v
 | gRPC đúng mẫu (giữ) | `kmaedu-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` |
 | Event | `kmaedu-be/libs/common/src/events/`, `apps/finance-service/src/events/user-event.handler.ts` |
 | Admin ghi chéo | `kmaedu-be/apps/admin-service/src/modules/admin-finance/admin-finance.service.ts`, `admin-stats/admin-stats.service.ts` |
-| ai-service ghi DB chung | `kmaedu-be/apps/ai-service/src/backend/services/{ocr_service,generation_service,graph_storage_service,benchmark_index_service}.py`, `src/rag/vector_store_pg.py` |
+| ai-service ghi DB chung | `kmaedu-be/apps/ai-service/src/backend/services/{ocr_service,generation_service,benchmark_index_service}.py`, `src/rag/vector_store_pg.py` |
 | Deploy | `kmaedu-be/deploy/{Dockerfile,docker-compose.yml,entrypoint-migration.sh}`, `.github/workflows/deploy.yml` |
 | Kiến trúc hiện tại (docs) | `docs/system/architecture.md` |

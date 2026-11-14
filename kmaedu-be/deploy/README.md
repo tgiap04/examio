@@ -158,10 +158,10 @@ are optional lines in `.env` that compose passes to `ai` (defaults in `compose/a
 ```bash
 # AI2 is used only for quiz/flashcard/content generation.
 AI2_BASE_URL=https://ai.fayedark.com/v1
-AI2_GENERATION_MODEL_NAMES=oc/deepseek-v4.1-flash-free,oc/nemotron-3.5-lightning-free
-AI2_DEFAULT_MODEL=oc/deepseek-v4.1-flash-free
+AI2_GENERATION_MODEL_NAMES=Faye-AI
+AI2_DEFAULT_MODEL=Faye-AI
 AI2_TIMEOUT_SECONDS=3600
-AI2_MAX_TOKENS=4096
+AI2_MAX_TOKENS=8192   # Faye-AI spends most completion tokens on reasoning before the answer
 DEFAULT_MAX_TOKENS=4096
 DEFAULT_MAX_TOKENS_CAP=4096
 CHAT_HISTORY_MAX_MESSAGES=4
@@ -169,7 +169,24 @@ CHAT_HISTORY_MAX_CHARS=1200
 
 # Gemini is used for OCR/RAG embeddings.
 GEMINI_EMBEDDING_MODEL=models/gemini-embedding-001
+
+# GraphRAG: entity/relationship extraction and community reports per document (ai and ai-worker).
+# An empty GRAPHRAG_LLM_MODEL falls back to the AI2 default model.
+GRAPHRAG_LLM_MODEL=Faye-AI
+GRAPHRAG_CONCURRENCY=5
+GRAPHRAG_MAX_TOKENS=8192
+GRAPHRAG_MERGE_THRESHOLD=0.92
+GRAPHRAG_BUILD_TIMEOUT_MINUTES=40   # one index build; the claim lease is this + 5 minutes
 ```
+
+After the first deploy that carries GraphRAG (schema migration `0002_graphrag`), index the documents that were already processed. Run it once, from the `ai-worker` container, after `ai-migrate` has finished:
+
+```bash
+docker compose exec ai-worker python -m src.graphrag.backfill --dry-run   # count only, no LLM calls
+docker compose exec ai-worker python -m src.graphrag.backfill             # enqueue GraphIndex jobs; the worker drains them
+```
+
+`--dim N` overrides the embedding size to compare against (default: probe the embedding model once). Documents whose stored vectors have another size are skipped and logged; upload them again. Until a document is indexed, chat and generation fall back to plain vector search for it. Alembic `0003_drop_legacy_graph` drops the old `DocumentEntity`, `UserStorageGraph` and `UserStorageGraphGroup` tables (contract migration, label `migration:contract`).
 
 #### R2 Storage (Cloudflare)
 ```bash
@@ -316,7 +333,9 @@ compatible (expand), and the destructive half goes in a later PR (contract).
 `DROP TABLE|COLUMN|TYPE|SCHEMA`, `RENAME`, `ALTER COLUMN .. [SET DATA] TYPE`, `ALTER TYPE`, `SET NOT NULL`,
 `ADD COLUMN .. NOT NULL` without `DEFAULT`, and in Alembic `op.drop_*` (not `drop_index` / `drop_constraint`),
 `op.rename_*`, `op.alter_column(.. type_= | nullable=False)` and `op.add_column(.. nullable=False)` without
-`server_default`. `DROP INDEX|DEFAULT|NOT NULL|CONSTRAINT` pass. CI sets `MIGRATION_CONTRACT=1` from the
+`server_default`. `DROP INDEX|DEFAULT|NOT NULL|CONSTRAINT` pass. The body of a top-level Alembic
+`def downgrade()` is not checked: it runs only on a manual rollback, so dropping the tables its `upgrade()`
+created there is expected. CI sets `MIGRATION_CONTRACT=1` from the
 `migration:contract` label, which skips the check. Tests: `bash scripts/lint-migrations.test.sh`.
 
 A contract migration cannot be rolled back by redeploying the previous image (it no longer matches the

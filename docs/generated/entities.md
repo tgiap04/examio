@@ -16,7 +16,7 @@
 > | study-room (`studyroom`, phase 12) | StudyRoom, StudyRoomMember, StudyRoomPlaylistItem, StudyRoomChatBlock, ProcessedEvent (no outbox) |
 > | vocabulary (`vocabulary`, phase 12) | WordFamilyCategory, WordFamily, UserSavedWordFamily, R2DeleteTask (`r2_delete_tasks`); no OutboxEvent/ProcessedEvent (no RabbitMQ) |
 > | document (`document`, phase 15) | UserStorage, OutboxEvent, ProcessedEvent, R2DeleteTask (`r2_delete_tasks`) |
-> | ai-service (`ai`, phase 15; Alembic) | Document, DocumentEntity, UserStorageGraph, UserStorageGraphGroup, `outbox_events`, `processed_events` |
+> | ai-service (`ai`, phase 15; Alembic) | Document, GraphIndex, GraphEntity, GraphRelationship, GraphTextUnitEntity, GraphCommunity, `outbox_events`, `processed_events` (the legacy DocumentEntity / UserStorageGraph / UserStorageGraphGroup were dropped by Alembic `0003`) |
 >
 > The exam schema no longer exists (exam-service was split into content, assessment, ai-chat, study-room, vocabulary and document). The tables below carry 36 detailed entities; PageFeatureFlag, the four StudyRoom* models and the three word-family models are not detailed here (see their feature specs and schema files).
 >
