@@ -28,14 +28,20 @@ x-ai-database: &ai-database
 x-ai-models: &ai-models
     PYTHONUNBUFFERED: '1'
     AI2_BASE_URL: '${AI2_BASE_URL:-https://ai.fayedark.com/v1}'
-    AI2_GENERATION_MODEL_NAMES: '${AI2_GENERATION_MODEL_NAMES:-oc/deepseek-v4.1-flash-free,oc/nemotron-3.5-lightning-free}'
-    AI2_DEFAULT_MODEL: '${AI2_DEFAULT_MODEL:-oc/deepseek-v4.1-flash-free}'
+    AI2_GENERATION_MODEL_NAMES: '${AI2_GENERATION_MODEL_NAMES:-Faye-AI}'
+    AI2_DEFAULT_MODEL: '${AI2_DEFAULT_MODEL:-Faye-AI}'
     AI2_TIMEOUT_SECONDS: '${AI2_TIMEOUT_SECONDS:-3600}'
-    AI2_MAX_TOKENS: '${AI2_MAX_TOKENS:-4096}'
+    AI2_MAX_TOKENS: '${AI2_MAX_TOKENS:-8192}'  # Faye-AI reasons first: leave room for it
     DEFAULT_MAX_TOKENS_CAP: '${DEFAULT_MAX_TOKENS_CAP:-4096}'
     CHAT_HISTORY_MAX_MESSAGES: '${CHAT_HISTORY_MAX_MESSAGES:-4}'
     CHAT_HISTORY_MAX_CHARS: '${CHAT_HISTORY_MAX_CHARS:-1200}'
     GEMINI_EMBEDDING_MODEL: '${GEMINI_EMBEDDING_MODEL:-models/gemini-embedding-001}'
+    # GraphRAG indexing/query (an empty GRAPHRAG_LLM_MODEL falls back to the AI2 default model).
+    GRAPHRAG_LLM_MODEL: '${GRAPHRAG_LLM_MODEL:-Faye-AI}'
+    GRAPHRAG_CONCURRENCY: '${GRAPHRAG_CONCURRENCY:-5}'
+    GRAPHRAG_MAX_TOKENS: '${GRAPHRAG_MAX_TOKENS:-8192}'
+    GRAPHRAG_MERGE_THRESHOLD: '${GRAPHRAG_MERGE_THRESHOLD:-0.92}'
+    GRAPHRAG_BUILD_TIMEOUT_MINUTES: '${GRAPHRAG_BUILD_TIMEOUT_MINUTES:-40}'  # lease = this + 5 min
     OCR_SERVICE_URL: ''  # Using internal Tesseract/PyPDF logic
 
 services:

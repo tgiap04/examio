@@ -14,8 +14,8 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from typing import Any
 
-from src.backend.services.hybrid_retrieval_service import hybrid_retrieval_service
 from src.backend.services.sync_stream import aiter_blocking
+from src.graphrag import graphrag_retrieval
 from src.llm.model_manager import model_manager
 from src.rag.retriever import create_in_memory_retriever
 from src.rag.simple_chat_agent import SimpleChatAgent
@@ -79,7 +79,7 @@ async def answer_query(params: ChatParams) -> tuple[str, list[dict[str, Any]]]:
     sources: list[dict[str, Any]] = []
     pre_context = None
     if params.user_storage_id:
-        result = await hybrid_retrieval_service.retrieve_for_chat(
+        result = await graphrag_retrieval.retrieve_for_chat(
             user_storage_id=params.user_storage_id,
             query=params.query,
             model_type=model_id,
@@ -115,7 +115,7 @@ async def stream_chat(params: ChatParams) -> AsyncIterator[dict[str, Any]]:
     try:
         pre_context = None
         if params.user_storage_id:
-            result = await hybrid_retrieval_service.retrieve_for_chat(
+            result = await graphrag_retrieval.retrieve_for_chat(
                 user_storage_id=params.user_storage_id,
                 query=params.query,
                 model_type=model_id,

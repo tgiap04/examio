@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "documents": [
+    {
+      "storageId": "REPLACE_ME",
+      "title": "PLACEHOLDER - thay bằng tên tài liệu thật",
+      "questions": [
+        {"question": "PLACEHOLDER (local): câu hỏi hỏi một chi tiết nằm trong một đoạn duy nhất", "type": "local", "keyPoints": ["PLACEHOLDER ý chính 1"]},
+        {"question": "PLACEHOLDER (multi_hop): câu hỏi cần nối thông tin từ hai phần khác nhau", "type": "multi_hop", "keyPoints": ["PLACEHOLDER ý chính 1", "PLACEHOLDER ý chính 2"]},
+        {"question": "PLACEHOLDER (global): câu hỏi tổng quan về toàn bộ tài liệu", "type": "global", "keyPoints": ["PLACEHOLDER ý chính 1", "PLACEHOLDER ý chính 2", "PLACEHOLDER ý chính 3"]}
+      ]
+    }
+  ]
+}

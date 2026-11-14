@@ -35,7 +35,8 @@ for _helpers in ("auth", "messaging"):
     sys.path.insert(0, str(Path(__file__).resolve().parent / _helpers))
 SEARCH_PATH = {"search_path": "ai,extensions"}
 TABLES = (
-    '"Document", "DocumentEntity", "UserStorageGraph", "UserStorageGraphGroup",'
+    '"Document",'
+    ' "GraphIndex", "GraphEntity", "GraphRelationship", "GraphTextUnitEntity", "GraphCommunity",'
     " outbox_events, processed_events"
 )
 

@@ -80,7 +80,7 @@ python src/rag/indexing.py
 The service has no public HTTP API. Callers are other services:
 
 1. **gRPC** `kmaedu.ai.v1.AiService` (`StreamChat`, `Query`, `GenerateWordFamily`, `ListModels`) on `GRPC_PORT` (50051), accepted only with a service token (RS256, `aud=ai`, allowed callers `svc:ai-chat`, `svc:vocabulary`, `svc:content`).
-2. **RabbitMQ events** on queue `ai.events`: `document.uploaded` (OCR, chunking, embedding, graph), `document.deleted` (drop vectors/entities/graph), `content.generation.requested` (quiz/flashcard generation). Answers: `ai.document.processed|failed`, `ai.generation.completed|failed`.
+2. **RabbitMQ events** on queue `ai.events`: `document.uploaded` (OCR, chunking, embedding, then a GraphRAG index job), `document.deleted` (drop vectors and the document's graph), `content.generation.requested` (quiz/flashcard generation). Answers: `ai.document.processed|failed`, `ai.generation.completed|failed`.
 3. **HTTP**: only `/` and `/health` (liveness). The former compat routes and their shared HTTP secret are gone.
 
 ```
@@ -146,49 +146,43 @@ ROLE=api,worker ./venv/bin/python -m src.main
 
 The service owns schema `ai` (Alembic, `alembic/versions`); it never reads or writes another service's tables. Processing status flows back through events (`ai.document.processed|failed`, `ai.generation.completed|failed`).
 
-## Benchmark Hybrid GraphRAG
+## GraphRAG
 
-Bạn có thể benchmark nhanh sự khác nhau giữa `vector` và `hybrid` retrieval trên một tài liệu đã OCR bằng script sau:
+Each document gets its own knowledge graph, built in the `ai-worker` (`ROLE=worker`) after OCR and embedding:
 
-```bash
-cd kmaedu-be/apps/ai-service
-./venv/bin/python src/backend/scripts/benchmark_hybrid_retrieval.py \
-  --user-storage-id <userStorageId> \
-  --query "Tóm tắt nội dung chính" \
-  --query "Các khái niệm quan trọng là gì?" \
-  --model-type gemini \
-  --top-k 8 \
-  --output benchmark-result.json
-```
+1. `document.uploaded` is processed (OCR, chunks, vectors) and a `GraphIndex` row is queued (`PENDING`).
+2. The index worker (`src/graphrag/index_worker.py`) claims a row with a lease (`LOCKED`), retries up to 3 times, and a stale lease is taken over by the next poll.
+3. Per chunk it extracts entities and relationships with the LLM, merges near-duplicates (`GRAPHRAG_MERGE_THRESHOLD`), runs Louvain (two levels) and writes one report per community.
+4. Results live in `GraphIndex`, `GraphEntity`, `GraphRelationship`, `GraphTextUnitEntity` and `GraphCommunity` (migration `0002_graphrag`).
 
-Script sẽ:
-- chạy cùng một query với `AI_RETRIEVAL_MODE=vector` và `AI_RETRIEVAL_MODE=hybrid`;
-- in ra số chunk được chọn, seed chunks, độ dài context, page range, chunk ids;
-- ghi JSON kết quả nếu truyền `--output`.
+Reads:
+- **Chat** (`src/graphrag/graphrag_retrieval.py`): local search (entities, relations, text units around the query) or global search (map-reduce over community reports); plain vector search when the document has no finished index or its vector size differs.
+- **Quiz / flashcard** (`src/graphrag/generation_runner.py`): the document is split into concept slots by community; each slot is generated from its own evidence and duplicates are removed. Documents without an index use the vector path.
 
-Tiêu chí bạn nên so sánh:
-- `selected_chunks`: hybrid có gom được cụm chunk liên quan hơn không;
-- `pages`: hybrid có phủ được các trang liên quan tốt hơn không;
-- `context_length`: context có đầy đủ hơn nhưng vẫn không quá dài không;
-- `elapsed_ms`: độ trễ có tăng trong mức chấp nhận được không.
+Tunables (all optional; empty `GRAPHRAG_LLM_MODEL` = the AI2 default model): `GRAPHRAG_LLM_MODEL` (compose default `Faye-AI`), `GRAPHRAG_CONCURRENCY=5`, `GRAPHRAG_MAX_TOKENS=8192` (Faye-AI reasons before answering), `GRAPHRAG_MERGE_THRESHOLD=0.92`, `GRAPHRAG_BUILD_TIMEOUT_MINUTES=40` (the claim lease is this + 5 minutes).
 
-Để benchmark retrieval cho flow generate quiz/flashcard, dùng script sau:
+Migration `0003_drop_legacy_graph` drops the legacy tables `DocumentEntity`, `UserStorageGraph` and `UserStorageGraphGroup` (contract migration, label `migration:contract`).
+
+### Backfill
+
+Documents processed before GraphRAG have no index. Queue them once after `ROLE=migrate`:
 
 ```bash
 cd kmaedu-be/apps/ai-service
-./venv/bin/python src/backend/scripts/benchmark_generation_modes.py \
-  --user-storage-id <userStorageId> \
-  --generation-type quiz \
-  --requested-items 12 \
-  --keyword "kiến trúc hệ thống" \
-  --model-type gemini \
-  --output benchmark-generation.json
+./venv/bin/python -m src.graphrag.backfill --dry-run   # report only, writes nothing
+./venv/bin/python -m src.graphrag.backfill             # queue GraphIndex rows; the worker builds them
 ```
 
-Script này không gọi LLM generate toàn bộ nội dung, mà tập trung đo:
-- retrieval mode nào chọn được source chunks tốt hơn cho generation;
-- phân phối số item trên các chunk (`distribution`) có hợp lý không;
-- narrow search có được graph mở rộng tốt hơn không.
+`--dim N` sets the embedding size to compare against (default: probe the embedding model once). A document whose stored vectors have another size is skipped and logged; upload it again.
+
+### Retrieval quality evaluation
+
+```bash
+./venv/bin/python -m src.backend.scripts.eval_rag_quality \
+  --storage-ids ID1,ID2 --out eval-graphrag.json --label graphrag
+```
+
+Other flags: `--dataset`, `--resume`, `--quiz-count` (default 20), `--judge-model`. Run it with a different `--label` and `--out` before and after a change, then compare the JSON files. It replaces the two retrieval benchmark scripts that were removed with the legacy hybrid code.
 
 ## Getting Started
 
@@ -209,6 +203,7 @@ GRPC_PORT=50058     # 50051 inside the container
 AUTH_JWKS_URL=...   # service-token verification (aud=ai)
 R2_ALLOWED_HOSTS=   # hosts document.uploaded may download from (fail-closed if empty and no R2_PUBLIC_URL)
 GEMINI_API_KEYS=...
+GRAPHRAG_LLM_MODEL=  # + GRAPHRAG_CONCURRENCY / _MAX_TOKENS / _MERGE_THRESHOLD, see GraphRAG
 ```
 
 ## Project Structure
@@ -225,8 +220,9 @@ ai-service/
 │   │   ├── api/              # HTTP compat routes (chat.py)
 │   │   ├── auth/             # service-token verifier
 │   │   ├── messaging/        # envelope, consumer, outbox relay, purge
-│   │   ├── services/         # OCR, generation, graph storage
+│   │   ├── services/         # OCR, chat, generation
 │   │   └── main.py           # FastAPI app (/health, compat)
+│   ├── graphrag/             # per-document GraphRAG: indexer, worker, chat and generation reads
 │   ├── llm/                  # LLM configuration
 │   └── rag/                  # RAG implementation
 └── requirements.txt          # Project dependencies

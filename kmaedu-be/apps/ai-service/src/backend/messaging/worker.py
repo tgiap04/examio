@@ -1,4 +1,4 @@
-"""``ROLE=worker``: event consumer + outbox relay + daily purge on one broker connection."""
+"""``ROLE=worker``: event consumer + outbox relay + daily purge on one broker connection, plus the GraphRAG index worker."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import logging
 import os
 
 from src import db
+from src.graphrag.index_worker import IndexWorker
 
 from .consumer import EventConsumer, Handler
 from .document_handlers import on_document_deleted, on_document_uploaded
@@ -53,15 +54,21 @@ async def run_worker(stop: asyncio.Event) -> None:
         return
     relay = OutboxRelay(relay_pool, consumer.publisher)
     purge = OutboxPurge(relay_pool)
-    tasks = [asyncio.create_task(relay.run(), name="outbox-relay"), asyncio.create_task(purge.run(), name="outbox-purge")]
+    index_worker = IndexWorker(pool)
+    tasks = [
+        asyncio.create_task(relay.run(), name="outbox-relay"),
+        asyncio.create_task(purge.run(), name="outbox-purge"),
+        asyncio.create_task(index_worker.run(), name="graphrag-index"),
+    ]
 
     def is_healthy() -> bool:
-        """Broker connected and no worker task (relay, purge, heartbeat) has ended."""
+        """Broker connected and no worker task (relay, purge, index, heartbeat) has ended."""
         return consumer.is_connected and not any(task.done() for task in tasks)
 
     tasks.append(asyncio.create_task(run_heartbeat(stop, is_healthy), name="worker-heartbeat"))
     logger.info("ai worker running")
     await stop.wait()
+    index_worker.stop()  # cancels the build in flight and puts its row back to PENDING
     relay.stop()
     purge.stop()
     await consumer.stop()

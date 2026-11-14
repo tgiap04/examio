@@ -16,10 +16,7 @@ from pydantic import BaseModel, Field
 
 from src.backend.utils.prompt_utils import prompt_utils
 from src.backend.services.ocr_service import DocumentChunk
-from src.backend.services.hybrid_retrieval_service import (
-    hybrid_retrieval_service,
-    GenerationGroup,
-)
+from src.graphrag.generation_runner import Outcome, run_generation
 from src.llm.model_manager import ModelUnavailableError, model_manager
 
 logging.basicConfig(level=logging.INFO)
@@ -78,6 +75,7 @@ class QuizItem(BaseModel):
     options: List[str] = Field(description="A list of 4 possible answers")
     answer: str = Field(description="The correct answer matching one of the options exactly")
     sourcePageRange: Optional[str] = Field(default=None, description="The source page range reference")
+    concept: Optional[str] = Field(default=None, description="Internal: the listed concept this question is about (removed before the result is returned)")
 
 class QuizList(BaseModel):
     items: List[QuizItem] = Field(description="List of quiz questions")
@@ -86,6 +84,7 @@ class FlashcardItem(BaseModel):
     question: str = Field(description="The front of the flashcard (concept or question)")
     answer: str = Field(description="The back of the flashcard (definition or answer)")
     sourcePageRange: Optional[str] = Field(default=None, description="The source page range reference")
+    concept: Optional[str] = Field(default=None, description="Internal: the listed concept this card is about (removed before the result is returned)")
 
 class FlashcardList(BaseModel):
     items: List[FlashcardItem] = Field(description="List of flashcards")
@@ -133,25 +132,10 @@ class ContentGenerationService:
     """Service for generating quiz and flashcard content using LLM"""
 
     _instance = None
-    MAX_SOURCE_CHUNKS = 10
     MAX_ITEMS_PER_CALL = 12
     DEFAULT_GENERATION_MAX_CONCURRENCY = 6
     DEFAULT_GENERATION_MAX_CONCURRENCY_CAP = 10
     MAX_META_OUTPUT_RETRIES = 1
-
-    def _describe_group(self, group: GenerationGroup) -> Dict[str, Any]:
-        return {
-            'groupIndex': group.group_index,
-            'communityId': group.community_id,
-            'chunkCount': len(group.chunks),
-            'pageStart': group.page_start,
-            'pageEnd': group.page_end,
-            'pageRanges': group.page_ranges,
-            'estimatedTokens': group.estimated_tokens,
-            'charCount': group.char_count,
-            'weight': group.weight,
-            'contentQualityScore': group.metadata.get('content_quality_score'),
-        }
 
     def _is_meta_document_question(self, text: str) -> bool:
         normalized = text.lower().strip()
@@ -293,6 +277,7 @@ class ContentGenerationService:
                 'question': item.question,
                 'answer': item.answer,
                 'sourcePageRange': item.sourcePageRange or page_range,
+                **({'concept': item.concept} if item.concept else {}),
             }
             for item in flashcard_list.items
         ]
@@ -482,6 +467,46 @@ class ContentGenerationService:
         results.sort(key=lambda item: (item["chunk_index"], item["batch_index"]))
         return results
 
+    def _outcome_payload(
+        self,
+        outcome: Outcome,
+        result_key: str,
+        noun: str,
+        stage: str,
+        storage_id: str,
+        started: float,
+    ) -> Dict[str, Any]:
+        """Turn a generation outcome into the result dict callers already know."""
+        if outcome.no_content:
+            return {"success": False, "error": "No content found in file"}
+        if not outcome.items:
+            model_unavailable_error = next(
+                (
+                    result
+                    for result in outcome.results
+                    if result.get('error_code') in {
+                        'MODEL_UNAVAILABLE',
+                        'MODEL_INSUFFICIENT_VRAM',
+                        'MODEL_RUNTIME_ERROR',
+                    }
+                ),
+                None,
+            )
+            if model_unavailable_error:
+                return {
+                    'success': False,
+                    'error': model_unavailable_error.get('error'),
+                    'error_code': model_unavailable_error.get('error_code'),
+                    'status_code': 503,
+                }
+            return {"success": False, "error": f"Failed to generate any {noun}"}
+
+        total_ms = int((time.perf_counter() - started) * 1000)
+        logger.info(
+            f"[AI_TIMING] stage={stage}_total user_storage_id={storage_id} total_ms={total_ms} generated={len(outcome.items)} actual_batches={len(outcome.results)} retrieval_mode={outcome.retrieval_mode}"
+        )
+        return {"success": True, result_key: outcome.items, "count": len(outcome.items)}
+
     async def generate_quiz(
         self,
         request: GenerateQuizRequest
@@ -497,141 +522,29 @@ class ContentGenerationService:
         try:
             final_model = model_manager.resolve_model(request.model_type)
             logger.info(f"Using AI model for quiz: {final_model.id} (Request: {request.model_type})")
-            model_type_str = final_model.id
             generation_start = time.perf_counter()
-
-            retrieval_result = await hybrid_retrieval_service.retrieve_for_generation(
-                user_storage_id=request.user_storage_id,
-                total_items=request.num_questions,
-                model_type=model_type_str,
-                keyword=request.keyword,
-                is_narrow_search=request.is_narrow_search,
-                max_chunks=self.MAX_SOURCE_CHUNKS,
-            )
-            logger.info(
-                "[AI_RETRIEVAL] mode=%s user_storage_id=%s selected=%s total=%s generation=quiz narrow=%s",
-                retrieval_result.retrieval_mode,
-                request.user_storage_id,
-                retrieval_result.metadata.get("selected_chunks"),
-                retrieval_result.metadata.get("total_chunks"),
-                request.is_narrow_search,
-            )
-            chunks = retrieval_result.chunks
-
-            if not chunks:
-                return {"success": False, "error": "No content found in file"}
-
-            generation_groups = retrieval_result.generation_groups or hybrid_retrieval_service.plan_generation_groups(
-                user_storage_id=request.user_storage_id,
-                selected_chunks=chunks,
-                total_items=request.num_questions,
-                graph_entry=retrieval_result.graph_entry,
-                seed_chunks=None,
-                keyword=request.keyword,
-            )
-            selected_chunk_count = len(generation_groups)
-            questions_per_chunk = self._allocate_items_to_groups(
-                request.num_questions,
-                generation_groups,
-            )
-            logger.info(
-                '[AI_GROUPS] type=quiz user_storage_id=%s groups=%s allocation=%s',
-                request.user_storage_id,
-                [self._describe_group(group) for group in generation_groups],
-                questions_per_chunk,
-            )
-            expected_batches = sum(
-                (items + self.MAX_ITEMS_PER_CALL - 1) // self.MAX_ITEMS_PER_CALL
-                for items in questions_per_chunk
-                if items > 0
-            )
-            logger.info(
-                f"[AI_TIMING] stage=quiz_prepare user_storage_id={request.user_storage_id} requested={request.num_questions} chunks_total={len(chunks)} groups_selected={selected_chunk_count} expected_batches={expected_batches} max_items_per_call={self.MAX_ITEMS_PER_CALL} model={model_type_str}"
-            )
-
-            generation_max_concurrency = self._get_generation_max_concurrency()
-            logger.info(
-                f"[AI_TIMING] stage=quiz_generation_config user_storage_id={request.user_storage_id} generation_max_concurrency={generation_max_concurrency}"
-            )
-
-            # Build chunk-batch tasks while preserving original selection/distribution logic
-            generation_tasks = []
-            for i, group in enumerate(generation_groups):
-                if questions_per_chunk[i] == 0:
-                    continue
-
-                items_needed = questions_per_chunk[i]
-                num_batches = (items_needed + self.MAX_ITEMS_PER_CALL - 1) // self.MAX_ITEMS_PER_CALL
-                group_chunk = self._merge_group_chunks(group)
-                for batch_idx in range(num_batches):
-                    current_batch_size = min(
-                        self.MAX_ITEMS_PER_CALL,
-                        items_needed - batch_idx * self.MAX_ITEMS_PER_CALL
-                    )
-                    generation_tasks.append({
-                        "chunk_index": i,
-                        "batch_index": batch_idx,
-                        "runner": lambda c=group_chunk, ci=i, bi=batch_idx, nb=num_batches, bs=current_batch_size: self._generate_quiz_batch_for_chunk(
-                            chunk=c,
-                            chunk_position=ci,
-                            total_chunks=len(generation_groups),
-                            batch_idx=bi,
-                            num_batches=nb,
-                            current_batch_size=bs,
-                            final_model_id=final_model.id,
-                        )
-                    })
-
-            actual_batches = len(generation_tasks)
-            generation_results = await self._run_generation_tasks(
-                tasks=generation_tasks,
-                max_concurrency=generation_max_concurrency,
+            max_concurrency = self._get_generation_max_concurrency()
+            outcome = await run_generation(
                 kind="quiz",
-            )
-
-            model_unavailable_error = next(
-                (
-                    result
-                    for result in generation_results
-                    if result.get('error_code') in {
-                        'MODEL_UNAVAILABLE',
-                        'MODEL_INSUFFICIENT_VRAM',
-                        'MODEL_RUNTIME_ERROR',
-                    }
+                storage_id=request.user_storage_id,
+                total=request.num_questions,
+                keyword=request.keyword,
+                narrow=request.is_narrow_search,
+                run_batch=lambda chunk, size, index, count: self._generate_quiz_batch_for_chunk(
+                    chunk=chunk,
+                    chunk_position=index,
+                    total_chunks=count,
+                    batch_idx=0,
+                    num_batches=1,
+                    current_batch_size=size,
+                    final_model_id=final_model.id,
                 ),
-                None,
+                run_tasks=lambda tasks: self._run_generation_tasks(tasks, max_concurrency, "quiz"),
+                max_items=self.MAX_ITEMS_PER_CALL,
             )
-
-            all_questions = []
-            per_chunk_counts: Dict[int, int] = {}
-            for result in generation_results:
-                if result["items"]:
-                    all_questions.extend(result["items"])
-                    per_chunk_counts[result["chunk_index"]] = per_chunk_counts.get(result["chunk_index"], 0) + len(result["items"])
-
-            for chunk_idx in sorted(per_chunk_counts.keys()):
-                logger.info(f"Generated total {per_chunk_counts[chunk_idx]} questions for chunk {chunk_idx + 1}")
-
-            if not all_questions:
-                if model_unavailable_error:
-                    return {
-                        'success': False,
-                        'error': model_unavailable_error.get('error'),
-                        'error_code': model_unavailable_error.get('error_code'),
-                        'status_code': 503,
-                    }
-                return {"success": False, "error": "Failed to generate any questions"}
-
-            total_ms = int((time.perf_counter() - generation_start) * 1000)
-            logger.info(
-                f"[AI_TIMING] stage=quiz_total user_storage_id={request.user_storage_id} total_ms={total_ms} generated={len(all_questions)} actual_batches={actual_batches} expected_batches={expected_batches} groups_used={selected_chunk_count}"
+            return self._outcome_payload(
+                outcome, "quizzes", "questions", "quiz", request.user_storage_id, generation_start
             )
-
-            return {
-                "success": True,
-                "quizzes": all_questions,
-                "count": len(all_questions),
-            }
 
         except Exception as e:
             logger.exception(f"Error generating quiz: {e}")
@@ -652,141 +565,29 @@ class ContentGenerationService:
         try:
             final_model = model_manager.resolve_model(request.model_type)
             logger.info(f"Using AI model for flashcards: {final_model.id} (Request: {request.model_type})")
-            model_type_str = final_model.id
             generation_start = time.perf_counter()
-
-            retrieval_result = await hybrid_retrieval_service.retrieve_for_generation(
-                user_storage_id=request.user_storage_id,
-                total_items=request.num_flashcards,
-                model_type=model_type_str,
+            max_concurrency = self._get_generation_max_concurrency()
+            outcome = await run_generation(
+                kind="flashcard",
+                storage_id=request.user_storage_id,
+                total=request.num_flashcards,
                 keyword=request.keyword,
-                is_narrow_search=request.is_narrow_search,
-                max_chunks=self.MAX_SOURCE_CHUNKS,
-            )
-            logger.info(
-                "[AI_RETRIEVAL] mode=%s user_storage_id=%s selected=%s total=%s generation=flashcard narrow=%s",
-                retrieval_result.retrieval_mode,
-                request.user_storage_id,
-                retrieval_result.metadata.get("selected_chunks"),
-                retrieval_result.metadata.get("total_chunks"),
-                request.is_narrow_search,
-            )
-            chunks = retrieval_result.chunks
-
-            if not chunks:
-                return {"success": False, "error": "No content found in file"}
-
-            generation_groups = retrieval_result.generation_groups or hybrid_retrieval_service.plan_generation_groups(
-                user_storage_id=request.user_storage_id,
-                selected_chunks=chunks,
-                total_items=request.num_flashcards,
-                graph_entry=retrieval_result.graph_entry,
-                seed_chunks=None,
-                keyword=request.keyword,
-            )
-            selected_chunk_count = len(generation_groups)
-            flashcards_per_chunk = self._allocate_items_to_groups(
-                request.num_flashcards,
-                generation_groups,
-            )
-            logger.info(
-                '[AI_GROUPS] type=flashcard user_storage_id=%s groups=%s allocation=%s',
-                request.user_storage_id,
-                [self._describe_group(group) for group in generation_groups],
-                flashcards_per_chunk,
-            )
-            expected_batches = sum(
-                (items + self.MAX_ITEMS_PER_CALL - 1) // self.MAX_ITEMS_PER_CALL
-                for items in flashcards_per_chunk
-                if items > 0
-            )
-            logger.info(
-                f"[AI_TIMING] stage=flashcard_prepare user_storage_id={request.user_storage_id} requested={request.num_flashcards} chunks_total={len(chunks)} groups_selected={selected_chunk_count} expected_batches={expected_batches} max_items_per_call={self.MAX_ITEMS_PER_CALL} model={model_type_str}"
-            )
-
-            generation_max_concurrency = self._get_generation_max_concurrency()
-            logger.info(
-                f"[AI_TIMING] stage=flashcard_generation_config user_storage_id={request.user_storage_id} generation_max_concurrency={generation_max_concurrency}"
-            )
-
-            # Build chunk-batch tasks while preserving original selection/distribution logic
-            generation_tasks = []
-            for i, group in enumerate(generation_groups):
-                if flashcards_per_chunk[i] == 0:
-                    continue
-
-                items_needed = flashcards_per_chunk[i]
-                num_batches = (items_needed + self.MAX_ITEMS_PER_CALL - 1) // self.MAX_ITEMS_PER_CALL
-                group_chunk = self._merge_group_chunks(group)
-                for batch_idx in range(num_batches):
-                    current_batch_size = min(
-                        self.MAX_ITEMS_PER_CALL,
-                        items_needed - batch_idx * self.MAX_ITEMS_PER_CALL
-                    )
-                    generation_tasks.append({
-                        "chunk_index": i,
-                        "batch_index": batch_idx,
-                        "runner": lambda c=group_chunk, ci=i, bi=batch_idx, nb=num_batches, bs=current_batch_size: self._generate_flashcard_batch_for_chunk(
-                            chunk=c,
-                            chunk_position=ci,
-                            total_chunks=len(generation_groups),
-                            batch_idx=bi,
-                            num_batches=nb,
-                            current_batch_size=bs,
-                            final_model_id=final_model.id,
-                        )
-                    })
-
-            actual_batches = len(generation_tasks)
-            generation_results = await self._run_generation_tasks(
-                tasks=generation_tasks,
-                max_concurrency=generation_max_concurrency,
-                kind="flashcards",
-            )
-
-            model_unavailable_error = next(
-                (
-                    result
-                    for result in generation_results
-                    if result.get('error_code') in {
-                        'MODEL_UNAVAILABLE',
-                        'MODEL_INSUFFICIENT_VRAM',
-                        'MODEL_RUNTIME_ERROR',
-                    }
+                narrow=request.is_narrow_search,
+                run_batch=lambda chunk, size, index, count: self._generate_flashcard_batch_for_chunk(
+                    chunk=chunk,
+                    chunk_position=index,
+                    total_chunks=count,
+                    batch_idx=0,
+                    num_batches=1,
+                    current_batch_size=size,
+                    final_model_id=final_model.id,
                 ),
-                None,
+                run_tasks=lambda tasks: self._run_generation_tasks(tasks, max_concurrency, "flashcards"),
+                max_items=self.MAX_ITEMS_PER_CALL,
             )
-
-            all_flashcards = []
-            per_chunk_counts: Dict[int, int] = {}
-            for result in generation_results:
-                if result["items"]:
-                    all_flashcards.extend(result["items"])
-                    per_chunk_counts[result["chunk_index"]] = per_chunk_counts.get(result["chunk_index"], 0) + len(result["items"])
-
-            for chunk_idx in sorted(per_chunk_counts.keys()):
-                logger.info(f"Generated total {per_chunk_counts[chunk_idx]} flashcards for chunk {chunk_idx + 1}")
-
-            if not all_flashcards:
-                if model_unavailable_error:
-                    return {
-                        'success': False,
-                        'error': model_unavailable_error.get('error'),
-                        'error_code': model_unavailable_error.get('error_code'),
-                        'status_code': 503,
-                    }
-                return {"success": False, "error": "Failed to generate any flashcards"}
-
-            total_ms = int((time.perf_counter() - generation_start) * 1000)
-            logger.info(
-                f"[AI_TIMING] stage=flashcard_total user_storage_id={request.user_storage_id} total_ms={total_ms} generated={len(all_flashcards)} actual_batches={actual_batches} expected_batches={expected_batches} groups_used={selected_chunk_count}"
+            return self._outcome_payload(
+                outcome, "flashcards", "flashcards", "flashcard", request.user_storage_id, generation_start
             )
-
-            return {
-                "success": True,
-                "flashcards": all_flashcards,
-                "count": len(all_flashcards),
-            }
 
         except Exception as e:
             logger.exception(f"Error generating flashcards: {e}")
@@ -1058,109 +859,6 @@ class ContentGenerationService:
             logger.exception(f"Error generating word family: {e}")
             return {"success": False, "error": str(e)}
 
-    def _distribute_items(self, total: int, num_chunks: int) -> List[int]:
-        """Distribute items evenly across chunks"""
-        if num_chunks == 0:
-            return []
-
-        base = total // num_chunks
-        remainder = total % num_chunks
-
-        distribution = [base] * num_chunks
-        for i in range(remainder):
-            distribution[i] += 1
-
-        return distribution
-
-    def _allocate_items_to_groups(
-        self, total: int, groups: List[GenerationGroup]
-    ) -> List[int]:
-        if not groups:
-            return []
-
-        total_weight = sum(max(group.weight, 1.0) for group in groups)
-        raw_allocations = [
-            (max(group.weight, 1.0) / total_weight) * total for group in groups
-        ]
-        distribution = [int(allocation) for allocation in raw_allocations]
-        assigned = sum(distribution)
-
-        for index in range(min(total, len(distribution))):
-            if distribution[index] == 0:
-                distribution[index] = 1
-        assigned = sum(distribution)
-
-        while assigned < total:
-            best_index = max(
-                range(len(groups)),
-                key=lambda idx: raw_allocations[idx] - distribution[idx],
-            )
-            distribution[best_index] += 1
-            assigned += 1
-
-        while assigned > total:
-            worst_index = max(
-                [idx for idx, value in enumerate(distribution) if value > 1],
-                key=lambda idx: distribution[idx] - raw_allocations[idx],
-                default=0,
-            )
-            distribution[worst_index] -= 1
-            assigned -= 1
-
-        return distribution
-
-    def _merge_group_chunks(self, group: GenerationGroup) -> DocumentChunk:
-        combined_content = '\n\n'.join(chunk.content for chunk in group.chunks)
-        entity_names = group.metadata.get('entities')
-        if entity_names:
-            entity_hint = '\n\n[KEY CONCEPTS: ' + ', '.join(entity_names) + ']'
-            combined_content += entity_hint
-        page_range = (
-            f"{group.page_start}-{group.page_end}"
-            if group.page_start is not None and group.page_end is not None
-            else ','.join(group.page_ranges)
-        )
-        return DocumentChunk(
-            id=f"group_{group.group_index}",
-            user_storage_id=group.chunks[0].user_storage_id,
-            page_range=page_range,
-            title=f"Group {group.group_index + 1}",
-            content=combined_content,
-            created_at=group.chunks[0].created_at,
-        )
-
-    def _select_chunks_for_generation(
-        self,
-        chunks: List[DocumentChunk],
-        total_items: int
-    ) -> List[DocumentChunk]:
-        """Select bounded number of chunks to reduce generation latency."""
-        if not chunks:
-            return []
-
-        needed_chunks = min(len(chunks), max(1, total_items), self.MAX_SOURCE_CHUNKS)
-
-        if len(chunks) <= needed_chunks:
-            return chunks
-
-        # Keep chunk order stable but sample across the whole document
-        step = len(chunks) / needed_chunks
-        selected_indices = {min(len(chunks) - 1, int(i * step)) for i in range(needed_chunks)}
-        selected_chunks = [chunk for idx, chunk in enumerate(chunks) if idx in selected_indices]
-
-        if len(selected_chunks) < needed_chunks:
-            for chunk in chunks:
-                if chunk not in selected_chunks:
-                    selected_chunks.append(chunk)
-                    if len(selected_chunks) == needed_chunks:
-                        break
-
-        selected_chunks = selected_chunks[:needed_chunks]
-        logger.info(
-            f"Using {len(selected_chunks)}/{len(chunks)} chunks for generation (requested items: {total_items})"
-        )
-        return selected_chunks
-
     def _normalize_json_items(self, items: list) -> List[Dict]:
         """Normalize LLM output — handle str items, nested formats across models"""
         result = []
@@ -1195,6 +893,7 @@ class ContentGenerationService:
                     "options": q.get("options", []),
                     "answer": q.get("answer", ""),
                     "sourcePageRange": q.get("sourcePageRange", default_page_range),
+                    **self._concept_field(q),
                 }
                 for q in questions
             ]
@@ -1215,6 +914,7 @@ class ContentGenerationService:
                     "question": f.get("question", ""),
                     "answer": f.get("answer", ""),
                     "sourcePageRange": f.get("sourcePageRange", default_page_range),
+                    **self._concept_field(f),
                 }
                 for f in flashcards
             ]
@@ -1222,6 +922,12 @@ class ContentGenerationService:
         except Exception as e:
             logger.error(f"Failed to parse flashcard response: {e}")
             return []
+
+    @staticmethod
+    def _concept_field(raw: Dict[str, Any]) -> Dict[str, str]:
+        """Carry the model's internal ``concept`` field; the slot post-processing consumes and removes it."""
+        concept = raw.get("concept")
+        return {"concept": concept} if isinstance(concept, str) and concept.strip() else {}
 
     def _extract_json(self, text: str) -> str:
         """Extract JSON array from text (handle markdown code blocks and flexible finding)"""
@@ -1293,7 +999,8 @@ class ContentGenerationService:
             "question": item.question,
             "options": new_options,
             "answer": clean_answer,
-            "sourcePageRange": item.sourcePageRange or page_range
+            "sourcePageRange": item.sourcePageRange or page_range,
+            **({"concept": item.concept} if item.concept else {}),
         }
 
 

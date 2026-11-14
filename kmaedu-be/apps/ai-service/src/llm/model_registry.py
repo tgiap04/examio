@@ -7,12 +7,9 @@ ModelProvider = Literal['gemini', 'ai2']
 ModelTask = Literal['generation', 'chat', 'embedding']
 
 
-# Non-reasoning (or light-reasoning) models: reasoning models such as oc/minimax-m3.1-flash-free spend most of
-# max_tokens on hidden reasoning and return cut-off JSON.
-DEFAULT_AI2_GENERATION_MODEL_NAMES = (
-    'oc/deepseek-v4.1-flash-free',
-    'oc/nemotron-3.5-lightning-free',
-)
+# Faye-AI is the router's own model. It reasons before answering (most completion tokens are
+# reasoning), so AI2_MAX_TOKENS / GRAPHRAG_MAX_TOKENS must leave room for it or the JSON comes back cut off.
+DEFAULT_AI2_GENERATION_MODEL_NAMES = ('Faye-AI',)
 
 
 @dataclass(frozen=True)
@@ -146,6 +143,10 @@ LEGACY_MODEL_ALIASES: dict[str, str] = {
     'minimax-m2.5-free': '__default__',
     'nemotron-3-super-free': '__default__',
     'trinity-large-preview-free': '__default__',
+    # previous defaults on ai.fayedark.com (stored chat/job options may still name them)
+    'oc/deepseek-v4.1-flash-free': '__default__',
+    'oc/nemotron-3.5-lightning-free': '__default__',
+    'oc/minimax-m3.1-flash-free': '__default__',
 }
 
 
@@ -171,7 +172,11 @@ def resolve_generation_model(model_id: str | None) -> ModelRegistryEntry:
         return get_default_generation_model()
 
     requested_model_id = model_id.strip()
-    normalized = LEGACY_MODEL_ALIASES.get(requested_model_id.lower(), requested_model_id)
+    # A configured model always wins; aliases only rescue ids that are no longer served.
+    if requested_model_id in ALL_MODELS:
+        normalized = requested_model_id
+    else:
+        normalized = LEGACY_MODEL_ALIASES.get(requested_model_id.lower(), requested_model_id)
     if normalized == '__default__':
         return get_default_generation_model()
 

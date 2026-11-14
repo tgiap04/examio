@@ -11,6 +11,7 @@ from src.backend.messaging import document_handlers as dh
 from src.backend.messaging import generation_handler as gh
 from src.backend.messaging.consumer import EventConsumer
 from src.backend.messaging.topology import MAX_RETRIES
+from src.graphrag import indexer
 
 UPLOADED = {
     "storageId": "st1",
@@ -103,19 +104,35 @@ async def seed_document(pool, storage_id: str) -> None:
         f"{storage_id}_chunk_0",
         storage_id,
     )
-    await pool.execute('INSERT INTO "DocumentEntity" (id, "userStorageId", name, type) VALUES ($1, $2, \'n\', \'t\')', f"e_{storage_id}", storage_id)
+    await pool.execute('INSERT INTO "GraphIndex" ("userStorageId", "chunkSignature") VALUES ($1, \'sig\')', storage_id)
     await pool.execute(
-        'INSERT INTO "UserStorageGraph" (id, "userStorageId", "chunkSignature") VALUES ($1, $2, \'sig\')',
-        f"g_{storage_id}",
+        'INSERT INTO "GraphEntity" (id, "userStorageId", name, "normName", type) VALUES ($1, $2, \'n\', \'n\', \'concept\')',
+        f"ge_{storage_id}",
         storage_id,
     )
     await pool.execute(
-        'INSERT INTO "UserStorageGraphGroup" (id, "graphId", "userStorageId", "groupIndex", "pageRanges", "chunkIds")'
-        " VALUES ($1, $2, $3, 0, '[]', '[]')",
-        f"gg_{storage_id}",
-        f"g_{storage_id}",
+        'INSERT INTO "GraphRelationship" (id, "userStorageId", "sourceId", "targetId") VALUES ($1, $2, $3, $3)',
+        f"gr_{storage_id}",
+        storage_id,
+        f"ge_{storage_id}",
+    )
+    await pool.execute(
+        'INSERT INTO "GraphTextUnitEntity" ("userStorageId", "chunkId", "entityId") VALUES ($1, $2, $3)',
+        storage_id,
+        f"{storage_id}_chunk_0",
+        f"ge_{storage_id}",
+    )
+    await pool.execute(
+        'INSERT INTO "GraphCommunity" (id, "userStorageId", level, "communityKey") VALUES ($1, $2, 0, 0)',
+        f"gc_{storage_id}",
         storage_id,
     )
+
+
+ALL_DERIVED_TABLES = (
+    '"Document"',
+    '"GraphIndex"', '"GraphEntity"', '"GraphRelationship"', '"GraphTextUnitEntity"', '"GraphCommunity"',
+)
 
 
 async def test_deleted_drops_vectors_entities_and_graph_for_the_given_ids_only(pool):
@@ -126,7 +143,7 @@ async def test_deleted_drops_vectors_entities_and_graph_for_the_given_ids_only(p
     await consumer_for(pool, "document.deleted", dh.on_document_deleted).handle_message(message)
 
     assert message.acked
-    for table in ('"Document"', '"DocumentEntity"', '"UserStorageGraph"', '"UserStorageGraphGroup"'):
+    for table in ALL_DERIVED_TABLES:
         assert await pool.fetchval(f'SELECT array_agg("userStorageId") FROM {table}') == ["keep"], table
 
 
@@ -137,6 +154,29 @@ async def test_deleted_is_idempotent(pool):
     await consumer.handle_message(first)
     await consumer.handle_message(type(first)(first.routing_key, first.body, {}, first.message_id))
     assert await pool.fetchval('SELECT count(*) FROM "Document"') == 0
+
+
+async def test_deleted_clears_all_five_graphrag_tables(pool):
+    await seed_document(pool, "st1")
+    message = message_for("document.deleted", {"storageIds": ["st1"], "userId": "u"})
+    await consumer_for(pool, "document.deleted", dh.on_document_deleted).handle_message(message)
+    assert message.acked
+    for table in ('"GraphIndex"', '"GraphEntity"', '"GraphRelationship"', '"GraphTextUnitEntity"', '"GraphCommunity"'):
+        assert await pool.fetchval(f"SELECT count(*) FROM {table}") == 0, table
+
+
+async def test_a_failing_delete_in_the_graph_tables_rolls_back_the_whole_event(pool):
+    await seed_document(pool, "st1")
+    await pool.execute('ALTER TABLE "GraphCommunity" RENAME TO "GraphCommunity_x"')  # make that DELETE fail
+    try:
+        publisher = FakePublisher()
+        consumer = EventConsumer(pool, {"document.deleted": dh.on_document_deleted}, publisher)
+        await consumer.handle_message(message_for("document.deleted", {"storageIds": ["st1"], "userId": "u"}))
+    finally:
+        await pool.execute('ALTER TABLE "GraphCommunity_x" RENAME TO "GraphCommunity"')
+    assert len(publisher.published) == 1  # handed to the retry queue
+    assert await pool.fetchval('SELECT count(*) FROM "Document"') == 1  # nothing half-deleted
+    assert await pool.fetchval('SELECT count(*) FROM "GraphIndex"') == 1
 
 
 REQUEST = {
@@ -263,15 +303,42 @@ async def test_process_stores_chunks_in_the_ai_schema_and_skips_ocr_when_already
 
     monkeypatch.setattr(ocr_service, "prepare_documents_to_store", fake_prepare)
     monkeypatch.setattr(vector_store_pg.PgVectorStore, "create_embeddings_batch", fake_embed)
-    monkeypatch.setattr(dh, "_extract_entities", lambda storage_id: _noop())
     try:
         assert await dh._process("st9", "a.pdf", "application/pdf", "https://f/a.pdf") == 2  # pages 1 and 2
         assert await pool.fetchval('SELECT count(*) FROM "Document" WHERE "userStorageId" = \'st9\'') == 3
         assert await dh._process("st9", "a.pdf", "application/pdf", "https://f/a.pdf") == 2  # re-emitted event
         assert len(prepared) == 1  # no second OCR run
+        row = await pool.fetchrow('SELECT * FROM "GraphIndex" WHERE "userStorageId" = \'st9\'')
+        assert (row["status"], row["attempts"]) == ("PENDING", 0)  # queued for the index worker, not built inline
+        assert row["chunkSignature"] == indexer.chunk_signature((f"st9_chunk_{i}", f"text {i}") for i in range(3))
     finally:
         await db.close_pools()
 
 
-async def _noop() -> None:
-    return None
+async def test_process_requeues_graph_indexing_only_when_the_chunks_changed(pool, monkeypatch):
+
+    from src import db
+    from src.backend.services.ocr_service import ocr_service
+
+    monkeypatch.setenv("DATABASE_URL", os.environ["AI_TEST_DATABASE_URL"])
+    for i, content in enumerate(("a", "b")):
+        await pool.execute(
+            'INSERT INTO "Document" (id, "userStorageId", "pageRange", content, embeddings) VALUES ($1, \'st8\', \'1\', $2, \'[1,2,3]\'::vector)',
+            f"st8_chunk_{i}",
+            content,
+        )
+    monkeypatch.setattr(ocr_service, "prepare_documents_to_store", lambda *a, **k: pytest.fail("OCR must not run"))
+    try:
+        await dh._process("st8", "a.pdf", "application/pdf", "https://f/a.pdf")  # legacy doc: gets queued
+        await pool.execute('UPDATE "GraphIndex" SET status = \'READY\' WHERE "userStorageId" = \'st8\'')
+        await dh._process("st8", "a.pdf", "application/pdf", "https://f/a.pdf")  # same chunks: READY stays
+        assert await pool.fetchval('SELECT status FROM "GraphIndex" WHERE "userStorageId" = \'st8\'') == "READY"
+        await pool.execute('UPDATE "Document" SET content = \'changed\' WHERE id = \'st8_chunk_0\'')
+        await dh._process("st8", "a.pdf", "application/pdf", "https://f/a.pdf")
+        assert await pool.fetchval('SELECT status FROM "GraphIndex" WHERE "userStorageId" = \'st8\'') == "PENDING"
+    finally:
+        await db.close_pools()
+
+
+def test_the_fire_and_forget_entity_extraction_is_gone():
+    assert not hasattr(dh, "_extract_entities") and not hasattr(dh, "_background")

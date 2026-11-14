@@ -25,6 +25,8 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_AI2_MAX_TOKENS = 8192
+
 # TTL cache for AI2 model names — avoids hitting the provider on every request
 _AI2_MODELS_CACHE_TTL_SECONDS = 300  # 5 minutes
 _ai2_models_cache: dict[str, tuple[float, set[str]]] = {}  # url -> (timestamp, model_names)
@@ -55,6 +57,13 @@ class ModelUnavailableError(Exception):
     def __init__(self, message: str, code: str = 'MODEL_UNAVAILABLE') -> None:
         super().__init__(message)
         self.code = code
+
+
+class OutputTruncatedError(ModelUnavailableError):
+    """The completion hit max_tokens (finish_reason=length); raised only on request."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message, code='OUTPUT_TRUNCATED')
 
 
 class ModelManager:
@@ -137,14 +146,15 @@ class ModelManager:
             return 4096
 
     def get_ai2_max_tokens(self) -> int:
+        # Room for the reasoning tokens Faye-AI spends before the answer.
         raw_value = os.getenv('AI2_MAX_TOKENS')
         if raw_value is None:
-            return min(self.get_max_tokens(), 4096)
+            return DEFAULT_AI2_MAX_TOKENS
         try:
             return max(1, min(int(raw_value), 32768))
         except ValueError:
-            logger.warning('Invalid AI2_MAX_TOKENS=%s, using default=4096', raw_value)
-            return 4096
+            logger.warning('Invalid AI2_MAX_TOKENS=%s, using default=%s', raw_value, DEFAULT_AI2_MAX_TOKENS)
+            return DEFAULT_AI2_MAX_TOKENS
 
     def get_default_model_id(self) -> str:
         env_model = os.getenv('DEFAULT_MODEL_ID') or os.getenv('AI2_DEFAULT_MODEL')
@@ -390,6 +400,7 @@ class ModelManager:
         self,
         prompt: str,
         system_prompt: str | None = None,
+        max_tokens: int | None = None,
     ) -> str:
         import google.generativeai as genai  # type: ignore[import-untyped]
         from google.api_core.exceptions import ResourceExhausted
@@ -436,7 +447,7 @@ class ModelManager:
                             final_prompt,
                             generation_config=generation_types.GenerationConfig(
                                 temperature=self.get_temperature(),
-                                max_output_tokens=self.get_max_tokens(),
+                                max_output_tokens=max_tokens or self.get_max_tokens(),
                             ),
                         ),
                     )
@@ -455,6 +466,8 @@ class ModelManager:
         prompt: str,
         model_id: str,
         system_prompt: str | None = None,
+        max_tokens: int | None = None,
+        raise_on_truncation: bool = False,
     ) -> str:
         api_key = os.getenv('AI2_API_KEY')
         if not api_key:
@@ -473,7 +486,7 @@ class ModelManager:
             'model': ai2_info['model'],
             'messages': messages,
             'temperature': self.get_temperature(),
-            'max_tokens': self.get_ai2_max_tokens(),
+            'max_tokens': max(1, min(max_tokens, 32768)) if max_tokens else self.get_ai2_max_tokens(),
             'stream': False,
         }
         headers = {
@@ -528,6 +541,10 @@ class ModelManager:
                         (usage.get('completion_tokens_details') or {}).get('reasoning_tokens'),
                         payload['max_tokens'],
                     )
+                    if raise_on_truncation and finish_reason == 'length':
+                        raise OutputTruncatedError(
+                            f"AI2 completion cut at max_tokens={payload['max_tokens']} (finish_reason=length)"
+                        )
                 return content
             except (httpx.ConnectError, httpx.ConnectTimeout, httpx.ReadTimeout) as error:
                 last_error = error
@@ -548,15 +565,25 @@ class ModelManager:
         ai_model_type: str | None = None,
         response_model: Any = None,
         system_prompt: str | None = None,
+        max_tokens: int | None = None,
+        raise_on_truncation: bool = False,
     ) -> str:
+        """Generate text; ``max_tokens`` overrides the env default for this call, and
+        ``raise_on_truncation`` raises OutputTruncatedError on finish_reason=length (AI2 only)."""
         model_id = str(ai_model_type) if ai_model_type else None
         model = self.resolve_model(model_id)
 
         await self.ensure_generation_model_ready(model.id)
 
         if model.provider == 'ai2':
-            return await self._generate_with_ai2(prompt, model.id, system_prompt=system_prompt)
-        return await self._generate_with_gemini(prompt, system_prompt=system_prompt)
+            return await self._generate_with_ai2(
+                prompt,
+                model.id,
+                system_prompt=system_prompt,
+                max_tokens=max_tokens,
+                raise_on_truncation=raise_on_truncation,
+            )
+        return await self._generate_with_gemini(prompt, system_prompt=system_prompt, max_tokens=max_tokens)
 
     def get_langchain_model(self, ai_model_type: str | None = None):
         from langchain_google_genai import ChatGoogleGenerativeAI

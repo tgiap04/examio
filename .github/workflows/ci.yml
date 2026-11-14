@@ -587,8 +587,7 @@ jobs:
         run: |
           python -m ruff check src/db.py src/main.py src/backend/main.py src/grpc_server.py src/backend/messaging \
             src/backend/auth src/backend/ai_grpc_mapping.py src/backend/services/chat_service.py \
-            src/backend/services/sync_stream.py src/backend/tests alembic \
-            --extend-exclude src/backend/tests/test_hybrid_retrieval_service.py
+            src/backend/services/sync_stream.py src/backend/tests alembic src/graphrag src/backend/eval src/backend/scripts/eval_rag_quality.py
 
   # Deploy configuration that only fails at `up` time: the compose file must
   # render, and nginx must accept the real-ip include. Dummy values only.

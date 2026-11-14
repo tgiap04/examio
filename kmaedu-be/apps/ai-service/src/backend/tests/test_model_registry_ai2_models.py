@@ -46,5 +46,26 @@ class Ai2RouterModelTest(unittest.TestCase):
             self.registry.resolve_generation_model('oc/not-a-model')
 
 
+
+class DefaultAi2ModelTest(unittest.TestCase):
+    """Without AI2_* env the router's Faye-AI model is the only and default generation model."""
+
+    def setUp(self) -> None:
+        env = {k: v for k, v in os.environ.items() if k not in ('AI2_GENERATION_MODEL_NAMES', 'AI2_DEFAULT_MODEL')}
+        with mock.patch.dict(os.environ, env, clear=True):
+            self.registry = importlib.reload(model_registry)
+
+    def tearDown(self) -> None:
+        importlib.reload(model_registry)
+
+    def test_faye_ai_is_the_default_generation_model(self) -> None:
+        self.assertEqual(self.registry.DEFAULT_AI2_GENERATION_MODEL_NAMES, ('Faye-AI',))
+        self.assertEqual(self.registry.get_default_generation_model().runtime_model_name, 'Faye-AI')
+
+    def test_ids_of_the_previous_defaults_fall_back_to_faye_ai(self) -> None:
+        for old_id in ('oc/deepseek-v4.1-flash-free', 'oc/nemotron-3.5-lightning-free', 'oc/minimax-m3.1-flash-free'):
+            self.assertEqual(self.registry.resolve_generation_model(old_id).runtime_model_name, 'Faye-AI')
+
+
 if __name__ == '__main__':
     unittest.main()
