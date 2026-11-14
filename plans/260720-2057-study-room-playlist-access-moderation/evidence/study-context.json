@@ -11,14 +11,14 @@
     "frontend builds green (tsc + vite) with playlist panel, access settings, block and moderation UI wired to the new WS contract"
   ],
   "touchpoints": [
-    "examio-be/apps/exam-service/src/modules/study-room/study-room-playlist.service.ts",
-    "examio-be/apps/exam-service/src/modules/study-room/study-room.gateway.ts",
-    "examio-be/apps/exam-service/src/modules/study-room/study-room.service.ts",
-    "examio-be/apps/exam-service/src/modules/study-room/study-room.repository.ts",
-    "examio-be/libs/database/src/models/study-room.prisma",
-    "examio-be/apps/gateway-service/src/controllers/study-room-proxy.controller.ts",
-    "examio-fe/src/pages/study-room/components/playlist-panel.tsx",
-    "examio-fe/src/hooks/useStudyRoomSocket.ts"
+    "kmaedu-be/apps/exam-service/src/modules/study-room/study-room-playlist.service.ts",
+    "kmaedu-be/apps/exam-service/src/modules/study-room/study-room.gateway.ts",
+    "kmaedu-be/apps/exam-service/src/modules/study-room/study-room.service.ts",
+    "kmaedu-be/apps/exam-service/src/modules/study-room/study-room.repository.ts",
+    "kmaedu-be/libs/database/src/models/study-room.prisma",
+    "kmaedu-be/apps/gateway-service/src/controllers/study-room-proxy.controller.ts",
+    "kmaedu-fe/src/pages/study-room/components/playlist-panel.tsx",
+    "kmaedu-fe/src/hooks/useStudyRoomSocket.ts"
   ],
   "blastRadius": [
     "Additive Prisma changes (new columns with defaults + two new tables) applied to dev DB via psql; no existing model altered",
@@ -27,7 +27,7 @@
     "No change to other exam-service modules or other services beyond the gateway proxy route"
   ],
   "contracts": [
-    "WS events: examio-be/.../study-room/study-room.events.ts mirrored by examio-fe/src/types/studyRoom.ts",
+    "WS events: kmaedu-be/.../study-room/study-room.events.ts mirrored by kmaedu-fe/src/types/studyRoom.ts",
     "REST /studyrooms/:id/join proxied by gateway to exam-service"
   ]
 }

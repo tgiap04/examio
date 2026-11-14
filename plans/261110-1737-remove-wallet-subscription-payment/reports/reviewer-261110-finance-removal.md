@@ -27,7 +27,7 @@ None.
 ## High / Warning
 
 **W1. The new files are untracked, and the change does not build or migrate without them.** Location: `git status`, lines starting `??`.
-- `examio-be/apps/document-service/src/modules/upload/document-queue.service.ts` is imported by `document-register.service.ts:7`, `document-upload.service.ts:8` and `document-processing.service.ts`.
+- `kmaedu-be/apps/document-service/src/modules/upload/document-queue.service.ts` is imported by `document-register.service.ts:7`, `document-upload.service.ts:8` and `document-processing.service.ts`.
 - Both contract migrations are untracked: `apps/content-service/prisma/migrations/20261110180000_remove_generation_charge/` and `apps/document-service/prisma/migrations/20261110180000_remove_upload_charge/`.
 - The new specs are untracked: `generation-job.service.spec.ts`, `generation-lifecycle.e2e-spec.ts`, `document-register.service.spec.ts`, `document-upload.service.spec.ts`, `test/upload.e2e-spec.ts`, `ai-chat-turn.service.spec.ts`, `no-message-limits.e2e-spec.ts` and FE `permission-groups.test.ts`.
 
@@ -41,17 +41,17 @@ Cost: a commit made with `git commit -a` or `git add -u` compiles red, and the P
 
 ## Low / Suggestion
 
-**S1. `POST /ai/upload` no longer cleans up the client's R2 object when signing fails.** Location: `apps/document-service/src/modules/upload/document-register.service.ts:30`. On `develop`, an r2 signing failure after insert went through `failQuietly` → `claimFailed` → `r2Deletes.enqueue`. Now the 503 happens before any row exists, and the object under `keyR2` stays until the client registers again. The FE does not call this route (`git grep` finds no `POST /ai/upload` in `examio-fe/src`), so the impact is minimal. Option: on a sign failure, `r2Deletes.enqueue(tx, [ownedR2Key(dto.keyR2, AI_UPLOAD_AREAS, userId)])` before rethrowing.
+**S1. `POST /ai/upload` no longer cleans up the client's R2 object when signing fails.** Location: `apps/document-service/src/modules/upload/document-register.service.ts:30`. On `develop`, an r2 signing failure after insert went through `failQuietly` → `claimFailed` → `r2Deletes.enqueue`. Now the 503 happens before any row exists, and the object under `keyR2` stays until the client registers again. The FE does not call this route (`git grep` finds no `POST /ai/upload` in `kmaedu-fe/src`), so the impact is minimal. Option: on a sign failure, `r2Deletes.enqueue(tx, [ownedR2Key(dto.keyR2, AI_UPLOAD_AREAS, userId)])` before rethrowing.
 
 **S2. ai-chat keeps Redis it no longer uses.** Locations: `apps/ai-chat-service/src/ai-chat-service.module.ts:5,14,17`, `src/main.ts:11,38`, `deploy/compose/ai-chat.yml:32-34`. The only Redis use, the benefits cache, is gone. `RedisReadinessCheck` now makes ai-chat unready whenever Redis is down, although no request needs Redis. Fix: drop `RedisModule`, `RedisReadinessCheck`, `RedisUnavailableFilter` and the compose `REDIS_*` env. Alternatively, keep it and write down why.
 
 **S3. Test setups still clear `FINANCE_GRPC_URL`.** Locations: `apps/ai-chat-service/test/support/ai-chat-test-app.ts:74-75`, `apps/document-service/test/support/document-test-app.ts:61-62` and `apps/content-service/test/worker.e2e-spec.ts:32`. These lines are now no-ops. Delete them.
 
-**S4. The FE still ships a `currency-vnd` formatter that nothing uses.** Locations: `examio-fe/src/components/admin/KpiCard.tsx:4,16-26`, `MiniChartCard.tsx:19,41,57,66` and `StatChart.tsx:20,39,55,70`. No caller passes `format="currency-vnd"` any more. Remove the variant and the `vndFormatter` instances.
+**S4. The FE still ships a `currency-vnd` formatter that nothing uses.** Locations: `kmaedu-fe/src/components/admin/KpiCard.tsx:4,16-26`, `MiniChartCard.tsx:19,41,57,66` and `StatChart.tsx:20,39,55,70`. No caller passes `format="currency-vnd"` any more. Remove the variant and the `vndFormatter` instances.
 
 **S5. A dead `userSubscription` mock remains.** Location: `apps/auth-service/src/auth.service.register-outbox.spec.ts:17,34,104,147`. The `not.toHaveBeenCalled` assertions can never fail now, because auth has no such model. Drop the mock and those assertions.
 
-**S6. The buf `ignore_only` entries are temporary.** Location: `proto/buf.yaml:19-34`. They are correct and scoped (`FILE_NO_DELETE` covers `examio/finance` and `finance_events.proto`; `FIELD_NO_DELETE` and `ENUM_VALUE_NO_DELETE` cover `document.proto` only). Make sure the follow-up commit that removes them after the merge is tracked, as the plan says.
+**S6. The buf `ignore_only` entries are temporary.** Location: `proto/buf.yaml:19-34`. They are correct and scoped (`FILE_NO_DELETE` covers `kmaedu/finance` and `finance_events.proto`; `FIELD_NO_DELETE` and `ENUM_VALUE_NO_DELETE` cover `document.proto` only). Make sure the follow-up commit that removes them after the merge is tracked, as the plan says.
 
 **S7. A stale `finance` entry in `SERVICE_CLIENTS` would still mint tokens.** Location: `apps/auth-service/src/token/service-clients.ts:39-60`. `parseServiceClients` accepts any well-formed name. An operator who forgets to remove the `finance` entry leaves a client that can mint `svc:finance` tokens for the remaining audiences. Every allowlist now excludes `finance`, but RPCs declared with no `callers` would accept such a token. `deploy/README.md:472` documents the removal. Optional: warn at boot about a client that no audience or allowlist uses.
 

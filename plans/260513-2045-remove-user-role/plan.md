@@ -4,8 +4,8 @@
 Remove the `role` column from the user database model and update backend/frontend so authentication, ownership checks, and admin behavior continue without teacher/student roles.
 
 ## Scope
-- Backend: `examio-be` Nest services and shared Prisma schema.
-- Frontend: `examio-fe` React routes, auth flow, role-gated UI, and types.
+- Backend: `kmaedu-be` Nest services and shared Prisma schema.
+- Frontend: `kmaedu-fe` React routes, auth flow, role-gated UI, and types.
 - Preserve `isAdmin` and resource ownership checks.
 - Do not remove chat message `role` fields (`user`/`assistant`) or ARIA `role` attributes.
 
@@ -22,28 +22,28 @@ Remove the `role` column from the user database model and update backend/fronten
 - Treat teacher/student page names and URLs as legacy labels unless product decides to rename them; remove authorization dependency first.
 
 ## High-Impact Files
-- `examio-be/libs/database/src/schema.prisma`
-- `examio-be/libs/database/src/models/user.prisma`
-- `examio-be/apps/auth-service/src/auth.service.ts`
-- `examio-be/apps/auth-service/src/dto/register.dto.ts`
-- `examio-be/apps/auth-service/src/auth.controller.ts`
-- `examio-be/apps/auth-service/src/strategies/google.strategy.ts`
-- `examio-be/apps/auth-service/src/strategies/facebook.strategy.ts`
-- `examio-be/apps/auth-service/src/strategies/github.strategy.ts`
-- `examio-be/libs/common/src/guard/auth.guard.ts`
-- `examio-be/libs/common/src/guard/roles.guard.ts`
-- `examio-fe/src/types/user.ts`
-- `examio-fe/src/apis/authApi.ts`
-- `examio-fe/src/stores/useAuthStore.ts`
-- `examio-fe/src/routes/index.tsx`
-- `examio-fe/src/components/organisms/k/SideBar.tsx`
-- `examio-fe/src/components/organisms/auth/signin-form.tsx`
-- `examio-fe/src/components/organisms/auth/signup-form.tsx`
+- `kmaedu-be/libs/database/src/schema.prisma`
+- `kmaedu-be/libs/database/src/models/user.prisma`
+- `kmaedu-be/apps/auth-service/src/auth.service.ts`
+- `kmaedu-be/apps/auth-service/src/dto/register.dto.ts`
+- `kmaedu-be/apps/auth-service/src/auth.controller.ts`
+- `kmaedu-be/apps/auth-service/src/strategies/google.strategy.ts`
+- `kmaedu-be/apps/auth-service/src/strategies/facebook.strategy.ts`
+- `kmaedu-be/apps/auth-service/src/strategies/github.strategy.ts`
+- `kmaedu-be/libs/common/src/guard/auth.guard.ts`
+- `kmaedu-be/libs/common/src/guard/roles.guard.ts`
+- `kmaedu-fe/src/types/user.ts`
+- `kmaedu-fe/src/apis/authApi.ts`
+- `kmaedu-fe/src/stores/useAuthStore.ts`
+- `kmaedu-fe/src/routes/index.tsx`
+- `kmaedu-fe/src/components/organisms/k/SideBar.tsx`
+- `kmaedu-fe/src/components/organisms/auth/signin-form.tsx`
+- `kmaedu-fe/src/components/organisms/auth/signup-form.tsx`
 
 ## Validation Commands
-- Backend: `cd examio-be && yarn prisma:generate && yarn build && yarn test`
-- Frontend: `cd examio-fe && yarn build && yarn lint`
-- Targeted backend checks: `cd examio-be && yarn test apps/auth-service/src/auth.service.spec.ts`
+- Backend: `cd kmaedu-be && yarn prisma:generate && yarn build && yarn test`
+- Frontend: `cd kmaedu-fe && yarn build && yarn lint`
+- Targeted backend checks: `cd kmaedu-be && yarn test apps/auth-service/src/auth.service.spec.ts`
 
 ## Open Questions And Risks
 - Legacy URLs/routes were kept as compatibility labels while role-based authorization and redirects were removed.

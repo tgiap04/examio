@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Microservice Refactor + RBAC</title>
-<meta name="description" content="Editorial companion to plan.md: refactor examio-be from distributed monolith to real microservices and introduce fixed-role RBAC (Teacher / Student / System Admin).">
+<meta name="description" content="Editorial companion to plan.md: refactor kmaedu-be from distributed monolith to real microservices and introduce fixed-role RBAC (Teacher / Student / System Admin).">
 <style>
 :root {
   --ink: #0a0a0a;
@@ -152,13 +152,13 @@ ol.steps li::before { content: counter(s, decimal-leading-zero); font: 500 12px/
 <section class="slide cover" id="cover">
   <div class="container">
     <div class="reveal">
-      <span class="eyebrow">Implementation plan · examio · 2026-10-18</span>
+      <span class="eyebrow">Implementation plan · kmaedu · 2026-10-18</span>
       <h1>Microservice Refactor <em>+ RBAC</em></h1>
       <p class="sub">Teacher / Student / System Admin — from distributed monolith to real microservices, with fixed roles and an admin role-assignment screen.</p>
     </div>
     <div class="folio reveal">
       <div><span class="label">Date</span><span class="v">2026-10-18</span></div>
-      <div><span class="label">Scope</span><span class="v">examio-be · examio-fe · examio-app</span></div>
+      <div><span class="label">Scope</span><span class="v">kmaedu-be · kmaedu-fe · kmaedu-app</span></div>
       <div><span class="label">Effort</span><span class="v">56.75d</span></div>
       <div><span class="label">Phases</span><span class="v">19 (P17 deferred)</span></div>
       <div><span class="label">Branch</span><span class="v"><code>refactor/microservice-rbac</code></span></div>
@@ -180,11 +180,11 @@ ol.steps li::before { content: counter(s, decimal-leading-zero); font: 500 12px/
         <h2>Split the monolith.<br><em>Put roles on the server.</em></h2>
       </div>
       <div>
-        <p class="lead">Refactor examio-be from distributed monolith to real microservices per <code>/ARCHITECTURE.md</code> (P0–P8). RBAC lands early, together with the RS256/JWKS token. Roles: <code>STUDENT</code> | <code>TEACHER</code> (mutually exclusive) + <code>SYSTEM_ADMIN</code> flag. The DB is reset (no real users), so there is no data migration or backfill. Public <code>/api/v1</code> paths are kept.</p>
+        <p class="lead">Refactor kmaedu-be from distributed monolith to real microservices per <code>/ARCHITECTURE.md</code> (P0–P8). RBAC lands early, together with the RS256/JWKS token. Roles: <code>STUDENT</code> | <code>TEACHER</code> (mutually exclusive) + <code>SYSTEM_ADMIN</code> flag. The DB is reset (no real users), so there is no data migration or backfill. Public <code>/api/v1</code> paths are kept.</p>
         <p class="muted">Decisions (authoritative): <a href="./reports/decisions.md">reports/decisions.md</a>. Inputs: <a href="./reports/scout-current-state-report.md">current state</a> · <a href="./reports/scout-rbac-surface-report.md">RBAC surface</a> · <a href="./research/researcher-01-rbac-report.md">RBAC research</a> · <a href="./research/researcher-02-migration-mechanics-report.md">migration mechanics</a>.</p>
       </div>
     </div>
-    <blockquote class="pull-quote reveal mt-l">Refactor examio-be from distributed monolith to real microservices — and introduce fixed-role RBAC with an admin role-assignment screen.<cite>plan.md · description</cite></blockquote>
+    <blockquote class="pull-quote reveal mt-l">Refactor kmaedu-be from distributed monolith to real microservices — and introduce fixed-role RBAC with an admin role-assignment screen.<cite>plan.md · description</cite></blockquote>
     <div class="three-col reveal mt-l">
       <div class="card"><div class="card-mark">01</div><h4>Data</h4><span class="stat">0</span><h3>Rows migrated</h3><p>The DB is reset locally now and in production at deploy. Columns can be renamed or dropped freely; no backfill anywhere.</p></div>
       <div class="card"><div class="card-mark">02</div><h4>Contract</h4><span class="stat">/api/v1</span><h3>Public paths kept</h3><p>The gateway is rewritten behind the same public routes; a contract test against the phase-01 route snapshot proves coverage.</p></div>
@@ -195,7 +195,7 @@ ol.steps li::before { content: counter(s, decimal-leading-zero); font: 500 12px/
       <ul class="chips">
         <li>Node 22 base image</li><li>Prisma 6.19.x (<code>prisma-client</code> + <code>@prisma/adapter-pg</code>)</li><li>jose@5.10 (CJS)</li><li>http-proxy-middleware@3.0.7</li><li>buf v2 + ts-proto</li><li>amqp-connection-manager</li>
       </ul>
-      <p class="muted mt-m"><code>examio-app</code> (mobile) is not in this checkout. Phase 18 runs in its own repo, iOS + Android parity.</p>
+      <p class="muted mt-m"><code>kmaedu-app</code> (mobile) is not in this checkout. Phase 18 runs in its own repo, iOS + Android parity.</p>
     </div>
   </div>
 </section>
@@ -251,7 +251,7 @@ ol.steps li::before { content: counter(s, decimal-leading-zero); font: 500 12px/
           <tr><td>Deploy target</td><td class="feat">Docker Compose on VPS, K8s-ready (per-service image, GHCR, per-service deploy).</td><td class="label">2026-10-17 · Arch</td></tr>
           <tr><td>Split exam-service</td><td class="feat">Strong split: content, assessment, study-room, vocabulary, ai-chat.</td><td class="label">2026-10-17 · Arch</td></tr>
           <tr><td>Document/RAG data owner</td><td class="feat">New document-service (UserStorage, quota); ai-service own DB <code>ai</code> (pgvector, Alembic).</td><td class="label">2026-10-17 · Arch</td></tr>
-          <tr><td>Repo</td><td class="feat">Keep monorepo <code>examio-be</code>, boundaries via dependency-cruiser + per-service image.</td><td class="label">2026-10-17 · Arch</td></tr>
+          <tr><td>Repo</td><td class="feat">Keep monorepo <code>kmaedu-be</code>, boundaries via dependency-cruiser + per-service image.</td><td class="label">2026-10-17 · Arch</td></tr>
           <tr><td>Auth</td><td class="feat">RS256 + JWKS, access 15m, revoke at gateway (Redis), public <code>/api/v1</code> paths unchanged.</td><td class="label">2026-10-17 · Arch</td></tr>
           <tr><td>Plan scope</td><td class="feat">HOLD — full P0–P8 roadmap + RBAC.</td><td class="label">2026-10-17 · RBAC</td></tr>
           <tr><td>RBAC model</td><td class="feat">Fixed roles + permission catalog in code; admin screen assigns roles, shows role→permission matrix read-only.</td><td class="label">2026-10-17 · RBAC</td></tr>
@@ -377,7 +377,7 @@ flowchart LR
         <li><span class="n">15</span><a href="./phase-15-document-service-and-ai-service-db.md">Document Service &amp; AI-Service DB</a> <span class="d">· 5d · after 03, 10, 11</span></li>
         <li><span class="n">16</span><a href="./phase-16-deploy-independence-and-observability.md">Deploy Independence</a> <span class="d">· 2.5d · after 12–15</span></li>
         <li class="gold"><span class="n">17</span><a href="./phase-17-k8s-readiness.md">Deferred: K8s + Observability + Redis ACL</a> <span class="d">· ~3.5d (excluded) · after 16</span></li>
-        <li><span class="n">18</span><a href="./phase-18-mobile-rbac-parity.md">Mobile RBAC Parity (examio-app)</a> <span class="d">· 2.75d (provisional) · after 09 · before first store release</span></li>
+        <li><span class="n">18</span><a href="./phase-18-mobile-rbac-parity.md">Mobile RBAC Parity (kmaedu-app)</a> <span class="d">· 2.75d (provisional) · after 09 · before first store release</span></li>
         <li><span class="n">19</span><a href="./phase-19-docs-and-architecture-sync.md">Docs &amp; Architecture Sync</a> <span class="d">· 1.25d · after 16</span></li>
       </ul>
     </div>
@@ -413,7 +413,7 @@ flowchart LR
         <div class="meta"><b>P1</b><span>2.25d</span><span>after 01</span></div>
         <h3><a href="./phase-02-contracts-and-infra-libs.md">Contracts &amp; Infra Libs</a></h3>
         <ul>
-          <li><code>examio-be/proto/</code> as the single contract source (buf v2, ts-proto + Python stubs), <code>examio.&lt;svc&gt;.v1</code>.</li>
+          <li><code>kmaedu-be/proto/</code> as the single contract source (buf v2, ts-proto + Python stubs), <code>kmaedu.&lt;svc&gt;.v1</code>.</li>
           <li>Auth proto: <code>GetUsersByIds</code>, <code>ListUsers</code>, <code>SetUserRole</code>, <code>SetSystemAdmin</code>, <code>SetUserStatus</code>; <code>BaseRole</code> enum, no numeric role.</li>
           <li>Idempotent money contracts <code>Debit</code>/<code>Credit</code>/<code>Refund</code> (server in 10); R2 <code>DeleteObjects</code> implemented.</li>
           <li>Ports unified HTTP 3000 / gRPC 50051; <code>libs/grpc</code> (3s deadline, retry only idempotent RPCs), <code>libs/http</code> error envelope.</li>
@@ -605,11 +605,11 @@ flowchart LR
       </article>
     </div>
 
-    <div class="group-head reveal"><span class="k">Mobile · 18</span><p>Cross-repo (<code>examio-app</code>). Runs any time after 09; must finish before the first store release.</p></div>
+    <div class="group-head reveal"><span class="k">Mobile · 18</span><p>Cross-repo (<code>kmaedu-app</code>). Runs any time after 09; must finish before the first store release.</p></div>
     <div class="phase-grid">
       <article class="card phase reveal"><div class="card-mark">P18</div>
         <div class="meta"><b>P2</b><span>2.75d provisional</span><span>after 09</span></div>
-        <h3><a href="./phase-18-mobile-rbac-parity.md">Mobile RBAC Parity (examio-app)</a></h3>
+        <h3><a href="./phase-18-mobile-rbac-parity.md">Mobile RBAC Parity (kmaedu-app)</a></h3>
         <ul>
           <li>Shared KMP <code>AuthSession { user, roles, permissions }</code> + <code>can(p)</code>.</li>
           <li><code>TOKEN_STALE</code>: single-flight refresh, refetch me, reset caches; <code>SESSION_REVOKED</code> → login.</li>
@@ -697,7 +697,7 @@ flowchart LR
           <tr><td>3</td><td><span class="label">Business</span><br>Giáo viên có được lưu word family (&ldquo;Từ đã lưu&rdquo;) như học sinh không?</td><td class="feat">Có, thêm cho TEACHER</td><td>Catalog v1: TEACHER += <code>word_family:save</code>.</td></tr>
           <tr><td>4</td><td><span class="label">Process</span><br>Chiến lược branch khi triển khai 19 phase?</td><td class="feat">Một branch dài</td><td>All work on <code>refactor/microservice-rbac</code>; weekly merge of <code>main</code>; every phase green.</td></tr>
           <tr><td>5</td><td><span class="label">Process</span><br>Với một branch dài, khi nào deploy production (kèm reset DB)?</td><td class="feat">Chỉ một lần khi merge cuối</td><td>Production keeps the current build until the end; one-time cutover runbook (P16).</td></tr>
-          <tr><td>6</td><td><span class="label">Integration</span><br>App mobile (examio-app) đã phát hành lên store và có người dùng thật chưa?</td><td class="feat">Chưa phát hành</td><td>Reverses RT-13: no <code>isAdmin</code>/<code>wallet</code> compat fields; P18 must reach parity before the first store release.</td></tr>
+          <tr><td>6</td><td><span class="label">Integration</span><br>App mobile (kmaedu-app) đã phát hành lên store và có người dùng thật chưa?</td><td class="feat">Chưa phát hành</td><td>Reverses RT-13: no <code>isAdmin</code>/<code>wallet</code> compat fields; P18 must reach parity before the first store release.</td></tr>
           <tr><td>7</td><td><span class="label">Scope</span><br>ai-service còn <code>src/score/</code> … và <code>BenchmarkItem</code> … Sau khi reset DB xử lý thế nào?</td><td class="feat">Xoá cả hai</td><td>P01 deletes <code>src/score/</code>, its dev agent, the benchmark service/routes and the model; P15 no longer migrates them.</td></tr>
         </tbody>
       </table>
@@ -725,15 +725,15 @@ flowchart LR
       <h2>Green on every phase.<br><em>Rehearsed before cutover.</em></h2>
     </div>
     <div class="three-col reveal mt-l">
-      <div class="card"><div class="card-mark">BE</div><h4>Backend</h4><h3><code>yarn build &amp;&amp; yarn test</code></h3><p>Run in <code>examio-be</code> at the end of every phase.</p></div>
-      <div class="card"><div class="card-mark">FE</div><h4>Frontend</h4><h3><code>yarn build &amp;&amp; yarn lint</code></h3><p>Run in <code>examio-fe</code>; <code>yarn test</code> joins once vitest lands in P09.</p></div>
+      <div class="card"><div class="card-mark">BE</div><h4>Backend</h4><h3><code>yarn build &amp;&amp; yarn test</code></h3><p>Run in <code>kmaedu-be</code> at the end of every phase.</p></div>
+      <div class="card"><div class="card-mark">FE</div><h4>Frontend</h4><h3><code>yarn build &amp;&amp; yarn lint</code></h3><p>Run in <code>kmaedu-fe</code>; <code>yarn test</code> joins once vitest lands in P09.</p></div>
       <div class="card dark"><div class="card-mark">APP</div><h4>Runtime</h4><h3>App runs via compose</h3><p>Milestones are verified on local compose only; production sees one deploy at the final merge.</p></div>
     </div>
 
     <div class="two-col reveal mt-l">
       <div>
         <h4>Production cutover runbook (P16, one-time)</h4>
-        <p>Lives in <code>examio-be/deploy/cutover-runbook.md</code>; smoke script <code>examio-be/scripts/cutover-smoke.ts</code>. Full commands in <a href="./phase-16-deploy-independence-and-observability.md">phase-16</a>.</p>
+        <p>Lives in <code>kmaedu-be/deploy/cutover-runbook.md</code>; smoke script <code>kmaedu-be/scripts/cutover-smoke.ts</code>. Full commands in <a href="./phase-16-deploy-independence-and-observability.md">phase-16</a>.</p>
         <div class="track-box mt-m">
           <h4>Rollback</h4>
           <p style="margin:0">Any failure in steps 4–10, or within the 24 h rollback window: <code>docker compose down</code>, remove the new volumes, checkout <code>pre-cutover</code>, <code>pg_restore</code> the step-1 dump, restore the old <code>R2_BUCKET_NAME</code>, start the <code>:pre-cutover</code> images, smoke login. Data created after cutover is lost (accepted; announced with the window). <code>CUTOVER_DONE</code> stays false.</p>
@@ -785,7 +785,7 @@ flowchart LR
       <h4>Next</h4>
       <h2>Start at phase 01.<br><em>plan.md drives execution.</em></h2>
     </div>
-    <code class="cmd reveal"><span class="p">$ </span>/tkm:takumi /Users/tgiap.dev/devs/examio/plans/261017-1547-microservice-refactor-rbac/plan.md</code>
+    <code class="cmd reveal"><span class="p">$ </span>/tkm:takumi /Users/tgiap.dev/devs/kmaedu/plans/261017-1547-microservice-refactor-rbac/plan.md</code>
     <div class="three-col reveal mt-m">
       <div class="card"><div class="card-mark">01</div><h4>Gate</h4><h3>Spike verdict first</h3><p>The P01 Prisma/bundling spike verdict (go | no-go + fallback) is recorded in <a href="./plan.md">plan.md</a> before phase 11 starts.</p></div>
       <div class="card"><div class="card-mark">02</div><h4>Cross-plan</h4><h3>Supersedes role removal</h3><p>Supersedes the role removal of <code>260513-2045-remove-user-role</code> and <code>260513-1957-unify-backend-role-access</code> (roles re-introduced, new model). Pending mobile plans <code>260525-0629-mobile-screens</code> and <code>260704-1030-ai-flashcard-quiz-generation-app</code> must respect the role gating from phases 09/18.</p></div>

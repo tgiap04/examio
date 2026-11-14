@@ -9,7 +9,7 @@ mở chi tiết phòng (header + danh sách phiên thi + nút tạo phiên).
 ## Pattern hiện có (theo đúng repo)
 - VM: `androidx.lifecycle.ViewModel` + `MutableStateFlow<State>`, `init{load()}`, `viewModelScope.launch`, khởi tạo `remember { XxxViewModel(repo) }`.
 - Nav con: state-based `when` trong composable (giống `DeThiScreen` → `managing?.let { QuizSetManageScreen }`).
-- UI dùng `ExamioCard`, `ExamioCardShape`, `MaterialTheme.colorScheme`, tiếng Việt.
+- UI dùng `KMAEduCard`, `KMAEduCardShape`, `MaterialTheme.colorScheme`, tiếng Việt.
 - Mỗi file < 200 dòng → tách VM và screen riêng.
 
 ## Files tạo (`androidApp/.../features/exams/room/`)

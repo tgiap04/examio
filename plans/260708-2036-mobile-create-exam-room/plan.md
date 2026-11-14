@@ -1,7 +1,7 @@
-# Bổ sung tính năng Phòng thi (Exam Room) cho examio-app — Android
+# Bổ sung tính năng Phòng thi (Exam Room) cho kmaedu-app — Android
 
 ## Bối cảnh
-`examio-fe` có đủ luồng quản lý phòng thi (tạo phòng → tạo phiên thi). `examio-app` (KMP)
+`kmaedu-fe` có đủ luồng quản lý phòng thi (tạo phòng → tạo phiên thi). `kmaedu-app` (KMP)
 mới chỉ có `ExamRoomApiService` **read-only** và tab "Phòng thi" đang **mock tĩnh**.
 Task: bổ sung luồng đầy đủ **Tạo phòng thi + Danh sách phòng + Tạo phiên thi** trên **Android**.
 
@@ -11,7 +11,7 @@ Task: bổ sung luồng đầy đủ **Tạo phòng thi + Danh sách phòng + T�
 - **Lối vào**: tab **Đề thi (DeThi)** — thêm mục "Phòng thi" mở luồng con.
 - SDD mode = off → không có stage spec.
 
-## Contract backend (nguồn sự thật — đã xác minh trong examio-be)
+## Contract backend (nguồn sự thật — đã xác minh trong kmaedu-be)
 - `POST /examrooms` body `{title, description?, quizSetId}` → `{message, examRoom}`
 - `GET /examrooms/list?page&limit&search?` → `{examRooms[], total, page, limit, totalPages}`
 - `GET /examrooms/detail/:id` → `ExamRoom` (kèm quizSet, host)

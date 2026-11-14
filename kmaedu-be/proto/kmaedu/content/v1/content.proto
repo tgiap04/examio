@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package kmaedu.content.v1;
+
+// Read access to the content domain for assessment-service. Served by content-service.
+// Every RPC acts as the owner: callers forward the TEACHER's access token (service tokens are
+// refused). A quiz set that is missing or not the caller's is NOT_FOUND (no existence oracle);
+// a request without a user token is UNAUTHENTICATED.
+service ContentService {
+  // The full, immutable view of one owned quiz set (labels + questions + a content hash), taken
+  // when an exam session is created or refreshed. NOT_FOUND unless the caller owns the set.
+  rpc GetQuizSetSnapshot(GetQuizSetSnapshotRequest) returns (QuizSetSnapshot);
+  // Summaries of the caller's own sets; missing or foreign ids are omitted.
+  rpc GetQuizSetsByIds(GetQuizSetsByIdsRequest) returns (GetQuizSetsByIdsResponse);
+  // Counts of the caller's own content (the teacher dashboard's history stats).
+  rpc GetUserContentStats(GetUserContentStatsRequest) returns (UserContentStats);
+}
+
+message GetQuizSetSnapshotRequest {
+  string quiz_set_id = 1;
+}
+
+message GetQuizSetsByIdsRequest {
+  repeated string ids = 1;
+  // Fill `content_hash` of every summary (teacher detail views only: it reads every question).
+  bool with_content_hash = 2;
+}
+
+message GetQuizSetsByIdsResponse {
+  repeated QuizSetSummary quiz_sets = 1;
+}
+
+message QuizSetSummary {
+  string id = 1;
+  string title = 2;
+  // Same value as `QuizSetSnapshot.content_hash` for the same content; set only with `with_content_hash`.
+  optional string content_hash = 3;
+  // Number of questions in the set (teacher room lists show it); always set by content-service.
+  optional int32 question_count = 4;
+}
+
+message GetUserContentStatsRequest {}
+
+message UserContentStats {
+  int32 quiz_set_count = 1;
+  int32 flashcard_set_count = 2;
+}
+
+message QuizSetSnapshot {
+  int32 schema_version = 1;
+  string quiz_set_id = 2;
+  string title = 3;
+  string owner_id = 4;
+  // RFC 3339 instant the snapshot was read.
+  string taken_at = 5;
+  // sha256 (hex) of the canonical JSON of the labels and questions.
+  string content_hash = 6;
+  repeated SnapshotLabel labels = 7;
+  repeated SnapshotQuestion questions = 8;
+}
+
+message SnapshotLabel {
+  string id = 1;
+  string name = 2;
+  int32 order = 3;
+  optional string color = 4;
+}
+
+message SnapshotQuestion {
+  string id = 1;
+  string question = 2;
+  repeated string options = 3;
+  // The correct option's letter ("A", "B", ...).
+  string answer = 4;
+  optional string label_id = 5;
+  int32 order = 6;
+}

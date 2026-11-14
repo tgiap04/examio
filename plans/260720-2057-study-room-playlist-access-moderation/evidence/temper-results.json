@@ -22,7 +22,7 @@
       "ts": "2026-07-21"
     },
     {
-      "command": "yarn build (examio-fe: tsc + vite)",
+      "command": "yarn build (kmaedu-fe: tsc + vite)",
       "exitCode": 0,
       "status": "pass",
       "summary": "frontend built successfully — playlist/access/block/moderation UI + contract mirror",

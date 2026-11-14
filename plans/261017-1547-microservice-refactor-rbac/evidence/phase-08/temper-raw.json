@@ -120,19 +120,19 @@
     "ts": "2026-10-20T14:37:10Z"
   },
   {
-    "command": "RABBITMQ_URL=amqp://gateway:ci-only-gateway-pass@localhost:55672 RABBITMQ_AUTH_URL=amqp://auth:ci-only-auth-pass@localhost:55672 NODE_OPTIONS='--require /private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/net-spy.js' ../../node_modules/.bin/jest --config test/jest-e2e.json test/gateway.e2e-spec.ts test/gateway-streaming.e2e-spec.ts test/gateway-expect.e2e-spec.ts test/gateway-authz.e2e-spec.ts test/gateway-control.e2e-spec.ts test/gateway-edge.e2e-spec.ts test/redis-scripts.e2e-spec.ts",
+    "command": "RABBITMQ_URL=amqp://gateway:ci-only-gateway-pass@localhost:55672 RABBITMQ_AUTH_URL=amqp://auth:ci-only-auth-pass@localhost:55672 NODE_OPTIONS='--require /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/net-spy.js' ../../node_modules/.bin/jest --config test/jest-e2e.json test/gateway.e2e-spec.ts test/gateway-streaming.e2e-spec.ts test/gateway-expect.e2e-spec.ts test/gateway-authz.e2e-spec.ts test/gateway-control.e2e-spec.ts test/gateway-edge.e2e-spec.ts test/redis-scripts.e2e-spec.ts",
     "exitCode": 0,
     "summary": "Snapshots:   0 total Time:        23.341 s Force exiting Jest: Have you considered using `--detectOpenHandles` to detect async operations that kept running after all tests finished? ",
     "ts": "2026-10-20T14:37:33Z"
   },
   {
-    "command": "env -i PATH=\"$PATH\" HOME=\"$HOME\" bash -c 'set -a; . \"/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/temper.env\"; set +a; export BOOT_CWD=\"/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/bootcwd\" COMPOSE_DEFAULTS=1 PORT=3580 GRPC_PORT=50151 SERVICES=\"auth exam finance admin r2 gateway\"; exec scripts/boot-built-services.sh'",
+    "command": "env -i PATH=\"$PATH\" HOME=\"$HOME\" bash -c 'set -a; . \"/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/temper.env\"; set +a; export BOOT_CWD=\"/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/bootcwd\" COMPOSE_DEFAULTS=1 PORT=3580 GRPC_PORT=50151 SERVICES=\"auth exam finance admin r2 gateway\"; exec scripts/boot-built-services.sh'",
     "exitCode": 0,
     "summary": "ok   gateway-service (http 3580, grpc up)",
     "ts": "2026-10-20T14:38:45Z"
   },
   {
-    "command": "env -i PATH=\"$PATH\" HOME=\"$HOME\" bash -c 'set -a; . \"/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/temper.env\"; set +a; export BOOT_CWD=\"/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/bootcwd\" COMPOSE_DEFAULTS=0 PORT=3580 GRPC_PORT=50151 SERVICES=\"auth exam finance admin r2 gateway\"; exec scripts/boot-built-services.sh'",
+    "command": "env -i PATH=\"$PATH\" HOME=\"$HOME\" bash -c 'set -a; . \"/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/temper.env\"; set +a; export BOOT_CWD=\"/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/bootcwd\" COMPOSE_DEFAULTS=0 PORT=3580 GRPC_PORT=50151 SERVICES=\"auth exam finance admin r2 gateway\"; exec scripts/boot-built-services.sh'",
     "exitCode": 0,
     "summary": "ok   gateway-service (http 3580, grpc up)",
     "ts": "2026-10-20T14:38:51Z"
@@ -144,7 +144,7 @@
     "ts": "2026-10-20T15:15:09Z"
   },
   {
-    "command": "TZ=UTC node_modules/.bin/jest --coverage --coverageReporters=text --coverageReporters=json-summary --coverageDirectory=/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/cov-phase08 --collectCoverageFrom='apps/admin-service/src/modules/admin-roles/**/*.ts' --collectCoverageFrom='apps/admin-service/src/modules/admin-users/**/*.ts' --collectCoverageFrom='apps/admin-service/src/clients/auth.client.ts' --collectCoverageFrom='apps/auth-service/src/user-status/**/*.ts' --collectCoverageFrom='!**/*.spec.ts' --testPathIgnorePatterns=e2e-spec",
+    "command": "TZ=UTC node_modules/.bin/jest --coverage --coverageReporters=text --coverageReporters=json-summary --coverageDirectory=/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/cov-phase08 --collectCoverageFrom='apps/admin-service/src/modules/admin-roles/**/*.ts' --collectCoverageFrom='apps/admin-service/src/modules/admin-users/**/*.ts' --collectCoverageFrom='apps/admin-service/src/clients/auth.client.ts' --collectCoverageFrom='apps/auth-service/src/user-status/**/*.ts' --collectCoverageFrom='!**/*.spec.ts' --testPathIgnorePatterns=e2e-spec",
     "exitCode": 0,
     "summary": "Tests:       1660 passed, 1660 total Snapshots:   0 total Time:        14.07 s ",
     "ts": "2026-10-20T15:15:24Z"
@@ -162,25 +162,25 @@
     "ts": "2026-10-20T15:17:13Z"
   },
   {
-    "command": "! grep -rn \"grant-admin\\|revoke-admin\\|grantAdminApi\" examio-be/apps examio-fe/src",
+    "command": "! grep -rn \"grant-admin\\|revoke-admin\\|grantAdminApi\" kmaedu-be/apps kmaedu-fe/src",
     "exitCode": 0,
     "summary": "no matches (gate pass)",
     "ts": "2026-10-20T15:17:13Z"
   },
   {
-    "command": "! grep -rn \"isAdmin\" examio-fe/src/apis/adminApi.ts examio-fe/src/components/admin examio-fe/src/stores/useAdminStore.ts examio-be/apps/admin-service/src",
+    "command": "! grep -rn \"isAdmin\" kmaedu-fe/src/apis/adminApi.ts kmaedu-fe/src/components/admin kmaedu-fe/src/stores/useAdminStore.ts kmaedu-be/apps/admin-service/src",
     "exitCode": 0,
     "summary": "no matches (gate pass)",
     "ts": "2026-10-20T15:17:13Z"
   },
   {
-    "command": "! grep -rn \"InvalidateUser|invalidateUser|gateway-control\" examio-be/apps/admin-service/src",
+    "command": "! grep -rn \"InvalidateUser|invalidateUser|gateway-control\" kmaedu-be/apps/admin-service/src",
     "exitCode": 0,
     "summary": "no matches (gate pass)",
     "ts": "2026-10-20T15:17:13Z"
   },
   {
-    "command": "grep -n \"prisma.user.update|tx.user.update\" examio-be/apps/admin-service/src/modules/admin-users/admin-users.service.ts",
+    "command": "grep -n \"prisma.user.update|tx.user.update\" kmaedu-be/apps/admin-service/src/modules/admin-users/admin-users.service.ts",
     "exitCode": 0,
     "summary": "one match at :217 inside updateUser (fields isVerified/name/bio only; role/admin/ban rejected by strict DTO)",
     "ts": "2026-10-20T15:17:13Z"

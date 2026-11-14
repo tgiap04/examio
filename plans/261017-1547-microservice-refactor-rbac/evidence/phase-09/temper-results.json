@@ -1,7 +1,7 @@
 {
   "commands": [
     {
-      "command": "ci.yml python yaml load :: python3 -c 'import yaml,sys; d=yaml.safe_load(open(\"'/Users/tgiap.dev/devs/examio'/.github/workflows/ci.yml\")); print(sorted(d[\"jobs\"].keys()))'",
+      "command": "ci.yml python yaml load :: python3 -c 'import yaml,sys; d=yaml.safe_load(open(\"'/Users/tgiap.dev/devs/kmaedu'/.github/workflows/ci.yml\")); print(sorted(d[\"jobs\"].keys()))'",
       "exitCode": 0,
       "status": "pass",
       "summary": "ci.yml loads as YAML; jobs: be-boot, be-check, be-e2e, be-unit, buf, deploy-config, fe, fe-permissions-drift",
@@ -22,10 +22,10 @@
       "ts": "2026-10-21T14:22:17Z"
     },
     {
-      "command": "re-temper-3: auth e2e (dedicated examio_e2e DB, RMQ up): app+refresh-cookie+token+role-change",
+      "command": "re-temper-3: auth e2e (dedicated kmaedu_e2e DB, RMQ up): app+refresh-cookie+token+role-change",
       "exitCode": 0,
       "status": "pass",
-      "summary": "dedicated examio_e2e DB + RabbitMQ up: 4 suites, 24 tests pass",
+      "summary": "dedicated kmaedu_e2e DB + RabbitMQ up: 4 suites, 24 tests pass",
       "ts": "2026-10-21T14:26:54Z"
     },
     {
@@ -85,7 +85,7 @@
       "ts": "2026-10-21T18:29:34Z"
     },
     {
-      "command": "re-temper-9: migrate deploy examio_p09",
+      "command": "re-temper-9: migrate deploy kmaedu_p09",
       "exitCode": 0,
       "status": "pass",
       "summary": "migrations applied (matrix DB)",
@@ -197,7 +197,7 @@
       "ts": "2026-10-21T18:48:59.016833Z"
     },
     {
-      "command": "final: grep user?.isAdmin|TeacherRoute in examio-fe/src; isAdmin in types/user.ts",
+      "command": "final: grep user?.isAdmin|TeacherRoute in kmaedu-fe/src; isAdmin in types/user.ts",
       "exitCode": 0,
       "status": "pass",
       "summary": "0 matches",

@@ -3,7 +3,7 @@
   "mode": "code",
   "acceptanceCriteria": [
     "yarn typecheck, build:all and test exit 0; admin-roles and ban e2e pass",
-    "examio-fe build and lint exit 0",
+    "kmaedu-fe build and lint exit 0",
     "no grant-admin, revoke-admin or grantAdminApi left in backend or FE",
     "no isAdmin left in admin FE files or admin-service; admin-service has no direct InvalidateUser/gateway-control usage; admin user writes for role/admin/ban go through auth RPCs",
     "SYSTEM_ADMIN can assign STUDENT/TEACHER and toggle SYSTEM_ADMIN from /admin/roles; non-admins get 403",
@@ -14,15 +14,15 @@
     "demotion dialog explains content is kept and management is locked"
   ],
   "touchpoints": [
-    "examio-be/apps/admin-service/src/modules/admin-users",
-    "examio-be/apps/admin-service/src/modules/admin-roles",
-    "examio-be/apps/auth-service/src/user-status",
-    "examio-be/apps/auth-service/src/grpc",
-    "examio-fe/src/pages/admin",
-    "examio-fe/src/components/admin",
-    "examio-fe/src/apis/adminApi.ts",
-    "examio-fe/src/stores/useAdminStore.ts",
-    "examio-fe/src/routes/index.tsx"
+    "kmaedu-be/apps/admin-service/src/modules/admin-users",
+    "kmaedu-be/apps/admin-service/src/modules/admin-roles",
+    "kmaedu-be/apps/auth-service/src/user-status",
+    "kmaedu-be/apps/auth-service/src/grpc",
+    "kmaedu-fe/src/pages/admin",
+    "kmaedu-fe/src/components/admin",
+    "kmaedu-fe/src/apis/adminApi.ts",
+    "kmaedu-fe/src/stores/useAdminStore.ts",
+    "kmaedu-fe/src/routes/index.tsx"
   ],
   "blastRadius": [
     "admin user management (ban/unban, profile edits)",

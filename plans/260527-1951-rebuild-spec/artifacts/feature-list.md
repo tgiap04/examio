@@ -89,7 +89,7 @@ The system uploads, signs, lists, and deletes user files/media via R2, while kee
 ## F012 - Cross-Platform Mobile Companion
 Android and iOS expose mobile versions of auth, AI, study, exams, history, account, wallet, and teacher management using shared KMP API/repository contracts.
 - User stories: US019, US020
-- Screens/routes: Android `ExamioApp` tabs, iOS `ContentView` TabView, app deep links
+- Screens/routes: Android `KMAEduApp` tabs, iOS `ContentView` TabView, app deep links
 - APIs: API001, API003, API004, API005, API006, API009, API010, API016
 - Entities: Same backend models via shared KMP DTOs
 - Notes: Shared API layer is real; most platform UIs outside auth still need repository wiring. Non-auth deep link completion needs verification.

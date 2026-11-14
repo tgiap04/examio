@@ -6,7 +6,7 @@
 
 ## Overview
 
-QuizAuthoring enables authenticated teachers to create, edit, and delete quiz sets; manage labels (chapters/sections) and questions within each set; control visibility (public/private); and generate quizzes from uploaded documents via AI. Students can view their own AI-processed PDF history and delete records. The feature spans `SCR016/REG001` (quiz set grid on MyMaterialsPage), `SCR018/REG001` (PDF history list), `SCR020` (PDF history page), `SCR021` (manage exam page), `SCR022` (quiz set detail), `SCR024` (AI tool, quiz portion), and `SCR017` (flashcard page, modal trigger). Backend lives in `examio-be/apps/content-service/src/modules/quizset/` and the AI job pipeline in `examio-be/apps/content-service/src/modules/ai/`.
+QuizAuthoring enables authenticated teachers to create, edit, and delete quiz sets; manage labels (chapters/sections) and questions within each set; control visibility (public/private); and generate quizzes from uploaded documents via AI. Students can view their own AI-processed PDF history and delete records. The feature spans `SCR016/REG001` (quiz set grid on MyMaterialsPage), `SCR018/REG001` (PDF history list), `SCR020` (PDF history page), `SCR021` (manage exam page), `SCR022` (quiz set detail), `SCR024` (AI tool, quiz portion), and `SCR017` (flashcard page, modal trigger). Backend lives in `kmaedu-be/apps/content-service/src/modules/quizset/` and the AI job pipeline in `kmaedu-be/apps/content-service/src/modules/ai/`.
 
 ## Polymorphic Behavior
 
@@ -69,7 +69,7 @@ None.
 
 **INT-006_01 — AI Generation Pipeline**
 **Linked FR:** FR-006_09, FR-006_10
-**Source:** `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` (inferred)
+**Source:** `kmaedu-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` (inferred)
 **Type:** api-call
 **Target:** `ai-service` (Python FastAPI)
 **Trigger:** `POST /api/v1/ai/job` with `generationType: "quiz"`
@@ -363,14 +363,14 @@ None.
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| QuizSetController | `examio-be/apps/content-service/src/modules/quizset/quizset.controller.ts` | REST endpoints for quiz set CRUD |
-| QuizSetService | `examio-be/apps/content-service/src/modules/quizset/quizset.service.ts` | Business logic for quiz set operations |
-| QuizQuestionRepository | `examio-be/apps/exam-service/src/modules/quizset/quiz-question.repository.ts` | Question CRUD via Prisma |
-| AIJobController | `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` | AI job create/poll/cancel endpoints |
-| useGenerationGuard | `examio-fe/src/hooks/useGenerationGuard.ts` | Client-side job polling + localStorage resume (BL015) |
-| QuizSetModal | `examio-fe/src/components/k/quizset/QuizSetModal.tsx` | Create/edit quiz set dialog |
-| QuestionList | `examio-fe/src/components/k/quizset/QuestionList.tsx` | Question management list on detail page |
-| LabelManager | `examio-fe/src/components/k/quizset/LabelManager.tsx` | Label CRUD on quiz set detail page |
+| QuizSetController | `kmaedu-be/apps/content-service/src/modules/quizset/quizset.controller.ts` | REST endpoints for quiz set CRUD |
+| QuizSetService | `kmaedu-be/apps/content-service/src/modules/quizset/quizset.service.ts` | Business logic for quiz set operations |
+| QuizQuestionRepository | `kmaedu-be/apps/exam-service/src/modules/quizset/quiz-question.repository.ts` | Question CRUD via Prisma |
+| AIJobController | `kmaedu-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` | AI job create/poll/cancel endpoints |
+| useGenerationGuard | `kmaedu-fe/src/hooks/useGenerationGuard.ts` | Client-side job polling + localStorage resume (BL015) |
+| QuizSetModal | `kmaedu-fe/src/components/k/quizset/QuizSetModal.tsx` | Create/edit quiz set dialog |
+| QuestionList | `kmaedu-fe/src/components/k/quizset/QuestionList.tsx` | Question management list on detail page |
+| LabelManager | `kmaedu-fe/src/components/k/quizset/LabelManager.tsx` | Label CRUD on quiz set detail page |
 
 ## Unresolved Questions
 

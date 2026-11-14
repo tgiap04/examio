@@ -13,7 +13,7 @@
 - Document `register` becomes today's `chargeCredits=false` branch: insert `PENDING` + `document.uploaded` outbox in one transaction.
 - `GetQuota` stays. Assessment `history-stats` reads `fileCount` (`examattempt.service.ts:1308`); `used_this_month` and `file_count` remain, and `monthly_limit` is reserved.
 - buf FILE category reports `FIELD_NO_DELETE` and `ENUM_VALUE_NO_DELETE` even for reserved fields (verified locally). Scoped `ignore_only` entries for `document.proto` are required.
-- The ai-chat `aichat.events` queue keeps its `finance.subscription.changed` binding until 05 (infra). The handler is deleted here. Check how `@examio/messaging` treats an event with no handler (ack and ignore, or DLQ). Interim only, never released.
+- The ai-chat `aichat.events` queue keeps its `finance.subscription.changed` binding until 05 (infra). The handler is deleted here. Check how `@kmaedu/messaging` treats an event with no handler (ack and ignore, or DLQ). Interim only, never released.
 
 ## Requirements
 - Functional:
@@ -28,7 +28,7 @@
 - Document: `register` / `createFromBytes` → R2 upload → tx (row `PENDING` + outbox `document.uploaded`). The new `DocumentQueueService` keeps `downloadUrl` and `recordUploaded` (moved from `document-charge.service.ts`). `DocumentReaper` is deleted, so the worker loses the 60 s loop.
 - ai-chat: `AiChatTurnService.admit()` keeps the ownership and document checks only.
 
-## Related Code Files (BE = `/Users/tgiap.dev/devs/examio/examio-be`)
+## Related Code Files (BE = `/Users/tgiap.dev/devs/kmaedu/kmaedu-be`)
 Content (`BE/apps/content-service`):
 - Delete `src/modules/ai/generation-charge.service.ts`, `src/modules/finance-client/**`, `test/generation/generation-free-mode.e2e-spec.ts`, `test/ownership/support/fake-finance.ts`.
 - Modify `src/modules/ai/{generation-job.service.ts, generation.constants.ts, generation-request-rules.ts, generation-job.repository.ts, generation-events.handler.ts, generation-reaper.service.ts, ai.service.ts, generation-query.service.ts, document-mapper.ts, generation.module.ts}`, `src/content-service.module.ts`, `src/worker.module.ts` (comment), `.env.example` (`FINANCE_GRPC_URL`, `AI_FREE_MODE`), `prisma/schema.prisma` (model comment, default `QUEUED`, drop `chargeKey`, `chargedAmount`, `refundedAt`, `@@index([status, refundedAt])`).
@@ -48,8 +48,8 @@ ai-chat (`BE/apps/ai-chat-service`):
 - Rewrite tests: `src/modules/events/event-handlers.spec.ts`, `test/events.e2e-spec.ts`, `test/support/{ai-chat-test-app.ts,fake-document.ts}`, `src/modules/ai-chat/ai-chat-document-wait.spec.ts`.
 
 Shared / other:
-- Modify `BE/proto/examio/document/v1/document.proto`: `reserved 1; reserved "DOCUMENT_PROCESSING_STATUS_PENDING_CHARGE";` in the enum, `reserved 9 / "credit_charged"`, `reserved 4 / "charge_credits"`, `reserved 2 / "monthly_limit"`, and the service comments updated. Comment-only edits in `BE/proto/examio/events/v1/{content_events,ai_events,document_events}.proto`.
-- Modify `BE/proto/buf.yaml`: add `breaking.ignore_only` `FIELD_NO_DELETE` and `ENUM_VALUE_NO_DELETE` for `examio/document/v1/document.proto`, with a comment saying to remove after merge.
+- Modify `BE/proto/kmaedu/document/v1/document.proto`: `reserved 1; reserved "DOCUMENT_PROCESSING_STATUS_PENDING_CHARGE";` in the enum, `reserved 9 / "credit_charged"`, `reserved 4 / "charge_credits"`, `reserved 2 / "monthly_limit"`, and the service comments updated. Comment-only edits in `BE/proto/kmaedu/events/v1/{content_events,ai_events,document_events}.proto`.
+- Modify `BE/proto/buf.yaml`: add `breaking.ignore_only` `FIELD_NO_DELETE` and `ENUM_VALUE_NO_DELETE` for `kmaedu/document/v1/document.proto`, with a comment saying to remove after merge.
 - Modify `BE/libs/grpc/src/clients/document-errors.ts` (+spec): drop the credit/charge/quota mappers.
 - Modify `BE/apps/assessment-service/test/ownership/support/fake-document.ts` (drop `monthlyLimit`, `creditCharged`).
 - Regenerate `BE/apps/ai-service` document stubs (`document_pb2*.py/.pyi`) via `apps/ai-service/scripts/gen_grpc.sh`, and update the comments in `src/backend/messaging/{document_handlers.py, generation_handler.py}`.
@@ -64,7 +64,7 @@ Shared / other:
 2. Content: rewrite `submit/cancel/reap/fail`, then delete the charge service, finance module and credit helpers. Drop `PENDING_CHARGE` from `JobStatus` and `OPEN_STATUSES` and delete `REFUNDABLE_STATUSES`. `generation-query` keeps mapping unknown status to 'pending'.
 3. Document: extract `DocumentQueueService`. Simplify register and upload. Remove `enforceQuota` (3 call sites), the reaper, and the `VISIBLE` filter terms on `chargeFailedAt` / `PENDING_CHARGE` (repository lines 11-14 and the `deleteVisible` SQL at 157). `getQuota` returns `{usedThisMonth, fileCount}`.
 4. ai-chat: delete the limits service, handler and constants. `admit()` keeps the ownership checks.
-5. Proto: apply the `reserved` edits and the buf ignores, then run `yarn proto:lint` and `yarn proto:gen`. Check breaking with `node_modules/.bin/buf breaking proto --against '../.git#branch=develop,subdir=examio-be/proto'`; expect exit 0. Run `apps/ai-service/scripts/gen_grpc.sh`.
+5. Proto: apply the `reserved` edits and the buf ignores, then run `yarn proto:lint` and `yarn proto:gen`. Check breaking with `node_modules/.bin/buf breaking proto --against '../.git#branch=develop,subdir=kmaedu-be/proto'`; expect exit 0. Run `apps/ai-service/scripts/gen_grpc.sh`.
 6. Migrations, which only write SQL for review:
    - `PRISMA_ADMIN_URL=… scripts/prisma-migrate-dev.sh content remove_generation_charge` and `… document remove_upload_charge`.
    - Prepend the defensive dev-DB statements **before** the DROPs:
@@ -93,7 +93,7 @@ Shared / other:
 - Changed: content, document and ai-chat services; `document.proto`; `libs/grpc` document-errors; two migrations; Python stubs.
 - Impacted: assessment (`GetQuota` via `libs/grpc` `document.client`), ai-service (stubs), gateway (no route change).
 - Will verify (whole groups, because the area is safety-critical):
-  - `cd examio-be && yarn typecheck`
+  - `cd kmaedu-be && yarn typecheck`
   - `yarn test apps/content-service apps/document-service apps/ai-chat-service libs/grpc`
   - `cd apps/content-service && ../../node_modules/.bin/jest --config test/jest-e2e.json` and the same for `apps/document-service`, `apps/ai-chat-service` and `apps/assessment-service` (fake-document and history-stats `GetQuota`).
   - `yarn test test/authz test/cross-app/rpc-guard-table.spec.ts test/build`

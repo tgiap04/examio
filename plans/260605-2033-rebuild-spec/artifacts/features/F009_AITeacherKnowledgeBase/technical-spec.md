@@ -6,7 +6,7 @@
 
 ## Overview
 
-AITeacherKnowledgeBase enables authenticated users to build a personal AI tutor knowledge base by uploading documents, organizing them into folders, triggering AI processing (chunking + embedding), reprocessing files, bulk-importing datasets, and viewing knowledge base statistics. The processed documents serve as the grounding context for the AI chat feature. The feature spans `SCR025/REG001` (FolderPanel), `SCR025/REG002` (FilePanel), `SCR025/REG003` (DatasetImportPanel), and `SCR025/REG004` (StatsPanel). Backend lives in `examio-be/apps/exam-service/src/modules/ai-tutor/` and the AI processing pipeline in `examio-be/apps/ai-service/`.
+AITeacherKnowledgeBase enables authenticated users to build a personal AI tutor knowledge base by uploading documents, organizing them into folders, triggering AI processing (chunking + embedding), reprocessing files, bulk-importing datasets, and viewing knowledge base statistics. The processed documents serve as the grounding context for the AI chat feature. The feature spans `SCR025/REG001` (FolderPanel), `SCR025/REG002` (FilePanel), `SCR025/REG003` (DatasetImportPanel), and `SCR025/REG004` (StatsPanel). Backend lives in `kmaedu-be/apps/exam-service/src/modules/ai-tutor/` and the AI processing pipeline in `kmaedu-be/apps/ai-service/`.
 
 ## Polymorphic Behavior
 
@@ -61,7 +61,7 @@ None.
 
 **INT-009_01 — Document Processing Pipeline**
 **Linked FR:** FR-009_06, FR-009_08
-**Source:** `examio-be/apps/exam-service/src/modules/ai-tutor/knowledge-file.controller.ts` (inferred)
+**Source:** `kmaedu-be/apps/exam-service/src/modules/ai-tutor/knowledge-file.controller.ts` (inferred)
 **Type:** api-call
 **Target:** `ai-service` (Python FastAPI)
 **Trigger:** File upload or reprocess request
@@ -70,7 +70,7 @@ None.
 
 **INT-009_02 — Dataset Import Job**
 **Linked FR:** FR-009_10
-**Source:** `examio-be/apps/exam-service/src/modules/ai-tutor/dataset-import.controller.ts` (inferred)
+**Source:** `kmaedu-be/apps/exam-service/src/modules/ai-tutor/dataset-import.controller.ts` (inferred)
 **Type:** queue-job
 **Target:** `ai-service`
 **Trigger:** User submits dataset import form
@@ -79,7 +79,7 @@ None.
 
 **INT-009_03 — Knowledge Graph Build**
 **Linked FR:** FR-009_06
-**Source:** `examio-be/apps/ai-service/` (inferred)
+**Source:** `kmaedu-be/apps/ai-service/` (inferred)
 **Type:** event-publish
 **Target:** `UserStorageGraph` + `UserStorageGraphGroup`
 **Trigger:** Document processing completion
@@ -263,16 +263,16 @@ None.
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| KnowledgeFolderController | `examio-be/apps/exam-service/src/modules/ai-tutor/knowledge-folder.controller.ts` | REST endpoints for folder CRUD |
-| KnowledgeFileController | `examio-be/apps/exam-service/src/modules/ai-tutor/knowledge-file.controller.ts` | REST endpoints for file upload, delete, reprocess |
-| DatasetImportController | `examio-be/apps/exam-service/src/modules/ai-tutor/dataset-import.controller.ts` | Dataset import job endpoints |
-| KnowledgeStatsController | `examio-be/apps/exam-service/src/modules/ai-tutor/knowledge-stats.controller.ts` | Knowledge base statistics endpoint |
-| R2ClientService | `examio-be/apps/exam-service/src/modules/r2/r2-client.service.ts` | File upload to R2 storage (BL005) |
-| OcrService | `examio-be/apps/exam-service/src/modules/ocr/ocr-client.service.ts` | Document OCR processing (BL007) |
-| FolderPanel | `examio-fe/src/components/k/genai-knowledge/FolderPanel.tsx` | Folder CRUD UI panel |
-| FilePanel | `examio-fe/src/components/k/genai-knowledge/FilePanel.tsx` | File list and upload UI panel |
-| DatasetImportPanel | `examio-fe/src/components/k/genai-knowledge/DatasetImportPanel.tsx` | Dataset import job UI |
-| StatsPanel | `examio-fe/src/components/k/genai-knowledge/StatsPanel.tsx` | Knowledge base statistics display |
+| KnowledgeFolderController | `kmaedu-be/apps/exam-service/src/modules/ai-tutor/knowledge-folder.controller.ts` | REST endpoints for folder CRUD |
+| KnowledgeFileController | `kmaedu-be/apps/exam-service/src/modules/ai-tutor/knowledge-file.controller.ts` | REST endpoints for file upload, delete, reprocess |
+| DatasetImportController | `kmaedu-be/apps/exam-service/src/modules/ai-tutor/dataset-import.controller.ts` | Dataset import job endpoints |
+| KnowledgeStatsController | `kmaedu-be/apps/exam-service/src/modules/ai-tutor/knowledge-stats.controller.ts` | Knowledge base statistics endpoint |
+| R2ClientService | `kmaedu-be/apps/exam-service/src/modules/r2/r2-client.service.ts` | File upload to R2 storage (BL005) |
+| OcrService | `kmaedu-be/apps/exam-service/src/modules/ocr/ocr-client.service.ts` | Document OCR processing (BL007) |
+| FolderPanel | `kmaedu-fe/src/components/k/genai-knowledge/FolderPanel.tsx` | Folder CRUD UI panel |
+| FilePanel | `kmaedu-fe/src/components/k/genai-knowledge/FilePanel.tsx` | File list and upload UI panel |
+| DatasetImportPanel | `kmaedu-fe/src/components/k/genai-knowledge/DatasetImportPanel.tsx` | Dataset import job UI |
+| StatsPanel | `kmaedu-fe/src/components/k/genai-knowledge/StatsPanel.tsx` | Knowledge base statistics display |
 
 ## Unresolved Questions
 

@@ -4,11 +4,11 @@ Generated: 2026-05-27
 
 ## Scope
 
-Examio is a three-workspace learning and exam platform:
+KMAEdu is a three-workspace learning and exam platform:
 
-- Backend: `examio-be/` NestJS monorepo plus Python FastAPI AI/OCR services.
-- Frontend: `examio-fe/` React 19 + Vite + TypeScript web app.
-- Mobile: `examio-app/` Kotlin Multiplatform app with Android Compose and iOS SwiftUI.
+- Backend: `kmaedu-be/` NestJS monorepo plus Python FastAPI AI/OCR services.
+- Frontend: `kmaedu-fe/` React 19 + Vite + TypeScript web app.
+- Mobile: `kmaedu-app/` Kotlin Multiplatform app with Android Compose and iOS SwiftUI.
 
 Sources: `plans/260527-1951-rebuild-spec/artifacts/_session-context.md`, `plans/260527-1951-rebuild-spec/artifacts/scout-report.md`.
 
@@ -16,8 +16,8 @@ Sources: `plans/260527-1951-rebuild-spec/artifacts/_session-context.md`, `plans/
 
 - Public entry point is `gateway-service` on port 3000, forwarding `/api/v1/*` traffic to internal services through proxy controllers.
 - Domain services include `auth-service`, `exam-service`, `finance-service`, `r2-service`, `ocr-service`, and Python `ai-service`.
-- Shared libraries are `@examio/common`, `@examio/database`, and `@examio/redis`.
-- Persistence uses PostgreSQL through Prisma; Redis is used for caching; RabbitMQ topic exchange `examio.events` handles async events.
+- Shared libraries are `@kmaedu/common`, `@kmaedu/database`, and `@kmaedu/redis`.
+- Persistence uses PostgreSQL through Prisma; Redis is used for caching; RabbitMQ topic exchange `kmaedu.events` handles async events.
 - gRPC contracts connect auth, wallet/subscription, R2 storage, and OCR services.
 
 Sources: `scout-report.md` lines 20-37, 61-93, 365-430, 499-530.

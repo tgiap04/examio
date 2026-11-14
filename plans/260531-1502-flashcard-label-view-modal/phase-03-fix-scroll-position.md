@@ -1,7 +1,7 @@
 # Phase 3: Fix Scroll Position After Save
 
 ## Context
-- File: `examio-fe/src/pages/k/ManageFlashcardSetDetailPage.tsx`
+- File: `kmaedu-fe/src/pages/k/ManageFlashcardSetDetailPage.tsx`
 - Reference: Quiz-set page (`ManageQuizSetDetailPage.tsx`) — sau khi lưu câu hỏi, trang KHÔNG scroll to top, giữ nguyên vị trí
 
 ## Problem

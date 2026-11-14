@@ -1,18 +1,18 @@
 # Workshop Survey Report: Flashcard Study Progress
 
 ## Relevant Files
-- `examio-fe/src/routes/index.tsx` - Defines `/k/flash-card`, public `/study-flashcard/:id`, and protected `/k/manage-flashcard-set/:id` routes.
-- `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx` - Actual study UI. Loads set through `checkFlashcardSetAccess`, `getFlashcardSetPublicInfo`, `getFlashcardSetForStudy`; keeps `currentCardIndex`, `isFlipped`, and `studiedCards` in local React state only.
-- `examio-fe/src/apis/flashcardSetApi.ts` - API calls used by study page: `GET /flashcardsets/study/:id/access`, `GET /flashcardsets/study/:id/info`, `GET /flashcardsets/study/:id`, `POST /flashcardsets/study/:id/with-code`. No study progress save API here.
-- `examio-fe/src/apis/flashcardStudyApi.ts` - Defines intended progress/session APIs for `/flashcard-study/*` (`session`, `review`, `history`, `progress`), but no imports/usages from the actual study page were found.
-- `examio-fe/src/types/flashcardSet.ts` - Contains frontend-only types for `FlashcardStudySession` and `FlashcardSetProgress`, plus normal set/card/access types.
-- `examio-fe/src/pages/k/ManageFlashcardSetDetailPage.tsx` - Owner/detail management page. Displays total cards, view count, created date, labels, and paginated cards; no learner progress display.
-- `examio-fe/src/pages/k/MyMaterialsPage.tsx` - Student materials page. `handleReview` navigates to `/study-flashcard/${setId}`; share link falls back to same study route.
-- `examio-fe/src/pages/k/FlashcardsPage.tsx` - Protected flashcard set management list. Stats are groups/cards/views; manage route is `/k/manage-flashcard-set/:id`.
-- `examio-be/apps/exam-service/src/modules/flashcardset/flashcardset.controller.ts` - Backend study/access endpoints under `/flashcardsets/study/:id...`; no progress/attempt endpoints in this module.
-- `examio-be/apps/exam-service/src/modules/flashcardset/flashcardset.service.ts` - `getFlashcardSetForStudy` and `getFlashcardSetWithCode` increment `viewCount` and create `FlashCardViewHistory` if authenticated; they return all flashcards and creator info.
-- `examio-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts` - Gateway proxy exposes `/flashcard-study/*` endpoints to an upstream service path, but repository search found no corresponding implementation in `exam-service`, `ai-service`, or Prisma models.
-- `examio-be/libs/database/src/models/exam.prisma` - Flashcard models are `FlashCardSet`, `FlashCardSetLabel`, `FlashCard`, `DetailsFlashCard`, `FlashCardViewHistory`, `UserPinnedFlashcard`, and `HistoryGeneratedFlashcard`; quiz has `QuizPracticeAttempt`, but flashcards have no `FlashcardPractice`, `FlashcardAttempt`, or `FlashcardProgress` model.
+- `kmaedu-fe/src/routes/index.tsx` - Defines `/k/flash-card`, public `/study-flashcard/:id`, and protected `/k/manage-flashcard-set/:id` routes.
+- `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx` - Actual study UI. Loads set through `checkFlashcardSetAccess`, `getFlashcardSetPublicInfo`, `getFlashcardSetForStudy`; keeps `currentCardIndex`, `isFlipped`, and `studiedCards` in local React state only.
+- `kmaedu-fe/src/apis/flashcardSetApi.ts` - API calls used by study page: `GET /flashcardsets/study/:id/access`, `GET /flashcardsets/study/:id/info`, `GET /flashcardsets/study/:id`, `POST /flashcardsets/study/:id/with-code`. No study progress save API here.
+- `kmaedu-fe/src/apis/flashcardStudyApi.ts` - Defines intended progress/session APIs for `/flashcard-study/*` (`session`, `review`, `history`, `progress`), but no imports/usages from the actual study page were found.
+- `kmaedu-fe/src/types/flashcardSet.ts` - Contains frontend-only types for `FlashcardStudySession` and `FlashcardSetProgress`, plus normal set/card/access types.
+- `kmaedu-fe/src/pages/k/ManageFlashcardSetDetailPage.tsx` - Owner/detail management page. Displays total cards, view count, created date, labels, and paginated cards; no learner progress display.
+- `kmaedu-fe/src/pages/k/MyMaterialsPage.tsx` - Student materials page. `handleReview` navigates to `/study-flashcard/${setId}`; share link falls back to same study route.
+- `kmaedu-fe/src/pages/k/FlashcardsPage.tsx` - Protected flashcard set management list. Stats are groups/cards/views; manage route is `/k/manage-flashcard-set/:id`.
+- `kmaedu-be/apps/exam-service/src/modules/flashcardset/flashcardset.controller.ts` - Backend study/access endpoints under `/flashcardsets/study/:id...`; no progress/attempt endpoints in this module.
+- `kmaedu-be/apps/exam-service/src/modules/flashcardset/flashcardset.service.ts` - `getFlashcardSetForStudy` and `getFlashcardSetWithCode` increment `viewCount` and create `FlashCardViewHistory` if authenticated; they return all flashcards and creator info.
+- `kmaedu-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts` - Gateway proxy exposes `/flashcard-study/*` endpoints to an upstream service path, but repository search found no corresponding implementation in `exam-service`, `ai-service`, or Prisma models.
+- `kmaedu-be/libs/database/src/models/exam.prisma` - Flashcard models are `FlashCardSet`, `FlashCardSetLabel`, `FlashCard`, `DetailsFlashCard`, `FlashCardViewHistory`, `UserPinnedFlashcard`, and `HistoryGeneratedFlashcard`; quiz has `QuizPracticeAttempt`, but flashcards have no `FlashcardPractice`, `FlashcardAttempt`, or `FlashcardProgress` model.
 
 ## Study Flow
 1. User navigates to `/study-flashcard/:id` from `MyMaterialsPage` or a shared link.

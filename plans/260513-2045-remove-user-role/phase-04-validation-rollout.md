@@ -4,11 +4,11 @@
 Validate role removal across generated Prisma client, Nest services, frontend build, and runtime migration ordering.
 
 ## Validation Commands
-- Complete: `cd examio-be && yarn prisma:generate` passed.
-- Complete: `cd examio-be && yarn build` passed.
-- Complete: `cd examio-be && yarn test apps/auth-service/src/auth.service.spec.ts` passed.
-- Complete: `cd examio-fe && yarn build` passed.
-- Complete with warnings only: `cd examio-fe && yarn lint` reported pre-existing/generated UI style warnings and one existing unused route import, no errors.
+- Complete: `cd kmaedu-be && yarn prisma:generate` passed.
+- Complete: `cd kmaedu-be && yarn build` passed.
+- Complete: `cd kmaedu-be && yarn test apps/auth-service/src/auth.service.spec.ts` passed.
+- Complete: `cd kmaedu-fe && yarn build` passed.
+- Complete with warnings only: `cd kmaedu-fe && yarn lint` reported pre-existing/generated UI style warnings and one existing unused route import, no errors.
 
 ## Search Checks
 - Complete: Final role cleanup search returned no matches for forbidden `User.role`/role guard patterns in backend apps/common and frontend `src`.

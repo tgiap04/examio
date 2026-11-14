@@ -1,9 +1,9 @@
 # Phase 04 — Optimize Quiz and Flashcard Generation
 
 ## Context Links
-- `../examio-be/apps/ai-service/src/backend/services/generation_service.py`
-- `../examio-be/apps/ai-service/src/llm/llm_factory.py`
-- `../examio-be/apps/ai-service/src/llm/model_manager.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/generation_service.py`
+- `../kmaedu-be/apps/ai-service/src/llm/llm_factory.py`
+- `../kmaedu-be/apps/ai-service/src/llm/model_manager.py`
 
 ## Overview
 Priority: high  
@@ -24,11 +24,11 @@ Reduce wall-clock generation time by tuning batching and bounded concurrency whi
 
 ## Related Code Files
 Modify:
-- `../examio-be/apps/ai-service/src/backend/services/generation_service.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/generation_service.py`
 
 Read:
-- `../examio-be/apps/ai-service/src/llm/model_registry.py`
-- `../examio-be/apps/ai-service/src/llm/model_manager.py`
+- `../kmaedu-be/apps/ai-service/src/llm/model_registry.py`
+- `../kmaedu-be/apps/ai-service/src/llm/model_manager.py`
 
 ## Implementation Steps
 1. Benchmark `GENERATION_MAX_CONCURRENCY=1`, `2`, and `3` for same model, file, and item count.

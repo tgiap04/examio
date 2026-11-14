@@ -59,8 +59,8 @@ curl http://localhost:3000/api/v1/admin/series/traffic
 
 | File | Change |
 |---|---|
-| `examio-be/apps/gateway-service/.env` | Append 4 service URLs |
-| `examio-be/apps/gateway-service/.env.example` | Add 2 missing keys, add section header |
+| `kmaedu-be/apps/gateway-service/.env` | Append 4 service URLs |
+| `kmaedu-be/apps/gateway-service/.env.example` | Add 2 missing keys, add section header |
 
 ## Prevention (deferred)
 

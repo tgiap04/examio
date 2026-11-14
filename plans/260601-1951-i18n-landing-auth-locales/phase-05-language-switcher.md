@@ -55,11 +55,11 @@ LanguageSwitcher
 ## Related Code Files
 
 ### Files to Create
-- `examio-fe/src/components/molecules/language-switcher.tsx` (~35 lines)
+- `kmaedu-fe/src/components/molecules/language-switcher.tsx` (~35 lines)
 
 ### Files to Modify
-- `examio-fe/src/components/molecules/HeaderSection.tsx` — replace inline locale dropdown with `<LanguageSwitcher />`
-- `examio-fe/src/components/organisms/FooterSection.tsx` — replace static language span with `<LanguageSwitcher />`
+- `kmaedu-fe/src/components/molecules/HeaderSection.tsx` — replace inline locale dropdown with `<LanguageSwitcher />`
+- `kmaedu-fe/src/components/organisms/FooterSection.tsx` — replace static language span with `<LanguageSwitcher />`
 
 ## Todo List
 
@@ -91,7 +91,7 @@ LanguageSwitcher
 ## Security Considerations
 
 - No sensitive data in language selection
-- localStorage key `examio-i18next.locale` is non-sensitive; `examio.locale` (legacy) is untouched
+- localStorage key `kmaedu-i18next.locale` is non-sensitive; `kmaedu.locale` (legacy) is untouched
 
 ## Next Steps
 

@@ -29,7 +29,7 @@ N/A — no discriminator fields in Key Entities (User, VerifyAccountCode have no
 None.
 ### BR-001_UnverifiedAccountGate
 **Linked FR:** FR-003
-**Source:** `examio-be/apps/auth-service/src/auth.controller.ts`
+**Source:** `kmaedu-be/apps/auth-service/src/auth.controller.ts`
 **Applies to:** `GET /api/v1/auth/me`
 **Rule:** Unverified accounts (isVerified = false) are identified via `GET /api/v1/auth/me`. The frontend `ProtectedRoute` uses this flag to redirect unverified users to `/k/verify`. Backend does not block unverified users from calling `/api/v1/auth/me` — gating is enforced at the frontend route level.
 
@@ -41,7 +41,7 @@ else → proceed to requested protected page
 
 ### BR-002_VerifyAccountCodeExpiry
 **Linked FR:** FR-001
-**Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+**Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 **Applies to:** `POST /api/v1/auth/verifyAccount`
 **Rule:** Verification code expires after a configured window (e.g., 15 minutes). Expired code returns 400.
 
@@ -55,7 +55,7 @@ delete verify account code
 
 ### BR-003_KRootRedirect
 **Linked FR:** FR-004
-**Source:** `examio-fe/src/pages/k/KRootRedirect.tsx`
+**Source:** `kmaedu-fe/src/pages/k/KRootRedirect.tsx`
 **Applies to:** `GET /k`
 **Rule:** Authenticated users visiting `/k` are redirected to `/k/my-materials`. Unauthenticated users are redirected to `/login`.
 
@@ -77,7 +77,7 @@ None.
 None.
 ### INT-001_MailService
 **Linked FR:** FR-002
-**Source:** `examio-be/libs/common/src/services/mail.service.ts`
+**Source:** `kmaedu-be/libs/common/src/services/mail.service.ts`
 **Type:** notification
 **Target:** User email inbox
 **Trigger:** User requests a new verification email
@@ -118,9 +118,9 @@ None.
 **Requirements fulfilled:**
 
 - **FR-001** Verify account with OTP — `POST /api/v1/auth/verifyAccount` via `AuthService.verifyAccount`
-  **Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+  **Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 - **FR-002** Resend verification email — `POST /api/v1/auth/sendVerificationEmail` via `AuthService.sendVerificationEmail`
-  **Source:** `examio-be/apps/auth-service/src/auth.service.ts`
+  **Source:** `kmaedu-be/apps/auth-service/src/auth.service.ts`
 
 **Rules enforced:** BR-001, BR-002
 
@@ -160,12 +160,12 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| AuthService | `examio-be/apps/auth-service/src/auth.service.ts` | verifyAccount, sendVerificationEmail logic |
-| AuthController | `examio-be/apps/auth-service/src/auth.controller.ts` | HTTP endpoints for verification routes |
-| MailService | `examio-be/libs/common/src/services/mail.service.ts` | Email sending for verification codes |
-| KRootRedirect | `examio-fe/src/pages/k/KRootRedirect.tsx` | Root redirect for /k/ section |
-| VerifyPage | `examio-fe/src/pages/k/VerifyPage.tsx` | Account verification page with OTP form |
-| ProtectedRoute | `examio-fe/src/routes/ProtectedRoute.tsx` | Frontend route guard for unverified accounts |
+| AuthService | `kmaedu-be/apps/auth-service/src/auth.service.ts` | verifyAccount, sendVerificationEmail logic |
+| AuthController | `kmaedu-be/apps/auth-service/src/auth.controller.ts` | HTTP endpoints for verification routes |
+| MailService | `kmaedu-be/libs/common/src/services/mail.service.ts` | Email sending for verification codes |
+| KRootRedirect | `kmaedu-fe/src/pages/k/KRootRedirect.tsx` | Root redirect for /k/ section |
+| VerifyPage | `kmaedu-fe/src/pages/k/VerifyPage.tsx` | Account verification page with OTP form |
+| ProtectedRoute | `kmaedu-fe/src/routes/ProtectedRoute.tsx` | Frontend route guard for unverified accounts |
 
 ## Unresolved Questions
 

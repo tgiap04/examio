@@ -1,14 +1,14 @@
-# Phase 18 — Mobile RBAC Parity (examio-app, cross-repo)
+# Phase 18 — Mobile RBAC Parity (kmaedu-app, cross-repo)
 
-> **Cross-repo.** `examio-app/` (KMP shared + `androidApp` + `iosApp`) is NOT in this checkout. Every file path below is **[UNVERIFIED]**, taken from project memory notes, until step 1 replaces them. **iOS + Android parity is mandatory** (CLAUDE.md "khi sửa UI trên mobile thì cần sửa cả iosApp và androidApp").
+> **Cross-repo.** `kmaedu-app/` (KMP shared + `androidApp` + `iosApp`) is NOT in this checkout. Every file path below is **[UNVERIFIED]**, taken from project memory notes, until step 1 replaces them. **iOS + Android parity is mandatory** (CLAUDE.md "khi sửa UI trên mobile thì cần sửa cả iosApp và androidApp").
 >
 > <!-- Updated: Validation Session 1 - RT-13 reversed (mobile unreleased) --> **Release gate.** The mobile app has never been released (validation Q6), so no store build depends on the old API. This phase blocks no backend work or deploy. Its only gate: it **must be finished before the first mobile store release**, and that release targets the post-cutover backend (phase 16 runbook, single production deploy at final merge).
 
 ## Context Links
 - [plan.md](./plan.md) · [validation-session-1.md](./reports/validation-session-1.md) Q6 (reverses RT-13) · [red-team-changes.md](./reports/red-team-changes.md) RT-15 · [planner-brief.md](./reports/planner-brief.md) decisions 3, 5, 12, 14 <!-- Updated: Validation Session 1 - RT-13 reversed -->
 - [phase-04](./phase-04-identity-and-rbac-core.md) (`/auth/me|login|refresh` → `{user, roles, permissions}`, no `isAdmin` alias, `av` claim, `EMAIL_NOT_VERIFIED`), [phase-05](./phase-05-gateway-rewrite.md) (401 `TOKEN_STALE` from `gw:user:<id>:av`), [phase-09](./phase-09-frontend-rbac.md) (web behaviour to mirror), [phase-10](./phase-10-cut-cross-db-access.md) (`/auth/me` has no `wallet`; balance via `GET /wallet/info`) <!-- Updated: Validation Session 1 - no compat fields -->
-- `/Users/tgiap.dev/devs/examio/ARCHITECTURE.md` §4.6 (mobile = Bearer, 401 codes)
-- Pending mobile plans to align: `/Users/tgiap.dev/devs/examio/plans/260525-0629-mobile-screens/`, `/Users/tgiap.dev/devs/examio/plans/260704-1030-ai-flashcard-quiz-generation-app/`
+- `/Users/tgiap.dev/devs/kmaedu/ARCHITECTURE.md` §4.6 (mobile = Bearer, 401 codes)
+- Pending mobile plans to align: `/Users/tgiap.dev/devs/kmaedu/plans/260525-0629-mobile-screens/`, `/Users/tgiap.dev/devs/kmaedu/plans/260704-1030-ai-flashcard-quiz-generation-app/`
 
 ## Overview
 - Priority: P2 · Status: **Removed 2026-10-29** (user: "không đưa app vào đâu, không đụng tới phần app nữa"). The mobile app stays on `develop`, unadapted to the new API. · Effort: 2.75d **provisional — re-estimate after step 1** · Depends on: 09 (web behaviour + final API shapes from 04/05/10) · Gate: done before the first mobile store release. Blocks: nothing in this plan. <!-- Updated: Validation Session 1 - P2, deps 09, −0.25d (no legacy fallback, no coordinated release) -->
@@ -17,7 +17,7 @@
 ## Key Insights
 - Mobile auth uses `Authorization: Bearer`. Tokens come in the body of `/auth/login` and `/auth/refresh` (ARCH §4.6). The access token is RS256 with an `av` (authzVersion) claim (phase 04), but the client never decodes it. Permissions come only from the response body (decision 12, same as web).
 - <!-- Red Team: RT-3 --> `TOKEN_STALE` means the token's `av` is older than the gateway's `gw:user:<id>:av` (role change, admin flag, ban, password change). One refresh issues a token with the current `av`. A second `TOKEN_STALE` right after a refresh is not recoverable → logout.
-- Android refresh lives in shared `AuthInterceptor.kt` (status-based 401 refresh, fixed 2026-07; memory). Session expiry is broadcast via shared `SessionEvents` SharedFlow → Android `ExamioApp`, iOS `NotificationCenter .examioSessionExpired`. iOS has its own Swift `ExamioAPIClient` + `TokenRefresher` actor (single-flight, retry once) [UNVERIFIED paths].
+- Android refresh lives in shared `AuthInterceptor.kt` (status-based 401 refresh, fixed 2026-07; memory). Session expiry is broadcast via shared `SessionEvents` SharedFlow → Android `KMAEduApp`, iOS `NotificationCenter .kmaeduSessionExpired`. iOS has its own Swift `KMAEduAPIClient` + `TokenRefresher` actor (single-flight, retry once) [UNVERIFIED paths].
 - iOS reimplements several features in Swift rather than through shared Kotlin (exam-room is Android-only, memory). Parity work = two implementations of the gating.
 - <!-- Updated: Validation Session 1 - no compat fields --> API changes the app absorbs (target shape only; no old shape to tolerate): `roles`/`permissions` added; `User.isSystemAdmin` replaces `isAdmin` (no alias); `user.wallet` is gone (phase 10) → balance from `GET /api/v1/wallet/info`; new 401 codes `TOKEN_EXPIRED | TOKEN_STALE | SESSION_REVOKED`; 403 `PERMISSION_DENIED`; 403 `EMAIL_NOT_VERIFIED` (RT-6). `User.id` is already a `String` today (`libs/database/src/models/user.prisma:2`), so it is not a change.
 - <!-- Red Team: RT-15 --> Every user has exactly one base role (`STUDENT` | `TEACHER`), optionally plus `SYSTEM_ADMIN`. An "admin-only" account cannot exist, so there is no admin-only screen and no such fixture. Gating is driven purely by `permissions`, never by role names.
@@ -56,17 +56,17 @@ Dev/QA: app builds point at local compose (branch backend). First store release:
 <!-- Updated: Validation Session 1 - release decoupled from backend deploy -->
 
 ## Related Code Files
-File ownership: the examio-app repo only. Nothing in this checkout. All paths are relative to `examio-app/` and **[UNVERIFIED]** until step 1:
+File ownership: the kmaedu-app repo only. Nothing in this checkout. All paths are relative to `kmaedu-app/` and **[UNVERIFIED]** until step 1:
 - Shared: `shared/src/commonMain/kotlin/**/auth/{AuthSession.kt,Permission.kt,AuthRepository.kt,SessionEvents.kt}`, `shared/src/commonMain/kotlin/**/network/AuthInterceptor.kt`, `shared/src/commonMain/kotlin/**/model/User.kt`, `shared/src/commonTest/**/auth/*Test.kt`
-- Android: `androidApp/src/main/**/ExamioApp.kt`, `androidApp/src/main/**/navigation/*` (bottom bar/NavGraph), `androidApp/src/main/**/features/{ai,exams,exams/room,exams/session,study,studyroom,wordfamily,profile,subscription}/**` (entry gating), `androidApp/src/main/**/AndroidAppContainer.kt`, `androidApp/src/main/res/values*/strings.xml`, `androidApp/proguard-rules.pro`
-- iOS: `iosApp/**/Networking/{ExamioAPIClient.swift,TokenRefresher.swift}`, `iosApp/**/Models/{User.swift,AuthSession.swift,Permission.swift}`, `iosApp/**/App/RootView.swift` (TabView), `iosApp/**/Features/{AI,DeThi,Study,StudyRoom,WordFamily,Profile}/**`, `iosApp/**/Resources/*.lproj/Localizable.strings`
+- Android: `androidApp/src/main/**/KMAEduApp.kt`, `androidApp/src/main/**/navigation/*` (bottom bar/NavGraph), `androidApp/src/main/**/features/{ai,exams,exams/room,exams/session,study,studyroom,wordfamily,profile,subscription}/**` (entry gating), `androidApp/src/main/**/AndroidAppContainer.kt`, `androidApp/src/main/res/values*/strings.xml`, `androidApp/proguard-rules.pro`
+- iOS: `iosApp/**/Networking/{KMAEduAPIClient.swift,TokenRefresher.swift}`, `iosApp/**/Models/{User.swift,AuthSession.swift,Permission.swift}`, `iosApp/**/App/RootView.swift` (TabView), `iosApp/**/Features/{AI,DeThi,Study,StudyRoom,WordFamily,Profile}/**`, `iosApp/**/Resources/*.lproj/Localizable.strings`
 
 ## Implementation Steps
-1. Locate the examio-app repo, read the real tree, replace the [UNVERIFIED] paths in this file, record gaps (does iOS use shared KMP models? current Json config? which screens exist per platform?), then **re-estimate this phase** and report the effort to the lead for plan.md. Can start once phase 09 lands on the branch. <!-- Updated: Validation Session 1 - no Milestone-A prerequisite -->
+1. Locate the kmaedu-app repo, read the real tree, replace the [UNVERIFIED] paths in this file, record gaps (does iOS use shared KMP models? current Json config? which screens exist per platform?), then **re-estimate this phase** and report the effort to the lead for plan.md. Can start once phase 09 lands on the branch. <!-- Updated: Validation Session 1 - no Milestone-A prerequisite -->
 2. Shared: `AuthSession` + `Permission` constants + `can()`. Update the `User` model (`isSystemAdmin`; drop `isAdmin` and `wallet`). Persist the session. <!-- Updated: Validation Session 1 - no compat fields -->
 3. Shared `AuthInterceptor`: parse the error `code` from the 401/403 body. Implement the STALE/EXPIRED (refresh once)/REVOKED/PERMISSION_DENIED/EMAIL_NOT_VERIFIED branches. Emit `PermissionsChanged`.
 4. Android: build the nav/bottom bar from `AuthSession` (StateFlow) by permission. Gate each feature entry. 403 + verify-email states. Reset caches on `PermissionsChanged`. Keep-rules for the new serializable models.
-5. iOS: mirror steps 2–4 in Swift (`TokenRefresher` code branches, `Permission.swift`, TabView builder, gated buttons, 403 + verify-email views, cache reset via NotificationCenter `.examioPermissionsChanged`).
+5. iOS: mirror steps 2–4 in Swift (`TokenRefresher` code branches, `Permission.swift`, TabView builder, gated buttons, 403 + verify-email views, cache reset via NotificationCenter `.kmaeduPermissionsChanged`).
 6. Wallet loading via `/wallet/info` behind `wallet:use` on both platforms.
 7. i18n strings (vi/en/ja) on both platforms.
 8. Release readiness: QA both builds against local compose running the branch backend. Smoke-test the Android release (R8) build first (memory: R8 breakage shows only at runtime). The first store submission happens only after the phase-16 cutover is live. <!-- Updated: Validation Session 1 - release decoupled -->
@@ -81,7 +81,7 @@ Write first:
 - Manual QA matrix on device (both platforms, local compose backend): STUDENT, TEACHER, TEACHER+ADMIN, STUDENT+ADMIN; role change by admin on web while the app is open → the next request triggers STALE → UI updates without re-login; ban on web → next request → login screen.
 
 ## Todo List
-- [ ] Step 1: locate/read examio-app, verify paths, re-estimate <!-- Updated: Validation Session 1 - no Milestone-A prerequisite -->
+- [ ] Step 1: locate/read kmaedu-app, verify paths, re-estimate <!-- Updated: Validation Session 1 - no Milestone-A prerequisite -->
 - [ ] Shared AuthSession/Permission + User model changes (`isSystemAdmin`, no `isAdmin`/`wallet`)
 - [ ] Shared interceptor STALE(once)/EXPIRED/REVOKED/403/EMAIL_NOT_VERIFIED
 - [ ] Android permission-based nav + gating + 403/verify states + cache reset
@@ -93,10 +93,10 @@ Write first:
 - [ ] Note in pending mobile plans
 
 ## Success Criteria
-- `./gradlew :shared:allTests :androidApp:assembleDebug :androidApp:assembleRelease` green (run in examio-app).
-- `xcodebuild -scheme ExamioApp -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16' build test` green.
+- `./gradlew :shared:allTests :androidApp:assembleDebug :androidApp:assembleRelease` green (run in kmaedu-app).
+- `xcodebuild -scheme KMAEduApp -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 16' build test` green.
 - QA matrix: a STUDENT sees no AI/wallet/create entries on either platform. A role flip TEACHER→STUDENT applies within 1 request without logout (exactly one refresh in the network log). <!-- Red Team: RT-15 -->
-- `grep -rn "isAdmin\|\.wallet\b" shared/src/commonMain iosApp` (in examio-app) → no reads of the removed fields. The effort line reflects the step-1 re-estimate. <!-- Updated: Validation Session 1 - no compat fields -->
+- `grep -rn "isAdmin\|\.wallet\b" shared/src/commonMain iosApp` (in kmaedu-app) → no reads of the removed fields. The effort line reflects the step-1 re-estimate. <!-- Updated: Validation Session 1 - no compat fields -->
 
 ## Risk Assessment
 | Risk | L | I | Mitigation |
@@ -108,7 +108,7 @@ Write first:
 | Paths / effort in this plan are wrong | H | M | Step 1 verification + re-estimate before any edit |
 
 ## Rollback
-- App-side commits revert independently in examio-app. No store build exists yet, so there is nothing to roll back in the stores; after the first release, use the normal store rollback (previous build). <!-- Updated: Validation Session 1 - mobile unreleased -->
+- App-side commits revert independently in kmaedu-app. No store build exists yet, so there is nothing to roll back in the stores; after the first release, use the normal store rollback (previous build). <!-- Updated: Validation Session 1 - mobile unreleased -->
 
 ## Security Considerations
 - UI gating is cosmetic; the backend enforces permissions (decision 4). Never derive permissions client-side from the JWT.

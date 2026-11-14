@@ -52,4 +52,4 @@
 - `behavior-logic.md` BL001-BL011, BL020-BL024, BL060
 - `api-map.md` API001, API018
 - `permissions.md` PERM002-PERM008
-- Source paths: `examio-fe/src/apis/authApi.ts`, `examio-fe/src/stores/useAuthStore.ts`, `examio-fe/src/apis/api.ts`; backend/mobile exact file paths Needs verification beyond artifact names.
+- Source paths: `kmaedu-fe/src/apis/authApi.ts`, `kmaedu-fe/src/stores/useAuthStore.ts`, `kmaedu-fe/src/apis/api.ts`; backend/mobile exact file paths Needs verification beyond artifact names.

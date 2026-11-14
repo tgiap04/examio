@@ -1,15 +1,15 @@
 ---
-title: AI Flashcard/Quiz Generation — wire up in examio-app (Android + iOS)
+title: AI Flashcard/Quiz Generation — wire up in kmaedu-app (Android + iOS)
 status: pending
 work_type: feature
-spec_waived: "Reuses existing examio-be AI-generation contract (already implemented & shipped in examio-fe); mobile scope is wire-up + contract-verify + save seam, no new backend behavior. Requirements captured in consultation-summary.md."
+spec_waived: "Reuses existing kmaedu-be AI-generation contract (already implemented & shipped in kmaedu-fe); mobile scope is wire-up + contract-verify + save seam, no new backend behavior. Requirements captured in consultation-summary.md."
 created: 2026-07-04
 level: medium
 blockedBy: []
 blocks: []
 ---
 
-# AI Flashcard/Quiz Generation — examio-app
+# AI Flashcard/Quiz Generation — kmaedu-app
 
 ## Context
 The AI generation feature is **already coded on both platforms but orphaned** (not wired to DI/nav; save seam missing). See `consultation-summary.md`. This plan wires it up, verifies the possibly-stale client contract, and finishes the generate→save→view loop. **No backend changes.**
@@ -36,7 +36,7 @@ The AI generation feature is **already coded on both platforms but orphaned** (n
 - **P02–P04 Android:** save-history API/repo methods; DI wiring; contextual entry buttons (Tài liệu → flashcard, Đề thi → quiz); result preview + save to new/existing set.
 - **Inspection fix:** save flow now keys off `result.type` (not the mutable UI toggle); type chip locks after generate; prior poll job cancelled on restart.
 - **iOS (P05/P06):** same P01 bug fixed in Swift (`AIToolViewModel.swift`: lowercase status, added `JobResult` with inline quizzes/flashcards, timeout 3→10min); save seam in `AiView.swift` + VM (save keyed off `result.type`, type picker locks, generator section made scrollable); entry via `StudyView` button + repurposed `DeThiView` "Tạo đề bằng AI" → presents `AiView` sheet. Note: `DeThiView` is still a mock list screen; the AI button works regardless.
-- **Verified:** `:androidApp:assembleDebug` + `:shared:testDebugUnitTest` (AiGenerationContractTest, 4 tests) pass; **iOS `xcodebuild -scheme ExamioApp -sdk iphonesimulator` BUILD SUCCEEDED**.
+- **Verified:** `:androidApp:assembleDebug` + `:shared:testDebugUnitTest` (AiGenerationContractTest, 4 tests) pass; **iOS `xcodebuild -scheme KMAEduApp -sdk iphonesimulator` BUILD SUCCEEDED**.
 - **Deferred follow-ups (non-blocking, from review):** distinguish serialization vs network errors in `ApiCall.kt` (amplified by 10-min timeout); retry/cleanup path for orphaned empty set on second-step save failure; pagination for >100 existing sets; live-backend full-loop/edge-case QA (P07); iOS has no auto token-refresh (long poll may 401).
 
 **Track structure:** P01→P02 is shared foundation. Android (03→04) and iOS (05→06) run in parallel after P02 — no cross-track blocking. P07 integrates both.
@@ -44,7 +44,7 @@ The AI generation feature is **already coded on both platforms but orphaned** (n
 ## Follow-up (2026-07-04, later): removed "Giáo viên AI" chat
 Per user request, stripped the AI-teacher chat AND upload-history sections — the AI screen is now a single-purpose generator (quiz/flashcard only), no tab picker. Removed dead code both platforms:
 - Shared: deleted `AIChatApiService`, `SubjectApiService`, `AIChatModels`, `SubjectModels`, `SSEClient` (expect+2 actuals); slimmed `AIGeneratorApiService` (generate + job status only) + `AIGeneratorModels`; `AIChatRepository` → **`AIGeneratorRepository`** (generator-only).
-- Android: `AIToolViewModel`/`AiScreen` generator-only; deleted `AiModels.kt` (AiSection/AiChatMessage); DI + `ExamioApp` updated.
+- Android: `AIToolViewModel`/`AiScreen` generator-only; deleted `AiModels.kt` (AiSection/AiChatMessage); DI + `KMAEduApp` updated.
 - iOS: `AIToolViewModel.swift`/`AiView.swift` generator-only; removed AiSection + chat/history models & UI; entry sheets updated.
 - Verified: Android assembleDebug + shared tests pass; iOS simulator BUILD SUCCEEDED; zero dangling refs to removed classes.
 
@@ -52,7 +52,7 @@ Per user request, stripped the AI-teacher chat AND upload-history sections — t
 Per user, removed the keyword field from generation on both platforms. `generateFromFile` no longer takes `keyword`/`isNarrowSearch` (API service now hardcodes `isNarrowSearch=false`); dropped keyword state/UI in Android VM+AiScreen and iOS VM+AiView. Verified: Android compile + shared tests pass; iOS simulator BUILD SUCCEEDED; no lingering `keyword` refs.
 
 ## Bugfix (2026-07-04): file picker strands user on system screen (Android)
-Root cause: `aiGenerateType` (AI overlay gate in `ExamioApp.kt`) used plain `remember` → when the system file picker foregrounds and Android recreates MainActivity (guaranteed with "Don't keep activities"), the overlay reset to null on return and the picker result (registered inside the now-uncomposed AiScreen) was dropped. Fix: `rememberSaveable` for `aiGenerateType` so the overlay + launcher survive recreation and the pending file result is redelivered. Verified: assembleDebug passes. (Note: could not repro headlessly — logcat needed if it persists; likely a stale-Activity-context crash-on-recreate would be the next suspect.)
+Root cause: `aiGenerateType` (AI overlay gate in `KMAEduApp.kt`) used plain `remember` → when the system file picker foregrounds and Android recreates MainActivity (guaranteed with "Don't keep activities"), the overlay reset to null on return and the picker result (registered inside the now-uncomposed AiScreen) was dropped. Fix: `rememberSaveable` for `aiGenerateType` so the overlay + launcher survive recreation and the pending file result is redelivered. Verified: assembleDebug passes. (Note: could not repro headlessly — logcat needed if it persists; likely a stale-Activity-context crash-on-recreate would be the next suspect.)
 
 ## Bugfix (2026-07-05): token refresh never worked → "Invalid or expired token" ~15m after login
 Root cause (proven from Ktor 2.3.12 source): Android `AuthInterceptor` drove the 401 refresh from a
@@ -65,7 +65,7 @@ AFTER our inner `execute()` returns — so `execute()` never throws here and the
 returns `refreshToken` in JSON body and `POST /auth/refresh` accepts it from body → contract was fine.
 - **Android fix:** inspect `execute(request).response.status` directly (canonical Ktor pattern), refresh +
   retry once on 401, return the 401 call unretried when refresh fails (outer validator surfaces it).
-- **iOS fix:** `ExamioAPIClient` had NO refresh at all — added single-flight `TokenRefresher` actor +
+- **iOS fix:** `KMAEduAPIClient` had NO refresh at all — added single-flight `TokenRefresher` actor +
   401→refresh→retry-once in `perform` and `delete`; shared `SessionKeychain` read/write.
 - Verified: `:androidApp:assembleDebug` OK; iOS `xcodebuild -sdk iphonesimulator` BUILD SUCCEEDED. Resolves
   the earlier "iOS lacks auto token-refresh" deferred risk.

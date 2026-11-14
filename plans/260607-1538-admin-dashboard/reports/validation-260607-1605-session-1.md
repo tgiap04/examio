@@ -57,5 +57,5 @@
 - Throttler: named `'admin'` per-controller
 - Sidebar admin link: yes, gated `user.isAdmin` (phase 10)
 - gRPC vs HTTP: HTTP qua gateway proxy
-- Log file names: `{service}-service.log` trong `LOGS_DIR=/var/log/examio`
+- Log file names: `{service}-service.log` trong `LOGS_DIR=/var/log/kmaedu`
 - `ADMIN_DEFAULT_PASSWORD`: first-time-only update

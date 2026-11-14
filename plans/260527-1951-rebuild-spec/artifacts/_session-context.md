@@ -1,15 +1,15 @@
 # Rebuild Spec Session Context
 
 Generated: 2026-05-27
-Work context: /Users/tgiap.dev/devs/examio
-Artifacts: /Users/tgiap.dev/devs/examio/plans/260527-1951-rebuild-spec/artifacts
-Output docs: /Users/tgiap.dev/devs/examio/docs
-DOCX output: /Users/tgiap.dev/devs/examio/docx
+Work context: /Users/tgiap.dev/devs/kmaedu
+Artifacts: /Users/tgiap.dev/devs/kmaedu/plans/260527-1951-rebuild-spec/artifacts
+Output docs: /Users/tgiap.dev/devs/kmaedu/docs
+DOCX output: /Users/tgiap.dev/devs/kmaedu/docx
 
 ## Scope
-- Backend: examio-be (NestJS monorepo + Python FastAPI AI/OCR services)
-- Frontend: examio-fe (React 19 + Vite + TypeScript)
-- Mobile: examio-app (Kotlin Multiplatform, Android Compose, iOS SwiftUI)
+- Backend: kmaedu-be (NestJS monorepo + Python FastAPI AI/OCR services)
+- Frontend: kmaedu-fe (React 19 + Vite + TypeScript)
+- Mobile: kmaedu-app (Kotlin Multiplatform, Android Compose, iOS SwiftUI)
 
 ## Source Of Truth
 - Wave 0 combined scout: scout-report.md

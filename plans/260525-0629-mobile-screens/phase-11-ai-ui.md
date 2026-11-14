@@ -19,7 +19,7 @@ Native-mobile UI for the AI tool: file picker entry, generation-in-progress indi
 
 ## Files to modify
 - Android: `androidApp/.../features/ai/AIToolScreen.kt` (split: `AiUploadSection.kt`, `AiRecentUploadsSection.kt`, `AiGeneratedQuestionsSection.kt` if >200 lines)
-- iOS: `iosApp/ExamioApp/Views/AiView.swift` (split subviews)
+- iOS: `iosApp/KMAEduApp/Views/AiView.swift` (split subviews)
 
 ## Out of scope
 - Job-polling logic, API calls, multipart (Phase 12/13). AI Teacher SSE chat (deferred). AiScreen.kt (dead — Phase 17 deletes).

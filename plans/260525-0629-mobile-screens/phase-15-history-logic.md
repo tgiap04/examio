@@ -12,7 +12,7 @@ track: B
 > BlockedBy Phase 01 only (needs HistoryRepository from Phase 01). Parallel-runnable with Phase 14. NO A↔B block.
 
 ## Context Links
-- DTO source: `../../examio-fe/src/apis/historyApi.ts`
+- DTO source: `../../kmaedu-fe/src/apis/historyApi.ts`
 - Shared: `HistoryApiService.kt`, `HistoryRepository.kt` (added Phase 01), `AIGeneratorApiService.kt` (recent-uploads for pdf tab)
 
 ## Overview
@@ -35,7 +35,7 @@ Build the History ViewModel over the new `HistoryRepository`. PDF tab reuses ai 
 
 ### Create
 - Android: `androidApp/.../features/history/HistoryViewModel.kt`
-- iOS: `iosApp/ExamioApp/ViewModels/HistoryViewModel.swift`
+- iOS: `iosApp/KMAEduApp/ViewModels/HistoryViewModel.swift`
 
 ### Modify
 - `shared/.../features/history/repository/HistoryRepository.kt` (ensure stats/list fns; add pdf via ai recent-uploads passthrough)

@@ -1,11 +1,11 @@
 # Phase 05: Auth Experience Migration
 
 ## Context Links
-- `examio-fe/src/routes/layouts/AuthLayout.tsx`
-- `examio-fe/src/components/organisms/auth/auth-layout-shell.tsx`
-- `examio-fe/src/components/organisms/auth/signin-form.tsx`
-- `examio-fe/src/components/organisms/auth/signup-form.tsx`
-- `examio-fe/src/pages/auth/*.tsx`
+- `kmaedu-fe/src/routes/layouts/AuthLayout.tsx`
+- `kmaedu-fe/src/components/organisms/auth/auth-layout-shell.tsx`
+- `kmaedu-fe/src/components/organisms/auth/signin-form.tsx`
+- `kmaedu-fe/src/components/organisms/auth/signup-form.tsx`
+- `kmaedu-fe/src/pages/auth/*.tsx`
 
 ## Overview
 - Priority: High

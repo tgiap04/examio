@@ -9,7 +9,7 @@
 - **Description:** iOS `AiView.swift` + `AIToolViewModel.swift` exist but are unreached. Add contextual entry from Study + DeThi views and render the generator. iOS is a pure-Swift stack (no shared framework).
 
 ## Key Insights
-- `ExamioAPIClient.shared` singleton already handles multipart upload + bearer/`X-Device-ID`.
+- `KMAEduAPIClient.shared` singleton already handles multipart upload + bearer/`X-Device-ID`.
 - Apply the same P01 status-enum fix in the Swift `AIToolViewModel` (Swift models are separate).
 - No 5th tab — add entry buttons in `StudyView`/`MyExamsView`(DeThi), open `AiView` via sheet/`NavigationLink`.
 
@@ -19,9 +19,9 @@
 - Graceful handling if `ai-tool` returns 404.
 
 ## Related Code Files
-- Modify: `iosApp/ExamioApp/Views/StudyView.swift`, `iosApp/ExamioApp/Views/MyExamsView.swift` (+ DeThiView) — entry buttons
-- Modify: `iosApp/ExamioApp/Features/AI/AIToolViewModel.swift` (status enum fix)
-- Verify: `iosApp/ExamioApp/Views/AiView.swift`, `ExamioAPIClient.swift`
+- Modify: `iosApp/KMAEduApp/Views/StudyView.swift`, `iosApp/KMAEduApp/Views/MyExamsView.swift` (+ DeThiView) — entry buttons
+- Modify: `iosApp/KMAEduApp/Features/AI/AIToolViewModel.swift` (status enum fix)
+- Verify: `iosApp/KMAEduApp/Views/AiView.swift`, `KMAEduAPIClient.swift`
 
 ## Implementation Steps
 1. Apply P01 status/field fixes to Swift models/VM.

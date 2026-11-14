@@ -42,7 +42,7 @@
 
 ## Requirements
 - Functional:
-  - `src/types/permissions.generated.ts` (generated, committed): `PERMISSIONS` const, `Permission` union, `Role` union, and `ROLE_PERMISSIONS` as emitted from the catalog (TEACHER includes `word_family:save` <!-- Updated: Validation Session 1 - TEACHER += word_family:save -->). The generator `examio-be/scripts/gen-fe-permissions.ts` reads `libs/auth-jwt/src/permissions.ts`. CI runs the generator, then `git diff --exit-code`.
+  - `src/types/permissions.generated.ts` (generated, committed): `PERMISSIONS` const, `Permission` union, `Role` union, and `ROLE_PERMISSIONS` as emitted from the catalog (TEACHER includes `word_family:save` <!-- Updated: Validation Session 1 - TEACHER += word_family:save -->). The generator `kmaedu-be/scripts/gen-fe-permissions.ts` reads `libs/auth-jwt/src/permissions.ts`. CI runs the generator, then `git diff --exit-code`.
   - `User` type: `id: string`, `role: "STUDENT"|"TEACHER"`, `isSystemAdmin: boolean`, `wallet?: {balance:number} | null` (today's field; phase 10 removes it). **No `isAdmin` field.** Decisions use `permissions`. `ProfilePage` keeps reading `user.wallet?.balance` (behind `wallet:use`) until phase 10. <!-- Red Team: RT-15 --> <!-- Updated: Validation Session 1 - no compat tolerance -->
   - FE test runner <!-- Red Team: RT-11 -->: `vitest` devDependency, script `"test": "vitest run"`, `vitest.config.ts` = `mergeConfig(viteConfig, defineConfig({ test: { environment: "node", include: ["src/**/*.test.ts"] } }))`. Tests import `describe/it/expect` from `"vitest"` (no globals, so `tsc -b` type-checks them). CI `fe` job runs `yarn test`.
   - Auth store: `roles: Role[]`, `permissions: Permission[]`, `applySession(payload)` (login, refresh, `getUser`). Cleared on logout.
@@ -143,31 +143,31 @@ resetRoleScopedState = for each store in ROLE_SCOPED_STORES: store.setState(stor
 <!-- Red Team: RT-5 -->
 
 ## Related Code Files
-File ownership (globs): `examio-fe/src/types/{user.ts,permissions.generated.ts}`, `examio-fe/src/stores/{useAuthStore.ts,reset-role-scoped-state.ts}`, `examio-fe/src/hooks/useCan.ts`, `examio-fe/src/lib/rbac/**`, `examio-fe/src/apis/{api.ts,authApi.ts}`, `examio-fe/src/routes/**`, `examio-fe/src/pages/errors/**`, `examio-fe/src/pages/k/{KRootRedirect,HistoryPage,ProfilePage,AIToolPage,ManageExamPage,ManageExamRoomPage,ManageExamRoomDetailPage,ExamRoomSessionAnalyticsPage,WordFamilyPage,WordFamilyCategoryPage,WordFamilyDetailPage}.tsx`, `examio-fe/src/pages/study-room/StudyRoomListPage.tsx`, `examio-fe/src/pages/exam-session/**` (start CTA only), `examio-fe/src/components/organisms/{k/SideBar.tsx,TeacherRoute.tsx,landing/PricingBand.tsx}`, `examio-fe/src/components/atoms/ProfileDropdown.tsx`, `examio-fe/public/locales/{vi,en,ja}/common.json`, `examio-be/scripts/gen-fe-permissions.ts`, `examio-be/package.json` (script), `/.github/workflows/ci.yml` (drift check + FE `yarn test`). Any FE file reading `user.id` as number (found by `tsc`), **except** the phase-08 admin files (`apis/adminApi.ts`, `components/admin/**`, `stores/useAdminStore.ts`, already string ids + `isSystemAdmin`). <!-- Red Team: RT-15 -->
-- <!-- Red Team: RT-5, RT-11, RT-15 --> Also owned: `examio-fe/{package.json,yarn.lock,vitest.config.ts}`, `examio-fe/src/hooks/useStudyRoomSocket.ts`, `examio-fe/src/lib/quiz-practice/progress.test.ts` and `examio-fe/src/lib/admin-roles/role-change-rules.test.ts` (test files only; the modules belong to 07/08, merged before 09). Explicitly `SideBar.tsx` and `routes/guards/AdminRoute.tsx` are 09's; admin FE files are 08's.
+File ownership (globs): `kmaedu-fe/src/types/{user.ts,permissions.generated.ts}`, `kmaedu-fe/src/stores/{useAuthStore.ts,reset-role-scoped-state.ts}`, `kmaedu-fe/src/hooks/useCan.ts`, `kmaedu-fe/src/lib/rbac/**`, `kmaedu-fe/src/apis/{api.ts,authApi.ts}`, `kmaedu-fe/src/routes/**`, `kmaedu-fe/src/pages/errors/**`, `kmaedu-fe/src/pages/k/{KRootRedirect,HistoryPage,ProfilePage,AIToolPage,ManageExamPage,ManageExamRoomPage,ManageExamRoomDetailPage,ExamRoomSessionAnalyticsPage,WordFamilyPage,WordFamilyCategoryPage,WordFamilyDetailPage}.tsx`, `kmaedu-fe/src/pages/study-room/StudyRoomListPage.tsx`, `kmaedu-fe/src/pages/exam-session/**` (start CTA only), `kmaedu-fe/src/components/organisms/{k/SideBar.tsx,TeacherRoute.tsx,landing/PricingBand.tsx}`, `kmaedu-fe/src/components/atoms/ProfileDropdown.tsx`, `kmaedu-fe/public/locales/{vi,en,ja}/common.json`, `kmaedu-be/scripts/gen-fe-permissions.ts`, `kmaedu-be/package.json` (script), `/.github/workflows/ci.yml` (drift check + FE `yarn test`). Any FE file reading `user.id` as number (found by `tsc`), **except** the phase-08 admin files (`apis/adminApi.ts`, `components/admin/**`, `stores/useAdminStore.ts`, already string ids + `isSystemAdmin`). <!-- Red Team: RT-15 -->
+- <!-- Red Team: RT-5, RT-11, RT-15 --> Also owned: `kmaedu-fe/{package.json,yarn.lock,vitest.config.ts}`, `kmaedu-fe/src/hooks/useStudyRoomSocket.ts`, `kmaedu-fe/src/lib/quiz-practice/progress.test.ts` and `kmaedu-fe/src/lib/admin-roles/role-change-rules.test.ts` (test files only; the modules belong to 07/08, merged before 09). Explicitly `SideBar.tsx` and `routes/guards/AdminRoute.tsx` are 09's; admin FE files are 08's.
 
 - Create:
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/types/permissions.generated.ts`, `/Users/tgiap.dev/devs/examio/examio-be/scripts/gen-fe-permissions.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/hooks/useCan.ts`, `/Users/tgiap.dev/devs/examio/examio-fe/src/routes/guards/RequirePermission.tsx`
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/pages/errors/ForbiddenPage.tsx`
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/lib/rbac/{landing-path.ts,landing-path.test.ts,nav-items.ts,nav-items.test.ts,api-error-policy.ts,api-error-policy.test.ts}`
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/stores/reset-role-scoped-state.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-fe/vitest.config.ts`, `/Users/tgiap.dev/devs/examio/examio-fe/src/lib/quiz-practice/progress.test.ts`, `/Users/tgiap.dev/devs/examio/examio-fe/src/lib/admin-roles/role-change-rules.test.ts` <!-- Red Team: RT-11 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/types/permissions.generated.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/scripts/gen-fe-permissions.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/hooks/useCan.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/routes/guards/RequirePermission.tsx`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/pages/errors/ForbiddenPage.tsx`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/lib/rbac/{landing-path.ts,landing-path.test.ts,nav-items.ts,nav-items.test.ts,api-error-policy.ts,api-error-policy.test.ts}`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/stores/reset-role-scoped-state.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/vitest.config.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/lib/quiz-practice/progress.test.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/lib/admin-roles/role-change-rules.test.ts` <!-- Red Team: RT-11 -->
 - Modify:
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/types/user.ts`, `/Users/tgiap.dev/devs/examio/examio-fe/src/stores/useAuthStore.ts`, `/Users/tgiap.dev/devs/examio/examio-fe/src/apis/{api.ts,authApi.ts}`
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/routes/index.tsx`, `/Users/tgiap.dev/devs/examio/examio-fe/src/routes/guards/AdminRoute.tsx` (→ thin wrapper over `RequirePermission admin:access`, or delete and inline), `/Users/tgiap.dev/devs/examio/examio-fe/src/routes/layouts/AdminLayout.tsx`
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/pages/k/KRootRedirect.tsx`, `/Users/tgiap.dev/devs/examio/examio-fe/src/components/organisms/k/SideBar.tsx`, `/Users/tgiap.dev/devs/examio/examio-fe/src/pages/k/HistoryPage.tsx`, `/Users/tgiap.dev/devs/examio/examio-fe/src/pages/k/ProfilePage.tsx`
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/pages/study-room/StudyRoomListPage.tsx`, word-family pages/components (generate/save/to-flashcard buttons), `/Users/tgiap.dev/devs/examio/examio-fe/src/components/organisms/landing/PricingBand.tsx`, `/Users/tgiap.dev/devs/examio/examio-fe/src/components/atoms/ProfileDropdown.tsx`, exam-session start CTA [UNVERIFIED file: `src/pages/exam-session/ExamSessionPage.tsx`]
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/types/user.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/stores/useAuthStore.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/apis/{api.ts,authApi.ts}`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/routes/index.tsx`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/routes/guards/AdminRoute.tsx` (→ thin wrapper over `RequirePermission admin:access`, or delete and inline), `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/routes/layouts/AdminLayout.tsx`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/pages/k/KRootRedirect.tsx`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/components/organisms/k/SideBar.tsx`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/pages/k/HistoryPage.tsx`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/pages/k/ProfilePage.tsx`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/pages/study-room/StudyRoomListPage.tsx`, word-family pages/components (generate/save/to-flashcard buttons), `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/components/organisms/landing/PricingBand.tsx`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/components/atoms/ProfileDropdown.tsx`, exam-session start CTA [UNVERIFIED file: `src/pages/exam-session/ExamSessionPage.tsx`]
   - the 5 pages using `components/organisms/TeacherRoute.tsx` (remove the wrapper)
-  - `/Users/tgiap.dev/devs/examio/examio-fe/public/locales/{vi,en,ja}/common.json`
-  - `/Users/tgiap.dev/devs/examio/examio-fe/package.json` (`vitest` devDependency, `test` script), `/Users/tgiap.dev/devs/examio/examio-fe/src/hooks/useStudyRoomSocket.ts` (re-auth) <!-- Red Team: RT-5, RT-11 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/package.json` (`gen:fe-permissions`), `/Users/tgiap.dev/devs/examio/.github/workflows/ci.yml` (drift check, FE `yarn test`) <!-- Red Team: RT-11 -->
-- Delete: `/Users/tgiap.dev/devs/examio/examio-fe/src/routes/guards/TeacherRoute.tsx`, `/Users/tgiap.dev/devs/examio/examio-fe/src/components/organisms/TeacherRoute.tsx`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/public/locales/{vi,en,ja}/common.json`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/package.json` (`vitest` devDependency, `test` script), `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/hooks/useStudyRoomSocket.ts` (re-auth) <!-- Red Team: RT-5, RT-11 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/package.json` (`gen:fe-permissions`), `/Users/tgiap.dev/devs/kmaedu/.github/workflows/ci.yml` (drift check, FE `yarn test`) <!-- Red Team: RT-11 -->
+- Delete: `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/routes/guards/TeacherRoute.tsx`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/components/organisms/TeacherRoute.tsx`
 
 ## Implementation Steps
 0. Test runner: `yarn add -D vitest`, `vitest.config.ts` with `mergeConfig(viteConfig, …)`, script `test`. Smoke: a trivial import of `@/lib/utils` resolves under vitest. <!-- Red Team: RT-11 -->
 1. Write the vitest specs first (`lib/rbac/*.test.ts`, plus `lib/quiz-practice/progress.test.ts` and `lib/admin-roles/role-change-rules.test.ts` for the 07/08 modules), see Tests. <!-- Red Team: RT-11 -->
-2. Generator: `gen-fe-permissions.ts` imports `PERMISSIONS` and emits the const + unions with a "DO NOT EDIT" header, double quotes, 2-space indent. Add the BE script `gen:fe-permissions`. Commit the output. Add the CI step `yarn gen:fe-permissions && git diff --exit-code ../examio-fe/src/types/permissions.generated.ts`.
+2. Generator: `gen-fe-permissions.ts` imports `PERMISSIONS` and emits the const + unions with a "DO NOT EDIT" header, double quotes, 2-space indent. Add the BE script `gen:fe-permissions`. Commit the output. Add the CI step `yarn gen:fe-permissions && git diff --exit-code ../kmaedu-fe/src/types/permissions.generated.ts`.
 3. Types + store: `User.id: string` (fix the `tsc` fallout outside the 08 admin files, e.g. study room `myId`), `isAdmin` removed from the type, `wallet?` left as today (phase 10 removes it) <!-- Updated: Validation Session 1 - no compat tolerance -->, `applySession`, `roles`, `permissions`. `login`, `refreshSession`, `getUser` all call `applySession`. <!-- Red Team: RT-13, RT-15 -->
 4. `useCan`, `RequirePermission`, `ForbiddenPage`, `/403` route. Rewire `routes/index.tsx` per the table. `AdminRoute` uses `admin:access` (replaces `AdminRoute.tsx:20`). <!-- Red Team: RT-15 -->
 5. `landing-path.ts` + `KRootRedirect`. `nav-items.ts` (pure config + `filterNav(can, pageMap)`) used by `SideBar` (drops `adminOnly`/`user?.isAdmin`, `SideBar.tsx:188-189`). Admin nav is filtered the same way. <!-- Red Team: RT-15 -->
@@ -183,7 +183,7 @@ File ownership (globs): `examio-fe/src/types/{user.ts,permissions.generated.ts}`
    - a STUDENT in a study room is promoted → socket gets `auth:reauth`, reconnects, stays in the room. <!-- Red Team: RT-5 -->
 
 ## Tests
-- Write first (vitest, `examio-fe/src/lib/rbac/`):
+- Write first (vitest, `kmaedu-fe/src/lib/rbac/`):
   - `landing-path.test.ts`: TEACHER → `/k/ai-tool`; STUDENT → `/k/my-materials`; STUDENT+ADMIN → `/admin`; TEACHER+ADMIN → `/k/ai-tool`; `from` wins; disabled page flag → next allowed item.
   - `word-family-actions` check inside `nav-items.test.ts` (or `useCan` test): TEACHER permissions → "Lưu"/"Từ đã lưu" and "Sinh bằng AI" visible; STUDENT → "Lưu" visible, "Sinh bằng AI" hidden <!-- Updated: Validation Session 1 - TEACHER += word_family:save -->.
   - `nav-items.test.ts`: STUDENT sees exactly [Từ vựng, Tài liệu, Bài thi, Phòng học chung, Lịch sử]. TEACHER sees [Công cụ AI, Từ vựng, Quản lý Đề thi, Quản lý Flashcard, Quản lý Phòng thi, Phòng học chung, Lịch sử]. The admin item appears only with `admin:access`. A page flag `false` hides the item.
@@ -211,7 +211,7 @@ File ownership (globs): `examio-fe/src/types/{user.ts,permissions.generated.ts}`
 
 ## Delivered beyond plan (fixes found in tempering)
 Scope drift from the original plan. Cost: edits outside 09's file ownership (the BE items need review by the auth, exam and libs owners). The evidence records no effort figures, so none are given here.
-- **F1 refresh-cookie rotation.** `/auth/refresh` now rotates the `refreshToken` cookie. The defect is pre-existing on `main`, not a regression from this branch. Reason: browser sessions died about 60 s after the first refresh. Files: `examio-be/apps/auth-service/src/auth.controller.ts`, new `test/refresh-cookie.e2e-spec.ts`.
+- **F1 refresh-cookie rotation.** `/auth/refresh` now rotates the `refreshToken` cookie. The defect is pre-existing on `main`, not a regression from this branch. Reason: browser sessions died about 60 s after the first refresh. Files: `kmaedu-be/apps/auth-service/src/auth.controller.ts`, new `test/refresh-cookie.e2e-spec.ts`.
 - **F2 single-flight `getUser`.** The `getUser` fallback goes through `refreshAccessToken()`. Reason: a demotion produced two refreshes where the plan expects one.
 - **F3 transient errors keep the session.** A transient `/auth/me` error keeps the session, and a cold load shows a `SessionUnavailable` screen instead of `/login`. Reason: a 429 or 502 during a cold reload logged the user out.
 - **F5 teacher exam-session notice.** The stats call is skipped without `exam:take`, and the teacher sees the notice (`exam-stats-gate.test.ts`). Reason: teachers got a 403 and an endless spinner.
@@ -231,7 +231,7 @@ Open items. Each has a target phase and an owner. None of them is a regression i
 | D1 | socket.io transport attempts are not capped between namespace errors (F8: about 15 attempts in 5 min, bounded, not a crash) | 16 | lead | A socket test counts transport attempts: at most 6 before give-up while the namespace is down |
 | D2 | No `enableShutdownHooks` or graceful SIGTERM in exam-service | 12 (study-room-service `main.ts`), verified in 16 | lead | SIGTERM drains sockets and closes Redis clients, with no unhandled rejection on restart |
 | D3 | The first Redis-dependent call during an outage returns 504 (gateway timeout), later calls 503. Opt-in `REDIS_COMMAND_TIMEOUT_MS` | 16 (per-service env) | lead | Value set per env; outage probe gets 503 on the first call |
-| D4 | `libs/common/src/events/event-subscriber.service.ts:50` runs JSON.parse outside try (legacy consumer) | 14 (new consumers on `@examio/messaging`) | lead | Legacy file deleted; a malformed message is rejected, not thrown |
+| D4 | `libs/common/src/events/event-subscriber.service.ts:50` runs JSON.parse outside try (legacy consumer) | 14 (new consumers on `@kmaedu/messaging`) | lead | Legacy file deleted; a malformed message is rejected, not thrown |
 | D5 | Deep import `ioredis/built/errors` (in the adapter) | 12 (adapter moves) | lead | No deep import in `apps/` or `libs/`; match `err.name` or pin `ioredis ~5.10` |
 | D6 | A late stale 401 can trigger a second refresh (harmless) | none, observe | lead | No action unless it recurs as a loop |
 | D7 | `/auth/refresh` still returns `refreshToken` in the body (web uses the cookie only) | 18 (mobile contract decision) | user | Decision recorded; body field kept with a reason or removed |
@@ -245,10 +245,10 @@ Open items. Each has a target phase and an owner. None of them is a regression i
 | D15 | Auth global throttle 30 req/60 s per IP (F4): users behind shared NAT get 429 on each full load (now shows SessionUnavailable, not logout) | 16 decision before cutover | user decides | Throttle keyed per user or raised; decision recorded |
 
 ## Success Criteria
-- `cd examio-fe && yarn build && yarn lint && yarn test`: exit 0.
-- `cd examio-be && yarn gen:fe-permissions && git diff --exit-code ../examio-fe/src/types/permissions.generated.ts`: exit 0.
-- `grep -rnE "user\??\.isAdmin|TeacherRoute" examio-fe/src` → none, and `grep -n "isAdmin" examio-fe/src/types/user.ts` → none. <!-- Red Team: RT-15 --> <!-- Updated: Validation Session 1 - no compat tolerance -->
-- `cd examio-fe && yarn test` runs ≥ 5 spec files (rbac ×3, quiz-practice, admin-roles). <!-- Red Team: RT-11 -->
+- `cd kmaedu-fe && yarn build && yarn lint && yarn test`: exit 0.
+- `cd kmaedu-be && yarn gen:fe-permissions && git diff --exit-code ../kmaedu-fe/src/types/permissions.generated.ts`: exit 0.
+- `grep -rnE "user\??\.isAdmin|TeacherRoute" kmaedu-fe/src` → none, and `grep -n "isAdmin" kmaedu-fe/src/types/user.ts` → none. <!-- Red Team: RT-15 --> <!-- Updated: Validation Session 1 - no compat tolerance -->
+- `cd kmaedu-fe && yarn test` runs ≥ 5 spec files (rbac ×3, quiz-practice, admin-roles). <!-- Red Team: RT-11 -->
 - STUDENT browsing `/k/ai-tool` directly → `/403`. Its network log shows zero 403 responses while clicking every visible sidebar item.
 - After an admin promotes a logged-in STUDENT, the user's next click yields `401 TOKEN_STALE` → one refresh → teacher sidebar, with no full reload and no second refresh.
 - <!-- Red Team: RT-5 --> A student in a study room for > 15 min (token `exp`) stays in the room: one `auth:reauth` → refresh → reconnect → snapshot re-applied, no navigation away.
@@ -291,7 +291,7 @@ Register as of 2026-10-22. Closed items stay listed with their evidence so nothi
 - [CROSS-PHASE] Sidebar/`/k` page labels remain hardcoded vi (existing style). Full i18n of `/k` pages is out of scope; only new RBAC strings are localized.
 
 ### Next moves (owner · done mark)
-1. **Commit the Phase 09 work** · owner: user approves; lead commits per the CLAUDE.md commit rules (no push). Done when `examio-fe/src/types/permissions.generated.ts` is tracked, `git diff --exit-code` on it is meaningful, Todo line 3 is ticked, and this status reads "Completed".
+1. **Commit the Phase 09 work** · owner: user approves; lead commits per the CLAUDE.md commit rules (no push). Done when `kmaedu-fe/src/types/permissions.generated.ts` is tracked, `git diff --exit-code` on it is meaningful, Todo line 3 is ticked, and this status reads "Completed".
 2. **Live 15-min socket check** · owner: lead, in the phase-16 cutover smoke (D12). Done when one run shows the TOKEN_EXPIRED reconnect and the student stays in the room.
 3. **Decide the product items** · owner: user. D7 (refresh body token), D10 ("Từ đã lưu"), D11 (word-family copy), D13 (public share login), D15 (throttle). Done when each has a recorded decision in `clarifications.md` or the relevant phase file.
 4. **Unblocks** phase 10 (FE step, now that 09 is in) and phase 18 (mirrors the route and sidebar tables).

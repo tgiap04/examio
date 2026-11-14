@@ -30,7 +30,7 @@ N/A — no discriminator fields in Key Entities.
 | FR-012 | Ban and unban go through auth `SetUserStatus`: self 403, sessions revoked on ban, `authzVersion` bumped; `PATCH /admin/users/:id` rejects `role`, `isSystemAdmin`, `isBanned` (400 `VALIDATION_ERROR`) | `admin-users` module | yes |
 | FR-006 | New admin accounts are provisioned/synced from an env allowlist on service startup | `admin-bootstrap` module | yes |
 
-**Source:** `examio-be/apps/admin-service/src/admin-service.controller.ts`, `examio-be/apps/admin-service/src/modules/{admin-stats,admin-users,admin-logs,admin-audit,admin-bootstrap}/`
+**Source:** `kmaedu-be/apps/admin-service/src/admin-service.controller.ts`, `kmaedu-be/apps/admin-service/src/modules/{admin-stats,admin-users,admin-logs,admin-audit,admin-bootstrap}/`
 
 ### Business Rules
 
@@ -109,19 +109,19 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| PermissionsGuard | `examio-be/libs/auth-jwt/src/` | Replaces the removed `AdminGuard`; admin controllers declare `@RequirePermissions(...)` (see `system/permissions.md`) |
-| AuditWriterService | `examio-be/apps/admin-service/src/modules/*/audit-writer.service.ts` (shared) | Per-field `AdminAudit` row writer |
-| admin-stats module | `examio-be/apps/admin-service/src/modules/admin-stats/` | KPI + time-series + signup-source breakdown via the auth stats RPC, Redis 5-min cache |
-| AdminStatsFeRoutesController | `examio-be/apps/admin-service/src/modules/admin-stats/admin-stats-fe-routes.controller.ts` | Top-level `/admin/{overview,series,sources}` alias routes for FE dashboard |
-| admin-users module | `examio-be/apps/admin-service/src/modules/admin-users/` | List/detail/patch/ban/unban |
-| admin-roles module | `examio-be/apps/admin-service/src/modules/admin-roles/` | Role matrix, user list, history, set role / SYSTEM_ADMIN |
-| AdminRolesPage | `examio-fe/src/pages/admin/AdminRolesPage.tsx` | `/admin/roles` (SCR044) |
-| admin-logs module | `examio-be/apps/admin-service/src/modules/admin-logs/` | Redactor, ticket-exchange SSE |
-| admin-audit module | `examio-be/apps/admin-service/src/modules/admin-audit/` | Paginated audit query |
-| admin-bootstrap module | `examio-be/apps/admin-service/src/modules/admin-bootstrap/` | `OnModuleInit` sync + CLI |
-| AdminProxyController (gateway) | `examio-be/apps/gateway-service/src/controllers/admin-proxy.controller.ts` | `@All('*')` forward to admin-service |
-| Admin FE pages | `examio-fe/src/pages/admin/{AdminOverviewPage,AdminStatsPage,AdminUsersPage,AdminLogsPage,AdminAuditPage}.tsx` | 5 admin screens (plus AdminRolesPage) |
-| useAdminStore | `examio-fe/src/stores/useAdminStore.ts` | Zustand store, 5-min in-memory cache per endpoint |
+| PermissionsGuard | `kmaedu-be/libs/auth-jwt/src/` | Replaces the removed `AdminGuard`; admin controllers declare `@RequirePermissions(...)` (see `system/permissions.md`) |
+| AuditWriterService | `kmaedu-be/apps/admin-service/src/modules/*/audit-writer.service.ts` (shared) | Per-field `AdminAudit` row writer |
+| admin-stats module | `kmaedu-be/apps/admin-service/src/modules/admin-stats/` | KPI + time-series + signup-source breakdown via the auth stats RPC, Redis 5-min cache |
+| AdminStatsFeRoutesController | `kmaedu-be/apps/admin-service/src/modules/admin-stats/admin-stats-fe-routes.controller.ts` | Top-level `/admin/{overview,series,sources}` alias routes for FE dashboard |
+| admin-users module | `kmaedu-be/apps/admin-service/src/modules/admin-users/` | List/detail/patch/ban/unban |
+| admin-roles module | `kmaedu-be/apps/admin-service/src/modules/admin-roles/` | Role matrix, user list, history, set role / SYSTEM_ADMIN |
+| AdminRolesPage | `kmaedu-fe/src/pages/admin/AdminRolesPage.tsx` | `/admin/roles` (SCR044) |
+| admin-logs module | `kmaedu-be/apps/admin-service/src/modules/admin-logs/` | Redactor, ticket-exchange SSE |
+| admin-audit module | `kmaedu-be/apps/admin-service/src/modules/admin-audit/` | Paginated audit query |
+| admin-bootstrap module | `kmaedu-be/apps/admin-service/src/modules/admin-bootstrap/` | `OnModuleInit` sync + CLI |
+| AdminProxyController (gateway) | `kmaedu-be/apps/gateway-service/src/controllers/admin-proxy.controller.ts` | `@All('*')` forward to admin-service |
+| Admin FE pages | `kmaedu-fe/src/pages/admin/{AdminOverviewPage,AdminStatsPage,AdminUsersPage,AdminLogsPage,AdminAuditPage}.tsx` | 5 admin screens (plus AdminRolesPage) |
+| useAdminStore | `kmaedu-fe/src/stores/useAdminStore.ts` | Zustand store, 5-min in-memory cache per endpoint |
 
 ## Unresolved Questions
 

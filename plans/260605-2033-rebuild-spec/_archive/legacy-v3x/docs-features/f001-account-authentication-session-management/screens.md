@@ -23,4 +23,4 @@
 ## Artifact References
 - `screen-list.md` SCR008-SCR012, SCR101-SCR105, SCR201-SCR205
 - `screen-flow.md` FLW002-FLW006, FLW011-FLW012, FLW101-FLW104, FLW201-FLW204
-- Source paths: web auth routes in `examio-fe/src/routes/index.tsx` Needs verification for exact route declarations.
+- Source paths: web auth routes in `kmaedu-fe/src/routes/index.tsx` Needs verification for exact route declarations.

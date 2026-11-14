@@ -234,11 +234,11 @@ The page uses a single-column stacked layout rendered entirely inside `Flashcard
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/k/FlashcardsPage.tsx:1`
-- FlashcardManagementTemplate: `examio-fe/src/templates/FlashcardManagementTemplate.tsx:1`
-- FlashcardSetStore: `examio-fe/src/stores/useFlashcardSetStore.ts:1`
-- StatsStore: `examio-fe/src/stores/useStatsStore.ts:1`
-- FlashcardSetModal: `examio-fe/src/components/organisms/FlashcardSetModal.tsx:1`
-- DeleteConfirmDialog: `examio-fe/src/components/organisms/DeleteConfirmDialog.tsx:1`
-- ShareFlashcardModal: `examio-fe/src/components/organisms/ShareFlashcardModal.tsx:1`
-- useDebounce: `examio-fe/src/hooks/useDebounce.ts:1`
+- Page/View: `kmaedu-fe/src/pages/k/FlashcardsPage.tsx:1`
+- FlashcardManagementTemplate: `kmaedu-fe/src/templates/FlashcardManagementTemplate.tsx:1`
+- FlashcardSetStore: `kmaedu-fe/src/stores/useFlashcardSetStore.ts:1`
+- StatsStore: `kmaedu-fe/src/stores/useStatsStore.ts:1`
+- FlashcardSetModal: `kmaedu-fe/src/components/organisms/FlashcardSetModal.tsx:1`
+- DeleteConfirmDialog: `kmaedu-fe/src/components/organisms/DeleteConfirmDialog.tsx:1`
+- ShareFlashcardModal: `kmaedu-fe/src/components/organisms/ShareFlashcardModal.tsx:1`
+- useDebounce: `kmaedu-fe/src/hooks/useDebounce.ts:1`

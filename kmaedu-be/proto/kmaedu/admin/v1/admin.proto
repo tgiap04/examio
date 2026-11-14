@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package kmaedu.admin.v1;
+
+// Admin-owned data that other services need at boot.
+service AdminService {
+  // Current page feature flags (key -> enabled). The gateway pulls this on
+  // start when its own Redis copy is empty.
+  rpc GetPageFlags(GetPageFlagsRequest) returns (GetPageFlagsResponse);
+}
+
+message GetPageFlagsRequest {}
+
+message GetPageFlagsResponse {
+  map<string, bool> flags = 1;
+}

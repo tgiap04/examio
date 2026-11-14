@@ -24,7 +24,7 @@ Replace all hardcoded Vietnamese strings in HeaderSection, FooterSection, and th
 
 ## Key Insights
 
-- HeaderSection already has locale state management via `examio.locale` — replace with `i18n.changeLanguage()` which auto-persists via LanguageDetector
+- HeaderSection already has locale state management via `kmaedu.locale` — replace with `i18n.changeLanguage()` which auto-persists via LanguageDetector
 - FooterSection has `linkGroups` array defined at module scope with hardcoded strings — must convert to a function/component that reads translations
 - Landing page organisms (HeroBand, FeatureGrid, etc.) define data arrays at module scope with hardcoded strings — same pattern: convert to use `t()` inside the component
 - PricingBand: tier names/descriptions/CTAs come from API with locale-aware fields (e.g., `nameVi`, `descriptionVi`). Only static UI strings (badge, headline, toggle labels, popular badge, free label, period labels, error message) go to locale files.
@@ -49,7 +49,7 @@ Replace all hardcoded Vietnamese strings in HeaderSection, FooterSection, and th
 ```
 User clicks language in HeaderSection
   → i18n.changeLanguage('en')
-    → LanguageDetector persists 'en' to localStorage('examio-i18next.locale')
+    → LanguageDetector persists 'en' to localStorage('kmaedu-i18next.locale')
       → All useTranslation() subscribers re-render
         → Text updates instantly
 ```
@@ -57,16 +57,16 @@ User clicks language in HeaderSection
 ## Related Code Files
 
 ### Files to Modify
-- `examio-fe/src/components/molecules/HeaderSection.tsx` (~15 strings)
-- `examio-fe/src/components/organisms/FooterSection.tsx` (~25 strings)
-- `examio-fe/src/components/organisms/landing/HeroBand.tsx` (~6 strings)
-- `examio-fe/src/components/organisms/landing/TrustStrip.tsx` (~4 strings)
-- `examio-fe/src/components/organisms/landing/FeatureGrid.tsx` (~10 strings)
-- `examio-fe/src/components/organisms/landing/ProductShowcase.tsx` (~8 strings)
-- `examio-fe/src/components/organisms/landing/WaysToStudy.tsx` (~10 strings)
-- `examio-fe/src/components/organisms/landing/PricingBand.tsx` (~10 strings)
-- `examio-fe/src/components/organisms/landing/PricingCards.tsx` (~5 strings)
-- `examio-fe/src/components/organisms/landing/CoralCallout.tsx` (~8 strings)
+- `kmaedu-fe/src/components/molecules/HeaderSection.tsx` (~15 strings)
+- `kmaedu-fe/src/components/organisms/FooterSection.tsx` (~25 strings)
+- `kmaedu-fe/src/components/organisms/landing/HeroBand.tsx` (~6 strings)
+- `kmaedu-fe/src/components/organisms/landing/TrustStrip.tsx` (~4 strings)
+- `kmaedu-fe/src/components/organisms/landing/FeatureGrid.tsx` (~10 strings)
+- `kmaedu-fe/src/components/organisms/landing/ProductShowcase.tsx` (~8 strings)
+- `kmaedu-fe/src/components/organisms/landing/WaysToStudy.tsx` (~10 strings)
+- `kmaedu-fe/src/components/organisms/landing/PricingBand.tsx` (~10 strings)
+- `kmaedu-fe/src/components/organisms/landing/PricingCards.tsx` (~5 strings)
+- `kmaedu-fe/src/components/organisms/landing/CoralCallout.tsx` (~8 strings)
 
 ## Todo List
 

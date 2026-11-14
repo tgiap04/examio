@@ -1,6 +1,6 @@
-# Text Audit Report: Landing & Auth Pages (examio-fe)
+# Text Audit Report: Landing & Auth Pages (kmaedu-fe)
 
-**Scope:** examio-fe/src/pages/landing/, pages/auth/, routes/layouts/PublicLayout.tsx, routes/index.tsx, components/organisms/landing/, components/molecules/HeaderSection.tsx, components/organisms/FooterSection.tsx, components/organisms/auth/
+**Scope:** kmaedu-fe/src/pages/landing/, pages/auth/, routes/layouts/PublicLayout.tsx, routes/index.tsx, components/organisms/landing/, components/molecules/HeaderSection.tsx, components/organisms/FooterSection.tsx, components/organisms/auth/
 **Date:** 2026-06-01
 **Conclusion:** No i18n library is installed. All text is hardcoded Vietnamese.
 
@@ -42,7 +42,7 @@
 | Hà Nội, Việt Nam | footer address |
 | togiap.dev@gmail.com | contact email |
 | Facebook / Twitter / Instagram / LinkedIn | social labels |
-| © {year} Examio. Made with love by tgiap.dev | copyright |
+| © {year} KMAEdu. Made with love by tgiap.dev | copyright |
 | Điều khoản / Quyền riêng tư / Cookie | footer bottom links |
 | 🇻🇳 Tiếng Việt | locale display |
 
@@ -52,7 +52,7 @@
 |---|---|
 | AI cho việc học | badge |
 | Biến mọi tài liệu thành kiến thức bạn nắm chắc. | h1 heading |
-| Examio dùng AI để biến PDF... | body paragraph |
+| KMAEdu dùng AI để biến PDF... | body paragraph |
 | Bắt đầu miễn phí | CTA button |
 | Xem cách hoạt động | secondary CTA button |
 | AI đang phân tích | mockup terminal label |
@@ -99,13 +99,13 @@
 | Sinh quiz và flashcard có trích dẫn nguồn | step |
 | Đồng bộ vào phòng luyện thi của bạn | step |
 | Thử ngay | CTA button |
-| examio · pipeline | terminal title bar |
+| kmaedu · pipeline | terminal title bar |
 | # 1. Upload tài liệu / # 2. Sinh đề trắc nghiệm / # 3. Tạo flashcard | terminal comments |
-| $ examio upload giai-tich-1.pdf | terminal cmd |
+| $ kmaedu upload giai-tich-1.pdf | terminal cmd |
 | ✓ Đã trích xuất 12 chương · 248 khái niệm | terminal output |
-| $ examio quiz --count=40 --difficulty=mixed | terminal cmd |
+| $ kmaedu quiz --count=40 --difficulty=mixed | terminal cmd |
 | ✓ Sinh 40 câu hỏi (15 dễ · 18 trung bình · 7 khó) | terminal output |
-| $ examio flashcards --per-chapter=10 | terminal cmd |
+| $ kmaedu flashcards --per-chapter=10 | terminal cmd |
 | ✓ 120 flashcard sẵn sàng | terminal output |
 
 ### 1.7 WaysToStudy (`WaysToStudy.tsx`)
@@ -114,7 +114,7 @@
 |---|---|
 | Ba cách học | eyebrow |
 | Bạn đang cần ôn theo cách nào? | heading |
-| Examio không ép bạn theo một quy trình... | body paragraph |
+| KMAEdu không ép bạn theo một quy trình... | body paragraph |
 | Tự ôn tập | card name |
 | Học một mình | card tag |
 | Tải lên tài liệu, AI tạo flashcard... | card blurb |
@@ -153,7 +153,7 @@
 | String | Category |
 |---|---|
 | Sẵn sàng học? | badge |
-| Bắt đầu học cùng Examio hôm nay. | heading |
+| Bắt đầu học cùng KMAEdu hôm nay. | heading |
 | Tải tài liệu đầu tiên... | body paragraph |
 | Tạo tài khoản miễn phí | CTA button |
 | Khám phá công cụ | secondary CTA |
@@ -203,7 +203,7 @@
 |---|---|
 | Về chúng tôi | eyebrow |
 | Học tập nên dựa trên tài liệu thật... | h1 heading |
-| Examio ra đời từ nhu cầu thực tế... | intro paragraph |
+| KMAEdu ra đời từ nhu cầu thực tế... | intro paragraph |
 | 2+ Năm phát triển / 10K+ Bài kiểm tra được tạo / 98% Người dùng hài lòng | stats |
 | Sứ mệnh | section eyebrow |
 | Dân chủ hoá việc ôn tập chất lượng cao. | section heading |
@@ -218,8 +218,8 @@
 | Minh bạch với AI | value title |
 | AI trích dẫn nguồn cụ thể... | value description |
 | Học từ tài liệu thật | value title |
-| Examio không tạo nội dung từ internet... | value description |
-| Sẵn sàng thử Examio? | cta heading |
+| KMAEdu không tạo nội dung từ internet... | value description |
+| Sẵn sàng thử KMAEdu? | cta heading |
 | Tải tài liệu đầu tiên... | cta body |
 | Tạo tài khoản miễn phí | cta button |
 
@@ -252,7 +252,7 @@
 | String | Category |
 |---|---|
 | Chào Mừng Trở Lại | h2 |
-| Đăng nhập vào Examio | subheading |
+| Đăng nhập vào KMAEdu | subheading |
 | Tên Đăng Nhập hoặc Email | field label |
 | Tên Đăng Nhập hoặc Email | placeholder |
 | Mật Khẩu | field label |
@@ -267,11 +267,11 @@
 
 | String | Category |
 |---|---|
-| Chào Mừng Đến Với Examio | h2 |
+| Chào Mừng Đến Với KMAEdu | h2 |
 | Đăng Ký | h1 |
 | Tên Đăng Nhập | label + placeholder |
 | Email | label + placeholder |
-| email@examio.vn | email placeholder |
+| email@kmaedu.fayedark.com | email placeholder |
 | Mật Khẩu | label |
 | •••••••• | password placeholder |
 | Nhập Lại Mật Khẩu | label + placeholder |
@@ -432,7 +432,7 @@ This is a client-side validation error that lives in the UI layer but currently 
 ## 5. Unresolved Questions
 
 1. **i18n library choice?** No library currently installed. Recommend `react-i18next` as the de-facto standard for React. Alternative: `lingui` for compile-time extraction, or `@formatjs/intl` for lighter weight.
-2. **Locale storage strategy?** HeaderSection already stores `examio.locale` in localStorage — does this imply a partial i18n strategy already in progress? Confirm before overwriting.
+2. **Locale storage strategy?** HeaderSection already stores `kmaedu.locale` in localStorage — does this imply a partial i18n strategy already in progress? Confirm before overwriting.
 3. **Pricing API contract change?** Moving pricing tier text to the API requires a backend change. Should this be done in parallel with frontend i18n, or handled separately?
 4. **Backend-sourced strings?** Legal page content, About page content — should these be CMS-backed (API-fetched with locale param) rather than hardcoded in frontend?
 5. **RTL / number formatting?** Vietnamese uses `.` as thousand separator and `,` as decimal. If pricing cards use `NumberFlow` with locale-aware currency formatting, ensure it targets `vi-VN`.

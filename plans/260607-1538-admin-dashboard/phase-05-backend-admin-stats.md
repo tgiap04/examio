@@ -2,8 +2,8 @@
 
 - Parent plan: [plan.md](../plan.md)
 - Research: [researcher-01-backend.md](../research/researcher-01-backend.md)
-- Prisma aggregations: [examio-be/libs/database/src/schema.prisma](../../../../examio-be/libs/database/src/schema.prisma)
-- RedisService: [examio-be/libs/redis/src/redis.service.ts](../../../../examio-be/libs/redis/src/redis.service.ts)
+- Prisma aggregations: [kmaedu-be/libs/database/src/schema.prisma](../../../../kmaedu-be/libs/database/src/schema.prisma)
+- RedisService: [kmaedu-be/libs/redis/src/redis.service.ts](../../../../kmaedu-be/libs/redis/src/redis.service.ts)
 - Phase 01: [phase-01-backend-infra-foundation.md](phase-01-backend-infra-foundation.md)
 
 ## Overview
@@ -93,15 +93,15 @@ export class AdminStatsService {
 ## Related code files
 
 **New:**
-- `examio-be/apps/admin-service/src/modules/admin-stats/admin-stats.service.ts`
-- `examio-be/apps/admin-service/src/modules/admin-stats/admin-stats.controller.ts`
-- `examio-be/apps/admin-service/src/modules/admin-stats/admin-stats.module.ts`
-- `examio-be/apps/admin-service/src/modules/admin-stats/dto/range.query.ts`
-- `examio-be/apps/admin-service/src/modules/admin-stats/admin-stats.service.spec.ts`
-- `examio-be/apps/admin-service/src/modules/admin-stats/admin-stats.types.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-stats/admin-stats.service.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-stats/admin-stats.controller.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-stats/admin-stats.module.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-stats/dto/range.query.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-stats/admin-stats.service.spec.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-stats/admin-stats.types.ts`
 
 **Modify:**
-- `examio-be/apps/admin-service/src/admin-service.module.ts` — import `AdminStatsModule`
+- `kmaedu-be/apps/admin-service/src/admin-service.module.ts` — import `AdminStatsModule`
 
 ## Implementation Steps
 

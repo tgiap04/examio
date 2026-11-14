@@ -7,7 +7,7 @@
 
 ## Purpose
 
-A static legal page that informs visitors about examio's cookie usage policy. Users reach it from the public footer when they want to understand what tracking technologies the platform uses. Fully static, no async operations.
+A static legal page that informs visitors about kmaedu's cookie usage policy. Users reach it from the public footer when they want to understand what tracking technologies the platform uses. Fully static, no async operations.
 
 ## Screen Layout
 
@@ -48,7 +48,7 @@ Single-column legal page wrapped in the shared `LegalPageShell` (same as TermsPa
 
 | Decision point | Condition | Outcome on this screen | Source |
 |----------------|-----------|------------------------|--------|
-| Navigate away | User clicks header logo or any nav link | Route changes via React Router | `examio-fe/src/components/molecules/HeaderSection.tsx:42` |
+| Navigate away | User clicks header logo or any nav link | Route changes via React Router | `kmaedu-fe/src/components/molecules/HeaderSection.tsx:42` |
 
 `N/A — single-action screen, no branches.`
 
@@ -67,7 +67,7 @@ Single-column legal page wrapped in the shared `LegalPageShell` (same as TermsPa
 
 ## Interaction Patterns
 
-- **Clicking "Back to Home" navigates to `/`** — source: `examio-fe/src/components/molecules/HeaderSection.tsx:42`
+- **Clicking "Back to Home" navigates to `/`** — source: `kmaedu-fe/src/components/molecules/HeaderSection.tsx:42`
 
 `N/A — no non-trivial interaction patterns detected (only standard navigation links).`
 
@@ -92,7 +92,7 @@ Single-column legal page wrapped in the shared `LegalPageShell` (same as TermsPa
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/landing/CookiesPage.tsx:1`
-- Shell: `examio-fe/src/components/organisms/landing/LegalPageShell.tsx:1`
-- Header: `examio-fe/src/components/molecules/HeaderSection.tsx:42`
-- Footer (with link target): `examio-fe/src/components/organisms/FooterSection.tsx:1`
+- Page/View: `kmaedu-fe/src/pages/landing/CookiesPage.tsx:1`
+- Shell: `kmaedu-fe/src/components/organisms/landing/LegalPageShell.tsx:1`
+- Header: `kmaedu-fe/src/components/molecules/HeaderSection.tsx:42`
+- Footer (with link target): `kmaedu-fe/src/components/organisms/FooterSection.tsx:1`

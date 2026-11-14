@@ -1,6 +1,6 @@
 # Backend Performance Audit — N+1 & Algorithmic Complexity
 
-Date: 2026-07-15 · Scope: all `examio-be/apps/*` services · Method: 4 parallel readers over every `*.service.ts`/repository (skipped specs).
+Date: 2026-07-15 · Scope: all `kmaedu-be/apps/*` services · Method: 4 parallel readers over every `*.service.ts`/repository (skipped specs).
 
 ## Verdict
 No classic `await find()` inside a `for` loop across a large dataset survived scrutiny — the codebase is generally disciplined (admin-service especially: pagination, `groupBy`, Map-joins, Redis caching throughout). The real hotspots are **unbounded `findMany` + in-memory aggregation** (loading whole histories to sum/count/count-length) and **two O(n·m·k) in-memory scans** in the save-history paths.

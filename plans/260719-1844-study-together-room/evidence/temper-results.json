@@ -22,7 +22,7 @@
       "ts": "2026-07-20"
     },
     {
-      "command": "yarn build (examio-fe: tsc + vite)",
+      "command": "yarn build (kmaedu-fe: tsc + vite)",
       "exitCode": 0,
       "status": "pass",
       "summary": "frontend built successfully — study-room types/api/store/hook/pomodoro + pages/panels/routes",

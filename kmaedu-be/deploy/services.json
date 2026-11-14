@@ -1,0 +1,17 @@
+{
+    "node": {
+        "admin": { "dir": "admin-service", "image": "kmaedu-admin", "db": true, "worker": false },
+        "ai-chat": { "dir": "ai-chat-service", "image": "kmaedu-ai-chat", "env": "aichat", "db": true, "worker": true },
+        "assessment": { "dir": "assessment-service", "image": "kmaedu-assessment", "db": true, "worker": true },
+        "auth": { "dir": "auth-service", "image": "kmaedu-auth", "db": true, "worker": true },
+        "content": { "dir": "content-service", "image": "kmaedu-content", "db": true, "worker": true },
+        "document": { "dir": "document-service", "image": "kmaedu-document", "db": true, "worker": true },
+        "gateway": { "dir": "gateway-service", "image": "kmaedu-gateway", "db": false, "worker": false, "instances": ["gateway-a", "gateway-b"] },
+        "r2": { "dir": "r2-service", "image": "kmaedu-r2", "db": false, "worker": false },
+        "study-room": { "dir": "study-room-service", "image": "kmaedu-study-room", "env": "studyroom", "db": true, "worker": false },
+        "vocabulary": { "dir": "vocabulary-service", "image": "kmaedu-vocabulary", "db": true, "worker": true }
+    },
+    "python": {
+        "ai": { "dir": "ai-service", "image": "kmaedu-ai", "db": true, "worker": true, "workerService": "ai-worker" }
+    }
+}

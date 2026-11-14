@@ -1,10 +1,10 @@
 # Phase 6: Frontend - Save to Collection + FlashCard Bridge
 
 ## Context
-- Word Family store: `examio-fe/src/stores/useWordFamilyStore.ts` (created in Phase 5)
-- Flashcard API: `examio-fe/src/apis/flashcardSetApi.ts`
-- Flashcard store: `examio-fe/src/stores/useFlashcardSetStore.ts`
-- Word Family API: `examio-fe/src/apis/wordFamilyApi.ts` (created in Phase 5)
+- Word Family store: `kmaedu-fe/src/stores/useWordFamilyStore.ts` (created in Phase 5)
+- Flashcard API: `kmaedu-fe/src/apis/flashcardSetApi.ts`
+- Flashcard store: `kmaedu-fe/src/stores/useFlashcardSetStore.ts`
+- Word Family API: `kmaedu-fe/src/apis/wordFamilyApi.ts` (created in Phase 5)
 
 ## Overview
 Add user actions to Word Family detail view: save individual words to personal collection, and create FlashCard decks from selected words. Includes collection page and flashcard bridge modal.
@@ -81,21 +81,21 @@ interface WordFamilyState {
 ```
 
 ## Files to Create
-- `examio-fe/src/pages/k/WordFamilyCollectionPage.tsx`
-- `examio-fe/src/components/organisms/word-family/WordSaveButton.tsx`
-- `examio-fe/src/components/organisms/word-family/SelectionToolbar.tsx`
-- `examio-fe/src/components/organisms/word-family/FlashCardBridgeModal.tsx`
-- `examio-fe/src/components/organisms/word-family/CollectionGroupList.tsx`
-- `examio-fe/src/components/organisms/word-family/CollectionGroup.tsx`
-- `examio-fe/src/apis/wordFamilyApi.ts` — add save/collection/bridge endpoints
+- `kmaedu-fe/src/pages/k/WordFamilyCollectionPage.tsx`
+- `kmaedu-fe/src/components/organisms/word-family/WordSaveButton.tsx`
+- `kmaedu-fe/src/components/organisms/word-family/SelectionToolbar.tsx`
+- `kmaedu-fe/src/components/organisms/word-family/FlashCardBridgeModal.tsx`
+- `kmaedu-fe/src/components/organisms/word-family/CollectionGroupList.tsx`
+- `kmaedu-fe/src/components/organisms/word-family/CollectionGroup.tsx`
+- `kmaedu-fe/src/apis/wordFamilyApi.ts` — add save/collection/bridge endpoints
 
 ## Files to Modify
-- `examio-fe/src/stores/useWordFamilyStore.ts` — add save/selection/bridge actions
-- `examio-fe/src/apis/wordFamilyApi.ts` — add save/collection/bridge API calls
-- `examio-fe/src/components/organisms/word-family/WordFamilyTreeView.tsx` — add save buttons + checkboxes
-- `examio-fe/src/components/organisms/word-family/WordFamilyListView.tsx` — add save buttons + checkboxes
-- `examio-fe/src/components/organisms/word-family/WordRow.tsx` — add save button + checkbox
-- `examio-fe/src/routes/index.tsx` — add collection route
+- `kmaedu-fe/src/stores/useWordFamilyStore.ts` — add save/selection/bridge actions
+- `kmaedu-fe/src/apis/wordFamilyApi.ts` — add save/collection/bridge API calls
+- `kmaedu-fe/src/components/organisms/word-family/WordFamilyTreeView.tsx` — add save buttons + checkboxes
+- `kmaedu-fe/src/components/organisms/word-family/WordFamilyListView.tsx` — add save buttons + checkboxes
+- `kmaedu-fe/src/components/organisms/word-family/WordRow.tsx` — add save button + checkbox
+- `kmaedu-fe/src/routes/index.tsx` — add collection route
 
 ## Implementation Steps
 

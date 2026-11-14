@@ -4,7 +4,7 @@
 |----------|-------------|---------------------|
 | Login with wrong password | Credentials check fails; generic error returned | "Invalid email or password." |
 | Login with non-existent email | User lookup fails; generic error returned | "Invalid email or password." |
-| Registration without Turnstile token | Controller rejects with 400 before account creation | "Bot protection failed. Please try again." |
+| Registration or login body with an unknown key (e.g. the removed captcha field) | Strict schema rejects with 400 before account creation | Validation error |
 | Registration with duplicate email | Unique constraint violation; validation error returned | "This email is already registered." |
 | Forgot password with unregistered email | User lookup fails; generic response returned (security) | "If this email is registered, a reset code has been sent." |
 | Password reset with expired OTP | Expiry check fails; 400 returned | "Reset code has expired. Please request a new one." |

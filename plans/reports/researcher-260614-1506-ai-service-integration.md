@@ -1,14 +1,14 @@
-# Study Report: Examio AI Service Integration Pattern
+# Study Report: KMAEdu AI Service Integration Pattern
 
 **Date:** 2026-06-14
 **Scope:** Quiz/Flashcard generation + AI chat integration across all three layers
-**Sources:** 12 files across `examio-be/apps/ai-service`, `examio-be/apps/exam-service`, `examio-fe`
+**Sources:** 12 files across `kmaedu-be/apps/ai-service`, `kmaedu-be/apps/exam-service`, `kmaedu-fe`
 
 ---
 
 ## Summary
 
-Examio has a layered AI generation pipeline: NestJS backend orchestrates file upload + job management, a Python FastAPI service handles OCR/embedding and LLM generation, and the frontend polls for results. Two model providers are supported: AI2 (OpenAI-compatible, default) and Google Gemini (cloud with API key rotation). Generation is async with Redis locks and 10s polling (up to 60 min). Chat uses SSE streaming; quiz/flashcard uses batch + poll.
+KMAEdu has a layered AI generation pipeline: NestJS backend orchestrates file upload + job management, a Python FastAPI service handles OCR/embedding and LLM generation, and the frontend polls for results. Two model providers are supported: AI2 (OpenAI-compatible, default) and Google Gemini (cloud with API key rotation). Generation is async with Redis locks and 10s polling (up to 60 min). Chat uses SSE streaming; quiz/flashcard uses batch + poll.
 
 ---
 
@@ -58,10 +58,10 @@ User sends message
 | Python | `ai-service/src/backend/api/chat.py` | FastAPI SSE streaming endpoints `/chat/query`, `/chat/stream` |
 | NestJS | `exam-service/src/modules/ai/ai.service.ts` | Orchestrator: upload, lock, process, poll, credit deduction |
 | NestJS | `exam-service/src/modules/ai-chat/ai-chat.service.ts` | Chat session management, streaming relay |
-| FE | `examio-fe/src/stores/useAIGeneratorStore.ts` | Job polling, localStorage persistence of pending job |
-| FE | `examio-fe/src/stores/useAIModelCatalogStore.ts` | Model catalog with lazy singleton fetch |
-| FE | `examio-fe/src/apis/aiApi.ts` | REST client for job management |
-| FE | `examio-fe/src/apis/aiChatApi.ts` | SSE streaming client for chat |
+| FE | `kmaedu-fe/src/stores/useAIGeneratorStore.ts` | Job polling, localStorage persistence of pending job |
+| FE | `kmaedu-fe/src/stores/useAIModelCatalogStore.ts` | Model catalog with lazy singleton fetch |
+| FE | `kmaedu-fe/src/apis/aiApi.ts` | REST client for job management |
+| FE | `kmaedu-fe/src/apis/aiChatApi.ts` | SSE streaming client for chat |
 
 ---
 

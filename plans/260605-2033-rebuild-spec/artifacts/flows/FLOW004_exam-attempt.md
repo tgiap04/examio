@@ -2,7 +2,7 @@
 
 **Entity:** `ExamAttempt` (MODEL-019)
 **State Field:** `status` (DISC-008)
-**Source:** `examio-be/libs/database/src/schema.prisma` (ExamAttempt)
+**Source:** `kmaedu-be/libs/database/src/schema.prisma` (ExamAttempt)
 **Last Updated:** 2026-06-05
 
 ## State Diagram
@@ -23,12 +23,12 @@ stateDiagram-v2
 
 | ID | From | Trigger | To | Side Effects | Source |
 |----|------|---------|----|--------------|--------|
-| T1 | INIT | user-action | IN_PROGRESS | POST /examattempts/start | `examio-be/apps/exam-service/src/modules/exam-attempt/exam-attempt.service.ts:42` |
-| T2 | IN_PROGRESS | user-action | IN_PROGRESS | Auto-save progress (debounced) | `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:278` |
-| T3 | IN_PROGRESS | user-action | COMPLETED | POST /secure-submit | `examio-be/apps/exam-service/src/modules/exam-attempt/exam-attempt.service.ts:88` |
-| T4 | IN_PROGRESS | scheduled | COMPLETED | timeLimitMinutes reached | `examio-be/apps/auth-service/src/session-cleanup.cron.ts:118` |
-| T5 | IN_PROGRESS | event | CANCELLED | ExamSession ended (cascade) | `examio-be/apps/exam-service/src/modules/exam-session/exam-session.service.ts:155` |
-| T6 | IN_PROGRESS | user-action | CANCELLED | Room deleted | `examio-be/apps/exam-service/src/modules/exam-room/exam-room.service.ts:215` |
+| T1 | INIT | user-action | IN_PROGRESS | POST /examattempts/start | `kmaedu-be/apps/exam-service/src/modules/exam-attempt/exam-attempt.service.ts:42` |
+| T2 | IN_PROGRESS | user-action | IN_PROGRESS | Auto-save progress (debounced) | `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:278` |
+| T3 | IN_PROGRESS | user-action | COMPLETED | POST /secure-submit | `kmaedu-be/apps/exam-service/src/modules/exam-attempt/exam-attempt.service.ts:88` |
+| T4 | IN_PROGRESS | scheduled | COMPLETED | timeLimitMinutes reached | `kmaedu-be/apps/auth-service/src/session-cleanup.cron.ts:118` |
+| T5 | IN_PROGRESS | event | CANCELLED | ExamSession ended (cascade) | `kmaedu-be/apps/exam-service/src/modules/exam-session/exam-session.service.ts:155` |
+| T6 | IN_PROGRESS | user-action | CANCELLED | Room deleted | `kmaedu-be/apps/exam-service/src/modules/exam-room/exam-room.service.ts:215` |
 
 ## Trigger Types (3)
 

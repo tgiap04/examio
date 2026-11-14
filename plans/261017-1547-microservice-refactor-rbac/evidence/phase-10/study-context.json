@@ -13,10 +13,10 @@
     "admin overview/series numbers equal pre-change output (golden JSON) via GetUserStats + GetRevenueStats; 5-min Redis cache kept",
     "page flags: admin PATCH -> gateway SetPageFlags; gateway boot pulls GetPageFlags when empty; study-room no longer reads the shared key",
     "WordFamilyAdminService served by exam; admin-word-family calls it; exam category CUD routes deleted; DeleteCategory deletes R2 image",
-    "FE: User type has no wallet; balance loaded from GET /wallet/info with wallet:use, cached per session; grep user?.wallet in examio-fe/src none; single toast per denied action (D9)",
-    "yarn build/test green in examio-be; examio-fe build/lint/test green"
+    "FE: User type has no wallet; balance loaded from GET /wallet/info with wallet:use, cached per session; grep user?.wallet in kmaedu-fe/src none; single toast per denied action (D9)",
+    "yarn build/test green in kmaedu-be; kmaedu-fe build/lint/test green"
   ],
-  "touchpoints": ["examio-be/apps/admin-service", "examio-be/apps/finance-service", "examio-be/apps/auth-service", "examio-be/apps/gateway-service", "examio-be/apps/exam-service", "examio-be/proto", "examio-be/libs/grpc", "examio-be/libs/database", "examio-be/scripts", ".github/workflows/ci.yml", "examio-fe/src"],
+  "touchpoints": ["kmaedu-be/apps/admin-service", "kmaedu-be/apps/finance-service", "kmaedu-be/apps/auth-service", "kmaedu-be/apps/gateway-service", "kmaedu-be/apps/exam-service", "kmaedu-be/proto", "kmaedu-be/libs/grpc", "kmaedu-be/libs/database", "kmaedu-be/scripts", ".github/workflows/ci.yml", "kmaedu-fe/src"],
   "blastRadius": ["all money flows (AI debit, admin credit/refund/tier)", "/auth/me consumers (FE, mobile unreleased)", "admin dashboard stats", "page flags", "every exam view that shows user info", "word-family admin"],
   "contracts": ["finance.v1 WalletService Debit/Credit/Refund (UpdateBalance removed, breaking)", "finance.v1 FinanceAdminService, GetRevenueStats", "auth.v1 UpdateUserAdmin, SearchUsers, GetUserStats, GetUsersByIds privileged", "admin.v1 GetPageFlags", "vocabulary.v1 WordFamilyAdminService", "events auth.user.updated, finance.subscription.changed", "/auth/me response shape (wallet/subscription removed)"]
 }

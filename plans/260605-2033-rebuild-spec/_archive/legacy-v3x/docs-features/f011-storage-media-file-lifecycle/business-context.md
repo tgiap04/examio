@@ -1,7 +1,7 @@
 # F011 - Storage, Media & File Lifecycle Business Context
 
 ## Why It Matters
-Examio depends on uploaded files for AI generation, tutor knowledge, chat context, OCR, history, and profile personalization. A reliable storage lifecycle keeps user files available when needed and removes them when no longer owned or referenced.
+KMAEdu depends on uploaded files for AI generation, tutor knowledge, chat context, OCR, history, and profile personalization. A reliable storage lifecycle keeps user files available when needed and removes them when no longer owned or referenced.
 
 ## Who Uses It
 Users upload documents and images. AI and OCR services process files behind the scenes. Profile, AI tool, history, and knowledge-management screens all depend on stored file metadata.

@@ -1,8 +1,8 @@
 # F001 - Account Authentication & Session Management Business Context
 
-This feature is the front door to Examio. It lets people create an account, sign in, stay signed in, recover access when they forget a password, and leave safely when they log out.
+This feature is the front door to KMAEdu. It lets people create an account, sign in, stay signed in, recover access when they forget a password, and leave safely when they log out.
 
-Users can start with email and password or choose Google sign-in. After they sign in, Examio keeps their session active so they can move through the workspace without repeatedly logging in. If their session expires, the app tries to renew it quietly before interrupting them.
+Users can start with email and password or choose Google sign-in. After they sign in, KMAEdu keeps their session active so they can move through the workspace without repeatedly logging in. If their session expires, the app tries to renew it quietly before interrupting them.
 
 The same account entry flows exist across web, Android, and iOS. Web is fully wired for the main auth flow. Android uses the shared mobile auth layer. iOS auth works through its own Swift client and Keychain storage because shared iOS token storage still needs verification.
 

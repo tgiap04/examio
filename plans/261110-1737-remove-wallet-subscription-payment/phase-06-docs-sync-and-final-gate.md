@@ -19,10 +19,10 @@
 ## Architecture
 - n/a (docs only).
 
-## Related Code Files (ROOT = `/Users/tgiap.dev/devs/examio`)
+## Related Code Files (ROOT = `/Users/tgiap.dev/devs/kmaedu`)
 - Modify:
-  - `ROOT/CLAUDE.md` and `ROOT/AGENTS.md`: topology, commands (`dev:finance`, `seed:dev` chain, `finance:reconcile-teachers`, `typecheck:<…>` list, migrate-dev svc list), shared libs (`@examio/grpc` FinanceClient), communication patterns (Debit/Refund, `MONEY_CALLERS`, upload/generation charge paths, ai-chat limits and benefits cache), data-shape table (finance row; 10 → 9 roles), FE (`useWalletStore`, `Idempotency-Key`).
-  - `ROOT/ARCHITECTURE.md`, `ROOT/README.md`, `ROOT/examio-be/README.md` (if it mentions finance), and the `architecture-overview.mmd` node.
+  - `ROOT/CLAUDE.md` and `ROOT/AGENTS.md`: topology, commands (`dev:finance`, `seed:dev` chain, `finance:reconcile-teachers`, `typecheck:<…>` list, migrate-dev svc list), shared libs (`@kmaedu/grpc` FinanceClient), communication patterns (Debit/Refund, `MONEY_CALLERS`, upload/generation charge paths, ai-chat limits and benefits cache), data-shape table (finance row; 10 → 9 roles), FE (`useWalletStore`, `Idempotency-Key`).
+  - `ROOT/ARCHITECTURE.md`, `ROOT/README.md`, `ROOT/kmaedu-be/README.md` (if it mentions finance), and the `architecture-overview.mmd` node.
   - `ROOT/docs/system/{architecture,overview,business-rules,glossary,permissions}.md` (hand-written parts).
   - `ROOT/docs/generated/{route-list,api-map,entities,feature-list,behavior-logic,screen-list,screen-flow,user-stories}.md`: hand edits.
   - `ROOT/docs/flows/FLOW001*`, `FLOW002*`, `FLOW006*` (drop charge/refund steps).
@@ -52,16 +52,16 @@
 ## Test Plan — Scope Contract (final gate; SAFETY-CRITICAL areas from 02 and 05 run whole)
 - Changed: docs only in this phase. The gate covers the whole branch.
 - Will verify, once, on the finished tree:
-  - `cd examio-be && yarn proto:lint && yarn proto:gen && yarn typecheck && yarn build:all`
+  - `cd kmaedu-be && yarn proto:lint && yarn proto:gen && yarn typecheck && yarn build:all`
   - `yarn test` (all unit and spec tests, including `test/authz`, `test/build`, `test/ownership` and `test/cross-app/rpc-guard-table`)
   - The e2e config of each service: `for s in auth content assessment study-room vocabulary document ai-chat admin r2 gateway; do (cd apps/$s-service && ../../node_modules/.bin/jest --config test/jest-e2e.json) || exit 1; done`
   - `./node_modules/.bin/jest --config test/cross-app/jest-e2e.json` and `./node_modules/.bin/jest --config test/db-isolation/jest-e2e.json` (DB env)
   - `yarn check:ownership && yarn check:deps`
-  - `yarn gen:permissions-doc && yarn gen:fe-permissions && git diff --exit-code -- ../docs/generated ../docs/system/permissions.md ../examio-fe/src/types/permissions.generated.ts` (drift)
+  - `yarn gen:permissions-doc && yarn gen:fe-permissions && git diff --exit-code -- ../docs/generated ../docs/system/permissions.md ../kmaedu-fe/src/types/permissions.generated.ts` (drift)
   - `MIGRATION_CONTRACT=1 bash scripts/lint-migrations.sh develop HEAD`, plus the same without the env var to confirm it flags only the two intended migrations
   - buf breaking against develop (from 05)
   - `cd apps/ai-service && ./venv/bin/ruff check src && ./venv/bin/pytest src/backend/tests`
-  - `cd ../../../examio-fe && yarn build && yarn lint && yarn test`
+  - `cd ../../../kmaedu-fe && yarn build && yarn lint && yarn test`
   - Coverage on changed logic: `yarn test:cov` scoped to content `modules/ai`, document `modules/upload` and ai-chat `modules/ai-chat`. Target 90% line and 80% branch.
 - Deliberately skipped: mobile (out of scope) and a browser e2e (manual UI spot-check done in 04).
 

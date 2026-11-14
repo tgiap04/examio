@@ -1,6 +1,6 @@
-# API Map — examio
+# API Map — kmaedu
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Sources**: `route-list.md` (gateway routes, authoritative), `behavior-logic.md` (BL handlers)
 

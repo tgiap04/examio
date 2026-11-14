@@ -1,56 +1,56 @@
 {
   "commands": [
     {
-      "command": "cd examio-be && yarn install --immutable",
+      "command": "cd kmaedu-be && yarn install --immutable",
       "exitCode": 0,
       "status": "pass",
       "summary": "lockfile immutable (earlier this phase, not changed since)",
       "ts": "2026-10-18T06:34:44.189Z"
     },
     {
-      "command": "cd examio-be && yarn proto:lint",
+      "command": "cd kmaedu-be && yarn proto:lint",
       "exitCode": 0,
       "status": "pass",
       "summary": "buf lint STANDARD clean",
       "ts": "2026-10-18T06:34:44.189Z"
     },
     {
-      "command": "cd examio-be && yarn proto:gen",
+      "command": "cd kmaedu-be && yarn proto:gen",
       "exitCode": 0,
       "status": "pass",
       "summary": "ts-proto generated",
       "ts": "2026-10-18T06:34:44.189Z"
     },
     {
-      "command": "cd examio-be && yarn typecheck",
+      "command": "cd kmaedu-be && yarn typecheck",
       "exitCode": 0,
       "status": "pass",
       "summary": "six service tsconfig.app.json pass",
       "ts": "2026-10-18T06:34:44.189Z"
     },
     {
-      "command": "cd examio-be && yarn build:all",
+      "command": "cd kmaedu-be && yarn build:all",
       "exitCode": 0,
       "status": "pass",
       "summary": "proto:gen plus six nest builds",
       "ts": "2026-10-18T06:34:44.189Z"
     },
     {
-      "command": "cd examio-be && TZ=UTC yarn test --verbose",
+      "command": "cd kmaedu-be && TZ=UTC yarn test --verbose",
       "exitCode": 0,
       "status": "pass",
       "summary": "47 suites, 379 tests pass, 0 fail",
       "ts": "2026-10-18T06:34:44.189Z"
     },
     {
-      "command": "cd examio-be && npx prisma migrate deploy --schema=libs/database/src/schema.prisma (fresh pgvector pg16)",
+      "command": "cd kmaedu-be && npx prisma migrate deploy --schema=libs/database/src/schema.prisma (fresh pgvector pg16)",
       "exitCode": 0,
       "status": "pass",
       "summary": "baseline migration applied to empty DB",
       "ts": "2026-10-18T06:34:44.189Z"
     },
     {
-      "command": "cd examio-be && npx prisma migrate diff --from-url $DATABASE_URL --to-schema-datamodel libs/database/src/schema.prisma --exit-code",
+      "command": "cd kmaedu-be && npx prisma migrate diff --from-url $DATABASE_URL --to-schema-datamodel libs/database/src/schema.prisma --exit-code",
       "exitCode": 0,
       "status": "pass",
       "summary": "no drift",
@@ -71,49 +71,49 @@
       "ts": "2026-10-18T06:34:44.189Z"
     },
     {
-      "command": "cd examio-be/apps/auth-service && jest-e2e app.e2e-spec (CI env)",
+      "command": "cd kmaedu-be/apps/auth-service && jest-e2e app.e2e-spec (CI env)",
       "exitCode": 0,
       "status": "pass",
       "summary": "3/3 pass",
       "ts": "2026-10-18T06:34:44.189Z"
     },
     {
-      "command": "cd examio-be/apps/exam-service && jest-e2e app.e2e-spec (CI env)",
+      "command": "cd kmaedu-be/apps/exam-service && jest-e2e app.e2e-spec (CI env)",
       "exitCode": 0,
       "status": "pass",
       "summary": "3/3 pass",
       "ts": "2026-10-18T06:34:44.189Z"
     },
     {
-      "command": "cd examio-be/apps/finance-service && jest-e2e app.e2e-spec (CI env)",
+      "command": "cd kmaedu-be/apps/finance-service && jest-e2e app.e2e-spec (CI env)",
       "exitCode": 0,
       "status": "pass",
       "summary": "3/3 pass",
       "ts": "2026-10-18T06:34:44.189Z"
     },
     {
-      "command": "cd examio-be/apps/admin-service && jest-e2e app.e2e-spec (CI env)",
+      "command": "cd kmaedu-be/apps/admin-service && jest-e2e app.e2e-spec (CI env)",
       "exitCode": 0,
       "status": "pass",
       "summary": "3/3 pass",
       "ts": "2026-10-18T06:34:44.189Z"
     },
     {
-      "command": "cd examio-be/apps/r2-service && jest-e2e app.e2e-spec (CI env)",
+      "command": "cd kmaedu-be/apps/r2-service && jest-e2e app.e2e-spec (CI env)",
       "exitCode": 0,
       "status": "pass",
       "summary": "3/3 pass",
       "ts": "2026-10-18T06:34:44.189Z"
     },
     {
-      "command": "cd examio-be/apps/gateway-service && jest-e2e app.e2e-spec (CI env)",
+      "command": "cd kmaedu-be/apps/gateway-service && jest-e2e app.e2e-spec (CI env)",
       "exitCode": 0,
       "status": "pass",
       "summary": "3/3 pass",
       "ts": "2026-10-18T06:34:44.189Z"
     },
     {
-      "command": "cd examio-be/apps/ai-service && ./scripts/gen_grpc.sh (earlier round; proto unchanged for r2/common)",
+      "command": "cd kmaedu-be/apps/ai-service && ./scripts/gen_grpc.sh (earlier round; proto unchanged for r2/common)",
       "exitCode": 0,
       "status": "pass",
       "summary": "stubs regenerated",

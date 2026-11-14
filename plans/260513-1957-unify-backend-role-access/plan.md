@@ -1,7 +1,7 @@
 # Unify Backend Role Access Plan
 
 ## Goal
-Stop using teacher vs student role as an API access boundary in `examio-be`; any authenticated user can create/manage study resources, create exam rooms, take exams, use AI study/chat features, and view user-scoped data.
+Stop using teacher vs student role as an API access boundary in `kmaedu-be`; any authenticated user can create/manage study resources, create exam rooms, take exams, use AI study/chat features, and view user-scoped data.
 
 ## Current Findings
 - Role enforcement is centralized in `libs/common/src/guard/roles.guard.ts` and `libs/common/src/guard/roles.decorator.ts`, while authentication remains in `libs/common/src/guard/auth.guard.ts`.
@@ -22,7 +22,7 @@ Stop using teacher vs student role as an API access boundary in `examio-be`; any
 - Keep `isAdmin` and any admin-only behavior separate; this plan targets teacher/student role distinction only.
 
 ## Validation Commands
-Run from `examio-be/`:
+Run from `kmaedu-be/`:
 
 ```bash
 yarn build

@@ -1,35 +1,35 @@
 # Workshop Survey Report: `/k/ai-tool`
 
 ## Route Definition
-- `examio-fe/src/routes/index.tsx:24` imports `AIToolPage` from `@/pages/k/AIToolPage`.
-- `examio-fe/src/routes/index.tsx:243` defines `path: "/k/ai-tool"` and renders `<ProtectedRoute><KLayout><AIToolPage /></KLayout></ProtectedRoute>`.
-- `examio-fe/src/routes/layouts/KLayout.tsx:44` resumes pending AI jobs and navigates back to `/k/ai-tool`.
-- `examio-fe/src/components/organisms/k/SideBar.tsx:68` links the sidebar item to `/k/ai-tool`.
+- `kmaedu-fe/src/routes/index.tsx:24` imports `AIToolPage` from `@/pages/k/AIToolPage`.
+- `kmaedu-fe/src/routes/index.tsx:243` defines `path: "/k/ai-tool"` and renders `<ProtectedRoute><KLayout><AIToolPage /></KLayout></ProtectedRoute>`.
+- `kmaedu-fe/src/routes/layouts/KLayout.tsx:44` resumes pending AI jobs and navigates back to `/k/ai-tool`.
+- `kmaedu-fe/src/components/organisms/k/SideBar.tsx:68` links the sidebar item to `/k/ai-tool`.
 
 ## Page Component
-- `examio-fe/src/pages/k/AIToolPage.tsx` is the route page.
+- `kmaedu-fe/src/pages/k/AIToolPage.tsx` is the route page.
 - `AIToolPage` wraps content in `TeacherRoute` and `Suspense`.
 - `AIGeneratorContent` reads `?tab=` from the URL and defaults to `test`.
 - Tabs:
-  - `test` renders `examio-fe/src/components/organisms/k/TestGenerator.tsx`.
-  - `flashcard` renders `examio-fe/src/components/organisms/k/FlashcardGenerator.tsx`.
+  - `test` renders `kmaedu-fe/src/components/organisms/k/TestGenerator.tsx`.
+  - `flashcard` renders `kmaedu-fe/src/components/organisms/k/FlashcardGenerator.tsx`.
 - The same page also shows recent uploads via `useRecentUploadsStore`, with delete and select actions.
 
 ## Stores
-- `examio-fe/src/stores/useAIGeneratorStore.ts` contains all AI generation state for this route:
+- `kmaedu-fe/src/stores/useAIGeneratorStore.ts` contains all AI generation state for this route:
   - `useJobStore`: shared current/pending job state, persistence in `localStorage` key `pending_generation_job`, cancel/resume logic.
   - `useTestGeneratorStore`: PDF/upload selection, quiz count, narrow-search keyword, selected model, generated quiz result, `generateTest()`.
   - `useFlashcardGeneratorStore`: PDF/upload selection, card count, narrow-search keyword, selected model, generated flashcards, current flashcard index, `generateFlashcards()`.
   - `useRecentUploadsStore`: recent file list, selected upload, delete, and load previous quiz/flashcard histories.
-- `examio-fe/src/stores/useAIModelCatalogStore.ts` is used indirectly for default/selected AI model.
-- `examio-fe/src/stores/useAuthStore.ts` is used for wallet balance checks, wallet updates, and user refresh after generation.
+- `kmaedu-fe/src/stores/useAIModelCatalogStore.ts` is used indirectly for default/selected AI model.
+- `kmaedu-fe/src/stores/useAuthStore.ts` is used for wallet balance checks, wallet updates, and user refresh after generation.
 
 ## API Calls
-- New PDF generation uses `examio-fe/src/apis/examApi.ts`:
+- New PDF generation uses `kmaedu-fe/src/apis/examApi.ts`:
   - `POST /ai/generate-from-file`
   - multipart form fields: `file`, `typeResult`, `isNarrowSearch`, optional `quantityQuizz`, `quantityFlashcard`, `keyword`, `modelType`
   - returns `{ jobId, status, message, newBalance? }`.
-- Regenerating from an already-uploaded recent file uses `examio-fe/src/apis/aiApi.ts`:
+- Regenerating from an already-uploaded recent file uses `kmaedu-fe/src/apis/aiApi.ts`:
   - `POST /ai/regenerate/{uploadId}` with JSON `{ typeResult, quantityQuizz|quantityFlashcard, isNarrowSearch, keyword?, modelType? }`
   - returns `{ jobId, newBalance? }`.
 - Job status/result polling uses:
@@ -69,10 +69,10 @@
 
 ## Result Delivery: Polling, Not SSE
 - The `/k/ai-tool` quiz/flashcard generation flow uses job polling, not SSE.
-- Poll helper: `pollJobStatus()` in `examio-fe/src/stores/useAIGeneratorStore.ts:297`.
+- Poll helper: `pollJobStatus()` in `kmaedu-fe/src/stores/useAIGeneratorStore.ts:297`.
 - Poll interval: `JOB_POLL_INTERVAL_MS = 10_000`.
 - Max attempts: `JOB_POLL_MAX_ATTEMPTS = 360`, roughly 60 minutes.
-- SSE streaming exists elsewhere for AI chat in `examio-fe/src/apis/aiChatApi.ts` and `useAITeacherStore.ts`, but it is not used by `/k/ai-tool` quiz/flashcard generation.
+- SSE streaming exists elsewhere for AI chat in `kmaedu-fe/src/apis/aiChatApi.ts` and `useAITeacherStore.ts`, but it is not used by `/k/ai-tool` quiz/flashcard generation.
 
 ## Pending Job / Resume Behavior
 - `useGenerationGuard()` warns on browser unload while `isGenerating` and `currentJobId` are active.
@@ -83,16 +83,16 @@
 - Continuing calls `resumePendingJob()` and navigates to `/k/ai-tool`.
 
 ## Relevant Files
-- `examio-fe/src/routes/index.tsx` - route definition for `/k/ai-tool`.
-- `examio-fe/src/pages/k/AIToolPage.tsx` - page shell, tabs, recent upload list.
-- `examio-fe/src/components/organisms/k/TestGenerator.tsx` - quiz generation UI and trigger.
-- `examio-fe/src/components/organisms/k/FlashcardGenerator.tsx` - flashcard generation UI and trigger.
-- `examio-fe/src/stores/useAIGeneratorStore.ts` - Zustand stores, generation actions, polling, pending job resume/cancel.
-- `examio-fe/src/apis/examApi.ts` - new-file generation API call.
-- `examio-fe/src/apis/aiApi.ts` - regenerate, job status/cancel, recent uploads/history APIs.
-- `examio-fe/src/hooks/useGenerationGuard.ts` - unload/network visibility guard during generation.
-- `examio-fe/src/components/organisms/PendingJobDialog.tsx` - resume/cancel pending job UI.
-- `examio-fe/src/routes/layouts/KLayout.tsx` - renders pending job dialog and navigates back to AI tool on resume.
+- `kmaedu-fe/src/routes/index.tsx` - route definition for `/k/ai-tool`.
+- `kmaedu-fe/src/pages/k/AIToolPage.tsx` - page shell, tabs, recent upload list.
+- `kmaedu-fe/src/components/organisms/k/TestGenerator.tsx` - quiz generation UI and trigger.
+- `kmaedu-fe/src/components/organisms/k/FlashcardGenerator.tsx` - flashcard generation UI and trigger.
+- `kmaedu-fe/src/stores/useAIGeneratorStore.ts` - Zustand stores, generation actions, polling, pending job resume/cancel.
+- `kmaedu-fe/src/apis/examApi.ts` - new-file generation API call.
+- `kmaedu-fe/src/apis/aiApi.ts` - regenerate, job status/cancel, recent uploads/history APIs.
+- `kmaedu-fe/src/hooks/useGenerationGuard.ts` - unload/network visibility guard during generation.
+- `kmaedu-fe/src/components/organisms/PendingJobDialog.tsx` - resume/cancel pending job UI.
+- `kmaedu-fe/src/routes/layouts/KLayout.tsx` - renders pending job dialog and navigates back to AI tool on resume.
 
 ## Unresolved Questions
 - I did not verify backend implementation details for `/ai/generate-from-file`, `/ai/regenerate/{uploadId}`, or `/ai/job/{jobId}`.

@@ -29,7 +29,7 @@
    - **Answer:** Chỉ một lần khi merge cuối
    - **Rationale:** Production keeps running the current build until the end. "Deploy together" constraints (04+05+08) apply to local/compose milestone testing only. Needs a one-time production cutover runbook (reset DB, per-service migrate, seed, bootstrap admin, smoke).
 
-6. **[Integration]** App mobile (examio-app) đã phát hành lên store và có người dùng thật chưa? Điều này quyết định P18 có chặn việc deploy backend hay không.
+6. **[Integration]** App mobile (kmaedu-app) đã phát hành lên store và có người dùng thật chưa? Điều này quyết định P18 có chặn việc deploy backend hay không.
    - Options: Chưa phát hành | Đã có trên store
    - **Answer:** Chưa phát hành
    - **Rationale:** Reverses RT-13: no `isAdmin`/`wallet` compat fields needed; P18 no longer blocks any deploy, but must reach parity before the first mobile store release.

@@ -6,8 +6,8 @@
 Bắt `utm_source` lúc load đầu, giữ first-touch qua localStorage, gửi kèm khi đăng ký (email + Google).
 
 ## Related Code Files
-- Create: `examio-fe/src/lib/utmSource.ts` (mẫu `src/lib/authRedirect.ts` set/get/clear).
-- Modify: `examio-fe/src/provider/AppProviders.tsx` — gọi capture lúc first-load (cạnh
+- Create: `kmaedu-fe/src/lib/utmSource.ts` (mẫu `src/lib/authRedirect.ts` set/get/clear).
+- Modify: `kmaedu-fe/src/provider/AppProviders.tsx` — gọi capture lúc first-load (cạnh
   `AuthSyncBootstrap`/`useAuthSync`).
 - Modify: form đăng ký email (`src/components/organisms/auth/signup-form.tsx`) — gửi `utmSource`
   trong payload, `clear()` khi đăng ký thành công.
@@ -18,7 +18,7 @@ Bắt `utm_source` lúc load đầu, giữ first-touch qua localStorage, gửi k
 ## Implementation Steps
 1. `utmSource.ts`:
    ```ts
-   const KEY = "examio:utm_source";
+   const KEY = "kmaedu:utm_source";
    const clean = (v: string | null) =>
      v && /^[\w.-]{1,64}$/.test(v) ? v : null;             // whitelist + cap 64
    export function captureUtmSource() {                    // first-touch: chỉ ghi nếu chưa có
@@ -42,7 +42,7 @@ Bắt `utm_source` lúc load đầu, giữ first-touch qua localStorage, gửi k
 - [ ] Nút Google OAuth nối utm_source theo cơ chế Phase 2
 
 ## Success Criteria
-- Vào `?utm_source=unikorn` → localStorage `examio:utm_source='unikorn'`; vào lại `?utm_source=other`
+- Vào `?utm_source=unikorn` → localStorage `kmaedu:utm_source='unikorn'`; vào lại `?utm_source=other`
   KHÔNG ghi đè (first-touch); đăng ký email/Google gửi đúng giá trị; clear sau đăng ký.
 
 ## Notes

@@ -259,9 +259,9 @@ The page uses a two-column grid layout at large viewports: a sticky left summary
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/k/ProfilePage.tsx:1`
-- ProfileForm: `examio-fe/src/components/molecules/profile/ProfileForm.tsx:1`
-- ChangePasswordSection: `examio-fe/src/components/molecules/profile/ChangePasswordSection.tsx:1`
-- DeviceList: `examio-fe/src/components/molecules/profile/DeviceList.tsx:1`
-- Profile API: `examio-fe/src/apis/profileApi.ts:1`
-- Auth store: `examio-fe/src/stores/useAuthStore.ts:1`
+- Page/View: `kmaedu-fe/src/pages/k/ProfilePage.tsx:1`
+- ProfileForm: `kmaedu-fe/src/components/molecules/profile/ProfileForm.tsx:1`
+- ChangePasswordSection: `kmaedu-fe/src/components/molecules/profile/ChangePasswordSection.tsx:1`
+- DeviceList: `kmaedu-fe/src/components/molecules/profile/DeviceList.tsx:1`
+- Profile API: `kmaedu-fe/src/apis/profileApi.ts:1`
+- Auth store: `kmaedu-fe/src/stores/useAuthStore.ts:1`

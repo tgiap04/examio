@@ -27,7 +27,7 @@ Source: scout reports and `_scout-bl-inventory.md`. Unknowns are marked `Needs v
 | BL021 | Gateway forwards cookies and bearer tokens to downstream services. | Backend | Proxy behavior. |
 | BL022 | Gateway rate limits requests at about 100 req/min. | Backend | `@nestjs/throttler`; exact route exclusions Need verification. |
 | BL023 | Service-to-service validation can use auth gRPC `ValidateToken`, `GetUserInfo`, and `CheckPermission`. | Backend | Authorization model simple role/ownership. |
-| BL024 | RabbitMQ topic exchange `examio.events` carries user, payment, wallet, subscription, exam, OCR events. | Backend | Known consumers include finance user-created handler and AI consumer. |
+| BL024 | RabbitMQ topic exchange `kmaedu.events` carries user, payment, wallet, subscription, exam, OCR events. | Backend | Known consumers include finance user-created handler and AI consumer. |
 
 ## Learning Content
 

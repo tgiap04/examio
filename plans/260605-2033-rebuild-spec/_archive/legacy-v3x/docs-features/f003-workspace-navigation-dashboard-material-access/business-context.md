@@ -1,6 +1,6 @@
 # F003 - Workspace Navigation, Dashboard & Material Access Business Context
 
-This feature is the learner's main workspace after sign-in. It gives users a protected place to continue studying, find recent materials, review history, and move between the major Examio tools.
+This feature is the learner's main workspace after sign-in. It gives users a protected place to continue studying, find recent materials, review history, and move between the major KMAEdu tools.
 
 The workspace shell is more than navigation. It holds shared workspace UI such as the sidebar, header, search, theme controls, verification reminders, and pending job information.
 

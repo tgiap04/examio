@@ -1,7 +1,7 @@
 # Mobile UI Mockups Plan
 
 ## Mục tiêu
-Tạo bộ mockups mobile UI bằng HTML trong `examio-app/mockups/`, dựa trên `examio-app/user-stories.html` và tuân thủ `examio-app/DESIGN.md` + `examio-app/ui-design.html`.
+Tạo bộ mockups mobile UI bằng HTML trong `kmaedu-app/mockups/`, dựa trên `kmaedu-app/user-stories.html` và tuân thủ `kmaedu-app/DESIGN.md` + `kmaedu-app/ui-design.html`.
 
 ## Design direction
 - Nền kem `#faf9f5`, card kem `#efe9de`, CTA coral `#cc785c`, dark surface `#181715`.
@@ -10,7 +10,7 @@ Tạo bộ mockups mobile UI bằng HTML trong `examio-app/mockups/`, dựa trê
 - Không dùng emoji làm icon cấu trúc; dùng icon SVG inline đơn giản.
 
 ## Frontend route audit
-Nguồn audit: `examio-fe/src/routes/index.tsx`, `src/pages/**`, `src/app/k/**`, `KLayout`, `SideBar`, các template route chính.
+Nguồn audit: `kmaedu-fe/src/routes/index.tsx`, `src/pages/**`, `src/app/k/**`, `KLayout`, `SideBar`, các template route chính.
 
 ### Loại khỏi mockup vì là landing/public marketing
 - `/` — `HomePage`
@@ -62,24 +62,24 @@ Nguồn audit: `examio-fe/src/routes/index.tsx`, `src/pages/**`, `src/app/k/**`,
 - Exam quiz: cheating warning, fullscreen confirm, autosave/network status, submit confirm.
 
 ## File sẽ tạo
-- `examio-app/mockups/index.html` — gallery tổng quan, route coverage matrix và link đến từng mockup.
-- `examio-app/mockups/auth-flow.html` — `/login`, `/register`, `/forgot-password`, `/reset-password`, `/k/verify`.
-- `examio-app/mockups/student-dashboard.html` — `/k/dashboard-student`, quick tasks, upcoming exams, recent activity.
-- `examio-app/mockups/teacher-dashboard.html` — `/k/dashboard-teacher`, stats, posts/activity, teacher shortcuts.
-- `examio-app/mockups/profile-settings.html` — `/k/profile` + settings tabs: account, privacy, notification, interface, theme, integrations, billing.
-- `examio-app/mockups/subscription-wallet.html` — `/k/subscription`, credit purchase, plans, transaction history, QR payment.
-- `examio-app/mockups/student-materials.html` — `/k/my-materials`, `/study-flashcard/:id`, share dialog, empty/loading states.
-- `examio-app/mockups/student-exams.html` — `/k/my-exams`, `/exam-session/:id`, `/exam-session/:id/quiz`, result/detail dialog.
-- `examio-app/mockups/ai-student-programming.html` — `/k/student-programming`, sessions, chat, code block, evaluation score, sources.
-- `examio-app/mockups/history.html` — `/k/history`, `/k/history/exam`, `/k/history/pdf`.
-- `examio-app/mockups/ai-generator.html` — `/k/ai-tool`, test generator, flashcard generator, recent uploads, pending job.
-- `examio-app/mockups/genai-knowledge.html` — `/k/genai-knowledge`, folder/file management, upload, graph, dataset import.
-- `examio-app/mockups/manage-exams.html` — `/k/manage-exam`, `/k/manage-quiz-set/:id`, question editor, label manager, practice settings.
-- `examio-app/mockups/manage-flashcards.html` — `/k/flash-card`, `/k/manage-flashcard-set/:id`, card editor, share flow.
-- `examio-app/mockups/manage-exam-rooms.html` — `/k/manage-exam-room`, `/k/manage-exam-room/:id`, `/k/manage-exam-room/:id/session/:sessionId`.
+- `kmaedu-app/mockups/index.html` — gallery tổng quan, route coverage matrix và link đến từng mockup.
+- `kmaedu-app/mockups/auth-flow.html` — `/login`, `/register`, `/forgot-password`, `/reset-password`, `/k/verify`.
+- `kmaedu-app/mockups/student-dashboard.html` — `/k/dashboard-student`, quick tasks, upcoming exams, recent activity.
+- `kmaedu-app/mockups/teacher-dashboard.html` — `/k/dashboard-teacher`, stats, posts/activity, teacher shortcuts.
+- `kmaedu-app/mockups/profile-settings.html` — `/k/profile` + settings tabs: account, privacy, notification, interface, theme, integrations, billing.
+- `kmaedu-app/mockups/subscription-wallet.html` — `/k/subscription`, credit purchase, plans, transaction history, QR payment.
+- `kmaedu-app/mockups/student-materials.html` — `/k/my-materials`, `/study-flashcard/:id`, share dialog, empty/loading states.
+- `kmaedu-app/mockups/student-exams.html` — `/k/my-exams`, `/exam-session/:id`, `/exam-session/:id/quiz`, result/detail dialog.
+- `kmaedu-app/mockups/ai-student-programming.html` — `/k/student-programming`, sessions, chat, code block, evaluation score, sources.
+- `kmaedu-app/mockups/history.html` — `/k/history`, `/k/history/exam`, `/k/history/pdf`.
+- `kmaedu-app/mockups/ai-generator.html` — `/k/ai-tool`, test generator, flashcard generator, recent uploads, pending job.
+- `kmaedu-app/mockups/genai-knowledge.html` — `/k/genai-knowledge`, folder/file management, upload, graph, dataset import.
+- `kmaedu-app/mockups/manage-exams.html` — `/k/manage-exam`, `/k/manage-quiz-set/:id`, question editor, label manager, practice settings.
+- `kmaedu-app/mockups/manage-flashcards.html` — `/k/flash-card`, `/k/manage-flashcard-set/:id`, card editor, share flow.
+- `kmaedu-app/mockups/manage-exam-rooms.html` — `/k/manage-exam-room`, `/k/manage-exam-room/:id`, `/k/manage-exam-room/:id/session/:sessionId`.
 
 ## Cách triển khai
-1. Tạo folder `examio-app/mockups/`.
+1. Tạo folder `kmaedu-app/mockups/`.
 2. Mỗi HTML là file tự chứa CSS để mở trực tiếp trên browser.
 3. Dùng chung một visual language nhưng không tạo file CSS riêng để giữ từng mockup độc lập.
 4. Mỗi file chứa nhiều màn hình mobile đặt cạnh nhau trong desktop gallery, mỗi màn hình mô phỏng khung điện thoại.
@@ -87,7 +87,7 @@ Nguồn audit: `examio-fe/src/routes/index.tsx`, `src/pages/**`, `src/app/k/**`,
 6. Mỗi route app trong danh sách audit phải xuất hiện trong coverage matrix của `index.html` và có ít nhất một screen mockup tương ứng.
 
 ## Validation
-- Kiểm tra file tồn tại bằng `ls examio-app/mockups`.
+- Kiểm tra file tồn tại bằng `ls kmaedu-app/mockups`.
 - Chạy một script nhẹ để parse HTML bằng Python `html.parser`, đảm bảo các file đọc được.
 - Không chạy dev server vì đây là static HTML mockup.
 

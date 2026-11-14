@@ -1,7 +1,7 @@
 # F009 - Exam Taking, Attempts & Integrity Logging Business Context
 
 ## Why It Matters
-Examio must let students take assigned exams reliably while giving teachers confidence that the results were produced under fair conditions. The feature protects both learning assessment and trust in exam outcomes.
+KMAEdu must let students take assigned exams reliably while giving teachers confidence that the results were produced under fair conditions. The feature protects both learning assessment and trust in exam outcomes.
 
 ## Who Uses It
 Students use it when joining and completing an exam. Teachers or exam hosts depend on the captured attempt and integrity records when reviewing participation and suspicious activity.

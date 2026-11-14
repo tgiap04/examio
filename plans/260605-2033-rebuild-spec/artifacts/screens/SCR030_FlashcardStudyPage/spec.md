@@ -230,10 +230,10 @@ The page renders as a full-screen fixed layout (`fixed inset-0 flex flex-col ove
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:50`
-- TurnstileGuard: `examio-fe/src/components/molecules/TurnstileGuard.tsx`
-- FlashcardSetApi: `examio-fe/src/apis/flashcardSetApi.ts`
-- FlashcardStudyApi: `examio-fe/src/apis/flashcardStudyApi.ts`
-- AuthStore: `examio-fe/src/stores/useAuthStore.ts`
-- Types: `examio-fe/src/types/flashcardSet.ts`
-- authRedirect: `examio-fe/src/lib/authRedirect.ts`
+- Page/View: `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:50`
+- TurnstileGuard: `kmaedu-fe/src/components/molecules/TurnstileGuard.tsx`
+- FlashcardSetApi: `kmaedu-fe/src/apis/flashcardSetApi.ts`
+- FlashcardStudyApi: `kmaedu-fe/src/apis/flashcardStudyApi.ts`
+- AuthStore: `kmaedu-fe/src/stores/useAuthStore.ts`
+- Types: `kmaedu-fe/src/types/flashcardSet.ts`
+- authRedirect: `kmaedu-fe/src/lib/authRedirect.ts`

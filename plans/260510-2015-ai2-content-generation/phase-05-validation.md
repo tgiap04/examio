@@ -6,10 +6,10 @@ Status: implemented
 Validate that AI2 content generation works and Ollama is only used for OCR/embedding.
 
 ## Context Links
-- `../examio-be/apps/ai-service/src/backend/api/file.py`
-- `../examio-be/apps/ai-service/src/backend/api/generation.py`
-- `../examio-be/apps/exam-service/src/modules/ai/ai.service.ts`
-- `../examio-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
+- `../kmaedu-be/apps/ai-service/src/backend/api/file.py`
+- `../kmaedu-be/apps/ai-service/src/backend/api/generation.py`
+- `../kmaedu-be/apps/exam-service/src/modules/ai/ai.service.ts`
+- `../kmaedu-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
 
 ## Requirements
 - Validate `/ai/models` returns the 3 AI2 generation models and Ollama embedding metadata.
@@ -22,9 +22,9 @@ Validate that AI2 content generation works and Ollama is only used for OCR/embed
 
 ## Commands
 - Python compile:
-  - `cd ../examio-be && python3 -m py_compile apps/ai-service/src/llm/model_registry.py apps/ai-service/src/llm/model_manager.py apps/ai-service/src/llm/llm_factory.py apps/ai-service/src/backend/services/generation_service.py`
+  - `cd ../kmaedu-be && python3 -m py_compile apps/ai-service/src/llm/model_registry.py apps/ai-service/src/llm/model_manager.py apps/ai-service/src/llm/llm_factory.py apps/ai-service/src/backend/services/generation_service.py`
 - Backend build:
-  - `cd ../examio-be && yarn build`
+  - `cd ../kmaedu-be && yarn build`
 - Prisma not required unless schema changes.
 - Optional live AI2 smoke test only if API key is configured in env:
   - `GET ${AI2_BASE_URL}/models`

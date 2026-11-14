@@ -11,7 +11,7 @@ A student browses the exam sessions they have attempted, sees their best scores 
 
 ## Screen Layout
 
-The page renders a single-column responsive layout with a sticky header section, a grid of session cards in the main content area, and a paginated navigation footer. On mobile the grid collapses from 3 columns to 1; on tablet it shows 2 columns. The history dialog is a full-screen sheet that overlays the grid. The page uses a `max-w-7xl` container centered with `px-4` gutters (`examio-fe/src/pages/k/MyExamsPage.tsx:231`).
+The page renders a single-column responsive layout with a sticky header section, a grid of session cards in the main content area, and a paginated navigation footer. On mobile the grid collapses from 3 columns to 1; on tablet it shows 2 columns. The history dialog is a full-screen sheet that overlays the grid. The page uses a `max-w-7xl` container centered with `px-4` gutters (`kmaedu-fe/src/pages/k/MyExamsPage.tsx:231`).
 
 ### Layout Sketch
 
@@ -166,10 +166,10 @@ N/A — no client-side form validation detected.
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/k/MyExamsPage.tsx:1`
-- Types: `examio-fe/src/pages/k/my-exams-types.ts:1`
-- SessionCard component: `examio-fe/src/pages/k/components/session-card.tsx:1`
-- SessionHistoryDialog component: `examio-fe/src/pages/k/components/session-history-dialog.tsx:1`
-- Store: `examio-fe/src/stores/useStudentMaterialsStore.ts`
-- API: `examio-fe/src/apis/studentMaterialsApi.ts`
-- Attempt API: `examio-fe/src/apis/examAttemptApi.ts`
+- Page/View: `kmaedu-fe/src/pages/k/MyExamsPage.tsx:1`
+- Types: `kmaedu-fe/src/pages/k/my-exams-types.ts:1`
+- SessionCard component: `kmaedu-fe/src/pages/k/components/session-card.tsx:1`
+- SessionHistoryDialog component: `kmaedu-fe/src/pages/k/components/session-history-dialog.tsx:1`
+- Store: `kmaedu-fe/src/stores/useStudentMaterialsStore.ts`
+- API: `kmaedu-fe/src/apis/studentMaterialsApi.ts`
+- Attempt API: `kmaedu-fe/src/apis/examAttemptApi.ts`

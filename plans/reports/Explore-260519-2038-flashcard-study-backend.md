@@ -18,7 +18,7 @@ scope: backend flashcard study endpoints
 
 ### Student recent flashcards endpoint
 
-`examio-be/apps/gateway-service/src/controllers/student-proxy.controller.ts`
+`kmaedu-be/apps/gateway-service/src/controllers/student-proxy.controller.ts`
 
 ```ts
 12:     @Get('recent-flashcards')
@@ -36,7 +36,7 @@ scope: backend flashcard study endpoints
 27:     }
 ```
 
-`examio-be/apps/exam-service/src/modules/student/student.controller.ts`
+`kmaedu-be/apps/exam-service/src/modules/student/student.controller.ts`
 
 ```ts
 12:     @Get('recent-flashcards')
@@ -52,7 +52,7 @@ scope: backend flashcard study endpoints
 25:     }
 ```
 
-`examio-be/apps/exam-service/src/modules/student/student.service.ts`
+`kmaedu-be/apps/exam-service/src/modules/student/student.service.ts`
 
 ```ts
 8:     async getRecentFlashcards(userId: string, limit: number, page: number) {
@@ -93,7 +93,7 @@ Progress calculation: none. The returned `progress` is explicitly `undefined`. `
 
 Module registration:
 
-`examio-be/apps/exam-service/src/modules/student/student.module.ts`
+`kmaedu-be/apps/exam-service/src/modules/student/student.module.ts`
 
 ```ts
 7: @Module({
@@ -104,7 +104,7 @@ Module registration:
 12: })
 ```
 
-`examio-be/apps/exam-service/src/exam-service.module.ts`
+`kmaedu-be/apps/exam-service/src/exam-service.module.ts`
 
 ```ts
 25: import { StudentModule } from './modules/student/student.module';
@@ -113,11 +113,11 @@ Module registration:
 
 ### Flashcard-study backend module
 
-Search result: no backend `flashcard-study` module/controller/service files were found under `examio-be/apps/exam-service/src`. A route search for `@Controller('flashcard-study')` in exam-service returned no matches.
+Search result: no backend `flashcard-study` module/controller/service files were found under `kmaedu-be/apps/exam-service/src`. A route search for `@Controller('flashcard-study')` in exam-service returned no matches.
 
 ### Gateway `/flashcard-study/*` proxy routes
 
-`examio-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
+`kmaedu-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
 
 ```ts
 1029: @ApiTags('Flashcard Study')
@@ -139,7 +139,7 @@ Search result: no backend `flashcard-study` module/controller/service files were
 1153:                 path: `/api/v1/flashcard-study/progress/${flashCardSetId}`,
 ```
 
-`examio-be/apps/gateway-service/src/gateway.module.ts`
+`kmaedu-be/apps/gateway-service/src/gateway.module.ts`
 
 ```ts
 31: import {
@@ -151,7 +151,7 @@ Search result: no backend `flashcard-study` module/controller/service files were
 
 ### FlashCardViewHistory model usage
 
-Only create usages were found in `examio-be/apps/exam-service/src/modules/flashcardset/flashcardset.service.ts`; no `findMany`, `count`, `groupBy`, or progress calculations were found.
+Only create usages were found in `kmaedu-be/apps/exam-service/src/modules/flashcardset/flashcardset.service.ts`; no `findMany`, `count`, `groupBy`, or progress calculations were found.
 
 Cards page access creates a history row:
 
@@ -219,7 +219,7 @@ Flashcard set with access code creates a history row:
 
 ### Prisma flashcard history/progress schema
 
-`examio-be/libs/database/src/schema.prisma`
+`kmaedu-be/libs/database/src/schema.prisma`
 
 ```prisma
 121: model FlashCardSet {
@@ -252,8 +252,8 @@ Flashcard set with access code creates a history row:
 
 Additional generated/split schema copies contain the same model:
 
-- `examio-be/libs/database/src/models/exam.prisma`
-- `examio-be/libs/database/prisma/models/exam.prisma`
+- `kmaedu-be/libs/database/src/models/exam.prisma`
+- `kmaedu-be/libs/database/prisma/models/exam.prisma`
 
 Search for `FlashCard.*Session`, `StudySession`, `FlashcardStudy`, and flashcard `progress` in Prisma found no flashcard study session/progress models.
 

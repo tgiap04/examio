@@ -33,13 +33,13 @@ Giữ kiến trúc async hiện tại, không thêm pipeline mới. Chỉ mở r
 - [Phase 3](./phase-03-validation-and-rollout.md) — Kiểm thử, đo thời gian phản hồi, tinh chỉnh ngưỡng.
 
 ## Key Files
-- `examio-be/apps/ai-service/src/backend/services/student_programming_evaluation_service.py`
-- `examio-be/apps/ai-service/src/backend/api/tutor.py`
-- `examio-be/apps/exam-service/src/modules/ai/ai.controller.ts`
-- `examio-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
-- `examio-fe/src/apis/aiStudentApi.ts`
-- `examio-fe/src/stores/useAIStudentStore.ts`
-- `examio-fe/src/app/k/ai-student/page.tsx`
+- `kmaedu-be/apps/ai-service/src/backend/services/student_programming_evaluation_service.py`
+- `kmaedu-be/apps/ai-service/src/backend/api/tutor.py`
+- `kmaedu-be/apps/exam-service/src/modules/ai/ai.controller.ts`
+- `kmaedu-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
+- `kmaedu-fe/src/apis/aiStudentApi.ts`
+- `kmaedu-fe/src/stores/useAIStudentStore.ts`
+- `kmaedu-fe/src/app/k/ai-student/page.tsx`
 
 ## Risks
 - UX nhầm quick score là final score.

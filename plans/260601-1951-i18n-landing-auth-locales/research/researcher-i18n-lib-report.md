@@ -1,7 +1,7 @@
 # Study Report: i18n Library Selection for React 19 + Vite
 
 **Date:** 2026-06-01
-**Context:** examio-fe — landing + auth pages, 3 languages (vi/en/ja)
+**Context:** kmaedu-fe — landing + auth pages, 3 languages (vi/en/ja)
 
 ---
 
@@ -99,7 +99,7 @@ Rationale:
 ## Vite + React 19 Setup
 
 ```bash
-cd examio-fe
+cd kmaedu-fe
 yarn add i18next react-i18next i18next-browser-languagedetector i18next-http-backend
 yarn add -D @types/i18next
 ```
@@ -138,7 +138,7 @@ import './lib/i18n'; // side-effect import, runs once
 ## Translation File Structure
 
 ```
-examio-fe/public/locales/
+kmaedu-fe/public/locales/
 ├── vi/
 │   ├── common.json   # shared keys: buttons, labels, errors, nav
 │   ├── landing.json  # landing page strings
@@ -228,7 +228,7 @@ examio-fe/public/locales/
 ```json
 {
   "hero": {
-    "headline": "Học tập thông minh hơn với Examio",
+    "headline": "Học tập thông minh hơn với KMAEdu",
     "subheadline": "Nền tảng thi trực tuyến và học tập thông minh, hỗ trợ AI",
     "cta": "Bắt đầu miễn phí",
     "ctaSecondary": "Tìm hiểu thêm"

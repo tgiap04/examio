@@ -15,7 +15,7 @@ Trang web riêng cho nhiều người học chung một phòng: Pomodoro đồng
 nghe nhạc + xem video chung qua YouTube (play/pause/seek sync), live roster (học/nghỉ),
 chat ephemeral, leaderboard thời gian tập trung. Host + co-host điều khiển. Phòng riêng tư,
 join bằng mã 6 số. Transport: **Socket.io/WebSocket** (net-new), fan-out đa instance qua
-`@socket.io/redis-adapter`, WS upgrade proxy qua gateway. Web-only (examio-fe).
+`@socket.io/redis-adapter`, WS upgrade proxy qua gateway. Web-only (kmaedu-fe).
 
 **Context:** `../260719-1835-study-together-room-brainstorm/brainstorm-study-together-room.md` · `clarifications.md`
 

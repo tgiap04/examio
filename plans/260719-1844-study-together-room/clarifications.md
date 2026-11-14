@@ -4,7 +4,7 @@
 
 - Q: Ai điều khiển timer/nhạc/video trong phòng? → A: Host + co-host được uỷ quyền
 - Q: Nguồn nhạc và video lấy từ đâu? → A: YouTube cho cả nhạc lẫn video (YouTube IFrame API)
-- Q: Phạm vi nền tảng lần đầu? → A: Chỉ web (examio-fe), mobile để phase sau
+- Q: Phạm vi nền tảng lần đầu? → A: Chỉ web (kmaedu-fe), mobile để phase sau
 - Q: Cách vào phòng và loại phòng? → A: Phòng riêng tư, join bằng mã mời 6 số, model StudyRoom mới tách khỏi ExamRoom
 - Q: Lớp social nào cần ở bản đầu? → A: Live roster (học/nghỉ) + chat text + thống kê thời gian tập trung/leaderboard; KHÔNG WebRTC
 - Q: Vòng đời và sức chứa phòng? → A: Phòng nhỏ ~10–20 người, bền theo host, host đóng/mở lại được

@@ -1,8 +1,8 @@
-# Data Model — examio
+# Data Model — kmaedu
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
-**Source**: `examio-be/libs/database/src/schema.prisma` (38 models, ~735 lines)
+**Source**: `kmaedu-be/libs/database/src/schema.prisma` (38 models, ~735 lines)
 
 ---
 

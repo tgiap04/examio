@@ -1,36 +1,36 @@
 [
   {
-    "command": "cd examio-be && yarn prisma:merge",
+    "command": "cd kmaedu-be && yarn prisma:merge",
     "exitCode": 0,
     "summary": "schema merged including messaging.prisma",
     "ts": "2026-10-18T09:22:40Z"
   },
   {
-    "command": "cd examio-be && yarn prisma:generate",
+    "command": "cd kmaedu-be && yarn prisma:generate",
     "exitCode": 0,
     "summary": "Prisma client generated",
     "ts": "2026-10-18T09:22:40Z"
   },
   {
-    "command": "cd examio-be && yarn typecheck",
+    "command": "cd kmaedu-be && yarn typecheck",
     "exitCode": 0,
     "summary": "typecheck clean across services (rerun after e2e edit: also 0)",
     "ts": "2026-10-18T09:22:40Z"
   },
   {
-    "command": "cd examio-be && yarn build:all",
+    "command": "cd kmaedu-be && yarn build:all",
     "exitCode": 0,
     "summary": "6 webpack builds clean",
     "ts": "2026-10-18T09:22:40Z"
   },
   {
-    "command": "cd examio-be && TZ=UTC yarn test",
+    "command": "cd kmaedu-be && TZ=UTC yarn test",
     "exitCode": 0,
     "summary": "62 suites, 450 tests passed, 0 failed",
     "ts": "2026-10-18T09:22:40Z"
   },
   {
-    "command": "cd examio-be && yarn test:cov --collectCoverageFrom='libs/messaging/src/**/*.ts' (unit)",
+    "command": "cd kmaedu-be && yarn test:cov --collectCoverageFrom='libs/messaging/src/**/*.ts' (unit)",
     "exitCode": 0,
     "summary": "libs/messaging/src: lines 99.38% (324/326), statements 99.45% (365/367), branches 94.39% (101/107), functions 98.43% (63/64); unit-only, mocks in several specs",
     "ts": "2026-10-18T09:22:40Z"
@@ -138,7 +138,7 @@
     "ts": "2026-10-18T09:24:36Z"
   },
   {
-    "command": "live checks: finance credentials publish auth.x to examio.events",
+    "command": "live checks: finance credentials publish auth.x to kmaedu.events",
     "exitCode": 0,
     "summary": "refused: 403 ACCESS_REFUSED (write to auth.x denied for user finance)",
     "ts": "2026-10-18T09:24:36Z"
@@ -152,7 +152,7 @@
   {
     "command": "docker exec p3r-rmq rabbitmqctl -q list_topic_permissions",
     "exitCode": 0,
-    "summary": "finance examio.events write ^finance\\\\. read .*",
+    "summary": "finance kmaedu.events write ^finance\\\\. read .*",
     "ts": "2026-10-18T09:24:36Z"
   },
   {

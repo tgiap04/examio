@@ -117,10 +117,10 @@ interface WordFamilyData {
 ## Related Code Files
 
 ### Files to Modify
-- `examio-be/libs/database/src/schema.prisma` — add 3 models + User relation
+- `kmaedu-be/libs/database/src/schema.prisma` — add 3 models + User relation
 
 ### Files to Create
-- `examio-be/libs/database/src/seed/word-family-category.seed.ts` — seed 10 categories
+- `kmaedu-be/libs/database/src/seed/word-family-category.seed.ts` — seed 10 categories
 
 ## Implementation Steps
 

@@ -1,6 +1,6 @@
 # User Stories
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Analysis Scope**: All 32 frontend screens + permissions matrix
 
@@ -27,7 +27,6 @@
 | SCR008 | SigninForm | primary-action | Sign in with email/password | POST /api/v1/auth/login |
 | SCR008 | GoogleOneTap | navigation | Sign in with Google OAuth | GET /api/v1/auth/google |
 | SCR009 | SignupForm | primary-action | Register new account | POST /api/v1/auth/register |
-| SCR009 | TurnstileGuard | system-action | Bot protection challenge | N/A |
 | SCR010 | ForgotPasswordForm | primary-action | Request password reset OTP | POST /api/v1/auth/send-code-reset-password |
 | SCR011 | ResetPasswordForm | primary-action | Reset password with OTP | POST /api/v1/auth/reset-password |
 | SCR013 | ProfileForm | primary-action | Update profile info | PUT /api/v1/profile |
@@ -103,7 +102,6 @@
 | SCR030 | FlipCard flip | navigation | Flip flashcard front/back | N/A |
 | SCR030 | NavControls prev/next | navigation | Navigate to previous/next card | N/A |
 | SCR030 | AccessModal enter code | primary-action | Enter access code to unlock study | N/A |
-| SCR030 | TurnstileGuard | system-action | Bot protection on access check | N/A |
 | SCR030 | ProgressAutoSave | system-action | Auto-save studied card progress | addStudiedCardApi |
 | SCR031 | Start exam button | primary-action | Start new exam attempt | POST /api/v1/secure-quiz |
 | SCR031 | Resume attempt button | primary-action | Resume in-progress attempt | POST /api/v1/secure-quiz |
@@ -316,16 +314,15 @@ As a **guest**, I want to **register** a new account so that I can access the pl
 ### Acceptance Criteria
 
 - [ ] AC1: Registration form accepts required fields (email, password, username)
-- [ ] AC2: Turnstile bot challenge is enforced before submission
-- [ ] AC3: Successful registration sends verification email with OTP
-- [ ] AC4: User is redirected to VerifyPage after registration
-- [ ] AC5: Duplicate email shows validation error
+- [ ] AC2: Successful registration sends verification email with OTP
+- [ ] AC3: User is redirected to VerifyPage after registration
+- [ ] AC4: Duplicate email shows validation error
 
 ### Technical Notes
 
 - **Endpoint**: POST /api/v1/auth/register
-- **Data Required**: email, password, username, turnstile token
-- **Dependencies**: PERM005, PERM042
+- **Data Required**: email, password, username
+- **Dependencies**: PERM005
 
 ### Screens
 
@@ -1733,14 +1730,13 @@ As a **student**, I want to **access** a flashcard set for study so that I can r
 
 - [ ] AC1: FlashcardStudyPage loads the flashcard set
 - [ ] AC2: Access check passes for public sets, set owners, or correct access code
-- [ ] AC3: Turnstile bot protection is enforced on access check
-- [ ] AC4: Unauthenticated users are redirected to login
+- [ ] AC3: Unauthenticated users are redirected to login
 
 ### Technical Notes
 
 - **Endpoint**: GET /study-flashcard/:id
 - **Data Required**: FlashCardSet, FlashCard listings
-- **Dependencies**: PERM002, PERM003, PERM032, PERM042
+- **Dependencies**: PERM002, PERM003, PERM032
 
 ### Screens
 
@@ -1770,7 +1766,7 @@ As a **student**, I want to **enter** an access code for a protected flashcard s
 
 - **Endpoint**: N/A (client-side access check)
 - **Data Required**: accessCode
-- **Dependencies**: PERM002, PERM003, PERM033, PERM042
+- **Dependencies**: PERM002, PERM003, PERM033
 
 ### Screens
 

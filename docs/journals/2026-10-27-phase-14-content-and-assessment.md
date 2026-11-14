@@ -2,13 +2,13 @@
 
 **Date**: 2026-10-27
 **Severity**: medium
-**Component**: examio-be content-service (new), assessment-service (renamed from exam-service), libs/grpc document client, gateway routes.yaml, r2/finance/auth/ai-service allowlists, deploy/compose, RabbitMQ definitions, postgres init, CI, examio-fe exam room detail
+**Component**: kmaedu-be content-service (new), assessment-service (renamed from exam-service), libs/grpc document client, gateway routes.yaml, r2/finance/auth/ai-service allowlists, deploy/compose, RabbitMQ definitions, postgres init, CI, kmaedu-fe exam room detail
 **Status**: resolved (signed off 2026-10-27)
 
 ## What Happened
 
 Phase 14 is 13 commits, `62339ba..2137847`, on top of `ebae483`, not pushed. exam-service no longer exists:
-- **content-service:** owns quiz sets, flashcard sets and the AI generation money flow. It serves gRPC `examio.content.v1.ContentService` and publishes `content.quizset.deleted`.
+- **content-service:** owns quiz sets, flashcard sets and the AI generation money flow. It serves gRPC `kmaedu.content.v1.ContentService` and publishes `content.quizset.deleted`.
 - **assessment-service:** a git-mv of exam-service, owning rooms, sessions and attempts.
 
 Each exam session now freezes the quiz into `ExamSession.quizSnapshot` + `quizSnapshotHash`:

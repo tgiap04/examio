@@ -1,8 +1,8 @@
 # Phase 02: Tailwind Theme And Utility Alignment
 
 ## Context Links
-- `examio-fe/tailwind.config.ts`
-- `examio-fe/src/app/globals.css`
+- `kmaedu-fe/tailwind.config.ts`
+- `kmaedu-fe/src/app/globals.css`
 - `DESIGN.md` colors, typography, spacing, radius sections
 
 ## Overview
@@ -25,8 +25,8 @@
 - Prefer semantic utility names already used by the app.
 
 ## Related Code Files
-- Modify: `examio-fe/tailwind.config.ts`
-- Read: `examio-fe/src/app/globals.css`
+- Modify: `kmaedu-fe/tailwind.config.ts`
+- Read: `kmaedu-fe/src/app/globals.css`
 
 ## Implementation Steps
 1. Replace purple/glass shadow values with subtle editorial shadows or remove unused entries.

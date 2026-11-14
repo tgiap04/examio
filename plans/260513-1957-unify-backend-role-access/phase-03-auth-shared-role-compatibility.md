@@ -4,14 +4,14 @@
 Priority: medium. Status: planned. Make teacher/student roles non-authoritative for access while preserving compatibility.
 
 ## Related Code Files
-- `examio-be/apps/auth-service/src/dto/register.dto.ts`
-- `examio-be/apps/auth-service/src/auth.service.ts`
-- `examio-be/apps/auth-service/src/auth.controller.ts`
-- `examio-be/apps/auth-service/src/strategies/google.strategy.ts`
-- `examio-be/apps/auth-service/src/strategies/github.strategy.ts`
-- `examio-be/apps/auth-service/src/strategies/facebook.strategy.ts`
-- `examio-be/libs/common/src/guard/roles.decorator.ts`
-- `examio-be/libs/common/src/guard/roles.guard.ts`
+- `kmaedu-be/apps/auth-service/src/dto/register.dto.ts`
+- `kmaedu-be/apps/auth-service/src/auth.service.ts`
+- `kmaedu-be/apps/auth-service/src/auth.controller.ts`
+- `kmaedu-be/apps/auth-service/src/strategies/google.strategy.ts`
+- `kmaedu-be/apps/auth-service/src/strategies/github.strategy.ts`
+- `kmaedu-be/apps/auth-service/src/strategies/facebook.strategy.ts`
+- `kmaedu-be/libs/common/src/guard/roles.decorator.ts`
+- `kmaedu-be/libs/common/src/guard/roles.guard.ts`
 
 ## Recommended Scope
 - Keep `role` in register DTO, OAuth state parsing, profile responses, and Prisma for backward compatibility with frontend dashboards.
@@ -23,7 +23,7 @@ Priority: medium. Status: planned. Make teacher/student roles non-authoritative 
 1. Verify no downstream access still depends on teacher/student after controller changes.
 2. Keep auth registration/OAuth defaults as-is unless product asks to remove role choice from signup.
 3. Update comments and API docs that imply role controls capabilities.
-4. If `RolesGuard` becomes unused, leave it in `@examio/common` to avoid breaking imports outside the inspected scope, then schedule cleanup separately.
+4. If `RolesGuard` becomes unused, leave it in `@kmaedu/common` to avoid breaking imports outside the inspected scope, then schedule cleanup separately.
 5. Check any redirect logic in `auth.controller.ts` that sends users to `/k/dashboard-teacher` or `/k/dashboard-student`; flag this as frontend/product follow-up, not backend blocker.
 
 ## Success Criteria

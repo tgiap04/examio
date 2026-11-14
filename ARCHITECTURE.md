@@ -1,15 +1,15 @@
-# Kiến trúc Microservice — Examio (kiến trúc đã dựng trên nhánh `refactor/microservice-rbac`)
+# Kiến trúc Microservice — KMAEdu (kiến trúc đã dựng trên nhánh `refactor/microservice-rbac`)
 
-> **Mục đích:** mô tả kiến trúc microservice mà Examio **đã dựng** (phase 01–16, nhánh `refactor/microservice-rbac`), và lộ trình migration đã đi.
+> **Mục đích:** mô tả kiến trúc microservice mà KMAEdu **đã dựng** (phase 01–16, nhánh `refactor/microservice-rbac`), và lộ trình migration đã đi.
 >
 > - Mục **2** ghi hiện trạng **trước đây** (bản 17/10/2026, trước refactor), giữ lại làm bối cảnh. Đây là nội dung legacy.
 > - Các mục **3–11** là kiến trúc như đã dựng; chỗ nào chưa làm được ghi `[DEFERRED]`.
 > - Mục **12** là lộ trình migration theo phase.
 >
-> **Nguồn:** đọc code `examio-be/`, `examio-fe/`, `deploy/`, `.github/workflows/` (bản gốc 17/10/2026, đồng bộ lại với code ở phase 19), đối chiếu với kiến trúc cụm ssv-wsm (Gateway + JWT verify phân tán + DB per service + gRPC contract-first + event bus).
+> **Nguồn:** đọc code `kmaedu-be/`, `kmaedu-fe/`, `deploy/`, `.github/workflows/` (bản gốc 17/10/2026, đồng bộ lại với code ở phase 19), đối chiếu với kiến trúc cụm ssv-wsm (Gateway + JWT verify phân tán + DB per service + gRPC contract-first + event bus).
 > Chỗ nào ghi *(cần xác nhận)* là chưa kiểm chứng đủ trong code.
 >
-> **Phạm vi:** backend `examio-be` (NestJS + Python). Đường dẫn API public `/api/v1/...` **giữ nguyên**. Nhưng client **có** phải đổi: web (phase 09) đã đổi theo shape `/auth/me` và mã lỗi mới (xem 4.6); mobile (`examio-app`, chỉ có trên nhánh `develop`) nằm ngoài phạm vi theo quyết định 29/10/2026 và **chưa** được đổi theo API mới.
+> **Phạm vi:** backend `kmaedu-be` (NestJS + Python). Đường dẫn API public `/api/v1/...` **giữ nguyên**. Nhưng client **có** phải đổi: web (phase 09) đã đổi theo shape `/auth/me` và mã lỗi mới (xem 4.6). Hệ thống chỉ có client web.
 
 ### Thay đổi so với bản 17/10/2026
 
@@ -34,7 +34,7 @@ Phase 19 đồng bộ file này với code thực tế. Khi plan và code lệch
 | 15 | 14.2 | Câu hỏi 3 đã đóng; RAM theo bảng `mem_limit`, chưa đo thực tế. |
 | 16 | 10.3 | CI/CD theo `.github/workflows/deploy.yml`: wave, migration lint, cutover. |
 | 17 | 4.5, 4.7, 8.3, 10.4 | Hạ tầng quan sát và Redis ACL `[DEFERRED]` (phase 17); KPI admin qua RPC tổng hợp. |
-| 18 | 4.6 | Mã lỗi 403, `TOKEN_STALE`, `/auth/me` đổi shape; mobile phải đồng bộ trước release. |
+| 18 | 4.6 | Mã lỗi 403, `TOKEN_STALE`, `/auth/me` đổi shape; web đã đồng bộ (phase 09). |
 | 19 | 1, 3, 4.3–4.4, 5, 6, 7, 8, 9, 10, 15 | Bỏ tính năng ví, gói và thanh toán: không còn finance-service, proto `finance/v1`, quyền `wallet:use`/`subscription:manage`/`finance:admin`, luồng trừ/hoàn tiền và giới hạn theo gói. Mục 2, 12 và phụ lục C là lịch sử, giữ nguyên. |
 
 ## Mục lục
@@ -62,18 +62,18 @@ Phase 19 đồng bộ file này với code thực tế. Khi plan và code lệch
 **Bài toán:** nền tảng học tập B2C.
 - Người dùng tạo quiz/flashcard (thủ công hoặc sinh bằng AI từ tài liệu), tổ chức phòng thi, học nhóm realtime, chat với "giáo viên AI".
 - Không có ví, gói hay thanh toán (đã bỏ); chi phí AI chỉ được chặn bằng rate limit ở gateway.
-- Client: web SPA (`examio-fe`) và mobile (`examio-app`, Kotlin Multiplatform). Cả hai chỉ nói chuyện với một cửa vào duy nhất.
+- Client: web SPA (`kmaedu-fe`), chỉ nói chuyện với một cửa vào duy nhất.
 
 **Nguyên tắc kiến trúc:**
 
-| # | Nguyên tắc | Cách làm ở Examio (đích) |
+| # | Nguyên tắc | Cách làm ở KMAEdu (đích) |
 |---|---|---|
 | 1 | Một cửa vào | Mọi request từ client đi qua **gateway-service**. Service nghiệp vụ không có cổng public, chỉ nằm trong mạng `internal`. |
 | 2 | Đăng nhập tập trung, kiểm tra phân tán | **auth-service** ký JWT **RS256**, công khai **JWKS**. Gateway và từng service tự verify bằng public key. **Không query DB, không gọi auth** cho mỗi request. |
 | 3 | Database per service | Mỗi service một database (giai đoạn đầu: một schema Postgres riêng + role riêng). Dữ liệu của service khác chỉ lưu **ID**. Không có FK xuyên service. |
 | 4 | Contract-first | Giao tiếp nội bộ đồng bộ bằng **gRPC**. Proto quản lý tập trung bằng **buf** (lint + kiểm tra breaking change), code sinh tự động cho cả TypeScript và Python. |
 | 5 | Event cho tác vụ lan toả | **RabbitMQ** topic exchange, event đặt tên theo **domain** (`auth.user.authz_changed`). Ghi event qua **outbox**, consumer **idempotent**, có **DLQ**. |
-| 6 | Không có tenant | Examio là B2C, không có multi-tenancy. Cô lập dữ liệu theo `userId` lấy từ claim `sub`. |
+| 6 | Không có tenant | KMAEdu là B2C, không có multi-tenancy. Cô lập dữ liệu theo `userId` lấy từ claim `sub`. |
 | 7 | Một image, nhiều vai trò | Mỗi service một image riêng, chạy được các vai trò `api` / `worker` / `migrate` (mục 8.3). |
 | 8 | Nhiều ngôn ngữ cùng chạy | NestJS và Python (FastAPI + gRPC) nói chuyện với nhau qua gRPC và RabbitMQ với cùng một contract. |
 | 9 | Triển khai độc lập | Sửa một service chỉ build, test và deploy service đó. Chạy Docker Compose trên VPS, thiết kế sẵn để chuyển sang K8s/Helm mà không phải sửa code (K8s: `[DEFERRED]` phase 17). |
@@ -97,7 +97,7 @@ Trước đây backend là **distributed monolith**: tách process nhưng vẫn 
 | 7 | **Gateway viết tay 208 route, chỉ 3 controller kiểm tra JWT** | 17 file `*-proxy.controller.ts` (+ `config.controller.ts`), 11 file chép lại helper `h()`/`t()`. `AuthGuard` chỉ có ở ai, ai-chat, một method admin và một method config. Các hàm `ProxyService.forward*` chỉ trả `response.data`, làm mất status và header (trừ `forwardWithRedirect`). Chỉ admin-logs và config là tự stream. | Thêm endpoint phải sửa hai nơi. SSE của AI chat bị gom hết rồi mới trả (`proxy.service.ts:189-225`), nên không stream. |
 | 8 | **gRPC dùng nửa vời** | Proto nạp lúc chạy, interface TS viết tay và phải thêm biến thể camelCase không có trong proto (`fileId?`, `keyR2?` ở `r2-client.service.ts`). Không ai gọi `auth.proto`. `admin.proto` được tham chiếu nhưng không tồn tại. `ocr` và `finance` cùng cổng `50053`. | Contract không phải nguồn sự thật. |
 | 9 | **Event bus mong manh** | Chỉ có một luồng thật là `user.created` (auth → finance). Không có outbox. Consumer ack cả khi lỗi, không có DLQ (`event-subscriber.service.ts:50-55`). Luồng `ai.ocr.requested` không ai publish. | Mất event là không biết. Ví có thể không được tạo. |
-| 10 | **`libs/common` chứa nghiệp vụ** | Mail, password, refresh-token cipher, turnstile, PDF, OAuth guard, `sanitizeUser`, enum event của mọi domain, `BaseRepository` dùng `prisma[modelName]`. | Sửa lib là rebuild và redeploy mọi service. |
+| 10 | **`libs/common` chứa nghiệp vụ** | Mail, password, refresh-token cipher, PDF, OAuth guard, `sanitizeUser`, enum event của mọi domain, `BaseRepository` dùng `prisma[modelName]`. | Sửa lib là rebuild và redeploy mọi service. |
 | 11 | **Deploy khoá chặt với nhau** | Một `deploy/Dockerfile` build cả monorepo theo `SERVICE_NAME`. CI chạy `docker compose build` → `down` → `up` cho **toàn bộ** backend. Không có registry, image tag, test hay lint trong CI. | Downtime mỗi lần deploy. Không rollback được từng service. |
 | 12 | **Lộ hạ tầng và bảo mật lỏng** | Postgres publish ra host `5411`. `entrypoint-seed.sh` in `DATABASE_URL` ra log. Cookie bị set hai lần (auth 7 ngày, gateway 30 ngày, `SameSite=None`). | Bề mặt tấn công lớn. |
 | 13 | **Không có observability** | Health check trả tĩnh `{status:'ok'}`, không kiểm tra DB. Không có tracing hay metrics. Log đẩy vào Redis list và admin đọc file. Rate limit lưu in-memory theo instance. | Khó lần lỗi xuyên service. Scale ngang thì rate limit sai. |
@@ -109,11 +109,11 @@ Trước đây backend là **distributed monolith**: tách process nhưng vẫn 
 ## 3. Sơ đồ tổng thể (đích)
 
 ```
-                     Web SPA (examio-fe)            Mobile (examio-app)
+                                 Web SPA (kmaedu-fe)
                             │  /api/v1/...  ·  WS /ws/study  ·  SSE
                             ▼
    ┌───────────────────────────────────────────────────────────────────────┐
-   │  Edge: Cloudflare → reverse proxy host → nginx (examio-fe container)   │
+   │  Edge: Cloudflare → reverse proxy host → nginx (kmaedu-fe container)   │
    └───────────────────────────────┬───────────────────────────────────────┘
                                    │ mạng "edge"
                     ┌──────────────▼──────────────┐   gRPC (revoke/invalidate,
@@ -132,7 +132,7 @@ Trước đây backend là **distributed monolith**: tách process nhưng vẫn 
    │          │         │         │          │          │           │         │
    └──────────┴────┬────┴─────────┴────┬─────┴──────────┴───────────┴─────────┘
                    │ gRPC (đồng bộ)     │ RabbitMQ           │ gRPC
-                   ▼                    ▼ examio.events      ▼
+                   ▼                    ▼ kmaedu.events      ▼
             service khác        (outbox → exchange →     ai-service (Python)
             r2-service (blob)    queue/service + DLQ)    RAG · LLM · OCR · pgvector
 
@@ -148,10 +148,10 @@ Trước đây backend là **distributed monolith**: tách process nhưng vẫn 
 
 | Môi trường | Công cụ | Định tuyến |
 |---|---|---|
-| Production (VPS) | Cloudflare → reverse proxy trên host (nginx/Caddy) → nginx trong container `examio-frontend` | `/` → SPA. `/api/` và `/ws/` → upstream `gw` (`examio-gateway-a:3000`, `examio-gateway-b:3000`). `proxy_buffering off` cho SSE (`examio-fe/nginx.conf`). |
+| Production (VPS) | Cloudflare → reverse proxy trên host (nginx/Caddy) → nginx trong container `kmaedu-frontend` | `/` → SPA. `/api/` và `/ws/` → upstream `gw` (`kmaedu-gateway-a:3000`, `kmaedu-gateway-b:3000`). `proxy_buffering off` cho SSE (`kmaedu-fe/nginx.conf`). |
 | Local | Vite dev proxy → gateway | `VITE_BACKEND_URL=http://localhost:3000` |
 
-- Container FE chỉ publish `FE_PORT` (mặc định 6368) trên `127.0.0.1` (`FE_BIND`); host reverse proxy là đường vào duy nhất. IP thật của client lấy từ `CF-Connecting-IP`, chỉ tin khi kết nối tới từ dải Cloudflare hoặc dải private của Docker (`examio-fe/nginx/cloudflare-real-ip.conf`).
+- Container FE chỉ publish `FE_PORT` (mặc định 6368) trên `127.0.0.1` (`FE_BIND`); host reverse proxy là đường vào duy nhất. IP thật của client lấy từ `CF-Connecting-IP`, chỉ tin khi kết nối tới từ dải Cloudflare hoặc dải private của Docker (`kmaedu-fe/nginx/cloudflare-real-ip.conf`).
 - Chỉ **gateway** (và nginx FE) nằm trên mạng `edge`. Mọi service nghiệp vụ, Postgres, Redis, RabbitMQ chỉ nằm trong mạng `internal`, **không publish cổng ra host** (cổng `5411` và `6369` cũ đã bỏ; truy cập DB bằng `docker compose exec postgres psql` hoặc SSH tunnel).
 
 ### 4.2 gateway-service
@@ -227,9 +227,9 @@ routes:
 **Pipeline xử lý một request:**
 
 1. **Match route.** Không khớp route nào → 404. Thứ tự ưu tiên: `path` regex trước, `prefix` dài nhất sau.
-2. **Lấy token.** Từ cookie `accessToken` (web) hoặc header `Authorization: Bearer` (mobile). **Không** nhận token qua query string, kể cả ở WS handshake (`src/ws/ws-upgrade.handler.ts` dùng cùng bộ kiểm tra với HTTP). Không có token → `401 TOKEN_MISSING` (route `optional` thì đi tiếp ẩn danh).
+2. **Lấy token.** Từ cookie `accessToken` (web) hoặc header `Authorization: Bearer` (client không dùng cookie, ví dụ script và test). **Không** nhận token qua query string, kể cả ở WS handshake (`src/ws/ws-upgrade.handler.ts` dùng cùng bộ kiểm tra với HTTP). Không có token → `401 TOKEN_MISSING` (route `optional` thì đi tiếp ẩn danh).
 3. **Verify JWT** bằng JWKS (cache key theo `kid`, tự refetch khi gặp `kid` lạ).
-   - Chữ ký sai, `iss`/`aud` sai hoặc token không hợp lệ → `401 TOKEN_INVALID`; chỉ khi hết hạn (`exp`) mới là `401 TOKEN_EXPIRED`. Client tự gọi `/auth/refresh`; luồng này đã có trong `examio-fe/src/apis/api.ts`.
+   - Chữ ký sai, `iss`/`aud` sai hoặc token không hợp lệ → `401 TOKEN_INVALID`; chỉ khi hết hạn (`exp`) mới là `401 TOKEN_EXPIRED`. Client tự gọi `/auth/refresh`; luồng này đã có trong `kmaedu-fe/src/apis/api.ts`.
    - `sid` nằm trong `gw:revoked:sid:<sid>` → `401 SESSION_REVOKED`.
    - `av` của token < `gw:user:<sub>:av` → `401 TOKEN_STALE`. Refresh để nhận claims mới.
 4. **Kiểm tra quyền thô theo route:** `permissions: [...]` → các quyền suy từ `roles` qua `ROLE_PERMISSIONS` phải đủ (route có `permissions`).
@@ -245,7 +245,7 @@ routes:
 | `gw:config:pages` | Page feature flags hiện hành |
 | `gw:rl:*` | Bộ đếm rate limit |
 
-**gRPC API của gateway** (`proto/examio/gateway/v1/gateway_control.proto`): `RevokeSession(sid, exp)`, `InvalidateUser(user_id, authz_version)`, `SetPageFlags(flags)`. Mỗi lệnh chỉ ghi Redis. Bên gọi là auth (logout, ban, đổi quyền) và admin (page flags). Đây là đường nhanh; đường **bền** là worker của gateway consume `auth.user.authz_changed` và `auth.session.revoked` (queue `gateway.events`), `SET` idempotent nếu `av` lớn hơn.
+**gRPC API của gateway** (`proto/kmaedu/gateway/v1/gateway_control.proto`): `RevokeSession(sid, exp)`, `InvalidateUser(user_id, authz_version)`, `SetPageFlags(flags)`. Mỗi lệnh chỉ ghi Redis. Bên gọi là auth (logout, ban, đổi quyền) và admin (page flags). Đây là đường nhanh; đường **bền** là worker của gateway consume `auth.user.authz_changed` và `auth.session.revoked` (queue `gateway.events`), `SET` idempotent nếu `av` lớn hơn.
 
 ### 4.3 auth-service
 
@@ -301,12 +301,12 @@ Chi tiết token, cookie và thu hồi ở mục 5.
 - Đọc file từ R2 bằng presigned URL do service gửi kèm trong event. Không giữ credentials R2 ghi.
 - Code cũ `src/score/` (bảng `students`, `subjects`, `scores`), dev agent, benchmark index và `BenchmarkItem` đã bị xóa ở phase 01.
 
-### 4.6 Frontend và mobile
+### 4.6 Frontend
 
 - **Không đổi URL.** Mọi đường dẫn `/api/v1/...` và `/ws/study` giữ nguyên. Gateway tự định tuyến về service mới. Hợp đồng response thì **có** đổi, xem bên dưới.
-- Web dùng cookie httpOnly do auth set. Mobile dùng `Authorization: Bearer`, token nhận trong body của `/auth/login` và `/auth/refresh`.
+- Web dùng cookie httpOnly do auth set. Client không dùng cookie thì gửi `Authorization: Bearer`, token nhận trong body của `/auth/login` và `/auth/refresh`.
 - Mã lỗi 401: `TOKEN_EXPIRED`, `TOKEN_STALE` (`av` cũ) → client refresh **một lần** rồi retry; `SESSION_REVOKED` → về login. Mã lỗi 403: `PERMISSION_DENIED` (client báo và nạp lại `/auth/me`) và `EMAIL_NOT_VERIFIED` (chuyển tới `/k/verify`).
-- Câu "client không phải sửa" của bản cũ là **sai**: web (phase 09) đã đổi; mobile (`examio-app`, chỉ có trên nhánh `develop`) nằm ngoài phạm vi theo quyết định 29/10/2026 và **chưa** được đổi theo API mới. `/auth/me` trả `{ user, roles, permissions }` với `user.isSystemAdmin` (không còn `isAdmin`) và **không có `wallet`** (tính năng ví đã bỏ; mobile chưa đổi theo nên nếu còn gọi `/wallet/*` thì route không còn). App mobile cần đồng bộ lại trước khi phát hành, nếu sau này đưa vào phạm vi.
+- Câu "client không phải sửa" của bản cũ là **sai**: web (phase 09) đã đổi. `/auth/me` trả `{ user, roles, permissions }` với `user.isSystemAdmin` (không còn `isAdmin`) và **không có `wallet`** (tính năng ví đã bỏ, route `/wallet/*` không còn).
 - SSE của AI chat sẽ **stream thật** sau khi gateway chuyển sang proxy dạng stream (hiện tại bị gom).
 
 ### 4.7 Hạ tầng dùng chung
@@ -315,9 +315,9 @@ Chi tiết token, cookie và thu hồi ở mục 5.
 |---|---|---|
 | Postgres 16 + pgvector | Mỗi service một database (giai đoạn đầu: một schema) + role riêng | Một server cho VPS. Tách server khi cần, chỉ phải đổi URL. |
 | Redis 7 | Cache, rate limit, revoke list, state realtime của study-room, Socket.io adapter | Tách theo **prefix** từng service. Redis ACL theo service: `[DEFERRED]` phase 17. Có thể tách instance riêng cho study-room nếu tải lớn. |
-| RabbitMQ 3.13 | Event bus | Exchange `examio.events` (topic). Mỗi service một queue `<svc>.events`, một RabbitMQ user riêng. |
+| RabbitMQ 3.13 | Event bus | Exchange `kmaedu.events` (topic). Mỗi service một queue `<svc>.events`, một RabbitMQ user riêng. |
 | Cloudflare R2 | Lưu file | Chỉ `r2-service` giữ credentials ghi. Service khác dùng presigned URL. |
-| Container registry (GHCR) | Image theo service | `ghcr.io/cychipo/examio-<key>:<git-sha>` |
+| Container registry (GHCR) | Image theo service | `ghcr.io/tgiap04/kmaedu-<key>:<git-sha>` |
 | Log, health | pino JSON (`libs/observability`), `/health/live`, `/health/ready`; admin đọc log qua Redis list/pub-sub hiện có | Đã dựng. |
 | Grafana + Loki + Tempo + Prometheus, OpenTelemetry | Log tập trung, trace, metrics | `[DEFERRED]` phase 17; admin đọc log từ Loki cũng `[DEFERRED]`. |
 
@@ -339,8 +339,8 @@ Chi tiết token, cookie và thu hồi ở mục 5.
 
 ```json
 {
-  "iss": "examio-auth",
-  "aud": "examio",
+  "iss": "kmaedu-auth",
+  "aud": "kmaedu",
   "sub": "<userId>",
   "sid": "<sessionId>",
   "roles": ["STUDENT"],
@@ -352,8 +352,8 @@ Chi tiết token, cookie và thu hồi ở mục 5.
 ```
 
 - `roles`: một trong `STUDENT` hoặc `TEACHER` (loại trừ nhau), cộng thêm `SYSTEM_ADMIN` nếu là admin hệ thống. `av` là `User.authzVersion` (5.4).
-- **Quyền không nằm trong token.** Quyền suy ra từ `roles` qua bảng `ROLE_PERMISSIONS` trong `examio-be/libs/auth-jwt/src/permissions.ts` (nguồn sự thật; FE sinh bản sao `src/types/permissions.generated.ts` từ đó).
-- Không có tier hay số dư trong token: Examio không còn gói hay ví, và không có giới hạn nào suy ra từ gói.
+- **Quyền không nằm trong token.** Quyền suy ra từ `roles` qua bảng `ROLE_PERMISSIONS` trong `kmaedu-be/libs/auth-jwt/src/permissions.ts` (nguồn sự thật; FE sinh bản sao `src/types/permissions.generated.ts` từ đó).
+- Không có tier hay số dư trong token: KMAEdu không còn gói hay ví, và không có giới hạn nào suy ra từ gói.
 
 ### 5.2 Cookie (web)
 
@@ -361,7 +361,7 @@ Chi tiết token, cookie và thu hồi ở mục 5.
 |---|---|
 | Tên | `accessToken`, `refreshToken`. Bỏ các cookie trùng `token`, `session_id`. |
 | Ai set | **Chỉ auth-service** (`libs/common/src/utils/cookie-config.ts`). Gateway không set cookie (trước đây: `auth-proxy.controller.ts:308-341`, đã xóa). |
-| Thuộc tính | `HttpOnly; Secure` (production); `SameSite=Lax`; host-only, không đặt `Domain` (`.examio.top` chỉ dùng để xóa cookie cũ lúc logout). FE và API cùng origin qua nginx nên không cần `SameSite=None`. |
+| Thuộc tính | `HttpOnly; Secure` (production); `SameSite=Lax`; host-only, không đặt `Domain` (`.kmaedu.fayedark.com` chỉ dùng để xóa cookie cũ lúc logout). FE và API cùng origin qua nginx nên không cần `SameSite=None`. |
 | `refreshToken` | `Path=/api/v1/auth`, thời hạn bằng session TTL |
 | Thời hạn `accessToken` | Bằng TTL của access token |
 
@@ -421,11 +421,11 @@ Chi tiết token, cookie và thu hồi ở mục 5.
 
 ### 6.2 gRPC
 
-**Quy ước proto** (`examio-be/proto/`, quản lý bằng buf):
+**Quy ước proto** (`kmaedu-be/proto/`, quản lý bằng buf):
 
 ```proto
 syntax = "proto3";
-package examio.document.v1;                        // examio.<svc>.v<major>
+package kmaedu.document.v1;                        // kmaedu.<svc>.v<major>
 
 service DocumentService {
   rpc GetDocumentsByIds (GetDocumentsByIdsRequest) returns (GetDocumentsByIdsResponse); // batch, tránh N+1
@@ -455,7 +455,7 @@ proto/**/*.proto ──► buf lint ──► buf breaking (so với main) ─�
                addNestjsRestParameter=true)           scripts/gen_grpc.sh)
 ```
 
-- Cờ ts-proto trong `examio-be/proto/buf.gen.yaml`: `nestJs=true`, `addGrpcMetadata=true`, `addNestjsRestParameter=true`, `esModuleInterop=true`, `env=node`, `forceLong=string`. Stub Python sinh bằng `grpc_tools.protoc` (`gen_grpc.sh`), không phải plugin buf.
+- Cờ ts-proto trong `kmaedu-be/proto/buf.gen.yaml`: `nestJs=true`, `addGrpcMetadata=true`, `addNestjsRestParameter=true`, `esModuleInterop=true`, `env=node`, `forceLong=string`. Stub Python sinh bằng `grpc_tools.protoc` (`gen_grpc.sh`), không phải plugin buf.
 - Code sinh ra **không commit** (`libs/contracts/src/generated/` bị gitignore) mà sinh ở bước build (`yarn proto:gen`; `yarn proto:lint` để lint). `buf breaking` chạy trên PR so với base (`.github/workflows/ci.yml`).
 
 **gRPC server (NestJS):** mỗi service là **hybrid app** gồm HTTP `:3000` và gRPC `:50051` trong cùng process (vai trò `api`). Khi cần scale riêng thì tách thành vai trò `grpc`.
@@ -502,27 +502,27 @@ export class DocumentGrpcController implements documentV1.DocumentServiceControl
 | `vocabulary/v1` | `WordFamilyService.GetWordFamily`; `WordFamilyAdminService`: `ListCategories`, `UpsertCategory`, `DeleteCategory` | vocabulary | content, admin |
 | `admin/v1` | `GetPageFlags` | admin | gateway (lúc khởi động) |
 
-Không có RPC `DeleteUser` (xóa user là `[DEFERRED]`, 7.2). Danh mục trên khớp `examio-be/proto/examio/*/v1/*.proto`.
+Không có RPC `DeleteUser` (xóa user là `[DEFERRED]`, 7.2). Danh mục trên khớp `kmaedu-be/proto/kmaedu/*/v1/*.proto`.
 
 ### 6.3 RabbitMQ
 
 **Topology:**
 
 ```
-exchange: examio.events (topic, durable)            exchange: examio.dlx (topic)
+exchange: kmaedu.events (topic, durable)            exchange: kmaedu.dlx (topic)
    │ routing key = <domain>.<entity>.<verb-past>        │
    ├─► queue gateway.events     (bind auth.user.authz_changed, auth.session.revoked)
    ├─► queue document.events    (bind ai.document.*)
    ├─► queue ai.events          (bind document.uploaded, document.deleted, content.generation.requested)
    ├─► queue content.events     (bind ai.generation.*, document.deleted, auth.user.updated)
-   ├─► ...                       mỗi queue: x-dead-letter-exchange=examio.dlx
+   ├─► ...                       mỗi queue: x-dead-letter-exchange=kmaedu.dlx
    └─►                           retry: một tầng <svc>.retry.30s (TTL 30 giây) → về queue chính
                                  quá 5 lần → <svc>.dlq (cảnh báo + replay thủ công)
 ```
 
 - **Topic theo domain event, không theo service nhận** (đây là cải tiến so với hệ thống tham chiếu). Bên gửi không cần biết ai nghe. Service nào cần thì tự bind.
 - Mỗi service **một queue** `<svc>.events`, tên lấy theo service. Bỏ fallback `common-queue`.
-- **Một RabbitMQ user cho mỗi service**: chỉ được publish lên `examio.events` với routing key khớp `^<domain>\.`, chỉ đọc queue của mình (user/permission render từ `deploy/rabbitmq/definitions.template.json`). Consumer kiểm tra `source` của envelope khớp domain của routing key.
+- **Một RabbitMQ user cho mỗi service**: chỉ được publish lên `kmaedu.events` với routing key khớp `^<domain>\.`, chỉ đọc queue của mình (user/permission render từ `deploy/rabbitmq/definitions.template.json`). Consumer kiểm tra `source` của envelope khớp domain của routing key.
 - `prefetch` = 10–20. Ack **sau khi** xử lý xong và commit DB. Lỗi tạm thời thì nack vào retry queue, lỗi vĩnh viễn (dữ liệu sai) thì đưa thẳng vào DLQ.
 
 **Envelope chung** (dùng cho cả Nest và Python):
@@ -539,7 +539,7 @@ exchange: examio.events (topic, durable)            exchange: examio.dlx (topic)
 }
 ```
 
-- Schema `data` của từng event khai báo trong `proto/examio/events/v1/*.proto` (hoặc JSON Schema). Kiểu sinh ra dùng chung cho producer và consumer.
+- Schema `data` của từng event khai báo trong `proto/kmaedu/events/v1/*.proto` (hoặc JSON Schema). Kiểu sinh ra dùng chung cho producer và consumer.
 - Header AMQP mang `traceparent`: `[DEFERRED]` cùng OpenTelemetry (phase 17).
 - Event **trạng thái** mang thêm `version` (số tăng dần); consumer chỉ áp dụng nếu mới hơn bản đã có.
 
@@ -579,7 +579,7 @@ exchange: examio.events (topic, durable)            exchange: examio.dlx (topic)
 ### 6.4 Không có transaction phân tán
 
 - Nhất quán giữa các service đạt được dần qua event (eventual consistency) + outbox + consumer idempotent.
-- **Không có luồng tiền.** Examio không còn ví, gói hay thanh toán, nên không có bước trừ/hoàn tiền cần bù.
+- **Không có luồng tiền.** KMAEdu không còn ví, gói hay thanh toán, nên không có bước trừ/hoàn tiền cần bù.
 - **Trường hợp cần bù trừ** (ví dụ AI sinh lỗi): content chỉ đổi trạng thái job (`FAILED`); watchdog fail job `QUEUED`/`PROCESSING` quá hạn. Không có saga hoàn tiền.
 
 ---
@@ -590,7 +590,7 @@ exchange: examio.events (topic, durable)            exchange: examio.dlx (topic)
 
 - **Mỗi service một database.**
   - Giai đoạn đầu: một server Postgres, mỗi service một **schema** (`auth`, `content`…) + một **role** chỉ có quyền trên schema đó.
-  - Prisma kết nối bằng `DATABASE_URL=postgresql://content_svc:***@postgres:5432/examio?schema=content`. Nhưng `?schema=` **không đủ** cho raw SQL qua `@prisma/adapter-pg`, nên init script `deploy/postgres/init/01-service-schemas.sh` còn chạy `ALTER ROLE <svc>_svc SET search_path = <svc>, extensions`. pgvector nằm trong schema `extensions`. ai-service (Python) đặt `search_path` cho từng pool (`DB_SEARCH_PATH=ai,extensions`) và kết nối **không** dùng `?schema=`.
+  - Prisma kết nối bằng `DATABASE_URL=postgresql://content_svc:***@postgres:5432/kmaedu?schema=content`. Nhưng `?schema=` **không đủ** cho raw SQL qua `@prisma/adapter-pg`, nên init script `deploy/postgres/init/01-service-schemas.sh` còn chạy `ALTER ROLE <svc>_svc SET search_path = <svc>, extensions`. pgvector nằm trong schema `extensions`. ai-service (Python) đặt `search_path` cho từng pool (`DB_SEARCH_PATH=ai,extensions`) và kết nối **không** dùng `?schema=`.
   - Giai đoạn sau: mỗi service một database riêng. Chỉ phải `pg_dump --schema` sang DB mới và đổi URL, code không đổi.
 - **Không FK xuyên service.**
   - Cột như `userId`, `quizSetId`, `storageId` trỏ sang service khác chỉ là `String` có index.
@@ -656,13 +656,13 @@ Response ◄── Mapper/serializer (bỏ field nhạy cảm) ── error filt
 
 Nguyên tắc: HTTP controller, gRPC controller và event handler **dùng chung Service layer**. Logic nghiệp vụ không nằm trong controller hay handler.
 
-### 8.2 Cây thư mục chuẩn (monorepo `examio-be`)
+### 8.2 Cây thư mục chuẩn (monorepo `kmaedu-be`)
 
 ```
-examio-be/
+kmaedu-be/
 ├─ proto/                                 # NGUỒN GỐC mọi contract
 │  ├─ buf.yaml  buf.gen.yaml
-│  └─ examio/
+│  └─ kmaedu/
 │     ├─ common/v1/*.proto                # pagination
 │     ├─ auth/v1/auth.proto
 │     ├─ gateway/v1/gateway_control.proto
@@ -709,9 +709,9 @@ examio-be/
 | Hiện ở `libs/common` | Chuyển về |
 |---|---|
 | Guard đọc Prisma (`auth.guard.ts`, `admin.guard.ts`, `optional-auth.guard.ts`) | `libs/auth-jwt` (bản không DB; guard cũ đã xóa) |
-| Mail, password, refresh-token cipher, turnstile, Google OAuth guard, `sanitizeUser` | auth-service |
+| Mail, password, refresh-token cipher, Google OAuth guard, `sanitizeUser` | auth-service |
 | PDF, image processing | document-service hoặc ai-service |
-| Enum và payload event của mọi domain | `proto/examio/events/v1` |
+| Enum và payload event của mọi domain | `proto/kmaedu/events/v1` |
 | `BaseRepository` (`prisma[modelName]`) | Bỏ. Mỗi service viết repository kiểu tường minh. |
 | `grpc-clients.module.ts`, `protos/` | `libs/grpc` + `libs/contracts` + `proto/` |
 | `AuditWriterService` | admin-service |
@@ -750,14 +750,14 @@ NODE_ENV=production
 ROLE=api,worker
 PORT=3000
 GRPC_PORT=50051
-DATABASE_URL=postgresql://content_svc:***@postgres:5432/examio?schema=content
+DATABASE_URL=postgresql://content_svc:***@postgres:5432/kmaedu?schema=content
 REDIS_HOST=redis
 RABBITMQ_URL=amqp://content:***@rabbitmq:5672
 AUTH_JWKS_URL=http://auth:3000/.well-known/jwks.json
 AUTH_TOKEN_URL=http://auth:3000/internal/token
 SERVICE_CLIENT_SECRET=***          # secret của riêng service, auth giữ hash trong SERVICE_CLIENTS
-JWT_ISSUER=examio-auth
-JWT_AUDIENCE=examio
+JWT_ISSUER=kmaedu-auth
+JWT_AUDIENCE=kmaedu
 AUTH_GRPC_URL=auth:50051
 DOCUMENT_GRPC_URL=document:50051
 R2_GRPC_URL=r2:50051
@@ -805,7 +805,7 @@ sequenceDiagram
 
     A->>ADB: BEGIN; UPDATE User (role, authzVersion+1); INSERT outbox_events(auth.user.authz_changed); COMMIT
     A-->>A: (relay trong auth-worker) đọc outbox SKIP LOCKED
-    A->>R: publish (confirm) → examio.events / auth.user.authz_changed
+    A->>R: publish (confirm) → kmaedu.events / auth.user.authz_changed
     R-->>G: queue gateway.events
     G->>G: ghi gw:user:<id>:av (token cũ → TOKEN_STALE)
     R-->>S: queue studyroom.events
@@ -883,24 +883,24 @@ sequenceDiagram
 
 ### 10.1 Docker Compose trên VPS
 
-Stack nằm ở `examio-be/deploy/docker-compose.yml`, ghép từ `deploy/compose/<key>.yml` bằng `include:` (cần Docker Compose 2.24+). Ví dụ rút gọn:
+Stack nằm ở `kmaedu-be/deploy/docker-compose.yml`, ghép từ `deploy/compose/<key>.yml` bằng `include:` (cần Docker Compose 2.24+). Ví dụ rút gọn:
 
 ```yaml
 networks:
   edge:      {}                       # nginx FE ↔ gateway
   internal:  { internal: true }       # gateway ↔ service ↔ data; không ra Internet trực tiếp
-  egress:    {}                       # chỉ service cần gọi ra ngoài (ai, r2, auth/OAuth/mail, Turnstile)
+  egress:    {}                       # chỉ service cần gọi ra ngoài (ai, r2, auth/OAuth/mail)
 
 services:
   gateway-a:                          # gateway-b giống hệt; alias mạng: gateway
-    image: ghcr.io/cychipo/examio-gateway:${GATEWAY_TAG}
+    image: ghcr.io/tgiap04/kmaedu-gateway:${GATEWAY_TAG}
     networks: { edge: {}, internal: {} }   # KHÔNG publish cổng ra host
   content-migrate:
-    image: ghcr.io/cychipo/examio-content:${CONTENT_TAG}
+    image: ghcr.io/tgiap04/kmaedu-content:${CONTENT_TAG}
     environment: [ROLE=migrate]
     restart: "no"
   content:
-    image: ghcr.io/cychipo/examio-content:${CONTENT_TAG}
+    image: ghcr.io/tgiap04/kmaedu-content:${CONTENT_TAG}
     environment: [ROLE=api,worker]
     networks: [internal]              # (+ egress với service gọi ra ngoài)
     depends_on: { content-migrate: { condition: service_completed_successfully } }
@@ -910,14 +910,14 @@ services:
 ```
 
 - Cổng host duy nhất là nginx FE (`FE_PORT`, mặc định 6368, bind `127.0.0.1` qua `FE_BIND`; host reverse proxy đứng trước). Không container backend nào publish cổng; `6369` cũ đã bỏ.
-- **Hai gateway** `gateway-a` và `gateway-b` sau upstream `gw` của nginx FE (`examio-fe/nginx.conf`): `resolve` (nginx ≥ 1.27.3; image `nginx:1.27-alpine`), `max_fails=1 fail_timeout=5s`, `proxy_next_upstream error timeout http_502 http_503` chỉ cho method idempotent, `proxy_connect_timeout 3s`. Có `location /api/` (SSE: `proxy_buffering off`) và `location /ws/` (WebSocket), và khối `real_ip` (`CF-Connecting-IP`, 4.1). Rollout gateway **không reload nginx**: `deploy-service.sh` thay lần lượt `gateway-a` rồi `gateway-b`.
+- **Hai gateway** `gateway-a` và `gateway-b` sau upstream `gw` của nginx FE (`kmaedu-fe/nginx.conf`): `resolve` (nginx ≥ 1.27.3; image `nginx:1.27-alpine`), `max_fails=1 fail_timeout=5s`, `proxy_next_upstream error timeout http_502 http_503` chỉ cho method idempotent, `proxy_connect_timeout 3s`. Có `location /api/` (SSE: `proxy_buffering off`) và `location /ws/` (WebSocket), và khối `real_ip` (`CF-Connecting-IP`, 4.1). Rollout gateway **không reload nginx**: `deploy-service.sh` thay lần lượt `gateway-a` rồi `gateway-b`.
 - `depends_on` chỉ dùng cho quan hệ `migrate → api` của chính service đó (và hạ tầng healthy). Bỏ chuỗi "gateway chờ mọi service". Service tự chịu được phụ thuộc chưa sẵn sàng: retry khi kết nối, readiness trả 503 tới khi kết nối được.
 - Health: `/health/live` (process còn sống) và `/health/ready` (DB, Redis, broker) qua `@nestjs/terminus`, từ `libs/observability`. `ai-worker` không có cổng HTTP nên dùng healthcheck heartbeat (`/tmp/worker-heartbeat`).
-- **Tài nguyên (RAM):** mỗi container có `mem_limit` (cap cứng, không phải reservation). Bảng `mem_limit` trong `examio-be/deploy/README.md` cộng lại khoảng **10,5 GB** cho các container chạy thường trực (gateway 256m ×2; auth, assessment, content, document, ai-chat, study-room 512m; admin, vocabulary, r2 384m; `ai` 1536m; `ai-worker` 2g; postgres 1g; rabbitmq 512m; redis 256m). **Chưa đo RAM thực tế** trên VPS; README yêu cầu chạy `docker compose stats` sau cutover rồi hạ cap `ai-worker` và các cap Node trước khi dựa vào số này. Đã gộp `api` và `worker` thành một container (`ROLE=api,worker`) để tiết kiệm RAM.
+- **Tài nguyên (RAM):** mỗi container có `mem_limit` (cap cứng, không phải reservation). Bảng `mem_limit` trong `kmaedu-be/deploy/README.md` cộng lại khoảng **10,5 GB** cho các container chạy thường trực (gateway 256m ×2; auth, assessment, content, document, ai-chat, study-room 512m; admin, vocabulary, r2 384m; `ai` 1536m; `ai-worker` 2g; postgres 1g; rabbitmq 512m; redis 256m). **Chưa đo RAM thực tế** trên VPS; README yêu cầu chạy `docker compose stats` sau cutover rồi hạ cap `ai-worker` và các cap Node trước khi dựa vào số này. Đã gộp `api` và `worker` thành một container (`ROLE=api,worker`) để tiết kiệm RAM.
 
 ### 10.2 Docker image
 
-- **Một recipe** `examio-be/deploy/Dockerfile.node` cho mọi service Node (`--build-arg SERVICE=<thư mục apps/>`). ai-service có `apps/ai-service/Dockerfile` riêng (context `examio-be`).
+- **Một recipe** `kmaedu-be/deploy/Dockerfile.node` cho mọi service Node (`--build-arg SERVICE=<thư mục apps/>`). ai-service có `apps/ai-service/Dockerfile` riêng (context `kmaedu-be`).
   1. Stage `deps`: `yarn install --immutable` (cache).
   2. Stage `builder`: `yarn proto:gen`, `prisma generate --schema apps/<svc>/prisma/schema.prisma`, rồi `yarn build <svc>` (bundle webpack **mặc định của Nest**, `nest-cli.json` đặt `webpack: true`; node_modules để external). Không có file `webpack.service.js` tùy biến.
   3. Stage `prod-deps`: `yarn workspaces focus --production`.
@@ -925,7 +925,7 @@ services:
 - Prisma dùng generator `prisma-client` với `engineType = "client"` và `moduleFormat = "cjs"`, `output = "../src/generated/prisma"` (gitignore): **không có engine native** lúc chạy; client được bundle vào `dist`.
 - Runtime base là **Node 22** (`ARG NODE_IMAGE=node:22-alpine`).
 - Image Node không chứa OCR (tesseract, ghostscript); OCR thuộc ai-service.
-- Tag: `ghcr.io/cychipo/examio-<key>:<git-sha>` và `:main`; danh mục ở `deploy/services.json`. Rollback bằng cách đổi tag về sha cũ (`deploy-service.sh` tự làm khi lỗi).
+- Tag: `ghcr.io/tgiap04/kmaedu-<key>:<git-sha>` và `:main`; danh mục ở `deploy/services.json`. Rollback bằng cách đổi tag về sha cũ (`deploy-service.sh` tự làm khi lỗi).
 
 ### 10.3 CI/CD
 
@@ -936,17 +936,17 @@ PR ───────────► lint · typecheck · unit/e2e · buf lin
                  · dependency-cruiser · check:ownership · migration lint
                  (scripts/lint-migrations.sh; label `migration:contract` bỏ qua)
 push main ────► detect: scripts/changed-services.sh <before> <sha> → {wave1, wave2}
-             ──► build + push ghcr.io/cychipo/examio-<key>:<sha> cho từng service đổi
+             ──► build + push ghcr.io/tgiap04/kmaedu-<key>:<sha> cho từng service đổi
              ──► SSH VPS: deploy/deploy-service.sh <svc> <sha>, lần lượt theo wave
 ```
 
-- **Wave:** wave 1 là server của package proto `proto/examio/<x>/` vừa đổi (RPC mới có trước khi caller ra); wave 2 là phần còn lại. Trong mỗi wave: auth đầu (phát JWKS và service token), rồi theo thứ tự chữ cái, **gateway cuối**. `libs/**`, `Dockerfile.node` đổi thì chọn mọi service Node. Đổi proto → build lại server; `buf breaking` giữ client tương thích.
+- **Wave:** wave 1 là server của package proto `proto/kmaedu/<x>/` vừa đổi (RPC mới có trước khi caller ra); wave 2 là phần còn lại. Trong mỗi wave: auth đầu (phát JWKS và service token), rồi theo thứ tự chữ cái, **gateway cuối**. `libs/**`, `Dockerfile.node` đổi thì chọn mọi service Node. Đổi proto → build lại server; `buf breaking` giữ client tương thích.
 - **`deploy-service.sh`:** đặt tag, pull, chạy `<svc>-migrate` (cổng migrate), rồi `up -d --no-deps --wait`; lỗi thì đổi lại tag cũ, dựng lại image cũ, báo Telegram. Migrate lỗi hoặc `P3009` thì **dừng deploy**, báo Telegram, container cũ vẫn chạy, và **không bao giờ tự chạy** `migrate resolve` hay `db push`.
 - **Migration expand → contract:** migration lint từ chối `DROP`, `RENAME`, `ALTER … TYPE`, `SET NOT NULL`, `ADD COLUMN … NOT NULL` không có default, trừ khi PR có label `migration:contract` (PR thứ hai của luồng hai PR).
 - **Rabbit:** khi `deploy/rabbitmq/**` đổi, workflow nạp lại bằng `rabbitmqctl import_definitions`.
 - **Cổng `CUTOVER_DONE`:** job deploy bị chặn cho tới khi repo variable `CUTOVER_DONE` là `true`; image vẫn được build.
 - **Drain thành thật:** request không streaming được drain; client SSE/WS bị cắt khi gateway dừng và tự kết nối lại; một luồng chat AI đang chạy có thể bị cắt (người dùng gửi lại). Gateway chạy hai instance sau nginx để deploy gateway không gây downtime.
-- **Cutover production (một lần):** lần deploy production đầu tiên là cutover có **reset DB**, không đi qua wave: backup → dừng stack cũ → drop volume → render định nghĩa RabbitMQ → migrate từng service theo wave → seed → bootstrap admin → smoke; rollback bằng image `:pre-cutover` và restore dump. Chi tiết và lệnh chỉ nằm ở [`examio-be/deploy/cutover-runbook.md`](examio-be/deploy/cutover-runbook.md) (đừng chép lại ở đây). Sau cutover thì wave áp dụng như trên.
+- **Cutover production (một lần):** lần deploy production đầu tiên là cutover có **reset DB**, không đi qua wave: backup → dừng stack cũ → drop volume → render định nghĩa RabbitMQ → migrate từng service theo wave → seed → bootstrap admin → smoke; rollback bằng image `:pre-cutover` và restore dump. Chi tiết và lệnh chỉ nằm ở [`kmaedu-be/deploy/cutover-runbook.md`](kmaedu-be/deploy/cutover-runbook.md) (đừng chép lại ở đây). Sau cutover thì wave áp dụng như trên.
 
 ### 10.4 Sẵn sàng cho K8s [DEFERRED] (phase 17, chưa làm)
 
@@ -957,7 +957,7 @@ push main ────► detect: scripts/changed-services.sh <before> <sha> →
 | `<svc>-migrate` | Job (Helm pre-upgrade hook) |
 | Mạng `internal` | NetworkPolicy: default deny + cho phép trong namespace (không có allow-list theo từng caller) |
 | `env/<svc>.env` | ConfigMap + Secret (External Secrets) |
-| — | Một Helm chart chuẩn `examio-service`, mỗi service chỉ có `values-<svc>.yaml` |
+| — | Một Helm chart chuẩn `kmaedu-service`, mỗi service chỉ có `values-<svc>.yaml` |
 | gRPC không mã hoá trong mạng internal | mTLS qua Linkerd (mọi RPC đã đòi token, 5.3) |
 
 ---
@@ -966,17 +966,17 @@ push main ────► detect: scripts/changed-services.sh <before> <sha> →
 
 | Hạng mục | Quy ước |
 |---|---|
-| Tên service | `<domain>-service` (`content-service`). Image `examio-<domain>`. |
+| Tên service | `<domain>-service` (`content-service`). Image `kmaedu-<domain>`. |
 | Path public | `/api/v1/<resource>` (giữ nguyên); WS `/ws/<feature>` |
 | Cổng | HTTP `3000`, gRPC `50051` ở **mọi** container |
 | Host nội bộ | tên service trong compose (`auth`, `content`, `ai-chat`, `gateway`); `<domain>-service.<ns>.svc.cluster.local` (K8s, `[DEFERRED]`) |
 | Env host gRPC | `<DOMAIN>_GRPC_URL=<key>:50051` (ví dụ `VOCABULARY_GRPC_URL=vocabulary:50051`) |
-| Package proto | `examio.<domain>.v<major>` |
+| Package proto | `kmaedu.<domain>.v<major>` |
 | Service gRPC | `<Entity>Service`; controller `<feature>.grpc.controller.ts` |
 | JWT | RS256, `typ: at+jwt`, `iss`/`aud` cố định; user token: `sub`, `sid`, `roles` (`STUDENT`\|`TEACHER` + `SYSTEM_ADMIN`), `av`, `email_verified`; service token: `sub=svc:<name>`, `aud=<đích>`, `roles=["SERVICE"]`, TTL 5 phút |
 | Header xuống service | `Authorization: Bearer <jwt>`, `X-Request-Id` (`traceparent`: `[DEFERRED]`) |
 | Metadata gRPC | `authorization: Bearer <token user được chuyển tiếp hoặc service token>`; người thực hiện là `sub`; **không** tin `x-user-id`/`x-user-roles` (đã bỏ) |
-| Exchange | `examio.events` (topic), `examio.dlx` |
+| Exchange | `kmaedu.events` (topic), `kmaedu.dlx` |
 | Routing key / event type | `<domain>.<entity>.<verb quá khứ>`, snake_case cho nhiều từ (`auth.user.authz_changed`) |
 | Queue | `<svc>.events`, `<svc>.retry.30s`, `<svc>.dlq` |
 | Envelope | `{ id, type, version, occurredAt, source, correlationId, data }` |
@@ -985,7 +985,7 @@ push main ────► detect: scripts/changed-services.sh <before> <sha> →
 | Redis | prefix `<domain>:` (ACL user theo service: `[DEFERRED]`) |
 | ID | `cuid`/`ulid` dạng chuỗi (giữ như Prisma hiện tại) |
 | Lỗi | `{ statusCode, code, message, requestId }`, `code` là UPPER_SNAKE |
-| Image tag | `<git-sha>` và `main` (`ghcr.io/cychipo/examio-<key>`) |
+| Image tag | `<git-sha>` và `main` (`ghcr.io/tgiap04/kmaedu-<key>`) |
 | Branch | `main` = production (giữ như hiện tại) |
 
 ---
@@ -994,7 +994,7 @@ push main ────► detect: scripts/changed-services.sh <before> <sha> →
 
 **Chiến lược:** strangler fig, từng bước nhỏ, mỗi phase kiểm chứng được. URL public không đổi trong suốt quá trình. Riêng lần deploy production đầu tiên là **một lần cutover có reset DB** (10.3), không chạy song song cũ/mới.
 
-**Trạng thái:** P0–P7 tương ứng phase 01–16 của plan `plans/261017-1547-microservice-refactor-rbac` (đã commit; phase 16 ký duyệt 28/10/2026). P8 (K8s) cùng phần quan sát và Redis ACL của P7 chuyển sang **phase 17 `[DEFERRED]`**. Thêm hai phần ngoài bản gốc: RBAC (phase 04, 06–09) và đồng bộ mobile (phase 18, chưa xong).
+**Trạng thái:** P0–P7 tương ứng phase 01–16 của plan `plans/261017-1547-microservice-refactor-rbac` (đã commit; phase 16 ký duyệt 28/10/2026). P8 (K8s) cùng phần quan sát và Redis ACL của P7 chuyển sang **phase 17 `[DEFERRED]`**. Thêm một phần ngoài bản gốc: RBAC (phase 04, 06–09).
 
 ```
 P0 Rào chắn ─► P1 Edge & Auth ─► P2 Contract & Event ─► P3 Cắt truy cập chéo DB
@@ -1028,7 +1028,7 @@ Thứ tự thực tế: **P6 (document + ai-service DB, phase 15) đi trước v
 
 ## 13. Checklist thêm một service mới
 
-1. **Proto:** viết `proto/examio/<svc>/v1/*.proto` (và `events/v1` nếu có event). Chạy `yarn proto:lint` và `yarn proto:gen`.
+1. **Proto:** viết `proto/kmaedu/<svc>/v1/*.proto` (và `events/v1` nếu có event). Chạy `yarn proto:lint` và `yarn proto:gen`.
 2. **App:** `nest g app <svc>-service` theo cây thư mục 8.2:
    - `main.ts` đọc `ROLE`; `config/env.schema.ts` validate env.
    - `libs/auth-jwt`, `libs/grpc`, `libs/messaging`, `libs/observability`, `libs/http`.
@@ -1054,7 +1054,7 @@ Thứ tự thực tế: **P6 (document + ai-service DB, phase 15) đi trước v
 | Triển khai | **Compose trên VPS, thiết kế sẵn cho K8s** (image, registry, deploy theo service) | Chi phí vận hành thấp, chuyển sang Helm không phải sửa code |
 | Tách exam-service | **Tách mạnh:** content, assessment, study-room, vocabulary, ai-chat | Theo yêu cầu. Ranh giới theo vòng đời dữ liệu, có snapshot để content và assessment không phụ thuộc runtime. |
 | Dữ liệu tài liệu / RAG | **document-service** giữ metadata và trạng thái xử lý. **ai-service** có DB riêng cho chunk, vector, graph. | ai-service thôi ghi bảng của người khác. Trạng thái đồng bộ qua event. |
-| Repo | Giữ **monorepo** `examio-be`, ranh giới cưỡng chế bằng dependency-cruiser + image riêng | Ít overhead hơn polyrepo. Khi tách repo thì proto publish thành package. |
+| Repo | Giữ **monorepo** `kmaedu-be`, ranh giới cưỡng chế bằng dependency-cruiser + image riêng | Ít overhead hơn polyrepo. Khi tách repo thì proto publish thành package. |
 | Multi-tenancy | Không áp dụng (B2C) | — |
 | Auth | RS256 + JWKS, access token 15 phút, revoke ở gateway; gRPC luôn mang token (user hoặc service) | Bỏ secret dùng chung và 2 query DB mỗi request; mạng không cấp quyền |
 | Image Node | Giữ `node_modules` production trong image, không bundle hết (27/10/2026) | Đơn giản; image khoảng 176 MB |
@@ -1064,9 +1064,9 @@ Thứ tự thực tế: **P6 (document + ai-service DB, phase 15) đi trước v
 1. Gateway: giữ NestJS hay chuyển sang Envoy/APISIX khi lên K8s? Đề xuất giữ NestJS tới P8.
 2. ~~Trừ credit cho AI~~ **Đã đóng:** tính năng ví/credit đã bỏ; chi phí AI chỉ được chặn bằng rate limit của gateway (có cần hạn mức theo người dùng không là câu hỏi mở nếu sau này cần).
 3. ~~`score/database.py` trong ai-service~~ **Đã đóng:** `src/score/`, dev agent, benchmark index và `BenchmarkItem` đã bị xóa ở phase 01.
-4. Có cần notification-service (email, push cho mobile) trong 6 tháng tới không? Nếu có thì tách khỏi auth ở P7.
-5. RAM trên một VPS: các cap `mem_limit` cộng lại khoảng 10,5 GB (bảng trong `examio-be/deploy/README.md`). **Chưa có số đo thực tế** (chưa chạy trên VPS); phải đo bằng `docker compose stats` sau cutover. Đã gộp `api,worker` vào một container.
-6. `[DEFERRED]` Xóa user (`auth.user.deleted`, fan-out và purger), phase 17 (K8s, Grafana/Loki/Tempo/Prometheus, Redis ACL, OpenTelemetry): chưa làm. Mobile parity (phase 18) đã bỏ khỏi plan (quyết định 29/10/2026).
+4. Có cần notification-service (email, thông báo đẩy) trong 6 tháng tới không? Nếu có thì tách khỏi auth ở P7.
+5. RAM trên một VPS: các cap `mem_limit` cộng lại khoảng 10,5 GB (bảng trong `kmaedu-be/deploy/README.md`). **Chưa có số đo thực tế** (chưa chạy trên VPS); phải đo bằng `docker compose stats` sau cutover. Đã gộp `api,worker` vào một container.
+6. `[DEFERRED]` Xóa user (`auth.user.deleted`, fan-out và purger), phase 17 (K8s, Grafana/Loki/Tempo/Prometheus, Redis ACL, OpenTelemetry): chưa làm.
 
 ---
 
@@ -1088,7 +1088,7 @@ Thứ tự thực tế: **P6 (document + ai-service DB, phase 15) đi trước v
 
 ### B. Bản đồ route public → service đích
 
-*(bản đồ rút gọn; nguồn sự thật là `examio-be/apps/gateway-service/config/routes.yaml` và `docs/generated/route-list.md`; cột "Hiện tại" là trước refactor)*
+*(bản đồ rút gọn; nguồn sự thật là `kmaedu-be/apps/gateway-service/config/routes.yaml` và `docs/generated/route-list.md`; cột "Hiện tại" là trước refactor)*
 
 | Prefix / path | Hiện tại | Đích |
 |---|---|---|
@@ -1111,15 +1111,15 @@ Thứ tự thực tế: **P6 (document + ai-service DB, phase 15) đi trước v
 
 | Chủ đề | File |
 |---|---|
-| Schema chung (trước đây, đã xóa) | `examio-be/libs/database/src/base.prisma`, `libs/database/src/models/*.prisma` |
-| Guard đọc DB | `examio-be/libs/common/src/guard/{auth,admin,optional-auth}.guard.ts` |
-| Ký JWT | `examio-be/apps/auth-service/src/auth.module.ts`, `auth.service.ts` |
-| Refresh token (giữ) | `examio-be/libs/common/src/services/refresh-token-cipher.service.ts` |
-| Proxy gateway | `examio-be/apps/gateway-service/src/controllers/*-proxy.controller.ts`, `services/proxy.service.ts`, `main.ts` (WS) |
-| gRPC | `examio-be/libs/common/src/protos/*.proto`, `libs/common/src/grpc/` |
-| gRPC đúng mẫu (giữ) | `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` |
-| Event | `examio-be/libs/common/src/events/`, `apps/finance-service/src/events/user-event.handler.ts` |
-| Admin ghi chéo | `examio-be/apps/admin-service/src/modules/admin-finance/admin-finance.service.ts`, `admin-stats/admin-stats.service.ts` |
-| ai-service ghi DB chung | `examio-be/apps/ai-service/src/backend/services/{ocr_service,generation_service,graph_storage_service,benchmark_index_service}.py`, `src/rag/vector_store_pg.py` |
-| Deploy | `examio-be/deploy/{Dockerfile,docker-compose.yml,entrypoint-migration.sh}`, `.github/workflows/deploy.yml` |
+| Schema chung (trước đây, đã xóa) | `kmaedu-be/libs/database/src/base.prisma`, `libs/database/src/models/*.prisma` |
+| Guard đọc DB | `kmaedu-be/libs/common/src/guard/{auth,admin,optional-auth}.guard.ts` |
+| Ký JWT | `kmaedu-be/apps/auth-service/src/auth.module.ts`, `auth.service.ts` |
+| Refresh token (giữ) | `kmaedu-be/libs/common/src/services/refresh-token-cipher.service.ts` |
+| Proxy gateway | `kmaedu-be/apps/gateway-service/src/controllers/*-proxy.controller.ts`, `services/proxy.service.ts`, `main.ts` (WS) |
+| gRPC | `kmaedu-be/libs/common/src/protos/*.proto`, `libs/common/src/grpc/` |
+| gRPC đúng mẫu (giữ) | `kmaedu-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` |
+| Event | `kmaedu-be/libs/common/src/events/`, `apps/finance-service/src/events/user-event.handler.ts` |
+| Admin ghi chéo | `kmaedu-be/apps/admin-service/src/modules/admin-finance/admin-finance.service.ts`, `admin-stats/admin-stats.service.ts` |
+| ai-service ghi DB chung | `kmaedu-be/apps/ai-service/src/backend/services/{ocr_service,generation_service,graph_storage_service,benchmark_index_service}.py`, `src/rag/vector_store_pg.py` |
+| Deploy | `kmaedu-be/deploy/{Dockerfile,docker-compose.yml,entrypoint-migration.sh}`, `.github/workflows/deploy.yml` |
 | Kiến trúc hiện tại (docs) | `docs/system/architecture.md` |

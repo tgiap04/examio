@@ -2,7 +2,7 @@
 
 ## Why It Matters
 
-Teachers need to build and maintain flashcard decks for students to study. Without a structured authoring tool, teachers fall back on third-party apps with no integration to the platform. FlashcardAuthoring keeps content creation within examio, enabling AI-assisted generation from lecture notes and textbooks, and ensuring that decks are discoverable on the platform alongside quiz sets and exam rooms.
+Teachers need to build and maintain flashcard decks for students to study. Without a structured authoring tool, teachers fall back on third-party apps with no integration to the platform. FlashcardAuthoring keeps content creation within kmaedu, enabling AI-assisted generation from lecture notes and textbooks, and ensuring that decks are discoverable on the platform alongside quiz sets and exam rooms.
 
 ## Who Uses It
 

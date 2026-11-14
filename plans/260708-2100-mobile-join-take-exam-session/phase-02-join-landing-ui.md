@@ -3,13 +3,13 @@
 **Priority:** Cao · **Status:** ✅ DONE · **Phụ thuộc:** phase-01
 
 ## Files tạo (`androidApp/.../features/exams/session/`)
-- `JoinSessionScreen.kt` — 1 ô nhập "dán link hoặc ID phiên thi" + nút "Tiếp tục". Tách sessionId từ link bằng helper (dùng `parseDeepLink` cho examio://, examio.vn; fallback: nếu chứa "exam-session/" lấy segment sau, else dùng nguyên input trim). Gọi `onOpen(sessionId)`.
+- `JoinSessionScreen.kt` — 1 ô nhập "dán link hoặc ID phiên thi" + nút "Tiếp tục". Tách sessionId từ link bằng helper (dùng `parseDeepLink` cho kmaedu://, kmaedu.fayedark.com; fallback: nếu chứa "exam-session/" lấy segment sau, else dùng nguyên input trim). Gọi `onOpen(sessionId)`.
 - `ExamSessionLandingViewModel.kt` — state `{isLoading, info: SessionPublicInfo?, access: SessionAccessCheck?, needCode, code, codeError, verifying, verified, error}`; `load()` = checkAccess + publicInfo (song song/tuần tự); `verifyCode(code)`; `canStart = access.hasAccess || verified`.
 - `ExamSessionLandingScreen.kt` — hiển thị info phiên (tiêu đề, mô tả, người tạo, thời gian, trạng thái). Nếu `accessType == denied` → thông báo "Phiên thi riêng tư, bạn không có quyền". Nếu `code_required` và chưa verify → ô nhập mã 6 số + nút "Xác nhận mã" (gọi verifyCode; sai → lỗi). Khi `canStart` → nút "Bắt đầu làm bài" → `onStart(title)`.
 
 ## Wiring
 - `ExamNavState.kt` (features/exams/) — thêm: `data object Joining`, `data class SessionLanding(val sessionId: String)`.
-- `ExamioApp.kt`:
+- `KMAEduApp.kt`:
   - Overlay `Joining` → `JoinSessionScreen(onBack={Idle}, onOpen={id-> examNav = SessionLanding(id)})`.
   - Overlay `SessionLanding` → `ExamSessionLandingScreen(sessionId, examRepository, onBack={Idle}, onStart={title-> examNav = TakingExam(sessionId, title)})`.
   - `MyExamsScreen(onJoinSession = { examNav = ExamNavState.Joining }, ...)`.
@@ -28,7 +28,7 @@
 - [x] JoinSessionScreen.kt (+ helper tách id)
 - [x] ExamSessionLandingViewModel.kt + ExamSessionLandingScreen.kt
 - [x] ExamNavState.kt (+2 state)
-- [x] ExamioApp.kt wiring (2 overlay + 2 callback)
+- [x] KMAEduApp.kt wiring (2 overlay + 2 callback)
 - [x] MyExamsScreen.kt (nút Tham gia)
 - [x] DeThiScreen.kt + ExamRoomsScreen.kt + ExamRoomDetailScreen.kt (nút Vào làm bài, thread callback)
 - [x] Build android pass

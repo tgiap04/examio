@@ -15,4 +15,4 @@
 ## Artifact References
 - `behavior-logic.md` BL001-BL007
 - `permissions.md` PERM002-PERM008
-- Source paths: `examio-fe/src/apis/api.ts`, `examio-fe/src/stores/useAuthStore.ts`
+- Source paths: `kmaedu-fe/src/apis/api.ts`, `kmaedu-fe/src/stores/useAuthStore.ts`

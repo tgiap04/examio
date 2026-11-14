@@ -268,10 +268,10 @@ Three-region layout: a sticky header (R1) with question counter and timer, a scr
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:1`
-- Shared component: `examio-fe/src/components/molecules/QuizOptionRow.tsx:1`
-- Shared component: `examio-fe/src/components/molecules/CheatingWarningModal.tsx:1`
-- Hook: `examio-fe/src/hooks/useCheatingDetection.ts:1`
-- Utils: `examio-fe/src/lib/secureQuizHelpers.ts:1`
-- API (attempt): `examio-fe/src/apis/examAttemptApi.ts:86` (`startExamAttemptApi`), `examio-fe/src/apis/examAttemptApi.ts:100` (`updateExamAttemptProgressApi`), `examio-fe/src/apis/examAttemptApi.ts:211` (`getExamAttemptDetailApi`), `examio-fe/src/apis/examAttemptApi.ts:333` (`getSecureQuizApi`), `examio-fe/src/apis/examAttemptApi.ts:344` (`submitSecureQuizApi`)
-- Route config: `examio-fe/src/routes/index.tsx:255`
+- Page/View: `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:1`
+- Shared component: `kmaedu-fe/src/components/molecules/QuizOptionRow.tsx:1`
+- Shared component: `kmaedu-fe/src/components/molecules/CheatingWarningModal.tsx:1`
+- Hook: `kmaedu-fe/src/hooks/useCheatingDetection.ts:1`
+- Utils: `kmaedu-fe/src/lib/secureQuizHelpers.ts:1`
+- API (attempt): `kmaedu-fe/src/apis/examAttemptApi.ts:86` (`startExamAttemptApi`), `kmaedu-fe/src/apis/examAttemptApi.ts:100` (`updateExamAttemptProgressApi`), `kmaedu-fe/src/apis/examAttemptApi.ts:211` (`getExamAttemptDetailApi`), `kmaedu-fe/src/apis/examAttemptApi.ts:333` (`getSecureQuizApi`), `kmaedu-fe/src/apis/examAttemptApi.ts:344` (`submitSecureQuizApi`)
+- Route config: `kmaedu-fe/src/routes/index.tsx:255`

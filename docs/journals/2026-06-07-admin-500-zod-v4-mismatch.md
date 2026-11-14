@@ -40,7 +40,7 @@ Migrated 3 DTO files (refund.body.ts, credit.body.ts, set-tier.body.ts) from v4 
 ## Verification
 
 ```
-$ yarn tsc --noEmit          # both examio-be and examio-fe
+$ yarn tsc --noEmit          # both kmaedu-be and kmaedu-fe
 exit 0
 
 $ curl .../admin/users?page=1&pageSize=20          → 200
@@ -56,14 +56,14 @@ All 3 previously-500 endpoints now return 200 with real data. No more `zod.defau
 ## Files changed (8)
 
 ```
-examio-be/package.json                                       (zod v4 → v3)
-examio-be/apps/admin-service/src/modules/admin-finance/dto/refund.body.ts
-examio-be/apps/admin-service/src/modules/admin-finance/dto/credit.body.ts
-examio-be/apps/admin-service/src/modules/admin-finance/dto/set-tier.body.ts
-examio-fe/src/components/admin/UserTable.tsx
-examio-fe/src/pages/admin/AdminAuditPage.tsx
-examio-fe/src/stores/useAdminStore.ts
-examio-fe/src/apis/adminApi.ts
+kmaedu-be/package.json                                       (zod v4 → v3)
+kmaedu-be/apps/admin-service/src/modules/admin-finance/dto/refund.body.ts
+kmaedu-be/apps/admin-service/src/modules/admin-finance/dto/credit.body.ts
+kmaedu-be/apps/admin-service/src/modules/admin-finance/dto/set-tier.body.ts
+kmaedu-fe/src/components/admin/UserTable.tsx
+kmaedu-fe/src/pages/admin/AdminAuditPage.tsx
+kmaedu-fe/src/stores/useAdminStore.ts
+kmaedu-fe/src/apis/adminApi.ts
 ```
 
 ## Prevention (deferred)

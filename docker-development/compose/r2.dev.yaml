@@ -1,0 +1,32 @@
+# Dev overlay for kmaedu-be/deploy/compose/r2.yml, merged by .generated/compose.yaml (Compose >= 2.24).
+# Runs the app from source (`yarn dev:r2`) in the dev image; R2 keys come from docker-development/.env.
+services:
+    r2:
+        image: kmaedu-dev-node:local
+        build: !reset null
+        pull_policy: never
+        container_name: !reset null
+        working_dir: /workspace
+        volumes:
+            - ${KMAEDU_BE_DIR}:/workspace
+            - be_node_modules:/workspace/node_modules
+            # per-container webpack output: never written into the host tree, never wiped by a sibling
+            - /workspace/dist
+        command: ['yarn', 'dev:r2']
+        environment:
+            NODE_ENV: development
+            MAIL_TRANSPORT: json
+            CHOKIDAR_USEPOLLING: ${KMAEDU_WATCH_POLL}
+            WATCHPACK_POLLING: ${KMAEDU_WATCH_POLL}
+            YARN_INSTALL_STATE_PATH: /workspace/node_modules/.yarn-install-state.gz
+        env_file: !override
+            - path: ${KMAEDU_DEV_GEN_DIR}/env/r2.env
+              required: true
+        mem_limit: !reset null
+        # other apps are reached through lazy clients: only the services file decides what runs
+        depends_on: !override
+            deps:
+                condition: service_completed_successfully
+        healthcheck:
+            interval: 10s
+            start_period: 180s

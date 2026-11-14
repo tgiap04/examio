@@ -16,7 +16,7 @@ Mở rộng chấm điểm tín nhiệm cho `/k/student-programming` để vẫn
 
 - FE gọi `POST /ai/tutor/student-programming/evaluate` qua `src/apis/aiStudentApi.ts`.
 - Gateway/exam-service chỉ proxy request sang Python AI service.
-- Logic chính nằm ở `examio-be/apps/ai-service/src/backend/services/student_programming_evaluation_service.py`.
+- Logic chính nằm ở `kmaedu-be/apps/ai-service/src/backend/services/student_programming_evaluation_service.py`.
 - Hiện có 3 tầng:
   1. benchmark imported/smoke samples,
   2. `rule_based_fallback` cho vài bài pure-function đơn giản,

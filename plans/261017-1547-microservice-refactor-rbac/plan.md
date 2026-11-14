@@ -1,6 +1,6 @@
 ---
 title: "Microservice Refactor + RBAC (Teacher / Student / System Admin)"
-description: "Refactor examio-be from distributed monolith to real microservices per ARCHITECTURE.md and introduce fixed-role RBAC with an admin role-assignment screen."
+description: "Refactor kmaedu-be from distributed monolith to real microservices per ARCHITECTURE.md and introduce fixed-role RBAC with an admin role-assignment screen."
 status: in-progress
 priority: P1
 effort: 56.75d
@@ -16,7 +16,7 @@ created: 2026-10-17
 # Microservice Refactor + RBAC
 
 ## Overview
-Refactor examio-be from distributed monolith to real microservices per `/ARCHITECTURE.md` (P0–P8). RBAC lands early, together with the RS256/JWKS token. Roles: `STUDENT` | `TEACHER` (mutually exclusive) + `SYSTEM_ADMIN` flag. **DB is reset** (no real users), so there is no data migration or backfill. Public `/api/v1` paths are kept.
+Refactor kmaedu-be from distributed monolith to real microservices per `/ARCHITECTURE.md` (P0–P8). RBAC lands early, together with the RS256/JWKS token. Roles: `STUDENT` | `TEACHER` (mutually exclusive) + `SYSTEM_ADMIN` flag. **DB is reset** (no real users), so there is no data migration or backfill. Public `/api/v1` paths are kept.
 
 Decisions (authoritative): [reports/decisions.md](./reports/decisions.md). Inputs: [current state](./reports/scout-current-state-report.md) · [RBAC surface](./reports/scout-rbac-surface-report.md) · [RBAC research](./research/researcher-01-rbac-report.md) · [migration mechanics](./research/researcher-02-migration-mechanics-report.md).
 
@@ -41,7 +41,7 @@ Decisions (authoritative): [reports/decisions.md](./reports/decisions.md). Input
 | 15 | [Document Service & AI-Service DB](./phase-15-document-service-and-ai-service-db.md) | Completed | 5d | 03, 10, 11 |
 | 16 | [Deploy Independence](./phase-16-deploy-independence-and-observability.md) | Signed off 2026-10-28 (9/9 acceptance; review + gate SEALED) | 2.5d | 12–15 |
 | 17 | [Deferred: K8s + Observability + Redis ACL](./phase-17-k8s-readiness.md) | Deferred | ~3.5d (excluded) | 16 |
-| 18 | [Mobile RBAC Parity (examio-app, cross-repo)](./phase-18-mobile-rbac-parity.md) | Removed (user decision 2026-10-29: do not touch the mobile app) | 2.75d (provisional) | 09 · before first store release |
+| 18 | [Mobile RBAC Parity (kmaedu-app, cross-repo)](./phase-18-mobile-rbac-parity.md) | Removed (user decision 2026-10-29: do not touch the mobile app) | 2.75d (provisional) | 09 · before first store release |
 | 19 | [Docs & Architecture Sync](./phase-19-docs-and-architecture-sync.md) | Signed off 2026-10-29 (review + gate SEALED) | 1.25d | 16 |
 
 ## Execution Strategy
@@ -49,14 +49,14 @@ Decisions (authoritative): [reports/decisions.md](./reports/decisions.md). Input
 - Milestone A (01–09): RBAC usable end to end on the current topology, with the new auth and gateway. 04 + 05 + 08 are verified together (04 alone has no revoke list). **Status 2026-10-20: Milestone A backend (04 + 05 + 08) is verified locally** (admin trio 36/36, auth CI set 35/35, gateway probe 16/16, UI browser run 27/27; evidence: [phase-08-runs.md](./evidence/phase-08-runs.md)). **FE (09) completed 2026-10-22, pending commit** (live matrix 64 PASS / 0 FAIL / 1 NOTE; carried items D1–D15 in [phase 09](./phase-09-frontend-rbac.md#deferred--carried)). Phase 08 has two open Todo lines (FE error/409 states, last-admin ban UI on `/admin/users`); see phase-08 Next Steps item 10.
 - P04 admin grant/revoke already route via auth (`SetSystemAdmin`, with the admin's token forwarded). P08 builds the rest of the role screen on that path; admin-service never writes `isSystemAdmin` directly.
 - Milestone B (10–11): data ownership. Each service gets its own schema and role. `libs/database` is removed. 10's FE edits land after 09 (shared `useAuthStore.ts`, `types/user.ts`).
-- Milestone C (12–15): exam-service is split away. Order: **12 ∥ 15 → 13 → 14** (15 also needs 10's idempotent `Debit`/`Refund`). **Status 2026-10-25:** 13 signed off. 14 implemented, tested and reviewed (0 Critical/High), awaiting user sign-off and commit. Remaining order: **16 → 19** (18 removed 2026-10-29) (17 deferred). **Decided 2026-10-29:** 19 goes first. 18 stays Pending until the user decides how examio-app enters `refactor/microservice-rbac`. Evidence: [phase-13-runs.md](./evidence/phase-13-runs.md). 13 needs 15 (document-service + gRPC `AiService`). 12/13/14 share `apps/exam-service/src/exam-service.module.ts` and `apps/gateway-service/config/routes.yaml` (single file, named entries per phase). Edits to shared files (`routes.yaml`, `nest-cli.json`, `package.json`, `jest.config.js`, compose includes) are append-only, and merges are serialized.
+- Milestone C (12–15): exam-service is split away. Order: **12 ∥ 15 → 13 → 14** (15 also needs 10's idempotent `Debit`/`Refund`). **Status 2026-10-25:** 13 signed off. 14 implemented, tested and reviewed (0 Critical/High), awaiting user sign-off and commit. Remaining order: **16 → 19** (18 removed 2026-10-29) (17 deferred). **Decided 2026-10-29:** 19 goes first. 18 stays Pending until the user decides how kmaedu-app enters `refactor/microservice-rbac`. Evidence: [phase-13-runs.md](./evidence/phase-13-runs.md). 13 needs 15 (document-service + gRPC `AiService`). 12/13/14 share `apps/exam-service/src/exam-service.module.ts` and `apps/gateway-service/config/routes.yaml` (single file, named entries per phase). Edits to shared files (`routes.yaml`, `nest-cli.json`, `package.json`, `jest.config.js`, compose includes) are append-only, and merges are serialized.
 - Milestone D (16, 19): independent deploy + docs. 17 deferred (K8s, observability stack, Redis ACL).
 - Mobile (18): removed 2026-10-29 by user decision — the mobile app is out of scope and not touched.
 - Every phase ends green: `yarn build && yarn test` (BE), `yarn build && yarn lint` (FE), app runs via compose.
 
 ## Key Dependencies
 - Node 22 base image, Prisma 6.19.x (`prisma-client` generator + `@prisma/adapter-pg`), `jose@5.10` (CJS), `http-proxy-middleware@3.0.7`, buf v2 + ts-proto, amqp-connection-manager.
-- `examio-app` (mobile) is not in this checkout. Phase 18 runs in its own repo, iOS + Android parity.
+- `kmaedu-app` (mobile) is not in this checkout. Phase 18 runs in its own repo, iOS + Android parity.
 
 ## Prisma Spike Verdict (P01 step 3 — gates P11)
 **GO (2026-10-18).** Prisma 6.19.3 `prisma-client` generator (`engineType=client`, `moduleFormat=cjs`) + `@prisma/adapter-pg`. Custom webpack (`externals: []`) gives a self-contained bundle. Image ≈63 MB. Migrations and queries land in `?schema=<svc>`, and raw SQL relies on the role's `search_path`. Tested on arm64 only, so amd64 must be confirmed in CI. Details: [spike report](./reports/spike-prisma-bundling-report.md).

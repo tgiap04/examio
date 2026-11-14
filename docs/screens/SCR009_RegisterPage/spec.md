@@ -7,11 +7,11 @@
 
 ## Purpose
 
-New visitors create an account on this page by providing a username, email, and password. The form is protected by Cloudflare Turnstile to prevent bot registrations. On success the user is automatically signed in and redirected to `/k`.
+New visitors create an account on this page by providing a username, email, and password. On success the user is automatically signed in and redirected to `/k`.
 
 ## Screen Layout
 
-Full-viewport centered layout with a single card. The card contains a brand header (logo + welcome title), the registration form (username, email, password, confirm password), a Turnstile widget, and a Google OAuth button. A divider separates the OAuth section from the form. A link to login is at the bottom. The layout root is `signup-form.tsx:76` (`.min-h-screen.flex`).
+Full-viewport centered layout with a single card. The card contains a brand header (logo + welcome title), the registration form (username, email, password, confirm password), and a Google OAuth button. A divider separates the OAuth section from the form. A link to login is at the bottom. The layout root is `signup-form.tsx:76` (`.min-h-screen.flex`).
 
 ### Layout Sketch
 
@@ -33,7 +33,6 @@ Full-viewport centered layout with a single card. The card contains a brand head
 │  │  ├─────────────────────────────┤ │  │
 │  │  │ R2e: Login link               │ │  │
 │  │  ├─────────────────────────────┤ │  │
-│  │  │ R2f: TurnstileGuard (fixed)   │ │  │
 │  │  └─────────────────────────────┘ │  │
 │  └───────────────────────────────────┘  │
 └─────────────────────────────────────────┘
@@ -50,26 +49,23 @@ Full-viewport centered layout with a single card. The card contains a brand head
 | R2c | Submit button | static | no | `type="submit"` button | full-width |
 | R2d | OAuth divider + Google button | static | no | `hr` dividers + `IconBrandGoogle` button | full-width |
 | R2e | Login link | static | no | `Link` to `/login` | centered |
-| R2f | TurnstileGuard | static | no | `TurnstileGuard` component | centered at bottom |
 
 ## User Flow
 
 ### Happy Path
 
-1. Page loads; Turnstile challenge runs and fires `onTokenReady` with a `turnstileToken` string (enables submit/Google buttons).
-2. User fills `username`, `email`, `password`, and `confirmPassword` fields.
-3. User clicks **Submit** (enabled only when `turnstileToken` is non-empty).
-4. `handleSubmit` at `signup-form.tsx:44` fires: extracts form fields via `FormData`, checks `password === confirmPassword` client-side; if mismatch shows `toast.warning(t("signup.passwordMismatch"))` and returns early.
-5. Calls `signup({ username, email, password, turnstileToken })` from auth store.
-6. On success: store sets auth state, writes tokens, calls `toast.success(response.message)`, then `window.location.href` redirects to `from` param or `response.redirectTo` or `/k`.
-7. On error: `toast.error(...)` fires; form remains filled; user retries.
+1. User fills `username`, `email`, `password`, and `confirmPassword` fields.
+2. User clicks **Submit**.
+3. `handleSubmit` at `signup-form.tsx:44` fires: extracts form fields via `FormData`, checks `password === confirmPassword` client-side; if mismatch shows `toast.warning(t("signup.passwordMismatch"))` and returns early.
+4. Calls `signup({ username, email, password })` from auth store.
+5. On success: store sets auth state, writes tokens, calls `toast.success(response.message)`, then `window.location.href` redirects to `from` param or `response.redirectTo` or `/k`.
+6. On error: `toast.error(...)` fires; form remains filled; user retries.
 
 ### Branches
 
 | Decision point | Condition | Outcome on this screen | Source |
 |----------------|-----------|------------------------|--------|
 | Password mismatch | `password !== confirmPassword` | `toast.warning` fires; no API call; form retains values | `signup-form.tsx:52` |
-| Turnstile challenge | `turnstileToken` is empty string | Submit + Google buttons disabled | `signup-form.tsx:152,170` |
 | OAuth path | User clicks Google button | `loginWithGoogle()` → full-page redirect to Google OAuth | `signup-form.tsx:173` |
 | Already authenticated | `isAuthenticated === true` at mount | `PublicRoute` redirects to `/k` | `PublicRoute.tsx:16` |
 
@@ -82,7 +78,6 @@ N/A — screen displays no dynamic data. All fields are writable inputs (documen
 | State | Trigger | Visual Behavior | User Action Available | Source |
 |-------|---------|----------------|-----------------------|--------|
 | loading | `PublicRoute` checks `initializing === true` | Spinner placeholder in `RegisterPage` via `Suspense` | none | `RegisterPage.tsx` (Suspense wraps SignupForm) |
-| Turnstile pending | Challenge not yet solved | Submit + Google buttons disabled | Wait for challenge | `signup-form.tsx:152,170` |
 | submitting | `signup()` in-flight | Button shows default text (no spinner wired to store `loading`) | none | `useAuthStore.ts:125` |
 | password mismatch | client-side check fires | `toast.warning` inline, no API call | Correct password | `signup-form.tsx:52` |
 | error | `signupApi` rejects | `toast.error` with server message; form retains values | Retry | `signup-form.tsx:70` |
@@ -103,7 +98,7 @@ N/A — screen displays no dynamic data. All fields are writable inputs (documen
 
 #### Account registration
 - **Endpoint:** `POST /auth/register`
-- **Request:** `{ username, email, password, turnstileToken }`
+- **Request:** `{ username, email, password }`
 - **Success:** `200` → store sets auth state, `window.location.href` redirect
 - **Errors:** `400` / `409` / etc. → `toast.error(response.message || "Đăng ký tài khoản thất bại")`; network error → `toast.error((error).message)`
 - **Trigger:** Submit button click
@@ -115,7 +110,6 @@ N/A — screen displays no dynamic data. All fields are writable inputs (documen
 
 ## Interaction Patterns
 
-- **Turnstile token expiry disables all submit actions** — `onExpire` callback clears `turnstileToken` → buttons become disabled — source: `signup-form.tsx:192`
 - **Login link** navigates to `/login` — source: `signup-form.tsx:183`
 - **Google button click** triggers OAuth redirect — source: `signup-form.tsx:173`
 
@@ -123,7 +117,7 @@ N/A — screen displays no dynamic data. All fields are writable inputs (documen
 
 | Aspect | Status | Notes |
 |--------|--------|-------|
-| ARIA roles/labels | partial | `alt="Examio"` on logo; `htmlFor` on `<Label>` elements; no `role="form"` |
+| ARIA roles/labels | partial | `alt="KMAEdu"` on logo; `htmlFor` on `<Label>` elements; no `role="form"` |
 | Keyboard navigation | supported | Tab order: username → email → password → confirmPassword → toggle → submit → Google → link |
 | Focus management | unmanaged | No explicit `focus()` calls; `autofocus` not set |
 | Screen reader compatibility | supported | Labels linked via `htmlFor`/`id`; `placeholder` as secondary cue |
@@ -136,20 +130,18 @@ N/A — screen displays no dynamic data. All fields are writable inputs (documen
 |-----------|------|---------|--------|-------|
 | `isAuthenticated === true` | auth | Redirect to `/k` via `PublicRoute` | Entire page | Consequence: authenticated users never see this page |
 | `initializing === true` | auth | Loading spinner in `RegisterPage` | `SignupForm` | While auth store hydrates |
-| `!turnstileToken` | feature-flag | Submit + Google buttons disabled | none | Turnstile challenge must complete first |
 
 ## Security Surface
 
 | Guard | Type | Consequence if bypassed |
 |-------|------|------------------------|
 | `PublicRoute` component | auth | Authenticated users are redirected to `/k` — they should not see the registration page |
-| Turnstile bot protection | auth | Submit and Google buttons remain disabled until valid token; `[UNVERIFIED] server enforcement` — backend Turnstile validation not confirmed by static analysis |
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/auth/RegisterPage.tsx:1`
-- Form + layout: `examio-fe/src/components/organisms/auth/signup-form.tsx:1`
-- Auth store: `examio-fe/src/stores/useAuthStore.ts:1`
-- API client: `examio-fe/src/apis/authApi.ts:64`
-- Route guard: `examio-fe/src/routes/guards/PublicRoute.tsx:1`
-- Router config: `examio-fe/src/routes/index.tsx:123`
+- Page/View: `kmaedu-fe/src/pages/auth/RegisterPage.tsx:1`
+- Form + layout: `kmaedu-fe/src/components/organisms/auth/signup-form.tsx:1`
+- Auth store: `kmaedu-fe/src/stores/useAuthStore.ts:1`
+- API client: `kmaedu-fe/src/apis/authApi.ts:64`
+- Route guard: `kmaedu-fe/src/routes/guards/PublicRoute.tsx:1`
+- Router config: `kmaedu-fe/src/routes/index.tsx:123`

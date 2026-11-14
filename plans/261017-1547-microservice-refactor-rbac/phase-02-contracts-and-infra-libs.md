@@ -9,7 +9,7 @@
 
 ## Overview
 - Priority: P1 · Status: Completed (2026-10-18) · Effort: 2.25d <!-- Red Team: RT-1, RT-8 (was 2d: +money/delete contracts, +DeleteObjects server; −ALS middleware, −filter rollout) --> · Depends on: 01
-- Make `examio-be/proto/` the single contract source. Generate TS (ts-proto) and Python stubs. Unify ports. Add the `libs/contracts`, `libs/grpc`, `libs/http` skeletons. Move every existing gRPC caller and server onto generated types. Define the idempotent money and delete contracts now so later phases code against them.
+- Make `kmaedu-be/proto/` the single contract source. Generate TS (ts-proto) and Python stubs. Unify ports. Add the `libs/contracts`, `libs/grpc`, `libs/http` skeletons. Move every existing gRPC caller and server onto generated types. Define the idempotent money and delete contracts now so later phases code against them.
 
 ## Key Insights
 - Current protos: `libs/common/src/protos/{auth,wallet,r2,subscription}.proto` (ocr deleted in 01). Runtime proto-loader plus hand-written TS interfaces. Packages are `auth`, `wallet`, `r2`, `subscription`.
@@ -25,16 +25,16 @@
 
 ## Requirements
 - Functional:
-  - `proto/examio/{common,auth,finance,r2,gateway}/v1/*.proto` lint-clean under buf STANDARD.
-  - Auth proto `examio.auth.v1.AuthService`: `GetUser`, `GetUsersByIds` (privileged, full user incl. email), `GetPublicProfilesByIds` (`id, username, name, avatar` only), `FindUserByEmail`, `ListUsers`, `SetUserRole`, `SetSystemAdmin`, `SetUserStatus(user_id, is_banned, reason)`, `ListRoleChanges`. `User` message carries `BaseRole role` (enum `BASE_ROLE_UNSPECIFIED=0, STUDENT=1, TEACHER=2`) + `bool is_system_admin`. No numeric role. <!-- Red Team: RT-15, RT-3 -->
+  - `proto/kmaedu/{common,auth,finance,r2,gateway}/v1/*.proto` lint-clean under buf STANDARD.
+  - Auth proto `kmaedu.auth.v1.AuthService`: `GetUser`, `GetUsersByIds` (privileged, full user incl. email), `GetPublicProfilesByIds` (`id, username, name, avatar` only), `FindUserByEmail`, `ListUsers`, `SetUserRole`, `SetSystemAdmin`, `SetUserStatus(user_id, is_banned, reason)`, `ListRoleChanges`. `User` message carries `BaseRole role` (enum `BASE_ROLE_UNSPECIFIED=0, STUDENT=1, TEACHER=2`) + `bool is_system_admin`. No numeric role. <!-- Red Team: RT-15, RT-3 -->
   - No request message carries `actor_id`: the actor is always the forwarded token `sub` (enforced in 04). <!-- Red Team: RT-2 -->
-  - Finance `examio.finance.v1.WalletService`: <!-- Red Team: RT-1 -->
+  - Finance `kmaedu.finance.v1.WalletService`: <!-- Red Team: RT-1 -->
     - `CreateWallet`, `GetWallet`;
     - `Debit(user_id, amount, reason, idempotency_key)`, `Credit(user_id, amount, reason, idempotency_key)`, `Refund(debit_idempotency_key, reason)` → `{ transaction, already_applied: bool }`. Contract only here; server returns `UNIMPLEMENTED` until phase 10.
     - `UpdateBalance` kept, marked `option deprecated = true;` (same semantics as today) for the current exam caller. Phase 10 switches the caller to `Debit` and deletes it.
   - `SubscriptionService.GetUserBenefits`.
-  - R2: `examio.r2.v1.R2Service` (existing 4 RPCs) + `DeleteObjects(keys[]) → { deleted_count }`, idempotent (missing keys are success), implemented here. <!-- Red Team: RT-8 -->
-  - Gateway: `examio.gateway.v1.GatewayControl` (`RevokeSession(sid, exp)`, `InvalidateUser(user_id, authz_version)`, `SetPageFlags(flags)`). Contract only here; server in 05. <!-- Red Team: RT-3 -->
+  - R2: `kmaedu.r2.v1.R2Service` (existing 4 RPCs) + `DeleteObjects(keys[]) → { deleted_count }`, idempotent (missing keys are success), implemented here. <!-- Red Team: RT-8 -->
+  - Gateway: `kmaedu.gateway.v1.GatewayControl` (`RevokeSession(sid, exp)`, `InvalidateUser(user_id, authz_version)`, `SetPageFlags(flags)`). Contract only here; server in 05. <!-- Red Team: RT-3 -->
   - All Nest gRPC servers bind `0.0.0.0:${GRPC_PORT:-50051}`. HTTP binds `${PORT:-3000}`.
   - `libs/grpc` `GrpcClientModule.register({ name, pkg, protoFile, urlEnv })`:
     - default deadline 3s (override per call);
@@ -57,33 +57,33 @@ service code ─► clients/<x>.client.ts (explicit metadata arg) ─► libs/gr
 - Not-yet-implementable RPCs return `UNIMPLEMENTED`: auth `SetUserRole`, `SetSystemAdmin`, `ListRoleChanges`, `GetPublicProfilesByIds` until 04, `SetUserStatus` until 08 <!-- Reconcile: X1 -->; finance `Debit`, `Credit`, `Refund` until 10. `ListUsers`/`GetUsersByIds` map `isAdmin → is_system_admin`, `role = STUDENT` until 04. <!-- Red Team: RT-1, RT-3, RT-15 -->
 
 ## Related Code Files
-File ownership (globs): `examio-be/proto/**`, `examio-be/libs/{contracts,grpc,http}/**`, `examio-be/libs/common/src/{protos/**,grpc/**}`, `examio-be/apps/*/src/main.ts`, `examio-be/apps/auth-service/src/grpc/**`, `examio-be/apps/{finance,r2}-service/src/**/*.grpc.controller.ts`, `examio-be/apps/r2-service/src/{r2-service.controller.ts,r2-service.service.ts}` (gRPC handlers + `deleteObjects`), `examio-be/apps/exam-service/src/modules/{finance-client,r2}/**`, `examio-be/apps/*/src/**/*.module.ts` (client registration lines), `examio-be/apps/ai-service/src/backend/grpc_generated/**`, `examio-be/apps/ai-service/{pyproject.toml,Makefile}`, `examio-be/{package.json,nest-cli.json,tsconfig.json,jest.config.js,.gitignore}`, `examio-be/deploy/{docker-compose.yml,Dockerfile}`, `examio-be/apps/*/.env.example`, `/.github/workflows/ci.yml` (buf job), `examio-fe/docker-compose.yml` (`BACKEND_URL` default line only). <!-- Red Team: RT-8 --> <!-- Reconcile: X9 -->
+File ownership (globs): `kmaedu-be/proto/**`, `kmaedu-be/libs/{contracts,grpc,http}/**`, `kmaedu-be/libs/common/src/{protos/**,grpc/**}`, `kmaedu-be/apps/*/src/main.ts`, `kmaedu-be/apps/auth-service/src/grpc/**`, `kmaedu-be/apps/{finance,r2}-service/src/**/*.grpc.controller.ts`, `kmaedu-be/apps/r2-service/src/{r2-service.controller.ts,r2-service.service.ts}` (gRPC handlers + `deleteObjects`), `kmaedu-be/apps/exam-service/src/modules/{finance-client,r2}/**`, `kmaedu-be/apps/*/src/**/*.module.ts` (client registration lines), `kmaedu-be/apps/ai-service/src/backend/grpc_generated/**`, `kmaedu-be/apps/ai-service/{pyproject.toml,Makefile}`, `kmaedu-be/{package.json,nest-cli.json,tsconfig.json,jest.config.js,.gitignore}`, `kmaedu-be/deploy/{docker-compose.yml,Dockerfile}`, `kmaedu-be/apps/*/.env.example`, `/.github/workflows/ci.yml` (buf job), `kmaedu-fe/docker-compose.yml` (`BACKEND_URL` default line only). <!-- Red Team: RT-8 --> <!-- Reconcile: X9 -->
 
 - Create:
-  - `/Users/tgiap.dev/devs/examio/examio-be/proto/{buf.yaml,buf.gen.yaml}`
-  - `/Users/tgiap.dev/devs/examio/examio-be/proto/examio/common/v1/pagination.proto`
-  - `/Users/tgiap.dev/devs/examio/examio-be/proto/examio/auth/v1/auth.proto`
-  - `/Users/tgiap.dev/devs/examio/examio-be/proto/examio/finance/v1/{wallet,subscription}.proto`
-  - `/Users/tgiap.dev/devs/examio/examio-be/proto/examio/r2/v1/r2.proto`
-  - `/Users/tgiap.dev/devs/examio/examio-be/proto/examio/gateway/v1/gateway_control.proto`
-  - `/Users/tgiap.dev/devs/examio/examio-be/libs/contracts/src/index.ts` (re-exports generated)
-  - `/Users/tgiap.dev/devs/examio/examio-be/libs/grpc/src/{index.ts,grpc-client.module.ts,metadata.ts,deadline-retry.ts,idempotent-rpcs.ts,grpc-error-map.ts}` <!-- Red Team: RT-1, RT-2 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/libs/http/src/{index.ts,http-error-envelope.filter.ts}`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/clients/{r2,finance}.client.ts`, `/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service/src/clients/r2.client.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/ai-service/scripts/gen_grpc.sh`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/proto/{buf.yaml,buf.gen.yaml}`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/proto/kmaedu/common/v1/pagination.proto`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/proto/kmaedu/auth/v1/auth.proto`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/proto/kmaedu/finance/v1/{wallet,subscription}.proto`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/proto/kmaedu/r2/v1/r2.proto`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/proto/kmaedu/gateway/v1/gateway_control.proto`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/contracts/src/index.ts` (re-exports generated)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/grpc/src/{index.ts,grpc-client.module.ts,metadata.ts,deadline-retry.ts,idempotent-rpcs.ts,grpc-error-map.ts}` <!-- Red Team: RT-1, RT-2 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/http/src/{index.ts,http-error-envelope.filter.ts}`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/clients/{r2,finance}.client.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/auth-service/src/clients/r2.client.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ai-service/scripts/gen_grpc.sh`
 - Modify:
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service/src/grpc/auth.grpc.controller.ts` (rewrite to generated interface)
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts`, `/Users/tgiap.dev/devs/examio/examio-be/apps/finance-service/src/modules/sepay/subscription.grpc.controller.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/r2-service/src/r2-service.controller.ts` (gRPC handlers + `DeleteObjects`), `/Users/tgiap.dev/devs/examio/examio-be/apps/r2-service/src/r2-service.service.ts` (`deleteObjects(keys)` sharing the `deleteDirectory` batch loop) <!-- Red Team: RT-8 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` (delegate to `clients/finance.client.ts`)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/auth-service/src/grpc/auth.grpc.controller.ts` (rewrite to generated interface)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/finance-service/src/modules/sepay/subscription.grpc.controller.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/r2-service/src/r2-service.controller.ts` (gRPC handlers + `DeleteObjects`), `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/r2-service/src/r2-service.service.ts` (`deleteObjects(keys)` sharing the `deleteDirectory` batch loop) <!-- Red Team: RT-8 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` (delegate to `clients/finance.client.ts`)
   - every `GrpcClientsModule.register*Client()` call site (exam modules, `auth.module.ts`, `profile.module.ts`)
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/{auth,exam,finance,admin,r2,gateway}-service/src/main.ts` (ports, proto path from `dist/proto`)
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/ai-service/src/backend/grpc_generated/**` (regenerated)
-  - `/Users/tgiap.dev/devs/examio/examio-be/{package.json,nest-cli.json,tsconfig.json,jest.config.js,.gitignore}`, `/Users/tgiap.dev/devs/examio/examio-be/deploy/{docker-compose.yml,Dockerfile}`, `/Users/tgiap.dev/devs/examio/.github/workflows/ci.yml`
-  - `/Users/tgiap.dev/devs/examio/examio-fe/docker-compose.yml:21` (`BACKEND_URL` default `http://examio-gateway:7000` → `:3000`) <!-- Reconcile: X9 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/{auth,exam,finance,admin,r2,gateway}-service/src/main.ts` (ports, proto path from `dist/proto`)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ai-service/src/backend/grpc_generated/**` (regenerated)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/{package.json,nest-cli.json,tsconfig.json,jest.config.js,.gitignore}`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/{docker-compose.yml,Dockerfile}`, `/Users/tgiap.dev/devs/kmaedu/.github/workflows/ci.yml`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/docker-compose.yml:21` (`BACKEND_URL` default `http://kmaedu-gateway:7000` → `:3000`) <!-- Reconcile: X9 -->
 - Delete:
-  - `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/protos/` (all)
-  - `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/grpc/{grpc-clients.module.ts,r2-client.service.ts}` (after callers moved)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/common/src/protos/` (all)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/common/src/grpc/{grpc-clients.module.ts,r2-client.service.ts}` (after callers moved)
   - hand-written gRPC interfaces in `finance-client`/auth grpc dirs [UNVERIFIED exact files — grep `interface .*Service` near gRPC usages]
 
 ## Implementation Steps
@@ -93,15 +93,15 @@ File ownership (globs): `examio-be/proto/**`, `examio-be/libs/{contracts,grpc,ht
    - `prebuild:all` = `yarn proto:gen`
    Gitignore `libs/contracts/src/generated`.
 2. Write the protos. Field names snake_case. `idempotency_key` on `Debit`/`Credit`; `Refund` keys on `debit_idempotency_key`. `ListUsers` request: `query, role filter (optional BaseRole), is_system_admin (optional bool), is_banned (optional bool), page, limit`. `ListRoleChanges` request: `target_user_id (optional), page, limit`. `PublicProfile` message has no `email` field. <!-- Red Team: RT-1, RT-15 -->
-3. Run `yarn proto:gen`. Add aliases `@examio/contracts`, `@examio/grpc`, `@examio/http` to `tsconfig.json` and `jest.config.js`.
+3. Run `yarn proto:gen`. Add aliases `@kmaedu/contracts`, `@kmaedu/grpc`, `@kmaedu/http` to `tsconfig.json` and `jest.config.js`.
 4. Build `libs/grpc` (explicit-metadata wrappers, `IDEMPOTENT_RPCS`) and `libs/http`. Unit-test the error map table, the retry policy, and the envelope filter. <!-- Red Team: RT-1, RT-2 -->
-5. Migrate servers in this order: r2 (incl. `DeleteObjects`) → finance (wallet with `Debit/Credit/Refund` stubs, subscription) → auth. Each uses generated decorators and `protoPath` = `join(__dirname, 'proto/examio/<svc>/v1/<file>.proto')` with `includeDirs: [proto root]` and loader `{ keepCase:false, longs:String, defaults:true, oneofs:true }`. In `nest-cli.json`, add per-project asset `{ include: "../../proto/**/*.proto", outDir: "dist/apps/<svc>/proto" }`. <!-- Red Team: RT-1, RT-8 -->
+5. Migrate servers in this order: r2 (incl. `DeleteObjects`) → finance (wallet with `Debit/Credit/Refund` stubs, subscription) → auth. Each uses generated decorators and `protoPath` = `join(__dirname, 'proto/kmaedu/<svc>/v1/<file>.proto')` with `includeDirs: [proto root]` and loader `{ keepCase:false, longs:String, defaults:true, oneofs:true }`. In `nest-cli.json`, add per-project asset `{ include: "../../proto/**/*.proto", outDir: "dist/apps/<svc>/proto" }`. <!-- Red Team: RT-1, RT-8 -->
 6. Migrate the TS callers to `clients/<x>.client.ts` on `libs/grpc`, passing metadata explicitly (pre-04: `x-request-id` only). Delete the `libs/common/src/grpc` client module. <!-- Red Team: RT-2 -->
-7. Python: `scripts/gen_grpc.sh` runs `python -m grpc_tools.protoc -I ../../proto --python_out --pyi_out --grpc_python_out` for `examio/r2/v1` + `examio/common/v1`. Pin `grpcio`, `grpcio-tools`, `protobuf` together in `pyproject.toml`.
+7. Python: `scripts/gen_grpc.sh` runs `python -m grpc_tools.protoc -I ../../proto --python_out --pyi_out --grpc_python_out` for `kmaedu/r2/v1` + `kmaedu/common/v1`. Pin `grpcio`, `grpcio-tools`, `protobuf` together in `pyproject.toml`.
 8. Ports:
    - `main.ts` defaults to `PORT=3000`, `GRPC_PORT=50051`.
    - Compose: every service uses container ports 3000/50051. Callers use `<SVC>_GRPC_URL=<svc>-service:50051`. Gateway uses `*_SERVICE_URL=http://<svc>-service:3000`.
-   - FE compose `BACKEND_URL` default → `http://examio-gateway:3000` (the gateway container port changes here; host mapping `6369:3000`). <!-- Reconcile: X9 -->
+   - FE compose `BACKEND_URL` default → `http://kmaedu-gateway:3000` (the gateway container port changes here; host mapping `6369:3000`). <!-- Reconcile: X9 -->
    - `.env.example` per service keeps distinct local ports (e.g. auth 3001/50051, finance 3003/50053) with a comment.
 9. CI: add a `buf` job: `bufbuild/buf-action@v1` with lint + `breaking_against` the PR base (researcher-02 §2). Add `yarn proto:gen` before `be-check`.
 
@@ -119,7 +119,7 @@ File ownership (globs): `examio-be/proto/**`, `examio-be/libs/{contracts,grpc,ht
 
 ## Todo List
 - [x] buf config + proto files lint-clean (incl. Debit/Credit/Refund, DeleteObjects, SetUserStatus, GetPublicProfilesByIds) — evidence: 6 proto files (plan text said "7"; Create list has 6), `proto:lint` exit 0 · <!-- Red Team: RT-1, RT-8, RT-15 -->
-- [x] proto:gen + aliases + gitignore — `proto:gen` exit 0; `@examio/{contracts,grpc,http}` aliases in tsconfig + jest; `libs/contracts/src/generated/` gitignored
+- [x] proto:gen + aliases + gitignore — `proto:gen` exit 0; `@kmaedu/{contracts,grpc,http}` aliases in tsconfig + jest; `libs/contracts/src/generated/` gitignored
 - [x] libs/grpc (client module, explicit metadata, deadline, allowlisted retry, error map) — 36 tests pass with libs/http <!-- Red Team: RT-1, RT-2 -->
 - [x] libs/http error envelope filter (built + tested, not registered) <!-- Red Team: RT-11 -->
 - [x] r2 (+DeleteObjects), finance, auth gRPC servers on generated types — r2 7, finance 48, auth 12 tests pass
@@ -129,10 +129,10 @@ File ownership (globs): `examio-be/proto/**`, `examio-be/libs/{contracts,grpc,ht
 - [x] CI buf lint/breaking + proto:gen before build — `ci.yml` buf job (`breaking_against` PR base), `proto:gen` before be-check and build jobs
 
 ## Success Criteria
-- `cd examio-be && yarn proto:lint && yarn proto:gen && yarn typecheck && yarn build:all && yarn test`: exit 0.
-- `grep -rn "protos/" examio-be/apps examio-be/libs --include=*.ts` → no hits. `grep -rn "50053\|50054\|50056" examio-be/apps/*/src examio-be/deploy/docker-compose.yml` → no hits.
-- `grep -rn "AsyncLocalStorage" examio-be/libs/grpc` → none. `grep -rn "actor_id" examio-be/proto` → none. <!-- Red Team: RT-2 -->
-- `cd examio-be/apps/ai-service && ./scripts/gen_grpc.sh && ./venv/bin/python -c "from src.backend.grpc_generated.examio.r2.v1 import r2_pb2_grpc"`: exit 0 [UNVERIFIED import path — adjust to generated layout].
+- `cd kmaedu-be && yarn proto:lint && yarn proto:gen && yarn typecheck && yarn build:all && yarn test`: exit 0.
+- `grep -rn "protos/" kmaedu-be/apps kmaedu-be/libs --include=*.ts` → no hits. `grep -rn "50053\|50054\|50056" kmaedu-be/apps/*/src kmaedu-be/deploy/docker-compose.yml` → no hits.
+- `grep -rn "AsyncLocalStorage" kmaedu-be/libs/grpc` → none. `grep -rn "actor_id" kmaedu-be/proto` → none. <!-- Red Team: RT-2 -->
+- `cd kmaedu-be/apps/ai-service && ./scripts/gen_grpc.sh && ./venv/bin/python -c "from src.backend.grpc_generated.kmaedu.r2.v1 import r2_pb2_grpc"`: exit 0 [UNVERIFIED import path — adjust to generated layout].
 - Compose up: exam AI generation still debits credits (manual smoke: one quick-upload as a funded user → balance −5).
 
 ## Risk Assessment

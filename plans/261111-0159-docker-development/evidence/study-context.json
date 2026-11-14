@@ -1,0 +1,13 @@
+{
+  "task": "Add docker-development/ with a services file and ./project up that runs the KMAEdu stack from source on top of the deploy compose",
+  "mode": "interactive",
+  "acceptanceCriteria": [
+    "./project up starts the services listed in the services file with infra, migrations and Traefik",
+    "real env files and deploy secrets are never read into the dev stack",
+    "kmaedu-be/deploy is unchanged",
+    "project commands down ps logs sh seed db:reset work and are guarded against foreign projects"
+  ],
+  "touchpoints": ["docker-development/", "README.md", "CLAUDE.md", "docs/project-changelog.md"],
+  "blastRadius": ["deploy compose stack", "host env files with real secrets", "docker volumes and networks on the dev machine"],
+  "contracts": ["kmaedu-be/deploy/docker-compose.yml and deploy/compose/*.yml unchanged", "node --test deploy/compose-topology.spec.cjs"]
+}

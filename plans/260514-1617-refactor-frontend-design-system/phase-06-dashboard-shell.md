@@ -1,10 +1,10 @@
 # Phase 06: Dashboard Shell And Feature Surface Migration
 
 ## Context Links
-- `examio-fe/src/routes/layouts/KLayout.tsx`
-- `examio-fe/src/components/organisms/k/SideBar.tsx`
-- `examio-fe/src/templates/*.tsx`
-- `examio-fe/src/pages/k/*.tsx`
+- `kmaedu-fe/src/routes/layouts/KLayout.tsx`
+- `kmaedu-fe/src/components/organisms/k/SideBar.tsx`
+- `kmaedu-fe/src/templates/*.tsx`
+- `kmaedu-fe/src/pages/k/*.tsx`
 - `DESIGN.md` cards, inputs, layout, responsive sections
 
 ## Overview

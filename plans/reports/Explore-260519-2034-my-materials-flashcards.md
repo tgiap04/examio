@@ -9,24 +9,24 @@
 - Quiz practice attempts exist and are persisted via `QuizPracticeAttempt`; this appears quiz-only, not flashcard-related.
 
 ## Relevant Files
-- `examio-fe/src/routes/index.tsx` - maps `/k/my-materials` to `MyMaterialsPage`; maps `/study-flashcard/:id` to `FlashcardStudyPage`.
-- `examio-fe/src/pages/k/MyMaterialsPage.tsx` - loads recent flashcard sets, displays optional progress, share/pin/review actions.
-- `examio-fe/src/apis/studentMaterialsApi.ts` - client for `/student/recent-flashcards`, includes optional `progress?: number`.
-- `examio-be/apps/exam-service/src/modules/student/student.controller.ts` - backend routes for recent flashcards/exams and pinning.
-- `examio-be/apps/exam-service/src/modules/student/student.service.ts` - builds My Materials response and sets `progress: undefined`.
-- `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx` - flashcard study UI; progress is local `studiedCards.size / totalCards`.
-- `examio-fe/src/apis/flashcardStudyApi.ts` - unused frontend API wrapper for study sessions/reviews/progress endpoints.
-- `examio-fe/src/types/flashcardSet.ts` - frontend-only study/progress interfaces.
-- `examio-fe/src/stores/useFlashcardSetStore.ts` - only flashcard-related store; CRUD/cache for flashcard sets/cards.
-- `examio-fe/src/apis/flashcardSetApi.ts` - flashcard-set CRUD plus study access/load endpoints.
-- `examio-be/apps/exam-service/src/modules/flashcardset/flashcardset.controller.ts` - backend flashcard CRUD/access/study endpoints.
-- `examio-be/apps/exam-service/src/modules/flashcardset/flashcardset.service.ts` - increments `viewCount` and writes view history when studying a set.
-- `examio-be/libs/database/src/schema.prisma` - flashcard models and quiz practice attempt model.
+- `kmaedu-fe/src/routes/index.tsx` - maps `/k/my-materials` to `MyMaterialsPage`; maps `/study-flashcard/:id` to `FlashcardStudyPage`.
+- `kmaedu-fe/src/pages/k/MyMaterialsPage.tsx` - loads recent flashcard sets, displays optional progress, share/pin/review actions.
+- `kmaedu-fe/src/apis/studentMaterialsApi.ts` - client for `/student/recent-flashcards`, includes optional `progress?: number`.
+- `kmaedu-be/apps/exam-service/src/modules/student/student.controller.ts` - backend routes for recent flashcards/exams and pinning.
+- `kmaedu-be/apps/exam-service/src/modules/student/student.service.ts` - builds My Materials response and sets `progress: undefined`.
+- `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx` - flashcard study UI; progress is local `studiedCards.size / totalCards`.
+- `kmaedu-fe/src/apis/flashcardStudyApi.ts` - unused frontend API wrapper for study sessions/reviews/progress endpoints.
+- `kmaedu-fe/src/types/flashcardSet.ts` - frontend-only study/progress interfaces.
+- `kmaedu-fe/src/stores/useFlashcardSetStore.ts` - only flashcard-related store; CRUD/cache for flashcard sets/cards.
+- `kmaedu-fe/src/apis/flashcardSetApi.ts` - flashcard-set CRUD plus study access/load endpoints.
+- `kmaedu-be/apps/exam-service/src/modules/flashcardset/flashcardset.controller.ts` - backend flashcard CRUD/access/study endpoints.
+- `kmaedu-be/apps/exam-service/src/modules/flashcardset/flashcardset.service.ts` - increments `viewCount` and writes view history when studying a set.
+- `kmaedu-be/libs/database/src/schema.prisma` - flashcard models and quiz practice attempt model.
 
 ## Key Snippets
 
 ### Route: `/k/my-materials`
-`examio-fe/src/routes/index.tsx`:
+`kmaedu-fe/src/routes/index.tsx`:
 ```tsx
 import MyMaterialsPage from "@/pages/k/MyMaterialsPage";
 
@@ -43,7 +43,7 @@ import MyMaterialsPage from "@/pages/k/MyMaterialsPage";
 ```
 
 ### My Materials fetch + display
-`examio-fe/src/pages/k/MyMaterialsPage.tsx`:
+`kmaedu-fe/src/pages/k/MyMaterialsPage.tsx`:
 ```tsx
 const fetchMaterials = useCallback(async (page: number) => {
   setLoading(true)
@@ -71,7 +71,7 @@ Progress UI exists, but is conditional:
 ```
 
 ### My Materials API contract
-`examio-fe/src/apis/studentMaterialsApi.ts`:
+`kmaedu-fe/src/apis/studentMaterialsApi.ts`:
 ```ts
 export interface RecentFlashcardSet {
   id: string;
@@ -90,7 +90,7 @@ export async function getRecentFlashcardSetsApi(limit = 10, page = 1) {
 ```
 
 ### Backend response disables progress display
-`examio-be/apps/exam-service/src/modules/student/student.service.ts`:
+`kmaedu-be/apps/exam-service/src/modules/student/student.service.ts`:
 ```ts
 const formattedSets = flashcardSets.map((set) => ({
   id: set.id,
@@ -105,7 +105,7 @@ const formattedSets = flashcardSets.map((set) => ({
 ```
 
 ### Flashcard study page progress is local only
-`examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx`:
+`kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx`:
 ```tsx
 const [studiedCards, setStudiedCards] = useState<Set<string>>(() => new Set());
 
@@ -124,7 +124,7 @@ const progress = Math.round(((studiedCards.size) / totalCards) * 100);
 No call is made here to `flashcardStudyApi.ts`; progress resets on reload/navigation.
 
 ### Unused frontend flashcard-study API
-`examio-fe/src/apis/flashcardStudyApi.ts`:
+`kmaedu-fe/src/apis/flashcardStudyApi.ts`:
 ```ts
 export async function getOrCreateStudySessionApi(dto: CreateStudySessionDto) {
   const response = await api.post("/flashcard-study/session", dto);
@@ -141,11 +141,11 @@ export async function getProgressApi(flashCardSetId: string) {
   return response.data;
 }
 ```
-Search found no matching backend `flashcard-study` module/controller/service under `examio-be/apps/exam-service/src`.
+Search found no matching backend `flashcard-study` module/controller/service under `kmaedu-be/apps/exam-service/src`.
 
 ### Flashcard stores
-Only one flashcard store was found in `examio-fe/src/stores/`:
-`examio-fe/src/stores/useFlashcardSetStore.ts`:
+Only one flashcard store was found in `kmaedu-fe/src/stores/`:
+`kmaedu-fe/src/stores/useFlashcardSetStore.ts`:
 ```ts
 interface FlashcardSetStore {
   flashcardSetsK: Omit<FlashcardSet, "flashcards">[];
@@ -165,7 +165,7 @@ interface FlashcardSetStore {
 This store handles flashcard set/card CRUD and cache invalidation; it does not track study progress.
 
 ### Backend tracks views, not learning progress
-`examio-be/apps/exam-service/src/modules/flashcardset/flashcardset.service.ts`:
+`kmaedu-be/apps/exam-service/src/modules/flashcardset/flashcardset.service.ts`:
 ```ts
 const flashcardSet = await this.prisma.flashCardSet.update({
   where: { id },
@@ -185,7 +185,7 @@ if (userId) {
 ```
 
 ### Prisma flashcard models
-`examio-be/libs/database/src/schema.prisma`:
+`kmaedu-be/libs/database/src/schema.prisma`:
 ```prisma
 model FlashCardSet {
   id               String   @id @default(cuid())
@@ -233,7 +233,7 @@ model UserPinnedFlashcard {
 No `FlashcardStudySession`, `FlashcardReview`, `FlashcardProgress`, or flashcard attempt model was found.
 
 ### Quiz practice attempts exist, but for quiz sets
-`examio-be/libs/database/src/schema.prisma`:
+`kmaedu-be/libs/database/src/schema.prisma`:
 ```prisma
 model QuizPracticeAttempt {
   id              String   @id @default(cuid())
@@ -254,17 +254,17 @@ model QuizPracticeAttempt {
 This provides persisted quiz practice state/attempt tracking, but no equivalent model exists for flashcards.
 
 ## Search Coverage
-- Frontend route/page scan: `examio-fe/src/routes`, `examio-fe/src/pages/k`, `examio-fe/src/pages/study-flashcard`.
-- Frontend flashcard stores: `examio-fe/src/stores/`; only `useFlashcardSetStore.ts` matched.
-- Frontend flashcard APIs: `examio-fe/src/apis/flashcardSetApi.ts`, `examio-fe/src/apis/flashcardStudyApi.ts`, `examio-fe/src/apis/studentMaterialsApi.ts`.
-- Backend flashcard modules: `examio-be/apps/exam-service/src/modules/flashcardset`, `examio-be/apps/exam-service/src/modules/student`.
-- Backend progress/attempt scan: `examio-be/apps/exam-service/src` and Prisma schema for `FlashcardStudy`, `FlashcardReview`, `Progress`, `Attempt`, `QuizPracticeAttempt`, `flashcard-study`.
-- Prisma schema checked: `examio-be/libs/database/src/schema.prisma`. A second schema path exists at `examio-be/libs/database/prisma/schema.prisma`; findings should be cross-checked if that file is the generated/deployed source.
+- Frontend route/page scan: `kmaedu-fe/src/routes`, `kmaedu-fe/src/pages/k`, `kmaedu-fe/src/pages/study-flashcard`.
+- Frontend flashcard stores: `kmaedu-fe/src/stores/`; only `useFlashcardSetStore.ts` matched.
+- Frontend flashcard APIs: `kmaedu-fe/src/apis/flashcardSetApi.ts`, `kmaedu-fe/src/apis/flashcardStudyApi.ts`, `kmaedu-fe/src/apis/studentMaterialsApi.ts`.
+- Backend flashcard modules: `kmaedu-be/apps/exam-service/src/modules/flashcardset`, `kmaedu-be/apps/exam-service/src/modules/student`.
+- Backend progress/attempt scan: `kmaedu-be/apps/exam-service/src` and Prisma schema for `FlashcardStudy`, `FlashcardReview`, `Progress`, `Attempt`, `QuizPracticeAttempt`, `flashcard-study`.
+- Prisma schema checked: `kmaedu-be/libs/database/src/schema.prisma`. A second schema path exists at `kmaedu-be/libs/database/prisma/schema.prisma`; findings should be cross-checked if that file is the generated/deployed source.
 
 ## Conclusion
 Flashcard progress tracking does not currently exist as a persisted backend feature. The UI has placeholders/types/APIs for progress and study sessions, but My Materials receives `progress: undefined`, and the study page keeps progress only in component memory. The backend persists flashcard views (`FlashCardViewHistory`) and pins (`UserPinnedFlashcard`), and it persists quiz practice attempts (`QuizPracticeAttempt`) for quiz sets only.
 
 ## Unresolved Questions
-- Which Prisma schema is authoritative in this repo: `examio-be/libs/database/src/schema.prisma` or `examio-be/libs/database/prisma/schema.prisma`?
+- Which Prisma schema is authoritative in this repo: `kmaedu-be/libs/database/src/schema.prisma` or `kmaedu-be/libs/database/prisma/schema.prisma`?
 - Was `flashcardStudyApi.ts` planned work, abandoned work, or generated ahead of backend implementation?
 - Should progress mean cards viewed once, cards self-rated/mastered, spaced-repetition due status, or session completion percentage?

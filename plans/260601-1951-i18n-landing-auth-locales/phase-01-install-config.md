@@ -12,22 +12,22 @@ tags: [i18n, setup, config]
 ## Context Links
 
 - [plan.md](./plan.md) — overview
-- `examio-fe/package.json` — current dependencies
-- `examio-fe/src/provider/AppProviders.tsx` — provider tree
-- `examio-fe/src/main.tsx` — entry point
-- `examio-fe/src/components/molecules/HeaderSection.tsx` — existing locale storage
+- `kmaedu-fe/package.json` — current dependencies
+- `kmaedu-fe/src/provider/AppProviders.tsx` — provider tree
+- `kmaedu-fe/src/main.tsx` — entry point
+- `kmaedu-fe/src/components/molecules/HeaderSection.tsx` — existing locale storage
 
 ## Overview
 
-Install i18next packages and create the core configuration. Wire the i18n instance into the app so all components can use `useTranslation`. Align the locale storage key with the existing `examio.locale` used by HeaderSection.
+Install i18next packages and create the core configuration. Wire the i18n instance into the app so all components can use `useTranslation`. Align the locale storage key with the existing `kmaedu.locale` used by HeaderSection.
 
 **Priority:** P1 (blocking for all other phases)
 **Status:** completed
 
 ## Key Insights
 
-- User confirmed: separate locale storage key for i18next (NOT `examio.locale` — that stays as legacy in HeaderSection)
-- i18next LanguageDetector will use key `examio-i18next.locale` — independent from `examio.locale`
+- User confirmed: separate locale storage key for i18next (NOT `kmaedu.locale` — that stays as legacy in HeaderSection)
+- i18next LanguageDetector will use key `kmaedu-i18next.locale` — independent from `kmaedu.locale`
 - HeaderSection currently supports `vi` and `en` — Phase 05 adds `ja` via the LanguageSwitcher component
 - AppProviders wraps the entire app — i18n init happens at module level (side-effect import in `main.tsx`)
 - Ant Design 6 does not require separate locale config for basic usage
@@ -36,7 +36,7 @@ Install i18next packages and create the core configuration. Wire the i18n instan
 
 ### Functional
 - i18next initializes before first render
-- Language detected from `examio-i18next.locale` localStorage key (separate from legacy `examio.locale`), falls back to browser `navigator.language`, then to `en`
+- Language detected from `kmaedu-i18next.locale` localStorage key (separate from legacy `kmaedu.locale`), falls back to browser `navigator.language`, then to `en`
 - Supported languages: `vi`, `en`, `ja`
 - 3 namespaces: `common`, `landing`, `auth`
 - Fallback language: `en`
@@ -71,20 +71,20 @@ No new React context or provider wrapper needed — react-i18next uses its own c
 ## Related Code Files
 
 ### Files to Create
-- `examio-fe/src/lib/i18n.ts` — i18next configuration (side-effect import)
+- `kmaedu-fe/src/lib/i18n.ts` — i18next configuration (side-effect import)
 
 ### Files to Modify
-- `examio-fe/package.json` — add dependencies
-- `examio-fe/src/main.tsx` — add `import './lib/i18n'` before App import
+- `kmaedu-fe/package.json` — add dependencies
+- `kmaedu-fe/src/main.tsx` — add `import './lib/i18n'` before App import
 
 ### Files to Read (no modify)
-- `examio-fe/src/components/molecules/HeaderSection.tsx` — confirm `LOCALE_STORAGE_KEY = "examio.locale"`
+- `kmaedu-fe/src/components/molecules/HeaderSection.tsx` — confirm `LOCALE_STORAGE_KEY = "kmaedu.locale"`
 
 ## Implementation Steps
 
 ### Step 1: Install packages
 ```bash
-cd examio-fe
+cd kmaedu-fe
 yarn add react-i18next i18next i18next-http-backend i18next-browser-languagedetector
 ```
 
@@ -95,7 +95,7 @@ import { initReactI18next } from "react-i18next";
 import HttpBackend from "i18next-http-backend";
 import LanguageDetector from "i18next-browser-languagedetector";
 
-const LOCALE_KEY = "examio-i18next.locale"; // separate from legacy examio.locale in HeaderSection
+const LOCALE_KEY = "kmaedu-i18next.locale"; // separate from legacy kmaedu.locale in HeaderSection
 
 i18n
   .use(HttpBackend)
@@ -146,7 +146,7 @@ import "./lib/i18n";
 - [x] `yarn build` passes without errors
 - [x] App renders normally with no visible changes
 - [x] `i18next` instance is accessible from any component via `useTranslation()`
-- [x] Language detection reads from `examio-i18next.locale` localStorage key
+- [x] Language detection reads from `kmaedu-i18next.locale` localStorage key
 - [x] Fallback to English works when no locale is set
 
 ## Risk Assessment
@@ -154,13 +154,13 @@ import "./lib/i18n";
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
 | HttpBackend path wrong | Low | High | Test with a minimal locale file in step 02 |
-| LanguageDetector conflict with existing locale code | Low | Medium | Separate `examio-i18next.locale` key — no conflict with legacy `examio.locale` |
+| LanguageDetector conflict with existing locale code | Low | Medium | Separate `kmaedu-i18next.locale` key — no conflict with legacy `kmaedu.locale` |
 | TypeScript errors from plugin types | Low | Low | Install `@types/i18next` if needed, or use `i18next` built-in types |
 
 ## Security Considerations
 
 - No sensitive data in locale files
-- localStorage key `examio-i18next.locale` is non-sensitive (language preference only)
+- localStorage key `kmaedu-i18next.locale` is non-sensitive (language preference only)
 
 ## Next Steps
 

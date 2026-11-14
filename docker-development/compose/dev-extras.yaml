@@ -1,0 +1,86 @@
+# Services that exist only in docker-development (included by .generated/compose.yaml, Compose >= 2.24).
+#   deps     one-shot (images/deps-job.sh): yarn install + proto:gen + prisma:generate into the shared
+#            node_modules volume, skipped when their inputs did not change (KMAEDU_DEPS_FORCE=1 forces it);
+#            every Node app and migrate job waits for it
+#   traefik  the only way in, two plain-HTTP entrypoints (loopback only):
+#              fe  :5173 -> KMAEDU_WEB_PORT  browser: / -> Vite, /api/ and /ws/ -> gateway (same origin)
+#              web :80   -> KMAEDU_HTTP_PORT API + /_traefik/dashboard/ and /_rabbitmq/
+#   fe       Vite dev server from kmaedu-fe (HMR through Traefik on the browser port)
+# deps and fe keep yarn's package cache in kmaedu-dev-yarn-cache: external (./project up creates it), so it
+# outlives `down -v`, db:reset and a lost node_modules volume, and every dev project shares it.
+services:
+    deps:
+        image: kmaedu-dev-node:local
+        pull_policy: never
+        working_dir: /workspace
+        command: ['sh', '/usr/local/bin/kmaedu-deps-job']
+        environment:
+            YARN_INSTALL_STATE_PATH: /workspace/node_modules/.yarn-install-state.gz
+            KMAEDU_DEPS_FORCE: ${KMAEDU_DEPS_FORCE:-0}
+        volumes:
+            - ${KMAEDU_DEV_DIR}/images/deps-job.sh:/usr/local/bin/kmaedu-deps-job:ro
+            - ${KMAEDU_BE_DIR}:/workspace
+            - be_node_modules:/workspace/node_modules
+            - yarn_cache:/root/.yarn/berry/cache
+        # registry + buf plugins: needs the internet
+        networks:
+            - egress
+        restart: 'no'
+
+    traefik:
+        image: traefik:v3.6.25
+        restart: unless-stopped
+        command:
+            - --log.level=INFO
+            - --ping=true
+            - --api.dashboard=true
+            - --api.basePath=/_traefik
+            - --providers.file.directory=/etc/traefik/dynamic
+            - --providers.file.watch=true
+            - --entrypoints.web.address=:80
+            - --entrypoints.web.http.encodedCharacters.allowEncodedSlash=true
+            - --entrypoints.fe.address=:5173
+        ports:
+            - '127.0.0.1:${KMAEDU_WEB_PORT}:5173'
+            - '127.0.0.1:${KMAEDU_HTTP_PORT}:80'
+        volumes:
+            - ${KMAEDU_DEV_DIR}/infra/traefik:/etc/traefik/dynamic:ro
+        networks:
+            - internal
+            - edge
+        healthcheck:
+            test: ['CMD', 'traefik', 'healthcheck', '--ping']
+            interval: 5s
+            timeout: 3s
+            retries: 20
+
+    fe:
+        image: kmaedu-dev-node:local
+        pull_policy: never
+        working_dir: /workspace-fe
+        command: ['sh', '-c', 'yarn install --immutable && yarn dev']
+        # Process env beats kmaedu-fe/.env in Vite: every VITE_* the app reads is set here.
+        environment:
+            VITE_API_URL: /api/v1
+            VITE_BACKEND_URL: http://gateway:3000
+            VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+            VITE_MEASUREMENT_ID: ${VITE_MEASUREMENT_ID}
+            VITE_COOKIE_DOMAIN: ''
+            VITE_GENAI_TUTOR_ALLOWED_EMAILS: ${VITE_GENAI_TUTOR_ALLOWED_EMAILS}
+            CHOKIDAR_USEPOLLING: ${KMAEDU_WATCH_POLL}
+            YARN_INSTALL_STATE_PATH: /workspace-fe/node_modules/.yarn-install-state.gz
+        volumes:
+            - ${KMAEDU_FE_DIR}:/workspace-fe
+            - fe_node_modules:/workspace-fe/node_modules
+            - yarn_cache:/root/.yarn/berry/cache
+        networks:
+            - edge
+            - egress
+        restart: unless-stopped
+
+volumes:
+    be_node_modules:
+    fe_node_modules:
+    yarn_cache:
+        name: kmaedu-dev-yarn-cache
+        external: true

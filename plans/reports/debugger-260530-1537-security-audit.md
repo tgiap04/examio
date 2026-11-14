@@ -1,8 +1,8 @@
-# Security Audit Report — examio-be
+# Security Audit Report — kmaedu-be
 
 **Audited by:** Claude Code (Debugger Agent)
 **Date:** 2026-05-30
-**Scope:** examio-be backend (auth, gateway, exam, finance, r2 services)
+**Scope:** kmaedu-be backend (auth, gateway, exam, finance, r2 services)
 **Files reviewed:** 40+ files across services
 
 ---
@@ -101,7 +101,7 @@ if (keyBuf.length !== secretBuf.length ||
 
 | Field | Value |
 |---|---|
-| File | `examio-be/.env`, `examio-be/apps/auth-service/.env`, `examio-be/apps/gateway-service/.env` |
+| File | `kmaedu-be/.env`, `kmaedu-be/apps/auth-service/.env`, `kmaedu-be/apps/gateway-service/.env` |
 | Severity | **High** |
 | STRIDE | I (Information Disclosure) |
 | OWASP | A02 (Cryptographic Failures) |
@@ -150,7 +150,7 @@ This leaks tokens via:
 // Generate a short-lived one-time code
 const oneTimeCode = crypto.randomBytes(32).toString('hex');
 // Store (code → tokens) mapping in Redis with 60-second TTL
-// Redirect to app scheme: examio://auth/callback?code=oneTimeCode
+// Redirect to app scheme: kmaedu://auth/callback?code=oneTimeCode
 ```
 
 ---

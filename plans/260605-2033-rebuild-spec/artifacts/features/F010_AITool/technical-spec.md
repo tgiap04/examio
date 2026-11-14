@@ -6,7 +6,7 @@
 
 ## Overview
 
-AITool provides a unified interface for AI-assisted content generation from uploaded documents. Users select a source document, choose generation type (quiz or flashcards), configure parameters, and initiate a background job. The system checks wallet credits (or bypasses via FREE_MODE), queues the job, and provides polling-based status updates. The feature spans `SCR024` (AIToolPage) with cross-feature participation from `SCR017` (FlashcardsPage) for flashcard generation trigger. Backend lives in `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` and `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` (BL004).
+AITool provides a unified interface for AI-assisted content generation from uploaded documents. Users select a source document, choose generation type (quiz or flashcards), configure parameters, and initiate a background job. The system checks wallet credits (or bypasses via FREE_MODE), queues the job, and provides polling-based status updates. The feature spans `SCR024` (AIToolPage) with cross-feature participation from `SCR017` (FlashcardsPage) for flashcard generation trigger. Backend lives in `kmaedu-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` and `kmaedu-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` (BL004).
 
 ## Polymorphic Behavior
 
@@ -37,7 +37,7 @@ N/A — no other discriminator fields in AITool Key Entities.
 
 **BR-010_01 — Credit Check Before Generation**
 **Linked FR:** FR-010_01
-**Source:** `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` (BL004)
+**Source:** `kmaedu-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` (BL004)
 **Applies to:** `POST /api/v1/ai/job`
 **Rule:** Before creating an AI generation job, the system checks the user's wallet balance via `FinanceClientService`. If balance is insufficient and `FREE_MODE` is not enabled, job creation is rejected. If `FREE_MODE = true`, the check is bypassed entirely.
 **Pseudocode:**
@@ -51,7 +51,7 @@ else:
 
 **BR-010_02 — Source Document Readiness Check**
 **Linked FR:** FR-010_01
-**Source:** `examio-be/apps/exam-service/src/modules/ai/ai-job.service.ts` (inferred)
+**Source:** `kmaedu-be/apps/exam-service/src/modules/ai/ai-job.service.ts` (inferred)
 **Applies to:** `POST /api/v1/ai/job`
 **Rule:** Only documents with `processingStatus = COMPLETED` can be used as the source for AI generation. PENDING, PROCESSING, and FAILED documents are rejected with HTTP 400.
 **Pseudocode:**
@@ -68,7 +68,7 @@ if doc.processingStatus != 'COMPLETED':
 **Triggers in:** SCR024 (AIToolPage) on document list render
 **Involved entities:** `UserStorage.processingStatus`, `Wallet.balance`
 **user_visible_outcome:** Generate button is enabled only when the selected document is COMPLETED and wallet has sufficient credits (or FREE_MODE is active)
-**Source:** `examio-fe/src/pages/k/AIToolPage.tsx` (inferred)
+**Source:** `kmaedu-fe/src/pages/k/AIToolPage.tsx` (inferred)
 
 ```pseudo
 doc = selectedDocument
@@ -88,7 +88,7 @@ else if !hasCredits:
 
 #### SM-010_01 — Generation Flow Status
 **Linked FR:** FR-010_01, FR-010_02, FR-010_03
-**Source:** `examio-fe/src/hooks/useGenerationGuard.ts` (BL015)
+**Source:** `kmaedu-fe/src/hooks/useGenerationGuard.ts` (BL015)
 
 ```mermaid
 stateDiagram-v2
@@ -119,7 +119,7 @@ None.
 
 **INT-010_01 — Credit Deduction (BL004)**
 **Linked FR:** FR-010_01
-**Source:** `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts`
+**Source:** `kmaedu-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts`
 **Type:** api-call
 **Target:** `finance-service` via gRPC
 **Trigger:** Before creating AI job
@@ -128,7 +128,7 @@ None.
 
 **INT-010_02 — AI Generation Pipeline**
 **Linked FR:** FR-010_01, FR-010_02
-**Source:** `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` (inferred)
+**Source:** `kmaedu-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` (inferred)
 **Type:** api-call
 **Target:** `ai-service` (Python FastAPI)
 **Trigger:** `POST /api/v1/ai/job`
@@ -264,14 +264,14 @@ None.
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| AIJobController | `examio-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` | REST endpoints for AI job create/poll/cancel |
-| AIJobService | `examio-be/apps/exam-service/src/modules/ai/ai-job.service.ts` | Job creation logic, credit check, queue dispatch |
-| FinanceClientService | `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` | Wallet balance check and credit deduction (BL004) |
-| useGenerationGuard | `examio-fe/src/hooks/useGenerationGuard.ts` | Client-side job polling + localStorage resume (BL015) |
-| AIToolPage | `examio-fe/src/pages/k/AIToolPage.tsx` | Main AI tool page with TestGenerator and FlashcardGenerator |
-| TestGenerator | `examio-fe/src/components/k/ai-tool/TestGenerator.tsx` | Quiz generation UI component |
-| FlashcardGenerator | `examio-fe/src/components/k/ai-tool/FlashcardGenerator.tsx` | Flashcard generation UI component |
-| PendingJobDialog | `examio-fe/src/components/k/ai-tool/PendingJobDialog.tsx` | Job status polling dialog |
+| AIJobController | `kmaedu-be/apps/exam-service/src/modules/ai/ai-job.controller.ts` | REST endpoints for AI job create/poll/cancel |
+| AIJobService | `kmaedu-be/apps/exam-service/src/modules/ai/ai-job.service.ts` | Job creation logic, credit check, queue dispatch |
+| FinanceClientService | `kmaedu-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts` | Wallet balance check and credit deduction (BL004) |
+| useGenerationGuard | `kmaedu-fe/src/hooks/useGenerationGuard.ts` | Client-side job polling + localStorage resume (BL015) |
+| AIToolPage | `kmaedu-fe/src/pages/k/AIToolPage.tsx` | Main AI tool page with TestGenerator and FlashcardGenerator |
+| TestGenerator | `kmaedu-fe/src/components/k/ai-tool/TestGenerator.tsx` | Quiz generation UI component |
+| FlashcardGenerator | `kmaedu-fe/src/components/k/ai-tool/FlashcardGenerator.tsx` | Flashcard generation UI component |
+| PendingJobDialog | `kmaedu-fe/src/components/k/ai-tool/PendingJobDialog.tsx` | Job status polling dialog |
 
 ## Unresolved Questions
 

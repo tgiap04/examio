@@ -9,21 +9,21 @@
 
 ## Key Insights
 - `public-profile.client.ts:16` imports the token from `./finance.client`. Deleting the finance client in 05 would break public-profile enrichment in content, assessment and study-room.
-- The barrel `libs/grpc/src/index.ts` already exports `./metadata`, so `@examio/grpc` consumers (ai-chat, content and document modules, the root test) keep working with no import change.
+- The barrel `libs/grpc/src/index.ts` already exports `./metadata`, so `@kmaedu/grpc` consumers (ai-chat, content and document modules, the root test) keep working with no import change.
 - The token value `'GRPC_METADATA_ATTACHER'` must stay identical, because DI keys are matched by value.
 
 ## Requirements
-- Functional: same exported names, same token string, and `@examio/grpc` exports unchanged.
-- Non-functional: no new dependency from `libs/grpc` on `@examio/auth-jwt` (keep the structural interface).
+- Functional: same exported names, same token string, and `@kmaedu/grpc` exports unchanged.
+- Non-functional: no new dependency from `libs/grpc` on `@kmaedu/auth-jwt` (keep the structural interface).
 
 ## Architecture
 `metadata.ts` (interface + token) ← imported by `public-profile.client.ts` and `finance.client.ts`. `finance.client.ts` no longer defines either.
 
 ## Related Code Files
-- Modify `/Users/tgiap.dev/devs/examio/examio-be/libs/grpc/src/metadata.ts`: add the interface and token, with the doc comment moved over.
-- Modify `/Users/tgiap.dev/devs/examio/examio-be/libs/grpc/src/clients/finance.client.ts`: delete lines 10-18 and import from `../metadata`.
-- Modify `/Users/tgiap.dev/devs/examio/examio-be/libs/grpc/src/clients/public-profile.client.ts:16`: import from `../metadata`.
-- Modify `/Users/tgiap.dev/devs/examio/examio-be/libs/grpc/src/metadata.spec.ts`: add one assertion that the token equals `'GRPC_METADATA_ATTACHER'`.
+- Modify `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/grpc/src/metadata.ts`: add the interface and token, with the doc comment moved over.
+- Modify `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/grpc/src/clients/finance.client.ts`: delete lines 10-18 and import from `../metadata`.
+- Modify `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/grpc/src/clients/public-profile.client.ts:16`: import from `../metadata`.
+- Modify `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/grpc/src/metadata.spec.ts`: add one assertion that the token equals `'GRPC_METADATA_ATTACHER'`.
 
 ## Implementation Steps
 1. Check that `metadata.ts` has no conflicting export names (`git grep -n "export" libs/grpc/src/metadata.ts`).
@@ -44,7 +44,7 @@
 - Changed: 3 files in `libs/grpc`.
 - Impacted: every service that wires `GRPC_METADATA_ATTACHER` (ai-chat, content, document, public-profile users: content, assessment, study-room).
 - Will verify:
-  - Unit: `cd examio-be && yarn test libs/grpc`. A spec that would catch the wrong token value or a broken export.
+  - Unit: `cd kmaedu-be && yarn test libs/grpc`. A spec that would catch the wrong token value or a broken export.
   - Compile: `yarn typecheck` (all services; catches a missing barrel export).
   - Integration: `yarn test test/cross-app/rpc-guard-table.spec.ts` (boots controllers with DI).
 - Deliberately skipped: service e2e suites. DI behaviour cannot change if the token string is identical, and the assertion pins it.

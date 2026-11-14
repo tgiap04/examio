@@ -1,0 +1,57 @@
+# Dev overlay for kmaedu-be/deploy/compose/ai.yml, merged by .generated/compose.yaml (Compose >= 2.24).
+# The image is still built from apps/ai-service/Dockerfile (deploy's `build`), tagged kmaedu-dev-ai:local;
+# src/, alembic/ and alembic.ini are bind-mounted so code changes need no rebuild, and `watchfiles`
+# (shipped with uvicorn[standard]) restarts the process on a .py change. apps/ai-service/.env is never
+# mounted (only src/ and alembic/ are), so no host env file reaches the container.
+services:
+    ai-migrate:
+        image: kmaedu-dev-ai:local
+        container_name: !reset null
+        volumes:
+            - ${KMAEDU_BE_DIR}/apps/ai-service/src:/app/src
+            - ${KMAEDU_BE_DIR}/apps/ai-service/alembic:/app/alembic
+            - ${KMAEDU_BE_DIR}/apps/ai-service/alembic.ini:/app/alembic.ini:ro
+
+    ai:
+        image: kmaedu-dev-ai:local
+        container_name: !reset null
+        command: ['watchfiles', '--filter', 'python', 'python -m src.main', '/app/src']
+        env_file: !override
+            - path: ${KMAEDU_DEV_GEN_DIR}/env/ai.env
+              required: true
+        volumes:
+            - ${KMAEDU_BE_DIR}/apps/ai-service/src:/app/src
+            - ${KMAEDU_BE_DIR}/apps/ai-service/alembic:/app/alembic
+            - ${KMAEDU_BE_DIR}/apps/ai-service/alembic.ini:/app/alembic.ini:ro
+        # auth is reached lazily (JWKS on the first call): it need not run
+        depends_on: !override
+            ai-migrate:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+            redis:
+                condition: service_healthy
+        healthcheck:
+            interval: 10s
+            start_period: 180s
+
+    ai-worker:
+        image: kmaedu-dev-ai:local
+        container_name: !reset null
+        command: ['watchfiles', '--filter', 'python', 'python -m src.main', '/app/src']
+        env_file: !override
+            - path: ${KMAEDU_DEV_GEN_DIR}/env/ai.env
+              required: true
+        volumes:
+            - ${KMAEDU_BE_DIR}/apps/ai-service/src:/app/src
+            - ${KMAEDU_BE_DIR}/apps/ai-service/alembic:/app/alembic
+            - ${KMAEDU_BE_DIR}/apps/ai-service/alembic.ini:/app/alembic.ini:ro
+        depends_on: !override
+            ai-migrate:
+                condition: service_completed_successfully
+            postgres:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+        healthcheck:
+            start_period: 180s

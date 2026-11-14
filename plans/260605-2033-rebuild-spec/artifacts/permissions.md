@@ -1,6 +1,6 @@
 # Permissions
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Analysis Scope**: All 32 frontend screens + 17 backend route groups + BL inventory
 
@@ -1259,7 +1259,7 @@ A student can view their own exam attempt history with scores, timestamps, and p
 ## PERM040: SessionCleanup
 
 **Type**: env-gate
-**Enforced At**: `SessionCleanupCron` (BL001) — `examio-be/apps/auth-service/src/session-cleanup.cron.ts`
+**Enforced At**: `SessionCleanupCron` (BL001) — `kmaedu-be/apps/auth-service/src/session-cleanup.cron.ts`
 
 ### Description
 
@@ -1276,7 +1276,7 @@ Daily cron job deactivates expired sessions. Runs on a configurable schedule. Th
 ## PERM041: FreeModeCreditBypass
 
 **Type**: env-gate
-**Enforced At**: `FinanceClientService` (BL004) — `examio-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts`
+**Enforced At**: `FinanceClientService` (BL004) — `kmaedu-be/apps/exam-service/src/modules/finance-client/finance-client.service.ts`
 
 ### Description
 

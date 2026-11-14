@@ -1,17 +1,17 @@
 # Refactor Frontend Design System
 
 ## Overview
-- Goal: refactor `examio-fe` design system to follow `DESIGN.md` and `ui-design.html`.
+- Goal: refactor `kmaedu-fe` design system to follow `DESIGN.md` and `ui-design.html`.
 - Scope: global tokens, Tailwind theme, shared primitives, public/landing pages, auth flows, dashboard shell, and high-traffic reusable surfaces.
 - Strategy: token-first migration, keep behavior/API unchanged, avoid big-bang page rewrites.
 
 ## References
 - `DESIGN.md`
 - `ui-design.html`
-- `examio-fe/src/app/globals.css`
-- `examio-fe/tailwind.config.ts`
-- `examio-fe/src/components/antd/button.tsx`
-- `examio-fe/src/routes/layouts/PublicLayout.tsx`
+- `kmaedu-fe/src/app/globals.css`
+- `kmaedu-fe/tailwind.config.ts`
+- `kmaedu-fe/src/components/antd/button.tsx`
+- `kmaedu-fe/src/routes/layouts/PublicLayout.tsx`
 
 ## Phase Status
 - [x] Phase 01: Token foundation and CSS variables - `phase-01-token-foundation.md`
@@ -36,10 +36,10 @@
 - Phase 07 runs last.
 
 ## Validation
-- Completed: `cd examio-fe && yarn lint && yarn build` passed.
+- Completed: `cd kmaedu-fe && yarn lint && yarn build` passed.
 - Lint: 63 warnings, 0 errors; warnings are existing style warnings.
 - Build: passed with large chunk warnings only.
-- Reviewer fixes applied: restored `--animate-grid`, removed hard-forced input height/padding, and replaced user-visible KMA branding in migrated auth/logo/feedback/footer with Examio/brand mark.
+- Reviewer fixes applied: restored `--animate-grid`, removed hard-forced input height/padding, and replaced user-visible KMA branding in migrated auth/logo/feedback/footer with KMAEdu/brand mark.
 
 ## Open Questions
 - Should KMA red/yellow branding be fully removed, or preserved in limited institutional logo/copy areas?

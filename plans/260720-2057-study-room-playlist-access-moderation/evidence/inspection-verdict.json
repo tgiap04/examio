@@ -9,12 +9,12 @@
     "playlist auto-advance is guarded: only the elected leader's media:ended advances, and only when the reported index matches the current index — proof: advanceOnEnded spec (index-mismatch→null, at-end→null, mid→advance) + gateway onMediaEnded leader+throttle guard confirmed by review",
     "playlist index stays in bounds across remove/reorder/jump/step and removing an item before the current one shifts index without restarting playback — proof: playlist enhanced spec (remove index-shift, jump/step clamp, empty playlist) all green after L1 fix",
     "moderation is authorized server-side: cohost cannot ban/mute a host or another cohost and cannot self-ban (target.role >= caller.role denied); mute rejects chat server-side and membership cache is invalidated — proof: reviewer traced moderate() hierarchy + setBanned/setMuted invalidateMemberCache; onChat mute check + onJoin banned check present",
-    "frontend builds green (tsc + vite) with playlist panel, access settings, block and moderation UI wired to the new WS contract — proof: examio-fe yarn build succeeded, lint clean on touched files"
+    "frontend builds green (tsc + vite) with playlist panel, access settings, block and moderation UI wired to the new WS contract — proof: kmaedu-fe yarn build succeeded, lint clean on touched files"
   ],
   "regressionChecked": [
     "Full backend yarn test: 232 pass, 1 pre-existing UNRELATED failure (admin-stats date-dependent spec) — no study-room regression",
     "Additive-only schema (new columns with defaults + 2 new tables) applied to dev DB via psql, isolated from the pending money float→int migration; no existing model changed",
-    "exam-service + gateway-service webpack builds green; examio-fe tsc+vite build green",
+    "exam-service + gateway-service webpack builds green; kmaedu-fe tsc+vite build green",
     "Reviewer findings addressed this session: H1 leader re-election on disconnect, M1 playlist cap, M2 media:ended throttle, M3 countMembers excludes banned, L1 remove no-restart-before-current — all re-tested green (124/124)"
   ],
   "contractStatus": "OK",

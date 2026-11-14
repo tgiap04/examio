@@ -32,35 +32,35 @@
     {
       "severity": "High",
       "category": "Authorization",
-      "location": "examio-be/apps/admin-service/src/modules/admin-users/admin-users.service.ts:50",
+      "location": "kmaedu-be/apps/admin-service/src/modules/admin-users/admin-users.service.ts:50",
       "summary": "isSystemAdmin removed from MUTABLE_FIELDS and strict PATCH body; grant/revoke via auth SetSystemAdmin (last-admin guard, log, av bump)",
       "disposition": "Accept"
     },
     {
       "severity": "Medium",
       "category": "Authorization",
-      "location": "examio-be/apps/r2-service/src/r2-service.controller.ts:129",
+      "location": "kmaedu-be/apps/r2-service/src/r2-service.controller.ts:129",
       "summary": "GetFileUrl now service-only exam/auth",
       "disposition": "Accept"
     },
     {
       "severity": "Medium",
       "category": "Build",
-      "location": "examio-be/libs/database/prisma/seed-dev.ts:85",
+      "location": "kmaedu-be/libs/database/prisma/seed-dev.ts:85",
       "summary": "seed-dev uses role/isSystemAdmin",
       "disposition": "Accept"
     },
     {
       "severity": "Low",
       "category": "Hardening",
-      "location": "examio-be/libs/auth-jwt/src/verify.ts:57",
+      "location": "kmaedu-be/libs/auth-jwt/src/verify.ts:57",
       "summary": "requiredClaims exp/iat added",
       "disposition": "Accept"
     },
     {
       "severity": "Low",
       "category": "Authorization",
-      "location": "examio-be/apps/admin-service/src/modules/admin-users/admin-users.service.ts:50",
+      "location": "kmaedu-be/apps/admin-service/src/modules/admin-users/admin-users.service.ts:50",
       "summary": "PATCH isBanned can still ban the last admin; ban path owned by P08 SetUserStatus (X1)",
       "disposition": "Defer"
     }

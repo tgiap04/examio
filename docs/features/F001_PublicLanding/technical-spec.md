@@ -134,13 +134,13 @@ None.
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| HomePage | `examio-fe/src/pages/HomePage.tsx` | Public landing page |
-| ContactForm | `examio-fe/src/pages/ContactPage.tsx` | Contact form submission |
-| Static pages | `examio-fe/src/pages/{About,Terms,Privacy,Cookies,Security}Page.tsx` | Informational pages |
+| HomePage | `kmaedu-fe/src/pages/HomePage.tsx` | Public landing page |
+| ContactForm | `kmaedu-fe/src/pages/ContactPage.tsx` | Contact form submission |
+| Static pages | `kmaedu-fe/src/pages/{About,Terms,Privacy,Cookies,Security}Page.tsx` | Informational pages |
 
 > Note: Source code paths not yet verified via Read tool. Pending source-code audit phase.
 
 ## Unresolved Questions
 
 1. **{HomePage}**: Whether content is server-side rendered or fetched client-side on mount — not confirmed from source.
-2. **{ContactForm}**: Whether rate limiting or spam protection (other than Turnstile) is applied — not confirmed.
+2. **{ContactForm}**: Whether rate limiting or spam protection (other than the gateway rate limit) is applied — not confirmed.

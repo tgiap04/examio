@@ -1,7 +1,7 @@
-# Frontend Security Audit Report — examio-fe
+# Frontend Security Audit Report — kmaedu-fe
 
 **Date:** 2026-05-30
-**Scope:** examio-fe/src/ — API layer, auth stores, hooks, lib, components, env configs
+**Scope:** kmaedu-fe/src/ — API layer, auth stores, hooks, lib, components, env configs
 **Methodology:** STRIDE + OWASP Top 10
 
 ---
@@ -12,7 +12,7 @@
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/.env` (committed to repo) |
+| **File** | `kmaedu-fe/.env` (committed to repo) |
 | **Severity** | Critical |
 | **STRIDE** | Information Disclosure |
 | **OWASP** | A05:2021 Security Misconfiguration |
@@ -23,7 +23,7 @@
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/src/lib/crypto.ts:5` + `examio-fe/src/lib/env.ts:23` |
+| **File** | `kmaedu-fe/src/lib/crypto.ts:5` + `kmaedu-fe/src/lib/env.ts:23` |
 | **Severity** | Critical |
 | **STRIDE** | Tampering / Information Disclosure |
 | **OWASP** | A01:2021 Broken Access Control, A02:2021 Cryptographic Failures |
@@ -38,29 +38,29 @@
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/src/hooks/useAuthSync.ts:54–76` |
+| **File** | `kmaedu-fe/src/hooks/useAuthSync.ts:54–76` |
 | **Severity** | High |
 | **STRIDE** | Spoofing / Elevation of Privilege |
 | **OWASP** | A01:2021 Broken Access Control, A07:2021 Authentication Failures |
-| **Description** | The `useAuthSync` hook reads `token`, `refreshToken`, and `sessionId` directly from URL query parameters (`url.searchParams.get(...)`) and immediately stores them in localStorage/cookies. An attacker can craft a malicious URL like `https://examio.fayedark.com/k?token=<attacker_token>&refreshToken=<attacker_refresh_token>` and send it to a victim. If the victim visits the link, their session is silently overwritten with the attacker's token, log them out (or log them in as the attacker account), and the redirect removes all traces from the URL bar. This is a token substitution attack. |
+| **Description** | The `useAuthSync` hook reads `token`, `refreshToken`, and `sessionId` directly from URL query parameters (`url.searchParams.get(...)`) and immediately stores them in localStorage/cookies. An attacker can craft a malicious URL like `https://kmaedu.fayedark.com/k?token=<attacker_token>&refreshToken=<attacker_refresh_token>` and send it to a victim. If the victim visits the link, their session is silently overwritten with the attacker's token, log them out (or log them in as the attacker account), and the redirect removes all traces from the URL bar. This is a token substitution attack. |
 | **Fix** | Never accept tokens from URL query parameters. Use HTTP-only cookies set by the backend on the `/auth/callback` OAuth endpoint. If session-fixation protection is needed, use a one-time POST exchange via the backend. Strip tokens from URLs before any storage operation. |
 
 ---
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/src/stores/useAuthStore.ts:52–72` + `examio-fe/src/stores/useAuthStore.ts:329–330` |
+| **File** | `kmaedu-fe/src/stores/useAuthStore.ts:52–72` + `kmaedu-fe/src/stores/useAuthStore.ts:329–330` |
 | **Severity** | High |
 | **STRIDE** | Information Disclosure / Phishing |
 | **OWASP** | A01:2021 Broken Access Control |
-| **Description** | `getOAuthRedirectPath()` reads a `from` URL parameter and returns it directly as the post-login redirect destination without validating that it belongs to the app's origin. `window.location.href` is then set to `${env.apiUrl}/auth/google?redirect=${redirect}` where `redirect` is an arbitrary URL. An attacker can set `from=https://evil.phishing.com` to redirect the victim to a fake site after OAuth login, or `from=https://examio.fayedark.com/admin/delete-everything`. The `normalizeReturnPath()` only validates `//` prefix but not cross-origin targets. |
+| **Description** | `getOAuthRedirectPath()` reads a `from` URL parameter and returns it directly as the post-login redirect destination without validating that it belongs to the app's origin. `window.location.href` is then set to `${env.apiUrl}/auth/google?redirect=${redirect}` where `redirect` is an arbitrary URL. An attacker can set `from=https://evil.phishing.com` to redirect the victim to a fake site after OAuth login, or `from=https://kmaedu.fayedark.com/admin/delete-everything`. The `normalizeReturnPath()` only validates `//` prefix but not cross-origin targets. |
 | **Fix** | Validate that the `from` parameter points to a path within the app's origin. Use `URL` to parse and compare `origin` (not just `pathname`). Allowlist redirect paths or restrict to relative paths only (`from` must start with `/`). |
 
 ---
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/src/hooks/useAuthSync.ts:118–121, 134–136` |
+| **File** | `kmaedu-fe/src/hooks/useAuthSync.ts:118–121, 134–136` |
 | **Severity** | High |
 | **STRIDE** | Spoofing / Information Disclosure |
 | **OWASP** | A07:2021 Authentication Failures |
@@ -71,7 +71,7 @@
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/src/apis/api.ts` (global axios instance) |
+| **File** | `kmaedu-fe/src/apis/api.ts` (global axios instance) |
 | **Severity** | High |
 | **STRIDE** | Tampering |
 | **OWASP** | A01:2021 Broken Access Control, A08:2021 Software and Data Integrity Failures |
@@ -86,18 +86,18 @@
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/src/hooks/useAuthSync.ts:19–24` |
+| **File** | `kmaedu-fe/src/hooks/useAuthSync.ts:19–24` |
 | **Severity** | Medium |
 | **STRIDE** | Tampering |
 | **OWASP** | A01:2021 Broken Access Control |
-| **Description** | `SameSite=None` is only set for the production hostname `examio.fayedark.com`. On all other hostnames (localhost, staging, dev environments), the auth cookie uses the default browser behavior (Lax), which does not protect against CSRF from other subdomains. Additionally, the `Secure` flag is only applied in production — staging/development cookies travel over HTTP, making them interceptable. |
+| **Description** | `SameSite=None` is only set for the production hostname `kmaedu.fayedark.com`. On all other hostnames (localhost, staging, dev environments), the auth cookie uses the default browser behavior (Lax), which does not protect against CSRF from other subdomains. Additionally, the `Secure` flag is only applied in production — staging/development cookies travel over HTTP, making them interceptable. |
 | **Fix** | Set `Secure; SameSite=Strict` cookies in production. Use `SameSite=Lax` (not `None`) for non-production as an interim CSRF measure. In production, ensure all traffic is HTTPS. Consider a domain allowlist for cookie domain attribute rather than hardcoding `fayedark.com`. |
 
 ---
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/vite.config.ts:59–64` |
+| **File** | `kmaedu-fe/vite.config.ts:59–64` |
 | **Severity** | Medium |
 | **STRIDE** | Information Disclosure / Tampering |
 | **OWASP** | A05:2021 Security Misconfiguration |
@@ -108,7 +108,7 @@
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/src/pages/exam-session/ExamQuizPage.tsx:435,463` + `examio-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:443,464` |
+| **File** | `kmaedu-fe/src/pages/exam-session/ExamQuizPage.tsx:435,463` + `kmaedu-fe/src/pages/study-flashcard/FlashcardStudyPage.tsx:443,464` |
 | **Severity** | Medium |
 | **STRIDE** | Injection |
 | **OWASP** | A03:2021 Injection |
@@ -119,7 +119,7 @@
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/src/components/organisms/GoogleOneTap.tsx:34` + `.env` |
+| **File** | `kmaedu-fe/src/components/organisms/GoogleOneTap.tsx:34` + `.env` |
 | **Severity** | Medium |
 | **STRIDE** | Information Disclosure |
 | **OWASP** | A05:2021 Security Misconfiguration |
@@ -130,7 +130,7 @@
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/src/lib/env.ts:21` + `.env` |
+| **File** | `kmaedu-fe/src/lib/env.ts:21` + `.env` |
 | **Severity** | Medium |
 | **STRIDE** | Information Disclosure |
 | **OWASP** | A05:2021 Security Misconfiguration |
@@ -145,7 +145,7 @@
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/src/lib/genai-knowledge-access.ts:4–9` |
+| **File** | `kmaedu-fe/src/lib/genai-knowledge-access.ts:4–9` |
 | **Severity** | Low |
 | **STRIDE** | Information Disclosure |
 | **OWASP** | A01:2021 Broken Access Control |
@@ -156,7 +156,7 @@
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/src/hooks/useCheatingDetection.ts:83–166` |
+| **File** | `kmaedu-fe/src/hooks/useCheatingDetection.ts:83–166` |
 | **Severity** | Low |
 | **STRIDE** | Denial of Service |
 | **OWASP** | A04:2021 Insecure Design |
@@ -167,7 +167,7 @@
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/src/hooks/useAuthSync.ts:42–44` |
+| **File** | `kmaedu-fe/src/hooks/useAuthSync.ts:42–44` |
 | **Severity** | Low |
 | **STRIDE** | Information Disclosure |
 | **OWASP** | A07:2021 Authentication Failures |
@@ -178,7 +178,7 @@
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/src/hooks/useAuthSync.ts:95–109` |
+| **File** | `kmaedu-fe/src/hooks/useAuthSync.ts:95–109` |
 | **Severity** | Low |
 | **STRIDE** | Denial of Service / Information Disclosure |
 | **OWASP** | A07:2021 Authentication Failures |
@@ -193,7 +193,7 @@
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/src/stores/useAuthStore.ts` (multiple `typeof window !== "undefined"` checks) |
+| **File** | `kmaedu-fe/src/stores/useAuthStore.ts` (multiple `typeof window !== "undefined"` checks) |
 | **Severity** | Info |
 | **STRIDE** | Information Disclosure |
 | **Description** | Positive security pattern: auth store correctly guards all localStorage/cookie access with `typeof window !== "undefined"` SSR checks. This prevents SSR crashes but note that server-side rendering of protected pages without auth context should be handled by the routing layer's `ProtectedRoute` to avoid leaking unauthenticated state. |
@@ -202,7 +202,7 @@
 
 | Field | Value |
 |---|---|
-| **File** | `examio-fe/src/lib/authRedirect.ts:3–12` |
+| **File** | `kmaedu-fe/src/lib/authRedirect.ts:3–12` |
 | **Severity** | Info |
 | **STRIDE** | Information Disclosure |
 | **Description** | `normalizeReturnPath()` correctly blocks `//` prefix (to prevent `//evil.com`) but does not block other protocol-relative or cross-origin redirects. This is partially mitigated by `getOAuthRedirectPath()` using `startsWith("/")` check, but the `from` param in `useAuthStore` bypasses `normalizeReturnPath` and is used as the raw redirect in the OAuth URL. |

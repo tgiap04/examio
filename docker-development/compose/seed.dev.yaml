@@ -1,0 +1,24 @@
+# Dev overlay for kmaedu-be/deploy/compose/seed.yml, merged by .generated/compose.yaml (Compose >= 2.24).
+# `./project seed` runs it (profile `seed`): `yarn seed:dev` from source with the generated auth env
+# (ADMIN_EMAILS / ADMIN_DEFAULT_PASSWORD), after the four migrate jobs deploy keeps in depends_on.
+services:
+    seed:
+        image: kmaedu-dev-node:local
+        build: !reset null
+        pull_policy: never
+        container_name: !reset null
+        working_dir: /workspace
+        command: ['yarn', 'seed:dev']
+        environment:
+            NODE_ENV: development
+            YARN_INSTALL_STATE_PATH: /workspace/node_modules/.yarn-install-state.gz
+        env_file: !override
+            - path: ${KMAEDU_DEV_GEN_DIR}/env/auth.env
+              required: true
+        volumes:
+            - ${KMAEDU_BE_DIR}:/workspace
+            - be_node_modules:/workspace/node_modules
+        mem_limit: !reset null
+        depends_on:
+            deps:
+                condition: service_completed_successfully

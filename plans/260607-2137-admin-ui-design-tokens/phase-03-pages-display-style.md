@@ -49,5 +49,5 @@ Apply uniform display-style h1 (and h2) across all 6 admin pages. Some pages alr
 
 ## Success
 - All 6 page h1s use `font-display text-3xl font-normal tracking-tight text-ink`.
-- `grep -E "text-2xl font-semibold|text-3xl font-semibold" examio-fe/src/pages/admin/` returns 0 matches.
-- `grep -E "font-semibold" examio-fe/src/pages/admin/` returns 0 matches (h1/h2 should be font-normal display).
+- `grep -E "text-2xl font-semibold|text-3xl font-semibold" kmaedu-fe/src/pages/admin/` returns 0 matches.
+- `grep -E "font-semibold" kmaedu-fe/src/pages/admin/` returns 0 matches (h1/h2 should be font-normal display).

@@ -3,7 +3,7 @@
   "mode": "code",
   "acceptanceCriteria": [
     "yarn typecheck, build:all and test exit 0 and gateway e2e passes",
-    "gateway has no prisma/@examio/database usage and only config.controller.ts remains under controllers",
+    "gateway has no prisma/@kmaedu/database usage and only config.controller.ts remains under controllers",
     "every route in the phase 01 route inventory is covered by routes.yaml",
     "SSE responses stream incrementally and uploads stream without buffering; status codes and headers are preserved",
     "only auth sets accessToken/refreshToken cookies with SameSite=Lax",
@@ -15,14 +15,14 @@
     "helmet, CORS allowlist and OPTIONS short-circuit are in place",
     "compose exposes no host ports for postgres, redis or rabbitmq and only edge-facing services have egress",
     "WebSocket upgrade verifies the token and page flag before proxying",
-    "examio-fe build and lint still pass"
+    "kmaedu-fe build and lint still pass"
   ],
   "touchpoints": [
-    "examio-be/apps/gateway-service",
-    "examio-be/deploy/docker-compose.yml",
-    "examio-fe/nginx.conf",
-    "examio-be/apps/auth-service (cookie + GatewayControl client enable)",
-    "examio-be/deploy/rabbitmq/definitions.template.json"
+    "kmaedu-be/apps/gateway-service",
+    "kmaedu-be/deploy/docker-compose.yml",
+    "kmaedu-fe/nginx.conf",
+    "kmaedu-be/apps/auth-service (cookie + GatewayControl client enable)",
+    "kmaedu-be/deploy/rabbitmq/definitions.template.json"
   ],
   "blastRadius": [
     "every public request from FE and mobile",

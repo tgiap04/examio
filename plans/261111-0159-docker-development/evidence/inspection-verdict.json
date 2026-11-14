@@ -1,0 +1,29 @@
+{
+  "score": 9,
+  "criticalCount": 0,
+  "decision": "SEALED",
+  "acceptanceCovered": [
+    "./project up starts the services listed in the services file with infra, migrations and Traefik — proven by up-flow.bats (shimmed order: dev image -> infra --wait -> listed apps only) and by the real-Docker smoke run (test/smoke-up.sh exit 0, gateway+auth+fe via Traefik, deps/auth-migrate exited 0) recorded in temper-results.json; smoke run by the implementer, not re-run by the reviewer",
+    "real env files and deploy secrets are never read into the dev stack — reviewer render + docker compose config: all 21 /workspace services mask every existing .env (root, deploy/, apps/*/) plus deploy/rabbitmq/definitions.json, tmpfs over deploy/env, fe masks .env*; compose env_file all overridden to .generated; host-env-masks.bats RED->GREEN; test container sees staged non-ignored files only",
+    "kmaedu-be/deploy is unchanged — git diff --exit-code kmaedu-be/deploy exit 0; compose-topology.spec.cjs 46/46",
+    "project commands down ps logs sh seed db:reset work and are guarded against foreign projects — inspect-and-database.bats + project-ownership.bats (100/100); assert_project_owned in up, down, seed, db:reset and sh; ps/logs are read-only and unguarded by design"
+  ],
+  "regressionChecked": [
+    "deploy compose stack: deploy diff clean, topology spec 46/46, deploy/.env never loaded (env_file overrides + poison test)",
+    "host env files with real secrets: name-only scan of ignored files, every one inside a masked dir; masks never read contents",
+    "docker volumes and networks on the dev machine: owner marker + config_files guard before any mutation; smoke refuses kmaedu-dev and non-leftover volumes; no legacy kmaedu-dev volumes exist that the new guard would lock out",
+    "deps job under live watchers: stamp skip verified against real prisma/proto layout (outputs_present cannot loop)",
+    "render temp files with secrets: EXIT trap + errexit through the whole render chain",
+    "S1 db:reset with a stopped postgres container (ps -a)"
+  ],
+  "contractStatus": "OK",
+  "refuted": [],
+  "unproven": [],
+  "reachableRegressions": [],
+  "findings": [
+    { "severity": "Medium", "category": "Testing", "location": "docker-development/test/project-ownership.bats:20", "summary": "foreign-project loop covers up/down/seed/db:reset but not sh; add sh to the loop", "disposition": "Defer" },
+    { "severity": "Low", "category": "Security", "location": "docker-development/lib/render-host-env-masks.sh:42-47", "summary": "env-file scan is fixed-depth (root, deploy, apps/*); a future .env under libs/ or test/ would be visible; none exists today", "disposition": "Defer" },
+    { "severity": "Low", "category": "Logic", "location": "docker-development/images/deps-job.sh:18-26", "summary": "deps stamp hash omits scripts/prisma-*.sh; KMAEDU_DEPS_FORCE=1 is the workaround", "disposition": "Defer" },
+    { "severity": "Medium", "category": "Portability", "location": "docker-development/images/node-dev.Dockerfile:4", "summary": "W3: containers run as root, Linux host may get root-owned generated dirs; documented in README only, Linux untested", "disposition": "Defer" }
+  ]
+}

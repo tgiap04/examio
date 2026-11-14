@@ -68,7 +68,7 @@ Source: scout reports. Unknowns are marked `Needs verification`.
 |---|---|---|---|
 | FLW101 | Launch unauthenticated | SCR101 -> SCR102 | API-backed auth. |
 | FLW102 | Register or reset password | SCR101 -> SCR103/SCR104/SCR105 | API-backed auth. |
-| FLW103 | Google OAuth | SCR102 -> system browser -> `examio://auth/callback` -> SCR106 | API-backed auth. |
+| FLW103 | Google OAuth | SCR102 -> system browser -> `kmaedu://auth/callback` -> SCR106 | API-backed auth. |
 | FLW104 | Launch authenticated | AuthRepository.restoreSession -> SCR106 | API-backed session restore. |
 | FLW105 | Main tab navigation | SCR106 -> SCR108/SCR112/SCR110/SCR111/SCR113 | Platform feature screens mock-backed. |
 | FLW106 | Profile sheet/logout | SCR106 -> SCR115 -> auth logout -> SCR101 | Auth/logout likely API-backed; sheet data Needs verification. |
@@ -81,7 +81,7 @@ Source: scout reports. Unknowns are marked `Needs verification`.
 |---|---|---|---|
 | FLW201 | Launch unauthenticated | SCR201 -> SCR202 | API-backed auth through URLSession client. |
 | FLW202 | Register or reset password | SCR201 -> SCR203/SCR204/SCR205 | API-backed auth. |
-| FLW203 | Google OAuth | SCR202 -> system browser -> `examio://auth/callback` -> SCR206 | API-backed auth with Keychain persistence. |
+| FLW203 | Google OAuth | SCR202 -> system browser -> `kmaedu://auth/callback` -> SCR206 | API-backed auth with Keychain persistence. |
 | FLW204 | Launch authenticated | AuthViewModel token restore Needs verification -> SCR206 | Token persistence exists; restore semantics Need verification. |
 | FLW205 | Main tab navigation | SCR206 -> SCR207-SCR212 | Feature screens mock-backed. |
 | FLW206 | AI/study/exam/account/teacher actions | SCR208-SCR212 local state only | Mock-backed UI; shared KMP APIs not generally used by iOS screens except auth has private URLSession client. |

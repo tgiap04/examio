@@ -90,5 +90,5 @@ N/A — no auth guards or permission checks detected on this screen.
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/landing/PrivacyPage.tsx:1-33`
-- LegalPageShell component: `examio-fe/src/components/organisms/landing/LegalPageShell.tsx:1-46`
+- Page/View: `kmaedu-fe/src/pages/landing/PrivacyPage.tsx:1-33`
+- LegalPageShell component: `kmaedu-fe/src/components/organisms/landing/LegalPageShell.tsx:1-46`

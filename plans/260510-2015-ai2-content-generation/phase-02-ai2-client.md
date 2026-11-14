@@ -6,7 +6,7 @@ Status: implemented
 Add a small OpenAI-compatible HTTP client for AI2 generation and model listing.
 
 ## Context Links
-- `../examio-be/apps/ai-service/src/llm/model_manager.py`
+- `../kmaedu-be/apps/ai-service/src/llm/model_manager.py`
 - User-provided API base: `https://ai2.devt.vn/`
 
 ## Requirements

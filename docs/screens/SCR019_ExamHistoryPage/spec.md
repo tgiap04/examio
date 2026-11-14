@@ -49,9 +49,9 @@ KLayout-wrapped page containing a single main content area with the shared `Hist
 
 | Decision point | Condition | Outcome on this screen | Source |
 |----------------|-----------|------------------------|--------|
-| Empty history | `attempts.length === 0` | empty-state illustration + "Take your first exam" CTA | `examio-fe/src/components/molecules/ExamHistoryListItem.tsx:42` |
-| Filter applied | Date/score filter changed | Re-fetch with new filter params; list updates | `examio-fe/src/components/organisms/k/ExamSearchFilterBar.tsx:18` |
-| Pagination | User clicks next/prev | Fetch page N+1, scroll to top | `examio-fe/src/components/organisms/k/ExamTablePagination.tsx:55` |
+| Empty history | `attempts.length === 0` | empty-state illustration + "Take your first exam" CTA | `kmaedu-fe/src/components/molecules/ExamHistoryListItem.tsx:42` |
+| Filter applied | Date/score filter changed | Re-fetch with new filter params; list updates | `kmaedu-fe/src/components/organisms/k/ExamSearchFilterBar.tsx:18` |
+| Pagination | User clicks next/prev | Fetch page N+1, scroll to top | `kmaedu-fe/src/components/organisms/k/ExamTablePagination.tsx:55` |
 
 ## Data Inventory
 
@@ -67,10 +67,10 @@ KLayout-wrapped page containing a single main content area with the shared `Hist
 
 | State | Trigger | Visual Behavior | User Action Available | Source |
 |-------|---------|----------------|-----------------------|--------|
-| loading | API in-flight | skeleton row list | none | `examio-fe/src/components/organisms/k/ExamHistoryListSection.tsx:31` |
-| empty | 0 results | empty-state illustration + CTA | navigate to home | `examio-fe/src/components/molecules/ExamHistoryListItem.tsx:42` |
-| error | API error / network | error message + retry button | retry | `examio-fe/src/components/organisms/k/ExamHistoryListSection.tsx:78` |
-| loading-stats | stats API in-flight | 4 skeleton cards | none | `examio-fe/src/components/molecules/HistoryStatCard.tsx:18` |
+| loading | API in-flight | skeleton row list | none | `kmaedu-fe/src/components/organisms/k/ExamHistoryListSection.tsx:31` |
+| empty | 0 results | empty-state illustration + CTA | navigate to home | `kmaedu-fe/src/components/molecules/ExamHistoryListItem.tsx:42` |
+| error | API error / network | error message + retry button | retry | `kmaedu-fe/src/components/organisms/k/ExamHistoryListSection.tsx:78` |
+| loading-stats | stats API in-flight | 4 skeleton cards | none | `kmaedu-fe/src/components/molecules/HistoryStatCard.tsx:18` |
 
 ## Validation & Error Feedback
 
@@ -84,13 +84,13 @@ KLayout-wrapped page containing a single main content area with the shared `Hist
 - **Success:** `200` → renders history list
 - **Errors:** `401` (unauthenticated) | `500` (server error) → toast error message
 - **Trigger:** page mount / pagination / filter change
-- **Source:** `examio-fe/src/apis/historyApi.ts:42`
+- **Source:** `kmaedu-fe/src/apis/historyApi.ts:42`
 
 ## Interaction Patterns
 
-- **Clicking "Review" opens result modal with per-question breakdown** — source: `examio-fe/src/components/molecules/ExamHistoryListItem.tsx:88`
-- **Clicking "Retry" navigates to exam session** — source: `examio-fe/src/components/molecules/ExamHistoryListItem.tsx:103`
-- **Filter changes debounce 500ms before re-fetch** — source: `examio-fe/src/hooks/useDebounce.ts:12`
+- **Clicking "Review" opens result modal with per-question breakdown** — source: `kmaedu-fe/src/components/molecules/ExamHistoryListItem.tsx:88`
+- **Clicking "Retry" navigates to exam session** — source: `kmaedu-fe/src/components/molecules/ExamHistoryListItem.tsx:103`
+- **Filter changes debounce 500ms before re-fetch** — source: `kmaedu-fe/src/hooks/useDebounce.ts:12`
 
 ## Accessibility
 
@@ -119,8 +119,8 @@ KLayout-wrapped page containing a single main content area with the shared `Hist
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/k/ExamHistoryPage.tsx:1`
-- Template: `examio-fe/src/templates/HistoryTemplate.tsx:1`
-- API: `examio-fe/src/apis/historyApi.ts:1`
-- Store: `examio-fe/src/stores/useStatsStore.ts:1` (history stats cache)
-- Hook: `examio-fe/src/hooks/useDebounce.ts:12`
+- Page/View: `kmaedu-fe/src/pages/k/ExamHistoryPage.tsx:1`
+- Template: `kmaedu-fe/src/templates/HistoryTemplate.tsx:1`
+- API: `kmaedu-fe/src/apis/historyApi.ts:1`
+- Store: `kmaedu-fe/src/stores/useStatsStore.ts:1` (history stats cache)
+- Hook: `kmaedu-fe/src/hooks/useDebounce.ts:12`

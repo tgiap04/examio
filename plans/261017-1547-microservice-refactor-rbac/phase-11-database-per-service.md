@@ -3,7 +3,7 @@
 ## Context Links
 - [plan.md](./plan.md) · [planner-brief.md](./reports/planner-brief.md) decisions 1, 13, 15 · [red-team-changes.md](./reports/red-team-changes.md) (RT-8, RT-11, RT-14 override the brief)
 - [researcher-02 §1 Prisma, §6 Postgres](./research/researcher-02-migration-mechanics-report.md)
-- `/Users/tgiap.dev/devs/examio/ARCHITECTURE.md` §7.1–7.2, §8.2, §12 P4, Appendix A
+- `/Users/tgiap.dev/devs/kmaedu/ARCHITECTURE.md` §7.1–7.2, §8.2, §12 P4, Appendix A
 - Prior: [phase-10](./phase-10-cut-cross-db-access.md) (ownership map), [phase-01](./phase-01-guardrails-and-cleanup.md) (single baseline + `migrate deploy`, **Prisma spike go/no-go**)
 
 ## Overview
@@ -24,7 +24,7 @@
 - R2 deletes happen after the row delete with no retry, so a failure leaves orphans <!-- Red Team: RT-8 -->: `flashcardset.service.ts:250-254` (thumbnail), `:396` (old image on update), `quizset.service.ts:239,411`, `ai-chat.service.ts:769` (clearChat files), `ai.service.ts:908` (deleteUpload), `apps/auth-service/src/profile/profile.service.ts:199-206` (old avatar/banner), plus `DeleteCategory` (phase 10).
 - exam stays as a **legacy** schema split into multi-file Prisma (`prisma/schema/*.prisma`), so 12–15 each own one file [UNVERIFIED: multi-file schema GA in Prisma 6.7+; fallback = one file with model-region ownership].
 - Phase 03 put one shared `outbox_events` (with `source`) + `processed_events` (PK `consumer, event_id`) in `libs/database/src/models/messaging.prisma`. Each service schema gets its own copy of both tables. The `source`/`consumer` columns stay (harmless, phase 03), so `libs/messaging` needs no change for them.
-- `BaseRepository` (`libs/common/src/repositories/base.repository.ts:2,27`) imports `PrismaService` from `@examio/database`. It is used by 9 repositories, so retype it structurally rather than rewrite them.
+- `BaseRepository` (`libs/common/src/repositories/base.repository.ts:2,27`) imports `PrismaService` from `@kmaedu/database`. It is used by 9 repositories, so retype it structurally rather than rewrite them.
 - <!-- Red Team: RT-14 --> `libs/observability` health stays Prisma-free (P01: injected `ReadinessCheck[]`). Each local Prisma module provides a `db` ReadinessCheck (`SELECT 1`).
 
 ## Requirements
@@ -41,7 +41,7 @@ Functional
 - Shared code `libs/messaging/src/r2-delete/{r2-delete-task.writer.ts,r2-delete.worker.ts}` (Prisma-free, takes a structural `PrismaLike` tx with `$executeRaw`/`$queryRaw`).
 - One URL→key resolver `libs/common/src/utils/r2-key-from-url.ts` replaces the three copies of `replace(/^https?:\/\/[^/]+\//, '')` (`flashcardset.service.ts:251`, `quizset.service.ts:237`, `profile.service.ts:216-217`). It returns a key only for URLs on the configured R2 public host (`R2_PUBLIC_URL`), else `null`, so external URLs are never deleted. <!-- Red Team: RT-8 -->
 - Per-service seeds <!-- Red Team: RT-14 -->: `apps/auth-service/prisma/seed.ts` (admin bootstrap stays CLI; dev users), `apps/finance-service/prisma/seed.ts` (dev wallets/payments), `apps/admin-service/prisma/seed.ts` (PageFeatureFlag + dev audit), exam legacy `apps/exam-service/prisma/seed/{subjects,word-family-categories}.ts` (one file per future owner, moved in 12/13). `seed:dev` runs each service's dev seed in order auth → finance → admin → exam.
-- Delete `libs/database` (both `src/` and the stale `prisma/` tree), the `@examio/database` path alias, `prisma:merge|push|seed|...` root scripts, and the `examio-migration` container.
+- Delete `libs/database` (both `src/` and the stale `prisma/` tree), the `@kmaedu/database` path alias, `prisma:merge|push|seed|...` root scripts, and the `kmaedu-migration` container.
 
 Non-functional
 - Pool `max: 5` per process. Postgres `max_connections=200`. A role cannot read another schema (verified by test).
@@ -70,11 +70,11 @@ psql ... -c "GRANT USAGE ON SCHEMA exam TO ai_svc" \
   -c "ALTER DEFAULT PRIVILEGES FOR ROLE exam_svc IN SCHEMA exam GRANT SELECT,INSERT,UPDATE,DELETE ON TABLES TO ai_svc"
 ```
 - ai-service sets the search path per pool (`asyncpg server_settings={"search_path": os.environ["DB_SEARCH_PATH"]}`): `exam,extensions` now, `ai,extensions` in phase 15. No `ALTER ROLE` is needed later.
-- Runtime: `DATABASE_URL=postgresql://<svc>_svc:***@postgres:5432/examio?schema=<svc>` (the role's `search_path` covers raw SQL).
+- Runtime: `DATABASE_URL=postgresql://<svc>_svc:***@postgres:5432/kmaedu?schema=<svc>` (the role's `search_path` covers raw SQL).
 
 Migration baseline procedure (per service, fresh DB):
 1. `docker compose -f deploy/docker-compose.yml down -v && docker compose up -d postgres` (init runs).
-2. `scripts/prisma-migrate-dev.sh <svc> init`. It creates `examio_shadow_<svc>` as superuser with schema `<svc>` + `extensions`/vector, then runs `prisma migrate dev --create-only --name init --schema apps/<svc>-service/prisma/schema.prisma` (exam: `--schema apps/exam-service/prisma/schema`) with `shadowDatabaseUrl`.
+2. `scripts/prisma-migrate-dev.sh <svc> init`. It creates `kmaedu_shadow_<svc>` as superuser with schema `<svc>` + `extensions`/vector, then runs `prisma migrate dev --create-only --name init --schema apps/<svc>-service/prisma/schema.prisma` (exam: `--schema apps/exam-service/prisma/schema`) with `shadowDatabaseUrl`.
 3. Hand-edit `migration.sql`: outbox partial index `WHERE published_at IS NULL`; `r2_delete_tasks` index. Check the `vector` columns in exam.
 4. `prisma migrate deploy` via `<svc>-migrate` → commit `apps/<svc>-service/prisma/migrations/**`. Delete the phase-01 baseline under `libs/database/src/migrations`.
 5. Later model moves (12–15): new `migrate dev --create-only` in both the source (drop) and target (create) services. No data copy.
@@ -86,22 +86,22 @@ service tx { DELETE row | UPDATE image ; INSERT r2_delete_tasks(key) } ─commit
 
 ## Related Code Files
 File ownership (globs; sequential phase, but 09/18 may run in parallel; FE untouched): <!-- Red Team: RT-11 -->
-- `/Users/tgiap.dev/devs/examio/examio-be/apps/{auth,finance,admin,exam}-service/prisma/**` (create)
-- `/Users/tgiap.dev/devs/examio/examio-be/apps/{auth,finance,admin,exam,gateway,r2}-service/src/**` (import swaps `@examio/database` → local `src/prisma/`; R2 delete call sites → task writer)
-- `/Users/tgiap.dev/devs/examio/examio-be/libs/database/**` (delete, incl. `libs/database/prisma/**`), `.../libs/common/src/{repositories/base.repository.ts,utils/r2-key-from-url.ts}`, `.../libs/messaging/src/r2-delete/**` (create) <!-- Red Team: RT-8, RT-14 -->
-- `/Users/tgiap.dev/devs/examio/examio-be/apps/ai-service/src/{rag/vector_store_pg.py,backend/services/*.py}` (search_path + DDL guard only)
-- `/Users/tgiap.dev/devs/examio/examio-be/deploy/{postgres/**,compose/**,docker-compose.yml,Dockerfile,Dockerfile.migration,Dockerfile.seed,entrypoint-migration.sh,entrypoint-seed.sh,env/*.env.example}`
-- `/Users/tgiap.dev/devs/examio/examio-be/{package.json,tsconfig.json,jest.config.js,nest-cli.json,.gitignore,scripts/prisma-*.sh}`
+- `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/{auth,finance,admin,exam}-service/prisma/**` (create)
+- `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/{auth,finance,admin,exam,gateway,r2}-service/src/**` (import swaps `@kmaedu/database` → local `src/prisma/`; R2 delete call sites → task writer)
+- `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/database/**` (delete, incl. `libs/database/prisma/**`), `.../libs/common/src/{repositories/base.repository.ts,utils/r2-key-from-url.ts}`, `.../libs/messaging/src/r2-delete/**` (create) <!-- Red Team: RT-8, RT-14 -->
+- `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ai-service/src/{rag/vector_store_pg.py,backend/services/*.py}` (search_path + DDL guard only)
+- `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/{postgres/**,compose/**,docker-compose.yml,Dockerfile,Dockerfile.migration,Dockerfile.seed,entrypoint-migration.sh,entrypoint-seed.sh,env/*.env.example}`
+- `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/{package.json,tsconfig.json,jest.config.js,nest-cli.json,.gitignore,scripts/prisma-*.sh}`
 
 Create: `deploy/postgres/init/01-service-schemas.sh`, `deploy/compose/{auth,finance,admin,exam,gateway,r2,ai,infra}.yml` (top-level `include:`), `deploy/env/<svc>.env.example`, `apps/<svc>-service/src/prisma/{prisma.service.ts,prisma.module.ts}`, `apps/exam-service/prisma/schema/{base,content,assessment,study-room,vocabulary,ai-chat,document,ai}.prisma`, `apps/{auth,finance,admin}-service/prisma/seed.ts`, `apps/exam-service/prisma/seed/{subjects,word-family-categories}.ts`, `libs/messaging/src/r2-delete/*`, `libs/common/src/utils/r2-key-from-url.ts`.
-Delete: `libs/database/**` (incl. the stale `prisma/` tree after the seeds are relocated), `entrypoint-migration.sh` (replaced by `ROLE=migrate`), the `examio-migration` compose service.
+Delete: `libs/database/**` (incl. the stale `prisma/` tree after the seeds are relocated), `entrypoint-migration.sh` (replaced by `ROLE=migrate`), the `kmaedu-migration` compose service.
 
 ## Implementation Steps
 0. Gate <!-- Red Team: RT-14 -->: read the P01 spike result in plan.md. GO → `prisma-client` + adapter-pg. NO-GO → `prisma-client-js` with `output = "../src/generated/prisma"` per service (same layout; only the generator block and the PrismaService differ).
 1. Write the init script and per-service DB passwords in `deploy/env/*.env.example`. Compose `postgres` mounts `deploy/postgres/init` and no longer publishes a port (phase 01).
 2. Split the compose file into `deploy/compose/*.yml` + `include:`. Each service gets `<svc>-migrate` (`Dockerfile.migration`, `ARG SERVICE`, runs `prisma migrate deploy --schema apps/$SERVICE/prisma`) + `depends_on: service_completed_successfully`. 12–15 then only add a file + one include line.
 3. Per service: create the schema file from the ownership map (phase 10) using `libs/database/src/models/*.prisma` as the only source (never the stale `prisma/` tree), remove `User` relations, keep indexes. Add `r2_delete_tasks` to auth + exam `base`. Generate the client into `src/generated/prisma` (gitignored). Add `prisma.service.ts` with the adapter + a `db` ReadinessCheck.
-4. Swap all `@examio/database` imports (76 files) to the local Prisma module. Retype `BaseRepository` to a structural `PrismaLike` so `libs/common` imports no Prisma (dependency-cruiser `libs-no-prisma` → error).
+4. Swap all `@kmaedu/database` imports (76 files) to the local Prisma module. Retype `BaseRepository` to a structural `PrismaLike` so `libs/common` imports no Prisma (dependency-cruiser `libs-no-prisma` → error).
 5. Generate baselines per the procedure above. `package.json`: `prisma:generate` loops over `apps/*/prisma`; `prisma:migrate <svc>`; delete the `merge`/`push` scripts.
 6. ai-service: env `DATABASE_URL` as `ai_svc`, `DB_SEARCH_PATH=exam,extensions`, `AI_RUNTIME_DDL=false` guarding the DDL blocks.
 7. R2 deletion <!-- Red Team: RT-8 -->: write `libs/messaging/src/r2-delete/*`. Replace every call site listed in Key Insights with `r2DeleteTasks.enqueue(tx, keys)` inside the delete/update tx (move the delete into a `$transaction` where it is not one yet). Run the worker in auth + exam `ROLE=worker`. (exam/auth are already in the r2 `DeleteObjects` `@ServiceOnly` decorator since P04; nothing to add.) <!-- Reconcile: X6 -->
@@ -120,7 +120,7 @@ Write first:
 - [x] Spike gate check (P01 result) <!-- Red Team: RT-14 --> — GO 2026-10-18 (plan.md "Prisma Spike Verdict").
 - [x] Init SQL + env examples + compose split — empty-volume bring-up, 12/12 images built, `<svc>-migrate` 4/4 exit 0 (Re-temper 2, evidence/phase-11-runs.md).
 - [x] Per-service schemas (auth, finance, admin, exam multi-file) from `src/models` only — `migrate diff` "No difference" 4/4; `migrate status` up to date; 6/6 expected permission denials.
-- [x] Local Prisma modules + ReadinessCheck; swap 76 imports; retype BaseRepository — build/typecheck PASS, zero `@examio/database` refs. ReadinessCheck not evidenced on its own; APIs report healthy.
+- [x] Local Prisma modules + ReadinessCheck; swap 76 imports; retype BaseRepository — build/typecheck PASS, zero `@kmaedu/database` refs. ReadinessCheck not evidenced on its own; APIs report healthy.
 - [x] Baseline migrations + `<svc>-migrate` containers — 4/4 exit 0 from empty volume.
 - [x] ai-service search_path + DDL guard + temporary grants — `/health` healthy, `DB_SEARCH_PATH=exam,extensions`, `AI_RUNTIME_DDL=false`, zero DDL lines in logs. "Skipping runtime DDL" line not observed.
 - [x] `r2_delete_tasks` + shared writer/worker + call-site conversion <!-- Red Team: RT-8 --> — live 23/23 (thumbnail, avatar, r2 outage backoff, drain). Poison key and concurrent no-double-send: unit/DB e2e only.
@@ -128,9 +128,9 @@ Write first:
 - [x] Delete `libs/database` + scripts — grep clean; build PASS in Re-temper 2.
 
 ## Success Criteria
-- `cd /Users/tgiap.dev/devs/examio/examio-be && ls libs/database 2>/dev/null` → empty. `grep -rn "@examio/database\|libs/database" apps libs package.json deploy` → no output.
+- `cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && ls libs/database 2>/dev/null` → empty. `grep -rn "@kmaedu/database\|libs/database" apps libs package.json deploy` → no output.
 - `docker compose -f deploy/docker-compose.yml up -d --wait` from an empty volume → all `*-migrate` exit 0, all APIs healthy; `yarn seed:dev` exit 0.
-- `docker compose exec postgres psql -U content_svc -d examio -c 'select 1 from auth."User"'` → `permission denied`.
+- `docker compose exec postgres psql -U content_svc -d kmaedu -c 'select 1 from auth."User"'` → `permission denied`.
 - `yarn build && yarn test` green (incl. the db-isolation e2e). `npx depcruise apps libs` → 0 errors.
 - Deleting a flashcard set with a thumbnail in the FE → `r2.DeleteObjects` log line with the key within 60 s; with r2 stopped, the task stays and succeeds after r2 restarts. <!-- Red Team: RT-8 -->
 
@@ -184,7 +184,7 @@ Each entry: what, why, cost.
 - `.dockerignore` did not exclude nested `apps/*/.env`. Fixed.
 - Dead `R2Client.deleteFile` and throwing `deleteObjects` wrappers removed (F8).
 - F9 (`up --wait` exit 1) and F10 (AdminAudit growth): fixed by seed opt-in and upsert. Post-fix, not re-run live.
-- F14: README `--scale exam=2` note (`container_name` pins `examio-exam`). Docs only.
+- F14: README `--scale exam=2` note (`container_name` pins `kmaedu-exam`). Docs only.
 
 ## Closed before commit
 Both items that blocked the "Completed" label were closed before the commit (sign-off 2026-10-23).

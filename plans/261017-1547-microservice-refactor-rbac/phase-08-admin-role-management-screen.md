@@ -129,31 +129,31 @@ admin-service AdminUsersController ban|unban (user:manage) ─► auth SetUserSt
 <!-- Red Team: RT-2, RT-3 -->
 
 ## Related Code Files
-File ownership (globs): `examio-be/apps/admin-service/src/modules/admin-roles/**`, `examio-be/apps/admin-service/src/clients/auth.client.ts`, `examio-be/apps/admin-service/src/modules/admin-users/{admin-users.controller.ts,admin-users.service.ts,user-select.safe.ts,dto/list-users.query.ts,dto/update-user.body.ts}`, `examio-be/apps/admin-service/src/{admin-service.module.ts,main.ts}`, `examio-be/apps/admin-service/test/{admin-roles.e2e-spec.ts,ban.e2e-spec.ts,jest-e2e.json}`, `examio-be/apps/auth-service/src/user-status/**`, `examio-be/apps/auth-service/src/grpc/auth.grpc.controller.ts` (`SetUserStatus` handler only), `examio-be/apps/auth-service/src/auth.module.ts` (module import line), `examio-fe/src/pages/admin/AdminRolesPage.tsx`, `examio-fe/src/components/admin/roles/**`, `examio-fe/src/components/admin/{UserTable,UserDetailDrawer}.tsx`, `examio-fe/src/apis/{adminApi,adminRolesApi}.ts`, `examio-fe/src/stores/{useAdminRolesStore,useAdminStore}.ts`, `examio-fe/src/lib/admin-roles/**` (no `*.test.ts`; 09 adds it), `examio-fe/src/routes/layouts/AdminLayout.tsx`, `examio-fe/public/locales/{vi,en}/admin.json`, `examio-fe/src/routes/index.tsx` (one child route, after 07 merges). Not owned here: `SideBar.tsx`, `AdminRoute.tsx` (phase 09). <!-- Red Team: RT-3, RT-11, RT-15 -->
+File ownership (globs): `kmaedu-be/apps/admin-service/src/modules/admin-roles/**`, `kmaedu-be/apps/admin-service/src/clients/auth.client.ts`, `kmaedu-be/apps/admin-service/src/modules/admin-users/{admin-users.controller.ts,admin-users.service.ts,user-select.safe.ts,dto/list-users.query.ts,dto/update-user.body.ts}`, `kmaedu-be/apps/admin-service/src/{admin-service.module.ts,main.ts}`, `kmaedu-be/apps/admin-service/test/{admin-roles.e2e-spec.ts,ban.e2e-spec.ts,jest-e2e.json}`, `kmaedu-be/apps/auth-service/src/user-status/**`, `kmaedu-be/apps/auth-service/src/grpc/auth.grpc.controller.ts` (`SetUserStatus` handler only), `kmaedu-be/apps/auth-service/src/auth.module.ts` (module import line), `kmaedu-fe/src/pages/admin/AdminRolesPage.tsx`, `kmaedu-fe/src/components/admin/roles/**`, `kmaedu-fe/src/components/admin/{UserTable,UserDetailDrawer}.tsx`, `kmaedu-fe/src/apis/{adminApi,adminRolesApi}.ts`, `kmaedu-fe/src/stores/{useAdminRolesStore,useAdminStore}.ts`, `kmaedu-fe/src/lib/admin-roles/**` (no `*.test.ts`; 09 adds it), `kmaedu-fe/src/routes/layouts/AdminLayout.tsx`, `kmaedu-fe/public/locales/{vi,en}/admin.json`, `kmaedu-fe/src/routes/index.tsx` (one child route, after 07 merges). Not owned here: `SideBar.tsx`, `AdminRoute.tsx` (phase 09). <!-- Red Team: RT-3, RT-11, RT-15 -->
 
 - Create:
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/admin-service/src/modules/admin-roles/{admin-roles.module.ts,admin-roles.controller.ts,admin-roles.service.ts,admin-roles.mapper.ts,dto/set-role.dto.ts,dto/set-system-admin.dto.ts,dto/list-role-users.query.ts}`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/admin-service/src/clients/auth.client.ts` <!-- Red Team: RT-3 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/admin-service/test/admin-roles.e2e-spec.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service/src/user-status/{user-status.module.ts,user-status.service.ts,user-status.service.spec.ts}` <!-- Red Team: RT-3 -->
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/pages/admin/AdminRolesPage.tsx`
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/components/admin/roles/{RoleUserTable,RoleUserFilters,RoleChangeDialog,PermissionMatrix,RoleChangeHistory,RoleBadge}.tsx`
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/apis/adminRolesApi.ts`, `/Users/tgiap.dev/devs/examio/examio-fe/src/stores/useAdminRolesStore.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/lib/admin-roles/{role-change-rules.ts,permission-groups.ts}` (test in 09) <!-- Red Team: RT-11 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/admin-service/src/modules/admin-roles/{admin-roles.module.ts,admin-roles.controller.ts,admin-roles.service.ts,admin-roles.mapper.ts,dto/set-role.dto.ts,dto/set-system-admin.dto.ts,dto/list-role-users.query.ts}`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/admin-service/src/clients/auth.client.ts` <!-- Red Team: RT-3 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/admin-service/test/admin-roles.e2e-spec.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/auth-service/src/user-status/{user-status.module.ts,user-status.service.ts,user-status.service.spec.ts}` <!-- Red Team: RT-3 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/pages/admin/AdminRolesPage.tsx`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/components/admin/roles/{RoleUserTable,RoleUserFilters,RoleChangeDialog,PermissionMatrix,RoleChangeHistory,RoleBadge}.tsx`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/apis/adminRolesApi.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/stores/useAdminRolesStore.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/lib/admin-roles/{role-change-rules.ts,permission-groups.ts}` (test in 09) <!-- Red Team: RT-11 -->
 - Modify:
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/admin-service/src/{admin-service.module.ts,main.ts}` (`main.ts`: register `HttpErrorEnvelopeFilter`) <!-- Red Team: RT-11 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service/src/grpc/auth.grpc.controller.ts` (`SetUserStatus` replaces the `UNIMPLEMENTED` stub), `/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service/src/auth.module.ts`, `/Users/tgiap.dev/devs/examio/examio-be/apps/admin-service/test/ban.e2e-spec.ts` (create; through auth; `jest-e2e.json` from 04) <!-- Red Team: RT-3 --> <!-- Reconcile: X1 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/admin-service/src/modules/admin-users/{admin-users.controller.ts,admin-users.service.ts,user-select.safe.ts,dto/list-users.query.ts,dto/update-user.body.ts}` (ban/unban → `SetUserStatus`; PATCH drops `isBanned`; `isSystemAdmin` filter + field) <!-- Red Team: RT-3, RT-15 -->
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/components/admin/UserTable.tsx`, `/Users/tgiap.dev/devs/examio/examio-fe/src/components/admin/UserDetailDrawer.tsx` (role badge, `isSystemAdmin`, last-admin ban states) <!-- Red Team: RT-15 -->
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/apis/adminApi.ts` (drop grant/revoke, ids `string`, `isSystemAdmin`), `/Users/tgiap.dev/devs/examio/examio-fe/src/stores/useAdminStore.ts` (`:275` filter), `/Users/tgiap.dev/devs/examio/examio-fe/src/routes/layouts/AdminLayout.tsx`, `/Users/tgiap.dev/devs/examio/examio-fe/src/routes/index.tsx` <!-- Red Team: RT-15 -->
-  - `/Users/tgiap.dev/devs/examio/examio-fe/public/locales/vi/admin.json`, `/Users/tgiap.dev/devs/examio/examio-fe/public/locales/en/admin.json`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/admin-service/src/{admin-service.module.ts,main.ts}` (`main.ts`: register `HttpErrorEnvelopeFilter`) <!-- Red Team: RT-11 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/auth-service/src/grpc/auth.grpc.controller.ts` (`SetUserStatus` replaces the `UNIMPLEMENTED` stub), `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/auth-service/src/auth.module.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/admin-service/test/ban.e2e-spec.ts` (create; through auth; `jest-e2e.json` from 04) <!-- Red Team: RT-3 --> <!-- Reconcile: X1 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/admin-service/src/modules/admin-users/{admin-users.controller.ts,admin-users.service.ts,user-select.safe.ts,dto/list-users.query.ts,dto/update-user.body.ts}` (ban/unban → `SetUserStatus`; PATCH drops `isBanned`; `isSystemAdmin` filter + field) <!-- Red Team: RT-3, RT-15 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/components/admin/UserTable.tsx`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/components/admin/UserDetailDrawer.tsx` (role badge, `isSystemAdmin`, last-admin ban states) <!-- Red Team: RT-15 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/apis/adminApi.ts` (drop grant/revoke, ids `string`, `isSystemAdmin`), `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/stores/useAdminStore.ts` (`:275` filter), `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/routes/layouts/AdminLayout.tsx`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/routes/index.tsx` <!-- Red Team: RT-15 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/public/locales/vi/admin.json`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/public/locales/en/admin.json`
 - Delete: `grantAdmin`/`revokeAdmin` in `admin-users.service.ts` + controller handlers; the direct `User` writes in `banUser`/`unbanUser` (`admin-users.service.ts:253-345`); <!-- Reconcile: X1 --> `grantAdminApi`/`revokeAdminApi` in `adminApi.ts`; i18n keys `users.actions.{grantAdmin,revokeAdmin,grantSuccess,revokeSuccess,grantError,revokeError,cannotRevokeSelf}`, `users.columns.isAdmin` (replaced by `users.columns.isSystemAdmin`). <!-- Red Team: RT-3, RT-15 -->
 
 ## Implementation Steps
 1. BE tests first (see Tests).
 2. `clients/auth.client.ts` via `GrpcClientModule.register` (02) using generated `AuthServiceClient`. Every call takes `md = forwardUser(req)` (04 `libs/auth-jwt/src/grpc-metadata.ts`: the admin's bearer token + `x-request-id`) as the explicit `metadata` argument. No `actor_id`, no service token. <!-- Red Team: RT-2 -->
 3. `AdminRolesService`:
-   - `matrix()` reads `ROLE_PERMISSIONS`/`PERMISSIONS` from `@examio/auth-jwt`;
+   - `matrix()` reads `ROLE_PERMISSIONS`/`PERMISSIONS` from `@kmaedu/auth-jwt`;
    - `listUsers()` runs `ListUsers` + `ListUsers({isSystemAdmin:true,limit:1})` in `Promise.all` for `systemAdminCount`;
    - `setRole()` / `setSystemAdmin()` call the RPC, then write audit;
    - `listChanges()`.
@@ -202,10 +202,10 @@ File ownership (globs): `examio-be/apps/admin-service/src/modules/admin-roles/**
 - [x] e2e + manual verification (evidence: admin trio 36/36, auth CI set 35/35, gateway-probe 16/16, ui-browser-run 27/27)
 
 ## Success Criteria
-- `cd examio-be && yarn typecheck && yarn build:all && yarn test`: exit 0. `cd examio-be/apps/admin-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin-roles.e2e-spec.ts test/ban.e2e-spec.ts` (create `test/jest-e2e.json` if missing): exit 0. <!-- Red Team: RT-3 -->
-- `cd examio-fe && yarn build && yarn lint`: exit 0. <!-- Red Team: RT-11 -->
-- `grep -rn "grant-admin\|revoke-admin\|grantAdminApi" examio-be/apps examio-fe/src` → none.
-- <!-- Red Team: RT-3, RT-15 --> `grep -rn "isAdmin" examio-fe/src/{apis/adminApi.ts,components/admin,stores/useAdminStore.ts} examio-be/apps/admin-service/src` → none. `grep -rn "InvalidateUser\|invalidateUser\|gateway-control" examio-be/apps/admin-service/src` → none. `grep -n "prisma.user.update\|tx.user.update" examio-be/apps/admin-service/src/modules/admin-users/admin-users.service.ts` → only the non-authz `updateUser` path (name/bio/isVerified; moves to auth in 10).
+- `cd kmaedu-be && yarn typecheck && yarn build:all && yarn test`: exit 0. `cd kmaedu-be/apps/admin-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin-roles.e2e-spec.ts test/ban.e2e-spec.ts` (create `test/jest-e2e.json` if missing): exit 0. <!-- Red Team: RT-3 -->
+- `cd kmaedu-fe && yarn build && yarn lint`: exit 0. <!-- Red Team: RT-11 -->
+- `grep -rn "grant-admin\|revoke-admin\|grantAdminApi" kmaedu-be/apps kmaedu-fe/src` → none.
+- <!-- Red Team: RT-3, RT-15 --> `grep -rn "isAdmin" kmaedu-fe/src/{apis/adminApi.ts,components/admin,stores/useAdminStore.ts} kmaedu-be/apps/admin-service/src` → none. `grep -rn "InvalidateUser\|invalidateUser\|gateway-control" kmaedu-be/apps/admin-service/src` → none. `grep -n "prisma.user.update\|tx.user.update" kmaedu-be/apps/admin-service/src/modules/admin-users/admin-users.service.ts` → only the non-authz `updateUser` path (name/bio/isVerified; moves to auth in 10).
 - Promoting a user in the UI shows a new row in "Lịch sử thay đổi" and in `/admin/audit`. The promoted user's next request gets `TOKEN_STALE` → auto-refresh → teacher sidebar (with 09).
 
 ## Risk Assessment
@@ -230,7 +230,7 @@ File ownership (globs): `examio-be/apps/admin-service/src/modules/admin-roles/**
 ## Next Steps
 - Unblocks 09 (switch `AdminRoute` to permissions, `/admin/roles` guarded by `role:assign`), 10 (admin-users list → `ListUsers`, profile edit → `UpdateUserAdmin`; ban already on `SetUserStatus`). <!-- Red Team: RT-3 -->
 - Resolved (reconciliation X1): `SetUserStatus` is implemented here only. P04 has no interim ban, P05 has no ban logic, P10 does not implement or verify `SetUserStatus`. <!-- Reconcile: X1 -->
-- [CROSS-PHASE] `examio-fe/src/routes/index.tsx` is shared with 07. Register `/admin/roles` only after 07 merges (lead to serialise if 07/08 run in parallel).
+- [CROSS-PHASE] `kmaedu-fe/src/routes/index.tsx` is shared with 07. Register `/admin/roles` only after 07 merges (lead to serialise if 07/08 run in parallel).
 - [CROSS-PHASE] `/admin/users` still reads `User` directly (DB). Phase 10 should converge it on auth `ListUsers` (same shape as `/admin/roles/users`) to remove the duplicate list path.
 - [CROSS-PHASE] Optional: add `public/locales/ja/admin.json` (all admin pages, not just roles) in a later i18n pass.
 

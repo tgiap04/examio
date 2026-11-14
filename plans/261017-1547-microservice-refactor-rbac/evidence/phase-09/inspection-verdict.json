@@ -3,9 +3,9 @@
   "criticalCount": 0,
   "decision": "SEALED",
   "acceptanceCovered": [
-    "cd examio-fe && yarn build && yarn lint && yarn test exit 0; yarn test runs >= 5 spec files (rbac x3, quiz-practice progress, admin-roles rules) \u2014 final: fe build 0, lint 0, test 9 files/86 pass (rbac specs, socket-reconnect, quiz-practice progress, admin-roles rules)",
-    "cd examio-be && yarn gen:fe-permissions && git diff --exit-code ../examio-fe/src/types/permissions.generated.ts exit 0; CI runs drift check and FE yarn test \u2014 generator byte-identical (cmp); CI fe-permissions-drift job fails on missing/untracked/drifted file (test -f + ls-files --error-unmatch + git diff); fe job runs yarn test; generated file is committed with this phase",
-    "grep -rnE 'user\\??\\.isAdmin|TeacherRoute' examio-fe/src returns nothing; types/user.ts has no isAdmin and id is string \u2014 final grep 0 matches; types/user.ts id:string, isSystemAdmin, no isAdmin",
+    "cd kmaedu-fe && yarn build && yarn lint && yarn test exit 0; yarn test runs >= 5 spec files (rbac x3, quiz-practice progress, admin-roles rules) \u2014 final: fe build 0, lint 0, test 9 files/86 pass (rbac specs, socket-reconnect, quiz-practice progress, admin-roles rules)",
+    "cd kmaedu-be && yarn gen:fe-permissions && git diff --exit-code ../kmaedu-fe/src/types/permissions.generated.ts exit 0; CI runs drift check and FE yarn test \u2014 generator byte-identical (cmp); CI fe-permissions-drift job fails on missing/untracked/drifted file (test -f + ls-files --error-unmatch + git diff); fe job runs yarn test; generated file is committed with this phase",
+    "grep -rnE 'user\\??\\.isAdmin|TeacherRoute' kmaedu-fe/src returns nothing; types/user.ts has no isAdmin and id is string \u2014 final grep 0 matches; types/user.ts id:string, isSystemAdmin, no isAdmin",
     "every route in routes/index.tsx guarded per the phase-09 route table; forbidden direct URL -> /403 \u2014 routes/index.tsx guarded() matches the plan table row for row (reviewer); live matrix item 3: 9/9 forbidden URLs -> /403",
     "/k landing: TEACHER -> /k/ai-tool, STUDENT -> /k/my-materials, STUDENT+ADMIN -> /admin, from param wins, disabled page flag -> first visible item \u2014 lib/rbac/landing-path.ts + tests; live matrix item 1 PASS for all 3 roles",
     "sidebar shows exactly the per-role item sets in the plan; admin item only with admin:access \u2014 lib/rbac/nav-items.ts + tests; live matrix item 2 exact sets; admin item only with admin:access",
@@ -36,14 +36,14 @@
     {
       "severity": "Medium",
       "category": "Reliability",
-      "location": "examio-fe/src/hooks/useStudyRoomSocket.ts:95",
+      "location": "kmaedu-fe/src/hooks/useStudyRoomSocket.ts:95",
       "summary": "addressed \u2014 SERVICE_UNAVAILABLE 'backoff' is a no-op; socket.io does not auto-reconnect after a middleware CONNECT_ERROR, so the room stays dead in 'connecting'",
       "disposition": "Accept"
     },
     {
       "severity": "Medium",
       "category": "Logic",
-      "location": "examio-fe/src/apis/api.ts:184-191",
+      "location": "kmaedu-fe/src/apis/api.ts:184-191",
       "summary": "addressed \u2014 interceptor logs out on any refresh failure incl. 429/5xx/network, inconsistent with the F3 refreshFailureAction policy used by session-probe",
       "disposition": "Accept"
     },
@@ -57,35 +57,35 @@
     {
       "severity": "Low",
       "category": "Logic",
-      "location": "examio-fe/src/hooks/useStudyRoomSocket.ts:79-82",
+      "location": "kmaedu-fe/src/hooks/useStudyRoomSocket.ts:79-82",
       "summary": "addressed \u2014 the 'refreshed' flag is reset inside reconnect(), so the disconnect-handler reconnect branch is dead; reauthTried resets on each connect with no minimum interval",
       "disposition": "Accept"
     },
     {
       "severity": "Low",
       "category": "Scope",
-      "location": "examio-fe/src/pages/admin/AdminAuditPage.tsx:22-25",
+      "location": "kmaedu-fe/src/pages/admin/AdminAuditPage.tsx:22-25",
       "summary": "out-of-ownership phase-08 tweak bundled into phase 09; commit separately",
       "disposition": "Accept"
     },
     {
       "severity": "Low",
       "category": "Concurrency",
-      "location": "examio-fe/src/apis/api.ts:104-137",
+      "location": "kmaedu-fe/src/apis/api.ts:104-137",
       "summary": "a stale-token 401 that arrives after the shared refresh settled starts a second refresh (harmless with the grace window)",
       "disposition": "Defer"
     },
     {
       "severity": "Low",
       "category": "Security",
-      "location": "examio-be/apps/auth-service/src/auth.controller.ts:377",
+      "location": "kmaedu-be/apps/auth-service/src/auth.controller.ts:377",
       "summary": "refresh response body still returns refreshToken to JS; predates this change, mobile may depend on it",
       "disposition": "Defer"
     },
     {
       "severity": "Low",
       "category": "Logic",
-      "location": "examio-fe/src/pages/exam-session/ExamSessionPage.tsx:65-70",
+      "location": "kmaedu-fe/src/pages/exam-session/ExamSessionPage.tsx:65-70",
       "summary": "public exam-session page ignores sessionUnavailable; a cold-load transient failure still redirects to /login",
       "disposition": "Defer"
     },
@@ -98,21 +98,21 @@
     {
       "severity": "Medium",
       "category": "Logic",
-      "location": "examio-fe/src/hooks/study-room-socket-recovery.ts:54",
+      "location": "kmaedu-fe/src/hooks/study-room-socket-recovery.ts:54",
       "summary": "addressed \u2014 socket reauth refresh calls handleAuthFailure() on any refresh failure incl. 429/5xx/network; branch on refreshFailureAction(errorFailure(err)) and backoff/give-up on 'keep'",
       "disposition": "Accept"
     },
     {
       "severity": "Low",
       "category": "Reliability",
-      "location": "examio-fe/src/hooks/study-room-socket-recovery.ts:53",
+      "location": "kmaedu-fe/src/hooks/study-room-socket-recovery.ts:53",
       "summary": "addressed \u2014 no disposed flag; in-flight refresh at unmount reconnects and re-JOINs (ghost presence)",
       "disposition": "Accept"
     },
     {
       "severity": "Low",
       "category": "Build",
-      "location": "examio-be/libs/redis/src/redis-unavailable.filter.ts:7",
+      "location": "kmaedu-be/libs/redis/src/redis-unavailable.filter.ts:7",
       "summary": "MaxRetriesPerRequestError deep-imported from ioredis/built/errors; match err.name or pin ioredis",
       "disposition": "Defer"
     }

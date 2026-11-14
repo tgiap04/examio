@@ -22,7 +22,7 @@ N/A — no discriminator fields in Key Entities.
 | FR-002 | Deactivate sessions inactive for 30+ days | UserSessionRepository.deactivateInactiveSessions | yes |
 | FR-003 | Delete sessions older than 90 days | UserSessionRepository.deleteOldSessions | yes |
 
-**Source:** `examio-be/apps/auth-service/src/devices/session-cleanup.cron.ts:1-52`
+**Source:** `kmaedu-be/apps/auth-service/src/devices/session-cleanup.cron.ts:1-52`
 
 ### Business Rules
 
@@ -98,9 +98,9 @@ See `edge-cases.md` for the full table of scenarios, expected behavior, and user
 
 | Symbol | Path | Purpose |
 |--------|------|---------|
-| SessionCleanupCron | `examio-be/apps/auth-service/src/devices/session-cleanup.cron.ts:6-52` | Cron job class with three-step cleanup |
-| UserSessionRepository | `examio-be/apps/auth-service/src/devices/repositories/user-session.repository.ts` | Repository with Prisma batch delete/deactivate queries |
-| UserSession (model) | `examio-be/libs/database/src/schema.prisma` | Session entity definition |
+| SessionCleanupCron | `kmaedu-be/apps/auth-service/src/devices/session-cleanup.cron.ts:6-52` | Cron job class with three-step cleanup |
+| UserSessionRepository | `kmaedu-be/apps/auth-service/src/devices/repositories/user-session.repository.ts` | Repository with Prisma batch delete/deactivate queries |
+| UserSession (model) | `kmaedu-be/libs/database/src/schema.prisma` | Session entity definition |
 
 ## Unresolved Questions
 

@@ -4,11 +4,11 @@
 - Research: [researcher-02-frontend.md](../research/researcher-02-frontend.md)
 - Locked design: [brainstorm session record](../../reports/brainstorm-260607-1517-admin-dashboard.md) (Q3: antd Table)
 - Design system: [DESIGN.md](../../../../DESIGN.md)
-- AppProviders (antd theme): [examio-fe/src/provider/AppProviders.tsx](../../../../examio-fe/src/provider/AppProviders.tsx)
-- Stats example: [examio-fe/src/pages/k/ExamRoomSessionAnalyticsPage.tsx](../../../../examio-fe/src/pages/k/ExamRoomSessionAnalyticsPage.tsx) (Recharts usage)
-- AdminRoute: [examio-fe/src/routes/guards/AdminRoute.tsx](../../../../examio-fe/src/routes/guards/AdminRoute.tsx) (new from phase 02)
-- adminApi: [examio-fe/src/apis/adminApi.ts](../../../../examio-fe/src/apis/adminApi.ts) (new from phase 02)
-- useAdminStore: [examio-fe/src/stores/useAdminStore.ts](../../../../examio-fe/src/stores/useAdminStore.ts) (new from phase 02)
+- AppProviders (antd theme): [kmaedu-fe/src/provider/AppProviders.tsx](../../../../kmaedu-fe/src/provider/AppProviders.tsx)
+- Stats example: [kmaedu-fe/src/pages/k/ExamRoomSessionAnalyticsPage.tsx](../../../../kmaedu-fe/src/pages/k/ExamRoomSessionAnalyticsPage.tsx) (Recharts usage)
+- AdminRoute: [kmaedu-fe/src/routes/guards/AdminRoute.tsx](../../../../kmaedu-fe/src/routes/guards/AdminRoute.tsx) (new from phase 02)
+- adminApi: [kmaedu-fe/src/apis/adminApi.ts](../../../../kmaedu-fe/src/apis/adminApi.ts) (new from phase 02)
+- useAdminStore: [kmaedu-fe/src/stores/useAdminStore.ts](../../../../kmaedu-fe/src/stores/useAdminStore.ts) (new from phase 02)
 - Phase 02: [phase-02-frontend-foundation.md](phase-02-frontend-foundation.md)
 - Phase 05: [phase-05-backend-admin-stats.md](phase-05-backend-admin-stats.md)
 
@@ -65,14 +65,14 @@
 ## Architecture
 
 ```
-examio-fe/src/pages/admin/
+kmaedu-fe/src/pages/admin/
   AdminOverviewPage.tsx           ← new
   AdminStatsPage.tsx              ← new
-examio-fe/src/components/admin/
+kmaedu-fe/src/components/admin/
   KpiCard.tsx                     ← new
   RangeSelector.tsx               ← new
   MiniChartCard.tsx               ← new
-examio-fe/src/locales/vi/
+kmaedu-fe/src/locales/vi/
   admin.json                      ← extend with stats keys
 ```
 
@@ -117,15 +117,15 @@ export function MiniChartCard({ title, data, type }: Props) {
 ## Related code files
 
 **New:**
-- `examio-fe/src/pages/admin/AdminOverviewPage.tsx`
-- `examio-fe/src/pages/admin/AdminStatsPage.tsx`
-- `examio-fe/src/components/admin/KpiCard.tsx`
-- `examio-fe/src/components/admin/RangeSelector.tsx`
-- `examio-fe/src/components/admin/MiniChartCard.tsx`
-- `examio-fe/src/components/admin/StatChart.tsx` (large chart cho AdminStats)
+- `kmaedu-fe/src/pages/admin/AdminOverviewPage.tsx`
+- `kmaedu-fe/src/pages/admin/AdminStatsPage.tsx`
+- `kmaedu-fe/src/components/admin/KpiCard.tsx`
+- `kmaedu-fe/src/components/admin/RangeSelector.tsx`
+- `kmaedu-fe/src/components/admin/MiniChartCard.tsx`
+- `kmaedu-fe/src/components/admin/StatChart.tsx` (large chart cho AdminStats)
 
 **Modify:**
-- `examio-fe/src/locales/vi/admin.json` — add stats keys (`admin.overview.*`, `admin.stats.*`, `admin.kpi.*`)
+- `kmaedu-fe/src/locales/vi/admin.json` — add stats keys (`admin.overview.*`, `admin.stats.*`, `admin.kpi.*`)
 
 ## Implementation Steps
 

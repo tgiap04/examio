@@ -27,8 +27,8 @@
 ## Integrations
 - INT001: Auth APIs (API001) are used by mobile auth flows. Linked FR: FR001.
 - INT002: Study/exam/AI/wallet APIs (API003, API004, API005, API006, API009, API010, API016) are represented in shared KMP services. Linked FR: FR003.
-- INT003: Android `ExamioApp` tabs and iOS `ContentView` TabView host mobile screens. Linked FR: FR002.
-- INT004: Android `examio://auth` and iOS `examio` URL scheme support OAuth/auth callbacks. Linked FR: FR004.
+- INT003: Android `KMAEduApp` tabs and iOS `ContentView` TabView host mobile screens. Linked FR: FR002.
+- INT004: Android `kmaedu://auth` and iOS `kmaedu` URL scheme support OAuth/auth callbacks. Linked FR: FR004.
 
 ## Key Entities
 - Mobile DTOs mirror backend models through shared KMP types, including User/Profile/Wallet, QuizSet, FlashcardSet, ExamRoom, ExamSession, ExamAttempt, AIChat, and subscription plan models.
@@ -43,4 +43,4 @@
 - `behavior-logic.md` BL010, BL011, BL071, BL072, BL074.
 - `api-map.md` API001, API003, API004, API005, API006, API009, API010, API016.
 - `permissions.md` PERM040.
-- Source paths cited by artifacts: `examio-app` Android Compose screens, iOS SwiftUI views, shared KMP repositories; exact file paths Need verification.
+- Source paths cited by artifacts: `kmaedu-app` Android Compose screens, iOS SwiftUI views, shared KMP repositories; exact file paths Need verification.

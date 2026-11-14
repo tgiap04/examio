@@ -11,9 +11,9 @@ Raw rows: `evidence/phase-15/temper-raw.json` (`temper-1:` static and earlier li
 
 ## Method
 
-- Scratch copy of `examio-be` (rsync, excluding `node_modules`, `dist`, `venv`, `__pycache__`, every real `.env*` except `*.env.example`; post-copy check: 0 real env files). Dummy `deploy/.env` written in the copy only, values never printed.
+- Scratch copy of `kmaedu-be` (rsync, excluding `node_modules`, `dist`, `venv`, `__pycache__`, every real `.env*` except `*.env.example`; post-copy check: 0 real env files). Dummy `deploy/.env` written in the copy only, values never printed.
 - Compose project `p15t2`, empty volume, sequential image builds (19 build targets, one at a time), gateway on `127.0.0.1:6369`.
-- Stand-ins: s3proxy (`s3backend`) plus an nginx TLS, virtual-host-to-path-style shim (`examio-p15t.s3shim:8443`) as R2; a Turnstile stand-in on `challenges.cloudflare.com` on the internal network with a scratch CA trusted by auth (`NODE_EXTRA_CA_CERTS`), r2 and ai-worker only. Turnstile is required in `NODE_ENV=production` for login; the stand-in answers `success:true`.
+- Stand-ins: s3proxy (`s3backend`) plus an nginx TLS, virtual-host-to-path-style shim (`kmaedu-p15t.s3shim:8443`) as R2; a Turnstile stand-in on `challenges.cloudflare.com` on the internal network with a scratch CA trusted by auth (`NODE_EXTRA_CA_CERTS`), r2 and ai-worker only. Turnstile is required in `NODE_ENV=production` for login; the stand-in answers `success:true`.
 - Money checks read the live DB (`finance."WalletTransaction"` keyed by `idempotencyKey`, `exam."GenerationJob"`, `document."UserStorage"`). Fake AI events were published as broker user `ai` (`source=ai`, `evt_*`, `version 1`, `correlationId`); the content request was captured as the RabbitMQ admin.
 - Each step was recorded with its real process exit code; failed rows are kept.
 
@@ -34,7 +34,7 @@ Raw rows: `evidence/phase-15/temper-raw.json` (`temper-1:` static and earlier li
 - 19 image builds, one at a time: all exit 0 (auth, finance, admin, exam, study-room, vocabulary, r2, document, gateway, ai, plus 9 migrate images and seed).
 - `up -d --wait` from an empty volume: exit 0 on the 3rd attempt. Attempts 1-2 exit 1, both scratch `.env` gaps (not product defects): (1) `PAYMENT_*` SePay settings missing, finance went unhealthy; (2) `GOOGLE_/FACEBOOK_/GITHUB_CLIENT_*` missing, auth `OAuth2Strategy requires a clientID`. Then login needed the Turnstile stand-in (a request-time failure, not a boot failure; see F5); a 4th `up` (exit 0) applied it.
 - One-shots: `auth/finance/admin/exam/study-room/vocabulary/document/ai-migrate` and `rabbitmq-defs`: exit code 0 each (inspected).
-- R2 bucket created on the stand-in (HTTP 200); virtual-host alias resolves on `examio-internal`.
+- R2 bucket created on the stand-in (HTTP 200); virtual-host alias resolves on `kmaedu-internal`.
 - Opt-in seed (`--profile seed run --rm seed`): exit 0. Counts: users 8, wallets 7, subjects 15, word-family categories 10 (same as Phase 12).
 - Not run: a plain `up -d --wait` after the seed (Phase 12 did this).
 
@@ -74,14 +74,14 @@ Scope actually run: the teacher AI tool page, the history and flashcard routes (
 
 - Final run (`ui/ui5-run2.log`): **20 PASS, 0 FAIL**. Covered: AI tool page renders; history and flashcard pages not refused; the PDF is selected; `POST /ai/generate-from-file` 201 and a new job QUEUED; fake completion published for that job; job COMPLETED in DB; the question text is visible in the UI; recents list shows the file with the `1Q` badge; object present (200) before delete; delete 200; row and object gone within 1 min; no refund on delete; file removed from recents; no page JS errors; STUDENT (`user5`, demoted through the admin role API) redirected to `/403`; `user5` restored to TEACHER (200).
 - Upload is part of generation in the FE (the TestGenerator sends the file with `generate-from-file`; there is no standalone upload step), so "upload a file" is covered by the generate step.
-- First run (`ui/ui5-run1.log`, 11 PASS / 10 FAIL, results `#188-#203`): harness failures, superseded. (1) A first-visit driver.js tour overlay blocked the generate click (fixed by presetting the tour key `examio:tour:ai-tool:v1`); (2) the job lookup fell back to the latest job of the user, which was an old COMPLETED job, so the completion was published for a job that was not in flight (ignored by the handler, see invariant note); (3) the delete controls were never reached. The #192 timeout, #193, #196-#198, #199-#203 are all downstream of (1) and (2).
+- First run (`ui/ui5-run1.log`, 11 PASS / 10 FAIL, results `#188-#203`): harness failures, superseded. (1) A first-visit driver.js tour overlay blocked the generate click (fixed by presetting the tour key `kmaedu:tour:ai-tool:v1`); (2) the job lookup fell back to the latest job of the user, which was an old COMPLETED job, so the completion was published for a job that was not in flight (ignored by the handler, see invariant note); (3) the delete controls were never reached. The #192 timeout, #193, #196-#198, #199-#203 are all downstream of (1) and (2).
 
 ## Findings
 
 | # | Where | Finding | Severity | Status |
 |---|---|---|---|---|
 | F1 | `apps/ai-service` unit pytest, `conftest.py` (plan "Fixed while tempering" F1) | Real Gemini key and `load_dotenv` leak into pytest. Temper-1 exit 1 (3 failed, 49 errors). | High (CI red) | Closed. Final code: exit 0, 80 passed, 51 skipped (`temper-2: ai-service-pytest-unit-final-code`); integration rerun exit 0 (131 passed). |
-| F2 | Plan "Delivered beyond plan / deviations" (accepted) | AiService with a USER token (`aud=examio`) returns UNAUTHENTICATED, not PERMISSION_DENIED (the `aud=ai` check runs first). Re-observed in temper-3 (`grpc-user-token-observed-expect-permission-denied` exit 1, recorded as the accepted deviation). | Info | Accepted by the plan. Note: the plan file names no other F2/F3; this is the only other item it lists. |
+| F2 | Plan "Delivered beyond plan / deviations" (accepted) | AiService with a USER token (`aud=kmaedu`) returns UNAUTHENTICATED, not PERMISSION_DENIED (the `aud=ai` check runs first). Re-observed in temper-3 (`grpc-user-token-observed-expect-permission-denied` exit 1, recorded as the accepted deviation). | Info | Accepted by the plan. Note: the plan file names no other F2/F3; this is the only other item it lists. |
 | F3 | `apps/ai-service/src/backend/services/ocr_service.py:131` | The presigned-download guard refuses any host that resolves to a private, loopback, link-local or reserved address, with no configuration switch. An S3-compatible endpoint on a private network (self-hosted MinIO, a Docker-internal stand-in) fails every download with `DOWNLOAD_REJECTED` (FAILED + refund, so money is correct). The real "no model keys" OCR failure cannot be reached on a private-network stack. | Medium for self-hosted deployments (by design for public R2) | Open: owner decision (keep, or allow a configured internal host). Found during 4a. |
 | F4 | Plan text vs code (ledger keys) | Ledger keys are `debit:doc:<id>`, `refund:doc:<id>`, `debit:gen:<id>`, `refund:gen:<id>`; the plan writes `doc:<id>` / `gen:<id>`. Keys are deterministic per id, so retries stay idempotent; the prefixes keep the debit and refund rows apart under `unique(walletId, idempotencyKey)`. | Info | Open: align the plan text. |
 | F5 | `.github/workflows/ci.yml` deploy-config variable list vs boot requirements | The CI list (which only runs `docker compose config`) omits `PAYMENT_*` (finance SePay throws at boot) and `GOOGLE_/FACEBOOK_/GITHUB_CLIENT_ID/SECRET/CALLBACK` (auth OAuth2Strategy throws at boot). A stack built from the CI list passes CI and fails to start. Production login also needs a reachable Cloudflare Turnstile `siteverify`. | Medium (CI gap) | Open. |
@@ -100,7 +100,7 @@ Every row below is kept in `temper-raw.json` with its real exit code. None is hi
 
 **Stage 4 superseded rows (each with the passing rerun named):**
 - **4a `#003`, `#004`, `#006` (user1, first run):** ledger query used `doc:<id>%`, but the keys are `debit:`/`refund:`-prefixed (harness artefact; the debit and balance were right). Superseded by the later 4a runs on user3, which pass (rows after `#068`).
-- **4a `#065`-`#068` (user3, worker still stopped from 4b):** document stayed PENDING because the real worker was stopped; the rerun after `docker start examio-ai-worker` (4a PASS, reason `DOWNLOAD_REJECTED`) supersedes them.
+- **4a `#065`-`#068` (user3, worker still stopped from 4b):** document stayed PENDING because the real worker was stopped; the rerun after `docker start kmaedu-ai-worker` (4a PASS, reason `DOWNLOAD_REJECTED`) supersedes them.
 - **4b/4c `QUOTA_EXCEEDED` (user1, then user3):** `TEACHER` monthly limit of 5 files (`403 QUOTA_EXCEEDED`), an enforced product rule; the cases were re-run on `user3` and `user6` (4b, 4c, 4e: PASS).
 - **4c `#039` (reuse-FAILED, 409 lock):** the reuse-COMPLETED job was still open, so the per-user, per-type generation lock (`409` "job sinh quiz chưa hoàn tất") refused a second job. Reordered so the reuse-FAILED check runs after the cancel; rerun `#098`-`#100` PASS (job QUEUED, 0 debits).
 - **4f `#116` (quota on user3):** superseded by the user6 run (PASS, watchdog `GENERATION_TIMEOUT`).
@@ -116,11 +116,11 @@ Every row below is kept in `temper-raw.json` with its real exit code. None is hi
 ## Teardown
 
 - `docker compose -p p15t2 ... down -v --rmi local --remove-orphans` from the scratch deploy directory: exit 0 (the stubs `p15t2-s3backend`, `p15t2-s3shim`, `p15t2-turnstile` were in the project and removed with it). Recorded as `temper-2: teardown-compose-down-v-rmi-local`.
-- Re-checked at the end: `docker ps -a` lists 0 containers; 0 volumes matching `p15t`/`examio`; 0 networks matching `examio-(edge|egress|internal)`/`p15t`; 0 local `p15t2` images.
-- Earlier, before any run, I removed three leftover `examio-edge`, `examio-egress`, `examio-internal` networks. Their compose labels showed project `p15t` (from the lost earlier run) and they had 0 attached containers. `meetio_*` volumes and `deploy_default` were not touched.
+- Re-checked at the end: `docker ps -a` lists 0 containers; 0 volumes matching `p15t`/`kmaedu`; 0 networks matching `kmaedu-(edge|egress|internal)`/`p15t`; 0 local `p15t2` images.
+- Earlier, before any run, I removed three leftover `kmaedu-edge`, `kmaedu-egress`, `kmaedu-internal` networks. Their compose labels showed project `p15t` (from the lost earlier run) and they had 0 attached containers. `meetio_*` volumes and `deploy_default` were not touched.
 - Scratch secrets deleted: the copy's `deploy/.env`, the rendered `rabbitmq/definitions.json`, the JWT output, the TLS keys and certificates, the cached login cookies. The repo copy (`scratchpad/p15t2/repo`) is removed. Logs, `results.json`, `rows.tsv` and the UI screenshots remain in `scratchpad/p15t2` (no secrets).
 - Process check: the Vite dev server (pid 29720) was stopped by PID after confirming its command line; no `vite`, `pytest`, `ui5`, `playwright` or `docker compose` processes of this run remain; the user's process count is 579 (system-wide `ps` is not the test's responsibility).
-- The real `examio-be` tree was not modified, and its `deploy/.env` and `apps/*/.env` were never read.
+- The real `kmaedu-be` tree was not modified, and its `deploy/.env` and `apps/*/.env` were never read.
 
 ## Final verification set (gate input, coordinator)
 `temper-results.json` is built from `temper-final.json`: every passing `temper-2:` row (stages 2–5 of the resumed run), the `final:` static rows run by the coordinator on the FINAL code after review round 1 (proto lint/breaking, typecheck, unit 2179, check:deps, check:ownership 0, build:all, topology/rabbit 40/40, ai-service unit pytest + ruff gate, the three success-criteria greps), and the `fix-round` rows (implementer runs on the final code against throwaway infra: ai-service integration pytest 139, document e2e 71, exam e2e 269 incl. generation 63, db-isolation 57). Excluded: all `temper-1:` rows (pre-fix code; superseded) and every non-zero `temper-2:` row, each explained in "Excluded or expected-failure rows" above (harness/env gaps, ordering/quota artefacts with passing reruns, expected isolation denials, the stage-5 first run, 4g #127/#129 proven at e2e level `test/upload-money.e2e-spec.ts:151`).

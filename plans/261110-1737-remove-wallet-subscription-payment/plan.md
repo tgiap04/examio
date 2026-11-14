@@ -14,7 +14,7 @@ created: 2026-11-10
 # Remove wallet / subscription / payment
 
 ## Overview
-Examio is now a school product: no credits, wallets, subscriptions or payments. Finance-service, Debit/Refund flows, subscription limits (ai-chat 5/min and 30/chat, document monthly quota), the finance permissions, admin finance UI and the FE wallet/subscription/pricing UI all go. The work ships as **one release** on a branch off `develop` with PR label `migration:contract`. There is no expand/contract split and no data migration, because the new stack was never deployed and cutover resets the DB.
+KMAEdu is now a school product: no credits, wallets, subscriptions or payments. Finance-service, Debit/Refund flows, subscription limits (ai-chat 5/min and 30/chat, document monthly quota), the finance permissions, admin finance UI and the FE wallet/subscription/pricing UI all go. The work ships as **one release** on a branch off `develop` with PR label `migration:contract`. There is no expand/contract split and no data migration, because the new stack was never deployed and cutover resets the DB.
 
 Decisions: [clarifications.md](./clarifications.md). Inventories: [backend money flows](./reports/scout-01-backend-money-flows.md) · [finance-service, infra, authz](./reports/scout-02-finance-service-infra-authz.md) · [frontend](./reports/scout-03-frontend.md).
 
@@ -44,7 +44,7 @@ Credential rate limit, gateway `rateLimits`, `maxBodySize`, the 1 MB snapshot ca
 
 ## NOT in scope
 - A student AI chat page, or granting students `ai_chat:use` / `document:upload` (later, together).
-- examio-app (mobile): not touched.
+- kmaedu-app (mobile): not touched.
 - A new CD flow (`deploy.yml` is already deleted).
 - Re-running the rebuild-spec skill. Generated docs other than permissions-matrix are edited by hand.
 
@@ -56,13 +56,13 @@ Owed before merge:
 - Commit: stage the untracked files by path (new migrations, new specs, `document-queue.service.ts`). `git status --short | grep '^??'` must show only `plans/`. Reviewer W1.
 - PR carries label `migration:contract`. The two contract migrations trip `lint-migrations.sh` (7 DROPs) without it.
 - Browser pass with `yarn dev`: landing, `/k/profile`, `/admin` overview, stats, audit, user drawer. Not run.
-- Leftover S3: delete the no-op `delete process.env.FINANCE_GRPC_URL` at `examio-be/apps/content-service/test/worker.e2e-spec.ts:32`.
+- Leftover S3: delete the no-op `delete process.env.FINANCE_GRPC_URL` at `kmaedu-be/apps/content-service/test/worker.e2e-spec.ts:32`.
 - Final gate not in any report: `yarn typecheck`, `yarn build:all`, full `yarn test`, `test/authz`, buf breaking exit 0, permissions drift diff, FE `yarn build && lint && test`, ai-service ruff and pytest, coverage on changed logic.
 
 Owed after merge:
-- Remove the temporary buf `ignore_only` entries (`FILE_NO_DELETE`, `FIELD_NO_DELETE`, `ENUM_VALUE_NO_DELETE`) in `examio-be/proto/buf.yaml`.
+- Remove the temporary buf `ignore_only` entries (`FILE_NO_DELETE`, `FIELD_NO_DELETE`, `ENUM_VALUE_NO_DELETE`) in `kmaedu-be/proto/buf.yaml`.
 - Ops: `docker compose down -v` on dev stacks, or the manual steps in phase 05 ops note.
 
 Deferred review suggestions (`reports/reviewer-261110-finance-removal.md`): M2 (delete orphan upload when `submit` fails), S1 (R2 cleanup on sign failure in register), S2 (drop unused Redis from ai-chat), S4 (dead `currency-vnd` formatter), S5 (dead `userSubscription` mock in auth spec), S7 (warn on unused `SERVICE_CLIENTS` entries).
 
-Out of scope, known gap: examio-app still calls the removed `/wallet` routes. Not touched in this release.
+Out of scope, known gap: kmaedu-app still calls the removed `/wallet` routes. Not touched in this release.

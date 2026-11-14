@@ -12,7 +12,7 @@
     "Postgres port 5411 not published, DATABASE_URL not echoed, Node 22 images",
     "dead code removed (ocr-service, unregistered proxies, ai-service score/agent/benchmark, FE dead APIs) and ai-service still imports and boots",
     "route inventory snapshot committed and differs from HEAD only by the removed dead routes",
-    "examio-fe yarn build and yarn lint exit 0",
+    "kmaedu-fe yarn build and yarn lint exit 0",
     "Prisma spike verdict recorded in plan.md"
   ],
   "regressionChecked": [
@@ -33,14 +33,14 @@
     {
       "severity": "Low",
       "category": "Hygiene",
-      "location": "examio-be/.DS_Store:1",
+      "location": "kmaedu-be/.DS_Store:1",
       "summary": "untracked .DS_Store; add to .gitignore, do not commit",
       "disposition": "Defer"
     },
     {
       "severity": "Low",
       "category": "Contract",
-      "location": "examio-be/apps/gateway-service/src/gateway.module.ts:44",
+      "location": "kmaedu-be/apps/gateway-service/src/gateway.module.ts:44",
       "summary": "QuizPracticeProxyController and 4 flashcard-study session routes were registered at HEAD (not unregistered); removal is documented in inventory diff and has no FE/mobile callers",
       "disposition": "Defer"
     },

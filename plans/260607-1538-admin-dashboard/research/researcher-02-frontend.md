@@ -1,6 +1,6 @@
 # Research Report — Frontend Admin Dashboard Patterns
 
-Work context: `/Users/tgiap.dev/devs/examio/examio-fe`
+Work context: `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe`
 Date: 2026-06-07
 
 ## 1. Routes wiring
@@ -111,7 +111,7 @@ Data shape (assumed, to confirm with backend):
 - For 2-step refund/credit/tier: open first confirm ("Bạn có chắc?") → onOk opens a second `Modal` (a real form with amount/reason/tier) → on submit of second modal call API → close both + toast.
 - Reuse shadcn `Dialog` for the form modal to keep visual consistency; antd `Modal.confirm` for the trigger.
 
-## 9. Design tokens (from `/Users/tgiap.dev/devs/examio/DESIGN.md`)
+## 9. Design tokens (from `/Users/tgiap.dev/devs/kmaedu/DESIGN.md`)
 
 Already wired in `src/provider/AppProviders.tsx:11-46` as `antd` `ConfigProvider` token. Reuse as-is:
 

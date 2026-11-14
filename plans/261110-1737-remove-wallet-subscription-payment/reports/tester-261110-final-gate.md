@@ -2,13 +2,13 @@
 
 Branch `feat/remove-finance`, all changes uncommitted, base `develop`. No production code edited, no git state changed, docs untouched.
 
-Logs: `/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/98946b76-ed84-4c4e-b639-fed5f91646c2/scratchpad/rmfin-logs/` (one `.log` per step, `e2e-summary.txt` holds the exit codes).
+Logs: `/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu/98946b76-ed84-4c4e-b639-fed5f91646c2/scratchpad/rmfin-logs/` (one `.log` per step, `e2e-summary.txt` holds the exit codes).
 
 ## Setup (throwaway, mirrors `.github/workflows/ci.yml` job `be-e2e`)
 
-- Containers, all removed at the end: `examio-rmfin-pg` (`pgvector/pgvector:pg16`, host 55432), `examio-rmfin-redis` (`redis:7`, host 56379, no password), `examio-rmfin-rmq` (`rabbitmq:3.13`, host 55672, with `deploy/rabbitmq/definitions.json` rendered by `render-definitions.cjs` and mounted as CI does).
+- Containers, all removed at the end: `kmaedu-rmfin-pg` (`pgvector/pgvector:pg16`, host 55432), `kmaedu-rmfin-redis` (`redis:7`, host 56379, no password), `kmaedu-rmfin-rmq` (`rabbitmq:3.13`, host 55672, with `deploy/rabbitmq/definitions.json` rendered by `render-definitions.cjs` and mounted as CI does).
 - Non-default host ports. The CI commands hardcode `localhost:5432/6379/5672`, so those were remapped in the env and in the commands. Images are the same as CI.
-- Env: a separate file built from the CI job's `env:` block, with the auth values from `scripts/ci-ephemeral-auth-env.sh`. Every run used `env -i`. Every DB host is `localhost:55432` (checked). `examio-be/.env` and `apps/*/.env` were never opened. The apps only load dotenv in `main.ts` and the CLI, which the tests do not import.
+- Env: a separate file built from the CI job's `env:` block, with the auth values from `scripts/ci-ephemeral-auth-env.sh`. Every run used `env -i`. Every DB host is `localhost:55432` (checked). `kmaedu-be/.env` and `apps/*/.env` were never opened. The apps only load dotenv in `main.ts` and the CLI, which the tests do not import.
 - Roles and schemas: `deploy/postgres/init/01-service-schemas.sh` run directly with the CI passwords.
 - The first attempt was disturbed by a stray second runner (a trace run piped into `head`). I killed it, rebuilt the containers from zero, and every reported number below is from one clean pass on the rebuilt stack.
 
@@ -83,7 +83,7 @@ No product defect was found in either finding. Neither is a harness wiring probl
 ## Cleanup
 
 - Removed: the three containers and their volumes (`docker rm -f -v`).
-- Removed: `examio-be/deploy/rabbitmq/definitions.json`. It is gitignored, but it held the CI dummy broker passwords. The rendering step overwrote any previous copy.
+- Removed: `kmaedu-be/deploy/rabbitmq/definitions.json`. It is gitignored, but it held the CI dummy broker passwords. The rendering step overwrote any previous copy.
 - Changed on disk, all gitignored: regenerated Prisma clients under `src/generated`.
 - Git: no commit, stash, checkout, reset, restore or rm. `git ls-files -o` shows only the change's own new files.
 
@@ -91,7 +91,7 @@ No product defect was found in either finding. Neither is a harness wiring probl
 
 Test-file edits by the coordinator (`generation-lifecycle.e2e-spec.ts` only): the STUDENT case sends `bytes: 1` (line 178), and the watchdog describe has a `beforeEach` that deletes open QUEUED/PROCESSING `GenerationJob` rows (line 306). No production code or harness changed.
 
-Stack rebuilt the same way: `examio-rmfin-` containers on localhost:55432 / 56379 / 55672, the same env file with `env -i`, all 8 migration sets applied (exit 0).
+Stack rebuilt the same way: `kmaedu-rmfin-` containers on localhost:55432 / 56379 / 55672, the same env file with `env -i`, all 8 migration sets applied (exit 0).
 
 | Run | Command | Exit | Suites | Tests |
 |---|---|---|---|---|
@@ -100,8 +100,8 @@ Stack rebuilt the same way: `examio-rmfin-` containers on localhost:55432 / 5637
 
 - The lifecycle file passed in both runs (`PASS test/generation/generation-lifecycle.e2e-spec.ts`), so the EPIPE case and the watchdog case are both green.
 - Run 2 started with 38 leftover rows from run 1 (`FAILED` 22, `COMPLETED` 8, `CANCELLED` 4, `QUEUED` 4). The watchdog's `beforeEach` cleared the open rows, so the reaper count held. This is the cross-run check that the earlier manual truncation stood in for.
-- Logs: `/private/tmp/claude-501/-Users-tgiap-dev-devs-examio/98946b76-ed84-4c4e-b639-fed5f91646c2/scratchpad/rmfin-logs/rbac-content-rerun1.log` and `rbac-content-rerun2.log`.
-- Cleanup: containers and volumes removed, `examio-be/deploy/rabbitmq/definitions.json` removed again. No git state changed, nothing committed.
+- Logs: `/private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu/98946b76-ed84-4c4e-b639-fed5f91646c2/scratchpad/rmfin-logs/rbac-content-rerun1.log` and `rbac-content-rerun2.log`.
+- Cleanup: containers and volumes removed, `kmaedu-be/deploy/rabbitmq/definitions.json` removed again. No git state changed, nothing committed.
 
 The first red result (`rbac-content` exit 1, 179 / 180) is superseded by this re-run. The content step is now green.
 

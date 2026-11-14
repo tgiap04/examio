@@ -1,126 +1,126 @@
 [
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && yarn install --immutable",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && yarn install --immutable",
     "exitCode": 0,
     "summary": "[install] (no summary lines) (1s, log 001-install.log)",
     "ts": "2026-10-20T13:33:42.536Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && yarn prisma:merge",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && yarn prisma:merge",
     "exitCode": 0,
     "summary": "[prisma-merge] (no summary lines) (1s, log 002-prisma_merge.log)",
     "ts": "2026-10-20T13:33:43.546Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && yarn prisma:generate",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && yarn prisma:generate",
     "exitCode": 0,
     "summary": "[prisma-generate] (no summary lines) (1s, log 003-prisma_generate.log)",
     "ts": "2026-10-20T13:33:44.236Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && yarn typecheck",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && yarn typecheck",
     "exitCode": 0,
     "summary": "[typecheck] (no summary lines) (12s, log 004-typecheck.log)",
     "ts": "2026-10-20T13:33:45.559Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && yarn build:all",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && yarn build:all",
     "exitCode": 0,
     "summary": "[build-all] (no summary lines) (24s, log 005-build_all.log)",
     "ts": "2026-10-20T13:33:58.010Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && TZ=UTC yarn test",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && TZ=UTC yarn test",
     "exitCode": 0,
     "summary": "[unit-tests] Test Suites: 144 passed, 144 total | Tests:       1578 passed, 1578 total | Snapshots:   0 total | Time:        10.705 s, estimated 16 s (12s, log 006-unit_tests.log)",
     "ts": "2026-10-20T13:34:22.509Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && TZ=UTC yarn test test/authz",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && TZ=UTC yarn test test/authz",
     "exitCode": 0,
     "summary": "[authz-tests] Test Suites: 8 passed, 8 total | Tests:       250 passed, 250 total | Snapshots:   0 total | Time:        7.086 s, estimated 9 s (8s, log 007-authz_tests.log)",
     "ts": "2026-10-20T13:34:34.081Z"
   },
   {
-    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p07/run && /Users/tgiap.dev/devs/examio/examio-be/node_modules/.bin/prisma migrate deploy --schema=/Users/tgiap.dev/devs/examio/examio-be/libs/database/src/schema.prisma",
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p07/run && /Users/tgiap.dev/devs/kmaedu/kmaedu-be/node_modules/.bin/prisma migrate deploy --schema=/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/database/src/schema.prisma",
     "exitCode": 0,
     "summary": "[migrate-deploy-fresh] (no summary lines) (1s, log 008-migrate_deploy_fresh.log)",
     "ts": "2026-10-20T13:34:49.731Z"
   },
   {
-    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-examio/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p07/run && /Users/tgiap.dev/devs/examio/examio-be/node_modules/.bin/prisma migrate diff --from-url \"$DATABASE_URL\" --to-schema-datamodel /Users/tgiap.dev/devs/examio/examio-be/libs/database/src/schema.prisma --exit-code",
+    "command": "cd /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p07/run && /Users/tgiap.dev/devs/kmaedu/kmaedu-be/node_modules/.bin/prisma migrate diff --from-url \"$DATABASE_URL\" --to-schema-datamodel /Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/database/src/schema.prisma --exit-code",
     "exitCode": 0,
     "summary": "[drift-check] (no summary lines) (1s, log 009-drift_check.log)",
     "ts": "2026-10-20T13:34:50.578Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be/apps/exam-service && ../../node_modules/.bin/jest --config test/jest-e2e.json",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service && ../../node_modules/.bin/jest --config test/jest-e2e.json",
     "exitCode": 0,
     "summary": "[exam-e2e-folder-run1] Test Suites: 17 passed, 17 total | Tests:       203 passed, 203 total | Snapshots:   0 total | Time:        18.61 s, estimated 25 s (19s, log 010-exam_e2e_folder_run1.log)",
     "ts": "2026-10-20T13:34:51.114Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be/apps/exam-service && ../../node_modules/.bin/jest --config test/jest-e2e.json",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service && ../../node_modules/.bin/jest --config test/jest-e2e.json",
     "exitCode": 0,
     "summary": "[exam-e2e-folder-run2] Test Suites: 17 passed, 17 total | Tests:       203 passed, 203 total | Snapshots:   0 total | Time:        17.141 s, estimated 19 s (17s, log 011-exam_e2e_folder_run2.log)",
     "ts": "2026-10-20T13:35:09.971Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service && ../../node_modules/.bin/jest --config test/jest-e2e.json",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service && ../../node_modules/.bin/jest --config test/jest-e2e.json",
     "exitCode": 0,
     "summary": "[gateway-e2e] Test Suites: 8 passed, 8 total | Tests:       62 passed, 62 total | Snapshots:   0 total | Time:        22.813 s, estimated 26 s (23s, log 012-gateway_e2e.log)",
     "ts": "2026-10-20T13:35:27.358Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be/apps/auth-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/register-outbox.e2e-spec.ts test/token.e2e-spec.ts test/service-token.e2e-spec.ts test/role-change.e2e-spec.ts test/public-profiles.e2e-spec.ts test/login-throttle.e2e-spec.ts",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/auth-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/register-outbox.e2e-spec.ts test/token.e2e-spec.ts test/service-token.e2e-spec.ts test/role-change.e2e-spec.ts test/public-profiles.e2e-spec.ts test/login-throttle.e2e-spec.ts",
     "exitCode": 0,
     "summary": "[auth-e2e-ci-list] Test Suites: 6 passed, 6 total | Tests:       36 passed, 36 total | Snapshots:   0 total | Time:        13.2 s (13s, log 013-auth_e2e_ci_list.log)",
     "ts": "2026-10-20T13:35:50.417Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be/apps/auth-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/ownership",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/auth-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/ownership",
     "exitCode": 0,
     "summary": "[auth-e2e-ownership] Test Suites: 1 passed, 1 total | Tests:       4 passed, 4 total | Snapshots:   0 total | Time:        3.517 s, estimated 4 s (4s, log 014-auth_e2e_ownership.log)",
     "ts": "2026-10-20T13:36:03.892Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be/apps/finance-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-authz-changed.e2e-spec.ts",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/finance-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/user-authz-changed.e2e-spec.ts",
     "exitCode": 0,
     "summary": "[finance-e2e-ci-list] Test Suites: 1 passed, 1 total | Tests:       11 passed, 11 total | Snapshots:   0 total | Time:        6.466 s, estimated 7 s (7s, log 015-finance_e2e_ci_list.log)",
     "ts": "2026-10-20T13:36:07.626Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be/apps/admin-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin.e2e-spec.ts test/admin-roles.e2e-spec.ts",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/admin-service && ../../node_modules/.bin/jest --config test/jest-e2e.json test/admin.e2e-spec.ts test/admin-roles.e2e-spec.ts",
     "exitCode": 0,
     "summary": "[admin-e2e-ci-list] Test Suites: 2 passed, 2 total | Tests:       17 passed, 17 total | Snapshots:   0 total | Time:        7.06 s (7s, log 016-admin_e2e_ci_list.log)",
     "ts": "2026-10-20T13:36:14.315Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && COMPOSE_DEFAULTS=1 ./scripts/boot-built-services.sh",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && COMPOSE_DEFAULTS=1 ./scripts/boot-built-services.sh",
     "exitCode": 0,
     "summary": "[boot-built-services-compose-defaults] (no summary lines) (7s, log 017-boot_built_services_compose_defaults.log)",
     "ts": "2026-10-20T13:36:21.591Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-be && ./scripts/boot-built-services.sh",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && ./scripts/boot-built-services.sh",
     "exitCode": 0,
     "summary": "[boot-built-services-plain] (no summary lines) (7s, log 018-boot_built_services_plain.log)",
     "ts": "2026-10-20T13:36:28.615Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-fe && yarn build",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-fe && yarn build",
     "exitCode": 0,
     "summary": "[fe-build] (no summary lines) (11s, log 019-fe_build.log)",
     "ts": "2026-10-20T13:36:41.892Z"
   },
   {
-    "command": "cd /Users/tgiap.dev/devs/examio/examio-fe && yarn lint",
+    "command": "cd /Users/tgiap.dev/devs/kmaedu/kmaedu-fe && yarn lint",
     "exitCode": 0,
     "summary": "[fe-lint] ✖ 32 problems (0 errors, 32 warnings) (6s, log 020-fe_lint.log)",
     "ts": "2026-10-20T13:36:52.720Z"
   },
   {
-    "command": "cd examio-be && ! grep -rn \"Math.random\" apps/exam-service/src/modules/flashcardset apps/exam-service/src/modules/examsession apps/exam-service/src/modules/quizset",
+    "command": "cd kmaedu-be && ! grep -rn \"Math.random\" apps/exam-service/src/modules/flashcardset apps/exam-service/src/modules/examsession apps/exam-service/src/modules/quizset",
     "exitCode": 0,
     "summary": "[static-gate] no Math.random in flashcardset, examsession, quizset",
     "ts": "2026-10-20T13:39:43.994Z"

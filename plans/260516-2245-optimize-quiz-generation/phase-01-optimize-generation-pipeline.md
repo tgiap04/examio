@@ -2,8 +2,8 @@
 
 ## Context
 
-- [generation_service.py](../../examio-be/apps/ai-service/src/backend/services/generation_service.py)
-- [hybrid_retrieval_service.py](../../examio-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py)
+- [generation_service.py](../../kmaedu-be/apps/ai-service/src/backend/services/generation_service.py)
+- [hybrid_retrieval_service.py](../../kmaedu-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py)
 
 ## Overview
 
@@ -33,11 +33,11 @@ Bottleneck chính: LLM generation gọi nhiều batch (MAX_ITEMS_PER_CALL=6, con
 ## Related Code Files
 
 ### Modify
-- `examio-be/apps/ai-service/src/backend/services/generation_service.py`
+- `kmaedu-be/apps/ai-service/src/backend/services/generation_service.py`
 
 ### Read (context)
-- `examio-be/apps/ai-service/src/llm/model_manager.py`
-- `examio-be/apps/ai-service/src/backend/utils/prompt_utils.py`
+- `kmaedu-be/apps/ai-service/src/llm/model_manager.py`
+- `kmaedu-be/apps/ai-service/src/backend/utils/prompt_utils.py`
 
 ## Implementation Steps
 

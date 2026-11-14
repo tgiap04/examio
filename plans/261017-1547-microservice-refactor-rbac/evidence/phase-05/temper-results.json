@@ -1,28 +1,28 @@
 {
   "commands": [
     {
-      "command": "cd examio-be && env -i PATH HOME yarn install --immutable",
+      "command": "cd kmaedu-be && env -i PATH HOME yarn install --immutable",
       "exitCode": 0,
       "status": "pass",
       "summary": "lockfile immutable; install ok",
       "ts": "2026-10-19T20:13:06.921Z"
     },
     {
-      "command": "cd examio-be && env -i PATH HOME yarn typecheck",
+      "command": "cd kmaedu-be && env -i PATH HOME yarn typecheck",
       "exitCode": 0,
       "status": "pass",
       "summary": "six service typechecks clean",
       "ts": "2026-10-19T20:13:06.921Z"
     },
     {
-      "command": "cd examio-be && env -i PATH HOME yarn build:all",
+      "command": "cd kmaedu-be && env -i PATH HOME yarn build:all",
       "exitCode": 0,
       "status": "pass",
       "summary": "six services built from the round-4 tree",
       "ts": "2026-10-19T20:13:06.921Z"
     },
     {
-      "command": "cd examio-be && env -i PATH HOME TZ=UTC NODE_ENV=test yarn test",
+      "command": "cd kmaedu-be && env -i PATH HOME TZ=UTC NODE_ENV=test yarn test",
       "exitCode": 0,
       "status": "pass",
       "summary": "115/115 suites, 1117/1117 tests",
@@ -99,7 +99,7 @@
       "ts": "2026-10-19T20:13:06.921Z"
     },
     {
-      "command": "prisma migrate deploy (fresh examio_ci, cwd outside repo) + migrate diff --exit-code",
+      "command": "prisma migrate deploy (fresh kmaedu_ci, cwd outside repo) + migrate diff --exit-code",
       "exitCode": 0,
       "status": "pass",
       "summary": "migrations applied; no schema drift",
@@ -134,14 +134,14 @@
       "ts": "2026-10-19T20:13:06.921Z"
     },
     {
-      "command": "cd examio-fe && yarn build",
+      "command": "cd kmaedu-fe && yarn build",
       "exitCode": 0,
       "status": "pass",
       "summary": "vite build ok",
       "ts": "2026-10-19T20:13:06.921Z"
     },
     {
-      "command": "cd examio-fe && yarn lint",
+      "command": "cd kmaedu-fe && yarn lint",
       "exitCode": 0,
       "status": "pass",
       "summary": "0 errors, 32 warnings (pre-existing)",

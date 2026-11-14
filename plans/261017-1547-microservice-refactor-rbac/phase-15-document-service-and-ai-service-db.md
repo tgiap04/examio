@@ -2,7 +2,7 @@
 
 ## Context Links
 - [plan.md](./plan.md) · [planner-brief.md](./reports/planner-brief.md) decisions 1, 9, 13 · [red-team-changes.md](./reports/red-team-changes.md) RT-1, RT-2, RT-8, RT-10, RT-11, RT-15 (authoritative over this file's earlier text) <!-- Red Team: RT-1, RT-2, RT-8, RT-10, RT-11, RT-15 -->
-- `/Users/tgiap.dev/devs/examio/ARCHITECTURE.md` §4.4 (document row), §4.5 ai-service, §6.2 (`ai/v1`, `document/v1`, `r2/v1`), §6.3 events, §9.3 flow, §12 P6, **§13 checklist**
+- `/Users/tgiap.dev/devs/kmaedu/ARCHITECTURE.md` §4.4 (document row), §4.5 ai-service, §6.2 (`ai/v1`, `document/v1`, `r2/v1`), §6.3 events, §9.3 flow, §12 P6, **§13 checklist**
 - [researcher-02 §2 Python gRPC, §3 aio-pika outbox/consumer](./research/researcher-02-migration-mechanics-report.md)
 - Prior: [phase-03](./phase-03-messaging-foundation.md) (envelope, one retry tier + DLQ), [phase-04](./phase-04-identity-and-rbac-core.md) (service tokens), [phase-10](./phase-10-cut-cross-db-access.md) (`Debit`/`Refund`, shared finance client), [phase-11](./phase-11-database-per-service.md) (`r2_delete_tasks`)
 
@@ -34,7 +34,7 @@
 ## Requirements
 Functional — document-service
 - HTTP (paths unchanged, `document:upload`, owner checks → 404): `POST /ai/upload`, `POST /ai/quick-upload`, `GET /ai/recent-uploads`, `GET|DELETE /ai/upload/:uploadId`, `POST /ai/upload-image`, `POST /r2/image`. Multer disk storage, 50 MB limit.
-- gRPC `examio.document.v1.DocumentService` (user-scoped; forwarded user token, actor = token `sub`): <!-- Red Team: RT-1, RT-2, RT-8 -->
+- gRPC `kmaedu.document.v1.DocumentService` (user-scoped; forwarded user token, actor = token `sub`): <!-- Red Team: RT-1, RT-2, RT-8 -->
 ```proto
 rpc CreateUpload(CreateUploadRequest) returns (CreateUploadResponse);
   // {filename, mimetype, bytes data, charge_credits, reuse_duplicate} → {document, reused}
@@ -57,17 +57,17 @@ rpc DeleteDocuments(DeleteDocumentsRequest) returns (DeleteDocumentsResponse);
 Functional — ai-service
 - DB `schema=ai` (role `ai_svc`, `DB_SEARCH_PATH=ai,extensions`), Alembic baseline (`version_table_schema='ai'`): `Document` (`embeddings extensions.vector`), `DocumentEntity`, `UserStorageGraph`, `UserStorageGraphGroup`, `outbox_events`, `processed_events`. Keep the `userStorageId` column, no FK. One shared asyncpg pool (`max_size=5`) instead of 7, plus a separate pool (`max_size=2`) for the outbox relay. <!-- Red Team: RT-10 -->
 - Remove the runtime DDL and the `AI_RUNTIME_DDL` flag. Remove every SQL touching `UserStorage`/`HistoryGenerated*`.
-- gRPC `examio.ai.v1.AiService` on :50051 (`grpc.aio.server(maximum_concurrent_rpcs=64)`, SIGTERM `stop(grace=20)`): `StreamChat` (server-stream), `Query`, `GenerateWordFamily`, `ListModels`. Callers have already authorized storage ids.
+- gRPC `kmaedu.ai.v1.AiService` on :50051 (`grpc.aio.server(maximum_concurrent_rpcs=64)`, SIGTERM `stop(grace=20)`): `StreamChat` (server-stream), `Query`, `GenerateWordFamily`, `ListModels`. Callers have already authorized storage ids.
 - <!-- Red Team: RT-2 --> Service-token interceptor (`src/backend/auth/service_token.py`, `python-jose`): verifies the `authorization` metadata against `AUTH_JWKS_URL` (JWKS cached, refetch on unknown `kid`), `algorithms=['RS256']`, `iss`, `aud=ai`, `exp`, `roles ∋ SERVICE`, `sub ∈ ALLOWED_CALLERS` (a code constant in `service_token.py`, not env: `svc:exam, svc:ai-chat, svc:vocabulary, svc:content`; `exam` removed in 14) <!-- Reconcile: X6 -->. Missing/invalid → `UNAUTHENTICATED`; wrong caller → `PERMISSION_DENIED`. The FastAPI app keeps only `/health` (+ compat routes below; `/metrics` arrives with phase 17 <!-- Reconcile: X9 -->), which still check `INTERNAL_SERVICE_TOKEN` until 13.
 - <!-- Red Team: RT-10 --> Messaging (Python, moved here from P03): `src/backend/messaging/`:
   - `envelope.py`: `build(type, data, source, correlation_id)` / `parse(body) -> Envelope` — the P03 envelope `{id: "evt_<ulid>", type, version: 1, occurredAt, source, correlationId, data}`, version ≠ 1 → permanent error. No `traceparent` (deferred).
   - `consumer.py`: aio-pika `connect_robust`, queue `ai.events` with ONE retry tier `ai.retry.30s` (TTL 30 s, DLX back to `ai.events`) and `ai.dlq`; `x-retry-count` ≥ 5 or permanent → `nack(requeue=false)` → DLQ. Queue args byte-identical to `libs/messaging` (shared topology contract test). Idempotency via `processed_events (consumer, event_id)` in the same tx as the effect. The consumer rejects (permanent) an envelope whose `source` does not match the routing-key domain (`document.*` must come from `document`, `content.*` from `content`/`exam` until 14).
   - `outbox_relay.py`: same algorithm as `libs/messaging` — claim rows in a short tx (`FOR UPDATE SKIP LOCKED LIMIT 100`, set `locked_until = now()+30s`, commit), publish OUTSIDE the tx with publisher confirms, then mark `published_at`; failures → `attempts+1`, backoff. Daily purge: outbox published > 7 d, `processed_events` > 14 d.
-- <!-- Red Team: RT-2 --> RabbitMQ users (P03 pattern, edited in `deploy/rabbitmq/definitions.template.json`, rendered at deploy <!-- Reconcile: X6 -->): `ai` — write on `examio.events` with routing keys `^ai\.` only, read on `ai.events` (+ its retry queue); `document` — write `^document\.`, read `document.events` (+ retry). Python and Nest services get their own credentials via env (`RABBITMQ_URL` per service).
+- <!-- Red Team: RT-2 --> RabbitMQ users (P03 pattern, edited in `deploy/rabbitmq/definitions.template.json`, rendered at deploy <!-- Reconcile: X6 -->): `ai` — write on `kmaedu.events` with routing keys `^ai\.` only, read on `ai.events` (+ its retry queue); `document` — write `^document\.`, read `document.events` (+ retry). Python and Nest services get their own credentials via env (`RABBITMQ_URL` per service).
 - Events: consume `document.uploaded` (download via `downloadUrl`, OCR/chunk/embed/graph; prefetch 1, CPU in an executor) → `ai.document.processed|failed`. `document.deleted` → delete vectors/entities/graph. `content.generation.requested {jobId, userId, storageId, type, options, model}` → process the doc inline if no chunks → `ai.generation.completed {jobId, type, items}` (inline ≤ 512 KB) | `ai.generation.failed {jobId, reason}`. Outbox relay as above.
 - Roles: `api` (gRPC + FastAPI `/health`) <!-- Reconcile: X9 -->, `worker` (aio-pika + relay + purge), `migrate` (`alembic upgrade head`).
 - HTTP compat: keep only `/chat/query`, `/chat/stream`, `/generate/word-family` behind `AI_HTTP_COMPAT=true` (callers removed in 13). Delete all other routers now.
-- Extend the phase-02 `scripts/gen_grpc.sh` (`grpc_tools.protoc`) to also emit `examio/{ai,document}/v1` + `events/v1`. Remove any leftover `src/backend/grpc_generated/` if phase 02 has not already done so.
+- Extend the phase-02 `scripts/gen_grpc.sh` (`grpc_tools.protoc`) to also emit `kmaedu/{ai,document}/v1` + `events/v1`. Remove any leftover `src/backend/grpc_generated/` if phase 02 has not already done so.
 
 Functional — exam `modules/ai` (generation stays in exam until 14) <!-- Red Team: RT-1 -->
 - `GenerationJob {id, storageId, userId, type, status, chargeKey, chargedAmount, error?, historyId?, createdAt}`; `status ∈ PENDING_CHARGE | QUEUED | PROCESSING | COMPLETED | FAILED | CANCELLED`; `chargeKey = gen:<jobId>`.
@@ -113,17 +113,17 @@ Two regex entries both match `/ai/upload/:id/history`; the more specific `ai-upl
 
 ## Related Code Files
 File ownership (globs):
-- Create: `/Users/tgiap.dev/devs/examio/examio-be/apps/document-service/**`, `.../proto/examio/{document,ai}/v1/**`, `.../proto/examio/events/v1/{document,ai}_events.proto`, `.../deploy/compose/document.yml`, `.../deploy/env/{document,ai}.env.example`, `.../apps/exam-service/prisma/schema/generation.prisma`
-- Create (moved from P03) <!-- Red Team: RT-10 -->: `/Users/tgiap.dev/devs/examio/examio-be/apps/ai-service/src/backend/messaging/{__init__.py,envelope.py,consumer.py,outbox_relay.py,purge.py}` + `src/backend/tests/messaging/**`
-- Create <!-- Red Team: RT-2 -->: `/Users/tgiap.dev/devs/examio/examio-be/apps/ai-service/src/backend/auth/{__init__.py,service_token.py}`
-- Modify: `/Users/tgiap.dev/devs/examio/examio-be/apps/ai-service/**` (alembic/, src/, Dockerfile, pyproject.toml), `.../deploy/compose/ai.yml`
-- Modify: `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/{ai,r2}/**`, `.../apps/exam-service/prisma/schema/{document,ai}.prisma` (delete) + exam migration, `.../proto/examio/r2/v1/**` (additive `CreatePresignedDownload`; `DeleteObjects` exists since P02)
-- Modify <!-- Red Team: RT-15 -->: `/Users/tgiap.dev/devs/examio/examio-be/apps/r2-service/src/r2-service.controller.ts` (delete `internal/upload` + `assertInternalToken`, `:47-90`), r2 env (drop `INTERNAL_SERVICE_TOKEN`); `@ServiceOnly` decorators in the r2 controller + `document` <!-- Reconcile: X6 -->
-- Modify <!-- Red Team: RT-1, RT-2 -->: `/Users/tgiap.dev/devs/examio/examio-be/apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts` (verify P10's `Debit`/`Refund` decorator caller lists contain `document`), `/Users/tgiap.dev/devs/examio/examio-be/deploy/rabbitmq/definitions.template.json` (users `ai`, `document`) <!-- Reconcile: X6 -->
+- Create: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/document-service/**`, `.../proto/kmaedu/{document,ai}/v1/**`, `.../proto/kmaedu/events/v1/{document,ai}_events.proto`, `.../deploy/compose/document.yml`, `.../deploy/env/{document,ai}.env.example`, `.../apps/exam-service/prisma/schema/generation.prisma`
+- Create (moved from P03) <!-- Red Team: RT-10 -->: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ai-service/src/backend/messaging/{__init__.py,envelope.py,consumer.py,outbox_relay.py,purge.py}` + `src/backend/tests/messaging/**`
+- Create <!-- Red Team: RT-2 -->: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ai-service/src/backend/auth/{__init__.py,service_token.py}`
+- Modify: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ai-service/**` (alembic/, src/, Dockerfile, pyproject.toml), `.../deploy/compose/ai.yml`
+- Modify: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/{ai,r2}/**`, `.../apps/exam-service/prisma/schema/{document,ai}.prisma` (delete) + exam migration, `.../proto/kmaedu/r2/v1/**` (additive `CreatePresignedDownload`; `DeleteObjects` exists since P02)
+- Modify <!-- Red Team: RT-15 -->: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/r2-service/src/r2-service.controller.ts` (delete `internal/upload` + `assertInternalToken`, `:47-90`), r2 env (drop `INTERNAL_SERVICE_TOKEN`); `@ServiceOnly` decorators in the r2 controller + `document` <!-- Reconcile: X6 -->
+- Modify <!-- Red Team: RT-1, RT-2 -->: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/finance-service/src/modules/wallet/wallet.grpc.controller.ts` (verify P10's `Debit`/`Refund` decorator caller lists contain `document`), `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/rabbitmq/definitions.template.json` (users `ai`, `document`) <!-- Reconcile: X6 -->
 - Carve-outs: the 3 items listed above
-- Modify (line-level YAML entries above): `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/config/routes.yaml`
-- Modify (append-only, serialize with 12): `/Users/tgiap.dev/devs/examio/examio-be/{nest-cli.json,package.json,jest.config.js,deploy/docker-compose.yml,scripts/check-model-ownership.ts}`, `.../deploy/postgres/init/01-service-schemas.sh` (remove the temporary `ai_svc` exam grant lines)
-- Delete: `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/r2/r2.controller.ts`, `.../apps/ai-service/src/backend/api/{file,generation}.py`, `.../apps/ai-service/src/backend/rabbitmq_consumer.py` (replaced by `messaging/consumer.py`) <!-- Red Team: RT-10 -->
+- Modify (line-level YAML entries above): `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/config/routes.yaml`
+- Modify (append-only, serialize with 12): `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/{nest-cli.json,package.json,jest.config.js,deploy/docker-compose.yml,scripts/check-model-ownership.ts}`, `.../deploy/postgres/init/01-service-schemas.sh` (remove the temporary `ai_svc` exam grant lines)
+- Delete: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/r2/r2.controller.ts`, `.../apps/ai-service/src/backend/api/{file,generation}.py`, `.../apps/ai-service/src/backend/rabbitmq_consumer.py` (replaced by `messaging/consumer.py`) <!-- Red Team: RT-10 -->
 
 ## Implementation Steps
 1. Protos `document/v1` (incl. `DeleteDocuments`, `CreateUpload.reuse_duplicate`), `ai/v1`, the r2 additions, the events → `buf lint/breaking/generate`. Extend the phase-02 Python gen script `apps/ai-service/scripts/gen_grpc.sh`. <!-- Red Team: RT-1, RT-8 -->
@@ -167,12 +167,12 @@ Write first:
 - [x] Gateway YAML entries + route snapshot
 
 ## Success Criteria
-- `grep -rnE '"(UserStorage|HistoryGenerated[A-Za-z]*)"|CREATE TABLE|CREATE INDEX' /Users/tgiap.dev/devs/examio/examio-be/apps/ai-service/src` → no output.
-- <!-- Red Team: RT-15 --> `grep -rn "INTERNAL_SERVICE_TOKEN\|x-internal-service-token\|internal/upload" /Users/tgiap.dev/devs/examio/examio-be/apps/r2-service /Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/ai /Users/tgiap.dev/devs/examio/examio-be/apps/document-service --exclude-dir=node_modules` → no output. (Remaining users — ai-service compat, exam ai-chat, vocabulary — are removed in 13.)
-- `grep -rn "UpdateBalance\|deductCredits" /Users/tgiap.dev/devs/examio/examio-be/apps/document-service /Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/ai` → no output. <!-- Red Team: RT-1 -->
-- `docker compose exec postgres psql -U ai_svc -d examio -c 'select 1 from exam."UserStorage"'` → permission denied (or relation missing).
-- `cd /Users/tgiap.dev/devs/examio/examio-be/apps/ai-service && ./venv/bin/pytest -q && ./venv/bin/alembic upgrade head` green. `cd ../.. && yarn build && yarn test` green.
-- `grpcurl -plaintext ai-service:50051 list` (from an internal container) shows `examio.ai.v1.AiService`; a `Query` call without a token → `Unauthenticated`. <!-- Red Team: RT-2 -->
+- `grep -rnE '"(UserStorage|HistoryGenerated[A-Za-z]*)"|CREATE TABLE|CREATE INDEX' /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ai-service/src` → no output.
+- <!-- Red Team: RT-15 --> `grep -rn "INTERNAL_SERVICE_TOKEN\|x-internal-service-token\|internal/upload" /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/r2-service /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/ai /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/document-service --exclude-dir=node_modules` → no output. (Remaining users — ai-service compat, exam ai-chat, vocabulary — are removed in 13.)
+- `grep -rn "UpdateBalance\|deductCredits" /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/document-service /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/ai` → no output. <!-- Red Team: RT-1 -->
+- `docker compose exec postgres psql -U ai_svc -d kmaedu -c 'select 1 from exam."UserStorage"'` → permission denied (or relation missing).
+- `cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ai-service && ./venv/bin/pytest -q && ./venv/bin/alembic upgrade head` green. `cd ../.. && yarn build && yarn test` green.
+- `grpcurl -plaintext ai-service:50051 list` (from an internal container) shows `kmaedu.ai.v1.AiService`; a `Query` call without a token → `Unauthenticated`. <!-- Red Team: RT-2 -->
 - Manual: upload a PDF → status PENDING → COMPLETED, balance debited once; generate-from-file → quiz history, balance debited once by upload + generation; cancel a queued job → balance restored; delete upload → vectors gone (`select count(*) from ai."Document" where "userStorageId"=$1` = 0) and the R2 object gone within 1 min. <!-- Red Team: RT-1, RT-8 -->
 
 ## Risk Assessment
@@ -215,7 +215,7 @@ Part D (exam generation): `GenerationJob.refundedAt` plus a refund sweeper in th
 
 Fixed while tempering:
 - F1 (temper stage 1): `src/backend/tests/test_hybrid_retrieval_service.py::test_graph_builder_uses_bruteforce_when_faiss_disabled` called the real Gemini embedding API (fails with `No Gemini API key configured for embeddings` without a key, so the new CI `ai-service` job would go red), and `src/llm/{config,model_manager}.py` call `load_dotenv()` at import, so a developer's real `.env` (real API keys, a remote `DATABASE_URL`) could leak into pytest. Fixed: `conftest.py` makes `dotenv.load_dotenv` a no-op for the test session; the test patches `get_pg_vector_store` with precomputed vectors (no key, network or DB).
-- AiService with a USER access token (`aud=examio`) answers UNAUTHENTICATED, not PERMISSION_DENIED: the `aud=ai` check runs first. Still refused; accepted (live temper stage 3). PERMISSION_DENIED is for a valid `aud=ai` token from a non-allowlisted caller (e.g. `svc:document`).
+- AiService with a USER access token (`aud=kmaedu`) answers UNAUTHENTICATED, not PERMISSION_DENIED: the `aud=ai` check runs first. Still refused; accepted (live temper stage 3). PERMISSION_DENIED is for a valid `aud=ai` token from a non-allowlisted caller (e.g. `svc:document`).
 - Review round 1 H1 (+L1, L7 document side): document-service charge compensation is claim-then-refund with bookkeeping. `UserStorage.refundSettledAt` (migration `20261024100000_refund_settled_at`); only a definitive refusal (INSUFFICIENT_CREDITS, WALLET_NOT_FOUND, PERMISSION_DENIED, INVALID_ARGUMENT) settles at once; an ambiguous Debit first claims PENDING_CHARGE -> FAILED (+ R2 key queued, one tx), then refunds, and the reaper retries every open refund, a Refund NOT_FOUND settling only after the 2 min grace (`REFUND_SWEEP_GRACE_MS`). A refund can no longer hit a row a concurrent request confirmed. Still answers 403 CHARGE_UNAVAILABLE. e2e: late-committing debit refunded once via the sweeper (time injected), NOT_FOUND grace, L1 concurrent confirm, L7.
 - Review round 1 L2: `ai.document.failed` refund clears `creditCharged` in the same tx; a FAILED -> COMPLETED document after a refund no longer reads as charged, and a second failure refunds nothing (worker-pipeline e2e).
 - Review round 1 M1: reuse of a FAILED/PENDING document is free only when an earlier job of that user on that storage was really charged then FAILED/CANCELLED (`hasChargedFailedJob`); quick-upload then generate pays 5. Refused jobs and Refund-NOT_FOUND-settled jobs get `chargedAmount` 0 so they never count as a charged failure. An `unknown` debit on a NEW upload now discards it (`ChargeUnknownException`). Concern: refund + free retry means a failed charged job that is retried and succeeds costs the user nothing (coordinator rule, as specified).

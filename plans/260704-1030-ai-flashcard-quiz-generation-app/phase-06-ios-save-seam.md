@@ -13,17 +13,17 @@
 - Reuse existing Swift study/exam views to land on after save.
 
 ## Requirements
-- Add Swift save-history calls to `ExamioAPIClient` (mirror BE `{setIds[], historyId, label?}`).
+- Add Swift save-history calls to `KMAEduAPIClient` (mirror BE `{setIds[], historyId, label?}`).
 - Result preview + set picker (existing set or create-new) in `AiView`.
 - Post-save navigation + list refresh.
 
 ## Related Code Files
-- Modify: `iosApp/ExamioApp/ExamioAPIClient.swift` (save-history methods)
-- Modify: `iosApp/ExamioApp/Views/AiView.swift`, `Features/AI/AIToolViewModel.swift` (review + save + nav)
-- Reuse: `iosApp/ExamioApp/Views/StudyView.swift`, `MyExamsView.swift` (target after save)
+- Modify: `iosApp/KMAEduApp/KMAEduAPIClient.swift` (save-history methods)
+- Modify: `iosApp/KMAEduApp/Views/AiView.swift`, `Features/AI/AIToolViewModel.swift` (review + save + nav)
+- Reuse: `iosApp/KMAEduApp/Views/StudyView.swift`, `MyExamsView.swift` (target after save)
 
 ## Implementation Steps
-1. Add `saveHistoryToQuizset`/`saveHistoryToFlashcardSet` to `ExamioAPIClient` (Codable request bodies).
+1. Add `saveHistoryToQuizset`/`saveHistoryToFlashcardSet` to `KMAEduAPIClient` (Codable request bodies).
 2. Result preview UI in `AiView`.
 3. Set-picker (existing + create-new via existing create endpoints).
 4. Save → navigate to target set view → refresh.

@@ -133,11 +133,11 @@ Return ONLY the JSON, no markdown, no explanation.
 ## Related Code Files
 
 ### Files to Modify
-- `examio-be/apps/ai-service/src/backend/api/generation.py` — add endpoint
-- `examio-be/apps/ai-service/src/backend/services/generation_service.py` — add generation logic
+- `kmaedu-be/apps/ai-service/src/backend/api/generation.py` — add endpoint
+- `kmaedu-be/apps/ai-service/src/backend/services/generation_service.py` — add generation logic
 
 ### Files to Create
-- `examio-be/apps/ai-service/src/backend/schemas/word_family.py` — Pydantic schemas
+- `kmaedu-be/apps/ai-service/src/backend/schemas/word_family.py` — Pydantic schemas
 
 ## Implementation Steps
 

@@ -1,6 +1,6 @@
 # System Overview
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Architecture Type**: Distributed multi-service (NestJS monorepo + Python FastAPI + React 19 SPA)
 
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-examio is a multi-tenant exam/quiz platform serving students and teachers. Authoring users create quiz sets, flashcard sets, and exam rooms; students take timed sessions under AES-256-CBC question encryption with JWT answer tokens. The backend is a NestJS monorepo of 6 services + one Python FastAPI AI service, fronted by a gateway HTTP proxy. Payments are handled via SePay QR code and an internal wallet with credit-based subscription gating. AI features (generation, document RAG, AI teacher chat) are offloaded to a Python FastAPI worker. Infrastructure runs on PostgreSQL + Redis + RabbitMQ (topic exchange `examio.events`).
+kmaedu is a multi-tenant exam/quiz platform serving students and teachers. Authoring users create quiz sets, flashcard sets, and exam rooms; students take timed sessions under AES-256-CBC question encryption with JWT answer tokens. The backend is a NestJS monorepo of 6 services + one Python FastAPI AI service, fronted by a gateway HTTP proxy. Payments are handled via SePay QR code and an internal wallet with credit-based subscription gating. AI features (generation, document RAG, AI teacher chat) are offloaded to a Python FastAPI worker. Infrastructure runs on PostgreSQL + Redis + RabbitMQ (topic exchange `kmaedu.events`).
 
 For architecture diagrams and tech stack details, see [architecture.md](architecture.md).
 
@@ -36,7 +36,7 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 **Context**: auth-service, finance-service, and r2-service all need to be called by other services synchronously (e.g., exam-service verifying subscription credits before generating AI content, or fetching a signed R2 upload URL).
 
-**Decision**: These three services expose gRPC APIs on dedicated ports (auth=50051, wallet=50053, r2=50054). exam-service and auth-service embed gRPC client modules rather than HTTP-calling the gateway. Proto definitions live in `@examio/common`.
+**Decision**: These three services expose gRPC APIs on dedicated ports (auth=50051, wallet=50053, r2=50054). exam-service and auth-service embed gRPC client modules rather than HTTP-calling the gateway. Proto definitions live in `@kmaedu/common`.
 
 **Rationale**: gRPC provides typed contracts, bidirectional streaming support, and lower latency than HTTP proxy chains for internal calls. Avoids circular gateway routing.
 
@@ -44,7 +44,7 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 **Context**: Wallet creation must happen automatically when a new user registers, without coupling auth-service to finance-service at the HTTP level.
 
-**Decision**: auth-service publishes `auth.user.created` to the durable topic exchange `examio.events`. finance-service's `UserEventHandler` subscribes to this event and creates a wallet idempotently (with a 20-credit welcome bonus). 14+ event types are defined in `EventType` enum but currently unused.
+**Decision**: auth-service publishes `auth.user.created` to the durable topic exchange `kmaedu.events`. finance-service's `UserEventHandler` subscribes to this event and creates a wallet idempotently (with a 20-credit welcome bonus). 14+ event types are defined in `EventType` enum but currently unused.
 
 **Rationale**: Decouples service lifecycle and failure domains. If finance-service is down during registration, the event is retained and replayed. New cross-service workflows can be added by publishing/consuming events without code changes to unrelated services.
 
@@ -62,7 +62,7 @@ For architecture diagrams and tech stack details, see [architecture.md](architec
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     examio-fe (React 19 SPA)                │
+│                     kmaedu-fe (React 19 SPA)                │
 │          Zustand stores · Axios · React Router             │
 └────────────────────────┬────────────────────────────────────┘
                          │ HTTP (X-Device-ID header)
@@ -81,7 +81,7 @@ gRPC:50051      gRPC:50053 gRPC:50054
            ai-service :8000 (Python FastAPI)
            RAG · embedding · AI chat · ReAct agent
 
-Infrastructure: PostgreSQL (Prisma shared) · Redis (cache) · RabbitMQ (topic exchange examio.events)
+Infrastructure: PostgreSQL (Prisma shared) · Redis (cache) · RabbitMQ (topic exchange kmaedu.events)
 ```
 
 ### Service Summary
@@ -115,7 +115,7 @@ gateway-service proxies HTTP requests to downstream services by URL prefix. Down
 
 ### RabbitMQ (async, event-driven)
 
-Exchange: `examio.events` (topic, durable). Only wired event: `auth.user.created` → `UserEventHandler` in finance-service (wallet creation).
+Exchange: `kmaedu.events` (topic, durable). Only wired event: `auth.user.created` → `UserEventHandler` in finance-service (wallet creation).
 
 ### AI Orchestration (HTTP, exam-service → ai-service)
 

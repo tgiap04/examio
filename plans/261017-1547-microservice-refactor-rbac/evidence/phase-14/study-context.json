@@ -1,9 +1,9 @@
 {
-  "task": "Phase 14 Extract Content & Assessment: content-service (quizset, flashcardset incl. word-family-to-flashcard, flashcard-study, quiz-practice, AI generation jobs + reaper, student-content, r2_delete_tasks for thumbnails, gRPC examio.content.v1.ContentService GetQuizSetSnapshot/GetQuizSetsByIds/GetUserContentStats, publishes content.quizset.deleted + content.generation.requested) and assessment-service (examroom, examsession, examattempt, cheatinglog, student-exam; ExamSession.quizSnapshot immutable snapshot + drift/refresh-snapshot + LRU; ExamRoom.quizSetId without FK + sourceDeleted); exam-service deleted; gateway/deploy/CI/allowlists switched; FE snapshot-outdated banner",
+  "task": "Phase 14 Extract Content & Assessment: content-service (quizset, flashcardset incl. word-family-to-flashcard, flashcard-study, quiz-practice, AI generation jobs + reaper, student-content, r2_delete_tasks for thumbnails, gRPC kmaedu.content.v1.ContentService GetQuizSetSnapshot/GetQuizSetsByIds/GetUserContentStats, publishes content.quizset.deleted + content.generation.requested) and assessment-service (examroom, examsession, examattempt, cheatinglog, student-exam; ExamSession.quizSnapshot immutable snapshot + drift/refresh-snapshot + LRU; ExamRoom.quizSetId without FK + sourceDeleted); exam-service deleted; gateway/deploy/CI/allowlists switched; FE snapshot-outdated banner",
   "mode": "code",
   "acceptanceCriteria": [
-    "exam-service gone: apps/exam-service does not exist and git grep for exam-service|EXAM_SERVICE_URL in *.ts, *.yaml, *.yml, *.json, *.example under examio-be -> no output; no exam upstream in gateway routes.yaml; exam removed from r2/finance/ai-service allowlists, RabbitMQ users and postgres init list",
-    "yarn build && yarn typecheck && yarn test && check:deps && check:ownership --strict green; buf lint + breaking (content/v1 is additive) green; content and assessment compose services healthy from an empty volume; examio-fe yarn build && yarn lint && yarn test green",
+    "exam-service gone: apps/exam-service does not exist and git grep for exam-service|EXAM_SERVICE_URL in *.ts, *.yaml, *.yml, *.json, *.example under kmaedu-be -> no output; no exam upstream in gateway routes.yaml; exam removed from r2/finance/ai-service allowlists, RabbitMQ users and postgres init list",
+    "yarn build && yarn typecheck && yarn test && check:deps && check:ownership --strict green; buf lint + breaking (content/v1 is additive) green; content and assessment compose services healthy from an empty volume; kmaedu-fe yarn build && yarn lint && yarn test green",
     "snapshot: POST /examsessions stores quizSnapshot + quizSnapshotHash (stable content_hash from one content-hash.ts shared with GetQuizSetsByIds); attempt start, GET :id/quiz, secure-quiz, submit/grading and available-labels read only the snapshot; teacher edits a question and deletes the quiz set -> student submit grades with the original answers; room shows sourceDeleted and a new session -> 422 QUIZSET_DELETED; > 1 MB snapshot -> 422 QUIZSET_TOO_LARGE",
     "drift + refresh: host get-by-id returns snapshotOutdated/canRefreshSnapshot; POST /examsessions/:id/refresh-snapshot changes the hash while UPCOMING with 0 attempts, else 409 SNAPSHOT_LOCKED (row lock shared with attempt start; race never yields a started attempt plus a changed snapshot); PUT never changes the hash; content UNAVAILABLE -> snapshotOutdated null with 200; snapshot LRU keyed <sessionId>:<hash>; list endpoints never select quizSnapshot",
     "contracts and privacy: GetQuizSetSnapshot non-owner -> NOT_FOUND, no token -> UNAUTHENTICATED; no pre-submit exam:take/flashcard:study response contains answer, accessCode or whitelist (answers only after submit when the teacher enabled showAnswersAfterSubmit); no content or assessment response contains an email key; profile enrichment uses only GetPublicProfilesByIds; permission matrix (STUDENT/TEACHER/ADMIN) holds in both services incl. refresh-snapshot",
@@ -13,24 +13,24 @@
     "FE: teacher session views show the banner \"Đề đã thay đổi kể từ khi tạo phiên — Cập nhật đề\" when snapshotOutdated, the \"Cập nhật đề\" button only when canRefreshSnapshot, and refresh clears it; the sourceDeleted notice shows on the room; /auth/me unreachable on the exam session page shows SessionUnavailable; teacher creates quiz -> room -> session, student takes and submits, teacher sees results (live through the gateway); flashcard study and AI generate-from-file keep their contracts (content e2e)"
   ],
   "touchpoints": [
-    "examio-be/apps/content-service",
-    "examio-be/apps/assessment-service",
-    "examio-be/apps/exam-service (deleted)",
-    "examio-be/proto/examio/content/v1",
-    "examio-be/proto/examio/events/v1",
-    "examio-be/libs/grpc",
-    "examio-be/libs/messaging",
-    "examio-be/libs/common/src/events",
-    "examio-be/apps/gateway-service/config/routes.yaml",
-    "examio-be/apps/r2-service",
-    "examio-be/apps/finance-service/src/modules/wallet",
-    "examio-be/apps/auth-service/src/token",
-    "examio-be/apps/ai-service/src/backend/auth",
-    "examio-be/deploy",
+    "kmaedu-be/apps/content-service",
+    "kmaedu-be/apps/assessment-service",
+    "kmaedu-be/apps/exam-service (deleted)",
+    "kmaedu-be/proto/kmaedu/content/v1",
+    "kmaedu-be/proto/kmaedu/events/v1",
+    "kmaedu-be/libs/grpc",
+    "kmaedu-be/libs/messaging",
+    "kmaedu-be/libs/common/src/events",
+    "kmaedu-be/apps/gateway-service/config/routes.yaml",
+    "kmaedu-be/apps/r2-service",
+    "kmaedu-be/apps/finance-service/src/modules/wallet",
+    "kmaedu-be/apps/auth-service/src/token",
+    "kmaedu-be/apps/ai-service/src/backend/auth",
+    "kmaedu-be/deploy",
     ".github/workflows/ci.yml",
-    "examio-fe/src/apis/examSessionApi.ts",
-    "examio-fe/src/stores/useExamRoomDetailStore.ts",
-    "examio-fe/src/pages/k"
+    "kmaedu-fe/src/apis/examSessionApi.ts",
+    "kmaedu-fe/src/stores/useExamRoomDetailStore.ts",
+    "kmaedu-fe/src/pages/k"
   ],
   "blastRadius": [
     "quiz/flashcard authoring, sharing, study, practice",
@@ -45,7 +45,7 @@
   ],
   "contracts": [
     "HTTP paths and response shapes unchanged except added snapshotOutdated/canRefreshSnapshot/sourceDeleted and new POST /examsessions/:id/refresh-snapshot, 409 SNAPSHOT_LOCKED, 422 QUIZSET_DELETED/QUIZSET_TOO_LARGE",
-    "new gRPC examio.content.v1.ContentService",
+    "new gRPC kmaedu.content.v1.ContentService",
     "new event content.quizset.deleted; content.generation.requested now sourced by content natively",
     "behaviour change: deleting a QuizSet no longer cascades to exam rooms",
     "env: CONTENT_SERVICE_URL, ASSESSMENT_SERVICE_URL, CONTENT_GRPC_URL, content/assessment DB/broker/client secrets; EXAM_SERVICE_URL removed"

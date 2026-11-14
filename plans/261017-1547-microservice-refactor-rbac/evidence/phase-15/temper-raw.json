@@ -110,7 +110,7 @@
   {
     "command": "temper-2: infra-rabbit-render",
     "exitCode": 0,
-    "summary": "exit 0 in 0s; last: rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/repo/deploy/rabbitmq/definitions.json (8 users)",
+    "summary": "exit 0 in 0s; last: rendered /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/repo/deploy/rabbitmq/definitions.json (8 users)",
     "ts": "2026-10-23T21:24:13.950Z"
   },
   {
@@ -320,115 +320,115 @@
   {
     "command": "temper-3: build-auth-migrate",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.131Z"
   },
   {
     "command": "temper-3: build-auth",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.174Z"
   },
   {
     "command": "temper-3: build-finance-migrate",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.216Z"
   },
   {
     "command": "temper-3: build-finance",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.256Z"
   },
   {
     "command": "temper-3: build-admin-migrate",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.295Z"
   },
   {
     "command": "temper-3: build-admin",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.335Z"
   },
   {
     "command": "temper-3: build-exam-migrate",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.375Z"
   },
   {
     "command": "temper-3: build-exam",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.416Z"
   },
   {
     "command": "temper-3: build-study-room-migrate",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.458Z"
   },
   {
     "command": "temper-3: build-study-room",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.500Z"
   },
   {
     "command": "temper-3: build-vocabulary-migrate",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.543Z"
   },
   {
     "command": "temper-3: build-vocabulary",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.584Z"
   },
   {
     "command": "temper-3: build-r2",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.625Z"
   },
   {
     "command": "temper-3: build-document-migrate",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.666Z"
   },
   {
     "command": "temper-3: build-document",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.705Z"
   },
   {
     "command": "temper-3: build-gateway",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.745Z"
   },
   {
     "command": "temper-3: build-rabbitmq-defs",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.784Z"
   },
   {
     "command": "temper-3: build-ai-migrate",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.824Z"
   },
   {
     "command": "temper-3: build-ai",
     "exitCode": 127,
-    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
+    "summary": "exit 127 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/rec15.sh: line 9: timeout: command not found",
     "ts": "2026-10-23T21:29:41.865Z"
   },
   {
@@ -566,17 +566,17 @@
   {
     "command": "temper-3: s3-stubs-mkbucket",
     "exitCode": 0,
-    "summary": "exit 0 in 0s; last: buckets: examio-p15t",
+    "summary": "exit 0 in 0s; last: buckets: kmaedu-p15t",
     "ts": "2026-10-23T21:45:31.535Z"
   },
   {
     "command": "temper-3: s3-up-wait-empty-volume",
     "exitCode": 0,
-    "summary": "exit 0 in 33s; last:  Container examio-gateway Healthy ",
+    "summary": "exit 0 in 33s; last:  Container kmaedu-gateway Healthy ",
     "ts": "2026-10-23T21:46:04.534Z"
   },
   {
-    "command": "temper-3: s3-shim-attach-examio-internal",
+    "command": "temper-3: s3-shim-attach-kmaedu-internal",
     "exitCode": 0,
     "summary": "exit 0 in 0s; last: ",
     "ts": "2026-10-23T21:46:04.641Z"
@@ -770,13 +770,13 @@
   {
     "command": "temper-3: grpc-mint-alg-none-token",
     "exitCode": 1,
-    "summary": "exit 1 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/stage3-grpc.sh: line 14: !sec: unbound variable",
+    "summary": "exit 1 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/stage3-grpc.sh: line 14: !sec: unbound variable",
     "ts": "2026-10-23T21:51:08.359Z"
   },
   {
     "command": "temper-3: grpc-no-token-unauthenticated",
     "exitCode": 1,
-    "summary": "exit 1 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-examio-examio-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/stage3-grpc.sh: line 20: hdr[@]: unbound variable",
+    "summary": "exit 1 in 0s; last: /private/tmp/claude-501/-Users-tgiap-dev-devs-kmaedu-kmaedu-fe/7ab92c2f-a17b-4d9b-bd0b-11e5945d7f4b/scratchpad/p15t/stage3-grpc.sh: line 20: hdr[@]: unbound variable",
     "ts": "2026-10-23T21:51:08.415Z"
   },
   {
@@ -956,83 +956,83 @@
   {
     "command": "temper-2: stage3b-up-wait-empty-volume",
     "exitCode": 1,
-    "summary": "exit 1 in 12s; dependency failed to start: container examio-finance is unhealthy",
+    "summary": "exit 1 in 12s; dependency failed to start: container kmaedu-finance is unhealthy",
     "ts": "2026-10-24T06:47:27.000Z"
   },
   {
     "command": "temper-2: stage3b-up-wait-empty-volume-attempt1",
     "exitCode": 1,
-    "summary": "exit 1 after 36s: examio-finance unhealthy: SePay configuration not set (scratch .env gap, fixed by adding dummy PAYMENT_* vars)",
+    "summary": "exit 1 after 36s: kmaedu-finance unhealthy: SePay configuration not set (scratch .env gap, fixed by adding dummy PAYMENT_* vars)",
     "ts": "2026-10-24T06:47:40.000Z"
   },
   {
     "command": "temper-2: stage3b-up-wait-empty-volume",
     "exitCode": 1,
-    "summary": "exit 1 in 14s; dependency failed to start: container examio-auth is unhealthy",
+    "summary": "exit 1 in 14s; dependency failed to start: container kmaedu-auth is unhealthy",
     "ts": "2026-10-24T06:47:54.000Z"
   },
   {
     "command": "temper-2: stage3b-up-wait-empty-volume-attempt2",
     "exitCode": 1,
-    "summary": "exit 1: examio-auth unhealthy: OAuth2Strategy requires clientID (scratch .env gap, fixed by adding dummy OAuth settings)",
+    "summary": "exit 1: kmaedu-auth unhealthy: OAuth2Strategy requires clientID (scratch .env gap, fixed by adding dummy OAuth settings)",
     "ts": "2026-10-24T06:48:01.000Z"
   },
   {
     "command": "temper-2: stage3b-up-wait-empty-volume",
     "exitCode": 0,
-    "summary": "exit 0 in 32s;  Container examio-gateway Healthy",
+    "summary": "exit 0 in 32s;  Container kmaedu-gateway Healthy",
     "ts": "2026-10-24T06:48:33.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-auth-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-auth-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-finance-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-finance-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-admin-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-admin-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-exam-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-exam-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-study-room-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-study-room-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-vocabulary-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-vocabulary-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-document-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-document-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-ai-migrate",
+    "command": "temper-2: stage3b-oneshot-kmaedu-ai-migrate",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
-    "command": "temper-2: stage3b-oneshot-examio-rabbitmq-defs",
+    "command": "temper-2: stage3b-oneshot-kmaedu-rabbitmq-defs",
     "exitCode": 0,
     "summary": "exit 0, state exited",
     "ts": "2026-10-24T06:48:39.000Z"
@@ -1040,13 +1040,13 @@
   {
     "command": "temper-2: stage3b-s3-mkbucket",
     "exitCode": 0,
-    "summary": "curl exit 0 (bucket examio-p15t on s3proxy stub)",
+    "summary": "curl exit 0 (bucket kmaedu-p15t on s3proxy stub)",
     "ts": "2026-10-24T06:48:39.000Z"
   },
   {
     "command": "temper-2: stage3b-shim-alias-resolves",
     "exitCode": 0,
-    "summary": "virtual-host alias examio-p15t.s3shim on examio-internal",
+    "summary": "virtual-host alias kmaedu-p15t.s3shim on kmaedu-internal",
     "ts": "2026-10-24T06:48:40.000Z"
   },
   {
@@ -1076,7 +1076,7 @@
   {
     "command": "temper-2: stage4-up-turnstile-standin-auth-ca",
     "exitCode": 0,
-    "summary": "exit 0 in 13s;  Container examio-vocabulary Healthy",
+    "summary": "exit 0 in 13s;  Container kmaedu-vocabulary Healthy",
     "ts": "2026-10-24T06:50:05.000Z"
   },
   {
@@ -1088,19 +1088,19 @@
   {
     "command": "temper-2: stage4-up-s3-tls-standin",
     "exitCode": 0,
-    "summary": "exit 0 in 46s;  Container examio-gateway Healthy",
+    "summary": "exit 0 in 46s;  Container kmaedu-gateway Healthy",
     "ts": "2026-10-24T06:52:58.000Z"
   },
   {
     "command": "temper-2: stage4-ai-worker-restart",
     "exitCode": 0,
-    "summary": "exit 0: docker start examio-ai-worker (real worker resumes)",
+    "summary": "exit 0: docker start kmaedu-ai-worker (real worker resumes)",
     "ts": "2026-10-24T06:59:53.000Z"
   },
   {
     "command": "temper-2: stage4f-ai-worker-stop-for-watchdog",
     "exitCode": 0,
-    "summary": "docker stop examio-ai-worker (keep job QUEUED)",
+    "summary": "docker stop kmaedu-ai-worker (keep job QUEUED)",
     "ts": "2026-10-24T07:00:53.000Z"
   },
   {
@@ -1118,7 +1118,7 @@
   {
     "command": "temper-2: stage4h-ai-worker-restart",
     "exitCode": 0,
-    "summary": "docker start examio-ai-worker",
+    "summary": "docker start kmaedu-ai-worker",
     "ts": "2026-10-24T07:03:13.000Z"
   },
   {
@@ -1136,7 +1136,7 @@
   {
     "command": "temper-2: stage4h2-ai-worker-stop",
     "exitCode": 0,
-    "summary": "docker stop examio-ai-worker (keep generation QUEUED for fake completion)",
+    "summary": "docker stop kmaedu-ai-worker (keep generation QUEUED for fake completion)",
     "ts": "2026-10-24T07:04:50.000Z"
   },
   {
@@ -2252,7 +2252,7 @@
   {
     "command": "temper-2: s4k-check#185 4k.r2-image-upload-201",
     "exitCode": 0,
-    "summary": "PASS status=201 {\"url\":\"https://examio-p15t.s3shim:8443/images/81ae44047473791f52a4a657/1792825592565-p15t.png\"}",
+    "summary": "PASS status=201 {\"url\":\"https://kmaedu-p15t.s3shim:8443/images/81ae44047473791f52a4a657/1792825592565-p15t.png\"}",
     "ts": "2026-10-24T07:14:54.000Z"
   },
   {
@@ -2498,7 +2498,7 @@
   {
     "command": "temper-2: s5-check#226 5.student-demotion-fixture",
     "exitCode": 0,
-    "summary": "PASS status=200 {\"user\":{\"id\":\"1979300aa29eb142c9d9a5ae\",\"email\":\"user5@examio.vn\",\"username\":\"user5\",\"name\":\"Ho\u00e0ng",
+    "summary": "PASS status=200 {\"user\":{\"id\":\"1979300aa29eb142c9d9a5ae\",\"email\":\"user5@kmaedu.fayedark.com\",\"username\":\"user5\",\"name\":\"Ho\u00e0ng",
     "ts": "2026-10-24T07:14:54.000Z"
   },
   {

@@ -6,7 +6,7 @@
 Đảm bảo build Android sạch và luồng chạy đúng end-to-end.
 
 ## Build
-- [x] `cd examio-app && ./gradlew :androidApp:assembleDebug` → exit 0 ✅
+- [x] `cd kmaedu-app && ./gradlew :androidApp:assembleDebug` → exit 0 ✅
 - [x] `compileDebugKotlin` → PASS ✅
 - No new critical warnings from new code.
 

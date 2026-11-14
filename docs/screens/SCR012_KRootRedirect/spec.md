@@ -102,7 +102,7 @@ N/A — no form inputs, no async API calls in this component.
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/k/KRootRedirect.tsx:1`
-- Auth store: `examio-fe/src/stores/useAuthStore.ts:1`
-- Route guard: `examio-fe/src/routes/guards/ProtectedRoute.tsx:1`
-- Router config: `examio-fe/src/routes/index.tsx:152`
+- Page/View: `kmaedu-fe/src/pages/k/KRootRedirect.tsx:1`
+- Auth store: `kmaedu-fe/src/stores/useAuthStore.ts:1`
+- Route guard: `kmaedu-fe/src/routes/guards/ProtectedRoute.tsx:1`
+- Router config: `kmaedu-fe/src/routes/index.tsx:152`

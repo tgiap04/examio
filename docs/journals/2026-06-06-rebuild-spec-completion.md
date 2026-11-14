@@ -10,7 +10,7 @@ mode: full
 
 ## Summary
 
-Full v4.0.0 spec rebuild for the **examio** monorepo (NestJS backend + React 19 frontend + Python AI service).
+Full v4.0.0 spec rebuild for the **kmaedu** monorepo (NestJS backend + React 19 frontend + Python AI service).
 13 features, 7 process flows, 9 core artifacts, 52 feature spec files. All validators PASS (0 critical).
 
 ## What was built

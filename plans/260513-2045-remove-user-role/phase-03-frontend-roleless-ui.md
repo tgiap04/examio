@@ -4,32 +4,32 @@
 Remove role from frontend user types, auth requests, OAuth URLs, redirects, guards, sidebar filtering, and teacher/student page branching.
 
 ## Impacted Files
-- `examio-fe/src/types/user.ts`
-- `examio-fe/src/apis/authApi.ts`
-- `examio-fe/src/stores/useAuthStore.ts`
-- `examio-fe/src/routes/guards/PublicRoute.tsx`
-- `examio-fe/src/routes/guards/TeacherRoute.tsx`
-- `examio-fe/src/components/organisms/TeacherRoute.tsx`
-- `examio-fe/src/routes/index.tsx`
-- `examio-fe/src/pages/k/KRootRedirect.tsx`
-- `examio-fe/src/pages/k/DashboardStudentPage.tsx`
-- `examio-fe/src/pages/k/DashboardTeacherPage.tsx`
-- `examio-fe/src/pages/k/AITeacherPage.tsx`
-- `examio-fe/src/pages/k/MyMaterialsPage.tsx`
-- `examio-fe/src/pages/k/HistoryPage.tsx`
-- `examio-fe/src/pages/k/ManageExamPage.tsx`
-- `examio-fe/src/pages/k/ManageExamRoomPage.tsx`
-- `examio-fe/src/pages/k/ManageExamRoomDetailPage.tsx`
-- `examio-fe/src/pages/k/ExamRoomSessionAnalyticsPage.tsx`
-- `examio-fe/src/pages/k/AIToolPage.tsx`
-- `examio-fe/src/app/k/ai-student/page.tsx`
-- `examio-fe/src/app/k/genai-knowledge/page.tsx`
-- `examio-fe/src/lib/genai-knowledge-access.ts`
-- `examio-fe/src/components/organisms/k/SideBar.tsx`
-- `examio-fe/src/components/organisms/auth/signin-form.tsx`
-- `examio-fe/src/components/organisms/auth/signup-form.tsx`
-- `examio-fe/src/components/organisms/auth/role-selection.tsx`
-- `examio-fe/src/components/organisms/auth/auth-layout-shell.tsx`
+- `kmaedu-fe/src/types/user.ts`
+- `kmaedu-fe/src/apis/authApi.ts`
+- `kmaedu-fe/src/stores/useAuthStore.ts`
+- `kmaedu-fe/src/routes/guards/PublicRoute.tsx`
+- `kmaedu-fe/src/routes/guards/TeacherRoute.tsx`
+- `kmaedu-fe/src/components/organisms/TeacherRoute.tsx`
+- `kmaedu-fe/src/routes/index.tsx`
+- `kmaedu-fe/src/pages/k/KRootRedirect.tsx`
+- `kmaedu-fe/src/pages/k/DashboardStudentPage.tsx`
+- `kmaedu-fe/src/pages/k/DashboardTeacherPage.tsx`
+- `kmaedu-fe/src/pages/k/AITeacherPage.tsx`
+- `kmaedu-fe/src/pages/k/MyMaterialsPage.tsx`
+- `kmaedu-fe/src/pages/k/HistoryPage.tsx`
+- `kmaedu-fe/src/pages/k/ManageExamPage.tsx`
+- `kmaedu-fe/src/pages/k/ManageExamRoomPage.tsx`
+- `kmaedu-fe/src/pages/k/ManageExamRoomDetailPage.tsx`
+- `kmaedu-fe/src/pages/k/ExamRoomSessionAnalyticsPage.tsx`
+- `kmaedu-fe/src/pages/k/AIToolPage.tsx`
+- `kmaedu-fe/src/app/k/ai-student/page.tsx`
+- `kmaedu-fe/src/app/k/genai-knowledge/page.tsx`
+- `kmaedu-fe/src/lib/genai-knowledge-access.ts`
+- `kmaedu-fe/src/components/organisms/k/SideBar.tsx`
+- `kmaedu-fe/src/components/organisms/auth/signin-form.tsx`
+- `kmaedu-fe/src/components/organisms/auth/signup-form.tsx`
+- `kmaedu-fe/src/components/organisms/auth/role-selection.tsx`
+- `kmaedu-fe/src/components/organisms/auth/auth-layout-shell.tsx`
 
 ## Implementation Steps
 1. Remove `UserRole` and `role` from `User`, `CredentialsSignup`, auth API payloads, and Zustand auth method signatures.

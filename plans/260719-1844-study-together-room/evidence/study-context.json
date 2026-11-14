@@ -11,13 +11,13 @@
     "Frontend builds green (tsc + vite) with the study-room pages, panels, store, socket hook, and routes"
   ],
   "touchpoints": [
-    "examio-be/libs/database/src/models/study-room.prisma",
-    "examio-be/apps/exam-service/src/modules/study-room/*",
-    "examio-be/apps/gateway-service/src/main.ts",
-    "examio-be/apps/gateway-service/src/controllers/study-room-proxy.controller.ts",
-    "examio-fe/src/pages/study-room/*",
-    "examio-fe/src/hooks/useStudyRoomSocket.ts",
-    "examio-fe/src/stores/useStudyRoomStore.ts"
+    "kmaedu-be/libs/database/src/models/study-room.prisma",
+    "kmaedu-be/apps/exam-service/src/modules/study-room/*",
+    "kmaedu-be/apps/gateway-service/src/main.ts",
+    "kmaedu-be/apps/gateway-service/src/controllers/study-room-proxy.controller.ts",
+    "kmaedu-fe/src/pages/study-room/*",
+    "kmaedu-fe/src/hooks/useStudyRoomSocket.ts",
+    "kmaedu-fe/src/stores/useStudyRoomStore.ts"
   ],
   "blastRadius": [
     "libs/common CACHE_MODULES gained an additive STUDY_ROOM entry",
@@ -26,7 +26,7 @@
     "No existing model, service, or controller behavior was modified"
   ],
   "contracts": [
-    "WS event names + payloads: examio-be/.../study-room/study-room.events.ts mirrored by examio-fe/src/types/studyRoom.ts",
+    "WS event names + payloads: kmaedu-be/.../study-room/study-room.events.ts mirrored by kmaedu-fe/src/types/studyRoom.ts",
     "REST /studyrooms surface proxied by gateway to exam-service"
   ]
 }

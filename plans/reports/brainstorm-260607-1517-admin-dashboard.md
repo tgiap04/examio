@@ -33,7 +33,7 @@ Lý do chọn A: dự án đã là monorepo đa service, admin có traffic riên
 
 ### Backend
 
-- **Service mới**: `examio-be/apps/admin-service/` (NestJS, port 7006, gRPC 50056)
+- **Service mới**: `kmaedu-be/apps/admin-service/` (NestJS, port 7006, gRPC 50056)
 
 - **Modules**:
 
@@ -63,15 +63,15 @@ Lý do chọn A: dự án đã là monorepo đa service, admin có traffic riên
 - **Env**:
 
   ```
-  ADMIN_EMAILS=admin1@examio.vn,admin2@examio.vn
+  ADMIN_EMAILS=admin1@kmaedu.fayedark.com,admin2@kmaedu.fayedark.com
   ADMIN_DEFAULT_PASSWORD=<secure-random-min-32>
   ADMIN_SERVICE_URL=http://admin:7006
-  LOG_DIR=/var/log/examio
+  LOG_DIR=/var/log/kmaedu
   ```
 
 ### Frontend
 
-- **Pages mới** trong `examio-fe/src/pages/admin/`:
+- **Pages mới** trong `kmaedu-fe/src/pages/admin/`:
   - `AdminLayout.tsx` — sidebar + header với role check
   - `AdminOverviewPage.tsx` — 4 KPI cards + 3 mini charts
   - `AdminUsersPage.tsx` — DataTable với filter (search, role, tier, createdAt range)
@@ -79,7 +79,7 @@ Lý do chọn A: dự án đã là monorepo đa service, admin có traffic riên
   - `AdminFinancePage.tsx` — bảng giao dịch + form refund/credit/tier (modal với confirm 2 bước)
   - `AdminLogsPage.tsx` — chọn service (auth/gateway) + file log, button "tail live" (SSE)
   - `AdminAuditPage.tsx` — lịch sử thao tác admin (read-only)
-- **API layer**: `examio-fe/src/apis/adminApi.ts` + `useAdminStore.ts`
+- **API layer**: `kmaedu-fe/src/apis/adminApi.ts` + `useAdminStore.ts`
 - **Guard**: `AdminRoute.tsx` check `isAdmin` từ auth store
 - **Routes**:
   - `/admin` (overview)
@@ -90,7 +90,7 @@ Lý do chọn A: dự án đã là monorepo đa service, admin có traffic riên
   - `/admin/audit`
 - **i18n**: chỉ tiếng Việt (admin user là người Việt)
 - **UI stack**: antd (Table, Drawer, Modal, Form, Statistic, Card) + Radix primitives + Recharts (charts)
-- **DESIGN SYSTEM UI:** `/examio/DESIGN.md`
+- **DESIGN SYSTEM UI:** `/kmaedu/DESIGN.md`
 
 ### Bảo mật
 

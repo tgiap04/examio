@@ -1,0 +1,71 @@
+# Dev overlay for kmaedu-be/deploy/compose/gateway.yml, merged by .generated/compose.yaml (Compose >= 2.24).
+# gateway-b cannot be removed by an overlay, so it gets the same dev shape; ./project only ever starts
+# gateway-a, which keeps the `gateway` alias on the internal network (Traefik routes /api/ and /ws/ to it).
+services:
+    gateway-a:
+        image: kmaedu-dev-node:local
+        build: !reset null
+        pull_policy: never
+        container_name: !reset null
+        working_dir: /workspace
+        volumes:
+            - ${KMAEDU_BE_DIR}:/workspace
+            - be_node_modules:/workspace/node_modules
+            # per-container webpack output: never written into the host tree, never wiped by a sibling
+            - /workspace/dist
+        command: ['yarn', 'dev:gateway']
+        environment:
+            NODE_ENV: development
+            MAIL_TRANSPORT: json
+            CHOKIDAR_USEPOLLING: ${KMAEDU_WATCH_POLL}
+            WATCHPACK_POLLING: ${KMAEDU_WATCH_POLL}
+            YARN_INSTALL_STATE_PATH: /workspace/node_modules/.yarn-install-state.gz
+        env_file: !override
+            - path: ${KMAEDU_DEV_GEN_DIR}/env/gateway.env
+              required: true
+        mem_limit: !reset null
+        # other apps are reached through lazy clients: only the services file decides what runs
+        depends_on: !override
+            deps:
+                condition: service_completed_successfully
+            redis:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+        healthcheck:
+            interval: 10s
+            start_period: 180s
+
+    gateway-b:
+        image: kmaedu-dev-node:local
+        build: !reset null
+        pull_policy: never
+        container_name: !reset null
+        working_dir: /workspace
+        volumes:
+            - ${KMAEDU_BE_DIR}:/workspace
+            - be_node_modules:/workspace/node_modules
+            # per-container webpack output: never written into the host tree, never wiped by a sibling
+            - /workspace/dist
+        command: ['yarn', 'dev:gateway']
+        environment:
+            NODE_ENV: development
+            MAIL_TRANSPORT: json
+            CHOKIDAR_USEPOLLING: ${KMAEDU_WATCH_POLL}
+            WATCHPACK_POLLING: ${KMAEDU_WATCH_POLL}
+            YARN_INSTALL_STATE_PATH: /workspace/node_modules/.yarn-install-state.gz
+        env_file: !override
+            - path: ${KMAEDU_DEV_GEN_DIR}/env/gateway.env
+              required: true
+        mem_limit: !reset null
+        # other apps are reached through lazy clients: only the services file decides what runs
+        depends_on: !override
+            deps:
+                condition: service_completed_successfully
+            redis:
+                condition: service_healthy
+            rabbitmq:
+                condition: service_healthy
+        healthcheck:
+            interval: 10s
+            start_period: 180s

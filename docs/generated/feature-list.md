@@ -1,6 +1,6 @@
 # Feature List
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Analysis Scope**: All 32 frontend screens + permissions matrix + user stories + background logic inventory
 
@@ -31,22 +31,22 @@
 
 | Code | Name | Type | Language | Workspace | Priority |
 |------|------|------|----------|-----------|----------|
-| F001 | PublicLanding | ui | TypeScript | examio-fe | P1 |
-| F002 | Authentication | ui | TypeScript | examio-fe | P0 |
-| F003 | AccountManagement | ui | TypeScript | examio-fe | P0 |
-| F004 | ProfileManagement | ui | TypeScript | examio-fe | P1 |
-| F005 | Finance (REMOVED 2026-11-10) | ui | TypeScript | examio-fe | P1 |
-| F006 | QuizAuthoring | ui | TypeScript | examio-fe | P1 |
-| F007 | FlashcardAuthoring | ui | TypeScript | examio-fe | P1 |
-| F008 | ExamHosting | ui | TypeScript | examio-fe | P1 |
-| F009 | AITeacherKnowledgeBase (REMOVED 2026-06-14) | ui | TypeScript | examio-fe | P1 |
-| F010 | AITool | ui | TypeScript | examio-fe | P1 |
-| F011 | FlashcardStudy | ui | TypeScript | examio-fe | P1 |
-| F012 | ExamTaking | ui | TypeScript | examio-fe | P0 |
-| F013 | SessionCleanup | background | TypeScript | examio-be | P2 |
-| F014 | AdminDashboard | ui | TypeScript | examio-fe + examio-be | P1 |
-| F015 | PageFeatureFlags | ui | TypeScript | examio-fe + examio-be | P1 |
-| F016 | WordFamily | ui | TypeScript | examio-fe + examio-be | P2 |
+| F001 | PublicLanding | ui | TypeScript | kmaedu-fe | P1 |
+| F002 | Authentication | ui | TypeScript | kmaedu-fe | P0 |
+| F003 | AccountManagement | ui | TypeScript | kmaedu-fe | P0 |
+| F004 | ProfileManagement | ui | TypeScript | kmaedu-fe | P1 |
+| F005 | Finance (REMOVED 2026-11-10) | ui | TypeScript | kmaedu-fe | P1 |
+| F006 | QuizAuthoring | ui | TypeScript | kmaedu-fe | P1 |
+| F007 | FlashcardAuthoring | ui | TypeScript | kmaedu-fe | P1 |
+| F008 | ExamHosting | ui | TypeScript | kmaedu-fe | P1 |
+| F009 | AITeacherKnowledgeBase (REMOVED 2026-06-14) | ui | TypeScript | kmaedu-fe | P1 |
+| F010 | AITool | ui | TypeScript | kmaedu-fe | P1 |
+| F011 | FlashcardStudy | ui | TypeScript | kmaedu-fe | P1 |
+| F012 | ExamTaking | ui | TypeScript | kmaedu-fe | P0 |
+| F013 | SessionCleanup | background | TypeScript | kmaedu-be | P2 |
+| F014 | AdminDashboard | ui | TypeScript | kmaedu-fe + kmaedu-be | P1 |
+| F015 | PageFeatureFlags | ui | TypeScript | kmaedu-fe + kmaedu-be | P1 |
+| F016 | WordFamily | ui | TypeScript | kmaedu-fe + kmaedu-be | P2 |
 
 ## Feature Details
 
@@ -55,7 +55,7 @@
 **Type**: ui
 **Description**: Public landing page for unauthenticated and authenticated users. Displays featured quiz sets, flashcard sets, and exam rooms with browse/search capability. Includes static informational pages (About, Contact, Legal).
 
-**Workspace**: examio-fe
+**Workspace**: kmaedu-fe
 **Languages**: TypeScript
 **Components**: 12
 
@@ -98,9 +98,9 @@
 ### F002: Authentication
 
 **Type**: ui
-**Description**: Full authentication flow including email/password login, Google OAuth (One Tap), account registration with Turnstile bot protection, and session management with device tracking.
+**Description**: Full authentication flow including email/password login, Google OAuth (One Tap), account registration, and session management with device tracking.
 
-**Workspace**: examio-fe
+**Workspace**: kmaedu-fe
 **Languages**: TypeScript
 **Components**: 8
 
@@ -140,7 +140,6 @@
 **Related Permissions**:
 - PERM004: LoginAccess
 - PERM005: RegisterAccess
-- PERM042: TurnstileBotProtection
 
 ---
 
@@ -149,7 +148,7 @@
 **Type**: ui
 **Description**: Account lifecycle management: email verification (OTP), unverified account gating, and root redirect logic for protected `/k/` section.
 
-**Workspace**: examio-fe
+**Workspace**: kmaedu-fe
 **Languages**: TypeScript
 **Components**: 3
 
@@ -184,7 +183,7 @@
 **Type**: ui
 **Description**: User profile management including avatar/banner upload via R2 storage proxy, username/name/bio editing, password change with email notification, and session/device termination.
 
-**Workspace**: examio-fe
+**Workspace**: kmaedu-fe
 **Languages**: TypeScript
 **Components**: 6
 
@@ -235,7 +234,7 @@
 **Type**: ui
 **Description**: Quiz set full lifecycle: create, edit, delete, visibility control. Question and label CRUD within quiz sets. PDF history management (view, download, delete). AI quiz generation from documents. Stats aggregation.
 
-**Workspace**: examio-fe
+**Workspace**: kmaedu-fe
 **Languages**: TypeScript
 **Components**: 14
 
@@ -322,7 +321,7 @@
 **Type**: ui
 **Description**: Flashcard set full lifecycle: create, edit, delete, visibility control. Label and flashcard CRUD within sets. AI flashcard generation from documents.
 
-**Workspace**: examio-fe
+**Workspace**: kmaedu-fe
 **Languages**: TypeScript
 **Components**: 12
 
@@ -387,7 +386,7 @@
 **Type**: ui
 **Description**: Exam room and session full lifecycle for teachers: create/edit/delete rooms, create/edit/delete sessions, configure sharing/access control (public/whitelist/code), view session analytics (leaderboard, score distribution, cheating stats), and manage attempt history.
 
-**Workspace**: examio-fe
+**Workspace**: kmaedu-fe
 **Languages**: TypeScript
 **Components**: 16
 
@@ -484,7 +483,7 @@
 **Type**: ui
 **Description**: AI tutor knowledge base management: knowledge folder CRUD, knowledge file upload/processing/reprocessing/delete, dataset import jobs, and knowledge statistics display.
 
-**Workspace**: examio-fe
+**Workspace**: kmaedu-fe
 **Languages**: TypeScript
 **Components**: 10
 
@@ -537,7 +536,7 @@
 **Type**: ui
 **Description**: AI content generation tool for creating quizzes and flashcards from uploaded documents. Job status polling and cancellation. Not charged: there is no wallet or credit check, and cost is guarded only by the gateway rate limits.
 
-**Workspace**: examio-fe
+**Workspace**: kmaedu-fe
 **Languages**: TypeScript
 **Components**: 5
 
@@ -572,9 +571,9 @@
 ### F011: FlashcardStudy
 
 **Type**: ui
-**Description**: Flashcard study interface with flip animation, keyboard navigation, sound effects, shuffle, and progress tracking. Access-gated (Turnstile + optional access code). Progress auto-saved per user per set.
+**Description**: Flashcard study interface with flip animation, keyboard navigation, sound effects, shuffle, and progress tracking. Access-gated (optional access code). Progress auto-saved per user per set.
 
-**Workspace**: examio-fe
+**Workspace**: kmaedu-fe
 **Languages**: TypeScript
 **Components**: 5
 
@@ -604,7 +603,6 @@
 - PERM032: FlashcardStudyAccess
 - PERM033: FlashcardStudyAccessCode
 - PERM034: FlashcardStudyProgress
-- PERM042: TurnstileBotProtection
 
 ---
 
@@ -613,7 +611,7 @@
 **Type**: ui
 **Description**: Active exam-taking interface: encrypted question fetch and client-side AES-256-CBC decryption, answer selection, auto-save every 30s via background polling, cheating detection (tab switch, window blur, devtools, copy-paste), and secure answer submission via JWT-wrapped endpoint.
 
-**Workspace**: examio-fe
+**Workspace**: kmaedu-fe
 **Languages**: TypeScript
 **Components**: 6
 
@@ -658,7 +656,7 @@
 **Type**: background
 **Description**: Daily cron job that deactivates expired user sessions. Runs on a configurable schedule. Enforced via service account; no user-facing screen directly triggers it.
 
-**Workspace**: examio-be
+**Workspace**: kmaedu-be
 **Languages**: TypeScript
 **Components**: 1
 
@@ -687,7 +685,7 @@
 **Type**: ui
 **Description**: Admin dashboard providing privileged access to platform operations: KPI overview and analytics, user management (ban/unban), role management (`/admin/roles`), server-side log viewing with SSE streaming, and audit log query. Backed by `admin-service` (port 7006) with dedicated `AdminGuard`.
 
-**Workspace**: examio-fe + examio-be
+**Workspace**: kmaedu-fe + kmaedu-be
 **Languages**: TypeScript
 **Components**: 6 pages
 
@@ -738,7 +736,7 @@
 **Type**: ui
 **Description**: Dynamic page enable/disable system without redeployment. Admins toggle `PageFeatureFlag` rows via an admin screen; the gateway enforces the flag on proxy routes decorated with `@TogglePage(key)` (fail-open on infra errors, 404 on explicit disable); the frontend mirrors the same state via `<FeatureRoute>` and hides sidebar nav items. Changes propagate to all connected clients in real time over SSE.
 
-**Workspace**: examio-fe + examio-be
+**Workspace**: kmaedu-fe + kmaedu-be
 **Languages**: TypeScript
 **Components**: 1 admin page + cross-cutting guard/store
 
@@ -771,7 +769,7 @@
 **Type**: ui
 **Description**: AI-assisted vocabulary study by root-word family. Students browse categories, generate new root-word groups via AI (with per-user/category dedup + concurrency lock), save families to a personal collection, and convert selected words into a `FlashCardSet` for spaced-repetition study. Admins manage categories via a dedicated admin CRUD screen.
 
-**Workspace**: examio-fe + examio-be
+**Workspace**: kmaedu-fe + kmaedu-be
 **Languages**: TypeScript, Python (AI generation)
 **Components**: 4 pages (3 student-facing + 1 admin)
 

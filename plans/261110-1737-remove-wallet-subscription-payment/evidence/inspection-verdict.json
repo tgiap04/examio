@@ -3,7 +3,7 @@
   "criticalCount": 0,
   "decision": "SEALED",
   "acceptanceCovered": [
-    "finance-service, finance protos, FinanceClient and permissions wallet:use, subscription:manage, finance:admin are gone \u2014 apps/finance-service, proto/examio/finance and events/v1/finance_events.proto deleted; libs/grpc finance.client removed from the index; the 3 permissions dropped from libs/auth-jwt/src/permissions.ts; no remaining code reference (git grep)",
+    "finance-service, finance protos, FinanceClient and permissions wallet:use, subscription:manage, finance:admin are gone \u2014 apps/finance-service, proto/kmaedu/finance and events/v1/finance_events.proto deleted; libs/grpc finance.client removed from the index; the 3 permissions dropped from libs/auth-jwt/src/permissions.ts; no remaining code reference (git grep)",
     "content generation and document upload no longer charge or refund \u2014 GenerationJobService.submit inserts QUEUED plus the outbox row in one tx; document register and createFromBytes insert PENDING plus document.uploaded in one tx; markFailed only sets FAILED; no Debit or Refund call remains",
     "no subscription-derived limits remain in ai-chat and document-service \u2014 AIChatLimitsService and the benefits cache are gone, admit() keeps only the ownership checks; enforceQuota is removed and getQuota returns counts only",
     "student permissions unchanged and AI generation stays TEACHER-only \u2014 the STUDENT role list is untouched; ai:generate stays TEACHER; the e2e 'a STUDENT cannot generate' is green",
@@ -31,70 +31,70 @@
     {
       "severity": "Medium",
       "category": "Authz",
-      "location": "examio-be/apps/auth-service/src/grpc/auth.grpc.controller.ts:58-62",
+      "location": "kmaedu-be/apps/auth-service/src/grpc/auth.grpc.controller.ts:58-62",
       "summary": "M1 fixed: ListUsers is @RequirePermissions('user:manage') (user token only); rpc-guard-table.spec.ts expectation updated; re-verified against the guard semantics",
       "disposition": "Accept"
     },
     {
       "severity": "Low",
       "category": "Dead code",
-      "location": "examio-be/apps/ai-chat-service/test/support/ai-chat-test-app.ts:74",
+      "location": "kmaedu-be/apps/ai-chat-service/test/support/ai-chat-test-app.ts:74",
       "summary": "S3 fixed: the dead FINANCE_GRPC_URL delete was removed from the ai-chat and document test apps (only a comment remains); the content worker guard is kept on purpose",
       "disposition": "Accept"
     },
     {
       "severity": "High",
       "category": "Process",
-      "location": "examio-be/apps/document-service/src/modules/upload/document-register.service.ts:7",
+      "location": "kmaedu-be/apps/document-service/src/modules/upload/document-register.service.ts:7",
       "summary": "W1: document-queue.service.ts, both contract migrations and the new specs are untracked; they must be staged explicitly at commit or the build and migrations break",
       "disposition": "Defer"
     },
     {
       "severity": "Medium",
       "category": "Resource cleanup",
-      "location": "examio-be/apps/content-service/src/modules/ai/ai.service.ts:103-106",
+      "location": "kmaedu-be/apps/content-service/src/modules/ai/ai.service.ts:103-106",
       "summary": "M2: a failed submit leaves a just-created free upload in document-service (reused on retry); a best-effort delete is optional",
       "disposition": "Defer"
     },
     {
       "severity": "Low",
       "category": "Resource cleanup",
-      "location": "examio-be/apps/document-service/src/modules/upload/document-register.service.ts:30",
+      "location": "kmaedu-be/apps/document-service/src/modules/upload/document-register.service.ts:30",
       "summary": "S1: POST /ai/upload no longer enqueues the client's R2 object for deletion when signing fails (the route is unused by the FE)",
       "disposition": "Defer"
     },
     {
       "severity": "Low",
       "category": "Availability",
-      "location": "examio-be/apps/ai-chat-service/src/ai-chat-service.module.ts:5-17",
+      "location": "kmaedu-be/apps/ai-chat-service/src/ai-chat-service.module.ts:5-17",
       "summary": "S2: ai-chat keeps RedisModule and RedisReadinessCheck with no remaining Redis use, so a Redis outage makes it unready",
       "disposition": "Defer"
     },
     {
       "severity": "Low",
       "category": "Dead code",
-      "location": "examio-fe/src/components/admin/KpiCard.tsx:4-26",
+      "location": "kmaedu-fe/src/components/admin/KpiCard.tsx:4-26",
       "summary": "S4: the currency-vnd format and its VND formatters (KpiCard, MiniChartCard, StatChart) are unused",
       "disposition": "Defer"
     },
     {
       "severity": "Low",
       "category": "Dead code",
-      "location": "examio-be/apps/auth-service/src/auth.service.register-outbox.spec.ts:17-147",
+      "location": "kmaedu-be/apps/auth-service/src/auth.service.register-outbox.spec.ts:17-147",
       "summary": "S5: a dead userSubscription mock with vacuous not-called assertions",
       "disposition": "Defer"
     },
     {
       "severity": "Low",
       "category": "Contract tooling",
-      "location": "examio-be/proto/buf.yaml:19-34",
+      "location": "kmaedu-be/proto/buf.yaml:19-34",
       "summary": "S6: the temporary buf ignore_only entries must be removed after merge",
       "disposition": "Defer"
     },
     {
       "severity": "Low",
       "category": "Security hardening",
-      "location": "examio-be/apps/auth-service/src/token/service-clients.ts:39-60",
+      "location": "kmaedu-be/apps/auth-service/src/token/service-clients.ts:39-60",
       "summary": "S7: a stale finance entry in an operator's SERVICE_CLIENTS would still let auth mint svc:finance tokens; deploy/README.md documents the removal",
       "disposition": "Defer"
     },

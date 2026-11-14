@@ -19,7 +19,7 @@
 - `deploy/docker-compose.yml:375` publishes `5411:5432`. `deploy/entrypoint-seed.sh:5` echoes `DATABASE_URL`.
 - Dockerfiles use `node:20-alpine` (`deploy/Dockerfile:15,62`, `Dockerfile.migration:3`, `Dockerfile.seed:4`).
 - Guard bug: `libs/common/src/guard/auth.guard.ts` throws `ForbiddenException('Email not verified')` inside `try`, so the `catch` rewrites it as 401 → FE refresh loop. Unverified users also cannot reach `/auth/sendVerificationEmail`, `/auth/verifyAccount`, `/auth/me` (`auth.controller.ts:396,409,621`).
-- Prisma is pinned `6.16.2` (`examio-be/package.json:59,89`); generator is `prisma-client-js` (`libs/database/src/schema.prisma:3-4`). The authoritative schema is `libs/database/src/models/*.prisma` (merged into `schema.prisma`); `libs/database/prisma/` is a stale copy (P11 deletes it). <!-- Red Team: RT-14 -->
+- Prisma is pinned `6.16.2` (`kmaedu-be/package.json:59,89`); generator is `prisma-client-js` (`libs/database/src/schema.prisma:3-4`). The authoritative schema is `libs/database/src/models/*.prisma` (merged into `schema.prisma`); `libs/database/prisma/` is a stale copy (P11 deletes it). <!-- Red Team: RT-14 -->
 - Dead code (verified with grep):
   - `apps/ocr-service/` (gRPC 50053 collides with finance). Also `nest-cli.json` project, `package.json` `dev:ocr*`, compose service, `libs/common/src/protos/ocr.proto`.
   - `apps/gateway-service/src/controllers/{exam,finance}-proxy.controller.ts` are not in `gateway.module.ts:78+`.
@@ -59,34 +59,34 @@
   4. Go = all three work in the Docker image → phase 11 uses `prisma-client` + adapter-pg. No-go → fallback: classic `prisma-client-js` with per-service `output`. Record the decision + evidence (commands, exit codes, image size) in `plan.md`.
 
 ## Related Code Files
-File ownership (globs): `/.github/workflows/**`, `examio-be/deploy/**`, `examio-be/libs/observability/**`, `examio-be/libs/database/src/{migrations/**,readiness.check.ts,index.ts}`, `examio-be/libs/redis/src/{readiness.check.ts,index.ts}`, `examio-be/libs/common/src/{guard/auth.guard.ts,decorators/**,middleware/**,grpc/grpc-clients.module.ts,protos/ocr.proto,index.ts}`, `examio-be/apps/ocr-service/**`, `examio-be/apps/*/src/main.ts`, `examio-be/apps/*/src/*-service.module.ts`, `examio-be/apps/*/src/*-service.controller.ts`, `examio-be/apps/*/test/**`, `examio-be/apps/gateway-service/src/{gateway.module.ts,controllers/exam-proxy.controller.ts,controllers/finance-proxy.controller.ts,controllers/ai-study-proxy.controller.ts,gateway.controller.ts}`, `examio-be/{package.json,nest-cli.json,tsconfig.json,jest.config.js}`, `examio-fe/src/apis/{virtualTeacherApi,genaiTutorKnowledgeApi,flashcardStudyApi}.ts`, `examio-fe/src/stores/{useAITeacherStore,useGenAIKnowledgeStore}.ts`, `examio-fe/src/pages/k/AITeacherPage.tsx`, `examio-be/apps/auth-service/src/auth.controller.ts` (decorator lines only), `examio-be/apps/ai-service/{pyproject.toml,README.md,src/score/**,src/agent/**,src/streamlit_ui/**,src/evaluate_chatbot.py,src/backend/main.py (lifespan benchmark block only),src/backend/services/benchmark_index_service.py,src/evaluation/scripts/seed_benchmark_index.py,src/evaluation/README.md}`, `examio-be/libs/database/src/models/benchmark-item.prisma` <!-- Updated: Validation Session 1 - ai-service score/benchmark removal -->, `plans/261017-1547-microservice-refactor-rbac/plan.md` (spike result section only). <!-- Red Team: RT-11, RT-14 -->
+File ownership (globs): `/.github/workflows/**`, `kmaedu-be/deploy/**`, `kmaedu-be/libs/observability/**`, `kmaedu-be/libs/database/src/{migrations/**,readiness.check.ts,index.ts}`, `kmaedu-be/libs/redis/src/{readiness.check.ts,index.ts}`, `kmaedu-be/libs/common/src/{guard/auth.guard.ts,decorators/**,middleware/**,grpc/grpc-clients.module.ts,protos/ocr.proto,index.ts}`, `kmaedu-be/apps/ocr-service/**`, `kmaedu-be/apps/*/src/main.ts`, `kmaedu-be/apps/*/src/*-service.module.ts`, `kmaedu-be/apps/*/src/*-service.controller.ts`, `kmaedu-be/apps/*/test/**`, `kmaedu-be/apps/gateway-service/src/{gateway.module.ts,controllers/exam-proxy.controller.ts,controllers/finance-proxy.controller.ts,controllers/ai-study-proxy.controller.ts,gateway.controller.ts}`, `kmaedu-be/{package.json,nest-cli.json,tsconfig.json,jest.config.js}`, `kmaedu-fe/src/apis/{virtualTeacherApi,genaiTutorKnowledgeApi,flashcardStudyApi}.ts`, `kmaedu-fe/src/stores/{useAITeacherStore,useGenAIKnowledgeStore}.ts`, `kmaedu-fe/src/pages/k/AITeacherPage.tsx`, `kmaedu-be/apps/auth-service/src/auth.controller.ts` (decorator lines only), `kmaedu-be/apps/ai-service/{pyproject.toml,README.md,src/score/**,src/agent/**,src/streamlit_ui/**,src/evaluate_chatbot.py,src/backend/main.py (lifespan benchmark block only),src/backend/services/benchmark_index_service.py,src/evaluation/scripts/seed_benchmark_index.py,src/evaluation/README.md}`, `kmaedu-be/libs/database/src/models/benchmark-item.prisma` <!-- Updated: Validation Session 1 - ai-service score/benchmark removal -->, `plans/261017-1547-microservice-refactor-rbac/plan.md` (spike result section only). <!-- Red Team: RT-11, RT-14 -->
 
 - Create:
-  - `/Users/tgiap.dev/devs/examio/.github/workflows/ci.yml`
-  - `/Users/tgiap.dev/devs/examio/examio-be/libs/observability/src/{index.ts,health/health.module.ts,health/health.controller.ts,health/readiness-check.ts,logger/logger.module.ts}` <!-- Red Team: RT-14 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/libs/database/src/readiness.check.ts`, `/Users/tgiap.dev/devs/examio/examio-be/libs/redis/src/readiness.check.ts` <!-- Red Team: RT-14 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/decorators/allow-unverified.decorator.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/libs/database/src/migrations/<ts>_baseline/migration.sql`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/test/route-inventory.spec.ts`, `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/test/fixtures/route-inventory.json`
+  - `/Users/tgiap.dev/devs/kmaedu/.github/workflows/ci.yml`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/observability/src/{index.ts,health/health.module.ts,health/health.controller.ts,health/readiness-check.ts,logger/logger.module.ts}` <!-- Red Team: RT-14 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/database/src/readiness.check.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/redis/src/readiness.check.ts` <!-- Red Team: RT-14 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/common/src/decorators/allow-unverified.decorator.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/database/src/migrations/<ts>_baseline/migration.sql`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/test/route-inventory.spec.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/test/fixtures/route-inventory.json`
 - Modify:
-  - `/Users/tgiap.dev/devs/examio/.github/workflows/deploy.yml`
-  - `/Users/tgiap.dev/devs/examio/examio-be/{package.json,nest-cli.json,tsconfig.json,jest.config.js}` (`package.json` also: Prisma `6.19.x`, `@prisma/adapter-pg`, `pg`) <!-- Red Team: RT-14 -->
-  - `/Users/tgiap.dev/devs/examio/examio-be/deploy/{Dockerfile,Dockerfile.migration,Dockerfile.seed,docker-compose.yml,entrypoint-migration.sh,entrypoint-seed.sh}`
-  - `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/guard/auth.guard.ts`, `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/grpc/grpc-clients.module.ts`, `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/index.ts`, `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/services/refresh-token-cipher.service.ts` (comment only)
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/auth-service/src/auth.controller.ts` (`@AllowUnverified()` on sendVerificationEmail, verifyAccount, me, logout)
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/{auth,exam,finance,admin,r2,gateway}-service/src/main.ts` + root module (logger + health). Remove static `health` handlers in `*-service.controller.ts`, `gateway.controller.ts`.
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/admin-service/src/main.ts` (drop `ENABLE_ADMIN_GRPC` block)
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/gateway.module.ts`, `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/*/test/app.e2e-spec.ts` (→ health e2e)
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/apis/flashcardStudyApi.ts`
-  - <!-- Updated: Validation Session 1 - ai-service score/benchmark removal --> `/Users/tgiap.dev/devs/examio/examio-be/apps/ai-service/{pyproject.toml (drop `agent`/`score`/`streamlit_ui` packages),README.md (score/agent/streamlit/benchmark-index sections),src/backend/main.py (delete lifespan block `:58-65`),src/evaluation/README.md (drop seed-benchmark-index section)}`
+  - `/Users/tgiap.dev/devs/kmaedu/.github/workflows/deploy.yml`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/{package.json,nest-cli.json,tsconfig.json,jest.config.js}` (`package.json` also: Prisma `6.19.x`, `@prisma/adapter-pg`, `pg`) <!-- Red Team: RT-14 -->
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/{Dockerfile,Dockerfile.migration,Dockerfile.seed,docker-compose.yml,entrypoint-migration.sh,entrypoint-seed.sh}`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/common/src/guard/auth.guard.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/common/src/grpc/grpc-clients.module.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/common/src/index.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/common/src/services/refresh-token-cipher.service.ts` (comment only)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/auth-service/src/auth.controller.ts` (`@AllowUnverified()` on sendVerificationEmail, verifyAccount, me, logout)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/{auth,exam,finance,admin,r2,gateway}-service/src/main.ts` + root module (logger + health). Remove static `health` handlers in `*-service.controller.ts`, `gateway.controller.ts`.
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/admin-service/src/main.ts` (drop `ENABLE_ADMIN_GRPC` block)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/gateway.module.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/*/test/app.e2e-spec.ts` (→ health e2e)
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/apis/flashcardStudyApi.ts`
+  - <!-- Updated: Validation Session 1 - ai-service score/benchmark removal --> `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ai-service/{pyproject.toml (drop `agent`/`score`/`streamlit_ui` packages),README.md (score/agent/streamlit/benchmark-index sections),src/backend/main.py (delete lifespan block `:58-65`),src/evaluation/README.md (drop seed-benchmark-index section)}`
 - Delete:
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/ocr-service/`, `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/protos/ocr.proto`
-  - `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/src/controllers/{exam-proxy,finance-proxy}.controller.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/middleware/session-validation.middleware.ts`
-  - `/Users/tgiap.dev/devs/examio/examio-be/libs/database/src/migrations/{20260513100000_remove_user_role,20260710120000_money_float_to_int,20260724120000_add_user_utm_source}/`
-  - <!-- Updated: Validation Session 1 - ai-service score/benchmark removal --> `/Users/tgiap.dev/devs/examio/examio-be/apps/ai-service/src/{score/,agent/,streamlit_ui/,evaluate_chatbot.py,backend/services/benchmark_index_service.py,evaluation/scripts/seed_benchmark_index.py}`, `/Users/tgiap.dev/devs/examio/examio-be/libs/database/src/models/benchmark-item.prisma`
-  - `/Users/tgiap.dev/devs/examio/examio-fe/src/apis/{virtualTeacherApi,genaiTutorKnowledgeApi}.ts`, `/Users/tgiap.dev/devs/examio/examio-fe/src/stores/{useAITeacherStore,useGenAIKnowledgeStore}.ts`, `/Users/tgiap.dev/devs/examio/examio-fe/src/pages/k/AITeacherPage.tsx`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ocr-service/`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/common/src/protos/ocr.proto`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/src/controllers/{exam-proxy,finance-proxy}.controller.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/common/src/middleware/session-validation.middleware.ts`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/database/src/migrations/{20260513100000_remove_user_role,20260710120000_money_float_to_int,20260724120000_add_user_utm_source}/`
+  - <!-- Updated: Validation Session 1 - ai-service score/benchmark removal --> `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/ai-service/src/{score/,agent/,streamlit_ui/,evaluate_chatbot.py,backend/services/benchmark_index_service.py,evaluation/scripts/seed_benchmark_index.py}`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/database/src/models/benchmark-item.prisma`
+  - `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/apis/{virtualTeacherApi,genaiTutorKnowledgeApi}.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/stores/{useAITeacherStore,useGenAIKnowledgeStore}.ts`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/pages/k/AITeacherPage.tsx`
 
 ## Implementation Steps
 1. Add BE scripts:
@@ -97,10 +97,10 @@ File ownership (globs): `/.github/workflows/**`, `examio-be/deploy/**`, `examio-
 2. Prisma bump: `prisma` + `@prisma/client` `6.16.2 → 6.19.x`, add `@prisma/adapter-pg` + `pg`. Keep the `prisma-client-js` generator for now. Run `yarn prisma:generate && yarn typecheck && yarn test`. <!-- Red Team: RT-14 -->
 3. Prisma spike (0.5d, time-boxed) per Architecture. Write the go/no-go result into `plan.md`. Do not merge spike code. <!-- Red Team: RT-14 -->
 4. Delete dead code (list above). Remove the `registerAuthClient` method, the `ocr-service` project from `nest-cli.json`, `dev:ocr*` from `package.json`, the ocr compose service, and dead exports from `libs/common/src/index.ts`. Trim the `FlashcardStudyProxyController` dead routes. Remove `QuizPracticeProxyController` and unregister it. Remove the FE dead functions.
-   <!-- Updated: Validation Session 1 - ai-service score/benchmark removal --> ai-service: delete `src/score/`, `src/agent/`, `src/streamlit_ui/`, `src/evaluate_chatbot.py`, `benchmark_index_service.py`, `seed_benchmark_index.py`; drop the lifespan benchmark block in `main.py`; update `pyproject.toml` packages + READMEs. Delete `benchmark-item.prisma` before `prisma:merge` (step 9). Re-grep `grep -rnE "src\.score|supervisor_agent|benchmark_index" examio-be/apps/ai-service/src` → none; `./venv/bin/ruff check src` passes.
-5. Run `yarn build:all` and `cd examio-fe && yarn build && yarn lint`. Both must pass.
+   <!-- Updated: Validation Session 1 - ai-service score/benchmark removal --> ai-service: delete `src/score/`, `src/agent/`, `src/streamlit_ui/`, `src/evaluate_chatbot.py`, `benchmark_index_service.py`, `seed_benchmark_index.py`; drop the lifespan benchmark block in `main.py`; update `pyproject.toml` packages + READMEs. Delete `benchmark-item.prisma` before `prisma:merge` (step 9). Re-grep `grep -rnE "src\.score|supervisor_agent|benchmark_index" kmaedu-be/apps/ai-service/src` → none; `./venv/bin/ruff check src` passes.
+5. Run `yarn build:all` and `cd kmaedu-fe && yarn build && yarn lint`. Both must pass.
 6. Write the route-inventory spec. Generate `route-inventory.json` after step 4. Commit it as the phase 05 contract.
-7. Create `libs/observability`. Add the path alias `@examio/observability` in `tsconfig.json` and `jest.config.js`. Add `readiness.check.ts` to `libs/database` and `libs/redis`. Wire `LoggerModule` and `HealthModule.forRoot({ checks })` into the 6 Node services (gateway: Redis only). Use `app.useLogger(app.get(Logger))`. Delete the static `{status:'ok'}` handlers. <!-- Red Team: RT-14 -->
+7. Create `libs/observability`. Add the path alias `@kmaedu/observability` in `tsconfig.json` and `jest.config.js`. Add `readiness.check.ts` to `libs/database` and `libs/redis`. Wire `LoggerModule` and `HealthModule.forRoot({ checks })` into the 6 Node services (gateway: Redis only). Use `app.useLogger(app.get(Logger))`. Delete the static `{status:'ok'}` handlers. <!-- Red Team: RT-14 -->
 8. Guard fix: add `@AllowUnverified()`. In `AuthGuard`, skip the `isVerified` check when the metadata is set, and rethrow `HttpException`. Apply the decorator to `logout`, `sendVerificationEmail`, `verifyAccount`, `me`.
 9. Baseline migration:
    - Delete the 3 old dirs.
@@ -134,13 +134,13 @@ File ownership (globs): `/.github/workflows/**`, `examio-be/deploy/**`, `examio-
 - [x] ci.yml + deploy.yml needs quality
 
 ## Success Criteria
-- `cd examio-be && yarn typecheck && yarn build:all && yarn test`: exit 0.
-- `cd examio-be/apps/auth-service && ../../node_modules/.bin/jest --config test/jest-e2e.json` (with local compose infra): exit 0.
-- `cd examio-fe && yarn build && yarn lint`: exit 0. <!-- Red Team: RT-11 -->
-- `grep -n '"prisma": "6.19' examio-be/package.json` → 1 hit. `grep -rn "prisma\|@examio/database" examio-be/libs/observability/src` → none. `plan.md` holds a dated spike verdict (go | no-go + fallback). <!-- Red Team: RT-14 -->
-- `grep -rn "db push" examio-be/deploy` → none. `grep -n "5411" examio-be/deploy/docker-compose.yml` → none. `grep -rn "node:20" examio-be/deploy` → none.
+- `cd kmaedu-be && yarn typecheck && yarn build:all && yarn test`: exit 0.
+- `cd kmaedu-be/apps/auth-service && ../../node_modules/.bin/jest --config test/jest-e2e.json` (with local compose infra): exit 0.
+- `cd kmaedu-fe && yarn build && yarn lint`: exit 0. <!-- Red Team: RT-11 -->
+- `grep -n '"prisma": "6.19' kmaedu-be/package.json` → 1 hit. `grep -rn "prisma\|@kmaedu/database" kmaedu-be/libs/observability/src` → none. `plan.md` holds a dated spike verdict (go | no-go + fallback). <!-- Red Team: RT-14 -->
+- `grep -rn "db push" kmaedu-be/deploy` → none. `grep -n "5411" kmaedu-be/deploy/docker-compose.yml` → none. `grep -rn "node:20" kmaedu-be/deploy` → none.
 - Fresh `docker compose up` on an empty volume: migration container exits 0 and every service reports `/health/ready` 200.
-- <!-- Updated: Validation Session 1 - ai-service score/benchmark removal --> `grep -rn "BenchmarkItem" examio-be/libs/database examio-be/apps --exclude-dir=node_modules --exclude-dir=venv` → none; `ls examio-be/apps/ai-service/src/score` → no such dir; ai-service `/health` 200 after boot (no benchmark log line).
+- <!-- Updated: Validation Session 1 - ai-service score/benchmark removal --> `grep -rn "BenchmarkItem" kmaedu-be/libs/database kmaedu-be/apps --exclude-dir=node_modules --exclude-dir=venv` → none; `ls kmaedu-be/apps/ai-service/src/score` → no such dir; ai-service `/health` 200 after boot (no benchmark log line).
 - A PR with a type error in `finance-service` turns the CI check red.
 
 ## Risk Assessment

@@ -2,7 +2,7 @@
 
 ## Context Links
 - [plan.md](./plan.md) · [planner-brief.md](./reports/planner-brief.md) decisions 5, 9, 10 · [red-team-changes.md](./reports/red-team-changes.md) (RT-2, RT-5, RT-8, RT-10, RT-11, RT-15 override the brief)
-- `/Users/tgiap.dev/devs/examio/ARCHITECTURE.md` §4.4 (study-room, vocabulary rows), §7.4 Redis, §12 P5, **§13 new-service checklist**
+- `/Users/tgiap.dev/devs/kmaedu/ARCHITECTURE.md` §4.4 (study-room, vocabulary rows), §7.4 Redis, §12 P5, **§13 new-service checklist**
 - [scout-rbac-surface §1 study-room, word-family](./reports/scout-rbac-surface-report.md)
 - Prior: [phase-05 gateway/WS](./phase-05-gateway-rewrite.md), [phase-06](./phase-06-rbac-enforcement-and-security-fixes.md) (WS middleware authz, RT-5), [phase-10](./phase-10-cut-cross-db-access.md), [phase-11](./phase-11-database-per-service.md) (`r2_delete_tasks`)
 
@@ -39,7 +39,7 @@ Functional — vocabulary-service
   - `GET categories`, `GET categories/:slug/roots`, `GET category/:categorySlug/:rootWord`, `GET generation-status/:slug(/:rootWord)` → `word_family:read`
   - `POST save`, `GET saved`, `DELETE saved/:wordFamilyId` → `word_family:save` (STUDENT + TEACHER) <!-- Updated: Validation Session 1 - TEACHER += word_family:save -->
   - `POST generate`, `POST generate-root` → `word_family:generate` + the phase-06 per-user limit of 20/day (Redis key moves under prefix `vocab:`). Free: no finance `Debit`, no finance client in vocabulary-service; TEACHER-only via `word_family:generate`; rate-limited at the gateway by the path-keyed `word-family-generate` entry (P05, unchanged by the move). <!-- Updated: Validation Session 1 - word-family gen free + gateway rate-limited -->
-- gRPC `examio.vocabulary.v1`: `WordFamilyAdminService {ListCategories, UpsertCategory, DeleteCategory}` (moved, contract unchanged; <!-- Red Team: RT-2 --> forwarded admin token with `word_family:admin`, actor = token `sub`); add `WordFamilyService.GetWordFamily(id)` (any valid user or service token) for exam/content.
+- gRPC `kmaedu.vocabulary.v1`: `WordFamilyAdminService {ListCategories, UpsertCategory, DeleteCategory}` (moved, contract unchanged; <!-- Red Team: RT-2 --> forwarded admin token with `word_family:admin`, actor = token `sub`); add `WordFamilyService.GetWordFamily(id)` (any valid user or service token) for exam/content.
 - `DeleteCategory` and an `UpsertCategory` that replaces `imageUrl` enqueue the old key in vocabulary's `r2_delete_tasks` in the same tx; the vocabulary worker drains it (phase-11 pattern). Add `'vocabulary'` to the r2 `DeleteObjects` `@ServiceOnly(...)` decorator (code, not env). <!-- Red Team: RT-8 --> <!-- Reconcile: X6 -->
 - AI call: move it as-is behind `src/clients/ai.client.ts` (HTTP + `INTERNAL_SERVICE_TOKEN`, temporary). **Phase 13 switches it to gRPC `GenerateWordFamily`.**
 - Events consumed: none. <!-- Red Team: RT-11 --> (`UserSavedWordFamily` cleanup on user deletion is deferred.)
@@ -71,15 +71,15 @@ Gateway env: `STUDYROOM_SERVICE_URL=http://study-room-service:3000`, `VOCABULARY
 
 ## Related Code Files
 File ownership (globs):
-- Create: `/Users/tgiap.dev/devs/examio/examio-be/apps/study-room-service/**`, `/Users/tgiap.dev/devs/examio/examio-be/apps/vocabulary-service/**`
-- Create: `/Users/tgiap.dev/devs/examio/examio-be/proto/examio/vocabulary/v1/word_family.proto` (adds `WordFamilyService`; the admin service file moves here if phase 10 put it elsewhere)
-- Create: `/Users/tgiap.dev/devs/examio/examio-be/deploy/compose/{study-room,vocabulary}.yml`, `/Users/tgiap.dev/devs/examio/examio-be/deploy/env/{studyroom,vocabulary}.env.example`
-- Create: `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/flashcardset/word-family-to-flashcard.{controller,service}.ts`, `.../apps/exam-service/src/clients/vocabulary.client.ts`
-- Modify (shared with 13/14 → sequential): `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/{exam-service.module.ts,main.ts,worker.module.ts}`, `.../apps/exam-service/prisma/schema/{study-room,vocabulary}.prisma` (delete) + new exam migration
-- Modify (line-level; 15 owns the `ai-upload*`/`r2-image` entries only): `/Users/tgiap.dev/devs/examio/examio-be/apps/gateway-service/config/routes.yaml` entries `studyrooms`, `ws-study`, `word-family`, `wf-to-flashcard`
-- Modify (append-only, serialize merges with 15): `/Users/tgiap.dev/devs/examio/examio-be/{nest-cli.json,package.json,jest.config.js,deploy/docker-compose.yml(include list),scripts/check-model-ownership.ts(map)}`
-- Modify: `/Users/tgiap.dev/devs/examio/examio-be/deploy/env/admin.env.example` (`VOCABULARY_GRPC_URL`), gateway env (upstreams), `/Users/tgiap.dev/devs/examio/examio-be/apps/r2-service/src/r2-service.controller.ts` (`DeleteObjects` `@ServiceOnly` list + `vocabulary`, decorator line only) <!-- Red Team: RT-8 --> <!-- Reconcile: X6 -->
-- Delete: `/Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/{study-room,word-family}/**`
+- Create: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/study-room-service/**`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/vocabulary-service/**`
+- Create: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/proto/kmaedu/vocabulary/v1/word_family.proto` (adds `WordFamilyService`; the admin service file moves here if phase 10 put it elsewhere)
+- Create: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/compose/{study-room,vocabulary}.yml`, `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/env/{studyroom,vocabulary}.env.example`
+- Create: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/flashcardset/word-family-to-flashcard.{controller,service}.ts`, `.../apps/exam-service/src/clients/vocabulary.client.ts`
+- Modify (shared with 13/14 → sequential): `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/{exam-service.module.ts,main.ts,worker.module.ts}`, `.../apps/exam-service/prisma/schema/{study-room,vocabulary}.prisma` (delete) + new exam migration
+- Modify (line-level; 15 owns the `ai-upload*`/`r2-image` entries only): `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/gateway-service/config/routes.yaml` entries `studyrooms`, `ws-study`, `word-family`, `wf-to-flashcard`
+- Modify (append-only, serialize merges with 15): `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/{nest-cli.json,package.json,jest.config.js,deploy/docker-compose.yml(include list),scripts/check-model-ownership.ts(map)}`
+- Modify: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/deploy/env/admin.env.example` (`VOCABULARY_GRPC_URL`), gateway env (upstreams), `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/r2-service/src/r2-service.controller.ts` (`DeleteObjects` `@ServiceOnly` list + `vocabulary`, decorator line only) <!-- Red Team: RT-8 --> <!-- Reconcile: X6 -->
+- Delete: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/{study-room,word-family}/**`
 
 ## Implementation Steps
 New-app scaffold checklist (ARCH §13), per service (`study-room`, `vocabulary`):
@@ -127,9 +127,9 @@ Write first:
 - [x] [CARRIED from 09] D2 `enableShutdownHooks` + SIGTERM drain in study-room-service `main.ts`; D5 replace the `ioredis/built/errors` deep import (match `err.name` or pin `ioredis ~5.10`) — done in study-room; the `libs/redis` remainder is carried to phase 16
 
 ## Success Criteria
-- `grep -rn "StudyRoomModule\|WordFamilyModule" /Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src` → no output.
-- `grep -rn "question: { in:" /Users/tgiap.dev/devs/examio/examio-be/apps/exam-service/src/modules/flashcardset` → no output. <!-- Red Team: RT-15 -->
-- `cd /Users/tgiap.dev/devs/examio/examio-be && yarn build && yarn test && npx depcruise apps libs` green.
+- `grep -rn "StudyRoomModule\|WordFamilyModule" /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src` → no output.
+- `grep -rn "question: { in:" /Users/tgiap.dev/devs/kmaedu/kmaedu-be/apps/exam-service/src/modules/flashcardset` → no output. <!-- Red Team: RT-15 -->
+- `cd /Users/tgiap.dev/devs/kmaedu/kmaedu-be && yarn build && yarn test && npx depcruise apps libs` green.
 - `docker compose -f deploy/docker-compose.yml up -d --wait study-room-service vocabulary-service` → healthy. `curl -s localhost:<gw>/api/v1/word-family/categories -H "Authorization: Bearer $STUDENT"` → 200 with the same JSON as before.
 - FE `/k/study-room`: create (teacher), join (student), timer/chat/playlist sync across 2 browsers. Admin word-family CRUD works. Banning a joined user from the admin UI removes them from the room within 5 s. <!-- Red Team: RT-5 -->
 
@@ -163,7 +163,7 @@ Part A (study-room-service, 2026-10-23):
 - D2: `enableShutdownHooks()` + `StudyRoomShutdown` flushes buffered focus time on SIGTERM. D5: the `ioredis/built/errors` deep import is gone from study-room; it remains in `libs/redis/src/redis-unavailable.filter.ts` (out of scope, carried).
 
 Part B (vocabulary-service, 2026-10-23):
-- vocabulary-service: HTTP + gRPC (`WordFamilyAdminService` moved, new `WordFamilyService.GetWordFamily` in `proto/examio/vocabulary/v1/word_family.proto`), `ROLE=api,worker` in one process (R2 delete poller as `svc:vocabulary`), own `R2DeleteTask`; no RabbitMQ / MessagingModule. `GetWordFamily` is `@RequirePermissionsOrService([])` and returns typed fields (`root_word`, `category_name`, `words[]`); NOT_FOUND / FAILED_PRECONDITION / INVALID_ARGUMENT map to 404 / 400 / 503 in exam. It is on the idempotent retry list (`libs/grpc/src/idempotent-rpcs.ts`).
+- vocabulary-service: HTTP + gRPC (`WordFamilyAdminService` moved, new `WordFamilyService.GetWordFamily` in `proto/kmaedu/vocabulary/v1/word_family.proto`), `ROLE=api,worker` in one process (R2 delete poller as `svc:vocabulary`), own `R2DeleteTask`; no RabbitMQ / MessagingModule. `GetWordFamily` is `@RequirePermissionsOrService([])` and returns typed fields (`root_word`, `category_name`, `words[]`); NOT_FOUND / FAILED_PRECONDITION / INVALID_ARGUMENT map to 404 / 400 / 503 in exam. It is on the idempotent retry list (`libs/grpc/src/idempotent-rpcs.ts`).
 - exam now has no gRPC server (word-family admin was its only one); `main.ts` and `GRPC_PORT` wiring removed.
 - RT-15: card ids are pre-assigned with `crypto.randomUUID()`; the e2e fails against the old `question: { in }` lookup (mutation check: 6 links instead of 2).
 - Gateway: `wf-to-flashcard` is POST-only, path regex wins over the `word-family` prefix (matcher: path first, then longest prefix); route test covers look-alikes staying on vocabulary.

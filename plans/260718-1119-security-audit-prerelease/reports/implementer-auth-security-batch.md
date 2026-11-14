@@ -1,6 +1,6 @@
 # Auth security fix batch — implementation report
 
-Work context: examio-be (apps/auth-service/**, libs/common/**)
+Work context: kmaedu-be (apps/auth-service/**, libs/common/**)
 
 ## Files changed
 
@@ -39,7 +39,7 @@ Both of these depend on retrieving a **previously server-generated** plaintext t
 
 ## Verification
 
-- `cd examio-be && npx nest build auth-service` → exit 0 (webpack compiled successfully).
+- `cd kmaedu-be && npx nest build auth-service` → exit 0 (webpack compiled successfully).
 - Also built `gateway-service`, `exam-service`, `finance-service` (all consume the shared `libs/common` guards I edited) → all exit 0, confirming the guard changes and directory deletion didn't break other consumers.
 - `yarn test apps/auth-service/src/auth.service.spec.ts apps/auth-service/src/auth-service.controller.spec.ts` → 3 failing (refresh-token flow tests) / 3 passing. Confirmed via `git stash` that the same 3 tests fail identically on the pre-existing `main` working tree (mock `GenerateIdService` doesn't stub `generateSecureToken`) — pre-existing, unrelated to this batch, not touched.
 

@@ -4,17 +4,17 @@
 Remove teacher/student authorization while preserving authentication, resource ownership, and admin-only behavior.
 
 ## Impacted Files
-- `examio-be/libs/common/src/guard/roles.guard.ts`
-- `examio-be/libs/common/src/decorator/roles.decorator.ts` or equivalent export if present
-- `examio-be/libs/common/src/index.ts` if role guard/decorator exports become unused
-- `examio-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
-- `examio-be/apps/exam-service/src/modules/quizset/quizset.controller.ts`
-- `examio-be/apps/exam-service/src/modules/flashcardset/flashcardset.controller.ts`
-- `examio-be/apps/exam-service/src/modules/examroom/examroom.controller.ts`
-- `examio-be/apps/exam-service/src/modules/ai/ai.controller.ts`
-- `examio-be/apps/exam-service/src/modules/ai-chat/ai-chat.controller.ts`
-- `examio-be/apps/exam-service/src/modules/examattempt/examattempt.service.ts`
-- `examio-be/apps/exam-service/src/modules/ai/ai.controller.e2e-spec.ts`
+- `kmaedu-be/libs/common/src/guard/roles.guard.ts`
+- `kmaedu-be/libs/common/src/decorator/roles.decorator.ts` or equivalent export if present
+- `kmaedu-be/libs/common/src/index.ts` if role guard/decorator exports become unused
+- `kmaedu-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
+- `kmaedu-be/apps/exam-service/src/modules/quizset/quizset.controller.ts`
+- `kmaedu-be/apps/exam-service/src/modules/flashcardset/flashcardset.controller.ts`
+- `kmaedu-be/apps/exam-service/src/modules/examroom/examroom.controller.ts`
+- `kmaedu-be/apps/exam-service/src/modules/ai/ai.controller.ts`
+- `kmaedu-be/apps/exam-service/src/modules/ai-chat/ai-chat.controller.ts`
+- `kmaedu-be/apps/exam-service/src/modules/examattempt/examattempt.service.ts`
+- `kmaedu-be/apps/exam-service/src/modules/ai/ai.controller.e2e-spec.ts`
 
 ## Implementation Steps
 1. Replace `@UseGuards(AuthGuard, RolesGuard)` plus `@Roles('teacher', 'student')` with `@UseGuards(AuthGuard)` where every authenticated user should have access.

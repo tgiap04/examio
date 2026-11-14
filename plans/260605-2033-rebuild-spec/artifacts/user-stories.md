@@ -1,6 +1,6 @@
 # User Stories
 
-**Project**: examio
+**Project**: kmaedu
 **Generated**: 2026-06-05
 **Analysis Scope**: All 32 frontend screens + permissions matrix
 

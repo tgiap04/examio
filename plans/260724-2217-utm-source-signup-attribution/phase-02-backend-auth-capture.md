@@ -7,8 +7,8 @@ Ghi `utmSource` vào `User` ở CẢ hai nhánh tạo user: email register và O
 Đây là phase chứa rủi ro #1 (OAuth state plumbing).
 
 ## Related Code Files
-- Modify: `examio-be/apps/auth-service/src/dto/register.dto.ts` — thêm field zod optional.
-- Modify: `examio-be/apps/auth-service/src/auth.service.ts` — nhánh email register (~146-205) và
+- Modify: `kmaedu-be/apps/auth-service/src/dto/register.dto.ts` — thêm field zod optional.
+- Modify: `kmaedu-be/apps/auth-service/src/auth.service.ts` — nhánh email register (~146-205) và
   nhánh OAuth create (~583-616): ghi `utmSource` vào `tx.user.create({ data: { ..., utmSource } })`.
 - Read/confirm: google strategy + guard (`libs/common/src/guard/google-auth.guard.ts` và google
   strategy tương ứng) để biết cách `state` param được truyền/đọc.

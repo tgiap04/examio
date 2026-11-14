@@ -11,7 +11,7 @@ A teacher edits a specific flashcard deck — managing its chapter/section label
 
 ## Screen Layout
 
-The page is a single-column full-height layout (`min-h-screen`) with `max-w-7xl mx-auto` centering. Vertical regions stack top to bottom: a breadcrumb + description bar header, a 3-column stat cards row (total cards, view count, creation date), a `FlashcardLabelManager` section, and a `Card`-wrapped flashcard list with label filter and pagination. Two dialogs (`FlashcardEditorDialog`, `DeleteConfirmDialog`) float above the content. Responsive: stat cards stack to single column on mobile; flashcard grid shifts from 3→2→1 columns. (source: `examio-fe/src/pages/k/ManageFlashcardSetDetailPage.tsx`:218–465)
+The page is a single-column full-height layout (`min-h-screen`) with `max-w-7xl mx-auto` centering. Vertical regions stack top to bottom: a breadcrumb + description bar header, a 3-column stat cards row (total cards, view count, creation date), a `FlashcardLabelManager` section, and a `Card`-wrapped flashcard list with label filter and pagination. Two dialogs (`FlashcardEditorDialog`, `DeleteConfirmDialog`) float above the content. Responsive: stat cards stack to single column on mobile; flashcard grid shifts from 3→2→1 columns. (source: `kmaedu-fe/src/pages/k/ManageFlashcardSetDetailPage.tsx`:218–465)
 
 ### Layout Sketch
 
@@ -206,10 +206,10 @@ No `TeacherRoute` wrapper in this page. Auth is handled by the parent K layout s
 
 ## Source References
 
-- Page: `examio-fe/src/pages/k/ManageFlashcardSetDetailPage.tsx`
-- Flashcard set store: `examio-fe/src/stores/useFlashcardSetStore.ts`
-- Flashcard set API: `examio-fe/src/apis/flashcardSetApi.ts`
-- Store cache: `examio-fe/src/lib/storeCache.ts`
-- FlashcardEditorDialog: `examio-fe/src/components/organisms/FlashcardEditorDialog.tsx` (referenced, not read)
-- FlashcardLabelManager: `examio-fe/src/components/organisms/FlashcardLabelManager.tsx` (referenced, not read)
-- DeleteConfirmDialog: `examio-fe/src/components/organisms/DeleteConfirmDialog.tsx` (referenced, not read)
+- Page: `kmaedu-fe/src/pages/k/ManageFlashcardSetDetailPage.tsx`
+- Flashcard set store: `kmaedu-fe/src/stores/useFlashcardSetStore.ts`
+- Flashcard set API: `kmaedu-fe/src/apis/flashcardSetApi.ts`
+- Store cache: `kmaedu-fe/src/lib/storeCache.ts`
+- FlashcardEditorDialog: `kmaedu-fe/src/components/organisms/FlashcardEditorDialog.tsx` (referenced, not read)
+- FlashcardLabelManager: `kmaedu-fe/src/components/organisms/FlashcardLabelManager.tsx` (referenced, not read)
+- DeleteConfirmDialog: `kmaedu-fe/src/components/organisms/DeleteConfirmDialog.tsx` (referenced, not read)

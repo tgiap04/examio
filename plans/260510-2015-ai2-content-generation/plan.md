@@ -23,10 +23,10 @@ Remove Ollama from all content-generation paths and use the OpenAI-compatible AI
 - Do not route embeddings, OCR, vector storage, or graph/RAG chunk embedding to AI2.
 
 ## Current Code Findings
-- `../examio-be/apps/ai-service/src/llm/model_registry.py` defines generation models as `gemini`/`ollama` providers and embedding as Ollama.
-- `../examio-be/apps/ai-service/src/llm/model_manager.py` routes generation through `_generate_with_gemini()` or `_generate_with_ollama()`.
-- `../examio-be/apps/ai-service/src/backend/services/generation_service.py` conditionally uses Pydantic structured output only for Ollama models.
-- `../examio-be/apps/ai-service/src/llm/llm_factory.py` can still instantiate Ollama chat models for higher-level flows.
+- `../kmaedu-be/apps/ai-service/src/llm/model_registry.py` defines generation models as `gemini`/`ollama` providers and embedding as Ollama.
+- `../kmaedu-be/apps/ai-service/src/llm/model_manager.py` routes generation through `_generate_with_gemini()` or `_generate_with_ollama()`.
+- `../kmaedu-be/apps/ai-service/src/backend/services/generation_service.py` conditionally uses Pydantic structured output only for Ollama models.
+- `../kmaedu-be/apps/ai-service/src/llm/llm_factory.py` can still instantiate Ollama chat models for higher-level flows.
 - Model catalog endpoint exists at AI service `/ai/models`, proxied by exam-service and gateway; FE should only consume this proxied BE route.
 
 ## Phases

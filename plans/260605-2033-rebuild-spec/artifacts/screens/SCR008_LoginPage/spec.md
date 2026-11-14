@@ -115,7 +115,7 @@ N/A — screen displays no dynamic data. All fields are writable inputs (documen
 
 | Aspect | Status | Notes |
 |--------|--------|-------|
-| ARIA roles/labels | partial | `alt="Examio"` on logo img; `htmlFor` on `<label>` elements; no `role="form"` |
+| ARIA roles/labels | partial | `alt="KMAEdu"` on logo img; `htmlFor` on `<label>` elements; no `role="form"` |
 | Keyboard navigation | supported | Tab order: credential → password → toggle → submit → Google → link; `type="button"` prevents form submission on Google OAuth |
 | Focus management | unmanaged | No explicit `focus()` calls; `autofocus` not set |
 | Screen reader compatibility | supported | Labels linked to inputs via `htmlFor`/`id`; `placeholder` as secondary cue |
@@ -139,9 +139,9 @@ N/A — screen displays no dynamic data. All fields are writable inputs (documen
 
 ## Source References
 
-- Page/View: `examio-fe/src/pages/auth/LoginPage.tsx:1`
-- Form + layout: `examio-fe/src/components/organisms/auth/signin-form.tsx:1`
-- Auth store: `examio-fe/src/stores/useAuthStore.ts:1`
-- API client: `examio-fe/src/apis/authApi.ts:57`
-- Route guard: `examio-fe/src/routes/guards/PublicRoute.tsx:1`
-- Router config: `examio-fe/src/routes/index.tsx:113`
+- Page/View: `kmaedu-fe/src/pages/auth/LoginPage.tsx:1`
+- Form + layout: `kmaedu-fe/src/components/organisms/auth/signin-form.tsx:1`
+- Auth store: `kmaedu-fe/src/stores/useAuthStore.ts:1`
+- API client: `kmaedu-fe/src/apis/authApi.ts:57`
+- Route guard: `kmaedu-fe/src/routes/guards/PublicRoute.tsx:1`
+- Router config: `kmaedu-fe/src/routes/index.tsx:113`

@@ -1,0 +1,38 @@
+# Traefik dynamic config (file provider, mounted read-only). Static flags live in compose/dev-extras.yaml.
+# Entrypoints: fe = browser port (KMAEDU_WEB_PORT, default 5173), web = API port (KMAEDU_HTTP_PORT, default 8000).
+http:
+  routers:
+    # Same origin as the web app: cookies and /ws/study need no CORS. `gateway` is gateway-a's alias.
+    api:
+      rule: PathPrefix(`/api/`) || PathPrefix(`/ws/`)
+      entryPoints: [fe, web]
+      service: gateway
+    # Everything else on the browser port is the Vite dev server (HMR websocket included).
+    web-root:
+      rule: PathPrefix(`/`)
+      entryPoints: [fe]
+      priority: 1
+      service: fe
+    # Admin UIs on the API port only, under reserved /_* paths (no strip: each UI serves its own prefix).
+    traefik-dashboard:
+      rule: PathPrefix(`/_traefik`)
+      entryPoints: [web]
+      service: api@internal
+    rabbitmq-management:
+      rule: PathPrefix(`/_rabbitmq`)
+      entryPoints: [web]
+      service: rabbitmq-management
+
+  services:
+    gateway:
+      loadBalancer:
+        servers:
+          - url: http://gateway:3000
+    fe:
+      loadBalancer:
+        servers:
+          - url: http://fe:5173
+    rabbitmq-management:
+      loadBalancer:
+        servers:
+          - url: http://rabbitmq:15672

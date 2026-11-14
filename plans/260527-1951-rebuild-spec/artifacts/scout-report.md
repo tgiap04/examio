@@ -1,18 +1,18 @@
-# Examio Full-Stack Scout Report
+# KMAEdu Full-Stack Scout Report
 
 > Generated: 2026-05-27
-> Scope: examio-be, examio-fe, examio-app
+> Scope: kmaedu-be, kmaedu-fe, kmaedu-app
 
 ## Executive Summary
 
-Examio is a multi-workspace platform with a NestJS/Python backend, React/Vite web frontend, and Kotlin Multiplatform mobile app. The backend exposes gateway-backed REST APIs, gRPC service contracts, RabbitMQ events, Prisma/PostgreSQL persistence, R2 storage, and Python AI/OCR services. The web frontend consumes gateway APIs through Axios/Zustand and implements most production flows. The mobile app has real shared KMP API/repository layers, while most platform UI screens remain mock-data backed except auth.
+KMAEdu is a multi-workspace platform with a NestJS/Python backend, React/Vite web frontend, and Kotlin Multiplatform mobile app. The backend exposes gateway-backed REST APIs, gRPC service contracts, RabbitMQ events, Prisma/PostgreSQL persistence, R2 storage, and Python AI/OCR services. The web frontend consumes gateway APIs through Axios/Zustand and implements most production flows. The mobile app has real shared KMP API/repository layers, while most platform UI screens remain mock-data backed except auth.
 
 ## Backend Scout
 
-# Backend Codebase Scout Report -- ExamIO
+# Backend Codebase Scout Report -- KMAEdu
 
 > Generated: 2026-05-27
-> Root: `/Users/tgiap.dev/devs/examio/examio-be/`
+> Root: `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/`
 
 ---
 
@@ -328,7 +328,7 @@ Examio is a multi-workspace platform with a NestJS/Python backend, React/Vite we
 | `src/evaluation/` | Benchmark evaluation: code extraction, pass@k, codebleu, sandboxed execution |
 | `src/backend/rabbitmq_consumer.py` | RabbitMQ consumer for async tasks |
 
-**Message queue:** AI Service consumes from RabbitMQ `examio.events` exchange (topic type). On startup, starts async consumer. Tutor knowledge file processing events routed via RabbitMQ.
+**Message queue:** AI Service consumes from RabbitMQ `kmaedu.events` exchange (topic type). On startup, starts async consumer. Tutor knowledge file processing events routed via RabbitMQ.
 
 **AI models used:** Google Gemini (via langchain-google-genai), OpenAI (via langchain-openai), local HuggingFace models. Model registry supports runtime resolution.
 
@@ -365,7 +365,7 @@ Examio is a multi-workspace platform with a NestJS/Python backend, React/Vite we
 
 ## 3. Shared Libraries
 
-### 3.1 `@examio/common` (`libs/common`)
+### 3.1 `@kmaedu/common` (`libs/common`)
 
 | File | Description |
 |---|---|
@@ -395,7 +395,7 @@ Examio is a multi-workspace platform with a NestJS/Python backend, React/Vite we
 | `src/events/` | Event system: publisher, subscriber, types, RabbitMQ service |
 | `src/grpc/` | gRPC clients module, R2 client service |
 
-### 3.2 `@examio/database` (`libs/database`)
+### 3.2 `@kmaedu/database` (`libs/database`)
 
 | File | Description |
 |---|---|
@@ -407,7 +407,7 @@ Examio is a multi-workspace platform with a NestJS/Python backend, React/Vite we
 | `prisma/models/*.prisma` | Individual model files (merged via prisma-merge) |
 | `prisma/seed.ts` | Database seed script |
 
-### 3.3 `@examio/redis` (`libs/redis`)
+### 3.3 `@kmaedu/redis` (`libs/redis`)
 
 | File | Description |
 |---|---|
@@ -420,7 +420,7 @@ Examio is a multi-workspace platform with a NestJS/Python backend, React/Vite we
 
 ## 4. gRPC Contracts (Proto Files)
 
-All proto files in `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/protos/`:
+All proto files in `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/common/src/protos/`:
 
 | File | Package | Services |
 |---|---|---|
@@ -443,7 +443,7 @@ All proto files in `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/proto
 
 ## 5. Database Schema (Prisma)
 
-**Location:** `/Users/tgiap.dev/devs/examio/examio-be/libs/database/prisma/schema.prisma` (auto-generated from `prisma/models/*.prisma` via prisma-merge)
+**Location:** `/Users/tgiap.dev/devs/kmaedu/kmaedu-be/libs/database/prisma/schema.prisma` (auto-generated from `prisma/models/*.prisma` via prisma-merge)
 
 **Datasource:** PostgreSQL
 
@@ -502,7 +502,7 @@ All proto files in `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/proto
 **Library (NestJS):** `amqp-connection-manager` + `amqplib` (NestJS services)
 **Library (Python):** `aio-pika` (AI service)
 
-**Exchange:** `examio.events` (topic exchange, durable)
+**Exchange:** `kmaedu.events` (topic exchange, durable)
 
 **Event types (`libs/common/src/events/event-types.ts`):**
 
@@ -538,7 +538,7 @@ All proto files in `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/proto
 **Auth flow:**
 1. Login/Register -> JWT token issued -> Set in httpOnly cookies (`token`, `accessToken`, `refreshToken`, `session_id`)
 2. Subsequent requests: Cookie parsed by `AuthGuard` (higher priority) or Bearer token (`Authorization: Bearer <jwt>`)
-3. `AuthGuard` (in `@examio/common`) verifies JWT, loads user from DB, attaches `request.user`
+3. `AuthGuard` (in `@kmaedu/common`) verifies JWT, loads user from DB, attaches `request.user`
 
 **OAuth:** Google OAuth2 via passport-google-oauth20 with One Tap support
 
@@ -626,7 +626,7 @@ All proto files in `/Users/tgiap.dev/devs/examio/examio-be/libs/common/src/proto
 
 All routes prefixed with `/api/v1/`.
 
-### Gateway (`examio-be:3000`)
+### Gateway (`kmaedu-be:3000`)
 
 | Route | Internal Target |
 |---|---|
@@ -771,7 +771,7 @@ All routes prefixed with `/api/v1/`.
 
 3. **AI Service dual-dependencies:** Python AI service reads/writes the same PostgreSQL database as NestJS services (`UserStorage`, `Document`, `HistoryGenerated*` tables). This creates implicit coupling.
 
-4. **Shared auth library:** `@examio/common` is the most critical shared lib -- used by gateway, auth, exam, and finance services.
+4. **Shared auth library:** `@kmaedu/common` is the most critical shared lib -- used by gateway, auth, exam, and finance services.
 
 5. **Prisma merge workflow:** Individual `.prisma` model files under `prisma/models/` are merged into `schema.prisma` via `prisma-merge` before generation. Model files exist in both `prisma/models/` and `src/models/` (duplicates).
 
@@ -787,11 +787,11 @@ All routes prefixed with `/api/v1/`.
 
 ## Frontend Scout
 
-# Frontend Scout Report: examio-fe
+# Frontend Scout Report: kmaedu-fe
 
-**Project**: examio-fe (React 19 + Vite + TypeScript + Yarn 4)
+**Project**: kmaedu-fe (React 19 + Vite + TypeScript + Yarn 4)
 **Date**: 2026-05-27
-**Path**: `/Users/tgiap.dev/devs/examio/examio-fe/`
+**Path**: `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/`
 
 ---
 
@@ -1134,19 +1134,19 @@ These serve as the bridge between page components and organisms.
 
 ---
 
-*Report generated from source code analysis of `/Users/tgiap.dev/devs/examio/examio-fe/src/` -- 180+ source files examined.*
+*Report generated from source code analysis of `/Users/tgiap.dev/devs/kmaedu/kmaedu-fe/src/` -- 180+ source files examined.*
 
 ## Mobile App Scout
 
 # Mobile App Codebase Scout Report
 
 **Date:** 2026-05-27
-**Project:** Examio KMP Mobile App
-**Root:** `/Users/tgiap.dev/devs/examio/examio-app/`
+**Project:** KMAEdu KMP Mobile App
+**Root:** `/Users/tgiap.dev/devs/kmaedu/kmaedu-app/`
 
 ## 1. Project Overview
 
-This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetpack Compose)** and **iOS (SwiftUI)** frontends sharing Kotlin common code. It serves as the mobile companion to the Examio exam/learning platform, featuring AI question generation from PDFs, flashcard study, exam rooms, and account/wallet management.
+This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetpack Compose)** and **iOS (SwiftUI)** frontends sharing Kotlin common code. It serves as the mobile companion to the KMAEdu exam/learning platform, featuring AI question generation from PDFs, flashcard study, exam rooms, and account/wallet management.
 
 **Architecture Pattern:** Simple app-level architecture (not full Clean Architecture). Features are organized by domain folders. Data flow is: **View -> UiState (local) -> Repository (shared) -> ApiService (shared Ktor) -> Backend**. There are no ViewModel classes in the shared module -- each platform manages its own UI state locally.
 
@@ -1166,7 +1166,7 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 - `AuthInterceptor` plugin for automatic bearer token injection
 - `safeApiCall<T>` / `safeUnitApiCall` helper functions wrapping calls in try/catch and returning `ApiResult<T>`
 
-**Backend API Base URL:** `http://10.0.2.2:3000` (Android emulator localhost) / `http://localhost:3000` (iOS simulator), configurable via `BuildConfig` (Android) or `Info.plist` key `ExamioAPIBaseURL`.
+**Backend API Base URL:** `http://10.0.2.2:3000` (Android emulator localhost) / `http://localhost:3000` (iOS simulator), configurable via `BuildConfig` (Android) or `Info.plist` key `KMAEduAPIBaseURL`.
 
 ---
 
@@ -1176,7 +1176,7 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 - Applies plugins: `android.application`, `android.library`, `kotlin.android`, `kotlin.multiplatform`, `kotlin.compose`, `kotlin.serialization` (all via version catalog `libs`)
 
 ### `settings.gradle.kts`
-- Root project: `ExamioApp`
+- Root project: `KMAEduApp`
 - Modules: `:androidApp`, `:shared`
 - Uses version catalog (`libs`)
 
@@ -1187,10 +1187,10 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 - Android-specific: `ktor-client-okhttp`
 - iOS-specific: `ktor-client-darwin`
 - Min SDK: from version catalog
-- Namespace: `com.examio.app.shared`
+- Namespace: `com.kmaedu.app.shared`
 
 ### `androidApp/build.gradle.kts`
-- Application ID: `com.examio.app`
+- Application ID: `com.kmaedu.app`
 - Compile SDK: from version catalog, Min SDK: from version catalog, Target SDK: from version catalog
 - Version: `0.1.0` (versionCode 1)
 - `API_BASE_URL` build config field: `"http://10.0.2.2:3000"` (emulator localhost)
@@ -1291,7 +1291,7 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 
 | File | Description |
 |------|-------------|
-| `core/storage/SecureTokenStorage.android.kt` | `actual fun createSecureTokenStorage()`, uses Android SharedPreferences + AES/GCM encryption via Android KeyStore (key alias `examio_mobile_session`); initialized via `initSecureTokenStorage(context)` |
+| `core/storage/SecureTokenStorage.android.kt` | `actual fun createSecureTokenStorage()`, uses Android SharedPreferences + AES/GCM encryption via Android KeyStore (key alias `kmaedu_mobile_session`); initialized via `initSecureTokenStorage(context)` |
 | `core/network/SSEClient.kt` | `actual fun createSSEClient()`, currently throws `NotImplementedError("SSE streaming is wired in Phase 6")` |
 
 ### 3.3 iOS Main (`shared/src/iosMain/`)
@@ -1309,11 +1309,11 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 
 | File | Description |
 |------|-------------|
-| `AndroidManifest.xml` | Single activity (`MainActivity`), `launchMode="singleTop"`, deep link intent filter for `examio://auth` |
-| `MainActivity.kt` | Entry point; sets up edge-to-edge, initializes secure token storage, creates `AndroidAppContainer`, handles OAuth callback URI (`examio://auth`), renders `ExamioTheme { ExamioApp(...) }` |
-| `ExamioApp.kt` | Root composable; manages auth state (mut state); shows `AuthNavGraph` when unauthenticated, `Scaffold` + top bar + bottom tab bar + content `when(selectedTab)` when authenticated |
+| `AndroidManifest.xml` | Single activity (`MainActivity`), `launchMode="singleTop"`, deep link intent filter for `kmaedu://auth` |
+| `MainActivity.kt` | Entry point; sets up edge-to-edge, initializes secure token storage, creates `AndroidAppContainer`, handles OAuth callback URI (`kmaedu://auth`), renders `KMAEduTheme { KMAEduApp(...) }` |
+| `KMAEduApp.kt` | Root composable; manages auth state (mut state); shows `AuthNavGraph` when unauthenticated, `Scaffold` + top bar + bottom tab bar + content `when(selectedTab)` when authenticated |
 | `OAuthCallbackHolder.kt` | Singleton `StateFlow<String?>` to pass OAuth callback URIs between Activity and Compose tree |
-| `design/ExamioTheme.kt` | Material 3 `lightColorScheme` with primary `#CC785C` (coral), background `#FAF9F5`, surface variant `#EFE9DE` |
+| `design/KMAEduTheme.kt` | Material 3 `lightColorScheme` with primary `#CC785C` (coral), background `#FAF9F5`, surface variant `#EFE9DE` |
 
 ### 4.2 Backend / DI
 
@@ -1321,7 +1321,7 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 |------|-------------|
 | `backend/AndroidAppContainer.kt` | Manual DI container: creates `HttpClient` via `HttpClientFactory.create()`, instantiates `AuthRepository` with `AuthApiService` |
 | `backend/AndroidSecureTokenStorage.kt` | Unused? (Duplicates `shared/src/androidMain/` implementation -- also AES/GCM with Android KeyStore) |
-| `core/config/MobileApiConfig.kt` | Builds API base URL from `BuildConfig.API_BASE_URL` + `/api/v1`, provides `googleOAuthUrl()` with `examio://auth/callback` redirect |
+| `core/config/MobileApiConfig.kt` | Builds API base URL from `BuildConfig.API_BASE_URL` + `/api/v1`, provides `googleOAuthUrl()` with `kmaedu://auth/callback` redirect |
 
 ### 4.3 Navigation
 
@@ -1345,7 +1345,7 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 | `features/auth/AuthCardShell.kt` | Shared card-based layout with gradient background for auth screens |
 | `features/auth/AuthFormComponents.kt` | Reusable `AuthTextField`, `AuthPrimaryButton`, `AuthSocialButton`, `AuthMessage` |
 
-#### Home (Note: HomeScreen is defined but NOT used in ExamioApp.kt -- `selectedTab` defaults to `AiTool`)
+#### Home (Note: HomeScreen is defined but NOT used in KMAEduApp.kt -- `selectedTab` defaults to `AiTool`)
 
 | File | Description |
 |------|-------------|
@@ -1406,11 +1406,11 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 
 | File | Description |
 |------|-------------|
-| `ExamioApp.swift` | `@main` SwiftUI App struct, renders `ContentView()` in `WindowGroup` |
+| `KMAEduApp.swift` | `@main` SwiftUI App struct, renders `ContentView()` in `WindowGroup` |
 | `ContentView.swift` | Root view: shows `AuthFlowView` if not authenticated, tabbed main content (`TabView` with 5 tabs + `AppHeader` + `ProfileSheet` sheet) if authenticated; handles `onOpenURL` for deep links |
-| `AppConfig.swift` | API config: reads `ExamioAPIBaseURL` from `Info.plist` (default `http://localhost:3000`), builds `apiBaseURL` with `/api/v1` prefix, provides `googleOAuthURL()` |
+| `AppConfig.swift` | API config: reads `KMAEduAPIBaseURL` from `Info.plist` (default `http://localhost:3000`), builds `apiBaseURL` with `/api/v1` prefix, provides `googleOAuthURL()` |
 | `AppRouter.swift` | `AppDeepLink` enum (`examSession`, `flashcard`, `chat`, `profile`) + `AppTab` enum + `parseAppDeepLink()` function |
-| `Info.plist` | App version `0.1.0`, custom URL scheme `examio`, `ExamioAPIBaseURL` default `http://localhost:3000` |
+| `Info.plist` | App version `0.1.0`, custom URL scheme `kmaedu`, `KMAEduAPIBaseURL` default `http://localhost:3000` |
 
 ### 5.2 Auth
 
@@ -1441,16 +1441,16 @@ This is a **Kotlin Multiplatform (KMP)** mobile application with **Android (Jetp
 ## 6. Auth Flow Details
 
 ### Android
-1. `MainActivity.onCreate()` checks `intent.data` for `examio://auth` scheme -- stores in `OAuthCallbackHolder`
-2. `ExamioApp` renders `AuthNavGraph` when `authState == Unauthenticated`
+1. `MainActivity.onCreate()` checks `intent.data` for `kmaedu://auth` scheme -- stores in `OAuthCallbackHolder`
+2. `KMAEduApp` renders `AuthNavGraph` when `authState == Unauthenticated`
 3. `AuthNavGraph` uses `LaunchedEffect` to observe `OAuthCallbackHolder.callback` flow
 4. Login: validates -> calls `authRepository.login(credential, password)` -> Ktor POST `/auth/login` -> `AuthResponse` contains tokens -> `persistTokens()` saves via `AndroidSecureTokenStorage` (AES/GCM/KeyStore) -> `onAuthenticated(user)` -> app switches to main content
-5. Google OAuth: opens URL `{apiBaseUrl}/auth/google?redirect=examio://auth/callback` -> system browser -> callback intercepted by `MainActivity.onNewIntent()` -> `AuthNavGraph` parses `token`/`refreshToken` from callback URI query params -> `authRepository.saveOAuthTokens()`
+5. Google OAuth: opens URL `{apiBaseUrl}/auth/google?redirect=kmaedu://auth/callback` -> system browser -> callback intercepted by `MainActivity.onNewIntent()` -> `AuthNavGraph` parses `token`/`refreshToken` from callback URI query params -> `authRepository.saveOAuthTokens()`
 
 ### iOS
 1. `AuthFlowView` in `ContentView` shows unauthenticated flow
 2. `AuthViewModel` handles all auth logic (private `AuthApiClient` using `URLSession`, private `KeychainTokenStore` for Keychain persistence)
-3. Login/Register call `AuthApiClient` methods -> save tokens via Keychain (service: `examio.session`) -> set `isAuthenticated = true`
+3. Login/Register call `AuthApiClient` methods -> save tokens via Keychain (service: `kmaedu.session`) -> set `isAuthenticated = true`
 4. Google OAuth: `LoginView` calls `openURL(AppConfig.googleOAuthURL())` -> system browser -> callback via `onOpenURL` in `AuthFlowView` -> routes to `AuthViewModel.completeOAuthCallback(url:)` -> parses token from query params -> saves via Keychain
 5. **Keychain token store** stores accessToken, refreshToken, sessionId, deviceId per account
 

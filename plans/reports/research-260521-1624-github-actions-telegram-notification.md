@@ -11,7 +11,7 @@ Có thể dễ dàng gửi thông báo Telegram mỗi khi GitHub Actions build t
 ### Bước 1: Tạo Telegram Bot
 
 1. Mở Telegram, tìm `@BotFather`
-2. Gửi `/newbot`, đặt tên bot (ví dụ: `Examio CI Bot`)
+2. Gửi `/newbot`, đặt tên bot (ví dụ: `KMAEdu CI Bot`)
 3. Nhận **Bot Token** (dạng `123456:ABC-DEF...`)
 4. Gửi tin nhắn bất kỳ cho bot (hoặc thêm bot vào group)
 5. Gọi API lấy chat ID:

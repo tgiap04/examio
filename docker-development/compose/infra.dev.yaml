@@ -1,0 +1,44 @@
+# Dev overlay for kmaedu-be/deploy/compose/infra.yml, merged by .generated/compose.yaml (Compose >= 2.24).
+# - data stores publish their ports on 127.0.0.1 only (psql, redis-cli, an AMQP client on the host);
+# - `internal` stops being internal (an internal network cannot publish ports) and every network is
+#   renamed after the dev project, so nothing collides with the deploy stack's kmaedu-* networks;
+# - rabbitmq-defs reads deploy/rabbitmq READ-ONLY and writes definitions.json into .generated/rabbitmq
+#   (the deploy file renders into deploy/rabbitmq, which would overwrite a real rendered file).
+services:
+    postgres:
+        container_name: !reset null
+        ports:
+            - '127.0.0.1:${KMAEDU_PG_PORT}:5432'
+
+    redis:
+        container_name: !reset null
+        ports:
+            - '127.0.0.1:${KMAEDU_REDIS_PORT}:6379'
+
+    rabbitmq:
+        container_name: !reset null
+        ports:
+            - '127.0.0.1:${KMAEDU_RABBITMQ_PORT}:5672'
+        volumes: !override
+            - rabbitmq_data:/var/lib/rabbitmq
+            - ${KMAEDU_BE_DIR}/deploy/rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/20-definitions.conf:ro
+            # 90-dev-management.conf points definitions.local.path at this directory and serves the
+            # management UI under /_rabbitmq (Traefik, backend port)
+            - ${KMAEDU_DEV_GEN_DIR}/rabbitmq:/etc/rabbitmq/dev-defs:ro
+            - ${KMAEDU_DEV_DIR}/infra/rabbitmq/90-dev-management.conf:/etc/rabbitmq/conf.d/90-dev-management.conf:ro
+
+    rabbitmq-defs:
+        container_name: !reset null
+        command: !override ['node', 'render-definitions.cjs', '--out', '/out/definitions.json']
+        volumes: !override
+            - ${KMAEDU_BE_DIR}/deploy/rabbitmq:/defs:ro
+            - ${KMAEDU_DEV_GEN_DIR}/rabbitmq:/out
+
+networks:
+    edge:
+        name: ${KMAEDU_DEV_PROJECT}-edge
+    internal:
+        name: ${KMAEDU_DEV_PROJECT}-internal
+        internal: false
+    egress:
+        name: ${KMAEDU_DEV_PROJECT}-egress

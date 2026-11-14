@@ -159,7 +159,7 @@
     {
       "name": "6 'Từ đã lưu' saved-words view",
       "ok": null,
-      "extra": "no 'Từ đã lưu' label or saved-words view exists in examio-fe src (0 hits): cannot be verified as written"
+      "extra": "no 'Từ đã lưu' label or saved-words view exists in kmaedu-fe src (0 hits): cannot be verified as written"
     },
     {
       "name": "6 TEACHER exam session: notice 'Tài khoản giáo viên không thể làm bài thi'",
@@ -299,17 +299,17 @@
     {
       "name": "9 STUDENT: no permissions/roles arrays in web storage",
       "ok": true,
-      "extra": "keys=sidebar_collapsed,examio-i18next.locale,device_id hits="
+      "extra": "keys=sidebar_collapsed,kmaedu-i18next.locale,device_id hits="
     },
     {
       "name": "9 TEACHER: no permissions/roles arrays in web storage",
       "ok": true,
-      "extra": "keys=sidebar_collapsed,examio:tour:ai-tool:v1,examio-i18next.locale,device_id hits="
+      "extra": "keys=sidebar_collapsed,kmaedu:tour:ai-tool:v1,kmaedu-i18next.locale,device_id hits="
     },
     {
       "name": "9 ADMIN: no permissions/roles arrays in web storage",
       "ok": true,
-      "extra": "keys=sidebar_collapsed,examio-i18next.locale,device_id hits="
+      "extra": "keys=sidebar_collapsed,kmaedu-i18next.locale,device_id hits="
     },
     {
       "name": "10 long session: all 4 flips keep the student logged in with the right sidebar",

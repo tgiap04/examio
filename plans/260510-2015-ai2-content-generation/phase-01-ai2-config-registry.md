@@ -6,11 +6,11 @@ Status: implemented
 Introduce AI2 as a first-class generation provider and remove Ollama generation models from the exposed generation registry.
 
 ## Context Links
-- `../examio-be/apps/ai-service/src/llm/model_registry.py`
-- `../examio-be/apps/ai-service/src/llm/model_manager.py`
-- `../examio-be/apps/ai-service/src/backend/api/file.py`
-- `../examio-be/apps/exam-service/src/modules/ai/ai.service.ts`
-- `../examio-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
+- `../kmaedu-be/apps/ai-service/src/llm/model_registry.py`
+- `../kmaedu-be/apps/ai-service/src/llm/model_manager.py`
+- `../kmaedu-be/apps/ai-service/src/backend/api/file.py`
+- `../kmaedu-be/apps/exam-service/src/modules/ai/ai.service.ts`
+- `../kmaedu-be/apps/gateway-service/src/controllers/ai-study-proxy.controller.ts`
 
 ## Requirements
 - Add provider value `ai2` to model registry types.

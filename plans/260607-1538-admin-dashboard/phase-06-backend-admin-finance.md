@@ -3,10 +3,10 @@
 - Parent plan: [plan.md](../plan.md)
 - Research: [researcher-01-backend.md](../research/researcher-01-backend.md)
 - Locked design: [brainstorm session record](../../reports/brainstorm-260607-1517-admin-dashboard.md) (Q1: Payment.status = 4)
-- Wallet: [examio-be/apps/finance-service/src/modules/wallet/wallet.service.ts](../../../../examio-be/apps/finance-service/src/modules/wallet/wallet.service.ts)
-- Payment: [examio-be/libs/database/src/schema.prisma](../../../../examio-be/libs/database/src/schema.prisma) (lines 428-446)
-- UserSubscription: [examio-be/libs/database/src/schema.prisma](../../../../examio-be/libs/database/src/schema.prisma) (lines 657-671)
-- gRPC subscription: [examio-be/apps/finance-service/src/modules/sepay/subscription.grpc.controller.ts](../../../../examio-be/apps/finance-service/src/modules/sepay/subscription.grpc.controller.ts)
+- Wallet: [kmaedu-be/apps/finance-service/src/modules/wallet/wallet.service.ts](../../../../kmaedu-be/apps/finance-service/src/modules/wallet/wallet.service.ts)
+- Payment: [kmaedu-be/libs/database/src/schema.prisma](../../../../kmaedu-be/libs/database/src/schema.prisma) (lines 428-446)
+- UserSubscription: [kmaedu-be/libs/database/src/schema.prisma](../../../../kmaedu-be/libs/database/src/schema.prisma) (lines 657-671)
+- gRPC subscription: [kmaedu-be/apps/finance-service/src/modules/sepay/subscription.grpc.controller.ts](../../../../kmaedu-be/apps/finance-service/src/modules/sepay/subscription.grpc.controller.ts)
 - Phase 04: [phase-04-backend-admin-users-and-audit.md](phase-04-backend-admin-users-and-audit.md)
 - Phase 05: [phase-05-backend-admin-stats.md](phase-05-backend-admin-stats.md)
 
@@ -145,21 +145,21 @@ export class AdminFinanceService {
 ## Related code files
 
 **New:**
-- `examio-be/apps/admin-service/src/modules/admin-finance/admin-finance.service.ts`
-- `examio-be/apps/admin-service/src/modules/admin-finance/admin-finance.controller.ts`
-- `examio-be/apps/admin-service/src/modules/admin-finance/admin-finance.module.ts`
-- `examio-be/apps/admin-service/src/modules/admin-finance/dto/refund.body.ts`
-- `examio-be/apps/admin-service/src/modules/admin-finance/dto/credit.body.ts`
-- `examio-be/apps/admin-service/src/modules/admin-finance/dto/tier.body.ts`
-- `examio-be/apps/admin-service/src/modules/admin-finance/admin-finance.service.spec.ts`
-- `examio-be/apps/admin-service/src/modules/admin-finance/admin-finance.types.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-finance/admin-finance.service.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-finance/admin-finance.controller.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-finance/admin-finance.module.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-finance/dto/refund.body.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-finance/dto/credit.body.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-finance/dto/tier.body.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-finance/admin-finance.service.spec.ts`
+- `kmaedu-be/apps/admin-service/src/modules/admin-finance/admin-finance.types.ts`
 
 **Modify:**
-- `examio-be/libs/database/src/schema.prisma` — `Payment.status` thêm comment `// 4 = refunded` (giữ int thay vì convert enum, để tránh migration phá)
-- `examio-be/apps/finance-service/src/modules/wallet/wallet.service.ts` — wrap balance updates trong `$transaction` (nếu chưa có) — **CẢNH BÁO**: chỉnh sửa finance-service có thể ảnh hưởng logic khác. Phase này chỉ **đảm bảo admin path dùng tx riêng**, không refactor toàn bộ
-- `examio-be/apps/finance-service/src/modules/sepay/subscription.grpc.controller.ts` — thêm RPC `ChangeSubscriptionTier(userId, tier, billingCycle, reason)` nếu chọn gRPC; nếu HTTP, dùng `HttpService` từ admin-service
-- `examio-be/apps/admin-service/src/admin-service.module.ts` — import `AdminFinanceModule`
-- `examio-be/libs/common/src/protos/subscription.proto` (nếu gRPC path) — thêm `ChangeSubscriptionTier` RPC
+- `kmaedu-be/libs/database/src/schema.prisma` — `Payment.status` thêm comment `// 4 = refunded` (giữ int thay vì convert enum, để tránh migration phá)
+- `kmaedu-be/apps/finance-service/src/modules/wallet/wallet.service.ts` — wrap balance updates trong `$transaction` (nếu chưa có) — **CẢNH BÁO**: chỉnh sửa finance-service có thể ảnh hưởng logic khác. Phase này chỉ **đảm bảo admin path dùng tx riêng**, không refactor toàn bộ
+- `kmaedu-be/apps/finance-service/src/modules/sepay/subscription.grpc.controller.ts` — thêm RPC `ChangeSubscriptionTier(userId, tier, billingCycle, reason)` nếu chọn gRPC; nếu HTTP, dùng `HttpService` từ admin-service
+- `kmaedu-be/apps/admin-service/src/admin-service.module.ts` — import `AdminFinanceModule`
+- `kmaedu-be/libs/common/src/protos/subscription.proto` (nếu gRPC path) — thêm `ChangeSubscriptionTier` RPC
 - Migration: `add_payment_refunded_status` (comment-only, không đổi column type)
 
 ## Implementation Steps

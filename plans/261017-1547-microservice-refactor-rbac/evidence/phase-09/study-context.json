@@ -2,9 +2,9 @@
   "task": "Phase 09 Frontend RBAC: vitest runner + first FE tests, generated Permission type with CI drift check, User.id string + isSystemAdmin (no isAdmin), auth store applySession/roles/permissions, useCan/RequirePermission/403 page, every route guarded by permission, role-based /k landing, permission-driven sidebar and admin nav, TOKEN_STALE refresh/apply/reset/retry-once policy, study-room socket re-auth, hide student-forbidden UI, HistoryPage split, TeacherRoute removal, i18n RBAC strings",
   "mode": "code",
   "acceptanceCriteria": [
-    "cd examio-fe && yarn build && yarn lint && yarn test exit 0; yarn test runs >= 5 spec files (rbac x3, quiz-practice progress, admin-roles rules)",
-    "cd examio-be && yarn gen:fe-permissions && git diff --exit-code ../examio-fe/src/types/permissions.generated.ts exit 0; CI runs drift check and FE yarn test",
-    "grep -rnE 'user\\??\\.isAdmin|TeacherRoute' examio-fe/src returns nothing; types/user.ts has no isAdmin and id is string",
+    "cd kmaedu-fe && yarn build && yarn lint && yarn test exit 0; yarn test runs >= 5 spec files (rbac x3, quiz-practice progress, admin-roles rules)",
+    "cd kmaedu-be && yarn gen:fe-permissions && git diff --exit-code ../kmaedu-fe/src/types/permissions.generated.ts exit 0; CI runs drift check and FE yarn test",
+    "grep -rnE 'user\\??\\.isAdmin|TeacherRoute' kmaedu-fe/src returns nothing; types/user.ts has no isAdmin and id is string",
     "every route in routes/index.tsx guarded per the phase-09 route table; forbidden direct URL -> /403",
     "/k landing: TEACHER -> /k/ai-tool, STUDENT -> /k/my-materials, STUDENT+ADMIN -> /admin, from param wins, disabled page flag -> first visible item",
     "sidebar shows exactly the per-role item sets in the plan; admin item only with admin:access",
@@ -14,9 +14,9 @@
     "permissions are not persisted to localStorage"
   ],
   "touchpoints": [
-    "examio-fe/src/types", "examio-fe/src/stores/useAuthStore.ts", "examio-fe/src/hooks", "examio-fe/src/lib/rbac",
-    "examio-fe/src/apis/api.ts", "examio-fe/src/routes", "examio-fe/src/pages", "examio-fe/src/components/organisms/k/SideBar.tsx",
-    "examio-fe/public/locales", "examio-be/scripts/gen-fe-permissions.ts", ".github/workflows/ci.yml"
+    "kmaedu-fe/src/types", "kmaedu-fe/src/stores/useAuthStore.ts", "kmaedu-fe/src/hooks", "kmaedu-fe/src/lib/rbac",
+    "kmaedu-fe/src/apis/api.ts", "kmaedu-fe/src/routes", "kmaedu-fe/src/pages", "kmaedu-fe/src/components/organisms/k/SideBar.tsx",
+    "kmaedu-fe/public/locales", "kmaedu-be/scripts/gen-fe-permissions.ts", ".github/workflows/ci.yml"
   ],
   "blastRadius": [
     "all FE routing and navigation", "auth session handling and token refresh", "study-room realtime connection",

@@ -1,10 +1,10 @@
 # Phase 01 — Measure Baseline and Query Cost
 
 ## Context Links
-- `../examio-be/apps/ai-service/src/backend/services/ocr_service.py`
-- `../examio-be/apps/ai-service/src/rag/vector_store_pg.py`
-- `../examio-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py`
-- `../examio-be/apps/ai-service/src/backend/services/generation_service.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/ocr_service.py`
+- `../kmaedu-be/apps/ai-service/src/rag/vector_store_pg.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/generation_service.py`
 
 ## Overview
 Priority: critical  
@@ -23,12 +23,12 @@ Establish timing and query baselines before changing algorithms or concurrency.
 
 ## Related Code Files
 Modify:
-- `../examio-be/apps/ai-service/src/backend/services/ocr_service.py`
-- `../examio-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py`
-- `../examio-be/apps/ai-service/src/backend/services/generation_service.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/ocr_service.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/hybrid_retrieval_service.py`
+- `../kmaedu-be/apps/ai-service/src/backend/services/generation_service.py`
 
 Read/query:
-- `../examio-be/libs/database/src/schema.prisma`
+- `../kmaedu-be/libs/database/src/schema.prisma`
 
 ## Implementation Steps
 1. Add compact `[AI_TIMING]` logs for each missing stage.

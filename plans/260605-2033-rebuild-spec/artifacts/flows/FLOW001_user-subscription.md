@@ -2,7 +2,7 @@
 
 **Entity:** `UserSubscription` (MODEL-004)
 **State Field:** `tier` (DISC-004)
-**Source:** `examio-be/libs/database/src/schema.prisma` (UserSubscription)
+**Source:** `kmaedu-be/libs/database/src/schema.prisma` (UserSubscription)
 **Last Updated:** 2026-06-05
 
 ## State Diagram
@@ -29,12 +29,12 @@ stateDiagram-v2
 
 | ID | From | Trigger | To | Side Effects | Source |
 |----|------|---------|----|--------------|--------|
-| T1 | NONE | event | BASIC | SePay webhook payment.subscription tier=1 | `examio-be/apps/finance-service/src/wallet.service.ts:42` |
-| T2 | NONE | event | ADVANCED | SePay webhook tier=2 | `examio-be/apps/finance-service/src/wallet.service.ts:58` |
-| T3 | BASIC | user-action | ADVANCED | Upgrade payment | `examio-be/apps/finance-service/src/payment.controller.ts:88` |
-| T4 | BASIC | scheduled | NONE | nextPaymentDate < now (cron) | `examio-be/apps/auth-service/src/session-cleanup.cron.ts:31` |
-| T5 | ADVANCED | user-action | NONE | User cancels subscription | `examio-fe/src/pages/k/SubscriptionPage.tsx:142` |
-| T6 | VIP | scheduled | BASIC | Auto-downgrade after expiry | `examio-be/apps/auth-service/src/session-cleanup.cron.ts:55` |
+| T1 | NONE | event | BASIC | SePay webhook payment.subscription tier=1 | `kmaedu-be/apps/finance-service/src/wallet.service.ts:42` |
+| T2 | NONE | event | ADVANCED | SePay webhook tier=2 | `kmaedu-be/apps/finance-service/src/wallet.service.ts:58` |
+| T3 | BASIC | user-action | ADVANCED | Upgrade payment | `kmaedu-be/apps/finance-service/src/payment.controller.ts:88` |
+| T4 | BASIC | scheduled | NONE | nextPaymentDate < now (cron) | `kmaedu-be/apps/auth-service/src/session-cleanup.cron.ts:31` |
+| T5 | ADVANCED | user-action | NONE | User cancels subscription | `kmaedu-fe/src/pages/k/SubscriptionPage.tsx:142` |
+| T6 | VIP | scheduled | BASIC | Auto-downgrade after expiry | `kmaedu-be/apps/auth-service/src/session-cleanup.cron.ts:55` |
 
 ## Trigger Types (3)
 
