@@ -168,7 +168,7 @@ CHAT_HISTORY_MAX_MESSAGES=4
 CHAT_HISTORY_MAX_CHARS=1200
 
 # Gemini is used for OCR/RAG embeddings.
-GEMINI_EMBEDDING_MODEL=models/text-embedding-004
+GEMINI_EMBEDDING_MODEL=models/gemini-embedding-001
 ```
 
 #### R2 Storage (Cloudflare)

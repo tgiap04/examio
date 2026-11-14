@@ -115,7 +115,7 @@ export class ModelCatalogService {
                 name: 'Gemini Embedding',
                 description: 'Embedding model dùng chung cho hệ thống.',
                 provider: 'gemini',
-                runtimeModelName: 'models/text-embedding-004',
+                runtimeModelName: 'models/gemini-embedding-001',
                 badge: 'Offline',
                 disabled: true,
                 available: false,

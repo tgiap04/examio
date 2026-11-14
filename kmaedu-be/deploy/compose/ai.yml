@@ -35,7 +35,7 @@ x-ai-models: &ai-models
     DEFAULT_MAX_TOKENS_CAP: '${DEFAULT_MAX_TOKENS_CAP:-4096}'
     CHAT_HISTORY_MAX_MESSAGES: '${CHAT_HISTORY_MAX_MESSAGES:-4}'
     CHAT_HISTORY_MAX_CHARS: '${CHAT_HISTORY_MAX_CHARS:-1200}'
-    GEMINI_EMBEDDING_MODEL: '${GEMINI_EMBEDDING_MODEL:-models/text-embedding-004}'
+    GEMINI_EMBEDDING_MODEL: '${GEMINI_EMBEDDING_MODEL:-models/gemini-embedding-001}'
     OCR_SERVICE_URL: ''  # Using internal Tesseract/PyPDF logic
 
 services:
