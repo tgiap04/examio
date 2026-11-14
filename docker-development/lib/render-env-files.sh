@@ -22,7 +22,7 @@ _url_host() {
 
 # _resolve <key> <template>: sets VAL for one template key (see the table in phase-01 of the plan).
 _resolve() {
-  local key="$1" tpl="$2" v
+  local key="$1" tpl="$2" v b
   case "$key" in
     FRONTEND_URL) VAL="http://localhost:$WEB_PORT" ;;
     GOOGLE_CALLBACK_URL) VAL="http://localhost:$WEB_PORT/api/v1/auth/google/callback" ;;
@@ -33,9 +33,15 @@ _resolve() {
     ADMIN_DEFAULT_PASSWORD) VAL="$(_user_or "$key" "$(secret_get "$key")")" ;;
     GOOGLE_CLIENT_ID) VAL="$(_user_or "$key" "$GOOGLE_PLACEHOLDER_CLIENT_ID")" ;;
     R2_ALLOWED_HOSTS)
+      # ai-worker downloads presigned GETs, which are virtual-hosted: <bucket>.<endpoint host>. Allow that host
+      # first, then the endpoint host itself (path-style URLs). An explicit value in the dev .env wins.
       v="$(_user R2_ENDPOINT)"
       VAL="$(_user "$key")"
-      [ -n "$VAL" ] || [ -z "$v" ] || VAL="$(_url_host "$v")" ;;
+      if [ -z "$VAL" ] && [ -n "$v" ]; then
+        VAL="$(_url_host "$v")"
+        b="$(_user R2_BUCKET_NAME)"
+        [ -z "$b" ] || VAL="$b.$VAL,$VAL"
+      fi ;;
     POSTGRES_PASSWORD | *_DB_PASSWORD | REDIS_PASSWORD | RABBITMQ_PASS | RABBITMQ_*_PASS | JWT_KID | JWT_PRIVATE_KEY | \
       *_SERVICE_CLIENT_SECRET | REFRESH_TOKEN_ENC_KEY | QUIZ_JWT_SECRET | QUIZ_AES_KEY)
       VAL="$(secret_get "$key")" ;;

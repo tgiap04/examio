@@ -181,7 +181,7 @@ R2_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
 
 # .env (compose-level; env/r2.env also carries it)
 R2_PUBLIC_URL=https://pub-....r2.dev
-R2_ALLOWED_HOSTS=<account_id>.r2.cloudflarestorage.com   # ai-worker download allowlist
+R2_ALLOWED_HOSTS=<bucket>.<account_id>.r2.cloudflarestorage.com,<account_id>.r2.cloudflarestorage.com   # ai-worker download allowlist (presigned GETs use the bucket host)
 ```
 
 The ai-service refuses to download from a private or loopback address even when the host is listed in

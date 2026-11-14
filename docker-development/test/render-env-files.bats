@@ -56,12 +56,13 @@ render() { "$PROJECT" render; }
   grep -qx "KMAEDU_WEB_PORT='5999'" "$GEN/compose.env"
 }
 
-@test "R2_ALLOWED_HOSTS is derived from R2_ENDPOINT; an explicit value wins" {
+@test "R2_ALLOWED_HOSTS is derived from R2_ENDPOINT and the bucket's virtual host; an explicit value wins" {
   printf 'R2_ENDPOINT=https://abc123.r2.cloudflarestorage.com/\nR2_PUBLIC_URL=https://pub.example.com\nR2_ACCESS_KEY_ID=a\nR2_SECRET_ACCESS_KEY=b\nR2_BUCKET_NAME=c\n' >"$KMAEDU_DEV_ENV_FILE"
   run render
   assert_success
   refute_output --partial "R2 (uploads"
-  grep -qx "R2_ALLOWED_HOSTS='abc123.r2.cloudflarestorage.com'" "$GEN/compose.env"
+  # presigned GETs are virtual-hosted (<bucket>.<endpoint host>), so that host must be allowed too
+  grep -qx "R2_ALLOWED_HOSTS='c.abc123.r2.cloudflarestorage.com,abc123.r2.cloudflarestorage.com'" "$GEN/compose.env"
   grep -qx "R2_PUBLIC_URL='https://pub.example.com'" "$GEN/env/r2.env"
   printf 'R2_ALLOWED_HOSTS=other.example.com\n' >>"$KMAEDU_DEV_ENV_FILE"
   render
