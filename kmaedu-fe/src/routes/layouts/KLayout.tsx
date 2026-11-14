@@ -1,7 +1,7 @@
 import { type FormEvent, type PropsWithChildren, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { AlertTriangle, Mail, PanelLeft, Search, X } from "lucide-react";
-import { NAV_ITEMS } from "@/lib/rbac/nav-items";
+import { AlertTriangle, Bell, ChevronsLeft, Mail, Search, X } from "lucide-react";
+import { Dropdown } from "antd";
 import { SIDEBAR_WIDTH, SIDEBAR_WIDTH_COLLAPSED } from "@/components/organisms/nav/sidebar-styles";
 import ProfileDropdown from "@/components/atoms/ProfileDropdown";
 import { SidebarKit } from "@/components/organisms/k/SideBar";
@@ -32,12 +32,6 @@ export function KLayout({ children }: PropsWithChildren) {
   }, [sidebarCollapsed]);
 
   const sidebarWidth = isDesktop ? (sidebarCollapsed ? SIDEBAR_WIDTH_COLLAPSED : SIDEBAR_WIDTH) : 0;
-
-  // Page title in the header: the nav item that owns the current path (longest href match).
-  const pageTitle =
-    [...NAV_ITEMS]
-      .filter((item) => location.pathname === item.href || location.pathname.startsWith(`${item.href}/`))
-      .sort((a, b) => b.href.length - a.href.length)[0]?.label ?? "Tổng quan";
 
   // ⌘K / Ctrl+K focuses the workspace search.
   const searchRef = useRef<HTMLInputElement>(null);
@@ -139,7 +133,7 @@ export function KLayout({ children }: PropsWithChildren) {
       <SidebarKit collapsed={sidebarCollapsed} />
 
       <main
-        className="m-0 overflow-x-clip pb-5 pt-10 xl:pb-0"
+        className="m-0 overflow-x-clip pb-5 pt-[52px] xl:pb-0"
         style={{
           marginLeft: isDesktop ? sidebarWidth : 0,
           // Width must exclude the sidebar gutter — using w-full (100%) together
@@ -185,43 +179,70 @@ export function KLayout({ children }: PropsWithChildren) {
         )}
 
         <header
-          className="fixed right-0 top-0 z-50 border-b border-hairline bg-canvas/80 backdrop-blur-xl"
+          className="fixed right-0 top-0 z-50 overflow-hidden border-b border-hairline bg-canvas/90 backdrop-blur-xl"
           style={{ left: isDesktop ? sidebarWidth : 0, width: isDesktop ? `calc(100% - ${sidebarWidth}px)` : "100%" }}
         >
-          <div className="flex h-16 w-full items-center gap-3 px-4 xl:px-6 2xl:px-8">
-            <div className="flex min-w-0 items-center gap-2.5">
-              {isMobile && <Logo sizeLogo={32} sizeText={0} />}
-              {isDesktop && (
-                <button
-                  type="button"
-                  onClick={() => setSidebarCollapsed((current) => !current)}
-                  className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-surface-soft hover:text-ink"
-                  aria-label={sidebarCollapsed ? "Mở rộng sidebar" : "Thu nhỏ sidebar"}
-                >
-                  <PanelLeft className={cn("h-[18px] w-[18px] transition-transform", sidebarCollapsed && "rotate-180")} />
-                </button>
-              )}
-              {isDesktop && <span aria-hidden className="h-5 w-px bg-hairline" />}
-              <h2 className="truncate text-sm font-semibold text-ink">{pageTitle}</h2>
-            </div>
+          {/* soft pink waves on the right, as in the brand mock */}
+          <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-[45%] overflow-hidden">
+            <div className="absolute -right-24 -top-40 h-96 w-[520px] rotate-[-18deg] rounded-[50%] bg-gradient-to-l from-[#fde4e2] via-[#fef1f0] to-transparent opacity-80" />
+            <div className="absolute -right-10 -top-24 h-72 w-[380px] rotate-[-24deg] rounded-[50%] border-l-[28px] border-[#fdecea]/90" />
+          </div>
+
+          <div className="relative flex h-[76px] w-full items-center gap-4 px-4 xl:px-6 2xl:px-8">
+            {isMobile && <Logo sizeLogo={32} sizeText={0} />}
+            {isDesktop && (
+              <button
+                type="button"
+                onClick={() => setSidebarCollapsed((current) => !current)}
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-full border border-hairline bg-canvas text-body shadow-[0_1px_3px_rgba(15,23,42,0.06)] transition-colors hover:border-brand-border hover:text-brand-strong"
+                aria-label={sidebarCollapsed ? "Mở rộng sidebar" : "Thu nhỏ sidebar"}
+              >
+                <ChevronsLeft className={cn("h-5 w-5 transition-transform duration-200", sidebarCollapsed && "rotate-180")} />
+              </button>
+            )}
 
             <form
               onSubmit={handleSearch}
-              className="ml-auto hidden h-9 w-full max-w-xs items-center gap-2 rounded-lg border border-hairline bg-surface-soft px-2.5 text-[13px] text-muted-foreground transition-colors focus-within:border-brand-border focus-within:bg-canvas focus-within:ring-2 focus-within:ring-coral/15 lg:flex xl:max-w-sm"
+              className="hidden h-12 w-full max-w-md items-center gap-3 rounded-full border border-hairline bg-canvas px-4 text-[15px] text-muted-foreground shadow-[0_1px_3px_rgba(15,23,42,0.04)] transition-colors focus-within:border-brand-border focus-within:ring-4 focus-within:ring-coral/10 lg:flex xl:max-w-lg"
             >
-              <Search className="h-4 w-4 shrink-0" />
+              <Search className="h-5 w-5 shrink-0 text-body" />
               <input
                 ref={searchRef}
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 className="min-w-0 flex-1 bg-transparent text-body outline-none placeholder:text-muted-foreground"
-                placeholder="Tìm tài liệu, đề thi, phòng thi..."
+                placeholder="Tìm kiếm tài liệu, đề thi, flashcard..."
                 aria-label="Tìm kiếm trong workspace"
               />
-              <kbd className="hidden shrink-0 rounded border border-hairline bg-canvas px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground xl:inline">⌘K</kbd>
+              <kbd className="hidden shrink-0 rounded-lg bg-surface-card px-2 py-1 font-sans text-[12px] font-semibold text-body xl:inline">⌘K</kbd>
             </form>
 
-            <div className="ml-auto flex items-center gap-2 lg:ml-0">
+            <div className="ml-auto flex items-center gap-3">
+              <Dropdown
+                trigger={["click"]}
+                placement="bottomRight"
+                popupRender={() => (
+                  <div role="dialog" aria-label="Thông báo" className="w-80 rounded-2xl border border-hairline bg-canvas p-4 shadow-[0_16px_40px_rgba(15,23,42,0.14)]">
+                    <p className="text-[15px] font-semibold text-ink">Thông báo</p>
+                    <div className="mt-3 flex flex-col items-center gap-2 rounded-xl bg-surface-soft px-4 py-6 text-center">
+                      <span className="grid h-10 w-10 place-items-center rounded-full bg-brand-soft text-brand-strong">
+                        <Bell className="h-5 w-5" />
+                      </span>
+                      <p className="text-[13px] font-medium text-ink">Chưa có thông báo</p>
+                      <p className="text-xs text-muted-foreground">Thông báo về bài thi, phòng học và tài liệu sẽ hiện ở đây.</p>
+                    </div>
+                  </div>
+                )}
+              >
+                <button
+                  type="button"
+                  aria-label="Thông báo"
+                  className="grid h-11 w-11 place-items-center rounded-full text-body transition-colors hover:bg-surface-soft hover:text-ink"
+                >
+                  <Bell className="h-6 w-6" strokeWidth={1.75} />
+                </button>
+              </Dropdown>
+              <span aria-hidden className="h-8 w-px bg-hairline" />
               <ProfileDropdown data={profile} variant="header" />
             </div>
           </div>
