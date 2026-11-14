@@ -134,7 +134,7 @@ export default function ProfileDropdown({
             className={cn(
               "flex w-full items-center rounded-lg text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-coral",
               compact
-                ? "w-auto gap-1.5 rounded-full p-0.5 pr-1 transition-colors hover:bg-surface-soft"
+                ? "w-auto rounded-full transition-shadow hover:shadow-[0_0_0_4px_rgba(217,45,41,0.12)]"
                 : "gap-2.5",
             )}
           >
@@ -151,7 +151,6 @@ export default function ProfileDropdown({
                 <Facehash name={data.name} size={44} className="text-coral" />
               )}
             </div>
-            {compact && <ChevronDown className="h-4 w-4 shrink-0 text-body" />}
             {!compact && (
               <span className="flex min-w-0 flex-1 items-center gap-1.5 pl-1">
                 <span className="truncate text-[14px] font-medium text-ink">{data.name}</span>
